@@ -12380,8 +12380,8 @@ CLASS="PARAMETER"
 >passwd chat</I
 ></TT
 ></A
-> string will 
-		be ignored.
+> must be
+		be changed to work with the pam prompts.
 		</P
 ><P
 >Default: <B
@@ -12511,6 +12511,24 @@ CLASS="PARAMETER"
 		password cleartext. In this case the old password cleartext is set 
 		to "" (the empty string).</P
 ><P
+>Also, if the <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam
+		password change</I
+></TT
+></A
+> parameter is set to true, then the
+		chat sequence should consist of three elements. The first element should
+		match the pam prompt for the old password, the second element should match
+		the pam prompt for the first request for the new password, and the final
+		element should match the pam prompt for the second request for the new password.
+		These matches are done case insentively. Under most conditions this change
+		is done as root so the prompt for the old password will never be matched.
+		</P
+><P
 >See also <A
 HREF="#UNIXPASSWORDSYNC"
 ><TT
@@ -12528,12 +12546,20 @@ CLASS="PARAMETER"
 >		passwd program</I
 ></TT
 ></A
-> and <A
+> ,<A
 HREF="#PASSWDCHATDEBUG"
 >		<TT
 CLASS="PARAMETER"
 ><I
 >passwd chat debug</I
+></TT
+></A
+> and <A
+HREF="#PAMPASSWORDCHANGE"
+>		<TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
 ></TT
 ></A
 >.</P
@@ -18305,7 +18331,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5786"
+NAME="AEN5791"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18335,7 +18361,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5792"
+NAME="AEN5797"
 ></A
 ><H2
 >VERSION</H2
@@ -18346,7 +18372,7 @@ NAME="AEN5792"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5795"
+NAME="AEN5800"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18425,7 +18451,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5815"
+NAME="AEN5820"
 ></A
 ><H2
 >AUTHOR</H2
