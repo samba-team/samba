@@ -170,8 +170,7 @@ fcc_initialize(krb5_context context,
     int fd;
     char *filename = f->filename;
 
-    if((ret = erase_file(filename)))
-	return ret;
+    unlink (filename);
   
     fd = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
     if(fd == -1)
