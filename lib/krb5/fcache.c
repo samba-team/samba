@@ -166,7 +166,7 @@ fcc_initialize(krb5_context context,
 	       krb5_principal primary_principal)
 {
     krb5_fcache *f = FCACHE(id);
-    int ret;
+    int ret = 0;
     int fd;
     char *filename = f->filename;
 
