@@ -3213,12 +3213,16 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 
 		if (UNMARSHALLING(ps))
 		{
-			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
-			r_u->uni_grp_name = g_new(UNISTR2, r_u->num_entries2);
+			if (r_u->num_entries2 > 0)
+			{
+				r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
+				r_u->uni_grp_name = g_new(UNISTR2,
+							  r_u->num_entries2);
+			}
 		}
 
-		if ((r_u->sam == NULL || r_u->uni_grp_name == NULL)
-		    && r_u->num_entries2 != 0)
+		if (r_u->num_entries2 != 0 && 
+		    (r_u->sam == NULL || r_u->uni_grp_name == NULL))
 		{
 			DEBUG(0,
 			      ("NULL pointers in SAMR_R_ENUM_DOM_ALIASES\n"));
