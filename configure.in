@@ -51,6 +51,12 @@ case "$host" in
 	;;
 esac
 
+dnl
+dnl this is needed to run the configure tests against glibc
+dnl
+
+AC_DEFINE(_GNU_SOURCE, 1, [defining this enables extensions on glibc-based systems such as Linux])
+
 AC_OBJEXT
 AC_EXEEXT
 
