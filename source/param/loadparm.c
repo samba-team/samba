@@ -164,6 +164,7 @@ typedef struct
 #ifdef WITH_UTMP
   char *szUtmpDir;
 #endif /* WITH_UTMP */
+  char *szSourceEnv;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -493,6 +494,8 @@ static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
+static BOOL handle_source_env(char *pszParmValue,char **ptr);
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
 
 static void set_default_server_announce_type(void);
 
@@ -561,7 +564,7 @@ static struct parm_struct parm_table[] =
   {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
   {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_DOS_STRING},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,              handle_netbios_name,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
   {"netbios scope",    P_UGSTRING,P_GLOBAL, global_scope,               NULL,   NULL,  FLAG_DOS_STRING},
   {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
@@ -853,6 +856,7 @@ static struct parm_struct parm_table[] =
   {"volume",           P_STRING,  P_LOCAL,  &sDefault.volume,           NULL,   NULL,  FLAG_SHARE},
   {"fstype",           P_STRING,  P_LOCAL,  &sDefault.fstype,           NULL,   NULL,  FLAG_SHARE},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL,   NULL,  FLAG_SHARE},
+  {"source environment",P_STRING, P_GLOBAL, &Globals.szSourceEnv,       handle_source_env,NULL,0},
   {"wide links",       P_BOOL,    P_LOCAL,  &sDefault.bWidelinks,       NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"follow symlinks",  P_BOOL,    P_LOCAL,  &sDefault.bSymlinks,        NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"dont descend",     P_STRING,  P_LOCAL,  &sDefault.szDontdescend,    NULL,   NULL,  FLAG_SHARE},
@@ -1190,6 +1194,7 @@ FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
 FN_GLOBAL_STRING(lp_utmpdir,&Globals.szUtmpDir)
 #endif /* WITH_UTMP */
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
+FN_GLOBAL_STRING(lp_source_environment,&Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice,&Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command,&Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_dfree_command,&Globals.szDfree)
@@ -1904,6 +1909,136 @@ BOOL lp_file_list_changed(void)
     f = f->next;
   }
   return(False);
+}
+
+/***************************************************************************
+ Run standard_sub_basic on netbios name... needed because global_myname
+ is not accessed through any lp_ macro.
+***************************************************************************/
+
+static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
+{
+	pstring netbios_name;
+
+	pstrcpy(netbios_name,pszParmValue);
+
+	standard_sub_basic(netbios_name);
+	strupper(netbios_name);
+	string_set(ptr,netbios_name);
+
+	/*
+	 * Convert from UNIX to DOS string - the UNIX to DOS converter
+	 * isn't called on the special handlers.
+	 */
+	unix_to_dos(netbios_name, True);
+	pstrcpy(global_myname,netbios_name);
+
+	DEBUG(4,("handle_netbios_name: set global_myname to: %s\n", global_myname));
+
+	return(True);
+}
+
+/***************************************************************************
+ Do the work of sourcing in environment variable/value pairs.
+***************************************************************************/
+
+static BOOL source_env(FILE *fenv)
+{
+	pstring line;
+	char *varval;
+	size_t len;
+	char *p;
+
+	while (!feof(fenv)) {
+		if (fgets(line, sizeof(line), fenv) == NULL)
+			break;
+
+		if(feof(fenv))
+			break;
+
+		if((len = strlen(line)) == 0)
+			continue;
+
+		if (line[len - 1] == '\n')
+			line[--len] = '\0';
+
+		if ((varval=malloc(len+1)) == NULL) {
+			DEBUG(0,("source_env: Not enough memory!\n"));
+			return(False);
+		}
+
+		DEBUG(4,("source_env: Adding to environment: %s\n", line));
+		strncpy(varval, line, len);
+		varval[len] = '\0';
+
+		p=strchr(line, (int) '=');
+		if (p == NULL) {
+			DEBUG(4,("source_env: missing '=': %s\n", line));
+			continue;
+		}
+
+		if (putenv(varval)) {
+			DEBUG(0,("source_env: Failed to put environment variable %s\n", varval ));
+			continue;
+		}
+
+		*p='\0';
+		p++;
+		DEBUG(4,("source_env: getting var %s = %s\n", line, getenv(line)));
+	}
+
+	DEBUG(4,("source_env: returning successfully\n"));
+	return(True);
+}
+
+/***************************************************************************
+ Handle the source environment operation
+***************************************************************************/
+
+static BOOL handle_source_env(char *pszParmValue,char **ptr)
+{
+	pstring fname;
+	char *p = fname;
+	FILE *env;
+	BOOL result;
+
+	pstrcpy(fname,pszParmValue);
+
+	standard_sub_basic(fname);
+
+	string_set(ptr,pszParmValue);
+
+	DEBUG(4, ("handle_source_env: checking env type\n"));
+
+	/*
+	 * Filename starting with '|' means popen and read from stdin.
+	 */
+
+	if (*p == '|') {
+
+		DEBUG(4, ("handle_source_env: source env from pipe\n"));
+		p++;
+
+		if ((env = sys_popen(p, "r")) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
+			return(False);
+		}
+
+		DEBUG(4, ("handle_source_env: calling source_env()\n"));
+		result = source_env(env);
+		sys_pclose(env);
+
+	} else {
+
+		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
+		if ((env = sys_fopen(fname, "r")) == NULL) {
+			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
+			return(False);
+		}
+		result=source_env(env);
+		fclose(env);
+	}
+	return(result);
 }
 
 /***************************************************************************
