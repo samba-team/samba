@@ -42,6 +42,7 @@ static pstring workgroup;
 static char *cmdstr;
 static BOOL got_pass;
 static int io_bufsize = 64512;
+static BOOL use_kerberos;
 extern struct in_addr ipzero;
 
 static int name_type = 0x20;
@@ -946,6 +947,22 @@ static BOOL do_mkdir(char *name)
 	return(True);
 }
 
+/****************************************************************************
+show 8.3 name of a file
+****************************************************************************/
+static BOOL do_altname(char *name)
+{
+	fstring altname;
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		d_printf("%s getting alt name for %s\n",
+			 cli_errstr(cli),name);
+		return(False);
+	}
+	d_printf("%s\n", altname);
+
+	return(True);
+}
+
 
 /****************************************************************************
  Exit client.
@@ -996,6 +1013,27 @@ static int cmd_mkdir(void)
 	}
 	
 	return 0;
+}
+
+
+/****************************************************************************
+  show alt name
+  ****************************************************************************/
+static void cmd_altname(void)
+{
+	pstring name;
+	fstring buf;
+	char *p=buf;
+  
+	pstrcpy(name,cur_dir);
+
+	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
+		d_printf("altname <file>\n");
+		return;
+	}
+	pstrcat(name,p);
+
+	do_altname(name);
 }
 
 
@@ -1816,6 +1854,7 @@ struct
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
+  {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
@@ -2075,6 +2114,10 @@ struct cli_state *do_connect(const char *server, const char *share)
 
 	c->protocol = max_protocol;
 
+	if (use_kerberos) {
+		c->use_spnego = True;
+	}
+
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
 		d_printf("session request to %s failed (%s)\n", 
@@ -2198,6 +2241,7 @@ static void usage(char *pname)
   d_printf("\t-h                    Print this help message.\n");
   d_printf("\t-I dest IP            use this IP to connect to\n");
   d_printf("\t-E                    write messages to stderr instead of stdout\n");
+  d_printf("\t-k                    use kerberos (active directory) authentication\n");
   d_printf("\t-U username           set the network username\n");
   d_printf("\t-L host               get a list of shares available on a host\n");
   d_printf("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
@@ -2488,7 +2532,7 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:A:k")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
@@ -2645,6 +2689,15 @@ static int do_message_op(void)
 			break;
 		case 'b':
 			io_bufsize = MAX(1, atoi(optarg));
+			break;
+		case 'k':
+#if HAVE_KRB5
+			use_kerberos = True;
+			got_pass = True;
+#else
+			d_printf("No kerberos support compiled in\n");
+			exit(1);
+#endif
 			break;
 		default:
 			usage(pname);

@@ -38,6 +38,9 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_AWK
 
+dnl needed before AC_TRY_COMPILE
+AC_ISC_POSIX
+
 dnl Check if C compiler understands -c and -o at the same time
 AC_PROG_CC_C_O
 if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" = no"; then
@@ -316,6 +319,11 @@ fi
 # we need libdl for PAM and the new VFS code
 AC_CHECK_LIB(dl, dlopen, [LIBS="$LIBS -ldl";
 	AC_DEFINE(HAVE_LIBDL)])
+
+############################################
+# we need krb5 for w2k ADS authentication
+AC_CHECK_LIB(krb5, krb5_mk_req_extended, [LIBS="$LIBS -lkrb5";
+	AC_DEFINE(HAVE_KRB5)])
 
 
 ############################################

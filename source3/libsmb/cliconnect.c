@@ -31,15 +31,358 @@ static  struct {
 prots[] = 
     {
       {PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
-      {PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
-      {PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
       {PROTOCOL_LANMAN1,"LANMAN1.0"},
+      {PROTOCOL_LANMAN1,"Windows for Workgroups 3.1a"},
       {PROTOCOL_LANMAN2,"LM1.2X002"},
-      {PROTOCOL_LANMAN2,"Samba"},
-      {PROTOCOL_NT1,"NT LANMAN 1.0"},
+      {PROTOCOL_NT1,"LANMAN2.1"},
       {PROTOCOL_NT1,"NT LM 0.12"},
       {-1,NULL}
     };
+
+
+/****************************************************************************
+do an old lanman2 style session setup
+****************************************************************************/
+static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
+				      char *pass, int passlen)
+{
+	fstring pword;
+	char *p;
+
+	if (passlen > sizeof(pword)-1) {
+		return False;
+	}
+
+	/* if in share level security then don't send a password now */
+	if (!(cli->sec_mode & 1)) {
+		passlen = 0;
+	}
+
+	if (passlen > 0 && (cli->sec_mode & 2) && passlen != 24) {
+		/* Encrypted mode needed, and non encrypted password supplied. */
+		passlen = 24;
+		clistr_push(cli, pword, pass, -1, STR_TERMINATE);
+		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
+	} else if ((cli->sec_mode & 2) && passlen == 24) {
+		/* Encrypted mode needed, and encrypted password supplied. */
+		memcpy(pword, pass, passlen);
+	} else if (passlen > 0) {
+		/* Plaintext mode needed, assume plaintext supplied. */
+		passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
+	}
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,10, 0, True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+	
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,1);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+
+	p = smb_buf(cli->outbuf);
+	memcpy(p,pword,passlen);
+	p += passlen;
+	p += clistr_push(cli, p, user, -1, STR_UPPER|STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);	
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+
+/****************************************************************************
+work out suitable capabilities to offer the server
+****************************************************************************/
+static uint32 cli_session_setup_capabilities(struct cli_state *cli)
+{
+	uint32 capabilities = CAP_NT_SMBS;
+
+	/* Set the CLI_FORCE_DOSERR environment variable to test
+	   client routines using DOS errors instead of STATUS32
+	   ones.  This intended only as a temporary hack. */	
+	if (!getenv("CLI_FORCE_DOSERR")) {
+		capabilities |= CAP_STATUS32;
+	}
+
+	if (cli->use_level_II_oplocks) {
+		capabilities |= CAP_LEVEL_II_OPLOCKS;
+	}
+
+	if (cli->capabilities & CAP_UNICODE) {
+		capabilities |= CAP_UNICODE;
+	}
+
+	return capabilities;
+}
+
+
+/****************************************************************************
+do a NT1 guest session setup
+****************************************************************************/
+static BOOL cli_session_setup_guest(struct cli_state *cli)
+{
+	char *p;
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+
+	set_message(cli->outbuf,13,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+			
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,0);
+	SSVAL(cli->outbuf,smb_vwv8,0);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* username */
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+	      return False;
+	
+	show_msg(cli->inbuf);
+	
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	fstrcpy(cli->user_name, "");
+
+	return True;
+}
+
+
+/****************************************************************************
+do a NT1 plaintext session setup
+****************************************************************************/
+static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
+					char *pass, char *workgroup)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	fstring pword;
+	int passlen;
+	char *p;
+
+	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+
+	set_message(cli->outbuf,13,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+			
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+	SSVAL(cli->outbuf,smb_vwv8,0);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p, pword, passlen);
+	p += passlen;
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+	      return False;
+	
+	show_msg(cli->inbuf);
+	
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+
+/****************************************************************************
+do a NT1 NTLM/LM encrypted session setup
+****************************************************************************/
+static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
+				  char *pass, int passlen,
+				  char *ntpass, int ntpasslen,
+				  char *workgroup)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	fstring pword, ntpword;
+	char *p;
+
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+		return False;
+	}
+
+	if (passlen != 24) {
+		/* non encrypted password supplied. */
+		passlen = 24;
+		ntpasslen = 24;
+		clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+		clistr_push(cli, ntpword, ntpass, sizeof(ntpword), STR_TERMINATE);
+		SMBencrypt((uchar *)pword,cli->secblob.data,(uchar *)pword);
+		SMBNTencrypt((uchar *)ntpword,cli->secblob.data,(uchar *)ntpword);
+	} else {
+		memcpy(pword, pass, passlen);
+		memcpy(ntpword, ntpass, ntpasslen);
+	}
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,13,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+			
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+	SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p,pword,passlen); p += passlen;
+	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+#if HAVE_KRB5
+/****************************************************************************
+do a spnego encrypted session setup
+****************************************************************************/
+static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user, 
+				     char *pass, char *workgroup)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	char *p;
+	DATA_BLOB blob2, negTokenTarg;
+
+	negTokenTarg = spnego_gen_negTokenTarg(cli);
+
+	capabilities |= CAP_EXTENDED_SECURITY;
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,12,0,True);
+	CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
+	cli_setup_packet(cli);
+			
+	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,0);
+	SIVAL(cli->outbuf,smb_vwv5,0);
+	SSVAL(cli->outbuf,smb_vwv7,negTokenTarg.length);
+	SIVAL(cli->outbuf,smb_vwv10,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p, negTokenTarg.data, negTokenTarg.length);
+	p += negTokenTarg.length;
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	
+	p = smb_buf(cli->inbuf);
+
+	blob2 = data_blob(p, SVAL(cli->inbuf, smb_vwv3));
+
+	p += blob2.length;
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	fstrcpy(cli->user_name, user);
+
+	data_blob_free(negTokenTarg);
+
+	/* we don't need this blob until we do NTLMSSP */
+	data_blob_free(blob2);
+
+	return True;
+}
+#endif
 
 
 /****************************************************************************
@@ -47,7 +390,6 @@ prots[] =
  format and must be converted to DOS codepage format before sending. If the
  password is in plaintext, the same should be done.
 ****************************************************************************/
-
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -55,7 +397,6 @@ BOOL cli_session_setup(struct cli_state *cli,
 		       char *workgroup)
 {
 	char *p;
-	fstring pword, ntpword;
 	fstring user2;
 
 	/* allow for workgroups as part of the username */
@@ -69,146 +410,45 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (cli->protocol < PROTOCOL_LANMAN1)
 		return True;
 
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
-		return False;
+	/* now work out what sort of session setup we are going to
+           do. I have split this into separate functions to make the
+           flow a bit easier to understand (tridge) */
+
+	/* if its an older server then we have to use the older request format */
+	if (cli->protocol < PROTOCOL_NT1) {
+		return cli_session_setup_lanman2(cli, user, pass, passlen);
 	}
 
-	if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
-		/* Null session connect. */
-		pword[0] = '\0';
-		ntpword[0] = '\0';
-	} else {
-		if ((cli->sec_mode & 2) && passlen != 24) {
-			/*
-			 * Encrypted mode needed, and non encrypted password supplied.
-			 */
-			passlen = 24;
-			ntpasslen = 24;
-			clistr_push(cli, pword, pass, -1, STR_TERMINATE);
-			fstrcpy(ntpword, ntpass);;
-			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
-			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
-		} else if ((cli->sec_mode & 2) && passlen == 24) {
-			/*
-			 * Encrypted mode needed, and encrypted password supplied.
-			 */
-			memcpy(pword, pass, passlen);
-			if(ntpasslen == 24) {
-				memcpy(ntpword, ntpass, ntpasslen);
-			} else {
-				fstrcpy(ntpword, "");
-				ntpasslen = 0;
-			}
-		} else {
-			/*
-			 * Plaintext mode needed, assume plaintext supplied.
-			 */
-			passlen = clistr_push(cli, pword, pass, -1, STR_TERMINATE);
-			fstrcpy(ntpword, "");
-			ntpasslen = 0;
-		}
+	/* if no user is supplied then we have to do an anonymous connection.
+	   passwords are ignored */
+	if (!user || !*user) {
+		return cli_session_setup_guest(cli);
 	}
 
-	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {
-		fstrcpy(pword, "");
-		passlen=1;
-		fstrcpy(ntpword, "");
-		ntpasslen=1;
-	} 
-
-	/* send a session setup command */
-	memset(cli->outbuf,'\0',smb_size);
-
-	if (cli->protocol < PROTOCOL_NT1)
-	{
-		set_message(cli->outbuf,10, 0, True);
-		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_packet(cli);
-
-		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
-		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,1);
-		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-		SSVAL(cli->outbuf,smb_vwv7,passlen);
-		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen);
-		p += passlen;
-		p += clistr_push(cli, p, user, -1, STR_UPPER|STR_TERMINATE);
-		cli_setup_bcc(cli, p);
-	}
-	else
-	{
-		uint32 capabilities;
-
-		capabilities = CAP_NT_SMBS;
-
-                /* Set the CLI_FORCE_DOSERR environment variable to test
-                   client routines using DOS errors instead of STATUS32
-                   ones.  This intended only as a temporary hack. */
-
-                if (!getenv("CLI_FORCE_DOSERR")) {
-                        capabilities |= CAP_STATUS32;
-                }
-
-		if (cli->use_level_II_oplocks) {
-			capabilities |= CAP_LEVEL_II_OPLOCKS;
-		}
-		if (cli->capabilities & CAP_UNICODE) {
-			capabilities |= CAP_UNICODE;
-		}
-		set_message(cli->outbuf,13,0,True);
-		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_packet(cli);
-		
-		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-		SSVAL(cli->outbuf,smb_vwv7,passlen);
-		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SIVAL(cli->outbuf,smb_vwv11,capabilities);
-		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen); 
-		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpword,ntpasslen); 
-		p += SVAL(cli->outbuf,smb_vwv8);
-		p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-		p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
-		cli_setup_bcc(cli, p);
+	/* if the server is share level then send a plaintext null
+           password at this point. The password is sent in the tree
+           connect */
+	if ((cli->sec_mode & 1) == 0) {
+		return cli_session_setup_plaintext(cli, user, "", workgroup);
 	}
 
-      cli_send_smb(cli);
-      if (!cli_receive_smb(cli))
-	      return False;
+	/* if the server doesn't support encryption then we have to use plaintext. The 
+	   second password is ignored */
+	if ((cli->sec_mode & 2) == 0) {
+		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+	}
 
-      show_msg(cli->inbuf);
+#if HAVE_KRB5
+	/* if the server supports extended security then use SPNEGO */
+	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
+		return cli_session_setup_spnego(cli, user, pass, workgroup);
+	}
+#endif
 
-      if (cli_is_error(cli)) {
-	      return False;
-      }
-
-      /* use the returned vuid from now on */
-      cli->vuid = SVAL(cli->inbuf,smb_uid);
-
-      if (cli->protocol >= PROTOCOL_NT1) {
-	      /*
-	       * Save off some of the connected server
-	       * info.
-	       */
-	      char *q = smb_buf(cli->inbuf);
-	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE);
-	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE);
-	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE);
-      }
-
-      fstrcpy(cli->user_name, user);
-
-      return True;
+	/* otherwise do a NT1 style session setup */
+	return cli_session_setup_nt1(cli, user, 
+				     pass, passlen, ntpass, ntpasslen,
+				     workgroup);	
 }
 
 /****************************************************************************
@@ -256,8 +496,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		 */
 		passlen = 24;
 		clistr_push(cli, dos_pword, pass, -1, STR_TERMINATE);
-		
-		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
+		SMBencrypt((uchar *)dos_pword,cli->secblob.data,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & 3) == 0) {
 			/*
@@ -404,6 +643,11 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	CVAL(smb_buf(cli->outbuf),0) = 2;
 
+	if (cli->use_spnego) {
+		SSVAL(cli->outbuf, smb_flg2, 
+		      SVAL(cli->outbuf, smb_flg2) | FLAGS2_EXTENDED_SECURITY);
+	}
+
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
@@ -427,7 +671,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
-		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
+		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
 		if (cli->capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
@@ -449,7 +693,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		cli->servertime = make_unix_date(cli->inbuf+smb_vwv8);
 		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
 		cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
-		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
+		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
 	} else {
 		/* the old core protocol */
 		cli->sec_mode = 0;
@@ -481,7 +725,6 @@ BOOL cli_session_request(struct cli_state *cli,
 	if (cli->port == 445) return True;
 
 	/* send a session request (RFC 1002) */
-
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
   
@@ -758,7 +1001,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		unsigned char lm_sess_pwd[24];
 
 		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
-		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
+		pwd_make_lm_nt_owf(&(cli->pwd), cli->secblob.data);
 		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
 
 		/* attempt encrypted session */
