@@ -276,7 +276,7 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
  Init lsa_trans_names.
  ***************************************************************************/
 
-static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
+static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 				 int num_entries, DOM_SID2 *sid,
 				 uint32 *mapped_count)
 {
@@ -286,16 +286,18 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 
 	/* Allocate memory for list of names */
 
-	if (!(trn->name = (LSA_TRANS_NAME *)malloc(sizeof(LSA_TRANS_NAME) *
-						  num_entries))) {
-		DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
-		return;
-	}
+	if (num_entries > 0) {
+		if (!(trn->name = (LSA_TRANS_NAME *)talloc(ctx, sizeof(LSA_TRANS_NAME) *
+							  num_entries))) {
+			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
+			return;
+		}
 
-	if (!(trn->uni_name = (UNISTR2 *)malloc(sizeof(UNISTR2) * 
-						num_entries))) {
-		DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
-		return;
+		if (!(trn->uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2) * 
+							num_entries))) {
+			DEBUG(0, ("init_lsa_trans_names(): out of memory\n"));
+			return;
+		}
 	}
 
 	for (i = 0; i < num_entries; i++) {
@@ -375,21 +377,24 @@ static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entr
 	DOM_R_REF ref;
 	LSA_TRANS_NAME_ENUM names;
 	uint32 mapped_count = 0;
+	TALLOC_CTX *ctx = talloc_init();
 
 	ZERO_STRUCT(r_l);
 	ZERO_STRUCT(ref);
 	ZERO_STRUCT(names);
 
 	/* set up the LSA Lookup SIDs response */
-	init_lsa_trans_names(&ref, &names, num_entries, sid, &mapped_count);
+	init_lsa_trans_names(ctx, &ref, &names, num_entries, sid, &mapped_count);
 	init_reply_lookup_sids(&r_l, &ref, &names, mapped_count);
 
 	/* store the response in the SMB stream */
 	if(!lsa_io_r_lookup_sids("", &r_l, rdata, 0)) {
 		DEBUG(0,("lsa_reply_lookup_sids: Failed to marshall LSA_R_LOOKUP_SIDS.\n"));
+		talloc_destroy(ctx);
 		return False;
 	}
 
+	talloc_destroy(ctx);
 	return True;
 }
 
