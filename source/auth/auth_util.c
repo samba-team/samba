@@ -68,7 +68,7 @@ void auth_add_user_script(const char *domain, const char *username)
 	 * user on the fly, do so.
 	 */
 	
-	if ( lp_adduser_script() ) 
+	if ( *lp_adduser_script() )
 		smb_create_user(domain, username, NULL);
 	else {
 		DEBUG(10,("auth_add_user_script: no 'add user script'.  Asking winbindd\n"));
