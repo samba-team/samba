@@ -1308,3 +1308,38 @@ int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key)
 }
 
 
+#if TDB_DEBUG
+void tdb_printfreelist(TDB_CONTEXT *tdb)
+{
+	tdb_off offset, rec_ptr, last_ptr;
+	struct list_struct rec, lastrec, newrec;
+
+	tdb_lock(tdb, -1, F_WRLCK);
+
+	last_ptr = 0;
+	offset = FREELIST_TOP;
+
+	/* read in the freelist top */
+	if (ofs_read(tdb, offset, &rec_ptr) == -1) {
+		return;
+	}
+
+	while (rec_ptr) {
+		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+			return;
+		}
+
+		if (rec.magic != TDB_FREE_MAGIC) {
+			printf("bad magic 0x%08x in free list\n", rec.magic);
+			return;
+		}
+
+		printf("entry offset=[0x%08x], rec.rec_len = [0x%08x]\n", rec.next, rec.rec_len );
+
+		/* move to the next record */
+		rec_ptr = rec.next;
+	}
+
+	tdb_unlock(tdb, -1);
+}
+#endif
