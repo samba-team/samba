@@ -970,16 +970,47 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	DEBUG(3,("rpc: trusted_domains\n"));
 
 	*num_domains = 0;
+	*names = NULL;
 	*alt_names = NULL;
+	*dom_sids = NULL;
 
 	retry = 0;
 	do {
 		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(find_our_domain(), &hnd)))
 			goto done;
 
-		result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-						&hnd->pol, &enum_ctx,
-						num_domains, names, dom_sids);
+		result = STATUS_MORE_ENTRIES;
+
+		while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+			uint32 start_idx, num;
+			char **tmp_names;
+			DOM_SID *tmp_sids;
+			int i;
+
+			result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
+							&hnd->pol, &enum_ctx,
+							&num, &tmp_names,
+							&tmp_sids);
+
+			if (!NT_STATUS_IS_OK(result) &&
+			    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+				break;
+
+			start_idx = *num_domains;
+			*num_domains += num;
+			*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names,
+						      char *, *num_domains);
+			*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids,
+							 DOM_SID,
+							 *num_domains);
+			if ((*names == NULL) || (*dom_sids == NULL))
+				return NT_STATUS_NO_MEMORY;
+
+			for (i=0; i<num; i++) {
+				(*names)[start_idx+i] = tmp_names[i];
+				(*dom_sids)[start_idx+i] = tmp_sids[i];
+			}
+		}
 	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1) &&  hnd && hnd->cli && hnd->cli->fd == -1);
 
 done:
