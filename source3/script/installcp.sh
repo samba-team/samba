@@ -26,8 +26,8 @@ done
 
 cat << EOF
 ======================================================================
-The code pages have been installed. You may uninstall them using the command
-the command "make uninstallcp" or make "uninstall" to uninstall binaries,
+The code pages have been installed. You may uninstall them using the
+command "make uninstallcp" or make "uninstall" to uninstall binaries,
 man pages, shell scripts and code pages.
 ======================================================================
 EOF
