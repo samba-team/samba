@@ -1,3 +1,18 @@
+Mon Jun 30 06:08:14 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/rsh: New program.
+
+	* lib/krb5/keytab.c (krb5_kt_add_entry): change open mode to
+ 	O_WRONLY | O_APPEND
+
+	* lib/krb5/get_cred.c: removed stale prototype for
+ 	`extract_ticket' and corrected call.
+
+	* lib/asn1/gen_length.c (length_type): Make the length functions
+ 	for SequenceOf non-destructive
+
+	* admin/ank.c (doit): Fix reading of `y/n'.
+
 Mon Jun 16 05:41:43 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/gssapi/wrap.c, unwrap.c: do encrypt and add sequence number
