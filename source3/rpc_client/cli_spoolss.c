@@ -522,7 +522,7 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
         SPOOL_R_ADDPRINTEREX r_o;
 	struct cli_connection *con = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-        fstring client_name;
+        fstring the_client_name;
 	BOOL valid_pol = True;
 
 
@@ -544,12 +544,12 @@ BOOL spoolss_addprinterex(POLICY_HND *hnd, const char* srv_name, PRINTER_INFO_2 
         /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
         DEBUG(5,("SPOOLSS Add Printer Ex (Server: %s)\n", srv_name));
 	
-        fstrcpy(client_name, "\\\\");
-        fstrcat(client_name, con->pCli_state->desthost);
-        strupper(client_name);
+        fstrcpy(the_client_name, "\\\\");
+        fstrcat(the_client_name, con->pCli_state->desthost);
+        strupper(the_client_name);
 	
 
-        make_spoolss_q_addprinterex(&q_o, srv_name, client_name, 
+        make_spoolss_q_addprinterex(&q_o, srv_name, the_client_name, 
 				    /* "Administrator", */
 				    con->pCli_state->user_name,
 				    2, info2);
