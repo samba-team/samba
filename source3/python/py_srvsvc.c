@@ -28,6 +28,33 @@ static struct const_vals {
 	char *name;
 	uint32 value;
 } module_const_vals[] = {
+	{ "SV_TYPE_WORKSTATION", SV_TYPE_WORKSTATION },
+	{ "SV_TYPE_SERVER", SV_TYPE_SERVER },
+	{ "SV_TYPE_SQLSERVER", SV_TYPE_SQLSERVER },
+	{ "SV_TYPE_DOMAIN_CTRL", SV_TYPE_DOMAIN_CTRL },
+	{ "SV_TYPE_DOMAIN_BAKCTRL", SV_TYPE_DOMAIN_BAKCTRL },
+	{ "SV_TYPE_TIME_SOURCE", SV_TYPE_TIME_SOURCE },
+	{ "SV_TYPE_AFP", SV_TYPE_AFP },
+	{ "SV_TYPE_NOVELL", SV_TYPE_NOVELL },
+	{ "SV_TYPE_DOMAIN_MEMBER", SV_TYPE_DOMAIN_MEMBER },
+	{ "SV_TYPE_PRINTQ_SERVER", SV_TYPE_PRINTQ_SERVER },
+	{ "SV_TYPE_DIALIN_SERVER", SV_TYPE_DIALIN_SERVER },
+	{ "SV_TYPE_SERVER_UNIX", SV_TYPE_SERVER_UNIX },
+	{ "SV_TYPE_NT", SV_TYPE_NT },
+	{ "SV_TYPE_WFW", SV_TYPE_WFW },
+	{ "SV_TYPE_SERVER_MFPN", SV_TYPE_SERVER_MFPN },
+	{ "SV_TYPE_SERVER_NT", SV_TYPE_SERVER_NT },
+	{ "SV_TYPE_POTENTIAL_BROWSER", SV_TYPE_POTENTIAL_BROWSER },
+	{ "SV_TYPE_BACKUP_BROWSER", SV_TYPE_BACKUP_BROWSER },
+	{ "SV_TYPE_MASTER_BROWSER", SV_TYPE_MASTER_BROWSER },
+	{ "SV_TYPE_DOMAIN_MASTER", SV_TYPE_DOMAIN_MASTER },
+	{ "SV_TYPE_SERVER_OSF", SV_TYPE_SERVER_OSF },
+	{ "SV_TYPE_SERVER_VMS", SV_TYPE_SERVER_VMS },
+	{ "SV_TYPE_WIN95_PLUS", SV_TYPE_WIN95_PLUS },
+	{ "SV_TYPE_DFS_SERVER", SV_TYPE_DFS_SERVER },
+	{ "SV_TYPE_ALTERNATE_XPORT", SV_TYPE_ALTERNATE_XPORT },
+	{ "SV_TYPE_LOCAL_LIST_ONLY", SV_TYPE_LOCAL_LIST_ONLY },
+	{ "SV_TYPE_DOMAIN_ENUM", SV_TYPE_DOMAIN_ENUM },
 	{ NULL },
 };
 
@@ -100,8 +127,18 @@ PyObject *srvsvc_netservergetinfo(PyObject *self, PyObject *args,
 		goto done;
 	}
 
-	result = Py_None;
-	Py_INCREF(Py_None);
+	if (level != ctr.switch_value) {
+		PyErr_SetString(srvsvc_error, "container level value wrong");
+		goto done;
+	}
+
+	switch(level) {
+	case 101:
+		py_from_SRV_INFO_101(&result, &ctr.srv.sv101);
+		break;
+	}
+
+	Py_INCREF(result);
 
 done:
 	if (mem_ctx)

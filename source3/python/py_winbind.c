@@ -20,10 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
-#include "py_common_proto.h"
+#include "py_winbind.h"
 
 /* 
  * Exceptions raised by this module 
@@ -49,7 +46,8 @@ static PyObject *py_name_to_sid(PyObject *self, PyObject *args)
 	struct winbindd_request request;
 	struct winbindd_response response;
 	PyObject *result;
-	char *name, *p, *sep;
+	char *name, *p;
+	const char *sep;
 
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
@@ -137,7 +135,7 @@ static PyObject *py_enum_domain_users(PyObject *self, PyObject *args)
 	result = PyList_New(0);
 
 	if (response.extra_data) {
-		char *extra_data = response.extra_data;
+		const char *extra_data = response.extra_data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
@@ -168,7 +166,7 @@ static PyObject *py_enum_domain_groups(PyObject *self, PyObject *args)
 	result = PyList_New(0);
 
 	if (response.extra_data) {
-		char *extra_data = response.extra_data;
+		const char *extra_data = response.extra_data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
@@ -203,7 +201,7 @@ static PyObject *py_enum_trust_dom(PyObject *self, PyObject *args)
 	result = PyList_New(0);
 
 	if (response.extra_data) {
-		char *extra_data = response.extra_data;
+		const char *extra_data = response.extra_data;
 		fstring name;
 
 		while (next_token(&extra_data, name, ",", sizeof(fstring)))
@@ -522,12 +520,12 @@ static PyObject *py_getpwuid(PyObject *self, PyObject *args)
 
 static PyMethodDef winbind_methods[] = {
 
-	{ "getpwnam", py_getpwnam, METH_VARARGS, "getpwnam(3)" },
-	{ "getpwuid", py_getpwuid, METH_VARARGS, "getpwuid(3)" },
+	{ "getpwnam", (PyCFunction)py_getpwnam, METH_VARARGS, "getpwnam(3)" },
+	{ "getpwuid", (PyCFunction)py_getpwuid, METH_VARARGS, "getpwuid(3)" },
 
 	/* Name <-> SID conversion */
 
-	{ "name_to_sid", py_name_to_sid, METH_VARARGS,
+	{ "name_to_sid", (PyCFunction)py_name_to_sid, METH_VARARGS,
 	  "name_to_sid(s) -> string
 
 Return the SID for a name.
@@ -537,7 +535,7 @@ Example:
 >>> winbind.name_to_sid('FOO/Administrator')
 'S-1-5-21-406022937-1377575209-526660263-500' " },
 
-	{ "sid_to_name", py_sid_to_name, METH_VARARGS,
+	{ "sid_to_name", (PyCFunction)py_sid_to_name, METH_VARARGS,
 	  "sid_to_name(s) -> string
 
 Return the name for a SID.
@@ -550,7 +548,7 @@ Example:
 
 	/* Enumerate users/groups */
 
-	{ "enum_domain_users", py_enum_domain_users, METH_VARARGS,
+	{ "enum_domain_users", (PyCFunction)py_enum_domain_users, METH_VARARGS,
 	  "enum_domain_users() -> list of strings
 
 Return a list of domain users.
@@ -562,7 +560,8 @@ Example:
 'FOO/foo', 'FOO/foo2', 'FOO/foo3', 'FOO/Guest', 'FOO/user1', 
 'FOO/whoops-ptang'] " },
 
-	{ "enum_domain_groups", py_enum_domain_groups, METH_VARARGS,
+	{ "enum_domain_groups", (PyCFunction)py_enum_domain_groups, 
+	  METH_VARARGS,
 	  "enum_domain_groups() -> list of strings
 
 Return a list of domain groups.
@@ -575,7 +574,7 @@ Example:
 
 	/* ID mapping */
 
-	{ "uid_to_sid", py_uid_to_sid, METH_VARARGS,
+	{ "uid_to_sid", (PyCFunction)py_uid_to_sid, METH_VARARGS,
 	  "uid_to_sid(int) -> string
 
 Return the SID for a UNIX uid.
@@ -585,7 +584,7 @@ Example:
 >>> winbind.uid_to_sid(10000)   
 'S-1-5-21-406022937-1377575209-526660263-500' " },
 
-	{ "gid_to_sid", py_gid_to_sid, METH_VARARGS,
+	{ "gid_to_sid", (PyCFunction)py_gid_to_sid, METH_VARARGS,
 	  "gid_to_sid(int) -> string
 
 Return the UNIX gid for a SID.
@@ -595,7 +594,7 @@ Example:
 >>> winbind.gid_to_sid(10001)
 'S-1-5-21-406022937-1377575209-526660263-512' " },
 
-	{ "sid_to_uid", py_sid_to_uid, METH_VARARGS,
+	{ "sid_to_uid", (PyCFunction)py_sid_to_uid, METH_VARARGS,
 	  "sid_to_uid(string) -> int
 
 Return the UNIX uid for a SID.
@@ -605,7 +604,7 @@ Example:
 >>> winbind.sid_to_uid('S-1-5-21-406022937-1377575209-526660263-500')
 10000 " },
 
-	{ "sid_to_gid", py_sid_to_gid, METH_VARARGS,
+	{ "sid_to_gid", (PyCFunction)py_sid_to_gid, METH_VARARGS,
 	  "sid_to_gid(string) -> int
 
 Return the UNIX gid corresponding to a SID.
@@ -617,13 +616,13 @@ Example:
 
 	/* Miscellaneous */
 
-	{ "check_secret", py_check_secret, METH_VARARGS,
+	{ "check_secret", (PyCFunction)py_check_secret, METH_VARARGS,
 	  "check_secret() -> int
 
 Check the machine trust account password.  The NT status is returned
 with zero indicating success. " },
 
-	{ "enum_trust_dom", py_enum_trust_dom, METH_VARARGS,
+	{ "enum_trust_dom", (PyCFunction)py_enum_trust_dom, METH_VARARGS,
 	  "enum_trust_dom() -> list of strings
 
 Return a list of trusted domains.  The domain the server is a member 
@@ -636,13 +635,13 @@ Example:
 
 	/* PAM authorisation functions */
 
-	{ "auth_plaintext", py_auth_plaintext, METH_VARARGS,
+	{ "auth_plaintext", (PyCFunction)py_auth_plaintext, METH_VARARGS,
 	  "auth_plaintext(s, s) -> int
 
 Authenticate a username and password using plaintext authentication.
 The NT status code is returned with zero indicating success." },
 
-	{ "auth_crap", py_auth_crap, METH_VARARGS,
+	{ "auth_crap", (PyCFunction)py_auth_crap, METH_VARARGS,
 	  "auth_crap(s, s) -> int
 
 Authenticate a username and password using the challenge/response

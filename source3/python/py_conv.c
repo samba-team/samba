@@ -18,13 +18,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
 #include "py_conv.h"
 
 /* Helper for rpcstr_pull() function */
 
 static void fstr_pull(fstring str, UNISTR *uni)
+{
+	rpcstr_pull(str, uni->buffer, sizeof(fstring), -1, STR_TERMINATE);
+}
+
+static void fstr_pull2(fstring str, UNISTR2 *uni)
 {
 	rpcstr_pull(str, uni->buffer, sizeof(fstring), -1, STR_TERMINATE);
 }
@@ -46,6 +49,18 @@ PyObject *from_struct(void *s, struct pyconv *conv)
 
 			if (u->buffer)
 				fstr_pull(str, u);
+
+			item = PyString_FromString(str);
+			PyDict_SetItemString(obj, conv[i].name, item);
+
+			break;
+		}
+		case PY_UNISTR2: {
+			UNISTR2 *u = (UNISTR2 *)((char *)s + conv[i].offset);
+			fstring str = "";
+
+			if (u->buffer)
+				fstr_pull2(str, u);
 
 			item = PyString_FromString(str);
 			PyDict_SetItemString(obj, conv[i].name, item);

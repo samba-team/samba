@@ -3,7 +3,7 @@
 # Unix SMB/CIFS implementation.
 # Module packaging setup for Samba python extensions
 #
-# Copyright (C) Tim Potter, 2002
+# Copyright (C) Tim Potter, 2002-2003
 # Copyright (C) Martin Pool, 2002
 #
 # This program is free software; you can redistribute it and/or modify
@@ -83,6 +83,7 @@ setup(
                          samba_srcdir + "python/py_common.c",
                          samba_srcdir + "python/py_conv.c",
                          samba_srcdir + "python/py_ntsec.c",
+                         samba_srcdir + "python/py_spoolss_common.c",
                          samba_srcdir + "python/py_spoolss_forms.c",
                          samba_srcdir + "python/py_spoolss_forms_conv.c",
                          samba_srcdir + "python/py_spoolss_drivers.c",
@@ -148,6 +149,8 @@ setup(
 
     Extension(name = "srvsvc",
               sources = [samba_srcdir + "python/py_srvsvc.c",
+                         samba_srcdir + "python/py_conv.c",
+                         samba_srcdir + "python/py_srvsvc_conv.c",
                          samba_srcdir + "python/py_common.c"],
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],

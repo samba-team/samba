@@ -18,10 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "includes.h"
-#include "Python.h"
-
-#include "python/py_common_proto.h"
+#include "python/py_common.h"
 
 /* Return a tuple of (error code, error string) from a WERROR */
 

@@ -18,22 +18,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PY_SMB_H
-#define _PY_SMB_H
+#ifndef _PY_WINBIND_H
+#define _PY_WINBIND_H
 
 #include "python/py_common.h"
 
-/* cli_state handle object */
+/* The following definitions are from py_winbind_conv.c */
 
-typedef struct {
-	PyObject_HEAD
-	struct cli_state *cli;
-} cli_state_object;
+BOOL py_from_winbind_passwd(PyObject **dict, struct winbindd_response *response);
 
-/* Exceptions raised by this module */
-
-extern PyTypeObject cli_state_type;
-
-extern PyObject *smb_ntstatus;
-
-#endif /* _PY_SMB_H */
+#endif /* _PY_WINBIND_H */

@@ -1,7 +1,7 @@
 /* 
    Python wrappers for DCERPC/SMB client routines.
 
-   Copyright (C) Tim Potter, 2002
+   Copyright (C) Tim Potter, 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,22 +18,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PY_SMB_H
-#define _PY_SMB_H
+#include "python/py_spoolss.h"
 
-#include "python/py_common.h"
+PyObject *new_spoolss_policy_hnd_object(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx, POLICY_HND *pol)
+{
+	spoolss_policy_hnd_object *o;
 
-/* cli_state handle object */
+	o = PyObject_New(spoolss_policy_hnd_object, &spoolss_policy_hnd_type);
 
-typedef struct {
-	PyObject_HEAD
-	struct cli_state *cli;
-} cli_state_object;
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
 
-/* Exceptions raised by this module */
-
-extern PyTypeObject cli_state_type;
-
-extern PyObject *smb_ntstatus;
-
-#endif /* _PY_SMB_H */
+	return (PyObject*)o;
+}

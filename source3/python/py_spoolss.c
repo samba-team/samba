@@ -24,24 +24,6 @@
 
 PyObject *spoolss_error, *spoolss_werror;
 
-/*
- * Routines to convert from python hashes to Samba structures
- */
-
-PyObject *new_spoolss_policy_hnd_object(struct cli_state *cli, 
-					TALLOC_CTX *mem_ctx, POLICY_HND *pol)
-{
-	spoolss_policy_hnd_object *o;
-
-	o = PyObject_New(spoolss_policy_hnd_object, &spoolss_policy_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
-     
 /* 
  * Method dispatch table
  */

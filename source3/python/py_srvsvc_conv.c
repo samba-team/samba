@@ -1,7 +1,7 @@
 /* 
    Python wrappers for DCERPC/SMB client routines.
 
-   Copyright (C) Tim Potter, 2002
+   Copyright (C) Tim Potter, 2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,22 +18,26 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _PY_SMB_H
-#define _PY_SMB_H
+#include "python/py_srvsvc.h"
+#include "python/py_conv.h"
 
-#include "python/py_common.h"
+static struct pyconv py_SRV_INFO_101[] = {
+	{ "platform_id", PY_UINT32, offsetof(SRV_INFO_101, platform_id) },
+	{ "major_version", PY_UINT32, offsetof(SRV_INFO_101, ver_major) },
+	{ "minor_version", PY_UINT32, offsetof(SRV_INFO_101, ver_minor) },
+	{ "server_type", PY_UINT32, offsetof(SRV_INFO_101, srv_type) },
+	{ "name", PY_UNISTR2, offsetof(SRV_INFO_101, uni_name) },
+	{ "comment", PY_UNISTR2, offsetof(SRV_INFO_101, uni_comment) },
+	{ NULL }
+};	
 
-/* cli_state handle object */
+BOOL py_from_SRV_INFO_101(PyObject **dict, SRV_INFO_101 *info)
+{
+	PyObject *obj;	
 
-typedef struct {
-	PyObject_HEAD
-	struct cli_state *cli;
-} cli_state_object;
+	*dict = from_struct(info, py_SRV_INFO_101);
 
-/* Exceptions raised by this module */
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(101));
 
-extern PyTypeObject cli_state_type;
-
-extern PyObject *smb_ntstatus;
-
-#endif /* _PY_SMB_H */
+	return True;
+}

@@ -19,6 +19,7 @@
 */
 
 #include "python/py_spoolss.h"
+#include "python/py_conv.h"
 
 static BOOL py_from_printerdata(PyObject **dict, char *key, char *value,
 				uint16 data_type, uint8 *data, 
