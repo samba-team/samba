@@ -380,7 +380,7 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
+struct winbindd_domain *find_domain_from_sid(const DOM_SID *sid)
 {
 	struct winbindd_domain *domain;
 
