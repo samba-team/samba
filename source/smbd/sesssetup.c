@@ -262,6 +262,13 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(ret);
 	}
 
+        /* make_server_info_pw does not set the domain. Without this we end up
+	 * with the local netbios name in substitutions for %D. */
+
+        if (server_info->sam_account != NULL) {
+                pdb_set_domain(server_info->sam_account, domain, PDB_SET);
+        }
+
 	/* register_vuid keeps the server info */
 	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
 
