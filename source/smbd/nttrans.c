@@ -689,6 +689,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
@@ -1160,6 +1166,12 @@ static int call_nt_transact_create(connection_struct *conn,
 	 */
 
 	if(create_options & FILE_DIRECTORY_FILE) {
+
+		/* Can't open a temp directory. IFS kit test. */
+		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
 
 		oplock_request = 0;
 
