@@ -44,12 +44,18 @@ RCSID("$Id$");
 #include <paths.h>
 #endif
 
+#ifdef HAVE_SHADOW_H
+#include <shadow.h>
+#endif
+
 #include <pwd.h>
 
 #include <krb5.h>
+#include <kafs.h>
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+#include <kafs.h>
 
 #ifndef _PATH_DEFPATH
 #define _PATH_DEFPATH "/usr/bin:/bin"
@@ -115,15 +121,18 @@ make_info(struct passwd *pwd)
     return info;
 }
 
+#ifdef KRB5
+static krb5_context context;
+static krb5_ccache ccache;
+#endif
+
 static int
-verify_krb5(struct passwd *login_info, struct passwd *su_info,
+krb5_verify(struct passwd *login_info, struct passwd *su_info,
 	    const char *kerberos_instance)
 {
 #ifdef KRB5
-    krb5_context context;
     krb5_error_code ret;
     krb5_principal p;
-    krb5_ccache ccache;
 	
     ret = krb5_init_context (&context);
     if (ret) {
@@ -140,7 +149,7 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info,
 				  NULL);
     else
 	ret = krb5_make_principal(context, &p, NULL, 
-				  login_info->pw_name,
+				  su_info->pw_name,
 				  NULL);
     if(ret)
 	return 1;
@@ -153,50 +162,58 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info,
 #endif
 	    return 1;
 	}
+	krb5_cc_initialize (context, ccache, p);
 	ret = krb5_verify_user(context, p, ccache, NULL, TRUE, NULL);
 	if(ret) {
+	    krb5_free_principal (context, p);
 	    krb5_cc_destroy(context, ccache);
-#if 1
 	    switch (ret) {
 	    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
 	    case KRB5KRB_AP_ERR_MODIFIED:
 		krb5_warnx(context, "Password incorrect");
+		break;
 	    default :
 		krb5_warn(context, ret, "krb5_verify_user");
 		break;
 	    }
-#endif
 	    return 1;
 	}
-	{
-	    krb5_ccache ccache2;
-	    char *cc_name;
-
-	    if (seteuid(su_info->pw_uid))
-		krb5_err (context, 1, errno, "seteuid");
-	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache2);
-	    if (ret) {
-		if (seteuid (0))
-		    krb5_err (context, 1, errno, "seteuid");
-		krb5_cc_destroy(context, ccache);
-		return 1;
-	    }
-
-	    ret = krb5_cc_copy_cache(context, ccache, ccache2);
-	    if (seteuid(0))
-		krb5_err (context, 1, errno, "seteuid");
-
-	    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
-		     krb5_cc_get_name(context, ccache2));
-	    setenv("KRB5CCNAME", cc_name, 1);
-	    ret = krb5_cc_close(context, ccache2);
-	}
-	krb5_cc_destroy(context, ccache);
 	return 0;
     }
 #endif
     return 1;
 }
+
+#ifdef KRB5
+static int
+krb5_start_session(void)
+{
+    krb5_ccache ccache2;
+    char *cc_name;
+    int ret;
+
+    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache2);
+    if (ret) {
+	krb5_cc_destroy(context, ccache);
+	return 1;
+    }
+
+    ret = krb5_cc_copy_cache(context, ccache, ccache2);
+
+    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
+	     krb5_cc_get_name(context, ccache2));
+    setenv("KRB5CCNAME", cc_name, 1);
+            
+    if(k_hasafs()) {
+	if (k_setpag() == 0)
+	    krb5_afslog(context, ccache2, NULL, NULL);
+    }
+            
+    krb5_cc_close(context, ccache2);
+    krb5_cc_destroy(context, ccache);
+    return 0;
+}
+#endif
 
 static int
 verify_unix(struct passwd *su)
@@ -221,7 +238,7 @@ verify_unix(struct passwd *su)
 int
 main(int argc, char **argv)
 {
-    int optind = 0;
+    int i, optind = 0;
     char *su_user;
     struct passwd *su_info;
     char *login_user = NULL;
@@ -232,12 +249,19 @@ main(int argc, char **argv)
     char *shell;
 
     int ok = 0;
+    int kerberos_error=1;
 
     set_progname (argv[0]);
 
     if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage(1);
 
+    for (i=0; i < optind; i++)
+      if (strcmp(argv[i], "-") == 0) {
+	 full_login = 1;
+	 break;
+      }
+	
     if(help_flag)
 	usage(0);
     if(version_flag) {
@@ -273,23 +297,56 @@ main(int argc, char **argv)
     if(shell == NULL || *shell == '\0')
 	shell = _PATH_BSHELL;
     
-    if(ok == 0 && verify_krb5(login_info, su_info, kerberos_instance) == 0)
+    if(kerberos_flag && ok == 0 &&
+      (kerberos_error=krb5_verify(login_info, su_info, kerberos_instance)) == 0)
 	ok++;
 
-    if(ok == 0 && verify_unix(su_info) != 0) {
+    if(ok == 0 && login_info->pw_uid && verify_unix(su_info) != 0) {
 	printf("Sorry!\n");
 	exit(1);
     }
 
+#ifdef HAVE_GETSPNAM
+   {  struct spwd *sp;
+      long    today;
+    
+    sp=getspnam(su_info->pw_name);
+    if (sp==NULL)
+        errx(1,"Have not rights to read shadow passwords!");
+    today = time(0)/(24L * 60 * 60);
+    if (sp->sp_expire > 0) {
+        if (today >= sp->sp_expire) {
+            if (login_info->pw_uid) 
+                errx(1,"Your account has expired.");
+            else
+                 printf("Your account has expired.");
+            }
+            else if (sp->sp_expire - today < 14) 
+                printf("Your account will expire in %d days.\n",
+                   (int)(sp->sp_expire - today));
+    } 
+    if (sp->sp_max > 0) {
+       if (today >= sp->sp_lstchg + sp->sp_max) {
+           if (login_info->pw_uid)    
+               errx(1,"Your password has expired. Choose a new one.");
+           else
+               printf("Your password has expired. Choose a new one.");
+           }
+         else if (today >= sp->sp_lstchg + sp->sp_max - sp->sp_warn)
+             printf("Your account will expire in %d days.\n",
+                   (int)(sp->sp_lstchg + sp->sp_max -today));
+    }
+    }
+#endif
     {
 	char *tty = ttyname (STDERR_FILENO);
 	syslog (LOG_NOTICE | LOG_AUTH, tty ? "%s to %s" : "%s to %s on %s",
 		login_info->pw_name, su_info->pw_name, tty);
     }
 
+
     if(!env_flag) {
 	if(full_login) {
-	    char *k = getenv ("KRBTKFILE");
 	    char *t = getenv ("TERM");
 	    
 	    environ = malloc (10 * sizeof (char *));
@@ -299,9 +356,7 @@ main(int argc, char **argv)
 	    setenv ("PATH", _PATH_DEFPATH, 1);
 	    if (t)
 		setenv ("TERM", t, 1);
-	    if (k)
-		setenv ("KRBTKFILE", k, 1);
-	    if (chdir (pwd->pw_dir) < 0)
+	    if (chdir (su_info->pw_dir) < 0)
 		errx (1, "no directory");
 	}
 	if (full_login || su_info->pw_uid)
@@ -324,7 +379,7 @@ main(int argc, char **argv)
 	if (strcmp(p, "csh") != 0)
 	    csh_f_flag = 0;
 
-	args = malloc((1 + argc - optind + 1 + csh_f_flag) * sizeof(*args));
+        args = malloc(((cmd ? 2 : 0) + 1 + argc - optind + 1 + csh_f_flag) * sizeof(*args));
 	if (args == NULL)
 	    err (1, "malloc");
 	i = 0;
@@ -332,12 +387,18 @@ main(int argc, char **argv)
 	    asprintf(&args[i++], "-%s", p);
 	else
 	    args[i++] = p;
+	if (cmd) {
+	   args[i++] = "-c";
+	   args[i++] = cmd;
+	}  
+	   
 	if (csh_f_flag)
 	    args[i++] = "-f";
 
-	for(; i < argc - optind  + i; i++)
-	    args[i] = argv[optind + i - 1];
+	for (argv += optind; *argv; ++argv)
+	   args[i++] = *argv;
 	args[i] = NULL;
+	
 	if(setgid(su_info->pw_gid) < 0)
 	    err(1, "setgid");
 	if (initgroups (su_info->pw_name, su_info->pw_gid) < 0)
@@ -345,6 +406,10 @@ main(int argc, char **argv)
 	if(setuid(su_info->pw_uid) < 0)
 	    err(1, "setuid");
 
+#ifdef KRB5
+        if (!kerberos_error)
+           krb5_start_session();
+#endif
 	execv(shell, args);
     }
     
