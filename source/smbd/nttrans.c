@@ -1454,7 +1454,8 @@ static int call_nt_transact_rename(connection_struct *conn,
 
 	status = rename_internals(conn, fsp->fsp_name,
 				  new_name, replace_if_exists);
-	if (!NT_STATUS_IS_OK(status)) return ERROR_NT(status);
+	if (!NT_STATUS_IS_OK(status))
+		return ERROR_NT(status);
 
 	/*
 	 * Rename was successful.
