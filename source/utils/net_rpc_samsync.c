@@ -355,8 +355,11 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
 	/* TODO: logon hours */
-	/* TODO: bad password count */
-	/* TODO: logon count */
+	if (pdb_get_bad_password_count(account) != delta->bad_pwd_count)
+		pdb_set_bad_password_count(account, delta->bad_pwd_count, PDB_CHANGED);
+
+	if (pdb_get_logon_count(account) != delta->logon_count)
+		pdb_set_logon_count(account, delta->logon_count, PDB_CHANGED);
 
 	if (!nt_time_is_zero(&delta->pwd_last_set_time)) {
 		unix_time = nt_time_to_unix(&delta->pwd_last_set_time);
