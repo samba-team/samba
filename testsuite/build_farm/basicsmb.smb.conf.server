@@ -1,5 +1,4 @@
+log level = 100
 security=server
 password server=user
 smb passwd file=NON_EXISTANT_FILE
-
-
