@@ -30,8 +30,6 @@ extern int  sslFd;
 
 extern int DEBUGLEVEL;
 
-BOOL passive = False;
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -538,8 +536,6 @@ ssize_t write_socket(int fd,char *buf,size_t len)
 {
   ssize_t ret=0;
 
-  if (passive)
-    return(len);
   DEBUG(6,("write_socket(%d,%d)\n",fd,(int)len));
   ret = write_socket_data(fd,buf,len);
       
@@ -751,9 +747,6 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
   BOOL ret;
   int out_fd;
   struct sockaddr_in sock_out;
-
-  if (passive)
-    return(True);
 
   /* create a socket to write to */
   out_fd = socket(AF_INET, type, 0);

@@ -512,7 +512,6 @@ static void usage(char *pname)
 	printf("\t-D                    Become a daemon\n");
 	printf("\t-a                    Append to log file (default)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
-	printf("\t-P                    Passive only\n");
 	printf("\t-h                    Print usage\n");
 	printf("\t-?                    Print usage\n");
 	printf("\t-V                    Print version\n");
@@ -548,18 +547,11 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?VPaof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?Vaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
 			break;
-
-		case 'P':
-			{
-				extern BOOL passive;
-				passive = True;
-			}
-			break;	
 
 		case 's':
 			pstrcpy(servicesf,optarg);

@@ -157,78 +157,43 @@ static char *automount_server(char *user_name)
 	return server_name;
 }
 
-/*******************************************************************
- Substitute strings with useful parameters.
- Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
- Paul Rippin <pr3245@nopc.eurostat.cec.be>.
-********************************************************************/
-void standard_sub_basic(char *str)
-{
-	char *s, *p;
-	char pidstr[10];
-	struct passwd *pass;
-	char *username = sam_logon_in_ssb ? samlogon_user : sesssetup_user;
-
-	for (s = str ; s && *s && (p = strchr(s,'%')); s = p )
-	{
-		int l = sizeof(pstring) - (int)(p-str);
-
-		if (l < 0) {
-			DEBUG(0,("ERROR: string overflow by %d in standard_sub_basic(%.50s)\n", 
-				 -l, str));
-			
-			return;
-		}
-
-		switch (*(p+1))
-		{
-			case 'G' :
-			{
-				if ((pass = Get_Pwnam(username,False))!=NULL) {
-					string_sub(p,"%G",gidtoname(pass->pw_gid),l);
-				} else {
-					p += 2;
-				}
-				break;
-			}
-			case 'N' : string_sub(p,"%N", automount_server(username),l); break;
-			case 'I' : string_sub(p,"%I", client_addr(),l); break;
-			case 'L' : string_sub(p,"%L", local_machine,l); break;
-			case 'M' : string_sub(p,"%M", client_name(),l); break;
-			case 'R' : string_sub(p,"%R", remote_proto,l); break;
-			case 'T' : string_sub(p,"%T", timestring(False),l); break;
-			case 'U' : string_sub(p,"%U", username,l); break;
-			case 'a' : string_sub(p,"%a", remote_arch,l); break;
-			case 'd' :
-			{
-				slprintf(pidstr,sizeof(pidstr) - 1, "%d",(int)getpid());
-				string_sub(p,"%d", pidstr,l);
-				break;
-			}
-			case 'h' : string_sub(p,"%h", myhostname(),l); break;
-			case 'm' : string_sub(p,"%m", remote_machine,l); break;
-			case 'v' : string_sub(p,"%v", VERSION,l); break;
-			case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
-			case '\0': p++; break; /* don't run off end if last character is % */
-			default  : p+=2; break;
-		}
-	}
-	return;
-}
-
 
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-
-void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
+static void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
+	fstring pidstr;
+	struct passwd *pass;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {
 		int l = sizeof(pstring) - (int)(p-str);
-
+		
 		switch (*(p+1)) {
+		case 'I' : string_sub(p,"%I", client_addr(),l); break;
+		case 'L' : string_sub(p,"%L", local_machine,l); break;
+		case 'M' : string_sub(p,"%M", client_name(),l); break;
+		case 'R' : string_sub(p,"%R", remote_proto,l); break;
+		case 'T' : string_sub(p,"%T", timestring(False),l); break;
+		case 'U' : string_sub(p,"%U", user,l); break;
+		case 'a' : string_sub(p,"%a", remote_arch,l); break;
+		case 'd' :
+			slprintf(pidstr,sizeof(pidstr), "%d",(int)getpid());
+			string_sub(p,"%d", pidstr,l);
+			break;
+		case 'h' : string_sub(p,"%h", myhostname(),l); break;
+		case 'm' : string_sub(p,"%m", remote_machine,l); break;
+		case 'v' : string_sub(p,"%v", VERSION,l); break;
+		case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
+		case 'G' :
+			if ((pass = Get_Pwnam(user,False))!=NULL) {
+				string_sub(p,"%G",gidtoname(pass->pw_gid),l);
+			} else {
+				p += 2;
+			}
+			break;
+		case 'N' : string_sub(p,"%N", automount_server(user),l); break;
 		case 'H':
 			if ((home = get_user_home_dir(user))) {
 				string_sub(p,"%H",home, l);
@@ -236,7 +201,6 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 				p += 2;
 			}
 			break;
-			
 		case 'P': 
 			string_sub(p,"%P", connectpath, l); 
 			break;
@@ -270,19 +234,14 @@ void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, c
 			break;
 		}
 	}
-	
-	standard_sub_basic(str);
 }
 
 /****************************************************************************
  Do some standard substitutions in a string.
 ****************************************************************************/
-void standard_sub(connection_struct *conn, char *str)
+void standard_sub_conn(connection_struct *conn, char *str)
 {
-	if (conn==NULL)
-		standard_sub_advanced(-1, "", "", -1, str);
-	else
-		standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
+	standard_sub_advanced(SNUM(conn), conn->user, conn->connectpath, conn->gid, str);
 }
 
 /****************************************************************************
@@ -291,5 +250,30 @@ like standard_sub but by snum
 void standard_sub_snum(int snum, char *str)
 {
 	standard_sub_advanced(snum, "", "", -1, str);
+}
+
+
+/*******************************************************************
+ Substitute strings with useful parameters.
+********************************************************************/
+void standard_sub_basic(char *str)
+{
+	standard_sub_advanced(-1, "", "", -1, str);
+}
+
+/*******************************************************************
+ Substitute strings with useful parameters.
+********************************************************************/
+void standard_sub_vuser(char *str, user_struct *vuser)
+{
+	standard_sub_advanced(-1, vuser->name, "", -1, str);
+}
+
+/*******************************************************************
+ Substitute strings with useful parameters.
+********************************************************************/
+void standard_sub_vsnum(char *str, user_struct *vuser, int snum)
+{
+	standard_sub_advanced(snum, vuser->name, "", -1, str);
 }
 
