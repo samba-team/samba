@@ -892,8 +892,14 @@ void reply_read_and_X(struct smbsrv_request *req)
 	io->readx.in.offset        = IVAL(req->in.vwv, VWV(3));
 	io->readx.in.maxcnt        = SVAL(req->in.vwv, VWV(5));
 	io->readx.in.mincnt        = SVAL(req->in.vwv, VWV(6));
-	io->readx.in.maxcnt       |= IVAL(req->in.vwv, VWV(7)) << 16;
 	io->readx.in.remaining     = SVAL(req->in.vwv, VWV(9));
+
+	if (req->smb_conn->negotiate.client_caps & CAP_LARGE_READX) {
+		uint32_t high_part = IVAL(req->in.vwv, VWV(7));
+		if (high_part == 1) {
+			io->readx.in.maxcnt |= high_part << 16;
+		}
+	}
 	
 	/* the 64 bit variant */
 	if (req->in.wct == 12) {
