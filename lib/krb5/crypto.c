@@ -66,6 +66,7 @@ struct krb5_crypto_data {
 #define F_VARIANT	 8	/* uses `variant' keys (6.4.3) */
 #define F_PSEUDO	16	/* not a real protocol type */
 #define F_SPECIAL	32	/* backwards */
+#define F_DISABLED	64	/* enctype/checksum disabled */
 
 struct salt_type {
     krb5_salttype type;
@@ -1833,6 +1834,10 @@ create_checksum (krb5_context context,
     struct key_data *dkey;
     int keyed_checksum;
     
+    if (ct->flags & F_DISABLED) {
+	krb5_clear_error_string (context);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
     if(keyed_checksum && crypto == NULL) {
 	krb5_clear_error_string (context);
@@ -1909,7 +1914,7 @@ verify_checksum(krb5_context context,
     struct checksum_type *ct;
 
     ct = _find_checksum(cksum->cksumtype);
-    if (ct == NULL) {
+    if (ct == NULL || (ct->flags & F_DISABLED)) {
 	krb5_set_error_string (context, "checksum type %d not supported",
 			       cksum->cksumtype);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
@@ -2040,6 +2045,35 @@ krb5_checksum_is_collision_proof(krb5_context context,
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
     return ct->flags & F_CPROOF;
+}
+
+krb5_boolean
+krb5_checksum_is_disabled(krb5_context context,
+			  krb5_cksumtype type)
+{
+    struct checksum_type *ct = _find_checksum(type);
+    if(ct == NULL) {
+	if (context)
+	    krb5_set_error_string (context, "checksum type %d not supported",
+				   type);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+    return ct->flags & F_DISABLED;
+}
+
+krb5_error_code
+krb5_checksum_disable(krb5_context context,
+		      krb5_cksumtype type)
+{
+    struct checksum_type *ct = _find_checksum(type);
+    if(ct == NULL) {
+	if (context)
+	    krb5_set_error_string (context, "checksum type %d not supported",
+				   type);
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    }
+    ct->flags |= F_DISABLED;
+    return 0;
 }
 
 /************************************************************
@@ -2457,7 +2491,7 @@ static struct encryption_type enctype_null = {
     &keytype_null,
     &checksum_none,
     NULL,
-    0,
+    F_DISABLED,
     NULL_encrypt,
 };
 static struct encryption_type enctype_des_cbc_crc = {
@@ -2504,7 +2538,7 @@ static struct encryption_type enctype_arcfour_hmac_md5 = {
     8,
     &keytype_arcfour,
     &checksum_hmac_md5,
-    /* &checksum_hmac_md5_enc */ NULL,
+    NULL,
     F_SPECIAL,
     ARCFOUR_encrypt
 };
@@ -3586,7 +3620,7 @@ krb5_crypto_init(krb5_context context,
     if(etype == ETYPE_NULL)
 	etype = key->keytype;
     (*crypto)->et = _find_enctype(etype);
-    if((*crypto)->et == NULL) {
+    if((*crypto)->et == NULL || ((*crypto)->et->flags & F_DISABLED)) {
 	free(*crypto);
 	krb5_set_error_string (context, "encryption type %d not supported",
 			       etype);
@@ -3671,6 +3705,35 @@ krb5_crypto_getconfoundersize(krb5_context context,
                               size_t *confoundersize)
 {
     *confoundersize = crypto->et->confoundersize;
+    return 0;
+}
+
+krb5_boolean
+krb5_enctype_is_disabled(krb5_context context,
+			 krb5_enctype enctype)
+{
+    struct encryption_type *et = _find_enctype(enctype);
+    if(et == NULL) {
+	if (context)
+	    krb5_set_error_string (context, "encryption type %d not supported",
+				   enctype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    return et->flags & F_DISABLED;
+}
+
+krb5_error_code
+krb5_enctype_disable(krb5_context context,
+		     krb5_enctype enctype)
+{
+    struct encryption_type *et = _find_enctype(enctype);
+    if(et == NULL) {
+	if (context)
+	    krb5_set_error_string (context, "encryption type %d not supported",
+				   enctype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    et->flags |= F_DISABLED;
     return 0;
 }
 
