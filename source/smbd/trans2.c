@@ -3358,16 +3358,15 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				 * a new info level should be used for mknod. JRA.
 				 */
 
-#if !defined(HAVE_MAKEDEV_FN)
-				return(ERROR_DOS(ERRDOS,ERRnoaccess));
-#else /* HAVE_MAKEDEV_FN */
 				uint32 file_type = IVAL(pdata,0);
+#if defined(HAVE_MAKEDEV)
 				uint32 dev_major = IVAL(pdata,4);
 				uint32 dev_minor = IVAL(pdata,12);
+#endif
 
 				uid_t myuid = geteuid();
 				gid_t mygid = getegid();
-				SMB_DEV_T dev;
+				SMB_DEV_T dev = (SMB_DEV_T)0;
 
 				if (tran_call == TRANSACT2_SETFILEINFO)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
@@ -3375,7 +3374,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if (raw_unixmode == SMB_MODE_NO_CHANGE)
 					return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
+#if defined(HAVE_MAKEDEV)
 				dev = makedev(dev_major, dev_minor);
+#endif
 
 				/* We can only create as the owner/group we are. */
 
@@ -3384,10 +3385,30 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				if ((set_grp != mygid) && (set_grp != (gid_t)SMB_GID_NO_CHANGE))
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
-				if (file_type != UNIX_TYPE_CHARDEV && file_type != UNIX_TYPE_BLKDEV &&
-						file_type != UNIX_TYPE_FIFO &&
-						file_type != UNIX_TYPE_SOCKET)
-					return(ERROR_DOS(ERRDOS,ERRnoaccess));
+				switch (file_type) {
+#if defined(S_IFIFO)
+					case UNIX_TYPE_FIFO:
+						unixmode |= S_IFIFO;
+						break;
+#endif
+#if defined(S_IFSOCK)
+					case UNIX_TYPE_SOCKET:
+						unixmode |= S_IFSOCK;
+						break;
+#endif
+#if defined(S_IFCHR)
+					case UNIX_TYPE_CHARDEV:
+						unixmode |= S_IFCHR;
+						break;
+#endif
+#if defined(S_IFBLK)
+					case UNIX_TYPE_BLKDEV:
+						unixmode |= S_IFBLK;
+						break;
+#endif
+					default:
+						return(ERROR_DOS(ERRDOS,ERRnoaccess));
+				}
 
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
 0%o for file %s\n", (double)dev, unixmode, fname ));
@@ -3401,8 +3422,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				SSVAL(params,0,0);
 				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 				return(-1);
-#endif /* HAVE_MAKEDEV_FN */
-
 			}
 
 			/*
