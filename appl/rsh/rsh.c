@@ -18,7 +18,7 @@ static int no_input;
 static void
 usage (void)
 {
-    errx (1, "Usage: %s [-45nx] [-l user] host command", __progname);
+    errx (1, "Usage: %s [-45nx] [-p port] [-l user] host command", __progname);
 }
 
 static int
