@@ -320,20 +320,9 @@ reads or writes an NOTIFY INFO DATA structure.
 static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=0xADDE0FF0;
-
-	uint32 how_many_words;
-	BOOL isvalue;
-	uint32 x;
 	
 	prs_debug(ps, depth, desc, "smb_io_notify_info_data");
 	depth++;
-
-	how_many_words=data->size;
-	if (how_many_words==POINTER) {
-		how_many_words=TWO_VALUE;
-	}
-	
-	isvalue=data->enc_type;
 
 	if(!prs_align(ps))
 		return False;
@@ -341,33 +330,55 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		return False;
 	if(!prs_uint16("field",          ps, depth, &data->field))
 		return False;
-	/*prs_align(ps);*/
 
-	if(!prs_uint32("how many words", ps, depth, &how_many_words))
+	if(!prs_uint32("how many words", ps, depth, &data->size))
 		return False;
 	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
-	if(!prs_uint32("how many words", ps, depth, &how_many_words))
+	if(!prs_uint32("how many words", ps, depth, &data->size))
 		return False;
 
+	switch (data->enc_type) {
 
-	/*prs_align(ps);*/
+		/* One and two value data has two uint32 values */
 
-	if (isvalue==True) {
+	case ONE_VALUE:
+	case TWO_VALUE:
+
 		if(!prs_uint32("value[0]", ps, depth, &data->notify_data.value[0]))
 			return False;
 		if(!prs_uint32("value[1]", ps, depth, &data->notify_data.value[1]))
 			return False;
-		/*prs_align(ps);*/
-	} else {
-		/* it's a string */
-		/* length in ascii including \0 */
-		x=2*(data->notify_data.data.length+1);
-		if(!prs_uint32("string length", ps, depth, &x ))
+		break;
+
+		/* Pointers and strings have a string length and a
+		   pointer.  For a string the length is expressed as
+		   the number of uint16 characters plus a trailing
+		   \0\0. */
+
+	case POINTER:
+
+		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length ))
 			return False;
 		if(!prs_uint32("pointer", ps, depth, &useless_ptr))
 			return False;
-		/*prs_align(ps);*/
+
+		break;
+
+	case STRING:
+
+		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length))
+			return False;
+
+		if(!prs_uint32("pointer", ps, depth, &useless_ptr))
+			return False;
+
+		break;
+
+	default:
+		DEBUG(3, ("invalid enc_type %d for smb_io_notify_info_data\n",
+			  data->enc_type));
+		break;
 	}
 
 	return True;
@@ -380,22 +391,79 @@ reads or writes an NOTIFY INFO DATA structure.
 BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth)
 {
-	uint32 x;
-	BOOL isvalue;
-	
 	prs_debug(ps, depth, desc, "smb_io_notify_info_data_strings");
 	depth++;
 	
 	if(!prs_align(ps))
 		return False;
 
-	isvalue=data->enc_type;
+	switch(data->enc_type) {
 
+		/* No data for values */
+
+	case ONE_VALUE:
+	case TWO_VALUE:
+
+		break;
+
+		/* Strings start with a length in uint16s */
+
+	case STRING:
+
+		if (UNMARSHALLING(ps)) {
+			data->notify_data.data.string = 
+				(uint16 *)prs_alloc_mem(ps, data->notify_data.data.length);
+
+			if (!data->notify_data.data.string) 
+				return False;
+		}
+
+		if (MARSHALLING(ps))
+			data->notify_data.data.length /= 2;
+
+		if(!prs_uint32("string length", ps, depth, &data->notify_data.data.length))
+			return False;
+
+		if (!prs_uint16uni(True, "string", ps, depth, data->notify_data.data.string,
+				   data->notify_data.data.length))
+			return False;
+
+		if (MARSHALLING(ps))
+			data->notify_data.data.length *= 2;
+
+		break;
+
+	case POINTER:
+
+		if (UNMARSHALLING(ps)) {
+			data->notify_data.data.string = 
+				(uint16 *)prs_alloc_mem(ps, data->notify_data.data.length);
+
+			if (!data->notify_data.data.string) 
+				return False;
+		}
+
+		if(!prs_uint8s(True,"buffer",ps,depth,(uint8*)data->notify_data.data.string,data->notify_data.data.length))
+			return False;
+
+		break;
+
+	default:
+		DEBUG(3, ("invalid enc_type %d for smb_io_notify_info_data_strings\n",
+			  data->enc_type));
+		break;
+	}
+
+#if 0
 	if (isvalue==False) {
+
 		/* length of string in unicode include \0 */
 		x=data->notify_data.data.length+1;
-		if(!prs_uint32("string length", ps, depth, &x ))
-			return False;
+
+		if (data->field != 16)
+			if(!prs_uint32("string length", ps, depth, &x ))
+				return False;
+
 		if (MARSHALLING(ps)) {
 			/* These are already in little endian format. Don't byte swap. */
 			if (x == 1) {
@@ -409,6 +477,10 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				if(!prs_uint8s(True,"string",ps,depth, (uint8 *)&data->notify_data.data.length,x*2)) 
 					return False;
 			} else {
+
+				if (data->field == 16)
+					x /= 2;
+
 				if(!prs_uint16uni(True,"string",ps,depth,data->notify_data.data.string,x))
 					return False;
 			}
@@ -424,6 +496,9 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				return False;
 		}
 	}
+
+#endif
+
 #if 0	/* JERRY */
 	/* Win2k does not seem to put this parse align here */
 	if(!prs_align(ps))

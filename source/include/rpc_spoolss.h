@@ -197,9 +197,12 @@
 #define JOB_WRITE	STANDARD_RIGHTS_WRITE_ACCESS|JOB_ACCESS_ADMINISTER
 #define JOB_EXECUTE	STANDARD_RIGHTS_EXECUTE_ACCESS|JOB_ACCESS_ADMINISTER
 
-#define ONE_VALUE 1
-#define TWO_VALUE 2
-#define POINTER   3
+/* Notify field types */
+
+#define ONE_VALUE 1		/* Notify data is stored in value1 */
+#define TWO_VALUE 2		/* Notify data is stored in value2 */
+#define POINTER   3		/* Data is a pointer to a buffer */
+#define STRING    4		/* Data is a pointer to a buffer w/length */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
