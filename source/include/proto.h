@@ -1557,6 +1557,7 @@ char *lp_template_shell(void);
 char *lp_winbind_separator(void);
 BOOL lp_winbind_enum_users(void);
 BOOL lp_winbind_enum_groups(void);
+char *lp_codepagedir(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_bind_as(void);

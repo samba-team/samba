@@ -413,12 +413,12 @@ BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 *
   if (*codepage == '\0')
     goto clean_and_exit;
 
-  if(strlen(CODEPAGEDIR) + 13 + strlen(codepage) > sizeof(unicode_map_file_name)) {
+  if(strlen(lp_codepagedir()) + 13 + strlen(codepage) > sizeof(unicode_map_file_name)) {
     DEBUG(0,("load_unicode_map: filename too long to load\n"));
     goto clean_and_exit;
   }
 
-  pstrcpy(unicode_map_file_name, CODEPAGEDIR);
+  pstrcpy(unicode_map_file_name, lp_codepagedir());
   pstrcat(unicode_map_file_name, "/");
   pstrcat(unicode_map_file_name, "unicode_map.");
   pstrcat(unicode_map_file_name, codepage);
