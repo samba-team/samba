@@ -343,7 +343,7 @@ void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
 char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
-int str_checksum(char *s);
+int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 
 /*The following definitions come from  libsmb/clientgen.c  */
@@ -361,7 +361,7 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, char *));
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
 BOOL cli_session_setup(struct cli_state *cli, 

@@ -30,6 +30,7 @@ struct smbw_server {
 	struct cli_state cli;
 	char *server_name;
 	char *share_name;
+	dev_t dev;
 };
 
 struct smbw_file {
@@ -121,6 +122,13 @@ BOOL smbw_fd(int fd)
 	return (fd >= SMBW_FD_OFFSET);
 }
 
+/***************************************************** 
+a crude inode number generator
+*******************************************************/
+ino_t smbw_inode(const char *name)
+{
+	return (ino_t)str_checksum(name);
+}
 
 /***************************************************** 
 remove redundent stuff from a filename
@@ -422,6 +430,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 
 	srv->cli = c;
 
+	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+
 	srv->server_name = strdup(server);
 	if (!srv->server_name) {
 		errno = ENOMEM;
@@ -503,6 +513,7 @@ void smbw_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	st->st_blocks = (size+511)/512;
 	st->st_uid = getuid();
 	st->st_gid = getgid();
+	st->st_ino = smbw_inode(fname);
 }
 
 
@@ -653,6 +664,7 @@ int smbw_dir_open(const char *fname, int flags)
 	bitmap_set(file_bmap, fd);
 
 	dir->fd = fd + SMBW_FD_OFFSET;
+	dir->srv = srv;
 
 	DEBUG(4,("  -> %d\n", dir->count));
 
@@ -782,6 +794,8 @@ int smbw_dir_fstat(int fd, struct stat *st)
 
 	smbw_setup_stat(st, "", dir->count*sizeof(struct dirent), aDIR);
 
+	st->st_dev = dir->srv->dev;
+
 	return 0;
 }
 
@@ -820,6 +834,7 @@ int smbw_fstat(int fd, struct stat *st)
 	st->st_atime = a_time;
 	st->st_ctime = c_time;
 	st->st_mtime = m_time;
+	st->st_dev = file->srv->dev;
 
 	DEBUG(4,("%s - OK\n", __FUNCTION__));
 
@@ -876,6 +891,7 @@ int smbw_stat(const char *fname, struct stat *st)
 	st->st_atime = time(NULL);
 	st->st_ctime = m_time;
 	st->st_mtime = m_time;
+	st->st_dev = srv->dev;
 
 	smbw_busy--;
 	return 0;
@@ -1046,13 +1062,13 @@ int smbw_getdents(unsigned int fd, struct dirent *dirp, int count)
 	}
 	
 	while (count>=sizeof(*dirp) && (dir->offset < dir->count)) {
-		dirp->d_ino = dir->offset + 0x10000;
 		dirp->d_off = (dir->offset+1)*sizeof(*dirp);
 		dirp->d_reclen = sizeof(*dirp);
 		/* what's going on with the -1 here? maybe d_type
                    isn't really there? */
 		safe_strcpy(&dirp->d_name[-1], dir->list[dir->offset].name, 
 			    sizeof(dirp->d_name)-1);
+		dirp->d_ino = smbw_inode(dir->list[dir->offset].name);
 		dir->offset++;
 		count -= dirp->d_reclen;
 		if (dir->offset == dir->count) {
