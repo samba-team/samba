@@ -1,3 +1,28 @@
+2003-01-27  Love  <lha@stacken.kth.se>
+
+	* verify_mic.c (verify_mic_des3): fix 3des verify_mic to conform
+	to rfc (and mit kerberos), provide backward compat hook
+	
+	* get_mic.c (mic_des3): fix 3des get_mic to conform to rfc (and
+	mit kerberos), provide backward compat hook
+	
+	* init_sec_context.c (init_auth): check if we need compat for
+	older get_mic/verify_mic
+
+	* gssapi_locl.h: add prototype for _gss_DES3_get_mic_compat
+	
+	* gssapi.h (more_flags): add COMPAT_OLD_DES3
+	
+	* Makefile.am: add gssapi.3 and compat.c
+	
+	* gssapi.3: add gssapi COMPATIBILITY documentation
+	
+	* accept_sec_context.c (gss_accept_sec_context): check if we need
+	compat for older get_mic/verify_mic
+
+	* compat.c: check for compatiblity with other heimdal's 3des
+	get_mic/verify_mic
+
 2002-10-31  Johan Danielsson  <joda@pdc.kth.se>
 
 	* check return value from gssapi_krb5_init
