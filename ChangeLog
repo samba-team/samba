@@ -1,4 +1,32 @@
+2002-12-02  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kpasswd/kpasswdd.c (doit): initialise sa_size to size of
+	sockaddr_storage
+
+	* kdc/connect.c (init_socket): initialise sa_size to size of
+	sockaddr_storage
+
+2002-11-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5.h: remove trailing comma in enum
+
+2002-11-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/524.c: implement crude b2 style (non-)conversion for use
+	with afs
+
+	* kdc/kerberos4.c: move encrypt_v4_ticket to 524.c, since that's
+	where it's used
+
 2002-10-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_keyfile.c: more strcspn
+
+	* lib/krb5/store_emem.c (emem_store): limit how much we allocate
+	(from Olaf Kirch)
+
+	* lib/krb5/principal.c: don't allow trailing backslashes in
+	components
 
 	* kdc/connect.c: check that %-quotes are followed by two hex
 	digits
