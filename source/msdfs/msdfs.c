@@ -749,8 +749,7 @@ int enum_msdfs_links(struct junction_map* jn)
 
 #else
 /* Stub functions if WITH_MSDFS not defined */
- int setup_dfs_referral(connection_struct *conn, char* pathname, int max_referral_level, 
-		       char** ppdata)
+ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 {
 	return -1;
 }
