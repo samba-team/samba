@@ -33,7 +33,9 @@
 #include "includes.h"
 #endif
 
-#define TDB_VERSION (0x26011967 + 0)
+#define TDB_VERSION (0x26011967 + 1)
+#define TDB_MAGIC (0x26011999)
+#define TDB_FREE_MAGIC (~0x26011999)
 #define TDB_ALIGN 32
 #define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGN)
 #define DEFAULT_HASH_SIZE 512
@@ -48,6 +50,7 @@ struct list_struct {
 	tdb_len key_len; /* byte length of key */
 	tdb_len data_len; /* byte length of data */
 	unsigned full_hash; /* the full 32 bit hash of the key */
+	unsigned magic;   /* try to catch errors */
 	/*
 	   the following union is implied 
 	   union {
@@ -129,7 +132,7 @@ static tdb_off tdb_hash_top(TDB_CONTEXT *tdb, unsigned hash)
 static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 {
 	struct stat st;
-	if (offset < tdb->map_size) return 0;
+	if (offset <= tdb->map_size) return 0;
 
 	fstat(tdb->fd, &st);
 	if (st.st_size <= tdb->map_size) return -1;
@@ -213,6 +216,27 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 	return buf;
 }
 
+/* read a record and check for simple errors */
+static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
+{
+	if (tdb_read(tdb, offset, (char *)rec, sizeof(*rec)) == -1) return -1;
+	if (rec->magic != TDB_MAGIC) {
+#if TDB_DEBUG
+		printf("bad magic 0x%08x at offset %d\n",
+		       rec->magic, offset);
+#endif
+		return -1;
+	}
+	if (tdb_oob(tdb, rec->next) != 0) {
+#if TDB_DEBUG
+		printf("bad next %d at offset %d\n",
+		       rec->next, offset);
+#endif
+		return -1;
+	}
+	return 0;
+}
+
 /* expand the database at least length bytes by expanding the
    underlying file and doing the mmap again if necessary */
 static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
@@ -234,6 +258,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	/* form a new freelist record */
 	offset = FREELIST_TOP;
 	rec.rec_len = length - sizeof(rec);
+	rec.magic = TDB_FREE_MAGIC;
 	if (tdb_read(tdb, offset, (char *)&rec.next, sizeof(rec.next)) == -1) return -1;
 
 #if HAVE_MMAP
@@ -256,10 +281,6 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off length)
 	tdb->map_ptr = (void *)mmap(NULL, tdb->map_size, 
 				   PROT_READ|PROT_WRITE,
 				   MAP_SHARED | MAP_FILE, tdb->fd, 0);
-#endif
-
-#if TDB_DEBUG
-	printf("expanded database by %u bytes\n", length);
 #endif
 
 	return 0;
@@ -292,6 +313,8 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 			goto fail;
 		}
 
+		if (rec.magic != TDB_FREE_MAGIC) goto fail;
+
 		if (rec.rec_len >= length) {
 			/* found it - now possibly split it up  */
 			if (rec.rec_len > length + MIN_REC_SIZE) {
@@ -299,7 +322,8 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 
 				newrec.rec_len = rec.rec_len - (sizeof(rec) + length);
 				newrec.next = rec.next;
-				
+				newrec.magic = TDB_FREE_MAGIC;
+
 				rec.rec_len = length;
 				rec.next = rec_ptr + sizeof(rec) + rec.rec_len;
 				
@@ -331,9 +355,6 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length)
 			}
 
 			/* all done - return the new record offset */
-#if TDB_DEBUG
-			printf("allocated %u bytes in database\n", rec.rec_len);
-#endif
 			return rec_ptr;
 		}
 
@@ -373,8 +394,8 @@ static int tdb_new_database(TDB_CONTEXT *tdb, int hash_size)
 	}
 
 #if TDB_DEBUG
-	printf("initialised database of hash_size %u available space %u\n", 
-	       hash_size, rec.rec_len);
+	printf("initialised database of hash_size %u\n", 
+	       hash_size);
 #endif
 	return 0;
 }
@@ -404,7 +425,7 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
 
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+		if (rec_read(tdb, rec_ptr, &rec) == -1) {
 			goto fail;
 		}
 
@@ -472,7 +493,7 @@ TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key)
 
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+		if (rec_read(tdb, rec_ptr, &rec) == -1) {
 			return null_data;
 		}
 
@@ -530,7 +551,7 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+		if (rec_read(tdb, rec_ptr, &rec) == -1) {
 			return 0;
 		}
 
@@ -585,7 +606,7 @@ int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB
 
 		/* traverse all records for this hash */
 		while (rec_ptr) {
-			if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+			if (rec_read(tdb, rec_ptr, &rec) == -1) {
 				return -1;
 			}
 
@@ -646,7 +667,7 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb)
 	if (rec_ptr == 0) return null_data;
 
 	/* we've found a non-empty chain, now read the record */
-	if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+	if (rec_read(tdb, rec_ptr, &rec) == -1) {
 		return null_data;
 	}
 
@@ -679,7 +700,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 
 	/* look until we find the right record */
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+		if (rec_read(tdb, rec_ptr, &rec) == -1) {
 			return null_data;
 		}
 
@@ -709,11 +730,6 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	}
 
  next_hash:
-#if TDB_DEBUG
-	printf("tdb_nextkey trying next hash from %u\n",
-	       hash % tdb->header.hash_size);
-#endif
-
 	h = hash % tdb->header.hash_size;
 	if (h == tdb->header.hash_size - 1) return null_data;
 
@@ -721,9 +737,6 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	for (h = h+1, rec_ptr = 0; 
 	     h < tdb->header.hash_size && rec_ptr == 0;
 	     h++) {
-#if TDB_DEBUG
-		printf("tdb_nextkey trying bucket %u\n",h);
-#endif
 		/* find the top of the hash chain */
 		offset = tdb_hash_top(tdb, h);
 
@@ -738,15 +751,10 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
  found_record:
 
 	/* we've found a non-empty chain, now read the record */
-	if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+	if (rec_read(tdb, rec_ptr, &rec) == -1) {
 		return null_data;
 	}
 
-#if TDB_DEBUG
-	printf("tdb_nextkey found hash 0x%08x in bucket %u from bucket %u\n", 
-	       rec.full_hash, rec.full_hash % tdb->header.hash_size,
-	       hash % tdb->header.hash_size);
-#endif
 	/* allocate and read the key space */
 	ret.dptr = tdb_alloc_read(tdb, rec_ptr + sizeof(rec), rec.key_len);
 	ret.dsize = rec.key_len;
@@ -779,7 +787,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 
 	/* keep looking until we find the right record */
 	while (rec_ptr) {
-		if (tdb_read(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
+		if (rec_read(tdb, rec_ptr, &rec) == -1) {
 			goto fail;
 		}
 
@@ -793,10 +801,6 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 
 			if (memcmp(key.dptr, data, key.dsize) == 0) {
 				/* a definate match - delete it */
-#if TDB_DEBUG
-				printf("deleting record with hash 0x%08x in bucket %u\n", 
-				       hash, hash % tdb->header.hash_size);
-#endif
 				if (last_ptr == 0) {
 					offset = tdb_hash_top(tdb, hash);
 					if (tdb_write(tdb, offset, (char *)&rec.next, sizeof(rec.next)) == -1) {
@@ -813,6 +817,7 @@ int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key)
 				if (tdb_read(tdb, offset, (char *)&rec.next, sizeof(rec.next)) == -1) {
 					goto fail;
 				}
+				rec.magic = TDB_FREE_MAGIC;
 				if (tdb_write(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) {
 					goto fail;
 				}
@@ -886,6 +891,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 		goto fail;
 	}
 
+	if (rec.magic != TDB_FREE_MAGIC) goto fail;
+
 	/* find the top of the hash chain */
 	offset = tdb_hash_top(tdb, hash);
 
@@ -897,6 +904,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	rec.key_len = key.dsize;
 	rec.data_len = dbuf.dsize;
 	rec.full_hash = hash;
+	rec.magic = TDB_MAGIC;
 
 	/* write the new record */
 	if (tdb_write(tdb, rec_ptr, (char *)&rec, sizeof(rec)) == -1) goto fail;
@@ -907,9 +915,6 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	if (tdb_write(tdb, offset, (char *)&rec_ptr, sizeof(rec_ptr)) == -1) goto fail;
 
 	tdb_writeunlock(tdb);
-#if TDB_DEBUG
-	printf("added record with hash 0x%08x in bucket %u\n", hash, hash % tdb->header.hash_size);
-#endif
 	return 0;
 
  fail:
@@ -980,7 +985,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
 
 #if TDB_DEBUG
 	printf("mapped database of hash_size %u map_size=%u\n", 
-	       hash_size, db.map_size);
+	       hash_size, tdb.map_size);
 #endif
 
 	return ret;
