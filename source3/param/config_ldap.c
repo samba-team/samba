@@ -80,11 +80,9 @@ static NTSTATUS parse_section(
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
 	pstring filter;
-	pstring suffix;
 	pstring option_name;
 	pstring option_value;
 	char **attr_list = NULL;
-	char *temp;
 	int rc;
 	int count;
 
@@ -156,14 +154,13 @@ static NTSTATUS ldap_config_load(
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
 	pstring filter;
-	pstring suffix;
 	pstring attr_text;
 	char *config_dn = NULL;
 	char *temp;
 	int rc;
 	int count;
-	char *config_attr_list[] = {"description", NULL};
-	char *share_attr_list[] = {"sambaShareName", "description", NULL};
+	const char *config_attr_list[] = {"description", NULL};
+	const char *share_attr_list[] = {"sambaShareName", "description", NULL};
 	char **share_dn;
 	char **share_name;
 
