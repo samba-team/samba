@@ -1109,7 +1109,7 @@ static NTSTATUS samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, TALLOC_C
 	switch (r->in.level) {
 	case GroupInfoAll:
 		QUERY_STRING(msg, all.name.string,        "sAMAccountName");
-		r->out.info->all.unknown = 7; /* Do like w2k3 */
+		r->out.info->all.attributes = 7; /* Do like w2k3 */
 		QUERY_UINT  (msg, all.num_members,      "numMembers")
 		QUERY_STRING(msg, all.description.string, "description");
 		break;
