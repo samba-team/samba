@@ -105,6 +105,162 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
+#ifdef KRB5
+static int
+krb5_verify(struct passwd *pwd, const char *password)
+{
+    krb5_error_code ret;
+    krb5_context context;
+    krb5_principal princ;
+    krb5_ccache id;
+    ret = krb5_init_context(&context);
+    if(ret)
+	return 1;
+	    
+    ret = krb5_parse_name(context, pwd->pw_name, &princ);
+    if(ret){
+	krb5_free_context(context);
+	return 1;
+    }
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    if(ret){
+	krb5_free_principal(context, princ);
+	krb5_free_context(context);
+	return 1;
+    }
+    ret = krb5_verify_user(context,
+			   princ, 
+			   id,
+			   password, 
+			   1,
+			   NULL);
+    if(ret == 0){
+	krb5_ccache id2;
+	char residual[32];
+	/* copy credentials to file cache */
+	snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
+		 (unsigned)pwd->pw_uid);
+	krb5_cc_resolve(context, residual, &id2);
+	if(seteuid(pwd->pw_uid))
+	    ;
+	ret = krb5_cc_copy_cache(context, id, id2);
+	if(seteuid(0))
+	    ;
+	ret = krb5_cc_close(context, id2);
+	add_env("KRB5CCNAME", residual);
+	ret = 0;
+    }
+	
+    krb5_cc_destroy(context, id);
+    krb5_free_principal(context, princ);
+    krb5_free_context(context);
+    return ret;
+}
+
+static void
+krb5_get_afs_tokens (struct passwd *pwd)
+{
+    krb5_context context;
+    krb5_ccache ccache;
+    krb5_error_code ret;
+    char cell[64];
+    char *pw_dir;
+
+    if (!k_hasafs ())
+	return;
+
+#ifdef _AIX
+    /* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
+	   this hack the kernel crashes on the following
+	   pioctl... */
+    pw_dir = strdup(pwd->pw_dir);
+#else
+    pw_dir = pwd->pw_dir;
+#endif
+
+    ret = krb5_init_context (&context);
+    if (ret)
+	return;
+
+    ret = krb5_cc_default (context, &ccache);
+    if (ret) {
+	krb5_free_context (context);
+	return;
+    }
+
+    k_setpag();
+
+    if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
+	krb5_afslog_uid_home (context, ccache,
+			      cell, NULL, pwd->pw_uid, pwd->pw_dir);
+    krb5_afslog_uid_home (context, ccache, NULL, NULL,
+				  pwd->pw_uid, pwd->pw_dir);
+    krb5_cc_close (context, ccache);
+    krb5_free_context (context);
+}
+#endif /* KRB5 */
+
+#ifdef KRB4
+
+static int
+krb4_verify(struct passwd *pwd, const char *password)
+{
+    char lrealm[REALM_SZ];
+    int ret;
+    char ticket_file[MaxPathLen];
+
+    ret = krb_get_lrealm (lrealm, 1);
+    if (ret)
+	return 1;
+
+    snprintf (ticket_file, sizeof(ticket_file),
+	      "%s%u_%u",
+	      TKT_ROOT, (unsigned)pwd->pw_uid, (unsigned)getpid());
+
+    krb_set_tkt_string (ticket_file);
+
+    ret = krb_verify_user (pwd->pw_name, "", lrealm, (char *)password,
+			   KRB_VERIFY_SECURE_FAIL, NULL);
+    if (ret)
+	return 1;
+
+    if (chown (ticket_file, pwd->pw_uid, pwd->pw_gid) < 0) {
+	dest_tkt();
+	return 1;
+    }
+	
+    add_env ("KRBTKFILE", ticket_file);
+    return 0;
+}
+
+static void
+krb4_get_afs_tokens (struct passwd *pwd)
+{
+    char cell[64];
+    char *pw_dir;
+
+    if (!k_hasafs ())
+	return;
+
+#ifdef _AIX
+    /* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
+	   this hack the kernel crashes on the following
+	   pioctl... */
+    pw_dir = strdup(pwd->pw_dir);
+#else
+    pw_dir = pwd->pw_dir;
+#endif
+
+    k_setpag();
+
+    if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
+	krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
+
+    krb_afslog_uid_home (NULL, NULL, pwd->pw_uid, pwd->pw_dir);
+}
+
+#endif /* KRB4 */
+
 static int f_flag;
 static int p_flag;
 static int r_flag;
@@ -242,103 +398,18 @@ do_login(struct passwd *pwd)
 	pwd->pw_dir = "/";
 	fprintf(stderr, "Logging in with home = \"/\".\n");
     }
+#ifdef KRB5
+    krb5_get_afs_tokens (pwd);
+#endif
+#ifdef KRB4
+    krb4_get_afs_tokens (pwd);
+#endif
+
     add_env("HOME", pwd->pw_dir);
     add_env("USER", pwd->pw_name);
     add_env("LOGNAME", pwd->pw_name);
     exec_shell(pwd->pw_shell, rootlogin);
 }
-
-#ifdef KRB5
-static int
-krb5_verify(struct passwd *pwd, const char *password)
-{
-    krb5_error_code ret;
-    krb5_context context;
-    krb5_principal princ;
-    krb5_ccache id;
-    ret = krb5_init_context(&context);
-    if(ret)
-	return 1;
-	    
-    ret = krb5_parse_name(context, pwd->pw_name, &princ);
-    if(ret){
-	krb5_free_context(context);
-	return 1;
-    }
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
-    if(ret){
-	krb5_free_principal(context, princ);
-	krb5_free_context(context);
-	return 1;
-    }
-    ret = krb5_verify_user(context,
-			   princ, 
-			   id,
-			   password, 
-			   1,
-			   NULL);
-    if(ret == 0){
-	krb5_ccache id2;
-	char residual[32];
-	/* copy credentials to file cache */
-	snprintf(residual, sizeof(residual), "FILE:/tmp/krb5cc_%u", 
-		 (unsigned)pwd->pw_uid);
-	krb5_cc_resolve(context, residual, &id2);
-	if(seteuid(pwd->pw_uid))
-	    ;
-	ret = krb5_cc_copy_cache(context, id, id2);
-	if(seteuid(0))
-	    ;
-	ret = krb5_cc_close(context, id2);
-	add_env("KRB5CCNAME", residual);
-	ret = 0;
-    }
-	
-    krb5_cc_destroy(context, id);
-    krb5_free_principal(context, princ);
-    krb5_free_context(context);
-    return ret;
-}
-#endif /* KRB5 */
-
-#ifdef KRB4
-
-/*
- * It's ugly duplicating these here but we would like it to build with
- * old krb4 code.
- */
-
-static int
-krb4_verify(struct passwd *pwd, const char *password)
-{
-    char lrealm[REALM_SZ];
-    int ret;
-    char ticket_file[MaxPathLen];
-
-    ret = krb_get_lrealm (lrealm, 1);
-    if (ret)
-	return 1;
-
-    snprintf (ticket_file, sizeof(ticket_file),
-	      "%s%u_%u",
-	      TKT_ROOT, (unsigned)pwd->pw_uid, (unsigned)getpid());
-
-    krb_set_tkt_string (ticket_file);
-
-    ret = krb_verify_user (pwd->pw_name, "", lrealm, (char *)password,
-			   KRB_VERIFY_SECURE_FAIL, NULL);
-    if (ret)
-	return 1;
-
-    if (chown (ticket_file, pwd->pw_uid, pwd->pw_gid) < 0) {
-	dest_tkt();
-	return 1;
-    }
-	
-    add_env ("KRBTKFILE", ticket_file);
-    return 0;
-}
-#endif /* KRB4 */
 
 static int
 check_password(struct passwd *pwd, const char *password)
