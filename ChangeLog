@@ -1,6 +1,24 @@
-Fri Mar  5 13:54:13 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+Mon Mar  8 11:49:43 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Release 0.1c
+
+	* kuser/klist.c: use print_version
+
+	* kuser/kdestroy.c: use print_version
+
+	* kdc/hpropd.c: use print_version
+
+	* kdc/hprop.c: use print_version
+
+	* kdc/config.c: use print_version
+
+	* kadmin/kadmind.c: use print_version
+
+	* kadmin/kadmin.c: use print_version
+
+	* appl/test/common.c: use print_version
+
+	* appl/afsutil/afslog.c: use print_version
 
 Mon Mar  1 10:49:14 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
