@@ -24,7 +24,7 @@ large readwrite
 
 New option to allow new Windows 2000 large file (64k) streaming
 read/write options. Needs a 64 bit underlying operating system
-(Linux kernel 2.4 with glibc 2.2 or above). Can improve performance
+(for Linux use kernel 2.4 with glibc 2.2 or above). Can improve performance
 by 10% with Windows 2000 clients. Defaults to off. Not as tested
 as some other Samba code paths.
 
