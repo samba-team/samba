@@ -385,7 +385,7 @@ BOOL load_unicode_map(const char *codepage, smb_ucs2_t **pp_cp_to_ucs2, uint16 *
   size_t size;
   char buf[UNICODE_MAP_HEADER_SIZE];
 
-  DEBUG(5, ("load_unicode_map: loading unicode map for codepage %d.\n", codepage));
+  DEBUG(5, ("load_unicode_map: loading unicode map for codepage %s.\n", codepage));
 
   if (*codepage == '\0')
     goto clean_and_exit;
