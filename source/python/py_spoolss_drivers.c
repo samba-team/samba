@@ -31,15 +31,15 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 	int level = 1, i;
 	uint32 needed, num_drivers;
 	char *arch = "Windows NT x86", *server_name;
-	static char *kwlist[] = {"server", "level", "arch", "creds", NULL};
+	static char *kwlist[] = {"server", "creds", "level", "arch", NULL};
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|isO!", kwlist, 
-					 &server_name, &level, &arch,
-					 &PyDict_Type, &creds))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|O!is", kwlist, 
+					 &server_name, &PyDict_Type, &creds,
+					 &level, &arch))
 		return NULL;
 	
 	/* Call rpc function */

@@ -53,10 +53,10 @@ static PyMethodDef spoolss_methods[] = {
 	{ "openprinter", spoolss_openprinter, METH_VARARGS | METH_KEYWORDS, 
 	  "openprinter(printername, [creds, access]) -> <spoolss hnd object>
 
-Open a printer given by printername in UNC format.  Optionally a 
-dictionary of (username, password) may be given in which case they are
-used when opening the RPC pipe.  An access mask may also be given which
-defaults to MAXIMUM_ALLOWED_ACCESS.
+Open a printer given by printername in UNC format.  Optionally a dictionary
+of (domain, username, password) may be given in which case they are used
+when opening the RPC pipe.  An access mask may also be given which defaults
+to MAXIMUM_ALLOWED_ACCESS.
 
 Example:
 
@@ -104,7 +104,7 @@ Example:
 
 	{ "enumprinterdrivers", spoolss_enumprinterdrivers, METH_VARARGS |
 	  METH_KEYWORDS, 
-"enumprinterdrivers(server, [level, arch, creds]) -> list
+"enumprinterdrivers(server, [creds, level, arch]) -> list
 
 Return a list of printer drivers.
 "},
