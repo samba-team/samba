@@ -1,5 +1,8 @@
 2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/mkey.c (read_master_mit): krb5_ret_int16 takes a int16_t
+	as argument
+
 	* lib/krb5/parse-name-test.c: please lint (and me)
 	
 	* kdc/config.c (configure): remove only set variable 'e'
