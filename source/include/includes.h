@@ -1175,5 +1175,9 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 time_t timegm(struct tm *tm);
 #endif
 
+#if defined(VALGRIND)
+#define strlen(x) valgrind_strlen(x)
+#endif
+
 #endif /* _INCLUDES_H */
 
