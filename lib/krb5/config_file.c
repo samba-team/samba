@@ -250,6 +250,11 @@ krb5_config_parse_file_debug (const char *fname,
 	    ret = EINVAL;	/* XXX */
 	    goto out;
 	} else if(*p != '\0') {
+	    if (s == NULL) {
+		*error_message = "binding before section";
+		ret = EINVAL;
+		goto out;
+	    }
 	    ret = parse_binding(f, lineno, p, &b, &s->u.list, error_message);
 	    if (ret)
 		goto out;
