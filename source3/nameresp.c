@@ -101,7 +101,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  {
 		name_unregister_work(d,n->name.name,n->name.name_type);
 	  }
-	  if (!n->bcast)
+	  if (!n->bcast && n->num_msgs == 0)
 	  {
 		 DEBUG(0,("WINS server did not respond to name release!\n"));
          /* XXXX whoops. we have problems. must deal with this */
@@ -119,7 +119,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 						n->nb_flags, GET_TTL(0),
 						n->reply_to_ip, False, n->reply_to_ip);
 
-	  if (!n->bcast)
+	  if (!n->bcast && n->num_msgs == 0)
 	  {
 		 DEBUG(1,("WINS server did not respond to name registration!\n"));
          /* XXXX whoops. we have problems. must deal with this */
@@ -144,7 +144,7 @@ static void dead_netbios_entry(struct subnet_record *d,
 		name_register_work(d,n->name.name,n->name.name_type,
 				n->nb_flags, n->ttl, n->reply_to_ip, n->bcast);
 	  }
-	  else
+	  else if (n->num_msgs == 0)
 	  {
 		/* received no response. rfc1001.txt states that after retrying,
 		   we should assume the WINS server is dead, and fall back to
