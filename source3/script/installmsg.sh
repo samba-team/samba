@@ -2,7 +2,7 @@
 # first version (Sept 2003) written by Shiro Yamada <shiro@miraclelinux.com>
 # based on the first verion (March 2002) of installdat.sh written by Herb Lewis
 
-MSGDIR=$1
+MSGDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
 
 echo Installing msg files in $MSGDIR
