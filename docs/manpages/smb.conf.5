@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 April 2002" "" ""
+.TH "SMB.CONF" "5" "16 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -519,6 +519,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIadd machine script\fR
+.TP 0.2i
+\(bu
+\fIalgorithmic rid base\fR
 .TP 0.2i
 \(bu
 \fIallow trusted domains\fR
@@ -1596,6 +1599,25 @@ Example: \fBadmin users = jason\fR
 .TP
 \fBallow hosts (S)\fR
 Synonym for  \fIhosts allow\fR.
+.TP
+\fBalgorithmic rid base (G)\fR
+This determines how Samba will use its
+algorithmic mapping from uids/gid to the RIDs needed to construct
+NT Security Identifiers.
+
+Setting this option to a larger value could be useful to sites
+transitioning from WinNT and Win2k, as existing user and 
+group rids would otherwise clash with sytem users etc. 
+
+All UIDs and GIDs must be able to be resolved into SIDs for 
+the correct operation of ACLs on the server. As such the algorithmic
+mapping can't be 'turned off', but pushing it 'out of the way' should
+resolve the issues. Users and groups can then be assigned 'low' RIDs
+in arbitary-rid supporting backends. 
+
+Default: \fBalgorithmic rid base = 1000\fR
+
+Example: \fBalgorithmic rid base = 100000\fR
 .TP
 \fBallow trusted domains (G)\fR
 This option only takes effect when the \fIsecurity\fR option is set to 
@@ -4629,10 +4651,10 @@ Default: \fBpanic action = <empty string>\fR
 Example: \fBpanic action = "/bin/sleep 90000"\fR
 .TP
 \fBpassdb backend (G)\fR
-This option allows the administrator to chose what
-backend in which to store passwords. This allows (for example) both 
-smbpasswd and tdbsam to be used without a recompile. Only one can
-be used at a time however, and experimental backends must still be selected
+This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
+smbpasswd and tdbsam to be used without a recompile. 
+Multiple backends can be specified, seperated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
+Experimental backends must still be selected
 (eg --with-tdbsam) at configure time.
 
 This paramater is in two parts, the backend's name, and a 'location'
@@ -4688,11 +4710,11 @@ for its own processing
 
 Default: \fBpassdb backend = smbpasswd\fR
 
-Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb\fR
+Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd\fR
 
 Example: \fBpassdb backend = ldapsam_nua:ldaps://ldap.example.com\fR
 
-Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args\fR
+Example: \fBpassdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb\fR
 .TP
 \fBpasswd chat (G)\fR
 This string controls the \fB"chat"\fR 
@@ -5155,6 +5177,9 @@ Synonym for \fI printcap name\fR.
 This parameter may be used to override the 
 compiled-in default printcap name used by the server (usually \fI /etc/printcap\fR). See the discussion of the [printers] section above for reasons 
 why you might want to do this.
+
+To use the CUPS printing interface set \fBprintcap name = cups
+\fR\&.
 
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
@@ -7016,9 +7041,13 @@ used when listing a username of the form of \fIDOMAIN
 is only applicable when using the \fIpam_winbind.so\fR
 and \fInss_winbind.so\fR modules for UNIX services.
 
-Example: \fBwinbind separator = \\\fR
+Please note that setting this parameter to + causes problems
+with group membership at least on glibc systems, as the character +
+is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = +\fR
+Example: \fBwinbind separator = \\\\\fR
+
+Example: \fBwinbind separator = /\fR
 .TP
 \fBwinbind uid\fR
 The winbind gid parameter specifies the range of group 
