@@ -57,6 +57,10 @@ childhandler (int sig)
      SIGRETURN(0);
 }
 
+/*
+ * Print the error message `format' and `...' on fd and die.
+ */
+
 void
 fatal (kx_context *kc, int fd, char *format, ...)
 {
@@ -78,6 +82,10 @@ fatal (kx_context *kc, int fd, char *format, ...)
     exit (1);
 }
 
+/*
+ * Remove all sockets and cookie files.
+ */
+
 static void
 cleanup(int nsockets, struct x_socket *sockets)
 {
@@ -94,7 +102,7 @@ cleanup(int nsockets, struct x_socket *sockets)
 }
 
 /*
- *
+ * Prepare to receive a connection on `sock'.
  */
 
 static int
@@ -252,6 +260,10 @@ passive_session (kx_context *kc, int fd, int sock, int cookiesp)
 	return copy_encrypted (kc, fd, sock);
 }
 
+/*
+ *
+ */
+
 static int
 active_session (kx_context *kc, int fd, int sock, int cookiesp)
 {
@@ -262,6 +274,10 @@ active_session (kx_context *kc, int fd, int sock, int cookiesp)
     else
 	return copy_encrypted (kc, fd, sock);
 }
+
+/*
+ * Handle a new connection.
+ */
 
 static int
 doit_conn (kx_context *kc,
@@ -332,7 +348,7 @@ doit_conn (kx_context *kc,
 }
 
 /*
- *
+ *  Is the current user the owner of the console?
  */
 
 static void
