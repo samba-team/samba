@@ -1,3 +1,15 @@
+Tue Aug 12 01:29:46 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/time.c: new file with `krb5_timeofday' and
+ 	`krb5_us_timeofday'.  Use these functions.
+
+	* kuser/klist.c: print KDC offset iff verbose
+
+	* lib/krb5/get_in_tkt.c: implement KDC time offset and use it if
+ 	[libdefaults]kdc_timesync is set.
+	
+	* lib/krb5/fcache.c: Implement version 4 of the ccache format.
+
 Mon Aug 11 05:34:43 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_rep.c (krb5_free_ap_rep_enc_part): free all memory
