@@ -37,6 +37,21 @@ static const char *remote_machine = NULL;
 
 static fstring ldap_secret;
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 /*********************************************************
  Print command usage on stderr and die.
 **********************************************************/

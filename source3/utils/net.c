@@ -77,6 +77,21 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 uint32 get_sec_channel_type(const char *param) 
 {
 	if (!(param && *param)) {
