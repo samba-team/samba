@@ -2695,7 +2695,7 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic(current_user_info.smb_name, n2,sizeof(n2));
+		standard_sub_basic( username, n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
