@@ -33,7 +33,6 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
 extern FILE* out_hnd;
 
 
@@ -160,7 +159,6 @@ scheduler add job
 ****************************************************************************/
 void cmd_at(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
 	fstring dest_wks;
 	BOOL add = False;
 	BOOL del = False;
@@ -172,6 +170,10 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 	uint8 weekdays = 0;
 	uint8 flags = JOB_NONINTERACTIVE;
 	pstring command;
+
+	safe_strcpy(dest_wks, "\\\\", sizeof(dest_wks));
+	safe_strcat(dest_wks, info->dest_host, sizeof(dest_wks));
+	strupper(dest_wks);
 
         while (argc > 1)
 	{
@@ -289,14 +291,6 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	safe_strcpy(dest_wks, "\\\\", sizeof(dest_wks));
-	safe_strcat(dest_wks, info->dest_host, sizeof(dest_wks));
-	strupper(dest_wks);
-
-	/* open scheduler session. */
-	if (!cli_nt_session_open(smb_cli, PIPE_ATSVC, &nt_pipe_fnum))
-		return;
-
 	if (add) /* add job */
 	{
 		AT_JOB_INFO job;
@@ -311,8 +305,7 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 		display_at_job_info(out_hnd, ACTION_ENUMERATE, &job, command);
 		display_at_job_info(out_hnd, ACTION_FOOTER   , &job, command);
 
-		if (at_add_job(smb_cli, nt_pipe_fnum, dest_wks, &job,
-				     command, &jobid))
+		if (at_add_job(dest_wks, &job, command, &jobid))
 		{
 			fprintf(out_hnd, "\tJob ID:      %d\n\n", jobid);
 		}
@@ -322,14 +315,12 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 		if (jobid == -1)
 		{
 			fprintf(out_hnd, "\tDeleting all jobs.\n\n");
-			at_del_job(smb_cli, nt_pipe_fnum, dest_wks,
-				   0, 0xffffffff);
+			at_del_job(dest_wks, 0, 0xffffffff);
 		}
 		else
 		{
 			fprintf(out_hnd, "\tDeleting job %d.\n\n", jobid);
-			at_del_job(smb_cli, nt_pipe_fnum, dest_wks,
-				   jobid, jobid);
+			at_del_job(dest_wks, jobid, jobid);
 		}
 
 	}
@@ -339,8 +330,7 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 		char **commands;
 		uint32 num_jobs;
 
-		if (at_enum_jobs(smb_cli, nt_pipe_fnum, dest_wks, &num_jobs,
-			     jobs, &commands))
+		if (at_enum_jobs(dest_wks, &num_jobs, jobs, &commands))
 		{
 			display_at_enum_info(out_hnd, ACTION_HEADER   , num_jobs, jobs, commands);
 			display_at_enum_info(out_hnd, ACTION_ENUMERATE, num_jobs, jobs, commands);
@@ -353,14 +343,11 @@ void cmd_at(struct client_info *info, int argc, char *argv[])
 	{
 		AT_JOB_INFO job;
 		
-		if (at_query_job(smb_cli, nt_pipe_fnum, dest_wks, jobid, &job, command))
+		if (at_query_job(dest_wks, jobid, &job, command))
 		{
 			display_at_job_info(out_hnd, ACTION_HEADER   , &job, command);
 			display_at_job_info(out_hnd, ACTION_ENUMERATE, &job, command);
 			display_at_job_info(out_hnd, ACTION_FOOTER   , &job, command);
 		}
 	}
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
 }
