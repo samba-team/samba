@@ -77,6 +77,7 @@ err_code_struct dos_msgs[] = {
   {"ERRinvgroup",ERRinvgroup,"Invalid workgroup (try the -W option)"},
   {"ERRlogonfailure",ERRlogonfailure,"Logon failure"},
   {"ERRdiskfull",ERRdiskfull,"Disk full"},
+  {"ERRgeneral",ERRgeneral, "General failure"},
   {NULL,-1,NULL}};
 
 /* Server Error Messages */
@@ -181,6 +182,16 @@ char *smb_dos_err_name(uint8 class, uint16 num)
 	return(ret);
 }
 
+/* Return a string for a DOS error */
+
+char *get_dos_error_msg(WERROR result)
+{
+	uint16 errnum;
+
+	errnum = W_ERROR_V(result);
+
+	return smb_dos_err_name(ERRDOS, errnum);
+}
 
 /****************************************************************************
 return a SMB error class name as a string.
