@@ -196,9 +196,9 @@ reply_priv (krb5_auth_context auth_context,
 }
 
 static const char *
-simple_passwd_quality_check (krb5_context context,
-			     krb5_principal principal,
-			     krb5_data *pwd)
+simple_passwd_quality (krb5_context context,
+		krb5_principal principal,
+		krb5_data *pwd)
 {
     if (pwd->length < 6)
 	return "Password too short";
@@ -208,12 +208,15 @@ simple_passwd_quality_check (krb5_context context,
 
 static const char* (*passwd_quality_check)(krb5_context, 
 					   krb5_principal, 
-					   krb5_data*);
+					   krb5_data*) = simple_passwd_quality;
 
-extern char *check_library;
-extern char *check_function;
+#ifdef HAVE_DLOPEN
+extern const char *check_library;
+extern const char *check_function;
 
 #define PASSWD_VERSION 0
+
+#endif
 
 static void
 setup_passwd_quality_check(krb5_context context)
@@ -222,24 +225,26 @@ setup_passwd_quality_check(krb5_context context)
     void *handle;
     void *sym;
     int *version;
+    if(check_library == NULL)
+	return;
     handle = dlopen(check_library, RTLD_NOW);
     if(handle == NULL) {
 	krb5_warnx(context, "failed to open `%s'", check_library);
-	goto out;
+	return;
     }
     version = dlsym(handle, "version");
     if(version == NULL) {
 	krb5_warnx(context,
 		   "didn't find `version' symbol in `%s'", check_library);
 	dlclose(handle);
-	goto out;
+	return;
     }
     if(*version != PASSWD_VERSION) {
 	krb5_warnx(context,
 		   "version of loaded library is %d (expected %d)",
 		   *version, PASSWD_VERSION);
 	dlclose(handle);
-	goto out;
+	return;
     }
     sym = dlsym(handle, check_function);
     if(sym == NULL) {
@@ -247,13 +252,11 @@ setup_passwd_quality_check(krb5_context context)
 		   "didn't find `%s' symbol in `%s'", 
 		   check_function, check_library);
 	dlclose(handle);
-	goto out;
+	return;
     }
     passwd_quality_check = sym;
     return;
-out:
 #endif
-    passwd_quality_check = simple_passwd_quality_check;
 }
 
 static void
@@ -592,10 +595,10 @@ sigterm(int sig)
     exit_flag = 1;
 }
 
-#define DEFAULT_FUNC_NAME "passwd_quality"
-
-char *check_library = DEFAULT_FUNC_NAME;
-char *check_function = LIBDIR "/" DEFAULT_FUNC_NAME ".so";
+#ifdef HAVE_DLOPEN
+const char *check_library;
+const char *check_function;
+#endif
 int version_flag;
 int help_flag;
 
@@ -630,6 +633,30 @@ main (int argc, char **argv)
 
     krb5_openlog (context, "kpasswdd", &log_facility);
     krb5_set_warn_dest(context, log_facility);
+
+#ifdef HAVE_DLOPEN
+    {
+	const char *tmp;
+	if(check_library == NULL) {
+	    tmp = krb5_config_get_string(context, NULL, 
+					 "password_quality", 
+					 "check_library", 
+					 NULL);
+	    if(tmp != NULL)
+		check_library = tmp;
+	}
+	if(check_function == NULL) {
+	    tmp = krb5_config_get_string(context, NULL, 
+					 "password_quality", 
+					 "check_function", 
+					 NULL);
+	    if(tmp != NULL)
+		check_function = tmp;
+	}
+	if(check_library != NULL && check_function == NULL)
+	    check_function = "passwd_check";
+    }
+#endif
 
     setup_passwd_quality_check(context);
     memset (&conf, 0, sizeof(conf));
