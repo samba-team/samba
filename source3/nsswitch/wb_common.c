@@ -81,7 +81,7 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
 			return -1;
 		}
-		/* Parinoia */
+		/* Paranoia */
 		if (new_fd < 3) {
 			close(new_fd);
 			return -1;
