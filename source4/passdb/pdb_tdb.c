@@ -986,7 +986,7 @@ static NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_tdb_init(void)
+NTSTATUS passdb_tdb_init(void)
 {
 	NTSTATUS ret;
 	struct passdb_ops ops;

@@ -144,7 +144,7 @@ static BOOL fetch_ldapsam_pw(char **dn, char** pw)
 	return True;
 }
 
-static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
+static const char * const attr[] = {"uid", "pwdLastSet", "logonTime",
 			     "logoffTime", "kickoffTime", "cn",
 			     "pwdCanChange", "pwdMustChange",
 			     "displayName", "homeDrive",
@@ -2063,7 +2063,7 @@ static NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_ldap_init(void)
+NTSTATUS passdb_ldap_init(void)
 {
 	NTSTATUS ret;
 	struct passdb_ops ops;

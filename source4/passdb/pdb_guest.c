@@ -122,7 +122,7 @@ static NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_me
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_guest_init(void)
+NTSTATUS passdb_guest_init(void)
 {
 	NTSTATUS ret;
 	struct passdb_ops ops;
