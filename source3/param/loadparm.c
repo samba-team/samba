@@ -3273,9 +3273,9 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 				char **list = *(char ***)ptr;
 				
 				for (; *list; list++) {
-					/* surround strings with whitespace in single quotes */
+					/* surround strings with whitespace in double quotes */
 					if ( strchr_m( *list, ' ' ) )
-						fprintf(f, "\'%s\'%s", *list, ((*(list+1))?", ":""));
+						fprintf(f, "\"%s\"%s", *list, ((*(list+1))?", ":""));
 					else
 						fprintf(f, "%s%s", *list, ((*(list+1))?", ":""));
 				}
