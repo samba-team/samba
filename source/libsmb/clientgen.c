@@ -2998,7 +2998,7 @@ static BOOL cli_init_redirect(struct cli_state *cli,
 	key.pid = getpid();
 	key.vuid = UID_FIELD_INVALID;
 
-	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", getuid());
+	slprintf(path, sizeof(path)-1, "/tmp/.smb.%d/agent", (int)getuid());
 
 	if (strequal(srv_name, "*SMBSERVER"))
 	{
