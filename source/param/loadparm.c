@@ -240,6 +240,7 @@ typedef struct
 	BOOL sslReqServerCert;
 	BOOL sslCompatibility;
 #endif				/* WITH_SSL */
+	char *szAclCompat;
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -569,6 +570,7 @@ static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(const char *pszParmValue, char **ptr);
 static BOOL handle_debug_list(const char *pszParmValue, char **ptr );
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -858,6 +860,7 @@ static struct parm_struct parm_table[] = {
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, 0},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, 0},
 	
+	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_ADVANCED},
 	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
@@ -1451,6 +1454,7 @@ static void init_globals(void)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
+	string_set(&Globals.szAclCompat, "");
 	Globals.winbind_cache_time = 15;
 
 	Globals.bWinbindEnumUsers = True;
@@ -1594,6 +1598,7 @@ FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -2705,6 +2710,19 @@ static BOOL handle_debug_list(const char *pszParmValueIn, char **ptr )
 	return debug_parse_levels( pszParmValue );
 }
 
+
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr)
+{
+	if (strequal(pszParmValue, "auto"))
+		string_set(ptr, "");
+	else if (strequal(pszParmValue, "winnt"))
+		string_set(ptr, "winnt");
+	else if (strequal(pszParmValue, "win2k"))
+		string_set(ptr, "win2k");
+	else
+		return False;
+	return True;
+}
 
 /***************************************************************************
  Initialise a copymap.

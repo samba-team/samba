@@ -1960,6 +1960,7 @@ char *lp_domain_guest_group(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
+char *lp_acl_compatibility(void);
 BOOL lp_winbind_enum_users(void);
 BOOL lp_winbind_enum_groups(void);
 BOOL lp_winbind_use_default_domain(void);
@@ -4622,9 +4623,11 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
 
 /* The following definitions come from smbd/posix_acls.c  */
 
+SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T acl);
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc);
 BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd);
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
+int inherit_access_acl(connection_struct *conn, const char *name, mode_t mode);
 int fchmod_acl(files_struct *fsp, int fd, mode_t mode);
 BOOL directory_has_default_acl(connection_struct *conn, const char *fname);
 
