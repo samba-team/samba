@@ -914,6 +914,37 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 	case SAM_DELTA_DOMAIN_INFO:
 		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
 		break;
+	/* The following types are recognised but not handled */
+	case SAM_DELTA_RENAME_GROUP:
+		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+		break;
+	case SAM_DELTA_RENAME_USER:
+		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+		break;
+	case SAM_DELTA_RENAME_ALIAS:
+		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+		break;
+	case SAM_DELTA_POLICY_INFO:
+		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+		break;
+	case SAM_DELTA_TRUST_DOMS:
+		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+		break;
+	case SAM_DELTA_PRIVS_INFO:
+		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+		break;
+	case SAM_DELTA_SECRET_INFO:
+		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+		break;
+	case SAM_DELTA_DELETE_GROUP:
+		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+		break;
+	case SAM_DELTA_DELETE_USER:
+		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+		break;
+	case SAM_DELTA_MODIFIED_COUNT:
+		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
+		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
 		break;
