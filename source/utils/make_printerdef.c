@@ -27,7 +27,7 @@
 */
 
 char *files_to_copy;
-char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype;
+char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype, *vendorsetup;
 char buffer[50][sizeof(pstring)];
 char sbuffer[50][sizeof(pstring)];
 char sub_dir[50][2][sizeof(pstring)];
@@ -96,13 +96,20 @@ static char *scan(char *chaine,char **entry)
  	i++;
   }
   (*entry)[i]='\0'; 
-  pstrcpy(value,temp+i+1);      
+  if (temp[i]!='\0') {
+        i++;
+  }
+  while( temp[i]==' ' && temp[i]!='\0') {
+ 	i++;
+  }
+  pstrcpy(value,temp+i);      
   return (value);
 }
 
 static void build_subdir(void)
 {
   int i=0;
+  int j=0;
   char *entry;
   char *data;
  
@@ -111,12 +118,18 @@ static void build_subdir(void)
 #ifdef DEBUGIT
     fprintf(stderr,"\tentry=data %s:%s\n",entry,data);
 #endif      
+    j = strlen(entry);
+    while (j) {
+      if (entry[j-1] != ' ') break;
+      j--;
+    }
+    entry[j] = '\0';
 
-    if (strcmp(data,"11")==0) {
+    if (strncmp(data,"11",2)==0) {
       pstrcpy(sub_dir[i][0],entry);
       pstrcpy(sub_dir[i][1],"");
     }
-    if (strcmp(data,"23")==0) {
+    if (strncmp(data,"23",2)==0) {
       pstrcpy(sub_dir[i][0],entry);
       pstrcpy(sub_dir[i][1],"color\\");
     }
@@ -362,15 +375,21 @@ static void scan_copyfiles(FILE *fichier, char *chaine)
               else break;
 	  }
 	}
-        if (strlen(files_to_copy) != 0)
-          pstrcat(files_to_copy,",");
-	pstrcat(files_to_copy,direc);
-	pstrcat(files_to_copy,buffer[i]);
-	fprintf(stderr,"%s%s\n",direc,buffer[i]);
+	if (*buffer[i] != ';') {
+          if (strlen(files_to_copy) != 0)
+            pstrcat(files_to_copy,",");
+	  pstrcat(files_to_copy,direc);
+	  pstrcat(files_to_copy,buffer[i]);
+	  fprintf(stderr,"%s%s\n",direc,buffer[i]);
+	}
 	i++;
       } 
     }
     part=strtok(NULL,",");
+    if (part)
+      while( *part ==' ' && *part != '\0') {
+ 	part++;
+      }
   }
   while (part!=NULL);
   fprintf(stderr,"\n");
@@ -385,6 +404,7 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
  
   helpfile=0;
   languagemonitor=0;
+  vendorsetup=0;
   datatype="RAW";
   if((temp=(char *)malloc(sizeof(pstring))) == NULL) {
     fprintf(stderr, "scan_short_desc: malloc fail !\n");
@@ -414,6 +434,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	languagemonitor=scan(buffer[i],&temp);
     else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	datatype=scan(buffer[i],&temp);
+    else if (strncasecmp(buffer[i],"VendorSetup",11)==0) 
+	vendorsetup=scan(buffer[i],&temp);
     i++;	
   }
 
@@ -439,6 +461,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	  languagemonitor=scan(buffer[i],&temp);
       else if (strncasecmp(buffer[i],"DefaultDataType",15)==0) 
 	  datatype=scan(buffer[i],&temp);
+      else if (strncasecmp(buffer[i],"VendorSetup",11)==0) 
+	  vendorsetup=scan(buffer[i],&temp);
       i++;	
     }
   }
@@ -464,6 +488,8 @@ static void scan_short_desc(FILE *fichier, char *short_desc)
 	helpfile?helpfile:"(null)");
   fprintf(stderr,"LanguageMonitor: %s\n",
 	languagemonitor?languagemonitor:"(null)");
+  fprintf(stderr,"VendorSetup: %s\n",
+	vendorsetup?vendorsetup:"(null)");
   if (copyfiles) scan_copyfiles(fichier,copyfiles);
 }
 
