@@ -117,8 +117,8 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
   ubi_slAddTail(&blocking_lock_queue, blr);
 
 
-  DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with expiry time %d \
-for fnum = %d, name = %s\n", length, (int)blr->expire_time, 
+  DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with expiry time %d (+%d) \
+for fnum = %d, name = %s\n", length, (int)blr->expire_time, lock_timeout,
         blr->fsp->fnum, blr->fsp->fsp_name ));
 
   return True;

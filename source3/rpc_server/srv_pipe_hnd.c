@@ -77,7 +77,7 @@ void init_rpc_pipe_hnd(void)
  Initialise an outgoing packet.
 ****************************************************************************/
 
-static BOOL pipe_init_outgoing_data(output_data *o_data, uint32 len)
+static BOOL pipe_init_outgoing_data(output_data *o_data)
 {
 	/* Reset the offset counters. */
 	o_data->data_sent_length = 0;
@@ -93,7 +93,7 @@ static BOOL pipe_init_outgoing_data(output_data *o_data, uint32 len)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, len, 4, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
@@ -486,7 +486,7 @@ authentication failed. Denying the request.\n", p->name));
 		 * Process the complete data stream here.
 		 */
 
-		if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+		if(pipe_init_outgoing_data(&p->out_data))
 			ret = api_pipe_request(p);
 
 		/*
@@ -537,14 +537,14 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+			if(pipe_init_outgoing_data(&p->out_data))
 				reply = api_pipe_bind_req(p, &rpc_in);
 			break;
 		case RPC_BINDRESP:
 			/*
 			 * We assume that a pipe bind_resp is only in one pdu.
 			 */
-			if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+			if(pipe_init_outgoing_data(&p->out_data))
 				reply = api_pipe_bind_auth_resp(p, &rpc_in);
 			break;
 		case RPC_REQUEST:
@@ -716,7 +716,7 @@ static BOOL read_from_remote(pipes_struct *p)
 		 * Create the response data buffer.
 		 */
 
-		if(!pipe_init_outgoing_data(&p->out_data, 65536)) {
+		if(!pipe_init_outgoing_data(&p->out_data)) {
 			DEBUG(0,("read_from_remote: failed to create outgoing buffer.\n"));
 			return False;
 		}
