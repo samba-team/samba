@@ -196,8 +196,8 @@ void *talloc_unreference(const void *context, const void *ptr)
 	}
 
 	for (h=tc->refs;h;h=h->next) {
-		const void *parent = talloc_parent_chunk(h);
-		if (parent == context) break;
+		struct talloc_chunk *p = talloc_parent_chunk(h);
+		if ((p==NULL && context==NULL) || p+1 == context) break;
 	}
 	if (h == NULL) {
 		return NULL;
@@ -526,7 +526,7 @@ off_t talloc_total_size(const void *ptr)
 /*
   return the total number of blocks in a talloc pool (subtree)
 */
-static off_t talloc_total_blocks(const void *ptr)
+off_t talloc_total_blocks(const void *ptr)
 {
 	off_t total = 0;
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
