@@ -109,7 +109,6 @@ typedef struct
 	char *szConfigFile;
 	char *szSMBPasswdFile;
 	char *szPrivateDir;
-	char *szPassdbModulePath;
 	char *szPassdbBackend;
 	char *szPasswordServer;
 	char *szSocketOptions;
@@ -538,9 +537,12 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
+
+#if WITH_LDAP_SAM
 static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_user_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_suffix ( char *pszParmValue, char **ptr );
+#endif
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -706,7 +708,6 @@ static struct parm_struct parm_table[] = {
 	{"password server", P_STRING, P_GLOBAL, &Globals.szPasswordServer, NULL, NULL, 0},
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, 0},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, 0},
-	{"passdb module path", P_STRING, P_GLOBAL, &Globals.szPassdbModulePath, NULL, NULL, 0},
 	{"passdb backend", P_STRING, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, 0},
 	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, 0},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, 0},
@@ -882,7 +883,7 @@ static struct parm_struct parm_table[] = {
 	{"addprinter command", P_STRING, P_GLOBAL, &Globals.szAddPrinterCommand, NULL, NULL, 0},
 	{"deleteprinter command", P_STRING, P_GLOBAL, &Globals.szDeletePrinterCommand, NULL, NULL, 0},
 	{"show add printer wizard", P_BOOL, P_GLOBAL, &Globals.bMsAddPrinterWizard, NULL, NULL, 0},
-    {"os2 driver map", P_STRING, P_GLOBAL, &Globals.szOs2DriverMap, NULL, NULL, 0},
+	{"os2 driver map", P_STRING, P_GLOBAL, &Globals.szOs2DriverMap, NULL, NULL, 0},
 	
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, 0},
@@ -1221,7 +1222,6 @@ static void init_globals(void)
 
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
-	string_set(&Globals.szPassdbModulePath, "");
 	string_set(&Globals.szPassdbBackend, "smbpasswd");
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);
@@ -1493,7 +1493,6 @@ FN_GLOBAL_STRING(lp_logfile, &Globals.szLogFile)
 FN_GLOBAL_STRING(lp_configfile, &Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
-FN_GLOBAL_STRING(lp_passdb_module_path, &Globals.szPassdbModulePath)
 FN_GLOBAL_STRING(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
