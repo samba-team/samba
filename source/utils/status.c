@@ -77,15 +77,6 @@ static unsigned int Ucrit_checkUsername(char *username)
 	return 0;
 }
 
-static void Ucrit_addPid(pid_t pid)
-{
-	int i;
-	if ( !Ucrit_IsActive) return;
-	for (i=0;i<Ucrit_MaxPid;i++)
-		if( pid == Ucrit_pid[i] ) return;
-	Ucrit_pid[Ucrit_MaxPid++] = pid;
-}
-
 static unsigned int Ucrit_checkPid(pid_t pid)
 {
 	int i;
@@ -182,8 +173,6 @@ static int profile_dump(void)
 
 static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
-	static pid_t last_pid;
-	struct session_record *ptr;
 	struct connections_data crec;
 
 	if (dbuf.dsize != sizeof(crec))
@@ -208,8 +197,6 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
-	static pid_t last_pid;
-	struct session_record *ptr;
 	struct sessionid sessionid;
 
 	if (dbuf.dsize != sizeof(sessionid))
@@ -239,7 +226,6 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	extern char *optarg;
 	int profile_only = 0, new_debuglevel = -1;
 	TDB_CONTEXT *tdb;
-	struct session_record *ptr;
 
 	TimeInit();
 	setup_logging(argv[0],True);

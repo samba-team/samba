@@ -137,5 +137,4 @@ void smb_user_control(char *unix_user, uint32 nt_status)
 		if(lp_deluser_script() && smb_getpwnam(unix_user,True))
 			smb_delete_user(unix_user);
 	}
-
 }
