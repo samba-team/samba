@@ -2441,18 +2441,9 @@ static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 
 		for (i=0; i<q2.out.info.info5.count; i++) {
-			char *name;
-			size_t namelen;
 			int j;
+			const char *name = q2.out.info.info5.entries[i].account_name.name;
 			BOOL found = False;
-
-			/* Querydisplayinfo returns ascii -- convert */
-
-			namelen = convert_string_talloc(mem_ctx, CH_DISPLAY, CH_UNIX,
-							q2.out.info.info5.entries[i].account_name.name,
-							q2.out.info.info5.entries[i].account_name.name_len,
-							(void **)&name);
-
 			for (j=0; j<num_names; j++) {
 				if (names[j] == NULL)
 					continue;
