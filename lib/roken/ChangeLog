@@ -1,3 +1,7 @@
+1999-07-26  Assar Westerlund  <assar@sics.se>
+
+	* snprintf.c: some signed vs unsigned casts
+	
 1999-07-24  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (struct sockaddr_storage): define it needed
