@@ -172,16 +172,25 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
           		elif $PKG_CONFIG --exists '$2' ; then
             			AC_MSG_RESULT(yes)
 
-				SMB_EXT_LIB_ENABLE($1, YES)
+
+				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
+    			OLD_CFLAGS="$CFLAGS"
+	    		CFLAGS="$CFLAGS $$1_CFLAGS"
+		    	AC_MSG_CHECKING([that the C compiler can use the $1_CFLAGS])
+    			AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+					SMB_EXT_LIB_ENABLE($1, YES)
+			    	AC_MSG_RESULT(yes),
+					AC_MSG_RESULT(no),
+					AC_MSG_WARN([cannot run when cross-compiling]))
+
+    			CFLAGS="$OLD_CFLAGS"
+
 				SMB_EXT_LIB($1, 
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
 					[`$PKG_CONFIG --cflags-only-I '$2'`],
 					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
 
-				# FIXME: Dirty hack
-				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
-				CFLAGS="$CFLAGS $$1_CFLAGS"
         		else
 				SMB_EXT_LIB($1)
 				SMB_EXT_LIB_ENABLE($1, NO)

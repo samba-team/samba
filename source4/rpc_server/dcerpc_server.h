@@ -48,7 +48,7 @@ struct dcesrv_interface {
 
 	/* the ndr_pull function for the chosen interface.
 	 */
-	NTSTATUS (*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *, void **);;
+	NTSTATUS (*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *, void **);
 	
 	/* the dispatch function for the chosen interface.
 	 */
