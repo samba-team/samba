@@ -74,18 +74,21 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 			       int scope, const char *exp,
 			       const char **attrs, void **res, 
-			       int *count, void **cookie)
+			       int *count, void **cookie, const char *sort)
 {
 	int rc;
 #define ADS_PAGE_CTL_OID "1.2.840.113556.1.4.319"
 #define ADS_NO_REFERRALS_OID "1.2.840.113556.1.4.1339"
+#define ADS_SERVER_SORT_OID "1.2.840.113556.1.4.473"
 	int version;
 	LDAPControl PagedResults; 
 	LDAPControl NoReferrals;
-	BerElement *berelem = NULL;
-	struct berval *berval = NULL;
-	LDAPControl *controls[3];
-	LDAPControl **rcontrols, *cur_control;
+	LDAPControl ServerSort;
+	BerElement *cookie_be = NULL, *sort_be = NULL;
+	struct berval *cookie_bv= NULL, *sort_bv = NULL;
+	LDAPControl *controls[4];
+	LDAPControl **rcontrols;
+	int i;
 
 	*res = NULL;
 
@@ -97,28 +100,39 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	if (version < LDAP_VERSION3) 
 		return ADS_ERROR(LDAP_NOT_SUPPORTED);
 
-	berelem = ber_alloc_t(LBER_USE_DER);
+	cookie_be = ber_alloc_t(LBER_USE_DER);
 	if (cookie && *cookie) {
-		ber_printf(berelem, "{iO}", (ber_int_t) 1000, *cookie);
+		ber_printf(cookie_be, "{iO}", (ber_int_t) 1000, *cookie);
 		ber_bvfree(*cookie); /* don't need it from last time */
 		*cookie = NULL;
 	} else {
-		ber_printf(berelem, "{io}", (ber_int_t) 1000, "", 0);
+		ber_printf(cookie_be, "{io}", (ber_int_t) 1000, "", 0);
 	}
-	ber_flatten(berelem, &berval);
+	ber_flatten(cookie_be, &cookie_bv);
 	PagedResults.ldctl_oid = ADS_PAGE_CTL_OID;
 	PagedResults.ldctl_iscritical = (char) 1;
-	PagedResults.ldctl_value.bv_len = berval->bv_len;
-	PagedResults.ldctl_value.bv_val = berval->bv_val;
+	PagedResults.ldctl_value.bv_len = cookie_bv->bv_len;
+	PagedResults.ldctl_value.bv_val = cookie_bv->bv_val;
 
 	NoReferrals.ldctl_oid = ADS_NO_REFERRALS_OID;
 	NoReferrals.ldctl_iscritical = (char) 0;
 	NoReferrals.ldctl_value.bv_len = 0;
 	NoReferrals.ldctl_value.bv_val = "";
 
+	if (sort && *sort) {
+		sort_be = ber_alloc_t(LBER_USE_DER);
+		ber_printf(sort_be, "{{s}}", sort);
+		ber_flatten(sort_be, &sort_bv);
+		ServerSort.ldctl_oid = ADS_SERVER_SORT_OID;
+		ServerSort.ldctl_iscritical = (char) 0;
+		ServerSort.ldctl_value.bv_len = sort_bv->bv_len;
+		ServerSort.ldctl_value.bv_val = sort_bv->bv_val;
+	}	
+
 	controls[0] = &NoReferrals;
 	controls[1] = &PagedResults;
-	controls[2] = NULL;
+	controls[2] = (sort && *sort) ? &ServerSort : NULL;
+	controls[3] = NULL;
 
 	*res = NULL;
 
@@ -137,13 +151,17 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 			       NULL, LDAP_NO_LIMIT,
 			       (LDAPMessage **)res);
 
+	ber_free(cookie_be, 1);
+	ber_bvfree(cookie_bv);
+	if (sort && *sort) {
+		ber_free(sort_be, 1);
+		ber_bvfree(sort_bv);
+	}
+
 	if (rc) {
 		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", exp, ldap_err2string(rc)));
 		return ADS_ERROR(rc);
 	}
-
-	ber_free(berelem, 1);
-	ber_bvfree(berval);
 
 	rc = ldap_parse_result(ads->ld, *res, NULL, NULL, NULL,
 					NULL, &rcontrols,  0);
@@ -152,19 +170,19 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		return ADS_ERROR(rc);
 	}
 
-	for (cur_control=rcontrols[0]; cur_control; cur_control++) {
-		if (strcmp(ADS_PAGE_CTL_OID, cur_control->ldctl_oid) == 0) {
-			berelem = ber_init(&cur_control->ldctl_value);
-			ber_scanf(berelem,"{iO}", (ber_int_t *) count,
-				  &berval);
+	for (i=0; rcontrols[i]; i++) {
+		if (strcmp(ADS_PAGE_CTL_OID, rcontrols[i]->ldctl_oid) == 0) {
+			cookie_be = ber_init(&rcontrols[i]->ldctl_value);
+			ber_scanf(cookie_be,"{iO}", (ber_int_t *) count,
+				  &cookie_bv);
 			/* the berval is the cookie, but must be freed when
 			   it is all done */
-			if (berval->bv_len) /* still more to do */
-				*cookie=ber_bvdup(berval);
+			if (cookie_bv->bv_len) /* still more to do */
+				*cookie=ber_bvdup(cookie_bv);
 			else
 				*cookie=NULL;
-			ber_bvfree(berval);
-			ber_free(berelem, 1);
+			ber_bvfree(cookie_bv);
+			ber_free(cookie_be, 1);
 			break;
 		}
 	}
@@ -187,7 +205,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 	int count = 0;
 	ADS_STATUS status;
 
-	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res, &count, &cookie);
+	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, res, &count, &cookie, NULL);
 
 	if (!ADS_ERR_OK(status)) return status;
 
@@ -196,7 +214,7 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 		ADS_STATUS status2;
 		LDAPMessage *msg, *next;
 
-		status2 = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res2, &count, &cookie);
+		status2 = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res2, &count, &cookie, NULL);
 
 		if (!ADS_ERR_OK(status2)) break;
 
@@ -209,6 +227,40 @@ ADS_STATUS ads_do_search_all(ADS_STRUCT *ads, const char *bind_path,
 
 		/* note that we do not free res2, as the memory is now
                    part of the main returned list */
+	}
+
+	return status;
+}
+
+/* same as ads_do_search_all, but runs a function on each result, rather
+   than returning it.  Needed to get sorting working, as the merging of
+   ads_do_search_all messes it up.  This should eventually replace it.  */
+
+ADS_STATUS ads_do_search_all2(ADS_STRUCT *ads, const char *bind_path,
+			      int scope, const char *exp, 
+			      const char **attrs, const char *sort, 
+			      void(*fn)(char *, void **, void *), 
+			      void *data_area)
+{
+	void *cookie = NULL;
+	int count = 0;
+	ADS_STATUS status;
+	void *res;
+
+	status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res, &count, &cookie, sort);
+
+	if (!ADS_ERR_OK(status)) return status;
+
+	ads_process_results(ads, res, fn, data_area);
+	ads_msgfree(ads, res);
+
+	while (cookie) {
+		status = ads_do_paged_search(ads, bind_path, scope, exp, attrs, &res, &count, &cookie, NULL);
+
+		if (!ADS_ERR_OK(status)) break;
+		
+		ads_process_results(ads, res, fn, data_area);
+		ads_msgfree(ads, res);
 	}
 
 	return status;
