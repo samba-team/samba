@@ -23,6 +23,7 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
@@ -793,6 +794,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 	nt_devmode->devicename
 */
 
+	char adevice[32];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
 
 	if (nt_devmode == NULL) {
@@ -802,7 +804,10 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	fstrcpy(nt_devmode->devicename, default_devicename);
+	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, default_devicename);
+	fstrcpy(nt_devmode->devicename, adevice);
+	
+	
 	fstrcpy(nt_devmode->formname, "Letter");
 
 	nt_devmode->specversion      = 0x0401;
@@ -1039,6 +1044,8 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	info.starttime = 0; /* Minutes since 12:00am GMT */
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
+	info.priority = 1;
+	info.default_priority = 1;
 
 	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
