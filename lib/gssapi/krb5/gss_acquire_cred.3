@@ -358,13 +358,13 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "OM_uint32 * max_input_size"
 .Fc
 .Sh DESCRIPTION
-.Nm GSS-API
-uses standardized C API for
-.Nm GSS-API
-described in
-.Li RFC1509
+Generic Security Service API (GSS-API) version 2, and its C binding,
+is described in
+.Li RFC2743
 and
 .Li RFC2744 .
+Version 1 (deprecated) of the C binding is described in
+.Li RFC1509 .
 .Pp
 Heimdals GSS-API implementation supports the following mechanisms
 .Bl -bullet
@@ -372,7 +372,8 @@ Heimdals GSS-API implementation supports the following mechanisms
 .Li GSS_KRB5_MECHANISM
 .El
 .Pp
-GSS-API have some generic name types
+GSS-API have generic name types that all mechanism are supposed to
+implement (if possible)
 .Bl -bullet
 .It
 .Li GSS_C_NT_USER_NAME
@@ -430,9 +431,7 @@ They are provided so that version 1 applications can link against the
 library.
 .Pp
 .Fn gss_krb5_copy_ccache
-is an extension to the
-.Nm GSS-API
-API.
+is an extension to the GSS-API API.
 The function will extract the krb5 credential that are transfered from
 the initiator to the acceptor when using token delegation in the
 Kerberos mechanism.
