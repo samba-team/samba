@@ -3586,9 +3586,15 @@ wrapped_length (krb5_context context,
 {
     struct encryption_type *et = crypto->et;
     size_t padsize = et->padsize;
+    size_t checksumsize;
     size_t res;
 
-    res =  et->confoundersize + et->checksum->checksumsize + data_len;
+    if (et->keyed_checksum)
+	checksumsize = et->keyed_checksum->checksumsize;
+    else
+	checksumsize = et->checksum->checksumsize;
+
+    res =  et->confoundersize + checksumsize + data_len;
     res =  (res + padsize - 1) / padsize * padsize;
     return res;
 }
@@ -3604,7 +3610,10 @@ wrapped_length_dervied (krb5_context context,
 
     res =  et->confoundersize + data_len;
     res =  (res + padsize - 1) / padsize * padsize;
-    res += et->checksum->checksumsize;
+    if (et->keyed_checksum)
+	res += et->keyed_checksum->checksumsize;
+    else
+	res += et->checksum->checksumsize;
     return res;
 }
 
