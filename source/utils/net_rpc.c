@@ -2792,7 +2792,7 @@ typedef struct copy_clistate {
  * @param state	arg-pointer
  *
  **/
-static void copy_fn(file_info *f, const char *mask, void *state)
+static void copy_fn(const char *mnt, file_info *f, const char *mask, void *state)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct copy_clistate *local_state = (struct copy_clistate *)state;
