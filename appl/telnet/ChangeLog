@@ -1,3 +1,8 @@
+2000-02-07  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos.c (kerberos4_is): send a reject back to the
+	client when we're not authorized
+
 2000-02-06  Assar Westerlund  <assar@sics.se>
 
 	* telnet/ring.h (ring_encrypt): better proto
