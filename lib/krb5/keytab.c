@@ -57,6 +57,10 @@ krb5_kt_register(krb5_context context,
     return 0;
 }
 
+#ifdef KRB4
+extern krb5_kt_ops krb4_fkt_ops;
+#endif
+
 krb5_error_code
 krb5_kt_resolve(krb5_context context,
 		const char *name,
@@ -74,6 +78,10 @@ krb5_kt_resolve(krb5_context context,
 	if(ret) return ret;
 	ret = krb5_kt_register(context, &krb5_mkt_ops);
 	if(ret) return ret;
+#ifdef KRB4
+	ret = krb5_kt_register(context, &krb4_fkt_ops);
+	if(ret) return ret;
+#endif
     }
     
     residual = strchr(name, ':');
@@ -306,7 +314,7 @@ krb5_kt_next_entry(krb5_context context,
 		   krb5_keytab_entry *entry,
 		   krb5_kt_cursor *cursor)
 {
-    if(id->next_entry)
+    if(id->next_entry == NULL)
 	return HEIM_ERR_OPNOTSUPP;
     return (*id->next_entry)(context, id, entry, cursor);
 }
@@ -317,7 +325,7 @@ krb5_kt_end_seq_get(krb5_context context,
 		    krb5_keytab id,
 		    krb5_kt_cursor *cursor)
 {
-    if(id->end_seq_get)
+    if(id->end_seq_get == NULL)
 	return HEIM_ERR_OPNOTSUPP;
     return (*id->end_seq_get)(context, id, cursor);
 }
