@@ -1,3 +1,9 @@
+1999-10-30  Assar Westerlund  <assar@sics.se>
+
+	* snprintf.c (PARSE_INT_FORMAT): add redundant casts to work
+ 	around a gcc-bug that manifests itself on Linux-PPC.  From Tom
+ 	Rini <trini@kernel.crashing.org>
+
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 3:1:0
