@@ -1,8 +1,21 @@
+2001-09-16  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/appdefault.c (krb5_appdefault_{boolean,string,time):
+	make realm const
+
+	* lib/krb5/crypto.c: use des functions to avoid generating
+	warnings with openssl's prototypes
+
 2001-09-05  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: check for termcap.h
 
 	* lib/asn1/lex.l: add another undef ECHO to keep AIX lex happy
+
+2001-09-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/addr_families.c (krb5_print_address): handle snprintf
+	returning < 0.  noticed by hin@stacken.kth.se
 
 2001-09-03  Assar Westerlund  <assar@sics.se>
 
