@@ -16,10 +16,6 @@ handle readline hiding in readline/readline.h
 
 Implement RFC1731 and 1734, pop over GSS-API
 
-** appl/rsh
-
-add rcp program
-
 * doc
 
 add example from hprop manpage to texi
@@ -52,7 +48,7 @@ write a man-page
 
 ** lib/des
 
-make everything work with openssl
+make everything work with openssl and make prototypes compatible
 
 ** lib/gssapi
 
