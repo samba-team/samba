@@ -456,7 +456,7 @@ static void fill_share_mode(char *p, files_struct *fsp, uint16 port, uint16 op_t
 	e->share_mode = fsp->share_mode;
 	e->op_port = port;
 	e->op_type = op_type;
-	memcpy((char *)&e->time, (char *)&fsp->open_time, sizeof(struct timeval));
+	e->time = fsp->open_time;
 }
 
 /*******************************************************************
