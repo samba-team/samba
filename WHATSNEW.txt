@@ -85,7 +85,7 @@ Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details
 
 1)  Rework our smb signing code again, this factors out some of 
-    the common MAC calcuation code, and now supports multiple 
+    the common MAC calculation code, and now supports multiple 
     outstanding packets (bug #40)
 2)  Enforce 'client plaintext auth', 'client lanman auth' and 'client
     ntlmv2 auth'
@@ -93,15 +93,15 @@ details
 4)  Add extra debugging statements to winbindd for tracking down
     failures
 5)  Fix bug when aliased 'winbind uid/gid' parameters are used
-	'winbind uid/gid' are now replaced with 'idmap uid/gid'
+    ('winbind uid/gid' are now replaced with 'idmap uid/gid')
 6)  Added an auth flag that indicates if we should be allowed 
-    to fallback to NTLMSSP for SASL if krb5 fails
+    to fall back to NTLMSSP for SASL if krb5 fails
 7)  Fixed the bug that forced us not to use the winbindd cache when 
     we have a primary ADS domain and a secondary (trusted) NT4 domain. 
 8)  Use lp_realm() to find the default realm for 'net ads password'
 9)  Removed editreg from standard build until it is portable.
 10) Fix domain membership for servers not running winbindd
-11) Correct race condition in determining the high water mark 
+11) Correct race condition in determining the high water mark
     in the idmap backend (bug #181)
 12) Set the user's primary unix group from usrmgr.exe (partial 
     fix for bug #45)
@@ -109,7 +109,7 @@ details
 14) Add trivial extension to 'net' to dump current local idmap
     and restore mappings as well
 15) Modify 'net rpc vampire' to add new and existing users to
-    both the idmap and the SAM. This code needs further testing.
+    both the idmap and the SAM.  This code needs further testing.
 16) Fix crash bug in ADS searches 
 17) Build libnss_wins.so as part of nsswitch target (bug #160)
 18) Make net rpc vampire return an error if the sam sync RPC 
@@ -119,10 +119,10 @@ details
 20) Fix various memory leaks in server and client code
 21) Remove the short option to --set-auth-user for wbinfo (-A) to 
     prevent confusion with the -a option (bug #158)
-22) Added new 'map acl inheritence' parameter
+22) Added new 'map acl inherit' parameter
 23) Removed unused 'privileges' code from group mapping database
 24) Don't segfault on empty passdb backend list (bug #136)
-25) Fixed acl sorting algorithm forWwindows 2000 clients
+25) Fixed acl sorting algorithm for Windows 2000 clients
 26) Replace universal group cache with netsamlogon_cache 
     from APPLIANCE_HEAD branch
 27) Fix autoconf detection issues surrounding --with-ads=yes
@@ -200,8 +200,7 @@ in the 3.0 release.  The most noticeable are:
     backend and authentication section for more details
   
   * inclusion of non-standard passdb modules may be enabled using
-    --with-expsam.  This includes an XML backend, a mysql backend,
-    and a NIS backend.
+    --with-expsam.  This includes an XML backend and a mysql backend.
       
   * removal of --with-msdfs (is now enabled by default)
   
@@ -432,7 +431,8 @@ utility.  See the respective man pages for details.
 LDAP
 ####
 
-This section outlines the new features affecting Samba / LDAP integration.
+This section outlines the new features affecting Samba / LDAP 
+integration.
 
 New Schema
 ----------
@@ -522,11 +522,62 @@ share a uid/gid number space, thus avoiding the interoperability problems
 with NFS that were present in Samba 2.2.
     
 
+
+######################################################################
+Trust Relationships and a Samba Domain
+######################################
+
+Samba 3.0.0beta2 is able to utilize winbindd as the means of 
+allocating uids and gids to trusted users and groups.  More
+information regarding Samba's support for establishing trust 
+relationships can be found in the Samba-HOWTO-Collection included
+in the docs/ directory of this release.
+
+First create your Samba PDC and ensure that everything is 
+working correctly before moving on the trusts.
+
+To establish Samba as the trusting domain (named SAMBA) from a Windows NT
+4.0 domain named WINDOWS:
+
+  1) create the trust account for SAMBA in "User Manager for Domains"
+  2) connect the trust from the Samba domain using
+     'net rpc trustdom establish GLASS'
+
+To create a trustlationship with SAMBA as the trusted domain:
+
+  1) create the initial trust account for GLASS using
+     'smbpasswd -a -i GLASS'.  You may need to create a UNIX
+     account for GLASS$ prior to this step (depending on your
+     local configuration).
+  2) connect the trust from a WINDOWS DC using "User Manager
+     for Domains"
+
+Now join winbindd on the Samba PDC to the SAMBA domain using
+the normal steps for adding a Samba server to an NT4 domain:
+(note that smbd & nmbd must be running at this point)
+
+   root# net rpc join -U root
+   Password: <enter root password from smbpasswd file here>
+
+Start winbindd and test the join with 'wbinfo -t'.
+
+Now test the trust relationship by connecting to the SAMBA DC
+(e.g. POGO) as a user from the WINDOWS domain:
+
+   $ smbclient //pogo/netlogon -U Administrator -W WINDOWS
+   Password:
+
+Now connect to the WINDOWS DC (e.g. CRYSTAL) as a Samba user:
+
+   $ smbclient //crystal/netlogon -U root -W WINDOWS
+   Password:
+
+
 ######################################################################
 Known Issues
 ############
 
-* The smbldap perl scripts for managing user entries in an LDAP 
+* The smbldap perl scripts for managing user entries in an LDAP
   directory have not be updated to function with the Samba 3.0
   schema changes.  This (or an equivalent solution) work is planned
   to be completed prior to the stable 3.0.0 release.
