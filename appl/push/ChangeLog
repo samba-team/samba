@@ -1,3 +1,7 @@
+1999-08-05  Assar Westerlund  <assar@sics.se>
+
+	* push.c (do_connect): v6-ify
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* push.c: get_default_username and the resulting const propagation

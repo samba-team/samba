@@ -1,3 +1,26 @@
+1999-08-05  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_sname_to_principal): remember to call
+ 	freehostent
+
+	* appl/test/tcp_client.c: call freehostent
+
+	* appl/kf/kf.c (doit): call freehostent
+
+	* appl/kf/kf.c: make v6 friendly and simplify
+
+	* appl/kf/kfd.c: make v6 friendly and simplify
+
+	* appl/test/tcp_server.c: simplify by using krb5_err instead of
+ 	errx
+	
+	* appl/test/tcp_client.c: simplify by using krb5_err instead of
+ 	errx
+
+	* appl/test/tcp_server.c: make v6 friendly and simplify
+
+	* appl/test/tcp_client.c: make v6 friendly and simplify
+
 1999-08-04  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1m

@@ -1,3 +1,7 @@
+1999-08-04  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: don't run testit in `make check'
+
 1999-04-11  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: don't run testit as a check

@@ -1,3 +1,9 @@
+1999-08-05  Assar Westerlund  <assar@sics.se>
+
+	* pop_init.c: v6-ify
+
+	* pop_debug.c: v6-ify
+
 1999-05-10  Assar Westerlund  <assar@sics.se>
 
 	* pop_debug.c (doit_v5): call krb5_sendauth with ccache == NULL

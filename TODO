@@ -16,6 +16,10 @@ Implement RFC1731 and 1734, pop over GSS-API
 
 should test more stuff
 
+** appl/rsh
+
+add rcp program
+
 ** appl/ftp
 
 * doc
