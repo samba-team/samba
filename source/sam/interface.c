@@ -904,7 +904,7 @@ void free_sam_context(SAM_CONTEXT **context)
 }
 
 /******************************************************************
-  Make a sam_methods from scratch
+  Make a backend_entry from scratch
  *******************************************************************/
  
 static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_backend_string)
@@ -1174,8 +1174,6 @@ NTSTATUS make_sam_context(SAM_CONTEXT **context)
 	ZERO_STRUCTP(*context);
 
 	(*context)->mem_ctx = mem_ctx;
-
-	/* FIXME */
 
 	(*context)->free_fn = free_sam_context;
 
