@@ -696,7 +696,7 @@ winbindd_proto:
 	  $(WINBINDD_OBJ1)
 
 delproto:
-	@/bin/rm -f include/proto.h
+	@/bin/rm -f $(srcdir)/include/proto.h
 
 include/proto.h: 
 	@echo rebuilding include/proto.h
