@@ -2216,6 +2216,23 @@ AC_ARG_WITH(sam,
 ########################################################################################
 
 #################################################
+# check for a LDAP password database configuration backwards compatibility
+AC_MSG_CHECKING(whether to use LDAP SAM 2.2 compatible configuration)
+AC_ARG_WITH(ldapsam,
+[  --with-ldapsam           Include LDAP SAM 2.2 compatible configuration (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_LDAP_SAMCONFIG)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+#################################################
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB SAM database)
 AC_ARG_WITH(tdbsam,
