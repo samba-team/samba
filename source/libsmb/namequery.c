@@ -585,6 +585,7 @@ static int parse_resolvconf(char name_server_arr[][16])
     }
   }
 
+  fclose(fp);
   return i;
 }
 
