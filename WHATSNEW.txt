@@ -49,7 +49,7 @@ o   Gerald Carter <jerry@samba.org>
     * BUG 1302: Fix seg fault by not trying to optimize a list of 
       invalid gids using the wrong array size.
     * BUG 1309: fix seg fault caused by trying to strdup(NULL)
-      seen when 'security = share'
+      seen when 'security = share'.
     * Fix problems when using IBM's compiler on AIX.
     * Link Developer's Guide, Example Guide, and multi-page HOWTO
       into SWAT's welcome page.
