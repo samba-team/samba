@@ -166,7 +166,12 @@ There are three ways of doing this:
 		<term>In &smb.conf;</term>
 		<listitem><para>
 		Affect the following settings and ALL clients will be forced to use a local profile:
-		<smbconfoption><name>logon home</name></smbconfoption> and <smbconfoption><name>logon path</name></smbconfoption>
+		<smbconfoption><name>logon home</name><value> </value></smbconfoption> and <smbconfoption><name>logon path</name><value> </value></smbconfoption>
+		</para>
+
+		<para>
+		The arguments to these parameters must be left blank. It is necessary to include the <constant>=</constant> sign
+		to specifically assign the empty value.
 		</para></listitem>
 	</varlistentry>
 
