@@ -751,6 +751,7 @@ static NTSTATUS create_rpc_bind_req(struct cli_state *cli, prs_struct *rpc_out,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+	prs_mem_free(&auth_info);
 	return NT_STATUS_OK;
 }
 
