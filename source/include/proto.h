@@ -175,6 +175,8 @@ long sys_random(void);
 void sys_srandom(unsigned int seed);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
+struct passwd *sys_getpwnam(const char *name);
+struct passwd *sys_getpwuid(uid_t uid);
 
 /*The following definitions come from  lib/time.c  */
 

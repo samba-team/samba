@@ -2356,7 +2356,7 @@ turn a uid into a user name
 char *uidtoname(uid_t uid)
 {
   static char name[40];
-  struct passwd *pass = getpwuid(uid);
+  struct passwd *pass = sys_getpwuid(uid);
   if (pass) return(pass->pw_name);
   slprintf(name, sizeof(name) - 1, "%d",(int)uid);
   return(name);
@@ -2381,7 +2381,7 @@ turn a user name into a uid
 ********************************************************************/
 uid_t nametouid(const char *name)
 {
-	struct passwd *pass = getpwnam(name);
+	struct passwd *pass = sys_getpwnam(name);
 	if (pass) return(pass->pw_uid);
 	return (uid_t)-1;
 }

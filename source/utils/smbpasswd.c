@@ -357,7 +357,7 @@ static int process_root(int argc, char *argv[])
 		usage();
 	}
 
-	if (!user_name && (pwd = getpwuid(0))) {
+	if (!user_name && (pwd = sys_getpwuid(0))) {
 		user_name = xstrdup(pwd->pw_name);
 	} 
 
@@ -503,7 +503,7 @@ static int process_nonroot(int argc, char *argv[])
 	}
 	
 	if (!user_name) {
-		pwd = getpwuid(getuid());
+		pwd = sys_getpwuid(getuid());
 		if (pwd) {
 			user_name = xstrdup(pwd->pw_name);
 		} else {

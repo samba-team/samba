@@ -150,7 +150,7 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
 
   /* add in the root encrypted password. On any system where security is taken
      seriously this will be secret */
-  pw = getpwnam("root");
+  pw = sys_getpwnam("root");
   if (pw && pw->pw_passwd) {
 	  int i;
 	  unsigned char md4_tmp[16];

@@ -70,7 +70,7 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	*err_str = '\0';
 	*msg_str = '\0';
 
-	pwd = getpwnam(user_name);
+	pwd = sys_getpwnam(user_name);
 	
 	/*
 	 * Check for a local account.

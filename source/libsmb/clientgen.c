@@ -1399,7 +1399,17 @@ size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t
 	int total = -1;
 	int issued=0;
 	int received=0;
-	int mpx = MAX(cli->max_mux-1, 1);
+/*
+ * There is a problem in this code when mpx is more than one.
+ * for some reason files can get corrupted when being read.
+ * Until we understand this fully I am serializing reads (one
+ * read/one reply) for now. JRA.
+ */
+#if 0
+	int mpx = MAX(cli->max_mux-1, 1); 
+#else
+	int mpx = 1;
+#endif
 	int block = (cli->max_xmit - (smb_size+32)) & ~1023;
 	int mid;
 	int blocks = (size + (block-1)) / block;

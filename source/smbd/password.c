@@ -276,7 +276,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   DEBUG(3, ("Clearing default real name\n"));
   fstrcpy(vuser->real_name, "<Full Name>\0");
   if (lp_unix_realname()) {
-    if ((pwfile=getpwnam(vuser->name))!= NULL)
+    if ((pwfile=sys_getpwnam(vuser->name))!= NULL)
       {
       DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
       fstrcpy(vuser->real_name, pwfile->pw_gecos);
