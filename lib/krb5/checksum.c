@@ -1,4 +1,5 @@
 #include <krb5_locl.h>
+#include <crc.h>
 
 RCSID("$Id$");
 
