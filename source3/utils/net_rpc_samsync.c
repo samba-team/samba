@@ -156,7 +156,7 @@ int rpc_samdump(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PIPE_NETLOGON)) {
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -669,7 +669,7 @@ int rpc_vampire(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PIPE_NETLOGON)) {
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}

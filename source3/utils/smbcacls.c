@@ -83,7 +83,7 @@ static BOOL cacls_open_policy_hnd(void)
 
 	if (!global_hack_cli) {
 		global_hack_cli = connect_one("IPC$");
-		if (!cli_nt_session_open (global_hack_cli, PIPE_LSARPC)) {
+		if (!cli_nt_session_open (global_hack_cli, PI_LSARPC)) {
 				return False;
 		}
 	}

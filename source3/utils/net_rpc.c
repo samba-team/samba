@@ -71,7 +71,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	}
 
 
-	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open (cli, PI_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
 	}
@@ -117,7 +117,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
  * @return A shell status integer (0 for success)
  */
 
-static int run_rpc_command(struct cli_state *cli_arg, const char *pipe_name, int conn_flags,
+static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
                            rpc_command_fn fn,
                            int argc, const char **argv) 
 {
@@ -146,8 +146,8 @@ static int run_rpc_command(struct cli_state *cli_arg, const char *pipe_name, int
 		return -1;
 	}
 	
-	if (!cli_nt_session_open(cli, pipe_name)) {
-		DEBUG(0, ("Could not initialise %s pipe\n", pipe_name));
+	if (!cli_nt_session_open(cli, pipe_idx)) {
+		DEBUG(0, ("Could not initialise pipe\n"));
 	}
 	
 	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
@@ -209,7 +209,7 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cl
 
 static int rpc_changetrustpw(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_changetrustpw_internals,
+	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_changetrustpw_internals,
 			       argc, argv);
 }
 
@@ -277,7 +277,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 static int net_rpc_join_oldstyle(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_join_oldstyle_internals,
+	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_join_oldstyle_internals,
 			       argc, argv);
 }
 
@@ -400,7 +400,7 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
  **/
 int net_rpc_info(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_info_internals,
 			       argc, argv);
 }
@@ -449,7 +449,7 @@ rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
  **/
 int net_rpc_getsid(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+	return run_rpc_command(NULL, PI_SAMR, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
 			       rpc_getsid_internals,
 			       argc, argv);
 }
@@ -553,7 +553,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 
 static int rpc_user_add(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_SAMR, 0, rpc_user_add_internals,
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_add_internals,
 			       argc, argv);
 }
 
@@ -654,7 +654,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 static int rpc_user_delete(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_SAMR, 0, rpc_user_del_internals,
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_del_internals,
 			       argc, argv);
 }
 
@@ -756,7 +756,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 static int rpc_user_info(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_SAMR, 0, rpc_user_info_internals,
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_user_info_internals,
 			       argc, argv);
 }
 
@@ -851,7 +851,7 @@ int net_rpc_user(int argc, const char **argv)
 		if (opt_long_list_entries) {
 		} else {
 		}
-			return run_rpc_command(NULL,PIPE_SAMR, 0, 
+			return run_rpc_command(NULL,PI_SAMR, 0, 
 					       rpc_user_list_internals,
 					       argc, argv);
 	}
@@ -1002,7 +1002,7 @@ int net_rpc_group(int argc, const char **argv)
 		if (opt_long_list_entries) {
 		} else {
 		}
-		return run_rpc_command(NULL, PIPE_SAMR, 0, 
+		return run_rpc_command(NULL, PI_SAMR, 0, 
 				       rpc_group_list_internals,
 				       argc, argv);
 	}
@@ -1060,7 +1060,7 @@ static int rpc_share_add(int argc, const char **argv)
 		DEBUG(1,("Sharename or path not specified on add\n"));
 		return rpc_share_usage(argc, argv);
 	}
-	return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_share_add_internals,
 			       argc, argv);
 }
@@ -1106,7 +1106,7 @@ static int rpc_share_delete(int argc, const char **argv)
 		DEBUG(1,("Sharename not specified on delete\n"));
 		return rpc_share_usage(argc, argv);
 	}
-	return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_share_del_internals,
 			       argc, argv);
 }
@@ -1196,7 +1196,7 @@ int net_rpc_share(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+		return run_rpc_command(NULL, PI_SRVSVC, 0, 
 				       rpc_share_list_internals,
 				       argc, argv);
 
@@ -1250,7 +1250,7 @@ static int rpc_file_close(int argc, const char **argv)
 		return(rpc_file_usage(argc, argv));
 	}
 
-	return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_file_close_internals,
 			       argc, argv);
 }
@@ -1341,7 +1341,7 @@ static int rpc_file_user(int argc, const char **argv)
 		return(rpc_file_usage(argc, argv));
 	}
 
-	return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+	return run_rpc_command(NULL, PI_SRVSVC, 0, 
 			       rpc_file_list_internals,
 			       argc, argv);
 }
@@ -1366,7 +1366,7 @@ int net_rpc_file(int argc, const char **argv)
 	};
 
 	if (argc == 0)
-		return run_rpc_command(NULL, PIPE_SRVSVC, 0, 
+		return run_rpc_command(NULL, PI_SRVSVC, 0, 
 				       rpc_file_list_internals,
 				       argc, argv);
 
@@ -1421,7 +1421,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct c
 
 static int rpc_shutdown_abort(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_WINREG, 0, rpc_shutdown_abort_internals,
+	return run_rpc_command(NULL, PI_WINREG, 0, rpc_shutdown_abort_internals,
 			       argc, argv);
 }
 
@@ -1511,7 +1511,7 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 
 static int rpc_shutdown(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PIPE_WINREG, 0, rpc_shutdown_internals,
+	return run_rpc_command(NULL, PI_WINREG, 0, rpc_shutdown_internals,
 				       argc, argv);
 }
 
@@ -1602,7 +1602,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 
 static int rpc_trustdom_add(int argc, const char **argv)
 {
-	return run_rpc_command(NULL, PIPE_SAMR, 0, rpc_trustdom_add_internals,
+	return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_add_internals,
 			       argc, argv);
 }
 
@@ -1718,7 +1718,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * note: It is now used only to get unicode domain name
 	 */
 	
-	if (!cli_nt_session_open(cli, PIPE_WKSSVC)) {
+	if (!cli_nt_session_open(cli, PI_WKSSVC)) {
 		DEBUG(0, ("Couldn't not initialise wkssvc pipe\n"));
 		return -1;
 	}
@@ -1751,7 +1751,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
 		cli_shutdown(cli);
 		return -1;
@@ -1929,7 +1929,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 
-	if (!cli_nt_session_open(cli, PIPE_LSARPC)) {
+	if (!cli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
 		return -1;
 	};
@@ -2008,7 +2008,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/*
 	 * Open \PIPE\samr and get needed policy handles
 	 */
-	if (!cli_nt_session_open(cli, PIPE_SAMR)) {
+	if (!cli_nt_session_open(cli, PI_SAMR)) {
 		DEBUG(0, ("Could not initialise samr pipe\n"));
 		return -1;
 	};
@@ -2080,7 +2080,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			remote_cli = net_make_ipc_connection(NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS);
 			if (remote_cli) {			
 				/* query for domain's sid */
-				if (run_rpc_command(remote_cli, PIPE_LSARPC, 0, rpc_query_domain_sid, argc, argv))
+				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
 					d_printf("couldn't get domain's sid\n");
 
 				cli_shutdown(remote_cli);

@@ -88,7 +88,7 @@ static void cmd_reg_enum(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -247,7 +247,7 @@ static void cmd_reg_query_key(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -410,7 +410,7 @@ static void cmd_reg_create_val(struct client_info *info)
 	dump_data(10, (char *)value.buffer, value.buf_len);
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
@@ -489,7 +489,7 @@ static void cmd_reg_delete_val(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, keyname, parent_name,
@@ -564,7 +564,7 @@ static void cmd_reg_delete_key(struct client_info *info)
 	}
 	
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, parent_name, key_name,
@@ -653,7 +653,7 @@ static void cmd_reg_create_key(struct client_info *info)
 	sam_access.mask = SEC_RIGHTS_READ;
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, parent_key, parent_name,
@@ -732,7 +732,7 @@ static void cmd_reg_test_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -827,7 +827,7 @@ static void cmd_reg_get_key_sec(struct client_info *info)
 	}
 
 	/* open WINREG session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
+	res = res ? cli_nt_session_open(smb_cli, PI_WINREG) : False;
 
 	/* open registry receive a policy handle */
 	res = res ? do_reg_connect(smb_cli, full_keyname, key_name,
@@ -973,10 +973,10 @@ struct cmd_set reg_commands[] = {
 
 	{ "REG"  },
 
-	{ "shutdown",		cmd_reg_shutdown,		PIPE_WINREG, "Remote Shutdown",
+	{ "shutdown",		cmd_reg_shutdown,		PI_WINREG, "Remote Shutdown",
 				"[-m message] [-t timeout] [-r] [-f] (-r == reboot, -f == force)" },
 				
-	{ "abortshutdown",	cmd_reg_abort_shutdown,		PIPE_WINREG, "Abort Shutdown",
+	{ "abortshutdown",	cmd_reg_abort_shutdown,		PI_WINREG, "Abort Shutdown",
 				"" },				
 /*
 	{ "regenum",		cmd_reg_enum,			"Registry Enumeration",
