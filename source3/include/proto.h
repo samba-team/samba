@@ -158,7 +158,6 @@ int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
-int sys_statvfs( const char *path, SMB_STRUCT_STATVFS *fsd);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
 int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
