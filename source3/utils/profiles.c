@@ -391,7 +391,7 @@ typedef struct acl_struct {
 
 #define OFF(f) (0x1000 + (f) + 4) 
 
-void print_sid(DOM_SID *sid);
+static void print_sid(DOM_SID *sid);
 
 int verbose = 1;
 DOM_SID old_sid, new_sid;
