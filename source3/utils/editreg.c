@@ -1,6 +1,7 @@
 /* 
    Samba Unix/Linux SMB client utility editreg.c 
    Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
+   Copyright (C) 2003 Jelmer Vernooij (conversion to popt)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -307,6 +308,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <sys/mman.h>
 #include <string.h>
 #include <fcntl.h>
+#include "popt.h"
 
 static int verbose = 0;
 
@@ -1993,69 +1995,53 @@ int print_val(const char *path, char *val_name, int val_type, int data_len,
   return 1;
 }
 
-void usage(void)
-{
-  fprintf(stderr, "Usage: editreg [-v] [-k] [-c <command-file>] <registryfile>\n");
-  fprintf(stderr, "Version: 0.1\n\n");
-  fprintf(stderr, "\n\t-v\t sets verbose mode");
-  fprintf(stderr, "\n\t-c <command-file>\t specifies a command file");
-  fprintf(stderr, "\n");
-}
-
 int main(int argc, char *argv[])
 {
   REGF *regf;
-  extern char *optarg;
-  extern int optind;
   int opt;
-  int commands = 0;
-  char *cmd_file = NULL;
+  static char *cmd_file = NULL;
+  poptContext pc;
+  struct poptOption long_options[] = {
+	POPT_AUTOHELP
+	{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "Sets verbose mode" },
+	{ "command-file", 'c', POPT_ARG_STRING, &cmd_file, 'c', "Specifies a command file" },
+	{ 0, 0, 0, 0 }
+  };
 
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
-  
-  /* 
-   * Now, process the arguments
-   */
+  pc = poptGetContext("editreg", argc, (const char **)argv, long_options, 
+					  POPT_CONTEXT_KEEP_FIRST);
 
-  while ((opt = getopt(argc, argv, "vkc:")) != EOF) {
-    switch (opt) {
-    case 'c':
-      commands = 1;
-      cmd_file = optarg;
-      break;
+  poptSetOtherOptionHelp(pc, "<registry-file>");
 
-    case 'v':
-      verbose++;
-      break;
+  while((opt = poptGetNextOpt(pc)) != -1)
+	  switch(opt) {
+	  case 'v':
+		  verbose++;
+		  break;
+	  }
 
-    case 'k':
-      break;
+  poptGetArg(pc); /* For argv[0] */
 
-    default:
-      usage();
-      exit(1);
-      break;
-    }
+  if (!poptPeekArg(pc)) {
+	poptPrintUsage(pc, stderr, 0);
+	exit(1);
   }
 
   if ((regf = nt_create_regf()) == NULL) {
-    fprintf(stderr, "Could not create registry object: %s\n", strerror(errno));
-    exit(2);
+	  fprintf(stderr, "Could not create registry object: %s\n", strerror(errno));
+	  exit(2);
   }
 
-  if (!nt_set_regf_input_file(regf, argv[optind])) {
+  if (!nt_set_regf_input_file(regf, poptPeekArg(pc))) {
     fprintf(stderr, "Could not set name of registry file: %s, %s\n", 
-	    argv[1], strerror(errno));
+	    poptPeekArg(pc), strerror(errno));
     exit(3);
   }
 
   /* Now, open it, and bring it into memory :-) */
 
   if (nt_load_registry(regf) < 0) {
-    fprintf(stderr, "Could not load registry: %s\n", argv[1]);
+    fprintf(stderr, "Could not load registry: %s\n", poptPeekArg(pc));
     exit(4);
   }
 
@@ -2065,5 +2051,6 @@ int main(int argc, char *argv[])
    */
 
   nt_key_iterator(regf, regf->root, 0, "", print_key, print_sec, print_val);
+  poptFreeContext(pc);
   return 0;
 }
