@@ -128,7 +128,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
-	a.in.username = talloc_asprintf(p->mem_ctx, "%s$", workstation);
+	a.in.account_name = talloc_asprintf(p->mem_ctx, "%s$", workstation);
 	a.in.secure_channel_type = chan_type;
 	a.in.computer_name = workstation;
 	a.in.negotiate_flags = &negotiate_flags;

@@ -56,16 +56,6 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
 #define DCESRV_INTERFACE_NETLOGON_BIND netlogon_bind
 #define DCESRV_INTERFACE_NETLOGON_UNBIND netlogon_unbind
 
-/* 
-  netr_ServerReqChallenge 
-
-	NTSTATUS netr_ServerReqChallenge(
-		[in]         unistr *server_name,
-		[in]         unistr computer_name,
-		[in,out,ref] netr_Credential *credentials
-		);
-
-*/
 static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
@@ -113,32 +103,12 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 	return NT_STATUS_OK;
 }
 
-
-/* 
-  netr_ServerAuthenticate 
-
-	 secure channel types:
- 
-	const int SEC_CHAN_WKSTA   = 2;
-	const int SEC_CHAN_DOMAIN  = 4;
-	const int SEC_CHAN_BDC     = 6;
-
-	NTSTATUS netr_ServerAuthenticate3(
-		[in]         unistr *server_name,
-		[in]         unistr username,
-		[in]         uint16 secure_channel_type,
-		[in]         unistr computer_name,
-		[in,out,ref] netr_Credential *credentials
-		[in,out,ref] uint32 *negotiate_flags,
-		[out,ref]    uint32 *rid
-		);
-*/
 static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate3 *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
 	void *sam_ctx;
-	uint8_t *mach_pwd;
+	struct samr_Password *mach_pwd;
 	uint16_t acct_flags;
 	int num_records;
 	struct ldb_message **msgs;
@@ -162,17 +132,17 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	/* pull the user attributes */
 	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   r->in.username);
+				   r->in.account_name);
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
-			 r->in.username));
+			 r->in.account_name));
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records > 1) {
-		DEBUG(1,("Found %d records matching user [%s]\n", num_records, r->in.username));
+		DEBUG(1,("Found %d records matching user [%s]\n", num_records, r->in.account_name));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -181,7 +151,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 					     "userAccountControl");
 
 	if (acct_flags & ACB_DISABLED) {
-		DEBUG(1, ("Account [%s] is disabled\n", r->in.username));
+		DEBUG(1, ("Account [%s] is disabled\n", r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -242,7 +212,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		talloc_free(pipe_state->mem_ctx, pipe_state->account_name);
 	}
 
-	pipe_state->account_name = talloc_strdup(pipe_state->mem_ctx, r->in.username);
+	pipe_state->account_name = talloc_strdup(pipe_state->mem_ctx, r->in.account_name);
 	
 	if (pipe_state->computer_name) {
 		/* We don't want a memory leak on this long-lived talloc context */
@@ -265,7 +235,7 @@ static NTSTATUS netr_ServerAuthenticate(struct dcesrv_call_state *dce_call, TALL
 	uint32 negotiate_flags, rid;
 
 	r3.in.server_name = r->in.server_name;
-	r3.in.username = r->in.username;
+	r3.in.account_name = r->in.account_name;
 	r3.in.secure_channel_type = r->in.secure_channel_type;
 	r3.in.computer_name = r->in.computer_name;
 	r3.in.credentials = r->in.credentials;
@@ -284,7 +254,7 @@ static NTSTATUS netr_ServerAuthenticate2(struct dcesrv_call_state *dce_call, TAL
 	uint32 rid;
 
 	r3.in.server_name = r->in.server_name;
-	r3.in.username = r->in.username;
+	r3.in.account_name = r->in.account_name;
 	r3.in.secure_channel_type = r->in.secure_channel_type;
 	r3.in.computer_name = r->in.computer_name;
 	r3.in.credentials = r->in.credentials;
@@ -309,20 +279,7 @@ static BOOL netr_creds_server_step_check(struct server_pipe_state *pipe_state,
 				       return_authenticator);
 }
 
-/* 
- netr_ServerPasswordSet 
 
- 	NTSTATUS netr_ServerPasswordSet(
-		[in]  unistr *server_name,
-		[in]  unistr username,
-		[in]  uint16 secure_channel_type,
-		[in]  unistr computer_name,
-		[in]  netr_Authenticator credential,
-		[in]  netr_Password new_password,
-		[out] netr_Authenticator return_authenticator
-		);
-
-*/
 static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				       struct netr_ServerPasswordSet *r)
 {

@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#define TEST_USERNAME "samrtorturetest"
+#define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"
 #define TEST_GROUPNAME "samrtorturetestgroup"
 #define TEST_MACHINENAME "samrtorturetestmach$"
@@ -281,11 +281,11 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	TEST_USERINFO_NAME(21, logon_script, 21, logon_script, "xx21-21 logon_script", 
 			   SAMR_FIELD_LOGON_SCRIPT);
 
-	TEST_USERINFO_NAME(12, profile,  3, profile, "xx12-3 profile", 0);
-	TEST_USERINFO_NAME(12, profile,  5, profile, "xx12-5 profile", 0);
-	TEST_USERINFO_NAME(12, profile, 21, profile, "xx12-21 profile", 0);
-	TEST_USERINFO_NAME(21, profile, 21, profile, "xx21-21 profile", 
-			   SAMR_FIELD_PROFILE);
+	TEST_USERINFO_NAME(12, profile_path,  3, profile_path, "xx12-3 profile_path", 0);
+	TEST_USERINFO_NAME(12, profile_path,  5, profile_path, "xx12-5 profile_path", 0);
+	TEST_USERINFO_NAME(12, profile_path, 21, profile_path, "xx12-21 profile_path", 0);
+	TEST_USERINFO_NAME(21, profile_path, 21, profile_path, "xx21-21 profile_path", 
+			   SAMR_FIELD_PROFILE_PATH);
 
 	TEST_USERINFO_NAME(13, description,  1, description, "xx13-1 description", 0);
 	TEST_USERINFO_NAME(13, description,  5, description, "xx13-5 description", 0);
@@ -741,7 +741,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
-	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_USERNAME, &user_handle);
+	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_ACCOUNT_NAME, &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -804,7 +804,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	printf("Testing OemChangePasswordUser2\n");
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	account.name = TEST_USERNAME;
+	account.name = TEST_ACCOUNT_NAME;
 
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
@@ -847,7 +847,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ChangePasswordUser2\n");
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_samr_Name(&account, TEST_USERNAME);
+	init_samr_Name(&account, TEST_ACCOUNT_NAME);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -900,7 +900,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing ChangePasswordUser3\n");
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
-	init_samr_Name(&account, TEST_USERNAME);
+	init_samr_Name(&account, TEST_ACCOUNT_NAME);
 
 	E_md4hash(oldpass, old_nt_hash);
 	E_md4hash(newpass, new_nt_hash);
@@ -1354,26 +1354,26 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Name name;
 	BOOL ret = True;
 
-	init_samr_Name(&name, TEST_USERNAME);
+	init_samr_Name(&name, TEST_ACCOUNT_NAME);
 
 	r.in.handle = domain_handle;
-	r.in.username = &name;
+	r.in.account_name = &name;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.acct_handle = user_handle;
 	r.out.rid = &rid;
 
-	printf("Testing CreateUser(%s)\n", r.in.username->name);
+	printf("Testing CreateUser(%s)\n", r.in.account_name->name);
 
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("Server refused create of '%s'\n", r.in.username->name);
+		printf("Server refused create of '%s'\n", r.in.account_name->name);
 		ZERO_STRUCTP(user_handle);
 		return True;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.username->name)) {
+		if (!test_DeleteUser_byname(p, mem_ctx, domain_handle, r.in.account_name->name)) {
 			return False;
 		}
 		status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
@@ -1474,9 +1474,9 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		const char *account_name;
 		NTSTATUS nt_status;
 	} account_types[] = {
-		{ ACB_NORMAL, TEST_USERNAME, NT_STATUS_OK },
-		{ ACB_NORMAL | ACB_DISABLED, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
-		{ ACB_NORMAL | ACB_PWNOEXP, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_NORMAL, TEST_ACCOUNT_NAME, NT_STATUS_OK },
+		{ ACB_NORMAL | ACB_DISABLED, TEST_ACCOUNT_NAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_NORMAL | ACB_PWNOEXP, TEST_ACCOUNT_NAME, NT_STATUS_INVALID_PARAMETER },
 		{ ACB_WSTRUST, TEST_MACHINENAME, NT_STATUS_OK },
 		{ ACB_WSTRUST | ACB_DISABLED, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
 		{ ACB_WSTRUST | ACB_PWNOEXP, TEST_MACHINENAME, NT_STATUS_INVALID_PARAMETER },
@@ -1486,8 +1486,8 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		{ ACB_DOMTRUST, TEST_DOMAINNAME, NT_STATUS_OK },
 		{ ACB_DOMTRUST | ACB_DISABLED, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
 		{ ACB_DOMTRUST | ACB_PWNOEXP, TEST_DOMAINNAME, NT_STATUS_INVALID_PARAMETER },
-		{ 0, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
-		{ ACB_DISABLED, TEST_USERNAME, NT_STATUS_INVALID_PARAMETER },
+		{ 0, TEST_ACCOUNT_NAME, NT_STATUS_INVALID_PARAMETER },
+		{ ACB_DISABLED, TEST_ACCOUNT_NAME, NT_STATUS_INVALID_PARAMETER },
 		{ 0, NULL, NT_STATUS_INVALID_PARAMETER }
 	};
 
@@ -1498,23 +1498,23 @@ static BOOL test_CreateUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		init_samr_Name(&name, account_types[i].account_name);
 
 		r.in.handle = handle;
-		r.in.username = &name;
+		r.in.account_name = &name;
 		r.in.acct_flags = acct_flags;
 		r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 		r.out.acct_handle = &acct_handle;
 		r.out.access_granted = &access_granted;
 		r.out.rid = &rid;
 		
-		printf("Testing CreateUser2(%s)\n", r.in.username->name);
+		printf("Testing CreateUser2(%s)\n", r.in.account_name->name);
 		
 		status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
 		
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			printf("Server refused create of '%s'\n", r.in.username->name);
+			printf("Server refused create of '%s'\n", r.in.account_name->name);
 			continue;
 
 		} else if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.username->name)) {
+			if (!test_DeleteUser_byname(p, mem_ctx, handle, r.in.account_name->name)) {
 				return False;
 			}
 			status = dcerpc_samr_CreateUser2(p, mem_ctx, &r);
@@ -2008,7 +2008,7 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 
 		r.in.handle = handle;
 		r.in.level = levels[i];
-		init_samr_Name(&r.in.name, TEST_USERNAME);
+		init_samr_Name(&r.in.name, TEST_ACCOUNT_NAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
 
@@ -2049,7 +2049,7 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 
 		r.in.handle = handle;
 		r.in.level = levels[i];
-		init_samr_Name(&r.in.name, TEST_USERNAME);
+		init_samr_Name(&r.in.name, TEST_ACCOUNT_NAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
 		if (ok_lvl[i] && 
@@ -2469,7 +2469,7 @@ static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	uint32_t rid;
 
-	status = test_LookupName(p, mem_ctx, domain_handle, TEST_USERNAME, &rid);
+	status = test_LookupName(p, mem_ctx, domain_handle, TEST_ACCOUNT_NAME, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
