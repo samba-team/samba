@@ -462,7 +462,7 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
 	LOGIN_CACHE	*cache_entry = NULL;
-	int pwHistLen;
+	uint32 		pwHistLen;
 	pstring		tmpstring;
 
 	/*
@@ -694,8 +694,8 @@ static BOOL init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 
 	if (ldap_state->is_nds_ldap) {
 		char *user_dn;
-		size_t pwd_len;
-		uchar clear_text_pw[512];
+		int pwd_len;
+		char clear_text_pw[512];
 
 		/* Make call to Novell eDirectory ldap extension to get clear text password.
 			NOTE: This will only work if we have an SSL connection to eDirectory. */
@@ -1086,14 +1086,15 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		}
 
 		if (need_update(sampass, PDB_PWHISTORY)) {
-			int pwHistLen = 0;
+			uint32 pwHistLen = 0;
 			account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 			if (pwHistLen == 0) {
 				/* Remove any password history from the LDAP store. */
 				memset(temp, '0', 64); /* NOTE !!!! '0' *NOT '\0' */
 				temp[64] = '\0';
 			} else {
-				int i, currHistLen = 0;
+				int i; 
+				uint32 currHistLen = 0;
 				const uint8 *pwhist = pdb_get_pw_history(sampass, &currHistLen);
 				if (pwhist != NULL) {
 					/* We can only store (sizeof(pstring)-1)/64 password history entries. */
@@ -1122,7 +1123,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 	}
 
 	if (need_update(sampass, PDB_HOURS)) {
-		const char *hours = pdb_get_hours(sampass);
+		const uint8 *hours = pdb_get_hours(sampass);
 		if (hours) {
 			pdb_sethexhours(temp, hours);
 			smbldap_make_mod(ldap_state->smbldap_state->ldap_struct,
