@@ -1,3 +1,37 @@
+2003-01-15  Love  <lha@stacken.kth.se>
+
+	* lib/krb5/krb5.conf.5: write more about [realms] REALM = { kdc =
+	... }
+
+	* lib/krb5/aes-test.c: test vectors in aes-draft
+	
+	* lib/krb5/Makefile.am: add aes-test.c
+
+	* lib/krb5/crypto.c: Add support for AES
+	(draft-raeburn-krb-rijndael-krb-02), not enabled by default.
+	(HMAC_SHA1_DES3_checksum): rename to SP_HMAC_SHA1_checksum and modify
+	to support checksumtype that are have a shorter wireformat then
+	their output block size.
+	
+	* lib/krb5/crypto.c (struct encryption_type): split the blocksize
+	into blocksize and padsize, padsize is the minimum padding
+	size. they are the same for now
+	(enctype_*): add padsize
+	(encrypt_internal): use padsize
+	(encrypt_internal_derived): use padsize
+	(wrapped_length): use padsize
+	(wrapped_length_dervied): use padsize
+
+	* lib/krb5/crypto.c: add extra `opaque' argument to string_to_key
+	function for each enctype in preparation enctypes that uses
+	`Encryption and Checksum Specifications for Kerberos 5' draft
+	
+	* lib/asn1/k5.asn1: add checksum and enctype for AES from
+	draft-raeburn-krb-rijndael-krb-02.txt
+
+	* lib/krb5/krb5.h (krb5_keytype): add KEYTYPE_AES128,
+	KEYTYPE_AES256
+
 2003-01-14  Love  <lha@it.su.se>
 
 	* lib/hdb/common.c (_hdb_fetch): handle error code from
