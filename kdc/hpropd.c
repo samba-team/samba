@@ -149,6 +149,7 @@ dump_krb4(krb5_context context, hdb_entry *ent, int fd)
 }
 #endif /* KRB4 */
 
+static int inetd_flag = -1;
 static int help_flag;
 static int version_flag;
 static int print_dump;
@@ -162,6 +163,8 @@ struct getargs args[] = {
     { "database", 'd', arg_string, &database, "database", "file" },
     { "stdin",    'n', arg_flag, &from_stdin, "read from stdin" },
     { "print",	    0, arg_flag, &print_dump, "print dump to stdout" },
+    { "inetd",	   'i',	arg_negative_flag,	&inetd_flag,
+      "Not started from inetd" },
 #ifdef KRB4
     { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
 #endif
@@ -235,27 +238,34 @@ main(int argc, char **argv)
     if(from_stdin)
 	fd = STDIN_FILENO;
     else {
-	mini_inetd (krb5_getportbyname (context, "hprop", "tcp",
-					HPROP_PORT));
+	struct sockaddr_storage ss;
+	struct sockaddr *sa = (struct sockaddr *)&ss;
+	int sin_len = sizeof(ss);
+	char addr_name[256];
+
 	fd = STDIN_FILENO;
-	{
-	    int sin_len;
-	    struct sockaddr_storage ss;
-	    struct sockaddr *sa = (struct sockaddr *)&ss;
-	    char addr_name[256];
-
-	    sin_len = sizeof(ss);
-	    if(getpeername(fd, sa, &sin_len) < 0)
-		krb5_err(context, 1, errno, "getpeername");
-	    if (inet_ntop(sa->sa_family,
-			  socket_get_address (sa),
-			  addr_name,
-			  sizeof(addr_name)) == NULL)
-		strcpy_truncate (addr_name, "unknown address",
-				 sizeof(addr_name));
-
-	    krb5_log(context, fac, 0, "Connection from %s", addr_name);
+	if (inetd_flag == -1) {
+	    if (getpeername (fd, sa, &sin_len) < 0)
+		inetd_flag = 0;
+	    else
+		inetd_flag = 1;
 	}
+	if (!inetd_flag) {
+	    mini_inetd (krb5_getportbyname (context, "hprop", "tcp",
+					    HPROP_PORT));
+	}
+	sin_len = sizeof(ss);
+	if(getpeername(fd, sa, &sin_len) < 0)
+	    krb5_err(context, 1, errno, "getpeername");
+
+	if (inet_ntop(sa->sa_family,
+		      socket_get_address (sa),
+		      addr_name,
+		      sizeof(addr_name)) == NULL)
+	    strcpy_truncate (addr_name, "unknown address",
+			     sizeof(addr_name));
+
+	krb5_log(context, fac, 0, "Connection from %s", addr_name);
     
 	gethostname(hostname, sizeof(hostname));
 	ret = krb5_sname_to_principal(context, hostname, HPROP_NAME,
