@@ -764,6 +764,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 /*******************************************************************
  * init a structure.
  ********************************************************************/
+
 BOOL make_spoolss_q_addprinterex(
 	TALLOC_CTX *mem_ctx,
 	SPOOL_Q_ADDPRINTEREX *q_u, 
@@ -784,12 +785,10 @@ BOOL make_spoolss_q_addprinterex(
 	
 	q_u->info.level = level;
 	q_u->info.info_ptr = (ctr->printers_2!=NULL)?1:0;
-	switch (level)
-	{
+	switch (level) {
 		case 2:
 			/* init q_u->info.info2 from *info */
-			if (!make_spoolss_printer_info_2(mem_ctx, &q_u->info.info_2, ctr->printers_2))
-			{
+			if (!make_spoolss_printer_info_2(mem_ctx, &q_u->info.info_2, ctr->printers_2)) {
 				DEBUG(0,("make_spoolss_q_addprinterex: Unable to fill SPOOL_Q_ADDPRINTEREX struct!\n"));
 				return False;
 			}
@@ -832,8 +831,7 @@ BOOL make_spoolss_printer_info_2(
 	SPOOL_PRINTER_INFO_LEVEL_2 *inf;
 
 	/* allocate the necessary memory */
-	if (!(inf=(SPOOL_PRINTER_INFO_LEVEL_2*)talloc(mem_ctx, sizeof(SPOOL_PRINTER_INFO_LEVEL_2))))
-	{
+	if (!(inf=(SPOOL_PRINTER_INFO_LEVEL_2*)talloc(mem_ctx, sizeof(SPOOL_PRINTER_INFO_LEVEL_2)))) {
 		DEBUG(0,("make_spoolss_printer_info_2: Unable to allocate SPOOL_PRINTER_INFO_LEVEL_2 sruct!\n"));
 		return False;
 	}
@@ -2721,6 +2719,7 @@ static BOOL spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUFFER 
  move a BUFFER from the query to the reply.
  As the data pointers in NEW_BUFFER are malloc'ed, not talloc'ed,
  this is ok. This is an OPTIMIZATION and is not strictly neccessary.
+ Clears the memory to zero also.
 ********************************************************************/  
 
 void spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
@@ -2728,8 +2727,8 @@ void spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 	prs_switch_type(&src->prs, MARSHALL);
 	if(!prs_set_offset(&src->prs, 0))
 		return;
-	prs_force_dynamic(&(src->prs));
-
+	prs_force_dynamic(&src->prs);
+	prs_mem_clear(&src->prs);
 	*dest=src;
 }
 

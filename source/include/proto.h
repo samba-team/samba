@@ -2750,6 +2750,7 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io);
 BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout);
 void prs_mem_free(prs_struct *ps);
+void prs_mem_clear(prs_struct *ps);
 char *prs_alloc_mem(prs_struct *ps, size_t size);
 TALLOC_CTX *prs_get_mem_context(prs_struct *ps);
 void prs_give_memory(prs_struct *ps, char *buf, uint32 size, BOOL is_dynamic);
