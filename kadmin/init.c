@@ -114,7 +114,7 @@ init(int argc, char **argv)
     char *realm_max_rlife = NULL;
     HDB *db;
     int optind = 0;
-    unsigned max_life, max_rlife;
+    krb5_deltat max_life, max_rlife;
 
     args[0].value = &realm_max_life;
     args[1].value = &realm_max_rlife;
