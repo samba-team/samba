@@ -78,9 +78,49 @@ struct pyconv py_DRIVER_DIRECTORY_1[] = {
 	{ NULL }
 };
 
-static uint16 *to_dependentfiles(PyObject *dict)
+static uint16 *to_dependentfiles(PyObject *list, TALLOC_CTX *mem_ctx)
 {
-	return (uint16 *)"abcd\0";
+	uint32 elements, size=0, pos=0, i;
+	char *str;
+	uint16 *ret = NULL;
+	PyObject *borrowedRef;
+
+	if (!PyList_Check(list)) {
+		goto done;
+	}
+
+	/* calculate size for dependentfiles */
+	elements=PyList_Size(list);
+	for (i = 0; i < elements; i++) {
+		borrowedRef=PyList_GetItem(list, i);
+		if (!PyString_Check(borrowedRef)) 
+			/* non string found, return error */
+			goto done;
+		size+=PyString_Size(borrowedRef)+1;
+	}
+
+	if (!(ret = (uint16*) talloc(mem_ctx,(size+1)*sizeof(uint16))))
+		goto done;
+
+	/* create null terminated sequence of null terminated strings */
+	for (i = 0; i < elements; i++) {
+		borrowedRef=PyList_GetItem(list, i);
+		str=PyString_AsString(borrowedRef);
+		do {
+			if (pos >= size) {
+				/* dependentfiles too small.  miscalculated? */
+				ret = NULL;
+				goto done;
+			}
+			SSVAL(&ret[pos], 0, str[0]);
+			pos++;
+		} while (*(str++));
+	}
+	/* final null */
+	ret[pos]='\0';
+
+done:
+	return ret;	
 }
 
 BOOL py_from_DRIVER_INFO_1(PyObject **dict, DRIVER_INFO_1 *info)
@@ -122,16 +162,17 @@ BOOL py_from_DRIVER_INFO_3(PyObject **dict, DRIVER_INFO_3 *info)
 	return True;
 }
 
-BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict)
+BOOL py_to_DRIVER_INFO_3(DRIVER_INFO_3 *info, PyObject *dict,
+			 TALLOC_CTX *mem_ctx)
 {
 	PyObject *obj, *dict_copy = PyDict_Copy(dict);
 	BOOL result = False;
 
-	if (!(obj = PyDict_GetItemString(dict_copy, "dependent_files")) ||
-	    !PyList_Check(obj))
+	if (!(obj = PyDict_GetItemString(dict_copy, "dependent_files")))
 		goto done;
 
-	info->dependentfiles = to_dependentfiles(obj);
+	if (!(info->dependentfiles = to_dependentfiles(obj, mem_ctx)))
+		goto done;
 
 	PyDict_DelItemString(dict_copy, "dependent_files");
 
