@@ -49,6 +49,8 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
+	pvfs_xattr_unlink_hook(pvfs, name->full_name);
+
 	status = pvfs_resolve_name(pvfs, req, md->t2mkdir.in.path, 0, &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -104,6 +106,8 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 	if (mkdir(name->full_name, mode) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
+
+	pvfs_xattr_unlink_hook(pvfs, name->full_name);
 
 	return NT_STATUS_OK;
 }
