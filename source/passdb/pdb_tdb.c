@@ -669,7 +669,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_methods *my_methods, SAM_ACCOUNT *use
 	return tdbsam_getsampwnam (my_methods, user, name);
 }
 
-static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
+static BOOL tdbsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))

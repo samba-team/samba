@@ -1032,7 +1032,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
 
-BOOL pdb_getsampwsid(SAM_ACCOUNT * user, DOM_SID *sid)
+BOOL pdb_getsampwsid(SAM_ACCOUNT * user, const DOM_SID *sid)
 {
 	uint32 rid;
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
