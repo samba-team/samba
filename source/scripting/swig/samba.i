@@ -25,7 +25,7 @@
 */
 
 %typemap(in) uint32 {
-	if (!PyInt_Check($input)) {
+	if (!PyInt_Check($input) && !PyLong_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "integer expected");
 		return NULL;
 	}
@@ -37,6 +37,5 @@
 }
 
 %typemap(out) NTSTATUS {
-        $result = PyInt_FromLong(NT_STATUS_V($1));
+        $result = PyLong_FromLong(NT_STATUS_V($1));
 }
-
