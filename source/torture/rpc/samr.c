@@ -2594,6 +2594,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Connect3 r3;
 	struct samr_Connect4 r4;
 	struct samr_Connect5 r5;
+	union samr_ConnectInfo info;
 	BOOL ret = True;
 
 	printf("testing samr_Connect\n");
@@ -2610,7 +2611,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing samr_Connect2\n");
 
-	r2.in.system_name = "";
+	r2.in.system_name = NULL;
 	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r2.out.handle = handle;
 
@@ -2622,7 +2623,7 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing samr_Connect3\n");
 
-	r3.in.system_name = "";
+	r3.in.system_name = NULL;
 	r3.in.unknown = 0;
 	r3.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r3.out.handle = handle;
@@ -2648,21 +2649,20 @@ static BOOL test_Connect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	printf("testing samr_Connect5\n");
 
+	info.info1.unknown1 = 0;
+	info.info1.unknown2 = 0;
+
 	r5.in.system_name = "";
 	r5.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r5.in.unknown0 = 1; /*Magic values I took from a WinXP pro workstation       */
-	r5.in.unknown1 = 1; /*tests failed with NT_STATUS_NET_WRITE_FAULT if         */
-	r5.in.unknown2 = 3; /*unknown0 and unknown1 where something other than 1     */
-	r5.in.unknown3 = 0; /*unkown2 and unknown3 could be varied and had no effect */
+	r5.in.level = 1;
+	r5.in.info = &info;
+	r5.out.info = &info;
 	r5.out.handle = handle;
 
 	status = dcerpc_samr_Connect5(p, mem_ctx, &r5);
 	if (!NT_STATUS_IS_OK(status)) {
-		/*This fails for a Win2000pro machine, but succeeds for
-		  WinXPpro  --  Kai
-		 */
 		printf("Connect5 failed - %s\n", nt_errstr(status));
-		/*ret = False; Should this test fail? */
+		ret = False;
 	}
 
 	return ret;
