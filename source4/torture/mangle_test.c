@@ -82,7 +82,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 	}
 
 	/* see if the short name is already in the tdb */
-	data = tdb_fetch_by_string(tdb, shortname);
+	data = tdb_fetch_bystring(tdb, shortname);
 	if (data.dptr) {
 		/* maybe its a duplicate long name? */
 		if (strcasecmp(name, data.dptr) != 0) {
@@ -98,7 +98,7 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		/* store it for later */
 		namedata.dptr = name;
 		namedata.dsize = strlen(name)+1;
-		tdb_store_by_string(tdb, shortname, namedata, TDB_REPLACE);
+		tdb_store_bystring(tdb, shortname, namedata, TDB_REPLACE);
 	}
 
 	return True;

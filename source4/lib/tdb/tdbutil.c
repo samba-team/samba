@@ -266,7 +266,7 @@ BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
  on failure.
 ****************************************************************************/
 
-int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
+int tdb_store_bystring(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int flags)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 	
@@ -278,7 +278,7 @@ int tdb_store_by_string(TDB_CONTEXT *tdb, const char *keystr, TDB_DATA data, int
  free() on the result dptr.
 ****************************************************************************/
 
-TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
+TDB_DATA tdb_fetch_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
@@ -289,7 +289,7 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, const char *keystr)
  Delete an entry using a null terminated string key. 
 ****************************************************************************/
 
-int tdb_delete_by_string(TDB_CONTEXT *tdb, const char *keystr)
+int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
 {
 	TDB_DATA key = make_tdb_data(keystr, strlen(keystr)+1);
 
@@ -311,7 +311,7 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldva
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
 		/* The lookup failed */
 		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
-			/* but not becouse it didn't exist */
+			/* but not because it didn't exist */
 			goto err_out;
 		}
 		
@@ -352,7 +352,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
 		/* It failed */
 		if (tdb_error(tdb) != TDB_ERR_NOEXIST) { 
-			/* and not becouse it didn't exist */
+			/* and not because it didn't exist */
 			goto err_out;
 		}
 
@@ -387,6 +387,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
 size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
+	uint8 bt;
 	uint16 w;
 	uint32 d;
 	int i;
@@ -402,44 +403,50 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 
 	while (*fmt) {
 		switch ((c = *fmt++)) {
-		case 'w':
+		case 'b': /* unsigned 8-bit integer */
+			len = 1;
+			bt = (uint8)va_arg(ap, int);
+			if (bufsize && bufsize >= len)
+				SSVAL(buf, 0, bt);
+			break;
+		case 'w': /* unsigned 16-bit integer */
 			len = 2;
 			w = (uint16)va_arg(ap, int);
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, w);
 			break;
-		case 'd':
+		case 'd': /* signed 32-bit integer (standard int in most systems) */
 			len = 4;
 			d = va_arg(ap, uint32);
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
-		case 'p':
+		case 'p': /* pointer */
 			len = 4;
 			p = va_arg(ap, void *);
 			d = p?1:0;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				SIVAL(buf, 0, d);
 			break;
-		case 'P':
+		case 'P': /* null-terminated string */
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				memcpy(buf, s, len);
 			break;
-		case 'f':
+		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
 			w = strlen(s);
 			len = w + 1;
-			if (bufsize >= len)
+			if (bufsize && bufsize >= len)
 				memcpy(buf, s, len);
 			break;
-		case 'B':
+		case 'B': /* fixed-length string */
 			i = va_arg(ap, int);
 			s = va_arg(ap, char *);
 			len = 4+i;
-			if (bufsize >= len) {
+			if (bufsize && bufsize >= len) {
 				SIVAL(buf, 0, i);
 				memcpy(buf+4, s, i);
 			}
@@ -452,7 +459,10 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 		}
 
 		buf += len;
-		bufsize -= len;
+		if (bufsize)
+			bufsize -= len;
+		if (bufsize < 0)
+			bufsize = 0;
 	}
 
 	va_end(ap);
@@ -471,6 +481,7 @@ size_t tdb_pack(char *buf, int bufsize, const char *fmt, ...)
 int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
+	uint8 *bt;
 	uint16 *w;
 	uint32 *d;
 	int len;
@@ -486,6 +497,13 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 	
 	while (*fmt) {
 		switch ((c=*fmt++)) {
+		case 'b':
+			len = 1;
+			bt = va_arg(ap, uint8 *);
+			if (bufsize < len)
+				goto no_space;
+			*bt = SVAL(buf, 0);
+			break;
 		case 'w':
 			len = 2;
 			w = va_arg(ap, uint16 *);
@@ -561,6 +579,67 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 
  no_space:
 	return -1;
+}
+
+
+/**
+ * Pack SID passed by pointer
+ *
+ * @param pack_buf pointer to buffer which is to be filled with packed data
+ * @param bufsize size of packing buffer
+ * @param sid pointer to sid to be packed
+ *
+ * @return length of the packed representation of the whole structure
+ **/
+size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
+{
+	int idx;
+	size_t len = 0;
+	
+	if (!sid || !pack_buf) return -1;
+	
+	len += tdb_pack(pack_buf + len, bufsize - len, "bb", sid->sid_rev_num,
+	                sid->num_auths);
+	
+	for (idx = 0; idx < 6; idx++) {
+		len += tdb_pack(pack_buf + len, bufsize - len, "b", sid->id_auth[idx]);
+	}
+	
+	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
+		len += tdb_pack(pack_buf + len, bufsize - len, "d", sid->sub_auths[idx]);
+	}
+	
+	return len;
+}
+
+
+/**
+ * Unpack SID into a pointer
+ *
+ * @param pack_buf pointer to buffer with packed representation
+ * @param bufsize size of the buffer
+ * @param sid pointer to sid structure to be filled with unpacked data
+ *
+ * @return size of structure unpacked from buffer
+ **/
+size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
+{
+	int idx, len = 0;
+	
+	if (!sid || !pack_buf) return -1;
+
+	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
+	                  &sid->sid_rev_num, &sid->num_auths);
+			  
+	for (idx = 0; idx < 6; idx++) {
+		len += tdb_unpack(pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
+	}
+	
+	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
+		len += tdb_unpack(pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
+	}
+	
+	return len;
 }
 
 /****************************************************************************
@@ -665,7 +744,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	return list;
 
-};
+}
 
 
 /**
@@ -679,9 +758,8 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 	
 	while (node) {
 		next_node = node->next;
+		SAFE_FREE(node->node_key.dptr);
 		SAFE_FREE(node);
 		node = next_node;
-	};
-};
-
-
+	}
+}

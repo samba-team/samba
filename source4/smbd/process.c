@@ -817,10 +817,6 @@ void smbd_process_init(void)
 	if (!init_change_notify())
 		exit(1);
 
-	/* Setup privileges database */
-	if (!privilege_init())
-		exit(1);
-
 	/* Setup the NTVFS subsystem */
 	if (!ntvfs_init())
 		exit(1);
