@@ -315,12 +315,14 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 										 CONFIG_TABLE_DEFAULT));
 	}
 
-	pdb_sql_int_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_ACCTCTRL)) {
+		pdb_sql_int_field(&query,
 						config_value_write(location, "acct ctrl column",
 										   CONFIG_ACCT_CTRL_DEFAULT),
 						pdb_get_acct_ctrl(newpwd));
+	}
 
-	if (pdb_get_init_flags(newpwd, PDB_LOGONTIME) != PDB_DEFAULT) {
+	if (IS_SAM_CHANGED(newpwd, PDB_LOGONTIME)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "logon time column",
@@ -328,7 +330,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_logon_time(newpwd));
 	}
 
-	if (pdb_get_init_flags(newpwd, PDB_LOGOFFTIME) != PDB_DEFAULT) {
+	if (IS_SAM_CHANGED(newpwd, PDB_LOGOFFTIME)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "logoff time column",
@@ -336,7 +338,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_logoff_time(newpwd));
 	}
 
-	if (pdb_get_init_flags(newpwd, PDB_KICKOFFTIME) != PDB_DEFAULT) {
+	if (IS_SAM_CHANGED(newpwd, PDB_KICKOFFTIME)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "kickoff time column",
@@ -344,7 +346,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_kickoff_time(newpwd));
 	}
 
-	if (pdb_get_init_flags(newpwd, PDB_CANCHANGETIME) != PDB_DEFAULT) {
+	if (IS_SAM_CHANGED(newpwd, PDB_CANCHANGETIME)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "pass can change time column",
@@ -352,7 +354,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_pass_can_change_time(newpwd));
 	}
 
-	if (pdb_get_init_flags(newpwd, PDB_MUSTCHANGETIME) != PDB_DEFAULT) {
+	if (IS_SAM_CHANGED(newpwd, PDB_MUSTCHANGETIME)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "pass must change time column",
@@ -360,7 +362,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_pass_must_change_time(newpwd));
 	}
 
-	if (pdb_get_pass_last_set_time(newpwd)) {
+	if (IS_SAM_CHANGED(newpwd, PDB_PASSLASTSET)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "pass last set time column",
@@ -368,7 +370,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_pass_last_set_time(newpwd));
 	}
 
-	if (pdb_get_hours_len(newpwd)) {
+	if (IS_SAM_CHANGED(newpwd, PDB_HOURSLEN)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "hours len column",
@@ -376,7 +378,7 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_hours_len(newpwd));
 	}
 
-	if (pdb_get_logon_divs(newpwd)) {
+	if (IS_SAM_CHANGED(newpwd, PDB_LOGONDIVS)) {
 		pdb_sql_int_field(&query,
 							config_value_write(location,
 											   "logon divs column",
@@ -384,85 +386,113 @@ char *sql_account_query_update(const char *location, const SAM_ACCOUNT *newpwd, 
 							pdb_get_logon_divs(newpwd));
 	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_USERSID)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "user sid column",
 											  CONFIG_USER_SID_DEFAULT),
 						   sid_to_string(sid_str, 
 										 pdb_get_user_sid(newpwd)));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_GROUPSID)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "group sid column",
 											  CONFIG_GROUP_SID_DEFAULT),
 						   sid_to_string(sid_str,
 										 pdb_get_group_sid(newpwd)));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "username column",
 											  CONFIG_USERNAME_DEFAULT),
 						   pdb_get_username(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_DOMAIN)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "domain column",
 											  CONFIG_DOMAIN_DEFAULT),
 						   pdb_get_domain(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_USERNAME)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "nt username column",
 											  CONFIG_NT_USERNAME_DEFAULT),
 						   pdb_get_nt_username(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_FULLNAME)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "fullname column",
 											  CONFIG_FULLNAME_DEFAULT),
 						   pdb_get_fullname(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_LOGONSCRIPT)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "logon script column",
 											  CONFIG_LOGON_SCRIPT_DEFAULT),
 						   pdb_get_logon_script(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_PROFILE)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "profile path column",
 											  CONFIG_PROFILE_PATH_DEFAULT),
 						   pdb_get_profile_path(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_DRIVE)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "dir drive column",
 											  CONFIG_DIR_DRIVE_DEFAULT),
 						   pdb_get_dir_drive(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_SMBHOME)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "home dir column",
 											  CONFIG_HOME_DIR_DEFAULT),
 						   pdb_get_homedir(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_WORKSTATIONS)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "workstations column",
 											  CONFIG_WORKSTATIONS_DEFAULT),
 						   pdb_get_workstations(newpwd));
+	}
 
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_UNKNOWNSTR)) {
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "unknown string column",
 											  CONFIG_UNKNOWN_STR_DEFAULT),
 						   pdb_get_workstations(newpwd));
+	}
 
-	pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
-				  pdb_get_acct_ctrl(newpwd));
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_LMPASSWD)) {
+		pdb_sethexpwd(temp, pdb_get_lanman_passwd(newpwd),
+					  pdb_get_acct_ctrl(newpwd));
+		pdb_sql_string_field(&query,
 						   config_value_write(location,
 											  "lanman pass column",
 											  CONFIG_LM_PW_DEFAULT), temp);
+	}
 
-	pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
-				  pdb_get_acct_ctrl(newpwd));
-	pdb_sql_string_field(&query,
+	if (IS_SAM_CHANGED(newpwd, PDB_NTPASSWD)) {
+		pdb_sethexpwd(temp, pdb_get_nt_passwd(newpwd),
+					  pdb_get_acct_ctrl(newpwd));
+		pdb_sql_string_field(&query,
 						   config_value_write(location, "nt pass column",
 											  CONFIG_NT_PW_DEFAULT), temp);
+	}
 
 	if (query.update) {
 		query.part1[strlen(query.part1) - 1] = '\0';
