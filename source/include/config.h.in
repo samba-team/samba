@@ -858,6 +858,9 @@
 /* Define if you have the <nss_common.h> header file.  */
 #undef HAVE_NSS_COMMON_H
 
+/* Define if you have the <nsswitch.h> header file.  */
+#undef HAVE_NSSWITCH_H
+
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
