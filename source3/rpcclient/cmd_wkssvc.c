@@ -61,7 +61,7 @@ void cmd_wks_query_info(struct client_info *info)
 		info_level = strtoul(tmp, (char**)NULL, 10);
 	}
 
-	DEBUG(4,("cmd_wks_query_info: server:%s info level: %D\n",
+	DEBUG(4,("cmd_wks_query_info: server:%s info level: %d\n",
 				dest_wks, info_level));
 
 	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));

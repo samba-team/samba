@@ -267,13 +267,7 @@ void cmd_sam_query_user(struct client_info *info)
 	DOM_SID sid1;
 	int user_idx;
 	BOOL res = True;
-	BOOL request_user_info  = False;
-	BOOL request_group_info = False;
-	uint16 num_entries = 0;
-	uint16 unk_0 = 0x0;
-	uint16 unk_1 = 0x0;
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
-	uint16 acb_mask = 0;
 	fstring rid_str ;
 	fstring info_str;
 	uint32 user_rid = 0;
@@ -442,15 +436,9 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	fstring domain;
 	fstring sid;
 	DOM_SID sid1;
-	int user_idx;
 	BOOL res = True;
-	BOOL res2 = True;
 	BOOL request_user_info  = False;
 	BOOL request_alias_info = False;
-	uint16 num_entries = 0;
-	uint16 unk_0 = 0x0;
-	uint16 acb_mask = 0;
-	uint16 unk_1 = 0x0;
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring tmp;
 
