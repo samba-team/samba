@@ -282,14 +282,16 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 	GROUP_INFO_CTR group_ctr;
 	fstring			server;	
 	TALLOC_CTX		*mem_ctx;
+	uint32 group_rid;
 	
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc != 2) {
+		printf("Usage: %s rid\n", argv[0]);
 		return 0;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
+	group_rid = atoi(argv[1]);
+
+	if (!(mem_ctx=talloc_init())) {
 		DEBUG(0,("cmd_samr_query_group: talloc_init returned NULL!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -324,7 +326,7 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
 					  MAXIMUM_ALLOWED_ACCESS,
-					  0x202, &group_pol))
+					  group_rid, &group_pol))
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -333,8 +335,8 @@ static uint32 cmd_samr_query_group(struct cli_state *cli, int argc, char **argv)
 
 	ZERO_STRUCT(group_ctr);
 
-	if ((result = cli_samr_query_groupinfo(cli, mem_ctx, &group_pol, info_level,
-					       &group_ctr)) 
+	if ((result = cli_samr_query_groupinfo(cli, mem_ctx, &group_pol, 
+					       info_level, &group_ctr)) 
 	    != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
@@ -902,4 +904,3 @@ struct cmd_set samr_commands[] = {
 
 	{ NULL, NULL, NULL }
 };
-
