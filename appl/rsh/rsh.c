@@ -620,7 +620,7 @@ main(int argc, char **argv)
     size_t cmd_len;
     struct passwd *pwd;
     char *local_user;
-    char *host;
+    char *host = NULL;
     int host_index = -1;
 
     priv_port1 = priv_port2 = IPPORT_RESERVED-1;
@@ -660,11 +660,12 @@ main(int argc, char **argv)
 	return 0;
     }
 	
-    if (host == NULL)
+    if (host == NULL) {
 	if (argc - optind < 2)
 	    usage (1);
 	else
 	    host = argv[host_index = optind++];
+    }
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
