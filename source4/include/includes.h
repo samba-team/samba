@@ -355,29 +355,6 @@
 
 #endif
 
-#if defined(HAVE_RPC_RPC_H)
-/*
- * Check for AUTH_ERROR define conflict with rpc/rpc.h in prot.h.
- */
-#if defined(HAVE_SYS_SECURITY_H) && defined(HAVE_RPC_AUTH_ERROR_CONFLICT)
-#undef AUTH_ERROR
-#endif
-#include <rpc/rpc.h>
-#endif
-
-#if defined(HAVE_YP_GET_DEFAULT_DOMAIN) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT) && defined(HAVE_GETNETGRENT)
-#define HAVE_NETGROUP 1
-#endif
-
-#if defined (HAVE_NETGROUP)
-#if defined(HAVE_RPCSVC_YP_PROT_H)
-#include <rpcsvc/yp_prot.h>
-#endif
-#if defined(HAVE_RPCSVC_YPCLNT_H)
-#include <rpcsvc/ypclnt.h>
-#endif
-#endif /* HAVE_NETGROUP */
-
 #if defined(HAVE_SYS_IPC_H)
 #include <sys/ipc.h>
 #endif /* HAVE_SYS_IPC_H */
@@ -479,7 +456,7 @@ typedef int socklen_t;
 #define uint8 unsigned char
 #endif
 
-#if !defined(int16) && !defined(HAVE_INT16_FROM_RPC_RPC_H)
+#if !defined(int16)
 #if (SIZEOF_SHORT == 4)
 #define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
 #else /* SIZEOF_SHORT != 4 */
@@ -487,12 +464,8 @@ typedef int socklen_t;
 #endif /* SIZEOF_SHORT != 4 */
 #endif
 
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int16 may be a typedef from rpc/rpc.h
- */
 
-#if !defined(uint16) && !defined(HAVE_UINT16_FROM_RPC_RPC_H)
+#if !defined(uint16)
 #if (SIZEOF_SHORT == 4)
 #define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
 #else /* SIZEOF_SHORT != 4 */
@@ -500,7 +473,7 @@ typedef int socklen_t;
 #endif /* SIZEOF_SHORT != 4 */
 #endif
 
-#if !defined(int32) && !defined(HAVE_INT32_FROM_RPC_RPC_H)
+#if !defined(int32)
 #if (SIZEOF_INT == 4)
 #define int32 int
 #elif (SIZEOF_LONG == 4)
@@ -513,12 +486,8 @@ typedef int socklen_t;
 #endif
 #endif
 
-/*
- * Note we duplicate the size tests in the unsigned 
- * case as int32 may be a typedef from rpc/rpc.h
- */
 
-#if !defined(uint32) && !defined(HAVE_UINT32_FROM_RPC_RPC_H)
+#if !defined(uint32)
 #if (SIZEOF_INT == 4)
 #define uint32 unsigned int
 #elif (SIZEOF_LONG == 4)

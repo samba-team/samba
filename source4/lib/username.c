@@ -179,35 +179,6 @@ struct passwd *Get_Pwnam(const char *user)
 }
 
 /****************************************************************************
- Check if a user is in a netgroup user list.
-****************************************************************************/
-
-static BOOL user_in_netgroup_list(const char *user, const char *ngname)
-{
-#ifdef HAVE_NETGROUP
-	/*	static char *mydomain = NULL; */
-	/* REWRITE: make thread safe if caching */
-	char *mydomain = NULL;
-	/*if (mydomain == NULL) */
-		yp_get_default_domain(&mydomain);
-
-	if(mydomain == NULL) {
-		DEBUG(5,("Unable to get default yp domain\n"));
-		return False;
-	}
-
-	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		user, mydomain, ngname));
-	DEBUG(5,("innetgr is %s\n", innetgr(ngname, NULL, user, mydomain)
-		? "TRUE" : "FALSE"));
-
-	if (innetgr(ngname, NULL, user, mydomain))
-		return (True);
-#endif /* HAVE_NETGROUP */
-	return False;
-}
-
-/****************************************************************************
  Check if a user is in a winbind group.
 ****************************************************************************/
   
@@ -398,8 +369,6 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 			 * Old behaviour. Check netgroup list
 			 * followed by UNIX list.
 			 */
-			if(user_in_netgroup_list(user, *list +1))
-				return True;
 			if(user_in_group_list(user, *list +1, groups, n_groups))
 				return True;
 		} else if (**list == '+') {
@@ -410,9 +379,6 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				 */
 				if(user_in_group_list(user, *list +2, groups, n_groups))
 					return True;
-				if(user_in_netgroup_list(user, *list +2))
-					return True;
-
 			} else {
 
 				/*
@@ -429,15 +395,7 @@ BOOL user_in_list(const char *user,const char **list, gid_t *groups, size_t n_gr
 				/*
 				 * Search netgroup list followed by UNIX list.
 				 */
-				if(user_in_netgroup_list(user, *list +2))
-					return True;
 				if(user_in_group_list(user, *list +2, groups, n_groups))
-					return True;
-			} else {
-				/*
-				 * Just search netgroup list.
-				 */
-				if(user_in_netgroup_list(user, *list +1))
 					return True;
 			}
 		} else if (!name_is_local(*list)) {
