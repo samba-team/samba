@@ -788,6 +788,8 @@ static void usage(void)
 \t-G username             change group ownership of a file\n\
 \t-n                      don't resolve sids or masks to names\n\
 \t-h                      print help\n\
+\t-d debuglevel           set debug output level\n\
+\t-U username             user to autheticate as\n\
 \n\
 The username can be of the form username%%password or\n\
 workgroup\\username%%password.\n\n\
@@ -855,7 +857,7 @@ You can string acls together with spaces, commas or newlines\n\
 		}
 	}
 
-	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:t")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:td:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -909,6 +911,10 @@ You can string acls together with spaces, commas or newlines\n\
 			usage();
 			talloc_destroy(ctx);
 			exit(EXIT_PARSE_ERROR);
+
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
