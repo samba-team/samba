@@ -468,7 +468,7 @@ static BOOL init_structs(void)
    */
   /* Work out the max number of netbios aliases that we have */
   ptr = lp_netbios_aliases();
-  for( namecount=0; next_token(&ptr,nbname,NULL); namecount++ )
+  for( namecount=0; next_token(&ptr,nbname,NULL, sizeof(nbname)); namecount++ )
     ;
   if ( *global_myname )
     namecount++;
@@ -487,7 +487,7 @@ static BOOL init_structs(void)
     my_netbios_names[namecount++] = global_myname;
   
   ptr = lp_netbios_aliases();
-  while ( next_token( &ptr, nbname, NULL ) )
+  while ( next_token( &ptr, nbname, NULL, sizeof(nbname) ) )
   {
     strupper( nbname );
     /* Look for duplicates */

@@ -448,7 +448,7 @@ static void cmd_cd(char *inbuf,char *outbuf)
 {
   fstring buf;
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     do_cd(buf);
   else
     DEBUG(0,("Current directory is %s\n",CNV_LANG(cur_dir)));
@@ -1033,7 +1033,7 @@ static void cmd_dir(char *inbuf,char *outbuf)
   if(mask[strlen(mask)-1]!='\\')
     pstrcat(mask,"\\");
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     {
       if (*p == '\\')
 	pstrcpy(mask,p);
@@ -1463,14 +1463,14 @@ static void cmd_get(char *dum_in, char *dum_out)
 
   p = rname + strlen(rname);
 
-  if (!next_token(NULL,p,NULL)) {
+  if (!next_token(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
     DEBUG(0,("get <filename>\n"));
     return;
   }
   pstrcpy(lname,p);
   dos_clean_name(rname);
     
-  next_token(NULL,lname,NULL);
+  next_token(NULL,lname,NULL,sizeof(lname));
 
   do_get(rname,lname,NULL);
 }
@@ -1577,7 +1577,7 @@ static void cmd_more(char *dum_in, char *dum_out)
 	   "%s/smbmore.%d",tmpdir(),(int)getpid());
   fstrcpy(lname,tmpname);
 
-  if (!next_token(NULL,rname+strlen(rname),NULL)) {
+  if (!next_token(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
     DEBUG(0,("more <filename>\n"));
     return;
   }
@@ -1612,7 +1612,7 @@ static void cmd_mget(char *inbuf,char *outbuf)
 
   abort_mget = False;
 
-  while (next_token(NULL,p,NULL))
+  while (next_token(NULL,p,NULL,sizeof(buf)))
     {
       pstrcpy(mget_mask,cur_dir);
       if(mget_mask[strlen(mget_mask)-1]!='\\')
@@ -1692,7 +1692,7 @@ static void cmd_mkdir(char *inbuf,char *outbuf)
   
   pstrcpy(mask,cur_dir);
 
-  if (!next_token(NULL,p,NULL))
+  if (!next_token(NULL,p,NULL,sizeof(buf)))
     {
       if (!recurse)
 	DEBUG(0,("mkdir <dirname>\n"));
@@ -1983,14 +1983,14 @@ static void cmd_put(char *dum_in, char *dum_out)
   pstrcat(rname,"\\");
   
   
-  if (!next_token(NULL,p,NULL))
+  if (!next_token(NULL,p,NULL,sizeof(buf)))
     {
       DEBUG(0,("put <filename>\n"));
       return;
     }
   pstrcpy(lname,p);
   
-  if (next_token(NULL,p,NULL))
+  if (next_token(NULL,p,NULL,sizeof(buf)))
     pstrcat(rname,p);      
   else
     pstrcat(rname,lname);
@@ -2040,7 +2040,7 @@ static BOOL seek_list(FILE *f,char *name)
 static void cmd_select(char *dum_in, char *dum_out)
 {
   pstrcpy(fileselection,"");
-  next_token(NULL,fileselection,NULL);
+  next_token(NULL,fileselection,NULL,sizeof(fileselection));
 }
 
 
@@ -2058,7 +2058,7 @@ static void cmd_mput(char *dum_in, char *dum_out)
   finfo = def_finfo;
 
   
-  while (next_token(NULL,p,NULL))
+  while (next_token(NULL,p,NULL,sizeof(buf)))
     {
       struct stat st;
       pstring cmd;
@@ -2197,14 +2197,14 @@ static void cmd_cancel(char *inbuf,char *outbuf )
       DEBUG(0,("Trying to cancel print jobs without -P may fail\n"));
     }
 
-  if (!next_token(NULL,buf,NULL)) {
+  if (!next_token(NULL,buf,NULL,sizeof(buf))) {
     printf("cancel <jobid> ...\n");
     return;
   }
   do {
     job = atoi(buf);
     do_cancel(job);
-  } while (next_token(NULL,buf,NULL));
+  } while (next_token(NULL,buf,NULL,sizeof(buf)));
 }
 
 
@@ -2228,7 +2228,7 @@ static void cmd_print(char *inbuf,char *outbuf )
       DEBUG(0,("Trying to print without -P may fail\n"));
     }
 
-  if (!next_token(NULL,lname,NULL))
+  if (!next_token(NULL,lname,NULL, sizeof(lname)))
     {
       DEBUG(0,("print <filename>\n"));
       return;
@@ -2699,7 +2699,7 @@ static void cmd_del(char *inbuf,char *outbuf )
   
   pstrcpy(mask,cur_dir);
     
-  if (!next_token(NULL,buf,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("del <filename>\n"));
       return;
@@ -2721,7 +2721,7 @@ static void cmd_rmdir(char *inbuf,char *outbuf )
   
   pstrcpy(mask,cur_dir);
   
-  if (!next_token(NULL,buf,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("rmdir <dirname>\n"));
       return;
@@ -2763,7 +2763,8 @@ static void cmd_rename(char *inbuf,char *outbuf )
   pstrcpy(src,cur_dir);
   pstrcpy(dest,cur_dir);
   
-  if (!next_token(NULL,buf,NULL) || !next_token(NULL,buf2,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+      !next_token(NULL,buf2,NULL, sizeof(buf2)))
     {
       DEBUG(0,("rename <src> <dest>\n"));
       return;
@@ -2817,7 +2818,7 @@ static void cmd_newer(char *dum_in, char *dum_out)
   BOOL ok;
   struct stat sbuf;
 
-  ok = next_token(NULL,buf,NULL);
+  ok = next_token(NULL,buf,NULL,sizeof(buf));
   if (ok && (sys_stat(buf,&sbuf) == 0))
     {
       newer_than = sbuf.st_mtime;
@@ -2838,7 +2839,7 @@ static void cmd_archive(char *dum_in, char *dum_out)
 {
   fstring buf;
 
-  if (next_token(NULL,buf,NULL)) {
+  if (next_token(NULL,buf,NULL,sizeof(buf))) {
     archive_level = atoi(buf);
   } else
     DEBUG(0,("Archive level is %d\n",archive_level));
@@ -2884,7 +2885,7 @@ static void cmd_printmode(char *dum_in, char *dum_out)
   fstring buf;
   fstring mode;
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     {
       if (strequal(buf,"text"))
 	printmode = 0;      
@@ -2921,7 +2922,7 @@ static void cmd_lcd(char *dum_in, char *dum_out)
   fstring buf;
   pstring d;
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     sys_chdir(buf);
   DEBUG(2,("the local directory is now %s\n",GetWd(d)));
 }
@@ -3299,7 +3300,7 @@ void cmd_help(char *dum_in, char *dum_out)
   int i=0,j;
   fstring buf;
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     {
       if ((i = process_tok(buf)) >= 0)
 	DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
@@ -3398,7 +3399,7 @@ static BOOL process(char *base_directory)
       /* and get the first part of the command */
       {
 	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
+	if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
       }
 
       if ((i = process_tok(tok)) >= 0)
@@ -3438,7 +3439,7 @@ static BOOL process(char *base_directory)
       /* and get the first part of the command */
       {
 	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
+	if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
       }
 
       if ((i = process_tok(tok)) >= 0)

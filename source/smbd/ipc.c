@@ -658,7 +658,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       p = q;			/* reset string pointer */
       fgets(p,8191,f);
       p[strlen(p)-1]='\0';
-      if (next_token(&p,tok,":") &&
+      if (next_token(&p,tok,":",sizeof(tok)) &&
         (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
         (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 	ok=1;
@@ -666,9 +666,9 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
     fclose(f);
 
     /* driver file name */
-    if (ok && !next_token(&p,driver,":")) ok = 0;
+    if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
     /* data file name */
-    if (ok && !next_token(&p,datafile,":")) ok = 0;
+    if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
       /*
        * for the next tokens - which may be empty - I have to check for empty
        * tokens first because the next_token function will skip all empty
@@ -679,7 +679,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       if (*p == ':') {
 	  *helpfile = '\0';
 	  p++;
-      } else if (!next_token(&p,helpfile,":")) ok = 0;
+      } else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
     }
 
     if (ok) {
@@ -687,11 +687,11 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
       if (*p == ':') {
 	  *langmon = '\0';
 	  p++;
-      } else if (!next_token(&p,langmon,":")) ok = 0;
+      } else if (!next_token(&p,langmon,":",sizeof(langmon))) ok = 0;
     }
 
     /* default data type */
-    if (ok && !next_token(&p,datatype,":")) ok = 0;
+    if (ok && !next_token(&p,datatype,":",sizeof(datatype))) ok = 0;
 
     if (ok) {
       PACKI(desc,"W",0x0400);                    /* don't know */
@@ -714,7 +714,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 	/* no need to check return value here - it was already tested in
 	 * get_printerdrivernumber
 	 */
-        next_token(&p,tok,",");
+        next_token(&p,tok,",",sizeof(tok));
         PACKS(desc,"z",tok);                        /* driver files to copy */
         DEBUG(3,("file:%s:\n",tok));
       }
@@ -755,7 +755,7 @@ int get_printerdrivernumber(int snum)
   {
     p = q;			/* reset string pointer */
     fgets(p,8191,f);
-    if (next_token(&p,tok,":") &&
+    if (next_token(&p,tok,":",sizeof(tok)) &&
       (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
 	ok=1;
   }
@@ -771,7 +771,7 @@ int get_printerdrivernumber(int snum)
       return(0);
 
     /* count the number of files */
-    while (next_token(&p,tok,","))
+    while (next_token(&p,tok,",",sizeof(tok)))
        i++;
   }
   free(q);
@@ -1021,10 +1021,10 @@ static int get_server_info(uint32 servertype,
     }
     s = &(*servers)[count];
     
-    if (!next_token(&ptr,s->name   , NULL)) continue;
-    if (!next_token(&ptr,stype     , NULL)) continue;
-    if (!next_token(&ptr,s->comment, NULL)) continue;
-    if (!next_token(&ptr,s->domain , NULL)) {
+    if (!next_token(&ptr,s->name   , NULL, sizeof(s->name))) continue;
+    if (!next_token(&ptr,stype     , NULL, sizeof(stype))) continue;
+    if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
+    if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
       /* this allows us to cope with an old nmbd */
       pstrcpy(s->domain,global_myworkgroup); 
     }

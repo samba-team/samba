@@ -2073,7 +2073,7 @@ void cmd_block(char *dum_in, char *dum_out)
   fstring buf;
   int block;
 
-  if (!next_token(NULL,buf,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("blocksize <n>\n"));
       return;
@@ -2097,7 +2097,7 @@ void cmd_tarmode(char *dum_in, char *dum_out)
 {
   fstring buf;
 
-  while (next_token(NULL,buf,NULL)) {
+  while (next_token(NULL,buf,NULL,sizeof(buf))) {
     if (strequal(buf, "full"))
       tar_inc=False;
     else if (strequal(buf, "inc"))
@@ -2143,7 +2143,7 @@ void cmd_setmode(char *dum_in, char *dum_out)
 
   attra[0] = attra[1] = 0;
 
-  if (!next_token(NULL,buf,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
       return;
@@ -2152,7 +2152,7 @@ void cmd_setmode(char *dum_in, char *dum_out)
   safe_strcpy(fname, cur_dir, sizeof(pstring));
   safe_strcat(fname, buf, sizeof(pstring));
 
-  while (next_token(NULL,buf,NULL)) {
+  while (next_token(NULL,buf,NULL,sizeof(buf))) {
     q=buf;
 
     while(*q)
@@ -2194,7 +2194,7 @@ void cmd_tar(char *inbuf, char *outbuf)
   char **argl;
   int argcl;
 
-  if (!next_token(NULL,buf,NULL))
+  if (!next_token(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbga] <filename>\n"));
       return;

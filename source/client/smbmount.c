@@ -326,7 +326,7 @@ static void cmd_mount(char *inbuf,char *outbuf)
 	int retval;
 	char mount_point[MAXPATHLEN+1];
 
-	if (!next_token(NULL, mpoint, NULL))
+	if (!next_token(NULL, mpoint, NULL, sizeof(mpoint)))
 	{
 		DEBUG(0,("You must supply a mount point\n"));
 		return;
@@ -350,7 +350,7 @@ static void cmd_mount(char *inbuf,char *outbuf)
 
 	slprintf(mount_command, sizeof(mount_command)-1,"smbmnt %s -s %s", mount_point, share_name);
 
-	while(next_token(NULL, buf, NULL))
+	while(next_token(NULL, buf, NULL, sizeof(buf)))
 	{
 		pstrcat(mount_command, " ");
 		pstrcat(mount_command, buf);
@@ -429,7 +429,7 @@ void cmd_help(char *dum_in, char *dum_out)
   int i=0,j;
   fstring buf;
 
-  if (next_token(NULL,buf,NULL))
+  if (next_token(NULL,buf,NULL,sizeof(buf)))
     {
       if ((i = process_tok(buf)) >= 0)
 	DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
@@ -527,7 +527,7 @@ static BOOL process(char *base_directory)
       /* and get the first part of the command */
       {
 	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
+	if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
       }
 
       if ((i = process_tok(tok)) >= 0)
@@ -567,7 +567,7 @@ static BOOL process(char *base_directory)
       /* and get the first part of the command */
       {
 	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
+	if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
       }
 
       if ((i = process_tok(tok)) >= 0)

@@ -558,7 +558,9 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 
 	if (sids_str == NULL || *sids_str == 0) return 0;
 
-	for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL) && count < max_sids; count++) 
+	for (count = 0, ptr = sids_str; 
+	     next_token(&ptr, s2, NULL, sizeof(s2)) && count < max_sids; 
+	     count++) 
 	{
                 DOM_SID tmpsid;
                 string_to_sid(&tmpsid, s2);

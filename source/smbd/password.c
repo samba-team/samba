@@ -934,7 +934,7 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 
         p = lp_passwordserver();
-        while(p && next_token( &p, desthost, LIST_SEP)) {
+        while(p && next_token( &p, desthost, LIST_SEP, sizeof(desthost))) {
 		standard_sub_basic(desthost);
 		strupper(desthost);
 
@@ -1214,7 +1214,7 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
    */
 
   p = lp_passwordserver();
-  while(p && next_token( &p, remote_machine, LIST_SEP)) {                       
+  while(p && next_token(&p,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 
     standard_sub_basic(remote_machine);
     strupper(remote_machine);

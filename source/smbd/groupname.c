@@ -125,10 +125,10 @@ void load_groupname_map(void)
     if (!*s || strchr("#;",*s))
       continue;
 
-    if(!next_token(&s,unixname, "\t\n\r="))
+    if(!next_token(&s,unixname, "\t\n\r=", sizeof(unixname)))
       continue;
 
-    if(!next_token(&s,windows_name, "\t\n\r="))
+    if(!next_token(&s,windows_name, "\t\n\r=", sizeof(windows_name)))
       continue;
 
     trim_string(unixname, " ", " ");

@@ -244,7 +244,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
     unsigned char b = 0;
 
     /* Get the 'lower' value. */
-    if(!next_token(&p, token_buf, NULL))
+    if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
       parse_error(buf, "cannot parse first value");
     if(!parse_byte( token_buf, &b))
       parse_error(buf, "first value doesn't resolve to a byte");
@@ -253,7 +253,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
     SCVAL(output_buf,CODEPAGE_HEADER_SIZE+(i*4),b);
 
     /* Get the 'upper' value. */
-    if(!next_token(&p, token_buf, NULL))
+    if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
       parse_error(buf, "cannot parse second value");
     if(!parse_byte( token_buf, &b))
       parse_error(buf, "second value doesn't resolve to a byte");
@@ -262,7 +262,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
     SCVAL(output_buf,CODEPAGE_HEADER_SIZE+(i*4) + 1,b);
 
     /* Get the 'upper to lower' value. */
-    if(!next_token(&p, token_buf, NULL))
+    if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
       parse_error(buf, "cannot parse third value");
     if(!parse_bool( token_buf, &b))
       parse_error(buf, "third value doesn't resolve to a boolean");
@@ -271,7 +271,7 @@ definition file. File %s has %d.\n", prog_name, MAXCODEPAGELINES, input_file, nu
     SCVAL(output_buf,CODEPAGE_HEADER_SIZE+(i*4) + 2,b);
 
     /* Get the 'lower to upper' value. */
-    if(!next_token(&p, token_buf, NULL))
+    if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
       parse_error(buf, "cannot parse fourth value");
     if(!parse_bool( token_buf, &b))
       parse_error(buf, "fourth value doesn't resolve to a boolean");

@@ -150,6 +150,8 @@ void sync_browse_lists(struct work_record *work,
 	CatchChild();
 	if ((s->pid = fork())) return;
 
+	BlockSignals( False, SIGTERM );
+
 	DEBUG(2,("Initiating browse sync for %s to %s(%s)\n",
 		 work->work_group, name, inet_ntoa(ip)));
 
@@ -239,11 +241,9 @@ static void complete_sync(struct sync_record *s)
 		
 		ptr = line;
 
-		DEBUG(9,("sync line [%s]\n", line));
-		
-		if (!next_token(&ptr,server,NULL) ||
-		    !next_token(&ptr,type_str,NULL) ||
-		    !next_token(&ptr,comment,NULL)) {
+		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
+		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||
+		    !next_token(&ptr,comment,NULL, sizeof(comment))) {
 			continue;
 		}
 

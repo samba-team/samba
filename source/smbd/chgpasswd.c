@@ -262,7 +262,7 @@ static int talktochild(int master, char *chatsequence)
   *buf = 0;
   sleep(1);
 
-  while (next_token(&ptr,chatbuf,NULL)) {
+  while (next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) {
     BOOL ok=True;
     count++;
     pwd_sub(chatbuf);
@@ -277,7 +277,7 @@ static int talktochild(int master, char *chatsequence)
       return(False);
     }
 
-    if (!next_token(&ptr,chatbuf,NULL)) break;
+    if (!next_token(&ptr,chatbuf,NULL,sizeof(chatbuf))) break;
     pwd_sub(chatbuf);
     if (!strequal(chatbuf,"."))
       writestring(master,chatbuf);
