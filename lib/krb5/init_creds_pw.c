@@ -87,7 +87,7 @@ init_cred (krb5_context context,
 	   krb5_creds *cred,
 	   krb5_principal client,
 	   krb5_deltat start_time,
-	   char *in_tkt_service,
+	   const char *in_tkt_service,
 	   krb5_get_init_creds_opt *options)
 {
     krb5_error_code ret;
@@ -208,7 +208,7 @@ get_init_creds_common(krb5_context context,
 		      krb5_creds *creds,
 		      krb5_principal client,
 		      krb5_deltat start_time,
-		      char *in_tkt_service,
+		      const char *in_tkt_service,
 		      krb5_get_init_creds_opt *options,
 		      krb5_addresses **addrs,
 		      krb5_enctype **etypes,
@@ -272,7 +272,7 @@ get_init_creds_common(krb5_context context,
 static krb5_error_code
 change_password (krb5_context context,
 		 krb5_principal client,
-		 char *password,
+		 const char *password,
 		 char *newpw,
 		 size_t newpw_sz,
 		 krb5_prompter_fct prompter,
@@ -374,11 +374,11 @@ krb5_error_code
 krb5_get_init_creds_password(krb5_context context,
 			     krb5_creds *creds,
 			     krb5_principal client,
-			     char *password,
+			     const char *password,
 			     krb5_prompter_fct prompter,
 			     void *data,
 			     krb5_deltat start_time,
-			     char *in_tkt_service,
+			     const char *in_tkt_service,
 			     krb5_get_init_creds_opt *options)
 {
     krb5_error_code ret;
@@ -545,7 +545,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 			   krb5_principal client,
 			   krb5_keytab keytab,
 			   krb5_deltat start_time,
-			   char *in_tkt_service,
+			   const char *in_tkt_service,
 			   krb5_get_init_creds_opt *options)
 {
     krb5_error_code ret;
