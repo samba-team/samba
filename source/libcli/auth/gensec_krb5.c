@@ -691,6 +691,16 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	return nt_status;
 }
 
+static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,
+				     uint32 feature)
+{
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		return True;
+	} 
+	
+	return False;
+}
+
 
 static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.name		= "krb5",
@@ -701,6 +711,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
+	.have_feature   = gensec_krb5_have_feature,
 };
 
 static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
@@ -712,6 +723,7 @@ static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 	.update 	= gensec_krb5_update,
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
+	.have_feature   = gensec_krb5_have_feature,
 };
 
 
