@@ -509,7 +509,7 @@ void set_dc_type_and_flags( struct winbindd_domain *domain )
 	
 done:
 	
-	/* close the connection;  no other cals use this pipe and it is called only
+	/* close the connection;  no other calls use this pipe and it is called only
 	   on reestablishing the domain list   --jerry */
 	
 	if ( conn.cli )
@@ -686,9 +686,9 @@ NTSTATUS cm_get_netlogon_cli(struct winbindd_domain *domain,
 	if ( sec_channel_type == SEC_CHAN_DOMAIN )
 		fstr_sprintf(conn->cli->mach_acct, "%s$", lp_workgroup());
 			
-		
+	/* This must be the remote domain (not ours) for schannel */
+
 	fstrcpy( conn->cli->domain, domain->name);
-       
 	
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	
