@@ -173,27 +173,25 @@ struct name_record *find_name_search(struct subnet_record **d,
 {
 	if (d == NULL) return NULL; /* bad error! */
 	
-    if ((search & FIND_LOCAL) == FIND_LOCAL)
-	{
-		if (*d != NULL)
-        {
-			struct name_record *n = find_name((*d)->namelist, name, search);
-			DEBUG(4,("find_name on local: %s %s search %x\n",
-						namestr(name),inet_ntoa(ip), search));
-			if (n) return n;
-		}
-	}
+    if (search & FIND_LOCAL) {
+      if (*d != NULL) {
+	struct name_record *n = find_name((*d)->namelist, name, search);
+	DEBUG(4,("find_name on local: %s %s search %x\n",
+		 namestr(name),inet_ntoa(ip), search));
+	if (n) return n;
+      }
+    }
 
-	if ((search & FIND_WINS) != FIND_WINS) return NULL;
+    if (!(search & FIND_WINS)) return NULL;
 
-	/* find WINS subnet record. */
-	*d = find_subnet(ipgrp);
-
-	if (*d == NULL) return NULL;
-
-	DEBUG(4,("find_name on WINS: %s %s search %x\n",
-						namestr(name),inet_ntoa(ip), search));
-	return find_name((*d)->namelist, name, search);
+    /* find WINS subnet record. */
+    *d = find_subnet(ipgrp);
+    
+    if (*d == NULL) return NULL;
+    
+    DEBUG(4,("find_name on WINS: %s %s search %x\n",
+	     namestr(name),inet_ntoa(ip), search));
+    return find_name((*d)->namelist, name, search);
 }
 
 
