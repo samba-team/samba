@@ -62,8 +62,10 @@ krb5_generate_subkey_extended(krb5_context context,
 
     /* XXX should we use the session key as input to the RF? */
     ret = krb5_generate_random_keyblock(context, etype, *subkey);
-    if(ret)
+    if (ret != 0) {
 	free(*subkey);
+	*subkey = NULL;
+    }
 
     return ret;
 }
