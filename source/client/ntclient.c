@@ -100,7 +100,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	
 	/******************* open the \PIPE\lsarpc file *****************/
 
-	if ((fnum = open_rpc_pipe(inbuf, outbuf, PIPE_LSARPC, Client, cnum)) == 0xffff)
+	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_LSARPC, Client, cnum)) == 0xffff)
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -126,7 +126,14 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	make_rpc_iface(&abstract, abs_data, 0x0);
 	make_rpc_iface(&transfer, trn_data, 0x2);
 
-	if (!bind_rpc_pipe(PIPE_LSARPC, fnum, ++call_id, &abstract, &transfer))
+	if (!rpc_pipe_bind(PIPE_LSARPC, fnum, ++call_id, &abstract, &transfer))
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/**************** Set Named Pipe State ***************/
+	if (!rpc_pipe_set_hnd_state(PIPE_LSARPC, fnum, 0x4300))
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -185,7 +192,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/******************* open the \PIPE\NETLOGON file *****************/
 
-	if ((fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
+	if ((fnum = rpc_pipe_open(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
 	{
 		free(inbuf); free(outbuf);
 		return False;
@@ -193,7 +200,14 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	/******************* bind request on \PIPE\NETLOGON *****************/
 
-	if (!bind_rpc_pipe(PIPE_NETLOGON, fnum, ++call_id, &abstract, &transfer))
+	if (!rpc_pipe_bind(PIPE_NETLOGON, fnum, ++call_id, &abstract, &transfer))
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/**************** Set Named Pipe State ***************/
+	if (!rpc_pipe_set_hnd_state(PIPE_NETLOGON, fnum, 0x4300))
 	{
 		free(inbuf); free(outbuf);
 		return False;
