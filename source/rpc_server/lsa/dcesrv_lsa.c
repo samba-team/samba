@@ -22,8 +22,10 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
+#include "lib/ldb/include/ldb.h"
 
 /*
   this type allows us to distinguish handle types
@@ -384,9 +386,129 @@ static NTSTATUS lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *
   lsa_LookupSids 
 */
 static NTSTATUS lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_LookupSids *r)
+			       struct lsa_LookupSids *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct lsa_policy_state *state;
+	struct dcesrv_handle *h;
+	int i;
+	NTSTATUS status = NT_STATUS_OK;
+
+	r->out.domains = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	r->out.domains = talloc_zero_p(mem_ctx,  struct lsa_RefDomainList);
+	if (r->out.domains == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.names = talloc_zero_p(mem_ctx,  struct lsa_TransNameArray);
+	if (r->out.domains == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*r->out.count = 0;
+
+	r->out.names->names = talloc_array_p(r->out.names, struct lsa_TranslatedName, 
+					     r->in.sids->num_sids);
+	if (r->out.names->names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0;i<r->in.sids->num_sids;i++) {
+		const char * const attrs[] = { "sAMAccountName", "sAMAccountType", NULL};
+		struct dom_sid *sid = r->in.sids->sids[i].sid;
+		char *sid_str = dom_sid_string(mem_ctx, sid);
+		int ret, j;
+		struct ldb_message **res;
+		const char *name, *authority_name;
+		struct dom_sid *authority_sid;
+		uint32_t atype, rtype;
+		const struct {
+			const char *sid_prefix;
+			const char *authority_name;
+		} authority_names[] = {
+			{ "S-1-5", "NT AUTHORITY" }
+		};
+
+		r->out.names->count++;
+		(*r->out.count)++;
+
+		r->out.names->names[i].sid_type = SID_NAME_UNKNOWN;
+		r->out.names->names[i].name.name = sid_str;
+		r->out.names->names[i].sid_index = 0xFFFFFFFF;
+
+		if (sid_str == NULL) {
+			r->out.names->names[i].name.name = "(SIDERROR)";
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		/* work out the authority name */
+		authority_name = talloc_strndup(mem_ctx, sid_str, 5);
+		authority_sid = dom_sid_parse_talloc(mem_ctx, authority_name);
+		if (!authority_name || !authority_sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		for (j=0;j<ARRAY_SIZE(authority_names);j++) {
+			if (strncmp(sid_str, authority_names[j].sid_prefix, 
+				    strlen(authority_names[j].sid_prefix)) == 0) {
+				authority_name = authority_names[j].authority_name;
+				break;
+			}
+		}
+
+		/* see if we've already done this authority name */
+		for (j=0;j<r->out.domains->count;j++) {
+			if (strcmp(authority_name, r->out.domains->domains[j].name.name) == 0) {
+				break;
+			}
+		}
+		if (j == r->out.domains->count) {
+			r->out.domains->domains = talloc_realloc_p(r->out.domains, 
+								   r->out.domains->domains,
+								   struct lsa_TrustInformation,
+								   r->out.domains->count+1);
+			if (r->out.domains == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			r->out.domains->domains[j].name.name = authority_name;
+			r->out.domains->domains[j].sid = authority_sid;
+			r->out.domains->count++;
+		}
+
+		ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, attrs, "objectSid=%s", sid_str);
+		if (ret != 1) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		name = ldb_msg_find_string(res[0], "sAMAccountName", NULL);
+		if (name == NULL) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+		if (atype == 0) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		rtype = samdb_atype_map(atype);
+		if (rtype == SID_NAME_UNKNOWN) {
+			status = STATUS_SOME_UNMAPPED;
+			continue;
+		}
+
+		r->out.names->names[i].sid_type = rtype;
+		r->out.names->names[i].name.name = name;
+		r->out.names->names[i].sid_index = 0;
+	}
+	
+	return status;
 }
 
 

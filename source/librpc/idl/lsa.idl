@@ -237,14 +237,14 @@
 	} lsa_SidPtr;
 	
 	typedef [public] struct {
-		uint32 num_sids;
+		[range(0,1000)] uint32 num_sids;
 		[size_is(num_sids)] lsa_SidPtr *sids;
 	} lsa_SidArray;
 
 	NTSTATUS lsa_EnumAccounts (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
-		[in]         uint32 num_entries,
+		[in,range(0,1000)] uint32 num_entries,
 		[out,ref]    lsa_SidArray *sids
 		);
 
@@ -281,7 +281,7 @@
 	NTSTATUS lsa_EnumTrustDom (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
-		[in]         uint32 num_entries,
+		[in,range(0,1000)] uint32 num_entries,
 		[out,ref]    lsa_DomainList *domains
 		);
 
@@ -296,19 +296,19 @@
 	} lsa_TranslatedSid;
 
 	typedef struct {
-		uint32 count;
+		[range(0,1000)] uint32 count;
 		[size_is(count)] lsa_TranslatedSid *sids;
 	} lsa_TransSidArray;
 
 	typedef struct {
-		uint32 count;
+		[range(0,1000)] uint32 count;
 		[size_is(count)] lsa_TrustInformation *domains;
 		uint32 max_count;
 	} lsa_RefDomainList;
 
 	NTSTATUS lsa_LookupNames (
 		[in,ref]     policy_handle *handle,
-		[in]         uint32 num_names,
+		[in,range(0,1000)] uint32 num_names,
 		[in,ref,size_is(num_names)]  lsa_Name *names,
 		[out]        lsa_RefDomainList *domains,
 		[in,out,ref] lsa_TransSidArray *sids,
@@ -327,7 +327,7 @@
 	} lsa_TranslatedName;
 
 	typedef struct {
-		uint32 count;
+		[range(0,1000)] uint32 count;
 		[size_is(count)] lsa_TranslatedName *names;
 	} lsa_TransNameArray;
 
