@@ -25,6 +25,8 @@
 		<arg choice="opt">-Y sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-m</arg>
+		<arg choice="opt">-a user%password</arg>
+		<arg choice="opt">-p</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -138,6 +140,20 @@
 		Windows NT server <command>winbindd(8)</command> contacts 
 		when resolving names.  This list does not include the Windows 
 		NT domain the server is a Primary Domain Controller for.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-a username%password</term>
+		<listitem><para>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-p</term>
+		<listitem><para>Attempt a simple 'ping' check that the winbindd
+                is indeed alive.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
