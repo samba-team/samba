@@ -51,13 +51,10 @@ static BOOL rpc_read(struct cli_state *cli, uint16 nt_pipe_fnum,
                      uint32 rdata_offset)
 {
 	int size = cli->max_recv_frag;
-	int file_offset = rdata_offset;
+	int file_offset = 0;
 	int num_read;
 	char *data;
-	uint32 err;
-	uint32 new_data_size = rdata->data->data_used + data_to_read;
-
-	file_offset -= rdata_offset;
+	uint32 new_data_size = rdata_offset + data_to_read;
 
 	DEBUG(5,("rpc_read: data_to_read: %d data offset: %d file offset: %d\n",
 	data_to_read, rdata_offset, file_offset));
@@ -75,14 +72,6 @@ static BOOL rpc_read(struct cli_state *cli, uint16 nt_pipe_fnum,
 		if (size > data_to_read)
 		size = data_to_read;
 
-		new_data_size = rdata->data->data_used + size;
-
-		if (new_data_size > rdata->data->data_size)
-		{
-			mem_grow_data(&rdata->data, True, new_data_size, True);
-			DEBUG(5,("rpc_read: grow buffer to %d\n", rdata->data->data_used));
-		}
-
 		num_read = cli_read(cli, nt_pipe_fnum, data, file_offset, size);
 
 		DEBUG(5,("rpc_read: read offset: %d read: %d to read: %d\n",
@@ -92,13 +81,11 @@ static BOOL rpc_read(struct cli_state *cli, uint16 nt_pipe_fnum,
 		file_offset  += num_read;
 		data         += num_read;
 
-		if (cli_error(cli, NULL, &err)) return False;
+		if (cli_error(cli, NULL, NULL)) return False;
 
 	} while (num_read > 0 && data_to_read > 0);
-	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
 
-	mem_realloc_data(rdata->data, file_offset + rdata_offset);
-	rdata->data->offset.end = file_offset + rdata_offset;
+	rdata->data->offset.end = new_data_size;
 
 	DEBUG(5,("rpc_read: offset end: 0x%x.  data left to read:0x%x\n",
 	          rdata->data->offset.end, data_to_read));
