@@ -310,8 +310,15 @@ void req_reply_error(struct request_context *req, NTSTATUS status)
 		return;
 	}
 
-	SIVAL(req->out.hdr, HDR_RCLS, NT_STATUS_V(status));
-	SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) | FLAGS2_32_BIT_ERROR_CODES);
+	if (NT_STATUS_IS_DOS(status)) {
+		/* its a encoded DOS error, using the reserved range */
+		SSVAL(req->out.hdr, HDR_RCLS, NT_STATUS_DOS_CLASS(status));
+		SSVAL(req->out.hdr, HDR_ERR,  NT_STATUS_DOS_CODE(status));
+		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) & ~FLAGS2_32_BIT_ERROR_CODES);
+	} else {
+		SIVAL(req->out.hdr, HDR_RCLS, NT_STATUS_V(status));
+		SSVAL(req->out.hdr, HDR_FLG2, SVAL(req->out.hdr, HDR_FLG2) | FLAGS2_32_BIT_ERROR_CODES);
+	}
 	
 	req_send_reply(req);
 }
