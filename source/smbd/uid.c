@@ -574,7 +574,7 @@ BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
 		return False;
 	}
 
-	DEBUG(10,("gid_to_uid: winbindd %s -> %u\n",
+	DEBUG(10,("sid_to_gid: winbindd %s -> %u\n",
 		sid_to_string(sid_str, psid),
 		(unsigned int)*pgid ));
 
