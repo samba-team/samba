@@ -505,7 +505,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	int i;
+	int i, retry;
 
 	if (!cache->tdb) goto do_query;
 
@@ -550,7 +550,11 @@ do_query:
 	if (!NT_STATUS_IS_OK(domain->last_status))
 		return domain->last_status;
 
-	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
+	retry = 0;
+	do {
+		status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
+	} while (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_UNSUCCESSFUL) && 
+		 (retry++ < 1));
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
