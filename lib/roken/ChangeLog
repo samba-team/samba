@@ -1,5 +1,15 @@
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
+	* strlcpy.c: update name and prototype
+
+	* strlcat.c: update name and prototype
+
+	* roken.h.in: rename strc{py,at}_truncate to strlc{py,at}
+
+	* Makefile.am: rename strc{py,at}_truncate -> strlc{py,at}
+
+	* Makefile.in: rename strc{py,at}_truncate -> strlc{py,at}
+
  	* strcpy_truncate.c (strcpy_truncate): change return value to be
  	the length of `src'
 
