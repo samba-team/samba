@@ -980,7 +980,7 @@ net_spoolss_enumprinterdataex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* enumprinterdataex call */
 	result = cli_spoolss_enumprinterdataex(
-		cli, mem_ctx, 0, &needed, hnd, keyname, NULL);
+		cli, mem_ctx, 0, &needed, hnd, keyname, ctr);
 			
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_MORE_DATA)) 
 		result = cli_spoolss_enumprinterdataex(
