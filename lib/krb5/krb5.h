@@ -750,6 +750,9 @@ krb5_copy_creds_contents (krb5_context context,
 			  const krb5_creds *incred,
 			  krb5_creds *c);
 
+krb5_error_code
+krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep);
+
 typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 krb5_error_code
@@ -804,6 +807,11 @@ krb5_get_forwarded_creds (krb5_context	    context,
 			  const char        *hostname,
 			  krb5_creds        *in_creds,
 			  krb5_data         *out_data);
+
+krb5_error_code
+krb5_rd_error(krb5_context context,
+	      krb5_data *msg,
+	      KRB_ERROR *result);
 
 krb5_error_code
 krb5_sendauth(krb5_context context,
