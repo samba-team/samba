@@ -62,3 +62,19 @@
 #define inet_ntoa rep_inet_ntoa
 #endif
 
+/*
+ * glibc on linux doesn't seem to have MSG_WAITALL
+ * defined. I think the kernel has it though..
+ */
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0
+#endif
+
+/*
+ * Some older systems seem not to have MAXHOSTNAMELEN
+ * defined.
+ */
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 254
+#endif
+

@@ -99,6 +99,15 @@
 #include <sys/xattr.h>
 #endif
 
+/* Load header file for dynamic linking stuff */
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+
 
 /* Some POSIX definitions for those without */
  
@@ -145,3 +154,10 @@
 #define S_IXOTH 00001           /* execute permission: other */
 #endif
 
+#ifndef O_ACCMODE
+#define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
+#endif
+
+#ifndef HAVE_RENAME
+int rename(const char *zfrom, const char *zto);
+#endif

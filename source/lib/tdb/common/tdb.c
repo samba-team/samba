@@ -68,6 +68,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "system/shmem.h"
+#include "system/filesys.h"
 #endif
 
 #define TDB_MAGIC_FOOD "TDB file\n"

@@ -30,6 +30,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #define XBUFSIZE BUFSIZ
 

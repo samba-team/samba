@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/passwd.h"
 
 #include <mntent.h>
 #include <asm/types.h>

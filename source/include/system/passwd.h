@@ -52,3 +52,15 @@
 #include <compat.h>
 #endif
 
+#ifdef REPLACE_GETPASS
+#define getpass(prompt) getsmbpass((prompt))
+#endif
+
+#ifndef HAVE_INITGROUPS
+int initgroups(char *name,gid_t id);
+#endif
+
+#ifndef HAVE_CRYPT
+#define crypt ufc_crypt
+#endif
+
