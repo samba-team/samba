@@ -278,7 +278,9 @@ struct samlogon_state {
 	const char *account_domain;
 	const char *password;
 	struct dcerpc_pipe *p;
+	int function_level;
 	struct netr_LogonSamLogon r;
+	struct netr_LogonSamLogonWithFlags r_flags;
 	struct netr_Authenticator auth, auth2;
 	struct creds_CredentialState creds;
 
@@ -300,13 +302,17 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogon *r = &samlogon_state->r;
+	struct netr_LogonSamLogonWithFlags *r_flags = &samlogon_state->r_flags;
 	struct netr_NetworkInfo ninfo;
-
+	
 	struct netr_SamBaseInfo *base;
+
+	uint16 validation_level;
 	
 	printf("testing netr_LogonSamLogon\n");
 	
 	samlogon_state->r.in.logon.network = &ninfo;
+	samlogon_state->r_flags.in.logon.network = &ninfo;
 	
 	ninfo.identity_info.domain_name.string = samlogon_state->account_domain;
 	ninfo.identity_info.parameter_control = 0;
@@ -364,39 +370,71 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		
 	ZERO_STRUCT(samlogon_state->auth2);
 	creds_client_authenticator(&samlogon_state->creds, &samlogon_state->auth);
-		
-	r->out.return_authenticator = NULL;
-	status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (error_string) {
-			*error_string = strdup(nt_errstr(status));
+
+	switch (samlogon_state->function_level) {
+	case DCERPC_NETR_LOGONSAMLOGON: 
+		r->out.return_authenticator = NULL;
+		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
+		if (!r->out.return_authenticator || 
+		    !creds_client_check(&samlogon_state->creds, &r->out.return_authenticator->cred)) {
+			printf("Credential chaining failed\n");
 		}
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+		}
+
+		validation_level = r->in.validation_level;
+		switch (validation_level) {
+		case 2:
+			base = &r->out.validation.sam2->base;
+			break;
+		case 3:
+			base = &r->out.validation.sam3->base;
+			break;
+		case 6:
+			base = &r->out.validation.sam6->base;
+			break;
+		}
+		break;
+	case DCERPC_NETR_LOGONSAMLOGONWITHFLAGS: 
+		r_flags->out.return_authenticator = NULL;
+		status = dcerpc_netr_LogonSamLogonWithFlags(samlogon_state->p, samlogon_state->mem_ctx, r_flags);
+		if (!r_flags->out.return_authenticator || 
+		    !creds_client_check(&samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
+			printf("Credential chaining failed\n");
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+		}
+
+		validation_level = r_flags->in.validation_level;
+		switch (validation_level) {
+		case 2:
+			base = &r_flags->out.validation.sam2->base;
+			break;
+		case 3:
+			base = &r_flags->out.validation.sam3->base;
+			break;
+		case 6:
+			base = &r_flags->out.validation.sam6->base;
+			break;
+		}
+		break;
 	}
 		
-	if (!r->out.return_authenticator || 
-	    !creds_client_check(&samlogon_state->creds, &r->out.return_authenticator->cred)) {
-		printf("Credential chaining failed\n");
-	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* we cannot check the session key, if the logon failed... */
 		return status;
 	}
 		
-	/* find and decyrpt the session keys, return in parameters above */
-	switch (r->in.validation_level) {
-		case 2:
-			base = &r->out.validation.sam2->base;
-		break;
-		case 3:
-			base = &r->out.validation.sam3->base;
-		break;
-		case 6:
-			base = &r->out.validation.sam6->base;
-		break;
-	}
 
-	if (r->in.validation_level != 6) {
+	/* find and decyrpt the session keys, return in parameters above */
+	if (validation_level != 6) {
 		static const char zeros[16];
 			
 		if (memcmp(base->key.key, zeros,  
@@ -505,7 +543,9 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 		pass = False;
 	}
 
-	if (break_which == NO_NT) {
+	switch (break_which) {
+	case NO_NT:
+	{
 		char lm_key_expected[16];
 		memcpy(lm_key_expected, lm_hash, 8);
 		memset(lm_key_expected+8, '\0', 8);
@@ -518,7 +558,9 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 			dump_data(1, (const char *)lm_key_expected, sizeof(lm_key_expected));
 			pass = False;
 		}
-	} else {		
+		break;
+	}
+	default:
 		if (memcmp(session_key.data, user_session_key, 
 			   sizeof(user_session_key)) != 0) {
 			printf("NT Session Key does not match expectations!\n");
@@ -725,10 +767,11 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 		return break_which == BREAK_BOTH;
 	}
 
-	if (break_which == NO_NT) {
+	switch (break_which) {
+	case NO_NT:
 		if (memcmp(lmv2_session_key.data, user_session_key, 
 			   sizeof(user_session_key)) != 0) {
-			printf("USER (NTLMv2) Session Key does not match expectations!\n");
+			printf("USER (LMv2) Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
 			dump_data(1, (const char *)user_session_key, 16);
 			printf("expected:\n");
@@ -737,14 +780,15 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 		}
 		if (memcmp(lmv2_session_key.data, lm_session_key, 
 			   sizeof(lm_session_key)) != 0) {
-			printf("LM (NTLMv2) Session Key does not match expectations!\n");
+			printf("LM (LMv2) Session Key does not match expectations!\n");
 			printf("lm_session_key:\n");
 			dump_data(1, (const char *)lm_session_key, 8);
 			printf("expected:\n");
 			dump_data(1, (const char *)lmv2_session_key.data, 8);
 			pass = False;
 		}
-	} else {
+		break;
+	default:
 		if (memcmp(ntlmv2_session_key.data, user_session_key, 
 			   sizeof(user_session_key)) != 0) {
 			printf("USER (NTLMv2) Session Key does not match expectations!\n");
@@ -956,10 +1000,13 @@ static const struct ntlm_tests {
 */
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
-	int i, v, l;
+	int i, v, l, f;
 	BOOL ret = True;
 	int validation_levels[] = {2,3,6};
 	int logon_levels[] = { 2, 6 };
+	int function_levels[] = { 
+		DCERPC_NETR_LOGONSAMLOGON,
+		DCERPC_NETR_LOGONSAMLOGONWITHFLAGS };
 	struct samlogon_state samlogon_state;
 	
 	samlogon_state.mem_ctx = mem_ctx;
@@ -984,6 +1031,12 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
+	samlogon_state.r_flags.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	samlogon_state.r_flags.in.workstation = TEST_MACHINE_NAME;
+	samlogon_state.r_flags.in.credential = &samlogon_state.auth;
+	samlogon_state.r_flags.in.return_authenticator = &samlogon_state.auth2;
+	samlogon_state.r_flags.in.flags = 0;
+
 	samlogon_state.r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	samlogon_state.r.in.workstation = TEST_MACHINE_NAME;
 	samlogon_state.r.in.credential = &samlogon_state.auth;
@@ -992,20 +1045,26 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	for (i=0; test_table[i].fn; i++) {
 		for (v=0;v<ARRAY_SIZE(validation_levels);v++) {
 			for (l=0;l<ARRAY_SIZE(logon_levels);l++) {
-				char *error_string = NULL;
-				samlogon_state.r.in.validation_level = validation_levels[v];
-				samlogon_state.r.in.logon_level = logon_levels[l];
-				printf("Testing SamLogon with '%s' at validation level %d, logon level %d\n", 
-				       test_table[i].name, validation_levels[v], logon_levels[l]);
-	
-				if (!test_table[i].fn(&samlogon_state, &error_string)) {
-					if (test_table[i].expect_fail) {
-						printf("Test %s failed (expected, test incomplete): %s\n", test_table[i].name, error_string);
-					} else {
-						printf("Test %s failed: %s\n", test_table[i].name, error_string);
-						ret = False;
+				for (f=0;f<ARRAY_SIZE(function_levels);f++) {
+					char *error_string = NULL;
+					samlogon_state.function_level = function_levels[f];
+					samlogon_state.r.in.validation_level = validation_levels[v];
+					samlogon_state.r.in.logon_level = logon_levels[l];
+					samlogon_state.r_flags.in.validation_level = validation_levels[v];
+					samlogon_state.r_flags.in.logon_level = logon_levels[l];
+					printf("Testing SamLogon with '%s' at validation level %d, logon level %d, function %d\n", 
+					       test_table[i].name, validation_levels[v], 
+					       logon_levels[l], function_levels[f]);
+					
+					if (!test_table[i].fn(&samlogon_state, &error_string)) {
+						if (test_table[i].expect_fail) {
+							printf("Test %s failed (expected, test incomplete): %s\n", test_table[i].name, error_string);
+						} else {
+							printf("Test %s failed: %s\n", test_table[i].name, error_string);
+							ret = False;
+						}
+						SAFE_FREE(error_string);
 					}
-					SAFE_FREE(error_string);
 				}
 			}
 		}
