@@ -1064,7 +1064,10 @@ static int do_put(char *rname,char *lname)
 	}
 
 	/* allow files to be piped into smbclient
-	   jdblair 24.jun.98 */
+	   jdblair 24.jun.98
+
+	   Note that in this case this function will exit(0) rather
+	   than returning. */
 	if (!strcmp(lname, "-")) {
 		f = x_stdin;
 		/* size of file is not known */
