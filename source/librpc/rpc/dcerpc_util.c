@@ -137,7 +137,7 @@ static const struct {
 	const char *name;
 	enum dcerpc_transport_t transport;
 	int num_protocols;
-	enum epm_protocols protseq[MAX_PROTSEQ];
+	enum epm_protocol protseq[MAX_PROTSEQ];
 } transports[] = {
 	{ "ncacn_np",     NCACN_NP, 3, 
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NETBIOS }},
@@ -430,6 +430,10 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		
 	case EPM_PROTOCOL_NULL:
 		return NULL;
+
+	default:
+		DEBUG(0,("Unsupported lhs protocol %d\n", floor->lhs.protocol));
+		break;
 	}
 
 	return NULL;
@@ -514,6 +518,10 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 		
 	case EPM_PROTOCOL_NULL:
 		return NT_STATUS_OK;
+
+	default:
+		DEBUG(0,("Unsupported lhs protocol %d\n", floor->lhs.protocol));
+		break;
 	}
 
 	return NT_STATUS_NOT_SUPPORTED;
@@ -602,7 +610,7 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
 {
-	const enum epm_protocols *protseq = NULL;
+	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
 	NTSTATUS status;
 	
