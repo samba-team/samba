@@ -305,7 +305,7 @@ kadm5_log_replay_delete (kadm5_server_context *context,
 
     krb5_ret_principal (sp, &ent.principal);
 
-    ret = context->db->delete(context->context, context->db, &ent);
+    ret = context->db->remove(context->context, context->db, &ent);
     krb5_free_principal (context->context, ent.principal);
     return ret;
 }
@@ -402,7 +402,7 @@ kadm5_log_replay_rename (kadm5_server_context *context,
 	return ret;
     }
     source_ent.principal = source;
-    ret = context->db->delete (context->context, context->db, &source_ent);
+    ret = context->db->remove (context->context, context->db, &source_ent);
     krb5_free_principal (context->context, source);
     return ret;
 }
