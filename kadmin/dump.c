@@ -61,6 +61,7 @@ RCSID("$Id$");
   max ticket life
   max renewable life
   flags
+  supported etypes
   */
 
 static void
@@ -173,6 +174,19 @@ hdb_entry2string(hdb_entry *ent, char **str)
     asprintf(&p, "%d", HDBFlags2int(ent->flags));
     strcat(buf, p);
     free(p);
+
+    strcat(buf, " ");
+    if(ent->etypes == NULL || ent->etypes->len == 0)
+	strcat(buf, "-");
+    else {
+	for(i = 0; i < ent->etypes->len; i++){
+	    asprintf(&p, "%u", ent->etypes->val[i]);
+	    strcat(buf, p);
+	    free(p);
+	    if(i != ent->etypes->len - 1)
+		strcat(buf, ":");
+	}
+    }
 
     *str = strdup(buf);
     
