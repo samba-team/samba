@@ -1,3 +1,13 @@
+2000-04-05  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/hdb.c: add support for hdb methods (aka back-ends).
+	include ldap.
+	* lib/hdb/hdb-ldap.c: tweak the ifdef to OPENLDAP
+	* lib/hdb/Makefile.am: add hdb-ldap.c and openldap
+	* kdc/Makefile.am, kpasswd/Makefile.am, kadmin/Makefile.am: add
+	* configure.in: bump version to 0.2s-pre add options and testing
+	for (open)ldap
+
 2000-04-04  Assar Westerlund  <assar@sics.se>
 
 	* configure.in (krb4): fix the krb_mk_req test
