@@ -1,0 +1,11 @@
+--- samba-2.2.0/source/script/convert_smbpasswd.gawk	Thu Nov  5 04:50:17 1998
++++ samba-2.2.0/source/script/convert_smbpasswd	Thu Apr 19 08:43:44 2001
+@@ -7,7 +7,7 @@
+ # with trying to work out how to get the seconds since 1970
+ # in awk or the shell. JRA.
+ #
+-nawk 'BEGIN {FS=":"} 
++gawk 'BEGIN {FS=":"} 
+ {
+ 	if( $0 ~ "^#" ) {
+ 		print $0

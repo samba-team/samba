@@ -7,7 +7,7 @@ service swat
 	port	= 901
 	socket_type	= stream
 	wait 	= no
-	only_from = localhost
+	only_from = 127.0.0.1
 	user	= root
 	server	= /usr/sbin/swat
 	log_on_failure	+= USERID

@@ -1,7 +1,7 @@
 Preparation Date: Sat Apr 14 2001
-Preparer:	  John H Terpstra <jht@samba.org>
+Preparer:	Gerald Carter <jerry@samba.org>
 
-Instructions:	Preparing Samba Packages for Mandrake Linux 7.2
+Instructions:	Preparing Samba Packages for Mandrake Linux 8.x
 ===============================================================
 
 We provide support only for current versions of Mandrake Linux.
