@@ -1001,6 +1001,27 @@ void init_unistr2_from_unistr(UNISTR2 *to, const UNISTR *from)
 }
 
 /*******************************************************************
+  Inits a UNISTR2 structure from a DATA_BLOB.
+  The length of the data_blob must count the bytes of the buffer.
+  Copies the blob data.
+********************************************************************/
+
+void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob) 
+{
+	/* Allocs the unistring */
+	init_unistr2(str, NULL, UNI_FLAGS_NONE);
+	
+	/* Sets the values */
+	str->uni_str_len = blob->length / sizeof(uint16);
+	str->uni_max_len = str->uni_str_len;
+	str->offset = 0;
+	str->buffer = (uint16 *) memdup(blob->data, blob->length);
+	if (!str->buffer) {
+		smb_panic("init_unistr2_from_datablob: malloc fail\n");
+	}
+}
+
+/*******************************************************************
  Reads or writes a UNISTR2 structure.
  XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
    the uni_str_len member tells you how long the string is;

@@ -31,6 +31,36 @@
 		    (!old_string && new_string) ||\
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
+#define STRING_CHANGED_NC(s1,s2) ((s1) && !(s2)) ||\
+		    (!(s1) && (s2)) ||\
+		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
+
+/*************************************************************
+ Copies a SAM_USER_INFO_20 to a SAM_ACCOUNT
+**************************************************************/
+
+void copy_id20_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_20 *from)
+{
+	const char *old_string;
+	char *new_string;
+	DATA_BLOB mung;
+
+	if (from == NULL || to == NULL) 
+		return;
+	
+	if (from->hdr_munged_dial.buffer) {
+		old_string = pdb_get_munged_dial(to);
+		mung.length = from->hdr_munged_dial.uni_str_len;
+		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		new_string = base64_encode_data_blob(mung);
+		DEBUG(10,("INFO_20 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
+		if (STRING_CHANGED_NC(old_string,new_string))
+			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
+
+		SAFE_FREE(new_string);
+	}
+}
+
 /*************************************************************
  Copies a SAM_USER_INFO_21 to a SAM_ACCOUNT
 **************************************************************/
@@ -39,6 +69,7 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 {
 	time_t unix_time, stored_time;
 	const char *old_string, *new_string;
+	DATA_BLOB mung;
 
 	if (from == NULL || to == NULL) 
 		return;
@@ -162,11 +193,16 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	}
 	
 	if (from->hdr_munged_dial.buffer) {
+		char *newstr;
 		old_string = pdb_get_munged_dial(to);
-		new_string = unistr2_static(&from->uni_munged_dial);
-		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
-		if (STRING_CHANGED)
-			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
+		mung.length = from->hdr_munged_dial.uni_str_len;
+		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		newstr = base64_encode_data_blob(mung);
+		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
+		if (STRING_CHANGED_NC(old_string,newstr))
+			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
+
+		SAFE_FREE(newstr);
 	}
 	
 	if (from->user_rid == 0) {
@@ -250,6 +286,7 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 {
 	time_t unix_time, stored_time;
 	const char *old_string, *new_string;
+	DATA_BLOB mung;
 
 	if (from == NULL || to == NULL) 
 		return;
@@ -373,11 +410,16 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	}
 	
 	if (from->hdr_munged_dial.buffer) {
+		char *newstr;
 		old_string = pdb_get_munged_dial(to);
-		new_string = unistr2_static(&from->uni_munged_dial);
-		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
-		if (STRING_CHANGED)
-			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
+		mung.length = from->hdr_munged_dial.uni_str_len;
+		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		newstr = base64_encode_data_blob(mung);
+		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
+		if (STRING_CHANGED_NC(old_string, newstr))
+			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
+
+		SAFE_FREE(newstr);
 	}
 	
 	if (from->user_rid == 0) {
@@ -450,5 +492,3 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 
 	DEBUG(10,("INFO_23 PADDING_4: %08X\n",from->padding4));
 }
-
-

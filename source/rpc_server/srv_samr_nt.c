@@ -2789,6 +2789,38 @@ static BOOL set_unix_primary_group(SAM_ACCOUNT *sampass)
 	
 
 /*******************************************************************
+ set_user_info_20
+ ********************************************************************/
+
+static BOOL set_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *sid)
+{
+	SAM_ACCOUNT *pwd = NULL;
+ 
+	if (id20 == NULL) {
+		DEBUG(5, ("set_user_info_20: NULL id20\n"));
+		return False;
+	}
+ 
+	pdb_init_sam(&pwd);
+ 
+	if (!pdb_getsampwsid(pwd, sid)) {
+		pdb_free_sam(&pwd);
+		return False;
+	}
+ 
+	copy_id20_to_sam_passwd(pwd, id20);
+
+	/* write the change out */
+	if(!pdb_update_sam_account(pwd)) {
+		pdb_free_sam(&pwd);
+		return False;
+ 	}
+
+	pdb_free_sam(&pwd);
+
+	return True;
+}
+/*******************************************************************
  set_user_info_21
  ********************************************************************/
 
@@ -3089,6 +3121,10 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	switch (switch_value) {
 		case 21:
 			if (!set_user_info_21(ctr->info.id21, &sid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+		case 20:
+			if (!set_user_info_20(ctr->info.id20, &sid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 		case 16:
@@ -4537,4 +4573,3 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 	return r_u->status;
 }
-
