@@ -94,6 +94,11 @@ enum winbindd_cmd {
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
+	/* WINS commands */
+
+	WINBINDD_WINS_BYIP,
+	WINBINDD_WINS_BYNAME,
+
 	/* Placeholder for end of cmd list */
 
 	WINBINDD_NUM_CMDS
@@ -107,6 +112,7 @@ struct winbindd_request {
 	pid_t pid;               /* pid of calling process */
 
 	union {
+		fstring winsreq;     /* WINS request */
 		fstring username;    /* getpwnam */
 		fstring groupname;   /* getgrnam */
 		uid_t uid;           /* getpwuid, uid_to_sid */
@@ -160,6 +166,8 @@ struct winbindd_response {
 	union {
 		int interface_version;  /* Try to ensure this is always in the same spot... */
 		
+		fstring winsresp;		/* WINS response */
+
 		/* getpwnam, getpwuid */
 		
 		struct winbindd_pw {

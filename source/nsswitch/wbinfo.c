@@ -137,6 +137,58 @@ static BOOL wbinfo_get_usergroups(char *user)
 	return True;
 }
 
+/* Convert NetBIOS name to IP */
+
+static BOOL wbinfo_wins_byname(char *name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.winsreq, name);
+
+	if (winbindd_request(WINBINDD_WINS_BYNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.winsresp);
+
+	return True;
+}
+
+/* Convert IP to NetBIOS name */
+
+static BOOL wbinfo_wins_byip(char *ip)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.winsreq, ip);
+
+	if (winbindd_request(WINBINDD_WINS_BYIP, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.winsresp);
+
+	return True;
+}
+
 /* List trusted domains */
 
 static BOOL wbinfo_list_domains(void)
@@ -578,6 +630,8 @@ static void usage(void)
 	d_printf("\t-g\t\t\tlists all domain groups\n");
 	d_printf("\t-n name\t\t\tconverts name to sid\n");
 	d_printf("\t-s sid\t\t\tconverts sid to name\n");
+	d_printf("\t-N name\t\t\tconverts NetBIOS name to IP (WINS)\n");
+	d_printf("\t-I name\t\t\tconverts IP address to NetBIOS name (WINS)\n");
 	d_printf("\t-U uid\t\t\tconverts uid to sid\n");
 	d_printf("\t-G gid\t\t\tconverts gid to sid\n");
 	d_printf("\t-S sid\t\t\tconverts sid to uid\n");
@@ -615,6 +669,8 @@ int main(int argc, char **argv)
 		{ "help", 'h', POPT_ARG_NONE, 0, 'h' },
 		{ "domain-users", 'u', POPT_ARG_NONE, 0, 'u' },
 		{ "domain-groups", 'g', POPT_ARG_NONE, 0, 'g' },
+		{ "WINS-by-name", 'N', POPT_ARG_STRING, &string_arg, 'N' },
+		{ "WINS-by-ip", 'I', POPT_ARG_STRING, &string_arg, 'I' },
 		{ "name-to-sid", 'n', POPT_ARG_STRING, &string_arg, 'n' },
 		{ "sid-to-name", 's', POPT_ARG_STRING, &string_arg, 's' },
 		{ "uid-to-sid", 'U', POPT_ARG_INT, &int_arg, 'U' },
@@ -698,6 +754,18 @@ int main(int argc, char **argv)
 		case 'n':
 			if (!wbinfo_lookupname(string_arg)) {
 				d_printf("Could not lookup name %s\n", string_arg);
+				return 1;
+			}
+			break;
+		case 'N':
+			if (!wbinfo_wins_byname(string_arg)) {
+				d_printf("Could not lookup WINS by name %s\n", string_arg);
+				return 1;
+			}
+			break;
+		case 'I':
+			if (!wbinfo_wins_byip(string_arg)) {
+				d_printf("Could not lookup WINS by IP %s\n", string_arg);
 				return 1;
 			}
 			break;
