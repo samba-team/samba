@@ -1,5 +1,11 @@
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
+	* appl/rsh/rshd.c: syslog remote shells
+
+	* appl/popper/pop_pass.c: log poppers
+
+	* kdc/kaserver.c: some more checks
+
 	* kpasswd/kpasswd.c: removed `-p'
 
 	* kuser/kinit.c: removed `-p'
