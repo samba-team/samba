@@ -776,6 +776,7 @@
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
+		<listitem><para><link linkend="USESENDFILE"><parameter>use sendfile</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
@@ -7895,6 +7896,23 @@
 		you are doing.</para>
 
 		<para>Default: <command>use rhosts = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="USESENDFILE">use sendfile (S)</term>
+		<listitem><para>If this parameter is <constant>true</constant>, and Samba
+		was built with the --with-sendfile-support option, and the underlying operating
+		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+		and ReadRaw) will use the more efficient sendfile system call for files that
+		are exclusively oplocked. This may make more efficient use of the system CPU's
+		and cause Samba to be faster. This is off by default as it's effects are unknown
+		as yet.
+		</para>
+
+		<para>Default: <command>use sendfile = no</command></para>
 		</listitem>
 		</varlistentry>
 
