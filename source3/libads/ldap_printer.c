@@ -57,11 +57,11 @@ ADS_STATUS ads_find_printer_on_server(ADS_STRUCT *ads, void **res,
 ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 				 const ADS_PRINTER_ENTRY *prt)
 {
-	void **mods;
+	ADS_MODLIST *mods;
 	ADS_STATUS status;
 
 	/* allocate the list */
-	mods = ads_init_mods(sizeof(ADS_PRINTER_ENTRY) / sizeof(char *));
+	*mods = ads_init_mods();
 
 	/* add the attributes to the list - required ones first */
 	ads_mod_repl(mods, "printerName", prt->printerName);
@@ -93,10 +93,10 @@ ADS_STATUS ads_mod_printer_entry(ADS_STRUCT *ads, char *prt_dn,
 	/*... and many others */
 
 	/* do the ldap modify */
-	status = ads_gen_mod(ads, prt_dn, mods);
+	status = ads_gen_mod(ads, prt_dn, *mods);
 
 	/* free mod list, mods, and values */
-	ads_free_mods(mods); 
+	ads_free_mods(*mods); 
 
 	return status;
 }
@@ -164,7 +164,16 @@ ADS_STATUS ads_add_printer(ADS_STRUCT *ads, const ADS_PRINTER_ENTRY *prt)
 		}
 	}
 
-	status = ads_mod_printer_entry(ads, prt_dn, prt);
+	status = ads_search_dn(ads, &res, prt_dn, attrs);
+
+	if (ADS_ERR_OK(status) && ads_count_replies(ads, res)) {
+		/* need to retrieve GUID from results
+		   prt->GUID */
+		status = ads_mod_printer_entry(ads, prt_dn, prt);
+	}
+
+	ads_msgfree(ads, res);
+
 
 	return status;
 }
