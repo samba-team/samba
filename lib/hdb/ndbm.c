@@ -7,7 +7,7 @@ RCSID("$Id$");
 krb5_error_code
 NDBM_close(krb5_context context, HDB *db)
 {
-    DBM *d = (DB*)db->db;
+    DBM *d = (DBM*)db->db;
     dbm_close(d);
     free(db);
     return 0;
