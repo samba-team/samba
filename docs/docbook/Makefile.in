@@ -122,7 +122,7 @@ $(HTMLDIR)/%.html: $(MANPROJDOC)/%.sgml
 	$(DOCBOOK2HTML) -u -o $(HTMLDIR) $<
 
 $(MANDIR)/%: $(MANPROJDOC)/%.sgml 
-	$(DOCBOOK2MAN) -o $(MANDIR) $< || rm $@
+	$(DOCBOOK2MAN) -o $(MANDIR) $<
 	$(PERL) scripts/strip-links.pl < $@ > $@.temp
 	mv $@.temp $@
 
