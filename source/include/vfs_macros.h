@@ -113,8 +113,8 @@
 #define SMB_VFS_OPAQUE_CONNECT(conn, service, user) ((conn)->vfs_opaque.ops.connect((conn)->vfs_opaque.handles.connect, (conn), (service), (user)))
 #define SMB_VFS_OPAQUE_DISCONNECT(conn) ((conn)->vfs_opaque.ops.disconnect((conn)->vfs_opaque.handles.disconnect, (conn)))
 #define SMB_VFS_OPAQUE_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs_opaque.ops.disk_free((conn)->vfs_opaque.handles.disk_free, (conn), (path), (small_query), (bsize), (dfree), (dsize)))
-#define SMB_VFS_OPAQUE_GET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.get_quota((conn)->vfs_opaque.handles.get_quota, (qtype), (id), (qt)))
-#define SMB_VFS_OPAQUE_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.set_quota((conn)->vfs_opaque.handles.set_quota, (qtype), (id), (qt)))
+#define SMB_VFS_OPAQUE_GET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.get_quota((conn)->vfs_opaque.handles.get_quota, (conn), (qtype), (id), (qt)))
+#define SMB_VFS_OPAQUE_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.set_quota((conn)->vfs_opaque.handles.set_quota, (conn), (qtype), (id), (qt)))
 
 /* Directory operations */
 #define SMB_VFS_OPAQUE_OPENDIR(conn, fname) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (conn), (fname)))
@@ -195,8 +195,8 @@
 #define SMB_VFS_NEXT_CONNECT(handle, conn, service, user) ((handle)->vfs_next.ops.connect((handle)->vfs_next.handles.connect, (conn), (service), (user)))
 #define SMB_VFS_NEXT_DISCONNECT(handle, conn) ((handle)->vfs_next.ops.disconnect((handle)->vfs_next.handles.disconnect, (conn)))
 #define SMB_VFS_NEXT_DISK_FREE(handle, conn, path, small_query, bsize, dfree ,dsize) ((handle)->vfs_next.ops.disk_free((handle)->vfs_next.handles.disk_free, (conn), (path), (small_query), (bsize), (dfree), (dsize)))
-#define SMB_VFS_NEXT_GET_QUOTA(handle, conn, qtype, id, qt) ((handle)->vfs_next.ops.get_quota((handle)->vfs_next.handles.get_quota, (qtype), (id), (qt)))
-#define SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, qt) ((handle)->vfs_next.ops.set_quota((handle)->vfs_next.handles.set_quota, (qtype), (id), (qt)))
+#define SMB_VFS_NEXT_GET_QUOTA(handle, conn, qtype, id, qt) ((handle)->vfs_next.ops.get_quota((handle)->vfs_next.handles.get_quota, (conn), (qtype), (id), (qt)))
+#define SMB_VFS_NEXT_SET_QUOTA(handle, conn, qtype, id, qt) ((handle)->vfs_next.ops.set_quota((handle)->vfs_next.handles.set_quota, (conn), (qtype), (id), (qt)))
 
 /* Directory operations */
 #define SMB_VFS_NEXT_OPENDIR(handle, conn, fname) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (conn), (fname)))
