@@ -622,6 +622,20 @@ static BOOL run_readwritelarge(int dummy)
 		correct = False;
 	}
 
+#if 0
+	/* ToDo - set allocation. JRA */
+	if(!cli_set_allocation_size(&cli1, fnum1, 0)) {
+		printf("set allocation size to zero failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+	if (!cli_qfileinfo(&cli1, fnum1, NULL, &fsize, NULL, NULL, NULL, NULL, NULL)) {
+		printf("qfileinfo failed (%s)\n", cli_errstr(&cli1));
+		correct = False;
+	}
+	if (fsize != 0)
+		printf("readwritelarge test 3 (truncate test) succeeded (size = %x)\n", fsize);
+#endif
+
 	if (!cli_close(&cli1, fnum1)) {
 		printf("close failed (%s)\n", cli_errstr(&cli1));
 		correct = False;
@@ -2902,7 +2916,11 @@ static BOOL run_rename(int dummy)
 	cli_unlink(&cli1, fname);
 	cli_unlink(&cli1, fname1);
 	fnum1 = cli_nt_create_full(&cli1, fname,GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+#if 0
+				   FILE_SHARE_DELETE|FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+#else
 				   FILE_SHARE_DELETE|FILE_SHARE_READ, FILE_OVERWRITE_IF, 0);
+#endif
 
 	if (fnum1 == -1) {
 		printf("Second open failed - %s\n", cli_errstr(&cli1));
@@ -2918,6 +2936,57 @@ static BOOL run_rename(int dummy)
 
 	if (!cli_close(&cli1, fnum1)) {
 		printf("close - 2 failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	cli_unlink(&cli1, fname);
+	cli_unlink(&cli1, fname1);
+
+#if 0
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+#else
+	fnum1 = cli_nt_create_full(&cli1, fname,READ_CONTROL_ACCESS, FILE_ATTRIBUTE_NORMAL,
+#endif
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("Third open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+
+
+#if 1
+  {
+  int fnum2;
+
+	fnum2 = cli_nt_create_full(&cli1, fname,DELETE_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum2 == -1) {
+		printf("Fourth open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+	if (!cli_nt_delete_on_close(&cli1, fnum2, True)) {
+		printf("[8] setting delete_on_close on file failed !\n");
+		return False;
+	}
+	
+	if (!cli_close(&cli1, fnum2)) {
+		printf("close - 4 failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+  }
+#endif
+
+	if (!cli_rename(&cli1, fname, fname1)) {
+		printf("Third rename failed - this should have succeeded - %s\n", cli_errstr(&cli1));
+		correct = False;
+	} else {
+		printf("Third rename succeeded\n");
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close - 3 failed (%s)\n", cli_errstr(&cli1));
 		return False;
 	}
 

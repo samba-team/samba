@@ -90,8 +90,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	static int count;
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid    DenyMode   R/W        Oplock           Name\n");
-		d_printf("--------------------------------------------------\n");
+		d_printf("Pid    DenyMode   Access      R/W        Oplock           Name\n");
+		d_printf("--------------------------------------------------------------\n");
 	}
 	count++;
 
@@ -105,6 +105,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	  case DENY_WRITE:printf("DENY_WRITE "); break;
 	  case DENY_FCB:  d_printf("DENY_FCB "); break;
 	  }
+	  d_printf("0x%-8x  ",(unsigned int)e->desired_access);
 	  switch (e->share_mode&0xF) {
 	  case 0: d_printf("RDONLY     "); break;
 	  case 1: d_printf("WRONLY     "); break;

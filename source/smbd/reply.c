@@ -1207,6 +1207,41 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 }
 
 /*******************************************************************
+ Check if a user is allowed to rename a file.
+********************************************************************/
+
+static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT *pst)
+{
+	int smb_action;
+	int access_mode;
+	files_struct *fsp;
+
+	if (!CAN_WRITE(conn))
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	
+	if (S_ISDIR(pst->st_mode))
+		return NT_STATUS_OK;
+
+	/* We need a better way to return NT status codes from open... */
+	unix_ERR_class = 0;
+	unix_ERR_code = 0;
+
+	fsp = open_file_shared1(conn, fname, pst, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
+	if (!fsp) {
+		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
+		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+			ret = NT_STATUS_SHARING_VIOLATION;
+		unix_ERR_class = 0;
+		unix_ERR_code = 0;
+		return ret;
+	}
+	close_file(fsp,False);
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
@@ -1214,6 +1249,9 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 {
 	SMB_STRUCT_STAT sbuf;
 	int fmode;
+	int smb_action;
+	int access_mode;
+	files_struct *fsp;
 
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
@@ -1231,9 +1269,22 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
 		return NT_STATUS_CANNOT_DELETE;
 
-	if (!check_file_sharing(conn,fname,False))
-		return NT_STATUS_SHARING_VIOLATION;
+	/* We need a better way to return NT status codes from open... */
+	unix_ERR_class = 0;
+	unix_ERR_code = 0;
 
+	fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
+		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
+	if (!fsp) {
+		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
+		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+			ret = NT_STATUS_SHARING_VIOLATION;
+		unix_ERR_class = 0;
+		unix_ERR_code = 0;
+		return ret;
+	}
+	close_file(fsp,False);
 	return NT_STATUS_OK;
 }
 
@@ -2950,21 +3001,6 @@ static BOOL resolve_wildcards(char *name1,char *name2)
   return(True);
 }
 
-/*******************************************************************
- Check if a user is allowed to rename a file.
-********************************************************************/
-
-static NTSTATUS can_rename(char *fname,connection_struct *conn)
-{
-	if (!CAN_WRITE(conn))
-		return NT_STATUS_ACCESS_DENIED;
-
-	if (!check_file_sharing(conn,fname,True))
-		return NT_STATUS_SHARING_VIOLATION;
-
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  The guts of the rename command, split out so it may be called by the NT SMB
  code. 
@@ -3099,7 +3135,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 		 * The source object must exist.
 		 */
 
-		if (!vfs_object_exist(conn, directory, NULL)) {
+		if (!vfs_object_exist(conn, directory, &sbuf1)) {
 			DEBUG(3,("rename_internals: source doesn't exist doing rename %s -> %s\n",
 				directory,newname));
 
@@ -3124,7 +3160,7 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			return error;
 		}
 
-		error = can_rename(directory,conn);
+		error = can_rename(directory,conn,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3190,7 +3226,12 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 				
 				error = NT_STATUS_ACCESS_DENIED;
 				slprintf(fname,sizeof(fname)-1,"%s/%s",directory,dname);
-				error = can_rename(fname,conn);
+				if (!vfs_object_exist(conn, fname, &sbuf1)) {
+					error = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(error)));
+					continue;
+				}
+				error = can_rename(fname,conn,&sbuf1);
 				if (!NT_STATUS_IS_OK(error)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;
