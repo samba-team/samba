@@ -216,7 +216,7 @@ struct vfs_ops {
 		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
 		void (*seekdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp, long offset);
 		long (*telldir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
-		void (*rewinddir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
+		void (*rewind_dir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dirp);
 		int (*mkdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
 		int (*closedir)(struct vfs_handle_struct *handle, struct connection_struct *conn, DIR *dir);
@@ -319,7 +319,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *readdir;
 		struct vfs_handle_struct *seekdir;
 		struct vfs_handle_struct *telldir;
-		struct vfs_handle_struct *rewinddir;
+		struct vfs_handle_struct *rewind_dir;
 		struct vfs_handle_struct *mkdir;
 		struct vfs_handle_struct *rmdir;
 		struct vfs_handle_struct *closedir;
