@@ -50,7 +50,8 @@
 .Nm krb5_rc_resolve ,
 .Nm krb5_rc_resolve_full ,
 .Nm krb5_rc_resolve_type ,
-.Nm krb5_rc_store
+.Nm krb5_rc_store ,
+.Nm krb5_get_server_rcache
 .Nd kerberos replay cache.
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
@@ -106,6 +107,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Ft krb5_error_code
 .Fo krb5_rc_initialize
 .Fa "krb5_context context"
+.Fa "krb5_rcache id"
 .Fa "krb5_deltat auth_lifespan"
 .Fc
 .Ft krb5_error_code
@@ -137,11 +139,24 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_rcache id"
 .Fa "krb5_donot_replay *rep"
 .Fc
+.Ft krb5_error_code
+.Fo krb5_get_server_rcache
+.Fa "krb5_context context"
+.Fa "const krb5_data *piece"
+.Fa "krb5_rcache *id"
+.Fc
 .Sh DESCRIPTION
 The
 .Li krb5_rcache
 structure holds a storage element that is used for data manipulation.
 The structure contains no public accessible elements.
+.Pp
+.Fn krb5_rc_initialize
+Creates the reply cache
+.Fa id
+and sets it lifespan to
+.Fa auth_lifespan .
+If the cache already exists, the content is destroyed.
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_data 3 ,
