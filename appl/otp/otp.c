@@ -40,14 +40,36 @@
 
 RCSID("$Id$");
 
-char *prog;
+static char *prog;
+
+#define USAGE_STRING \
+          "Usage: %s [-r] [-f alg] [-u user] num seed\n" \
+	  "       or -[d|l] [-u user]\n" \
+	  "       or -h\n"
+
+#define HELP_STRING \
+    "This program sets, renews, deletes or lists one-time passwords (OTP)\n" \
+    "\tdefault: set directly OTP\n" \
+    "\t-r: renew securely OTP\n" \
+    "\t-d: delete OTP\n" \
+    "\t-l: list OTP status\n" \
+    "\t-h: help!\n" \
+    "\t-u user: specify a user, default is the current user.\n" \
+    "\t		only root can use this option.\n" \
+    "\t-f alg: encryption algorithm (md4|md5|sha), default is md4.\n" \
+    "\tnum seed: number of iterations and seed for OTP\n"
+
+static void
+help (void)
+{
+  fprintf(stderr, USAGE_STRING HELP_STRING, prog);
+  exit (0);
+}
 
 static void
 usage (void)
 {
-  fprintf(stderr,
-	  "Usage: %s [-r] [-f alg] [-u user] num seed\n",
-	  prog);
+  fprintf(stderr, USAGE_STRING, prog);
   exit (1);
 }
 
@@ -139,19 +161,108 @@ set (int argc, char **argv, OtpAlgorithm *alg, char *user)
   return ret;
 }
 
+/*
+ * Delete otp of user from the database
+ */
+
+static int
+delete_otp (int argc, char **argv, char *user)
+{
+  void *db;
+  OtpContext ctx;
+  int ret;
+
+  if (argc != 0) 
+    usage();
+
+  db = otp_db_open ();
+  if(db == NULL) {
+    fprintf (stderr, "%s: otp_db_open failed\n", prog);
+    return 1;
+  }
+
+  ctx.user = user;
+  ret = otp_delete(db, &ctx);
+  otp_db_close (db);
+  return ret;
+}
+
+/*
+ * Get and print out the otp entry for some user
+ */
+
+static void
+print_otp_entry_for_name (void *db, char *user)
+{
+  OtpContext ctx;
+
+  ctx.user = user;
+  if (!otp_simple_get(db, &ctx)) {
+    fprintf(stdout, "%s\totp-%s %d %s\n", 
+	    ctx.user, ctx.alg->name, ctx.n, ctx.seed);
+    free(ctx.alg);
+  }
+}
+
+/*
+ * Print otp entries for one or all users
+ */
+
+static int
+list_otps (int argc, char **argv, char *user)
+{
+  void *db;
+  OtpContext ctx;
+  struct passwd *pw;
+
+  if (argc != 0) 
+    usage();
+
+  db = otp_db_open ();
+  if(db == NULL) {
+    fprintf (stderr, "%s: otp_db_open failed\n", prog);
+    return 1;
+  }
+
+  if (user)
+    print_otp_entry_for_name(db, user);
+  else
+    /* scans all users... so as to get a deterministic order */
+    while ((pw = getpwent()))
+      print_otp_entry_for_name(db, pw->pw_name);
+
+  otp_db_close (db);
+  return 0;
+}
+
 int
 main (int argc, char **argv)
 {
   int c;
-  int renewp = 0;
+  int renewp = 0, listp = 0, deletep = 0, defaultp = 0;
+  int uid = getuid();
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
   char *user = NULL;
   struct passwd *pwd;
 
   prog = argv[0];
 
-  while ((c = getopt (argc, argv, "rf:u:")) != EOF)
+  while ((c = getopt (argc, argv, "hrf:u:ld")) != EOF)
     switch (c) {
+    case 'h' : 
+      help();
+      break;
+    case 'l' :
+      listp = 1;
+      break;
+    case 'd' :
+      if (uid != 0) {
+	fprintf (stderr, "%s: Only root can delete OTPs\n",
+		 prog);
+	return 1;
+      }
+      deletep = 1;
+      break;
     case 'r' :
       renewp = 1;
       break;
@@ -163,9 +274,8 @@ main (int argc, char **argv)
       }
       break;
     case 'u' :
-      if (getuid () != 0) {
-	fprintf (stderr, "%s: Only root can change OTPs for other users\n",
-		 prog);
+      if (uid != 0) {
+	fprintf (stderr, "%s: Only root can use `-u'\n", prog);
 	return 1;
       }
       user = optarg;
@@ -177,18 +287,29 @@ main (int argc, char **argv)
   argc -= optind;
   argv += optind;
 
+  if (!(listp || deletep || renewp))
+    defaultp = 1;
+
+  if ( listp + deletep + renewp + defaultp != 1) /* one of -d or -l or -r or none */
+    usage();
+
+  if (listp)
+    return list_otps (argc, argv, user);
+
   if (user == NULL) {
     struct passwd *pwd;
 
-    pwd = k_getpwuid(getuid());
+    pwd = k_getpwuid(uid);
     if (pwd == NULL) {
       fprintf (stderr, "%s: You don't exist\n", prog);
       return 1;
     }
     user = pwd->pw_name;
   }
-
-  if (renewp)
+  
+  if (deletep)
+    return delete_otp (argc, argv, user);
+  else if (renewp)
     return renew (argc, argv, alg, user);
   else
     return set (argc, argv, alg, user);
