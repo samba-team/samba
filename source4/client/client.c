@@ -43,7 +43,7 @@ static int io_bufsize = 64512;
 static int name_type = 0x20;
 
 static int process_tok(fstring tok);
-static int cmd_help(void);
+static int cmd_help(const char **cmd_ptr);
 
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
@@ -252,7 +252,7 @@ static int do_dskattr(void)
 /****************************************************************************
 show cd/pwd
 ****************************************************************************/
-static int cmd_pwd(void)
+static int cmd_pwd(const char **cmd_ptr)
 {
 	d_printf("Current directory is %s",service);
 	d_printf("%s\n",cur_dir);
@@ -301,12 +301,12 @@ static int do_cd(char *newdir)
 /****************************************************************************
 change directory
 ****************************************************************************/
-static int cmd_cd(void)
+static int cmd_cd(const char **cmd_ptr)
 {
 	fstring buf;
 	int rc = 0;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf)))
 		rc = do_cd(buf);
 	else
 		d_printf("Current directory is %s\n",cur_dir);
@@ -632,7 +632,7 @@ void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL re
 /****************************************************************************
   get a directory listing
   ****************************************************************************/
-static int cmd_dir(void)
+static int cmd_dir(const char **cmd_ptr)
 {
 	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
@@ -645,7 +645,7 @@ static int cmd_dir(void)
 	if(mask[strlen(mask)-1]!='\\')
 		pstrcat(mask,"\\");
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
 			pstrcpy(mask,p);
@@ -669,7 +669,7 @@ static int cmd_dir(void)
 /****************************************************************************
   get a directory listing
   ****************************************************************************/
-static int cmd_du(void)
+static int cmd_du(const char **cmd_ptr)
 {
 	uint16_t attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mask;
@@ -682,7 +682,7 @@ static int cmd_du(void)
 	if(mask[strlen(mask)-1]!='\\')
 		pstrcat(mask,"\\");
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == '\\')
 			pstrcpy(mask,p);
@@ -830,7 +830,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 /****************************************************************************
   get a file
   ****************************************************************************/
-static int cmd_get(void)
+static int cmd_get(const char **cmd_ptr)
 {
 	pstring lname;
 	pstring rname;
@@ -841,14 +841,14 @@ static int cmd_get(void)
 	
 	p = rname + strlen(rname);
 	
-	if (!next_token_nr(NULL,p,NULL,sizeof(rname)-strlen(rname))) {
+	if (!next_token(cmd_ptr,p,NULL,sizeof(rname)-strlen(rname))) {
 		d_printf("get <filename>\n");
 		return 1;
 	}
 	pstrcpy(lname,p);
 	dos_clean_name(rname);
 	
-	next_token_nr(NULL,lname,NULL,sizeof(lname));
+	next_token(cmd_ptr,lname,NULL,sizeof(lname));
 	
 	return do_get(rname, lname, False);
 }
@@ -923,7 +923,7 @@ static void do_mget(file_info *finfo)
 /****************************************************************************
 view the file using the pager
 ****************************************************************************/
-static int cmd_more(void)
+static int cmd_more(const char **cmd_ptr)
 {
 	fstring rname,lname,pager_cmd;
 	char *pager;
@@ -941,7 +941,7 @@ static int cmd_more(void)
 	}
 	close(fd);
 
-	if (!next_token_nr(NULL,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
+	if (!next_token(cmd_ptr,rname+strlen(rname),NULL,sizeof(rname)-strlen(rname))) {
 		d_printf("more <filename>\n");
 		unlink(lname);
 		return 1;
@@ -965,7 +965,7 @@ static int cmd_more(void)
 /****************************************************************************
 do a mget command
 ****************************************************************************/
-static int cmd_mget(void)
+static int cmd_mget(const char **cmd_ptr)
 {
 	uint16_t attribute = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 	pstring mget_mask;
@@ -979,7 +979,7 @@ static int cmd_mget(void)
 	
 	abort_mget = False;
 
-	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	while (next_token(cmd_ptr,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
 		if(mget_mask[strlen(mget_mask)-1]!='\\')
 			pstrcat(mget_mask,"\\");
@@ -1039,7 +1039,7 @@ static BOOL do_altname(char *name)
 /****************************************************************************
  Exit client.
 ****************************************************************************/
-static int cmd_quit(void)
+static int cmd_quit(const char **cmd_ptr)
 {
 	smbcli_shutdown(cli);
 	exit(0);
@@ -1051,7 +1051,7 @@ static int cmd_quit(void)
 /****************************************************************************
   make a directory
   ****************************************************************************/
-static int cmd_mkdir(void)
+static int cmd_mkdir(const char **cmd_ptr)
 {
 	pstring mask;
 	fstring buf;
@@ -1059,7 +1059,7 @@ static int cmd_mkdir(void)
   
 	pstrcpy(mask,cur_dir);
 
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,p,NULL,sizeof(buf))) {
 		if (!recurse)
 			d_printf("mkdir <dirname>\n");
 		return 1;
@@ -1093,7 +1093,7 @@ static int cmd_mkdir(void)
 /****************************************************************************
   show alt name
   ****************************************************************************/
-static int cmd_altname(void)
+static int cmd_altname(const char **cmd_ptr)
 {
 	pstring name;
 	fstring buf;
@@ -1101,7 +1101,7 @@ static int cmd_altname(void)
   
 	pstrcpy(name,cur_dir);
 
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,p,NULL,sizeof(buf))) {
 		d_printf("altname <file>\n");
 		return 1;
 	}
@@ -1247,7 +1247,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 /****************************************************************************
   put a file
   ****************************************************************************/
-static int cmd_put(void)
+static int cmd_put(const char **cmd_ptr)
 {
 	pstring lname;
 	pstring rname;
@@ -1257,13 +1257,13 @@ static int cmd_put(void)
 	pstrcpy(rname,cur_dir);
 	pstrcat(rname,"\\");
   
-	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,p,NULL,sizeof(buf))) {
 		d_printf("put <filename>\n");
 		return 1;
 	}
 	pstrcpy(lname,p);
   
-	if (next_token_nr(NULL,p,NULL,sizeof(buf)))
+	if (next_token(cmd_ptr,p,NULL,sizeof(buf)))
 		pstrcat(rname,p);      
 	else
 		pstrcat(rname,lname);
@@ -1331,10 +1331,10 @@ static BOOL seek_list(struct file_list *list, char *name)
 /****************************************************************************
   set the file selection mask
   ****************************************************************************/
-static int cmd_select(void)
+static int cmd_select(const char **cmd_ptr)
 {
 	pstrcpy(fileselection,"");
-	next_token_nr(NULL,fileselection,NULL,sizeof(fileselection));
+	next_token(cmd_ptr,fileselection,NULL,sizeof(fileselection));
 
 	return 0;
 }
@@ -1405,12 +1405,12 @@ static int file_find(struct file_list **list, const char *directory,
 /****************************************************************************
   mput some files
   ****************************************************************************/
-static int cmd_mput(void)
+static int cmd_mput(const char **cmd_ptr)
 {
 	fstring buf;
 	char *p=buf;
 	
-	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
+	while (next_token(cmd_ptr,p,NULL,sizeof(buf))) {
 		int ret;
 		struct file_list *temp_list;
 		char *quest, *lname, *rname;
@@ -1498,19 +1498,19 @@ static int do_cancel(int job)
 /****************************************************************************
   cancel a print job
   ****************************************************************************/
-static int cmd_cancel(void)
+static int cmd_cancel(const char **cmd_ptr)
 {
 	fstring buf;
 	int job; 
 
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("cancel <jobid> ...\n");
 		return 1;
 	}
 	do {
 		job = atoi(buf);
 		do_cancel(job);
-	} while (next_token_nr(NULL,buf,NULL,sizeof(buf)));
+	} while (next_token(cmd_ptr,buf,NULL,sizeof(buf)));
 	
 	return 0;
 }
@@ -1519,13 +1519,13 @@ static int cmd_cancel(void)
 /****************************************************************************
   print a file
   ****************************************************************************/
-static int cmd_print(void)
+static int cmd_print(const char **cmd_ptr)
 {
 	pstring lname;
 	pstring rname;
 	char *p;
 
-	if (!next_token_nr(NULL,lname,NULL, sizeof(lname))) {
+	if (!next_token(cmd_ptr,lname,NULL, sizeof(lname))) {
 		d_printf("print <filename>\n");
 		return 1;
 	}
@@ -1547,7 +1547,7 @@ static int cmd_print(void)
 /****************************************************************************
  show a print queue
 ****************************************************************************/
-static int cmd_queue(void)
+static int cmd_queue(const char **cmd_ptr)
 {
 	d_printf("REWRITE: print job queue not implemented\n");
 	
@@ -1575,7 +1575,7 @@ static void do_del(file_info *finfo)
 /****************************************************************************
 delete some files
 ****************************************************************************/
-static int cmd_del(void)
+static int cmd_del(const char **cmd_ptr)
 {
 	pstring mask;
 	fstring buf;
@@ -1586,7 +1586,7 @@ static int cmd_del(void)
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("del <filename>\n");
 		return 1;
 	}
@@ -1601,7 +1601,7 @@ static int cmd_del(void)
 /****************************************************************************
 delete a whole directory tree
 ****************************************************************************/
-static int cmd_deltree(void)
+static int cmd_deltree(const char **cmd_ptr)
 {
 	pstring dname;
 	fstring buf;
@@ -1609,7 +1609,7 @@ static int cmd_deltree(void)
 
 	pstrcpy(dname,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("deltree <dirname>\n");
 		return 1;
 	}
@@ -1631,7 +1631,7 @@ static int cmd_deltree(void)
 /****************************************************************************
 show as much information as possible about a file
 ****************************************************************************/
-static int cmd_allinfo(void)
+static int cmd_allinfo(const char **cmd_ptr)
 {
 	pstring fname;
 	fstring buf;
@@ -1642,7 +1642,7 @@ static int cmd_allinfo(void)
 
 	pstrcpy(fname,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("allinfo <filename>\n");
 		return 1;
 	}
@@ -1739,7 +1739,7 @@ done:
 /****************************************************************************
 show any ACL on a file
 ****************************************************************************/
-static int cmd_acl(void)
+static int cmd_acl(const char **cmd_ptr)
 {
 	pstring fname;
 	fstring buf;
@@ -1751,7 +1751,7 @@ static int cmd_acl(void)
 
 	pstrcpy(fname,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("acl <filename>\n");
 		return 1;
 	}
@@ -1786,14 +1786,14 @@ done:
 
 /****************************************************************************
 ****************************************************************************/
-static int cmd_open(void)
+static int cmd_open(const char **cmd_ptr)
 {
 	pstring mask;
 	fstring buf;
 	
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("open <filename>\n");
 		return 1;
 	}
@@ -1808,14 +1808,14 @@ static int cmd_open(void)
 /****************************************************************************
 remove a directory
 ****************************************************************************/
-static int cmd_rmdir(void)
+static int cmd_rmdir(const char **cmd_ptr)
 {
 	pstring mask;
 	fstring buf;
   
 	pstrcpy(mask,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		d_printf("rmdir <dirname>\n");
 		return 1;
 	}
@@ -1832,7 +1832,7 @@ static int cmd_rmdir(void)
 /****************************************************************************
  UNIX hardlink.
 ****************************************************************************/
-static int cmd_link(void)
+static int cmd_link(const char **cmd_ptr)
 {
 	pstring src,dest;
 	fstring buf,buf2;
@@ -1845,8 +1845,8 @@ static int cmd_link(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
   
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)) || 
+	    !next_token(cmd_ptr,buf2,NULL, sizeof(buf2))) {
 		d_printf("link <src> <dest>\n");
 		return 1;
 	}
@@ -1866,7 +1866,7 @@ static int cmd_link(void)
  UNIX symlink.
 ****************************************************************************/
 
-static int cmd_symlink(void)
+static int cmd_symlink(const char **cmd_ptr)
 {
 	pstring src,dest;
 	fstring buf,buf2;
@@ -1879,8 +1879,8 @@ static int cmd_symlink(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)) || 
+	    !next_token(cmd_ptr,buf2,NULL, sizeof(buf2))) {
 		d_printf("symlink <src> <dest>\n");
 		return 1;
 	}
@@ -1901,7 +1901,7 @@ static int cmd_symlink(void)
  UNIX chmod.
 ****************************************************************************/
 
-static int cmd_chmod(void)
+static int cmd_chmod(const char **cmd_ptr)
 {
 	pstring src;
 	mode_t mode;
@@ -1914,8 +1914,8 @@ static int cmd_chmod(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)) || 
+	    !next_token(cmd_ptr,buf2,NULL, sizeof(buf2))) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -1936,7 +1936,7 @@ static int cmd_chmod(void)
  UNIX chown.
 ****************************************************************************/
 
-static int cmd_chown(void)
+static int cmd_chown(const char **cmd_ptr)
 {
 	pstring src;
 	uid_t uid;
@@ -1950,9 +1950,9 @@ static int cmd_chown(void)
 
 	pstrcpy(src,cur_dir);
 	
-	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
-	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)) || 
+	    !next_token(cmd_ptr,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(cmd_ptr,buf3,NULL, sizeof(buf3))) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
@@ -1973,7 +1973,7 @@ static int cmd_chown(void)
 /****************************************************************************
 rename some files
 ****************************************************************************/
-static int cmd_rename(void)
+static int cmd_rename(const char **cmd_ptr)
 {
 	pstring src,dest;
 	fstring buf,buf2;
@@ -1981,8 +1981,8 @@ static int cmd_rename(void)
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
 	
-	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
-	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
+	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf)) || 
+	    !next_token(cmd_ptr,buf2,NULL, sizeof(buf2))) {
 		d_printf("rename <src> <dest>\n");
 		return 1;
 	}
@@ -2002,7 +2002,7 @@ static int cmd_rename(void)
 /****************************************************************************
 toggle the prompt flag
 ****************************************************************************/
-static int cmd_prompt(void)
+static int cmd_prompt(const char **cmd_ptr)
 {
 	prompt = !prompt;
 	DEBUG(2,("prompting is now %s\n",prompt?"on":"off"));
@@ -2014,13 +2014,13 @@ static int cmd_prompt(void)
 /****************************************************************************
 set the newer than time
 ****************************************************************************/
-static int cmd_newer(void)
+static int cmd_newer(const char **cmd_ptr)
 {
 	fstring buf;
 	BOOL ok;
 	SMB_STRUCT_STAT sbuf;
 
-	ok = next_token_nr(NULL,buf,NULL,sizeof(buf));
+	ok = next_token(cmd_ptr,buf,NULL,sizeof(buf));
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
@@ -2040,11 +2040,11 @@ static int cmd_newer(void)
 /****************************************************************************
 set the archive level
 ****************************************************************************/
-static int cmd_archive(void)
+static int cmd_archive(const char **cmd_ptr)
 {
 	fstring buf;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		archive_level = atoi(buf);
 	} else
 		d_printf("Archive level is %d\n",archive_level);
@@ -2055,7 +2055,7 @@ static int cmd_archive(void)
 /****************************************************************************
 toggle the lowercaseflag
 ****************************************************************************/
-static int cmd_lowercase(void)
+static int cmd_lowercase(const char **cmd_ptr)
 {
 	lowercase = !lowercase;
 	DEBUG(2,("filename lowercasing is now %s\n",lowercase?"on":"off"));
@@ -2069,7 +2069,7 @@ static int cmd_lowercase(void)
 /****************************************************************************
 toggle the recurse flag
 ****************************************************************************/
-static int cmd_recurse(void)
+static int cmd_recurse(const char **cmd_ptr)
 {
 	recurse = !recurse;
 	DEBUG(2,("directory recursion is now %s\n",recurse?"on":"off"));
@@ -2080,7 +2080,7 @@ static int cmd_recurse(void)
 /****************************************************************************
 toggle the translate flag
 ****************************************************************************/
-static int cmd_translate(void)
+static int cmd_translate(const char **cmd_ptr)
 {
 	translation = !translation;
 	DEBUG(2,("CR/LF<->LF and print text translation now %s\n",
@@ -2093,12 +2093,12 @@ static int cmd_translate(void)
 /****************************************************************************
 do a printmode command
 ****************************************************************************/
-static int cmd_printmode(void)
+static int cmd_printmode(const char **cmd_ptr)
 {
 	fstring buf;
 	fstring mode;
 
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		if (strequal(buf,"text")) {
 			printmode = 0;      
 		} else {
@@ -2130,12 +2130,12 @@ static int cmd_printmode(void)
 /****************************************************************************
  do the lcd command
  ****************************************************************************/
-static int cmd_lcd(void)
+static int cmd_lcd(const char **cmd_ptr)
 {
 	fstring buf;
 	pstring d;
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf)))
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf)))
 		chdir(buf);
 	DEBUG(2,("the local directory is now %s\n",sys_getwd(d)));
 
@@ -2145,7 +2145,7 @@ static int cmd_lcd(void)
 /****************************************************************************
  get a file restarting at end of local file
  ****************************************************************************/
-static int cmd_reget(void)
+static int cmd_reget(const char **cmd_ptr)
 {
 	pstring local_name;
 	pstring remote_name;
@@ -2156,14 +2156,14 @@ static int cmd_reget(void)
 	
 	p = remote_name + strlen(remote_name);
 	
-	if (!next_token_nr(NULL, p, NULL, sizeof(remote_name) - strlen(remote_name))) {
+	if (!next_token(cmd_ptr, p, NULL, sizeof(remote_name) - strlen(remote_name))) {
 		d_printf("reget <filename>\n");
 		return 1;
 	}
 	pstrcpy(local_name, p);
 	dos_clean_name(remote_name);
 	
-	next_token_nr(NULL, local_name, NULL, sizeof(local_name));
+	next_token(cmd_ptr, local_name, NULL, sizeof(local_name));
 	
 	return do_get(remote_name, local_name, True);
 }
@@ -2171,7 +2171,7 @@ static int cmd_reget(void)
 /****************************************************************************
  put a file restarting at end of local file
  ****************************************************************************/
-static int cmd_reput(void)
+static int cmd_reput(const char **cmd_ptr)
 {
 	pstring local_name;
 	pstring remote_name;
@@ -2182,7 +2182,7 @@ static int cmd_reput(void)
 	pstrcpy(remote_name, cur_dir);
 	pstrcat(remote_name, "\\");
   
-	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
+	if (!next_token(cmd_ptr, p, NULL, sizeof(buf))) {
 		d_printf("reput <filename>\n");
 		return 1;
 	}
@@ -2193,7 +2193,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (next_token_nr(NULL, p, NULL, sizeof(buf)))
+	if (next_token(cmd_ptr, p, NULL, sizeof(buf)))
 		pstrcat(remote_name, p);
 	else
 		pstrcat(remote_name, local_name);
@@ -2325,7 +2325,7 @@ static BOOL list_servers(char *wk_grp)
 static struct
 {
   const char *name;
-  int (*fn)(void);
+  int (*fn)(const char **cmd_ptr);
   const char *description;
   char compl_args[2];      /* Completion argument info */
 } commands[] = 
@@ -2420,12 +2420,12 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-static int cmd_help(void)
+static int cmd_help(const char **cmd_ptr)
 {
 	int i=0,j;
 	fstring buf;
 	
-	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
+	if (next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
 		if ((i = process_tok(buf)) >= 0)
 			d_printf("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description);
 	} else {
@@ -2475,10 +2475,10 @@ static int process_command_string(char *cmd)
 		
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 		
 		if ((i = process_tok(tok)) >= 0) {
-			rc = commands[i].fn();
+			rc = commands[i].fn(&ptr);
 		} else if (i == -2) {
 			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
@@ -2674,7 +2674,7 @@ cleanup:
 /****************************************************************************
 make sure we swallow keepalives during idle time
 ****************************************************************************/
-static void readline_callback(void)
+static void readline_callback(const char **cmd_ptr)
 {
 	static time_t last_t;
 	time_t t;
@@ -2698,13 +2698,12 @@ process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
-	const char *ptr;
-
 	while (1) {
 		fstring tok;
 		fstring the_prompt;
 		char *cline;
 		pstring line;
+		const char *ptr;
 		int i;
 		
 		/* display a prompt */
@@ -2723,10 +2722,10 @@ static void process_stdin(void)
       
 		/* and get the first part of the command */
 		ptr = line;
-		if (!next_token_nr(&ptr,tok,NULL,sizeof(tok))) continue;
+		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
-			commands[i].fn();
+			commands[i].fn(&ptr);
 		} else if (i == -2) {
 			d_printf("%s: command abbreviation ambiguous\n",tok);
 		} else {
