@@ -267,6 +267,9 @@ BOOL lp_load(char *pszFname,BOOL global_only);
 int lp_numservices(void);
 void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
+int lp_default_server_announce(void);
+int lp_major_announce_version(void);
+int lp_minor_announce_version(void);
 char *volume_label(int snum);
 
 /*The following definitions come from  locking.c  */

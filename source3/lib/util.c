@@ -77,10 +77,9 @@ fstring myworkgroup = "";
 
 int smb_read_error = 0;
 
-static char *filename_dos(char *path,char *buf);
-
 static BOOL stdout_logging = False;
 
+static char *filename_dos(char *path,char *buf);
 
 /*******************************************************************
   get ready for syslog stuff
@@ -3742,5 +3741,3 @@ void file_unlock(int fd)
 #endif
   close(fd);
 }
-
-

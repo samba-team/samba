@@ -438,7 +438,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
       if (doencrypt && *pass) {
 	DEBUG(5,("Using encrypted passwords\n"));
 	passlen = 24;
-	SMBencrypt(pass,cryptkey,pword);
+	SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);
       }
 #else
       doencrypt = False;
@@ -556,7 +556,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 #ifdef SMB_PASSWD
     if (doencrypt && *pass) {
       passlen=24;
-      SMBencrypt(pass,cryptkey,pword);      
+      SMBencrypt((uchar *)pass,(uchar *)cryptkey,(uchar *)pword);      
     }
 #endif
 
