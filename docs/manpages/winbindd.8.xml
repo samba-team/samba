@@ -461,7 +461,9 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	<refentrytitle>ntlm_auth</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry>
 	<refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry></para>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry>
+	<refentrytitle>pam_winbind</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>

@@ -29,17 +29,66 @@
 
 <refsect1>
 	<title>OPTIONS</title>
-
 	<para>
-		pam_winbind does not support any additional options.
+		pam_winbind does support several options:
+		<variablelist>
+
+		<varlistentry>
+		<term>debug</term>
+		<listitem><para>Gives debugging-output to syslog.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>require_membership_of=[SID or NAME]</term>
+		<listitem><para>
+		If this option is set, pam_winbind will only succeed if the
+		user is a member of the given SID or NAME. A SID can be either a group-SID, a
+		alias-SID or even a user-SID. It is also possible to give a NAME instead of the
+		SID. That name must have the form: <parameter>MYDOMAIN\mygroup</parameter> or
+		<parameter>MYDOMAIN\myuser</parameter>.  pam_winbind will, in that case, lookup
+		the SID internally. You can verify the list of SIDs a user is a member of with
+		wbinfo --user-sids=SID.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>try_first_pass</term>
+		<listitem><para></para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>use_first_pass</term>
+		<listitem><para>
+		The default is, that pam_winbind tries to get the
+		authentication token from a previous module. If no token is available, the user
+		is asked for the old password. With this option, pam_winbind aborts with an
+		error if no authentication token from a previous module is available.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>use_authtok</term>
+		<listitem><para>
+		Set the new password to the one provided by the previously
+		stacked password module. If this option is not set, pam_winbind would ask the
+		user for the new password.
+		</para></listitem>
+		</varlistentry>
+
+		</variablelist>
+
+
 	</para>
 
 </refsect1>
 
 <refsect1>
 	<title>SEE ALSO</title>
-
-	<para>winbind(8)</para>
+	<para><citerefentry>
+	<refentrytitle>wbinfo</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry>
+	<refentrytitle>winbindd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry></para>
 </refsect1>
 
 <refsect1>
@@ -56,7 +105,7 @@
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</para>
 	
-	<para>This manpage was written by Jelmer Vernooij.</para>
+	<para>This manpage was written by Jelmer Vernooij and Guenther Deschner.</para>
 
 </refsect1>
 
