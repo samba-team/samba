@@ -15,4 +15,4 @@ libgssapi_a_SOURCES = \
 	init.c init_sec_context.c inquire_context.c \
 	release_buffer.c release_name.c release_oid_set.c \
 	test_oid_set_member.c unwrap.c verify_mic.c \
-	wrap.c \
+	wrap.c
