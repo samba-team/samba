@@ -258,7 +258,7 @@ int ldb_msg_add_value(struct ldb_context *ldb,
 		      const char *attr_name,
 		      const struct ldb_val *val);
 int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
-		       const char *attr_name, char *str);
+		       const char *attr_name, const char *str);
 
 /* compare two message elements - return 0 on match */
 int ldb_msg_element_compare(struct ldb_message_element *el1, 

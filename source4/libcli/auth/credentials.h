@@ -30,8 +30,8 @@ struct creds_CredentialState {
 	struct netr_Credential client;
 	struct netr_Credential server;
 	uint16_t secure_channel_type;
-	char *computer_name;
-	char *account_name;
+	const char *computer_name;
+	const char *account_name;
 };
 
 /* for the timebeing, use the same neg flags as Samba3. */

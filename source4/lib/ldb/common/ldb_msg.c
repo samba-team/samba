@@ -202,11 +202,11 @@ int ldb_msg_add_value(struct ldb_context *ldb,
   add a string element to a message
 */
 int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
-		       const char *attr_name, char *str)
+		       const char *attr_name, const char *str)
 {
 	struct ldb_val val;
 
-	val.data = str;
+	val.data = discard_const_p(char, str);
 	val.length = strlen(str);
 
 	return ldb_msg_add_value(ldb, msg, attr_name, &val);
