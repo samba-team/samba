@@ -3,6 +3,12 @@
 	* acl.c (_kadm5_privs_to_string): forgot one strcpy_truncate ->
  	strlcpy
 
+1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
+
+	* dump_log.c: remove unused `optind'
+
+	* replay_log.c: remove unused `optind'
+
 1999-09-13  Assar Westerlund  <assar@sics.se>
 
 	* chpass_c.c (kadm5_c_chpass_principal): new _kadm5_client_recv
