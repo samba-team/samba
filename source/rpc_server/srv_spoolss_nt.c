@@ -1720,7 +1720,6 @@ static void spoolss_notify_status(int snum,
 {
 	print_status_struct status;
 
-	memset(&status, 0, sizeof(status));
 	print_queue_length(snum, &status);
 	data->notify_data.value[0]=(uint32) status.status;
 }
@@ -2300,7 +2299,6 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 		case JOB_NOTIFY_TYPE: {
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-			memset(&status, 0, sizeof(status));	
 			count = print_queue_status(snum, &queue, &status);
 
 			if (get_a_printer(&printer, 2, 
@@ -2403,16 +2401,12 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	uint32 global_counter;
 	struct tm *t;
 	time_t setuptime;
-
-	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	
-	memset(&status, 0, sizeof(status));	
-
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) != 0)
 		return False;
 
-	count = print_queue_status(snum, &queue, &status);
+	count = print_queue_length(snum, &status);
 
 	/* check if we already have a counter for this printer */	
 	session_counter = (counter_printer_0 *)ubi_dlFirst(&counter_list);
@@ -2494,7 +2488,6 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 	printer->unknown28 = 0;
 	printer->unknown29 = 0;
 	
-	safe_free(queue);
 	free_a_printer(&ntprinter,2);
 	return (True);	
 }
@@ -2644,16 +2637,12 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
 {
 	int count;
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
-
-	print_queue_struct *queue=NULL;
 	print_status_struct status;
-	memset(&status, 0, sizeof(status));	
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 		return False;
 		
-	memset(&status, 0, sizeof(status));		
-	count = print_queue_status(snum, &queue, &status);
+	count = print_queue_length(snum, &status);
 
 	init_unistr(&printer->servername, ntprinter->info_2->servername); /* servername*/
 	init_unistr(&printer->printername, ntprinter->info_2->printername);				/* printername*/
@@ -2698,7 +2687,6 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum)
 	}
 
 	free_a_printer(&ntprinter, 2);
-	safe_free(queue);
 	return True;
 }
 
@@ -4717,12 +4705,10 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 			  uint32 *needed, uint32 *returned)
 {	
 	int snum;
-	print_queue_struct *queue=NULL;
 	print_status_struct prt_status;
+	print_queue_struct *queue=NULL;
 
 	DEBUG(4,("_spoolss_enumjobs\n"));
-
-	ZERO_STRUCT(prt_status);
 
 	*needed=0;
 	*returned=0;
@@ -4764,11 +4750,8 @@ uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
 		       pipes_struct *p, JOB_INFO *ctr, uint32 command)
 {
 	struct current_user user;
-	print_status_struct prt_status;
 	int snum, errcode = ERROR_INVALID_FUNCTION;
 		
-	memset(&prt_status, 0, sizeof(prt_status));
-
 	if (!get_printer_snum(handle, &snum)) {
 		return ERROR_INVALID_HANDLE;
 	}
@@ -6452,8 +6435,6 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 
 	DEBUG(5,("spoolss_getjob\n"));
 	
-	memset(&prt_status, 0, sizeof(prt_status));
-
 	*needed=0;
 	
 	if (!get_printer_snum(handle, &snum))
