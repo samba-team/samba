@@ -157,7 +157,7 @@ krb5_addlog_func(krb5_context context,
 }
 
 
-struct syslog_data{
+struct _heimdal_syslog_data{
     int priority;
 };
 
@@ -167,7 +167,7 @@ log_syslog(const char *time,
 	   void *data)
      
 {
-    struct syslog_data *s = data;
+    struct _heimdal_syslog_data *s = data;
     syslog(s->priority, "%s", msg);
 }
 
@@ -183,7 +183,7 @@ open_syslog(krb5_context context,
 	    krb5_log_facility *facility, int min, int max,
 	    const char *sev, const char *fac)
 {
-    struct syslog_data *sd = malloc(sizeof(*sd));
+    struct _heimdal_syslog_data *sd = malloc(sizeof(*sd));
     int i;
 
     if(sd == NULL) {
