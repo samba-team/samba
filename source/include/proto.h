@@ -684,6 +684,7 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol,
 
 /*The following definitions come from  libsmb/cli_samr.c  */
 
+#if NEW_NTDOMAIN
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
 				      struct ntuser_creds *creds);
 void cli_samr_shutdown(struct cli_state *cli);
@@ -696,8 +697,18 @@ uint32 cli_samr_open_domain(struct cli_state *cli, POLICY_HND *connect_pol,
 uint32 cli_samr_open_user(struct cli_state *cli, POLICY_HND *domain_pol,
 			  uint32 access_mask, uint32 user_rid,
 			  POLICY_HND *user_pol);
+uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
+			  uint32 access_mask, uint32 group_rid,
+			  POLICY_HND *group_pol);
 uint32 cli_samr_query_userinfo(struct cli_state *cli, POLICY_HND *user_pol, 
 			       uint16 switch_value, SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_query_groupinfo(struct cli_state *cli, POLICY_HND *group_pol,
+				uint32 info_level, GROUP_INFO_CTR *ctr);
+uint32 cli_samr_query_usergroups(struct cli_state *cli, POLICY_HND *user_pol,
+				 uint32 *num_groups, DOM_GID **gid);
+uint32 cli_samr_query_groupmem(struct cli_state *cli, POLICY_HND *group_pol,
+			       uint32 *num_mem, uint32 **rid, uint32 **attr);
+#endif
 
 /*The following definitions come from  libsmb/cli_spoolss.c  */
 
@@ -2297,6 +2308,9 @@ BOOL init_q_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM * q_e, POLICY_HND *pol,
 			   uint32 enum_context, uint32 preferred_len);
 BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM *q_e, 
 			     prs_struct *ps, int depth);
+void init_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e, uint32 enum_context, 
+			   char *domain_name, DOM_SID *domain_sid,
+                           uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e, 
 			     prs_struct *ps, int depth);
 void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e);
@@ -2790,6 +2804,98 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *
 void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
 BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u, uint32 status);
 BOOL samr_io_r_set_userinfo2(char *desc, SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth);
+#endif
+
+/*The following definitions come from  rpc_parse/parse_samr_new.c  */
+
+#if NEW_NTDOMAIN
+BOOL init_samr_q_connect(SAMR_Q_CONNECT * q_u, char *srv_name, 
+			 uint32 access_mask);
+BOOL samr_io_q_connect(char *desc, SAMR_Q_CONNECT * q_u, prs_struct *ps, 
+		       int depth);
+BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u, prs_struct *ps, 
+		       int depth);
+BOOL init_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND *hnd);
+BOOL samr_io_q_close_hnd(char *desc, SAMR_Q_CLOSE_HND * q_u,
+			 prs_struct *ps, int depth);
+BOOL samr_io_r_close_hnd(char *desc, SAMR_R_CLOSE_HND * r_u,
+			 prs_struct *ps, int depth);
+BOOL init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN * q_u, 
+			     POLICY_HND *connect_pol, uint32 access_mask,
+			     DOM_SID *sid);
+BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN * q_u,
+			   prs_struct *ps, int depth);
+BOOL samr_io_r_open_domain(char *desc, SAMR_R_OPEN_DOMAIN * r_u,
+			   prs_struct *ps, int depth);
+BOOL init_samr_q_open_user(SAMR_Q_OPEN_USER * q_u, POLICY_HND *pol,
+			   uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER * q_u,
+			 prs_struct *ps, int depth);
+BOOL samr_io_r_open_user(char *desc, SAMR_R_OPEN_USER * r_u,
+			 prs_struct *ps, int depth);
+BOOL init_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
+				POLICY_HND *hnd, uint16 switch_value);
+BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
+			      prs_struct *ps, int depth);
+BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO * r_u,
+			      prs_struct *ps, int depth);
+BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR * ctr,
+				 prs_struct *ps, int depth);
+void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr);
+BOOL sam_io_user_info10(char *desc, SAM_USER_INFO_10 * usr,
+			prs_struct *ps, int depth);
+BOOL init_sam_user_info11(SAM_USER_INFO_11 * usr,
+			  NTTIME * expiry,
+			  char *mach_acct,
+			  uint32 rid_user, uint32 rid_group, uint16 acct_ctrl);
+BOOL sam_io_user_info11(char *desc, SAM_USER_INFO_11 * usr,
+			prs_struct *ps, int depth);
+BOOL sam_io_user_info12(char *desc, SAM_USER_INFO_12 * u,
+			prs_struct *ps, int depth);
+BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
+			prs_struct *ps, int depth);
+BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
+			prs_struct *ps, int depth);
+BOOL init_sam_user_info24(SAM_USER_INFO_24 * usr,
+			  const char newpass[516], uint16 passlen);
+BOOL sam_io_user_info24(char *desc, SAM_USER_INFO_24 * usr,
+			prs_struct *ps, int depth);
+BOOL sam_io_logon_hrs(char *desc, LOGON_HRS * hrs, prs_struct *ps, 
+		      int depth);
+BOOL init_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
+				 POLICY_HND *pol, uint16 switch_level);
+BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
+			       prs_struct *ps, int depth);
+BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
+			       prs_struct *ps, int depth);
+BOOL samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u, 
+				  POLICY_HND *hnd);
+BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
+				prs_struct *ps, int depth);
+BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
+				prs_struct *ps, int depth);
+BOOL init_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND *hnd);
+BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
+			      prs_struct *ps, int depth);
+BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
+			      prs_struct *ps, int depth);
+void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u);
+BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr, prs_struct *ps, 
+			 int depth);
+BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
+		  prs_struct *ps, int depth);
+BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
+			 prs_struct *ps, int depth);
+BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
+			 prs_struct *ps, int depth);
+BOOL init_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
+				  POLICY_HND *hnd);
+BOOL init_samr_q_open_group(SAMR_Q_OPEN_GROUP * q_c, POLICY_HND *hnd,
+			    uint32 access_mask, uint32 rid);
+BOOL samr_io_q_open_group(char *desc, SAMR_Q_OPEN_GROUP * q_u,
+			  prs_struct *ps, int depth);
+BOOL samr_io_r_open_group(char *desc, SAMR_R_OPEN_GROUP * r_u,
+			  prs_struct *ps, int depth);
 #endif
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
@@ -3364,12 +3470,15 @@ BOOL api_wkssvc_rpc(pipes_struct *p);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
+#if NEW_NTDOMAIN
+#endif
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
+void fetch_domain_sid(void);
 void init_rpcclient_creds(struct ntuser_creds *creds);
 void add_command_set(struct cmd_set *cmd_set);
 
