@@ -1343,7 +1343,8 @@ BOOL do_wks_query_info(struct cli_state *cli,
 
 /*The following definitions come from  rpc_parse/parse_lsa.c  */
 
-void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx);
+void make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
+			uint32 sid_name_use, char *name, uint32 idx);
 void make_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff,
 				uint32 unknown);
 void make_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos);

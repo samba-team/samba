@@ -231,7 +231,9 @@ static void make_lsa_trans_names(LSA_TRANS_NAME_ENUM *trn,
 
 		if (status == 0x0)
 		{
-			make_lsa_trans_name(&(trn->name[(*total)]), type, name, (*total));
+			make_lsa_trans_name(&(trn->name    [(*total)]),
+			                    &(trn->uni_name[(*total)]),
+			                    type, name, (*total));
 			(*total)++;
 		}
 	}

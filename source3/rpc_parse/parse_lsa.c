@@ -31,12 +31,14 @@ static void lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn, prs_struct 
 /*******************************************************************
 creates a LSA_TRANS_NAME structure.
 ********************************************************************/
-void make_lsa_trans_name(LSA_TRANS_NAME *trn, uint32 sid_name_use, char *name, uint32 idx)
+void make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
+			uint32 sid_name_use, char *name, uint32 idx)
 {
 	int len_name = strlen(name);
 
 	trn->sid_name_use = sid_name_use;
 	make_uni_hdr(&(trn->hdr_name), len_name, len_name, len_name != 0);
+	make_unistr2(uni_name, name, len_name);
 	trn->domain_idx = idx;
 }
 
