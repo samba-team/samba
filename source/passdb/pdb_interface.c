@@ -522,8 +522,6 @@ static struct pdb_context *pdb_get_static_context(BOOL reload)
 	return pdb_context;
 }
 
-#if !defined(WITH_NISPLUS_SAM)
-
 /******************************************************************
  Backward compatibility functions for the original passdb interface
 *******************************************************************/
@@ -702,8 +700,6 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 						      rmap, num_entries, unix_only,
 						      with_priv));
 }
-
-#endif /* !defined(WITH_NISPLUS_SAM) */
 
 /***************************************************************
   Initialize the static context (at smbd startup etc). 
