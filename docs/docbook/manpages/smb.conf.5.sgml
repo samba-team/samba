@@ -5574,8 +5574,8 @@
 		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> of the Samba distribution for more information
+		the <ulink url="printer_driver2.html">Samba 2.2. Printing
+		HOWTO</ulink> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 		
@@ -5607,8 +5607,8 @@
 		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> of the Samba distribution for more information
+		the <ulink url="printer_driver2.html">Samba 2.2. Printing
+		HOWTO</ulink> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 
@@ -5622,7 +5622,7 @@
 		<para>This file is created from Windows 95 <filename>msprint.inf
 		</filename> files found on the Windows 95 client system. For more 
 		details on setting up serving of printer drivers to Windows 95 
-		clients, see the documentation file in the <filename>docs/</filename> 
+		clients, see the outdated documentation file in the <filename>docs/</filename> 
 		directory, <filename>PRINTER_DRIVER.txt</filename>.</para>
 
 		<para>See also <link linkend="PRINTERDRIVERLOCATION"><parameter>
@@ -5643,8 +5643,8 @@
 		<listitem><para><emphasis>Note :</emphasis>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
-		</filename> of the Samba distribution for more information
+		the <ulink url="printer_driver2.html">Samba 2.2. Printing
+		HOWTO</ulink> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
 
@@ -5657,7 +5657,7 @@
 
 		<para>Where MACHINE is the NetBIOS name of your Samba server, 
 		and PRINTER$ is a share you set up for serving printer driver 
-		files. For more details on setting this up see the documentation 
+		files. For more details on setting this up see the outdated documentation 
 		file in the <filename>docs/</filename> directory, <filename>
 		PRINTER_DRIVER.txt</filename>.</para>
 
