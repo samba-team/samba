@@ -38,8 +38,6 @@ samba_cflags = ""
 if os.environ.has_key("PYTHON_CFLAGS"):
     samba_cflags = os.environ.get("PYTHON_CFLAGS")
 
-print "FLAGS =", samba_cflags
-
 # These variables are filled in by configure
 
 samba_libs = "@LIBS@"
@@ -53,6 +51,8 @@ lib_list = []
 
 for lib in string.split(samba_libs):
     lib_list.append(string.replace(lib, "-l", ""))
+
+flags_list = string.split(samba_cflags)
 
 # Invoke distutils.setup
 
@@ -73,23 +73,35 @@ setup(
     
     # Module list
     
-    ext_modules = [Extension(name = "spoolss",
-                             sources = ["python/py_spoolss.c",
-                                        "python/py_spoolss_forms.c",
-                                        "python/py_common.c"],
-                             libraries = lib_list,
-                             library_dirs = ["/usr/kerberos/lib"],
-                             extra_objects = obj_list),
-                   Extension(name = "lsa",
-                             sources = ["python/py_lsa.c",
-                                        "python/py_common.c"],
-                             libraries = lib_list,
-                             library_dirs = ["/usr/kerberos/lib"],
-                             extra_objects = obj_list),
-                   Extension(name = "winbind",
-                             sources = ["python/py_winbind.c"],
-                             libraries = lib_list,
-                             library_dirs = ["/usr/kerberos/lib"],
-                             extra_objects = obj_list),
-                   ]
+    ext_modules = [
+
+    # SPOOLSS pipe module
+
+    Extension(name = "spoolss",
+              sources = ["python/py_spoolss.c",
+                         "python/py_spoolss_forms.c",
+                         "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
+
+    # LSA pipe module
+
+    Extension(name = "lsa",
+              sources = ["python/py_lsa.c",
+                         "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list),
+
+    # winbind client module
+
+    Extension(name = "winbind",
+              sources = ["python/py_winbind.c",
+                         "python/py_common.c"],
+              libraries = lib_list,
+              library_dirs = ["/usr/kerberos/lib"],
+              extra_objects = obj_list,
+              extra_compile_args = flags_list),
+    ]
 )
