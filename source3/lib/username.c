@@ -51,7 +51,7 @@ struct passwd_hash_table_s {
   NULL,0,NULL,NULL,NULL,0,{0,0}
 };
 
-int name_hash_function(const char *name) 
+static int name_hash_function(const char *name) 
 {
   /* I guess that there must be better hash functions. This one was the
    * first to come into mind :) */
@@ -65,13 +65,13 @@ int name_hash_function(const char *name)
   return value;
 }
     
-int uid_hash_function(uid_t uid) 
+static int uid_hash_function(uid_t uid) 
 {
   return uid%PASSWD_HASH_SIZE;
 }
 
 
-BOOL build_passwd_hash_table() 
+static BOOL build_passwd_hash_table(void) 
 {
   struct passwd_hash_table_s *pht=&passwd_hash_table; /* Convenience */
   int num_passwds=0;
@@ -213,7 +213,8 @@ BOOL build_passwd_hash_table()
   return False;
 }
 
-BOOL have_passwd_hash() {
+static BOOL have_passwd_hash(void)
+{
   struct passwd_hash_table_s *pht=&passwd_hash_table;
   struct timeval tv;
   GetTimeOfDay(&tv);
@@ -233,9 +234,9 @@ struct passwd *hashed_getpwnam(const char *name)
 
   if (have_passwd_hash()) {
     int name_i=name_hash_function(name);
-    int index=pht->names[name_i];
-    while(index!=-1) {
-      struct passwd *pass=&pht->passwds[pht->entries[index].entry];
+    int hash_index=pht->names[name_i];
+    while(hash_index!=-1) {
+      struct passwd *pass=&pht->passwds[pht->entries[hash_index].entry];
       if (strcmp(name,pass->pw_name)==0) {
 	DEBUG(5,("Found: %s:%s:%d:%d:%s:%s:%s\n",
 		 pass->pw_name,
@@ -247,7 +248,7 @@ struct passwd *hashed_getpwnam(const char *name)
 		 pass->pw_shell));
 	return pass;      
       }
-      index=pht->entries[index].next;
+      hash_index=pht->entries[hash_index].next;
     }
 
     /* Not found */
@@ -269,9 +270,9 @@ char *uidtoname(uid_t uid)
 
   DEBUG(5,("uidtoname(%d)\n",uid));
   if (have_passwd_hash()) {
-    int index=pht->uids[uid_hash_function(uid)];
-    while(index!=-1) {
-      pass=&pht->passwds[pht->entries[index].entry];
+    int hash_index=pht->uids[uid_hash_function(uid)];
+    while(hash_index!=-1) {
+      pass=&pht->passwds[pht->entries[hash_index].entry];
       if (pass->pw_uid==uid) {
 	DEBUG(5,("Found: %s:%s:%d:%d:%s:%s:%s\n",
 		 pass->pw_name,
@@ -283,7 +284,7 @@ char *uidtoname(uid_t uid)
 		 pass->pw_shell));
 	return pass->pw_name;      
       }
-      index=pht->entries[index].next;
+      hash_index=pht->entries[hash_index].next;
     }
     DEBUG(5,("Hash miss"));
     pass=NULL;
