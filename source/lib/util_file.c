@@ -280,169 +280,115 @@ routine to do file locking
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 #if HAVE_FCNTL_LOCK
-	SMB_STRUCT_FLOCK lock;
-	int ret;
+  SMB_STRUCT_FLOCK lock;
+  int ret;
+
 #if defined(LARGE_SMB_OFF_T)
-	/*
-	 * In the 64 bit locking case we store the original
-	 * values in case we have to map to a 32 bit lock on
-	 * a filesystem that doesn't support 64 bit locks.
-	 */
-	SMB_OFF_T orig_offset = offset;
-	SMB_OFF_T orig_count = count;
+  /*
+   * In the 64 bit locking case we store the original
+   * values in case we have to map to a 32 bit lock on
+   * a filesystem that doesn't support 64 bit locks.
+   */
+  SMB_OFF_T orig_offset = offset;
+  SMB_OFF_T orig_count = count;
 #endif /* LARGE_SMB_OFF_T */
 
-	if (lp_ole_locking_compat())
-	{
-		SMB_OFF_T mask2 = ((SMB_OFF_T) 0x3) << (SMB_OFF_T_BITS - 4);
-		SMB_OFF_T mask = (mask2 << 2);
+  DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
 
-		/* make sure the count is reasonable, we might kill the lockd otherwise */
-		count &= ~mask;
+  lock.l_type = type;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = offset;
+  lock.l_len = count;
+  lock.l_pid = 0;
 
-		/* the offset is often strange - remove 2 of its bits if either of
-		   the top two bits are set. Shift the top ones by two bits. This
-		   still allows OLE2 apps to operate, but should stop lockd from
-		   dieing */
-		if ((offset & mask) != 0)
-			offset =
-				(offset & ~mask) | (((offset & mask) >> 2) &
-						    mask2);
-	}
-	else
-	{
-		SMB_OFF_T mask2 = ((SMB_OFF_T) 0x4) << (SMB_OFF_T_BITS - 4);
-		SMB_OFF_T mask = (mask2 << 1);
-		SMB_OFF_T neg_mask = ~mask;
+  errno = 0;
 
-		/* interpret negative counts as large numbers */
-		if (count < 0)
-			count &= ~mask;
+  ret = fcntl(fd,op,&lock);
+  if (errno == EFBIG)
+  {
+    if( DEBUGLVL( 0 ))
+    {
+      dbgtext("fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n", (double)offset,(double)count);
+      dbgtext("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
+      dbgtext("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
+    }
+    /* 32 bit NFS file system, retry with smaller offset */
+    errno = 0;
+    lock.l_len = count & 0x7fffffff;
+    ret = fcntl(fd,op,&lock);
+  }
 
-		/* no negative offsets */
-		if (offset < 0)
-			offset &= ~mask;
+  if (errno != 0)
+    DEBUG(3,("fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
-		/* count + offset must be in range */
-		while ((offset < 0 || (offset + count < 0)) && mask)
-		{
-			offset &= ~mask;
-			mask = ((mask >> 1) & neg_mask);
-		}
-	}
+  /* a lock query */
+  if (op == SMB_F_GETLK)
+  {
+    if ((ret != -1) &&
+        (lock.l_type != F_UNLCK) && 
+        (lock.l_pid != 0) && 
+        (lock.l_pid != getpid()))
+    {
+      DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
+      return(True);
+    }
 
-	DEBUG(8,
-	      ("fcntl_lock %d %d %.0f %.0f %d\n", fd, op, (double)offset,
-	       (double)count, type));
+    /* it must be not locked or locked by me */
+    return(False);
+  }
 
-	lock.l_type = type;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = offset;
-	lock.l_len = count;
-	lock.l_pid = 0;
+  /* a lock set or unset */
+  if (ret == -1)
+  {
+    DEBUG(3,("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
+          (double)offset,(double)count,op,type,strerror(errno)));
 
-	errno = 0;
-
-	ret = fcntl(fd, op, &lock);
-	if (errno == EFBIG)
-	{
-		if (DEBUGLVL(0))
-		{
-			dbgtext
-				("fcntl_lock: WARNING: lock request at offset %.0f, length %.0f returned\n",
-				 (double)offset, (double)count);
-			dbgtext
-				("a 'file too large' error. This can happen when using 64 bit lock offsets\n");
-			dbgtext
-				("on 32 bit NFS mounted file systems. Retrying with 32 bit truncated length.\n");
-		}
-		/* 32 bit NFS file system, retry with smaller offset */
-		errno = 0;
-		lock.l_len = count & 0x7fffffff;
-		ret = fcntl(fd, op, &lock);
-	}
-
-	if (errno != 0)
-		DEBUG(3,
-		      ("fcntl lock gave errno %d (%s)\n", errno,
-		       strerror(errno)));
-
-	/* a lock query */
-	if (op == SMB_F_GETLK)
-	{
-		if ((ret != -1) &&
-		    (lock.l_type != F_UNLCK) &&
-		    (lock.l_pid != 0) && (lock.l_pid != getpid()))
-		{
-			DEBUG(3,
-			      ("fd %d is locked by pid %d\n", fd,
-			       (int)lock.l_pid));
-			return (True);
-		}
-
-		/* it must be not locked or locked by me */
-		return (False);
-	}
-
-	/* a lock set or unset */
-	if (ret == -1)
-	{
-		DEBUG(3,
-		      ("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
-		       (double)offset, (double)count, op, type,
-		       strerror(errno)));
-
-		/* perhaps it doesn't support this sort of locking?? */
-		if (errno == EINVAL)
-		{
+    /* perhaps it doesn't support this sort of locking?? */
+    if (errno == EINVAL)
+    {
 
 #if defined(LARGE_SMB_OFF_T)
-			{
-				/*
-				 * Ok - if we get here then we have a 64 bit lock request
-				 * that has returned EINVAL. Try and map to 31 bits for offset
-				 * and length and try again. This may happen if a filesystem
-				 * doesn't support 64 bit offsets (efs/ufs) although the underlying
-				 * OS does.
-				 */
-				uint32 off_low = (orig_offset & 0xFFFFFFFF);
-				uint32 off_high =
-					((orig_offset >> 32) & 0xFFFFFFFF);
+      {
+        /*
+         * Ok - if we get here then we have a 64 bit lock request
+         * that has returned EINVAL. Try and map to 31 bits for offset
+         * and length and try again. This may happen if a filesystem
+         * doesn't support 64 bit offsets (efs/ufs) although the underlying
+         * OS does.
+         */
+        uint32 off_low = (orig_offset & 0xFFFFFFFF);
+        uint32 off_high = ((orig_offset >> 32) & 0xFFFFFFFF);
 
-				lock.l_len = (orig_count & 0x7FFFFFFF);
-				lock.l_start =
-					(SMB_OFF_T) map_lock_offset(off_high,
-								    off_low);
-				ret = fcntl(fd, op, &lock);
-				if (ret == -1)
-				{
-					if (errno == EINVAL)
-					{
-						DEBUG(3,
-						      ("locking not supported? returning True\n"));
-						return (True);
-					}
-					return False;
-				}
-				DEBUG(3,
-				      ("64 -> 32 bit modified lock call successful\n"));
-				return True;
-			}
+        lock.l_len = (orig_count & 0x7FFFFFFF);
+        lock.l_start = (SMB_OFF_T)map_lock_offset(off_high, off_low);
+        ret = fcntl(fd,op,&lock);
+        if (ret == -1)
+        {
+          if (errno == EINVAL)
+          {
+            DEBUG(3,("locking not supported? returning True\n"));
+            return(True);
+          }
+          return False;
+        }
+        DEBUG(3,("64 -> 32 bit modified lock call successful\n"));
+        return True;
+      }
 #else /* LARGE_SMB_OFF_T */
-			DEBUG(3, ("locking not supported? returning True\n"));
-			return (True);
+      DEBUG(3,("locking not supported? returning True\n"));
+      return(True);
 #endif /* LARGE_SMB_OFF_T */
-		}
+    }
 
-		return (False);
-	}
+    return(False);
+  }
 
-	/* everything went OK */
-	DEBUG(8, ("Lock call successful\n"));
+  /* everything went OK */
+  DEBUG(8,("Lock call successful\n"));
 
-	return (True);
+  return(True);
 #else
-	return (False);
+  return(False);
 #endif
 }
 

@@ -253,7 +253,6 @@ typedef struct
   BOOL bBindInterfacesOnly;
   BOOL bUnixPasswdSync;
   BOOL bPasswdChatDebug;
-  BOOL bOleLockingCompat;
   BOOL bTimestampLogs;
   BOOL bNTSmbSupport;
   BOOL bNTPipeSupport;
@@ -859,7 +858,6 @@ static struct parm_struct parm_table[] =
 #ifdef WITH_UTMP
   {"utmp",             P_BOOL,    P_LOCAL,  &sDefault.bUtmp,            NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
 #endif
-  {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"oplock break wait time",P_INTEGER,P_GLOBAL,&Globals.oplock_break_wait_time,NULL,NULL,FLAG_GLOBAL},
@@ -1087,7 +1085,6 @@ static void init_globals(void)
   Globals.bBindInterfacesOnly = False;
   Globals.bUnixPasswdSync = False;
   Globals.bPasswdChatDebug = False;
-  Globals.bOleLockingCompat = True;
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
   Globals.bNTAclSupport = True; /* Use NT ACLs by default. */
@@ -1453,7 +1450,6 @@ static FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
-FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support,&Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
