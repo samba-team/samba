@@ -24,26 +24,9 @@
 #include "winbindd.h"
 #include "sids.h"
 
+#if 0
+
 static void winbindd_kill_connections(struct winbindd_domain *domain);
-
-/* Debug connection state */
-
-void debug_conn_state(void)
-{
-	struct winbindd_domain *domain;
-
-	DEBUG(3, ("server: dc=%s, pwdb_init=%d, lsa_hnd=%d\n", 
-		  server_state.controller,
-		  server_state.pwdb_initialised,
-		  server_state.lsa_handle_open));
-
-	for (domain = domain_list; domain; domain = domain->next) {
-		DEBUG(3, ("%s: dc=%s, got_sid=%d, sam_hnd=%d sam_dom_hnd=%d\n",
-			  domain->name, domain->controller,
-			  domain->got_domain_info, domain->sam_handle_open,
-			  domain->sam_dom_handle_open));
-	}
-}
 
 /* Add a trusted domain to our list of domains */
 
@@ -187,7 +170,6 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 	}
 	
 	DEBUG(3, ("checking domain handles for domain %s\n", domain->name));
-	debug_conn_state();
 
 	domain->last_check = t;
 
@@ -246,8 +228,6 @@ static void winbindd_kill_connections(struct winbindd_domain *domain)
 	DEBUG(0, ("killing connections to domain %s with controller %s\n", 
 		  domain->name, domain->controller));
 
-	debug_conn_state();
-
         /* Close LSA connections if we are killing connections to the dc
            that has them open. */
 
@@ -303,37 +283,6 @@ void winbindd_kill_all_connections(void)
 	}
 }
 
-static BOOL get_any_dc_name(char *domain, fstring srv_name)
-{
-	struct in_addr *ip_list, dc_ip;
-	extern pstring global_myname;
-	int count, i;
-
-	/* Lookup domain controller name */
-		
-	if (!get_dc_list(False, domain, &ip_list, &count))
-		return False;
-		
-	/* Firstly choose a PDC/BDC who has the same network address as any
-	   of our interfaces. */
-	
-	for (i = 0; i < count; i++) {
-		if(!is_local_net(ip_list[i]))
-			goto got_ip;
-	}
-	
-	i = (sys_random() % count);
-	
- got_ip:
-	dc_ip = ip_list[i];
-	SAFE_FREE(ip_list);
-		
-	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
-		return False;
-
-	return True;
-}
-
 /* Attempt to connect to all domain controllers we know about */
 
 void establish_connections(BOOL force_reestablish) 
@@ -350,7 +299,6 @@ void establish_connections(BOOL force_reestablish)
 	lastt = t;
 
 	DEBUG(3, ("establishing connections\n"));
-	debug_conn_state();
 
 	/* Maybe the connection died - if so then close up and restart */
 
@@ -401,96 +349,88 @@ void establish_connections(BOOL force_reestablish)
 
 		get_trusted_domains();
 	}
-
-	debug_conn_state();
 }
+
+#endif
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */
 
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
-    fstring level5_dom;
-    BOOL res;
-    uint32 enum_ctx = 0;
-    uint32 num_doms = 0;
-    char **domains = NULL;
-    DOM_SID *sids = NULL;
-
-    if (domain == NULL) {
-        return False;
-    }
-
-    DEBUG(1, ("looking up sid for domain %s\n", domain_name));
-
-    /* Get controller name for domain */
-
-    if (!get_any_dc_name(domain_name, domain->controller)) {
-	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
-		      domain_name));
-	    return False;
-    }
-
-    /* Do a level 5 query info policy if we are looking up our own SID */
-
-    if (strequal(domain_name, lp_workgroup())) {
-	    return wb_lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
-					 level5_dom, &domain->sid);
-    } 
-
-    /* Use lsaenumdomains to get sid for this domain */
-    
-    res = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-				&num_doms, &domains, &sids);
-    
-    /* Look for domain name */
-    
-    if (res && domains && sids) {
-            int found = False;
-            int i;
-	    
-            for(i = 0; i < num_doms; i++) {
-		    if (strequal(domain_name, domains[i])) {
-			    sid_copy(&domain->sid, &sids[i]);
-			    found = True;
+        fstring level5_dom;
+        uint32 enum_ctx = 0;
+        uint32 num_doms = 0;
+        char **domains = NULL;
+        DOM_SID *sids = NULL;
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result;
+        
+        DEBUG(1, ("looking up sid for domain %s\n", domain_name));
+        
+        if (!(hnd = cm_get_lsa_handle(domain_name)))
+            return False;
+        
+        /* Do a level 5 query info policy if we are looking up the SID for
+           our own domain. */
+        
+        if (strequal(domain_name, lp_workgroup())) {
+                
+                result = cli_lsa_query_info_policy(hnd->cli, hnd->cli->mem_ctx,
+                                                   &hnd->pol, 0x05, level5_dom,
+                                                   &domain->sid);
+                
+                return NT_STATUS_IS_OK(result);
+        } 
+        
+        /* Use lsaenumdomains to get sid for this domain */
+        
+        result = cli_lsa_enum_trust_dom(hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
+                                        &enum_ctx, &num_doms, &domains, &sids);
+        
+        /* Look for domain name */
+        
+        if (NT_STATUS_IS_OK(result) && domains && sids) {
+                int found = False;
+                int i;
+                
+                for(i = 0; i < num_doms; i++) {
+                        if (strequal(domain_name, domains[i])) {
+                                sid_copy(&domain->sid, &sids[i]);
+                                found = True;
 			    break;
-		    }
-            }
-	    
-            res = found;
-    }
-    
-    return res;
+                        }
+                }
+                
+                return found;
+        }
+        
+        return NT_STATUS_IS_OK(result);
 }
 
 /* Lookup domain controller and sid for a domain */
 
 BOOL get_domain_info(struct winbindd_domain *domain)
 {
-    fstring sid_str;
+        fstring sid_str;
+        
+        DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
 
-    DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
+        /* Lookup domain sid */        
+        
+        if (!lookup_domain_sid(domain->name, domain)) {
+                DEBUG(0, ("could not find sid for domain %s\n", domain->name));
+                return False;
+        }
+        
+        /* Lookup OK */
 
-    /* Lookup domain sid */        
-
-    if (!lookup_domain_sid(domain->name, domain)) {
-	    DEBUG(0, ("could not find sid for domain %s\n", domain->name));
-
-	    /* Could be a DC failure - shut down connections to this domain */
-
-	    winbindd_kill_connections(domain);
-
-	    return False;
-    }
-    
-    /* Lookup OK */
-
-    domain->got_domain_info = 1;
-
-    sid_to_string(sid_str, &domain->sid);
-    DEBUG(1, ("found sid %s for domain %s\n", sid_str, domain->name));
-
-    return True;
+        domain->got_domain_info = 1;
+        
+        sid_to_string(sid_str, &domain->sid);
+        DEBUG(1, ("found sid %s for domain %s\n", sid_str, domain->name));
+        
+        return True;
 }        
 
 /* Lookup a sid in a domain from a name */
@@ -498,40 +438,44 @@ BOOL get_domain_info(struct winbindd_domain *domain)
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type)
 {
-    int num_sids = 0, num_names = 1;
-    DOM_SID *sids = NULL;
-    uint32 *types = NULL;
-    BOOL res;
+        int num_sids = 0, num_names = 1;
+        DOM_SID *sids = NULL;
+        uint32 *types = NULL;
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result;
+        
+        /* Don't bother with machine accounts */
+        
+        if (name[strlen(name) - 1] == '$')
+                return False;
+        
+        /* Lookup name */
+        
+        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+                return False;
+        
+        result = cli_lsa_lookup_names(hnd->cli, hnd->cli->mem_ctx, &hnd->pol, 
+                                      num_names, (char **)&name, &sids, 
+                                      &types, &num_sids);
+        
+        /* Return rid and type if lookup successful */
+        
+        if (NT_STATUS_IS_OK(result)) {
+                
+                /* Return sid */
+                
+                if ((sid != NULL) && (sids != NULL))
+                        sid_copy(sid, &sids[0]);
+                
+                /* Return name type */
+                
+                if ((type != NULL) && (types != NULL))
+                        *type = types[0];
 
-    /* Don't bother with machine accounts */
-
-    if (name[strlen(name) - 1] == '$') {
+                return True;
+        }
+        
         return False;
-    }
-
-    /* Lookup name */
-
-    res = wb_lsa_lookup_names(&server_state.lsa_handle, num_names, 
-			      (char **)&name, &sids, &types, &num_sids);
-
-    /* Return rid and type if lookup successful */
-
-    if (res) {
-
-        /* Return sid */
-
-        if ((sid != NULL) && (sids != NULL)) {
-            sid_copy(sid, &sids[0]);
-        }
-
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-    
-    return res;
 }
 
 /* Lookup a name in a domain from a sid */
@@ -539,35 +483,42 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
                                  enum SID_NAME_USE *type)
 {
-    int num_sids = 1, num_names = 0;
-    uint32 *types = NULL;
-    char **names;
-    BOOL res;
+        int num_sids = 1, num_names = 0;
+        uint32 *types = NULL;
+        char **names;
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result;
+        
+        /* Lookup name */
+        
+        if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+                return False;
+        
+        result = cli_lsa_lookup_sids(hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
+                                     num_sids, sid, &names, &types, 
+                                     &num_names);
 
-    /* Lookup name */
+        /* Return name and type if successful */
+        
+        if (NT_STATUS_IS_OK(result)) {
+                
+                /* Return name */
+                
+                if ((names != NULL) && (name != NULL))
+                        fstrcpy(name, names[0]);
+                
+                /* Return name type */
 
-    res = wb_lsa_lookup_sids(&server_state.lsa_handle, num_sids, sid, 
-			     &names, &types, &num_names);
+                if ((type != NULL) && (types != NULL))
+                        *type = types[0];
 
-    /* Return name and type if successful */
-
-    if (res) {
-
-        /* Return name */
-
-        if ((names != NULL) && (name != NULL)) {
-            fstrcpy(name, names[0]);
+                return True;
         }
-
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-
-    return res;
+        
+        return False;
 }
+
+#if 0
 
 /* Lookup user information from a rid */
 
@@ -619,6 +570,8 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 	return wb_sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
 				     num_names, rid_mem, names, name_types);
 }
+
+#endif
 
 /* Globals for domain list stuff */
 
@@ -751,31 +704,7 @@ BOOL winbindd_param_init(void)
     return True;
 }
 
-/* find the sequence number for a domain */
-
-uint32 domain_sequence_number(char *domain_name)
-{
-	struct winbindd_domain *domain;
-	SAM_UNK_CTR ctr;
-
-	domain = find_domain_from_name(domain_name);
-	if (!domain) return DOM_SEQUENCE_NONE;
-
-	if (!wb_samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
-
-		/* If this fails, something bad has gone wrong */
-
-		winbindd_kill_connections(domain);
-
-		DEBUG(2,("domain sequence query failed\n"));
-		return DOM_SEQUENCE_NONE;
-	}
-
-	DEBUG(4,("got domain sequence number for %s of %u\n", 
-		 domain_name, (unsigned)ctr.info.inf2.seq_num));
-	
-	return ctr.info.inf2.seq_num;
-}
+#if 0
 
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
@@ -805,6 +734,7 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	return False;
 }
 
+#endif
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 

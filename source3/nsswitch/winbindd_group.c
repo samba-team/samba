@@ -23,6 +23,8 @@
 
 #include "winbindd.h"
 
+#if 0
+
 /* Fill a grent structure from various other information */
 
 static BOOL fill_grent(struct winbindd_gr *gr, char *gr_name,
@@ -496,15 +498,18 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		
 	do {
 		struct acct_info *sam_grp_entries = NULL;
+                CLI_POLICY_HND *hnd;
 
 		num_entries = 0;
 
-		status = wb_samr_enum_dom_groups(&ent->domain->sam_dom_handle,
-					     &ent->grp_query_start_ndx,
-					     0x8000, /* buffer size? */
-					     (struct acct_info **)
-					     &sam_grp_entries,
-					     &num_entries);
+                if (!(hnd = cm_get_sam_dom_handle(ent->domain->name)))
+                        break;
+
+                status = cli_samr_enum_dom_groups(
+                        hnd->cli, hnd->cli->mem_ctx, hnd->pol,
+                        &ent->grp_query_start_ndx,
+                        0x8000, /* buffer size? */
+                        (struct acct_info **) &sam_grp_entries, &num_entries);
 
 		/* Copy entries into return buffer */
 
@@ -983,3 +988,5 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	return result;
 }
+
+#endif
