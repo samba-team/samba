@@ -260,7 +260,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</command></para>
  
   	<para>The next step is to join the domain. To do that use the 
-	<command>smbpasswd</command> program like this:  </para>
+	<command>net</command> program like this:  </para>
  
 	<para><command>net join -S PDC -U Administrator</command></para>
  
