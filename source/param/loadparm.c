@@ -2620,54 +2620,55 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
 static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 {
-	int low, high;
+	unsigned int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
 
-        winbind_uid_low = low;
-        winbind_uid_high = high;
+        winbind_uid_low = (uid_t)low;
+        winbind_uid_high = (uid_t)high;
 
 	return True;
 }
 
 static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
 {
-	gid_t low, high;
+	unsigned int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
 		return False;
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
 
-        winbind_gid_low = low;
-        winbind_gid_high = high;
+        winbind_gid_low = (gid_t)low;
+        winbind_gid_high = (gid_t)high;
 
 	return True;
 }
 
 /***************************************************************************
- Handle the WINS SERVER list
+ Handle the WINS SERVER list.
 ***************************************************************************/
+
 static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
-  {
-  if( !wins_srv_load_list( pszParmValue ) )
-    return( False );  /* Parse failed. */
+{
+	if( !wins_srv_load_list( pszParmValue ) )
+		return( False );  /* Parse failed. */
 
-  string_set( ptr, pszParmValue );
-  return( True );
-  }
-
+	string_set( ptr, pszParmValue );
+	return( True );
+}
 
 /***************************************************************************
- Handle the DEBUG level list
+ Handle the DEBUG level list.
 ***************************************************************************/
+
 static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
@@ -2678,8 +2679,9 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 
 
 /***************************************************************************
-initialise a copymap
+ Initialise a copymap.
 ***************************************************************************/
+
 static void init_copymap(service * pservice)
 {
 	int i;

@@ -1729,7 +1729,8 @@ BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
 	 */
 	 
 	if ((pw=sys_getpwuid(uid)) == NULL)  {
-		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
+		DEBUG(0,("pdb_getsampwuid: getpwuid(%u) return NULL. User does not exist in Unix accounts!\n",
+					(unsigned int)uid));
 		return False;
 	}
 	

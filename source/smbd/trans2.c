@@ -1439,6 +1439,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SMB_BIG_UINT dfree,dsize,bsize,secs_per_unit;;
 			data_len = 24;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
+			if (bsize < 1024) {
+				SMB_BIG_UINT factor = 1024/bsize;
+				bsize = 1024;
+				dsize /= factor;
+				dfree /= factor;
+			}
 			secs_per_unit = 2;
 			SBIG_UINT(pdata,0,dsize*(bsize/(512*secs_per_unit)));
 			SBIG_UINT(pdata,8,dfree*(bsize/(512*secs_per_unit)));
@@ -2668,7 +2674,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			if (raw_unixmode != SMB_MODE_NO_CHANGE) {
 				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
-					unixmode, fname ));
+					(unsigned int)unixmode, fname ));
 				if (vfs_chmod(conn,fname,unixmode) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}

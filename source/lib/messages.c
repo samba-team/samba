@@ -322,8 +322,8 @@ void message_dispatch(void)
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
-		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%d\n",
-			  msg_type, (int) src));
+		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%u\n",
+			  msg_type, (unsigned int) src));
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
@@ -334,8 +334,8 @@ void message_dispatch(void)
 		}
 		if (!n_handled) {
 			DEBUG(5,("message_dispatch: warning: no handlers registed for "
-				 "msg_type %d in pid%d\n",
-				 msg_type, getpid()));
+				 "msg_type %d in pid%u\n",
+				 msg_type, (unsigned int)getpid()));
 		}
 		SAFE_FREE(buf);
 	}
