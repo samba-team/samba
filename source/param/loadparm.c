@@ -541,7 +541,7 @@ static service sDefault = {
 	False,			/* bForcePrintername */
 	True,			/* bNTAclSupport */
 	False,                  /* bForceUnknownAclUser */
-	True,			/* bUseSendfile */
+	False,			/* bUseSendfile */
 	False,			/* bProfileAcls */
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
