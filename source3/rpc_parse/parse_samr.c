@@ -3675,6 +3675,8 @@ void init_samr_q_lookup_rids(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_RIDS * q_u,
 	if (q_u->rid == NULL) {
 		q_u->num_rids1 = 0;
 		q_u->num_rids2 = 0;
+	} else {
+		memcpy(q_u->rid, rid, num_rids * sizeof(q_u->rid[0]));
 	}
 }
 
