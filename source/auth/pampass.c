@@ -56,7 +56,7 @@ static char *PAM_password;
 #define COPY_STRING(s) (s) ? strdup(s) : NULL
 
 /*
- * Macro converted to a function to simplyify this thing
+ * PAM error handler.
  */
 static BOOL pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, int dbglvl)
 {
@@ -132,6 +132,9 @@ static struct pam_conv PAM_conversation = {
 	NULL
 };
 
+/* 
+ * PAM Closing out cleanup handler
+ */
 static BOOL proc_pam_end(pam_handle_t *pamh)
 {
        int pam_error;
@@ -148,7 +151,9 @@ static BOOL proc_pam_end(pam_handle_t *pamh)
        return False;
 }
 
-/* Start PAM authentication for specified account */
+/*
+ * Start PAM authentication for specified account
+ */
 static BOOL proc_pam_start(pam_handle_t **pamh, char *user)
 {
        int pam_error;
@@ -187,7 +192,6 @@ static BOOL proc_pam_start(pam_handle_t **pamh, char *user)
 
 /*
  * PAM Authentication Handler
- * 	- For now both auth and acct!! Change this!!!!
  */
 static BOOL pam_auth(pam_handle_t *pamh, char *user, char *password)
 {
@@ -279,7 +283,10 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password)
 }
 
 
-static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
+/*
+ * PAM Internal Session Handler
+ */
+static BOOL proc_pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
 {
        int pam_error;
 
@@ -313,15 +320,23 @@ static BOOL pam_session(pam_handle_t *pamh, char *user, char *tty, BOOL flag)
       return (True);
 }
 
-BOOL PAM_session(BOOL flag, const connection_struct *conn, char *tty)
+/*
+ * PAM Externally accessible Session handler
+ */
+BOOL pam_session(BOOL flag, const connection_struct *conn, char *tty)
 {
 	pam_handle_t *pamh = NULL;
 	char * user;
 
 	user = malloc(strlen(conn->user)+1);
+	if ( user == NULL )
+	{
+		DEBUG(0, ("PAM: PAM_session Malloc Failed!\n"));
+		return False;
+	}
 
 	/* This is freed by PAM */
-	strncpy(user, conn->user, strlen(conn->user)+1);
+	StrnCpy(user, conn->user, strlen(conn->user)+1);
 
 	if (!proc_pam_start(&pamh, user))
 	{
@@ -329,7 +344,7 @@ BOOL PAM_session(BOOL flag, const connection_struct *conn, char *tty)
 	  return False;
 	}
 
-	if (pam_session(pamh, user, tty, flag))
+	if (proc_pam_session(pamh, user, tty, flag))
 	{
 	  return proc_pam_end(pamh);
 	}
@@ -340,70 +355,9 @@ BOOL PAM_session(BOOL flag, const connection_struct *conn, char *tty)
 	}
 }
 
-/*********************************************************************************/
-#if NOTBLOCKEDOUT
-
-static BOOL pam_account(pam_handle_t *pamh, char *user)
-{
-       int pam_error;
-
-       PAM_password = NULL;
-       PAM_username = user;
-
-       DEBUG(4,("PAM starting account management for user: %s \n", user));
-
-       pam_error = pam_acct_mgmt(pamh, PAM_SILENT);
-       if (!pam_error_handler(pamh, pam_error, "PAM set account management failed", 0)) {
-	   proc_pam_end(pamh);
-           return False;
-       } else {
-           DEBUG(4,("PAM: account management passed\n"));
-       }
-
-       /*
-        * This will allow samba to aquire a kerberos token. And, when
-        * exporting an AFS cell, be able to /write/ to this cell.
-        */
-       pam_error = pam_setcred(pamh, (PAM_ESTABLISH_CRED));
-       if (!pam_error_handler(pamh, pam_error, "set credentials failed\n", 0)) {
-	   proc_pam_end(pamh);
-           return False;
-       }
-
-       /* If this point is reached, the user has been authenticated. */
-       return (True);
-}
-static BOOL account_pam(char *user)
-{
-         /*
-	  * Check the account with the PAM account module:
-          *  - This means that accounts can be disabled
-          *    and or expired with avoidance of samba then just
-          *    bypassing the situation.
-          */
-
-         pam_handle_t *pamh = NULL;
-         char * PAMuser;
-
-         PAMuser = malloc(strlen(user)+1);
-         /* This is freed by PAM */
-         strncpy(PAMuser, user, strlen(user)+1);
-
-         if (proc_pam_start(&pamh, PAMuser))
-	 {
-           if (pam_account(pamh, PAMuser))
-	   {
-             return proc_pam_end(pamh);
-	   }
-	 }
-         proc_pam_end(pamh);
-         return False;
-}
-
-
-#endif /* NOTBLOCKEDOUT */
-/************************************************************************************/
-
+/*
+ * PAM Password Validation Suite
+ */
 BOOL pam_passcheck(char * user, char * password)
 {
 	pam_handle_t *pamh = NULL;
