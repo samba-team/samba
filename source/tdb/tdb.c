@@ -71,24 +71,24 @@ TDB_DATA tdb_null;
 /* all contexts, to ensure no double-opens (fcntl locks don't nest!) */
 static TDB_CONTEXT *tdbs = NULL;
 
-static void *tdb_munmap(void *ptr, tdb_len size)
+static void tdb_munmap(TDB_CONTEXT *tdb)
 {
 #ifdef HAVE_MMAP
-	munmap(ptr, size);
+	if (tdb->map_ptr) munmap(tdb->map_ptr, tdb->map_size);
 #endif
-	return NULL;
+	tdb->map_ptr = NULL;
 }
 
-static void *tdb_mmap(tdb_len size, int read_only, int fd)
+static void tdb_mmap(TDB_CONTEXT *tdb)
 {
-	void *ret = NULL;
 #ifdef HAVE_MMAP
-	ret = mmap(NULL, size, PROT_READ | (read_only ? 0 : PROT_WRITE), MAP_SHARED|MAP_FILE, fd, 0);
-
-	if (ret == (void *)-1)
-		ret = NULL;
+	if (!(tdb->flags & TDB_NOMMAP))
+		tdb->map_ptr = mmap(NULL, tdb->map_size, 
+				    PROT_READ|(tdb->read_only? 0:PROT_WRITE), 
+				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
+#else
+	tdb->map_ptr = NULL;
 #endif
-	return ret;
 }
 
 /* Endian conversion: we only ever deal with 4 byte quantities */
@@ -203,10 +203,9 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off offset)
 	if (st.st_size <= (size_t)offset) return TDB_ERRCODE(TDB_ERR_IO, -1);
 
 	/* Unmap, update size, remap */
-	if (tdb->map_ptr) tdb->map_ptr=tdb_munmap(tdb->map_ptr, tdb->map_size);
+	tdb_munmap(tdb);
 	tdb->map_size = st.st_size;
-	if (!(tdb->flags & TDB_NOMMAP))
-		tdb->map_ptr = tdb_mmap(tdb->map_size, tdb->read_only,tdb->fd);
+	tdb_mmap(tdb);
 	return 0;
 }
 
@@ -439,8 +438,8 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
            the database up to a multiple of TDB_PAGE_SIZE */
 	size = TDB_ALIGN(tdb->map_size + size*10, TDB_PAGE_SIZE) - tdb->map_size;
 
-	if (!(tdb->flags & TDB_INTERNAL) && tdb->map_ptr)
-		tdb->map_ptr = tdb_munmap(tdb->map_ptr, tdb->map_size);
+	if (!(tdb->flags & TDB_INTERNAL))
+		tdb_munmap(tdb);
 
 	/*
 	 * We must ensure the file is unmapped before doing this
@@ -467,11 +466,8 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 	 * writes and mmaps are not consistent.
 	 */
 
-	if (!(tdb->flags & TDB_NOMMAP)) {
-		tdb->map_ptr = tdb_mmap(tdb->map_size, 0, tdb->fd);
-		/* We're ok if this fails and returns NULL, as we'll
-			fallback to read/write here. */
-	}
+	/* We're ok if the mmap fails as we'll fallback to read/write */
+	tdb_mmap(tdb);
 
 	/* form a new freelist record */
 	memset(&rec,'\0',sizeof(rec));
@@ -1152,8 +1148,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.inode = st.st_ino;
         tdb.locked = calloc(tdb.header.hash_size+1, sizeof(tdb.locked[0]));
         if (!tdb.locked) goto fail;
-	if (!(tdb.flags & TDB_NOMMAP))
-		tdb.map_ptr = tdb_mmap(st.st_size, tdb.read_only, tdb.fd);
+	tdb_mmap(&tdb);
 	if (locked) {
 		tdb_clear_spinlocks(&tdb);
 		tdb_brlock(&tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK);
@@ -1172,7 +1167,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
  fail:
         if (tdb.name) free(tdb.name);
 	if (tdb.fd != -1) close(tdb.fd);
-	if (tdb.map_ptr) tdb_munmap(tdb.map_ptr, tdb.map_size);
+	tdb_munmap(&tdb);
 	return NULL;
 }
 
@@ -1184,7 +1179,7 @@ int tdb_close(TDB_CONTEXT *tdb)
 
 	if (tdb->map_ptr) {
 		if (tdb->flags & TDB_INTERNAL) free(tdb->map_ptr);
-		else tdb_munmap(tdb->map_ptr, tdb->map_size);
+		else tdb_munmap(tdb);
 	}
 	if (tdb->name) free(tdb->name);
 	if (tdb->fd != -1) {
