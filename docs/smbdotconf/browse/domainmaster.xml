@@ -2,7 +2,7 @@
 				 type="boolean"
                  context="G"
                  basic="1" advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Tell <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> to enable WAN-wide browse list

@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option helps Samba to try and 'guess' at 
     the real UNIX username, as many DOS clients send an all-uppercase 

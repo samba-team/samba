@@ -1,7 +1,7 @@
 <samba:parameter name="strict sync"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
     <para>Many Windows applications (including the Windows 98 explorer
     shell) seem to confuse flushing buffer contents to disk with doing

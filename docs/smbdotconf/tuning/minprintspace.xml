@@ -2,7 +2,7 @@
                  context="S"
 				 type="integer"
                  print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This sets the minimum amount of free disk 
     space that must be available before a user will be able to spool 

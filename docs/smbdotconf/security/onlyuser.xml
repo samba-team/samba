@@ -1,7 +1,7 @@
 <samba:parameter name="only user"
 					type="boolean"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a boolean option that controls whether 
     connections with usernames not in the <parameter moreinfo="none">user</parameter> 

@@ -2,7 +2,7 @@
 				 type="integer"
                  context="G"
                  advanced="1" developer="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter limits the maximum number of 
     open files that one <citerefentry><refentrytitle>smbd</refentrytitle>

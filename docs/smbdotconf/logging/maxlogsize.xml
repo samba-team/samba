@@ -2,7 +2,7 @@
 				 type="integer"
                  context="G"
                  developer="1" advanced="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option (an integer in kilobytes) specifies 
     the max size the log file should grow to. Samba periodically checks 

@@ -2,7 +2,7 @@
 				 type="string"
                  context="G"
                  advanced="1" developer="1" hide="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>winbind uid</synonym>
 <description>
 	<para>The idmap uid parameter specifies the range of user ids that are allocated for use

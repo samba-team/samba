@@ -1,7 +1,7 @@
 <samba:parameter name="fake oplocks"
 				 type="boolean"
                  context="S"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Oplocks are the way that SMB clients get permission 
 	from a server to locally cache file operations. If a server grants 

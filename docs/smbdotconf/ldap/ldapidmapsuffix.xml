@@ -2,7 +2,7 @@
                  context="G"
 		 advanced="1" developer="1"
 		 type="string"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameters specifies the suffix that is 
 	used when storing idmap mappings. If this parameter 

@@ -1,7 +1,7 @@
 <samba:parameter name="inherit acls"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter can be used to ensure that if default acls
     exist on parent directories, they are always honored when creating a

@@ -2,7 +2,7 @@
                  context="G"
                  developer="1"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Sometimes the timestamps in the log messages 
     are needed with a resolution of higher that seconds, this 

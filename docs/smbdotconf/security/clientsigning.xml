@@ -2,7 +2,7 @@
                  context="G"
 				 type="boolean-auto"
                  basic="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This controls whether the client offers or requires
     the server it talks to to use SMB signing. Possible values 

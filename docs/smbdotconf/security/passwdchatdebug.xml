@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This boolean specifies if the passwd chat script 
     parameter is run in <emphasis>debug</emphasis> mode. In this mode the 

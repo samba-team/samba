@@ -2,7 +2,7 @@
                  context="G"
 				 type="enum"
                  basic="1"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
     <para>This controls whether the server offers or requires

@@ -1,6 +1,6 @@
 <samba:parameter name="default case"
 	context="S"
-	type="string" xmlns:samba="http://samba.org/common">
+	type="string" xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>See the section on <link linkend="NAMEMANGLINGSECT">
 	NAME MANGLING</link>. Also note the <link linkend="SHORTPRESERVECASE">

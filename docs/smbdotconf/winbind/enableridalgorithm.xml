@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1" hide="1"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option is used to control whether or not smbd in Samba 3.0 should fallback
 	to the algorithm used by Samba 2.2 to generate user and group RIDs.  The longterm

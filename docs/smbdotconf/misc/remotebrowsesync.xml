@@ -2,7 +2,7 @@
 	         context="G"
 		 advanced="1" developer="1"
 		 type="list"
-		 xmlns:samba="http://samba.org/common">
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option allows you to setup <citerefentry><refentrytitle>nmbd</refentrytitle>
         <manvolnum>8</manvolnum></citerefentry> to periodically request 

@@ -2,7 +2,7 @@
                  context="G"
                  advanced="1" developer="1"
 				 type="integer"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>When Samba connects to an ldap server that server
 may be down or unreachable. To prevent Samba from hanging whilst

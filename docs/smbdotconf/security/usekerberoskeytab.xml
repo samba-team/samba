@@ -1,7 +1,7 @@
 <samba:parameter name="use kerberos keytab"
                  context="G"
 		 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 <para>
 Specifies whether Samba should attempt to maintain service principals in the systems

@@ -1,7 +1,7 @@
 <samba:parameter name="map system"
                  context="S"
 				 type="boolean"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This controls whether DOS style system files 
 	should be mapped to the UNIX group execute bit.</para>

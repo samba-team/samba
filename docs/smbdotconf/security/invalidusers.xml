@@ -1,7 +1,7 @@
 <samba:parameter name="invalid users"
                  context="S"
 				 type="list"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This is a list of users that should not be allowed 
     to login to this service. This is really a <emphasis>paranoid</emphasis> 

@@ -2,7 +2,7 @@
                  context="S"
 				 type="boolean"
 		 print="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter is only applicable to <link linkend="PRINTOK">printable</link> services.
     When smbd is serving Printer Drivers to Windows NT/2k/XP clients, each printer on the Samba

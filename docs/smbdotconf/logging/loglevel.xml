@@ -2,7 +2,7 @@
 				 type="string"
                  context="G"
                  developer="1" advanced="1"
-                 xmlns:samba="http://samba.org/common">
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>debuglevel</synonym>
 <description>
     <para>The value of the parameter (a astring) allows 
