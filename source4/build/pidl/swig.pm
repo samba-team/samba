@@ -42,21 +42,29 @@ sub XFromPython($$)
     my($e) = shift;
     my($prefix) = shift;
     my($result) = "";
+    my($obj) = "PyDict_GetItem(obj, PyString_FromString(\"$e->{NAME}\"))";
 
     # Special cases
 
-    if ($e->{TYPE} eq "policy_handle" && $e->{POINTERS} == 1) {
-	$result .= "\ts->$prefix$e->{NAME} = policy_handle_from_python(obj);";
+    if (($e->{TYPE} eq "policy_handle" || $e->{TYPE} eq "string") && $e->{POINTERS} == 1) {
+	$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj);\n";
 	return $result;
     }
 
+    if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
+	$result .= "\ts->$prefix$e->{NAME} = policy_handle_from_python($obj);\n";
+	return $result;
+    }
+
+    # Generate conversion for element
+    
     if (util::is_scalar_type($e->{TYPE})) {
 	if ($e->{POINTERS} == 0) {
 	    if ($e->{ARRAY_LEN}) {
 		# pointer to scalar with array len property
 		$result .= DebugElement($e);
 	    } else {
-		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(obj);\n";
+		$result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python($obj);\n";
 	    }
 	} else {
 	    # Pointer to scalar
@@ -82,6 +90,13 @@ sub XToPython($$)
 	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), policy_handle_to_python(s->$prefix$e->{NAME}));\n";
 	return $result;
     }
+
+    if ($e->{TYPE} eq "string" && $e->{POINTERS} == 1) {
+	$result .= "\tPyDict_SetItem(obj, PyString_FromString(\"$e->{NAME}\"), string_to_python(s->$prefix$e->{NAME}));\n";
+	return $result;
+    }
+
+    # Generate conversion for element
 
     if (util::is_scalar_type($e->{TYPE})) {
 	if ($e->{POINTERS} == 0) {
@@ -111,7 +126,7 @@ sub ParseFunction($)
 
     $res .= "/* Convert Python dict to struct $fn->{NAME}.in */\n\n";
 
-    $res .= "int python_to_$fn->{NAME}(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s, PyObject *obj)\n";
+    $res .= "int $fn->{NAME}_from_python(TALLOC_CTX *mem_ctx, struct $fn->{NAME} *s, PyObject *obj)\n";
     $res .= "{\n";
 
     foreach my $e (@{$fn->{DATA}}) {
@@ -141,7 +156,7 @@ sub ParseFunction($)
 
     $res .= "%typemap(in) struct $fn->{NAME} * (struct $fn->{NAME} temp) {\n";
     $res .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(int) $fn->{NAME}\");\n\n";
-    $res .= "\tpython_to_$fn->{NAME}(mem_ctx, &temp, \$input);\n";
+    $res .= "\t$fn->{NAME}_from_python(mem_ctx, &temp, \$input);\n";
     $res .= "\t\$1 = &temp;\n";
     $res .= "}\n\n";
 
