@@ -5034,39 +5034,32 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 	if(!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("unknown   ", ps, depth, &il->unknown))
+	/* 
+	 * I know this seems weird, but I have no other explanation.
+	 * This is observed behavior on both NT4 and 2K servers.
+	 * --jerry
+	 */
+	 
+	if (!prs_align_uint64(ps))
 		return False;
 
 	/* parse the main elements the packet */
 
-	if(!prs_uint32("cversion   ", ps, depth, &il->version))
+	if(!prs_uint32("cversion       ", ps, depth, &il->version))
 		return False;
-
-	if(!prs_uint32("name       ", ps, depth, &il->name_ptr))
+	if(!prs_uint32("name           ", ps, depth, &il->name_ptr))
 		return False;
-
-	/*
-	 * If name_ptr is NULL then the next 4 bytes are the name_ptr. A driver 
-	 * with a NULL name just isn't a driver For example: "HP LaserJet 4si"
-	 * from W2K CDROM (which uses unidriver). JohnR 010205
-	 */
-	if (!il->name_ptr) {
-		DEBUG(5,("spool_io_printer_driver_info_level_6: name_ptr is NULL! Get next value\n"));
-		if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
-			return False;	
-	}
-	
-	if(!prs_uint32("environment", ps, depth, &il->environment_ptr))
+	if(!prs_uint32("environment    ", ps, depth, &il->environment_ptr))
 		return False;
-	if(!prs_uint32("driverpath ", ps, depth, &il->driverpath_ptr))
+	if(!prs_uint32("driverpath     ", ps, depth, &il->driverpath_ptr))
 		return False;
-	if(!prs_uint32("datafile   ", ps, depth, &il->datafile_ptr))
+	if(!prs_uint32("datafile       ", ps, depth, &il->datafile_ptr))
 		return False;
-	if(!prs_uint32("configfile ", ps, depth, &il->configfile_ptr))
+	if(!prs_uint32("configfile     ", ps, depth, &il->configfile_ptr))
 		return False;
-	if(!prs_uint32("helpfile   ", ps, depth, &il->helpfile_ptr))
+	if(!prs_uint32("helpfile       ", ps, depth, &il->helpfile_ptr))
 		return False;
-	if(!prs_uint32("monitorname", ps, depth, &il->monitorname_ptr))
+	if(!prs_uint32("monitorname    ", ps, depth, &il->monitorname_ptr))
 		return False;
 	if(!prs_uint32("defaultdatatype", ps, depth, &il->defaultdatatype_ptr))
 		return False;
