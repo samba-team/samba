@@ -51,8 +51,7 @@ static int max_protocol = PROTOCOL_NT1;
 extern pstring user_socket_options;
 
 static int process_tok(fstring tok);
-static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc,
-			 const char **argv);
+static int cmd_help(void);
 
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
@@ -980,8 +979,7 @@ static BOOL do_altname(char *name)
 /****************************************************************************
  Exit client.
 ****************************************************************************/
-static NTSTATUS cmd_quit(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc,
-			 const char **argv)
+static int cmd_quit(void)
 {
 	cli_shutdown(cli);
 	exit(0);
@@ -2151,8 +2149,7 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx, int argc,
-		    const char **argv)
+static int cmd_help(void)
 {
 	int i=0,j;
 	fstring buf;
