@@ -41,8 +41,8 @@ of the SAMBA Web Pages.
 ------------------------------------------------------------------------------
 READING - ENGLAND
 
-Philip Hands                | E-Mail: info@hands.com  Tel:+44 1734 545656
-Philip Hands Computing Ltd. | Mobile: +44 802 242989  Fax:+44 1734 474655
+Philip Hands                | E-Mail: info@hands.com  Tel:+44 118 9545656
+Philip Hands Computing Ltd. | Mobile: +44 802 242989  Fax:+44 118 9474655
 Unit 1, Cherry Close, Caversham, Reading  RG4 8UP  ENGLAND
 
 Samba experience: 
