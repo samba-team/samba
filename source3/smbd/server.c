@@ -459,9 +459,7 @@ void exit_server(char *reason)
 	invalidate_all_vuids();
 
 	/* delete our entry in the connections database. */
-	if (lp_status(-1)) {
-		yield_connection(NULL,"",MAXSTATUS);
-	}
+	yield_connection(NULL,"",MAXSTATUS);
 
 	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
@@ -751,9 +749,7 @@ static void usage(char *pname)
 	}
 
 	/* Setup the main smbd so that we can get messages. */
-	if (lp_status(-1)) {
-		claim_connection(NULL,"",MAXSTATUS,True);
-	}
+	claim_connection(NULL,"",MAXSTATUS,True);
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
 	if (!migrate_from_old_password_file(global_myworkgroup)) {

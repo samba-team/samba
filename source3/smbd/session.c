@@ -28,17 +28,9 @@
 
 #include "includes.h"
 
-#if defined(WITH_PAM) || defined(WITH_UTMP)
+extern fstring remote_machine;
 
 static TDB_CONTEXT *tdb;
-struct sessionid {
-	fstring username;
-	fstring hostname;
-	fstring id_str;
-	uint32  id_num;
-	uint32  pid;
-};
-
 /* called when a session is created */
 BOOL session_claim(uint16 vuid)
 {
@@ -98,6 +90,10 @@ BOOL session_claim(uint16 vuid)
 	slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_TEMPLATE, i);
 	sessionid.id_num = i;
 	sessionid.pid = pid;
+	sessionid.uid = vuser->uid;
+	sessionid.gid = vuser->gid;
+	fstrcpy(sessionid.remote_machine, remote_machine);
+	fstrcpy(sessionid.ip_addr, client_addr());
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
@@ -106,12 +102,8 @@ BOOL session_claim(uint16 vuid)
 		return False;
 	}
 
-	dlen = tdb_pack(dbuf, sizeof(dbuf), "fffdd",
-			sessionid.username, sessionid.hostname, sessionid.id_str,
-			sessionid.id_num, sessionid.pid);
-
-	data.dptr = dbuf;
-	data.dsize = dlen;
+	data.dptr = (char *)&sessionid;
+	data.dsize = sizeof(sessionid);
 	if (tdb_store(tdb, key, data, TDB_MODIFY) != 0) {
 		DEBUG(1,("session_claim: unable to create session id record\n"));
 		return False;
@@ -132,7 +124,7 @@ BOOL session_claim(uint16 vuid)
 void session_yield(uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
-	TDB_DATA data;
+	TDB_DATA dbuf;
 	struct sessionid sessionid;
 	TDB_DATA key;		
 	fstring keystr;
@@ -148,17 +140,15 @@ void session_yield(uint16 vuid)
 	key.dptr = keystr;
 	key.dsize = strlen(keystr)+1;
 
-	data = tdb_fetch(tdb, key);
-	if (data.dptr == NULL) {
+	dbuf = tdb_fetch(tdb, key);
+
+	if (dbuf.dsize != sizeof(sessionid))
 		return;
-	}
 
-	tdb_unpack(data.dptr, data.dsize, "fffdd",
-		   &sessionid.username, &sessionid.hostname, &sessionid.id_str,
-		   &sessionid.id_num, &sessionid.pid);
+	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	safe_free(data.dptr);
-	data.dptr = NULL;
+	safe_free(dbuf.dptr);
+	dbuf.dptr = NULL;
 
 #if WITH_UTMP	
 	if (lp_utmp()) {
@@ -172,8 +162,3 @@ void session_yield(uint16 vuid)
 	tdb_delete(tdb, key);
 }
 
-#else
- /* null functions - no session support needed */
- BOOL session_claim(uint16 vuid) { return True; }
- void session_yield(uint16 vuid) {} 
-#endif

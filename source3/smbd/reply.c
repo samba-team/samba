@@ -127,9 +127,7 @@ int reply_special(char *inbuf,char *outbuf)
 		reload_services(True);
 		reopen_logs();
 
-		if (lp_status(-1)) {
-			claim_connection(NULL,"",MAXSTATUS,True);
-		}
+		claim_connection(NULL,"",MAXSTATUS,True);
 
 		break;
 		
