@@ -115,16 +115,10 @@ oplock messages, change notify events etc.
 ****************************************************************************/
 static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 {
-	/* JRATEMP */
-	DEBUG(10,("async_processing: doing async_processing...\n"));
-
 	/* check for oplock messages (both UDP and kernel) */
 	if (receive_local_message(fds, buffer, buffer_len, 0)) {
 		process_local_message(buffer, buffer_len);
 	}
-
-	/* JRATEMP */
-	DEBUG(10,("async_processing: doing pending_change_notify_queue...\n"));
 
 	/* check for async change notify events */
 	process_pending_change_notify_queue(0);
@@ -136,9 +130,6 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		reload_services(False);
 		reload_after_sighup = False;
 	}
-
-	/* JRATEMP */
-	DEBUG(10,("async_processing: end async_processing...\n"));
 }
 
 /****************************************************************************
@@ -208,13 +199,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	to.tv_sec = timeout / 1000;
 	to.tv_usec = (timeout % 1000) * 1000;
 
-	/* JRATEMP */
-	DEBUG(10,("receive_message_or_smb: Entering main select with maxfd = %d\n", maxfd));
-
 	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
-
-	/* JRATEMP */
-	DEBUG(10,("receive_message_or_smb: exited main select with return = %d\n", selrtn ));
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
