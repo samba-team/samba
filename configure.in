@@ -172,7 +172,7 @@ fi
 AM_CONDITIONAL(DCE, test "$with_dce" = yes)
 
 ## XXX quite horrible:
-if -f /etc/ibmcxx.cfg; then
+if test -f /etc/ibmcxx.cfg; then
 	x=`sed -n '/^xlc_r4/,/^$/p' /etc/ibmcxx.cfg`
 	dpagaix_LDADD=`echo $x | sed -n -e '/libraries/{;s/^[^=]*=\(.*\)/\1/;s/,/ /gp;}'`
 	dpagaix_CFLAGS=`echo $x | sed -n -e '/options/{;s/^[^=]*=\(.*\)/\1/;s/-q[^,]*//;s/,/ /gp;}'`
@@ -993,7 +993,6 @@ AC_OUTPUT(Makefile 			\
 	appl/ftp/common/Makefile	\
 	appl/ftp/ftp/Makefile		\
 	appl/ftp/ftpd/Makefile		\
-	appl/kauth/Makefile		\
 	appl/kx/Makefile		\
 	appl/login/Makefile		\
 	appl/otp/Makefile		\
