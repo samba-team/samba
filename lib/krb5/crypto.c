@@ -2258,20 +2258,6 @@ krb5_checksum_is_collision_proof(krb5_context context,
     return ct->flags & F_CPROOF;
 }
 
-krb5_boolean KRB5_LIB_FUNCTION
-krb5_checksum_is_disabled(krb5_context context,
-			  krb5_cksumtype type)
-{
-    struct checksum_type *ct = _find_checksum(type);
-    if(ct == NULL) {
-	if (context)
-	    krb5_set_error_string (context, "checksum type %d not supported",
-				   type);
-	return TRUE;
-    }
-    return (ct->flags & F_DISABLED) ? TRUE : FALSE;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_checksum_disable(krb5_context context,
 		      krb5_cksumtype type)
@@ -4183,20 +4169,6 @@ krb5_crypto_getconfoundersize(krb5_context context,
 {
     *confoundersize = crypto->et->confoundersize;
     return 0;
-}
-
-krb5_boolean KRB5_LIB_FUNCTION
-krb5_enctype_is_disabled(krb5_context context,
-			 krb5_enctype enctype)
-{
-    struct encryption_type *et = _find_enctype(enctype);
-    if(et == NULL) {
-	if (context)
-	    krb5_set_error_string (context, "encryption type %d not supported",
-				   enctype);
-	return TRUE;
-    }
-    return (et->flags & F_DISABLED) ? TRUE : FALSE;
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
