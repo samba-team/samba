@@ -113,7 +113,7 @@ verify_mic_des
     return GSS_S_BAD_MIC;
   }
 
-  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
 
@@ -226,7 +226,7 @@ verify_mic_des3
       return GSS_S_BAD_MIC;
   }
 
-  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
 
@@ -247,9 +247,7 @@ gss_verify_mic
     OM_uint32 ret;
     krb5_keytype keytype;
 
-    ret = krb5_auth_con_getremotesubkey (gssapi_krb5_context,
-					 context_handle->auth_context,
-					 &key);
+    ret = gss_krb5_get_remotekey(context_handle, &key);
     if (ret) {
 	gssapi_krb5_set_error_string ();
 	*minor_status = ret;
