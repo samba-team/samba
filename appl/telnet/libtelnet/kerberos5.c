@@ -206,6 +206,8 @@ kerberos5_send(char *name, Authenticator *ap)
 	ap_opts = AP_OPTS_MUTUAL_REQUIRED;
     else
 	ap_opts = 0;
+
+    ap_opts |= AP_OPTS_USE_SUBKEY;
     
     ret = krb5_auth_con_init (context, &auth_context);
     if (ret) {
