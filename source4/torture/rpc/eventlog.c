@@ -64,6 +64,7 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	init_eventlog_String(&r.in.unknown1, NULL);
 	r.in.unknown2 = 0x00000001;
 	r.in.unknown3 = 0x00000001;
+	r.out.handle = &handle;
 
 	status = dcerpc_eventlog_OpenEventLog(p, mem_ctx, &r);
 
