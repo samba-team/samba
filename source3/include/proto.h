@@ -1313,14 +1313,14 @@ void refresh_my_names(time_t t);
 /*The following definitions come from  nmbd_namelistdb.c  */
 
 void set_samba_nb_type(void);
-BOOL ms_browser_name(char *name, int type);
-void remove_name_from_namelist(struct subnet_record *subrec, 
-                               struct name_record *namerec);
+BOOL ms_browser_name( char *name, int type );
+void remove_name_from_namelist( struct subnet_record *subrec, 
+                                struct name_record *namerec );
 struct name_record *find_name_on_subnet(struct subnet_record *subrec,
                                       struct nmb_name *nmbname, BOOL self_only);
-struct name_record *find_name_for_remote_broadcast_subnet( struct nmb_name *nmbname, 
-                                                           BOOL self_only);
-void update_name_ttl(struct name_record *namerec, int ttl);
+struct name_record *find_name_for_remote_broadcast_subnet( struct nmb_name *nmbname,
+                                                           BOOL self_only );
+void update_name_ttl( struct name_record *namerec, int ttl );
 struct name_record *add_name_to_subnet(struct subnet_record *subrec,
 		char *name, int type, uint16 nb_flags, int ttl, 
                 enum name_source source, int num_ips, struct in_addr *iplist);
@@ -1328,17 +1328,20 @@ void standard_success_register(struct subnet_record *subrec,
                              struct userdata_struct *userdata,
                              struct nmb_name *nmbname, uint16 nb_flags, int ttl,
                              struct in_addr registered_ip);
-void standard_fail_register(struct subnet_record *subrec, 
-                             struct response_record *rrec, struct nmb_name *nmbname);
-BOOL find_ip_in_name_record(struct name_record *namerec, struct in_addr ip);
+void standard_fail_register( struct subnet_record   *subrec,
+                             struct response_record *rrec,
+                             struct nmb_name        *nmbname );
+BOOL find_ip_in_name_record( struct name_record *namerec, struct in_addr ip );
 void add_ip_to_name_record(struct name_record *namerec, struct in_addr new_ip);
-void remove_ip_from_name_record( struct name_record *namerec, struct in_addr remove_ip);
-void standard_success_release(struct subnet_record *subrec, 
-                             struct userdata_struct *userdata,
-                             struct nmb_name *nmbname, struct in_addr released_ip);
+void remove_ip_from_name_record( struct name_record *namerec,
+                                 struct in_addr      remove_ip );
+void standard_success_release( struct subnet_record   *subrec,
+                               struct userdata_struct *userdata,
+                               struct nmb_name        *nmbname,
+                               struct in_addr          released_ip );
 void expire_names_on_subnet(struct subnet_record *subrec, time_t t);
 void expire_names(time_t t);
-void add_samba_names_to_subnet(struct subnet_record *subrec);
+void add_samba_names_to_subnet( struct subnet_record *subrec );
 void dump_all_namelists(void);
 
 /*The following definitions come from  nmbd_namequery.c  */
