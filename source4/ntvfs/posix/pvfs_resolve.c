@@ -140,7 +140,7 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs, struct pvfs_filename *
 		if (!de) {
 			if (i < num_components-1) {
 				closedir(dir);
-				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 			}
 		} else {
 			components[i] = talloc_strdup(name, de->d_name);
@@ -271,7 +271,6 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
      PVFS_RESOLVE_NO_WILDCARD = wildcards are considered illegal characters
      PVFS_RESOLVE_STREAMS     = stream names are allowed
 
-     TODO: add reserved name checking (for things like LPT1)
      TODO: ../ collapsing, and outside share checking
 */
 NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
