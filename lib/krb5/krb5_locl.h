@@ -120,5 +120,6 @@
 #include <error.h>
 
 #define ALLOC(X, N) (X) = calloc((N), sizeof(*(X)))
+#define ALLOC_SEQ(X, N) do { (X)->len = (N); ALLOC((X)->val, (N)); } while(0)
 
 #endif /* __KRB5_LOCL_H__ */
