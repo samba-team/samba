@@ -1625,6 +1625,73 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct netr_LogonGetDomainInfo r;
+	struct netr_DomainQuery1 q1;
+	struct netr_Authenticator a;
+#define ASYNC_COUNT 100
+	struct creds_CredentialState creds;
+	struct creds_CredentialState creds_async[ASYNC_COUNT];
+	struct rpc_request *req[ASYNC_COUNT];
+	int i;
+
+	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, &creds)) {
+		return False;
+	}
+
+	ZERO_STRUCT(r);
+	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computer_name = TEST_MACHINE_NAME;
+	r.in.unknown1 = 512;
+	r.in.level = 1;
+	r.in.credential = &a;
+	r.out.credential = &a;
+
+	r.in.i1[0] = 0;
+	r.in.i1[1] = 0;
+
+	r.in.query.query1 = &q1;
+	ZERO_STRUCT(q1);
+	
+	/* this should really be the fully qualified name */
+	q1.workstation_domain = TEST_MACHINE_NAME;
+	q1.workstation_site = "Default-First-Site-Name";
+	q1.blob2.length = 0;
+	q1.blob2.size = 0;
+	q1.blob2.data = NULL;
+	q1.product.string = "product string";
+
+	printf("Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
+
+	for (i=0;i<ASYNC_COUNT;i++) {
+		creds_client_authenticator(&creds, &a);
+
+		creds_async[i] = creds;
+		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
+	}
+
+	for (i=0;i<ASYNC_COUNT;i++) {
+		status = dcerpc_ndr_request_recv(req[i]);
+		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(r.out.result)) {
+			printf("netr_LogonGetDomainInfo_async(%d) - %s/%s\n", 
+			       i, nt_errstr(status), nt_errstr(r.out.result));
+			return False;
+		}
+
+		if (!creds_client_check(&creds_async[i], &a.cred)) {
+			printf("Credential chaining failed at async %d\n", i);
+			return False;
+		}
+	}
+
+	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", ASYNC_COUNT);
+
+	return True;
+}
+
+
 BOOL torture_rpc_netlogon(int dummy)
 {
         NTSTATUS status;
@@ -1711,6 +1778,10 @@ BOOL torture_rpc_netlogon(int dummy)
 	}
 
 	if (!test_DsrEnumerateDomainTrusts(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_GetDomainInfo_async(p, mem_ctx)) {
 		ret = False;
 	}
 
