@@ -30,6 +30,7 @@
 #endif
 
 extern pstring scope;
+extern pstring global_myname;
 
 extern pstring user_socket_options;
 
@@ -456,6 +457,7 @@ enum client_action
 
 	TimeInit();
 	charset_initialise();
+	crc32_build_table();
 
 	myumask = umask(0);
 	umask(myumask);
@@ -682,6 +684,9 @@ enum client_action
 	{
 		fprintf(stderr, "Failed to get my hostname.\n");
 	}
+
+	fstrcpy(global_myname, cli_info.myhostname);
+	strupper(global_myname);
 
 	if (!lp_load(servicesf,True, False, False))
 	{

@@ -59,11 +59,17 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_NEGOTIATE_SEAL             0x00000020
 #define NTLMSSP_NEGOTIATE_LM_KEY           0x00000080
 #define NTLMSSP_NEGOTIATE_NTLM             0x00000200
+#define NTLMSSP_NEGOTIATE_00001000         0x00001000
+#define NTLMSSP_NEGOTIATE_00002000         0x00002000
 #define NTLMSSP_NEGOTIATE_ALWAYS_SIGN      0x00008000
 #define NTLMSSP_NEGOTIATE_NTLM2            0x00080000
 #define NTLMSSP_NEGOTIATE_TARGET_INFO      0x00800000
 #define NTLMSSP_NEGOTIATE_128              0x20000000
 #define NTLMSSP_NEGOTIATE_KEY_EXCH         0x40000000
+
+/* NTLMSSP signature version */
+#define NTLMSSP_SIGN_VERSION 0x01
+
 
 /* RPC_IFACE */
 typedef struct rpc_iface_info
@@ -271,7 +277,8 @@ typedef struct rpc_auth_ntlmssp_resp_info
 typedef struct rpc_auth_ntlmssp_chk_info
 {
 	uint32 ver; /* 0x0000 0001 */
-	uint8  crc32[8]; /* checksum using 0xEDB8 8320 as a polynomial */
+	uint32 reserved;
+	uint32 crc32; /* checksum using 0xEDB8 8320 as a polynomial */
 	uint32 seq_num;
 
 } RPC_AUTH_NTLMSSP_CHK;

@@ -390,7 +390,9 @@ BOOL cli_close(struct cli_state *cli, int fnum);
 BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
-size_t cli_write(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
+size_t cli_write(struct cli_state *cli,
+				int fnum, uint16 write_mode,
+				char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint32 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
@@ -1551,13 +1553,13 @@ void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
 				uint8 auth_type, uint8 auth_level,
 				uint8 stub_type_len);
 void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
+void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
+				char *signature, uint32 msg_type);
+void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain);
 void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
-void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
-				char *signature, uint32 msg_type);
-void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
 				uint32 neg_flags,
 				uint8 challenge[8]);
@@ -1567,6 +1569,9 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 				char *domain, char *user, char *wks,
 				uint32 neg_flags);
 void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
+void make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
+				uint32 ver, uint32 crc32, uint32 seq_num);
+void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_samr.c  */
 

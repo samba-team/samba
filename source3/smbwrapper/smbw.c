@@ -705,7 +705,7 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 		return -1;
 	}
 	
-	ret = cli_write(&file->srv->cli, file->f->cli_fd, buf, file->f->offset, count);
+	ret = cli_write(&file->srv->cli, file->f->cli_fd, 0, buf, file->f->offset, count);
 
 	if (ret == -1) {
 		errno = smbw_errno(&file->srv->cli);

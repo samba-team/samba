@@ -67,6 +67,14 @@ void cmd_sam_test(struct client_info *info)
 	/* open SAMR session.  */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
 
+	/* establish a connection. */
+	res = res ? do_samr_connect(smb_cli, 
+				srv_name, 0x00000020,
+				&info->dom.samr_pol_connect) : False;
+
+	res = res ? do_samr_close(smb_cli,
+	            &info->dom.samr_pol_connect) : False;
+
 	/* close the session */
 	cli_nt_session_close(smb_cli);
 
@@ -232,10 +240,10 @@ void cmd_sam_enum_users(struct client_info *info)
 	}
 
 	res = res ? do_samr_close(smb_cli,
-	            &info->dom.samr_pol_connect) : False;
+	            &info->dom.samr_pol_open_domain) : False;
 
 	res = res ? do_samr_close(smb_cli,
-	            &info->dom.samr_pol_open_domain) : False;
+	            &info->dom.samr_pol_connect) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);

@@ -286,12 +286,12 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
  - caller is expected to free the header data structure once used.
 
  ********************************************************************/
-
 static BOOL create_rpc_bind_req(prs_struct *rhdr,
                                 prs_struct *rhdr_rb,
                                 prs_struct *rhdr_auth,
                                 prs_struct *auth_req,
                                 prs_struct *auth_ntlm,
+				uint32 call_id,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
                                 char *my_name, char *domain)
 {
@@ -303,7 +303,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
 	/* create the bind request RPC_HDR_RB */
 	make_rpc_hdr_rb(&hdr_rb, 0x1630, 0x1630, 0x0,
-	0x1, 0x0, 0x1, abstract, transfer);
+	                0x1, 0x0, 0x1, abstract, transfer);
 
 	/* stream the bind request data */
 	smb_io_rpc_hdr_rb("", &hdr_rb,  rhdr_rb, 0);
@@ -329,7 +329,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	}
 
 	/* create the request RPC_HDR */
-	make_rpc_hdr(&hdr, RPC_BIND, 0x0, get_rpc_call_id(),
+	make_rpc_hdr(&hdr, RPC_BIND, 0x0, call_id,
 	             rhdr_rb->offset + 0x10,
 	             auth_req  != NULL ? auth_req ->offset : 0 +
 	             auth_ntlm != NULL ? auth_ntlm->offset : 0);
@@ -362,6 +362,71 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
 
 /*******************************************************************
+ creates a DCE/RPC bind authentication response
+
+ - initialises the parse structure.
+ - dynamically allocates the header data structure
+ - caller is expected to free the header data structure once used.
+
+ ********************************************************************/
+static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
+				char *domain, char *user_name, char *my_name,
+				uint32 ntlmssp_cli_flgs,
+				uint32 call_id,
+				prs_struct *rhdr,
+                                prs_struct *rhdr_autha,
+                                prs_struct *auth_resp)
+{
+	unsigned char lm_owf[24];
+	unsigned char nt_owf[24];
+	RPC_HDR               hdr;
+	RPC_HDR_AUTHA         hdr_autha;
+	RPC_AUTH_VERIFIER     auth_verifier;
+	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+
+	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
+	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
+	mem_realloc_data(rhdr_autha->data, rhdr_autha->offset);
+
+	make_rpc_auth_verifier(&auth_verifier,
+			       "NTLMSSP", NTLMSSP_AUTH);
+
+	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
+	mem_realloc_data(auth_resp->data, auth_resp->offset);
+
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf);
+			
+	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
+			         lm_owf, nt_owf,
+			         domain, user_name, my_name,
+			         ntlmssp_cli_flgs);
+
+	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp, 0);
+	mem_realloc_data(auth_resp->data, auth_resp->offset);
+
+	/* create the request RPC_HDR */
+	make_rpc_hdr(&hdr, RPC_BINDRESP, 0x0, call_id,
+	             auth_resp->offset + rhdr_autha->offset + 0x10,
+	             auth_resp->offset);
+
+	smb_io_rpc_hdr("hdr"   , &hdr   , rhdr, 0);
+	mem_realloc_data(rhdr->data, rhdr->offset);
+
+	if (rhdr->data == NULL || rhdr_autha->data == NULL) return False;
+
+	/***/
+	/*** link rpc header and authentication responses ***/
+	/***/
+
+	prs_link(NULL      , rhdr       , rhdr_autha);
+	prs_link(rhdr      , rhdr_autha , auth_resp );
+	prs_link(rhdr_autha, auth_resp  , NULL );
+
+	return True;
+}
+
+
+/*******************************************************************
  creates a DCE/RPC bind request
 
  - initialises the parse structure.
@@ -370,8 +435,10 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 
  ********************************************************************/
 
-static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len)
+static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len,
+				int auth_len)
 {
+	uint32 alloc_hint;
 	RPC_HDR_REQ hdr_req;
 	RPC_HDR     hdr;
 
@@ -380,10 +447,22 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len)
 
 	/* create the rpc header RPC_HDR */
 	make_rpc_hdr(&hdr   , RPC_REQUEST, RPC_FLG_FIRST | RPC_FLG_LAST,
-	             get_rpc_call_id(), data_len, 0);
+	             get_rpc_call_id(), data_len, auth_len);
+
+	if (auth_len != 0)
+	{
+		alloc_hint = data_len - 0x18 - auth_len - 12;
+	}
+	else
+	{
+		alloc_hint = data_len - 0x18;
+	}
+
+	DEBUG(10,("create_rpc_request: data_len: %x auth_len: %x alloc_hint: %x\n",
+	           data_len, auth_len, alloc_hint));
 
 	/* create the rpc request RPC_HDR_REQ */
-	make_rpc_hdr_req(&hdr_req, data_len, op_num);
+	make_rpc_hdr_req(&hdr_req, alloc_hint, op_num);
 
 	/* stream-time... */
 	smb_io_rpc_hdr    ("hdr    ", &hdr    , rhdr, 0);
@@ -405,31 +484,84 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
 	/* fudge this, at the moment: create the header; memcpy the data.  oops. */
+	prs_struct dataa;
 	prs_struct rparam;
 	prs_struct hdr;
+	prs_struct hdr_auth;
+	prs_struct auth_verf;
 	int data_len;
+	int auth_len;
 	BOOL ret;
+	BOOL auth_verify;
+	BOOL auth_seal;
+	uint32 crc32;
 
-	data_len               = data->offset + 0x18;
+	auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
+	auth_seal   = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);
+
+	/* happen to know that NTLMSSP authentication verifier is 16 bytes */
+	auth_len               = auth_verify ? 16 : 0;
+	data_len               = data->offset + auth_len + (auth_verify ? 8 : 0) + 0x18;
 	data->data->offset.end = data->offset;
 
-	prs_init(&hdr   , data_len, 4, SAFETY_MARGIN, False);
-	prs_init(&rparam, 0       , 4, 0            , True );
+	prs_init(&hdr      , data_len, 4, SAFETY_MARGIN, False);
+	prs_init(&hdr_auth , 8       , 4, SAFETY_MARGIN, False);
+	prs_init(&auth_verf, auth_len, 4, SAFETY_MARGIN, False);
+	prs_init(&rparam   , 0       , 4, 0            , True );
 
-	create_rpc_request(&hdr, op_num, data_len);
+	create_rpc_request(&hdr, op_num, data_len, auth_len);
+
+	if (auth_seal)
+	{
+		crc32 = crc32_calc_buffer(data->offset, mem_data(&data->data, 0));
+		NTLMSSPcalc(cli->ntlmssp_hash, mem_data(&data->data, 0), data->offset);
+	}
+
+	if (auth_verify)
+	{
+		RPC_AUTH_NTLMSSP_CHK chk;
+		RPC_HDR_AUTH         rhdr_auth;
+
+		make_rpc_hdr_auth(&rhdr_auth, 0x0a, 0x06, 0x02);
+		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &hdr_auth, 0);
+
+		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, 0);
+		smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0);
+		NTLMSSPcalc(cli->ntlmssp_hash, mem_data(&auth_verf.data, 4), 12);
+	}
+
+	if (auth_seal || auth_verify)
+	{
+		prs_link(NULL     , &hdr      , data      );
+		prs_link(&hdr     , data      , &hdr_auth );
+		prs_link(data     , &hdr_auth , &auth_verf);
+		prs_link(&hdr_auth, &auth_verf, NULL      );
+	}
+	else
+	{
+		prs_link(NULL, &hdr, data);
+		prs_link(&hdr, data, NULL);
+	}
 
 	mem_realloc_data(hdr.data, data_len);
-	hdr.data->offset.end = data_len;
-	mem_buf_copy(mem_data(&(hdr.data), 0x18), data->data, 0, data->offset);
 
-	ret = rpc_api_pipe(cli, 0x0026, NULL, &hdr, &rparam, rdata);
+	DEBUG(100,("data_len: %x data_calc_len: %x\n",
+		data_len, mem_buf_len(data->data)));
 
-	prs_mem_free(&rparam);
-	prs_mem_free(&hdr);
+	/* this is a hack due to limitations in rpc_api_pipe */
+	prs_init(&dataa, mem_buf_len(hdr.data), 4, 0x0, False);
+	mem_buf_copy(dataa.data->data, hdr.data, 0, mem_buf_len(hdr.data));
+
+	ret = rpc_api_pipe(cli, 0x0026, NULL, &dataa, &rparam, rdata);
+
+	prs_mem_free(&hdr_auth );
+	prs_mem_free(&auth_verf);
+	prs_mem_free(&rparam   );
+	prs_mem_free(&hdr      );
+	prs_mem_free(&dataa    );
 
 	return ret;
 }
-
 
 /****************************************************************************
 do an rpc bind
@@ -574,11 +706,13 @@ do an rpc bind
 ****************************************************************************/
 
 static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
-                   RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth)
+				RPC_IFACE *abstract, RPC_IFACE *transfer, 
+				char *my_name)
 {
 	prs_struct hdr;
 	prs_struct hdr_rb;
 	prs_struct hdr_auth;
+	prs_struct hdr_autha;
 	prs_struct auth_req;
 	prs_struct auth_ntlm;
 	prs_struct data;
@@ -586,9 +720,13 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_struct rparam;
 
 	BOOL valid_ack = False;
+	BOOL ntlmssp_auth = cli->ntlmssp_cli_flgs != 0;
+	uint32 call_id;
 
 	if (pipe_name == NULL || abstract == NULL || transfer == NULL)
-	return False;
+	{
+		return False;
+	}
 
 	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_name));
 
@@ -600,14 +738,16 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	prs_init(&auth_req , ntlmssp_auth ? 1024 : 0, 4, SAFETY_MARGIN, False);
 	prs_init(&auth_ntlm, ntlmssp_auth ? 1024 : 0, 4, SAFETY_MARGIN, False);
 
-	prs_init(&rdata , 0   , 4, SAFETY_MARGIN, True );
-	prs_init(&rparam, 0   , 4, SAFETY_MARGIN, True );
+	prs_init(&rdata    , 0   , 4, SAFETY_MARGIN, True);
+	prs_init(&rparam   , 0   , 4, SAFETY_MARGIN, True);
 
+	call_id = get_rpc_call_id();
 	create_rpc_bind_req(&hdr, &hdr_rb,
 	                    ntlmssp_auth ? &hdr_auth : NULL,
 	                    ntlmssp_auth ? &auth_req : NULL,
 	                    ntlmssp_auth ? &auth_ntlm : NULL,
-	                    abstract, transfer, global_myname, global_myworkgroup);
+	                    call_id,
+	                    abstract, transfer, global_myname, cli->domain);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
 	prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
@@ -645,6 +785,57 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 		{
 			smb_io_rpc_auth_ntlmssp_chal("", &rhdr_chal, &rdata, 0);
 			if (rdata.offset == 0) valid_ack = False;
+		}
+		if (valid_ack && ntlmssp_auth)
+		{
+			unsigned char p24[24];
+			unsigned char lm_owf[24];
+			unsigned char lm_hash[16];
+
+			prs_struct hdra;
+			prs_struct hdr_autha;
+			prs_struct auth_resp;
+			prs_struct dataa;
+
+			cli->ntlmssp_cli_flgs = rhdr_chal.neg_flags;
+
+			prs_init(&hdra     , 0x10, 4, 0x0          , False);
+			prs_init(&hdr_autha, 1024, 4, SAFETY_MARGIN, False);
+			prs_init(&auth_resp, 1024, 4, SAFETY_MARGIN, False);
+
+			pwd_make_lm_nt_owf(&cli->pwd, rhdr_chal.challenge);
+			pwd_get_lm_nt_owf(&cli->pwd, lm_owf, NULL);
+			pwd_get_lm_nt_16(&cli->pwd, lm_hash, NULL);
+			NTLMSSPOWFencrypt(lm_hash, lm_owf, p24);
+			bzero(lm_hash, sizeof(lm_hash));
+			NTLMSSPhash(cli->ntlmssp_hash, p24);
+
+			create_rpc_bind_resp(&cli->pwd, cli->domain,
+			                     cli->user_name, global_myname, 
+			                     cli->ntlmssp_cli_flgs,
+			                     call_id,
+			                     &hdra, &hdr_autha, &auth_resp);
+			                    
+			/* this is a hack due to limitations in rpc_api_pipe */
+			prs_init(&dataa, mem_buf_len(hdra.data), 4, 0x0, False);
+			mem_buf_copy(dataa.data->data, hdra.data, 0, mem_buf_len(hdra.data));
+
+			if (cli_write(cli, cli->nt_pipe_fnum, 0x0008,
+			          dataa.data->data, 0,
+			          dataa.data->data_used) < 0)
+			{
+				valid_ack = False;
+			}
+
+			if (valid_ack)
+			{
+				cli->ntlmssp_srv_flgs = rhdr_chal.neg_flags;
+			}
+
+			prs_mem_free(&hdra);
+			prs_mem_free(&dataa);
+			prs_mem_free(&hdr_autha);
+			prs_mem_free(&auth_resp);
 		}
 	}
 
@@ -690,7 +881,26 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	}
 
 	/******************* bind request on pipe *****************/
-	if (!rpc_pipe_bind(cli, pipe_name, &abstract, &transfer, encrypted))
+
+	if (encrypted)
+	{
+		cli->ntlmssp_cli_flgs =
+		                    NTLMSSP_NEGOTIATE_UNICODE |
+		                    NTLMSSP_NEGOTIATE_OEM |
+		                    NTLMSSP_NEGOTIATE_SIGN |
+		                    NTLMSSP_NEGOTIATE_SEAL |
+		                    NTLMSSP_NEGOTIATE_LM_KEY |
+		                    NTLMSSP_NEGOTIATE_NTLM |
+		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		                    NTLMSSP_NEGOTIATE_00001000 |
+		                    NTLMSSP_NEGOTIATE_00002000;
+		DEBUG(5,("cli_nt_session_open: neg_flags: %lx\n",
+		         cli->ntlmssp_cli_flgs));
+	}
+
+	if (!rpc_pipe_bind(cli, pipe_name,
+	                   &abstract, &transfer,
+	                   global_myname))
 	{
 		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
 		          cli_errstr(cli)));
@@ -699,8 +909,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 	}
 
 	/* 
-	* Setup the remote server name prefixed by \ and the machine account name.
-	*/
+	 * Setup the remote server name prefixed by \ and the machine account name.
+	 */
 
 	fstrcpy(cli->srv_name_slash, "\\\\");
 	fstrcat(cli->srv_name_slash, cli->desthost);

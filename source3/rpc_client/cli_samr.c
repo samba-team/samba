@@ -107,7 +107,7 @@ BOOL do_samr_unknown_8(struct cli_state *cli,
 	prs_struct rdata;
 
 	SAMR_Q_UNKNOWN_8 q_e;
-    BOOL valid_un8 = False;
+	BOOL valid_un8 = False;
 
 	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
 
@@ -128,7 +128,6 @@ BOOL do_samr_unknown_8(struct cli_state *cli,
 	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_8, &data, &rdata))
 	{
 #if 0
-
 		SAMR_R_UNKNOWN_8 r_e;
 		BOOL p;
 

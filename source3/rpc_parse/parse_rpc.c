@@ -375,13 +375,13 @@ void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth)
 /*******************************************************************
 creates an RPC_HDR_REQ structure.
 ********************************************************************/
-void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum)
+void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum)
 {
 	if (hdr == NULL) return;
 
-	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
-	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->opnum        = opnum;           /* opnum */
+	hdr->alloc_hint   = alloc_hint; /* allocation hint */
+	hdr->context_id   = 0;         /* presentation context identifier */
+	hdr->opnum        = opnum;     /* opnum */
 }
 
 /*******************************************************************
@@ -493,46 +493,6 @@ void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int dept
 }
 
 /*******************************************************************
-creates an RPC_AUTH_NTLMSSP_NEG structure.
-********************************************************************/
-void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
-				uint32 neg_flgs,
-				fstring myname, fstring domain)
-{
-	int len_myname = strlen(myname);
-	int len_domain = strlen(domain);
-
-	if (neg == NULL) return;
-
-	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
-
-	make_str_hdr(&neg->hdr_myname, len_myname, len_myname, 1); 
-	make_str_hdr(&neg->hdr_domain, len_domain, len_domain, 1); 
-
-	fstrcpy(neg->myname, myname);
-	fstrcpy(neg->domain, domain);
-}
-
-/*******************************************************************
-reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
-********************************************************************/
-void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
-{
-	if (neg == NULL) return;
-
-	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_neg");
-	depth++;
-
-	prs_uint32("neg_flgs ", ps, depth, &(neg->neg_flgs));
-
-	smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
-	smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
-
-	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len, sizeof(neg->myname)); 
-	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len, sizeof(neg->domain)); 
-}
-
-/*******************************************************************
 creates an RPC_AUTH_VERIFIER structure.
 ********************************************************************/
 void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
@@ -556,6 +516,46 @@ void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps
 
 	prs_string("signature", ps, depth, rav->signature, 0, sizeof(rav->signature)); /* "NTLMSSP" */
 	prs_uint32("msg_type ", ps, depth, &(rav->msg_type  )); /* NTLMSSP_MESSAGE_TYPE */
+}
+
+/*******************************************************************
+creates an RPC_AUTH_NTLMSSP_NEG structure.
+********************************************************************/
+void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
+				uint32 neg_flgs,
+				fstring myname, fstring domain)
+{
+	int len_myname = strlen(myname);
+	int len_domain = strlen(domain);
+
+	if (neg == NULL) return;
+
+	neg->neg_flgs = neg_flgs ; /* 0x00b2b3 */
+
+	make_str_hdr(&neg->hdr_myname, len_myname, len_myname, 0x20); 
+	make_str_hdr(&neg->hdr_domain, len_domain, len_domain, 0x20 + len_myname+1); 
+
+	fstrcpy(neg->myname, myname);
+	fstrcpy(neg->domain, domain);
+}
+
+/*******************************************************************
+reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
+********************************************************************/
+void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
+{
+	if (neg == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_neg");
+	depth++;
+
+	prs_uint32("neg_flgs ", ps, depth, &(neg->neg_flgs));
+
+	smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
+	smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
+
+	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len, sizeof(neg->myname)); 
+	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len, sizeof(neg->domain)); 
 }
 
 /*******************************************************************
@@ -606,30 +606,49 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 				uint32 neg_flags)
 {
 	uint32 offset;
-	int dom_len = strlen(domain) * 2;
-	int wks_len = strlen(wks   ) * 2;
-	int usr_len = strlen(user  ) * 2;
+	int dom_len = strlen(domain);
+	int wks_len = strlen(wks   );
+	int usr_len = strlen(user  );
 	int lm_len  = lm_resp != NULL ? 24 : 0;
 	int nt_len  = nt_resp != NULL ? 24 : 0;
 
+	DEBUG(5,("make_rpc_auth_ntlmssp_resp\n"));
+
 	if (rsp == NULL) return;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("lm_resp\n"));
+	dump_data(100, lm_resp, 24);
+	DEBUG(100,("nt_resp\n"));
+	dump_data(100, nt_resp, 24);
+#endif
+
+	DEBUG(6,("dom: %s user: %s wks: %s neg_flgs: 0x%x\n",
+	          domain, user, wks, neg_flags));
 
 	offset = 0x40;
 
+	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
+	{
+		dom_len *= 2;
+		wks_len *= 2;
+		usr_len *= 2;
+	}
+
 	make_str_hdr(&rsp->hdr_lm_resp, lm_len, lm_len, offset);
-	offset += lm_len * 2;
+	offset += lm_len;
 
 	make_str_hdr(&rsp->hdr_nt_resp, nt_len, nt_len, offset);
-	offset += nt_len * 2;
+	offset += nt_len;
 
 	make_str_hdr(&rsp->hdr_domain , dom_len, dom_len, offset);
-	offset += dom_len * 2;
+	offset += dom_len;
 
 	make_str_hdr(&rsp->hdr_usr    , usr_len, usr_len, offset);
-	offset += usr_len * 2;
+	offset += usr_len;
 
 	make_str_hdr(&rsp->hdr_wks    , wks_len, wks_len, offset);
-	offset += wks_len * 2;
+	offset += wks_len;
 
 	make_str_hdr(&rsp->hdr_sess_key, 0, 0, offset);
 
@@ -637,12 +656,20 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	memcpy(&rsp->lm_resp, lm_resp, 24);
 	memcpy(&rsp->nt_resp, nt_resp, 24);
-	fstrcpy(rsp->domain, domain);
-	fstrcpy(rsp->user  , user  );
-	fstrcpy(rsp->wks   , wks   );
-	rsp->sess_key[0] = 0;
 
-	
+	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
+	{
+		struni2((uint16*)rsp->domain, domain);
+		struni2((uint16*)rsp->user  , user  );
+		struni2((uint16*)rsp->wks   , wks   );
+	}
+	else
+	{
+		fstrcpy(rsp->domain, domain);
+		fstrcpy(rsp->user  , user  );
+		fstrcpy(rsp->wks   , wks   );
+	}
+	rsp->sess_key[0] = 0;
 }
 
 /*******************************************************************
@@ -659,12 +686,14 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_resp");
 	depth++;
 
-	ZERO_STRUCTP(rsp);
-
 	if (ps->io)
 	{
 		uint32 old_offset;
+
 		/* reading */
+
+		ZERO_STRUCTP(rsp);
+
 		smb_io_strhdr("hdr_lm_resp ", &rsp->hdr_lm_resp , ps, depth); 
 		smb_io_strhdr("hdr_nt_resp ", &rsp->hdr_nt_resp , ps, depth); 
 		smb_io_strhdr("hdr_domain  ", &rsp->hdr_domain  , ps, depth); 
@@ -677,30 +706,30 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 		old_offset = ps->offset;
 
 		ps->offset = rsp->hdr_lm_resp .buffer + 0x1c;
-		prs_uint8s(False, "lm_resp ", ps, depth, rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
+		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
 		old_offset += rsp->hdr_lm_resp .str_str_len;
 
 		ps->offset = rsp->hdr_nt_resp .buffer + 0x1c;
-		prs_uint8s(False, "nt_resp ", ps, depth, rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
+		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		old_offset += rsp->hdr_nt_resp .str_str_len;
 
 		ps->offset = rsp->hdr_domain  .buffer + 0x1c;
-		prs_uint8s(True , "domain  ", ps, depth, rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
+		prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
 		old_offset += rsp->hdr_domain  .str_str_len;
 
 		ps->offset = rsp->hdr_usr     .buffer + 0x1c;
-		prs_uint8s(True , "user    ", ps, depth, rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
+		prs_uint8s(True , "user    ", ps, depth, (uint8*)rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
 		old_offset += rsp->hdr_usr     .str_str_len;
 
 		ps->offset = rsp->hdr_wks     .buffer + 0x1c;
-		prs_uint8s(True , "wks     ", ps, depth, rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
+		prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
 		old_offset += rsp->hdr_wks     .str_str_len;
 
 		if (rsp->hdr_sess_key.str_str_len != 0)
 		{
 			ps->offset = rsp->hdr_sess_key.buffer + 0x1c;
 			old_offset += rsp->hdr_sess_key.str_str_len;
-			prs_uint8s(False, "sess_key", ps, depth, rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
+			prs_uint8s(False, "sess_key", ps, depth, (uint8*)rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
 		}
 
 		ps->offset = old_offset;
@@ -717,25 +746,42 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		prs_uint32("neg_flags", ps, depth, &(rsp->neg_flags)); /* 0x0000 82b1 */
 
-		prs_uint8s(False, "sess_key", ps, depth, rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
-		prs_uint8s(True , "wks     ", ps, depth, rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
-		prs_uint8s(True , "user    ", ps, depth, rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
-		prs_uint8s(True , "domain  ", ps, depth, rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
-		prs_uint8s(False, "nt_resp ", ps, depth, rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		prs_uint8s(False, "lm_resp ", ps, depth, rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
+		prs_uint8s(False, "nt_resp ", ps, depth, rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
+		prs_uint8s(True , "domain  ", ps, depth, rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
+		prs_uint8s(True , "user    ", ps, depth, rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
+		prs_uint8s(True , "wks     ", ps, depth, rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
+		prs_uint8s(False, "sess_key", ps, depth, rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
 	}
 }
 
-#if 0
-
-/* attached to the end of encrypted rpc requests and responses */
-/* RPC_AUTH_NTLMSSP_CHK */
-typedef struct rpc_auth_ntlmssp_chk_info
+/*******************************************************************
+creates an RPC_AUTH_NTLMSSP_CHK structure.
+********************************************************************/
+void make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
+				uint32 ver, uint32 crc32, uint32 seq_num)
 {
-	uint32 ver; /* 0x1 */
-	uint8 data[12];
+	if (chk == NULL) return;
 
-} RPC_AUTH_NTLMSSP_CHK;
+	chk->ver      = ver     ;
+	chk->reserved = 0x0;
+	chk->crc32    = crc32   ;
+	chk->seq_num  = seq_num ;
+}
 
-#endif /* 0 */
+/*******************************************************************
+reads or writes an RPC_AUTH_NTLMSSP_CHK structure.
+********************************************************************/
+void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth)
+{
+	if (chk == NULL) return;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_auth_ntlmssp_chk");
+	depth++;
+
+	prs_uint32("ver     ", ps, depth, &(chk->ver     )); 
+	prs_uint32("reserved", ps, depth, &(chk->reserved)); 
+	prs_uint32("crc32   ", ps, depth, &(chk->crc32   )); 
+	prs_uint32("seq_num ", ps, depth, &(chk->seq_num )); 
+}
 
