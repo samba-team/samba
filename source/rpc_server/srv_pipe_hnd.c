@@ -750,6 +750,7 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 		 */
 
 		if (p->mem_ctx) {
+			DEBUG(3,("read_from_pipe: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
 			talloc_destroy_pool(p->mem_ctx);
 		} else {
 			p->mem_ctx = talloc_init();

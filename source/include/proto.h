@@ -374,6 +374,8 @@ TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
 void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
+size_t talloc_pool_size(TALLOC_CTX *t);
+void *talloc_zero(TALLOC_CTX *t, size_t size);
 
 /*The following definitions come from  lib/time.c  */
 

@@ -535,11 +535,9 @@ void init_unistr(UNISTR *str, const char *buf)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-	str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
+	str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("init_unistr: malloc fail\n");
-
-	memset(str->buffer, '\0', len);
 
 	/* store the string (null-terminated copy) */
 	dos_struni2((char *)str->buffer, buf, len);
@@ -575,7 +573,7 @@ static void create_buffer3(BUFFER3 *str, size_t len)
 	if (len < MAX_BUFFERLEN)
 		len = MAX_BUFFERLEN;
 
-    str->buffer = talloc(get_talloc_ctx(), len);
+    str->buffer = talloc_zero(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_buffer3: talloc fail\n");
 
@@ -717,7 +715,7 @@ void init_buffer2(BUFFER2 *str, uint8 *buf, int len)
 	if (buf != NULL) {
 		if (len < MAX_BUFFERLEN)
 			len = MAX_BUFFERLEN;
-		str->buffer = talloc(get_talloc_ctx(), len);
+		str->buffer = talloc_zero(get_talloc_ctx(), len);
 		if (str->buffer == NULL)
 			smb_panic("init_buffer2: talloc fail\n");
 		memcpy(str->buffer, buf, MIN(str->buf_len, len));
@@ -810,7 +808,7 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
 			len = MAX_UNISTRLEN;
 		len *= sizeof(uint16);
 
-   		str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
+   		str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
 		if ((str->buffer == NULL) && (len > 0 ))
 		{
 			smb_panic("copy_unistr2: talloc fail\n");
@@ -839,7 +837,7 @@ void init_string2(STRING2 *str, char *buf, int len)
 	if(len != 0) {
 		if (len < MAX_STRINGLEN)
 			alloc_len = MAX_STRINGLEN;
-		str->buffer = talloc(get_talloc_ctx(), alloc_len);
+		str->buffer = talloc_zero(get_talloc_ctx(), alloc_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
 		memcpy(str->buffer, buf, len);
@@ -906,7 +904,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-	str->buffer = (uint16 *)talloc(get_talloc_ctx(), len);
+	str->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), len);
 	if ((str->buffer == NULL) && (len > 0))
 	{
 		smb_panic("init_unistr2: malloc fail\n");
@@ -948,7 +946,7 @@ void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
 	to->uni_str_len = i;
 
 	/* allocate the space and copy the string buffer */
-	to->buffer = (uint16 *)talloc(get_talloc_ctx(), sizeof(uint16)*(to->uni_str_len));
+	to->buffer = (uint16 *)talloc_zero(get_talloc_ctx(), sizeof(uint16)*(to->uni_str_len));
 	if (to->buffer == NULL)
 		smb_panic("init_unistr2_from_unistr: malloc fail\n");
 	memcpy(to->buffer, from->buffer, to->uni_max_len*sizeof(uint16));

@@ -3675,7 +3675,7 @@ void init_samr_q_lookup_rids(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_RIDS * q_u,
 	q_u->flags = flags;
 	q_u->ptr = 0;
 	q_u->num_rids2 = num_rids;
-	q_u->rid = (uint32 *)talloc(ctx, num_rids * sizeof(q_u->rid[0]));
+	q_u->rid = (uint32 *)talloc_zero(ctx, num_rids * sizeof(q_u->rid[0]));
 	if (q_u->rid == NULL) {
 		q_u->num_rids1 = 0;
 		q_u->num_rids2 = 0;
@@ -4382,8 +4382,8 @@ void init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 		r_u->ptr_rids = 1;
 		r_u->num_rids2 = num_rids;
 
-		r_u->rids = (uint32 *)talloc(ctx, sizeof(uint32)*num_rids);
-		r_u->types = (uint32 *)talloc(ctx, sizeof(uint32)*num_rids);
+		r_u->rids = (uint32 *)talloc_zero(ctx, sizeof(uint32)*num_rids);
+		r_u->types = (uint32 *)talloc_zero(ctx, sizeof(uint32)*num_rids);
 
 		if (!r_u->rids || !r_u->types)
 			goto empty;
@@ -5654,7 +5654,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 
 	switch (switch_value) {
 	case 0x10:
-		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc(ctx,sizeof(SAM_USER_INFO_10));
+		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_10));
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -5670,7 +5670,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 			expire.low = 0xffffffff;
 			expire.high = 0x7fffffff;
 
-			ctr->info.id = (SAM_USER_INFO_11 *) talloc(ctx,sizeof(*ctr->info.id11));
+			ctr->info.id = (SAM_USER_INFO_11 *) talloc_zero(ctx,sizeof(*ctr->info.id11));
 			init_sam_user_info11(ctr->info.id11, &expire,
 					     "BROOKFIELDS$",	/* name */
 					     0x03ef,	/* user rid */
@@ -5681,7 +5681,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 		}
 #endif
 	case 0x12:
-		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc(ctx,sizeof(SAM_USER_INFO_12));
+		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_12));
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -5690,7 +5690,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 	case 21:
 		{
 			SAM_USER_INFO_21 *cusr;
-			cusr = (SAM_USER_INFO_21 *)talloc(ctx,sizeof(SAM_USER_INFO_21));
+			cusr = (SAM_USER_INFO_21 *)talloc_zero(ctx,sizeof(SAM_USER_INFO_21));
 			ctr->info.id21 = cusr;
 			if (ctr->info.id21 == NULL)
 				return NT_STATUS_NO_MEMORY;

@@ -647,7 +647,7 @@ static int init_dom_sid2s(TALLOC_CTX *ctx, char *sids_str, DOM_SID2 **ppsids)
 			;
 
 		/* Now allocate space for them. */
-		*ppsids = (DOM_SID2 *)talloc(ctx, count * sizeof(DOM_SID2));
+		*ppsids = (DOM_SID2 *)talloc_zero(ctx, count * sizeof(DOM_SID2));
 		if (*ppsids == NULL)
 			return 0;
 
@@ -1115,7 +1115,7 @@ void init_net_user_info3(TALLOC_CTX *ctx,
 	usr->num_groups2 = num_groups;
 
 	if (num_groups > 0) {
-		usr->gids = (DOM_GID *)talloc(ctx,sizeof(DOM_GID) * num_groups);
+		usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * num_groups);
 		if (usr->gids == NULL)
 			return;
 		for (i = 0; i < num_groups; i++)

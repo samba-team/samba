@@ -401,10 +401,10 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 
 			/* Tallocate memory for string */
 
-			DEBUG(0, ("** tallocating memory\n"));
+			DEBUG(10, ("** tallocating memory\n"));
 
 			data->notify_data.data.string = (uint16 *)
-				talloc(ps->mem_ctx, x * 2);
+				talloc_zero(ps->mem_ctx, x * 2);
 			if (!data->notify_data.data.string) 
 				return False;
 

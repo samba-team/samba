@@ -128,10 +128,8 @@ SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *a
 	SEC_ACL *dst;
 	int i;
 
-	if((dst = (SEC_ACL *)talloc(ctx,sizeof(SEC_ACL))) == NULL)
+	if((dst = (SEC_ACL *)talloc_zero(ctx,sizeof(SEC_ACL))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	dst->revision = revision;
 	dst->num_aces = num_aces;
@@ -459,8 +457,7 @@ static DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, DOM_SID *src)
   if(!src)
     return NULL;
 
-  if((dst = talloc(ctx, sizeof(DOM_SID))) != NULL) {
-    memset(dst, '\0', sizeof(DOM_SID));
+  if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
     sid_copy( dst, src);
   }
 
@@ -480,10 +477,8 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision,
 
 	*sd_size = 0;
 
-	if(( dst = (SEC_DESC *)talloc(ctx, sizeof(SEC_DESC))) == NULL)
+	if(( dst = (SEC_DESC *)talloc_zero(ctx, sizeof(SEC_DESC))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	dst->revision = revision;
 	dst->type     = SEC_DESC_SELF_RELATIVE;
@@ -713,10 +708,8 @@ SEC_DESC_BUF *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, SEC_DESC *sec_desc)
 {
 	SEC_DESC_BUF *dst;
 
-	if((dst = (SEC_DESC_BUF *)talloc(ctx, sizeof(SEC_DESC_BUF))) == NULL)
+	if((dst = (SEC_DESC_BUF *)talloc_zero(ctx, sizeof(SEC_DESC_BUF))) == NULL)
 		return NULL;
-
-	ZERO_STRUCTP(dst);
 
 	/* max buffer size (allocated size) */
 	dst->max_len = (uint32)len;

@@ -36,6 +36,7 @@ struct talloc_chunk {
 
 typedef struct {
 	struct talloc_chunk *list;
+	size_t total_alloc_size;
 } TALLOC_CTX;
 
 #endif

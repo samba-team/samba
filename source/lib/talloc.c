@@ -47,6 +47,7 @@ TALLOC_CTX *talloc_init(void)
 	if (!t) return NULL;
 
 	t->list = NULL;
+	t->total_alloc_size = 0;
 
 	return t;
 }
@@ -82,6 +83,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 		c->alloc_size = 0;
 		c->total_size = asize;
 		t->list = c;
+		t->total_alloc_size += asize;
 	}
 
 	p = ((char *)t->list->ptr) + t->list->alloc_size;
@@ -107,6 +109,7 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 	}
 
 	t->list = NULL;
+	t->total_alloc_size = 0;
 }
 
 /* destroy a whole pool including the context */
@@ -116,4 +119,23 @@ void talloc_destroy(TALLOC_CTX *t)
 		return;
 	talloc_destroy_pool(t);
 	free(t);
+}
+
+/* return the current total size of the pool. */
+size_t talloc_pool_size(TALLOC_CTX *t)
+{
+	if (!t->list)
+		return 0;
+	return t->total_alloc_size;
+}
+
+/* talloc and zero memory. */
+void *talloc_zero(TALLOC_CTX *t, size_t size)
+{
+	void *p = talloc(t, size);
+
+	if (p)
+		memset(p, '\0', size);
+
+	return p;
 }
