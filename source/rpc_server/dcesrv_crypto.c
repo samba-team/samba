@@ -4,6 +4,7 @@
    server side dcerpc authentication code - crypto support
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Stefan (metze) Metzmacher 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,10 +31,9 @@
 /*
   startup the cryptographic side of an authenticated dcerpc server
 */
-NTSTATUS dcesrv_crypto_startup(struct dcesrv_connection *dce_conn,
+NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
 			       struct dcesrv_auth *auth)
 {
-	struct auth_ntlmssp_state *ntlmssp = NULL;
 	NTSTATUS status;
 
 	if (auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
@@ -43,25 +43,47 @@ NTSTATUS dcesrv_crypto_startup(struct dcesrv_connection *dce_conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	switch (auth->auth_info->auth_type) {
-/*
-	case DCERPC_AUTH_TYPE_SCHANNEL:
-		return auth_schannel_start();
-*/
+	if (auth->crypto_ctx.ops != NULL) {
+		/* TODO:
+		 * this this function should not be called
+		 * twice per dcesrv_connection!
+		 * 
+		 * so we need to find out the right
+		 * dcerpc error to return
+		 */
+	}
 
+	/*
+	 * TODO:
+	 * maybe a dcesrv_crypto_find_backend_by_type() whould be better here
+	 * to make thinks more generic
+	 */
+	switch (auth->auth_info->auth_type) {
+
+/*	case DCERPC_AUTH_TYPE_SCHANNEL:
+		status = dcesrv_crypto_schannel_get_ops(dce_conn, auth);
+		break;
+*/
 	case DCERPC_AUTH_TYPE_NTLMSSP:
-		status = auth_ntlmssp_start(&ntlmssp);
-		auth->crypto_state = ntlmssp;
+		status = dcesrv_crypto_ntlmssp_get_ops(dce_conn, auth);
 		break;
 
 	default:
 		DEBUG(2,("dcesrv auth_type %d not supported\n", auth->auth_info->auth_type));
-		status = NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("dcesrv_crypto_startup: %s\n", nt_errstr(status)));
 
 	return status;
+}
+
+/*
+  start crypto state
+*/
+NTSTATUS dcesrv_crypto_start(struct dcesrv_auth *auth) 
+{
+	return auth->crypto_ctx.ops->start(auth);
 }
 
 /*
@@ -71,52 +93,49 @@ NTSTATUS dcesrv_crypto_update(struct dcesrv_auth *auth,
 			      TALLOC_CTX *out_mem_ctx, 
 			      const DATA_BLOB in, DATA_BLOB *out) 
 {
-	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
-
-	return ntlmssp_update(ntlmssp->ntlmssp_state, out_mem_ctx, in, out);
+	return auth->crypto_ctx.ops->update(auth, out_mem_ctx, in, out);
 }
-
 
 /*
   seal a packet
 */
-NTSTATUS dcesrv_crypto_seal(struct dcesrv_auth *auth, 
-			    TALLOC_CTX *sig_mem_ctx, uint8_t *data, size_t length, DATA_BLOB *sig)
+NTSTATUS dcesrv_crypto_seal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig)
 {
-	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
-
-	return ntlmssp_seal_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
+	return auth->crypto_ctx.ops->seal(auth, sig_mem_ctx, data, length, sig);
 }
 
 /*
   sign a packet
 */
-NTSTATUS dcesrv_crypto_sign(struct dcesrv_auth *auth, 
-			    TALLOC_CTX *sig_mem_ctx, const uint8_t *data, size_t length, DATA_BLOB *sig) 
+NTSTATUS dcesrv_crypto_sign(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, DATA_BLOB *sig) 
 {
-	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
-
-	return ntlmssp_sign_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
+	return auth->crypto_ctx.ops->sign(auth, sig_mem_ctx, data, length, sig);
 }
 
 /*
   check a packet signature
 */
-NTSTATUS dcesrv_crypto_check_sig(struct dcesrv_auth *auth, 
-				 TALLOC_CTX *sig_mem_ctx, const uint8_t *data, size_t length, const DATA_BLOB *sig)
+NTSTATUS dcesrv_crypto_check_sig(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, const DATA_BLOB *sig)
 {
-	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
-
-	return ntlmssp_check_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
+	return auth->crypto_ctx.ops->check_sig(auth, sig_mem_ctx, data, length, sig);
 }
 
 /*
   unseal a packet
 */
-NTSTATUS dcesrv_crypto_unseal(struct dcesrv_auth *auth, 
-			       TALLOC_CTX *sig_mem_ctx, uint8_t *data, size_t length, DATA_BLOB *sig)
+NTSTATUS dcesrv_crypto_unseal(struct dcesrv_auth *auth, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig)
 {
-	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
+	return auth->crypto_ctx.ops->unseal(auth, sig_mem_ctx, data, length, sig);
+}
 
-	return ntlmssp_unseal_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
+/*
+  end crypto state
+*/
+void dcesrv_crypto_end(struct dcesrv_auth *auth) 
+{
+	auth->crypto_ctx.ops->end(auth);
 }
