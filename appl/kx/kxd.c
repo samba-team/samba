@@ -22,6 +22,15 @@ fatal (int fd, char *s)
      return err;
 }
 
+static void
+cleanup()
+{
+    if(xauthfile[0])
+	unlink(xauthfile);
+    if(x_socket[0])
+	unlink(x_socket);
+}
+
 static int
 recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	   struct sockaddr_in *retaddr)
@@ -217,12 +226,27 @@ doit(int sock)
 	  if (krb_net_read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
 	      != sizeof(thataddr.sin_port))
 	       return 1;
+
 	  for (;;) {
 	       pid_t child;
 	       int fd;
 	       int zero = 0;
-
-	       fd = accept (localx, NULL, &zero);
+	       fd_set fds;
+	       
+	       FD_ZERO(&fds);
+	       FD_SET(localx, &fds);
+	       FD_SET(sock, &fds);
+	       if(select(FD_SETSIZE, &fds, NULL, NULL, NULL) <=0)
+		   continue;
+	       if(FD_ISSET(sock, &fds)){
+		   /* there are no processes left on the remote side
+		    */
+		   cleanup();
+		   exit(0);
+	       }else if(FD_ISSET(localx, &fds))
+		   fd = accept (localx, NULL, &zero);
+	       else
+		   continue;
 	       if (fd < 0)
 		    if (errno == EINTR)
 			 continue;
