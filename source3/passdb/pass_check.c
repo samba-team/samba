@@ -27,9 +27,9 @@
 extern int DEBUGLEVEL;
 
 /* these are kept here to keep the string_combinations function simple */
-static fstring this_user[100] = "";
-static fstring this_salt[100] = "";
-static fstring this_crypted[100] = "";
+static fstring this_user;
+static fstring this_salt;
+static fstring this_crypted;
 
 #ifdef WITH_AFS
 
