@@ -126,10 +126,11 @@ init (unsigned char *a, unsigned char *b)
      a[7] = b[7] << 1;
 }
 
-krb5_error_code
-krb5_string_to_key (char *str,
-		    krb5_data *salt,
-		    krb5_keyblock *key)
+static krb5_error_code
+string_to_key_internal (char *str,
+			size_t str_len,
+			krb5_data *salt,
+			krb5_keyblock *key)
 {
      int odd, i;
      size_t len;
@@ -138,7 +139,7 @@ krb5_string_to_key (char *str,
      des_key_schedule sched;
      krb5_error_code err;
 
-     len = strlen(str) + salt->length;
+     len = str_len + salt->length;
 #if 1
      len = (len + 7) / 8 * 8;
 #endif
@@ -151,8 +152,8 @@ krb5_string_to_key (char *str,
 	  return err;
      }
      memset (s, 0, len);
-     strncpy (p, str, strlen(str));
-     p += strlen(str);
+     strncpy (p, str, str_len);
+     p += str_len;
      memcpy (p, salt->data, salt->length);
      odd = 1;
      memset (tempkey, 0, sizeof(tempkey));
@@ -180,6 +181,22 @@ krb5_string_to_key (char *str,
      key->keytype = KEYTYPE_DES;
      key->keyvalue.length = sizeof(tempkey);
      return 0;
+}
+
+krb5_error_code
+krb5_string_to_key (char *str,
+		    krb5_data *salt,
+		    krb5_keyblock *key)
+{
+    return string_to_key_internal (str, strlen(str), salt, key);
+}
+
+krb5_error_code
+krb5_string_to_key_data (krb5_data *str,
+			 krb5_data *salt,
+			 krb5_keyblock *key)
+{
+    return string_to_key_internal (str->data, str->length, salt, key);
 }
 
 krb5_error_code
