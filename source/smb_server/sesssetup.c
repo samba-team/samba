@@ -106,14 +106,16 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	if (req->smb_conn->negotiate.spnego_negotiated) {
 		struct auth_context *auth_context;
 
+		if (sess->nt1.in.user && *sess->nt1.in.user) {
+			return NT_STATUS_ACCESS_DENIED;
+		} else {
+			make_user_info_guest(&user_info);
+		}
+		
 		status = make_auth_context_subsystem(&auth_context);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
-		}
-		
-		if (!sess->nt1.in.user || !*sess->nt1.in.user) {
-			make_user_info_guest(&user_info);
 		}
 		
 		status = auth_context->check_ntlm_password(auth_context, 
