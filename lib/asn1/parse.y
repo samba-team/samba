@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,6 +63,7 @@ static void append (Member *l, Member *r);
 
 %token INTEGER SEQUENCE OF OCTET STRING GeneralizedTime GeneralString
 %token BIT APPLICATION OPTIONAL EEQUAL TBEGIN END DEFINITIONS EXTERNAL
+%token DOTDOT
 %token <name> IDENTIFIER 
 %token <constant> CONSTANT
 
@@ -112,6 +113,14 @@ constant_decl	: IDENTIFIER type EEQUAL constant
 		;
 
 type		: INTEGER     { $$ = new_type(TInteger); }
+		| INTEGER '(' constant DOTDOT constant ')' {
+		    if($3 != 0)
+			error_message("Only 0 supported as low range");
+		    if($5 != INT_MIN && $5 != UINT_MAX)
+			error_message("Only %u supported as high range",
+				      UINT_MAX);
+		    $$ = new_type(TUInteger);
+		}
 		| OCTET STRING { $$ = new_type(TOctetString); }
 		| GeneralString { $$ = new_type(TGeneralString); }
 		| GeneralizedTime { $$ = new_type(TGeneralizedTime); }
