@@ -1,3 +1,11 @@
+Changes in release 0.1a:
+
+ * new crypto code
+ * more bug fixes
+ * make sure we ask for DES keys in gssapi
+ * support signed ints in ASN1
+ * IPv6-bug fixes
+
 Changes in release 0.0u:
 
  * lots of bug fixes
