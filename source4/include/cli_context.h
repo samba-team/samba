@@ -29,17 +29,12 @@ struct smbcli_request;  /* forward declare */
 struct smbcli_session;  /* forward declare */
 struct smbcli_transport;  /* forward declare */
 
-struct smb_basic_signing_context {
-	DATA_BLOB mac_key;
-	uint32_t next_seq_num;
-};
-
 struct smb_signing_context {
 	void (*sign_outgoing_message)(struct smbcli_request *req);
 	BOOL (*check_incoming_message)(struct smbcli_request *req);
 	void (*free_signing_context)(struct smb_signing_context *sign_info);
-	struct smb_basic_signing_context *signing_context;
-	BOOL negotiated_smb_signing;
+	DATA_BLOB mac_key;
+	uint32_t next_seq_num;
 	BOOL allow_smb_signing;
 	BOOL doing_signing;
 	BOOL mandatory_signing;
