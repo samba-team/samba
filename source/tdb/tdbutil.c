@@ -592,7 +592,7 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
  *
  * @return length of the packed representation of the whole structure
  **/
-size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
+size_t tdb_sid_pack(char* pack_buf, int bufsize, const DOM_SID* sid)
 {
 	int idx;
 	size_t len = 0;
@@ -623,23 +623,30 @@ size_t tdb_sid_pack(char* pack_buf, int bufsize, DOM_SID* sid)
  *
  * @return size of structure unpacked from buffer
  **/
-size_t tdb_sid_unpack(char* pack_buf, int bufsize, DOM_SID* sid)
+size_t tdb_sid_unpack(const char* pack_buf, int bufsize, DOM_SID* sid)
 {
 	int idx, len = 0;
-	
+	char* buf = NULL;
+
 	if (!sid || !pack_buf) return -1;
 
-	len += tdb_unpack(pack_buf + len, bufsize - len, "bb",
+	buf = (char*)malloc(bufsize);
+	memcpy((void*)buf, pack_buf, bufsize);
+
+	len += tdb_unpack(buf + len, bufsize - len, "bb",
 	                  &sid->sid_rev_num, &sid->num_auths);
 			  
 	for (idx = 0; idx < 6; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "b", &sid->id_auth[idx]);
+		len += tdb_unpack(buf + len, bufsize - len,
+		                  "b", &sid->id_auth[idx]);
 	}
 	
 	for (idx = 0; idx < MAXSUBAUTHS; idx++) {
-		len += tdb_unpack(pack_buf + len, bufsize - len, "d", &sid->sub_auths[idx]);
+		len += tdb_unpack(buf + len, bufsize - len,
+		                  "d", &sid->sub_auths[idx]);
 	}
-	
+
+	SAFE_FREE(buf);
 	return len;
 }
 
@@ -703,6 +710,85 @@ size_t tdb_trusted_dom_pass_unpack(char* pack_buf, int bufsize, TRUSTED_DOM_PASS
 	len += tdb_sid_unpack(pack_buf + len, bufsize - len, &pass->domain_sid);
 	
 	return len;	
+}
+
+
+/**
+ * Unpack SAM_TRUST_PASSWD passed by pointer
+ *
+ * @param pack_buf pointer to buffer with packed representation
+ * @param bufsize size of the buffer
+ * @param pass pointer to trusted domain password to be filled with unpacked data
+ *
+ * @return size of structure unpacked from buffer
+ **/
+size_t tdb_trustpw_unpack(SAM_TRUST_PASSWD* trustpw, const char* pack_buf, int bufsize)
+{
+	int idx, len = 0, pass_len =0;
+	struct trust_passwd_data *t;
+	
+	if (!trustpw || !pack_buf) return -1;
+	t = &trustpw->private;
+	
+	/* packing password type flags */
+	len += tdb_unpack(pack_buf + len, bufsize - len, "w", &t->flags);
+
+	/* unpack unicode domain name and plaintext password */
+	len += tdb_unpack(pack_buf + len, bufsize - len, "d", &t->uni_name_len);
+	for (idx = 0; idx < 32; idx++)
+		len += tdb_unpack((const char*)(pack_buf + len), bufsize - len,
+		                  "w", &t->uni_name[idx]);
+
+	/* unpacking password and last modification time */
+	len += tdb_unpack((const char*)(pack_buf + len), bufsize - len, "dPd",
+	                  &pass_len, &t->pass, &t->mod_time);
+
+	if (pass_len > FSTRING_LEN) return -1;
+	t->pass[pass_len] = 0;
+	
+	/* unpack sid */
+	len += tdb_sid_unpack((const char*)(pack_buf + len), bufsize - len,
+	                      &t->domain_sid);
+	
+	return len;	
+}
+
+
+/**
+ * Pack SAM_TRUST_PASSWD passed by pointer
+ *
+ * @param pack_buf pointer to buffer which is to be filled with packed data
+ * @param bufsize size of the buffer
+ * @param pass pointer to trust password to be packed
+ *
+ * @return length of the packed representation of the structure
+ **/
+
+size_t tdb_trustpw_pack(const SAM_TRUST_PASSWD* trustpw, char* pack_buf, int bufsize)
+{
+	int idx, len = 0;
+	struct trust_passwd_data t;
+	
+	if (!trustpw) return -1;
+
+	t = trustpw->private;
+
+	/* packing password type flags */
+	len += tdb_pack(pack_buf + len, bufsize - len, "w", t.flags);
+
+	/* packing unicode domain name and password */
+	len += tdb_pack(pack_buf + len, bufsize - len, "d", t.uni_name_len);
+	for (idx = 0; idx < 32; idx++)
+		len += tdb_pack(pack_buf + len, bufsize - len, "w", t.uni_name[idx]);
+	
+	/* packing password and last modification time */
+	len += tdb_pack(pack_buf + len, bufsize - len, "dPd", strlen(t.pass),
+	                t.pass, t.mod_time);
+
+	/* packing SID structure */
+	len += tdb_sid_pack(pack_buf + len, bufsize - len, &t.domain_sid);
+
+	return len;
 }
 
 
