@@ -41,7 +41,7 @@
 
 # It should not be necessary to specify the print system type unless
 # it is non-standard. Currently supported print systems include:
-# bsd, sysv, plp, lprng, aix, hpux, qnx
+# bsd, sysv, plp, lprng, aix, hpux, qnx, cups
 ;   printing = bsd
 
 # Uncomment this if you want a guest account, you must add this to /etc/passwd
