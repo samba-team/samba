@@ -139,7 +139,7 @@ size_t convert_string(charset_t from, charset_t to,
 	i_len=srclen;
 	o_len=destlen;
 	retval = smb_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
-	if(retval==-1) {
+	if(retval==(size_t)-1) {
 	    	const char *reason="unknown error";
 		switch(errno) {
 			case EINVAL:
@@ -214,7 +214,7 @@ convert:
 	retval = smb_iconv(descriptor,
 			   &inbuf, &i_len,
 			   &outbuf, &o_len);
-	if(retval == -1) 		{
+	if(retval == (size_t)-1) 		{
 	    	const char *reason="unknown error";
 		switch(errno) {
 			case EINVAL:
