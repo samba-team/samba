@@ -346,10 +346,10 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	generate_random_buffer(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 	ninfo.nt.length = 24;
-	ninfo.nt.data = talloc(mem_ctx, 24);
+	ninfo.nt.data = talloc_size(mem_ctx, 24);
 	SMBNTencrypt(password, ninfo.challenge, ninfo.nt.data);
 	ninfo.lm.length = 24;
-	ninfo.lm.data = talloc(mem_ctx, 24);
+	ninfo.lm.data = talloc_size(mem_ctx, 24);
 	SMBencrypt(password, ninfo.challenge, ninfo.lm.data);
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));

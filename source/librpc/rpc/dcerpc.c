@@ -1032,7 +1032,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	DATA_BLOB blob2;
 
-	st = talloc(mem_ctx, struct_size);
+	st = talloc_size(mem_ctx, struct_size);
 	if (!st) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1096,7 +1096,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	DATA_BLOB blob, blob2;
 
-	st = talloc(mem_ctx, struct_size);
+	st = talloc_size(mem_ctx, struct_size);
 	if (!st) {
 		return NT_STATUS_NO_MEMORY;
 	}

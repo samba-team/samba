@@ -424,7 +424,7 @@ BOOL asn1_read_sequence_until(int sock, struct asn1_data *data,
 		len = b;
 	}
 
-	buf = talloc(NULL, len);
+	buf = talloc_size(NULL, len);
 	if (buf == NULL)
 		return False;
 
@@ -548,7 +548,7 @@ BOOL asn1_read_GeneralString(struct asn1_data *data, char **s)
 		data->has_error = True;
 		return False;
 	}
-	*s = talloc(NULL, len+1);
+	*s = talloc_size(NULL, len+1);
 	if (! *s) {
 		data->has_error = True;
 		return False;

@@ -841,12 +841,11 @@ int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 {
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
-	val.data = talloc(mem_ctx, 16);
-	val.length = 16;
+	val.data = talloc_memdup(mem_ctx, hash.hash, 16);
 	if (!val.data) {
 		return -1;
 	}
-	memcpy(val.data, hash.hash, 16);
+	val.length = 16;
 	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, &val);
 }
 
@@ -859,7 +858,7 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	int i;
-	val.data = talloc(mem_ctx, count*16);
+	val.data = talloc_array(mem_ctx, 16, count, __location__);
 	val.length = count*16;
 	if (!val.data) {
 		return -1;

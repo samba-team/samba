@@ -335,7 +335,7 @@ static BOOL test_misc(void)
 
 	root = talloc_new(NULL);
 
-	p1 = talloc(root, 0x7fffffff);
+	p1 = talloc_size(root, 0x7fffffff);
 	if (p1) {
 		printf("failed: large talloc allowed\n");
 		return False;
@@ -517,7 +517,7 @@ static BOOL test_realloc(void)
 
 	root = talloc_new(NULL);
 
-	p1 = talloc(root, 10);
+	p1 = talloc_size(root, 10);
 	CHECK_SIZE(p1, 10);
 
 	p1 = talloc_realloc(NULL, p1, 20);
@@ -581,7 +581,7 @@ static BOOL test_realloc_child(void)
 
 	printf("TESTING REALLOC WITH CHILD\n");
 
-	root = talloc(NULL, 0);
+	root = talloc_new(NULL);
 
 	el1 = talloc_p(root, struct el1);
 	el1->list = talloc_p(el1, struct el2 *);
@@ -607,7 +607,7 @@ static BOOL test_steal(void)
 
 	printf("TESTING STEAL\n");
 
-	root = talloc(NULL, 0);
+	root = talloc_new(NULL);
 
 	p1 = talloc_array_p(root, char, 10);
 	CHECK_SIZE(p1, 10);
@@ -645,7 +645,7 @@ static BOOL test_steal(void)
 
 	talloc_free(root);
 
-	p1 = talloc(NULL, 3);
+	p1 = talloc_new(NULL);
 	CHECK_SIZE(NULL, 3);
 	talloc_free(p1);
 
@@ -661,7 +661,7 @@ static BOOL test_ldb(void)
 
 	printf("TESTING LDB\n");
 
-	root = talloc(NULL, 0);
+	root = talloc_new(NULL);
 
 	p1 = talloc_realloc_fn(root, NULL, 10);
 	CHECK_BLOCKS(root, 2);
@@ -709,7 +709,7 @@ static BOOL test_unref_reparent(void)
 */
 static BOOL test_speed(void)
 {
-	void *ctx = talloc(NULL, 0);
+	void *ctx = talloc_new(NULL);
 	unsigned count;
 	struct timeval tv;
 
@@ -719,9 +719,9 @@ static BOOL test_speed(void)
 	count = 0;
 	do {
 		void *p1, *p2, *p3;
-		p1 = talloc(ctx, count);
+		p1 = talloc_size(ctx, count);
 		p2 = talloc_strdup(p1, "foo bar");
-		p3 = talloc(p1, 300);
+		p3 = talloc_size(p1, 300);
 		talloc_free(p1);
 		count += 3;
 	} while (timeval_elapsed(&tv) < 5.0);

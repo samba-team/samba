@@ -50,7 +50,7 @@ static BOOL test_EnumServicesStatus(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
 		r.in.buf_size = r.out.bytes_needed;
-		r.out.service = talloc(mem_ctx, r.out.bytes_needed);
+		r.out.service = talloc_size(mem_ctx, r.out.bytes_needed);
 		
 		status = dcerpc_svcctl_EnumServicesStatusW(p, mem_ctx, &r);
 

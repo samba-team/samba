@@ -1330,8 +1330,8 @@ static BOOL handler_readx(int instance)
 	parm[0].readx.in.mincnt = gen_io_count();
 	parm[0].readx.in.maxcnt = gen_io_count();
 	parm[0].readx.in.remaining = gen_io_count();
-	parm[0].readx.out.data = talloc(current_op.mem_ctx,
-					MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
+	parm[0].readx.out.data = talloc_size(current_op.mem_ctx,
+					     MAX(parm[0].readx.in.mincnt, parm[0].readx.in.maxcnt));
 
 	GEN_COPY_PARM;
 	GEN_SET_FNUM(readx.in.fnum);
@@ -1392,8 +1392,9 @@ static BOOL handler_lockingx(int instance)
 	} while (nlocks == 0);
 
 	if (nlocks > 0) {
-		parm[0].lockx.in.locks = talloc(current_op.mem_ctx,
-						sizeof(parm[0].lockx.in.locks[0]) * nlocks);
+		parm[0].lockx.in.locks = talloc_array_p(current_op.mem_ctx,
+							struct smb_lock_entry,
+							nlocks);
 		for (n=0;n<nlocks;n++) {
 			parm[0].lockx.in.locks[n].pid = gen_pid();
 			parm[0].lockx.in.locks[n].offset = gen_offset();

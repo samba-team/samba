@@ -272,7 +272,7 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 		}
 
 		/* rebuild the normlaized component and put it here */
-		component->component = dest = talloc(component, size);
+		component->component = dest = talloc_size(component, size);
 		for (i = 0; i < component->attr_num; i++) {
 			if (i != 0) {
 				*dest = '+';
@@ -303,7 +303,7 @@ struct ldap_dn *ldap_parse_dn(void *mem_ctx, const char *orig_dn)
 	}
 
 	/* rebuild the normlaized dn and put it here */
-	dn->dn = dest = talloc(dn, size);
+	dn->dn = dest = talloc_size(dn, size);
 	for (i = 0; i < dn->comp_num; i++) {
 		if (i != 0) {
 			*dest = ',';

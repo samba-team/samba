@@ -77,7 +77,7 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	*r = talloc(mem_ctx, table->calls[opnum].struct_size);
+	*r = talloc_size(mem_ctx, table->calls[opnum].struct_size);
 	if (!*r) {
 		return NT_STATUS_NO_MEMORY;
 	}

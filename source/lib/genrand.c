@@ -268,7 +268,7 @@ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list
 	size_t i;
 	size_t list_len = strlen(list);
 
-	char *retstr = talloc(mem_ctx, len + 1);
+	char *retstr = talloc_array_p(mem_ctx, char, len + 1);
 	if (!retstr) return NULL;
 
 	generate_random_buffer((uint8_t *)retstr, len);

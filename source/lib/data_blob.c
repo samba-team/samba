@@ -37,7 +37,7 @@ DATA_BLOB data_blob_named(const void *p, size_t length, const char *name)
 	if (p) {
 		ret.data = talloc_memdup(NULL, p, length);
 	} else {
-		ret.data = talloc(NULL, length);
+		ret.data = talloc_size(NULL, length);
 	}
 	if (ret.data == NULL) {
 		ret.length = 0;

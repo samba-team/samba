@@ -109,7 +109,7 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
    
 static const uint8_t *get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
-	uint8_t *chal = talloc(ntlmssp_state, 8);
+	uint8_t *chal = talloc_size(ntlmssp_state, 8);
 	generate_random_buffer(chal, 8);
 
 	return chal;
