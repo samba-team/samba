@@ -1,3 +1,7 @@
+2001-08-08  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c: make -a and -A do the same as in ls(1)
+
 2001-08-05  Assar Westerlund  <assar@chicken.stacken.kth.se>
 
 	* ftpd/ftpcmd.y: add some (unsigned char) casts to is*
