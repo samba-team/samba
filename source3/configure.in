@@ -1885,7 +1885,7 @@ fi
 # If we don't have all of these then disable large
 # file support.
 #
-AC_MSG_CHECKING([checking if large file support can be enabled])
+AC_MSG_CHECKING([if large file support can be enabled])
 AC_TRY_COMPILE([
 #if defined(HAVE_LONGLONG) && (defined(HAVE_OFF64_T) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8)))
 #include <sys/types.h>
@@ -1896,11 +1896,9 @@ __COMPILE_ERROR_
 [int i],
 samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes,samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=no)
 if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
-    AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
-else
-    AC_MSG_RESULT(no)
 fi
+AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
 AC_ARG_WITH(spinlocks, [  --with-spinlocks        use spin locks instead of fcntl locks ])
 if test "x$with_spinlocks" = "xyes"; then
