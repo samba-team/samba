@@ -279,7 +279,8 @@ static void state_handler(struct smbcli_composite *c)
 */
 static void request_handler(struct smbcli_request *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct smbcli_composite *c = talloc_get_type(req->async.private, 
+						     struct smbcli_composite);
 	return state_handler(c);
 }
 
@@ -288,7 +289,8 @@ static void request_handler(struct smbcli_request *req)
 */
 static void composite_handler(struct smbcli_composite *req)
 {
-	struct smbcli_composite *c = req->async.private;
+	struct smbcli_composite *c = talloc_get_type(req->async.private, 
+						     struct smbcli_composite);
 	return state_handler(c);
 }
 
