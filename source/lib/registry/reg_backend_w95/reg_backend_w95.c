@@ -224,12 +224,14 @@ static WERROR w95_get_subkey_by_index (REG_KEY *parent, int n, REG_KEY **key)
 
 static WERROR w95_open_reg (REG_HANDLE *h, const char *location, const char *credentials)
 {
-	CREG *creg = talloc_p(h->mem_ctx, CREG);
+	CREG *creg;
 	DWORD creg_id, rgkn_id;
-	memset(creg, 0, sizeof(CREG));
-	h->backend_data = creg;
 	DWORD i, nfree = 0;
 	DWORD offset, end_offset;
+
+	creg = talloc_p(h->mem_ctx, CREG);
+	memset(creg, 0, sizeof(CREG));
+	h->backend_data = creg;
 
 	if((creg->fd = open(location, O_RDONLY, 0000)) < 0) {
 		return WERR_FOOBAR;

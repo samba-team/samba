@@ -1575,11 +1575,12 @@ static WERROR nt_close_registry (REG_HANDLE *h)
 
 static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char *credentials) 
 {
-	REGF *regf = (REGF *)talloc_p(h->mem_ctx, REGF);
+	REGF *regf;
 	REGF_HDR *regf_hdr;
 	unsigned int regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
+	regf = (REGF *)talloc_p(h->mem_ctx, REGF);
 	memset(regf, 0, sizeof(REGF));
 	regf->owner_sid_str = credentials;
 	h->backend_data = regf;
