@@ -221,7 +221,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			char **mechType = spnego.negTokenInit.mechTypes;
 			char *my_mechs[] = {NULL, NULL};
 			int i;
-			NTSTATUS nt_status;
+			NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 			
 			for (i=0; mechType && mechType[i]; i++) {
 				nt_status = gensec_client_start(&spnego_state->sub_sec_security);
@@ -360,6 +360,7 @@ static void gensec_spnego_end(struct gensec_security *gensec_security)
 static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.name		= "spnego",
 	.sasl_name	= "GSS-SPNEGO",
+	.auth_type	= DCERPC_AUTH_TYPE_SPNEGO,
 	.oid            = OID_SPNEGO,
 	.client_start   = gensec_spnego_client_start,
 	.update 	= gensec_spnego_update,
