@@ -222,15 +222,15 @@ char * parse_server(char * unc_name)
 			printf(" %s does not begin with \\\\ or //\n",unc_name);
 			return 0;
 		} else {
-			unc_name[0] = '\\';
-			unc_name[1] = '\\';
+			unc_name[0] = '/';
+			unc_name[1] = '/';
 			unc_name += 2;
 			if ((share = strchr(unc_name, '/')) || 
 				(share = strchr(unc_name,'\\'))) {
 				*share = 0;  /* temporarily terminate the string */
 				share += 1;
 				host_entry = gethostbyname(unc_name);
-				*(share - 1) = '\\'; /* put the slash back */
+				*(share - 1) = '/'; /* put the slash back */
 /*				rc = getipnodebyname(unc_name, AF_INET, AT_ADDRCONFIG ,&rc);*/
 				if(host_entry == NULL) {
 					printf("mount error: could not find target server. TCP name %s not found ", unc_name);
@@ -300,6 +300,7 @@ int main(int argc, char ** argv)
 	char * uuid = NULL;
 	char * mountpoint;
 	char * options;
+	char * temp;
 	int rc,i;
 	int rsize = 0;
 	int wsize = 0;
@@ -500,9 +501,13 @@ int main(int argc, char ** argv)
 		optlen += strlen(mountpassword) + 6;
 	options = malloc(optlen + 10);
 
-    options[0] = 0;
+	options[0] = 0;
 	strncat(options,"unc=",4);
 	strcat(options,share_name);
+	/* scan backwards and reverse direction of slash */
+	temp = strrchr(options, '/');
+	if(temp > options + 6)
+		*temp = '\\';
 	if(ipaddr) {
 		strncat(options,",ip=",4);
 		strcat(options,ipaddr);
@@ -533,7 +538,7 @@ int main(int argc, char ** argv)
 			printf("mount error: cifs filesystem not supported by the system\n");
 			break;
 		default:
-			printf("mount error %d = %s",errno,strerror(errno));
+			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
 		return -1;
