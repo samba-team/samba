@@ -773,7 +773,7 @@ static void run_trans2test(void)
 	cli_unlink(&cli, fname);
 	fnum = cli_open(&cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
-	if (!cli_qfileinfo(&cli, fnum, &c_time, &a_time, &m_time, &size)) {
+	if (!cli_qfileinfo(&cli, fnum, &c_time, &a_time, &m_time, &size, NULL)) {
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(&cli));
 	}
 	cli_close(&cli, fnum);
@@ -785,7 +785,7 @@ static void run_trans2test(void)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(&cli, fnum);
 
-	if (!cli_qpathinfo(&cli, fname, &c_time, &a_time, &m_time, &size)) {
+	if (!cli_qpathinfo(&cli, fname, &c_time, &a_time, &m_time, &size, NULL)) {
 		printf("ERROR: qpathinfo failed (%s)\n", cli_errstr(&cli));
 	} else {
 		if (c_time != m_time) {
@@ -809,7 +809,7 @@ static void run_trans2test(void)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, fname, &c_time, &a_time, &m_time, 
-			    &w_time, &size)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	} else {
 		if (w_time < 60*60*24*2) {
@@ -828,7 +828,7 @@ static void run_trans2test(void)
 	}
 	sleep(3);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time, 
-			    &w_time, &size)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	}
 
@@ -837,7 +837,7 @@ static void run_trans2test(void)
 	cli_write(&cli, fnum,  (char *)&fnum, 0, sizeof(fnum));
 	cli_close(&cli, fnum);
 	if (!cli_qpathinfo2(&cli, "\\trans2\\", &c_time, &a_time, &m_time2, 
-			    &w_time, &size)) {
+			    &w_time, &size, NULL)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", cli_errstr(&cli));
 	} else {
 		if (m_time2 == m_time)
