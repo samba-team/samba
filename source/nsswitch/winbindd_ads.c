@@ -24,6 +24,37 @@
 
 #ifdef HAVE_ADS
 
+
+/*
+  return our ads connections structure for a domain. We keep the connection
+  open to make things faster
+*/
+static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
+{
+	ADS_STRUCT *ads;
+	int rc;
+
+	if (domain->private) {
+		return (ADS_STRUCT *)domain->private;
+	}
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
+		return NULL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("ads_connect for domain %s failed: %s\n", domain->name, ads_errstr(rc)));
+		ads_destroy(&ads);
+		return NULL;
+	}
+
+	domain->private = (void *)ads;
+	return ads;
+}
+
 /* useful utility */
 static void sid_from_rid(struct winbindd_domain *domain, uint32 rid, DOM_SID *sid)
 {
@@ -67,17 +98,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
 	if (rc) {
@@ -138,7 +160,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 done:
 	if (res) ads_msgfree(ads, res);
 	if (msg) ads_msgfree(ads, msg);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -165,17 +186,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
 	if (rc) {
@@ -232,7 +244,6 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 done:
 	if (res) ads_msgfree(ads, res);
 	if (msg) ads_msgfree(ads, msg);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -260,17 +271,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads: name_to_sid\n"));
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("name_to_sid ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	asprintf(&exp, "(sAMAccountName=%s)", name2);
 	rc = ads_search(ads, &res, exp, attrs);
@@ -302,7 +304,6 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 done:
 	if (res) ads_msgfree(ads, res);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -326,17 +327,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	DEBUG(3,("ads: sid_to_name\n"));
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("sid_to_name ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	sidstr = ads_sid_binstring(sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
@@ -359,7 +351,6 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 done:
 	if (msg) ads_msgfree(ads, msg);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -385,17 +376,8 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	sid_from_rid(domain, user_rid, &sid);
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("query_user ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	sidstr = ads_sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
@@ -433,7 +415,6 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 done:
 	if (msg) ads_msgfree(ads, msg);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -465,17 +446,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	sid_from_rid(domain, user_rid, &sid);
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("lookup_usergroups ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	sidstr = ads_sid_binstring(&sid);
 	asprintf(&exp, "(objectSid=%s)", sidstr);
@@ -514,7 +486,6 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	status = NT_STATUS_OK;
 done:
 	if (msg) ads_msgfree(ads, msg);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }
@@ -537,17 +508,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	*num_names = 0;
 
-	ads = ads_init(NULL, NULL, NULL);
-	if (!ads) {
-		DEBUG(1,("ads_init failed\n"));
-		goto done;
-	}
-
-	rc = ads_connect(ads);
-	if (rc) {
-		DEBUG(1,("query_user_list ads_connect: %s\n", ads_errstr(rc)));
-		goto done;
-	}
+	ads = ads_cached_connection(domain);
+	if (!ads) goto done;
 
 	sid_from_rid(domain, group_rid, &group_sid);
 	sidstr = ads_sid_binstring(&group_sid);
@@ -597,7 +559,6 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 done:
 	if (msg) ads_msgfree(ads, msg);
 	if (res) ads_msgfree(ads, res);
-	if (ads) ads_destroy(&ads);
 
 	return status;
 }

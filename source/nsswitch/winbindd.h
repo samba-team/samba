@@ -143,6 +143,7 @@ struct winbindd_domain {
 	struct winbindd_methods *methods;      /* lookup methods for
                                                   this domain (LDAP or
                                                   RPC) */
+	void *private; /* private data for the backends (used for connection cache) */
 	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
