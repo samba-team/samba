@@ -1,5 +1,8 @@
 2003-08-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/connect.c (handle_tcp): handle recvfrom returning 0
+	(connection closed)
+
 	* kdc/connect.c (grow_descr): increment the size after we succeed
 	to allocate the space
 
