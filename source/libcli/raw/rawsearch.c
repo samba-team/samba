@@ -235,7 +235,7 @@ static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
 */
 static int parse_trans2_search(struct cli_tree *tree,
 			       TALLOC_CTX *mem_ctx, 
-			       enum search_level level,
+			       enum smb_search_level level,
 			       uint16_t flags,
 			       DATA_BLOB *blob,
 			       union smb_search_data *data)
@@ -449,7 +449,7 @@ static int parse_trans2_search(struct cli_tree *tree,
 ****************************************************************************/
 static NTSTATUS smb_raw_t2search_backend(struct cli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
-					 enum search_level level,
+					 enum smb_search_level level,
 					 uint16_t flags,
 					 int16_t count,
 					 DATA_BLOB *blob,

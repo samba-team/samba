@@ -95,7 +95,7 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 	char *mask;
 	int ff_eos = 0, i, ff_searchcount;
 	int ff_dir_handle=0;
-	enum search_level level;
+	enum smb_search_level level;
 
 	/* initialize state for search */
 	state.dirlist = NULL;
