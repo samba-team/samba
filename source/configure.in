@@ -2110,10 +2110,7 @@ __COMPILE_ERROR_
 [int i],
 samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=yes,samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT=no)
 if test x"$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT" = x"yes"; then
-	AC_MSG_RESULT(yes)
     AC_DEFINE(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
-else
-	AC_MSG_RESULT(no)
 fi
 AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
@@ -2206,6 +2203,26 @@ samba_cv_HAVE_XFS_ACLS=yes,samba_cv_XFS_POSIX_ACLS=no)])
   AC_DEFINE(HAVE_NO_ACLS)
   AC_MSG_RESULT(no)
 )
+
+#################################################
+# check whether winbind is supported on this platform
+
+AC_MSG_CHECKING(whether to compile winbind)
+case "$host_os" in
+	*linux*|*solaris*)
+		AC_MSG_RESULT(yes)
+		WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PROGS)"
+		;;
+	*)
+		AC_MSG_RESULT(unsupported for $host_os)
+		;;
+esac
+
+AC_SUBST(WINBIND_TARGETS)
+
+#################################################
+# final configure stuff
+
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
