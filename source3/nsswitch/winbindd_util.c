@@ -209,8 +209,10 @@ BOOL init_domain_list(void)
 	/* Add ourselves as the first entry */
 	domain = add_trusted_domain(lp_workgroup(), NULL, &cache_methods, NULL);
 
-	/* Now we *must* get the domain sid for our primary domain. Go into
-	   a holding pattern until that is available */
+	/* 
+	 * Now we *must* get the domain sid for our primary domain. Go into
+	 * a holding pattern until that is available
+	 */
 
 	result = cache_methods.domain_sid(domain, &domain->sid);
 	while (!NT_STATUS_IS_OK(result)) {
