@@ -77,6 +77,9 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef HAVE_SHADOW_H
+#include <shadow.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
