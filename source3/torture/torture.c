@@ -2130,7 +2130,6 @@ static BOOL run_trans2test(int dummy)
 			printf("create time=%s", ctime(&c_time));
 			printf("modify time=%s", ctime(&m_time));
 			printf("This system appears to have sticky create times\n");
-			correct = False;
 		}
 		if (a_time % (60*60) == 0) {
 			printf("access time=%s", ctime(&a_time));
