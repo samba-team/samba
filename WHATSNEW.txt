@@ -15,7 +15,7 @@ Changes since 2.2.7
 See the cvs log for SAMBA_2_2 for more details
 
 1)  Fix for smbclient reporting negative file sizes on dir command
-    and negative statitistics being reported when using put or get
+    and negative statistics being reported when using put or get
     on large files.
 2)  Fix bug in determination of allocation size
 3)  Fix 64bit size problems which prevented copying of files larger
