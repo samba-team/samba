@@ -539,28 +539,6 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		return False;
 	}
 
-
-#if 0	/* JERRY -- not used anymore */
-	/* 
-	 * If so configured, try and get the values from LDAP 
-	 */
-
-	if (lp_ldap_trust_ids() && (get_unix_attributes(ldap_state, sampass, entry, &gid))) 
-	{	
-		if (pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) 
-		{
-			GROUP_MAP map;
-			/* call the mapping code here */
-			if(pdb_getgrgid(&map, gid)) {
-				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
-			} 
-			else {
-				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
-			}
-		}
-	}
-#endif
-
 	if (!smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 			get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_LAST_SET), temp)) {
 		/* leave as default */
