@@ -1,5 +1,16 @@
 2003-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_warn.3: add copyright/license
+	
+	* lib/krb5/krb5_context.3: add SYNOPSIS and LIBRARY
+	
+	* lib/krb5/krb5.3: add RCSID
+	
+	* kdc/hprop.8: fix mdoc problem, from netbsd
+	
+	* lib/krb5/krb5_krbhst_init.3: uppercase url, from Thomas Klausner
+	<wiz@netbsd.org>
+
 	* kuser/kinit.1: setup -> set up, new sentence, new line from
 	Thomas Klausner <wiz@netbsd.org>
 	
