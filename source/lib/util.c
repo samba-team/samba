@@ -3394,4 +3394,229 @@ char *readdirname(void *p)
 }
 
 
+BOOL is_vetoed_name(char *name)
+{
+  char *namelist = lp_veto_files();
+  char *nameptr = namelist;
+  char *name_end;
+
+  /* if we have no list it's obviously not vetoed */
+  if((nameptr == NULL ) || (*nameptr == '\0')) 
+    return 0;
+
+  /* if the name doesn't exist in the list, it's obviously ok too */
+  if(strstr(namelist,name) == NULL ) 
+    return 0;
+
+  /* now, we need to find the names one by one and check them
+     they can contain spaces and all sorts of stuff so we
+     separate them with of all things '/' which can never be in a filename
+     I could use "" but then I have to break them all out
+     maybe such a routine exists somewhere?
+  */
+  while(*nameptr) 
+    {
+      if ( *nameptr == '/' ) 
+        {
+          nameptr++;
+          continue;
+        }
+      if(name_end = strchr(nameptr,'/')) 
+        {
+          *name_end = 0;
+        }
+      /* a match! it's veto'd */
+      if(strcmp(name,nameptr) == 0) 
+        return 1;
+      if(name_end == NULL) 
+        return 0;
+      /* next segment please */
+      nameptr = name_end + 1;
+    }
+  return 0;
+}
+
+BOOL is_vetoed_path(char *name)
+{
+  char *namelist = lp_veto_files();
+  char *nameptr = namelist;
+  char *sub;
+  char *name_end;
+  int len;
+
+  /* if we have no list it's obviously not vetoed */
+  if((nameptr == NULL ) || (*nameptr == '\0')) 
+    return 0;
+
+
+  /* now, we need to find the names one by one and check them
+     they can contain spaces and all sorts of stuff so we
+     separate them with of all things '/' which can never be in a filename
+     I could use "" but then I have to break them all out
+     maybe such a routine exists somewhere?
+  */
+  while(*nameptr) 
+    {
+      if ( *nameptr == '/' ) 
+        {
+          nameptr++;
+          continue;
+        }
+      if(name_end = strchr(nameptr,'/')) 
+        {
+          *name_end = 0;
+        }
+
+      len = strlen(nameptr);
+      sub = name;
+      /* If the name doesn't exist in the path, try the next name.. */
+      while( sub && ((sub = strstr(sub,nameptr)) != NULL)) 
+        {
+           /* Is it a whole component? */
+           if(((sub == name) || (sub[-1] == '/'))
+                && ((sub[len] == '\0') || (sub[len] == '/'))) 
+             {
+               return 1;
+             }
+           /* skip to the next component of the path */
+              sub =strchr(sub,'/');
+         }
+      if(name_end == NULL) 
+        return 0;
+      /* next segment please */
+      nameptr = name_end + 1;
+    }
+  return 0;
+}
+
+/****************************************************************************
+routine to do file locking
+****************************************************************************/
+BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
+{
+#if HAVE_FCNTL_LOCK
+  struct flock lock;
+  int ret;
+
+#if 1
+  uint32 mask = 0xC0000000;
+
+  /* make sure the count is reasonable, we might kill the lockd otherwise */
+  count &= ~mask;
+
+  /* the offset is often strange - remove 2 of its bits if either of
+     the top two bits are set. Shift the top ones by two bits. This
+     still allows OLE2 apps to operate, but should stop lockd from
+     dieing */
+  if ((offset & mask) != 0)
+    offset = (offset & ~mask) | ((offset & mask) >> 2);
+#else
+  uint32 mask = ((unsigned)1<<31);
+
+  /* interpret negative counts as large numbers */
+  if (count < 0)
+    count &= ~mask;
+
+  /* no negative offsets */
+  offset &= ~mask;
+
+  /* count + offset must be in range */
+  while ((offset < 0 || (offset + count < 0)) && mask)
+    {
+      offset &= ~mask;
+      mask = mask >> 1;
+    }
+#endif
+
+
+  DEBUG(5,("fcntl_lock %d %d %d %d %d\n",fd,op,(int)offset,(int)count,type));
+
+  lock.l_type = type;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = (int)offset;
+  lock.l_len = (int)count;
+  lock.l_pid = 0;
+
+  errno = 0;
+
+  ret = fcntl(fd,op,&lock);
+
+  if (errno != 0)
+    DEBUG(3,("fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
+
+  /* a lock query */
+  if (op == F_GETLK)
+    {
+      if ((ret != -1) &&
+	  (lock.l_type != F_UNLCK) && 
+	  (lock.l_pid != 0) && 
+	  (lock.l_pid != getpid()))
+	{
+	  DEBUG(3,("fd %d is locked by pid %d\n",fd,lock.l_pid));
+	  return(True);
+	}
+
+      /* it must be not locked or locked by me */
+      return(False);
+    }
+
+  /* a lock set or unset */
+  if (ret == -1)
+    {
+      DEBUG(3,("lock failed at offset %d count %d op %d type %d (%s)\n",
+	       offset,count,op,type,strerror(errno)));
+
+      /* perhaps it doesn't support this sort of locking?? */
+      if (errno == EINVAL)
+	{
+	  DEBUG(3,("locking not supported? returning True\n"));
+	  return(True);
+	}
+
+      return(False);
+    }
+
+  /* everything went OK */
+  DEBUG(5,("Lock call successful\n"));
+
+  return(True);
+#else
+  return(False);
+#endif
+}
+
+/*******************************************************************
+lock a file - returning a open file descriptor or -1 on failure
+The timeout is in seconds. 0 means no timeout
+********************************************************************/
+int file_lock(char *name,int timeout)
+{  
+  int fd = open(name,O_RDWR|O_CREAT,0666);
+  time_t t=0;
+  if (fd < 0) return(-1);
+
+#if HAVE_FCNTL_LOCK
+  if (timeout) t = time(NULL);
+  while (!timeout || (time(NULL)-t < timeout)) {
+    if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)) return(fd);    
+    msleep(LOCK_RETRY_TIMEOUT);
+  }
+  return(-1);
+#else
+  return(fd);
+#endif
+}
+
+/*******************************************************************
+unlock a file locked by file_lock
+********************************************************************/
+void file_unlock(int fd)
+{
+  if (fd<0) return;
+#if HAVE_FCNTL_LOCK
+  fcntl_lock(fd,F_SETLK,0,1,F_UNLCK);
+#endif
+  close(fd);
+}
+
 
