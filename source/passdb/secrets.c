@@ -35,6 +35,7 @@ BOOL secrets_init(void)
 		return True;
 
 	get_private_directory(fname);
+
 	pstrcat(fname,"/secrets.tdb");
 
 	tdb = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
@@ -52,6 +53,7 @@ BOOL secrets_init(void)
 void *secrets_fetch(char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
+
 	if (!tdb)
 		return False;
 	kbuf.dptr = key;

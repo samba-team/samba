@@ -214,9 +214,19 @@ static void process_options(int argc, char **argv, BOOL amroot)
 		}
 
 		case 'X': /* Extract the SID for a domain from secrets */
+			if (!lp_load(servicesf,True,False,False)) {
+				fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+					servicesf);
+				exit(1);
+			}
+		  if (!secrets_init()) {
+			fprintf(stderr, "Unable to open secrets database!\n");
+			exit(1);
+		  }
 		  if (secrets_fetch_domain_sid(optarg, &dom_sid)) {
 		    sid_to_string(sid_str, &dom_sid);
 		    printf("SID for domain %s is: %s\n", optarg, sid_str);
+		    exit(0);
 		  }
 		  else {
 		    fprintf(stderr, "Could not retrieve SID for domain: %s\n", optarg);
