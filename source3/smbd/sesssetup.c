@@ -257,7 +257,6 @@ static BOOL reply_spnego_ntlmssp_ok(connection_struct *conn, char *outbuf,
 				    AUTH_NTLMSSP_STATE *auth_ntlmssp_state) 
 {
 	int sess_vuid;
-	pstring user;
 	DATA_BLOB null_blob = data_blob(NULL, 0);
 
 	sess_vuid = register_vuid(auth_ntlmssp_state->server_info, auth_ntlmssp_state->ntlmssp_state->user /* check this for weird */);
