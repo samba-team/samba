@@ -1660,6 +1660,7 @@ BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
+uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model);
 uint32 del_a_printer(char *portname);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
 BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);

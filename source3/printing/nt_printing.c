@@ -455,6 +455,61 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 }
 
 /****************************************************************************
+****************************************************************************/
+uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
+{
+	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
+	TDB_DATA kbuf, dbuf;
+	pstring key;
+	int i;
+	line[0] = '\0';
+
+	slprintf(key, sizeof(key), "%s%s/%s", DRIVERS_PREFIX, "WIN40", model);
+	DEBUG(10,("driver key: [%s]\n", key));
+	
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	if (!tdb_exists(tdb, kbuf)) return False;
+
+	ZERO_STRUCT(info3);
+	get_a_printer_driver_3(&info3, model, "Windows 4.0");
+	
+    DEBUGADD(10,("info3->name            [%s]\n", info3->name));
+    DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
+    DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
+    DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
+    DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
+	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
+    DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
+    }
+    DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
+    DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
+    DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
+
+	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
+	pstrcat(line, info3->configfile);
+    pstrcat(line, ":");
+	pstrcat(line, info3->datafile);
+    pstrcat(line, ":");
+	pstrcat(line, info3->helpfile);
+    pstrcat(line, ":");
+	pstrcat(line, info3->monitorname);
+    pstrcat(line, ":");
+	pstrcat(line, "RAW");                /*info3->defaultdatatype);*/
+    pstrcat(line, ":");
+
+	for (i=0; info3->dependentfiles &&
+		 *info3->dependentfiles[i]; i++) {
+		if (i) pstrcat(line, ",");               /* don't end in a "," */
+		pstrcat(line, info3->dependentfiles[i]);
+	}
+	
+	free(info3);
+
+	return True;	
+}
+
+/****************************************************************************
 debugging function, dump at level 6 the struct in the logs
 ****************************************************************************/
 static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
