@@ -29,11 +29,11 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                34
+    AMERICA - USA                                35
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       33
+    EUROPE                                       34
     MIDDLE EAST                                   1
 
 AFRICA
@@ -221,6 +221,28 @@ support Samba on HP, SGI, Linux, in addition to Sun Solaris Sparc/X86.
 
 To find out more about our company, look at our website:
                                 http://www.acclaim.com
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BAY AREA, BERKELEY  CALIFORNIA - USA
+
+Vortex Technology Services
+
+2467 Warring St Suite 206, Berkeley CA 94704
+
+Phone/Fax : (510) 540-VTEX  E-Mail: support@vtex.net
+            (510) 540-8839
+
+Contact: Paul Puey, Chief Network Consultant/Engineer
+
+Vortex Technology is a fast growing technical service company based in
+Berkeley, California. Our Co-founders are composed entirely of UC
+Berkeley engineering graduates with a broad range of skills in the
+technical consultation fields. We provide bay area companies with
+professional web site and database design, LAN and WAN consultation, and
+custom programming.  We ourselves use a mixed NT / Linux Samba server
+environment in our office. We are very experienced with Samba
+administration as well as administration of UNIX and NT networks.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1606,6 +1628,22 @@ Solaris
 Digital Unix
 
 Macintosh
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ROME - ITALY
+
+Company: Pantheon Srl
+         Via del Tritone 132
+         00187 ROME - ITALY
+
+Phone/Fax: +39 6 47823666 
+URL: http://www.pantheon.it
+
+Contact: Dario Centofanti <dario@pantheon.it>
+
+Pantheon provide support for SaMBa and other TCP/IP applications running
+under Linux. We are also an internet provider.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
