@@ -226,8 +226,8 @@ static BOOL linux_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *i
 {
 	/* Ensure that the msg length is correct. */
 	if (msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %d).\n", 
-			 msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
+		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %lu).\n", 
+			 msg_len, (unsigned long)KERNEL_OPLOCK_BREAK_MSG_LEN));
 		return False;
 	}
 
