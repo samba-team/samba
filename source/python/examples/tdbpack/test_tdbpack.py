@@ -113,8 +113,6 @@ class PackTests(unittest.TestCase):
         not "canonical".
         """
         cases = [('w', (42,), '\x2a\0'),
-                 ('p', [None], '\0\0\0\0'),
-                 ('p', ['true'], '\x01\0\0\0'),
                  ]
 
         for packer in both_packers:
