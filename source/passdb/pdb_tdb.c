@@ -501,7 +501,8 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	}
 
 	/* Data is stored in all lower-case */
-	unix_strlower(sname, -1, name, sizeof(name));
+	fstrcpy(name, sname);
+	strlower(name);
 
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -648,7 +649,8 @@ BOOL pdb_delete_sam_account(char *sname)
 	uint32		rid;
 	fstring		name;
 	
-	unix_strlower(sname, -1, name, sizeof(name));
+	fstrcpy(name, sname);
+	strlower(name);
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -755,7 +757,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 	data.dptr = buf;
 
-	unix_strlower(pdb_get_username(newpwd), -1, name, sizeof(name));
+	fstrcpy(name,pdb_get_username(newpwd));
+	strlower(name);
 	
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
