@@ -547,6 +547,435 @@ repl_mutual
     return ret;
 }
 
+static OM_uint32
+gsskrb5_init_sec_context
+           (OM_uint32 * minor_status,
+            const gss_cred_id_t initiator_cred_handle,
+            gss_ctx_id_t * context_handle,
+            const gss_name_t target_name,
+            const gss_OID mech_type,
+            OM_uint32 req_flags,
+            OM_uint32 time_req,
+            const gss_channel_bindings_t input_chan_bindings,
+            const gss_buffer_t input_token,
+            gss_OID * actual_mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec
+	   )
+{
+    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
+	return init_auth (minor_status,
+			  initiator_cred_handle,
+			  context_handle,
+			  target_name,
+			  mech_type,
+			  req_flags,
+			  time_req,
+			  input_chan_bindings,
+			  input_token,
+			  actual_mech_type,
+			  output_token,
+			  ret_flags,
+			  time_rec);
+    else
+	return repl_mutual(minor_status,
+			   initiator_cred_handle,
+			   context_handle,
+			   target_name,
+			   mech_type,
+			   req_flags,
+			   time_req,
+			   input_chan_bindings,
+			   input_token,
+			   actual_mech_type,
+			   output_token,
+			   ret_flags,
+			   time_rec);
+}
+
+static OM_uint32
+spnego_reply
+           (OM_uint32 * minor_status,
+            const gss_cred_id_t initiator_cred_handle,
+            gss_ctx_id_t * context_handle,
+            const gss_name_t target_name,
+            const gss_OID mech_type,
+            OM_uint32 req_flags,
+            OM_uint32 time_req,
+            const gss_channel_bindings_t input_chan_bindings,
+            const gss_buffer_t input_token,
+            gss_OID * actual_mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec
+    )
+{
+    OM_uint32 ret;
+    krb5_data indata;
+    NegTokenTarg targ;
+    u_char oidbuf[17];
+    size_t oidlen;
+    gss_buffer_desc sub_token;
+    ssize_t mech_len;
+    const u_char *p;
+    size_t len, taglen;
+
+    mech_len = gssapi_krb5_get_mech (input_token->value,
+				     input_token->length,
+				     &p);
+
+    if (mech_len < 0) {
+	/*
+	 * When using GSS-SPNEGO in LDAP, Microsoft ldap server sends
+	 * token that doesn't have GSS-API wrapping, so, if the
+	 * GSS-API header isn't there, just ignore it and hope that
+	 * whole token is a NegotiationToken->NegTokenTarg message.
+	 */
+	indata.data = input_token->value;
+	indata.length = input_token->length;
+    } else if (mech_len == GSS_KRB5_MECHANISM->length
+	&& memcmp(GSS_KRB5_MECHANISM->elements, p, mech_len) == 0)
+	return gsskrb5_init_sec_context (minor_status,
+					 initiator_cred_handle,
+					 context_handle,
+					 target_name,
+					 GSS_KRB5_MECHANISM,
+					 req_flags,
+					 time_req,
+					 input_chan_bindings,
+					 input_token,
+					 actual_mech_type,
+					 output_token,
+					 ret_flags,
+					 time_rec);
+    else if (mech_len == GSS_SPNEGO_MECHANISM->length
+	     && memcmp(GSS_SPNEGO_MECHANISM->elements, p, mech_len) == 0){
+	ret = _gssapi_decapsulate (minor_status,
+				   input_token,
+				   &indata,
+				   GSS_SPNEGO_MECHANISM);
+	if (ret)
+	    return ret;
+    } else
+	return GSS_S_BAD_MECH;
+
+    output_token->length = 0;
+    output_token->value  = NULL;
+
+    ret = der_match_tag_and_length((const char *)indata.data,
+				   indata.length - taglen,
+				   CONTEXT, CONS, 1, &len, &taglen);
+    if (ret)
+	return ret;
+
+    ret = decode_NegTokenTarg((const char *)indata.data + taglen, 
+			      len, &targ, NULL);
+    if (ret) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    if (targ.negResult == NULL
+	|| *(targ.negResult) == reject
+	|| targ.supportedMech == NULL) {
+	free_NegTokenTarg(&targ);
+	return GSS_S_BAD_MECH;
+    }
+    
+    ret = der_put_oid(oidbuf + sizeof(oidbuf) - 1,
+		      sizeof(oidbuf),
+		      targ.supportedMech,
+		      &oidlen);
+    if (ret || oidlen != GSS_KRB5_MECHANISM->length
+	|| memcmp(oidbuf + sizeof(oidbuf) - oidlen,
+		  GSS_KRB5_MECHANISM->elements,
+		  oidlen) != 0) {
+	free_NegTokenTarg(&targ);
+	return GSS_S_BAD_MECH;
+    }
+
+    if (targ.responseToken != NULL) {
+	sub_token.length = targ.responseToken->length;
+	sub_token.value  = targ.responseToken->data;
+    } else {
+	sub_token.length = 0;
+	sub_token.value  = NULL;
+    }
+
+    ret = gsskrb5_init_sec_context(minor_status,
+				   initiator_cred_handle,
+				   context_handle,
+				   target_name,
+				   GSS_KRB5_MECHANISM,
+				   req_flags,
+				   time_req,
+				   input_chan_bindings,
+				   &sub_token,
+				   actual_mech_type,
+				   output_token,
+				   ret_flags,
+				   time_rec);
+    if (ret || targ.mechListMIC == NULL) {
+	/* no thing to do */
+    } else if (targ.responseToken != NULL &&
+	       targ.mechListMIC->length == targ.responseToken->length &&
+	       memcmp(targ.mechListMIC->data, targ.responseToken->data,
+		      targ.mechListMIC->length) == 0) {
+	/* 
+	 * We dealing with a broken MS SPNEGO client that send the
+	 * responseToken in both responseToken and mechListMIC, just
+	 * ignore those.
+	 */
+    } else {
+	MechTypeList mechlist;
+	MechType m0;
+	char mechtypelist_buf[256];
+	size_t mechtypelist_sz;
+	gss_buffer_desc mic_buf, mech_buf;
+
+	mechlist.len = 1;
+	mechlist.val = &m0;
+
+	ret = der_get_oid(GSS_KRB5_MECHANISM->elements,
+			  GSS_KRB5_MECHANISM->length,
+			  &m0,
+			  NULL);
+	if (ret) {
+	    free_NegTokenTarg(&targ);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+
+	ret = encode_MechTypeList(mechtypelist_buf
+				  + sizeof(mechtypelist_buf) - 1,
+				  sizeof(mechtypelist_buf),
+				  &mechlist, &mechtypelist_sz);
+	if (ret) {
+	    free_NegTokenTarg(&targ);
+	    free_oid(&m0);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+
+	mech_buf.length = mechtypelist_sz;
+	mech_buf.value  = mechtypelist_buf
+	    + sizeof(mechtypelist_buf) - mechtypelist_sz;
+
+	mic_buf.length = targ.mechListMIC->length;
+	mic_buf.value  = targ.mechListMIC->data;
+
+	ret = gss_verify_mic(minor_status, *context_handle,
+			     &mech_buf, &mic_buf, NULL);
+	free_oid(&m0);
+    }
+    free_NegTokenTarg(&targ);
+    return ret;
+}
+
+static OM_uint32
+spnego_initial
+           (OM_uint32 * minor_status,
+            const gss_cred_id_t initiator_cred_handle,
+            gss_ctx_id_t * context_handle,
+            const gss_name_t target_name,
+            const gss_OID mech_type,
+            OM_uint32 req_flags,
+            OM_uint32 time_req,
+            const gss_channel_bindings_t input_chan_bindings,
+            const gss_buffer_t input_token,
+            gss_OID * actual_mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec
+	   )
+{
+    NegTokenInit ni;
+    int ret;
+    OM_uint32 sub, minor;
+    gss_buffer_desc mech_token;
+    u_char *buf;
+    size_t buf_size, buf_len;
+    krb5_data data;
+
+    memset (&ni, 0, sizeof(ni));
+
+    ALLOC(ni.mechTypes, 1);
+    if (ni.mechTypes == NULL) {
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    ALLOC_SEQ(ni.mechTypes, 1);
+    if (ni.mechTypes->val == NULL) {
+	free_NegTokenInit(&ni);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    ret = der_get_oid(GSS_KRB5_MECHANISM->elements,
+		      GSS_KRB5_MECHANISM->length,
+		      &ni.mechTypes->val[0],
+		      NULL);
+    if (ret) {
+	free_NegTokenInit(&ni);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+#if 0
+    ALLOC(ni.reqFlags, 1);
+    if (ni.reqFlags == NULL) {
+	free_NegTokenInit(&ni);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+    ni.reqFlags->delegFlag    = req_flags & GSS_C_DELEG_FLAG;
+    ni.reqFlags->mutualFlag   = req_flags & GSS_C_MUTUAL_FLAG;
+    ni.reqFlags->replayFlag   = req_flags & GSS_C_REPLAY_FLAG;
+    ni.reqFlags->sequenceFlag = req_flags & GSS_C_SEQUENCE_FLAG;
+    ni.reqFlags->anonFlag     = req_flags & GSS_C_ANON_FLAG;
+    ni.reqFlags->confFlag     = req_flags & GSS_C_CONF_FLAG;
+    ni.reqFlags->integFlag    = req_flags & GSS_C_INTEG_FLAG;
+#else
+    ni.reqFlags = NULL;
+#endif
+
+    sub = gsskrb5_init_sec_context(&minor,
+				   initiator_cred_handle,
+				   context_handle,
+				   target_name,
+				   GSS_KRB5_MECHANISM,
+				   req_flags,
+				   time_req,
+				   input_chan_bindings,
+				   GSS_C_NO_BUFFER,
+				   actual_mech_type,
+				   &mech_token,
+				   ret_flags,
+				   time_rec);
+    if (mech_token.length != 0) {
+	ALLOC(ni.mechToken, 1);
+	if (ni.mechToken == NULL) {
+	    free_NegTokenInit(&ni);
+	    gss_release_buffer(&minor, &mech_token);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	ni.mechToken->length = mech_token.length;
+	ni.mechToken->data   = mech_token.value;
+    }
+    /* XXX ignore mech list mic for now */
+    ni.mechListMIC = NULL;
+
+
+    buf_size = 1024;
+    buf = malloc(buf_size);
+    if (buf == NULL) {
+	free_NegTokenInit(&ni);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
+
+    do {
+	ret = encode_NegTokenInit(buf + buf_size -1,
+				  buf_size,
+				  &ni, &buf_len);
+	if (ret == 0) {
+	    size_t tmp;
+
+	    ret = der_put_length_and_tag(buf + buf_size - buf_len - 1,
+					 buf_size - buf_len,
+					 buf_len,
+					 CONTEXT,
+					 CONS,
+					 0,
+					 &tmp);
+	    if (ret == 0)
+		buf_len += tmp;
+	}
+	if (ret) {
+	    if (ret == ASN1_OVERFLOW) {
+		u_char *tmp;
+
+		buf_size *= 2;
+		tmp = realloc (buf, buf_size);
+		if (tmp == NULL) {
+		    *minor_status = ENOMEM;
+		    free(buf);
+		    free_NegTokenInit(&ni);
+		    return GSS_S_FAILURE;
+		}
+		buf = tmp;
+	    } else {
+		*minor_status = ret;
+		free(buf);
+		free_NegTokenInit(&ni);
+		return GSS_S_FAILURE;
+	    }
+	}
+    } while (ret == ASN1_OVERFLOW);
+
+    data.data   = buf + buf_size - buf_len;
+    data.length = buf_len;
+
+    sub = _gssapi_encapsulate(minor_status,
+			      &data,
+			      output_token,
+			      GSS_SPNEGO_MECHANISM);
+    free (buf);
+
+    if (sub)
+	return sub;
+
+    return GSS_S_CONTINUE_NEEDED;
+}
+
+static OM_uint32
+spnego_init_sec_context
+           (OM_uint32 * minor_status,
+            const gss_cred_id_t initiator_cred_handle,
+            gss_ctx_id_t * context_handle,
+            const gss_name_t target_name,
+            const gss_OID mech_type,
+            OM_uint32 req_flags,
+            OM_uint32 time_req,
+            const gss_channel_bindings_t input_chan_bindings,
+            const gss_buffer_t input_token,
+            gss_OID * actual_mech_type,
+            gss_buffer_t output_token,
+            OM_uint32 * ret_flags,
+            OM_uint32 * time_rec
+           )
+{
+    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
+	return spnego_initial (minor_status,
+			       initiator_cred_handle,
+			       context_handle,
+			       target_name,
+			       mech_type,
+			       req_flags,
+			       time_req,
+			       input_chan_bindings,
+			       input_token,
+			       actual_mech_type,
+			       output_token,
+			       ret_flags,
+			       time_rec);
+    else
+	return spnego_reply (minor_status,
+			     initiator_cred_handle,
+			     context_handle,
+			     target_name,
+			     mech_type,
+			     req_flags,
+			     time_req,
+			     input_chan_bindings,
+			     input_token,
+			     actual_mech_type,
+			     output_token,
+			     ret_flags,
+			     time_rec);
+}
+
 /*
  * gss_init_sec_context
  */
@@ -584,32 +1013,35 @@ OM_uint32 gss_init_sec_context
 	return GSS_S_BAD_NAME;
     }
 
-    if (input_token == GSS_C_NO_BUFFER || input_token->length == 0)
-	return init_auth (minor_status,
-			  initiator_cred_handle,
-			  context_handle,
-			  target_name,
-			  mech_type,
-			  req_flags,
-			  time_req,
-			  input_chan_bindings,
-			  input_token,
-			  actual_mech_type,
-			  output_token,
-			  ret_flags,
-			  time_rec);
+    if (mech_type == GSS_C_NO_OID || 
+	gss_oid_equal(mech_type,  GSS_KRB5_MECHANISM))
+	return gsskrb5_init_sec_context(minor_status,
+					initiator_cred_handle,
+					context_handle,
+					target_name,
+					mech_type,
+					req_flags,
+					time_req,
+					input_chan_bindings,
+					input_token,
+					actual_mech_type,
+					output_token,
+					ret_flags,
+					time_rec);
+    else if (gss_oid_equal(mech_type, GSS_SPNEGO_MECHANISM))
+	return spnego_init_sec_context (minor_status,
+					initiator_cred_handle,
+					context_handle,
+					target_name,
+					mech_type,
+					req_flags,
+					time_req,
+					input_chan_bindings,
+					input_token,
+					actual_mech_type,
+					output_token,
+					ret_flags,
+					time_rec);
     else
-	return repl_mutual(minor_status,
-			   initiator_cred_handle,
-			   context_handle,
-			   target_name,
-			   mech_type,
-			   req_flags,
-			   time_req,
-			   input_chan_bindings,
-			   input_token,
-			   actual_mech_type,
-			   output_token,
-			   ret_flags,
-			   time_rec);
+	return GSS_S_BAD_MECH;
 }
