@@ -273,6 +273,8 @@ typedef struct  {                               /*  POP parameter block */
 #ifdef OTP
     OtpContext		otp_ctx;		/*  OTP context */
 #endif
+    unsigned int	flags;
+#define POP_FLAG_CAPA 1
 } POP;
 
 typedef struct {                                /*  State information for 
