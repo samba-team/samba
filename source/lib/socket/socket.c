@@ -107,6 +107,14 @@ NTSTATUS socket_connect(struct socket_context *sock,
 	return sock->ops->fn_connect(sock, my_address, my_port, server_address, server_port, flags);
 }
 
+NTSTATUS socket_connect_complete(struct socket_context *sock, uint32_t flags)
+{
+	if (!sock->ops->fn_connect_complete) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return sock->ops->fn_connect_complete(sock, flags);
+}
+
 NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int port, int queue_size, uint32_t flags)
 {
 	if (sock->type != SOCKET_TYPE_STREAM) {
