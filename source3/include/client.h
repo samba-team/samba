@@ -132,6 +132,12 @@ struct cli_state {
 	 */
 
 	uint16 nt_pipe_fnum;               /* Pipe handle. */
+
+	uint16 saved_netlogon_pipe_fnum;   /* The "first" pipe to get
+                                              the session key for the
+                                              schannel. */
+	struct netsec_auth_struct auth_info;
+
 	unsigned char sess_key[16];        /* Current session key. */
 	unsigned char ntlmssp_hash[258];   /* ntlmssp data. */
 	uint32 ntlmssp_cli_flgs;           /* ntlmssp client flags */

@@ -389,11 +389,28 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Open pipe */
 
-	if (cmd_entry->pipe_idx != -1)
-		if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
-			DEBUG(0, ("Could not initialize pipe\n"));
+	if (cmd_entry->pipe_idx == PI_NETLOGON) {
+		uchar trust_password[16];
+
+		if (!secrets_fetch_trust_account_password(lp_workgroup(),
+							  trust_password,
+							  NULL)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
+
+		if (!cli_nt_open_netlogon(cli, trust_password,
+					  SEC_CHAN_WKSTA)) {
+			DEBUG(0, ("Could not initialize NETLOGON pipe\n"));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	} else {
+		if (cmd_entry->pipe_idx != -1) {
+			if (!cli_nt_session_open(cli, cmd_entry->pipe_idx)) {
+				DEBUG(0, ("Could not initialize pipe\n"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+		}
+	}
 
      /* Run command */
 

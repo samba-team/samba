@@ -209,19 +209,17 @@ int rpc_samdump(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
-		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
+	fstrcpy(cli->domain, lp_workgroup());
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(),
+						  trust_password,
+						  NULL)) {
+		DEBUG(0,("Could not fetch trust account password\n"));
 		goto fail;
 	}
 
-	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_password, NULL)) {
-		d_printf("Could not retrieve domain trust secret\n");
-		goto fail;
-	}
-	
-	result = cli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password, &neg_flags, 2);
-	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("Failed to setup BDC creds\n");
+	if (!cli_nt_open_netlogon(cli, trust_password, SEC_CHAN_BDC)) {
+		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
 

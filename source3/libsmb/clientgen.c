@@ -282,6 +282,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli_null_set_signing(cli);
 
 	cli->nt_pipe_fnum = 0;
+	cli->saved_netlogon_pipe_fnum = 0;
 
 	cli->initialised = 1;
 	cli->allocated = alloced_cli;
