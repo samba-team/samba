@@ -198,6 +198,32 @@ NDBM_nextkey(krb5_context context, HDB *db, hdb_entry *entry)
     return NDBM_seq(context, db, entry, 0);
 }
 
+static krb5_error_code
+NDBM_rename(krb5_context context, HDB *db, const char *new_name)
+{
+    /* XXX this function will break */
+
+    int ret;
+    char *old_dir, *old_pag, *new_dir, *new_pag;
+
+    asprintf(&old_dir, "%s.dir", db->name);
+    asprintf(&old_pag, "%s.pag", db->name);
+    asprintf(&new_dir, "%s.dir", new_name);
+    asprintf(&new_pag, "%s.pag", new_name);
+    ret = rename(old_dir, new_dir) || rename(old_pag, new_pag);
+    free(old_dir);
+    free(old_pag);
+    free(new_dir);
+    free(new_pag);
+    if(ret)
+	return errno;
+    
+    free(db->name);
+    db->name = strdup(new_name);
+    return 0;
+}
+
+
 krb5_error_code
 hdb_ndbm_open(krb5_context context, HDB **db, 
 	      const char *filename, int flags, mode_t mode)
@@ -208,6 +234,7 @@ hdb_ndbm_open(krb5_context context, HDB **db,
 	return errno;
     *db = malloc(sizeof(**db));
     (*db)->db = d;
+    (*db)->name = strdup(filename);
     (*db)->close = NDBM_close;
     (*db)->fetch = NDBM_fetch;
     (*db)->store = NDBM_store;
@@ -216,6 +243,7 @@ hdb_ndbm_open(krb5_context context, HDB **db,
     (*db)->nextkey= NDBM_nextkey;
     (*db)->lock = NDBM_lock;
     (*db)->unlock = NDBM_unlock;
+    (*db)->rename = NDBM_rename;
     return 0;
 }
 
