@@ -480,6 +480,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	BOOL guest=False;
 	static BOOL done_sesssetup = False;
 	extern BOOL global_encrypted_passwords_negotiated;
+	extern BOOL global_spnego_negotiated;
 	extern uint32 global_client_caps;
 	extern int Protocol;
 	extern fstring remote_machine;
@@ -492,9 +493,14 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	
 	/* a SPNEGO session setup has 12 command words, whereas a normal
 	   NT1 session setup has 13. See the cifs spec. */
-	if (CVAL(inbuf, smb_wct) == 12 && 
+	if (CVAL(inbuf, smb_wct) == 12 &&
 	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
+	}
+
+	if (global_spnego_negotiated) {
+		DEBUG(0,("reply_sesssetup_and_X:  Rejecting attempt at 'normal' session setup after negotiating spnego.\n"));
+		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
 	*smb_apasswd = *smb_ntpasswd = 0;

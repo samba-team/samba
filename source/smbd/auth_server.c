@@ -51,6 +51,9 @@ struct cli_state *server_cryptkey(void)
 	if (!cli_initialise(cli))
 		return NULL;
 
+	/* security = server just can't function with spnego */
+	cli->use_spnego = False;
+
         pserver = strdup(lp_passwordserver());
 	p = pserver;
 
