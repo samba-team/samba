@@ -854,19 +854,23 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 
 BOOL secrets_passwords_migrated(BOOL set_migrated)
 {
-	BOOL migrated, *mig, stored;
+ 	BOOL migrated, *mig = NULL;
 	const char *key = SECRETS_PASSWORDS_MIGRATED;
 	size_t keylen;
 
 	/* tdb key to fetch (and maybe store) */
 	keylen = strlen(key);
 	mig = secrets_fetch(key, &keylen);
-	migrated = *mig;
 
-	if (set_migrated) {
+	if (!set_migrated) {
+		/* if fetching returns NULL, there was definately no migration done yet */
+		if (!mig)
+			return False;
+		else
+			migrated = *mig;
+	} else {
 		/* set "migrated" sign in secrets.tdb */
-		stored = secrets_store(key, (void*)set_migrated, sizeof(set_migrated));
-		return stored;
+		migrated = secrets_store(key, (void*)&set_migrated, sizeof(set_migrated));
 	}
 
 	return migrated;
