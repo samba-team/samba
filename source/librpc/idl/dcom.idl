@@ -41,9 +41,6 @@ interface ObjectRpcBaseTypes
 	// Causality Identifier
 #define CID GUID
 
-	// Class ID
-#define CLSID GUID
-
 	// Interface identifier
 #define IID GUID
 
@@ -71,12 +68,15 @@ interface ObjectRpcBaseTypes
 	// Machines with version >=5.3 don't use "default" and will
 	// gracefully handle future extensions to SAFEARRAY.
 	// old constants (for convenience)
-	const uint16 COM_MINOR_VERSION_1 = 1;
-	const uint16 COM_MINOR_VERSION_2 = 2;
 
 	// current version
 	const uint16 COM_MAJOR_VERSION = 5;
-	const uint16 COM_MINOR_VERSION = 3;
+	const uint16 COM_MINOR_VERSION = 6;
+
+	// Body Extensions
+	const string dcom_ext_debugging = "f1f19680-4d2a-11ce-a66a-0020af6e72f4";
+	const string dcom_ext_extended_error = "f1f19681-4d2a-11ce-a66a-0020af6e72f4";
+
 	// Component Object Model version number
 
 	typedef [public] struct 
@@ -124,7 +124,7 @@ interface ObjectRpcBaseTypes
 		uint32 reserved; // Must be zero.
 		//FIXME[size_is((size+1)&~1,), unique] ORPC_EXTENT **extent; // extents
 		[size_is(size),unique] ORPC_EXTENT extent[];
-	} 	ORPC_EXTENT_ARRAY;
+	} ORPC_EXTENT_ARRAY;
 
 
 	// implicit 'this' pointer which is the first [in] parameter on
@@ -185,6 +185,7 @@ interface ObjectRpcBaseTypes
 
 	// flag values for OBJREF
 	typedef enum {
+		OBJREF_NULL = 0x0, // NULL pointer
 		OBJREF_STANDARD = 0x1, // standard marshaled objref
 		OBJREF_HANDLER = 0x2, // handler marshaled objref
 		OBJREF_CUSTOM = 0x4 // custom marshaled objref
@@ -223,32 +224,36 @@ interface ObjectRpcBaseTypes
 	} u_standard;
 
 	typedef struct
-		{
-			STDOBJREF std; // standard objref
-			CLSID clsid; // Clsid of handler code
-			DUALSTRINGARRAY saResAddr; // resolver address
-		} u_handler;
+	{
+		STDOBJREF std; // standard objref
+		GUID clsid; // Clsid of handler code
+		DUALSTRINGARRAY saResAddr; // resolver address
+	} u_handler;
 
 	typedef struct
-		{
-			CLSID clsid; // Clsid of unmarshaling code
-			uint32 cbExtension; // size of extension data
-			uint32 size; // size of data that follows
-			[size_is(size), ref] uint8 *pData; // extension + class specific data
-		} u_custom;
+	{
+		GUID clsid; // Clsid of unmarshaling code
+		uint32 cbExtension; // size of extension data
+		uint32 size; // size of data that follows
+		[size_is(size), ref] uint8 *pData; // extension + class specific data
+	} u_custom;
 
-
+	typedef struct
+	{
+	} u_null;
 
 	typedef union 
 	{
+		[case(OBJREF_NULL)] u_null u_null;
 		[case(OBJREF_STANDARD)] u_standard u_standard;
 		[case(OBJREF_HANDLER)] u_handler u_handler;
 		[case(OBJREF_CUSTOM)] u_custom u_custom;
 	} OBJREF_Types;
 
 	// OBJREF is the format of a marshaled interface pointer.
-	typedef struct 
+	typedef [public] struct 
 	{
+		uint32 signature;
 		uint32 flags; // OBJREF flags (see above)
 		GUID iid; // interface identifier
 		[switch_is(flags), switch_type(uint32)] OBJREF_Types u_objref;
@@ -257,8 +262,7 @@ interface ObjectRpcBaseTypes
 	// wire representation of a marshalled interface pointer
 	typedef [public] struct 
 	{
-		uint32 ulCntData; // size of data
-		[size_is(ulCntData)] uint8 abData[]; // data (OBJREF)
+		[subcontext(4)] OBJREF abData; // data (OBJREF)
 	} MInterfacePointer;
 }
 
@@ -318,12 +322,11 @@ interface IUnknown
 [
 	uuid(00000131-0000-0000-C000-000000000046),
 	object,
-	version(0.0),
 	helpstring("Remote version of IUnknown")
 ]
 interface IRemUnknown : IUnknown
 {
-	typedef struct 
+	typedef [public] struct 
 	{
 		HRESULT hResult; // result of call
 		STDOBJREF std; // data for returned interface
@@ -334,11 +337,10 @@ interface IRemUnknown : IUnknown
 		 [in] IPID *ripid, // interface to QI on
 		 [in] uint32 cRefs, // count of AddRefs requested
 		 [in] uint16 cIids, // count of IIDs that follow
-		 [in, size_is(cIids)]
-		 IID* iids//, // IIDs to QI for
-		 /*FIXME: [out, size_is(,cIids)]
-		 REMQIRESULT** ppQIResults // results returned*/
+		 [in, size_is(cIids)] IID* iids, //, // IIDs to QI for
+		 [out] MInterfacePointer *ip
 		);
+
 	typedef struct 
 	{
 		IPID ipid; // ipid to AddRef/Release
@@ -358,6 +360,33 @@ interface IRemUnknown : IUnknown
 		);
 }
 
+[
+	uuid(00000140-0000-0000-c000-000000000046),
+	object
+] interface IClassActivator : IUnknown
+{
+	void RemoteGetClassObject([in] GUID classid, 
+											  [in] uint32 context,
+											  [in] LCID locale,
+											  [in] GUID iid/*FIXME,
+											  [out, iid_is(iid)] void *data */);
+}
+
+/* Looks like this is the equivalent of .NET's 
+   System.Activator class */
+[
+	uuid(000001a0-0000-0000-c000-000000000046),
+	object
+]
+	interface ISystemActivator : IClassActivator
+{
+	void ISystemActivatorRemoteCreateInstance(
+											  [in] GUID classid,
+											  [in] OBJREF obj,
+											  [out] MInterfacePointer res
+											  );
+}
+
 
 
 // Derived from IRemUnknown, this interface supports Remote Query interface
@@ -365,8 +394,7 @@ interface IRemUnknown : IUnknown
 // marshaled interface packets.
 [
 	object,
-	uuid(00000143-0000-0000-C000-000000000046),
-	version(0.0)
+	uuid(00000143-0000-0000-C000-000000000046)
 ]
 
 interface IRemUnknown2 : IRemUnknown
@@ -375,90 +403,15 @@ interface IRemUnknown2 : IRemUnknown
 		 [in] IPID *ripid,
 		 [in] uint16 cIids,
 		 [in, size_is(cIids)] IID *iids,
-		 [out, size_is(cIids)] HRESULT *phr/*FIXME,
-		 [out, size_is(cIids)] MInterfacePointer *ppMIF[*]*/
+		 [out, size_is(cIids)] HRESULT *phr,
+		 [out, size_is(cIids)] MInterfacePointer *ppMIF
 		);
 }
 
 [
-	uuid(4d9f4ab8-7d1c-11cf-861e-0020af6e7c57),
-	version(0.0),
-	object,
-	pointer_default(unique)
-]
-interface IRemoteActivation
-{
-	typedef [public] struct {
-		MInterfacePointer *ppInterfaceData;
-	} ppInterfaceDataArray;
-
-	typedef [public] struct {
-		DUALSTRINGARRAY *dualstringarray;
-	} REF_DUALSTRINGARRAY;
-
-	typedef struct {
-		/* Looks very much like a protocol tower to me, but it appears 
-		   to be aligned differently then it is in epmapper -jelmer
-		  */
-		uint8 FIXME[12];
-	} floor_tmp;
-
-	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
-	HRESULT RemoteActivation (
-							  [in] GUID Clsid,
-							  [in, unique] unistr *pwszObjectName,
-							  [in, unique] MInterfacePointer *pObjectStorage,
-							  [in] uint32 ClientImpLevel,
-							  [in] uint32 Mode,
-							  [in] uint32 Interfaces,
-							  [in, unique,size_is(Interfaces)] IID *pIIDs,
-							  [in] uint16 num_protseqs,
-							  [in, size_is(num_protseqs)] floor_tmp protseq[],
-							  [out] OXID pOxid,
-							  [out] DUALSTRINGARRAY *pdsaOxidBindings,
-							  [out] IPID ipidRemUnknown,
-							  [out] uint32 pAuthnHint,
-							  [out] COMVERSION pServerVersion,
-							  [out] HRESULT *phr,
-							  [out,size_is(Interfaces)] ppInterfaceDataArray *ppInterfaceData,
-							  [out,size_is(Interfaces)] HRESULT *pResults
-								  );
-}
-
-
-/* The Win2k equivalent of IRemoteActivation */
-[
-	object,
-	uuid(000001a0-0000-0000-c000-000000000046),
-	version(0.0)
-]
-interface ISystemActivator : IUnknown
-{
-	void ISystemActivatorRemoteGetClassObject();
-	void ISystemActivatorRemoteCreateInstance();
-}
-
-[
-	uuid(00000132-0000-0000-C000-000000000046),
-	version(0.0)
-] interface ILocalSystemActivator
-{
-	WERROR ILocalSystemActivator_Unknown();
-}
-
-[
-	uuid(00000134-0000-0000-C000-000000000046),
-	version(0.0)
-] interface IRunDown
-{
-	void IRunDown_Dummy();
-}
-
-
-[
-	object,
+object,
 	uuid(00000136-0000-0000-C000-000000000046)
-] interface ISCMActivator : IUnknown
+	] interface ISCMActivator : IUnknown
 {
 	WERROR SCMActivator_GetClassObject();
 	WERROR SCMActivator_CreateInstance();
@@ -466,14 +419,13 @@ interface ISystemActivator : IUnknown
 
 [
 	object,
-	uuid(00020400-0000-0000-C000-000000000046),
-	version(0.0)
-] interface IDispatch : IUnknown
+	uuid(00020400-0000-0000-C000-000000000046)
+	] interface IDispatch : IUnknown
 {
 	/*****************/
 	/* Function 0x03 */
 	HRESULT GetTypeInfoCount(
-						 [out] uint16 *pctinfo);
+			[out] uint16 *pctinfo);
 
 	typedef struct {
 		uint8 FIXME;
@@ -486,24 +438,24 @@ interface ISystemActivator : IUnknown
 	/*****************/
 	/* Function 0x04 */
 	HRESULT GetTypeInfo (
-					 [in] uint16 iTInfo,
-					 [in] LCID lcid,
-					 [out] REF_ITypeInfo *ppTInfo);
+			[in] uint16 iTInfo,
+			[in] LCID lcid,
+			[out] REF_ITypeInfo *ppTInfo);
 
 	/*****************/
 	/* Function 0x05 */
 	HRESULT GetIDsOfNames(
-					  [in] IID *riid,
-					  /*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
-					  [in] uint16 cNames,
-					  [in] LCID lcid,
-					  [out,size_is(cNames)] DISPID *rgDispId);
+			[in] IID *riid,
+			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
+			[in] uint16 cNames,
+			[in] LCID lcid,
+			[out,size_is(cNames)] DISPID *rgDispId);
 
 	typedef struct {
 		uint16 vartype;
 		uint16 FIXME;
 	} VARIANT;
-	
+
 	typedef struct {
 		uint16 FIXME;
 	} DISPPARAMS;
@@ -512,26 +464,35 @@ interface ISystemActivator : IUnknown
 	typedef struct {
 		uint16 FIXME;
 	} EXCEPINFO;
-	
+
 	/*****************/
 	/* Function 0x06 */
 	HRESULT Invoke(
-			   [in] DISPID dispIdMember,
-			   [in] IID *riid,
-			   [in] LCID lcid,
-			   [in] uint16 wFlags,
-			   [out,in] DISPPARAMS *pDispParams,
-			   [out] VARIANT *pVarResult,
-			   [out] EXCEPINFO *pExcepInfo,
-			   [out] uint16 *puArgErr);
+			[in] DISPID dispIdMember,
+			[in] IID *riid,
+			[in] LCID lcid,
+			[in] uint16 wFlags,
+			[out,in] DISPPARAMS *pDispParams,
+			[out] VARIANT *pVarResult,
+			[out] EXCEPINFO *pExcepInfo,
+			[out] uint16 *puArgErr);
+}
+
+[
+object,
+	uuid(330E9E75-DF48-11CF-8E2C-00A0C90DC94B),
+	pointer_default(unique)
+	]
+	interface IDcomEchoServ : IDispatch
+{
+	HRESULT EchoPlusOne([in] uint32 x, [out] uint32 *y);
 }
 
 [
 	object,
-	uuid(330E9E75-DF48-11CF-8E2C-00A0C90DC94B),
-	pointer_default(unique)
-]
-interface IDcomEchoServ : IDispatch
+	uuid(00000003-0000-0000-C000-000000000046)
+] interface IMarshal : IUnknown
 {
-	HRESULT EchoPlusOne([in] uint32 x, [out] uint32 *y);
+	HRESULT MarshalInterface();
+	HRESULT UnMarshalInterface();
 }

@@ -114,10 +114,16 @@ sub ValidInterface($)
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
 
-	if (util::has_property($interface, "object") && 
-     	util::has_property($interface, "version") && 
-		$interface->{PROPERTIES}->{version} != 0) {
-					fatal "Object interfaces must have version 0.0\n";
+	if (util::has_property($interface, "object")) {
+     	if(util::has_property($interface, "version") && 
+			$interface->{PROPERTIES}->{version} != 0) {
+			fatal "Object interfaces must have version 0.0 ($interface->{NAME})\n";
+		}
+
+		if(!defined($interface->{BASE}) && 
+			not ($interface->{NAME} eq "IUnknown")) {
+			fatal "Object interfaces must all derive from IUnknown ($interface->{NAME})\n";
+		}
 	}
 		
 	foreach my $d (@{$data}) {
