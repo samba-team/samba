@@ -191,7 +191,16 @@ kerberos5_send(char *name, Authenticator *ap)
     else
 	ap_opts = 0;
     
-    auth_context = NULL;
+    ret = krb5_auth_con_init (context, &auth_context);
+    if (ret) {
+	if (auth_debug_mode) {
+	    printf("Kerberos V5: krb5_auth_con_init failed (%s)\r\n",
+		   krb5_get_err_text(context, ret));
+	}
+	return(0);
+    }
+
+    krb5_auth_setenctype (context, auth_context, ETYPE_DES_CBC_MD5);
 
     foo[0] = ap->type;
     foo[1] = ap->way;
