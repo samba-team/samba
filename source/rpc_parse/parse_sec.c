@@ -157,7 +157,7 @@ BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
  adds new SID with its permissions to ACE list
 ********************************************************************/
 
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, size_t *num, DOM_SID *sid, uint32 mask)
+NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, unsigned *num, DOM_SID *sid, uint32 mask)
 {
 	int i = 0;
 	
@@ -165,7 +165,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **new, SEC_ACE *old, size_t *n
 
 	*num += 1;
 	
-	if((new[0] = (SEC_ACE *) talloc_zero(ctx, *num * sizeof(SEC_ACE))) == 0)
+	if((new[0] = (SEC_ACE *) talloc_zero(ctx, (*num) * sizeof(SEC_ACE))) == 0)
 		return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < *num - 1; i ++)

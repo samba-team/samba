@@ -96,7 +96,7 @@ static void decode_wins_name(struct BUFFER *outbuf, WINS_NAME *wins_name)
 	wins_name->name_len=RIVAL(outbuf->buffer, outbuf->offset);
 	outbuf->offset+=4;
 	memcpy(wins_name->name,outbuf->buffer+outbuf->offset, 15);
-	wins_name->name[16]='\0';
+	wins_name->name[15]='\0';
 	if((p = strchr(wins_name->name,' ')) != NULL)
 		*p = 0;
 

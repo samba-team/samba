@@ -593,7 +593,7 @@ BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
 
 static NSS_STATUS fill_pwent(struct passwd *result,
 				  struct winbindd_pw *pw,
-				  char **buffer, int *buflen)
+				  char **buffer, size_t *buflen)
 {
 	/* User name */
 
@@ -678,8 +678,8 @@ static NSS_STATUS fill_pwent(struct passwd *result,
    the static data passed to us by libc to put strings and stuff in.
    Return NSS_STATUS_TRYAGAIN if we run out of memory. */
 
-static int fill_grent(struct group *result, struct winbindd_gr *gr,
-		      char *gr_mem, char **buffer, int *buflen)
+static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
+		      char *gr_mem, char **buffer, size_t *buflen)
 {
 	fstring name;
 	int i;
@@ -722,7 +722,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 	/* this next value is a pointer to a pointer so let's align it */
 
 	/* Calculate number of extra bytes needed to align on pointer size boundry */
-	if ((i = (int)*buffer % sizeof(char*)) != 0)
+	if ((i = (unsigned long)(*buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 	
 	if ((tst = get_static(buffer, buflen, ((gr->num_gr_mem + 1) * 
