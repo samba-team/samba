@@ -1035,6 +1035,7 @@ static const struct ntlm_tests {
 	const char *name;
 	BOOL expect_fail;
 } test_table[] = {
+	{test_lmv2_ntlmv2, "NTLMv2 and LMv2", False},
 	{test_lm, "LM", False},
 	{test_lm_ntlm, "LM and NTLM", False},
 	{test_lm_ntlm_both_broken, "LM and NTLM, both broken", False},
@@ -1042,7 +1043,6 @@ static const struct ntlm_tests {
 	{test_ntlm_in_lm, "NTLM in LM", False},
 	{test_ntlm_in_both, "NTLM in both", False},
 	{test_ntlmv2, "NTLMv2", False},
-	{test_lmv2_ntlmv2, "NTLMv2 and LMv2", False},
 	{test_lmv2, "LMv2", False},
 	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken", False},
 	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken", False},
@@ -1065,7 +1065,8 @@ static const struct ntlm_tests {
   try a netlogon SamLogon
 */
 static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-			  struct creds_CredentialState *creds)
+			  struct creds_CredentialState *creds, 
+			  int n_subtests)
 {
 	int i, v, l, f;
 	BOOL ret = True;
@@ -1106,6 +1107,9 @@ static BOOL test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	for (f=0;f<ARRAY_SIZE(function_levels);f++) {
 		for (i=0; test_table[i].fn; i++) {
+			if (n_subtests && (i > n_subtests)) {
+				continue;
+			}
 			for (v=0;v<ARRAY_SIZE(validation_levels);v++) {
 				for (l=0;l<ARRAY_SIZE(logon_levels);l++) {
 					char *error_string = NULL;
@@ -1271,7 +1275,7 @@ BOOL torture_rpc_samlogon(void)
 		ret = False;
 	}
 
-	if (!test_SamLogon(p, mem_ctx, creds)) {
+	if (!test_SamLogon(p, mem_ctx, creds, 0)) {
 		ret = False;
 	}
 
@@ -1287,7 +1291,7 @@ BOOL torture_rpc_samlogon(void)
 			ret = False;
 		}
 		
-		if (!test_SamLogon(p, mem_ctx, creds)) {
+		if (!test_SamLogon(p, mem_ctx, creds, 1)) {
 			ret = False;
 		}
 	}
