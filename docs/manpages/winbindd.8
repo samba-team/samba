@@ -3,16 +3,15 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "08 June 2001" "" ""
+.TH "WINBINDD" "8" "10 October 2001" "" ""
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
 .SH SYNOPSIS
 .sp
-\fBnmblookup\fR [ \fB-d debuglevel\fR ]  [ \fB-i\fR ]  [ \fB-S\fR ]  [ \fB-r\fR ]  [ \fB-A\fR ]  [ \fB-h\fR ]  [ \fB-B <broadcast address>\fR ]  [ \fB-U <unicast address>\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-s <smb config file>\fR ]  [ \fB-i <NetBIOS scope>\fR ]  [ \fB-T\fR ]  \fBname\fR
+\fBwinbindd\fR [ \fB-i\fR ]  [ \fB-d <debug level>\fR ]  [ \fB-s <smb config file>\fR ] 
 .SH "DESCRIPTION"
 .PP
-This tool is part of the  Sambasuite version 3.0 and describes functionality not 
-yet implemented in the main version of Samba.
+This program is part of the  Sambasuite.
 .PP
 \fBwinbindd\fR is a daemon that provides 
 a service for the Name Service Switch capability that is present 
@@ -24,7 +23,7 @@ Users and groups are allocated as they are resolved to a range
 of user and group ids specified by the administrator of the 
 Samba system.
 .PP
-The service provided by winbindd is called `winbind' and 
+The service provided by \fBwinbindd\fR is called `winbind' and 
 can be used to resolve user and group information from a 
 Windows NT server. The service can also provide authentication
 services via an associated PAM module. 
@@ -107,7 +106,7 @@ separator so that the unix user names look like
 DOMAIN\\username. In some cases this separator character may 
 cause problems as the '\\' character has special meaning in 
 unix shells. In that case you can use the winbind separator 
-option to specify an alternative sepataror character. Good 
+option to specify an alternative separator character. Good 
 alternatives may be '/' (although that conflicts
 with the unix directory separator) or a '+ 'character. 
 The '+' character appears to be the best choice for 100% 
@@ -121,7 +120,7 @@ Example: \fBwinbind separator = + \fR
 \fBwinbind uid\fR
 The winbind uid parameter specifies the 
 range of user ids that are allocated by the winbindd daemon. 
-This range of ids should have no existing local or nis users 
+This range of ids should have no existing local or NIS users 
 within it as strange conflicts can occur otherwise. 
 
 Default: \fBwinbind uid = <empty string> 
@@ -131,7 +130,7 @@ Example: \fBwinbind uid = 10000-20000\fR
 \fBwinbind gid\fR
 The winbind gid parameter specifies the 
 range of group ids that are allocated by the winbindd daemon. 
-This range of group ids should have no existing local or nis 
+This range of group ids should have no existing local or NIS 
 groups within it as strange conflicts can occur otherwise.
 
 Default: \fBwinbind gid = <empty string>
@@ -143,7 +142,7 @@ This parameter specifies the number of
 seconds the winbindd daemon will cache user and group information 
 before querying a Windows NT server again. When a item in the 
 cache is older than this time winbindd will ask the domain 
-controller for the sequence number of the servers account database. 
+controller for the sequence number of the server's account database. 
 If the sequence number has not changed then the cached item is 
 marked as valid for a further \fIwinbind cache time
 \fRseconds. Otherwise the item is fetched from the 
@@ -163,7 +162,7 @@ calls to the \fBgetpwent\fR system call will not
 return any data. 
 
 \fBWarning:\fR Turning off user enumeration 
-may cause some programs to behave oddly. For example, the finger 
+may cause some programs to behave oddly. For example, the \fBfinger\fR 
 program relies on having access to the full user list when 
 searching for matching usernames. 
 
@@ -237,18 +236,15 @@ Now replace the account lines with this:
 \fBaccount required /lib/security/pam_winbind.so
 \fR.PP
 The next step is to join the domain. To do that use the 
-\fBsamedit\fR program like this: 
+\fBsmbpasswd\fR program like this: 
 .PP
-\fBsamedit -S '*' -W DOMAIN -UAdministrator\fR
+\fBsmbpasswd -j DOMAIN -r PDC -U
+Administrator\fR
 .PP
-The username after the \fI-U\fR can be any Domain 
-user that has administrator priviliges on the machine. Next from 
-within \fBsamedit\fR, run the command: 
-.PP
-\fBcreateuser MACHINE$ -j DOMAIN -L\fR
-.PP
-This assumes your domain is called "DOMAIN" and your Samba 
-workstation is called "MACHINE". 
+The username after the \fI-U\fR can be any
+Domain user that has administrator privileges on the machine.
+Substitute your domain name for "DOMAIN" and the name of your PDC
+for "PDC".
 .PP
 Next copy \fIlibnss_winbind.so\fR to 
 \fI/lib\fR and \fIpam_winbind.so\fR
@@ -258,7 +254,7 @@ made from \fI/lib/libnss_winbind.so\fR to
 older version of glibc then the target of the link should be
 \fI/lib/libnss_winbind.so.1\fR.
 .PP
-Finally, setup a smb.conf containing directives like the 
+Finally, setup a \fIsmb.conf\fR containing directives like the 
 following: 
 .PP
 .sp
@@ -295,7 +291,7 @@ on startup and when a SIGHUP is received. Thus, for a running \fB winbindd\fR to
 servers, it must be sent a SIGHUP signal. 
 .PP
 Client processes resolving names through the \fBwinbindd\fR
-nsswitch module read an environment variable named \fI $WINBINDD_DOMAIN\fR. If this variable contains a comma separated
+nsswitch module read an environment variable named \fB $WINBINDD_DOMAIN\fR. If this variable contains a comma separated
 list of Windows NT domain names, then winbindd will only resolve users
 and groups within those Windows NT domains. 
 .PP
@@ -348,7 +344,7 @@ Implementation of name service switch library.
 \fB$LOCKDIR/winbindd_idmap.tdb\fR
 Storage for the Windows NT rid to UNIX user/group 
 id mapping. The lock directory is specified when Samba is initially 
-compiled using the \fI--with-lockdir\fR option. 
+compiled using the \fI--with-lockdir\fR option.
 This directory is by default \fI/usr/local/samba/var/locks
 \fR\&. 
 .TP
@@ -356,15 +352,15 @@ This directory is by default \fI/usr/local/samba/var/locks
 Storage for cached user and group information.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
-the Samba suite. winbindd is however not available in
-stable release of Samba as of yet.
+This man page is correct for version 2.2 of
+the Samba suite.
 .SH "SEE ALSO"
 .PP
 \fInsswitch.conf(5)\fR,
 samba(7),
 wbinfo(1),
-smb.conf(5).SH "AUTHOR"
+smb.conf(5)
+.SH "AUTHOR"
 .PP
 The original Samba software and related utilities 
 were created by Andrew Tridgell. Samba is now developed

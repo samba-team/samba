@@ -1,4 +1,4 @@
-<chapter>
+<chapter id="pwencrypt">
 
 
 <chapterinfo>
@@ -96,7 +96,7 @@
 	
 	<para>The unix and SMB password encryption techniques seem similar 
 	on the surface. This similarity is, however, only skin deep. The unix 
-	scheme typically sends clear text passwords over the nextwork when 
+	scheme typically sends clear text passwords over the network when 
 	logging in. This is bad. The SMB encryption scheme never sends the 
 	cleartext password over the network but it does store the 16 byte 
 	hashed values on disk. This is also bad. Why? Because the 16 byte hashed 
@@ -141,7 +141,7 @@
 		Microsoft SMB/CIFS clients support authentication via the
 		SMB Challenge/Response mechanism described here.  Enabling
 		clear text authentication does not disable the ability
-		of the client to particpate in encrypted authentication.</para>
+		of the client to participate in encrypted authentication.</para>
 	</warning>
 
 	<sect2>

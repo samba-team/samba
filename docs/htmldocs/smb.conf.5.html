@@ -758,7 +758,7 @@ CLASS="VARIABLELIST"
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
 		to permit long filenames to retain their case, while short names 
-		are lowered. Default <EM
+		are lowercased. Default <EM
 >yes</EM
 >.</P
 ></DD
@@ -810,7 +810,7 @@ CLASS="REPLACEABLE"
 ></LI
 ><LI
 ><P
->The client's netbios name and any previously 
+>The client's NetBIOS name and any previously 
 		used user names are checked against the supplied password, if 
 		they match then the connection is allowed as the corresponding 
 		user.</P
@@ -861,6 +861,18 @@ NAME="AEN254"
 ><LI
 ><P
 ><A
+HREF="#ABORTSHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>abort shutdown script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
@@ -890,6 +902,18 @@ HREF="#ADDUSERSCRIPT"
 CLASS="PARAMETER"
 ><I
 >add user script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#ADDMACHINESCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>add machine script</I
 ></TT
 ></A
 ></P
@@ -1197,6 +1221,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#DISABLESPOOLSS"
+><TT
+CLASS="PARAMETER"
+><I
+>disable spoolss</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#DNSPROXY"
 ><TT
 CLASS="PARAMETER"
@@ -1317,6 +1353,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#HIDEUNREADABLE"
+><TT
+CLASS="PARAMETER"
+><I
+>hide unreadable</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#HOMEDIRMAP"
 ><TT
 CLASS="PARAMETER"
@@ -1394,6 +1442,18 @@ HREF="#LANMANAUTH"
 CLASS="PARAMETER"
 ><I
 >lanman auth</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LARGEREADWRITE"
+><TT
+CLASS="PARAMETER"
+><I
+>large readwrite</I
 ></TT
 ></A
 ></P
@@ -2229,6 +2289,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>shutdown script</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SMBPASSWDFILE"
 ><TT
 CLASS="PARAMETER"
@@ -2637,6 +2709,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#UTMP"
+><TT
+CLASS="PARAMETER"
+><I
+>utmp</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#UTMPDIRECTORY"
 ><TT
 CLASS="PARAMETER"
@@ -2666,6 +2750,30 @@ HREF="#WINBINDCACHETIME"
 CLASS="PARAMETER"
 ><I
 >winbind cache time</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#WINBINDENUMUSERS"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind enum users</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#WINBINDENUMGROUPS"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind enum groups</I
 ></TT
 ></A
 ></P
@@ -2783,7 +2891,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN898"
+NAME="AEN934"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3936,18 +4044,6 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#SHAREMODES"
-><TT
-CLASS="PARAMETER"
-><I
->share modes</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
 HREF="#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
@@ -4008,6 +4104,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#USECLIENTDRIVER"
+><TT
+CLASS="PARAMETER"
+><I
+>use client driver</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#USER"
 ><TT
 CLASS="PARAMETER"
@@ -4037,18 +4145,6 @@ HREF="#USERS"
 CLASS="PARAMETER"
 ><I
 >users</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="#UTMP"
-><TT
-CLASS="PARAMETER"
-><I
->utmp</I
 ></TT
 ></A
 ></P
@@ -4202,7 +4298,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1370"
+NAME="AEN1402"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4211,6 +4307,46 @@ NAME="AEN1370"
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
+><DT
+><A
+NAME="ABORTSHUTDOWNSCRIPT"
+></A
+>abort shutdown script (G)</DT
+><DD
+><P
+><EM
+>This parameter only exists in the HEAD cvs branch</EM
+>
+		This a full path name to a script called by
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+>  that
+		should stop a shutdown procedure issued by the <A
+HREF="#SHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>shutdown script</I
+></TT
+></A
+>.</P
+><P
+>This command will be run as user.</P
+><P
+>Default: <EM
+>None</EM
+>.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>abort shutdown script = /sbin/shutdown -c</B
+></P
+></DD
 ><DT
 ><A
 NAME="ADDPRINTERCOMMAND"
@@ -4226,7 +4362,7 @@ NAME="ADDPRINTERCOMMAND"
 		NT/2000 print server.</P
 ><P
 >For a Samba host this means that the printer must be 
-		physically added to underlying printing system.  The <TT
+		physically added to the underlying printing system.  The <TT
 CLASS="PARAMETER"
 ><I
 >add 
@@ -4521,6 +4657,37 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="ADDMACHINESCRIPT"
+></A
+>add machine script (G)</DT
+><DD
+><P
+>This is the full pathname to a script that will 
+		be run by <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+>  when a machine is added
+                to it's domain using the administrator username and password method. </P
+><P
+>This option is only required when using sam back-ends tied to the
+                Unix uid method of RID calculation such as smbpasswd.  This option is only
+                available in Samba 3.0.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>add machine script = &#60;empty string&#62;
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
+                </B
+></P
+></DD
+><DT
+><A
 NAME="ADDUSERSCRIPT"
 ></A
 >add user script (G)</DT
@@ -4729,7 +4896,11 @@ CLASS="CONSTANT"
 >domain</TT
 >.  
 		If it is set to no, then attempts to connect to a resource from 
-		a domain or workgroup other than the one which smbd is running 
+		a domain or workgroup other than the one which <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> is running 
 		in will fail, even if that domain is trusted by the remote server 
 		doing the authentication.</P
 ><P
@@ -4787,7 +4958,7 @@ CLASS="COMMAND"
 ><A
 NAME="ANNOUNCEVERSION"
 ></A
->annouce version (G)</DT
+>announce version (G)</DT
 ><DD
 ><P
 >This specifies the major and minor version numbers 
@@ -4797,7 +4968,7 @@ NAME="ANNOUNCEVERSION"
 ><P
 >Default: <B
 CLASS="COMMAND"
->announce version = 4.2</B
+>announce version = 4.5</B
 ></P
 ><P
 >Example: <B
@@ -4854,7 +5025,7 @@ NAME="BINDINTERFACESONLY"
 ><DD
 ><P
 >This global parameter allows the Samba admin 
-		to limit what interfaces on a machine will serve smb requests. If 
+		to limit what interfaces on a machine will serve SMB requests. If 
 		affects file service <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -5084,7 +5255,7 @@ TARGET="_top"
 ><P
 >If this parameter is set to <TT
 CLASS="CONSTANT"
->False</TT
+>false</TT
 >, then 
 		Samba 2.2 will behave as previous versions of Samba would and 
 		will fail the lock request immediately if the lock range 
@@ -5362,7 +5533,11 @@ NAME="CHARACTERSET"
 >character set (G)</DT
 ><DD
 ><P
->This allows a smbd to map incoming filenames 
+>This allows <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> to map incoming filenames 
 		from a DOS Code page (see the <A
 HREF="#CLIENTCODEPAGE"
 >client 
@@ -5749,7 +5924,7 @@ CLASS="COMMAND"
 ><A
 NAME="CODINGSYSTEM"
 ></A
->codingsystem (G)</DT
+>coding system (G)</DT
 ><DD
 ><P
 >This parameter is used to determine how incoming 
@@ -6137,7 +6312,11 @@ NAME="DEBUGPID"
 ><DD
 ><P
 >When using only one log file for more then one 
-		forked smbd-process there may be hard to follow which process 
+		forked <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+>-process there may be hard to follow which process 
 		outputs which message. This boolean parameter is adds the process-id 
 		to the timestamp message headers in the logfile when turned on.</P
 ><P
@@ -6547,7 +6726,7 @@ HREF="#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
->delete share
+>add share
 		command</I
 ></TT
 ></A
@@ -6557,7 +6736,7 @@ HREF="#CHANGESHARECOMMAND"
 CLASS="PARAMETER"
 ><I
 >change 
-		share</I
+		share command</I
 ></TT
 ></A
 >.
@@ -6763,13 +6942,16 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >
-		option).  If this option is set to False (the default) then if a vetoed 
+		option).  If this option is set to <TT
+CLASS="CONSTANT"
+>false</TT
+> (the default) then if a vetoed 
 		directory contains any non-vetoed files or directories then the 
 		directory delete will fail. This is usually what you want.</P
 ><P
 >If this option is set to <TT
 CLASS="CONSTANT"
->True</TT
+>true</TT
 >, then Samba 
 		will attempt to recursively delete any files and directories within 
 		the vetoed directory. This can be useful for integration with file 
@@ -7080,7 +7262,10 @@ NAME="DIRECTORYSECURITYMASK"
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
 		Administrators of most normal systems will probably want to leave
-		it as the default of 0777.</P
+		it as the default of <TT
+CLASS="CONSTANT"
+>0777</TT
+>.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -7118,6 +7303,38 @@ CLASS="COMMAND"
 >Example: <B
 CLASS="COMMAND"
 >directory security mask = 0700</B
+></P
+></DD
+><DT
+><A
+NAME="DISABLESPOOLSS"
+></A
+>disable spoolss (G)</DT
+><DD
+><P
+>Enabling this parameter will disables Samba's support
+		for the SPOOLSS set of MS-RPC's and will yield identical behavior
+		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using
+		Lanman style printing commands. Windows 9x/ME will be uneffected by
+		the parameter. However, this will also disable the ability to upload
+		printer drivers to a Samba server via the Windows NT Add Printer
+		Wizard or by using the NT printer properties dialog window.  It will
+		also disable the capability of Windows NT/2000 clients to download
+		print drivers from the Samba host upon demand.
+		<EM
+>Be very careful about enabling this parameter.</EM
+>
+		</P
+><P
+>See also <A
+HREF="#USECLIENTDRIVER"
+>use client driver</A
+>
+		</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>disable spoolss = no</B
 ></P
 ></DD
 ><DT
@@ -7268,7 +7485,10 @@ NAME="DOMAINLOGONS"
 >domain logons (G)</DT
 ><DD
 ><P
->If set to true, the Samba server will serve 
+>If set to <TT
+CLASS="CONSTANT"
+>true</TT
+>, the Samba server will serve 
 		Windows 95/98 Domain logons for the <A
 HREF="#WORKGROUP"
 >		<TT
@@ -7447,7 +7667,7 @@ NAME="DOSFILEMODE"
 ><DD
 ><P
 > The default behavior in Samba is to provide 
-		UNIX-like behavor where only the owner of a file/directory is 
+		UNIX-like behavior where only the owner of a file/directory is 
 		able to change the permissions on it.  However, this behavior
 		is often confusing to  DOS/Windows users.  Enabling this parameter 
 		allows a user who has write access to the file (by whatever 
@@ -7516,8 +7736,12 @@ CLASS="COMMAND"
 > is acting 
 		on behalf of is not the file owner. Setting this option to <TT
 CLASS="CONSTANT"
->		True</TT
-> allows DOS semantics and smbd will change the file 
+>		true</TT
+> allows DOS semantics and <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> will change the file 
 		timestamp as DOS requires.</P
 ><P
 >Default: <B
@@ -7590,18 +7814,15 @@ NAME="ENHANCEDBROWSING"
 ><DD
 ><P
 >This option enables a couple of enhancements to 
-		cross-subnet browse propogation that have been added in Samba 
+		cross-subnet browse propagation that have been added in Samba 
 		but which are not standard in Microsoft implementations.  
-		<EM
->These enhancements are currently only available in
-		the HEAD Samba CVS tree (not Samba 2.2.x).</EM
-></P
+		</P
 ><P
->The first enhancement to browse propogation consists of a regular
+>The first enhancement to browse propagation consists of a regular
 		wildcard query to a Samba WINS server for all Domain Master Browsers,
-		followed by a browse synchronisation with each of the returned
+		followed by a browse synchronization with each of the returned
 		DMBs. The second enhancement consists of a regular randomised browse
-		synchronisation with all currently known DMBs.</P
+		synchronization with all currently known DMBs.</P
 ><P
 >You may wish to disable this option if you have a problem with empty
 		workgroups not disappearing from browse lists. Due to the restrictions
@@ -7609,7 +7830,7 @@ NAME="ENHANCEDBROWSING"
 		to stay around forever which can be annoying.</P
 ><P
 >In general you should leave this option enabled as it makes
-		cross-subnet browse propogation much more reliable.</P
+		cross-subnet browse propagation much more reliable.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -7706,7 +7927,7 @@ NAME="FAKEDIRECTORYCREATETIMES"
 		reported by Samba will be updated whenever a file is created or 
 		or deleted in the directory.  NMAKE finds all object files in 
 		the object directory.  The timestamp of the last one built is then 
-		compared to the timestamp of the object dircetory.  If the 
+		compared to the timestamp of the object directory.  If the 
 		directory's timestamp if newer, then all object files
 		will be rebuilt.  Enabling this option 
 		ensures directories always predate their contents and an NMAKE build 
@@ -7845,7 +8066,10 @@ CLASS="PARAMETER"
 		mask</I
 ></TT
 ></A
-> to true.</P
+> to <TT
+CLASS="CONSTANT"
+>true</TT
+>.</P
 ><P
 >See also the parameter <A
 HREF="#CREATEMASK"
@@ -7917,7 +8141,10 @@ CLASS="PARAMETER"
 		mask</I
 ></TT
 ></A
-> to true.</P
+> to <TT
+CLASS="CONSTANT"
+>true</TT
+>.</P
 ><P
 >See also the parameter <A
 HREF="#DIRECTORYMASK"
@@ -8270,7 +8497,7 @@ CLASS="PARAMETER"
 		</A
 >parameter is set to <TT
 CLASS="CONSTANT"
->False</TT
+>false</TT
 >.</P
 ><P
 >Default: <B
@@ -8524,6 +8751,21 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="HIDEUNREADABLE"
+></A
+>hide unreadable (S)</DT
+><DD
+><P
+>This parameter prevents clients from seeing the
+		existance of files that cannot be read. Defaults to off.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>hide unreadable = no</B
+></P
+></DD
+><DT
+><A
 NAME="HOMEDIRMAP"
 ></A
 >homedir map (G)</DT
@@ -8540,7 +8782,7 @@ CLASS="PARAMETER"
 ></A
 > is <TT
 CLASS="CONSTANT"
->True</TT
+>true</TT
 >, and <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -8819,7 +9061,7 @@ CLASS="PARAMETER"
 >		hosts equiv</I
 ></TT
 > may be useful for NT clients which will 
-		not supply passwords to samba.</P
+		not supply passwords to Samba.</P
 ><P
 ><EM
 >NOTE :</EM
@@ -8978,7 +9220,7 @@ CLASS="PARAMETER"
 		inheritance (the code explicitly prohibits this).</P
 ><P
 >This can be particularly useful on large systems with 
-		many users, perhaps several thousand,to allow a single [homes] 
+		many users, perhaps several thousand, to allow a single [homes] 
 		share to be used flexibly by each user.</P
 ><P
 >See also <A
@@ -9131,7 +9373,7 @@ CLASS="PARAMETER"
 		the value <TT
 CLASS="PARAMETER"
 ><I
->&#38;+group"</I
+>&#38;+group</I
 ></TT
 > means check the NIS
 		netgroup database, followed by the UNIX group database (the 
@@ -9249,12 +9491,9 @@ CLASS="COMMAND"
 >This parameter defaults to <TT
 CLASS="CONSTANT"
 >on</TT
-> on systems 
-		that have the support, and <TT
-CLASS="CONSTANT"
->off</TT
-> on systems that 
-		don't. You should never need to touch this parameter.</P
+>, but is translated
+		to a no-op on systems that no not have the necessary kernel support.
+		You should never need to touch this parameter.</P
 ><P
 >See also the <A
 HREF="#OPLOCKS"
@@ -9288,8 +9527,12 @@ NAME="LANMANAUTH"
 >lanman auth (G)</DT
 ><DD
 ><P
->This parameter determines whether or not smbd will
-		attempt to authentication users using the LANMAN password hash.
+>This parameter determines whether or not <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> will
+		attempt to authenticate users using the LANMAN password hash.
 		If disabled, only clients which support NT password hashes (e.g. Windows 
 		NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS 
 		network client) will be able to connect to the Samba host.</P
@@ -9297,6 +9540,31 @@ NAME="LANMANAUTH"
 >Default : <B
 CLASS="COMMAND"
 >lanman auth = yes</B
+></P
+></DD
+><DT
+><A
+NAME="LARGEREADWRITE"
+></A
+>large readwrite (G)</DT
+><DD
+><P
+>This parameter determines whether or not <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+>
+		supports the new 64k streaming read and write varient SMB requests introduced
+		with Windows 2000. Note that due to Windows 2000 client redirector bugs
+		this requires Samba to be running on a 64-bit capable operating system such
+		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
+		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+		code paths.
+		</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>large readwrite = no</B
 ></P
 ></DD
 ><DT
@@ -9352,7 +9620,10 @@ CLASS="PARAMETER"
 ></TT
 >
 		</A
-> parameter must be set to "true" on this share in order for 
+> parameter must be set to <TT
+CLASS="CONSTANT"
+>true</TT
+> on this share in order for 
 		this parameter to have any effect.</P
 ><P
 >See also the <A
@@ -9545,13 +9816,19 @@ CLASS="COMMAND"
 > to try and become a local master browser 
 		on a subnet. If set to <TT
 CLASS="CONSTANT"
->False</TT
+>false</TT
 > then <B
 CLASS="COMMAND"
 >		nmbd</B
 > will not attempt to become a local master browser 
 		on a subnet and will also lose in all browsing elections. By
-		default this value is set to true. Setting this value to true doesn't
+		default this value is set to <TT
+CLASS="CONSTANT"
+>true</TT
+>. Setting this value to <TT
+CLASS="CONSTANT"
+>true</TT
+> doesn't
 		mean that Samba will <EM
 >become</EM
 > the local master 
@@ -9562,7 +9839,10 @@ CLASS="COMMAND"
 >		participate</EM
 > in elections for local master browser.</P
 ><P
->Setting this value to False will cause <B
+>Setting this value to <TT
+CLASS="CONSTANT"
+>false</TT
+> will cause <B
 CLASS="COMMAND"
 >nmbd</B
 >
@@ -9653,7 +9933,7 @@ CLASS="COMMAND"
 		filesystems which <EM
 >may</EM
 > not need locking (such as 
-		cdrom drives), although setting this parameter of <TT
+		CDROM drives), although setting this parameter of <TT
 CLASS="CONSTANT"
 >no</TT
 > 
@@ -9783,7 +10063,7 @@ CLASS="COMMAND"
 		in a NetUserGetInfo request.  Win9X clients truncate the info to
 		\\server\share when a user does <B
 CLASS="COMMAND"
->net use /home"</B
+>net use /home</B
 >
 		but use the whole string when dealing with profiles.</P
 ><P
@@ -9866,7 +10146,7 @@ CLASS="FILENAME"
 ><P
 >The share and the path must be readable by the user for 
 		the preferences and directories to be loaded onto the Windows NT
-		client.  The share must be writeable when the logs in for the first
+		client.  The share must be writeable when the user logs in for the first
 		time, in order that the Windows NT client can create the NTuser.dat
 		and other directories.</P
 ><P
@@ -9910,7 +10190,7 @@ NAME="LOGONSCRIPT"
 >This parameter specifies the batch file (.bat) or 
 		NT command file (.cmd) to be downloaded and run on a machine when 
 		a user successfully logs in.  The file must contain the DOS 
-		style cr/lf line endings. Using a DOS-style editor to create the 
+		style CR/LF line endings. Using a DOS-style editor to create the 
 		file is recommended.</P
 ><P
 >The script must be a relative path to the [netlogon] 
@@ -9937,7 +10217,7 @@ CLASS="FILENAME"
 >/usr/local/samba/netlogon/STARTUP.BAT</TT
 ></P
 ><P
->The contents of the batch file is entirely your choice.  A 
+>The contents of the batch file are entirely your choice.  A 
 		suggested command would be to add <B
 CLASS="COMMAND"
 >NET TIME \\SERVER /SET 
@@ -9994,7 +10274,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. A <TT
 CLASS="PARAMETER"
 ><I
@@ -10004,7 +10284,7 @@ CLASS="PARAMETER"
 		the job number (an integer).  On HPUX (see <TT
 CLASS="PARAMETER"
 ><I
->printing = hpux
+>printing=hpux
 		</I
 ></TT
 >), if the <TT
@@ -10175,7 +10455,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. Otherwise it is placed at the end of the 
 		command.</P
 ><P
@@ -10245,7 +10525,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. A <TT
 CLASS="PARAMETER"
 ><I
@@ -10331,7 +10611,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. A <TT
 CLASS="PARAMETER"
 ><I
@@ -10389,7 +10669,7 @@ NAME="MACHINEPASSWORDTIMEOUT"
 >machine password timeout (G)</DT
 ><DD
 ><P
->If a Samba server is a member of an Windows 
+>If a Samba server is a member of a Windows 
 		NT Domain (see the <A
 HREF="#SECURITYEQUALSDOMAIN"
 >security = domain</A
@@ -10478,8 +10758,8 @@ NAME="MAGICSCRIPT"
 		executed on behalf of the connected user.</P
 ><P
 >Scripts executed in this way will be deleted upon 
-		completion assuming that the user has the appripriate level 
-		of priviledge and the ile permissions allow the deletion.</P
+		completion assuming that the user has the appropriate level 
+		of privilege and the file permissions allow the deletion.</P
 ><P
 >If the script generates output, output will be sent to 
 		the file specified by the <A
@@ -10541,7 +10821,7 @@ NAME="MANGLEDMAP"
 ><DD
 ><P
 >This is for those who want to directly map UNIX 
-		file names which can not be represented on Windows/DOS.  The mangling 
+		file names which cannot be represented on Windows/DOS.  The mangling 
 		of names is not always what is needed.  In particular you may have 
 		documents with file extensions that differ between DOS and UNIX. 
 		For example, under UNIX it is common to use <TT
@@ -10572,7 +10852,7 @@ CLASS="COMMAND"
 CLASS="FILENAME"
 >;1
 		</TT
-> off the ends of filenames on some CDROMS (only visible 
+> off the ends of filenames on some CDROMs (only visible 
 		under some UNIXes). To do this use a map of (*;1 *;).</P
 ><P
 >Default: <EM
@@ -10689,12 +10969,12 @@ TARGET="_top"
 ><P
 >The larger this value, the more likely it is that mangled 
 		names can be successfully converted to correct long UNIX names. 
-		However, large stack sizes will slow most directory access. Smaller 
+		However, large stack sizes will slow most directory accesses. Smaller 
 		stacks save memory in the server (each stack element costs 256 bytes).
 		</P
 ><P
 >It is not possible to absolutely guarantee correct long 
-		file names, so be prepared for some surprises!</P
+		filenames, so be prepared for some surprises!</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -11079,7 +11359,7 @@ NAME="MAXMUX"
 ><DD
 ><P
 >This option controls the maximum number of 
-		outstanding simultaneous SMB operations that samba tells the client 
+		outstanding simultaneous SMB operations that Samba tells the client 
 		it will allow. You should never need to set this parameter.</P
 ><P
 >Default: <B
@@ -11252,10 +11532,14 @@ CLASS="COMMAND"
 ></A
 >
 		processes concurrently running on a system and is intended
-		as a stop gap to prevent degrading service to clients in the event
+		as a stopgap to prevent degrading service to clients in the event
 		that the server has insufficient resources to handle more than this
 		number of connections.  Remember that under normal operating
-		conditions, each user will have an smbd associated with him or her
+		conditions, each user will have an <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> associated with him or her
 		to handle connections to all shares from a given host.
 		</P
 ><P
@@ -11393,7 +11677,7 @@ CLASS="COMMAND"
 >. That's why I 
 		have the '&#38;' on the end. If it doesn't return immediately then 
 		your PCs may freeze when sending messages (they should recover 
-		after 30secs, hopefully).</P
+		after 30 seconds, hopefully).</P
 ><P
 >All messages are delivered as the global guest user. 
 		The command takes the standard substitutions, although <TT
@@ -11798,7 +12082,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->name resolve order = lmhosts wins host bcast
+>name resolve order = lmhosts host wins bcast
 		</B
 ></P
 ><P
@@ -12047,7 +12331,7 @@ NAME="OBEYPAMRESTRICTIONS"
 >obey pam restrictions (G)</DT
 ><DD
 ><P
->When Samba 2.2 is configure to enable PAM support
+>When Samba 2.2 is configured to enable PAM support
 		(i.e. --with-pam), this parameter will control whether or not Samba
 		should obey PAM's account and session management directives.  The 
 		default behavior is to use PAM for clear text authentication only
@@ -12190,7 +12474,11 @@ TARGET="_top"
 		improve the efficiency of the granting of oplocks under multiple 
 		client contention for the same file.</P
 ><P
->In brief it specifies a number, which causes smbd not to 
+>In brief it specifies a number, which causes <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> not to 
 		grant an oplock even when requested if the approximate number of 
 		clients contending for an oplock on the same file goes over this 
 		limit. This causes <B
@@ -12216,7 +12504,10 @@ NAME="OPLOCKS"
 >oplocks (S)</DT
 ><DD
 ><P
->This boolean option tells smbd whether to 
+>This boolean option tells <B
+CLASS="COMMAND"
+>smbd</B
+> whether to 
 		issue oplocks (opportunistic locks) to file open requests on this 
 		share. The oplock code can dramatically (approx. 30% or more) improve 
 	 	the speed of access to files on Samba servers. It allows the clients 
@@ -12338,7 +12629,7 @@ NAME="OS2DRIVERMAP"
 		name&#62;.&#60;device name&#62;</P
 ><P
 >For example, a valid entry using the HP LaserJet 5
-		printer driver woudl appear as <B
+		printer driver would appear as <B
 CLASS="COMMAND"
 >HP LaserJet 5L = LASERJET.HP 
 		LaserJet 5L</B
@@ -12372,9 +12663,20 @@ NAME="PAMPASSWORDCHANGE"
 ><DD
 ><P
 >With the addition of better PAM support in Samba 2.2, 
-		this parameter, it is possible to use PAM's password change control 
-		flag for Samba.  If enabled, then PAM will be used for password
-		changes when requested by an SMB client, and  the <A
+  		this parameter, it is possible to use PAM's password change control 
+  		flag for Samba.  If enabled, then PAM will be used for password
+ 		changes when requested by an SMB client instead of the program listed in 
+                <A
+HREF="#PASSWDPROGRAM"
+><TT
+CLASS="PARAMETER"
+><I
+>passwd program</I
+></TT
+></A
+>. 
+                It should be possible to enable this without changing your 
+                <A
 HREF="#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
@@ -12382,9 +12684,9 @@ CLASS="PARAMETER"
 >passwd chat</I
 ></TT
 ></A
-> must be
-		be changed to work with the pam prompts.
-		</P
+>
+                parameter for most setups.
+  		</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -12436,7 +12738,7 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > and the local password changing
-		program to change the users password. The string describes a 
+		program to change the user's password. The string describes a 
 		sequence of response-receive pairs that <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -12458,19 +12760,39 @@ CLASS="PARAMETER"
 		on what local methods are used for password control (such as NIS 
 		etc).</P
 ><P
->The string can contain the macros <TT
+>Note that this parameter only is only used if the <A
+HREF="#UNIXPASSWORDSYNC"
+><TT
 CLASS="PARAMETER"
 ><I
->%o</I
+>unix 
+		password sync</I
 ></TT
-> 
-		and <TT
+></A
+> parameter is set to <TT
+CLASS="CONSTANT"
+>yes</TT
+>. This 
+		sequence is then called <EM
+>AS ROOT</EM
+> when the SMB password 
+		in the smbpasswd file is being changed, without access to the old 
+		password cleartext. This means that root must be able to reset the user's password
+ 		without knowing the text of the previous password. In the presence of NIS/YP, 
+		this means that the <A
+HREF="#PASSWDPROGRAM"
+>passwd program</A
+> must be 
+		executed on the NIS master.
+		</P
+><P
+>The string can contain the macro <TT
 CLASS="PARAMETER"
 ><I
 >%n</I
 ></TT
-> which are substituted for the old 
-		and new passwords respectively. It can also contain the standard 
+> which is substituted 
+		for the new password.  The chat sequence can also contain the standard 
 		macros <TT
 CLASS="CONSTANT"
 >\n</TT
@@ -12482,54 +12804,30 @@ CLASS="CONSTANT"
 >		\t</TT
 > and <TT
 CLASS="CONSTANT"
->%s</TT
+>\s</TT
 > to give line-feed, 
-		carriage-return, tab and space.</P
-><P
->The string can also contain a '*' which matches 
-		any sequence of characters.</P
-><P
->Double quotes can be used to collect strings with spaces 
+		carriage-return, tab and space.  The chat sequence string can also contain 
+		a '*' which matches any sequence of characters.
+		Double quotes can be used to collect strings with spaces 
 		in them into a single string.</P
 ><P
 >If the send string in any part of the chat sequence 
-		is a fullstop ".",  then no string is sent. Similarly, 
-		if the expect string is a fullstop then no string is expected.</P
+		is a full stop ".",  then no string is sent. Similarly, 
+		if the expect string is a full stop then no string is expected.</P
 ><P
->Note that if the <A
-HREF="#UNIXPASSWORDSYNC"
-><TT
-CLASS="PARAMETER"
-><I
->unix 
-		password sync</I
-></TT
-></A
-> parameter is set to true, then this 
-		sequence is called <EM
->AS ROOT</EM
-> when the SMB password 
-		in the smbpasswd file is being changed, without access to the old 
-		password cleartext. In this case the old password cleartext is set 
-		to "" (the empty string).</P
-><P
->Also, if the <A
+>If the <A
 HREF="#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
 >pam
-		password change</I
+ 		password change</I
 ></TT
 ></A
-> parameter is set to true, then the
-		chat sequence should consist of three elements. The first element should
-		match the pam prompt for the old password, the second element should match
-		the pam prompt for the first request for the new password, and the final
-		element should match the pam prompt for the second request for the new password.
-		These matches are done case insentively. Under most conditions this change
-		is done as root so the prompt for the old password will never be matched.
-		</P
+> parameter is set to true, the chat pairs
+                may be matched in any order, and sucess is determined by the PAM result, 
+                not any particular output. The \n macro is ignored for PAM conversions.
+  		</P
 ><P
 >See also <A
 HREF="#UNIXPASSWORDSYNC"
@@ -12622,10 +12920,19 @@ CLASS="PARAMETER"
 >passwd program</I
 ></TT
 > and should 
-		be turned off after this has been done. This parameter is off by
-		default.</P
+ 		be turned off after this has been done. This option has no effect if the 
+                <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
+></TT
+></A
+>
+                paramter is set. This parameter is off by default.</P
 ><P
->See also &#60;<A
+>See also <A
 HREF="#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
@@ -12633,7 +12940,16 @@ CLASS="PARAMETER"
 >passwd chat</I
 ></TT
 >
-		</A
+ 		</A
+>, <A
+HREF="#PAMPASSWORDCHANGE"
+><TT
+CLASS="PARAMETER"
+><I
+>pam password change</I
+></TT
+>
+                </A
 >, <A
 HREF="#PASSWDPROGRAM"
 ><TT
@@ -12642,7 +12958,7 @@ CLASS="PARAMETER"
 >passwd program</I
 ></TT
 >
-		</A
+  		</A
 >.</P
 ><P
 >Default: <B
@@ -12685,7 +13001,7 @@ CLASS="PARAMETER"
 ></TT
 > parameter is set to <TT
 CLASS="CONSTANT"
->True
+>true
 		</TT
 > then this program is called <EM
 >AS ROOT</EM
@@ -12722,7 +13038,7 @@ CLASS="PARAMETER"
 ></TT
 > is set to <TT
 CLASS="CONSTANT"
->False</TT
+>false</TT
 >.</P
 ><P
 >See also <A
@@ -13094,7 +13410,7 @@ NAME="POSTEXEC"
 		substitutions. The command may be run as the root on some 
 		systems.</P
 ><P
->An interesting example may be do unmount server 
+>An interesting example may be to unmount server 
 		resources:</P
 ><P
 ><B
@@ -13132,7 +13448,7 @@ NAME="POSTSCRIPT"
 ><DD
 ><P
 >This parameter forces a printer to interpret 
-		the print files as postscript. This is done by adding a <TT
+		the print files as PostScript. This is done by adding a <TT
 CLASS="CONSTANT"
 >%!
 		</TT
@@ -13237,7 +13553,10 @@ TARGET="_top"
 > is a preferred master browser 
 		for its workgroup.</P
 ><P
->If this is set to true, on startup, <B
+>If this is set to <TT
+CLASS="CONSTANT"
+>true</TT
+>, on startup, <B
 CLASS="COMMAND"
 >nmbd</B
 > 
@@ -13708,17 +14027,15 @@ NAME="PRINTERDRIVER"
 ><P
 ><EM
 >Note :</EM
->This is a depreciated 
+>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<TT
-CLASS="FILENAME"
->PRINTER_DRIVER2.txt</TT
-> in the <TT
-CLASS="FILENAME"
->docs
-		</TT
-> of the Samba distribution for more information
+		the <A
+HREF="printer_driver2.html"
+TARGET="_top"
+>Samba 2.2. Printing
+		HOWTO</A
+> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</P
 ><P
@@ -13768,17 +14085,15 @@ NAME="PRINTERDRIVERFILE"
 ><P
 ><EM
 >Note :</EM
->This is a depreciated 
+>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<TT
-CLASS="FILENAME"
->PRINTER_DRIVER2.txt</TT
-> in the <TT
-CLASS="FILENAME"
->docs
-		</TT
-> of the Samba distribution for more information
+		the <A
+HREF="printer_driver2.html"
+TARGET="_top"
+>Samba 2.2. Printing
+		HOWTO</A
+> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</P
 ><P
@@ -13803,7 +14118,7 @@ CLASS="FILENAME"
 		</TT
 > files found on the Windows 95 client system. For more 
 		details on setting up serving of printer drivers to Windows 95 
-		clients, see the documentation file in the <TT
+		clients, see the outdated documentation file in the <TT
 CLASS="FILENAME"
 >docs/</TT
 > 
@@ -13841,17 +14156,15 @@ NAME="PRINTERDRIVERLOCATION"
 ><P
 ><EM
 >Note :</EM
->This is a depreciated 
+>This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<TT
-CLASS="FILENAME"
->PRINTER_DRIVER2.txt</TT
-> in the <TT
-CLASS="FILENAME"
->docs
-		</TT
-> of the Samba distribution for more information
+		the <A
+HREF="printer_driver2.html"
+TARGET="_top"
+>Samba 2.2. Printing
+		HOWTO</A
+> for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</P
 ><P
@@ -13867,7 +14180,7 @@ CLASS="COMMAND"
 ><P
 >Where MACHINE is the NetBIOS name of your Samba server, 
 		and PRINTER$ is a share you set up for serving printer driver 
-		files. For more details on setting this up see the documentation 
+		files. For more details on setting this up see the outdated documentation 
 		file in the <TT
 CLASS="FILENAME"
 >docs/</TT
@@ -13979,7 +14292,7 @@ CLASS="PARAMETER"
 >lprm command</I
 ></TT
 > if specified in the 
-		[global]f&#62; section.</P
+		[global] section.</P
 ><P
 >Currently eight printing styles are supported. They are
 		<TT
@@ -14072,14 +14385,14 @@ NAME="QUEUEPAUSECOMMAND"
 ><DD
 ><P
 >This parameter specifies the command to be 
-		executed on the server host in order to pause the printerqueue.</P
+		executed on the server host in order to pause the printer queue.</P
 ><P
 >This command should be a program or script which takes 
-		a printer name as its only parameter and stops the printerqueue, 
+		a printer name as its only parameter and stops the printer queue, 
 		such that no longer jobs are submitted to the printer.</P
 ><P
 >This command is not supported by Windows for Workgroups, 
-		but can be issued from the Printer's window under Windows 95 
+		but can be issued from the Printers window under Windows 95 
 		and NT.</P
 ><P
 >If a <TT
@@ -14087,7 +14400,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. Otherwise it is placed at the end of the command.
 		</P
 ><P
@@ -14118,7 +14431,7 @@ NAME="QUEUERESUMECOMMAND"
 ><DD
 ><P
 >This parameter specifies the command to be 
-		executed on the server host in order to resume the printerqueue. It 
+		executed on the server host in order to resume the printer queue. It 
  		is the command to undo the behavior that is caused by the 
 		previous parameter (<A
 HREF="#QUEUEPAUSECOMMAND"
@@ -14131,11 +14444,11 @@ CLASS="PARAMETER"
 >).</P
 ><P
 >This command should be a program or script which takes 
-		a printer name as its only parameter and resumes the printerqueue, 
+		a printer name as its only parameter and resumes the printer queue, 
 		such that queued jobs are resubmitted to the printer.</P
 ><P
 >This command is not supported by Windows for Workgroups, 
-		but can be issued from the Printer's window under Windows 95 
+		but can be issued from the Printers window under Windows 95 
 		and NT.</P
 ><P
 >If a <TT
@@ -14143,7 +14456,7 @@ CLASS="PARAMETER"
 ><I
 >%p</I
 ></TT
-> is given then the printername 
+> is given then the printer name 
 		is put in its place. Otherwise it is placed at the end of the 
 		command.</P
 ><P
@@ -14372,7 +14685,10 @@ CLASS="COMMAND"
 		192.168.4.255/STAFF</B
 ></P
 ><P
->the above line would cause nmbd to announce itself 
+>the above line would cause <B
+CLASS="COMMAND"
+>nmbd</B
+> to announce itself 
 		to the two given IP addresses using the given workgroup names. 
 		If you leave out the workgroup name then the one given in 
 		the <A
@@ -14417,10 +14733,10 @@ HREF="nmbd.8.html"
 TARGET="_top"
 >nmbd(8)</A
 > to periodically request 
-		synchronization of browse lists with the master browser of a samba 
+		synchronization of browse lists with the master browser of a Samba 
 		server that is on a remote segment. This option will allow you to 
 		gain browse lists for multiple workgroups across routed networks. This 
-		is done in a manner that does not work with any non-samba servers.</P
+		is done in a manner that does not work with any non-Samba servers.</P
 ><P
 >This is useful if you want your Samba server and all local 
 		clients to appear in a remote workgroup for which the normal browse 
@@ -14447,7 +14763,7 @@ CLASS="COMMAND"
 		of known browse masters if your network config is that stable. If 
 		a machine IP address is given Samba makes NO attempt to validate 
 		that the remote machine is available, is listening, nor that it 
-		is in fact the browse master on it's segment.</P
+		is in fact the browse master on its segment.</P
 ><P
 >Default: <B
 CLASS="COMMAND"
@@ -14462,12 +14778,18 @@ NAME="RESTRICTACLWITHMASK"
 >restrict acl with mask (S)</DT
 ><DD
 ><P
->This is a boolean parameter.  If set to false (default), then 
-		Creation of files with access control lists (ACLS) and modification of ACLs
+>This is a boolean parameter.  If set to <TT
+CLASS="CONSTANT"
+>false</TT
+> (default), then 
+		creation of files with access control lists (ACLS) and modification of ACLs
 		using the Windows NT/2000 ACL editor will be applied directly to the file
 		or directory.</P
 ><P
->If set to True, then all requests to set an ACL on a file will have the
+>If set to <TT
+CLASS="CONSTANT"
+>true</TT
+>, then all requests to set an ACL on a file will have the
 		parameters <A
 HREF="#CREATEMASK"
 ><TT
@@ -14558,10 +14880,16 @@ NAME="RESTRICTANONYMOUS"
 >restrict anonymous (G)</DT
 ><DD
 ><P
->This is a boolean parameter.  If it is true, then 
+>This is a boolean parameter.  If it is <TT
+CLASS="CONSTANT"
+>true</TT
+>, then 
 		anonymous access to the server will be restricted, namely in the 
 		case where the server is expecting the client to send a username, 
-		but it doesn't.  Setting it to true will force these anonymous 
+		but it doesn't.  Setting it to <TT
+CLASS="CONSTANT"
+>true</TT
+> will force these anonymous 
  		connections to be denied, and the client will be required to always 
 		supply a username and password when connecting. Use of this parameter 
 		is only recommended for homogeneous NT client environments.</P
@@ -14571,10 +14899,13 @@ NAME="RESTRICTANONYMOUS"
 		likes to use anonymous connections when refreshing the share list, 
 		and this is a way to work around that.</P
 ><P
->When restrict anonymous is true, all anonymous connections 
+>When restrict anonymous is <TT
+CLASS="CONSTANT"
+>true</TT
+>, all anonymous connections 
 		are denied no matter what they are for.  This can effect the ability 
-		of a machine to access the samba Primary Domain Controller to revalidate 
-		it's machine account after someone else has logged on the client 
+		of a machine to access the Samba Primary Domain Controller to revalidate 
+		its machine account after someone else has logged on the client 
 		interactively.  The NT client will display a message saying that 
 		the machine's account in  the domain doesn't exist or the password is 
 		bad.  The best way to deal  with this is to reboot NT client machines 
@@ -14631,7 +14962,7 @@ NAME="ROOTDIRECTORY"
 CLASS="COMMAND"
 >chroot()</B
 > (i.e. 
-		Change it's root directory) to this directory on startup. This is 
+		Change its root directory) to this directory on startup. This is 
 		not strictly necessary for secure operation. Even without it the 
 		server will deny access to files not in one of the service entries. 
 		It may also check for, and deny access to, soft links to other 
@@ -14705,7 +15036,7 @@ CLASS="PARAMETER"
 >
 		parameter except that the command is run as root. This 
 		is useful for unmounting filesystems 
-		(such as cdroms) after a connection is closed.</P
+		(such as CDROMs) after a connection is closed.</P
 ><P
 >See also <A
 HREF="#POSTEXEC"
@@ -14737,8 +15068,8 @@ CLASS="PARAMETER"
 ></TT
 >
 		parameter except that the command is run as root. This 
-		is useful for mounting filesystems (such as cdroms) after a 
-		connection is closed.</P
+		is useful for mounting filesystems (such as CDROMs) when a 
+		connection is opened.</P
 ><P
 >See also <A
 HREF="#PREEXEC"
@@ -14918,7 +15249,7 @@ NAME="SECURITYEQUALSSHARE"
 		</EM
 ></P
 ><P
->When clients connect to a share level security server then 
+>When clients connect to a share level security server they 
 		need not log onto the server with a valid username and password before 
 		attempting to connect to a shared resource (although modern clients 
 		such as Windows 95/98 and Windows NT will send a logon request with 
@@ -15066,7 +15397,7 @@ HREF="#AEN235"
 NAME="SECURITYEQUALSUSER"
 ></A
 ><EM
->SECURIYT = USER
+>SECURITY = USER
 		</EM
 ></P
 ><P
@@ -15175,7 +15506,7 @@ CLASS="FILENAME"
 ><P
 ><EM
 >Note</EM
-> that from the clients point of 
+> that from the client's point of 
 		view <B
 CLASS="COMMAND"
 >security = server</B
@@ -15277,7 +15608,7 @@ CLASS="CONSTANT"
 ><P
 ><EM
 >Note</EM
-> that from the clients point 
+> that from the client's point 
 		of view <B
 CLASS="COMMAND"
 >security = domain</B
@@ -15392,7 +15723,10 @@ NAME="SECURITYMASK"
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
 		"appliance" systems.  Administrators of most normal systems will 
-		probably want to leave it set to 0777.</P
+		probably want to leave it set to <TT
+CLASS="CONSTANT"
+>0777</TT
+>.</P
 ><P
 >See also the <A
 HREF="#FORCEDIRECTORYSECURITYMODE"
@@ -15505,64 +15839,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="SHAREMODES"
-></A
->share modes (S)</DT
-><DD
-><P
->This enables or disables the honoring of 
-		the <TT
-CLASS="PARAMETER"
-><I
->share modes</I
-></TT
-> during a file open. These 
-		modes are used by clients to gain exclusive read or write access 
-		to a file.</P
-><P
->These open modes are not directly supported by UNIX, so
-		they are simulated using shared memory, or lock files if your 
-		UNIX doesn't support shared memory (almost all do).</P
-><P
->The share modes that are enabled by this option are 
-		<TT
-CLASS="CONSTANT"
->DENY_DOS</TT
->, <TT
-CLASS="CONSTANT"
->DENY_ALL</TT
->,
-		<TT
-CLASS="CONSTANT"
->DENY_READ</TT
->, <TT
-CLASS="CONSTANT"
->DENY_WRITE</TT
->,
-		<TT
-CLASS="CONSTANT"
->DENY_NONE</TT
-> and <TT
-CLASS="CONSTANT"
->DENY_FCB</TT
->.
-		</P
-><P
->This option gives full share compatibility and enabled 
-		by default.</P
-><P
->You should <EM
->NEVER</EM
-> turn this parameter 
-		off as many Windows applications will break if you do so.</P
-><P
->Default: <B
-CLASS="COMMAND"
->share modes = yes</B
-></P
-></DD
-><DT
-><A
 NAME="SHORTPRESERVECASE"
 ></A
 >short preserve case (S)</DT
@@ -15624,7 +15900,7 @@ CLASS="PARAMETER"
 >printer admin</I
 ></TT
 > group), the OpenPrinterEx() 
-		call fails and the clients another open call with a request for 
+		call fails and the client makes another open call with a request for 
 		a lower privilege level.  This should succeed, however the APW 
 		icon will not be displayed.</P
 ><P
@@ -15674,6 +15950,115 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="SHUTDOWNSCRIPT"
+></A
+>shutdown script (G)</DT
+><DD
+><P
+><EM
+>This parameter only exists in the HEAD cvs branch</EM
+>
+		This a full path name to a script called by
+		<A
+HREF="smbd.8.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>smbd(8)</B
+></A
+> that
+		should start a shutdown procedure.</P
+><P
+>This command will be run as the user connected to the
+		server.</P
+><P
+>%m %t %r %f parameters are expanded</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%m</I
+></TT
+> will be substituted with the
+		shutdown message sent to the server.</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%t</I
+></TT
+> will be substituted with the
+		number of seconds to wait before effectively starting the
+		shutdown procedure.</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%r</I
+></TT
+> will be substituted with the
+		switch <EM
+>-r</EM
+>. It means reboot after shutdown
+		for NT.
+		</P
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>%f</I
+></TT
+> will be substituted with the
+		switch <EM
+>-f</EM
+>. It means force the shutdown
+		even if applications do not respond for NT.</P
+><P
+>Default: <EM
+>None</EM
+>.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</B
+></P
+><P
+>Shutdown script example:
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		#!/bin/bash
+		
+		$time=0
+		let "time/60"
+		let "time++"
+
+		/sbin/shutdown $3 $4 +$time $1 &#38;
+		</PRE
+></TD
+></TR
+></TABLE
+>
+		Shutdown does not return so we need to launch it in background.
+		</P
+><P
+>See also <A
+HREF="#ABORTSHUTDOWNSCRIPT"
+><TT
+CLASS="PARAMETER"
+><I
+>abort shutdown script</I
+></TT
+></A
+>.</P
+></DD
+><DT
+><A
 NAME="SMBPASSWDFILE"
 ></A
 >smb passwd file (G)</DT
@@ -15707,7 +16092,7 @@ NAME="SOCKETADDRESS"
 		support multiple virtual interfaces on the one server, each 
 		with a different configuration.</P
 ><P
->By default samba will accept connections on any 
+>By default Samba will accept connections on any 
 		address.</P
 ><P
 >Example: <B
@@ -15917,8 +16302,8 @@ CLASS="COMMAND"
 		it is set to <TT
 CLASS="CONSTANT"
 >no</TT
->, the SSL enabled samba behaves 
-		exactly like the non-SSL samba. If set to <TT
+>, the SSL-enabled Samba behaves 
+		exactly like the non-SSL Samba. If set to <TT
 CLASS="CONSTANT"
 >yes</TT
 >, 
@@ -15971,7 +16356,7 @@ CLASS="COMMAND"
 ><P
 >This variable defines where to look up the Certification
 		Authorities. The given directory should contain one file for 
-		each CA that samba will trust.  The file name must be the hash 
+		each CA that Samba will trust.  The file name must be the hash 
 		value over the "Distinguished Name" of the CA. How this directory 
 		is set up is explained later in this document. All files within the 
 		directory that don't fit into this naming scheme are ignored. You 
@@ -16199,8 +16584,8 @@ CLASS="COMMAND"
 > enabled by default in any 
 		current binary version of Samba.</P
 ><P
->These two variables define whether samba will go 
-		into SSL mode or not. If none of them is defined, samba will 
+>These two variables define whether Samba will go 
+		into SSL mode or not. If none of them is defined, Samba will 
 		allow only SSL connections. If the <A
 HREF="#SSLHOSTS"
 >		<TT
@@ -16217,7 +16602,9 @@ CLASS="PARAMETER"
 >		ssl hosts resign</I
 ></TT
 > variable lists hosts, only these 
-		hosts will NOT be forced into SSL mode. The syntax for these two 
+		hosts will <EM
+>NOT</EM
+> be forced into SSL mode. The syntax for these two 
 		variables is the same as for the <A
 HREF="#HOSTSALLOW"
 ><TT
@@ -16587,7 +16974,7 @@ CLASS="CONSTANT"
 > the server does file 
 		lock checks only when the client explicitly asks for them.</P
 ><P
->Well behaved clients always ask for lock checks when it 
+>Well-behaved clients always ask for lock checks when it 
 		is important, so in the vast majority of cases <B
 CLASS="COMMAND"
 >strict 
@@ -16616,7 +17003,11 @@ NAME="STRICTSYNC"
 CLASS="CONSTANT"
 >no</TT
 > (the 
-		default) means that smbd ignores the Windows applications requests for
+		default) means that <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> ignores the Windows applications requests for
 		a sync call. There is only a possibility of losing data if the
 		operating system itself that Samba is running on crashes, so there is
 		little danger in this default setting. In addition, this fixes many
@@ -16664,10 +17055,16 @@ NAME="SYNCALWAYS"
 ><P
 >This is a boolean parameter that controls 
 		whether writes will always be written to stable storage before 
-		the write call returns. If this is false then the server will be 
+		the write call returns. If this is <TT
+CLASS="CONSTANT"
+>false</TT
+> then the server will be 
 		guided by the client's request in each write call (clients can 
 		set a bit indicating that a particular write should be synchronous). 
-		If this is true then every write will be followed by a <B
+		If this is <TT
+CLASS="CONSTANT"
+>true</TT
+> then every write will be followed by a <B
 CLASS="COMMAND"
 >fsync()
 		</B
@@ -16758,11 +17155,6 @@ NAME="TEMPLATEHOMEDIR"
 >template homedir (G)</DT
 ><DD
 ><P
-><EM
->NOTE:</EM
-> this parameter is 
-		only available in Samba 3.0.</P
-><P
 >When filling out the user information for a Windows NT 
 		user, the <A
 HREF="winbindd.8.html"
@@ -16796,11 +17188,6 @@ NAME="TEMPLATESHELL"
 ></A
 >template shell (G)</DT
 ><DD
-><P
-><EM
->NOTE:</EM
-> this parameter is 
-		only available in Samba 3.0.</P
 ><P
 >When filling out the user information for a Windows NT 
 		user, the <A
@@ -16884,7 +17271,11 @@ NAME="TOTALPRINTJOBS"
 >This parameter accepts an integer value which defines
 		a limit on the maximum number of print jobs that will be accepted 
 		system wide at any given time.  If a print job is submitted
-		by a client which will exceed this number, then smbd will return an 
+		by a client which will exceed this number, then <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd</A
+> will return an 
 		error indicating that no space is available on the server.  The 
 		default value of 0 means that no such limit exists.  This parameter
 		can be used to prevent a server from exceeding its capacity and is
@@ -16920,7 +17311,10 @@ NAME="UNIXPASSWORDSYNC"
 >This boolean parameter controls whether Samba 
 		attempts to synchronize the UNIX password with the SMB password 
 		when the encrypted SMB password in the smbpasswd file is changed. 
-		If this is set to true the program specified in the <TT
+		If this is set to <TT
+CLASS="CONSTANT"
+>true</TT
+> the program specified in the <TT
 CLASS="PARAMETER"
 ><I
 >passwd
@@ -16930,7 +17324,7 @@ CLASS="PARAMETER"
 >AS ROOT</EM
 > - 
 		to allow the new UNIX password to be set without access to the 
-		old UNIX password (as the SMB password has change code has no 
+		old UNIX password (as the SMB password change code has no 
 		access to the old password cleartext, only the new).</P
 ><P
 >See also <A
@@ -17014,13 +17408,66 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="USECLIENTDRIVER"
+></A
+>use client driver (S)</DT
+><DD
+><P
+>This parameter applies only to Windows NT/2000
+		clients.  It has no affect on Windows 95/98/ME clients.  When 
+		serving a printer to Windows NT/2000 clients without first installing
+		a valid printer driver on the Samba host, the client will be required
+		to install a local printer driver.  From this point on, the client
+		will treat the print as a local printer and not a network printer 
+		connection.  This is much the same behavior that will occur
+		when <B
+CLASS="COMMAND"
+>disable spoolss = yes</B
+>.  </P
+><P
+>The differentiating 
+		factor is that under normal circumstances, the NT/2000 client will 
+		attempt to open the network printer using MS-RPC.  The problem is that
+		because the client considers the printer to be local, it will attempt
+		to issue the OpenPrinterEx() call requesting access rights associated 
+		with the logged on user. If the user possesses local administator rights
+		but not root privilegde on the Samba host (often the case), the OpenPrinterEx()
+		call will fail.  The result is that the client will now display an "Access
+		Denied; Unable to connect" message in the printer queue window (even though
+		jobs may successfully be printed).  </P
+><P
+>If this parameter is enabled for a printer, then any attempt
+		to open the printer with the PRINTER_ACCESS_ADMINISTER right is mapped
+		to PRINTER_ACCESS_USE instead.  Thus allowing the OpenPrinterEx()
+		call to succeed.  <EM
+>This parameter MUST not be able enabled
+		on a print share which has valid print driver installed on the Samba 
+		server.</EM
+></P
+><P
+>See also <A
+HREF="#DISABLESPOOLSS"
+>disable spoolss</A
+>
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>use client driver = no</B
+></P
+></DD
+><DT
+><A
 NAME="USERHOSTS"
 ></A
 >use rhosts (G)</DT
 ><DD
 ><P
->If this global parameter is a true, it specifies 
-		that the UNIX users <TT
+>If this global parameter is <TT
+CLASS="CONSTANT"
+>true</TT
+>, it specifies 
+		that the UNIX user's <TT
 CLASS="FILENAME"
 >.rhosts</TT
 > file in their home directory 
@@ -17145,7 +17592,7 @@ CLASS="PARAMETER"
 > parameter.</P
 ><P
 >If any of the usernames begin with a '@' then the name 
-		will be looked up first in the yp netgroups list (if Samba 
+		will be looked up first in the NIS netgroups list (if Samba 
 		is compiled with netgroup support), followed by a lookup in 
 		the UNIX groups database and will expand to a list of all users 
 		in the group of that name.</P
@@ -17155,7 +17602,7 @@ CLASS="PARAMETER"
 		expand to a list of all users in the group of that name.</P
 ><P
 >If any of the usernames begin with a '&#38;'then the name 
-		will be looked up only in the yp netgroups database (if Samba 
+		will be looked up only in the NIS netgroups database (if Samba 
 		is compiled with netgroup support) and will expand to a list 
 		of all users in the netgroup group of that name.</P
 ><P
@@ -17374,14 +17821,17 @@ CLASS="COMMAND"
 ><A
 NAME="UTMP"
 ></A
->utmp (S)</DT
+>utmp (G)</DT
 ><DD
 ><P
 >This boolean parameter is only available if 
 		Samba has been configured and compiled  with the option <B
 CLASS="COMMAND"
 >		--with-utmp</B
->. If set to True then Samba will attempt
+>. If set to <TT
+CLASS="CONSTANT"
+>true</TT
+> then Samba will attempt
 		to add utmp or utmpx records (depending on the UNIX system) whenever a
 		connection is made to a Samba server. Sites may use this to record the
 		user connecting to a Samba share.</P
@@ -17664,15 +18114,12 @@ CLASS="PARAMETER"
 ><I
 >yes</I
 ></TT
->.
-
-		<P
+>.</P
+><P
 >Setting this parameter will affect the performance 
 		of Samba, as it will be forced to check all files and directories 
 		for a match as they are scanned.</P
->
-
-		<P
+><P
 >See also <A
 HREF="#HIDEFILES"
 ><TT
@@ -17691,16 +18138,12 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
->
-
-		<P
+><P
 >Default: <EM
 >No files or directories are vetoed.
 		</EM
 ></P
->
-
-		<P
+><P
 >Examples:<TABLE
 BORDER="0"
 BGCOLOR="#E0E0E0"
@@ -17722,8 +18165,6 @@ CLASS="PROGRAMLISTING"
 ></TR
 ></TABLE
 ></P
->
-		</P
 ></DD
 ><DT
 ><A
@@ -17802,7 +18243,7 @@ NAME="VFSOPTIONS"
 ><DD
 ><P
 >This parameter allows parameters to be passed 
-		to the vfs layer at initialisation time.  The Samba VFS layer 
+		to the vfs layer at initialization time.  The Samba VFS layer 
 		is new to Samba 2.2 and must be enabled at compile time 
 		with --with-vfs.  See also <A
 HREF="#VFSOBJECT"
@@ -17862,11 +18303,6 @@ NAME="WINBINDCACHETIME"
 >winbind cache time</DT
 ><DD
 ><P
-><EM
->NOTE:</EM
-> this parameter is only 
-		available in Samba 3.0.</P
-><P
 >This parameter specifies the number of seconds the
 		<A
 HREF="winbindd.8.html"
@@ -17883,15 +18319,113 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="WINBINDENUMUSERS"
+></A
+>winbind enum
+		users</DT
+><DD
+><P
+>On large installations using
+		<A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> it may be
+		necessary to suppress the enumeration of users through the
+		<B
+CLASS="COMMAND"
+> setpwent()</B
+>,
+		<B
+CLASS="COMMAND"
+>getpwent()</B
+> and
+		<B
+CLASS="COMMAND"
+>endpwent()</B
+> group of system calls.  If
+		the <TT
+CLASS="PARAMETER"
+><I
+>winbind enum users</I
+></TT
+> parameter is
+		false, calls to the <B
+CLASS="COMMAND"
+>getpwent</B
+> system call
+		will not return any data. </P
+><P
+><EM
+>Warning:</EM
+> Turning off user
+		enumeration may cause some programs to behave oddly.  For
+		example, the finger program relies on having access to the
+		full user list when searching for matching
+		usernames. </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind enum users = yes </B
+></P
+></DD
+><DT
+><A
+NAME="WINBINDENUMGROUPS"
+></A
+>winbind enum
+		groups</DT
+><DD
+><P
+>On large installations using
+		<A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> it may be
+		necessary to suppress the enumeration of groups through the
+		<B
+CLASS="COMMAND"
+> setgrent()</B
+>,
+		<B
+CLASS="COMMAND"
+>getgrent()</B
+> and
+		<B
+CLASS="COMMAND"
+>endgrent()</B
+> group of system calls.  If
+		the <TT
+CLASS="PARAMETER"
+><I
+>winbind enum groups</I
+></TT
+> parameter is
+		false, calls to the <B
+CLASS="COMMAND"
+>getgrent()</B
+> system
+		call will not return any data. </P
+><P
+><EM
+>Warning:</EM
+> Turning off group
+		enumeration may cause some programs to behave oddly.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind enum groups = no </B
+>
+		</P
+></DD
+><DT
+><A
 NAME="WINBINDGID"
 ></A
 >winbind gid</DT
 ><DD
-><P
-><EM
->NOTE:</EM
-> this parameter is only 
-		available in Samba 3.0.</P
 ><P
 >The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <A
@@ -17899,7 +18433,7 @@ HREF="winbindd.8.html"
 TARGET="_top"
 >		winbindd(8)</A
 > daemon.  This range of group ids should have no 
-		existing local or nis groups within it as strange conflicts can 
+		existing local or NIS groups within it as strange conflicts can 
 		occur otherwise.</P
 ><P
 >Default: <B
@@ -17919,11 +18453,6 @@ NAME="WINBINDSEPARATOR"
 ></A
 >winbind separator</DT
 ><DD
-><P
-><EM
->NOTE:</EM
-> this parameter is only 
-		available in Samba 3.0.</P
 ><P
 >This parameter allows an admin to define the character 
 		used when listing a username of the form of <TT
@@ -17965,18 +18494,13 @@ NAME="WINBINDUID"
 >winbind uid</DT
 ><DD
 ><P
-><EM
->NOTE:</EM
-> this parameter is only 
-		available in Samba 3.0.</P
-><P
 >The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <A
 HREF="winbindd.8.html"
 TARGET="_top"
 >		winbindd(8)</A
 > daemon.  This range of ids should have no 
-		existing local or nis users within it as strange conflicts can 
+		existing local or NIS users within it as strange conflicts can 
 		occur otherwise.</P
 ><P
 >Default: <B
@@ -18025,14 +18549,14 @@ CLASS="COMMAND"
 ></LI
 ><LI
 ><P
->The second argument is the netbios name. If the 
+>The second argument is the NetBIOS name. If the 
 			name is not a legal name then the wins hook is not called. 
 			Legal names contain only  letters, digits, hyphens, underscores 
 			and periods.</P
 ></LI
 ><LI
 ><P
->The third argument is the netbios name 
+>The third argument is the NetBIOS name 
 			type as a 2 digit hexadecimal number. </P
 ></LI
 ><LI
@@ -18130,14 +18654,20 @@ TARGET="_top"
 > 		
 		nmbd(8)</A
 > process in Samba will act as a WINS server. You should 
-		not set this to true unless you have a multi-subnetted network and 
+		not set this to <TT
+CLASS="CONSTANT"
+>true</TT
+> unless you have a multi-subnetted network and 
 		you wish a particular <B
 CLASS="COMMAND"
 >nmbd</B
 > to be your WINS server. 
 		Note that you should <EM
 >NEVER</EM
-> set this to true 
+> set this to <TT
+CLASS="CONSTANT"
+>true</TT
+>
 		on more than one machine in your network.</P
 ><P
 >Default: <B
@@ -18209,7 +18739,7 @@ NAME="WRITECACHESIZE"
 		within it.</P
 ><P
 >This cache allows Samba to batch client writes into a more 
-		efficient write size for RAID disks (ie. writes may be tuned to 
+		efficient write size for RAID disks (i.e. writes may be tuned to 
 		be the RAID stripe size) and can improve performance on systems 
 		where the disk subsystem is a bottleneck but there is free 
 		memory for userspace programs.</P
@@ -18301,7 +18831,7 @@ NAME="WRITERAW"
 ><DD
 ><P
 >This parameter controls whether or not the server 
-		will support raw writes SMB's when transferring data from clients. 
+		will support raw write SMB's when transferring data from clients. 
 		You should never need to change this parameter.</P
 ><P
 >Default: <B
@@ -18353,7 +18883,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5794"
+NAME="AEN5953"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18383,7 +18913,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5800"
+NAME="AEN5959"
 ></A
 ><H2
 >VERSION</H2
@@ -18394,7 +18924,7 @@ NAME="AEN5800"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5803"
+NAME="AEN5962"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18473,7 +19003,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5823"
+NAME="AEN5982"
 ></A
 ><H2
 >AUTHOR</H2

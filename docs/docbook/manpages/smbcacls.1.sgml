@@ -26,7 +26,6 @@
 		<arg choice="opt">-G name</arg>
 		<arg choice="opt">-n</arg>
 		<arg choice="opt">-h</arg>
-		<arg choice="opt">-d</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -36,7 +35,7 @@
 	<para>This tool is part of the <ulink url="samba.7.html">
 	Samba</ulink> suite.</para>
 	
-	<para>The smbcacls program manipulates NT Access Control Lists 
+	<para>The <command>smbcacls</command> program manipulates NT Access Control Lists 
 	(ACLs) on SMB file shares. </para>
 </refsect1>
 
@@ -44,7 +43,7 @@
 <refsect1>
 	<title>OPTIONS</title>
 
-	<para>The following options are available to the smbcacls program.  
+	<para>The following options are available to the <command>smbcacls</command> program.  
 	The format of ACLs is described in the section ACL FORMAT </para>
 
 
@@ -69,7 +68,7 @@
 		
 		<varlistentry>
 		<term>-D acls</term>
-		<listitem><para>Delete any ACLs specfied on the command line.  
+		<listitem><para>Delete any ACLs specified on the command line.  
 		An error will be printed for each ACL specified that was not 
 		already present in the ACL list. </para></listitem>
 		</varlistentry>
@@ -137,15 +136,6 @@
 		<term>-h</term>
 		<listitem><para>Print usage information on the <command>smbcacls
 		</command> program.</para></listitem>
-		</varlistentry>
-		
-		
-		
-		<varlistentry>
-		<term>-d debuglevel</term>
-		<listitem><para>Sets the debug level to the value given
-		rather than use the value from the
-		<filename>smb.conf</filename> file.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
@@ -233,8 +223,8 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 	depending on the success or otherwise of the operations performed.  
 	The exit status may be one of the following values. </para>
 
-	<para>If the operation succeded, smbcacls returns and exit 
-	status of 0.  If smbcacls couldn't connect to the specified server, 
+	<para>If the operation succeeded, smbcacls returns and exit 
+	status of 0.  If <command>smbcacls</command> couldn't connect to the specified server, 
 	or there was an error getting or setting the ACLs, an exit status 
 	of 1 is returned.  If there was an error parsing any command line 
 	arguments, an exit status of 2 is returned. </para>

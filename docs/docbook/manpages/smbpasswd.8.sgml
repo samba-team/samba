@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbpasswd</refname>
-	<refpurpose>change a users SMB password</refpurpose>
+	<refpurpose>change a user's SMB password</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -45,7 +45,7 @@
 	SMB passwords. </para>
 
 	<para>By default (when run with no arguments) it will attempt to 
-	change the current users SMB password on the local machine. This is 
+	change the current user's SMB password on the local machine. This is 
 	similar to the way the <command>passwd(1)</command> program works. 
 	<command>smbpasswd</command> differs from how the passwd program works 
 	however in that it is not <emphasis>setuid root</emphasis> but works in 
@@ -56,10 +56,10 @@
 	the <filename>smbpasswd(5)</filename> file. </para>
 
 	<para>When run by an ordinary user with no options. smbpasswd 
-	will prompt them for their old smb password and then ask them 
+	will prompt them for their old SMB password and then ask them 
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
-	whilst being typed. If you have a blank smb password (specified by 
+	whilst being typed. If you have a blank SMB password (specified by 
 	the string "NO PASSWORD" in the smbpasswd file) then just press 
 	the &lt;Enter&gt; key when asked for your old password. </para>
 
@@ -117,7 +117,7 @@
 		will fail. </para>
 		
 		<para>If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
-		format) there is no space in the users password entry to write
+		format) there is no space in the user's password entry to write
 		this information and so the user is disabled by writing 'X' characters 
 		into the password space in the smbpasswd file. See <command>smbpasswd(5)
 		</command> for details on the 'old' and new password file formats.
@@ -151,7 +151,7 @@
 
 		<varlistentry>
 		<term>-D debuglevel</term>
-		<listitem><para><parameter>debuglevel</parameter> is an integer 
+		<listitem><para><replaceable>debuglevel</replaceable> is an integer 
 		from 0 to 10.  The default value if this parameter is not specified 
 		is zero. </para>
 
@@ -274,68 +274,52 @@
 		
 		
 		<varlistentry>
-		<term>-j DOMAIN</term> <listitem><para>This option is used
-		to add a Samba server into a Windows NT Domain, as a Domain
-		member capable of authenticating user accounts to any
-		Domain Controller in the same way as a Windows NT
-		Server. See the <command>security = domain</command> option
-		in the <filename>smb.conf(5)</filename> man page. </para>
+		<term>-j DOMAIN</term>
+		<listitem><para>This option is used to add a Samba server 
+		into a Windows NT Domain, as a Domain member capable of authenticating 
+		user accounts to any Domain Controller in the same way as a Windows 
+		NT Server. See the <command>security = domain</command> option in 
+		the <filename>smb.conf(5)</filename> man page. </para>
 		
-                <para>The Samba server can be joined to the Windows NT
-                Domain in one of two ways.  The Administrator for the
-                domain can use the "Server Manager for Domains" program to
-                add the primary NetBIOS name of the Samba server as a
-                member of the Domain. </para>
+		<para>In order to be used in this way, the Administrator for 
+		the Windows NT Domain must have used the program "Server Manager 
+		for Domains" to add the primary NetBIOS name of  the Samba server 
+		as a member of the Domain. </para>
 		
-		<para>After this has been done, to join the Domain invoke
-		<command> smbpasswd</command> with this
-		parameter. smbpasswd will then look up the Primary Domain
-		Controller for the Domain (found in the
-		<filename>smb.conf</filename> file in the parameter
-		<parameter>password server</parameter> and change the
-		machine account password used to create the secure Domain
-		communication.  This password is then stored by smbpasswd
-		in a TDB, writeable only by root, called
-		<filename>secrets.tdb</filename> </para>
+		<para>After this has been done, to join the Domain invoke <command>
+		smbpasswd</command> with this parameter. smbpasswd will then 
+		look up the Primary Domain Controller for the Domain (found in 
+		the <filename>smb.conf</filename> file in the parameter 
+		<parameter>password server</parameter> and change the machine account 
+		password used to create the secure Domain communication.  This 
+		password is then stored by smbpasswd in a TDB, writeable only by root, 
+		called <filename>secrets.tdb</filename> </para>
 		
 		<para>Once this operation has been performed the <filename>
-		smb.conf</filename> file may be updated to set the
-		<command> security = domain</command> option and all future
-		logins to the Samba server will be authenticated to the
-		Windows NT PDC. </para>
+		smb.conf</filename> file may be updated to set the <command>
+		security = domain</command> option and all future logins
+		to the Samba server will be authenticated to the Windows NT 
+		PDC. </para>
 		
-		<para>Note that even though the authentication is being
-		done to the PDC all users accessing the Samba server must
-		still have a valid UNIX account on that machine. </para>
+		<para>Note that even though the authentication is being 
+		done to the PDC all users accessing the Samba server must still 
+		have a valid UNIX account on that machine. </para>
 
-                <para>The second method for joining the domain is to
-                use the <parameter>-U</parameter> option in addition to the
-                <parameter>-j</parameter> to specify an administrator
-                username and optional password.  This method does not
-                require the use of the "Server Manager for Domains"
-                program.  This method is more secure as the machine account
-                password is set to a well known value before the member
-                server is joined to the domain.
 
-		<para>This option is only available when running smbpasswd
-		as root.  </para></listitem>
+		<para>This option is only available when running smbpasswd as root. 
+		</para></listitem>
 		</varlistentry>
 		
 		
 		
 		<varlistentry>
-		<term>-U username[%password]</term> <listitem><para>This
-		option may only be used in conjunction with the
-		<parameter>-r</parameter> or <parameter>-j</parameter>
-		options. When changing a password on a remote machine it
-		allows the user to specify the user name on that machine
-		whose password will be changed. It is present to allow
-		users who have different user names on different systems to
-		change these passwords. When changing the password on a
-		machine account using the <parameter>-j</parameter> option
-		the username and password of an administrator is specified
-		here.  Non-administrator users with the 'Add workstations
-		to domain' user right can also be used.</para></listitem>
+		<term>-U username</term>
+		<listitem><para>This option may only be used in conjunction 
+		with the <parameter>-r</parameter> option. When changing
+		a password on a remote machine it allows the user to specify 
+		the user name on that machine whose password will be changed. It 
+		is present to allow users who have different user names on 
+		different systems to change these passwords. </para></listitem>
 		</varlistentry>
 		
 		
@@ -351,7 +335,7 @@
 		<varlistentry>
 		<term>-s</term>
 		<listitem><para>This option causes smbpasswd to be silent (i.e. 
-		not issue prompts) and to read it's old and new passwords from 
+		not issue prompts) and to read its old and new passwords from 
 		standard  input, rather than from <filename>/dev/tty</filename> 
 		(like the <command>passwd(1)</command> program does). This option 
 		is to aid people writing scripts to drive smbpasswd</para>

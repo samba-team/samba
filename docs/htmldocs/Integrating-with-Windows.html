@@ -1,0 +1,1072 @@
+<HTML
+><HEAD
+><TITLE
+>Integrating MS Windows networks with Samba</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.57"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="INTEGRATE-MS-NETWORKS"
+>Integrating MS Windows networks with Samba</A
+></H1
+><HR></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN3"
+>Agenda</A
+></H1
+><P
+>To identify the key functional mechanisms of MS Windows networking 
+to enable the deployment of Samba as a means of extending and/or 
+replacing MS Windows NT/2000 technology.</P
+><P
+>We will examine:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>Name resolution in a pure Unix/Linux TCP/IP 
+	environment
+	</P
+></LI
+><LI
+><P
+>Name resolution as used within MS Windows 
+	networking
+	</P
+></LI
+><LI
+><P
+>How browsing functions and how to deploy stable 
+	and dependable browsing using Samba
+	</P
+></LI
+><LI
+><P
+>MS Windows security options and how to 
+	configure Samba for seemless integration
+	</P
+></LI
+><LI
+><P
+>Configuration of Samba as:</P
+><P
+></P
+><OL
+TYPE="a"
+><LI
+><P
+>A stand-alone server</P
+></LI
+><LI
+><P
+>An MS Windows NT 3.x/4.0 security domain member
+		</P
+></LI
+><LI
+><P
+>An alternative to an MS Windows NT 3.x/4.0 Domain Controller
+		</P
+></LI
+></OL
+></LI
+></OL
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN25"
+>Name Resolution in a pure Unix/Linux world</A
+></H1
+><P
+>The key configuration files covered in this section are:</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+></P
+></LI
+></UL
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN41"
+><TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+></A
+></H2
+><P
+>Contains a static list of IP Addresses and names.
+eg:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	127.0.0.1	localhost localhost.localdomain
+	192.168.1.1	bigbox.caldera.com	bigbox	alias4box</PRE
+></P
+><P
+>The purpose of <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> is to provide a 
+name resolution mechanism so that uses do not need to remember 
+IP addresses.</P
+><P
+>Network packets that are sent over the physical network transport 
+layer communicate not via IP addresses but rather using the Media 
+Access Control address, or MAC address. IP Addresses are currently 
+32 bits in length and are typically presented as four (4) decimal 
+numbers that are separated by a dot (or period). eg: 168.192.1.1</P
+><P
+>MAC Addresses use 48 bits (or 6 bytes) and are typically represented 
+as two digit hexadecimal numbers separated by colons. eg: 
+40:8e:0a:12:34:56</P
+><P
+>Every network interfrace must have an MAC address. Associated with 
+a MAC address there may be one or more IP addresses. There is NO 
+relationship between an IP address and a MAC address, all such assignments 
+are arbitary or discretionary in nature. At the most basic level all 
+network communications takes place using MAC addressing. Since MAC 
+addresses must be globally unique, and generally remains fixed for 
+any particular interface, the assignment of an IP address makes sense 
+from a network management perspective. More than one IP address can 
+be assigned per MAC address. One address must be the primary IP address, 
+this is the address that will be returned in the ARP reply.</P
+><P
+>When a user or a process wants to communicate with another machine 
+the protocol implementation ensures that the "machine name" or "host 
+name" is resolved to an IP address in a manner that is controlled 
+by the TCP/IP configuration control files. The file 
+<TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> is one such file.</P
+><P
+>When the IP address of the destination interface has been 
+determined a protocol called ARP/RARP isused to identify 
+the MAC address of the target interface. ARP stands for Address 
+Resolution Protocol, and is a broadcast oriented method that 
+uses UDP (User Datagram Protocol) to send a request to all 
+interfaces on the local network segment using the all 1's MAC 
+address. Network interfaces are programmed to respond to two 
+MAC addresses only; their own unique address and the address 
+ff:ff:ff:ff:ff:ff. The reply packet from an ARP request will 
+contain the MAC address and the primary IP address for each 
+interface.</P
+><P
+>The <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> file is foundational to all 
+Unix/Linux TCP/IP installations and as a minumum will contain 
+the localhost and local network interface IP addresses and the 
+primary names by which they are known within the local machine. 
+This file helps to prime the pump so that a basic level of name 
+resolution can exist before any other method of name resolution 
+becomes available.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN57"
+><TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+></A
+></H2
+><P
+>This file tells the name resolution libraries:</P
+><P
+></P
+><UL
+><LI
+><P
+>The name of the domain to which the machine 
+	belongs
+	</P
+></LI
+><LI
+><P
+>The name(s) of any domains that should be 
+	automatically searched when trying to resolve unqualified 
+	host names to their IP address
+	</P
+></LI
+><LI
+><P
+>The name or IP address of available Domain 
+	Name Servers that may be asked to perform name to address 
+	translation lookups
+	</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN68"
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+></A
+></H2
+><P
+><TT
+CLASS="FILENAME"
+>/etc/host.conf</TT
+> is the primary means by 
+which the setting in /etc/resolv.conf may be affected. It is a 
+critical configuration file.  This file controls the order by 
+which name resolution may procede. The typical structure is:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	order hosts,bind
+	multi on</PRE
+></P
+><P
+>then both addresses should be returned. Please refer to the 
+man page for host.conf for further details.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN76"
+><TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+></A
+></H2
+><P
+>This file controls the actual name resolution targets. The 
+file typically has resolver object specifications as follows:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	# /etc/nsswitch.conf
+	#
+	# Name Service Switch configuration file.
+	#
+
+	passwd:		compat
+	# Alternative entries for password authentication are:
+	# passwd:	compat files nis ldap winbind
+	shadow:		compat
+	group:		compat
+
+	hosts:		files nis dns
+	# Alternative entries for host name resolution are:
+	# hosts:	files dns nis nis+ hesoid db compat ldap wins
+	networks:	nis files dns
+
+	ethers:		nis files
+	protocols:	nis files
+	rpc:		nis files
+	services:	nis files</PRE
+></P
+><P
+>Of course, each of these mechanisms requires that the appropriate 
+facilities and/or services are correctly configured.</P
+><P
+>It should be noted that unless a network request/message must be 
+sent, TCP/IP networks are silent. All TCP/IP communications assumes a 
+principal of speaking only when necessary.</P
+><P
+>Samba version 2.2.0 will add Linux support for extensions to 
+the name service switch infrastructure so that linux clients will 
+be able to obtain resolution of MS Windows NetBIOS names to IP 
+Addresses. To gain this functionality Samba needs to be compiled 
+with appropriate arguments to the make command (ie: <B
+CLASS="COMMAND"
+>make 
+nsswitch/libnss_wins.so</B
+>). The resulting library should 
+then be installed in the <TT
+CLASS="FILENAME"
+>/lib</TT
+> directory and 
+the "wins" parameter needs to be added to the "hosts:" line in 
+the <TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+> file. At this point it 
+will be possible to ping any MS Windows machine by it's NetBIOS 
+machine name, so long as that machine is within the workgroup to 
+which both the samba machine and the MS Windows machine belong.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN88"
+>Name resolution as used within MS Windows networking</A
+></H1
+><P
+>MS Windows networking is predicated about the name each machine 
+is given. This name is known variously (and inconsistently) as 
+the "computer name", "machine name", "networking name", "netbios name", 
+"SMB name". All terms mean the same thing with the exception of 
+"netbios name" which can apply also to the name of the workgroup or the 
+domain name. The terms "workgroup" and "domain" are really just a 
+simply name with which the machine is associated. All NetBIOS names 
+are exactly 16 characters in length. The 16th character is reserved. 
+It is used to store a one byte value that indicates service level 
+information for the NetBIOS name that is registered. A NetBIOS machine 
+name is therefore registered for each service type that is provided by 
+the client/server.</P
+><P
+>The following are typical NetBIOS name/service type registrations:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	Unique NetBIOS Names:
+		MACHINENAME&#60;00&#62;	= Server Service is running on MACHINENAME
+		MACHINENAME&#60;03&#62; = Generic Machine Name (NetBIOS name)
+		MACHINENAME&#60;20&#62; = LanMan Server service is running on MACHINENAME
+		WORKGROUP&#60;1b&#62; = Domain Master Browser
+
+	Group Names:
+		WORKGROUP&#60;03&#62; = Generic Name registered by all members of WORKGROUP
+		WORKGROUP&#60;1c&#62; = Domain Controllers / Netlogon Servers
+		WORKGROUP&#60;1d&#62; = Local Master Browsers
+		WORKGROUP&#60;1e&#62; = Internet Name Resolvers</PRE
+></P
+><P
+>It should be noted that all NetBIOS machines register their own 
+names as per the above. This is in vast contrast to TCP/IP 
+installations where traditionally the system administrator will 
+determine in the /etc/hosts or in the DNS database what names 
+are associated with each IP address.</P
+><P
+>One further point of clarification should be noted, the <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> 
+file and the DNS records do not provide the NetBIOS name type information 
+that MS Windows clients depend on to locate the type of service that may 
+be needed. An example of this is what happens when an MS Windows client 
+wants to locate a domain logon server. It find this service and the IP 
+address of a server that provides it by performing a lookup (via a 
+NetBIOS broadcast) for enumeration of all machines that have 
+registered the name type *&#60;1c&#62;. A logon request is then sent to each 
+IP address that is returned in the enumerated list of IP addresses. Which 
+ever machine first replies then ends up providing the logon services.</P
+><P
+>The name "workgroup" or "domain" really can be confusing since these 
+have the added significance of indicating what is the security 
+architecture of the MS Windows network. The term "workgroup" indicates 
+that the primary nature of the network environment is that of a 
+peer-to-peer design. In a WORKGROUP all machines are responsible for 
+their own security, and generally such security is limited to use of 
+just a password (known as SHARE MORE security). In most situations 
+with peer-to-peer networking the users who control their own machines 
+will simply opt to have no security at all. It is possible to have 
+USER MODE security in a WORKGROUP environment, thus requiring use 
+of a user name and a matching password.</P
+><P
+>MS Windows networking is thus predetermined to use machine names 
+for all local and remote machine message passing. The protocol used is 
+called Server Message Block (SMB) and this is implemented using 
+the NetBIOS protocol (Network Basic Input Output System). NetBIOS can 
+be encapsulated using LLC (Logical Link Control) protocol - in which case 
+the resulting protocol is called NetBEUI (Network Basic Extended User 
+Interface). NetBIOS can also be run over IPX (Internetworking Packet 
+Exchange) protocol as used by Novell NetWare, and it can be run 
+over TCP/IP protocols - in which case the resulting protocol is called 
+NBT or NetBT, the NetBIOS over TCP/IP.</P
+><P
+>MS Windows machines use a complex array of name resolution mechanisms. 
+Since we are primarily concerned with TCP/IP this demonstration is 
+limited to this area.</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN100"
+>The NetBIOS Name Cache</A
+></H2
+><P
+>All MS Windows machines employ an in memory buffer in which is 
+stored the NetBIOS names and their IP addresses for all external 
+machines that that the local machine has communicated with over the 
+past 10-15 minutes. It is more efficient to obtain an IP address 
+for a machine from the local cache than it is to go through all the 
+configured name resolution mechanisms.</P
+><P
+>If a machine whose name is in the local name cache has been shut 
+down before the name had been expired and flushed from the cache, then 
+an attempt to exchange a message with that machine will be subject 
+to time-out delays. ie: It's name is in the cache, so a name resolution 
+lookup will succeed, but the machine can not respond. This can be 
+frustrating for users - but it is a characteristic of the protocol.</P
+><P
+>The MS Windows utility that allows examination of the NetBIOS 
+name cache is called "nbtstat". The Samba equivalent of this 
+is called "nmblookup".</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN105"
+>The LMHOSTS file</A
+></H2
+><P
+>This file is usually located in MS Windows NT 4.0 or 
+2000 in <TT
+CLASS="FILENAME"
+>C:\WINNT\SYSTEM32\DRIVERS\ETC</TT
+> and contains 
+the IP Address and the machine name in matched pairs. The 
+<TT
+CLASS="FILENAME"
+>LMHOSTS</TT
+> file performs NetBIOS name 
+to IP address mapping oriented.</P
+><P
+>It typically looks like:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	# Copyright (c) 1998 Microsoft Corp.
+	#
+	# This is a sample LMHOSTS file used by the Microsoft Wins Client (NetBIOS
+	# over TCP/IP) stack for Windows98
+	#
+	# This file contains the mappings of IP addresses to NT computernames
+	# (NetBIOS) names.  Each entry should be kept on an individual line.
+	# The IP address should be placed in the first column followed by the
+	# corresponding computername. The address and the comptername
+	# should be separated by at least one space or tab. The "#" character
+	# is generally used to denote the start of a comment (see the exceptions
+	# below).
+	#
+	# This file is compatible with Microsoft LAN Manager 2.x TCP/IP lmhosts
+	# files and offers the following extensions:
+	#
+	#      #PRE
+	#      #DOM:&lt;domain&gt;
+	#      #INCLUDE &lt;filename&gt;
+	#      #BEGIN_ALTERNATE
+	#      #END_ALTERNATE
+	#      \0xnn (non-printing character support)
+	#
+	# Following any entry in the file with the characters "#PRE" will cause
+	# the entry to be preloaded into the name cache. By default, entries are
+	# not preloaded, but are parsed only after dynamic name resolution fails.
+	#
+	# Following an entry with the "#DOM:&lt;domain&gt;" tag will associate the
+	# entry with the domain specified by &lt;domain&gt;. This affects how the
+	# browser and logon services behave in TCP/IP environments. To preload
+	# the host name associated with #DOM entry, it is necessary to also add a
+	# #PRE to the line. The &lt;domain&gt; is always preloaded although it will not
+	# be shown when the name cache is viewed.
+	#
+	# Specifying "#INCLUDE &lt;filename&gt;" will force the RFC NetBIOS (NBT)
+	# software to seek the specified &lt;filename&gt; and parse it as if it were
+	# local. &lt;filename&gt; is generally a UNC-based name, allowing a
+	# centralized lmhosts file to be maintained on a server.
+	# It is ALWAYS necessary to provide a mapping for the IP address of the
+	# server prior to the #INCLUDE. This mapping must use the #PRE directive.
+	# In addtion the share "public" in the example below must be in the
+	# LanManServer list of "NullSessionShares" in order for client machines to
+	# be able to read the lmhosts file successfully. This key is under
+	# \machine\system\currentcontrolset\services\lanmanserver\parameters\nullsessionshares
+	# in the registry. Simply add "public" to the list found there.
+	#
+	# The #BEGIN_ and #END_ALTERNATE keywords allow multiple #INCLUDE
+	# statements to be grouped together. Any single successful include
+	# will cause the group to succeed.
+	#
+	# Finally, non-printing characters can be embedded in mappings by
+	# first surrounding the NetBIOS name in quotations, then using the
+	# \0xnn notation to specify a hex value for a non-printing character.
+	#
+	# The following example illustrates all of these extensions:
+	#
+	# 102.54.94.97     rhino         #PRE #DOM:networking  #net group's DC
+	# 102.54.94.102    "appname  \0x14"                    #special app server
+	# 102.54.94.123    popular            #PRE             #source server
+	# 102.54.94.117    localsrv           #PRE             #needed for the include
+	#
+	# #BEGIN_ALTERNATE
+	# #INCLUDE \\localsrv\public\lmhosts
+	# #INCLUDE \\rhino\public\lmhosts
+	# #END_ALTERNATE
+	#
+	# In the above example, the "appname" server contains a special
+	# character in its name, the "popular" and "localsrv" server names are
+	# preloaded, and the "rhino" server name is specified so it can be used
+	# to later #INCLUDE a centrally maintained lmhosts file if the "localsrv"
+	# system is unavailable.
+	#
+	# Note that the whole file is parsed including comments on each lookup,
+	# so keeping the number of comments to a minimum will improve performance.
+	# Therefore it is not advisable to simply add lmhosts file entries onto the
+	# end of this file.</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN113"
+>HOSTS file</A
+></H2
+><P
+>This file is usually located in MS Windows NT 4.0 or 2000 in 
+<TT
+CLASS="FILENAME"
+>C:\WINNT\SYSTEM32\DRIVERS\ETC</TT
+> and contains 
+the IP Address and the IP hostname in matched pairs. It can be 
+used by the name resolution infrastructure in MS Windows, depending 
+on how the TCP/IP environment is configured. This file is in 
+every way the equivalent of the Unix/Linux <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> file.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN118"
+>DNS Lookup</A
+></H2
+><P
+>This capability is configured in the TCP/IP setup area in the network 
+configuration facility. If enabled an elaborate name resolution sequence 
+is followed the precise nature of which isdependant on what the NetBIOS 
+Node Type parameter is configured to. A Node Type of 0 means use 
+NetBIOS broadcast (over UDP broadcast) is first used if the name 
+that is the subject of a name lookup is not found in the NetBIOS name 
+cache. If that fails then DNS, HOSTS and LMHOSTS are checked. If set to 
+Node Type 8, then a NetBIOS Unicast (over UDP Unicast) is sent to the 
+WINS Server to obtain a lookup before DNS, HOSTS, LMHOSTS, or broadcast 
+lookup is used.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN121"
+>WINS Lookup</A
+></H2
+><P
+>A WINS (Windows Internet Name Server) service is the equivaent of the 
+rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
+the names and IP addresses that are registered by a Windows client 
+if the TCP/IP setup has been given at least one WINS Server IP Address.</P
+><P
+>To configure Samba to be a WINS server the following parameter needs 
+to be added to the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	wins support = Yes</PRE
+></P
+><P
+>To configure Samba to use a WINS server the following parameters are 
+needed in the smb.conf file:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	wins support = No
+	wins server = xxx.xxx.xxx.xxx</PRE
+></P
+><P
+>where <TT
+CLASS="REPLACEABLE"
+><I
+>xxx.xxx.xxx.xxx</I
+></TT
+> is the IP address 
+of the WINS server.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN133"
+>How browsing functions and how to deploy stable and 
+dependable browsing using Samba</A
+></H1
+><P
+>As stated above, MS Windows machines register their NetBIOS names 
+(ie: the machine name for each service type in operation) on start 
+up. Also, as stated above, the exact method by which this name registration 
+takes place is determined by whether or not the MS Windows client/server 
+has been given a WINS server address, whether or not LMHOSTS lookup 
+is enabled, or if DNS for NetBIOS name resolution is enabled, etc.</P
+><P
+>In the case where there is no WINS server all name registrations as 
+well as name lookups are done by UDP broadcast. This isolates name 
+resolution to the local subnet, unless LMHOSTS is used to list all 
+names and IP addresses. In such situations Samba provides a means by 
+which the samba server name may be forcibly injected into the browse 
+list of a remote MS Windows network (using the "remote announce" parameter).</P
+><P
+>Where a WINS server is used, the MS Windows client will use UDP 
+unicast to register with the WINS server. Such packets can be routed 
+and thus WINS allows name resolution to function across routed networks.</P
+><P
+>During the startup process an election will take place to create a 
+local master browser if one does not already exist. On each NetBIOS network 
+one machine will be elected to function as the domain master browser. This 
+domain browsing has nothing to do with MS security domain control. 
+Instead, the domain master browser serves the role of contacting each local 
+master browser (found by asking WINS or from LMHOSTS) and exchanging browse 
+list contents. This way every master browser will eventually obtain a complete 
+list of all machines that are on the network. Every 11-15 minutes an election 
+is held to determine which machine will be the master browser. By nature of 
+the election criteria used, the machine with the highest uptime, or the 
+most senior protocol version, or other criteria, will win the election 
+as domain master browser.</P
+><P
+>Clients wishing to browse the network make use of this list, but also depend 
+on the availability of correct name resolution to the respective IP 
+address/addresses. </P
+><P
+>Any configuration that breaks name resolution and/or browsing intrinsics 
+will annoy users because they will have to put up with protracted 
+inability to use the network services.</P
+><P
+>Samba supports a feature that allows forced synchonisation 
+of browse lists across routed networks using the "remote 
+browse sync" parameter in the smb.conf file. This causes Samba 
+to contact the local master browser on a remote network and 
+to request browse list synchronisation. This effectively bridges 
+two networks that are separated by routers. The two remote 
+networks may use either broadcast based name resolution or WINS 
+based name resolution, but it should be noted that the "remote 
+browse sync" parameter provides browse list synchronisation - and 
+that is distinct from name to address resolution, in other 
+words, for cross subnet browsing to function correctly it is 
+essential that a name to address resolution mechanism be provided. 
+This mechanism could be via DNS, <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+>, 
+and so on.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN143"
+>MS Windows security options and how to configure 
+Samba for seemless integration</A
+></H1
+><P
+>MS Windows clients may use encrypted passwords as part of a 
+challenege/response authentication model (a.k.a. NTLMv1) or 
+alone, or clear text strings for simple password based 
+authentication. It should be realized that with the SMB 
+protocol the password is passed over the network either 
+in plain text or encrypted, but not both in the same 
+authentication requets.</P
+><P
+>When encrypted passwords are used a password that has been 
+entered by the user is encrypted in two ways:</P
+><P
+></P
+><UL
+><LI
+><P
+>An MD4 hash of the UNICODE of the password
+	string.  This is known as the NT hash.
+	</P
+></LI
+><LI
+><P
+>The password is converted to upper case,
+	and then padded or trucated to 14 bytes.  This string is 
+	then appended with 5 bytes of NULL characters and split to
+	form two 56 bit DES keys to encrypt a "magic" 8 byte value.
+	The resulting 16 bytes for the LanMan hash.
+	</P
+></LI
+></UL
+><P
+>You should refer to the <A
+HREF="ENCRYPTION.html"
+TARGET="_top"
+>Password Encryption</A
+> chapter in this HOWTO collection
+for more details on the inner workings</P
+><P
+>MS Windows 95 pre-service pack 1, MS Windows NT versions 3.x 
+and version 4.0 pre-service pack 3 will use either mode of 
+password authentication. All versions of MS Windows that follow 
+these versions no longer support plain text passwords by default.</P
+><P
+>MS Windows clients have a habit of dropping network mappings that 
+have been idle for 10 minutes or longer. When the user attempts to 
+use the mapped drive connection that has been dropped the SMB protocol 
+has a mechanism by which the connection can be re-established using 
+a cached copy of the password.</P
+><P
+>When Microsoft changed the default password mode, they dropped support for 
+caching of the plain text password. This means that when the registry 
+parameter is changed to re-enable use of plain text passwords it appears to 
+work, but when a dropped mapping attempts to revalidate it will fail if 
+the remote authentication server does not support encrypted passwords. 
+This means that it is definitely not a good idea to re-enable plain text 
+password support in such clients.</P
+><P
+>The following parameters can be used to work around the 
+issue of Windows 9x client upper casing usernames and
+password before transmitting them to the SMB server
+when using clear text authentication.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	<A
+HREF="smb.conf.5.html#PASSWORDLEVEL"
+TARGET="_top"
+>passsword level</A
+> = <TT
+CLASS="REPLACEABLE"
+><I
+>integer</I
+></TT
+>
+	<A
+HREF="smb.conf.5.html#USERNAMELEVEL"
+TARGET="_top"
+>username level</A
+> = <TT
+CLASS="REPLACEABLE"
+><I
+>integer</I
+></TT
+></PRE
+></P
+><P
+>By default Samba will lower case the username before attempting
+to lookup the user in the database of local system accounts.
+Because UNIX usernames conventionally only contain lower case
+character, the <TT
+CLASS="PARAMETER"
+><I
+>username level</I
+></TT
+> parameter
+is rarely even needed.</P
+><P
+>However, password on UNIX systems often make use of mixed case
+characters.  This means that in order for a user on a Windows 9x
+client to connect to a Samba server using clear text authentication,
+the <TT
+CLASS="PARAMETER"
+><I
+>password level</I
+></TT
+> must be set to the maximum
+number of upper case letter which <I
+CLASS="EMPHASIS"
+>could</I
+> appear
+is a password.  Note that is the server OS uses the traditional
+DES version of crypt(), then a <TT
+CLASS="PARAMETER"
+><I
+>password level</I
+></TT
+>
+of 8 will result in case insensitive passwords as seen from Windows
+users.  This will also result in longer login times as Samba
+hash to compute the permutations of the password string and 
+try them one by one until a match is located (or all combinations fail).</P
+><P
+>The best option to adopt is to enable support for encrypted passwords 
+where ever Samba is used. There are three configuration possibilities 
+for support of encrypted passwords:</P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN171"
+>Use MS Windows NT as an authentication server</A
+></H2
+><P
+>This method involves the additions of the following parameters 
+in the smb.conf file:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	encrypt passwords = Yes
+	security = server
+	password server = "NetBIOS_name_of_PDC"</PRE
+></P
+><P
+>There are two ways of identifying whether or not a username and 
+password pair was valid or not. One uses the reply information provided 
+as part of the authentication messaging process, the other uses 
+just and error code.</P
+><P
+>The down-side of this mode of configuration is the fact that 
+for security reasons Samba will send the password server a bogus 
+username and a bogus password and if the remote server fails to 
+reject the username and password pair then an alternative mode 
+of identification of validation is used. Where a site uses password 
+lock out after a certain number of failed authentication attempts 
+this will result in user lockouts.</P
+><P
+>Use of this mode of authentication does require there to be 
+a standard Unix account for the user, this account can be blocked 
+to prevent logons by other than MS Windows clients.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN179"
+>Make Samba a member of an MS Windows NT security domain</A
+></H2
+><P
+>This method involves additon of the following paramters in the smb.conf file:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	encrypt passwords = Yes
+	security = domain
+	workgroup = "name of NT domain"
+	password server = *</PRE
+></P
+><P
+>The use of the "*" argument to "password server" will cause samba 
+to locate the domain controller in a way analogous to the way 
+this is done within MS Windows NT.</P
+><P
+>In order for this method to work the Samba server needs to join the 
+MS Windows NT security domain. This is done as follows:</P
+><P
+></P
+><UL
+><LI
+><P
+>On the MS Windows NT domain controller using 
+	the Server Manager add a machine account for the Samba server.
+	</P
+></LI
+><LI
+><P
+>Next, on the Linux system execute: 
+	<B
+CLASS="COMMAND"
+>smbpasswd -r PDC_NAME -j DOMAIN_NAME</B
+>
+	</P
+></LI
+></UL
+><P
+>Use of this mode of authentication does require there to be 
+a standard Unix account for the user in order to assign
+a uid once the account has been authenticated by the remote
+Windows DC.  This account can be blocked to prevent logons by 
+other than MS Windows clients by things such as setting an invalid
+shell in the <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> entry.</P
+><P
+>An alternative to assigning UIDs to Windows users on a 
+Samba member server is presented in the <A
+HREF="winbind.html"
+TARGET="_top"
+>Winbind Overview</A
+> chapter in
+this HOWTO collection.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="AEN196"
+>Configure Samba as an authentication server</A
+></H2
+><P
+>This mode of authentication demands that there be on the 
+Unix/Linux system both a Unix style account as well as and 
+smbpasswd entry for the user. The Unix system account can be 
+locked if required as only the encrypted password will be 
+used for SMB client authentication.</P
+><P
+>This method involves addition of the following parameters to 
+the smb.conf file:</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>## please refer to the Samba PDC HOWTO chapter later in 
+## this collection for more details
+[global]
+	encrypt passwords = Yes
+	security = user
+	domain logons = Yes
+	; an OS level of 33 or more is recommended
+	os level = 33
+
+[NETLOGON]
+	path = /somewhare/in/file/system
+	read only = yes</PRE
+></P
+><P
+>in order for this method to work a Unix system account needs 
+to be created for each user, as well as for each MS Windows NT/2000 
+machine. The following structure is required.</P
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN203"
+>Users</A
+></H3
+><P
+>A user account that may provide a home directory should be 
+created. The following Linux system commands are typical of 
+the procedure for creating an account.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	# useradd -s /bin/bash -d /home/"userid" -m "userid"
+	# passwd "userid"
+	  Enter Password: &lt;pw&gt;
+	  
+	# smbpasswd -a "userid"
+	  Enter Password: &lt;pw&gt;</PRE
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><HR><H3
+CLASS="SECT3"
+><A
+NAME="AEN208"
+>MS Windows NT Machine Accounts</A
+></H3
+><P
+>These are required only when Samba is used as a domain 
+controller.  Refer to the Samba-PDC-HOWTO for more details.</P
+><P
+><PRE
+CLASS="PROGRAMLISTING"
+>	# useradd -s /bin/false -d /dev/null "machine_name"\$
+	# passwd -l "machine_name"\$
+	# smbpasswd -a -m "machine_name"</PRE
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN213"
+>Conclusions</A
+></H1
+><P
+>Samba provides a flexible means to operate as...</P
+><P
+></P
+><UL
+><LI
+><P
+>A Stand-alone server - No special action is needed 
+	other than to create user accounts. Stand-alone servers do NOT 
+	provide network logon services, meaning that machines that use this 
+	server do NOT perform a domain logon but instead make use only of 
+	the MS Windows logon which is local to the MS Windows 
+	workstation/server.
+	</P
+></LI
+><LI
+><P
+>An MS Windows NT 3.x/4.0 security domain member.
+	</P
+></LI
+><LI
+><P
+>An alternative to an MS Windows NT 3.x/4.0 
+	Domain Controller.
+	</P
+></LI
+></UL
+></DIV
+></DIV
+></BODY
+></HTML
+>

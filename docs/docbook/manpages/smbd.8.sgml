@@ -67,7 +67,7 @@
 	can force a reload by sending a SIGHUP to the server.  Reloading 
 	the configuration file will not affect connections to any service 
 	that is already established.  Either the user will have to 
-	disconnect from the service, or smbd killed and restarted.</para>
+	disconnect from the service, or <command>smbd</command> killed and restarted.</para>
 </refsect1>
 
 <refsect1>
@@ -80,9 +80,9 @@
 		the server to operate as a daemon. That is, it detaches 
 		itself and runs in the background, fielding requests 
 		on the appropriate port. Operating the server as a
-		daemon is the recommended way of running smbd for 
+		daemon is the recommended way of running <command>smbd</command> for 
 		servers that provide more than casual use file and 
-		print services.  This switch is assumed is <command>smbd
+		print services.  This switch is assumed if <command>smbd
 		</command> is executed on the command line of a shell.
 		</para></listitem>
 		</varlistentry>
@@ -104,7 +104,7 @@
 		
 		<varlistentry>
 		<term>-P</term>
-		<listitem><para>Passive option. Causes smbd not to 
+		<listitem><para>Passive option. Causes <command>smbd</command> not to 
 		send any network traffic out. Used for debugging by 
 		the developers only.</para></listitem>
 		</varlistentry>
@@ -123,7 +123,7 @@
 		
 		<varlistentry>
 		<term>-d &lt;debug level&gt;</term>
-		<listitem><para>debuglevel is an integer 
+		<listitem><para><replaceable>debuglevel</replaceable> is an integer 
 		from 0 to 10.  The default value if this parameter is 
 		not specified is zero.</para>
 		
@@ -149,7 +149,7 @@
 		
 		<varlistentry>
 		<term>-l &lt;log file&gt;</term>
-		<listitem><para>If specified, <emphasis>log file</emphasis> 
+		<listitem><para>If specified, <replaceable>log file</replaceable> 
 		specifies a log filename into which informational and debug 
 		messages from the running server will be logged. The log 
 		file generated is never removed by the server although 
@@ -170,7 +170,7 @@
 		
 		<varlistentry>
 		<term>-p &lt;port number&gt;</term>
-		<listitem><para>port number is a positive integer 
+		<listitem><para><replaceable>port number</replaceable> is a positive integer 
 		value.  The default value if this parameter is not 
 		specified is 139.</para>
 		
@@ -273,10 +273,10 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>PRINTER</term>
+		<term><envar>PRINTER</envar></term>
 		<listitem><para>If no printer name is specified to 
 		printable services, most systems will use the value of 
-		this variable (or lp if this variable is 
+		this variable (or <constant>lp</constant> if this variable is 
 		not defined) as the name of the printer to use. This 
 		is not specific to the server, however.</para></listitem>
 		</varlistentry>
@@ -296,10 +296,10 @@
 	program itself should be executable by all, as users may wish to 
 	run the server themselves (in which case it will of course run 
 	with their privileges).  The server should NOT be setuid. On some 
-	systems it may be worthwhile to make smbd setgid to an empty group. 
+	systems it may be worthwhile to make <command>smbd</command> setgid to an empty group. 
 	This is because some systems may have a security hole where daemon 
 	processes that become a user can be attached to with a debugger. 
-	Making the smbd file setgid to an empty group may prevent
+	Making the <command>smbd</command> file setgid to an empty group may prevent
 	this hole from being exploited. This security hole and the suggested
 	fix has only been confirmed on old versions (pre-kernel 2.0) of Linux
 	at the time this was written. It is possible that this hole only
@@ -395,7 +395,7 @@
 	<title>RUNNING THE SERVER ON REQUEST</title>
 
 	<para>If your system uses a meta-daemon such as <command>inetd
-	</command>, you can arrange to have the smbd server started 
+	</command>, you can arrange to have the <command>smbd</command> server started 
 	whenever a process attempts to connect to it. This requires several 
 	changes to the startup files on the host machine. If you are 
 	experimenting as an ordinary user rather than as root, you will 
@@ -463,6 +463,32 @@
 </refsect1>
 
 <refsect1>
+        <title>PAM INTERACTION</title>
+	<para>Samba uses PAM for authentication (when presented with a plaintext 
+	password), for account checking (is this account disabled?) and for
+	session management.  The degree too which samba supports PAM is restricted
+	by the limitations of the SMB protocol and the 
+	<ulink url="smb.conf.5.html#OBEYPAMRESRICTIONS">obey pam restricions</ulink>
+	smb.conf paramater.  When this is set, the following restrictions apply:
+	</para>
+
+	<itemizedlist>
+	<listitem><para><emphasis>Account Validation</emphasis>:  All acccesses to a 
+	samba server are checked 
+	against PAM to see if the account is vaild, not disabled and is permitted to 
+	login at this time.  This also applies to encrypted logins.
+	</para></listitem>
+
+	<listitem><para><emphasis>Session Management</emphasis>:  When not using share 
+	level secuirty, users must pass PAM's session checks before access 
+	is granted.  Note however, that this is bypassed in share level secuirty.  
+	Note also that some older pam configuration files may need a line 
+	added for session support. 
+	</para></listitem>
+	</itemizedlist>
+</refsect1>
+
+<refsect1>
 	<title>TESTING THE INSTALLATION</title>
 
 	<para>If running the server as a daemon, execute it before 
@@ -471,8 +497,8 @@
 	<command>inetd</command> will reread their configuration
 	tables if they receive a HUP signal.</para>
 
-	<para>If your machine's name is fred and your 
-	name is mary, you should now be able to connect 
+	<para>If your machine's name is <replaceable>fred</replaceable> and your 
+	name is <replaceable>mary</replaceable>, you should now be able to connect 
 	to the service <filename>\\fred\mary</filename>.
 	</para>
 
@@ -513,26 +539,26 @@
 <refsect1>
 	<title>SIGNALS</title>
 
-	<para>Sending the smbd a SIGHUP will cause it to 
-	re-load its <filename>smb.conf</filename> configuration 
+	<para>Sending the <command>smbd</command> a SIGHUP will cause it to 
+	reload its <filename>smb.conf</filename> configuration 
 	file within a short period of time.</para>
 
-	<para>To shut down a users smbd process it is recommended 
+	<para>To shut down a user's <command>smbd</command> process it is recommended 
 	that <command>SIGKILL (-9)</command> <emphasis>NOT</emphasis> 
 	be used, except as a last resort, as this may leave the shared
 	memory area in an inconsistent state. The safe way to terminate 
-	an smbd is to send it a SIGTERM (-15) signal and wait for 
+	an <command>smbd</command> is to send it a SIGTERM (-15) signal and wait for 
 	it to die on its own.</para>
 
-	<para>The debug log level of smbd may be raised by sending 
-	it a SIGUSR1 (<command>kill -USR1 &lt;smbd-pid&gt;</command>)
-	and lowered by sending it a SIGUSR2 (<command>kill -USR2 &lt;smbd-pid&gt;
-	</command>). This is to allow transient problems to be diagnosed, 
+	<para>The debug log level of <command>smbd</command> may be raised
+	or lowered using <ulink url="smbcontrol.1.html"><command>smbcontrol(1)
+	</command></ulink> program (SIGUSR[1|2] signals are no longer used in
+	Samba 2.2). This is to allow transient problems to be diagnosed, 
 	whilst still running at a normally low log level.</para>
 
 	<para>Note that as the signal handlers send a debug write, 
-	they are not re-entrant in smbd. This you should wait until 
-	smbd is in a state of waiting for an incoming smb before 
+	they are not re-entrant in <command>smbd</command>. This you should wait until 
+	<command>smbd</command> is in a state of waiting for an incoming SMB before 
 	issuing them. It is possible to make the signal handlers safe 
 	by un-blocking the signals before the select call and re-blocking 
 	them after, however this would affect performance.</para>

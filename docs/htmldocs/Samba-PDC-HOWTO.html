@@ -19,7 +19,7 @@ CLASS="TITLEPAGE"
 ><H1
 CLASS="TITLE"
 ><A
-NAME="AEN1"
+NAME="SAMBA-PDC"
 >How to Configure Samba 2.2 as a Primary Domain Controller</A
 ></H1
 ><HR></DIV
@@ -32,9 +32,9 @@ NAME="AEN3"
 >Prerequisite Reading</A
 ></H1
 ><P
->Before you continue readingin this chapter, please make sure 
+>Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
-in smb.conf and how to enable and administrate password 
+in smb.conf and how to enable and administer password 
 encryption in Samba.  Theses two topics are covered in the
 <A
 HREF="smb.conf.5.html"
@@ -45,7 +45,7 @@ CLASS="FILENAME"
 ></A
 > 
 manpage and the <A
-HREF="EMCRYPTION.html"
+HREF="ENCRYPTION.html"
 TARGET="_top"
 >Encryption chapter</A
 > 
@@ -71,12 +71,12 @@ CLASS="EMPHASIS"
 >Author's Note :</I
 > This document is a combination 
 of David Bannon's Samba 2.2 PDC HOWTO and the Samba NT Domain FAQ. 
-Both documents are superceeded by this one.</P
+Both documents are superseded by this one.</P
 ></BLOCKQUOTE
 ></DIV
 ><P
 >Version of Samba prior to release 2.2 had marginal capabilities to
-act as a Windows NT 4.0 Primary Domain Controller (PDC).  Beginning with 
+act as a Windows NT 4.0 Primary DOmain Controller  (PDC).  Beginning with 
 Samba 2.2.0, we are proud to announce official support for Windows NT 4.0 
 style domain logons from Windows NT 4.0 (through SP6) and Windows 2000 (through 
 SP1) clients.  This article outlines the steps necessary for configuring Samba 
@@ -214,7 +214,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN49"
+NAME="AEN51"
 >Configuring the Samba Domain Controller</A
 ></H1
 ><P
@@ -410,16 +410,11 @@ CLASS="FILENAME"
 >As Samba 2.2 does not offer a complete implementation of group mapping between 
 Windows NT groups and UNIX groups (this is really quite complicated to explain 
 in a short space), you should refer to the <A
-HREF="smb.conf.5.html#DOMAINADMINUSERS"
-TARGET="_top"
->domain 
-admin users</A
-> and <A
 HREF="smb.conf.5.html#DOMAINADMINGROUP"
 TARGET="_top"
 >domain 
 admin group</A
-> smb.conf parameters for information of creating a Domain Admins 
+> smb.conf parameter for information of creating "Domain Admins"
 style accounts.</P
 ></DIV
 ><DIV
@@ -427,7 +422,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN92"
+NAME="AEN93"
 >Creating Machine Trust Accounts and Joining Clients 
 to the Domain</A
 ></H1
@@ -435,7 +430,7 @@ to the Domain</A
 >A machine trust account is a samba user account owned by a computer.  
 The account password acts as the shared secret for secure 
 communication with the Domain Controller.  This is a security feature
-to prevent an unauthorized machine with the same netbios name from 
+to prevent an unauthorized machine with the same NetBIOS name from 
 joining the domain and gaining access to domain user/group accounts.  
 Hence a Windows 9x host is never a true member of a domain because it does 
 not posses a machine trust account, and thus has no shared secret with the DC.</P
@@ -468,7 +463,7 @@ CLASS="FILENAME"
 ><P
 >	Manual creation before joining the client to the domain.  In this case, 
 	the password is set to a known value -- the lower case of the 
-	machine's netbios name.
+	machine's NetBIOS name.
 	</P
 ></LI
 ><LI
@@ -485,7 +480,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN106"
+NAME="AEN107"
 >Manually creating machine trust accounts</A
 ></H2
 ><P
@@ -504,9 +499,20 @@ CLASS="PROMPT"
 >/usr/sbin/useradd -g 100 -d /dev/null -c <TT
 CLASS="REPLACEABLE"
 ><I
->machine_nickname</I
+>"machine 
+nickname"</I
 ></TT
-> -m -s /bin/false <TT
+> -s /bin/false <TT
+CLASS="REPLACEABLE"
+><I
+>machine_name</I
+></TT
+>$ </P
+><P
+><TT
+CLASS="PROMPT"
+>root# </TT
+>passwd -l <TT
 CLASS="REPLACEABLE"
 ><I
 >machine_name</I
@@ -546,7 +552,7 @@ CLASS="REPLACEABLE"
 >machine_name</I
 ></TT
 > absolutely must be 
-the netbios name of the pc to be added to the domain.  The "$" must append the netbios
+the NetBIOS name of the pc to be added to the domain.  The "$" must append the NetBIOS
 name of the pc or samba will not recognize this as a machine account</P
 ><P
 >Now that the UNIX account has been created, the next step is to create 
@@ -576,7 +582,7 @@ CLASS="REPLACEABLE"
 ><I
 >machine_name</I
 ></TT
-> is the machine's netbios
+> is the machine's NetBIOS
 name. </P
 ><DIV
 CLASS="WARNING"
@@ -602,7 +608,7 @@ ALIGN="LEFT"
 	the "Server Manager".  From the time at which the account is created
 	to the time which th client joins the domain and changes the password,
 	your domain is vulnerable to an intruder joining your domain using a
-	a machine with the same netbios name.  A PDC inherently trusts
+	a machine with the same NetBIOS name.  A PDC inherently trusts
 	members of the domain and will serve out a large degree of user 
 	information to such clients.  You have been warned!
 	</P
@@ -616,7 +622,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN134"
+NAME="AEN138"
 >Creating machine trust accounts "on the fly"</A
 ></H2
 ><P
@@ -646,7 +652,7 @@ CLASS="EMPHASIS"
 <I
 CLASS="EMPHASIS"
 >SHOULD</I
-> be set to s different password that the 
+> be set to a different password that the 
 associated <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
@@ -658,7 +664,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN145"
+NAME="AEN149"
 >Common Problems and Errors</A
 ></H1
 ><P
@@ -781,8 +787,8 @@ CLASS="PARAMETER"
 	have not been created correctly. Make sure that you have the entry 
 	correct for the machine account in smbpasswd file on the Samba PDC. 
 	If you added the account using an editor rather than using the smbpasswd 
-	utility, make sure that the account name is the machine netbios name 
-	with a '$' appended to it ( ie. computer_name$ ). There must be an entry 
+	utility, make sure that the account name is the machine NetBIOS name 
+	with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
 	in both /etc/passwd and the smbpasswd file. Some people have reported 
 	that inconsistent subnet masks between the Samba server and the NT 
 	client have caused this problem.   Make sure that these are consistent 
@@ -808,7 +814,7 @@ CLASS="EMPHASIS"
 CLASS="COMMAND"
 >smbpasswd -e 
 	%user%</B
->, this is normaly done, when you create an account.
+>, this is normally done, when you create an account.
 	</P
 ><P
 >	In order to work around this problem in 2.2.0, configure the 
@@ -853,7 +859,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN193"
+NAME="AEN197"
 >System Policies and Profiles</A
 ></H1
 ><P
@@ -920,7 +926,7 @@ CLASS="FILENAME"
 CLASS="COMMAND"
 >servicepackname /x</B
 >, 
-	ie thats <B
+	i.e. that's <B
 CLASS="COMMAND"
 >Nt4sp6ai.exe /x</B
 > for service pack 6a.  The policy editor, 
@@ -1015,7 +1021,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN237"
+NAME="AEN241"
 >What other help can I get ?</A
 ></H1
 ><P
@@ -1036,7 +1042,7 @@ CLASS="EMPHASIS"
 	</P
 ><P
 >	One of the best diagnostic tools for debugging problems is Samba itself.  
-	You can use the -d option for both smbd and nmbd to specifiy what 
+	You can use the -d option for both smbd and nmbd to specify what 
 	'debug level' at which to run.  See the man pages on smbd, nmbd  and 
 	smb.conf for more information on debugging options.  The debug 
 	level can range from 1 (the default) to 10 (100 for debugging passwords).
@@ -1092,7 +1098,7 @@ TARGET="_top"
 	(aka. netmon) is available on the Microsoft Developer Network CD's, 
 	the Windows NT Server install CD and the SMS CD's.  The version of 
 	netmon that ships with SMS allows for dumping packets between any two 
-	computers (ie. placing the network interface in promiscuous mode).  
+	computers (i.e. placing the network interface in promiscuous mode).  
 	The version on the NT Server install CD will only allow monitoring 
 	of network traffic directed to the local NT box and broadcasts on the 
 	local subnet.  Be aware that Ethereal can read and write netmon 
@@ -1347,7 +1353,7 @@ TARGET="_top"
 ><LI
 ><P
 > Don't cross post. Work out which is the best list to post to 
-		and see what happens, ie don't post to both samba-ntdom and samba-technical.
+		and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
         Many people active on the lists subscribe to more 
 		than one list and get annoyed to see the same message two or more times. 
 		Often someone will see a message and thinking it would be better dealt 
@@ -1417,7 +1423,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN351"
+NAME="AEN355"
 >Domain Control for Windows 9x/ME</A
 ></H1
 ><DIV
@@ -1455,7 +1461,7 @@ profiles for MS Windows for workgroups and MS Windows 9X clients.</P
 logon server.  The first one to reply gets the job, and validates its
 password using whatever mechanism the Samba administrator has installed.
 It is possible (but very stupid) to create a domain where the user
-database is not shared between servers, ie they are effectively workgroup
+database is not shared between servers, i.e. they are effectively workgroup
 servers advertising themselves as participating in a domain.  This
 demonstrates how authentication is quite different from but closely
 involved with domains.</P
@@ -1535,7 +1541,7 @@ TYPE="1"
 ><LI
 ><P
 >	The client then connects to the user's home share and searches for the 
-	user's profile. As it turns out, you can specify the users home share as
+	user's profile. As it turns out, you can specify the user's home share as
 	a sharename and path. For example, \\server\fred\.profile.
 	If the profiles are found, they are implemented.
 	</P
@@ -1553,7 +1559,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN381"
+NAME="AEN385"
 >Configuration Instructions:	Network Logons</A
 ></H2
 ><P
@@ -1636,7 +1642,7 @@ CLASS="PROGRAMLISTING"
 ></LI
 ><LI
 ><P
->	you will probabaly find that your clients automatically mount the
+>	you will probably find that your clients automatically mount the
 	\\SERVER\NETLOGON share as drive z: while logging in. You can put
 	some useful programs there to execute from the batch files.
 	</P
@@ -1686,7 +1692,7 @@ or not Samba must be the domain master browser for its workgroup
 when operating as a DC.  While it may technically be possible
 to configure a server as such (after all, browsing and domain logons
 are two distinctly different functions), it is not a good idea to
-so.  You should remember that the DC must register the DOMAIN#1b netbios 
+so.  You should remember that the DC must register the DOMAIN#1b NetBIOS 
 name.  This is the name used by Windows clients to locate the DC.
 Windows clients do not distinguish between the DC and the DMB.
 For this reason, it is very wise to configure the Samba DC as the DMB.</P
@@ -1715,7 +1721,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN415"
+NAME="AEN419"
 >Configuration Instructions:	Setting up Roaming User Profiles</A
 ></H2
 ><DIV
@@ -1752,7 +1758,7 @@ Win9X and WinNT clients implement these features.</P
 ><P
 >Win9X clients send a NetUserGetInfo request to the server to get the user's
 profiles location. However, the response does not have room for a separate 
-profiles location field, only the users home share. This means that Win9X 
+profiles location field, only the user's home share. This means that Win9X 
 profiles are restricted to being in the user's home directory.</P
 ><P
 >WinNT clients send a NetSAMLogon RPC request, which contains many fields, 
@@ -1763,7 +1769,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN423"
+NAME="AEN427"
 >Windows NT Configuration</A
 ></H3
 ><P
@@ -1798,7 +1804,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN431"
+NAME="AEN435"
 >Windows 9X Configuration</A
 ></H3
 ><P
@@ -1829,7 +1835,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN439"
+NAME="AEN443"
 >Win9X and WinNT Configuration</A
 ></H3
 ><P
@@ -1858,7 +1864,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN446"
+NAME="AEN450"
 >Windows 9X Profile Setup</A
 ></H3
 ><P
@@ -1867,7 +1873,7 @@ as are folders "Start Menu", "Desktop", "Programs" and "Nethood".
 These directories and their contents will be merged with the local
 versions stored in c:\windows\profiles\username on subsequent logins,
 taking the most recent from each.  You will need to use the [global]
-options "preserve case = yes", "short case preserve = yes" and
+options "preserve case = yes", "short preserve case = yes" and
 "case sensitive = no" in order to maintain capital letters in shortcuts
 in any of the profile folders.</P
 ><P
@@ -1983,7 +1989,7 @@ CLASS="EMPHASIS"
 ></LI
 ><LI
 ><P
->	search for the user's .PWL password-cacheing file in the c:\windows
+>	search for the user's .PWL password-caching file in the c:\windows
 	directory, and delete it.
 	</P
 ></LI
@@ -2015,7 +2021,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN482"
+NAME="AEN486"
 >Windows NT Workstation 4.0</A
 ></H3
 ><P
@@ -2077,11 +2083,11 @@ case, or whether there is some configuration issue, as yet unknown,
 that makes NT Workstation _think_ that the link is a slow one is a
 matter to be resolved].</P
 ><P
->[lkcl 20aug97 - after samba digest correspondance, one user found, and
+>[lkcl 20aug97 - after samba digest correspondence, one user found, and
 another confirmed, that profiles cannot be loaded from a samba server
 unless "security = user" and "encrypt passwords = yes" (see the file
 ENCRYPTION.txt) or "security = server" and "password server = ip.address.
-of.yourNTserver" are used.  either of these options will allow the NT
+of.yourNTserver" are used.  Either of these options will allow the NT
 workstation to access the samba server using LAN manager encrypted
 passwords, without the user intervention normally required by NT
 workstation for clear-text passwords].</P
@@ -2097,7 +2103,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN495"
+NAME="AEN499"
 >Windows NT Server</A
 ></H3
 ><P
@@ -2111,7 +2117,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN498"
+NAME="AEN502"
 >Sharing Profiles between W95 and NT Workstation 4.0</A
 ></H3
 ><DIV
@@ -2176,7 +2182,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN508"
+NAME="AEN512"
 >DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</A
 ></H1
 ><DIV
@@ -2274,7 +2280,7 @@ plain Servers.</P
 ><P
 >The User database is called the SAM (Security Access Manager) database and
 is used for all user authentication as well as for authentication of inter-
-process authentication (ie: to ensure that the service action a user has
+process authentication (i.e. to ensure that the service action a user has
 requested is permitted within the limits of that user's privileges).</P
 ><P
 >The Samba team have produced a utility that can dump the Windows NT SAM into 
@@ -2285,7 +2291,7 @@ to Samba systems.</P
 ><P
 >Windows for Workgroups, Windows 95, and Windows NT Workstations and Servers
 can participate in a Domain security system that is controlled by Windows NT
-servers that have been correctly configured. At most every domain will have
+servers that have been correctly configured. Almost every domain will have
 ONE Primary Domain Controller (PDC). It is desirable that each domain will
 have at least one Backup Domain Controller (BDC).</P
 ><P

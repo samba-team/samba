@@ -1,15 +1,18 @@
 AC_INIT(global.ent)
 
 ## check for the necesary install tools
+## Openjade includes 'onsgmls' while
+## the older jade package includes 'nsgmls'
 AC_PATH_PROG(JADE,openjade)
 
 if test -z "$JADE"; then
 	AC_PATH_PROG(JADE,jade)
+	AC_PATH_PROG(NSGMLS, nsgmls)
+else
+	AC_PATH_PROG(NSGMLS, onsgmls)
 fi
 
-AC_PATH_PROG(NSGMLS, nsgmls)
 AC_PATH_PROG(HTMLDOC, htmldoc)
-AC_PATH_PROG(ONSGMLS, onsgmls)
 AC_PATH_PROG(SGMLSPL, sgmlspl)
 AC_PATH_PROG(PERL, perl)
 
@@ -35,7 +38,7 @@ esac
 
 # The Makefile requires docbook2X in the share/sgml directory
 if [ ! test -f $SGML_SHARE/docbook2X/docbook2man-spec.pl ]; then
-	AC_MSG_ERROR("Unable to find docbook2X. Make sure it is installed and that the sgml-share path is correct.")
+	AC_MSG_ERROR("Unable to find dockbook2X. Make sure it is installed and that the sgml-share path is correct.")
 fi
 
 AC_SUBST(SGML_SHARE)dnl
