@@ -90,5 +90,4 @@ do {                             \
 #define on(x, y) (x & y)
 #define off(x, y) (!(x & y))
 
-#include "winbind_nss_config.h"
-#include "winbindd_nss.h"
+#include "winbind_client.h"

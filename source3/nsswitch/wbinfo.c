@@ -28,11 +28,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Prototypes from common.h */
-
-NSS_STATUS winbindd_request(int req_type, 
-			    struct winbindd_request *request,
-			    struct winbindd_response *response);
+extern int winbindd_fd;
 
 static char winbind_separator(void)
 {
@@ -608,13 +604,13 @@ static BOOL wbinfo_set_auth_user(char *username)
 static BOOL wbinfo_ping(void)
 {
         NSS_STATUS result;
-	
+
 	result = winbindd_request(WINBINDD_PING, NULL, NULL);
 
 	/* Display response */
 
-        d_printf("'ping' to winbindd %s\n", 
-               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+        d_printf("'ping' to winbindd %s on fd %d\n", 
+               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", winbindd_fd);
 
         return result == NSS_STATUS_SUCCESS;
 }

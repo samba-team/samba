@@ -62,6 +62,14 @@
 #include <string.h>
 #endif
 
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#else
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
