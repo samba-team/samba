@@ -6,6 +6,8 @@ Changes in release 0.4c
 
  * simplify and fix hprop handling of v4 databases
 
+ * fix some building problems (osf's sia and osfc2 login)
+
  * bug fixes
 
 Changes in release 0.4b

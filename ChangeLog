@@ -1,5 +1,9 @@
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
+	18:0:1
+
+	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): update to 7:3:0
 	* lib/krb5/sock_principal.c (krb5_sock_to_principal): use
 	getnameinfo
 
