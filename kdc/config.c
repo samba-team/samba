@@ -70,6 +70,8 @@ static const char *trpolicy_str;
 static struct getarg_strings addresses_str;	/* addresses to listen on */
 krb5_addresses explicit_addresses;
 
+static int disable_des = -1;
+
 #ifdef KRB4
 char *v4_realm;
 int enable_v4 = -1;
@@ -140,6 +142,8 @@ static struct getargs args[] = {
 #endif
     {	"addresses",	0,	arg_strings, &addresses_str,
 	"addresses to listen on", "list of addresses" },
+    {	"disable-des",	0,	arg_flag, &disable_des,
+	"disable DES" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -463,4 +467,17 @@ configure(int argc, char **argv)
 	krb_get_lrealm(v4_realm, 1);
     }
 #endif
+    if(disable_des == -1) 
+	disable_des = krb5_config_get_bool_default(context, NULL, 
+						   0,
+						   "kdc",
+						   "disable-des", NULL);
+    if(disable_des) {
+	krb5_enctype_disable(context, ETYPE_DES_CBC_CRC);
+	krb5_enctype_disable(context, ETYPE_DES_CBC_MD4);
+	krb5_enctype_disable(context, ETYPE_DES_CBC_MD5);
+	krb5_enctype_disable(context, ETYPE_DES_CBC_NONE);
+	krb5_enctype_disable(context, ETYPE_DES_CFB64_NONE);
+	krb5_enctype_disable(context, ETYPE_DES_PCBC_NONE);
+    }
 }
