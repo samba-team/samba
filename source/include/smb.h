@@ -1141,10 +1141,6 @@ typedef struct
   int *igroups; /* an integer version - some OSes are broken :-( */
   int *attrs; /* attributes associated with each gid */
 
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
-  char *home_share;  /* to store NIS home of a user - simeon */
-#endif
-
   int n_sids;
   int *sids;
 
