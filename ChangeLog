@@ -1,5 +1,18 @@
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/store_fd.c (fd_fetch, fd_store): use net_{read,write}
+	to make sure of not dropping data when doing it over a socket.
+	(this might break when used with ordinary files on win32)
+
+	* lib/hdb/hdb_err.et (NO_MKEY): add
+
+	* kdc/kerberos5.c (as_rep): be paranoid and check
+	krb5_enctype_to_string for failure, noted by <lha@stacken.kth.se>
+
+	* lib/krb5/krb5_init_context.3, lib/krb5/krb5_context.3,
+	lib/krb5/krb5_auth_context.3: add new man pages, contributed by
+	<lha@stacken.kth.se>
+
 	* use the openssl api for md4/md5/sha and handle openssl/*.h
 
 	* kdc/kaserver.c (do_getticket): check length of ticket.  noted by
