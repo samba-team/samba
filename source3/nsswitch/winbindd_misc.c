@@ -223,6 +223,7 @@ enum winbindd_result winbindd_domain_info(struct winbindd_cli_state *state)
 		sid_string_static(&domain->sid));
 	
 	state->response.data.domain_info.native_mode = domain->native_mode;
+	state->response.data.domain_info.active_directory = domain->active_directory;
 	state->response.data.domain_info.primary = domain->primary;
 
 	state->response.data.domain_info.sequence_number =

@@ -78,6 +78,15 @@ NTSTATUS ads_ntstatus(ADS_STATUS status)
 		return NT_STATUS_NO_MEMORY;
 	}
 #endif
+#ifdef HAVE_KRB5
+	if (status.error_type = ADS_ERROR_KRB5) { 
+		if (status.err.rc == KRB5KDC_ERR_PREAUTH_FAILED) {
+			return NT_STATUS_LOGON_FAILURE;
+		} else if (status.err.rc == KRB5_KDC_UNREACH) {
+			return NT_STATUS_NO_LOGON_SERVERS;
+		}
+	}
+#endif
 	if (ADS_ERR_OK(status)) return NT_STATUS_OK;
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -123,7 +132,7 @@ const char *ads_errstr(ADS_STATUS status)
 	}
 #endif
 	case ADS_ERROR_NT: 
-		return nt_errstr(ads_ntstatus(status));
+		return get_friendly_nt_error_msg(ads_ntstatus(status));
 	default:
 		return "Unknown ADS error type!? (not compiled in?)";
 	}

@@ -48,27 +48,14 @@ typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_C
  * @return The Domain SID of the remote machine.
  **/
 
-static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
+static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	DOM_SID *domain_sid;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
-	fstring domain_name;
-	TALLOC_CTX *mem_ctx;
+        char *domain_name;
 	
-	if (!(domain_sid = malloc(sizeof(DOM_SID)))){
-		DEBUG(0,("net_get_remote_domain_sid: malloc returned NULL!\n"));
-		goto error;
-	}
-	    
-	if (!(mem_ctx=talloc_init("net_get_remote_domain_sid")))
-	{
-		DEBUG(0,("net_get_remote_domain_sid: talloc_init returned NULL!\n"));
-		goto error;
-	}
-
-
 	if (!cli_nt_session_open (cli, PI_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
@@ -82,7 +69,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	}
 
 	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-					   domain_name, domain_sid);
+					   &domain_name, &domain_sid);
 	if (!NT_STATUS_IS_OK(result)) {
  error:
 		fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
@@ -96,7 +83,6 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 
 	cli_lsa_close(cli, mem_ctx, &pol);
 	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
 
 	return domain_sid;
 }
@@ -132,7 +118,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		return -1;
 	}
 
-	domain_sid = net_get_remote_domain_sid(cli);
+	domain_sid = net_get_remote_domain_sid(cli, mem_ctx);
 
 	/* Create mem_ctx */
 	
@@ -1928,10 +1914,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	POLICY_HND connect_hnd;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
-	DOM_SID domain_sid;
+	DOM_SID *domain_sid;
 	WKS_INFO_100 wks_info;
 	
 	char* domain_name;
+	char* domain_name_pol;
 	char* acct_name;
 	fstring pdc_name;
 
@@ -2052,7 +2039,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	/* Querying info level 5 */
 	
 	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
-	                                      5 /* info level */, domain_name,
+	                                      5 /* info level */, &domain_name_pol,
 	                                      &domain_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -2072,7 +2059,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	if (!secrets_store_trusted_domain_password(domain_name, wks_info.uni_lan_grp.buffer,
 						   wks_info.uni_lan_grp.uni_str_len, opt_password,
-						   domain_sid)) {
+						   *domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		return -1;
 	}
@@ -2163,7 +2150,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	struct cli_state *cli, *remote_cli;
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
-	DOM_SID queried_dom_sid;
+	DOM_SID *queried_dom_sid;
 	fstring ascii_sid, padding;
 	int ascii_dom_name_len;
 	POLICY_HND connect_hnd;
@@ -2173,7 +2160,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	int i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
-	fstring pdc_name, dummy;
+	fstring pdc_name;
+	char *dummy;
 	
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
@@ -2222,7 +2210,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* query info level 5 to obtain sid of a domain being queried */
 	nt_status = cli_lsa_query_info_policy(
 		cli, mem_ctx, &connect_hnd, 5 /* info level */, 
-		dummy, &queried_dom_sid);
+		&dummy, &queried_dom_sid);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -2304,8 +2292,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* SamrOpenDomain - we have to open domain policy handle in order to be
 	   able to enumerate accounts*/
 	nt_status = cli_samr_open_domain(cli, mem_ctx, &connect_hnd,
-									 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
-									 &queried_dom_sid, &domain_hnd);									 
+					 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					 queried_dom_sid, &domain_hnd);									 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));

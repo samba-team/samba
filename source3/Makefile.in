@@ -198,11 +198,11 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 
 PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o
 
-KRBCLIENT_OBJ = libads/kerberos.o
+KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o 
 
 LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o libads/sasl.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
-	     libads/ads_struct.o libads/ads_status.o \
+	     libads/ads_struct.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/ads_ldap.o libads/authdata.o
 
