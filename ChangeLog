@@ -1,7 +1,15 @@
 2000-07-22  Assar Westerlund  <assar@sics.se>
 
+	* kpasswd/kpasswdd.c: use kadm5_s_chpass_principal_cond instead of
+	mis-doing it here
+
+	* lib/krb5/changepw.c (krb5_change_password): make timeout 1 +
+	2^{0,1,...}.  also keep track if we got an old packet back and
+	then just wait without sending a new packet
 	* lib/krb5/changepw.c: use a datagram socket and remove the
 	sequence numbers
+	* lib/krb5/changepw.c (krb5_change_password): clarify an
+	expression, avoiding a warning
 
 2000-07-22  Johan Danielsson  <joda@pdc.kth.se>
 
