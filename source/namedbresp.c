@@ -94,6 +94,7 @@ void remove_response_record(struct subnet_record *d,
 struct response_record *make_response_queue_record(enum state_type state,
 				int id,uint16 fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
+				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip)
 {
@@ -111,10 +112,13 @@ struct response_record *make_response_queue_record(enum state_type state,
   make_nmb_name(&n->name, name, type, scope);
   n->nb_flags = nb_flags;
   n->ttl = ttl;
+  n->server_type = server_type;
   n->bcast = bcast;
   n->recurse = recurse;
   n->send_ip = send_ip;
   n->reply_to_ip = reply_to_ip;
+  StrnCpy(my_name   , n->my_name   , sizeof(n->my_name   )-1);
+  StrnCpy(my_comment, n->my_comment, sizeof(n->my_comment)-1);
 
   n->repeat_interval = 1; /* XXXX should be in ms */
   n->repeat_count = 3; /* 3 retries */

@@ -43,6 +43,7 @@ extern struct in_addr ipgrp;
 
 extern struct subnet_record *subnetlist;
 
+extern uint16 nb_type; /* samba's NetBIOS type */
 
 /****************************************************************************
   remove an entry from the name list
@@ -90,7 +91,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
          server, or if no reply is received, then we can remove the name */
 
         queue_netbios_pkt_wins(d,ClientNMB,NMB_REL,NAME_RELEASE,
-                 name, type, 0, 0,
+                 name, type, 0, 0,0,NULL,NULL,
                  False, True, ipzero, ipzero);
     }
   }
@@ -101,7 +102,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
         then we can remove the name. */
 
      queue_netbios_packet(d,ClientNMB,NMB_REL,NAME_RELEASE,
-			     name, type, 0, 0,
+			     name, type, 0, 0,0,NULL,NULL,
 			     True, True, d->bcast_ip, d->bcast_ip);
   }
 }
@@ -151,7 +152,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
       /* a time-to-live allows us to refresh this name with the WINS server. */
   	  queue_netbios_pkt_wins(d,ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
-			     name, type, nb_flags, GET_TTL(0),
+			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
 			     False, True, ipzero, ipzero);
     }
   }
@@ -160,7 +161,7 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
     /* broadcast the packet, but it comes from ipzero */
   	queue_netbios_packet(d,ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
-			     name, type, nb_flags, GET_TTL(0),
+			     name, type, nb_flags, GET_TTL(0),0,NULL,NULL,
 			     True, True, d->bcast_ip, ipzero);
   }
 }
@@ -186,20 +187,20 @@ void add_my_names(void)
   {
     BOOL wins_iface = ip_equal(d->bcast_ip, ipgrp);
 
-	add_my_name_entry(d, myname,0x20,NB_ACTIVE);
-	add_my_name_entry(d, myname,0x03,NB_ACTIVE);
-	add_my_name_entry(d, myname,0x00,NB_ACTIVE);
-	add_my_name_entry(d, myname,0x1f,NB_ACTIVE);
+	add_my_name_entry(d, myname,0x20,nb_type|NB_ACTIVE);
+	add_my_name_entry(d, myname,0x03,nb_type|NB_ACTIVE);
+	add_my_name_entry(d, myname,0x00,nb_type|NB_ACTIVE);
+	add_my_name_entry(d, myname,0x1f,nb_type|NB_ACTIVE);
 
     /* these names are added permanently (ttl of zero) and will NOT be
        refreshed with the WINS server  */
-	add_netbios_entry(d,"*",0x0,NB_ACTIVE,0,SELF,ip,False,wins);
-	add_netbios_entry(d,"__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip,False,wins);
-	add_netbios_entry(d,"__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False,wins);
+	add_netbios_entry(d,"*",0x0,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
+	add_netbios_entry(d,"__SAMBA__",0x20,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
+	add_netbios_entry(d,"__SAMBA__",0x00,nb_type|NB_ACTIVE,0,SELF,ip,False,wins);
 
     if (!wins_iface && lp_domain_logons() && lp_domain_master()) {
 	/* XXXX the 0x1c is apparently something to do with domain logons */
-	  add_my_name_entry(d, my_workgroup(),0x1c,NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d, my_workgroup(),0x1c,nb_type|NB_ACTIVE|NB_GROUP);
     }
   }
   if (lp_domain_master() && (d = find_subnet(ipgrp)))
@@ -310,7 +311,7 @@ void query_refresh_names(void)
 		  
     	  queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_CONFIRM,
 				n->name.name, n->name.name_type,
-				0,0,
+				0,0,0,NULL,NULL,
 				False,False,n->ip,n->ip);
 		  count++;
 		}

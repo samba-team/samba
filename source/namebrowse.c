@@ -94,7 +94,7 @@ void expire_browse_cache(time_t t)
   add a browser entry
   ****************************************************************************/
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip)
+					      time_t ttl, struct in_addr ip, BOOL local)
 {
   BOOL newentry=False;
   
@@ -135,6 +135,7 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
   
   b->ip     = ip;
   b->type   = type;
+  b->local  = local; /* local server list sync or complete sync required */
   
   if (newentry || ttl < b->sync_time) 
     b->sync_time = ttl;
@@ -176,8 +177,9 @@ static void start_sync_browse_entry(struct browse_cache_record *b)
          doesn't, the server must have died. o dear. */
 
       /* see response_netbios_packet() or expire_netbios_response_entries() */
-      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_SYNC,
-					   b->group,0x20,0,0,
+      queue_netbios_packet(d,ClientNMB,NMB_QUERY,
+                       b->local?NAME_QUERY_SYNC_LOCAL:NAME_QUERY_SYNC_REMOTE,
+					   b->group,0x20,0,0,0,NULL,NULL,
 					   False,False,b->ip,b->ip);
   }
 

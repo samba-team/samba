@@ -124,7 +124,66 @@ static void response_name_reg(struct subnet_record *d, struct packet_struct *p)
 
 
 /****************************************************************************
-  response from a name query server check. states of type NAME_QUERY_PDC_SRV_CHK,
+  response from a name query announce host
+  NAME_QUERY_ANNOUNCE_HOST is dealt with here
+  ****************************************************************************/
+static void response_announce_host(struct nmb_name *ans_name, 
+		struct nmb_packet *nmb, 
+		struct response_record *n, struct subnet_record *d)
+{
+	DEBUG(4, ("Name query at %s ip %s - ",
+		  namestr(&n->name), inet_ntoa(n->send_ip)));
+
+	if (!name_equal(&n->name, ans_name))
+	{
+		/* someone gave us the wrong name as a reply. oops. */
+		/* XXXX should say to them 'oi! release that name!' */
+
+		DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
+		return;
+	}
+
+	if (nmb->header.rcode == 0 && nmb->answers->rdata)
+    {
+		/* we had sent out a name query to the current owner
+		   of a name because someone else wanted it. now they
+		   have responded saying that they still want the name,
+		   so the other host can't have it.
+		 */
+
+		/* first check all the details are correct */
+
+		int nb_flags = nmb->answers->rdata[0];
+		struct in_addr found_ip;
+
+		putip((char*)&found_ip,&nmb->answers->rdata[2]);
+
+		if (nb_flags != n->nb_flags)
+		{
+			/* someone gave us the wrong nb_flags as a reply. oops. */
+			/* XXXX should say to them 'oi! release that name!' */
+
+			DEBUG(4,("expected nb_flags: %d\n", n->nb_flags));
+			DEBUG(4,("unexpected nb_flags: %d\n", nb_flags));
+			return;
+		}
+
+    	/* do an announce host */
+    	do_announce_host(ANN_HostAnnouncement,
+				n->my_name  , 0x00, d->myip,
+				n->name.name, 0x1d, found_ip,
+				n->ttl,
+				n->my_name, n->server_type, n->my_comment);
+	}
+	else
+	{
+		/* XXXX negative name query response. no master exists. oops */
+	}
+}
+
+
+/****************************************************************************
+  response from a name query server check. states of type NAME_QUERY_DOM_SRV_CHK,
   NAME_QUERY_SRV_CHK, and NAME_QUERY_FIND_MST dealt with here.
   ****************************************************************************/
 static void response_server_check(struct nmb_name *ans_name, 
@@ -132,13 +191,13 @@ static void response_server_check(struct nmb_name *ans_name,
 {
     /* issue another state: this time to do a name status check */
 
-    enum state_type cmd = (n->state == NAME_QUERY_PDC_SRV_CHK) ?
-	      NAME_STATUS_PDC_SRV_CHK : NAME_STATUS_SRV_CHK;
+    enum state_type cmd = (n->state == NAME_QUERY_DOM_SRV_CHK) ?
+	      NAME_STATUS_DOM_SRV_CHK : NAME_STATUS_SRV_CHK;
 
     /* initiate a name status check on the server that replied */
     queue_netbios_packet(d,ClientNMB,NMB_STATUS, cmd,
 				ans_name->name, ans_name->name_type,
-				0,0,
+				0,0,0,NULL,NULL,
 				False,False,n->send_ip,n->reply_to_ip);
 }
 
@@ -185,7 +244,7 @@ static BOOL interpret_node_status(struct subnet_record *d,
       if (NAME_BFLAG    (nb_flags)) { strcat(flags,"B "); }
       if (NAME_PFLAG    (nb_flags)) { strcat(flags,"P "); }
       if (NAME_MFLAG    (nb_flags)) { strcat(flags,"M "); }
-      if (NAME__FLAG    (nb_flags)) { strcat(flags,"_ "); }
+      if (NAME_HFLAG    (nb_flags)) { strcat(flags,"H "); }
       if (NAME_DEREG    (nb_flags)) { strcat(flags,"<DEREGISTERING> "); }
       if (NAME_CONFLICT (nb_flags)) { strcat(flags,"<CONFLICT> "); add=True;}
       if (NAME_ACTIVE   (nb_flags)) { strcat(flags,"<ACTIVE> "); add=True; }
@@ -236,7 +295,7 @@ static BOOL interpret_node_status(struct subnet_record *d,
 
 
 /****************************************************************************
-  response from a name status check. states of type NAME_STATUS_PDC_SRV_CHK
+  response from a name status check. states of type NAME_STATUS_DOM_SRV_CHK
   and NAME_STATUS_SRV_CHK dealt with here.
   ****************************************************************************/
 static void response_name_status_check(struct in_addr ip,
@@ -380,14 +439,17 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 
 		DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
 
-		if (n->state == NAME_QUERY_SYNC)
+		if (n->state == NAME_QUERY_SYNC_LOCAL ||
+		    n->state == NAME_QUERY_SYNC_REMOTE)
 		{
 			struct work_record *work = NULL;
 			if ((work = find_workgroupstruct(d, ans_name->name, False)))
 			{
+				BOOL local_list_only = n->state == NAME_QUERY_SYNC_LOCAL;
+
 				/* the server is there: sync quick before it (possibly) dies! */
 				sync_browse_lists(d, work, ans_name->name, ans_name->name_type,
-							found_ip);
+							found_ip, local_list_only);
 			}
 		}
 		else
@@ -439,17 +501,23 @@ void debug_state_type(int state)
   /* report the state type to help debugging */
   switch (state)
   {
-    case NAME_QUERY_PDC_SRV_CHK : DEBUG(4,("MASTER_SVR_CHECK\n")); break;
-    case NAME_QUERY_SRV_CHK     : DEBUG(4,("NAME_QUERY_SRV_CHK\n")); break;
-    case NAME_QUERY_FIND_MST    : DEBUG(4,("NAME_QUERY_FIND_MST\n")); break;
-    case NAME_STATUS_PDC_SRV_CHK: DEBUG(4,("NAME_STAT_MST_CHK\n")); break;
-    case NAME_STATUS_SRV_CHK    : DEBUG(4,("NAME_STATUS_SRV_CHK\n")); break;
-    case NAME_QUERY_MST_CHK     : DEBUG(4,("NAME_QUERY_MST_CHK\n")); break;
-    case NAME_REGISTER          : DEBUG(4,("NAME_REGISTER\n")); break;
-    case NAME_REGISTER_CHALLENGE: DEBUG(4,("NAME_REGISTER_CHALLENGE\n")); break;
-    case NAME_RELEASE           : DEBUG(4,("NAME_RELEASE\n")); break;
-    case NAME_QUERY_CONFIRM     : DEBUG(4,("NAME_QUERY_CONFIRM\n")); break;
-    case NAME_QUERY_SYNC        : DEBUG(4,("NAME_QUERY_SYNC\n")); break;
+    case NAME_QUERY_DOM_SRV_CHK  : DEBUG(4,("MASTER_SVR_CHECK\n")); break;
+    case NAME_QUERY_SRV_CHK      : DEBUG(4,("NAME_QUERY_SRV_CHK\n")); break;
+    case NAME_QUERY_FIND_MST     : DEBUG(4,("NAME_QUERY_FIND_MST\n")); break;
+    case NAME_QUERY_MST_CHK      : DEBUG(4,("NAME_QUERY_MST_CHK\n")); break;
+    case NAME_QUERY_CONFIRM      : DEBUG(4,("NAME_QUERY_CONFIRM\n")); break;
+    case NAME_QUERY_SYNC_LOCAL   : DEBUG(4,("NAME_QUERY_SYNC_LOCAL\n")); break;
+    case NAME_QUERY_SYNC_REMOTE  : DEBUG(4,("NAME_QUERY_SYNC_REMOTE\n")); break;
+    case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break;
+
+    case NAME_REGISTER           : DEBUG(4,("NAME_REGISTER\n")); break;
+    case NAME_REGISTER_CHALLENGE : DEBUG(4,("NAME_REGISTER_CHALLENGE\n"));break;
+
+    case NAME_RELEASE            : DEBUG(4,("NAME_RELEASE\n")); break;
+
+    case NAME_STATUS_DOM_SRV_CHK : DEBUG(4,("NAME_STAT_MST_CHK\n")); break;
+    case NAME_STATUS_SRV_CHK     : DEBUG(4,("NAME_STATUS_SRV_CHK\n")); break;
+
     default: break;
   }
 }
@@ -512,7 +580,8 @@ static BOOL response_problem_check(struct response_record *n,
                   /* query for ^1^2__MSBROWSE__^2^1 expect lots of responses */
                   return False;
                 }
-    			case NAME_QUERY_PDC_SRV_CHK:
+    			case NAME_QUERY_ANNOUNCE_HOST:
+    			case NAME_QUERY_DOM_SRV_CHK:
                 case NAME_QUERY_SRV_CHK:
                 case NAME_QUERY_MST_CHK:
                 {
@@ -576,8 +645,10 @@ static BOOL response_compatible(struct response_record *n,
 
     case NAME_REGISTER_CHALLENGE: /* this is a query: we then do a register */
     case NAME_QUERY_CONFIRM:
-    case NAME_QUERY_SYNC:
-    case NAME_QUERY_PDC_SRV_CHK:
+    case NAME_QUERY_ANNOUNCE_HOST:
+    case NAME_QUERY_SYNC_LOCAL:
+    case NAME_QUERY_SYNC_REMOTE:
+    case NAME_QUERY_DOM_SRV_CHK:
     case NAME_QUERY_SRV_CHK:
     case NAME_QUERY_FIND_MST:
     case NAME_QUERY_MST_CHK:
@@ -590,7 +661,7 @@ static BOOL response_compatible(struct response_record *n,
 		break;
     }
       
-    case NAME_STATUS_PDC_SRV_CHK:
+    case NAME_STATUS_DOM_SRV_CHK:
     case NAME_STATUS_SRV_CHK:
     {
 		if (nmb->answers->rr_type != NMB_STATUS)
@@ -638,7 +709,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
         break;
     }
 
-    case NAME_QUERY_PDC_SRV_CHK:
+    case NAME_QUERY_DOM_SRV_CHK:
     case NAME_QUERY_SRV_CHK:
     case NAME_QUERY_FIND_MST:
     {
@@ -646,15 +717,22 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 		break;
     }
       
-    case NAME_STATUS_PDC_SRV_CHK:
+    case NAME_STATUS_DOM_SRV_CHK:
     case NAME_STATUS_SRV_CHK:
     {
 		response_name_status_check(p->ip, nmb, bcast, n, d);
 		break;
     }
       
+    case NAME_QUERY_ANNOUNCE_HOST:
+    {
+		response_announce_host(ans_name, nmb, n, d);
+		break;
+    }
+      
     case NAME_QUERY_CONFIRM:
-    case NAME_QUERY_SYNC:
+    case NAME_QUERY_SYNC_LOCAL:
+    case NAME_QUERY_SYNC_REMOTE:
     {
 		response_name_query_sync(nmb, ans_name, bcast, n, d);
 		break;
@@ -702,7 +780,8 @@ void response_netbios_packet(struct packet_struct *p)
     return;
   }
 
-  if (!same_net(d->bcast_ip, d->mask_ip, p->ip)) /* copes with WINS 'subnet' */
+  /* args wrong way round: spotted by ccm@shentel.net */
+  if (!same_net(d->bcast_ip, p->ip, d->mask_ip)) /* copes with WINS 'subnet' */
   {
     DEBUG(2,("response from %s. ", inet_ntoa(p->ip)));
     DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));

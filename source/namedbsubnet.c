@@ -50,6 +50,7 @@ extern struct interface *local_interfaces;
 /* this is our domain/workgroup/server database */
 struct subnet_record *subnetlist = NULL;
 
+extern uint16 nb_type; /* samba's NetBIOS name type */
 
 /****************************************************************************
   add a domain into the list
@@ -166,7 +167,7 @@ void add_subnet_interfaces(void)
 	}
 
 	/* add the pseudo-ip interface for WINS: 255.255.255.255 */
-	if (lp_wins_support())
+	if (lp_wins_support() || (*lp_wins_server()))
     {
 		struct in_addr wins_bcast = ipgrp;
 		struct in_addr wins_nmask = ipzero;
@@ -231,8 +232,8 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 	 or register with WINS server, if it's our workgroup */
       if (strequal(lp_workgroup(), name))
 	{
-	  add_my_name_entry(d,name,0x1e,NB_ACTIVE|NB_GROUP);
-	  add_my_name_entry(d,name,0x0 ,NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d,name,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d,name,0x0 ,nb_type|NB_ACTIVE|NB_GROUP);
 	}
       /* add samba server name to workgroup list. don't add
          lmhosts server entries to local interfaces */

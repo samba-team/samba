@@ -295,6 +295,11 @@ void sync_server(enum state_type state, char *serv_name, char *work_name,
 		 int name_type,
 		 struct in_addr ip);
 void announce_backup(void);
+void do_announce_host(int command,
+		char *from_name, int from_type, struct in_addr from_ip,
+		char *to_name  , int to_type  , struct in_addr to_ip,
+		time_t announce_interval,
+		char *server_name, int server_type, char *server_comment);
 void remove_my_servers(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
 					char *name, char *comment, time_t ttl, int server_type);
@@ -305,11 +310,15 @@ void announce_master(void);
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip);
+					      time_t ttl, struct in_addr ip, BOOL local);
 void do_browser_lists(void);
+
+/*The following definitions come from  namedb.c  */
+
 
 /*The following definitions come from  namedbname.c  */
 
+void set_samba_nb_type(void);
 BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
 BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
@@ -342,6 +351,7 @@ void remove_response_record(struct subnet_record *d,
 struct response_record *make_response_queue_record(enum state_type state,
 				int id,uint16 fd,
 				int quest_type, char *name,int type, int nb_flags, time_t ttl,
+				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
 struct response_record *find_response_record(struct subnet_record **d,
@@ -432,13 +442,15 @@ void expire_netbios_response_entries();
 struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
+				int server_type, char *my_name, char *my_comment,
 			    BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
 struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
-			    BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip);
+			int server_type, char *my_name, char *my_comment,
+		    BOOL bcast,BOOL recurse,
+			struct in_addr send_ip, struct in_addr reply_to_ip);
 
 /*The following definitions come from  nameserv.c  */
 
@@ -502,7 +514,7 @@ int main(int argc,char *argv[]);
 
 char *getsmbpass(char *pass);
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip);
+		char *name, int nm_type, struct in_addr ip, BOOL local);
 
 /*The following definitions come from  params.c  */
 

@@ -52,6 +52,7 @@ extern time_t StartupTime;
 
 extern struct subnet_record *subnetlist;
 
+extern uint16 nb_type; /* samba's NetBIOS name type */
 
 /*******************************************************************
   occasionally check to see if the master browser is around
@@ -81,7 +82,7 @@ void check_master_browser(void)
 	  if (!AM_MASTER(work))
 	    {
 	      queue_netbios_packet(d,ClientNMB,NMB_QUERY,NAME_QUERY_MST_CHK,
-				   work->work_group,0x1d,0,0,
+				   work->work_group,0x1d,0,0,0,NULL,NULL,
 				   True,False,d->bcast_ip,d->bcast_ip);
 	    }
 	}
@@ -268,7 +269,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
 
       /* add special browser name */
-      add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
+      add_my_name_entry(d,MSBROWSE        ,0x01,nb_type|NB_ACTIVE|NB_GROUP);
 
       /* DON'T do anything else after calling add_my_name_entry() */
       return;
@@ -282,7 +283,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
 
       /* add master name */
-      add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
+      add_my_name_entry(d,work->work_group,0x1d,nb_type|NB_ACTIVE);
   
       /* DON'T do anything else after calling add_my_name_entry() */
       return;
@@ -320,7 +321,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
         DEBUG(3,("domain first stage: register as domain member\n"));
 
         /* add domain member name */
-        add_my_name_entry(d,work->work_group,0x1e,NB_ACTIVE         );
+        add_my_name_entry(d,work->work_group,0x1e,nb_type|NB_ACTIVE|NB_GROUP);
 
         /* DON'T do anything else after calling add_my_name_entry() */
         return;
@@ -347,7 +348,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
         }
 
         /* add domain master name */
-        add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
+        add_my_name_entry(d,work->work_group,0x1b,nb_type|NB_ACTIVE         );
 
         /* DON'T do anything else after calling add_my_name_entry() */
         return;

@@ -48,10 +48,10 @@
 #define NB_ACTIVE 0x04
 #define NB_CONFL  0x08
 #define NB_DEREG  0x10
-#define NB_BFLAG  0x00
-#define NB_PFLAG  0x20
-#define NB_MFLAG  0x40
-#define NB__FLAG  0x60
+#define NB_BFLAG  0x00 /* broadcast node type */
+#define NB_PFLAG  0x20 /* point-to-point node type */
+#define NB_MFLAG  0x40 /* mixed bcast & p-p node type */
+#define NB_HFLAG  0x60 /* microsoft 'hybrid' node type */
 #define NB_FLGMSK 0x60
 
 #define REFRESH_TIME (15*60)
@@ -68,7 +68,7 @@
 #define NAME_BFLAG(p)     (((p) & NB_FLGMSK) == NB_BFLAG)
 #define NAME_PFLAG(p)     (((p) & NB_FLGMSK) == NB_PFLAG)
 #define NAME_MFLAG(p)     (((p) & NB_FLGMSK) == NB_MFLAG)
-#define NAME__FLAG(p)     (((p) & NB_FLGMSK) == NB__FLAG)
+#define NAME_HFLAG(p)     (((p) & NB_FLGMSK) == NB_HFLAG)
 
 /* server type identifiers */
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
@@ -99,14 +99,16 @@ enum master_state
 
 enum state_type
 {
-	NAME_STATUS_PDC_SRV_CHK,
+	NAME_STATUS_DOM_SRV_CHK,
 	NAME_STATUS_SRV_CHK,
 	NAME_REGISTER_CHALLENGE,
 	NAME_REGISTER,
 	NAME_RELEASE,
 	NAME_QUERY_CONFIRM,
-	NAME_QUERY_SYNC,
-	NAME_QUERY_PDC_SRV_CHK,
+	NAME_QUERY_ANNOUNCE_HOST,
+	NAME_QUERY_SYNC_LOCAL,
+	NAME_QUERY_SYNC_REMOTE,
+	NAME_QUERY_DOM_SRV_CHK,
 	NAME_QUERY_SRV_CHK,
 	NAME_QUERY_FIND_MST,
 	NAME_QUERY_MST_CHK
@@ -147,6 +149,7 @@ struct browse_cache_record
 	struct in_addr ip;
 	time_t sync_time;
 	BOOL synced;
+	BOOL local;
 };
 
 /* this is used to hold the list of servers in my domain, and is */
@@ -190,6 +193,8 @@ struct work_record
 };
 
 /* initiated name queries recorded in this list to track any responses... */
+/* sadly, we need to group everything together. i suppose that if this
+   gets unwieldy, then a union ought to be considered. oh for c++... */
 struct response_record
 {
   struct response_record *next;
@@ -203,6 +208,10 @@ struct response_record
   struct nmb_name name;
   int nb_flags;
   time_t ttl;
+
+  int server_type;
+  fstring my_name;
+  fstring my_comment;
 
   BOOL bcast;
   BOOL recurse;

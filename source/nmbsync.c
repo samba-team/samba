@@ -136,8 +136,10 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   do a NetServerEnum and update our server and workgroup databases.
   ******************************************************************/
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip)
+		char *name, int nm_type, struct in_addr ip, BOOL local)
 {
+  uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
+
   if (!d || !work || !AM_MASTER(work)) return;
 
   pid = getpid();
@@ -169,8 +171,9 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
     {
       if (cli_send_login(NULL,NULL,True,True))
 	{
-	  add_info(d, work, SV_TYPE_DOMAIN_ENUM);
-	  add_info(d, work, SV_TYPE_ALL&~SV_TYPE_DOMAIN_ENUM);
+	  add_info(d, work, local_type|SV_TYPE_DOMAIN_ENUM);
+	  add_info(d, work, local_type|(SV_TYPE_ALL&
+                      ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY)));
 	}
       
       close_sockets();

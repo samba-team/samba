@@ -224,6 +224,7 @@ void expire_netbios_response_entries()
 struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 				int fd,int quest_type,enum state_type state,
 			    char *name,int name_type,int nb_flags, time_t ttl,
+				int server_type, char *my_name, char *my_comment,
 			    BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip)
 {
@@ -256,6 +257,7 @@ struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 
   return queue_netbios_packet(d,fd, quest_type, state, 
 		       name, name_type, nb_flags, ttl,
+               server_type,my_name,my_comment,
 		       bcast, recurse, send_ip, reply_to_ip);
 }
 
@@ -269,8 +271,9 @@ struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
 struct response_record *queue_netbios_packet(struct subnet_record *d,
 			int fd,int quest_type,enum state_type state,char *name,
 			int name_type,int nb_flags, time_t ttl,
-			    BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip)
+			int server_type, char *my_name, char *my_comment,
+		    BOOL bcast,BOOL recurse,
+			struct in_addr send_ip, struct in_addr reply_to_ip)
 {
   struct in_addr wins_ip = ipgrp;
   struct response_record *n;
@@ -289,6 +292,7 @@ struct response_record *queue_netbios_packet(struct subnet_record *d,
   
   if ((n = make_response_queue_record(state,id,fd,
 						quest_type,name,name_type,nb_flags,ttl,
+						server_type,my_name, my_comment,
 						bcast,recurse,send_ip,reply_to_ip)))
     {
       add_response_record(d,n);
