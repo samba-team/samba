@@ -965,3 +965,360 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 	return(True);
 } /* name_map_mangle */
 
+
+
+
+
+#if 0
+
+#define MANGLE_TDB_VERSION		"20010830"
+#define MANGLE_TDB_FILE_NAME		"mangle.tdb"
+#define MANGLE_TDB_STORED_NAME		"B"
+#define MANGLED_PREFIX			"MANGLED_"
+#define LONG_PREFIX			"LONG_"
+
+struct mt_enum_info {
+	TDB_CONTEXT	*mangle_tdb;
+	TDB_DATA	key;
+};
+
+
+static struct mt_enum_info	global_mt_ent = {0, 0};
+
+static int POW10(unsigned int exp)
+{
+	int result = 1;
+	
+	while (exp) {
+		result *= 10;
+		exp--;
+	}
+  
+	return result;
+}
+
+static BOOL init_mangle_tdb(void)
+{
+	pstring tdbfile;
+	
+	if (global_mt_ent.mangle_tdb == 0)
+	{
+		slprintf(tdbfile, sizeof(tdbfile)-1, "%s/%s", lp_private_dir(), MANGLE_TDB_FILE_NAME);
+
+		/* Open tdb */
+		if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600)))
+		{
+			DEBUG(0, ("Unable to open Mangle TDB, trying create new!\n"));
+			/* create a new one if it does not exist */
+			if (!(global_mt_ent.mangle_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600)))
+			{
+				DEBUG(0, ("Unable to create Mangle TDB (%s) !!!", tdbfile));
+				return False;
+			}
+		}
+	}
+
+	return True;
+}
+
+/* see push_ucs2 */
+int dos_to_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, int flags)
+{
+	int len=0;
+	int src_len = strlen(src);
+	pstring tmpbuf;
+
+	/* treat a pstring as "unlimited" length */
+	if (dest_len == -1) {
+		dest_len = sizeof(pstring);
+	}
+
+	if (flags & STR_UPPER) {
+		pstrcpy(tmpbuf, src);
+		strupper(tmpbuf);
+		src = tmpbuf;
+	}
+
+	if (flags & STR_TERMINATE) {
+		src_len++;
+	}
+
+	if (ucs2_align(base_ptr, dest, flags)) {
+		*(char *)dest = 0;
+		dest = (void *)((char *)dest + 1);
+		if (dest_len) dest_len--;
+		len++;
+	}
+
+	/* ucs2 is always a multiple of 2 bytes */
+	dest_len &= ~1;
+
+	len += convert_string(CH_DOS, CH_UCS2, src, src_len, dest, dest_len);
+	return len;
+}
+
+/* see pull_ucs2 */
+int ucs2_to_dos(const void *base_ptr, char *dest, const void *src, int dest_len, int src_len, int flags)
+{
+	int ret;
+
+	if (dest_len == -1) {
+		dest_len = sizeof(pstring);
+	}
+
+	if (ucs2_align(base_ptr, src, flags)) {
+		src = (const void *)((char *)src + 1);
+		if (src_len > 0) src_len--;
+	}
+
+	if (flags & STR_TERMINATE) src_len = strlen_w(src)*2+2;
+
+	/* ucs2 is always a multiple of 2 bytes */
+	src_len &= ~1;
+	
+	ret = convert_string(CH_UCS2, CH_DOS, src, src_len, dest, dest_len);
+	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
+
+	return src_len;
+}
+
+
+
+/* the unicode string will be ZERO terminated */
+static smb_ucs2_t *unicode_from_buffer (uint8 *buf, uint32 size)
+{
+	uint32 len = 0;
+	uint32 lfn_len;
+	smb_ucs2_t *long_file_name;
+	
+	len = tdb_unpack (buf, size, MANGLE_TDB_STORED_NAME,
+		&lfn_len, &long_file_name);
+
+	if (len == -1) return NULL;
+	else return long_file_name;
+}
+
+/* the unicode string MUST be ZERO terminated */
+static uint32 buffer_from_unicode (uint8 **buf, smb_ucs2_t *long_file_name)
+{
+	uint32 buflen;
+	uint32 len = 0;
+	uint32 lfn_len = strlen_w(long_file_name)*sizeof(smb_ucs2_t)+1;
+	
+	/* one time to get the size needed */
+	len = tdb_pack(NULL, 0,  MANGLE_TDB_STORED_NAME,
+		lfn_len, long_file_name);
+
+	/* malloc the space needed */
+	if ((*buf=(uint8*)malloc(len)) == NULL)
+	{
+		DEBUG(0,("buffer_from_longname: Unable to malloc() memory for buffer!\n"));
+		return (-1);
+	}
+	
+	/* now for the real call to tdb_pack() */
+	buflen = tdb_pack(*buf, 0,  MANGLE_TDB_STORED_NAME,
+		lfn_len, long_file_name);
+
+	/* check to make sure we got it correct */
+	if (buflen != len)
+	{
+		/* error */
+		free (*buf);
+		return (-1);
+	}
+
+	return (buflen);
+}
+
+/* mangled must contain only the file name, not a path.
+   and MUST be ZERO terminated */
+smb_ucs2_t *unmangle(const smb_ucs2_t *mangled)
+{
+	TDB_DATA data, key;
+	fstring keystr;
+	fstring mufname;
+	smb_ucs2_t *retstr;
+	smb_ucs2_t *temp;
+
+	if (strlen_w(mangled) > 12) return NULL;
+	if (!strchr_wa(mangled, '~')) return NULL;
+	if (!init_mangle_tdb()) return NULL;
+	
+	temp = strdup_w(mangled);
+	if (!temp)
+	{
+		DEBUG(0,("mangle: out of memory!\n"));
+		return NULL;
+	}
+	strupper_w(temp);
+	/* set search key */
+	pull_ucs2(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
+	SAFE_FREE(temp);
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* get the record */
+	data = tdb_fetch(global_mt_ent.mangle_tdb, key);
+	
+	if (!data.dptr) /* not found */
+	{
+		DEBUG(5,("unmangle: %s\n", tdb_errorstr(global_mt_ent.mangle_tdb)));
+		return NULL;
+	}
+	
+	if (!(retstr = unicode_from_buffer (data.dptr, data.dsize)))
+	{
+		DEBUG(0,("unmangle: bad buffer returned from database!\n"));
+		SAFE_FREE(data.dptr);
+		return NULL;
+	}
+
+	SAFE_FREE(data.dptr);
+	return retstr;
+}
+
+/* unmangled must contain only the file name, not a path.
+   and MUST be ZERO terminated */
+smb_ucs2_t *_mangle(const smb_ucs2_t *unmangled)
+{
+	TDB_DATA data, key;
+	pstring keystr;
+	pstring longname;
+	fstring mufname;
+	BOOL db_free = False;
+	smb_ucs2_t *mangled;
+	smb_ucs2_t *um;
+	smb_ucs2_t *ext = NULL;
+	smb_ucs2_t *p;
+	size_t b_len;
+	size_t e_len;
+	size_t um_len;
+	uint32 n, c;
+			
+
+	/* TODO: if it is a path return a failure */
+			
+	um = strdup_w(unmangled);
+	if (!um)
+	{
+		DEBUG(0,("mangle: out of memory!\n"));
+		goto error;
+	}
+	um_len = strlen_w(um);
+	if (p = strrchr_wa(um, '.'))
+	{
+		if ((um_len - ((p - um) / sizeof(smb_ucs2_t))) < 4) /* check extension */
+		{
+			*p = UCS2_CHAR('\0');
+			ext = p++;
+		}
+	}
+
+	/* test if the same is yet mangled */
+
+	/* set search key */
+	pull_ucs2(NULL, longname, um, sizeof(longname), 0, STR_TERMINATE);
+	slprintf(keystr, sizeof(keystr)-1, "%s%s", LONG_PREFIX, longname);
+	key.dptr = keystr;
+	key.dsize = strlen (keystr) + 1;
+	
+	/* get the record */
+	data = tdb_fetch (global_mt_ent.mangle_tdb, key);
+	if (!data.dptr) /* not found */
+	{
+		if (tdb_error(global_mt_ent.mangle_tdb) != TDB_ERR_NOEXIST)
+		{
+			DEBUG(0, ("mangle: database retrieval error: %s\n",
+					tdb_errorstr(global_mt_ent.mangle_tdb)));
+			goto error;
+		}
+	
+		/* if not find the first free possibile mangled name */
+		n = c = 1;
+		while (!db_free)
+		{
+			uint32 pos;
+			smb_ucs2_t temp[9];
+			char num[7];
+		
+			while ((int)POW10(n) <= c) n++;
+			pos = 7 - n;
+			if (pos == 0) goto error;
+
+			strncpy_w(temp, um, pos);
+			strupper_w(temp);
+			temp[pos] = UCS2_CHAR('~');
+			temp[pos+1] = 0;
+			snprintf(num, 7, "%d", c);
+			strncat_wa(temp, num, n);
+
+			pull_ucs2(NULL, mufname, temp, sizeof(mufname), 0, STR_TERMINATE);
+			if (strlen(mufname) > 8)
+			{
+				n++;
+				continue;
+			}
+
+			slprintf(keystr, sizeof(keystr)-1, "%s%s", MANGLED_PREFIX, mufname);
+			key.dptr = keystr;
+			key.dsize = strlen (keystr) + 1;
+			if ((data.dsize=buffer_from_unicode ((uint8 **)(&data.dptr), temp)) == -1)
+			{
+				DEBUG(0,("mangle: ERROR - Unable to copy mangled name info buffer!\n"));
+				goto error;
+			}
+
+			if (tdb_store(global_mt_ent.mangle_tdb, key, data, TDB_INSERT) != TDB_SUCCESS)
+			{
+				SAFE_FREE(data.dptr);
+				if (tdb_error(global_mt_ent.mangle_tdb) == TDB_ERR_EXISTS)
+				{
+					continue;
+				}
+				else
+				{
+					DEBUG(0, ("mangle: database retrieval error: %s\n",
+							tdb_errorstr(global_mt_ent.mangle_tdb)));
+					goto error;
+				}
+			}
+			else
+			{
+				db_free = True;
+				p = strdup_w(temp);
+			}
+			c++;
+		}
+	}
+	else /* FOUND */
+	{
+		if (!(p = unicode_from_buffer (data.dptr, data.dsize)))
+		{
+			DEBUG(0,("mangle: bad buffer returned from database!\n"));
+			goto error;
+		}
+	}
+		
+	b_len = strlen_w(p);
+	if (ext) e_len = strlen_w(ext);
+	else e_len = 0;
+	mangled = (smb_ucs2_t *)malloc((b_len+e_len+2)*sizeof(smb_ucs2_t));
+	strncpy_w (mangled, p, b_len+1);
+	strncat_w (mangled, ext, e_len);
+
+	SAFE_FREE(p);
+	SAFE_FREE(um);
+	SAFE_FREE(data.dptr);
+
+	return mangled;
+
+error:
+	DEBUG(10, ("mangle: failed to mangle <string from unicode here>!\n"));
+	SAFE_FREE(data.dptr);
+	SAFE_FREE(um);
+	return NULL;
+}
+
+#endif /* 0 */
