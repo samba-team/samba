@@ -398,14 +398,9 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	ads = ads_cached_connection(domain);
 	if (!ads) goto done;
 
-	/* when a name is longer than 20 characters, the sAMAccountName can
-	   be long or short! */
-	if (strlen(name) > 20) {
-		asprintf(&exp, "(|(sAMAccountName=%s)(sAMAccountName=%.20s))", 
-			 name, name);
-	} else {
-		asprintf(&exp, "(sAMAccountName=%s)", name);
-	}
+	/* accept either the win2000 or the pre-win2000 username */
+	asprintf(&exp, "(|(sAMAccountName=%s)(userPrincipalName=%s@%s))", 
+		 name, name, ads->realm);
 	rc = ads_search_retry(ads, &res, exp, attrs);
 	free(exp);
 	if (!ADS_ERR_OK(rc)) {
