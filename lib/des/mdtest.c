@@ -77,12 +77,20 @@ md4_tests (void)
   for (t = tests; t->str; ++t) {
     struct md4 md4;
     char res[16];
+    int i;
 
     md4_init (&md4);
     md4_update (&md4, (unsigned char *)t->str, strlen(t->str));
     md4_finito (&md4, res);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("MD4(\"%s\") failed\n", t->str);
+      printf("should be: ");
+      for(i = 0; i < 16; ++i)
+	  printf("%02x ", t->hash[i]);
+      printf("\nresult was: ");
+      for(i = 0; i < 16; ++i)
+	  printf("%02x ", res[i]);
+      printf("\n");
       return 1;
     }
   }
@@ -117,7 +125,16 @@ md5_tests (void)
     md5_update (&md5, (unsigned char *)t->str, strlen(t->str));
     md5_finito (&md5, res);
     if (memcmp (res, t->hash, 16) != 0) {
+      int i;
+
       printf ("MD5(\"%s\") failed\n", t->str);
+      printf("should be: ");
+      for(i = 0; i < 16; ++i)
+	  printf("%02x ", t->hash[i]);
+      printf("\nresult was: ");
+      for(i = 0; i < 16; ++i)
+	  printf("%02x ", res[i]);
+      printf("\n");
       return 1;
     }
   }
@@ -152,7 +169,16 @@ sha_tests (void)
     sha_update (&sha, (unsigned char *)t->str, strlen(t->str));
     sha_finito (&sha, res);
     if (memcmp (res, t->hash, 20) != 0) {
+      int i;
+
       printf ("SHA(\"%s\") failed\n", t->str);
+      printf("should be: ");
+      for(i = 0; i < 20; ++i)
+	  printf("%02x ", t->hash[i]);
+      printf("\nresult was: ");
+      for(i = 0; i < 20; ++i)
+	  printf("%02x ", res[i]);
+      printf("\n");
       return 1;
     }
   }
