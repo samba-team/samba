@@ -620,45 +620,6 @@ void ndr_push_struct_end(struct ndr_push *ndr)
 {
 }
 
-
-/*
-  pull a relative structure
-*/
-NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size, 
-			   NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
-{
-	struct ndr_pull *ndr2;
-	uint32_t ofs;
-	struct ndr_pull_save save;
-	void *p;
-
-	NDR_ALLOC(ndr, ndr2);
-	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
-	if (ofs == 0) {
-		(*buf) = NULL;
-		return NT_STATUS_OK;
-	}
-	ndr_pull_save(ndr, &save);
-	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
-		NDR_CHECK(ndr_pull_set_offset(ndr, ofs + ndr->offset - 4));
-	} else {
-		NDR_CHECK(ndr_pull_set_offset(ndr, ofs));
-	}
-	NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, ndr->data_size - ndr->offset));
-	/* strings must be allocated by the backend functions */
-	if (ndr->flags & LIBNDR_STRING_FLAGS) {
-		NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, &p));
-	} else {
-		NDR_ALLOC_SIZE(ndr, p, size);
-		NDR_CHECK(fn(ndr2, NDR_SCALARS|NDR_BUFFERS, p));
-	}
-	(*buf) = p;
-	ndr_pull_restore(ndr, &save);
-	talloc_free(ndr2);
-	return NT_STATUS_OK;
-}
-
-
 /*
   store a token in the ndr context, for later retrieval
 */
@@ -700,7 +661,12 @@ static uint32_t ndr_token_retrieve(struct ndr_token_list **list, const void *key
 */
 NTSTATUS ndr_pull_relative1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
-	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
+	if (ndr->flags & LIBNDR_FLAG_RELATIVE_CURRENT) {
+		return ndr_token_store(ndr, &ndr->relative_list, p, 
+				       rel_offset + ndr->offset);
+	} else {
+		return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
+	}
 }
 
 /*
