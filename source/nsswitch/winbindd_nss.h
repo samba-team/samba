@@ -216,6 +216,8 @@ struct winbindd_response {
 		} auth;
 	} data;
 
+	uint32 nt_status;	/* Extended error information */
+
 	/* Variable length return data */
 
 	void *extra_data;               /* getgrnam, getgrgid, getgrent */
