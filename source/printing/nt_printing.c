@@ -62,14 +62,14 @@ get a form struct list
 ****************************************************************************/
 int get_ntforms(nt_forms_struct **list)
 {
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf, newkey, dbuf;
 	nt_forms_struct form;
 	int ret;
 	int n = 0;
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     free(kbuf.dptr), kbuf = tdb_nextkey(tdb, kbuf)) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
@@ -201,14 +201,14 @@ int get_ntdrivers(fstring **list, char *architecture)
 	int total=0;
 	fstring short_archi;
 	pstring key;
-	TDB_DATA kbuf;
+	TDB_DATA kbuf, newkey;
 
 	get_short_archi(short_archi, architecture);
 	slprintf(key, sizeof(key), "%s/%s/", DRIVERS_PREFIX, short_archi);
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     free(kbuf.dptr), kbuf = tdb_nextkey(tdb, kbuf)) {
+	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
