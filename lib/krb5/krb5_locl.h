@@ -133,4 +133,8 @@ struct sockaddr_dl;
 /* should this be public? */
 #define KEYTAB_DEFAULT "FILE:/etc/krb5.keytab"
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 #endif /* __KRB5_LOCL_H__ */
