@@ -458,6 +458,13 @@ CLI_POLICY_HND *cm_get_lsa_handle(char *domain)
 	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
 		return NULL;
 	}
+
+	/* This *shitty* code needs scrapping ! JRA */
+	if (policy_handle_is_valid(&conn->pol)) {
+		hnd.pol = conn->pol;
+		hnd.cli = conn->cli;
+		return &hnd;
+	}
 	
 	result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 				     des_access, &conn->pol);
@@ -502,6 +509,12 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 		return NULL;
 	}
 	
+	/* This *shitty* code needs scrapping ! JRA */
+	if (policy_handle_is_valid(&conn->pol)) {
+		hnd.pol = conn->pol;
+		hnd.cli = conn->cli;
+		return &hnd;
+	}
 	result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 				  des_access, &conn->pol);
 

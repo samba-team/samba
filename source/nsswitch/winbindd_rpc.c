@@ -67,7 +67,10 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		ctr.sam.info1 = &info1;
 
 		ctx2 = talloc_init_named("winbindd dispinfo");
-		if (!ctx2) return NT_STATUS_NO_MEMORY;
+		if (!ctx2) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 		
 		/* Query display info level 1 */
 		result = cli_samr_query_dispinfo(hnd->cli, ctx2,
@@ -83,7 +86,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		(*info) = talloc_realloc(mem_ctx, *info,
 					 (*num_entries)*sizeof(WINBIND_USERINFO));
 		if (!(*info)) {
-			return NT_STATUS_NO_MEMORY;
+			result = NT_STATUS_NO_MEMORY;
+			talloc_destroy(ctx2);
+			goto done;
 		}
 
 		for (j=0;j<count;i++, j++) {
@@ -157,6 +162,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 					 sizeof(**info) * ((*num_entries) + count));
 		if (! *info) {
 			talloc_destroy(mem_ctx2);
+			cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -286,11 +292,14 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
+	got_user_pol = True;
+
 	/* Get user info */
 	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
 					 0x15, &ctr);
 
 	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+	got_user_pol = False;
 
 	user_info->group_rid = ctr->info.id21->group_rid;
 	user_info->acct_name = unistr2_tdup(mem_ctx, 

@@ -2672,6 +2672,7 @@ BOOL lsa_io_q_addprivs(char *desc, LSA_Q_ADDPRIVS *r_c, prs_struct *ps, int dept
 BOOL lsa_io_r_addprivs(char *desc, LSA_R_ADDPRIVS *r_c, prs_struct *ps, int depth);
 BOOL lsa_io_q_removeprivs(char *desc, LSA_Q_REMOVEPRIVS *r_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_removeprivs(char *desc, LSA_R_REMOVEPRIVS *r_c, prs_struct *ps, int depth);
+BOOL policy_handle_is_valid(const POLICY_HND *hnd);
 
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
