@@ -29,6 +29,7 @@
 		<arg choice="opt">-x</arg>	
 		<arg choice="opt">-i passdb-backend</arg>	
 		<arg choice="opt">-e passdb-backend</arg>   
+		<arg choice="opt">-b passdb-backend</arg>
 		<arg choice="opt">-D debuglevel</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -236,12 +237,13 @@
 
 		<varlistentry>
 		<term>-i passdb-backend</term>
-		<listitem><para>Use a different passdb backend to retrieve users than the one specified in smb.conf.</para>
+		<listitem><para>Use a different passdb backend to retrieve users than the one specified in smb.conf. Can be used to import data into your 
+		local user database.</para>
 
 		<para>This option will ease migration from one passdb backend to another.
 		</para>
 
-		<para>Example: <command>pdbedit -i smbpasswd:/etc/smbpasswd.old -e tdbsam:/etc/samba/passwd.tdb</command>
+		<para>Example: <command>pdbedit -i smbpasswd:/etc/smbpasswd.old</command>
 		</para>
 		</listitem>
 		</varlistentry>
@@ -253,6 +255,14 @@
 		<para>This option will ease migration from one passdb backend to another and will ease backupping</para>
 		
 		<para>Example: <command>pdbedit -e smbpasswd:/root/samba-users.backup</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-b passdb-backend</term>
+		<listitem><para>Use a different default passdb backend. </para>
+
+		<para>Example: <command>pdbedit -b xml:/root/pdb-backup.xml -l</command></para>
 		</listitem>
 		</varlistentry>
 	</variablelist>
