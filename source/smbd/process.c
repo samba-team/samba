@@ -346,7 +346,7 @@ struct smb_message_struct
    {SMBntcreateX, "SMBntcreateX", reply_ntcreate_and_X, AS_USER | CAN_IPC | QUEUE_IN_OPLOCK },
    {SMBnttrans, "SMBnttrans", reply_nttrans, AS_USER | CAN_IPC },
    {SMBnttranss, "SMBnttranss", reply_nttranss, AS_USER | CAN_IPC },
-   {SMBntcancel, "SMBntcancel", reply_ntcancel, AS_USER },
+   {SMBntcancel, "SMBntcancel", reply_ntcancel, 0 },
 
    /* messaging routines */
    {SMBsends,"SMBsends",reply_sends,AS_GUEST},
