@@ -1053,13 +1053,15 @@ uid_t nametouid(char *name)
 	uid_t u;
 
 	u = (uid_t)strtol(name, &p, 0);
-	if (p != name) return u;
+	if ((p != name) && (*p == '\0'))
+		return u;
 
 	if (winbind_nametouid(&u, name))
 		return u;
 
 	pass = sys_getpwnam(name);
-	if (pass) return(pass->pw_uid);
+	if (pass)
+		return(pass->pw_uid);
 	return (uid_t)-1;
 }
 
@@ -1075,13 +1077,15 @@ gid_t nametogid(char *name)
 	gid_t g;
 
 	g = (gid_t)strtol(name, &p, 0);
-	if (p != name) return g;
+	if ((p != name) && (*p == '\0'))
+		return g;
 
 	if (winbind_nametogid(&g, name))
 		return g;
 
 	grp = getgrnam(name);
-	if (grp) return(grp->gr_gid);
+	if (grp)
+		return(grp->gr_gid);
 	return (gid_t)-1;
 }
 
