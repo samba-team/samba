@@ -164,19 +164,15 @@ gpl.tex:
 
 latexfigures: $(LATEX_FIGURES)
 
-%.aux: %.tex
-	-$(LATEX) $<
-
-%.idx: %.aux
-	$(MAKEINDEX) $*
-
 $(PDFDIR)/%.pdf: %.pdf
 	mkdir -p $(@D)
 	cp $< $@
 
 # Adobe PDF files
-%.pdf %.aux: %.tex %.aux %.idx latexfigures gpl.tex $(%_IMAGES_PNG)
+%.pdf: %.tex latexfigures gpl.tex $(%_IMAGES_PNG)
 	-$(PDFLATEX) $<
+	-$(PDFLATEX) $<
+	$(MAKEINDEX) $*
 	$(THUMBPDF) $*.pdf
 	-$(PDFLATEX) $<
 
@@ -185,8 +181,10 @@ $(DVIDIR)/%.dvi: %.dvi
 	mkdir -p $(@D)
 	cp $< $@
 
-%.dvi %.aux: %.tex %.aux %.idx gpl.tex $(%_IMAGES_EPS)
+%.dvi: %.tex %.idx gpl.tex $(%_IMAGES_EPS)
 	-$(LATEX) $< 
+	-$(LATEX) $< 
+	$(MAKEINDEX) $*
 	-$(LATEX) $< 
 
 %.eps: %.png
@@ -283,3 +281,5 @@ xslt/expand-sambadoc.xsl: settings.xsl
 xslt/generate-attributions.xsl: 
 xslt/man.xsl:
 xslt/pearson.xsl:
+
+.SECONDARY:
