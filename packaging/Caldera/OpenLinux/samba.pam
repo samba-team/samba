@@ -5,7 +5,9 @@
 #
 auth       required     /lib/security/pam_pwdb.so nullok nodelay # audit
 # auth       required     /lib/security/pam_smbpass.so nodelay
+# auth       sufficient     /lib/security/pam_winbind.so 
 account    required     /lib/security/pam_pwdb.so nodelay # audit
+# account    sufficient     /lib/security/pam_winbind.so 
 session    required     /lib/security/pam_pwdb.so nodelay
-password   required     /lib/security/pam_pwdb.so # shadow md5
-#password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
+password   required     /lib/security/pam_pwdb.so shadow md5
+# password   required     /lib/security/pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
