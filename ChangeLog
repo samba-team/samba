@@ -95,6 +95,9 @@
 
 2000-07-17  Johan Danielsson  <joda@pdc.kth.se>
 
+	* configure.in: try to get xlc flags from ibmcxx.cfg use
+	conditional for X use readline cf macro
+
 	* configure.in: subst AIX compiler flags
 
 2000-07-15  Johan Danielsson  <joda@pdc.kth.se>
