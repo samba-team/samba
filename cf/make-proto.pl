@@ -77,7 +77,7 @@ print '/* This is a generated file */
 #endif
 #else
 #ifndef __P
-#define __P(x)
+#define __P(x) ()
 #endif
 #endif
 
