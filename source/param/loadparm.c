@@ -3889,7 +3889,7 @@ BOOL is_netbios_alias_or_name(const char *name)
 void lp_set_logfile(const char *name)
 {
 	extern pstring debugf;
-	pstrcpy(Globals.szLogFile, name);
+	string_set(&Globals.szLogFile, name);
 	pstrcpy(debugf, name);
 }
 
