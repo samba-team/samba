@@ -4,19 +4,23 @@
   uuid("38578646-4566-4564-2244-275796345667"),
   version(0.0),
   pointer_default(unique),
-  helpstring("Active Directory Replication LDAP Blobs")
+  helpstring("Active Directory Replication LDAP Blobs"),
+  depends(drsuapi)
 ]
 interface drsblobs {
+	declare bitmap drsuapi_DsReplicaSyncOptions;
+	declare [v1_enum] enum drsuapi_DsAttributeId;
+
 	/*
 	 * replPropertyMetaData
 	 * w2k  uses version 1
 	 * w2k3 uses version 1
 	 */
 	typedef struct {
-		uint32 attribute_id;
+		drsuapi_DsAttributeId attid;
 		uint32 version;
 		NTTIME_1sec orginating_time;
-		GUID orginating_dsa; /* the 'invocationId' ? */
+		GUID orginating_invocation_id;
 		hyper orginating_usn;
 		hyper local_usn;
 	} replPropertyMetaData1;
@@ -47,26 +51,15 @@ interface drsblobs {
 	 * w2k3 uses version 2
 	 */
 	typedef struct {
-		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
-		hyper highest_usn; /* updated after a full replication cycle */
-	} replUpToDateVector1;
-
-	typedef struct {
 		uint32 count;
 		uint32 reserved;
-		replUpToDateVector1 array[count];
+		drsuapi_DsReplicaCoursor coursors[count];
 	} replUpToDateVectorCtr1;
 
 	typedef struct {
-		GUID invocation_id_guid; /* the 'invocationId' field of the CN=NTDS Settings object */
-		hyper highest_usn; /* updated after a full replication cycle */
-		NTTIME_1sec last_success;
-	} replUpToDateVector2;
-
-	typedef struct {
 		uint32 count;
 		uint32 reserved;
-		replUpToDateVector2 array[count];
+		drsuapi_DsReplicaCoursor2 coursors[count];
 	} replUpToDateVectorCtr2;
 
 	typedef [nodiscriminant] union {
@@ -102,12 +95,10 @@ interface drsblobs {
 		WERROR result_last_attempt;
 		[relative] repsFromTo1OtherInfo *other_info;
 		[value(ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->flags))] uint32 other_info_length;
-		uint32 replica_flags;
+		drsuapi_DsReplicaSyncOptions replica_flags;
 		uint8 schedule[84];
 		uint32 reserved;
-		hyper tmp_highest_usn; /* updated after each object update */
-		hyper reserved_usn;
-		hyper highest_usn; /* updated after a full replication cycle */
+		drsuapi_DsReplicaUsnCtr replication_state;
 		GUID source_dsa_obj_guid; /* the 'objectGuid' field of the CN=NTDS Settings object */
 		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
 		GUID transport_guid;
@@ -127,29 +118,34 @@ interface drsblobs {
 		[in] repsFromToBlob blob
 		);
 
-	typedef struct {
-		GUID guid1;
-		dlong usn;
-	} ldapControlDirSyncArray;
-
-	typedef [public] struct {
-		uint8 prefix[4];
+	typedef [public,gensize] struct {
+		[value(ndr_size_ldapControlDirSyncBlob(r, ndr->flags))] uint32 blobsize; /* just a guess! --metze */ 
 		uint32 u1;
 		NTTIME time;
 		uint32 u2;
 		uint32 u3;
 		uint32 u4;
-		dlong usn1;
-		dlong usn2;
-		dlong usn3;
+		drsuapi_DsReplicaUsnCtr replication_state;
 		GUID guid1;
-		dlong h4;
-		uint32 count;
-		uint32 u5;
-		ldapControlDirSyncArray array[count];
+		hyper h4;
+		replUpToDateVectorCtr1 uptodateness_vector;
 	} ldapControlDirSyncBlob;
 
 	void decode_ldapControlDirSync(
 		[in] ldapControlDirSyncBlob blob
 		);
+
+	typedef [public] struct {
+		uint32 marker;
+		DATA_BLOB data;
+	} DsCompressedChunk;
+
+	typedef [public] struct {
+		DsCompressedChunk chunks[5];
+	} DsCompressedBlob;
+
+	void decode_DsCompressed(
+		[in] DsCompressedBlob blob
+		);
+
 }
