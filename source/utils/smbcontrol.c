@@ -60,9 +60,9 @@ static void usage(BOOL doexit)
 		printf("<destination> <message-type> <parameters>\n\n");
 	}
 	printf("\t<destination> is one of \"nmbd\", \"smbd\" or a process ID\n");
-	printf("\t<message-type> is one of: ");
+	printf("\t<message-type> is one of:\n");
 	for (i=0; msg_types[i].name; i++) 
-	    printf("%s%s", i?", ":"",msg_types[i].name);
+	    printf("\t\t%s\n", msg_types[i].name);
 	printf("\n");
 	if (doexit) exit(1);
 }
@@ -392,6 +392,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			fprintf(stderr, "\tjobpause <printername> <unix jobid>\n");
 			fprintf(stderr, "\tjobresume <printername> <unix jobid>\n");
 			fprintf(stderr, "\tjobdelete <printername> <unix jobid>\n");
+			fprintf(stderr, "\tprinter <printername> <comment|port|driver> <new value>\n");
 			return False;
 		}
 
