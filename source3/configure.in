@@ -399,6 +399,10 @@ case "$host_os" in
 	*irix*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
+	*freebsd*)
+		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
+		;;
+
 #
 # VOS may need to have POSIX support and System V compatibility enabled.
 #
@@ -417,7 +421,7 @@ case "$host_os" in
 	  *)
 		CPPFLAGS="$CPPFLAGS -D_SYSV"
 		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
-    esac
+   esac
     ;;
 #
 # Tests needed for SINIX large file support.
