@@ -63,7 +63,7 @@ kadm5_s_modify_principal(void *server_handle,
     ret = context->db->fetch(context->context, context->db, &ent);
     if(ret)
 	goto out;
-    ret = _kadm5_setup_entry(&ent, princ, mask);
+    ret = _kadm5_setup_entry(&ent, princ, NULL, mask);
     if(ret)
 	goto out2;
     ret = _kadm5_set_modifier(context, &ent);
