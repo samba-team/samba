@@ -122,7 +122,7 @@ here is incomplete &smbmdash; you are warned.
 	Use the Group Policy Editor to create a policy file that specifies the location of
 	user profiles and/or <filename>My Documents</filename>, and so on. Then save these
 	settings in a file called <filename>Config.POL</filename> that needs to be placed in the
-	root of the <smbconfsection>[NETLOGON]</smbconfsection> share. If Windows 98 is configured to log onto
+	root of the <smbconfsection name="[NETLOGON]"/> share. If Windows 98 is configured to log onto
 	the Samba Domain, it will automatically read this file and update the Windows 9x/Me registry
 	of the machine as it logs on.
 	</para>

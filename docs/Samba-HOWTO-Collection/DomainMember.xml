@@ -368,10 +368,9 @@ Here is an example for a Red Hat Linux system.
 </para>
 
 <para><smbconfblock>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfcomment>&lt;...remainder of parameters...&gt;</smbconfcomment>
-<smbconfoption name="add machine script">/usr/sbin/useradd -d /var/lib/nobody -g 100 \</smbconfoption>
-<member><parameter>  -s /bin/false -M %u</parameter></member>
+<smbconfoption name="add machine script">/usr/sbin/useradd -d /var/lib/nobody -g 100 -s /bin/false -M %u</smbconfoption>
 </smbconfblock></para>
 
 
@@ -522,7 +521,7 @@ of your &smb.conf; to read:
 </para>
 
 <para>
-Next change the <smbconfoption name="workgroup"/> line in the <smbconfsection>[global]</smbconfsection>
+Next change the <smbconfoption name="workgroup"/> line in the <smbconfsection name="[global]"/>
 section to read: 
 </para>
 

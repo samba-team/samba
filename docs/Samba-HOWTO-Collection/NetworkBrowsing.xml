@@ -607,7 +607,7 @@ cross-subnet browsing possible for a workgroup.
 In a WORKGROUP environment the Domain Master Browser must be a
 Samba server, and there must only be one Domain Master Browser per
 workgroup name. To set up a Samba server as a Domain Master Browser,
-set the following option in the <smbconfsection>[global]</smbconfsection> section 
+set the following option in the <smbconfsection name="[global]"/> section 
 of the &smb.conf; file:
 </para>
 
@@ -620,14 +620,14 @@ of the &smb.conf; file:
 <para>
 The Domain Master Browser should preferably be the local master
 browser for its own subnet. In order to achieve this, set the following
-options in the <smbconfsection>[global]</smbconfsection> section of the &smb.conf;
+options in the <smbconfsection name="[global]"/> section of the &smb.conf;
 file as shown in <link linkend="dmbexample">the following example</link>:
 </para>
 
 <para>
 <smbconfexample id="dmbexample">
 <title>Domain Master Browser smb.conf</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain master">yes</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
@@ -645,14 +645,14 @@ a Local Master Browser for the workgroup. Any MS Windows NT/200x/XP machine shou
 be able to do this, as will Windows 9x/Me machines (although these tend to get
 rebooted more often, so it is not such a good idea to use these). To make a Samba
 server a Local Master Browser set the following options in the
-<smbconfsection>[global]</smbconfsection> section of the &smb.conf; file as
+<smbconfsection name="[global]"/> section of the &smb.conf; file as
 shown in <link linkend="lmbexample">following example</link>:
 </para>
 
 <para>
 <smbconfexample id="lmbexample">
 <title>Local master browser smb.conf</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
@@ -674,14 +674,14 @@ parameter sets Samba high enough so it should win any browser elections.
 
 <para>
 If you have an NT machine on the subnet that you wish to be the Local Master Browser, you can disable Samba from
-becoming a Local Master Browser by setting the following options in the <smbconfsection>[global]</smbconfsection> section of the 
+becoming a Local Master Browser by setting the following options in the <smbconfsection name="[global]"/> section of the 
 &smb.conf; file as shown in <link linkend="nombexample">following example</link>:
 </para>
 
 <para>
 <smbconfexample id="nombexample">
 <title>smb.conf for not being a Master Browser</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">no</smbconfoption>
 <smbconfoption name="preferred master">no</smbconfoption>
@@ -703,14 +703,14 @@ with WINS instead of the PDC.
 
 <para>
 For subnets other than the one containing the Windows NT PDC, you may set up Samba servers as Local Master Browsers as
-described. To make a Samba server a Local Master Browser, set the following options in the <smbconfsection>[global]</smbconfsection> section 
+described. To make a Samba server a Local Master Browser, set the following options in the <smbconfsection name="[global]"/> section 
 of the &smb.conf; file as shown in <link linkend="remsmb">following example</link>:
 </para>
 
 <para>
 <smbconfexample id="remsmb">
 <title>Local Master Browser smb.conf</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">yes</smbconfoption>
 <smbconfoption name="preferred master">yes</smbconfoption>
@@ -729,13 +729,13 @@ they are running. For more details on this refer to <link linkend="browse-force-
 If you have Windows NT machines that are members of the domain on all subnets and you are
 sure they will always be running, you can disable Samba from taking part in browser elections
 and ever becoming a Local Master Browser by setting the following options in the
-<smbconfsection>[global]</smbconfsection> section of the &smb.conf; file as shown in <link linkend="xremmb">next example</link>:
+<smbconfsection name="[global]"/> section of the &smb.conf; file as shown in <link linkend="xremmb">next example</link>:
 </para>
 
 <para>
 <smbconfexample id="xremmb">
 <title>&smb.conf; for not being a master browser</title>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="domain master">no</smbconfoption>
 <smbconfoption name="local master">no</smbconfoption>
 <smbconfoption name="preferred master">no</smbconfoption>
@@ -1007,7 +1007,7 @@ file [global] section.
 <para>
 To configure Samba to register with a WINS server just add
 <smbconfoption name="wins server">a.b.c.d</smbconfoption>
-to your &smb.conf; file <smbconfsection>[global]</smbconfsection> section.
+to your &smb.conf; file <smbconfsection name="[global]"/> section.
 </para>
 
 <important><para>
@@ -1023,7 +1023,7 @@ particularly not using its own IP address. Specifying both will cause &nmbd; to 
 Either a Samba Server or a Windows NT Server machine may be set up
 as a WINS server. To configure a Samba Server to be a WINS server you must
 add to the &smb.conf; file on the selected Server the following line to
-the <smbconfsection>[global]</smbconfsection> section:
+the <smbconfsection name="[global]"/> section:
 </para>
 
 <para>
@@ -1071,7 +1071,7 @@ of this WINS server. If your WINS server is a Samba machine, fill in
 the Samba machine IP address in the <guilabel>Primary WINS Server</guilabel> field of
 the <guilabel>Control Panel->Network->Protocols->TCP->WINS Server</guilabel> dialogs
 in Windows 9x/Me or Windows NT/200x. To tell a Samba server the IP address
-of the WINS server, add the following line to the <smbconfsection>[global]</smbconfsection> section of
+of the WINS server, add the following line to the <smbconfsection name="[global]"/> section of
 all &smb.conf; files:
 </para>
 

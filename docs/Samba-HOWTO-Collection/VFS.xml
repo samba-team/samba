@@ -42,7 +42,7 @@ to files and put deleted files in a recycle bin, see <link linkend="vfsrecyc">ne
 
 <smbconfexample id="vfsrecyc">
 	<title>smb.conf with VFS modules</title>
-	<smbconfsection>[audit]</smbconfsection>
+	<smbconfsection name="[audit]"/>
 <smbconfoption name="comment">Audited /data directory</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
 <smbconfoption name="vfs objects">audit recycle</smbconfoption>
@@ -72,7 +72,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 
 <smbconfexample id="multimodule">
 	<title>smb.conf with multiple VFS modules</title>
-<smbconfsection>[test]</smbconfsection>
+<smbconfsection name="[test]"/>
 <smbconfoption name="comment">VFS TEST</smbconfoption>
 <smbconfoption name="path">/data</smbconfoption>
 <smbconfoption name="writeable">yes</smbconfoption>
@@ -505,7 +505,7 @@ This can be done using a configuration similar to the one shown in <link linkend
 	    <para>
 	      <smbconfexample id="vfsshadow">
 		<title>Share With shadow_copy VFS</title>
-		<smbconfsection>[shadow_share]</smbconfsection>
+		<smbconfsection name="[shadow_share]"/>
 		<smbconfoption name="comment">Shadow Copy Enabled Share</smbconfoption>
 		<smbconfoption name="path">/data/shadow_share</smbconfoption>
 		<smbconfoption name="vfs objects">shadow_copy</smbconfoption>

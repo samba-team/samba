@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
 <chapter id="unixclients">
   <title>Adding UNIX/LINUX Servers and Clients</title>
 
@@ -671,7 +671,7 @@ Joined domain MEGANET2.
 <smbconfexample id="ch9-sdmsdc">
 <title>Samba Domain Member in Samba Domain Control Context &smbmdash; &smb.conf; File</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">MEGANET2</smbconfoption>
 <smbconfoption name="security">DOMAIN</smbconfoption>
@@ -697,20 +697,20 @@ Joined domain MEGANET2.
 <smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[print$]</smbconfsection>
+<smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Drivers</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
@@ -969,7 +969,7 @@ MEGANET2+PIOps:x:10005:
 <smbconfexample id="ch0-NT4DSDM">
 <title>Samba Domain Member Server &smb.conf; File for NT4 Domain</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">MEGANET2</smbconfoption>
 <smbconfoption name="security">DOMAIN</smbconfoption>
@@ -991,20 +991,20 @@ MEGANET2+PIOps:x:10005:
 <smbconfoption name="hosts allow">192.168.2., 192.168.3., 127.</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[print$]</smbconfsection>
+<smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Drivers</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
@@ -1641,7 +1641,7 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfexample id="ch9-adssdm">
 <title>Samba Domain Member &smb.conf; File for Active Directory Membership</title>
 <smbconfcomment>Global parameters</smbconfcomment>
-<smbconfsection>[global]</smbconfsection>
+<smbconfsection name="[global]"/>
 <smbconfoption name="unix charset">LOCALE</smbconfoption>
 <smbconfoption name="workgroup">LONDON</smbconfoption>
 <smbconfoption name="realm">LONDON.ABMAS.BIZ</smbconfoption>
@@ -1661,20 +1661,20 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="winbind separator">+</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
-<smbconfsection>[homes]</smbconfsection>
+<smbconfsection name="[homes]"/>
 <smbconfoption name="comment">Home Directories</smbconfoption>
 <smbconfoption name="valid users">%S</smbconfoption>
 <smbconfoption name="read only">No</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[printers]</smbconfsection>
+<smbconfsection name="[printers]"/>
 <smbconfoption name="comment">SMB Print Spool</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="browseable">No</smbconfoption>
 
-<smbconfsection>[print$]</smbconfsection>
+<smbconfsection name="[print$]"/>
 <smbconfoption name="comment">Printer Drivers</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="admin users">root, Administrator</smbconfoption>
