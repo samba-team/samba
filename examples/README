@@ -1,6 +1,6 @@
-This directory contains example config files for Samba. If you have an
-interesting config file, then please send it in for inclusion in the
-package.
+This directory contains example config files and related material for
+Samba. 
 
-Send it to: Andrew.Tridgell@anu.edu.au
+Send additions to: samba-bugs@samba.anu.edu.au
+
 
