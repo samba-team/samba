@@ -164,6 +164,47 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 	}
 
 	return True;
+ Set or clear the delete on close flag.
+****************************************************************************/
+
+int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
+{
+	int data_len = 1;
+	int param_len = 6;
+	uint16 setup = TRANSACT2_SETFILEINFO;
+	pstring param;
+	unsigned char data;
+	char *rparam=NULL, *rdata=NULL;
+
+	memset(param, 0, param_len);
+	SSVAL(param,0,fnum);
+	SSVAL(param,2,SMB_SET_FILE_DISPOSITION_INFO);
+
+	data = flag ? 1 : 0;
+
+	if (!cli_send_trans(cli, SMBtrans2,
+						NULL, 0,                        /* name, length */
+						-1, 0,                          /* fid, flags */
+						&setup, 1, 0,                   /* setup, length, max */
+						param, param_len, 2,            /* param, length, max */
+						&data,  data_len, cli->max_xmit /* data, length, max */
+						)) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+						&rparam, &param_len,
+						&rdata, &data_len)) {
+		return False;
+	}
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+
+	return True;
+}
+
+/****************************************************************************
 }
 
 /****************************************************************************

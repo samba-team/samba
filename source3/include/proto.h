@@ -875,6 +875,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst);
 BOOL cli_unlink(struct cli_state *cli, char *fname);
 BOOL cli_mkdir(struct cli_state *cli, char *dname);
 BOOL cli_rmdir(struct cli_state *cli, char *dname);
+int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag);
 int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 		 uint32 FileAttributes, uint32 ShareAccess,
 		 uint32 CreateDisposition, uint32 CreateOptions);
