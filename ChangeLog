@@ -1,5 +1,8 @@
 2003-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/kerberos5.c (as_rep): when the second enctype_to_string
+	failes, remember to free memory from the first enctype_to_string
+
 	* lib/krb5/crypto.c (usage2arcfour): map KRB5_KU_TICKET to 2,
 	from Harald Joerg <harald.joerg@fujitsu-siemens.com>
 	(enctype_arcfour_hmac_md5): disable checksum_hmac_md5_enc
