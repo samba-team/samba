@@ -471,7 +471,7 @@ char *timestring(void )
     int zone = TimeDiff(t);
     int absZoneMinutes = (zone<0 ? -zone : zone) / 60;
     size_t len = strftime(TimeBuf,sizeof(TimeBuf)-6,"%Y/%m/%d %T",tm);
-    slprintf(TimeBuf+len, sizeof(string) - len - 1, " %c%02d%02d",
+    slprintf(TimeBuf+len, sizeof(TimeBuf) - len - 1, " %c%02d%02d",
 	    zone<0?'+':'-',absZoneMinutes/60,absZoneMinutes%60);
   }
 #else

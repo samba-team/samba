@@ -1594,6 +1594,7 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
   fstring new_passwd;
   struct smb_passwd *smbpw = NULL;
   char *p = param + 2;
+  int ret = True;
 
   *rparam_len = 2;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1634,9 +1635,9 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
    * available. JRA.
    */
   if(lp_unix_password_sync())
-    chgpasswd(user,"", new_passwd, True);
+    ret = chgpasswd(user,"", new_passwd, True);
   
-  if(change_oem_password( smbpw, new_passwd, False)) {
+  if(ret && change_oem_password( smbpw, new_passwd, False)) {
     SSVAL(*rparam,0,NERR_Success);
   }
 
