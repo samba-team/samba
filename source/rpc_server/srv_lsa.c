@@ -325,10 +325,14 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 		parse_domain_user(response.data.name.name, dom_name, name);
 		*name_type = response.data.name.type;
 	} else {
+
+		DEBUG(10,("winbind_lookup_sid: winbind lookup for %s failed - trying builtin.\n",
+				sid_str));
+
 		sid_copy(&tmp_sid, sid);
 		sid_split_rid(&tmp_sid, &rid);
 		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
-			lookup_local_rid(rid, name, name_type);
+			lookup_known_rid(&tmp_sid, rid, name, name_type);
 	}
 
 	return (result == WINBINDD_OK);
