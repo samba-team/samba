@@ -518,7 +518,7 @@
 	/* Function: 0x11 */
 	WERROR srvsvc_NetShareSetInfo(
 		[in]   unistr *server_unc,
-		[in]   unistr *share_name,
+		[in]   unistr share_name,
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetShareInfo info,
 		[in,out]   uint32 *parm_error
@@ -528,7 +528,7 @@
 	/* Function: 0x12 */
 	WERROR srvsvc_NetShareDel(
 		[in]   unistr *server_unc,
-		[in]   unistr *share_name,
+		[in]   unistr share_name,
 		[in]   uint32 reserved
 		);
 
@@ -536,7 +536,7 @@
 	/* Function: 0x13 */
 	WERROR srvsvc_NetShareDelSticky(
 		[in]   unistr *server_unc,
-		[in]   unistr *share_name,
+		[in]   unistr share_name,
 		[in]   uint32 reserved
 		);
 	
@@ -544,7 +544,7 @@
 	/* Function: 0x14 */
 	WERROR srvsvc_NetShareCheck(
 		[in]   unistr *server_unc,
-		[in]   unistr *share_name,
+		[in]   unistr device_name,
 		[out]   uint32 type
 		);
 
