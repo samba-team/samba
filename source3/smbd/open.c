@@ -494,12 +494,15 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 		return False;
 	}
 
+#if 0
+	/* Bluarc test may need this ... needs further investigation. */
 	if (deny_mode == DENY_ALL || old_deny_mode == DENY_ALL) {
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadshare;
 		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
 		return False;
 	}
+#endif
 
 	/*
 	 * If desired_access doesn't contain READ_DATA,WRITE_DATA,APPEND_DATA or EXECUTE
