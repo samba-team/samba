@@ -1124,7 +1124,7 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x02);
+		SIVAL(*data, 0, 0x03);
 		*needed = 0x4;
 		return True;
 	}
@@ -7157,7 +7157,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		 */
 	   
 		if (strcmp(key, "PrinterDriverData") != 0)
-			return WERR_INVALID_PARAM;
+			return WERR_BADFILE;
 
 		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
 		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
@@ -7176,7 +7176,7 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 			*data = NULL;
 		}
 
-		return WERR_BADFILE;
+		return WERR_INVALID_PARAM;
 	}
 	
 	if (*needed > *out_size)
