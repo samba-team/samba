@@ -1,7 +1,7 @@
 /*
    Samba Unix/Linux SMB client utility libeditreg.c 
    Copyright (C) 2002 Richard Sharpe, rsharpe@richardsharpe.com
-   Copyright (C) 2003-2004 Jelmer Vernooij, jelmer@samba.org
+   Copyright (C) 2003-2005 Jelmer Vernooij, jelmer@samba.org
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -342,9 +342,6 @@ const char *def_owner_sid_str = NULL;
 
 #define BLK_SIZE(b) ((int)*(int *)(((int *)b)-1))
 
-typedef uint_t DWORD;
-typedef unsigned short WORD;
-
 typedef struct sk_struct SK_HDR;
 /*
  * This structure keeps track of the output format of the registry
@@ -353,65 +350,67 @@ typedef struct sk_struct SK_HDR;
 #define REG_OUTBLK_HBIN 2
 
 typedef struct regf_block {
-	DWORD REGF_ID;     /* regf */
-	DWORD uk1;
-	DWORD uk2;
-	DWORD tim1, tim2;
-	DWORD uk3;             /* 1 */
-	DWORD uk4;             /* 3 */
-	DWORD uk5;             /* 0 */
-	DWORD uk6;             /* 1 */
-	DWORD first_key;       /* offset */
-	uint_t dblk_size;
-    DWORD uk7[116];        /* 1 */
-    DWORD chksum;
+	uint32_t REGF_ID;     /* regf */
+	uint32_t update_counter1;
+	uint32_t update_counter2;
+	uint32_t tim1, tim2;
+	uint32_t uk3;             /* 1 */
+	uint32_t uk4;             /* 3 */
+	uint32_t uk5;             /* 0 */
+	uint32_t uk6;             /* 1 */
+	uint32_t first_key;       /* offset */
+	uint32_t dblk_size;
+    uint32_t uk7;        /* 1 */
+	wchar_t filename[64];
+	uint32_t unused[83];
+    uint32_t chksum; 			/* Checksum of first 0x200 bytes */
 } REGF_HDR;
 
 typedef struct hbin_sub_struct {
-	DWORD dblocksize;
+	uint32_t dblocksize;
 	char data[1];
 } HBIN_SUB_HDR;
 
 typedef struct hbin_struct {
-	DWORD HBIN_ID; /* hbin */
-	DWORD off_from_first;
-	DWORD off_to_next;
-	DWORD uk1;
-	DWORD uk2;
-	DWORD uk3;
-	DWORD uk4;
-	DWORD blk_size;
+	uint32_t HBIN_ID; /* hbin */
+	uint32_t off_from_first;
+	uint32_t off_to_next;
+	uint32_t uk1;
+	uint32_t uk2;
+	uint32_t uk3;
+	uint32_t uk4;
+	uint32_t blk_size;
 	HBIN_SUB_HDR hbin_sub_hdr;
 } HBIN_HDR;
 
 typedef struct nk_struct {
-	WORD NK_ID;
-	WORD type;
-	DWORD t1, t2;
-	DWORD uk1;
-	DWORD own_off;
-	DWORD subk_num;
-	DWORD uk2;
-	DWORD lf_off;
-	DWORD uk3;
-	DWORD val_cnt;
-	DWORD val_off;
-	DWORD sk_off;
-	DWORD clsnam_off;
-	DWORD unk4[4];
-	DWORD unk5;
-	WORD nam_len;
-	WORD clsnam_len;
+	uint16_t NK_ID;
+	uint16_t type;
+	uint32_t t1, t2;
+	uint32_t uk1;
+	uint32_t own_off;
+	uint32_t subk_num;
+	uint32_t uk2;
+	uint32_t lf_off;
+	uint32_t uk3;
+	uint32_t val_cnt;
+	uint32_t val_off;
+	uint32_t sk_off;
+	uint32_t clsnam_off;
+	uint32_t unk4[4];
+	uint32_t unk5;
+	uint16_t nam_len;
+	uint16_t clsnam_len;
 	char key_nam[1];  /* Actual length determined by nam_len */
 } NK_HDR;
 
 struct sk_struct {
-	WORD SK_ID;
-	WORD uk1;
-	DWORD prev_off;
-	DWORD next_off;
-	DWORD ref_cnt;
-	DWORD rec_size;
+	uint16_t SK_ID;
+	uint16_t uk1;
+	uint32_t prev_off;
+	uint32_t next_off;
+	uint32_t ref_cnt;
+	uint32_t rec_size;
 	char sec_desc[1];
 };
 
@@ -431,27 +430,27 @@ typedef struct sk_map_s {
 } SK_MAP;
 
 typedef struct vk_struct {
-  WORD VK_ID;
-  WORD nam_len;
-  DWORD dat_len;    /* If top-bit set, offset contains the data */
-  DWORD dat_off;
-  DWORD dat_type;
-  WORD flag;        /* =1, has name, else no name (=Default). */
-  WORD unk1;
+  uint16_t VK_ID;
+  uint16_t nam_len;
+  uint32_t dat_len;    /* If top-bit set, offset contains the data */
+  uint32_t dat_off;
+  uint32_t dat_type;
+  uint16_t flag;        /* =1, has name, else no name (=Default). */
+  uint16_t unk1;
   char dat_name[1]; /* Name starts here ... */
 } VK_HDR;
 
-typedef DWORD VL_TYPE[1];  /* Value list is an array of vk rec offsets */
+typedef uint32_t VL_TYPE[1];  /* Value list is an array of vk rec offsets */
                                                                                 
 typedef struct hash_struct {
-  DWORD nk_off;
+  uint32_t nk_off;
   char hash[4];
 } HASH_REC;
 
 
 typedef struct lf_struct {
-  WORD LF_ID;
-  WORD key_count;
+  uint16_t LF_ID;
+  uint16_t key_count;
   struct hash_struct hr[1];  /* Array of hash records, depending on key_count */} LF_HDR;
 
 
@@ -491,7 +490,7 @@ typedef struct regf_struct_s {
 	HBIN_BLK *blk_head, *blk_tail, *free_space;
 } REGF;
 
-static DWORD str_to_dword(const char *a) {
+static uint32_t str_to_dword(const char *a) {
 	int i;
 	unsigned long ret = 0;
 	for(i = strlen(a)-1; i >= 0; i--) {
@@ -1373,7 +1372,7 @@ static uint_t nt_store_sec_desc(struct registry_hive *regf, SEC_DESC *sd, char *
 	rsd->revision = SEC_DESC_REVISION;
 	rsd->type = SEC_DESC_DACL_PRESENT | SEC_DESC_SELF_RELATIVE;  
 
-	off = 4 * sizeof(DWORD) + 4;
+	off = 4 * sizeof(uint32_t) + 4;
 
 	if (sd->sacl){
 		size = nt_store_acl(regf, sd->sacl, (char *)(locn + off));

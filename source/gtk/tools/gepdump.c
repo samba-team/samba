@@ -41,6 +41,7 @@ static GtkWidget *table_statistics;
 static GtkWidget *lbl_calls_in, *lbl_calls_out, *lbl_pkts_in, *lbl_pkts_out;
 static GtkWidget *lbl_iface_version, *lbl_iface_uuid, *lbl_iface_name;
 static GtkListStore *store_princ_names;
+static GtkWidget *mnu_refresh;
 TALLOC_CTX *eps_ctx = NULL;
 TALLOC_CTX *conn_ctx = NULL;
 
@@ -202,6 +203,8 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 		gtk_show_ntstatus(mainwin, "Error connecting to endpoint mapper", status);
 		goto fail;
 	}
+	
+	gtk_widget_set_sensitive( mnu_refresh, True );
 
 	refresh_eps();
 
@@ -300,7 +303,6 @@ static GtkWidget* create_mainwindow (void)
 	GtkWidget *menuitem4;
 	GtkWidget *menuitem4_menu;
 	GtkWidget *mnu_connect;
-	GtkWidget *mnu_refresh;
 	GtkWidget *treeview_princ_names;
 	GtkWidget *about1;
 	GtkWidget *hbox2;
@@ -337,6 +339,7 @@ static GtkWidget* create_mainwindow (void)
 
 	mnu_refresh = gtk_menu_item_new_with_mnemonic ("_Refresh");
 	gtk_container_add(GTK_CONTAINER(menuitem1_menu), mnu_refresh);
+	gtk_widget_set_sensitive( mnu_refresh, False );
 
 	quit1 = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), quit1);
