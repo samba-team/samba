@@ -133,6 +133,7 @@ _krb5_extract_ticket(krb5_context context,
     krb5_error_code ret;
     krb5_principal tmp_principal;
     int tmp;
+    size_t len;
     time_t tmp_time;
     krb5_timestamp sec_now;
 
@@ -159,9 +160,11 @@ _krb5_extract_ticket(krb5_context context,
 
     /* extract ticket */
     ASN1_MALLOC_ENCODE(Ticket, creds->ticket.data, creds->ticket.length, 
-		       &rep->kdc_rep.ticket, &creds->ticket.length, ret);
+		       &rep->kdc_rep.ticket, &len, ret);
     if(ret)
 	goto out;
+    if (creds->ticket.length != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
     creds->second_ticket.length = 0;
     creds->second_ticket.data   = NULL;
 
