@@ -153,9 +153,14 @@ BOOL idmap_init(const char **remote_backend)
  Don't do id mapping. This is used to make winbind a netlogon proxy only.
 **************************************************************************/
 
-void idmap_proxyonly(void)
+void idmap_set_proxyonly(void)
 {
 	proxyonly = True;
+}
+
+BOOL idmap_proxyonly(void)
+{
+	return proxyonly;
 }
 
 /**************************************************************************

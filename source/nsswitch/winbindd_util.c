@@ -723,6 +723,82 @@ BOOL winbindd_lookup_name_by_sid(TALLOC_CTX *mem_ctx,
 	return rv;
 }
 
+struct lookup_name_state {
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_response *response;
+	void (*cont)(void *private,
+		     BOOL success,
+		     const char *dom_name,
+		     const char *name,
+		     enum SID_NAME_USE type);
+	void *private;
+};
+
+static void lookup_name_recv(void *private, BOOL success);
+
+enum winbindd_result winbindd_lookup_name_by_sid_async(const DOM_SID *sid,
+						       TALLOC_CTX *mem_ctx,
+						       void (*cont)(void *private,
+								    BOOL success,
+								    const char *dom_name,
+								    const char *name,
+								    enum SID_NAME_USE type),
+						       void *private)
+{
+	struct winbindd_domain *domain;
+	struct winbindd_request *request;
+	struct winbindd_response *response;
+	struct lookup_name_state *state;
+
+	domain = find_lookup_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(5, ("Could not find domain for sid %s\n",
+			  sid_string_static(sid)));
+		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
+		return WINBINDD_ERROR;
+	}
+
+	request = TALLOC_ZERO_P(mem_ctx, struct winbindd_request);
+	response = TALLOC_ZERO_P(mem_ctx, struct winbindd_response);
+	state = TALLOC_ZERO_P(mem_ctx, struct lookup_name_state);
+
+	if ((request == NULL) || (response == NULL) || (state == NULL)) {
+		DEBUG(0, ("talloc failed\n"));
+		cont(private, False, NULL, NULL, SID_NAME_UNKNOWN);
+		return WINBINDD_ERROR;
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->response = response;
+	state->cont = cont;
+	state->private = private;
+
+	request->length = sizeof(*request);
+
+	request->cmd = WINBINDD_LOOKUPSID;
+	fstrcpy(request->data.sid, sid_string_static(sid));
+
+	return async_request(mem_ctx, &domain->child,
+			     request, response,
+			     lookup_name_recv, state);
+}
+
+static void lookup_name_recv(void *private, BOOL success)
+{
+	struct lookup_name_state *state = private;
+
+	if ((!success) || (state->response->result != WINBINDD_OK)) {
+		state->cont(state->private, False, NULL, NULL,
+			    SID_NAME_UNKNOWN);
+		return;
+	}
+
+	state->cont(state->private, True,
+		    state->response->data.name.dom_name,
+		    state->response->data.name.name,
+		    state->response->data.name.type);
+}
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
 
@@ -1189,52 +1265,3 @@ BOOL winbindd_upgrade_idmap(void)
 
 	return idmap_convert(idmap_name);
 }
-
-/*******************************************************************
- wrapper around retrieving the trust account password
-*******************************************************************/
-
-BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
-                          time_t *pass_last_set_time, uint32 *channel)
-{
-	DOM_SID sid;
-	char *pwd;
-
-	/* if we are a DC and this is not our domain, then lookup an account
-	   for the domain trust */
-
-	if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains() ) 
-	{
-		if ( !secrets_fetch_trusted_domain_password(domain, &pwd, &sid, 
-			pass_last_set_time) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for trusted domain %s\n", domain));
-			return False;
-		}
-
-		*channel = SEC_CHAN_DOMAIN;
-		E_md4hash(pwd, ret_pwd);
-		SAFE_FREE(pwd);
-
-		return True;
-	}
-	else 	/* just get the account for our domain (covers 
-		   ROLE_DOMAIN_MEMBER as well */
-	{
-		/* get the machine trust account for our domain */
-
-		if ( !secrets_fetch_trust_account_password (lp_workgroup(), ret_pwd,
-			pass_last_set_time, channel) ) 
-		{
-			DEBUG(0, ("get_trust_pw: could not fetch trust account "
-				  "password for my domain %s\n", domain));
-			return False;
-		}
-
-		return True;
-	}
-	
-	/* Failure */
-}
-

@@ -268,7 +268,7 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 
 	/* Lookup related functions */
 
-	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid, "SID_TO_UID" },
+	{ WINBINDD_SID_TO_UID, winbindd_sid_to_uid_async, "SID_TO_UID" },
 	{ WINBINDD_SID_TO_GID, winbindd_sid_to_gid, "SID_TO_GID" },
 	{ WINBINDD_GID_TO_SID, winbindd_gid_to_sid, "GID_TO_SID" },
 	{ WINBINDD_UID_TO_SID, winbindd_uid_to_sid, "UID_TO_SID" },
@@ -276,7 +276,7 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 
 	/* Miscellaneous */
 
-	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct, "CHECK_MACHACC" },
+	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct_async, "CHECK_MACHACC" },
 	{ WINBINDD_PING, winbindd_ping, "PING" },
 	{ WINBINDD_INFO, winbindd_info, "INFO" },
 	{ WINBINDD_INTERFACE_VERSION, winbindd_interface_version, "INTERFACE_VERSION" },
@@ -366,7 +366,7 @@ void remove_fd_event(struct fd_event *ev)
 static void rw_callback(struct fd_event *event, int flags)
 {
 	size_t todo;
-	ssize_t done;
+	ssize_t done = 0;
 
 	todo = event->length - event->done;
 
@@ -957,7 +957,7 @@ int main(int argc, char **argv)
 	if ( (!winbindd_param_init()) || (!winbindd_upgrade_idmap()) ||
 	     (!idmap_init(lp_idmap_backend())) ) {
 		DEBUG(1, ("Could not init idmap -- netlogon proxy only\n"));
-		idmap_proxyonly();
+		idmap_set_proxyonly();
 	}
 
 	generate_wellknown_sids();
@@ -1020,6 +1020,12 @@ int main(int argc, char **argv)
 	netsamlogon_cache_init(); /* Non-critical */
 	
 	init_domain_list();
+
+	if (!init_idmap_child()) {
+		DEBUG(1, ("Could not init idmap child -- "
+			  "netlogon proxy only\n"));
+		idmap_set_proxyonly();
+	}
 
 	/* Loop waiting for requests */
 

@@ -1006,6 +1006,21 @@ done:
 	return;
 }
 
+static BOOL cm_get_schannel_key(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				unsigned char **session_key)
+{
+	struct rpc_pipe_client *cli;
+	DOM_CRED *credentials;
+
+	if (lp_client_schannel() == False)
+		return False;
+
+	return NT_STATUS_IS_OK(cm_connect_netlogon(domain, mem_ctx,
+						   &cli, session_key,
+						   &credentials));
+}
+
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, POLICY_HND *sam_handle)
 {
@@ -1019,7 +1034,17 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->samr_pipe == NULL) {
-		conn->samr_pipe = cli_rpc_open_noauth(conn->cli, PI_SAMR);
+		unsigned char *session_key;
+
+		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
+			conn->samr_pipe = cli_rpc_open_schannel(conn->cli,
+								PI_SAMR,
+								session_key,
+								domain->name);
+		else
+			conn->samr_pipe = cli_rpc_open_noauth(conn->cli,
+							      PI_SAMR);
+
 		if (conn->samr_pipe == NULL) {
 			result = NT_STATUS_PIPE_NOT_AVAILABLE;
 			goto done;
@@ -1063,7 +1088,17 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	conn = &domain->conn;
 
 	if (conn->lsa_pipe == NULL) {
-		conn->lsa_pipe = cli_rpc_open_noauth(conn->cli, PI_LSARPC);
+		unsigned char *session_key;
+
+		if (cm_get_schannel_key(domain, mem_ctx, &session_key))
+			conn->lsa_pipe = cli_rpc_open_schannel(conn->cli,
+							       PI_LSARPC,
+							       session_key,
+							       domain->name);
+		else
+			conn->lsa_pipe = cli_rpc_open_noauth(conn->cli,
+							     PI_LSARPC);
+
 		if (conn->lsa_pipe == NULL) {
 			result = NT_STATUS_PIPE_NOT_AVAILABLE;
 			goto done;
@@ -1085,6 +1120,50 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/*******************************************************************
+ wrapper around retrieving the trust account password
+*******************************************************************/
+
+static BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+			 uint32 *channel)
+{
+	DOM_SID sid;
+	char *pwd;
+	time_t last_set_time;
+
+	/* if we are a DC and this is not our domain, then lookup an account
+	   for the domain trust */
+
+	if ( IS_DC && !strequal(domain, lp_workgroup()) &&
+	     lp_allow_trusted_domains() ) {
+
+		if (!secrets_fetch_trusted_domain_password(domain, &pwd, &sid,
+							   &last_set_time)) {
+			DEBUG(0, ("get_trust_pw: could not fetch trust "
+				  "account password for trusted domain %s\n",
+				  domain));
+			return False;
+		}
+
+		*channel = SEC_CHAN_DOMAIN;
+		E_md4hash(pwd, ret_pwd);
+		SAFE_FREE(pwd);
+
+		return True;
+	}
+
+	/* Just get the account for the requested domain. In the future this
+	 * might also cover to be member of more than one domain. */
+
+	if (secrets_fetch_trust_account_password(domain, ret_pwd,
+						 &last_set_time, channel))
+		return True;
+
+	DEBUG(5, ("get_trust_pw: could not fetch trust account "
+		  "password for domain %s\n", domain));
+	return False;
+}
+
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client **cli,
@@ -1096,7 +1175,6 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 
 	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	uint8  mach_pwd[16];
-	time_t last_change_time;
 	uint32  sec_chan_type;
 	DOM_CHAL clnt_chal, srv_chal, rcv_chal;
 	const char *server_name;
@@ -1116,8 +1194,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	if (!get_trust_pw(domain->name, mach_pwd, &last_change_time,
-			  &sec_chan_type))
+	if (!get_trust_pw(domain->name, mach_pwd, &sec_chan_type))
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 
 	conn->netlogon_auth2_pipe = cli_rpc_open_noauth(conn->cli,

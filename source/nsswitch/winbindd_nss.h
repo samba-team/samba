@@ -117,6 +117,10 @@ enum winbindd_cmd {
 	/* Initialize connection in a child */
 	WINBINDD_INIT_CONNECTION,
 
+	/* Blocking calls that are not allowed on the main winbind pipe, only
+	 * between parent and children */
+	WINBINDD_DUAL_SID2UID,
+
 	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
 };
@@ -210,6 +214,10 @@ struct winbindd_request {
 			BOOL is_primary;
 			fstring dcname;
 		} init_conn;
+		struct {
+			fstring sid;
+			fstring name;
+		} dual_sid2id;
 	} data;
 	char null_term;
 };

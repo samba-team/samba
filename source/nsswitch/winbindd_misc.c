@@ -29,6 +29,24 @@
 
 /* Check the machine account password is valid */
 
+enum winbindd_result winbindd_check_machine_acct_async(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+
+	DEBUG(3, ("[%5lu]: check machine account\n",
+		  (unsigned long)state->pid));
+
+	domain = find_our_domain();
+        if (!domain) {
+                DEBUG(1, ("Cannot find our own domain!\n"));
+		return WINBINDD_ERROR;
+        }
+
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
 enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;

@@ -574,10 +574,7 @@ enum winbindd_result winbindd_crap_auth_async(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
 {
 	NTSTATUS result;
-	unsigned char trust_passwd[16];
 	const char *srv_name_slash;
-	time_t last_change_time;
-	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
 	unsigned char *session_key;
 	struct rpc_pipe_client *pipe_cli;
@@ -657,11 +654,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			result = NT_STATUS_NO_SUCH_USER;
 			goto done;
 		}
-	}
-
-	if ( !get_trust_pw(contact_domain->name, trust_passwd, &last_change_time, &sec_channel_type) ) {
-		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-		goto done;
 	}
 
 	srv_name_slash = talloc_asprintf(state->mem_ctx, "\\\\%s",

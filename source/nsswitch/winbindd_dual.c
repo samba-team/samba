@@ -426,6 +426,9 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 	{ WINBINDD_PAM_AUTH, winbindd_pam_auth, "PAM_AUTH" },
 	{ WINBINDD_PAM_AUTH_CRAP, winbindd_pam_auth_crap, "AUTH_CRAP" },
+	{ WINBINDD_CHECK_MACHACC, winbindd_check_machine_acct,
+	  "CHECK_MACHACC" },
+	{ WINBINDD_DUAL_SID2UID, winbindd_dual_sid2uid, "DUAL_SID2UID" },
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }
