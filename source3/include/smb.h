@@ -331,6 +331,16 @@ typedef struct domsid2_info
 
 } DOM_SID2;
 
+/* DOM_SID3 - domain SID structure - SIDs stored in unicode */
+typedef struct domsid3_info
+{
+  UNISTR str; /* domain SID unicode string */
+  uint32 undoc; /* value is 0 */
+  uint32 type1; /* value is 1 */
+  uint32 type2; /* value is 5 or 3 */
+
+} DOM_SID3;
+
 /* DOM_RID2 - domain RID structure */
 typedef struct domrid2_info
 {
@@ -446,10 +456,11 @@ typedef struct rpc_hdr_info
   uint16 context_id; /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
   uint8  reserved; /* 0 - reserved */
+
 } RPC_HDR;
 
-/* DOM_QUERY_5 - info class 5 LSA Query response */
-typedef struct dom_query_5_info
+/* DOM_QUERY - info class 3 and 5 LSA Query response */
+typedef struct dom_query_info
 {
   uint16 uni_dom_max_len; /* domain name string length * 2 */
   uint16 uni_dom_str_len; /* domain name string length * 2 */
@@ -458,10 +469,11 @@ typedef struct dom_query_5_info
   UNISTR uni_domain_name; /* domain name (unicode string) */
   DOM_SID dom_sid; /* domain SID */
 
-} DOM_QUERY_5;
+} DOM_QUERY;
 
 /* level 5 is same as level 3.  we hope. */
-typedef DOM_QUERY_5 DOM_QUERY_3;
+typedef DOM_QUERY DOM_QUERY_3;
+typedef DOM_QUERY DOM_QUERY_5;
 
 /* LSA_POL_HND */
 typedef struct lsa_policy_info
@@ -507,8 +519,7 @@ typedef struct dom_ref_info
     UNIHDR2 hdr_ref_dom[MAX_REF_DOMAINS]; /* referenced domain unicode string headers */
 
     UNISTR uni_dom_name; /* domain name unicode string */
-    DOM_SID uni_dom_sid; /* domain SID */
-    DOM_SID uni_ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
+    DOM_SID ref_dom[MAX_REF_DOMAINS]; /* referenced domain SIDs */
 
 } DOM_R_REF;
 

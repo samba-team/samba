@@ -75,7 +75,20 @@ char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int al
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
- char* smb_io_(BOOL io, *, char *q, char *base, int align)
+ char* lsa_io_(BOOL io, *, char *q, char *base, int align)
+{
+	if (== NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, , 0); q += 4;
+
+	return q;
+}
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+ char* lsa_io_(BOOL io, *, char *q, char *base, int align)
 {
 	if (== NULL) return NULL;
 

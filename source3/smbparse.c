@@ -56,7 +56,7 @@ char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align)
 /*******************************************************************
 reads or writes a DOM_SID structure.
 ********************************************************************/
-char* smb_io_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align)
+char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align)
 {
 	int i;
 
@@ -404,6 +404,97 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align)
 	RW_CVAL(io, q, rpc->context_id, 0); q++;
 	RW_CVAL(io, q, rpc->reserved, 0); q++;
 
+	return q;
+}
+
+/*******************************************************************
+reads or writes an LSA_POL_HND structure.
+********************************************************************/
+char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align)
+{
+	if (pol == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_PCVAL(io, q, pol->data, 20); q += 20;
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align)
+{
+	return smb_io_dom_query(io, d_q, q, base, align);
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align)
+{
+	return smb_io_dom_query(io, d_q, q, base, align);
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+char* smb_io_dom_query(BOOL io, DOM_QUERY *d_q, char *q, char *base, int align)
+{
+	if (d_q == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+
+	RW_SVAL(io, q, d_q->uni_dom_max_len, 0); q += 2; /* domain name string length * 2 */
+	RW_SVAL(io, q, d_q->uni_dom_str_len, 0); q += 2; /* domain name string length * 2 */
+
+	RW_IVAL(io, q, d_q->buffer_dom_name, 0); q += 4; /* undocumented domain name string buffer pointer */
+	RW_IVAL(io, q, d_q->buffer_dom_sid , 0); q += 4; /* undocumented domain SID string buffer pointer */
+
+	if (d_q->buffer_dom_name != 0)
+	{
+		q = smb_io_unistr(io, &(d_q->uni_domain_name), q, base, align); /* domain name (unicode string) */
+	}
+	if (d_q->buffer_dom_sid != 0)
+	{
+		q = smb_io_dom_sid(io, &(d_q->dom_sid), q, base, align); /* domain SID */
+	}
+
+	return q;
+}
+
+/*******************************************************************
+reads or writes a DOM_R_REF structure.
+********************************************************************/
+char* smb_io_dom_r_ref(BOOL io, DOM_R_REF *r_r, char *q, char *base, int align)
+{
+	int i;
+
+	if (r_r == NULL) return NULL;
+
+	q = align_offset(q, base, align);
+	
+	RW_IVAL(io, q, r_r->undoc_buffer, 0); q += 4; /* undocumented buffer pointer. */
+	RW_IVAL(io, q, r_r->num_ref_doms_1, 0); q += 4; /* num referenced domains? */
+	RW_IVAL(io, q, r_r->buffer_dom_name, 0); q += 4; /* undocumented domain name buffer pointer. */
+	RW_IVAL(io, q, r_r->max_entries, 0); q += 4; /* 32 - max number of entries */
+	RW_IVAL(io, q, r_r->num_ref_doms_2, 0); q += 4; /* 4 - num referenced domains? */
+
+	q = smb_io_unihdr2(io, &(r_r->hdr_dom_name), q, base, align); /* domain name unicode string header */
+
+	for (i = 0; i < r_r->num_ref_doms_1-1; i++)
+	{
+		q = smb_io_unihdr2(io, &(r_r->hdr_ref_dom[i]), q, base, align);
+	}
+
+	q = smb_io_unistr(io, &(r_r->uni_dom_name), q, base, align); /* domain name unicode string */
+
+	for (i = 0; i < r_r->num_ref_doms_2; i++)
+	{
+		q = smb_io_dom_sid(io, &(r_r->ref_dom[i]), q, base, align); /* referenced domain SIDs */
+	}
 	return q;
 }
 
