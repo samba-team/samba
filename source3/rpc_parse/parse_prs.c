@@ -1429,7 +1429,7 @@ static void netsec_get_sealing_key(struct netsec_auth_struct *a,
 	
 	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
 	
-	/* MD5 of sess_kf0 and the high bytes of the sequence number */
+	/* MD5 of sess_kf0 and 4 zero bytes */
 	hmac_md5(sess_kf0, zeros, 0x4, digest2);
 	dump_data_pw("digest2:\n", digest2, sizeof(digest2));
 	
