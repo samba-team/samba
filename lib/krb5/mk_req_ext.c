@@ -76,7 +76,6 @@ krb5_mk_req_extended(krb5_context context,
       krb5_keytype_to_cksumtype (context, ac->key.keytype, &cksumtype);
 
   if (in_data) {
-
       r = krb5_create_checksum (context,
 				cksumtype,
 				in_data->data,
