@@ -2092,7 +2092,6 @@ sub LoadInterface($)
 
 	foreach my $d (@{$x->{DATA}}) {
 		if (($d->{TYPE} eq "DECLARE") or ($d->{TYPE} eq "TYPEDEF")) {
-			typelist::addType($d);
 			if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
 				CheckPointerTypes($d->{DATA}, $x->{PROPERTIES}->{pointer_default});
 			}

@@ -23,6 +23,7 @@ use stub;
 use ndr;
 use eparser;
 use validator;
+use typelist;
 use util;
 use template;
 use swig;
@@ -136,6 +137,10 @@ sub process_file($)
 
 	if ($opt_dump) {
 		print IdlDump::Dump($pidl);
+	}
+
+	if ($opt_header || $opt_parser) {
+		typelist::LoadIdl($pidl);
 	}
 
 	if ($opt_header) {

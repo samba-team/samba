@@ -132,6 +132,21 @@ sub mapType($)
 	die("Unknown type $dt->{DATA}->{TYPE}");
 }
 
+sub LoadIdl($)
+{
+	my $idl = shift;
+
+	foreach my $x (@{$idl}) {
+		next if $x->{TYPE} ne "INTERFACE";
+		addType($x);
+		foreach my $y (@{$x->{DATA}}) {
+			addType($y) if (
+				$y->{TYPE} eq "TYPEDEF" 
+			 or $y->{TYPE} eq "DECLARE");
+		}
+	}
+}
+
 RegisterPrimitives();
 
 
