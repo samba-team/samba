@@ -15,15 +15,75 @@ Samba-3 based domain control.
 <title>Planning and Getting Started</title>
 
 <para>
-You must use at least the following ...
+In the IT world there is often a saying that all problems are encountered because of
+poor planning. The corrollary to this saying is that not all problems can be anticpated
+and planned for. Then again, good planning will anticpate most show stopper type situations.
+</para>
+
+<para>
+Those wishing to migrate from MS Windows NT4 domain control to a Samba-3 domain control
+environment would do well to develop a detailed migration plan. So here are a few pointers to
+help migration get under way.
 </para>
 
 <sect2>
 <title>Objectives</title>
 
 <para>
-Blah blah objectives here.
+The key objective for most organisations will be to make the migration from MS Windows NT4 
+to Samba-3 domain control as painless as possible. One of the challenges you may experience
+in your migration process may well be one of convincing management that the new environment
+should remain in place. Many who have introduced open source technologies have experienced
+pressure to return to a Microsoft based platform solution at the first sign of trouble. 
 </para>
+
+<para>
+It is strongly advised that before attempting a migration to a Samba-3 controlled network
+that every possible effort be made to gain all-round commitment to the change. Firstly, you
+should know precisely <emphasis>why</emphasis> the change is important for the organisation.
+Possible motivations to make a change include:
+</para>
+
+<itemizedlist>
+<listitem>
+    <para>Improve network manageability</para>
+</listitem>
+<listitem>
+    <para>Obtain better user level functionality</para>
+</listitem>
+<listitem>
+    <para>Reduce network operating costs</para>
+</listitem>
+<listitem>
+    <para>Reduce exposure caused by Microsoft withdrawal of NT4 support</para>
+</listitem>
+<listitem>
+    <para>Avoid MS License 6 implications</para>
+</listitem>
+<listitem>
+    <para>Reduce organisation's dependency on Microsoft</para>
+</listitem>
+</itemizedlist>
+
+<para>
+It is vital that oit be well recognised that Samba-3 is NOT MS Windows NT4. Samba-3 offers
+an alternative solution that is both different from MS Windows NT4 and that offers some
+advantages compared with it. It should also be recognised that Samba-3 lacks many of the
+features that Microsoft has promoted as core values in migration from MS Windows NT4 to 
+MS Windows 2000 and beyond (with or without Active Directory services).
+</para>
+
+<para>
+What are the features the Samba-3 can NOT provide?
+</para>
+
+<simplelist>
+    <member>Active Directory Server</member>
+    <member>Group Policy Objects (in Active Direcrtory)</member>
+    <member>Machine Policy objects</member>
+    <member>Logon Scripts in Active Directorty</member>
+    <member>Software Application and Access Controls in Active Directory</member>
+</simplelist>
 
 </sect2>
 <sect2>

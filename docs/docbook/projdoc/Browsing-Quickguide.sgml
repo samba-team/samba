@@ -301,6 +301,32 @@ particularly not using it's own IP address.
 Specifying both will cause &nmbd; to refuse to start!
 </para></important>
 
+<sect2>
+<title>WINS Replication</title>
+
+<para>
+Samba-3 permits WINS replication through the use of the <filename>wrepld</filename> utility.
+This tool is not currently capable of being used as it is still in active development.
+As soon as this tool becomes moderately functional we will prepare man pages and enhance this
+section of the documentation to provide usage and technical details.
+</para>
+
+</sect2>
+<sect2>
+<title>Static WINS Entries</title>
+
+<para>
+New to Samba-3 is a tool called <filename>winsedit</filename> that may be used to add
+static WINS entries to the WINS database. This tool can be used also to modify entries
+existing in the WINS database.
+</para>
+
+<para>
+The development of the winsedit tool was made necessary due to the migration
+of the older style wins.dat file into a new tdb binary backend data store.
+</para>
+
+</sect2>
 </sect1>
 
 <sect1>
