@@ -25,27 +25,7 @@ interface rpcecho
 		[out,ref,size_is(len)] uint8 *data
 	);
 
-#define int uint32
-
-	typedef struct {
-		int *count;
-	} echo_Enum1;
-
-	typedef struct {
-		int *count;
-	} echo_Enum3;
-
-	typedef union {
-		[case(1)] echo_Enum1 enum1;
-		[case(3)] echo_Enum3 enum3;
-	} echo_EnumInfo;
-
-	typedef struct {
-		int level;
-		[switch_is(level)] echo_EnumInfo e;
-	} Struct1;
-	
 	void TestCall (
-		[out]        Struct1 *s1
+		[in]  unistr *s
 		);
 }

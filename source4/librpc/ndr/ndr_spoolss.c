@@ -172,19 +172,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_spoolss_PrinterInfo6(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_push_uint32(ndr, r->foo));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_spoolss_PrinterInfo7(struct ndr_push *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -225,10 +212,6 @@ NTSTATUS ndr_push_spoolss_PrinterInfo(struct ndr_push *ndr, int ndr_flags, uint1
 	NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
 	break;
 
-	case 6:
-	NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
-	break;
-
 	case 7:
 	NDR_CHECK(ndr_push_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
 	break;
@@ -258,10 +241,6 @@ buffers:
 
 	case 5:
 		NDR_CHECK(ndr_push_spoolss_PrinterInfo5(ndr, ndr_flags, &r->info5));
-	break;
-
-	case 6:
-		NDR_CHECK(ndr_push_spoolss_PrinterInfo6(ndr, ndr_flags, &r->info6));
 	break;
 
 	case 7:
@@ -1148,19 +1127,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_spoolss_PrinterInfo6(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo6 *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->foo));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_spoolss_PrinterInfo7(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrinterInfo7 *r)
 {
 	NDR_CHECK(ndr_pull_struct_start(ndr));
@@ -1200,10 +1166,6 @@ NTSTATUS ndr_pull_spoolss_PrinterInfo(struct ndr_pull *ndr, int ndr_flags, uint1
 	NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_SCALARS, &r->info5));
 	break; }
 
-	case 6: {
-	NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_SCALARS, &r->info6));
-	break; }
-
 	case 7: {
 	NDR_CHECK(ndr_pull_spoolss_PrinterInfo7(ndr, NDR_SCALARS, &r->info7));
 	break; }
@@ -1233,10 +1195,6 @@ buffers:
 
 	case 5:
 		NDR_CHECK(ndr_pull_spoolss_PrinterInfo5(ndr, NDR_BUFFERS, &r->info5));
-	break;
-
-	case 6:
-		NDR_CHECK(ndr_pull_spoolss_PrinterInfo6(ndr, NDR_BUFFERS, &r->info6));
 	break;
 
 	case 7:
@@ -1333,15 +1291,18 @@ NTSTATUS ndr_pull_spoolss_07(struct ndr_pull *ndr, struct spoolss_07 *r)
 
 NTSTATUS ndr_pull_spoolss_GetPrinter(struct ndr_pull *ndr, struct spoolss_GetPrinter *r)
 {
-	uint32 _ptr_buffer;
-	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_buffer));
-	if (_ptr_buffer) {
-		NDR_ALLOC(ndr, r->out.buffer);
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
 	} else {
-		r->out.buffer = NULL;
+		r->out.info = NULL;
 	}
-	if (r->out.buffer) {
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, r->out.buffer));
+	if (r->out.info) {
+	{ uint16 _level = r->in.level;
+	NDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, r->out.info, (ndr_pull_union_fn_t) ndr_pull_spoolss_PrinterInfo));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
 	}
 	NDR_CHECK(ndr_pull_uint32(ndr, r->out.buf_size));
 	NDR_CHECK(ndr_pull_WERROR(ndr, &r->out.result));
@@ -2109,14 +2070,6 @@ void ndr_print_spoolss_PrinterInfo5(struct ndr_print *ndr, const char *name, str
 	ndr->depth--;
 }
 
-void ndr_print_spoolss_PrinterInfo6(struct ndr_print *ndr, const char *name, struct spoolss_PrinterInfo6 *r)
-{
-	ndr_print_struct(ndr, name, "spoolss_PrinterInfo6");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "foo", r->foo);
-	ndr->depth--;
-}
-
 void ndr_print_spoolss_PrinterInfo7(struct ndr_print *ndr, const char *name, struct spoolss_PrinterInfo7 *r)
 {
 	ndr_print_struct(ndr, name, "spoolss_PrinterInfo7");
@@ -2148,10 +2101,6 @@ void ndr_print_spoolss_PrinterInfo(struct ndr_print *ndr, const char *name, uint
 
 	case 5:
 	ndr_print_spoolss_PrinterInfo5(ndr, "info5", &r->info5);
-	break;
-
-	case 6:
-	ndr_print_spoolss_PrinterInfo6(ndr, "info6", &r->info6);
 	break;
 
 	case 7:

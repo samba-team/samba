@@ -99,10 +99,6 @@
 	} spoolss_PrinterInfo5;
 
 	typedef struct {
-		uint32 foo;
-	} spoolss_PrinterInfo6;
-
-	typedef struct {
 		[relative] nstring guid; /* text form of printer guid */
 		uint32 action;
 	} spoolss_PrinterInfo7;
@@ -113,7 +109,6 @@
 		case(3) spoolss_PrinterInfo3 info3;
 		case(4) spoolss_PrinterInfo4 info4;
 		case(5) spoolss_PrinterInfo5 info5;
-		case(6) spoolss_PrinterInfo6 info6;
 		case(7) spoolss_PrinterInfo7 info7;
 	} spoolss_PrinterInfo;
 
@@ -178,7 +173,8 @@
 	WERROR spoolss_GetPrinter(
 		[in,ref]     policy_handle *handle,
 		[in]	     uint32 level,
-		[in,out]     DATA_BLOB *buffer,
+		[in]         DATA_BLOB *buffer,
+		[out,subcontext,switch_is(level)] spoolss_PrinterInfo *info,
 		[in,out,ref] uint32 *buf_size
 		);
 

@@ -399,6 +399,9 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 	struct ndr_pull ndr2;
 
 	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	if (size == 0) {
+		return NT_STATUS_OK;
+	}
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
 	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, base));
 	NDR_CHECK(ndr_pull_advance(ndr, size));
@@ -414,6 +417,9 @@ NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr,
 	struct ndr_pull ndr2;
 
 	NDR_CHECK(ndr_pull_uint32(ndr, &size));
+	if (size == 0) {
+		return NT_STATUS_OK;
+	}
 	NDR_CHECK(ndr_pull_subcontext(ndr, &ndr2, size));
 	NDR_CHECK(fn(&ndr2, NDR_SCALARS|NDR_BUFFERS, level, base));
 	NDR_CHECK(ndr_pull_advance(ndr, size));
