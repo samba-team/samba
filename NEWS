@@ -1,3 +1,16 @@
+Changes in release 0.2k:
+
+ * better IPv6 test
+
+ * make struct sockaddr_storage in roken work better on alphas
+
+ * some missing [hn]to[hn]s fixed.
+
+ * allow users to change their own passwords with kadmin (with initial
+   tickets)
+
+ * add `ktutil change'
+
 Changes in release 0.2j:
 
  * builds on Irix
