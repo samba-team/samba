@@ -893,6 +893,10 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
+bin/libbigballofmud.a: $(LIBBIGBALLOFMUD_OBJS)
+	@echo Linking bigballofmud non-shared library $@
+	-$(AR) -rc $@ $(LIBBIGBALLOFMUD_OBJS)
+
 libsmbclient: bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 
 bin/librpc_lsarpc.@SHLIBEXT@: $(RPC_LSA_OBJ)
