@@ -633,8 +633,11 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	unbecome_root();
 
 	if (!ret)
+	{
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
-
+	}
+	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
 	/* Validate password - if required. */
