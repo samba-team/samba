@@ -713,6 +713,10 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL);
 	}
+
+	/* make sure we leave the directory available for unmount */
+	vfs_ChDir(conn, "/");
+
 	conn_free(conn);
 }
 
