@@ -792,7 +792,8 @@ uint32 cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Lookup rids */
+/* Lookup rids.  Note that NT4 seems to crash if more than ~1000 rids are
+   looked up in one packet. */
 
 uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 			    POLICY_HND *domain_pol, uint32 flags,
@@ -804,6 +805,11 @@ uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_LOOKUP_RIDS q;
 	SAMR_R_LOOKUP_RIDS r;
 	uint32 result = NT_STATUS_UNSUCCESSFUL, i;
+
+        if (num_rids > 1000) {
+                DEBUG(2, ("cli_samr_lookup_rids: warning: NT4 can crash if "
+                          "more than ~1000 rids are looked up at once.\n"));
+        }
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
