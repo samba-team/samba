@@ -153,6 +153,7 @@ machine's hostname (in uppercase) as its NetBIOS name. This parameter
 allows you to override the host name and use whatever NetBIOS name you
 wish.
 
+label(minus_d)
 dit(bf(-d debuglevel)) debuglevel is an integer from 0 to 10, or the
 letter 'A'.
 
@@ -707,6 +708,6 @@ sources were converted to YODL format (another excellent piece of Open
 Source software) and updated for the Samba2.0 release by Jeremy
 Allison, email(samba-bugs@samba.anu.edu.au).
 
-See url(bf(samba (8)))(samba.7.html) to find out how to get a full
+See url(bf(samba (7)))(samba.7.html) to find out how to get a full
 list of contributors and details on how to submit bug reports,
 comments etc.
