@@ -1,3 +1,8 @@
+Wed Mar 18 09:58:18 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/get_in_tkt_with_keytab.c (krb5_keytab_key_proc): don't
+ 	free keyseed; use correct keytab
+
 Mon Mar 16 23:58:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* Release 0.0n
