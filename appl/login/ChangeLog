@@ -1,3 +1,7 @@
+1999-09-28  Assar Westerlund  <assar@sics.se>
+
+	* login.c (krb5_verify): use krb5_verify_user_lrealm
+
 1999-09-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* login.c: SGI capability mumbo-jumbo

@@ -1,3 +1,11 @@
+1999-09-28  Assar Westerlund  <assar@sics.se>
+
+	* sia/sia.c (doauth): use krb5_get_local_realms and
+ 	krb5_verify_user_lrealm
+
+	* afskauthlib/verify.c (verify_krb5): remove krb5_kuserok.  use
+ 	krb5_verify_user_lrealm
+
 1999-08-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afskauthlib/verify.c: make this compile w/o krb4

@@ -1,3 +1,28 @@
+1999-09-28  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/verify_user.c (krb5_verify_user_lrealm): ariant of
+ 	krb5_verify_user that tries in all the local realms
+
+	* lib/krb5/set_default_realm.c: add support for having several
+ 	default realms
+
+	* lib/krb5/kuserok.c (krb5_kuserok): use `krb5_get_default_realms'
+
+	* lib/krb5/get_default_realm.c (krb5_get_default_realms): add
+
+	* lib/krb5/krb5.h (krb5_context_data): change `default_realm' to
+ 	`default_realms'
+
+	* lib/krb5/context.c: change from `default_realm' to
+ 	`default_realms'
+
+	* lib/krb5/aname_to_localname.c (krb5_aname_to_localname): use
+ 	krb5_get_default_realms
+
+	* lib/krb5/Makefile.am (libkrb5_la_SOURCES): add copy_host_realm.c
+
+	* lib/krb5/copy_host_realm.c: new file
+
 1999-09-27  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/asn1/der_put.c (encode_generalized_time): encode length
