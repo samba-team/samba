@@ -887,9 +887,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		fstrcpy(pjob.user, vuser->user.smb_name);
+		fstrcpy(pjob.user, unix_to_dos(vuser->user.smb_name,False));
 	} else {
-		fstrcpy(pjob.user, uidtoname(user->uid));
+		fstrcpy(pjob.user, unix_to_dos(uidtoname(user->uid),False));
 	}
 
 	fstrcpy(pjob.qname, lp_servicename(snum));
@@ -1068,11 +1068,6 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	ts->queue[i].time = pjob.starttime;
 	fstrcpy(ts->queue[i].user, pjob.user);
 	fstrcpy(ts->queue[i].file, pjob.jobname);
-
-	/* Convert username to DOS codepage.  For some reason the job name
-	   is already in DOS codepage so it doesn't need converting. */
-
-	unix_to_dos(ts->queue[i].user, True);
 
 	ts->qcount++;
 
