@@ -17,6 +17,7 @@ krb5_auth_con_init(krb5_context context,
 	return ENOMEM;
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
     p->cksumtype = CKSUMTYPE_RSA_MD4_DES;
+    p->enctype   = ETYPE_DES_CBC_CRC;
     *auth_context = p;
     return 0;
 }
@@ -229,6 +230,10 @@ krb5_auth_getauthenticator(krb5_context context,
     if (*authenticator == NULL)
 	return ENOMEM;
 
+    copy_Authenticator(auth_context->authenticator,
+		       *authenticator);
+
+#if 0
     copy_PrincipalName(&auth_context->authenticator->cname,
 		       &(*authenticator)->cname);
     copy_Realm(&auth_context->authenticator->crealm,
@@ -236,6 +241,7 @@ krb5_auth_getauthenticator(krb5_context context,
     (*authenticator)->cusec = auth_context->authenticator->cusec;
     (*authenticator)->ctime = auth_context->authenticator->ctime;
     (*authenticator)->seq_number = auth_context->authenticator->seq_number; /* XXX */
+#endif
     return 0;
 }
 
@@ -244,8 +250,7 @@ void
 krb5_free_authenticator(krb5_context context,
 			krb5_authenticator *authenticator)
 {
-    free_PrincipalName (&(*authenticator)->cname);
-    free_Realm (&(*authenticator)->crealm);
+    free_Authenticator (*authenticator);
     free (*authenticator);
     *authenticator = NULL;
 }
@@ -255,6 +260,7 @@ krb5_error_code
 krb5_auth_initvector(krb5_context context,
 		     krb5_auth_context auth_context)
 {
+    abort ();
 }
 
 
@@ -263,6 +269,7 @@ krb5_set_initvector(krb5_context context,
 		    krb5_auth_context auth_context,
 		    krb5_pointer ivector)
 {
+    abort ();
 }
 
 
@@ -271,4 +278,5 @@ krb5_set_rcache(krb5_context context,
 		krb5_auth_context auth_context,
 		krb5_rcache rcache)
 {
+    abort ();
 }
