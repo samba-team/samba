@@ -162,7 +162,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 		setflag = False;
 		homedir = strdup(lp_logon_home());
 		if(!homedir) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, homedir);
+		standard_sub_advanced(-1, username, "", gid, homedir, sizeof(homedir));
 		DEBUG(5,("Home directory set back to %s\n", homedir));
 	}
 	pdb_set_homedir(sampass, homedir, setflag);
@@ -172,7 +172,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 		setflag = False;
 		dir_drive = strdup(lp_logon_drive());
 		if(!dir_drive) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, dir_drive);
+		standard_sub_advanced(-1, username, "", gid, dir_drive, sizeof(dir_drive));
 		DEBUG(5,("Home directory set back to %s\n", dir_drive));
 	}
 	pdb_set_dir_drive(sampass, dir_drive, setflag);
@@ -182,7 +182,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 		setflag = False;
 		logon_script = strdup(lp_logon_script());
 		if(!logon_script) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, logon_script);
+		standard_sub_advanced(-1, username, "", gid, logon_script, sizeof(logon_script));
 		DEBUG(5,("Home directory set back to %s\n", logon_script));
 	}
 	pdb_set_logon_script(sampass, logon_script, setflag);
@@ -192,7 +192,7 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 		setflag = False;
 		profile_path = strdup(lp_logon_path());
 		if(!profile_path) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, profile_path);
+		standard_sub_advanced(-1, username, "", gid, profile_path, sizeof(profile_path));
 		DEBUG(5,("Home directory set back to %s\n", profile_path));
 	}
 	pdb_set_profile_path(sampass, profile_path, setflag);

@@ -541,7 +541,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	if (!get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive)) {
 		pstrcpy(dir_drive, lp_logon_drive());
-		standard_sub_advanced(-1, username, "", gid, dir_drive);
+		standard_sub_advanced(-1, username, "", gid, dir_drive, sizeof(dir_drive));
 		DEBUG(5,("homeDrive fell back to %s\n",dir_drive));
 		pdb_set_dir_drive(sampass, dir_drive, False);
 	}
@@ -550,7 +550,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	if (!get_single_attribute(ldap_struct, entry, "smbHome", homedir)) {
 		pstrcpy(homedir, lp_logon_home());
-		standard_sub_advanced(-1, username, "", gid, homedir);
+		standard_sub_advanced(-1, username, "", gid, homedir, sizeof(homedir));
 		DEBUG(5,("smbHome fell back to %s\n",homedir));
 		pdb_set_homedir(sampass, homedir, False);
 	}
@@ -559,7 +559,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	if (!get_single_attribute(ldap_struct, entry, "scriptPath", logon_script)) {
 		pstrcpy(logon_script, lp_logon_script());
-		standard_sub_advanced(-1, username, "", gid, logon_script);
+		standard_sub_advanced(-1, username, "", gid, logon_script, sizeof(logon_script));
 		DEBUG(5,("scriptPath fell back to %s\n",logon_script));
 		pdb_set_logon_script(sampass, logon_script, False);
 	}
@@ -568,7 +568,7 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 
 	if (!get_single_attribute(ldap_struct, entry, "profilePath", profile_path)) {
 		pstrcpy(profile_path, lp_logon_path());
-		standard_sub_advanced(-1, username, "", gid, profile_path);
+		standard_sub_advanced(-1, username, "", gid, profile_path, sizeof(profile_path));
 		DEBUG(5,("profilePath fell back to %s\n",profile_path));
 		pdb_set_profile_path(sampass, profile_path, False);
 	}
@@ -854,7 +854,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
 		pstring filter;
 
 		pstrcpy(filter, lp_ldap_filter());
-		standard_sub_advanced(-1, sname, "", -1, filter);
+		standard_sub_advanced(-1, sname, "", -1, filter, sizeof(filter));
 		DEBUG(0,("LDAP search \"%s\" returned %d entries.\n",  filter, 
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
