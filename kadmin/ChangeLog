@@ -1,3 +1,7 @@
+2001-08-22  Assar Westerlund  <assar@sics.se>
+
+	* kadmin_locl.h: include libutil.h if it exists
+
 2001-08-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* util.c: do something to handle C-c in prompts
