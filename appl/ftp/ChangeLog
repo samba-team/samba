@@ -1,6 +1,17 @@
 Sat Feb 13 17:19:35 1999  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ftpd.c (match): remove #ifdef HAVE_FNMATCH.  We have a
+ 	fnmatch implementation in roken and therefore always have it.
+
 	* ftp/ftp.c (copy_stream): initialize `werr'
+
+Wed Jan 13 23:52:57 1999  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ftpcmd.y: moved all check_login and check_login_no_guest to
+ 	the end of the rules to ensure we don't generate several
+ 	(independent) error messages.  once again, having a yacc-grammar
+ 	for FTP with embedded actions doesn't strike me as the most
+ 	optimal way of doing it.
 
 Tue Dec  1 14:44:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
