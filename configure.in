@@ -553,14 +553,20 @@ if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
     LIB_des="-R $krb4_libdir -L$krb4_libdir"
   fi
   LIB_des="$LIB_des $ac_cv_funclib_MD4_Init"
+  LIB_des_a="$LIB_des"
+  LIB_des_so="$LIB_des"
   LIB_des_appl="$LIB_des"
 else
   DIR_des='des'
   LIB_des='$(top_builddir)/lib/des/libdes.la'
+  LIB_des_a='$(top_builddir)/lib/des/.libs/libdes.a'
+  LIB_des_so='$(top_builddir)/lib/des/.libs/libdes.so'
   LIB_des_appl="-ldes"
 fi
 AC_SUBST(DIR_des)
 AC_SUBST(LIB_des)
+AC_SUBST(LIB_des_a)
+AC_SUBST(LIB_des_so)
 AC_SUBST(LIB_des_appl)
 
 KRB_READLINE
