@@ -6,6 +6,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "symbol.h"
 #include "lex.h"
 #include "gen.h"
@@ -13,7 +14,7 @@
 static Type *new_type (Typetype t);
 void yyerror (char *);
 
-#ifdef HAVE_STRUP
+#ifndef HAVE_STRDUP
 char *strdup(char *);
 #endif
 
