@@ -1,0 +1,82 @@
+
+
+
+
+<html><head><title>smbcacls (1)</title>
+
+</head>
+<body>
+
+<hr>
+
+<h1>smbcacls (1)</h1>
+<h2>Samba</h2>
+<h2>3 Dec 2000</h2>
+
+
+    
+<p><a name="NAME"></a>
+<h2>NAME</h2>
+    smbcacls - Set or get ACLs on an NT file
+<p><a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+     
+<p><strong>smbcacls</strong> //server/share filename <a href="smbcacls.1.html#minusU">-U username</a>
+[<a href="smbcacls.1.html#minusA">-A acls</a>] [<a href="smbcacls.1.html#minusM">-M acls</a>] 
+[<a href="smbcacls.1.html#minusD">-D acls</a>] [<a href="smbcacls.1.html#minusS">-S acls</a>] 
+[<a href="smbcacls.1.html#minusn">-n</a>] [<a href="smbcacls.1.html#minush">-h</a>]
+<p><a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+    
+<p>The <strong>smbcacls</strong> program manipulates NT Access Control Lists (ACLs) on
+SMB file shares.
+<p><a name="OPTIONS"></a>
+<h2>OPTIONS</h2>
+    
+<p>The following options are available to the <strong>smbcacls</strong> program:
+<p><dl>
+<p><a name="minusA"></a>
+<p></p><dt><strong><strong>-A acls</strong></strong><dd>
+<p>Add the ACLs specified to the ACL list.
+<p><a name="minusM"></a>
+<p></p><dt><strong><strong>-M acls</strong></strong><dd>
+<p>Modify the mask value (permissions) for the ACLs specified on the command
+line.  An error will be printed if the ACL specified is not already present
+in the ACL list
+<p><a name="minusD"></a>
+<p></p><dt><strong><strong>-D acls</strong></strong><dd>
+<p>Delete any ACLs specfied on the command line.  An error is printed if any
+of the ACLs specified are not present in the ACL list.
+<p><a name="minusS"></a>
+<p></p><dt><strong><strong>-S acls</strong></strong><dd>
+<p>This command deletes the current ACLs for the file or directory and
+replaces them with the ACLs specified on the command line.
+<p><a name="minusU"></a>
+<p></p><dt><strong><strong>-U username</strong></strong><dd>
+<p>Specifies a username used to connect to the specified service.  The
+username may be of the form <code>username</code> in which case the user is
+prompted to enter in a password and the workgroup specified in the
+<a href="smb.conf.5.html"><strong>smb.conf</strong></a> file is used, or <code>username%password</code>
+or <code>DOMAIN\username%password</code> and the password and workgroup names are
+used as provided.
+<p><a name="minusn"></a>
+<p></p><dt><strong><strong>-n</strong></strong><dd>
+<p>This option displays all ACL information in numeric format.  The default is
+to convert SIDs to names and ACE types and masks to a readable string
+format. 
+<p><a name="minush"></a>
+<p></p><dt><strong><strong>-h</strong></strong><dd>
+<p>Print usage information on the <strong>smbcacls</strong> program
+<p></dl>
+<p><a name="EXITSTATUS"></a>
+<h2>EXIT STATUS</h2>
+    
+<p><a name="AUTHOR"></a>
+<h2>AUTHOR</h2>
+    
+<p>The original Samba software and related utilities were created by
+Andrew Tridgell. Samba is now developed by the Samba Team as an Open
+Source project.
+<p><strong>smbcacls</strong> was written by Andrew Tridgell and Tim Potter.
+</body>
+</html>
