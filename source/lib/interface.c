@@ -30,7 +30,7 @@ struct in_addr ipzero;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
-static struct interface *local_interfaces  = NULL;
+static struct interface *local_interfaces;
 
 #define ALLONES  ((uint32)0xFFFFFFFF)
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
