@@ -807,7 +807,7 @@ struct parm_struct
 
 struct bitmap {
 	uint32 *b;
-	int n;
+	unsigned int n;
 };
 
 #define FLAG_BASIC 	0x0001 /* fundamental options */
