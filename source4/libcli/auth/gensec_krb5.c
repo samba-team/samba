@@ -403,7 +403,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			/* this string should be unique */
 			ccache_string = talloc_asprintf(gensec_krb5_state, "MEMORY:%s:%s:%s", 
 							gensec_get_client_principal(gensec_security, gensec_krb5_state), 
-							gensec_get_target_principal(gensec_security, gensec_krb5_state), 
+							gensec_get_target_principal(gensec_security),
 							generate_random_str(gensec_krb5_state, 16));
 
 			ret = krb5_cc_resolve(gensec_krb5_state->krb5_context, ccache_string, &gensec_krb5_state->krb5_ccache);
