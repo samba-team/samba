@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      20
     CANADA                                       10
-    EUROPE                                       40
+    EUROPE                                       41
     MIDDLE EAST                                   1
 
 AFRICA
@@ -1643,6 +1643,27 @@ mailto:fb@hydmech.fb12.TU-Berlin.de
 We install and maintain small to middle sized Linux-Windows
 networks within the Berlin area and are available for consulting and
 questions about networking, Linux, database systems and electronics.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BERLIN - GERMANY
+
+Name   :  Jan Riedinger
+          Unix, Networks, Security
+Address:  Oldenburger Str. 29
+          10551 Berlin
+
+Phone  :  +49 30 395 82 47
+FAX    :  +49 30 397 319 64
+Email  :  uns@intrail.de 
+
+Taetigkeitschwerpunkte:
+  Administration heterogener Netzwerke (Unix, Novell, MS Windows XX, Macintosh)
+  Konzeption und Installation von Unix basierten Firewalls
+  Installation von Unix basierten Internet-Servern (News, WWW, Mail, Ftp, DNS
+                                                                  NIS, NIS+)
+  Internetanbindung (Routerkonfiguration) 
+  Erstellung von Individualsoftware (C, C++, Java, Perl, Pascal) und WEB-Seiten
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
