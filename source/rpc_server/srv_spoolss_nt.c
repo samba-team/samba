@@ -1533,7 +1533,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
-	unistr2_to_ascii(name, printername, sizeof(name)-1);
+	unistr2_to_dos(name, printername, sizeof(name)-1);
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
