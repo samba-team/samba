@@ -251,6 +251,8 @@
 #undef HAVE_GSSAPI
 #undef BROKEN_REDHAT_7_SYSTEM_HEADERS
 #undef HAVE_LDAP
+#undef HAVE_STAT_ST_BLOCKS
+#undef STAT_ST_BLOCKSIZE
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
