@@ -19,9 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "includes.h"
+
+/*
+ * Hmmm, only check on WITH_SSL after we have included includes.h
+ * which pulls in config.h which is where WITH_SSL is defined, if 
+ * at all :-)
+ */
+
 #ifdef WITH_SSL  /* should always be defined if this module is compiled */
 
-#include "includes.h"
 #include <ssl.h>
 #include <err.h>
 
