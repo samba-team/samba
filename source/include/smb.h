@@ -236,19 +236,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 /* turn a 7 bit character into a ucs2 character */
 #define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
-/* Allowable account control bits */
-#define ACB_DISABLED   0x0001  /* 1 = User account disabled */
-#define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
-#define ACB_PWNOTREQ   0x0004  /* 1 = User password not required */
-#define ACB_TEMPDUP    0x0008  /* 1 = Temporary duplicate account */
-#define ACB_NORMAL     0x0010  /* 1 = Normal user account */
-#define ACB_MNS        0x0020  /* 1 = MNS logon user account */
-#define ACB_DOMTRUST   0x0040  /* 1 = Interdomain trust account */
-#define ACB_WSTRUST    0x0080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST   0x0100  /* 1 = Server trust account */
-#define ACB_PWNOEXP    0x0200  /* 1 = User password does not expire */
-#define ACB_AUTOLOCK   0x0400  /* 1 = Account auto locked */
- 
 #define MAX_HOURS_LEN 32
 
 #ifndef MAXSUBAUTHS

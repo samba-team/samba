@@ -1100,6 +1100,17 @@ static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
 #define QUERY_NTTIME(msg, field, attr) \
 	r->out.info->field = samdb_result_nttime(msg, attr, 0);
+#define QUERY_APASSC(msg, field, attr) \
+	r->out.info->field = samdb_result_allow_pwd_change(state->sam_ctx, mem_ctx, \
+							   state->domain_state->basedn, msg, attr);
+#define QUERY_FPASSC(msg, field, attr) \
+	r->out.info->field = samdb_result_force_pwd_change(state->sam_ctx, mem_ctx, \
+							   state->domain_state->basedn, msg, attr);
+#define QUERY_LHOURS(msg, field, attr) \
+	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
+#define QUERY_AFLAGS(msg, field, attr) \
+	r->out.info->field = samdb_result_acct_flags(msg, attr);
+
 
 /* 
   samr_QueryUserInfo 
@@ -1152,7 +1163,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	case 3:
 		QUERY_STRING(msg, info3.username.name,       "sAMAccountName");
 		QUERY_STRING(msg, info3.full_name.name,      "displayName");
-		QUERY_RID   (msg, info3.Rid,                 "objectSid");
+		QUERY_RID   (msg, info3.rid,                 "objectSid");
 		QUERY_UINT  (msg, info3.primary_gid,         "primaryGroupID");
 		QUERY_STRING(msg, info3.home_directory.name, "homeDirectory");
 		QUERY_STRING(msg, info3.home_drive.name,     "homeDrive");
@@ -1162,14 +1173,116 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 		QUERY_NTTIME(msg, info3.last_logon,          "lastLogon");
 		QUERY_NTTIME(msg, info3.last_logoff,         "lastLogoff");
 		QUERY_NTTIME(msg, info3.last_pwd_change,     "pwdLastSet");
-/*
-		QUERY_APASSC(msg, info2.allow_pwd_change, "pwdLastSet");
-		QUERY_LHOURS(msg, info2.logon_hours,      "logonHours");
-		QUERY_UINT  (msg, info2.bad_pwd_count,    "badPwdCount");
-		QUERY_UINT  (msg, info2.num_logons,       "logonCount");
-		QUERY_AFLAGS(msg, info2.acct_flags,       "userAccountControl");
-*/
+		QUERY_APASSC(msg, info3.allow_pwd_change,    "pwdLastSet");
+		QUERY_FPASSC(msg, info3.force_pwd_change,    "pwdLastSet");
+		QUERY_LHOURS(msg, info3.logon_hours,         "logonHours");
+		QUERY_UINT  (msg, info3.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info3.num_logons,          "logonCount");
+		QUERY_AFLAGS(msg, info3.acct_flags,          "userAccountControl");
 		break;
+
+	case 4:
+		QUERY_LHOURS(msg, info4.logon_hours,         "logonHours");
+		break;
+
+	case 5:
+		QUERY_STRING(msg, info5.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info5.full_name.name,      "displayName");
+		QUERY_RID   (msg, info5.rid,                 "objectSid");
+		QUERY_UINT  (msg, info5.primary_gid,         "primaryGroupID");
+		QUERY_STRING(msg, info5.home_directory.name, "homeDirectory");
+		QUERY_STRING(msg, info5.home_drive.name,     "homeDrive");
+		QUERY_STRING(msg, info5.logon_script.name,   "scriptPath");
+		QUERY_STRING(msg, info5.profile.name,        "profilePath");
+		QUERY_STRING(msg, info5.description.name,    "description");
+		QUERY_STRING(msg, info5.workstations.name,   "userWorkstations");
+		QUERY_NTTIME(msg, info5.last_logon,          "lastLogon");
+		QUERY_NTTIME(msg, info5.last_logoff,         "lastLogoff");
+		QUERY_LHOURS(msg, info5.logon_hours,         "logonHours");
+		QUERY_UINT  (msg, info5.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info5.num_logons,          "logonCount");
+		QUERY_NTTIME(msg, info5.last_pwd_change,     "pwdLastSet");
+		QUERY_NTTIME(msg, info5.acct_expiry,         "accountExpires");
+		QUERY_AFLAGS(msg, info5.acct_flags,          "userAccountControl");
+		break;
+
+	case 6:
+		QUERY_STRING(msg, info6.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info6.full_name.name,      "displayName");
+		break;
+
+	case 7:
+		QUERY_STRING(msg, info7.username.name,       "sAMAccountName");
+		break;
+
+	case 8:
+		QUERY_STRING(msg, info8.full_name.name,      "displayName");
+		break;
+
+	case 9:
+		QUERY_UINT  (msg, info9.primary_gid,         "primaryGroupID");
+		break;
+
+	case 10:
+		QUERY_STRING(msg, info10.home_directory.name, "homeDirectory");
+		QUERY_STRING(msg, info10.home_drive.name,     "homeDrive");
+		break;
+
+	case 11:
+		QUERY_STRING(msg, info11.logon_script.name,   "scriptPath");
+		break;
+
+	case 12:
+		QUERY_STRING(msg, info12.profile.name,        "profilePath");
+		break;
+
+	case 13:
+		QUERY_STRING(msg, info13.description.name,    "description");
+		break;
+
+	case 14:
+		QUERY_STRING(msg, info14.workstations.name,   "userWorkstations");
+		break;
+
+	case 16:
+		QUERY_AFLAGS(msg, info16.acct_flags,          "userAccountControl");
+		break;
+
+	case 17:
+		QUERY_NTTIME(msg, info17.acct_expiry,         "accountExpires");
+
+	case 20:
+		QUERY_STRING(msg, info20.callback.name,       "userParameters");
+		break;
+
+	case 21:
+		QUERY_NTTIME(msg, info21.last_logon,          "lastLogon");
+		QUERY_NTTIME(msg, info21.last_logoff,         "lastLogoff");
+		QUERY_NTTIME(msg, info21.last_pwd_change,     "pwdLastSet");
+		QUERY_NTTIME(msg, info21.acct_expiry,         "accountExpires");
+		QUERY_APASSC(msg, info21.allow_pwd_change,    "pwdLastSet");
+		QUERY_FPASSC(msg, info21.force_pwd_change,    "pwdLastSet");
+		QUERY_STRING(msg, info21.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info21.full_name.name,      "displayName");
+		QUERY_STRING(msg, info21.home_directory.name, "homeDirectory");
+		QUERY_STRING(msg, info21.home_drive.name,     "homeDrive");
+		QUERY_STRING(msg, info21.logon_script.name,   "scriptPath");
+		QUERY_STRING(msg, info21.profile.name,        "profilePath");
+		QUERY_STRING(msg, info21.description.name,    "description");
+		QUERY_STRING(msg, info21.workstations.name,   "userWorkstations");
+		QUERY_STRING(msg, info21.comment.name,        "comment");
+		QUERY_STRING(msg, info21.callback.name,       "userParameters");
+		QUERY_RID   (msg, info21.rid,                 "objectSid");
+		QUERY_UINT  (msg, info21.primary_gid,         "primaryGroupID");
+		QUERY_AFLAGS(msg, info21.acct_flags,          "userAccountControl");
+		r->out.info->info21.fields_present = 0x00FFFFFF;
+		QUERY_LHOURS(msg, info21.logon_hours,         "logonHours");
+		QUERY_UINT  (msg, info21.bad_pwd_count,       "badPwdCount");
+		QUERY_UINT  (msg, info21.num_logons,          "logonCount");
+		QUERY_UINT  (msg, info21.country_code,        "countryCode");
+		QUERY_UINT  (msg, info21.code_page,           "codePage");
+		break;
+		
 
 	default:
 		r->out.info = NULL;
@@ -1178,6 +1291,7 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	
 	return NT_STATUS_OK;
 }
+
 
 /* these are used to make the SetUserInfo code easier to follow */
 #define SET_STRING(mod, field, attr) do { \
@@ -1193,6 +1307,17 @@ static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	} \
 } while (0)
 
+#define SET_AFLAGS(msg, field, attr) do { \
+	if (samdb_msg_add_acct_flags(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
+
+#define SET_LHOURS(msg, field, attr) do { \
+	if (samdb_msg_add_logon_hours(state->sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
 
 /* 
   samr_SetUserInfo 
@@ -1202,7 +1327,7 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 {
 	struct dcesrv_handle *h;
 	struct samr_account_state *state;
-	struct ldb_message mod;
+	struct ldb_message mod, *msg = &mod;
 	int i, ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
@@ -1217,9 +1342,68 @@ static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	switch (r->in.level) {
 	case 2:
-		SET_STRING(&mod, info2.comment.name, "description");
-		SET_UINT  (&mod, info2.country_code, "countryCode");
-		SET_UINT  (&mod, info2.code_page,    "codePage");
+		SET_STRING(msg, info2.comment.name,         "comment");
+		SET_UINT  (msg, info2.country_code,         "countryCode");
+		SET_UINT  (msg, info2.code_page,            "codePage");
+		break;
+
+	case 4:
+		SET_LHOURS(msg, info4.logon_hours,          "logonHours");
+		break;
+
+	case 6:
+		SET_STRING(msg, info6.full_name.name,       "displayName");
+		break;
+
+	case 8:
+		SET_STRING(msg, info8.full_name.name,       "displayName");
+		break;
+
+	case 9:
+		SET_UINT(msg, info9.primary_gid,            "primaryGroupID");
+		break;
+
+	case 10:
+		SET_STRING(msg, info10.home_directory.name, "homeDirectory");
+		SET_STRING(msg, info10.home_drive.name,     "homeDrive");
+		break;
+
+	case 11:
+		SET_STRING(msg, info11.logon_script.name,   "scriptPath");
+		break;
+
+	case 12:
+		SET_STRING(msg, info12.profile.name,        "profilePath");
+		break;
+
+	case 13:
+		SET_STRING(msg, info13.description.name,    "description");
+		break;
+
+	case 14:
+		SET_STRING(msg, info14.workstations.name,   "userWorkstations");
+		break;
+
+	case 16:
+		SET_AFLAGS(msg, info16.acct_flags,          "userAccountControl");
+		break;
+
+	case 20:
+		SET_STRING(msg, info20.callback.name,       "userParameters");
+		break;
+
+	case 21:
+#define IFSET(bit) if (bit & r->in.info->info21.fields_present)
+		IFSET(SAMR_FIELD_NAME)         SET_STRING(msg, info21.full_name.name,    "displayName");
+		IFSET(SAMR_FIELD_DESCRIPTION)  SET_STRING(msg, info21.description.name,  "description");
+		IFSET(SAMR_FIELD_COMMENT)      SET_STRING(msg, info21.comment.name,      "comment");
+		IFSET(SAMR_FIELD_LOGON_SCRIPT) SET_STRING(msg, info21.logon_script.name, "scriptPath");
+		IFSET(SAMR_FIELD_PROFILE)      SET_STRING(msg, info21.profile.name,      "profilePath");
+		IFSET(SAMR_FIELD_WORKSTATION)  SET_STRING(msg, info21.workstations.name, "userWorkstations");
+		IFSET(SAMR_FIELD_LOGON_HOURS)  SET_LHOURS(msg, info21.logon_hours,       "logonHours");
+		IFSET(SAMR_FIELD_CALLBACK)     SET_STRING(msg, info21.callback.name,     "userParameters");
+		IFSET(SAMR_FIELD_COUNTRY_CODE) SET_UINT(msg, info21.country_code,        "countryCode");
+		IFSET(SAMR_FIELD_CODE_PAGE)    SET_UINT(msg, info21.code_page,           "codePage");
 		break;
 
 	default:
@@ -1335,11 +1519,23 @@ static NTSTATUS samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call, TALLOC
 
 /* 
   samr_QueryUserInfo2 
+
+  just an alias for samr_QueryUserInfo
 */
 static NTSTATUS samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_QueryUserInfo2 *r)
+				    struct samr_QueryUserInfo2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_QueryUserInfo r1;
+	NTSTATUS status;
+
+	r1.in.handle = r->in.handle;
+	r1.in.level  = r->in.level;
+	
+	status = samr_QueryUserInfo(dce_call, mem_ctx, &r1);
+	
+	r->out.info = r1.out.info;
+
+	return status;
 }
 
 

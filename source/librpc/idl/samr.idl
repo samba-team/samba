@@ -13,6 +13,20 @@
   pointer_default(unique)
 ] interface samr
 {
+	/* account control (acct_flags) bits */
+	const int ACB_DISABLED  = 0x0001;  /* 1 = User account disabled */
+	const int ACB_HOMDIRREQ = 0x0002;  /* 1 = Home directory required */
+	const int ACB_PWNOTREQ  = 0x0004;  /* 1 = User password not required */
+	const int ACB_TEMPDUP   = 0x0008;  /* 1 = Temporary duplicate account */
+	const int ACB_NORMAL    = 0x0010;  /* 1 = Normal user account */
+	const int ACB_MNS       = 0x0020;  /* 1 = MNS logon user account */
+	const int ACB_DOMTRUST  = 0x0040;  /* 1 = Interdomain trust account */
+	const int ACB_WSTRUST   = 0x0080;  /* 1 = Workstation trust account */
+	const int ACB_SVRTRUST  = 0x0100;  /* 1 = Server trust account */
+	const int ACB_PWNOEXP   = 0x0200;  /* 1 = User password does not expire */
+	const int ACB_AUTOLOCK  = 0x0400;  /* 1 = Account auto locked */
+
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
@@ -262,6 +276,7 @@
 
 	/************************/
 	/* Function    0x0d     */
+
 
 	/* w2k3 treats max_size as max_users*54 and sets the
 	   resume_handle as the rid of the last user sent
@@ -569,7 +584,7 @@
 	typedef struct {
 		samr_Name username;
 		samr_Name full_name;
-		uint32 Rid;
+		uint32 rid;
 		uint32 primary_gid;
 		samr_Name home_directory;
 		samr_Name home_drive;
@@ -630,7 +645,7 @@
 	} samr_UserInfo9;
 
 	typedef struct {
-		samr_Name home_dir;
+		samr_Name home_directory;
 		samr_Name home_drive;
 	} samr_UserInfo10;
 
@@ -684,7 +699,7 @@
 		NTTIME force_pwd_change;
 		samr_Name username;
 		samr_Name full_name;
-		samr_Name home_dir;
+		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
 		samr_Name profile;

@@ -136,7 +136,7 @@ int ldb_msg_add(struct ldb_context *ldb,
 */
 int ldb_msg_add_value(struct ldb_context *ldb,
 		      struct ldb_message *msg, 
-		      char *attr_name,
+		      const char *attr_name,
 		      struct ldb_val *val)
 {
 	struct ldb_message_element *el;
@@ -200,51 +200,59 @@ int ldb_msg_element_compare(struct ldb_message_element *el1,
 	return 0;
 }
 
-
 /*
   convenience functions to return common types from a message
   these return the first value if the attribute is multi-valued
 */
+const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name)
+{
+	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
+	if (!el || el->num_values == 0) {
+		return NULL;
+	}
+	return &el->values[0];
+}
+
 int ldb_msg_find_int(const struct ldb_message *msg, 
 		     const char *attr_name,
 		     int default_value)
 {
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
-	if (!el || el->num_values == 0) {
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtol(el->values[0].data, NULL, 0);
+	return strtol(v->data, NULL, 0);
 }
 
 unsigned int ldb_msg_find_uint(const struct ldb_message *msg, 
 			       const char *attr_name,
 			       int default_value)
 {
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
-	if (!el || el->num_values == 0) {
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtoul(el->values[0].data, NULL, 0);
+	return strtoul(v->data, NULL, 0);
 }
 
 double ldb_msg_find_double(const struct ldb_message *msg, 
 			   const char *attr_name,
 			   double default_value)
 {
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
-	if (!el || el->num_values == 0) {
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
 		return default_value;
 	}
-	return strtod(el->values[0].data, NULL);
+	return strtod(v->data, NULL);
 }
 
 const char *ldb_msg_find_string(const struct ldb_message *msg, 
 				const char *attr_name,
 				const char *default_value)
 {
-	struct ldb_message_element *el = ldb_msg_find_element(msg, attr_name);
-	if (!el || el->num_values == 0) {
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
 		return default_value;
 	}
-	return el->values[0].data;
+	return v->data;
 }
