@@ -221,7 +221,7 @@
 		
 		<varlistentry>
 		<term>-R name resolve order</term>
-		<listitem><para>This option allows the user of smbclient to determine 
+		<listitem><para>This option allows the user of smbpasswd to determine 
 		what name resolution services to use when looking up the NetBIOS
 		name of the host being connected to. </para>
 
