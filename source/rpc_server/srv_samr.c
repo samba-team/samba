@@ -30,7 +30,7 @@ extern int DEBUGLEVEL;
 
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
-extern pstring global_myworkgroup;
+extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
 

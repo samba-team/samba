@@ -104,13 +104,19 @@ int main(int argc, char *argv[])
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.32.so:DEFAULT", libd);
 		smbw_setenv("_RLD_LIST", line);
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);
-		smbw_setenv("_RLD32_LIST", line);
+		smbw_setenv("_RLDN32_LIST", line);
 	} else {
 		slprintf(line,sizeof(line)-1,"%s/smbwrapper.so:DEFAULT", libd);
 		smbw_setenv("_RLD_LIST", line);
 	}
 
-	execl("/bin/sh","smbsh",NULL);
+	{
+    	char *shellpath = getenv("SHELL");
+		if(shellpath)
+			execl(shellpath,"smbsh",NULL);
+		else
+			execl("/bin/sh","smbsh",NULL);
+	}
 	printf("launch failed!\n");
 	return 1;
 }	

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
