@@ -593,3 +593,46 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
+/****************************************************************************
+send a qfileinfo call
+****************************************************************************/
+BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QFILEINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	/* if its a win95 server then fail this - win95 totally screws it
+	   up */
+	if (cli->win95) return False;
+
+	param_len = 4;
+
+	memset(param, 0, param_len);
+	SSVAL(param, 0, fnum);
+	SSVAL(param, 2, level);
+
+	if (!cli_send_trans(cli, SMBtrans2, 
+                            NULL,                           /* name */
+                            -1, 0,                          /* fid, flags */
+                            &setup, 1, 0,                   /* setup, length, max */
+                            param, param_len, 2,            /* param, length, max */
+                            NULL, data_len, cli->max_xmit   /* data, length, max */
+                           )) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                               &rparam, &param_len,
+                               &rdata, &data_len)) {
+		return False;
+	}
+
+	memcpy(outdata, rdata, data_len);
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+	return True;
+}
