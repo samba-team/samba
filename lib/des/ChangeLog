@@ -1,3 +1,8 @@
+Tue Jan 12 05:06:54 1999  Assar Westerlund  <assar@sics.se>
+
+	* des.h: sparcv9 is also 64 bits, use `unsigned int' instead of
+ 	`unsigned long'
+
 Sun Nov 22 10:40:09 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set
