@@ -1,5 +1,5 @@
 !==
-!== PRINTER_DRIVER.txt for Samba release 1.9.18p6 11 May 1998
+!== PRINTER_DRIVER.txt for Samba release 1.9.18p7 13 May 1998
 !==
 ==========================================================================
 	Supporting the famous PRINTER$ share

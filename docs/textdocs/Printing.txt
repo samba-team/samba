@@ -1,5 +1,5 @@
 !==
-!== Printing.txt for Samba release 1.9.18p6 11 May 1998
+!== Printing.txt for Samba release 1.9.18p7 13 May 1998
 !==
 Contributor:	Unknown <samba-bugs@samba.anu.edu.au>
 Date:		Unknown

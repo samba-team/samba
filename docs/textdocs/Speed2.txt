@@ -1,5 +1,5 @@
 !==
-!== Speed2.txt for Samba release 1.9.18p6 11 May 1998
+!== Speed2.txt for Samba release 1.9.18p7 13 May 1998
 !==
 Contributor:	Paul Cochrane <paulc@dth.scot.nhs.uk>
 Organization: 	Dundee Limb Fitting Centre

@@ -12,7 +12,7 @@ filename rename operation. It is as yet undetermined whether the
 security hole is actually exploitable because of existing buffer
 overflow checks in Samba and the limitations on available characters
 in filenames but the Samba Team considered the threat of a possible
-security hole to warrant an immediate patch release.
+security hole enough to warrant an immediate patch release.
 
 It is highly recommended that all sites assume that the security hole
 is exploitable and upgrade to version 1.9.18p7 of Samba.

@@ -1,5 +1,5 @@
 !==
-!== BROWSING.txt for Samba release 1.9.18p6 11 May 1998
+!== BROWSING.txt for Samba release 1.9.18p7 13 May 1998
 !==
 Author/s:	Many (Thanks to Luke, Jeremy, Andrew, etc.)
 Updated:	October 12, 1997
