@@ -167,6 +167,7 @@ static BOOL api_noauth_auth_chk(rpcsrv_struct *l,
 				enum RPC_PKT_TYPE pkt_type)
 {
 	l->auth_validated = True;
+	memset(l->user_sess_key, 0, 16);
 	return True;
 }
 
@@ -175,18 +176,11 @@ static BOOL api_noauth_decode_pdu(rpcsrv_struct *l)
 	return True;
 }
 
-static BOOL api_noauth_usr_sess_key(rpcsrv_struct *l, uchar usr_sess_key[16])
-{
-	return False;
-}
-
 srv_auth_fns noauth_fns = 
 {
 	api_noauth_auth_chk,
 	api_noauth_auth_gen,
 	api_noauth_decode_pdu,
 	api_noauth_create_pdu,
-	api_noauth_usr_sess_key
-
 };
 

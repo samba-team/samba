@@ -90,9 +90,6 @@ typedef struct ntlmssp_auth_struct
 
 	unsigned char ntlmssp_hash[258];
 	uint32 ntlmssp_seq_num;
-	fstring user_name;
-	fstring domain;
-	fstring wks;
 
 	uchar user_sess_key[16];
 
@@ -115,6 +112,7 @@ typedef struct rpcsrv_struct
 	struct srv_auth_fns *auth;
 	BOOL auth_validated;
 	BOOL faulted_once_before;
+	uchar user_sess_key[16];
 
 	RPC_HDR       hdr;
 	RPC_HDR_BA    hdr_ba;
@@ -135,7 +133,6 @@ typedef struct srv_auth_fns
 	BOOL (*api_auth_gen)(rpcsrv_struct *, prs_struct *, enum RPC_PKT_TYPE);
 	BOOL (*api_decode_pdu)(rpcsrv_struct *);
 	BOOL (*api_create_pdu)(rpcsrv_struct *, uint32, prs_struct *);
-	BOOL (*api_user_sess_key)(rpcsrv_struct *, uchar[16]);
 
 } srv_auth_fns;
 

@@ -228,6 +228,9 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	size_t dom_len;
 	size_t wks_len;
 	BOOL anonymous = False;
+	fstring user_name;
+	fstring domain;
+	fstring wks;
 
 	memset(password, 0, sizeof(password));
 
@@ -266,46 +269,45 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	dump_data(100, a->ntlmssp_chal.challenge, 8);
 #endif
 
-	memset(a->user_name, 0, sizeof(a->user_name));
-	memset(a->domain   , 0, sizeof(a->domain   ));
-	memset(a->wks      , 0, sizeof(a->wks      ));
+	memset(user_name, 0, sizeof(user_name));
+	memset(domain   , 0, sizeof(domain   ));
+	memset(wks      , 0, sizeof(wks      ));
 
 	if (IS_BITS_SET_ALL(a->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{
-		unibuf_to_ascii(a->user_name, ntlmssp_resp->user,
+		unibuf_to_ascii(user_name, ntlmssp_resp->user,
 				MIN(ntlmssp_resp->hdr_usr   .str_str_len/2,
-				    sizeof(a->user_name)-1));
-		unibuf_to_ascii(a->domain   , ntlmssp_resp->domain,
+				    sizeof(user_name)-1));
+		unibuf_to_ascii(domain   , ntlmssp_resp->domain,
 				MIN(ntlmssp_resp->hdr_domain.str_str_len/2,
-				    sizeof(a->domain   )-1));
-		unibuf_to_ascii(a->wks      , ntlmssp_resp->wks,
+				    sizeof(domain   )-1));
+		unibuf_to_ascii(wks      , ntlmssp_resp->wks,
 				MIN(ntlmssp_resp->hdr_wks   .str_str_len/2,
-				    sizeof(a->wks      )-1));
+				    sizeof(wks      )-1));
 	}
 	else
 	{
-		fstrcpy(a->user_name, ntlmssp_resp->user  );
-		fstrcpy(a->domain   , ntlmssp_resp->domain);
-		fstrcpy(a->wks      , ntlmssp_resp->wks   );
+		fstrcpy(user_name, ntlmssp_resp->user  );
+		fstrcpy(domain   , ntlmssp_resp->domain);
+		fstrcpy(wks      , ntlmssp_resp->wks   );
 	}
-
 
 	if (anonymous)
 	{
 		DEBUG(5,("anonymous user session\n"));
-		mdfour(a->user_sess_key, password, 16);
+		mdfour(l->user_sess_key, password, 16);
 		pwd = password;
 		l->auth_validated = True;
 	}
 	else
 	{
-		DEBUG(5,("user: %s domain: %s wks: %s\n", a->user_name, a->domain, a->wks));
+		DEBUG(5,("user: %s domain: %s wks: %s\n", user_name, domain, wks));
 		become_root(False);
-		l->auth_validated = check_domain_security(a->user_name, a->domain,
+		l->auth_validated = check_domain_security(user_name, domain,
 				      (uchar*)a->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      a->user_sess_key,
+				      l->user_sess_key,
 				      password) == 0x0;
 		pwd = password;
 		unbecome_root(False);
@@ -575,20 +577,11 @@ static BOOL api_ntlmssp_decode_pdu(rpcsrv_struct *l)
 	return True;
 }
 
-static BOOL api_ntlmssp_usr_sess_key(rpcsrv_struct *l, uchar usr_sess_key[16])
-{
-	ntlmssp_auth_struct *a = (ntlmssp_auth_struct *)l->auth_info;
-	memcpy(usr_sess_key, a->user_sess_key, 16);
-	return True;
-}
-
 srv_auth_fns ntlmssp_fns = 
 {
 	api_ntlmssp_auth_chk,
 	api_ntlmssp_auth_gen,
 	api_ntlmssp_decode_pdu,
 	api_ntlmssp_create_pdu,
-	api_ntlmssp_usr_sess_key
-
 };
 

@@ -1013,7 +1013,7 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	}
 	else
 	{
-		ps->offset = start_offset + (*data32);
+		ps->offset = data_size + (*data32);
 	}
 	return True;
 }
