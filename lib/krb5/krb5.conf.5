@@ -186,12 +186,32 @@ of the `dns_lookup_realm' option).
 .Bl -tag -width "xxx" -offset indent
 .It Va REALM Li = {
 .Bl -tag -width "xxx" -offset indent
-.It Li kdc = Va host[:port]
-Specifies a list of kdcs for this realm. If the optional port is absent, the
+.It Li kdc = Va [service/]host[:port]
+Specifies a list of kdcs for this realm. If the optional
+.Va port
+is absent, the
 default value for the
 .Dq kerberos/udp
-service will be used.
+.Dq kerberos/tcp ,
+and
+.Dq http/tcp
+port (depending on service) will be used.
 The kdcs will be used in the order that they are specified.
+.Pp
+The optional
+.Va service
+specifies over what medium the kdc should be
+contacted. Possible services are
+.Dq udp ,
+.Dq tcp , 
+and
+.Dq http .
+Http can also be written as
+.Dq http:// .
+Default service is
+.Dq udp 
+and
+.Dq tcp .
 .It Li admin_server = Va host[:port]
 Specifies the admin server for this realm, where all the modifications
 to the database are perfomed.
