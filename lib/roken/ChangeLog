@@ -1,5 +1,10 @@
 2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
 
+	* resolve.c: fix res_nsearch call, but don't use it for now, AIX5
+	has a broken version that trashes memory
+
+	* roken-common.h: fix typo in previous
+
 	* roken-common.h: change IRIX == 4 to IRIX4
 
 2002-09-04  Assar Westerlund  <assar@kth.se>
