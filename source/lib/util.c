@@ -1117,7 +1117,8 @@ void msleep(int t)
 * Does the actual matching. This is the 'original code' 
 * used by the unix matcher.
 *********************************************************/
-static BOOL unix_do_match(char *str, char *regexp, int case_sig)
+
+BOOL unix_do_match(char *str, char *regexp, int case_sig)
 {
   char *p;
 
@@ -1242,9 +1243,14 @@ static BOOL unix_mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
 * Recursive routine that is called by mask_match.
 * Does the actual matching. Returns True if matched,
 * False if failed. This is the 'new' NT style matcher.
+* The win9x_semantics parameter is needed as Win9x matching
+* is *actually different*. In Win9x, trailing '?' characters
+* will only match the *exact* number of characters. Under
+* DOS and NT they match any number. This makes no
+* sense.....
 *********************************************************/
 
-BOOL do_match(char *str, char *regexp, int case_sig)
+static BOOL do_match(char *str, char *regexp, int case_sig, BOOL win9x_semantics)
 {
   char *p;
 
@@ -1268,7 +1274,7 @@ BOOL do_match(char *str, char *regexp, int case_sig)
         while(*str && (case_sig ? (*p == *str) : (toupper(*p)==toupper(*str))))
           str++;
         str--; /* We've eaten the match char after the '*' */
-        if(do_match(str,p,case_sig)) {
+        if(do_match(str,p,case_sig,win9x_semantics)) {
           return True;
         }
         if(!*str) {
@@ -1301,10 +1307,12 @@ BOOL do_match(char *str, char *regexp, int case_sig)
     return(True);
   }
   
-  if (!*str && *p == '?') {
-    while (*p == '?')
-      p++;
-    return(!*p);
+  if (!win9x_semantics) {
+    if (!*str && *p == '?') {
+      while (*p == '?')
+        p++;
+      return(!*p);
+    }
   }
 
   if(!*str && (*p == '*' && p[1] == '\0')) {
@@ -1329,6 +1337,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   pstring t_pattern, t_filename, te_pattern, te_filename;
   fstring ebase,eext,sbase,sext;
   BOOL matched = False;
+  BOOL win9x_semantics = (get_remote_arch() == RA_WIN95);
 
   /* special case - if it is exactly the same then it always matches! */
   if ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0) return True;
@@ -1383,7 +1392,6 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
     char *fp, *rp, *cp2, *cp1;
     BOOL last_wcard_was_star = False;
     int num_path_components, num_regexp_components;
-    enum remote_arch_types ra_type = get_remote_arch();
 
     pstrcpy(te_pattern,t_pattern);
     pstrcpy(te_filename,t_filename);
@@ -1398,7 +1406,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
      * Check for special 'hack' case of "DIR a*z". - needs to match a.b.c...z
      */
     if(num_regexp_components == 0)
-      matched = do_match( te_filename, te_pattern, case_sig);
+      matched = do_match( te_filename, te_pattern, case_sig, win9x_semantics);
     else {
       for( cp1 = te_pattern, cp2 = te_filename; cp1;) {
         fp = strchr(cp2, '.');
@@ -1413,17 +1421,18 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         else
           last_wcard_was_star = False;
 
-        if(!do_match(cp2, cp1, case_sig))
+        if(!do_match(cp2, cp1, case_sig, win9x_semantics))
           break;
 
         /*
-         * Ugly ! Special case for non-NT. If filename is XXXX and pattern extension
+         * Ugly ! Special case for Win9x *only*. If filename is XXXX and pattern extension
          * is '*' or all '?' then disallow match.
          */
 
-        if (*cp2 == '\0' && (ra_type != RA_WINNT) && (ra_type != RA_WIN2K) &&
-            (strequal(cp1, "*") || str_is_all(cp1, '?')))
-          break;
+        if (win9x_semantics) {
+          if (*cp2 == '\0' && (strequal(cp1, "*") || str_is_all(cp1, '?')))
+            break;
+        }
 
         cp1 = rp ? rp + 1 : NULL;
         cp2 = fp ? fp + 1 : "";
@@ -1437,7 +1446,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
             if(fp)
               *fp = '\0';
 
-            if((cp1 != NULL) && do_match( cp2, cp1, case_sig)) {
+            if((cp1 != NULL) && do_match( cp2, cp1, case_sig, win9x_semantics)) {
               cp2 = fp ? fp + 1 : "";
               break;
             }
@@ -1516,12 +1525,12 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sbase, t_filename);
         fstrcpy (sext, p + 1);
         if (*eext) {
-          matched = do_match(sbase, ebase, case_sig)
-                    && do_match(sext, eext, case_sig);
+          matched = do_match(sbase, ebase, case_sig, win9x_semantics)
+                    && do_match(sext, eext, case_sig, win9x_semantics);
         } else {
           /* pattern has no extension */
           /* Really: match complete filename with pattern ??? means exactly 3 chars */
-          matched = do_match(str, ebase, case_sig);
+          matched = do_match(str, ebase, case_sig, win9x_semantics);
         }
       } else {
         /* 
@@ -1531,17 +1540,20 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
         fstrcpy (sext, "");
         if (*eext) {
           /* pattern has extension */
-          matched = do_match(sbase, ebase, case_sig)
-                    && do_match(sext, eext, case_sig);
-          /*
-           * Special case. If filename is XXXX and pattern extension
-           * is '*' or all '?' then disallow match.
-           */
-          if (matched && (strequal(eext, "*") || str_is_all(eext, '?')))
-            matched = False;
+          matched = do_match(sbase, ebase, case_sig, win9x_semantics)
+                    && do_match(sext, eext, case_sig, win9x_semantics);
+
+          if (win9x_semantics) {
+            /*
+             * Special case for Win9x *only*. If filename is XXXX and pattern extension
+             * is '*' or all '?' then disallow match.
+             */
+            if (matched && (strequal(eext, "*") || str_is_all(eext, '?')))
+              matched = False;
+          }
 
         } else {
-          matched = do_match(sbase, ebase, case_sig);
+          matched = do_match(sbase, ebase, case_sig, win9x_semantics);
 #ifdef EMULATE_WEIRD_W95_MATCHING
           /*
            * Even Microsoft has some problems
@@ -1552,7 +1564,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
           if (!matched) {
             /* a? matches aa and a in w95 */
             fstrcat (sbase, ".");
-            matched = do_match(sbase, ebase, case_sig);
+            matched = do_match(sbase, ebase, case_sig, win9x_semantics);
           }
 #endif
         }

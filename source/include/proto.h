@@ -246,7 +246,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 int name_extract(char *buf,int ofs,char *name);
 int name_len(char *s1);
 void msleep(int t);
-BOOL do_match(char *str, char *regexp, int case_sig);
+BOOL unix_do_match(char *str, char *regexp, int case_sig);
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);

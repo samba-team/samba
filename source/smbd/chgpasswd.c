@@ -219,7 +219,7 @@ static int expect(int master,char *expected,char *buf)
       pstring s1,s2;
       pstrcpy(s1,buf);
       pstrcpy(s2,expected);
-      if (do_match(s1, s2, False))
+      if (unix_do_match(s1, s2, False))
 	return(True);
     }
   }
