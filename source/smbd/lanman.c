@@ -1672,14 +1672,8 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	int uLevel = SVAL(p,0);
-	int buf_len = SVAL(p,2);
 	char *p2;
 	int count=0;
-	int total=0,counted=0;
-	BOOL missed = False;
-	int i;
-	int data_len, fixed_len, string_len;
-	int f_len = 0, s_len = 0;
 
 	if (!prefix_ok(str1,"WrLeh")) return False;
   
@@ -1734,14 +1728,8 @@ static BOOL api_RNetUserEnum(connection_struct *conn,uint16 vuid, char *param,ch
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
 	int uLevel = SVAL(p,0);
-	int buf_len = SVAL(p,2);
 	char *p2;
 	int count=0;
-	int total=0,counted=0;
-	BOOL missed = False;
-	int i;
-	int data_len, fixed_len, string_len;
-	int f_len = 0, s_len = 0;
 
 	if (!prefix_ok(str1,"WrLeh")) return False;
   
