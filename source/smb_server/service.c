@@ -143,7 +143,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 
-	tcon = conn_new(req->smb_ctx);
+	tcon = conn_new(req->smb_conn);
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -165,7 +165,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 			/* No access, read or write. */
 			DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 				  lp_servicename(snum)));
-			conn_free(req->smb_ctx, tcon);
+			conn_free(req->smb_conn, tcon);
 			return NT_STATUS_ACCESS_DENIED;
 		} else {
 			tcon->read_only = True;
@@ -178,7 +178,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 			      lp_max_connections(SNUM(tcon)),
 			      False,0)) {
 		DEBUG(1,("too many connections - rejected\n"));
-		conn_free(req->smb_ctx, tcon);
+		conn_free(req->smb_conn, tcon);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}  
 
@@ -186,7 +186,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	status = ntvfs_init_connection(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(tcon))));
-		conn_free(req->smb_ctx, tcon);
+		conn_free(req->smb_conn, tcon);
 		return status;
 	}
 	
@@ -195,7 +195,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		status = tcon->ntvfs_ops->connect(req, lp_servicename(snum));
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
-			conn_free(req->smb_ctx, tcon);
+			conn_free(req->smb_conn, tcon);
 			return status;
 		}
 	}
@@ -259,14 +259,14 @@ close a cnum
 void close_cnum(struct smbsrv_tcon *tcon)
 {
 	DEBUG(3,("%s closed connection to service %s\n",
-		 tcon->smb_ctx->socket.client_addr, lp_servicename(SNUM(tcon))));
+		 tcon->smb_conn->socket.client_addr, lp_servicename(SNUM(tcon))));
 
 	yield_connection(tcon, lp_servicename(SNUM(tcon)));
 
 	/* tell the ntvfs backend that we are disconnecting */
 	tcon->ntvfs_ops->disconnect(tcon);
 
-	conn_free(tcon->smb_ctx, tcon);
+	conn_free(tcon->smb_conn, tcon);
 }
 
 
@@ -293,7 +293,7 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 			return status;
 		}
 
-		con->tcon.out.max_xmit = req->smb_ctx->negotiate.max_recv;
+		con->tcon.out.max_xmit = req->smb_conn->negotiate.max_recv;
 		con->tcon.out.cnum = req->tcon->cnum;
 		
 		return status;

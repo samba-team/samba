@@ -249,7 +249,7 @@ static NTSTATUS ipc_open_generic(struct smbsrv_request *req, const char *fname,
 		session_info = req->user_ctx->vuser->session_info;
 	}
 
-	status = dcesrv_endpoint_search_connect(&req->smb_ctx->dcesrv, 
+	status = dcesrv_endpoint_search_connect(&req->smb_conn->dcesrv, 
 						&ep_description, 
 						session_info,
 						&p->dce_conn);

@@ -28,7 +28,7 @@
 #include "includes.h"
 
 /* called when a session is created */
-BOOL session_claim(struct smbsrv_context *smb_ctx, user_struct *vuser)
+BOOL session_claim(struct smbsrv_connection *smb_ctx, user_struct *vuser)
 {
 	DEBUG(0,("rewrite: Not doing session claim\n"));
 	return True;

@@ -420,9 +420,9 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		trans2_setup_reply(req, trans, 2, 22, 0);
 
 		SSVAL(trans->out.params.data, 0, 0);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 0, st->standard.out.create_time);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 4, st->standard.out.access_time);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 8, st->standard.out.write_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 0, st->standard.out.create_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 4, st->standard.out.access_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 8, st->standard.out.write_time);
 		SIVAL(trans->out.data.data,        12, st->standard.out.size);
 		SIVAL(trans->out.data.data,        16, st->standard.out.alloc_size);
 		SSVAL(trans->out.data.data,        20, st->standard.out.attrib);
@@ -432,9 +432,9 @@ static NTSTATUS trans2_fileinfo_fill(struct smbsrv_request *req, struct smb_tran
 		trans2_setup_reply(req, trans, 2, 26, 0);
 
 		SSVAL(trans->out.params.data, 0, 0);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 0, st->ea_size.out.create_time);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 4, st->ea_size.out.access_time);
-		srv_push_dos_date2(req->smb_ctx, trans->out.data.data, 8, st->ea_size.out.write_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 0, st->ea_size.out.create_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 4, st->ea_size.out.access_time);
+		srv_push_dos_date2(req->smb_conn, trans->out.data.data, 8, st->ea_size.out.write_time);
 		SIVAL(trans->out.data.data,        12, st->ea_size.out.size);
 		SIVAL(trans->out.data.data,        16, st->ea_size.out.alloc_size);
 		SSVAL(trans->out.data.data,        20, st->ea_size.out.attrib);
@@ -705,9 +705,9 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 
 	case RAW_SFILEINFO_STANDARD:
 		CHECK_MIN_BLOB_SIZE(blob, 12);
-		st->standard.in.create_time = srv_pull_dos_date2(req->smb_ctx, blob->data + 0);
-		st->standard.in.access_time = srv_pull_dos_date2(req->smb_ctx, blob->data + 4);
-		st->standard.in.write_time  = srv_pull_dos_date2(req->smb_ctx, blob->data + 8);
+		st->standard.in.create_time = srv_pull_dos_date2(req->smb_conn, blob->data + 0);
+		st->standard.in.access_time = srv_pull_dos_date2(req->smb_conn, blob->data + 4);
+		st->standard.in.write_time  = srv_pull_dos_date2(req->smb_conn, blob->data + 8);
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_EA_SET:
@@ -896,9 +896,9 @@ static void find_fill_info(struct smbsrv_request *req,
 			trans2_grow_data(req, trans, ofs + 23);
 		}
 		data = trans->out.data.data + ofs;
-		srv_push_dos_date2(req->smb_ctx, data, 0, file->standard.create_time);
-		srv_push_dos_date2(req->smb_ctx, data, 4, file->standard.access_time);
-		srv_push_dos_date2(req->smb_ctx, data, 8, file->standard.write_time);
+		srv_push_dos_date2(req->smb_conn, data, 0, file->standard.create_time);
+		srv_push_dos_date2(req->smb_conn, data, 4, file->standard.access_time);
+		srv_push_dos_date2(req->smb_conn, data, 8, file->standard.write_time);
 		SIVAL(data, 12, file->standard.size);
 		SIVAL(data, 16, file->standard.alloc_size);
 		SSVAL(data, 20, file->standard.attrib);
@@ -915,9 +915,9 @@ static void find_fill_info(struct smbsrv_request *req,
 			trans2_grow_data(req, trans, ofs + 27);
 		}
 		data = trans->out.data.data + ofs;
-		srv_push_dos_date2(req->smb_ctx, data, 0, file->ea_size.create_time);
-		srv_push_dos_date2(req->smb_ctx, data, 4, file->ea_size.access_time);
-		srv_push_dos_date2(req->smb_ctx, data, 8, file->ea_size.write_time);
+		srv_push_dos_date2(req->smb_conn, data, 0, file->ea_size.create_time);
+		srv_push_dos_date2(req->smb_conn, data, 4, file->ea_size.access_time);
+		srv_push_dos_date2(req->smb_conn, data, 8, file->ea_size.write_time);
 		SIVAL(data, 12, file->ea_size.size);
 		SIVAL(data, 16, file->ea_size.alloc_size);
 		SSVAL(data, 20, file->ea_size.attrib);

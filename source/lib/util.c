@@ -640,7 +640,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
  Set the remote_arch string based on an enum. This is used in places
 where we desperately need to distinguish client type. 
 ********************************************************************/
-void set_remote_arch(struct smbsrv_context *smb, enum remote_arch_types type)
+void set_remote_arch(struct smbsrv_connection *smb, enum remote_arch_types type)
 {
 	const char *arch;
 

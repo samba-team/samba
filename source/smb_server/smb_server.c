@@ -29,7 +29,7 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 {
 	struct smbsrv_request *req;
 
-	req = init_smb_request(tcon->smb_ctx);
+	req = init_smb_request(tcon->smb_conn);
 
 	req_setup_reply(req, 8, 0);
 	
@@ -57,20 +57,20 @@ BOOL req_send_oplock_break(struct smbsrv_tcon *tcon, uint16_t fnum, uint8_t leve
 /****************************************************************************
 receive a SMB request from the wire, forming a request_context from the result
 ****************************************************************************/
-static struct smbsrv_request *receive_smb_request(struct smbsrv_context *smb_ctx)
+static struct smbsrv_request *receive_smb_request(struct smbsrv_connection *smb_conn)
 {
 	ssize_t len, len2;
 	char header[4];
 	struct smbsrv_request *req;
 
-	len = read_data(smb_ctx->socket.fd, header, 4);
+	len = read_data(smb_conn->socket.fd, header, 4);
 	if (len != 4) {
 		return NULL;
 	}
 
 	len = smb_len(header);
 
-	req = init_smb_request(smb_ctx);
+	req = init_smb_request(smb_conn);
 
 	GetTimeOfDay(&req->request_time);
 	req->chained_fnum = -1;
@@ -81,7 +81,7 @@ static struct smbsrv_request *receive_smb_request(struct smbsrv_context *smb_ctx
 	/* fill in the already received header */
 	memcpy(req->in.buffer, header, 4);
 
-	len2 = read_data(smb_ctx->socket.fd, req->in.buffer + NBT_HDR_SIZE, len);
+	len2 = read_data(smb_conn->socket.fd, req->in.buffer + NBT_HDR_SIZE, len);
 	if (len2 != len) {
 		return NULL;
 	}
@@ -122,7 +122,7 @@ static void setup_user_context(struct smbsrv_request *req)
 
 	user_ctx = talloc(req->mem_ctx, sizeof(*user_ctx));
 	user_ctx->vuid = SVAL(req->in.hdr, HDR_UID);
-	user_ctx->vuser = get_valid_user_struct(req->smb_ctx, user_ctx->vuid);
+	user_ctx->vuser = get_valid_user_struct(req->smb_conn, user_ctx->vuid);
 
 	req->user_ctx = user_ctx;
 }
@@ -437,7 +437,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 {
 	int flags;
 	uint16_t session_tag;
-	struct smbsrv_context *smb_ctx = req->smb_ctx;
+	struct smbsrv_connection *smb_conn = req->smb_conn;
 
 	type &= 0xff;
 
@@ -456,7 +456,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 		UID_FIELD_INVALID : 
 		SVAL(req->in.hdr,HDR_UID);
 
-	req->tcon = conn_find(smb_ctx, SVAL(req->in.hdr,HDR_TID));
+	req->tcon = conn_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
 	/* setup the user context for this request */
 	setup_user_context(req);
@@ -467,7 +467,7 @@ static void switch_message(int type, struct smbsrv_request *req)
 	if (req->user_ctx) {
 		req->user_ctx->vuid = session_tag;
 	}
-	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_ctx->model_ops->get_id(req)));
+	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->model_ops->get_id(req)));
 
 	/* does this protocol need to be run as root? */
 	if (!(flags & AS_USER)) {
@@ -562,19 +562,19 @@ static void construct_reply(struct smbsrv_request *req)
 	if (memcmp(req->in.hdr,"\377SMB",4) != 0) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating connection\n", 
 			 req->in.size));
-		exit_server(req->smb_ctx, "Non-SMB packet");
+		exit_server(req->smb_conn, "Non-SMB packet");
 		return;
 	}
 
 	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct > req->in.size) {
 		DEBUG(2,("Invalid SMB word count %d\n", req->in.wct));
-		exit_server(req->smb_ctx, "Invalid SMB packet");
+		exit_server(req->smb_conn, "Invalid SMB packet");
 		return;
 	}
 
 	if (NBT_HDR_SIZE + MIN_SMB_SIZE + 2*req->in.wct + req->in.data_size > req->in.size) {
 		DEBUG(2,("Invalid SMB buffer length count %d\n", req->in.data_size));
-		exit_server(req->smb_ctx, "Invalid SMB packet");
+		exit_server(req->smb_conn, "Invalid SMB packet");
 		return;
 	}
 
@@ -667,22 +667,22 @@ error:
 /*
   close the socket and shutdown a server_context
 */
-void server_terminate(struct smbsrv_context *smb_ctx)
+void server_terminate(struct smbsrv_connection *smb_conn)
 {
-	close(smb_ctx->socket.fd);
-	event_remove_fd_all(smb_ctx->events, smb_ctx->socket.fd);
+	close(smb_conn->socket.fd);
+	event_remove_fd_all(smb_conn->events, smb_conn->socket.fd);
 
-	conn_close_all(smb_ctx);
+	conn_close_all(smb_conn);
 
-	talloc_destroy(smb_ctx->mem_ctx);
+	talloc_destroy(smb_conn->mem_ctx);
 }
 
 /*
   called on a fatal error that should cause this server to terminate
 */
-void exit_server(struct smbsrv_context *smb_ctx, const char *reason)
+void exit_server(struct smbsrv_connection *smb_conn, const char *reason)
 {
-	smb_ctx->model_ops->terminate_connection(smb_ctx, reason);
+	smb_conn->model_ops->terminate_connection(smb_conn, reason);
 }
 
 /*
@@ -783,11 +783,11 @@ void smbd_read_handler(struct event_context *ev, struct fd_event *fde,
 		       time_t t, uint16_t flags)
 {
 	struct smbsrv_request *req;
-	struct smbsrv_context *smb_ctx = fde->private;
+	struct smbsrv_connection *smb_conn = fde->private;
 	
-	req = receive_smb_request(smb_ctx);
+	req = receive_smb_request(smb_conn);
 	if (!req) {
-		smb_ctx->model_ops->terminate_connection(smb_ctx, "receive error");
+		smb_conn->model_ops->terminate_connection(smb_conn, "receive error");
 		return;
 	}
 
@@ -804,13 +804,13 @@ void smbd_read_handler(struct event_context *ev, struct fd_event *fde,
   new messages from clients are still processed while they are
   performing long operations
 */
-void smbd_process_async(struct smbsrv_context *smb_ctx)
+void smbd_process_async(struct smbsrv_connection *smb_conn)
 {
 	struct smbsrv_request *req;
 	
-	req = receive_smb_request(smb_ctx);
+	req = receive_smb_request(smb_conn);
 	if (!req) {
-		smb_ctx->model_ops->terminate_connection(smb_ctx, "receive error");
+		smb_conn->model_ops->terminate_connection(smb_conn, "receive error");
 		return;
 	}
 
@@ -825,7 +825,7 @@ void smbd_process_async(struct smbsrv_context *smb_ctx)
 void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int fd,
 		     void (*read_handler)(struct event_context *, struct fd_event *, time_t, uint16_t))
 {
-	struct smbsrv_context *smb_ctx;
+	struct smbsrv_connection *smb_conn;
 	TALLOC_CTX *mem_ctx;
 	struct fd_event fde;
 	char *socket_addr;
@@ -835,48 +835,48 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 
 	mem_ctx = talloc_init("server_context");
 
-	smb_ctx = talloc_p(mem_ctx, struct smbsrv_context);
-	if (!smb_ctx) return;
+	smb_conn = talloc_p(mem_ctx, struct smbsrv_connection);
+	if (!smb_conn) return;
 
-	ZERO_STRUCTP(smb_ctx);
+	ZERO_STRUCTP(smb_conn);
 
-	smb_ctx->mem_ctx = mem_ctx;
-	smb_ctx->socket.fd = fd;
-	smb_ctx->pid = getpid();
+	smb_conn->mem_ctx = mem_ctx;
+	smb_conn->socket.fd = fd;
+	smb_conn->pid = getpid();
 
-	sub_set_context(&smb_ctx->substitute);
+	sub_set_context(&smb_conn->substitute);
 
 	/* set an initial client name based on its IP address. This will be replaced with
 	   the netbios name later if it gives us one */
-	socket_addr = get_socket_addr(smb_ctx->mem_ctx, fd);
+	socket_addr = get_socket_addr(smb_conn->mem_ctx, fd);
 	sub_set_remote_machine(socket_addr);
-	smb_ctx->socket.client_addr = socket_addr;
+	smb_conn->socket.client_addr = socket_addr;
 
 	/* now initialise a few default values associated with this smb socket */
-	smb_ctx->negotiate.max_send = 0xFFFF;
+	smb_conn->negotiate.max_send = 0xFFFF;
 
 	/* this is the size that w2k uses, and it appears to be important for
 	   good performance */
-	smb_ctx->negotiate.max_recv = lp_max_xmit();
+	smb_conn->negotiate.max_recv = lp_max_xmit();
 
-	smb_ctx->negotiate.zone_offset = get_time_zone(time(NULL));
+	smb_conn->negotiate.zone_offset = get_time_zone(time(NULL));
 
-	smb_ctx->users.next_vuid = VUID_OFFSET;
+	smb_conn->users.next_vuid = VUID_OFFSET;
 	
-	smb_ctx->events = ev;
-	smb_ctx->model_ops = model_ops;
+	smb_conn->events = ev;
+	smb_conn->model_ops = model_ops;
 
-	conn_init(smb_ctx);
+	conn_init(smb_conn);
 
 	/* setup a event handler for this socket. We are initially
 	   only interested in reading from the socket */
 	fde.fd = fd;
 	fde.handler = read_handler;
-	fde.private = smb_ctx;
+	fde.private = smb_conn;
 	fde.flags = EVENT_FD_READ;
 
 	event_add_fd(ev, &fde);
 
 	/* setup the DCERPC server subsystem */
-	dcesrv_init_context(&smb_ctx->dcesrv);
+	dcesrv_init_context(&smb_conn->dcesrv);
 }

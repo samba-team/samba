@@ -51,8 +51,8 @@ struct async_info {
 static void idle_func(struct cli_transport *transport, void *p_private)
 {
 	struct cvfs_private *private = p_private;
-	if (socket_pending(private->tcon->smb_ctx->socket.fd)) {
-		smbd_process_async(private->tcon->smb_ctx);
+	if (socket_pending(private->tcon->smb_conn->socket.fd)) {
+		smbd_process_async(private->tcon->smb_conn);
 	}
 }
 
@@ -164,7 +164,7 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename)
 	fde.private = private;
 	fde.handler = cifs_socket_handler;
 
-	event_add_fd(tcon->smb_ctx->events, &fde);
+	event_add_fd(tcon->smb_conn->events, &fde);
 
 	/* we need to receive oplock break requests from the server */
 	cli_oplock_handler(private->transport, oplock_handler, private);
@@ -180,7 +180,7 @@ static NTSTATUS cvfs_disconnect(struct smbsrv_tcon *tcon)
 {
 	struct cvfs_private *private = tcon->ntvfs_private;
 
-	event_remove_fd_all(tcon->smb_ctx->events, private->transport->socket->fd);
+	event_remove_fd_all(tcon->smb_conn->events, private->transport->socket->fd);
 	smb_tree_disconnect(private->tree);
 	cli_tree_close(private->tree);
 

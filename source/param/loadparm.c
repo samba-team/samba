@@ -3039,7 +3039,7 @@ BOOL lp_loaded(void)
  Unload unused services.
 ***************************************************************************/
 
-void lp_killunused(struct smbsrv_context *smb, BOOL (*snumused) (struct smbsrv_context *, int))
+void lp_killunused(struct smbsrv_connection *smb, BOOL (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
 	for (i = 0; i < iNumServices; i++) {

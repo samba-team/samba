@@ -21,20 +21,20 @@
 #include "includes.h"
 
 /* initialise the auth_context for this server and return the cryptkey */
-static void get_challenge(struct smbsrv_context *smb_ctx, char buff[8]) 
+static void get_challenge(struct smbsrv_connection *smb_conn, char buff[8]) 
 {
 	NTSTATUS nt_status;
 	const uint8_t *cryptkey;
 
 	/* muliple negprots are not premitted */
-	if (smb_ctx->negotiate.auth_context) {
+	if (smb_conn->negotiate.auth_context) {
 		DEBUG(3,("get challenge: is this a secondary negprot?  auth_context is non-NULL!\n"));
 		smb_panic("secondary negprot");
 	}
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 
-	nt_status = make_auth_context_subsystem(&smb_ctx->negotiate.auth_context);
+	nt_status = make_auth_context_subsystem(&smb_conn->negotiate.auth_context);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("make_auth_context_subsystem returned %s", nt_errstr(nt_status)));
@@ -42,7 +42,7 @@ static void get_challenge(struct smbsrv_context *smb_ctx, char buff[8])
 	}
 
 	DEBUG(10, ("get challenge: getting challenge\n"));
-	cryptkey = smb_ctx->negotiate.auth_context->get_ntlm_challenge(smb_ctx->negotiate.auth_context);
+	cryptkey = smb_conn->negotiate.auth_context->get_ntlm_challenge(smb_conn->negotiate.auth_context);
 	memcpy(buff, cryptkey, 8);
 }
 
@@ -55,7 +55,7 @@ static void reply_corep(struct smbsrv_request *req, uint16_t choice)
 
 	SSVAL(req->out.vwv, VWV(0), choice);
 
-	req->smb_ctx->negotiate.protocol = PROTOCOL_CORE;
+	req->smb_conn->negotiate.protocol = PROTOCOL_CORE;
 
 	req_send_reply(req);
 }
@@ -82,7 +82,7 @@ static void reply_coreplus(struct smbsrv_request *req, uint16_t choice)
 	   readbraw and writebraw (possibly) */
 	SSVAL(req->out.vwv, VWV(5), raw); 
 
-	req->smb_ctx->negotiate.protocol = PROTOCOL_COREPLUS;
+	req->smb_conn->negotiate.protocol = PROTOCOL_COREPLUS;
 
 	req_send_reply(req);
 }
@@ -96,17 +96,17 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 
-	req->smb_ctx->negotiate.encrypted_passwords = lp_encrypted_passwords();
+	req->smb_conn->negotiate.encrypted_passwords = lp_encrypted_passwords();
 
 	if (lp_security() != SEC_SHARE)
 		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 
-	if (req->smb_ctx->negotiate.encrypted_passwords)
+	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	req->smb_ctx->negotiate.protocol = PROTOCOL_LANMAN1;
+	req->smb_conn->negotiate.protocol = PROTOCOL_LANMAN1;
 
-	req_setup_reply(req, 13, req->smb_ctx->negotiate.encrypted_passwords ? 8 : 0);
+	req_setup_reply(req, 13, req->smb_conn->negotiate.encrypted_passwords ? 8 : 0);
 
 	/* SMBlockread, SMBwritelock supported. */
 	SCVAL(req->out.hdr,HDR_FLG,
@@ -114,18 +114,18 @@ static void reply_lanman1(struct smbsrv_request *req, uint16_t choice)
 
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SSVAL(req->out.vwv, VWV(1), secword); 
-	SSVAL(req->out.vwv, VWV(2), req->smb_ctx->negotiate.max_recv);
+	SSVAL(req->out.vwv, VWV(2), req->smb_conn->negotiate.max_recv);
 	SSVAL(req->out.vwv, VWV(3), lp_maxmux());
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
-	SIVAL(req->out.vwv, VWV(6), req->smb_ctx->pid);
-	srv_push_dos_date(req->smb_ctx, req->out.vwv, VWV(8), t);
-	SSVAL(req->out.vwv, VWV(10), req->smb_ctx->negotiate.zone_offset/60);
+	SIVAL(req->out.vwv, VWV(6), req->smb_conn->pid);
+	srv_push_dos_date(req->smb_conn, req->out.vwv, VWV(8), t);
+	SSVAL(req->out.vwv, VWV(10), req->smb_conn->negotiate.zone_offset/60);
 
 	/* Create a token value and add it to the outgoing packet. */
-	if (req->smb_ctx->negotiate.encrypted_passwords) {
+	if (req->smb_conn->negotiate.encrypted_passwords) {
 		SSVAL(req->out.vwv, VWV(11), 8);
-		get_challenge(req->smb_ctx, req->out.data);
+		get_challenge(req->smb_conn, req->out.data);
 	}
 
 	req_send_reply(req);	
@@ -140,33 +140,33 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 	int secword=0;
 	time_t t = req->request_time.tv_sec;
 
-	req->smb_ctx->negotiate.encrypted_passwords = lp_encrypted_passwords();
+	req->smb_conn->negotiate.encrypted_passwords = lp_encrypted_passwords();
   
 	if (lp_security() != SEC_SHARE)
 		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 
-	if (req->smb_ctx->negotiate.encrypted_passwords)
+	if (req->smb_conn->negotiate.encrypted_passwords)
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 
-	req->smb_ctx->negotiate.protocol = PROTOCOL_LANMAN2;
+	req->smb_conn->negotiate.protocol = PROTOCOL_LANMAN2;
 
 	req_setup_reply(req, 13, 0);
 
 	SSVAL(req->out.vwv, VWV(0), choice);
 	SSVAL(req->out.vwv, VWV(1), secword); 
-	SSVAL(req->out.vwv, VWV(2), req->smb_ctx->negotiate.max_recv);
+	SSVAL(req->out.vwv, VWV(2), req->smb_conn->negotiate.max_recv);
 	SSVAL(req->out.vwv, VWV(3), lp_maxmux());
 	SSVAL(req->out.vwv, VWV(4), 1);
 	SSVAL(req->out.vwv, VWV(5), raw); 
-	SIVAL(req->out.vwv, VWV(6), req->smb_ctx->pid);
-	srv_push_dos_date(req->smb_ctx, req->out.vwv, VWV(8), t);
-	SSVAL(req->out.vwv, VWV(10), req->smb_ctx->negotiate.zone_offset/60);
+	SIVAL(req->out.vwv, VWV(6), req->smb_conn->pid);
+	srv_push_dos_date(req->smb_conn, req->out.vwv, VWV(8), t);
+	SSVAL(req->out.vwv, VWV(10), req->smb_conn->negotiate.zone_offset/60);
 
 	/* Create a token value and add it to the outgoing packet. */
-	if (req->smb_ctx->negotiate.encrypted_passwords) {
+	if (req->smb_conn->negotiate.encrypted_passwords) {
 		SSVAL(req->out.vwv, VWV(11), 8);
 		req_grow_data(req, 8);
-		get_challenge(req->smb_ctx, req->out.data);
+		get_challenge(req->smb_conn, req->out.data);
 	}
 
 	req_push_str(req, NULL, lp_workgroup(), -1, STR_TERMINATE);
@@ -179,7 +179,7 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 /****************************************************************************
  Generate the spnego negprot reply blob. Return the number of bytes used.
 ****************************************************************************/
-static DATA_BLOB negprot_spnego(struct smbsrv_context *smb_ctx)
+static DATA_BLOB negprot_spnego(struct smbsrv_connection *smb_conn)
 {
 	DATA_BLOB blob;
 	uint8_t guid[16];
@@ -190,7 +190,7 @@ static DATA_BLOB negprot_spnego(struct smbsrv_context *smb_ctx)
 	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
 	char *principal;
 
-	smb_ctx->negotiate.spnego_negotiated = True;
+	smb_conn->negotiate.spnego_negotiated = True;
 
 	memset(guid, 0, 16);
 	safe_strcpy((char *)guid, lp_netbios_name(), 16);
@@ -238,12 +238,12 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		CAP_NT_FIND | CAP_LOCK_AND_READ | 
 		CAP_LEVEL_II_OPLOCKS | CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
 
-	req->smb_ctx->negotiate.encrypted_passwords = lp_encrypted_passwords();
+	req->smb_conn->negotiate.encrypted_passwords = lp_encrypted_passwords();
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
 	
-	if (req->smb_ctx->negotiate.encrypted_passwords && 
+	if (req->smb_conn->negotiate.encrypted_passwords && 
 	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
@@ -283,13 +283,13 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	}
 
-	if (req->smb_ctx->negotiate.encrypted_passwords) {
+	if (req->smb_conn->negotiate.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
 
-	req->smb_ctx->signing.signing_state = lp_server_signing();
+	req->smb_conn->signing.signing_state = lp_server_signing();
 
-	switch (req->smb_ctx->signing.signing_state) {
+	switch (req->smb_conn->signing.signing_state) {
 	case SMB_SIGNING_OFF:
 		break;
 	case SMB_SIGNING_SUPPORTED:
@@ -301,7 +301,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		break;
 	}
 	
-	req->smb_ctx->negotiate.protocol = PROTOCOL_NT1;
+	req->smb_conn->negotiate.protocol = PROTOCOL_NT1;
 
 	req_setup_reply(req, 17, 0);
 	
@@ -314,20 +314,20 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	   are offset by 1 byte */
 	SSVAL(req->out.vwv+1, VWV(1), lp_maxmux());
 	SSVAL(req->out.vwv+1, VWV(2), 1); /* num vcs */
-	SIVAL(req->out.vwv+1, VWV(3), req->smb_ctx->negotiate.max_recv);
+	SIVAL(req->out.vwv+1, VWV(3), req->smb_conn->negotiate.max_recv);
 	SIVAL(req->out.vwv+1, VWV(5), 0x10000); /* raw size. full 64k */
-	SIVAL(req->out.vwv+1, VWV(7), req->smb_ctx->pid); /* session key */
+	SIVAL(req->out.vwv+1, VWV(7), req->smb_conn->pid); /* session key */
 	SIVAL(req->out.vwv+1, VWV(9), capabilities);
 	push_nttime(req->out.vwv+1, VWV(11), nttime);
-	SSVALS(req->out.vwv+1,VWV(15), req->smb_ctx->negotiate.zone_offset/60);
+	SSVALS(req->out.vwv+1,VWV(15), req->smb_conn->negotiate.zone_offset/60);
 	
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
-		if (req->smb_ctx->negotiate.encrypted_passwords) {
+		if (req->smb_conn->negotiate.encrypted_passwords) {
 			req_grow_data(req, 8);
 			/* note that we do not send a challenge at all if
 			   we are using plaintext */
-			get_challenge(req->smb_ctx, req->out.ptr);
+			get_challenge(req->smb_conn, req->out.ptr);
 			req->out.ptr += 8;
 			SCVAL(req->out.vwv+1, VWV(16), 8);
 		}
@@ -336,13 +336,13 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 #if 0
-		DATA_BLOB blob = negprot_spnego(req->smb_ctx);
+		DATA_BLOB blob = negprot_spnego(req->smb_conn);
 
 		req_grow_data(req, blob.length);
 		memcpy(req->out.ptr, blob.data, blob.length);
 		DEBUG(3,("using SPNEGO\n"));
 #else
-		exit_server(req->smb_ctx, "no SPNEGO please");
+		exit_server(req->smb_conn, "no SPNEGO please");
 #endif
 	}
 	
@@ -449,10 +449,10 @@ void reply_negprot(struct smbsrv_request *req)
 	char *p;
 	int arch = ARCH_ALL;
 
-	if (req->smb_ctx->negotiate.done_negprot) {
-		exit_server(req->smb_ctx, "multiple negprot's are not permitted");
+	if (req->smb_conn->negotiate.done_negprot) {
+		exit_server(req->smb_conn, "multiple negprot's are not permitted");
 	}
-	req->smb_ctx->negotiate.done_negprot = True;
+	req->smb_conn->negotiate.done_negprot = True;
 
 	p = req->in.data + 1;
 
@@ -485,33 +485,33 @@ void reply_negprot(struct smbsrv_request *req)
     
 	switch (arch) {
 		case ARCH_SAMBA:
-			set_remote_arch(req->smb_ctx, RA_SAMBA);
+			set_remote_arch(req->smb_conn, RA_SAMBA);
 			break;
 		case ARCH_WFWG:
-			set_remote_arch(req->smb_ctx, RA_WFWG);
+			set_remote_arch(req->smb_conn, RA_WFWG);
 			break;
 		case ARCH_WIN95:
-			set_remote_arch(req->smb_ctx, RA_WIN95);
+			set_remote_arch(req->smb_conn, RA_WIN95);
 			break;
 		case ARCH_WINNT:
 			if (req->flags2==FLAGS2_WIN2K_SIGNATURE)
-				set_remote_arch(req->smb_ctx, RA_WIN2K);
+				set_remote_arch(req->smb_conn, RA_WIN2K);
 			else
-				set_remote_arch(req->smb_ctx, RA_WINNT);
+				set_remote_arch(req->smb_conn, RA_WINNT);
 			break;
 		case ARCH_WIN2K:
-			set_remote_arch(req->smb_ctx, RA_WIN2K);
+			set_remote_arch(req->smb_conn, RA_WIN2K);
 			break;
 		case ARCH_OS2:
-			set_remote_arch(req->smb_ctx, RA_OS2);
+			set_remote_arch(req->smb_conn, RA_OS2);
 			break;
 		default:
-			set_remote_arch(req->smb_ctx, RA_UNKNOWN);
+			set_remote_arch(req->smb_conn, RA_UNKNOWN);
 		break;
 	}
  
 	/* possibly reload - change of architecture */
-	reload_services(req->smb_ctx, True);      
+	reload_services(req->smb_conn, True);      
     
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
@@ -531,7 +531,7 @@ void reply_negprot(struct smbsrv_request *req)
   
 	if(choice != -1) {
 		sub_set_remote_proto(supported_protocols[protocol].short_name);
-		reload_services(req->smb_ctx, True);
+		reload_services(req->smb_conn, True);
 		supported_protocols[protocol].proto_reply_fn(req, choice);
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {
