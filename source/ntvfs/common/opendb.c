@@ -88,7 +88,7 @@ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 
 	path = lock_path(odb, "openfiles.tdb");
 	odb->w = tdb_wrap_open(odb, path, 0,  
-			       TDB_DEFAULT|TDB_CLEAR_IF_FIRST,
+			       TDB_DEFAULT,
 			       O_RDWR|O_CREAT, 0600);
 	talloc_free(path);
 	if (odb->w == NULL) {
