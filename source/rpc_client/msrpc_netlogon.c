@@ -92,18 +92,12 @@ static uint32 domain_client_validate(const char *user, const char *domain,
 	fstrcpy(trust_acct, acct_name);
 	fstrcat(trust_acct, "$");
 
-	/* 
-	   * Check that the requested domain is not our own machine name.
-	   * If it is, we should never check the PDC here, we use our own local
-	   * password file.
-	 */
-
 	if (!get_any_dc_name(domain, srv_name))
 	{
 		DEBUG(3,
-		      ("domain_client_validate: could not find domain %s\n",
+		      ("domain_client_validate: could not find domain %s, using local SAM\n",
 		       domain));
-		return NT_STATUS_ACCESS_DENIED;
+		fstrcpy(srv_name, "\\\\.");
 	}
 
 	if (acct_type == SEC_CHAN_DOMAIN)
@@ -249,11 +243,17 @@ uint32 check_domain_security(const char *orig_user, const char *domain,
 	    (lp_security() == SEC_DOMAIN &&
 	     strequal(domain, global_myworkgroup)))
 	{
+		/*
+		 * security = user (pdc, bdc) or security = domain
+		 */
 		fstrcpy(acct_name, global_myname);
 		acct_type = SEC_CHAN_WKSTA;
 	}
 	else
 	{
+		/*
+		 * hm, must be a trusted domain name.
+		 */
 		fstrcpy(acct_name, global_myworkgroup);
 		acct_type = SEC_CHAN_DOMAIN;
 	}
