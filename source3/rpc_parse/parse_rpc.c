@@ -243,6 +243,34 @@ BOOL smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Reads or writes an RPC_UUID structure.
+********************************************************************/
+
+static BOOL smb_io_rpc_uuid(const char *desc, RPC_UUID *uuid, prs_struct *ps, int depth)
+{
+	if (ifc == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_uuid");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32 ("data   ", ps, depth, &uuid->time_low))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_mid))
+		return False;
+	if(!prs_uint16 ("data   ", ps, depth, &uuid->time_hi_and_version))
+		return False;
+
+	if(!prs_uint8s (False, "data   ", ps, depth, uuid->remaining, sizeof(uuid->remaining)))
+		return False;
+
+	return true;
+}
+
+/*******************************************************************
  Reads or writes an RPC_IFACE structure.
 ********************************************************************/
 
@@ -254,18 +282,9 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
 
-	if(!prs_align(ps))
+	if (!smb_io_rpc_uuid(  "uuid", ps, depth, &ifc->uuid))
 		return False;
 
-	if(!prs_uint32 ("data   ", ps, depth, &ifc->uuid.time_low))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_mid))
-		return False;
-	if(!prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_hi_and_version))
-		return False;
-
-	if(!prs_uint8s (False, "data   ", ps, depth, ifc->uuid.remaining, sizeof(ifc->uuid.remaining)))
-		return False;
 	if(!prs_uint32 (       "version", ps, depth, &ifc->version))
 		return False;
 
