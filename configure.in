@@ -3,7 +3,7 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
-AM_INIT_AUTOMAKE(heimdal,0.2t-pre)
+AM_INIT_AUTOMAKE(heimdal,0.3a-pre)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
 
@@ -76,7 +76,7 @@ if test "$withval" = no; then
 fi
 ])
 
-AC_ROKEN(9,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
+AC_ROKEN(10,[/usr/heimdal /usr/athena],[lib/roken],[$(top_builddir)/lib/roken/libroken.la],[-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken])
 
 AC_TEST_PACKAGE_NEW(openldap,[#include <ldap.h>],[-lldap -llber])
 
