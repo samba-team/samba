@@ -1646,31 +1646,52 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 	if(!smb_io_dom_sid2("", &usr->dom_sid, ps, depth))           /* domain SID */
 		return False;
 
-	if (usr->num_other_sids) {
+	if (usr->buffer_other_sids) {
+
+		uint32 num_other_sids = usr->num_other_sids;
+
+		if (!prs_uint32("num_other_sids", ps, depth,
+				&num_other_sids))
+			return False;
+
+		if (num_other_sids != usr->num_other_sids)
+			return False;
 
 		if (UNMARSHALLING(ps)) {
 			usr->other_sids = PRS_ALLOC_MEM(ps, DOM_SID2, usr->num_other_sids);
-			if (usr->other_sids == NULL)
+			usr->other_sids_attrib =
+				PRS_ALLOC_MEM(ps, uint32, usr->num_other_sids);
+							       
+			if ((num_other_sids != 0) &&
+			    ((usr->other_sids == NULL) ||
+			     (usr->other_sids_attrib == NULL)))
 				return False;
 		}
-	
-		if(!prs_uint32("num_other_groups", ps, depth, &usr->num_other_groups))
-			return False;
 
-		if (UNMARSHALLING(ps) && usr->num_other_groups > 0) {
-			usr->other_gids = PRS_ALLOC_MEM(ps, DOM_GID, usr->num_other_groups);
-			if (usr->other_gids == NULL)
+		/* First the pointers to the SIDS and attributes */
+
+		depth++;
+
+		for (i=0; i<usr->num_other_sids; i++) {
+			uint32 ptr = 1;
+
+			if (!prs_uint32("sid_ptr", ps, depth, &ptr))
+				return False;
+
+			if (UNMARSHALLING(ps) && (ptr == 0))
+				return False;
+
+			if (!prs_uint32("attribute", ps, depth,
+					&usr->other_sids_attrib[i]))
 				return False;
 		}
 	
-		for (i = 0; i < usr->num_other_groups; i++) {
-			if(!smb_io_gid("", &usr->other_gids[i], ps, depth)) /* other GIDs */
-				return False;
-		}
 		for (i = 0; i < usr->num_other_sids; i++) {
 			if(!smb_io_dom_sid2("", &usr->other_sids[i], ps, depth)) /* other domain SIDs */
 				return False;
 		}
+
+		depth--;
 	}
 
 	return True;

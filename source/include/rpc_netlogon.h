@@ -190,9 +190,8 @@ typedef struct net_user_info_3
 
 	DOM_SID2 dom_sid;           /* domain SID */
 
-	uint32 num_other_groups;        /* other groups */
-	DOM_GID *other_gids; /* group info */
 	DOM_SID2 *other_sids; /* foreign/trusted domain SIDs */
+	uint32 *other_sids_attrib;
 
 } NET_USER_INFO_3;
 
