@@ -454,7 +454,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	asn1_read_uint8(data, &b);
 
 	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b/40);
-	tmp_oid = talloc_asprintf_append(mem_ctx, tmp_oid, " %u",  b%40);
+	tmp_oid = talloc_asprintf_append(tmp_oid, " %u",  b%40);
 
 	while (!data->has_error && asn1_tag_remaining(data) > 0) {
 		uint_t v = 0;
@@ -462,7 +462,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
-		tmp_oid = talloc_asprintf_append(mem_ctx, tmp_oid, " %u",  v);
+		tmp_oid = talloc_asprintf_append(tmp_oid, " %u",  v);
 	}
 
 	asn1_end_tag(data);

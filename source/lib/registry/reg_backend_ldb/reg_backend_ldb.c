@@ -28,7 +28,7 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 	char *end = mypath, *begin;
 
 	if(add) 
-		ret = talloc_asprintf_append(mem_ctx, ret, "%s", add);
+		ret = talloc_asprintf_append(ret, "%s", add);
 
 	while(end) {
 		char *keyname;
@@ -38,7 +38,7 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path, const char *
 		else keyname = mypath;
 
 		if(strlen(keyname))
-			ret = talloc_asprintf_append(mem_ctx, ret, "key=%s,", keyname);
+			ret = talloc_asprintf_append(ret, "key=%s,", keyname);
 			
 		if(begin) {
 			begin[0] = '\0';
