@@ -554,7 +554,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     krb5_enctype *etypes = NULL;
     krb5_preauthtype *pre_auth_types = NULL;
     krb5_creds this_cred;
-    krb5_keytab_entry kt_ent;
+    krb5_keytab_key_proc_args *a;
     
     ret = get_init_creds_common(context, creds, client, start_time,
 				in_tkt_service, options,
@@ -563,14 +563,13 @@ krb5_get_init_creds_keytab(krb5_context context,
     if(ret)
 	goto out;
 
-    ret = krb5_kt_get_entry(context,
-			    keytab,
-			    this_cred.client,
-			    0,
-			    KEYTYPE_DES,
-			    &kt_ent);
-    if(ret)
+    a = malloc (sizeof(*a));
+    if (a == NULL) {
+	ret = ENOMEM;
 	goto out;
+    }
+    a->principal = this_cred.client;
+    a->keytab    = keytab;
 
     ret = krb5_get_in_cred (context,
 			    flags.i,
@@ -578,13 +577,12 @@ krb5_get_init_creds_keytab(krb5_context context,
 			    etypes,
 			    pre_auth_types,
 			    NULL,
-			    krb5_keyblock_key_proc,
-			    &kt_ent.keyblock,
+			    krb5_keytab_key_proc,
+			    a,
 			    NULL,
 			    NULL,
 			    &this_cred,
 			    NULL);
-    krb5_kt_free_entry(context, &kt_ent);
     if (ret)
 	goto out;
     free (pre_auth_types);
