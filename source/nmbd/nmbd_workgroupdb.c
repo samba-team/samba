@@ -156,7 +156,7 @@ static struct work_record *remove_workgroup_from_subnet(struct subnet_record *su
   **************************************************************************/
 
 struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
-                                             fstring name)
+                                             const char *name)
 {
   struct work_record *ret;
   
