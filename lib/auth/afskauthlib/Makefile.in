@@ -75,4 +75,4 @@ $(OBJECTS): ../../../config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes ../../roken/libroken.a
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(OBJECTS) -L../../kafs -lkafs -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken
