@@ -3121,8 +3121,9 @@ AC_MSG_CHECKING(whether to try the lib/sysquotas.c interface on ${host_os})
             samba_cv_RUN_QUOTA_TESTS=yes
             samba_cv_SYSQUOTA_FOUND=yes
             AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
-            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
             samba_cv_sysquotas_file="lib/sysquotas_linux.c"
+            AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+            samba_cv_found_xfs_header=yes
 	    ;;
 	*)
 	    AC_MSG_RESULT(no)
@@ -3147,7 +3148,7 @@ AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 # For sys/quota.h and linux/quota.h
 AC_CHECK_HEADERS(sys/quota.h)
 
-if test x"$samba_cv_found_xfs_header" = x"no"; then
+if test x"$samba_cv_found_xfs_header" != x"yes"; then
 # if we have xfs quota support <sys/quota.h> (IRIX) we should use it
 AC_CACHE_CHECK([for XFS QUOTA in <sys/quota.h>],samba_cv_HAVE_SYS_QUOTA_XFS, [
 AC_TRY_COMPILE([
@@ -3162,10 +3163,9 @@ AC_TRY_COMPILE([
 ],[int i = Q_XGETQUOTA;],
 samba_cv_HAVE_SYS_QUOTA_XFS=yes,samba_cv_HAVE_SYS_QUOTA_XFS=no)])
 if test "$samba_cv_HAVE_SYS_QUOTA_XFS"x = "yes"x; then
-	AC_DEFINE(HAVE_IRIX_XFS_QUOTAS,1,[Whether IRIX xfs quota support is available])
+	samba_cv_found_xfs_header=yes
 fi
 fi
-
 
 # if we have struct dqblk .dqb_fsoftlimit instead of .dqb_isoftlimit on IRIX 
 AC_CACHE_CHECK([if struct dqblk has .dqb_fsoftlimit],samba_cv_HAVE_DQB_FSOFTLIMIT, [
@@ -3284,6 +3284,27 @@ AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
 	AC_MSG_RESULT(yes)
     else
         AC_MSG_RESULT(no)
+    fi
+fi
+fi
+
+if test x"$samba_cv_SYSQUOTA_FOUND" != x"no" -a x"$samba_cv_found_xfs_header" = x"yes"; then
+AC_CACHE_CHECK([whether the sys_quota interface works with XFS],samba_cv_SYSQUOTA_WORKS_XFS,[
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -I${srcdir-.}/ -I. -I${srcdir-.}/include -I${srcdir-.}/ubiqx -I${srcdir-.}/popt  -I${srcdir-.}/smbwrapper -I${srcdir-.}/nsswitch"
+AC_TRY_COMPILE([
+#include "confdefs.h"
+#define NO_PROTO_H 1
+#define NO_CONFIG_H 1
+#define HAVE_SYS_QUOTAS 1
+#define HAVE_XFS_QUOTAS 1
+#include "${srcdir-.}/lib/sysquotas_xfs.c"
+],[],samba_cv_SYSQUOTA_WORKS_XFS=yes,samba_cv_SYSQUOTA_WORKS_XFS=no)
+CPPFLAGS="$SAVE_CPPFLAGS"
+])
+if test x"$samba_cv_SYSQUOTA_WORKS_XFS" = x"yes"; then
+    if test x"$samba_cv_WE_USE_SYS_QUOTAS" = x"yes"; then
+	AC_DEFINE(HAVE_XFS_QUOTAS,1,[Whether xfs quota support is available])
     fi
 fi
 fi
