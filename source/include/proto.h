@@ -373,6 +373,7 @@ BOOL trim_string(char *s,const char *front,const char *back);
 BOOL strhasupper(const char *s);
 BOOL strhaslower(const char *s);
 size_t count_chars(const char *s,char c);
+BOOL str_is_all(const char *s,char c);
 char *safe_strcpy(char *dest,const char *src, size_t maxlength);
 char *safe_strcat(char *dest, const char *src, size_t maxlength);
 char *StrCpy(char *dest,const char *src);
@@ -2480,7 +2481,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
 
-int32 get_number_of_open_oplocks(void);
+int32 get_number_of_exclusive_open_oplocks(void);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);

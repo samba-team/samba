@@ -244,12 +244,12 @@ void respond_to_all_remaining_local_messages(void)
   fd_set fds;
 
   /*
-   * Assert we have no open oplocks.
+   * Assert we have no exclusive open oplocks.
    */
 
-  if(get_number_of_open_oplocks()) {
-    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d oplocks.\n",
-          get_number_of_open_oplocks() ));
+  if(get_number_of_exclusive_open_oplocks()) {
+    DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
+          get_number_of_exclusive_open_oplocks() ));
     return;
   }
 

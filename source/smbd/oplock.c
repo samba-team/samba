@@ -30,7 +30,8 @@ static int oplock_pipe_read = -1;
 static int oplock_pipe_write = -1;
 
 /* Current number of oplocks we have outstanding. */
-static int32 global_oplocks_open = 0;
+static int32 exclusive_oplocks_open = 0;
+static int32 level_II_oplocks_open = 0;
 BOOL global_oplock_break = False;
 
 extern int smb_read_error;
@@ -38,12 +39,12 @@ extern int smb_read_error;
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, BOOL local);
 
 /****************************************************************************
- Get the number of current oplocks.
+ Get the number of current exclusive oplocks.
 ****************************************************************************/
 
-int32 get_number_of_open_oplocks(void)
+int32 get_number_of_exclusive_open_oplocks(void)
 {
-  return global_oplocks_open;
+  return exclusive_oplocks_open;
 }
 
 /****************************************************************************
@@ -309,7 +310,10 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 
   fsp->oplock_type = oplock_type;
   fsp->sent_oplock_break = NO_BREAK_SENT;
-  global_oplocks_open++;
+  if ( oplock_type == LEVEL_II_OPLOCK)
+    level_II_oplocks_open++;
+  else
+    exclusive_oplocks_open++;
 
   DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
         fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
@@ -366,9 +370,14 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
 void release_file_oplock(files_struct *fsp)
 {
   release_kernel_oplock(fsp);
+
+  if (fsp->oplock_type == LEVEL_II_OPLOCK)
+    level_II_oplocks_open--;
+  else
+    exclusive_oplocks_open--;
+
   fsp->oplock_type = NO_OPLOCK;
   fsp->sent_oplock_break = NO_BREAK_SENT;
-  global_oplocks_open--;
 }
 
 /****************************************************************************
@@ -379,6 +388,8 @@ void downgrade_file_oplock(files_struct *fsp)
 {
   release_kernel_oplock(fsp);
   fsp->oplock_type = LEVEL_II_OPLOCK;
+  exclusive_oplocks_open--;
+  level_II_oplocks_open++;
   fsp->sent_oplock_break = NO_BREAK_SENT;
 }
 
@@ -526,7 +537,7 @@ pid %d, port %d, dev = %x, inode = %.0f\n", (int)remotepid, from_port, (unsigned
    * Now actually process the break request.
    */
 
-  if(global_oplocks_open != 0)
+  if((exclusive_oplocks_open + level_II_oplocks_open) != 0)
   {
     if (oplock_break(dev, inode, ptval, False) == False)
     {
@@ -635,7 +646,8 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, st
     dbgtext( "initial_break_processing: called for dev = %x, inode = %.0f tv_sec = %x, tv_usec = %x.\n",
       (unsigned int)dev, (double)inode, tval ? (int)tval->tv_sec : 0,
       tval ? (int)tval->tv_usec : 0);
-    dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
+    dbgtext( "Current oplocks_open (exclusive = %d, levelII = %d)\n",
+              exclusive_oplocks_open, level_II_oplocks_open );
   }
 
   /* We need to search the file open table for the
@@ -736,12 +748,12 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
     unlock_share_entry(fsp->conn, dev, inode, token);
 
   fsp->oplock_type = NO_OPLOCK;
-  global_oplocks_open--;
+  level_II_oplocks_open--;
 
-  if(global_oplocks_open < 0)
+  if(level_II_oplocks_open < 0)
   {
-    DEBUG(0,("oplock_break_level2: global_oplocks_open < 0 (%d). PANIC ERROR\n",
-              global_oplocks_open));
+    DEBUG(0,("oplock_break_level2: level_II_oplocks_open < 0 (%d). PANIC ERROR\n",
+              level_II_oplocks_open));
     abort();
   }
 
@@ -749,7 +761,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
   {
     dbgtext( "oplock_break_level2: returning success for " );
     dbgtext( "dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
-    dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
+    dbgtext( "Current level II oplocks_open = %d\n", level_II_oplocks_open );
   }
 
   return True;
@@ -983,10 +995,10 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   }
 
   /* Santity check - remove this later. JRA */
-  if(global_oplocks_open < 0)
+  if(exclusive_oplocks_open < 0)
   {
-    DEBUG(0,("oplock_break: global_oplocks_open < 0 (%d). PANIC ERROR\n",
-              global_oplocks_open));
+    DEBUG(0,("oplock_break: exclusive_oplocks_open < 0 (%d). PANIC ERROR\n",
+              exclusive_oplocks_open));
     abort();
   }
 
@@ -995,7 +1007,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   {
     dbgtext( "oplock_break: returning success for " );
     dbgtext( "dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode );
-    dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
+    dbgtext( "Current exclusive_oplocks_open = %d\n", exclusive_oplocks_open );
   }
 
   return True;
