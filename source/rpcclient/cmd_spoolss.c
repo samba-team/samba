@@ -1266,12 +1266,13 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	fstring			driver_name;
 
 	/* parse the command arguements */
-	if (argc != 3)
+	if (argc != 3 && argc != 4)
 	{
-		printf ("Usage: %s <Environment>\\\n", argv[0]);
+		printf ("Usage: %s <Environment> \\\n", argv[0]);
 		printf ("\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
     		printf ("\t<Config File Name>:<Help File Name>:<Language Monitor Name>:\\\n");
-	    	printf ("\t<Default Data Type>:<Comma Separated list of Files>\n");
+	    	printf ("\t<Default Data Type>:<Comma Separated list of Files> \\\n");
+		printf ("\t[version]\n");
 
             return WERR_OK;
         }
@@ -1290,6 +1291,14 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	{
 		printf ("Error Invalid parameter list - %s.\n", argv[2]);
 		return WERR_INVALID_PARAM;
+	}
+
+	/* if printer driver version specified, override the default version
+	 * used by the architecture.  This allows installation of Windows
+	 * 2000 (version 3) printer drivers. */
+	if (argc == 4)
+	{
+		info3.version = atoi(argv[3]);
 	}
 
 
