@@ -259,7 +259,9 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignor
 	domain = find_domain_from_name(dom_name);
 	if (!domain) {
 		/* what do we do about this?? */
-		return 0;
+		DEBUG(0,("winbindd: convert_fn : Unable to find domain %s\n", dom_name ));
+		DEBUG(0,("winbindd: convert_fn : conversion failed - idmap corrupt ?\n"));
+		return -1;
 	}
 
 	rid = atoi(p);
@@ -273,12 +275,16 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignor
 
 	if (tdb_store(idmap_tdb, key2, data, TDB_INSERT) != 0) {
 		/* not good! */
-		return 0;
+		DEBUG(0,("winbindd: convert_fn : Unable to update record %s\n", key2.dptr ));
+		DEBUG(0,("winbindd: convert_fn : conversion failed - idmap corrupt ?\n"));
+		return -1;
 	}
 
 	if (tdb_store(idmap_tdb, data, key2, TDB_REPLACE) != 0) {
 		/* not good! */
-		return 0;
+		DEBUG(0,("winbindd: convert_fn : Unable to update record %s\n", data.dptr ));
+		DEBUG(0,("winbindd: convert_fn : conversion failed - idmap corrupt ?\n"));
+		return -1;
 	}
 
 	tdb_delete(idmap_tdb, key);
@@ -289,14 +295,43 @@ static int convert_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA data, void *ignor
 /* convert the idmap database from an older version */
 static BOOL idmap_convert(void)
 {
-	if (tdb_fetch_int(idmap_tdb, "IDMAP_VERSION") == IDMAP_VERSION) {
+	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
+
+	if (vers == IDMAP_VERSION)
 		return True;
+
+	if (IREV(vers) == IDMAP_VERSION) {
+		/* Arrggghh ! Bytereversed - make order independent ! */
+		int32 wm;
+
+		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
+
+		if (wm != -1)
+			wm = IREV(wm);
+		else
+			wm = server_state.uid_low;
+
+		if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
+			DEBUG(0, ("idmap_convert: Unable to byteswap user hwm in idmap database\n"));
+			return False;
+		}
+
+		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
+		if (wm != -1)
+			wm = IREV(wm);
+		else
+			wm = server_state.gid_low;
+		if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
+			DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
+			return False;
+		}
 	}
 
 	/* the old format stored as DOMAIN/rid - now we store the SID direct */
 	tdb_traverse(idmap_tdb, convert_fn, NULL);
 
-        if (tdb_store_int(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
+        if (tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
+		DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
 		return False;
 	}
 
@@ -323,16 +358,16 @@ BOOL winbindd_idmap_init(void)
 
      /* Create high water marks for group and user id */
 
-    if (tdb_fetch_int(idmap_tdb, HWM_USER) == -1) {
-        if (tdb_store_int(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
-            DEBUG(0, ("Unable to initialise user hwm in idmap database\n"));
+    if (tdb_fetch_int32(idmap_tdb, HWM_USER) == -1) {
+        if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
+            DEBUG(0, ("winbindd_idmap_init: Unable to initialise user hwm in idmap database\n"));
             return False;
         }
     }
 
-    if (tdb_fetch_int(idmap_tdb, HWM_GROUP) == -1) {
-        if (tdb_store_int(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
-            DEBUG(0, ("Unable to initialise group hwm in idmap database\n"));
+    if (tdb_fetch_int32(idmap_tdb, HWM_GROUP) == -1) {
+        if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
+            DEBUG(0, ("winbindd_idmap_init: Unable to initialise group hwm in idmap database\n"));
             return False;
         }
     }

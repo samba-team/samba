@@ -240,7 +240,7 @@ BOOL initialise_wins(void)
 		return True;
 	}
 
-	if (tdb_fetch_int(tdb, INFO_VERSION) != WINS_VERSION) {
+	if (tdb_fetch_int32(tdb, INFO_VERSION) != WINS_VERSION) {
 		DEBUG(0,("Discarding invalid wins.dat file\n"));
 		tdb_close(tdb);
 		return True;
@@ -1766,7 +1766,7 @@ void wins_write_database(BOOL background)
 
 	DEBUG(3,("wins_write_database: Dump of WINS name list.\n"));
 
-	tdb_store_int(tdb, INFO_VERSION, WINS_VERSION);
+	tdb_store_int32(tdb, INFO_VERSION, WINS_VERSION);
 
 	for (namerec = (struct name_record *)ubi_trFirst( wins_server_subnet->namelist );
 	     namerec;
@@ -1823,12 +1823,12 @@ void wins_write_database(BOOL background)
 	}
 
 	/* store the number of records */
-	tdb_store_int(tdb, INFO_COUNT, num_record);
+	tdb_store_int32(tdb, INFO_COUNT, num_record);
 
 	/* get and store the last used ID */
 	get_global_id_and_update(&id, False);
-	tdb_store_int(tdb, INFO_ID_HIGH, id>>32);
-	tdb_store_int(tdb, INFO_ID_LOW, id&0xffffffff);
+	tdb_store_int32(tdb, INFO_ID_HIGH, id>>32);
+	tdb_store_int32(tdb, INFO_ID_LOW, id&0xffffffff);
 
 	tdb_close(tdb);
 

@@ -197,8 +197,8 @@ static void get_our_last_id(WINS_OWNER *wins_owner)
 		return;
 	}
 	
-	wins_owner->max_version=((SMB_BIG_UINT)tdb_fetch_int(tdb, INFO_ID_HIGH))<<32 | 
-				 (SMB_BIG_UINT)tdb_fetch_int(tdb, INFO_ID_LOW);
+	wins_owner->max_version=((SMB_BIG_UINT)tdb_fetch_int32(tdb, INFO_ID_HIGH))<<32 | 
+				 (SMB_BIG_UINT)tdb_fetch_int32(tdb, INFO_ID_LOW);
 
 	tdb_close(tdb);
 }
