@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -126,13 +126,78 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     return ret;
 }
 
-#ifdef KRB4
-static des_cblock mkey4;
-static des_key_schedule msched4;
 static char realm_buf[REALM_SZ];
 
+#ifdef KRB4
+
+static int
+kdb_prop(void *arg, Principal *p)
+{
+    int ret;
+    struct v4_principal pr;
+
+    memset(&pr, 0, sizeof(pr));
+
+    if(p->attributes != 0) {
+	warnx("%s.%s has non-zero attributes - skipping", 
+	      p->name, p->instance);
+	    return 0;
+    }
+    strlcpy(pr.name, p->name, sizeof(pr.name));
+    strlcpy(pr.instance, p->instance, sizeof(pr.instance));
+    /* key */
+    pr.exp_date = p->exp_date;
+    pr.mod_date = p->mod_date;
+    strlcpy(pr.mod_name, p->mod_name, sizeof(pr.mod_name));
+    strlcpy(pr.mod_instance, p->mod_instance, sizeof(pr.mod_instance));
+    pr.max_life = p->max_life;
+    pr.mkvno = p->kdc_key_ver;
+    pr.kvno = p->key_version;
+    
+    ret = v4_prop(arg, &pr);
+    memset(&pr, 0, sizeof(pr));
+    return ret;
+}
+
+#endif
+
+#ifndef KRB4
+static time_t
+krb_life_to_time(time_t start, int life)
+{
+    static int lifetimes[] = {
+	  38400,   41055,   43894,   46929,   50174,   53643,   57352,   61318,
+	  65558,   70091,   74937,   80119,   85658,   91581,   97914,  104684,
+	 111922,  119661,  127935,  136781,  146239,  156350,  167161,  178720,
+	 191077,  204289,  218415,  233517,  249664,  266926,  285383,  305116,
+	 326213,  348769,  372885,  398668,  426234,  455705,  487215,  520904,
+	 556921,  595430,  636601,  680618,  727680,  777995,  831789,  889303,
+	 950794, 1016537, 1086825, 1161973, 1242318, 1328218, 1420057, 1518247,
+	1623226, 1735464, 1855462, 1983758, 2120925, 2267576, 2424367, 2592000
+    };
+
+#if 0
+    int i;
+    double q = exp((log(2592000.0) - log(38400.0)) / 63);
+    double x = 38400;
+    for(i = 0; i < 64; i++) {
+	lifetimes[i] = (int)x;
+	x *= q;
+    }
+#endif
+
+    if(life == 0xff)
+	return NEVERDATE;
+    if(life < 0x80)
+	return start + life * 5 * 60;
+    if(life > 0xbf)
+	life = 0xbf;
+    return start + lifetimes[life - 0x80];
+}
+#endif /* !KRB4 */
+
 int
-v4_prop(void *arg, Principal *p)
+v4_prop(void *arg, struct v4_principal *p)
 {
     struct prop_data *pd = arg;
     hdb_entry ent;
@@ -156,42 +221,42 @@ v4_prop(void *arg, Principal *p)
 	free(s);
     }
 
-    ent.kvno = p->key_version;
+    ent.kvno = p->kvno;
     ent.keys.len = 3;
     ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
-    ent.keys.val[0].mkvno = NULL;
+    if(p->mkvno != -1) {
+	ent.keys.val[0].mkvno = malloc (sizeof(*ent.keys.val[0].mkvno));
 #if 0
-    ent.keys.val[0].mkvno = malloc (sizeof(*ent.keys.val[0].mkvno));
-    *(ent.keys.val[0].mkvno) = p->kdc_key_ver; /* XXX */
+	*(ent.keys.val[0].mkvno) = p->mkvno; /* XXX */
+#else
+	*(ent.keys.val[0].mkvno) = 0;
 #endif
+    } else
+	ent.keys.val[0].mkvno = NULL;
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = KRB5_PADATA_PW_SALT;
     ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
     krb5_data_alloc(&ent.keys.val[0].key.keyvalue, sizeof(des_cblock));
-    
-    {
-	unsigned char *key = ent.keys.val[0].key.keyvalue.data;
-	unsigned char null_key[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	memcpy(key, &p->key_low, 4);
-	memcpy(key + 4, &p->key_high, 4);
-	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key,
-			&mkey4, msched4, DES_DECRYPT);
-	if(memcmp(key, null_key, sizeof(null_key)) == 0) {
-	    free_Key(&ent.keys.val[0]);
-	    ent.keys.val = 0;
-	    ent.flags.invalid = 1;
-	}
-    }
+    memcpy(ent.keys.val[0].key.keyvalue.data, p->key, 8);
+
     copy_Key(&ent.keys.val[0], &ent.keys.val[1]);
     ent.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
     copy_Key(&ent.keys.val[0], &ent.keys.val[2]);
     ent.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
-    ALLOC(ent.max_life);
-    *ent.max_life = krb_life_to_time(0, p->max_life);
-    if(*ent.max_life == NEVERDATE){
-	free(ent.max_life);
-	ent.max_life = NULL;
+    {
+	int life = krb_life_to_time(0, p->max_life);
+	if(life == NEVERDATE){
+	    ent.max_life = NULL;
+	} else {
+	    /* clean up lifetime a bit */
+	    if(life > 86400)
+		life = (life + 86399) / 86400 * 86400;
+	    else if(life > 3600)
+		life = (life + 3599) / 3600 * 3600;
+	    ALLOC(ent.max_life);
+	    *ent.max_life = life;
+	}
     }
 
     ALLOC(ent.valid_end);
@@ -249,11 +314,12 @@ v4_prop(void *arg, Principal *p)
 	    ret = v5_prop (pd->context, NULL, &ent, pd);
     }
 
-out:
+  out:
     hdb_free_entry(pd->context, &ent);
     return ret;
 }
 
+#ifdef KRB4
 #ifdef KASERVER_DB
 
 #include "kadb.h"
@@ -404,8 +470,9 @@ struct getargs args[] = {
     { "source",   0,	arg_string, &source_type, "type of database to read", 
       "heimdal"
       "|mit-dump"
+      "|krb4-dump"
 #ifdef KRB4
-      "|krb4-db|krb4-dump"
+      "|krb4-db"
 #ifdef KASERVER_DB
       "|kaserver"
 #endif
@@ -414,8 +481,8 @@ struct getargs args[] = {
       
 #ifdef KRB4
     { "v4-db",    '4',	arg_flag, &v4_db },
-    { "v4-realm", 'r',  arg_string, &realm, "v4 realm to use" },
 #endif
+    { "v4-realm", 'r',  arg_string, &realm, "v4 realm to use" },
 #ifdef KASERVER_DB
     { "ka-db",	  'K',  arg_flag, &ka_db },
     { "cell",	  'c',  arg_string, &afs_cell, "name of AFS cell" },
@@ -494,9 +561,9 @@ struct {
     const char *name;
 } types[] = {
     { HPROP_HEIMDAL,	"heimdal" },
+    { HPROP_KRB4_DUMP,	"krb4-dump" },
 #ifdef KRB4
     { HPROP_KRB4_DB,	"krb4-db" },
-    { HPROP_KRB4_DUMP,	"krb4-dump" },
 #ifdef KASERVER_DB
     { HPROP_KASERVER, 	"kaserver" },
 #endif
@@ -524,17 +591,17 @@ iterate (krb5_context context,
 	 struct prop_data *pd)
 {
     switch(type) {
+    case HPROP_KRB4_DUMP:
+	v4_prop_dump(pd, database);
+	break;
 #ifdef KRB4
     case HPROP_KRB4_DB: {
-	int e = kerb_db_iterate ((k_iter_proc_t)v4_prop, pd);
+	int e = kerb_db_iterate ((k_iter_proc_t)kdb_prop, pd);
 	if(e)
 	    krb5_errx(context, 1, "kerb_db_iterate: %s", 
 		      krb_get_err_text(e));
 	break;
     }
-    case HPROP_KRB4_DUMP:
-	v4_prop_dump(pd, database);
-	break;
 #ifdef KASERVER_DB
     case HPROP_KASERVER: {
 	int e = ka_dump(pd, database, afs_cell);
@@ -763,10 +830,12 @@ main(int argc, char **argv)
 	if(e)
 	    krb5_errx(context, 1, "kerb_db_set_name: %s",
 		      krb_get_err_text(e));
+#if 0
 	e = kdb_get_master_key(0, &mkey4, msched4);
 	if(e)
 	    krb5_errx(context, 1, "kdb_get_master_key: %s",
 		      krb_get_err_text(e));
+#endif
 	break;
     }
     case HPROP_KRB4_DUMP:
