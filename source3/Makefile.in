@@ -157,14 +157,29 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SMBRUN_OBJ = utils/smbrun.o
 
+MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+                       $(UBIQX_OBJ) $(LIB_OBJ)
+
+MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+                      $(UBIQX_OBJ) $(LIB_OBJ)
+
+STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
+             $(UBIQX_OBJ) $(LIB_OBJ)
+
 TESTPARM_OBJ = utils/testparm.o smbd/access.o $(PARAM_OBJ) $(PASSDB_OBJ) \
                $(UBIQX_OBJ) $(LIB_OBJ)
 
 TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) \
                $(LIB_OBJ)
 
+SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSMB_OBJ) \
+                $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
+
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
+
+NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) \
+                $(LIBSMB_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)
 
@@ -209,10 +224,26 @@ bin/testprns: $(TESTPRNS_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LIBS)
 
+bin/smbstatus: $(STATUS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LIBS)
 
-nmblookup: $(LOOKUP_OBJ)
-	@echo Linking nmblookup
-	@$(CC) $(FLAGS) -o nmblookup $(LOOKUP_OBJ) $(LIBS)
+bin/smbpasswd: $(SMBPASSWD_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LIBS)
+
+bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LIBS)
+
+bin/nmblookup: $(NMBLOOKUP_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LIBS)
+
+bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LIBS)
+
 
 smbmount: $(MOUNT_OBJ) 
 	@echo Linking smbmount
@@ -229,27 +260,6 @@ smbumount: $(UMOUNT_OBJ)
 smbtorture: torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL)
 	@echo Linking smbtorture
 	@$(CC) $(FLAGS) -o smbtorture torture.o getsmbpass.o $(UTILOBJ) $(CLIENTUTIL) $(LIBS)
-
-smbstatus: $(STATUS_OBJ)
-	@echo Linking smbstatus
-	@$(CC) $(FLAGS) -o smbstatus $(STATUS_OBJ) $(LIBS)
-
-smbpasswd: smbpasswd.o getsmbpass.o $(PASSDB_OBJ) $(UTILOBJ) $(CLIENTUTIL) $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ)
-	@echo Linking smbpasswd
-	@$(CC) $(FLAGS) -o smbpasswd smbpasswd.o getsmbpass.o $(PASSDB_OBJ) $(UTILOBJ) $(CLIENTUTIL) \
-                        $(RPC_CLIENT_SERVER_SUBSET_OBJ) $(RPC_OBJ) $(LIBS)
-
-make_smbcodepage: make_smbcodepage.o $(UTILOBJ) 
-	@echo Linking make_smbcodepage
-	@$(CC) $(FLAGS) -o make_smbcodepage make_smbcodepage.o $(UTILOBJ) $(LIBS)
-
-make_printerdef: make_printerdef.o $(UTILOBJ) 
-	@echo Linking make_printerdef
-	@$(CC) $(FLAGS) -o make_printerdef make_printerdef.o $(UTILOBJ) $(LIBS)
-
-wsmbstatus: wsmbstatus.o $(UTILOBJ)  
-	@echo Linking wsmbstatus
-	@$(CC) $(FLAGS) -o wsmbstatus wsmbstatus.o $(UTILOBJ) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 
