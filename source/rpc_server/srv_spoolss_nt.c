@@ -7298,40 +7298,52 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		DEBUG(2,("_spoolss_addform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
-
-	if (!get_printer_snum(p,handle, &snum))
-                return WERR_BADFID;
+	
+	
+	/* forms can be added on printer of on the print server handle */
+	
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+	{
+		if (!get_printer_snum(p,handle, &snum))
+	                return WERR_BADFID;
+	 
+		status = get_a_printer(&printer, 2, lp_servicename(snum));
+        	if (!W_ERROR_IS_OK(status))
+			goto done;
+	}
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
 		DEBUG(2,("_spoolss_addform: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
-		
+	
 	/* can't add if builtin */
+	
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return WERR_ALREADY_EXISTS;
+		status = WERR_ALREADY_EXISTS;
+		goto done;
 	}
 
-	count=get_ntforms(&list);
-	if(!add_a_form(&list, form, &count))
-		return WERR_NOMEM;
+	count = get_ntforms(&list);
+	
+	if(!add_a_form(&list, form, &count)) {
+		status =  WERR_NOMEM;
+		goto done;
+	}
+	
 	write_ntforms(&list, count);
 	
 	/*
-	 * ChangeID must always be set
+	 * ChangeID must always be set if this is a printer
 	 */
 	 
-	status = get_a_printer(&printer, 2, lp_servicename(snum));
-        if (!W_ERROR_IS_OK(status))
-		goto done;
-	
-	status = mod_a_printer(*printer, 2);
-        if (!W_ERROR_IS_OK(status))
-		goto done;
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTER )
+		status = mod_a_printer(*printer, 2);
 	
 done:
-	free_a_printer(&printer, 2);
+	if ( printer )
+		free_a_printer(&printer, 2);
 	SAFE_FREE(list);
 
 	return status;
