@@ -11,6 +11,7 @@
 <!ENTITY CVS-Access SYSTEM "CVS-Access.sgml">
 <!ENTITY IntegratingWithWindows SYSTEM "Integrating-with-Windows.sgml">
 <!ENTITY Samba-PAM SYSTEM "PAM-Authentication-And-Samba.sgml">
+<!ENTITY Samba-LDAP SYSTEM "Samba-LDAP-HOWTO.sgml">
 <!ENTITY INDEX-FILE SYSTEM "index.sgml">
 ]>
 
@@ -56,6 +57,7 @@ Cheers, jerry
 &PRINTER-DRIVER2;
 &DOMAIN-MEMBER;
 &Samba-PDC-HOWTO;
+&Samba-LDAP;
 &WINBIND;
 &OS2-Client;
 &CVS-Access;

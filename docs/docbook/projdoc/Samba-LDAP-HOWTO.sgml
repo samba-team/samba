@@ -1,0 +1,29 @@
+<chapter id="samba-ldap-howto">
+
+
+<chapterinfo>
+	<author>
+		<firstname>Gerald (Jerry)></firstname><surname>Carter></surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jerry@samba.org</email></address>
+		</affiliation>
+	</author>
+	
+		
+	<pubdate> (29 Dec 2001) </pubdate>
+</chapterinfo>
+
+<title>Storing Samba's User/Machine Account information in an LDAP Directory</title>
+
+<sect1>
+<title>Introduction</title>
+
+<para>f
+</para>
+
+</sect1>
+
+
+
+</chapter>
