@@ -74,6 +74,7 @@ static NTSTATUS cmd_echo_data(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		if (in_data[i] != out_data[i]) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, in_data[i], out_data[i]);
+			result = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -107,6 +108,7 @@ static NTSTATUS cmd_echo_source_data(struct cli_state *cli,
 		if (out_data && out_data[i] != (i & 0xff)) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, out_data[i], i & 0xff);
+			result = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
