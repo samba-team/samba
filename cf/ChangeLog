@@ -1,5 +1,7 @@
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
+	* roken-frag.m4: test for unvis, and vis.h
+
 	* roken-frag.m4: test for strvis*
 
 2000-12-05  Johan Danielsson  <joda@pdc.kth.se>
