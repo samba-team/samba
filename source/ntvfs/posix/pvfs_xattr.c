@@ -184,7 +184,7 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 	switch (attrib.version) {
 	case 1:
 		info1 = &attrib.info.info1;
-		name->dos.attrib = info1->attrib;
+		name->dos.attrib = pvfs_attrib_normalise(info1->attrib);
 		name->dos.ea_size = info1->ea_size;
 		if (name->st.st_size == info1->size) {
 			name->dos.alloc_size = info1->alloc_size;
@@ -223,6 +223,8 @@ NTSTATUS pvfs_dosattrib_save(struct pvfs_state *pvfs, struct pvfs_filename *name
 
 	attrib.version = 1;
 	info1 = &attrib.info.info1;
+
+	name->dos.attrib = pvfs_attrib_normalise(name->dos.attrib);
 
 	info1->attrib      = name->dos.attrib;
 	info1->ea_size     = name->dos.ea_size;
