@@ -4316,6 +4316,9 @@ static BOOL run_eatest(int dummy)
 	const char *fname = "\\eatest.txt";
 	BOOL correct = True;
 	int fnum, i;
+	size_t num_eas;
+	struct ea_struct *ea_list = NULL;
+	TALLOC_CTX *mem_ctx = talloc_init("eatest");
 
 	printf("starting eatest\n");
 	
@@ -4339,7 +4342,7 @@ static BOOL run_eatest(int dummy)
 
 		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
 		memset(ea_val, (char)i+1, i+1);
-		if (!cli_set_fnum_ea(cli, fnum, ea_name, ea_val, i+1)) {
+		if (!cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
 			return False;
 		}
@@ -4349,17 +4352,27 @@ static BOOL run_eatest(int dummy)
 	for (i = 0; i < 10; i++) {
 		fstring ea_name, ea_val;
 
-		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
+		slprintf(ea_name, sizeof(ea_name), "EA_%d", i+10);
 		memset(ea_val, (char)i+1, i+1);
-		if (!cli_set_path_ea(cli, fname, ea_name, ea_val, i+1)) {
+		if (!cli_set_ea_path(cli, fname, ea_name, ea_val, i+1)) {
 			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
 			return False;
 		}
 	}
 	
 	                                                                                       
-	cli_get_eas(cli, fname, NULL,NULL,NULL);
+	if (!cli_get_ea_list_path(cli, fname, mem_ctx, &num_eas, &ea_list)) {
+		printf("ea_get list failed - %s\n", cli_errstr(cli));
+		correct = False;
+	}
 
+	printf("num_eas = %d\n", num_eas);
+	for (i = 0; i < num_eas; i++) {
+		printf("%d: ea_name = %s. Val = ", i, ea_list[i].name);
+		dump_data(0, ea_list[i].value.data, ea_list[i].value.length);
+	}
+
+	talloc_destroy(mem_ctx);
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
