@@ -24,6 +24,7 @@ SMB_INCLUDE_M4(smbd/process_model.m4)
 SMB_INCLUDE_M4(lib/registry/config.m4)
 SMB_INCLUDE_M4(scripting/config.m4)
 SMB_INCLUDE_M4(gtk/config.m4)
+SMB_INCLUDE_M4(ntvfs/posix/config.m4)
 
 ALLLIBS_LIBS="$LIBS"
 ALLLIBS_CFLAGS="$CFLAGS"
