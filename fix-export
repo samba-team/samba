@@ -15,10 +15,12 @@ ed -s configure.in << END
 w
 q
 END
-aclocal -I cf
-autoconf
-autoheader
-automake
+# XXX autoreconf bug
+for i in include/config.h.in lib/roken/config.h.in; do
+    echo '/*autoheader*/' > $i
+done
+autoreconf --force --install
+automake lib/roken/Makefile ## stupid automake gets this wrong
 (cd doc; makeinfo heimdal.texi)
 
 make_proto () {
