@@ -277,7 +277,7 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 	}
 
 	r_u.status = _spoolss_rfnpcnex(&q_u.handle, q_u.change,
-	                               q_u.option, &r_u.info);
+	                               q_u.option, data->mem_ctx, &r_u.info);
 
 	safe_free(q_u.option);
 
