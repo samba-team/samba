@@ -119,7 +119,7 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const char *dn)
 {
-	return ldb->ops->delete(ldb, dn);
+	return ldb->ops->delete_record(ldb, dn);
 }
 
 /*

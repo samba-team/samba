@@ -71,7 +71,7 @@ static const char *lldb_option_find(const struct lldb_private *lldb, const char 
 static int lldb_close(struct ldb_context *ldb)
 {
 	int i, ret = 0;
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 
 	if (ldap_unbind(lldb->ldap) != LDAP_SUCCESS) {
 		ret = -1;
@@ -94,7 +94,7 @@ static int lldb_close(struct ldb_context *ldb)
 */
 static int lldb_delete(struct ldb_context *ldb, const char *dn)
 {
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 	int ret = 0;
 	
 	lldb->last_rc = ldap_delete_s(lldb->ldap, dn);
@@ -204,7 +204,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 		       enum ldb_scope scope, const char *expression,
 		       const char **attrs, struct ldb_message ***res)
 {
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 	int count, msg_count;
 	LDAPMessage *ldapres, *msg;
 
@@ -388,7 +388,7 @@ failed:
 */
 static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 {
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 	LDAPMod **mods;
 	int ret = 0;
 
@@ -410,7 +410,7 @@ static int lldb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 */
 static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 {
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 	LDAPMod **mods;
 	int ret = 0;
 
@@ -432,7 +432,7 @@ static int lldb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 */
 static const char *lldb_errstring(struct ldb_context *ldb)
 {
-	struct lldb_private *lldb = ldb->private;
+	struct lldb_private *lldb = ldb->private_data;
 	return ldap_err2string(lldb->last_rc);
 }
 
@@ -481,7 +481,7 @@ struct ldb_context *lldb_connect(const char *url,
 	}
 
 	ldb->ops = &lldb_ops;
-	ldb->private = lldb;
+	ldb->private_data = lldb;
 
 	if (options) {
 		/* take a copy of the options array, so we don't have to rely
