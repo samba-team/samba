@@ -1414,10 +1414,12 @@ struct kernel_stat {
 
  void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf)
 {
+#ifdef _STAT_VER_LINUX_OLD
 	if (vers == _STAT_VER_LINUX_OLD) {
 		memcpy(st, kbuf, sizeof(*st));
 		return;
 	}
+#endif
 
 	ZERO_STRUCTP(st);
 
