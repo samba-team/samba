@@ -519,6 +519,71 @@ void smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, in
 }
 
 /*******************************************************************
+initialise a BUFFER5 structure.
+********************************************************************/
+void init_buffer5(BUFFER5 **str)
+{
+	BUFFER5 *buf5;
+		
+	buf5=(BUFFER5 *)malloc( sizeof(BUFFER5) );
+	
+	buf5->buf_len=0;
+	buf5->buffer=NULL;	
+	*str=buf5;
+}
+
+/*******************************************************************
+clear a BUFFER5 structure.
+********************************************************************/
+void clear_buffer5(BUFFER5 **str)
+{
+	BUFFER5 *buf5;
+	
+	buf5=*str;	
+	if (buf5->buffer != NULL )
+	{
+		free(buf5->buffer);
+	}
+	free(buf5);
+	*str=NULL;
+}
+
+/*******************************************************************
+creates a BUFFER5 structure.
+********************************************************************/
+void make_buffer5(BUFFER5 *str, char *buf, int len)
+{
+
+	/* max buffer size (allocated size) */
+	str->buf_len = len;	
+	str->buffer = (uint16 *)malloc( sizeof(uint16) * len );	
+	ascii_to_unistr(str->buffer, buf, len);
+}
+
+/*******************************************************************
+reads or writes a BUFFER5 structure.
+the buf_len member tells you how large the buffer is.
+********************************************************************/
+void smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	depth++;
+
+	if (buf5 == NULL) return;
+
+	prs_align(ps);
+	prs_uint32("buf_len", ps, depth, &(buf5->buf_len));
+
+	/* reading: alloc the buffer first */
+	if ( ps->io )
+	{
+		buf5->buffer=(uint16 *)malloc( sizeof(uint16)*buf5->buf_len );
+	}
+	
+	prs_uint16s(True, "buffer     ", ps, depth, buf5->buffer, buf5->buf_len);
+}
+
+/*******************************************************************
 creates a BUFFER2 structure.
 ********************************************************************/
 void make_buffer2(BUFFER2 *str, const char *buf, int len)

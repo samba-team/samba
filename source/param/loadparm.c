@@ -153,6 +153,8 @@ typedef struct
   char *szLdapPasswdFile; 
 #endif /* WITH_LDAP */
   char *szPanicAction;
+  char *szNtForms;
+  char *szNtDriverFile;  
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -676,6 +678,8 @@ static struct parm_struct parm_table[] =
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  0},
   {"printer driver location",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriverLocation,  NULL,   NULL,  FLAG_GLOBAL},
+  {"nt forms file",    P_STRING,  P_GLOBAL, &Globals.szNtForms,         NULL,   NULL,  FLAG_GLOBAL},
+  {"nt printer driver",P_STRING,  P_GLOBAL, &Globals.szNtDriverFile,    NULL,   NULL,  FLAG_GLOBAL},
 
   {"Filename Handling", P_SEP, P_SEPARATOR},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL,   NULL,  0},
@@ -860,6 +864,8 @@ static void init_globals(void)
   string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szDriverFile, DRIVERFILE);
+  string_set(&Globals.szNtForms, FORMSFILE);
+  string_set(&Globals.szNtDriverFile, NTDRIVERSDIR);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
   string_set(&Globals.szSmbrun, SMBRUN);
@@ -1028,11 +1034,20 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
-    case PRINT_LPRNG:
     case PRINT_PLP:
       string_initial(&sDefault.szLpqcommand,"lpq -P%p");
       string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      break;
+      
+    case PRINT_LPRNG:
+      string_initial(&sDefault.szLpqcommand,"lpq -P%p");
+      string_initial(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_initial(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
+      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
+      string_initial(&sDefault.szLppausecommand,"lpc hold %p %j");
+      string_initial(&sDefault.szLpresumecommand,"lpc release %p %j");
       break;
 
     case PRINT_SYSV:
@@ -1186,6 +1201,8 @@ static FN_GLOBAL_STRING(lp_announce_version,&Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases,&Globals.szNetbiosAliases)
 FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
+FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
+FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);

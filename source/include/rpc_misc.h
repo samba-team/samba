@@ -189,6 +189,13 @@ typedef struct buffer4_info
 
 } BUFFER4;
 
+/* BUFFER5 */
+typedef struct buffer5_info
+{
+  uint32 buf_len;
+  uint16 *buffer; /* data */
+} BUFFER5;
+
 /* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
 typedef struct unistr2_info
 {
