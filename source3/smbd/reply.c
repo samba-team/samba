@@ -2728,7 +2728,7 @@ int reply_printopen(connection_struct *conn,
 
 	/* Open for exclusive use, write only. */
 	open_file_shared(fsp,conn,fname2, SET_DENY_MODE(DENY_ALL)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE), unix_mode(conn,0), 0, NULL, NULL);
+                     (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unix_mode(conn,0), 0, NULL, NULL);
 
 	if (!fsp->open) {
 		file_free(fsp);
