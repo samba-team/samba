@@ -201,8 +201,7 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
 static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 {
 	const char *guest_account = lp_guestaccount();
-	GROUP_MAP map;
-	BOOL ret;
+	DOM_SID group_sid;
 	
 	if (!account_data || !pwd) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -231,24 +230,11 @@ static NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	/* call the mapping code here */
-	become_root();
-	ret = pdb_getgrgid(&map, pwd->pw_gid);
-	unbecome_root();
-	
-	if( ret ) {
-		if (!pdb_set_group_sid(account_data, &map.sid, PDB_SET)){
-			DEBUG(0,("Can't set Group SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-	} 
-	else {
-		if (!pdb_set_group_sid_from_rid(account_data, pdb_gid_to_group_rid(pwd->pw_gid), PDB_SET)) {
-			DEBUG(0,("Can't set Group SID\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	gid_to_sid(&group_sid, pwd->pw_gid);
+	if (!pdb_set_group_sid(account_data, &group_sid, PDB_SET)){
+		DEBUG(0,("Can't set Group SID!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
 	return NT_STATUS_OK;
 }
 
