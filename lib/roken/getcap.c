@@ -77,7 +77,7 @@ static int	 gottoprec;	/* Flag indicating retrieval of toprecord */
 #define USE_DB
 #endif
 
-#if USE_DB
+#ifdef USE_DB
 static int	cdbget (DB *, char **, const char *);
 #endif
 static int 	getent (char **, size_t *, char **, int, const char *, int, char *);
@@ -284,7 +284,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	if (fd >= 0) {
 	    (void)lseek(fd, (off_t)0, SEEK_SET);
 	} else {
-#if USE_DB
+#ifdef USE_DB
 	    char pbuf[_POSIX_PATH_MAX];
 	    char *cbuf;
 	    size_t clen;
@@ -611,7 +611,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
     return (0);
 }	
 
-#if USE_DB
+#ifdef USE_DB
 static int
 cdbget(DB *capdbp, char **bp, const char *name)
 {
