@@ -1,0 +1,147 @@
+<chapter id="modules">
+<chapterinfo>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
+	<pubdate> 19 March 2003 </pubdate>
+</chapterinfo>
+
+<title>Modules</title>
+
+<sect1>
+<title>Advantages</title>
+
+<para>
+The new modules system has the following advantages:
+</para>
+
+<simplelist>
+<member>Transparent loading of static and shared modules (no need 
+for a subsystem to know about modules)</member>
+<member>Simple selection between shared and static modules at configure time</member>
+<member>"preload modules" option for increasing performance for stable modules</member>
+<member>No nasty #define stuff anymore</member>
+<member>All backends are available as plugin now (including pdb_ldap and pdb_tdb)</member>
+</simplelist>
+</sect1>
+
+<sect1>
+<title>Loading modules</title>
+
+<para>
+Some subsystems in samba use different backends. These backends can be 
+either statically linked in to samba or available as a plugin. A subsystem 
+should have a function that allows a module to register itself. For example, 
+the passdb subsystem has: 
+</para>
+
+<para><programlisting>
+BOOL smb_register_passdb(const char *name, pdb_init_function init, int version);
+</programlisting></para>
+
+<para>
+This function will be called by the initialisation function of the module to 
+register itself. 
+</para>
+
+<sect2>
+<title>Static modules</title>
+
+<para>
+The modules system compiles a list of initialisation functions for the 
+static modules of each subsystem. This is a define. For example, 
+it is here currently (from <filename>include/config.h</filename>): 
+</para>
+
+<para><programlisting>
+/* Static init functions */
+#define static_init_pdb { pdb_mysql_init(); pdb_ldap_init(); pdb_smbpasswd_init(); pdb_tdbsam_init(); pdb_guest_init();}
+</programlisting></para>
+
+<para>
+These functions should be called before the subsystem is used. That can be 
+done either from the executable that will be using the subsystem (
+static_init_rpc is called from the main() function of smbd), or 
+from the subsystem itself when it's first used (like passdb's
+lazy_initialise_passdb does).
+</para>
+
+</sect2>
+
+<sect2>
+<title>Shared modules</title>
+
+<para>
+If a subsystem needs a certain backend, it should check if it has 
+already been registered. If the backend hasn't been registered already, 
+the subsystem should call smb_probe_module(char *subsystem, char *backend).
+This function tries to load the correct module from a certain path
+($LIBDIR/subsystem/backend.so). If the first character in 'backend' 
+is a slash, smb_probe_module() tries to load the module from the 
+absolute path specified in 'backend'.
+</para>
+
+<para>After smb_probe_module() has been executed, the subsystem 
+should check again if the module has been registered. 
+</para>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Writing modules</title>
+
+<para>
+Each module has an initialisation function. For modules that are 
+included with samba this name is '<replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>_init'. For external modules (that will never be built-in, but only available as a module) this name is always 'module_init'.
+The prototype for this function is:
+</para>
+
+<para><programlisting>
+int module_init(void);
+</programlisting></para>
+
+<para>This function should call one or more 
+registration The function should return non-zero on success and zero on 
+failure.</para>
+
+<para>For example, pdb_ldap_init() contains: </para>
+
+<para><programlisting>
+int pdb_ldap_init(void)
+{
+    smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
+    smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
+	return TRUE;
+}
+</programlisting></para>
+
+<sect2>
+<title>Static/Shared selection in configure.in</title>
+
+<para>
+Some macros in configure.in generate the various defines and substs that 
+are necessary for the system to work correct. All modules that should 
+be built by default have to be added to the variable 'default_modules'. 
+For example, if ldap is found, pdb_ldap is added to this variable.
+</para>
+
+<para>
+On the bottom of configure.in, SMB_MODULE() should be called 
+for each module and SMB_SUBSYSTEM() for each subsystem.
+</para>
+
+<para>Syntax:</para>
+
+<para><programlisting>
+SMB_MODULE($MODULE_<replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>, <replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>, <replaceable>object files</replaceable>, <replaceable>plugin name</replaceable>, <replaceable>subsystem name</replaceable>)
+SMB_SUBSYSTEM(<replaceable>subsystem</replaceable>)
+</programlisting></para>
+
+</sect2>
+</sect1>
+</chapter>

@@ -7,6 +7,13 @@
 			<address><email>aliguor@us.ibm.com</email></address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Jelmer</firstname><surname>Vernooij</surname>
+		<affiliation>
+			<orgname>Samba Team</orgname>
+			<address><email>jelmer@samba.org</email></address>
+		</affiliation>
+	</author>
 	<pubdate>January 2003</pubdate>
 </chapterinfo>
 
@@ -33,12 +40,12 @@ When an RPC call is sent to smbd, smbd tries to load a shared library by the
 name <filename>librpc_&lt;pipename&gt;.so</filename> to handle the call if
 it doesn't know how to handle the call internally.  For instance, LSA calls
 are handled by <filename>librpc_lsass.so</filename>..
-These shared libraries should be located in the <filename>&lt;sambaroot&gt;/lib/rpc</filename>.  smbd then attempts to call the rpc_pipe_init function within
-the shared library.
+These shared libraries should be located in the <filename>&lt;sambaroot&gt;/lib/rpc</filename>.  smbd then attempts to call the init_module function within
+the shared library. Check the chapter on modules for more information.
 </para>
 
 <para>
-In the rpc_pipe_init function, the library should call 
+In the init_module function, the library should call 
 rpc_pipe_register_commands().  This function takes the following arguments:
 </para>
 
