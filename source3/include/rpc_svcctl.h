@@ -119,11 +119,9 @@ typedef struct {
 /**************************/
 
 typedef struct {
-	uint32 ptr_srv;
-	UNISTR2 servername;
-	uint32 ptr_db;
-	UNISTR2 database; 
-	uint32 access_mask;
+	UNISTR2 *servername;
+	UNISTR2 *database; 
+	uint32 access;
 } SVCCTL_Q_OPEN_SCMANAGER;
 
 typedef struct {

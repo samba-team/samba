@@ -192,22 +192,17 @@ BOOL svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("srv_ptr", ps, depth, &q_u->ptr_srv))
-		return False;
-	if(!smb_io_unistr2("servername", &q_u->servername, q_u->ptr_srv, ps, depth))
+	if(!prs_pointer("servername", ps, depth, (void**)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("db_ptr", ps, depth, &q_u->ptr_db))
+	if(!prs_pointer("database", ps, depth, (void**)&q_u->database, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
 		return False;
-	if(!smb_io_unistr2("database", &q_u->database, q_u->ptr_db, ps, depth))
-		return False;
-
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+	if(!prs_uint32("access", ps, depth, &q_u->access))
 		return False;
 
 	return True;
