@@ -124,6 +124,7 @@ interface netlogon
 		[case(1)] netr_PasswordInfo *password;
 		[case(2)] netr_NetworkInfo  *network;
 		[case(3)] netr_PasswordInfo *password;
+		[case(5)] netr_PasswordInfo *password;
 		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
 
