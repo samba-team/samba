@@ -644,6 +644,13 @@ int main(int argc, char **argv)
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
+	/* Must be root */
+
+	if(geteuid() != (uid_t)0) {
+		fprintf(stderr, "Must have effective user id of zero.\n");
+		exit(1);
+	}
+
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
 	SETENV(WINBINDD_DONT_ENV, "1", 1);

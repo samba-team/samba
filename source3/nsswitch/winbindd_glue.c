@@ -47,6 +47,9 @@ BOOL wb_lsa_open_policy(char *server, BOOL sec_qos, uint32 des_access,
 
 	/* Initialise RPC connection */
 
+	if (!cli_initialise(pol->cli))
+		goto done;
+
 	ZERO_STRUCT(creds);
 	creds.pwd.null_pwd = 1;
 
@@ -168,16 +171,62 @@ BOOL wb_samr_close(CLI_POLICY_HND *hnd)
 /****************************************************************************
 samr_connect glue
 ****************************************************************************/
-BOOL wb_samr_connect(char *srv_name, uint32 access_mask, 
-		  CLI_POLICY_HND *connect_pol)
+BOOL wb_samr_connect(char *server, uint32 access_mask, CLI_POLICY_HND *pol)
 {
-	uint32 ret;
+	struct nmb_name calling, called;
+	struct ntuser_creds creds;
+	struct in_addr dest_ip;
+	fstring dest_host;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	extern pstring global_myname;
 
-	ret = cli_samr_connect(connect_pol->cli, connect_pol->mem_ctx, 
-			       srv_name, access_mask,
-			       &connect_pol->handle);
+	ZERO_STRUCTP(pol);
 
-	return (ret == NT_STATUS_NOPROBLEMO);
+	pol->cli = (struct cli_state *)malloc(sizeof(struct cli_state));
+	pol->mem_ctx = talloc_init();
+
+	if (!pol->cli || !pol->mem_ctx)
+		return False;
+
+	/* Initialise RPC connection */
+
+	if (!cli_initialise(pol->cli))
+		goto done;
+
+	ZERO_STRUCT(creds);
+	creds.pwd.null_pwd = 1;
+
+	cli_init_creds(pol->cli, &creds);
+
+	/* Establish a SMB connection */
+
+	if (!resolve_srv_name(server, dest_host, &dest_ip)) {
+		goto done;
+	}
+
+	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
+	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
+
+	if (!cli_establish_connection(pol->cli, dest_host, &dest_ip, &calling, 
+				      &called, "IPC$", "IPC", False, True)) {
+		goto done;
+	}
+	
+	if (!cli_nt_session_open (pol->cli, PIPE_SAMR)) {
+		goto done;
+	}
+
+	result = cli_samr_connect(pol->cli, pol->mem_ctx, server, 
+				  access_mask, &pol->handle);
+
+ done:
+	if (result != NT_STATUS_NOPROBLEMO && pol->cli) {
+		if (pol->cli->initialised)
+			cli_shutdown(pol->cli);
+		free(pol->cli);
+	}
+
+	return (result == NT_STATUS_NOPROBLEMO);
 }
 
 
@@ -198,6 +247,7 @@ BOOL wb_samr_open_domain(CLI_POLICY_HND *connect_pol, uint32 ace_perms,
 
 	if (ret == NT_STATUS_NOPROBLEMO) {
 		domain_pol->cli = connect_pol->cli;
+		domain_pol->mem_ctx = connect_pol->mem_ctx;
 		return True;
 	}
 
@@ -222,8 +272,12 @@ uint32 wb_samr_enum_dom_groups(CLI_POLICY_HND *pol, uint32 *start_idx,
 			       uint32 size, struct acct_info **sam,
 			       uint32 *num_sam_groups)
 {
-	DEBUG(0,("unimplemented samr_enum_dom_groups\n"));
-	return -1;
+	uint32 ret;
+
+	ret = cli_samr_enum_dom_groups(pol->cli, pol->mem_ctx, &pol->handle,
+				       start_idx, size, sam, num_sam_groups);
+
+	return (ret == NT_STATUS_NOPROBLEMO);
 }
 
 /****************************************************************************
@@ -328,7 +382,12 @@ BOOL wb_sam_query_groupmem(CLI_POLICY_HND *pol, uint32 group_rid,
 	    != NT_STATUS_NOPROBLEMO)
 		goto done;
 
-	/* do a samr_query_lookup_rids() */
+	if ((result = cli_samr_lookup_rids(pol->cli, pol->mem_ctx,
+					   &pol->handle, 1000, /* ??? */
+					   *num_names, *rid_mem,
+					   num_names, names, name_types))
+	    != NT_STATUS_NOPROBLEMO)
+		goto done;
 
  done:
 	if (got_group_pol) cli_samr_close(pol->cli, pol->mem_ctx, &group_pol);
