@@ -249,7 +249,7 @@ static TDB_DATA print_key(uint32 jobid)
 	static uint32 j;
 	TDB_DATA ret;
 
-	j = jobid;
+	SIVAL(&j, 0, jobid);
 	ret.dptr = (void *)&j;
 	ret.dsize = sizeof(j);
 	return ret;
@@ -358,9 +358,9 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 		return 0;
 
 	if (*sysjob == pjob->sysjob) {
-		uint32 *jobid = (uint32 *)key.dptr;
+		uint32 jobid = IVAL(key.dptr,0);
 
-		sysjob_to_jobid_value = *jobid;
+		sysjob_to_jobid_value = jobid;
 		return 1;
 	}
 
