@@ -36,8 +36,9 @@
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 
-#ifndef EXTERN
-#	define EXTERN extern
+/* size of shared memory used for share mode locking */
+#ifndef SHMEM_SIZE
+#define SHMEM_SIZE 102400
 #endif
 
 #define NMB_PORT 137
@@ -52,6 +53,11 @@
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((char *)(p1)) - (char *)(p2)))
 
 typedef int BOOL;
+
+/* offset in shared memory */
+typedef  int shm_offset_t;
+#define NULL_OFFSET (shm_offset_t)(0)
+
 
 /*
    Samba needs type definitions for int16, int32, uint16 and uint32.
@@ -106,7 +112,7 @@ typedef unsigned int uint32;
 #ifndef SYSLOG
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))?(Debug1 body):0)
 #else
-EXTERN int syslog_level;
+extern int syslog_level;
 
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
 #endif
@@ -394,6 +400,20 @@ struct interface
 	struct in_addr bcast;
 	struct in_addr nmask;
 };
+
+/* share mode record in shared memory */
+typedef struct
+{
+  shm_offset_t next_offset; /* offset of next record in list in shared mem */
+  int locking_version;
+  int share_mode;
+  time_t time;
+  int pid;
+  dev_t st_dev;
+  ino_t st_ino;
+  char file_name[1];   /* dynamically allocated with correct size */
+} share_mode_record;
+
 
 /* this is used for smbstatus */
 struct connect_record

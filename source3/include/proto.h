@@ -259,12 +259,14 @@ void file_unlock(int fd);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
+BOOL start_share_mode_mgmt(void);
+BOOL stop_share_mode_mgmt(void);
 int get_share_mode_by_fnum(int cnum,int fnum,int *pid);
 int get_share_mode_byname(int cnum,char *fname,int *pid);
 int get_share_mode(int cnum,struct stat *sbuf,int *pid);
 void del_share_mode(int fnum);
 BOOL set_share_mode(int fnum,int mode);
-void clean_share_files(void);
+void clean_share_modes(void);
 
 /*The following definitions come from  mangle.c  */
 
@@ -545,6 +547,18 @@ BOOL server_validate(char *buf);
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
 
+/*The following definitions come from  pipes.c  */
+
+int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize);
+BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
+		     int mdrcnt,int mprcnt,
+		     char **rdata,char **rparam,
+		     int *rdata_len,int *rparam_len);
+
 /*The following definitions come from  predict.c  */
 
 int read_predict(int fd,int offset,char *buf,char **ptr,int num);
@@ -673,6 +687,22 @@ void standard_sub(int cnum,char *s);
 char *smb_fn_name(int type);
 int chain_reply(int type,char *inbuf,char *inbuf2,char *outbuf,char *outbuf2,int size,int bufsize);
 int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
+
+/*The following definitions come from  shmem.c  */
+
+BOOL shm_open( char *file_name, int size);
+BOOL shm_close( void );
+shm_offset_t shm_alloc(int size);
+BOOL shm_free(shm_offset_t offset);
+shm_offset_t shm_get_userdef_off(void);
+BOOL shm_set_userdef_off(shm_offset_t userdef_off);
+void * shm_offset2addr(shm_offset_t offset);
+shm_offset_t shm_addr2offset(void *addr);
+BOOL shm_lock(void);
+BOOL shm_unlock(void);
+BOOL shm_get_usage(int *bytes_free,
+		   int *bytes_used,
+		   int *bytes_overhead);
 
 /*The following definitions come from  smbencrypt.c  */
 
@@ -876,7 +906,7 @@ struct hostent *Get_Hostbyname(char *name);
 BOOL process_exists(int pid);
 char *uidtoname(int uid);
 char *gidtoname(int gid);
-void BlockSignals(BOOL block);
+void BlockSignals(BOOL block,int signum);
 void ajt_panic(void);
 char *readdirname(void *p);
 

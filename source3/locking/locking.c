@@ -17,6 +17,11 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   Revision History:
+
+   12 aug 96: Erik.Devriendt@te6.siemens.be
+   added support for shared memory implementation of share mode locking
 */
 
 #include "includes.h"
@@ -226,6 +231,34 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
   return True; /* Did unlock */
 }
 
+#ifdef FAST_SHARE_MODES
+/*******************************************************************
+  initialize the shared memory for share_mode management 
+  ******************************************************************/
+BOOL start_share_mode_mgmt(void)
+{
+   pstring shmem_file_name;
+   
+  strcpy(shmem_file_name,lp_lockdir());
+  trim_string(shmem_file_name,"","/");
+  if (!*shmem_file_name) return(False);
+  strcat(shmem_file_name, "/SHARE_MEM_FILE");
+  return shm_open(shmem_file_name, SHMEM_SIZE);
+}
+
+
+/*******************************************************************
+  deinitialize the shared memory for share_mode management 
+  ******************************************************************/
+BOOL stop_share_mode_mgmt(void)
+{
+   return shm_close();
+}
+
+#else
+
+/* SHARE MODE LOCKS USING SLOW DESCRIPTION FILES */
+
 /*******************************************************************
   name a share file
   ******************************************************************/
@@ -251,6 +284,7 @@ static BOOL share_name_fnum(int fnum,char *name)
   return(share_name(Files[fnum].cnum,&st,name));
 }
 
+#endif
 
 /*******************************************************************
   get the share mode of a file using the fnum
@@ -278,6 +312,78 @@ get the share mode of a file
 ********************************************************************/
 int get_share_mode(int cnum,struct stat *sbuf,int *pid)
 {
+#ifdef FAST_SHARE_MODES
+  share_mode_record *scanner_p;
+  share_mode_record *prev_p;
+  int ret;
+  BOOL found = False;
+
+  *pid = 0;
+
+  if(!shm_lock()) return (0);
+
+  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  prev_p = scanner_p;
+  while(scanner_p)
+  {
+     if( (scanner_p->st_dev == sbuf->st_dev) && (scanner_p->st_ino == sbuf->st_ino) )
+     {
+	found = True;
+	break;
+     }
+     else
+     {
+	prev_p = scanner_p ;
+	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+     }
+  }
+  
+  if(!found)
+  {
+     shm_unlock();
+     return (0);
+  }
+  
+  if(scanner_p->locking_version != LOCKING_VERSION)
+  {
+     DEBUG(2,("Deleting old share mode record due to old locking version %d",scanner_p->locking_version));
+     if(prev_p == scanner_p)
+	shm_set_userdef_off(scanner_p->next_offset);
+     else
+	prev_p->next_offset = scanner_p->next_offset;
+     shm_free(shm_addr2offset(scanner_p));
+     *pid = 0;
+	
+     shm_unlock();
+     return (0);
+  }
+  
+  *pid = scanner_p->pid;
+  ret = scanner_p->share_mode;
+
+  if (*pid && !process_exists(*pid))
+  {
+    ret = 0;
+    *pid = 0;
+  }
+  
+  if (! *pid)
+  {
+     if(prev_p == scanner_p)
+	shm_set_userdef_off(scanner_p->next_offset);
+     else
+	prev_p->next_offset = scanner_p->next_offset;
+     shm_free(shm_addr2offset(scanner_p));
+  }
+  
+  if (*pid)
+    DEBUG(5,("Read share mode record mode 0x%X pid=%d\n",ret,*pid));
+
+  if(!shm_unlock()) return (0);
+  
+  return(ret);
+  
+#else
   pstring fname;
   int fd2;
   char buf[16];
@@ -319,6 +425,7 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
     DEBUG(5,("Read share file %s mode 0x%X pid=%d\n",fname,ret,*pid));
 
   return(ret);
+#endif
 }
 
 
@@ -327,6 +434,67 @@ del the share mode of a file, if we set it last
 ********************************************************************/
 void del_share_mode(int fnum)
 {
+#ifdef FAST_SHARE_MODES
+  struct stat st;
+  time_t t=0;
+  int pid=0;
+  BOOL del = False;
+  share_mode_record *scanner_p;
+  share_mode_record *prev_p;
+  BOOL found = False;
+
+  
+  
+  if (fstat(Files[fnum].fd,&st) != 0) return;
+  
+  if (!shm_lock()) return;
+  
+  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  prev_p = scanner_p;
+  while(scanner_p)
+  {
+     if( (scanner_p->st_dev == st.st_dev) && (scanner_p->st_ino == st.st_ino) )
+     {
+	found = True;
+	break;
+     }
+     else
+     {
+	prev_p = scanner_p ;
+	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+     }
+  }
+    
+  if(!found)
+  {
+     shm_unlock();
+     return;
+  }
+  
+  t = scanner_p->time;
+  pid = scanner_p->pid;
+  
+  if( (scanner_p->locking_version != LOCKING_VERSION) || !pid || !process_exists(pid))
+    del = True;
+
+  if (!del && t == Files[fnum].open_time && pid==(int)getpid())
+    del = True;
+
+  if (del)
+  {
+     DEBUG(2,("Deleting share mode record\n"));
+     if(prev_p == scanner_p)
+	shm_set_userdef_off(scanner_p->next_offset);
+     else
+	prev_p->next_offset = scanner_p->next_offset;
+     shm_free(shm_addr2offset(scanner_p));
+	
+  }
+
+  shm_unlock();
+  return;
+
+#else
   pstring fname;
   int fd2;
   char buf[16];
@@ -363,6 +531,7 @@ void del_share_mode(int fnum)
       strcpy(share_del_pending,fname);
     }
   }
+#endif
 }
   
 
@@ -371,6 +540,36 @@ set the share mode of a file
 ********************************************************************/
 BOOL set_share_mode(int fnum,int mode)
 {
+#ifdef FAST_SHARE_MODES
+  int pid = (int)getpid();
+  struct stat st;
+  shm_offset_t new_off;
+  share_mode_record *new_p;
+  
+  
+  if (fstat(Files[fnum].fd,&st) != 0) return(False);
+  
+  if (!shm_lock()) return (False);
+  new_off = shm_alloc(sizeof(share_mode_record) + strlen(Files[fnum].name) );
+  if (new_off == NULL_OFFSET) return (False);
+  new_p = (share_mode_record *)shm_offset2addr(new_off);
+  new_p->locking_version = LOCKING_VERSION;
+  new_p->share_mode = mode;
+  new_p->time = Files[fnum].open_time;
+  new_p->pid = pid;
+  new_p->st_dev = st.st_dev;
+  new_p->st_ino = st.st_ino;
+  strcpy(new_p->file_name,Files[fnum].name);
+  new_p->next_offset = shm_get_userdef_off();
+  shm_set_userdef_off(new_off);
+
+
+  DEBUG(3,("Created share record for %s with mode 0x%X pid=%d\n",Files[fnum].name,mode,pid));
+
+  if (!shm_unlock()) return (False);
+  return(True);
+
+#else
   pstring fname;
   int fd2;
   char buf[16];
@@ -406,14 +605,58 @@ BOOL set_share_mode(int fnum,int mode)
   DEBUG(3,("Created share file %s with mode 0x%X pid=%d\n",fname,mode,pid));
 
   return(True);
+#endif
 }
   
 
 /*******************************************************************
 cleanup any stale share files
 ********************************************************************/
-void clean_share_files(void)
+void clean_share_modes(void)
 {
+#ifdef USE_SHMEM
+  share_mode_record *scanner_p;
+  share_mode_record *prev_p;
+  int pid;
+  
+  if (!shm_lock()) return;
+  
+  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  prev_p = scanner_p;
+  while(scanner_p)
+  {
+     pid = scanner_p->pid;
+     
+     if( (scanner_p->locking_version != LOCKING_VERSION) || !process_exists(pid))
+     {
+	DEBUG(2,("Deleting stale share mode record"));
+	if(prev_p == scanner_p)
+	{
+	   shm_set_userdef_off(scanner_p->next_offset);
+	   shm_free(shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+           prev_p = scanner_p;
+	}
+	else
+	{
+	   prev_p->next_offset = scanner_p->next_offset;
+  	   shm_free(shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)shm_offset2addr(prev_p->next_offset);
+	}
+	
+     }
+     else
+     {
+	prev_p = scanner_p ;
+	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+     }
+  }
+    
+
+  shm_unlock();
+  return;
+  
+#else
   char *lockdir = lp_lockdir();
   void *dir;
   char *s;
@@ -457,4 +700,5 @@ void clean_share_files(void)
   }
 
   closedir(dir);
+#endif
 }

@@ -64,7 +64,7 @@ BEGIN {
   next;
 }
 
-!/^unsigned|^mode_t|^DIR|^user|^int|^char|^uint|^struct|^BOOL|^void|^time/ {
+!/^unsigned|^mode_t|^DIR|^user|^int|^char|^uint|^struct|^BOOL|^void|^time|^shm_offset_t/ {
   next;
 }
 

@@ -58,7 +58,7 @@ extern struct in_addr ipzero;
   ****************************************************************************/
 static int sig_term()
 {
-  BlockSignals(True);
+  BlockSignals(True,SIGTERM);
   
   DEBUG(0,("Got SIGTERM: going down...\n"));
   
@@ -83,7 +83,7 @@ catch a sighup
 ****************************************************************************/
 static int sig_hup(void)
 {
-  BlockSignals(True);
+  BlockSignals(True,SIGHUP);
 
   DEBUG(0,("Got SIGHUP (reload not implemented)\n"));
   dump_names();
@@ -91,7 +91,7 @@ static int sig_hup(void)
 
   set_samba_nb_type();
 
-  BlockSignals(False);
+  BlockSignals(False,SIGHUP);
 #ifndef DONT_REINSTALL_SIG
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
@@ -103,12 +103,12 @@ catch a sigpipe
 ****************************************************************************/
 static int sig_pipe(void)
 {
-  BlockSignals(True);
+  BlockSignals(True,SIGPIPE);
 
   DEBUG(0,("Got SIGPIPE\n"));
   if (!is_daemon)
     exit(1);
-  BlockSignals(False);
+  BlockSignals(False,SIGPIPE);
   return(0);
 }
 

@@ -3118,16 +3118,20 @@ char *gidtoname(int gid)
 /*******************************************************************
 block sigs
 ********************************************************************/
-void BlockSignals(BOOL block)
+void BlockSignals(BOOL block,int signum)
 {
 #ifdef USE_SIGBLOCK
-  int block_mask = (sigmask(SIGTERM)|sigmask(SIGQUIT)|sigmask(SIGSEGV)
-		    |sigmask(SIGCHLD)|sigmask(SIGQUIT)|sigmask(SIGBUS)|
-		    sigmask(SIGINT));
+  int block_mask = sigmask(signum);
+  static int oldmask = 0;
   if (block) 
-    sigblock(block_mask);
+    oldmask = sigblock(block_mask);
   else
-    sigsetmask(0);
+    sigsetmask(oldmask);
+#elif defined(USE_SIGPROCMASK)
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set,signum);
+  sigprocmask(block?SIG_BLOCK:SIG_UNBLOCK,&set,NULL);
 #endif
 }
 

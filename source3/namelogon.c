@@ -49,7 +49,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   struct in_addr ip = dgram->header.source_ip;
   struct subnet_record *d = find_subnet(ip);
   char *logname,*q;
-  char *reply_name;
+  fstring reply_name;
   BOOL add_slashes = False;
   pstring outbuf;
   int code,reply_code;
@@ -78,7 +78,8 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       char *user = skip_string(machine,1);
       logname = skip_string(user,1);
       reply_code = 6;
-      reply_name = myname;
+      strcpy(reply_name,myname); 
+      strupper(reply_name);
       add_slashes = True;
       DEBUG(3,("Domain login request from %s(%s) user=%s\n",
  	       machine,inet_ntoa(p->ip),user));
@@ -89,11 +90,12 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       char *machine = buf+2;
       logname = skip_string(machine,1);
       reply_code = 7;
-      reply_name = lp_domain_controller();
+      strcpy(reply_name,lp_domain_controller()); 
       if (!*reply_name) {
-        reply_name = myname;
+	strcpy(reply_name,myname); 
         reply_code = 0xC;
       }
+      strupper(reply_name);
       DEBUG(3,("GETDC request from %s(%s), reporting %s 0x%2x\n",
  	       machine,inet_ntoa(p->ip), reply_name, reply_code));
     }
@@ -112,7 +114,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
     q += 2;
   }
   StrnCpy(q,reply_name,16);
-  strupper(q);
   q = skip_string(q,1);
 
   if (reply_code == 0xC)
@@ -122,13 +123,11 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
        q++;
    }
 
-   StrnCpy(q,reply_name,16);
-   strupper(q);
-   q = skip_string(q,1);
+   PutUniCode(q,reply_name);
+   q += 2*(strlen(reply_name) + 1);
 
-   StrnCpy(q,lp_workgroup(),16);
-   strupper(q);
-   q = skip_string(q,1);
+   PutUniCode(q,lp_workgroup());
+   q += 2*(strlen(lp_workgroup()) + 1);
 
    SIVAL(q,0,1);
    q += 4;
