@@ -11,7 +11,12 @@
 	on behalf of is not the file owner. Setting this option to <constant>
 	yes</constant> allows DOS semantics and <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> will change the file 
-timestamp as DOS requires.</para>
+	timestamp as DOS requires. Due to changes in Microsoft Office 2000 and beyond,
+	the default for this parameter has been changed from "no" to "yes" in Samba 3.0.14
+	and above. Microsoft Excel will display dialog box warnings about the file being
+	changed by another user if this parameter is not set to "yes" and files are being
+	shared between users.
+	</para>
 </description>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
