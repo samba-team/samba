@@ -31,7 +31,7 @@
 /*
   generate a krb5 GSS-API wrapper packet given a ticket
 */
-DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8 tok_id[2])
+DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *ticket, const uint8_t tok_id[2])
 {
 	struct asn1_data data;
 	DATA_BLOB ret = data_blob(NULL,0);
@@ -63,7 +63,7 @@ DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *tick
 /*
   parse a krb5 GSS-API wrapper packet giving a ticket
 */
-BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8 tok_id[2])
+BOOL gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, DATA_BLOB *ticket, uint8_t tok_id[2])
 {
 	BOOL ret;
 	struct asn1_data data;

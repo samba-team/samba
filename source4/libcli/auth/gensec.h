@@ -58,7 +58,7 @@ struct auth_session_info;
 struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
-	uint8 auth_type;  /* 0 if not offered on DCE-RPC */
+	uint8_t auth_type;  /* 0 if not offered on DCE-RPC */
 	const char *oid;  /* NULL if not offered by SPENGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
 	NTSTATUS (*server_start)(struct gensec_security *gensec_security);
@@ -93,7 +93,7 @@ struct gensec_security_ops {
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, 
 				 struct auth_session_info **session_info); 
 	BOOL (*have_feature)(struct gensec_security *gensec_security,
-				    uint32 feature); 
+				    uint32_t feature); 
 	BOOL enabled;
 };
 	
@@ -109,7 +109,7 @@ struct gensec_security {
 	struct gensec_target target;
 	enum gensec_role gensec_role;
 	BOOL subcontext;
-	uint32 want_features;
+	uint32_t want_features;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
