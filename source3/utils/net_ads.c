@@ -76,15 +76,43 @@ int net_ads_usage(void)
 	return -1;
 }
 
-static int net_ads_leave(int argc, const char **argv)
+
+static int net_ads_status(int argc, const char **argv)
 {
-	char *hostname;
 	ADS_STRUCT *ads;
 	int rc;
 	extern pstring global_myname;
+	void *res;
 
-	hostname = strdup(global_myname);
-	strlower(hostname);
+	ads = ads_init(NULL, NULL, NULL);
+
+	rc = ads_connect(ads);
+	if (rc) {
+		d_printf("ads_connect: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	rc = ads_find_machine_acct(ads, &res, global_myname);
+	if (rc) {
+		d_printf("ads_find_machine_acct: %s\n", ads_errstr(rc));
+		return -1;
+	}
+
+	if (ads_count_replies(ads, res) == 0) {
+		d_printf("No machine account for '%s' found\n", global_myname);
+		return -1;
+	}
+
+	ads_dump(ads, res);
+
+	return 0;
+}
+
+static int net_ads_leave(int argc, const char **argv)
+{
+	ADS_STRUCT *ads;
+	int rc;
+	extern pstring global_myname;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -99,29 +127,25 @@ static int net_ads_leave(int argc, const char **argv)
 		return -1;
 	}
 
-	rc = ads_leave_realm(ads, hostname);
+	rc = ads_leave_realm(ads, global_myname);
 	if (rc) {
 	    d_printf("Failed to delete host '%s' from the '%s' realm.\n", 
-		     hostname, ads->realm);
+		     global_myname, ads->realm);
 	    return -1;
 	}
 
-	d_printf("Removed '%s' from realm '%s'\n", hostname, ads->realm);
+	d_printf("Removed '%s' from realm '%s'\n", global_myname, ads->realm);
 
 	return 0;
 }
 
 static int net_ads_join(int argc, const char **argv)
 {
-	char *hostname;
 	ADS_STRUCT *ads;
 	int rc;
 	char *password;
 	extern pstring global_myname;
 	NTSTATUS status;
-
-	hostname = strdup(global_myname);
-	strlower(hostname);
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -138,13 +162,13 @@ static int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	rc = ads_join_realm(ads, hostname);
+	rc = ads_join_realm(ads, global_myname);
 	if (rc) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
-	status = ads_set_machine_password(ads, hostname, password);
+	status = ads_set_machine_password(ads, global_myname, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("ads_set_machine_password: %s\n", get_nt_error_msg(status));
 		return -1;
@@ -155,7 +179,7 @@ static int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
-	d_printf("Joined '%s' to realm '%s'\n", hostname, ads->realm);
+	d_printf("Joined '%s' to realm '%s'\n", global_myname, ads->realm);
 
 	return 0;
 }
@@ -165,6 +189,7 @@ int net_ads(int argc, const char **argv)
 	struct functable func[] = {
 		{"JOIN", net_ads_join},
 		{"LEAVE", net_ads_leave},
+		{"STATUS", net_ads_status},
 		{NULL, NULL}
 	};
 	

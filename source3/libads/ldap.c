@@ -286,6 +286,32 @@ static int ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname)
 }
 
 /*
+  dump a binary result from ldap
+*/
+static void dump_binary(const char *field, struct berval **values)
+{
+	int i, j;
+	for (i=0; values[i]; i++) {
+		printf("%s: ", field);
+		for (j=0; j<values[i]->bv_len; j++) {
+			printf("%02X", (unsigned char)values[i]->bv_val[j]);
+		}
+		printf("\n");
+	}
+}
+
+/*
+  dump a string result from ldap
+*/
+static void dump_string(const char *field, struct berval **values)
+{
+	int i;
+	for (i=0; values[i]; i++) {
+		printf("%s: %s\n", field, values[i]->bv_val);
+	}
+}
+
+/*
   dump a record from LDAP on stdout
   used for debugging
 */
@@ -295,6 +321,14 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 	LDAPMessage *msg;
 	BerElement *b;
 	char *this_dn;
+	struct {
+		char *name;
+		void (*handler)(const char *, struct berval **);
+	} handlers[] = {
+		{"objectGUID", dump_binary},
+		{"objectSid", dump_binary},
+		{NULL, NULL}
+	};
     
 	for (msg = ldap_first_entry(ads->ld, (LDAPMessage *)res); 
 	     msg; msg = ldap_next_entry(ads->ld, msg)) {
@@ -307,12 +341,21 @@ void ads_dump(ADS_STRUCT *ads, void *res)
 		for (field = ldap_first_attribute(ads->ld, msg, &b); 
 		     field;
 		     field = ldap_next_attribute(ads->ld, msg, b)) {
-			char **values, **p;
-			values = ldap_get_values(ads->ld, msg, field);
-			for (p = values; *p; p++) {
-				printf("%s: %s\n", field, *p);
+			struct berval **values;
+			int i;
+
+			values = ldap_get_values_len(ads->ld, msg, field);
+
+			for (i=0; handlers[i].name; i++) {
+				if (StrCaseCmp(handlers[i].name, field) == 0) {
+					handlers[i].handler(field, values);
+					break;
+				}
 			}
-			ldap_value_free(values);
+			if (!handlers[i].name) {
+				dump_string(field, values);
+			}
+			ldap_value_free_len(values);
 			ldap_memfree(field);
 		}
 
@@ -337,25 +380,32 @@ int ads_join_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	int rc;
 	LDAPMessage *res;
+	char *host;
 
-	rc = ads_find_machine_acct(ads, (void **)&res, hostname);
+	/* hostname must be lowercase */
+	host = strdup(hostname);
+	strlower(host);
+
+	rc = ads_find_machine_acct(ads, (void **)&res, host);
 	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1) {
-		DEBUG(0, ("Host account for %s already exists\n", hostname));
+		DEBUG(0, ("Host account for %s already exists\n", host));
 		return LDAP_SUCCESS;
 	}
 
-	rc = ads_add_machine_acct(ads, hostname);
+	rc = ads_add_machine_acct(ads, host);
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("ads_add_machine_acct: %s\n", ads_errstr(rc)));
 		return rc;
 	}
 
-	rc = ads_find_machine_acct(ads, (void **)&res, hostname);
+	rc = ads_find_machine_acct(ads, (void **)&res, host);
 	if (rc != LDAP_SUCCESS || ads_count_replies(ads, res) != 1) {
 		DEBUG(0, ("Host account test failed\n"));
 		/* hmmm, we need NTSTATUS */
 		return -1;
 	}
+
+	free(host);
 
 	return LDAP_SUCCESS;
 }
@@ -367,11 +417,15 @@ int ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	int rc;
 	void *res;
-	char *hostnameDN; 
+	char *hostnameDN, *host; 
 
-	rc = ads_find_machine_acct(ads, &res, hostname);
+	/* hostname must be lowercase */
+	host = strdup(hostname);
+	strlower(host);
+
+	rc = ads_find_machine_acct(ads, &res, host);
 	if (rc != LDAP_SUCCESS || ads_count_replies(ads, res) != 1) {
-	    DEBUG(0, ("Host account for %s does not exist.\n", hostname));
+	    DEBUG(0, ("Host account for %s does not exist.\n", host));
 	    return -1;
 	}
 
@@ -383,13 +437,15 @@ int ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	    return rc;
 	}
 
-	rc = ads_find_machine_acct(ads, &res, hostname);
+	rc = ads_find_machine_acct(ads, &res, host);
 	if (rc == LDAP_SUCCESS && ads_count_replies(ads, res) == 1 ) {
 	    DEBUG(0, ("Failed to remove host account.\n"));
 	    /*hmmm, we need NTSTATUS */
 	    return -1;
 	}
-	
+
+	free(host);
+
 	return LDAP_SUCCESS;
 }
 
@@ -398,7 +454,12 @@ NTSTATUS ads_set_machine_password(ADS_STRUCT *ads,
 				  const char *hostname, 
 				  const char *password)
 {
-	return krb5_set_password(ads->kdc_server, hostname, ads->realm, password);
+	NTSTATUS ret;
+	char *host = strdup(hostname);
+	strlower(host);
+	ret = krb5_set_password(ads->kdc_server, host, ads->realm, password);
+	free(host);
+	return ret;
 }
 
 #endif
