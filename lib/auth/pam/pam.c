@@ -217,7 +217,7 @@ pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
     setenv("KRBTKFILE", tkt, 1);
     if(k_hasafs()){
 	k_setpag();
-	k_afsklog(0, 0);
+	krb_afslog(0, 0);
     }
     return PAM_SUCCESS;
 }

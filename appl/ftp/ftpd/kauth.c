@@ -215,7 +215,7 @@ kauth(char *principal, char *ticket)
 	do_destroy_tickets = 1;
 
 	if(k_hasafs())
-	    k_afsklog(0, 0);
+	    krb_afslog(0, 0);
 	reply(200, "Tickets will be destroyed on exit.");
 	return;
     }
@@ -367,7 +367,7 @@ void
 afslog(const char *cell)
 {
     if(k_hasafs()) {
-	k_afsklog(cell, 0);
+	krb_afslog(cell, 0);
 	reply(200, "afslog done");
     } else {
 	reply(200, "no AFS present");

@@ -895,7 +895,7 @@ pass(char *passwd)
 		    if (rval == KSUCCESS ) {
 			chown (tkt_string(), pw->pw_uid, pw->pw_gid);
 			if(k_hasafs())
-			    k_afsklog(0, 0);
+			    krb_afslog(0, 0);
 		    } else 
 			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {

@@ -72,7 +72,7 @@ afs_verify(char *name,
     if (ret == KSUCCESS) {
       if (k_hasafs()) {
 	k_setpag ();
-	k_afsklog_uid (0, 0, pwd->pw_uid);
+	krb_afslog_uid (0, 0, pwd->pw_uid);
       }
     } else if (!quiet)
       printf ("%s\n", krb_get_err_text (ret));
