@@ -869,6 +869,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 krb5_error_code
 pk_mk_pa_reply(krb5_context context,
       	       pk_client_params *client_params,
+	       const hdb_entry *client,
 	       const KDC_REQ *req,
                krb5_keyblock **reply_key,
 	       METHOD_DATA *md)
@@ -893,6 +894,7 @@ pk_mk_pa_reply(krb5_context context,
 	goto out;
     }
 
+    /* XXX select best/allowed enctype */
     enctype = req->req_body.etype.val[0];
     enctype = ETYPE_DES3_CBC_SHA1;
 
