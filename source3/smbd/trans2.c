@@ -1681,9 +1681,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
           files_struct *iterate_fsp;
           SMB_DEV_T dev = fsp->fd_ptr->dev;
           SMB_INO_T inode = fsp->fd_ptr->inode;
-          int new_share_mode = (delete_on_close ? 
-                                  (fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
-                                  (fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
 
           DEBUG(10,("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
                delete_on_close ? "Adding" : "Removing", fsp->fnum, fsp->fsp_name ));
@@ -1699,6 +1696,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
           for(iterate_fsp = file_find_di_first(dev, inode); iterate_fsp;
                                 iterate_fsp = file_find_di_next(iterate_fsp))
           {
+            int new_share_mode = (delete_on_close ? 
+                                  (iterate_fsp->share_mode | DELETE_ON_CLOSE_FLAG) :
+                                  (iterate_fsp->share_mode & ~DELETE_ON_CLOSE_FLAG) );
+
             if(modify_share_mode(token, iterate_fsp, new_share_mode)==False)
               DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
