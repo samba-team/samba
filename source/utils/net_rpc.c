@@ -1342,6 +1342,10 @@ rpc_list_alias_members(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
+	if (num_members == 0) {
+		return NT_STATUS_OK;
+	}
+
 	cli_nt_session_close(cli);
 
 	if (!cli_nt_session_open(cli, PI_LSARPC)) {
