@@ -130,29 +130,6 @@ void init_modules(void)
 }
 
 
-/*************************************************************************
- * This functions /path/to/foobar.so -> foobar
- ************************************************************************/
-void module_path_get_name(const char *path, pstring name)
-{
-	char *s;
-
-	/* First, make the path relative */
-	s = strrchr(path, '/');
-	if(s) pstrcpy(name, s+1);
-	else pstrcpy(name, path);
-	
-	if (dyn_SHLIBEXT && *dyn_SHLIBEXT && strlen(dyn_SHLIBEXT) < strlen(name)) {
-		int n = strlen(name) - strlen(dyn_SHLIBEXT);
-		
-		/* Remove extension if necessary */
-		if (name[n-1] == '.' && !strcmp(name+n, dyn_SHLIBEXT)) {
-			name[n-1] = '\0';
-		}
-	}
-}
-
-
 /***************************************************************************
  * This Function registers a idle event
  *
