@@ -30,6 +30,7 @@
 #include "svfs.h"
 #include "system/time.h"
 #include "dlinklist.h"
+#include "smb_server/smb_server.h"
 
 #ifndef O_DIRECTORY
 #define O_DIRECTORY 0

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "smb_server/smb_server.h"
 
 struct unixuid_private {
 	void *samctx;

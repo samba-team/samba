@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "ioctl.h"
+#include "smb_server/smb_server.h"
 
 /*
   connect to a share - used when a tree_connect operation comes

@@ -1,3 +1,5 @@
+#ifndef _REQUEST_H
+#define _REQUEST_H
 /*
    Unix SMB/CIFS implementation.
    SMB parameters and setup
@@ -18,6 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
+
+#include "signing.h"
 
 /*
   Shared state structure between client and server, representing the basic packet.
@@ -55,3 +59,4 @@ struct request_buffer {
 	char *ptr;
 };
 
+#endif

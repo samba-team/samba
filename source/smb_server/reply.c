@@ -24,6 +24,8 @@
 */
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
+
 
 /* useful way of catching wct errors with file and line number */
 #define REQ_CHECK_WCT(req, wcount) do { \

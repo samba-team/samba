@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "request.h"
 #include "libcli/raw/libcliraw.h"
 
 #define NSERVERS 2

@@ -20,6 +20,7 @@
 
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
 
 /* oh bugger - I realy didn't want to have a top-level context
    anywhere, but until we change all lp_*() calls to take a context

@@ -24,6 +24,8 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "asn_1.h"
+#include "smb_server/smb_server.h"
+
 
 /*
   setup the OS, Lanman and domain portions of a session setup reply

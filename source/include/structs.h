@@ -77,3 +77,16 @@ struct registry_value;
 
 struct rap_NetShareEnum;
 struct rap_NetServerEnum2;
+
+struct smbsrv_request;
+struct smbsrv_tcon;
+struct smb_signing_context;
+struct smbsrv_connection;
+struct auth_context;
+struct request_buffer;
+
+struct pvfs_dir;
+struct pvfs_filename;
+struct pvfs_state;
+struct pvfs_file;
+

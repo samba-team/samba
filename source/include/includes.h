@@ -181,6 +181,8 @@ extern int errno;
 #include "pstring.h"
 
 /* Lists, trees, caching, database... */
+#include "dynconfig.h"
+#include "version.h"
 #include "xfile.h"
 #include "talloc.h"
 #include "lib/ldb/include/ldb.h"
@@ -192,49 +194,31 @@ extern int errno;
 #include "trans2.h"
 #include "nterr.h"
 #include "charset.h"
-#include "dynconfig.h"
-
-#include "version.h"
 #include "rewrite.h"
 #include "smb.h"
 #include "ads.h"
 #include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
 #include "nameserv.h"
-
 #include "byteorder.h"
-
 #include "module.h"
-
 #include "mutex.h"
-
-#include "structs.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/ndr/ndr_sec.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/tables.h"
-
 #include "smb_interfaces.h"
 #include "smbd/server.h"
 #include "smbd/service.h"
 #include "rpc_server/dcerpc_server.h"
-#include "request.h"
-#include "signing.h"
-#include "smb_server/smb_server.h"
+#include "structs.h"
 #include "ntvfs/ntvfs.h"
 #include "cli_context.h"
-
 #include "libnet/libnet.h"
 #include "utils/net/net.h"
-
 #include "nsswitch/winbind_client.h"
-
-/* hmm, this really is getting ugly isn't it .... we probably need to
-   have some way to have subsystem includes without including it
-   globally */
-#include "ntvfs/posix/vfs_posix.h"
 
 #define malloc_p(type) (type *)malloc(sizeof(type))
 #define malloc_array_p(type, count) (type *)realloc_array(NULL, sizeof(type), count)

@@ -20,6 +20,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "request.h"
+#include "smbd/process_model.h"
+
 /*
   this header declares the core context structures associated with smb
   sockets, tree connects, requests etc
@@ -139,8 +142,6 @@ struct substitute_context {
 	/* the username for %U */
 	char *user_name;
 };
-
-#include "smbd/process_model.h"
 
 /* smb server context structure. This should contain all the state
  * information associated with a SMB server connection 

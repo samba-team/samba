@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+#include "smb_server/smb_server.h"
+
 
 /*******************************************************************
 put a dos date into a buffer (time/date format)

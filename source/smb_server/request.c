@@ -24,6 +24,8 @@
 
 #include "includes.h"
 #include "dlinklist.h"
+#include "smb_server/smb_server.h"
+
 
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 256
