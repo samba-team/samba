@@ -1821,9 +1821,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 			}
-			if((pos = SMB_VFS_LSEEK(fsp,fsp->fd,0,SEEK_CUR)) == -1)
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-
+			pos = fsp->position_information;
 			delete_pending = fsp->delete_on_close;
 		}
 	} else {
@@ -2699,6 +2697,27 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
 				return ERROR_NT(status);
 
+			break;
+		}
+
+		case SMB_FILE_POSITION_INFORMATION:
+		{
+			SMB_BIG_UINT position_information;
+
+			if (total_data < 8)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+			position_information = (SMB_BIG_UINT)IVAL(pdata,0);
+#ifdef LARGE_SMB_OFF_T
+			position_information |= (((SMB_BIG_UINT)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if (IVAL(pdata,4) != 0) /* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+#endif /* LARGE_SMB_OFF_T */
+			DEBUG(10,("call_trans2setfilepathinfo: Set file position information for file %s to %.0f\n",
+					fname, (double)position_information ));
+			if (fsp)
+				fsp->position_information = position_information;
 			break;
 		}
 

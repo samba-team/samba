@@ -390,6 +390,7 @@ typedef struct files_struct
 	SMB_OFF_T pos;
 	SMB_BIG_UINT size;
 	SMB_BIG_UINT initial_allocation_size; /* Faked up initial allocation on disk. */
+	SMB_BIG_UINT position_information;
 	mode_t mode;
 	uint16 vuid;
 	write_bmpx_struct *wbmpx_ptr;
