@@ -34,21 +34,22 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, c
 	server_terminate_connection(ldap_conn->connection, reason);
 }
 
+static const struct server_stream_ops *ldapsrv_get_stream_ops(void);
+
 /*
   add a socket address to the list of events, one event per port
 */
-static void add_socket(struct server_service *service, 
-		       const struct model_ops *model_ops, 
+static void add_socket(struct server_service *service,
 		       struct ipv4_addr *ifip)
 {
-	struct server_socket *srv_sock;
+	struct server_stream_socket *stream_socket;
 	uint16_t port = 389;
 	char *ip_str = talloc_strdup(service, sys_inet_ntoa(*ifip));
 
-	srv_sock = service_setup_socket(service, model_ops, "ipv4", ip_str, &port);
+	stream_socket = service_setup_stream_socket(service, ldapsrv_get_stream_ops(), "ipv4", ip_str, &port);
 
 	port = 3268;
-	srv_sock = service_setup_socket(service, model_ops, "ipv4", ip_str, &port);
+	stream_socket = service_setup_stream_socket(service, ldapsrv_get_stream_ops(), "ipv4", ip_str, &port);
 
 	talloc_free(ip_str);
 }
@@ -56,8 +57,7 @@ static void add_socket(struct server_service *service,
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
-static void ldapsrv_init(struct server_service *service,
-			 const struct model_ops *model_ops)
+static void ldapsrv_init(struct server_service *service)
 {	
 	struct ldapsrv_service *ldap_service;
 	struct ldapsrv_partition *part;
@@ -97,7 +97,7 @@ static void ldapsrv_init(struct server_service *service,
 	ldap_service->default_partition = part;
 	DLIST_ADD_END(ldap_service->partitions, part, struct ldapsrv_partition *);
 
-	service->private_data = ldap_service;
+	service->service.private_data = ldap_service;
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		int num_interfaces = iface_count();
@@ -116,14 +116,14 @@ static void ldapsrv_init(struct server_service *service,
 				continue;
 			}
 
-			add_socket(service, model_ops, ifip);
+			add_socket(service, ifip);
 		}
 	} else {
 		struct ipv4_addr ifip;
 
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
 		ifip = interpret_addr2(lp_socket_address());
-		add_socket(service, model_ops, &ifip);
+		add_socket(service, &ifip);
 	}
 }
 
@@ -423,7 +423,7 @@ NTSTATUS ldapsrv_flush_responses(struct ldapsrv_connection *conn)
 static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
-	struct ldapsrv_connection *ldap_conn = conn->private_data;
+	struct ldapsrv_connection *ldap_conn = conn->connection.private_data;
 	uint8_t *buf;
 	size_t buf_length, msg_length;
 	DATA_BLOB blob;
@@ -519,7 +519,7 @@ static void ldapsrv_recv(struct server_connection *conn, struct timeval t,
 static void ldapsrv_send(struct server_connection *conn, struct timeval t,
 			 uint16_t flags)
 {
-	struct ldapsrv_connection *ldap_conn = conn->private_data;
+	struct ldapsrv_connection *ldap_conn = conn->connection.private_data;
 
 	DEBUG(10,("ldapsrv_send\n"));
 
@@ -532,20 +532,6 @@ static void ldapsrv_send(struct server_connection *conn, struct timeval t,
 		conn->event.fde->flags &= ~EVENT_FD_WRITE;
 	}
 
-	return;
-}
-
-/*
-  called when connection is idle
-*/
-static void ldapsrv_idle(struct server_connection *conn, struct timeval t)
-{
-	DEBUG(10,("ldapsrv_idle: not implemented!\n"));
-	return;
-}
-
-static void ldapsrv_close(struct server_connection *conn, const char *reason)
-{
 	return;
 }
 
@@ -566,31 +552,31 @@ static void ldapsrv_accept(struct server_connection *conn)
 
 	ZERO_STRUCTP(ldap_conn);
 	ldap_conn->connection = conn;
-	ldap_conn->service = talloc_reference(ldap_conn, conn->service->private_data);
+	ldap_conn->service = talloc_reference(ldap_conn, conn->stream_socket->service);
 
-	conn->private_data = ldap_conn;
+	conn->connection.private_data = ldap_conn;
 
 	return;
 }
 
-/*
-  called on a fatal error that should cause this server to terminate
-*/
-static void ldapsrv_exit(struct server_service *service, const char *reason)
+static const struct server_stream_ops ldap_stream_ops = {
+	.name			= "ldap",
+	.socket_init		= NULL,
+	.accept_connection	= ldapsrv_accept,
+	.recv_handler		= ldapsrv_recv,
+	.send_handler		= ldapsrv_send,
+	.idle_handler		= NULL,
+	.close_connection	= NULL
+};
+
+static const struct server_stream_ops *ldapsrv_get_stream_ops(void)
 {
-	DEBUG(10,("ldapsrv_exit\n"));
-	return;
+	return &ldap_stream_ops;
 }
 
 static const struct server_service_ops ldap_server_ops = {
 	.name			= "ldap",
-	.service_init		= ldapsrv_init,
-	.accept_connection	= ldapsrv_accept,
-	.recv_handler		= ldapsrv_recv,
-	.send_handler		= ldapsrv_send,
-	.idle_handler		= ldapsrv_idle,
-	.close_connection	= ldapsrv_close,
-	.service_exit		= ldapsrv_exit,	
+	.service_init		= ldapsrv_init
 };
 
 const struct server_service_ops *ldapsrv_get_ops(void)

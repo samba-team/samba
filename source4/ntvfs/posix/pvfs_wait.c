@@ -134,7 +134,7 @@ static int pvfs_wait_destructor(void *ptr)
 
 	pwait->private = private;
 	pwait->handler = fn;
-	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->messaging_ctx;
+	pwait->msg_ctx = pvfs->tcon->smb_conn->connection->messaging.ctx;
 	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
 	pwait->msg_type = msg_type;
 	pwait->req = talloc_reference(pwait, req);

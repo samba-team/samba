@@ -3,7 +3,7 @@
    process model manager - main loop
    Copyright (C) Andrew Tridgell 1992-2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
-   Copyright (C) Stefan (metze) Metzmacher 2004
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,21 +37,23 @@ struct model_ops {
 	const char *name;
 
 	/* called at startup when the model is selected */
-	void (*model_startup)(void);
+	void (*model_init)(struct server_context *srv_ctx);
+	/* called at th eend of the main server process */
+	void (*model_exit)(struct server_context *srv_ctx, const char *reason);
+
 
 	/* function to accept new connection */
 	void (*accept_connection)(struct event_context *, struct fd_event *, 
 				  struct timeval t, uint16_t);
-			
 	/* function to terminate a connection */
 	void (*terminate_connection)(struct server_connection *srv_conn, 
 				     const char *reason);
 
-	/* function to exit server */
-	void (*exit_server)(struct server_context *srv_ctx, const char *reason);
 
-	/* returns process or thread id */
-	int (*get_id)(struct smbsrv_request *req);
+	/* function to create a new task event_context */
+	void (*create_task)(struct server_task *task);
+	/* function to exit this task */
+	void (*terminate_task)(struct server_task *task, const char *reason);
 };
 
 /* this structure is used by modules to determine the size of some critical types */

@@ -130,16 +130,16 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	ntvfs->private_data = pvfs;
 
 	pvfs->brl_context = brl_init(pvfs, 
-				     pvfs->tcon->smb_conn->connection->server_id,  
+				     pvfs->tcon->smb_conn->connection->connection.id,  
 				     pvfs->tcon->service,
-				     pvfs->tcon->smb_conn->connection->messaging_ctx);
+				     pvfs->tcon->smb_conn->connection->messaging.ctx);
 	if (pvfs->brl_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	pvfs->odb_context = odb_init(pvfs, 
-				     pvfs->tcon->smb_conn->connection->server_id,  
-				     pvfs->tcon->smb_conn->connection->messaging_ctx);
+				     pvfs->tcon->smb_conn->connection->connection.id,  
+				     pvfs->tcon->smb_conn->connection->messaging.ctx);
 	if (pvfs->odb_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

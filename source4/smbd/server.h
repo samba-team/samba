@@ -25,8 +25,15 @@ struct server_service;
 struct event_context;
 
 struct server_context {
+	struct {
+		struct event_context *ctx;
+	} event;
+
+	struct {
+		const struct model_ops *ops;
+	} model;
+
 	struct server_service *service_list;
-	struct event_context *events;
 };
 
 /* size of listen() backlog in smbd */

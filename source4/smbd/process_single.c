@@ -30,9 +30,15 @@
 /*
   called when the process model is selected
 */
-static void single_start_server(void)
+static void single_model_init(struct server_context *server)
 {
-	smbd_process_init();
+}
+
+static void single_model_exit(struct server_context *server, const char *reason)
+{
+	DEBUG(1,("single_exit_server: reason[%s]\n",reason));
+	talloc_free(server);
+	exit(0);
 }
 
 /*
@@ -43,26 +49,24 @@ static void single_accept_connection(struct event_context *ev, struct fd_event *
 {
 	NTSTATUS status;
 	struct socket_context *sock;
-	struct server_socket *server_socket = srv_fde->private;
+	struct server_stream_socket *stream_socket = srv_fde->private;
 	struct server_connection *conn;
 
 	/* accept an incoming connection. */
-	status = socket_accept(server_socket->socket, &sock);
+	status = socket_accept(stream_socket->socket, &sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("accept_connection_single: accept: %s\n",
 			 nt_errstr(status)));
 		return;
 	}
 
-	conn = server_setup_connection(ev, server_socket, sock, t, socket_get_fd(sock));
+	conn = server_setup_connection(ev, stream_socket, sock, t, socket_get_fd(sock));
 	if (!conn) {
 		DEBUG(10,("server_setup_connection failed\n"));
 		return;
 	}
 
 	talloc_steal(conn, sock);
-
-	DLIST_ADD(server_socket->connection_list,conn);
 
 	/* return to event handling */
 	return;
@@ -80,15 +84,47 @@ static void single_terminate_connection(struct server_connection *conn, const ch
 	}
 }
 
-static int single_get_id(struct smbsrv_request *req)
+/*
+  called to create a new event context for a new task
+*/
+static void single_create_task(struct server_task *task)
 {
-	return (int)req->smb_conn->pid;
+	task->task.id	= (uint32_t)task;
+	task->event.ctx	= task->service->server->event.ctx;
+
+	/* setup to receive internal messages on this connection */
+	task->messaging.ctx = messaging_init(task, task->task.id, task->event.ctx);
+	if (!task->messaging.ctx) {
+		server_terminate_task(task, "messaging_init() failed");
+		return;
+	}
+
+	task->task.ops->task_init(task);
+	return;
 }
 
-static void single_exit_server(struct server_context *srv_ctx, const char *reason)
+/*
+  called to exit from a server_task
+*/
+static void single_terminate_task(struct server_task *task, const char *reason)
 {
 	DEBUG(1,("single_exit_server: reason[%s]\n",reason));
+	talloc_free(task);
+	return;
 }
+
+static const struct model_ops single_ops = {
+	.name			= "single",
+
+	.model_init		= single_model_init,
+	.model_exit		= single_model_exit,
+
+	.accept_connection	= single_accept_connection,
+	.terminate_connection	= single_terminate_connection,
+
+	.create_task		= single_create_task,
+	.terminate_task		= single_terminate_task
+};
 
 /*
   initialise the single process model, registering ourselves with the process model subsystem
@@ -96,22 +132,9 @@ static void single_exit_server(struct server_context *srv_ctx, const char *reaso
 NTSTATUS process_model_single_init(void)
 {
 	NTSTATUS ret;
-	struct model_ops ops;
-
-	ZERO_STRUCT(ops);
-
-	/* fill in our name */
-	ops.name = "single";
-
-	/* fill in all the operations */
-	ops.model_startup		= single_start_server;
-	ops.accept_connection		= single_accept_connection;
-	ops.terminate_connection	= single_terminate_connection;
-	ops.exit_server			= single_exit_server;
-	ops.get_id			= single_get_id;
 
 	/* register ourselves with the PROCESS_MODEL subsystem. */
-	ret = register_process_model(&ops);
+	ret = register_process_model(&single_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register process_model 'single'!\n"));
 		return ret;
