@@ -346,6 +346,10 @@ void set_progname(char *argv0);
 #define F_OK 0
 #endif
 
+#ifndef O_ACCMODE
+#define O_ACCMODE	003
+#endif
+
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
