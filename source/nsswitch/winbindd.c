@@ -194,6 +194,8 @@ static void process_request(struct winbindd_cli_state *state)
     DEBUG(3,("processing command %s from pid %d\n", 
             winbindd_cmd_to_string(state->request.cmd), state->pid));
 
+    if (!server_state.lsa_handle_open) return;
+
     switch(state->request.cmd) {
         
         /* User functions */
@@ -438,12 +440,16 @@ static void process_loop(int accept_sock)
         struct winbindd_cli_state *state;
         fd_set r_fds, w_fds;
         int maxfd = accept_sock, selret;
+	struct timeval timeout;
 
         /* Initialise fd lists for select() */
 
         FD_ZERO(&r_fds);
         FD_ZERO(&w_fds);
         FD_SET(accept_sock, &r_fds);
+
+	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
+	timeout.tv_usec = 0;
 
         /* Set up client readers and writers */
 
@@ -494,7 +500,11 @@ static void process_loop(int accept_sock)
 
         /* Call select */
         
-        selret = select(maxfd + 1, &r_fds, &w_fds, NULL, NULL);
+        selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
+
+	establish_connections();
+
+	if (selret == 0) continue;
 
         if ((selret == -1 && errno != EINTR) || selret == 0) {
 
@@ -534,7 +544,7 @@ static void process_loop(int accept_sock)
                 /* Data available for writing */
                 
                 if (FD_ISSET(state->sock, &w_fds)) {
-                    client_write(state);
+			client_write(state);
                 }
             }
         }
@@ -595,11 +605,10 @@ int main(int argc, char **argv)
 
     pwdb_initialise(False);
 
-    /* Winbind daemon initialisation */
-
     ZERO_STRUCT(server_state);
-    fstrcpy(server_state.controller, lp_passwordserver());
+    establish_connections();
 
+    /* Winbind daemon initialisation */
     if (!winbindd_param_init()) {
         return 1;
     }
