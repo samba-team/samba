@@ -438,34 +438,40 @@ typedef int socklen_t;
 typedef unsigned short sa_family_t;
 #endif
 
+#ifdef HAVE_IPV6
+#define _SS_MAXSIZE sizeof(struct sockaddr_in6)
+#else
+#define _SS_MAXSIZE sizeof(struct sockaddr_in)
+#endif
+
+#define _SS_ALIGNSIZE	sizeof(unsigned long)
+
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
+
+#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (sa_family_t) - sizeof(unsigned char))
+#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
     unsigned char	__ss_len;
     sa_family_t		__ss_family;
-    char		pad[
-#ifdef HAVE_IPV6
-			    sizeof(struct sockaddr_in6)
-#else
-			    sizeof(struct sockaddr_in)
-#endif
-			   - sizeof(unsigned char) - sizeof(sa_family_t)];
+    char		__ss_pad1[_SS_PAD1SIZE];
+    unsigned long	__ss_align;
+    char		__ss_pad2[_SS_PAD2SIZE];
 };
 
-#else
+#else /* !HAVE_STRUCT_SOCKADDR_SA_LEN */
+
+#define _SS_PAD1SIZE   (_SS_ALIGNSIZE - sizeof (sa_family_t))
+#define _SS_PAD2SIZE   (_SS_MAXSIZE - (sizeof (sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 
 struct sockaddr_storage {
     sa_family_t		__ss_family;
-    char		pad[
-#ifdef HAVE_IPV6
-			    sizeof(struct sockaddr_in6)
-#else
-			    sizeof(struct sockaddr_in)
-#endif
-			    - sizeof(sa_family_t)];
+    char		__ss_pad1[_SS_PAD1SIZE];
+    unsigned long	__ss_align;
+    char		__ss_pad2[_SS_PAD2SIZE];
 };
 
-#endif
+#endif /* HAVE_STRUCT_SOCKADDR_SA_LEN */
 
 #endif /* HAVE_STRUCT_SOCKADDR_STORAGE */
 
