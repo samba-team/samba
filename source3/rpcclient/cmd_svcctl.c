@@ -80,7 +80,7 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
-	fstring svc_name;
+	char *svc_name;
 
 	POLICY_HND pol_scm;
 	
@@ -92,11 +92,13 @@ void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(4,("cmd_svc_info: server:%s\n", srv_name));
 
-	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
+	if (argc < 2)
 	{
 		report(out_hnd,"svcinfo <service name>\n");
 		return;
 	}
+
+	svc_name = argv[1];
 
 	/* open SVCCTL session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
@@ -220,12 +222,22 @@ void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 {
 	ENUM_SRVC_STATUS *svcs = NULL;
 	uint32 num_svcs = 0;
-	fstring tmp;
 	BOOL request_info = False;
+	int opt;
 
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+	argc--;
+	argv++;
+
+	while ((opt = getopt(argc, argv,"i")) != EOF)
 	{
-		request_info = strequal(tmp, "-i");
+		switch (opt)
+		{
+			case 'i':
+			{
+				request_info = True;
+				break;
+			}
+		}
 	}
 
 	report(out_hnd,"Services\n");
@@ -249,7 +261,7 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
-	fstring svc_name;
+	char *svc_name;
 	BOOL res2 = True;
 	POLICY_HND pol_svc;
 	POLICY_HND pol_scm;
@@ -262,11 +274,13 @@ void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(4,("cmd_svc_stop: server:%s\n", srv_name));
 
-	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
+	if (argc < 2)
 	{
 		report(out_hnd,"svcstop <service name>\n");
 		return;
 	}
+
+	svc_name = argv[1];
 
 	/* open SVCCTL session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
@@ -308,13 +322,10 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	uint16 fnum;
 	BOOL res = True;
 	BOOL res1 = True;
-	fstring svc_name;
-	fstring tmp;
+	char *svc_name;
 	BOOL res2 = True;
 	POLICY_HND pol_svc;
 	POLICY_HND pol_scm;
-	uint32 argc = 0;
-	char **argv = NULL;
 	
 	fstring srv_name;
 
@@ -324,16 +335,19 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 
 	DEBUG(4,("cmd_svc_start: server:%s\n", srv_name));
 
-	if (!next_token(NULL, svc_name, NULL, sizeof(svc_name)))
+	if (argc < 2)
 	{
 		report(out_hnd,"svcstart <service name> [arg 0] [arg 1]...]\n");
 		return;
 	}
 
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		add_chars_to_array(&argc, &argv, tmp);
-	}
+	argc++;
+	argc--;
+
+	svc_name = argv[0];
+
+	argc++;
+	argc--;
 
 	/* open SVCCTL session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
@@ -366,8 +380,5 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_start: failed\n"));
 	}
-
-	free_char_array(argc, argv);
-
 }
 
