@@ -554,10 +554,8 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 
 static int bad_password_error(char *inbuf,char *outbuf)
 {
-  enum remote_arch_types ra_type = get_remote_arch();
 
-  if(((ra_type == RA_WINNT) || (ra_type == RA_WIN2K)) &&
-      (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
+  if (global_client_caps & CAP_STATUS32) {
     SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0,NT_STATUS_LOGON_FAILURE));
   }
