@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
@@ -123,12 +123,9 @@ NAME="AEN28"
 ><P
 >There are three special sections, [global],
 	[homes] and [printers], which are
-	described under <SPAN
-CLASS="emphasis"
-><I
+	described under <I
 CLASS="EMPHASIS"
 >special sections</I
-></SPAN
 >. The
 	following notes apply to ordinary section descriptions.</P
 ><P
@@ -142,20 +139,14 @@ CLASS="EMPHASIS"
 	printable services (used by the client to access print services 
 	on the host running the server).</P
 ><P
->Sections may be designated <SPAN
-CLASS="emphasis"
-><I
+>Sections may be designated <I
 CLASS="EMPHASIS"
 >guest</I
-></SPAN
 > services,
 	in which case no password is required to access them. A specified 
-	UNIX <SPAN
-CLASS="emphasis"
-><I
+	UNIX <I
 CLASS="EMPHASIS"
 >guest account</I
-></SPAN
 > is used to define access
 	privileges in this case.</P
 ><P
@@ -177,41 +168,56 @@ CLASS="FILENAME"
 >/home/bar</TT
 >. 
 	The share is accessed via the share name "foo":</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >	<TT
 CLASS="COMPUTEROUTPUT"
 > 	[foo]
  		path = /home/bar
- 		writeable = true
+ 		read only = no
 	</TT
 >
 	</PRE
+></TD
+></TR
+></TABLE
 ><P
 >The following sample section defines a printable share. 
 	The share is readonly, but printable. That is, the only write 
 	access permitted is via calls to open, write to and close a 
-	spool file. The <SPAN
-CLASS="emphasis"
-><I
+	spool file. The <I
 CLASS="EMPHASIS"
 >guest ok</I
-></SPAN
 > parameter means 
 	access will be permitted as the default guest user (specified 
 	elsewhere):</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >	<TT
 CLASS="COMPUTEROUTPUT"
 > 	[aprinter]
  		path = /usr/spool/public
- 		writeable = false
- 		printable = true
- 		guest ok = true
+ 		read only = yes
+ 		printable = yes
+ 		guest ok = yes
 	</TT
 >
 	</PRE
+></TD
+></TR
+></TABLE
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -269,12 +275,9 @@ NAME="AEN53"
 ></LI
 ></UL
 ><P
->If you decide to use a <SPAN
-CLASS="emphasis"
-><I
+>If you decide to use a <I
 CLASS="EMPHASIS"
 >path =</I
-></SPAN
 > line 
 		in your [homes] section then you may find it useful 
 		to use the %S macro. For example :</P
@@ -303,50 +306,47 @@ CLASS="USERINPUT"
 		a normal service section can specify, though some make more sense 
 		than others. The following is a typical and suitable [homes]
 		section:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >		<TT
 CLASS="COMPUTEROUTPUT"
 >	 	[homes]
- 			writeable = yes
+ 			read only = no
 		</TT
 >
 		</PRE
+></TD
+></TR
+></TABLE
 ><P
 >An important point is that if guest access is specified 
 		in the [homes] section, all home directories will be 
-		visible to all clients <SPAN
-CLASS="emphasis"
-><I
+		visible to all clients <I
 CLASS="EMPHASIS"
 >without a password</I
-></SPAN
 >. 
 		In the very unlikely event that this is actually desirable, it 
-		would be wise to also specify <SPAN
-CLASS="emphasis"
-><I
+		would be wise to also specify <I
 CLASS="EMPHASIS"
 >read only
 		access</I
-></SPAN
 >.</P
 ><P
->Note that the <SPAN
-CLASS="emphasis"
-><I
+>Note that the <I
 CLASS="EMPHASIS"
 >browseable</I
-></SPAN
 > flag for 
 		auto home directories will be inherited from the global browseable 
 		flag, not the [homes] browseable flag. This is useful as 
-		it means setting <SPAN
-CLASS="emphasis"
-><I
+		it means setting <I
 CLASS="EMPHASIS"
 >browseable = no</I
-></SPAN
 > in
 		the [homes] section will hide the [homes] share but make
 		any auto home directories visible.</P
@@ -406,6 +406,12 @@ NAME="AEN79"
 		world-writeable spool directory with the sticky bit set on 
 		it. A typical [printers] entry would look like 
 		this:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 ><TT
@@ -416,12 +422,21 @@ CLASS="COMPUTEROUTPUT"
  			printable = yes 
 		</TT
 ></PRE
+></TD
+></TR
+></TABLE
 ><P
 >All aliases given for a printer in the printcap file 
 		are legitimate printer names as far as the server is concerned. 
 		If your printing subsystem doesn't work like that, you will have 
 		to set up a pseudo-printcap. This is a file consisting of one or 
 		more lines like this:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 >		<TT
@@ -430,6 +445,9 @@ CLASS="COMPUTEROUTPUT"
 		</TT
 >
 		</PRE
+></TD
+></TR
+></TABLE
 ><P
 >Each alias should be an acceptable printer name for 
 		your printing subsystem. In the [global] section, specify 
@@ -461,44 +479,29 @@ NAME="AEN102"
 >parameters define the specific attributes of sections.</P
 ><P
 >Some parameters are specific to the [global] section
-	(e.g., <SPAN
-CLASS="emphasis"
-><I
+	(e.g., <I
 CLASS="EMPHASIS"
 >security</I
-></SPAN
 >).  Some parameters are usable 
-	in all sections (e.g., <SPAN
-CLASS="emphasis"
-><I
+	in all sections (e.g., <I
 CLASS="EMPHASIS"
 >create mode</I
-></SPAN
 >). All others 
 	are permissible only in normal sections. For the purposes of the 
 	following descriptions the [homes] and [printers]
-	sections will be considered normal.  The letter <SPAN
-CLASS="emphasis"
-><I
+	sections will be considered normal.  The letter <I
 CLASS="EMPHASIS"
 >G</I
-></SPAN
 > 
 	in parentheses indicates that a parameter is specific to the
-	[global] section. The letter <SPAN
-CLASS="emphasis"
-><I
+	[global] section. The letter <I
 CLASS="EMPHASIS"
 >S</I
-></SPAN
 >
 	indicates that a parameter can be specified in a service specific
-	section. Note that all <SPAN
-CLASS="emphasis"
-><I
+	section. Note that all <I
 CLASS="EMPHASIS"
 >S</I
-></SPAN
 > parameters can also be specified in 
 	the [global] section - in which case they will define
 	the default behavior for all services.</P
@@ -618,12 +621,9 @@ CLASS="VARIABLELIST"
 ><P
 >the name of your NIS home directory server.  
 		This is obtained from your NIS auto.map entry.  If you have 
-		not compiled Samba with the <SPAN
-CLASS="emphasis"
-><I
+		not compiled Samba with the <I
 CLASS="EMPHASIS"
 >--with-automount</I
-></SPAN
 > 
 		option then this value will be the same as %L.</P
 ></DD
@@ -733,12 +733,9 @@ CLASS="VARIABLELIST"
 > controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
 		if this is yes then a name like "Mail" would be mangled. 
-		Default <SPAN
-CLASS="emphasis"
-><I
+		Default <I
 CLASS="EMPHASIS"
 >no</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -747,12 +744,9 @@ CLASS="EMPHASIS"
 ><P
 >controls whether filenames are case sensitive. If 
 		they aren't then Samba must do a filename search and match on passed 
-		names. Default <SPAN
-CLASS="emphasis"
-><I
+		names. Default <I
 CLASS="EMPHASIS"
 >no</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -760,12 +754,9 @@ CLASS="EMPHASIS"
 ><DD
 ><P
 >controls what the default case is for new 
-		filenames. Default <SPAN
-CLASS="emphasis"
-><I
+		filenames. Default <I
 CLASS="EMPHASIS"
 >lower</I
-></SPAN
 >.</P
 ></DD
 ><DT
@@ -774,12 +765,9 @@ CLASS="EMPHASIS"
 ><P
 >controls if new files are created with the 
 		case that the client passes, or if they are forced to be the 
-		"default" case. Default <SPAN
-CLASS="emphasis"
-><I
+		"default" case. Default <I
 CLASS="EMPHASIS"
 >yes</I
-></SPAN
 >.
 		</P
 ></DD
@@ -792,12 +780,9 @@ CLASS="EMPHASIS"
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
 		to permit long filenames to retain their case, while short names 
-		are lowercased. Default <SPAN
-CLASS="emphasis"
-><I
+		are lowercased. Default <I
 CLASS="EMPHASIS"
 >yes</I
-></SPAN
 >.</P
 ></DD
 ></DL
@@ -900,7 +885,7 @@ NAME="AEN255"
 ><LI
 ><P
 ><A
-HREF="index.html#ABORTSHUTDOWNSCRIPT"
+HREF="r1.html#ABORTSHUTDOWNSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -912,7 +897,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDGROUPSCRIPT"
+HREF="r1.html#ADDGROUPSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -924,7 +909,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDPRINTERCOMMAND"
+HREF="r1.html#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -936,7 +921,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDSHARECOMMAND"
+HREF="r1.html#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -948,7 +933,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDUSERSCRIPT"
+HREF="r1.html#ADDUSERSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -960,7 +945,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDUSERTOGROUPSCRIPT"
+HREF="r1.html#ADDUSERTOGROUPSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -972,7 +957,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADDMACHINESCRIPT"
+HREF="r1.html#ADDMACHINESCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -984,7 +969,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEGROUPSCRIPT"
+HREF="r1.html#DELETEGROUPSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -996,7 +981,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ADSSERVER"
+HREF="r1.html#ADSSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1008,7 +993,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ALGORITHMICRIDBASE"
+HREF="r1.html#ALGORITHMICRIDBASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1020,7 +1005,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ALLOWTRUSTEDDOMAINS"
+HREF="r1.html#ALLOWTRUSTEDDOMAINS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1032,7 +1017,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ANNOUNCEAS"
+HREF="r1.html#ANNOUNCEAS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1044,7 +1029,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ANNOUNCEVERSION"
+HREF="r1.html#ANNOUNCEVERSION"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1056,7 +1041,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#AUTHMETHODS"
+HREF="r1.html#AUTHMETHODS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1068,7 +1053,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#AUTOSERVICES"
+HREF="r1.html#AUTOSERVICES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1080,7 +1065,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BINDINTERFACESONLY"
+HREF="r1.html#BINDINTERFACESONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1092,7 +1077,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BROWSELIST"
+HREF="r1.html#BROWSELIST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1104,7 +1089,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CHANGENOTIFYTIMEOUT"
+HREF="r1.html#CHANGENOTIFYTIMEOUT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1116,7 +1101,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CHANGESHARECOMMAND"
+HREF="r1.html#CHANGESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1128,7 +1113,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CONFIGFILE"
+HREF="r1.html#CONFIGFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1140,7 +1125,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEADTIME"
+HREF="r1.html#DEADTIME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1152,7 +1137,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEBUGHIRESTIMESTAMP"
+HREF="r1.html#DEBUGHIRESTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1164,7 +1149,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEBUGPID"
+HREF="r1.html#DEBUGPID"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1176,7 +1161,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEBUGTIMESTAMP"
+HREF="r1.html#DEBUGTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1188,7 +1173,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEBUGUID"
+HREF="r1.html#DEBUGUID"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1200,7 +1185,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEBUGLEVEL"
+HREF="r1.html#DEBUGLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1212,7 +1197,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEFAULT"
+HREF="r1.html#DEFAULT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1224,7 +1209,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEFAULTSERVICE"
+HREF="r1.html#DEFAULTSERVICE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1236,7 +1221,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEPRINTERCOMMAND"
+HREF="r1.html#DELETEPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1248,7 +1233,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETESHARECOMMAND"
+HREF="r1.html#DELETESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1260,7 +1245,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEUSERSCRIPT"
+HREF="r1.html#DELETEUSERSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1272,7 +1257,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEUSERFROMGROUPSCRIPT"
+HREF="r1.html#DELETEUSERFROMGROUPSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1284,7 +1269,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DFREECOMMAND"
+HREF="r1.html#DFREECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1296,7 +1281,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DISABLENETBIOS"
+HREF="r1.html#DISABLENETBIOS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1308,7 +1293,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DISABLESPOOLSS"
+HREF="r1.html#DISABLESPOOLSS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1320,7 +1305,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DISPLAYCHARSET"
+HREF="r1.html#DISPLAYCHARSET"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1332,7 +1317,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DNSPROXY"
+HREF="r1.html#DNSPROXY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1344,31 +1329,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOMAINADMINGROUP"
-><TT
-CLASS="PARAMETER"
-><I
->domain admin group</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="index.html#DOMAINGUESTGROUP"
-><TT
-CLASS="PARAMETER"
-><I
->domain guest group</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="index.html#DOMAINLOGONS"
+HREF="r1.html#DOMAINLOGONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1380,7 +1341,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOMAINMASTER"
+HREF="r1.html#DOMAINMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1392,7 +1353,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOSCHARSET"
+HREF="r1.html#DOSCHARSET"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1404,7 +1365,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1416,7 +1377,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ENHANCEDBROWSING"
+HREF="r1.html#ENHANCEDBROWSING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1428,7 +1389,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ENUMPORTSCOMMAND"
+HREF="r1.html#ENUMPORTSCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1440,7 +1401,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#GETWDCACHE"
+HREF="r1.html#GETWDCACHE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1452,7 +1413,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HIDELOCALUSERS"
+HREF="r1.html#HIDELOCALUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1464,7 +1425,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HIDEUNREADABLE"
+HREF="r1.html#HIDEUNREADABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1476,7 +1437,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HIDEUNWRITEABLEFILES"
+HREF="r1.html#HIDEUNWRITEABLEFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1488,7 +1449,19 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOMEDIRMAP"
+HREF="r1.html#HIDESPECIALFILES"
+><TT
+CLASS="PARAMETER"
+><I
+>hide special files</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="r1.html#HOMEDIRMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1500,7 +1473,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOSTMSDFS"
+HREF="r1.html#HOSTMSDFS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1512,7 +1485,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOSTNAMELOOKUPS"
+HREF="r1.html#HOSTNAMELOOKUPS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1524,7 +1497,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOSTSEQUIV"
+HREF="r1.html#HOSTSEQUIV"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1536,7 +1509,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#INTERFACES"
+HREF="r1.html#INTERFACES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1548,7 +1521,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#KEEPALIVE"
+HREF="r1.html#KEEPALIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1560,7 +1533,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#KERNELOPLOCKS"
+HREF="r1.html#KERNELOPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1572,7 +1545,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LANMANAUTH"
+HREF="r1.html#LANMANAUTH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1584,7 +1557,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LARGEREADWRITE"
+HREF="r1.html#LARGEREADWRITE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1596,7 +1569,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPADMINDN"
+HREF="r1.html#LDAPADMINDN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1608,7 +1581,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPFILTER"
+HREF="r1.html#LDAPFILTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1620,7 +1593,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPSSL"
+HREF="r1.html#LDAPSSL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1632,7 +1605,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPSUFFIX"
+HREF="r1.html#LDAPSUFFIX"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1644,11 +1617,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPUSERSUFFIX"
+HREF="r1.html#LDAPUSERSUFFIX"
 ><TT
 CLASS="PARAMETER"
 ><I
->ldap suffix</I
+>ldap user suffix</I
 ></TT
 ></A
 ></P
@@ -1656,11 +1629,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LDAPMACHINESUFFIX"
+HREF="r1.html#LDAPMACHINESUFFIX"
 ><TT
 CLASS="PARAMETER"
 ><I
->ldap suffix</I
+>ldap machine suffix</I
 ></TT
 ></A
 ></P
@@ -1668,7 +1641,19 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LMANNOUNCE"
+HREF="r1.html#LDAPPASSWDSYNC"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap passwd sync</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="r1.html#LMANNOUNCE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1680,7 +1665,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LMINTERVAL"
+HREF="r1.html#LMINTERVAL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1692,7 +1677,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOADPRINTERS"
+HREF="r1.html#LOADPRINTERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1704,7 +1689,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCALMASTER"
+HREF="r1.html#LOCALMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1716,7 +1701,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCKDIR"
+HREF="r1.html#LOCKDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1728,7 +1713,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCKDIRECTORY"
+HREF="r1.html#LOCKDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1740,7 +1725,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCKSPINCOUNT"
+HREF="r1.html#LOCKSPINCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1752,7 +1737,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCKSPINTIME"
+HREF="r1.html#LOCKSPINTIME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1764,7 +1749,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PIDDIRECTORY"
+HREF="r1.html#PIDDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1776,7 +1761,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGFILE"
+HREF="r1.html#LOGFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1788,7 +1773,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGLEVEL"
+HREF="r1.html#LOGLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1800,7 +1785,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGONDRIVE"
+HREF="r1.html#LOGONDRIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1812,7 +1797,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGONHOME"
+HREF="r1.html#LOGONHOME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1824,7 +1809,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGONPATH"
+HREF="r1.html#LOGONPATH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1836,7 +1821,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOGONSCRIPT"
+HREF="r1.html#LOGONSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1848,7 +1833,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LPQCACHETIME"
+HREF="r1.html#LPQCACHETIME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1860,7 +1845,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MACHINEPASSWORDTIMEOUT"
+HREF="r1.html#MACHINEPASSWORDTIMEOUT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1872,7 +1857,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLEDSTACK"
+HREF="r1.html#MANGLEDSTACK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1884,7 +1869,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAPTOGUEST"
+HREF="r1.html#MAPTOGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1896,7 +1881,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXDISKSIZE"
+HREF="r1.html#MAXDISKSIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1908,7 +1893,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXLOGSIZE"
+HREF="r1.html#MAXLOGSIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1920,7 +1905,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXMUX"
+HREF="r1.html#MAXMUX"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1932,7 +1917,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXOPENFILES"
+HREF="r1.html#MAXOPENFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1944,7 +1929,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXPROTOCOL"
+HREF="r1.html#MAXPROTOCOL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1956,7 +1941,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXSMBDPROCESSES"
+HREF="r1.html#MAXSMBDPROCESSES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1968,7 +1953,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXTTL"
+HREF="r1.html#MAXTTL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1980,7 +1965,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXWINSTTL"
+HREF="r1.html#MAXWINSTTL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -1992,7 +1977,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXXMIT"
+HREF="r1.html#MAXXMIT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2004,7 +1989,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MESSAGECOMMAND"
+HREF="r1.html#MESSAGECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2016,7 +2001,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MINPASSWDLENGTH"
+HREF="r1.html#MINPASSWDLENGTH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2028,7 +2013,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MINPASSWORDLENGTH"
+HREF="r1.html#MINPASSWORDLENGTH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2040,7 +2025,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MINPROTOCOL"
+HREF="r1.html#MINPROTOCOL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2052,7 +2037,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MINWINSTTL"
+HREF="r1.html#MINWINSTTL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2064,7 +2049,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NAMECACHETIMEOUT"
+HREF="r1.html#NAMECACHETIMEOUT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2076,7 +2061,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NAMERESOLVEORDER"
+HREF="r1.html#NAMERESOLVEORDER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2088,7 +2073,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NETBIOSALIASES"
+HREF="r1.html#NETBIOSALIASES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2100,7 +2085,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NETBIOSNAME"
+HREF="r1.html#NETBIOSNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2112,7 +2097,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NETBIOSSCOPE"
+HREF="r1.html#NETBIOSSCOPE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2124,7 +2109,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NISHOMEDIR"
+HREF="r1.html#NISHOMEDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2136,7 +2121,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NTLMAUTH"
+HREF="r1.html#NTLMAUTH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2148,7 +2133,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NONUNIXACCOUNTRANGE"
+HREF="r1.html#NONUNIXACCOUNTRANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2160,7 +2145,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NTPIPESUPPORT"
+HREF="r1.html#NTPIPESUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2172,7 +2157,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NTSTATUSSUPPORT"
+HREF="r1.html#NTSTATUSSUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2184,7 +2169,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NULLPASSWORDS"
+HREF="r1.html#NULLPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2196,7 +2181,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OBEYPAMRESTRICTIONS"
+HREF="r1.html#OBEYPAMRESTRICTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2208,7 +2193,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OPLOCKBREAKWAITTIME"
+HREF="r1.html#OPLOCKBREAKWAITTIME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2220,7 +2205,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OSLEVEL"
+HREF="r1.html#OSLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2232,7 +2217,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OS2DRIVERMAP"
+HREF="r1.html#OS2DRIVERMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2244,7 +2229,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PAMPASSWORDCHANGE"
+HREF="r1.html#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2256,7 +2241,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PANICACTION"
+HREF="r1.html#PANICACTION"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2268,7 +2253,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PARANOIDSERVERSECURITY"
+HREF="r1.html#PARANOIDSERVERSECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2280,7 +2265,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSDBBACKEND"
+HREF="r1.html#PASSDBBACKEND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2292,7 +2277,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSWDCHAT"
+HREF="r1.html#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2304,7 +2289,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSWDCHATDEBUG"
+HREF="r1.html#PASSWDCHATDEBUG"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2316,7 +2301,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2328,7 +2313,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSWORDLEVEL"
+HREF="r1.html#PASSWORDLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2340,7 +2325,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PASSWORDSERVER"
+HREF="r1.html#PASSWORDSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2352,7 +2337,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PREFEREDMASTER"
+HREF="r1.html#PREFEREDMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2364,7 +2349,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PREFERREDMASTER"
+HREF="r1.html#PREFERREDMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2376,7 +2361,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRELOAD"
+HREF="r1.html#PRELOAD"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2388,7 +2373,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTCAP"
+HREF="r1.html#PRINTCAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2400,7 +2385,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTCAPNAME"
+HREF="r1.html#PRINTCAPNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2412,7 +2397,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTERDRIVERFILE"
+HREF="r1.html#PRINTERDRIVERFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2424,7 +2409,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRIVATEDIR"
+HREF="r1.html#PRIVATEDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2436,7 +2421,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PROTOCOL"
+HREF="r1.html#PROTOCOL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2448,7 +2433,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#READBMPX"
+HREF="r1.html#READBMPX"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2460,7 +2445,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#READRAW"
+HREF="r1.html#READRAW"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2472,7 +2457,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#READSIZE"
+HREF="r1.html#READSIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2484,7 +2469,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#REALM"
+HREF="r1.html#REALM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2496,7 +2481,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#REMOTEANNOUNCE"
+HREF="r1.html#REMOTEANNOUNCE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2508,7 +2493,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#REMOTEBROWSESYNC"
+HREF="r1.html#REMOTEBROWSESYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2520,7 +2505,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#RESTRICTANONYMOUS"
+HREF="r1.html#RESTRICTANONYMOUS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2532,7 +2517,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOT"
+HREF="r1.html#ROOT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2544,7 +2529,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOTDIR"
+HREF="r1.html#ROOTDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2556,7 +2541,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOTDIRECTORY"
+HREF="r1.html#ROOTDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2568,7 +2553,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2580,7 +2565,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SERVERSTRING"
+HREF="r1.html#SERVERSTRING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2592,7 +2577,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SHOWADDPRINTERWIZARD"
+HREF="r1.html#SHOWADDPRINTERWIZARD"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2604,7 +2589,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SHUTDOWNSCRIPT"
+HREF="r1.html#SHUTDOWNSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2616,7 +2601,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SMBPASSWDFILE"
+HREF="r1.html#SMBPASSWDFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2628,7 +2613,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SMBPORTS"
+HREF="r1.html#SMBPORTS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2640,7 +2625,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SOCKETADDRESS"
+HREF="r1.html#SOCKETADDRESS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2652,7 +2637,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SOCKETOPTIONS"
+HREF="r1.html#SOCKETOPTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2664,7 +2649,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SOURCEENVIRONMENT"
+HREF="r1.html#SOURCEENVIRONMENT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2676,7 +2661,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SPNEGO"
+HREF="r1.html#SPNEGO"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2688,7 +2673,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STATCACHE"
+HREF="r1.html#STATCACHE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2700,7 +2685,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STATCACHESIZE"
+HREF="r1.html#STATCACHESIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2712,7 +2697,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STRIPDOT"
+HREF="r1.html#STRIPDOT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2724,7 +2709,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SYSLOG"
+HREF="r1.html#SYSLOG"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2736,7 +2721,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SYSLOGONLY"
+HREF="r1.html#SYSLOGONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2748,7 +2733,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TEMPLATEHOMEDIR"
+HREF="r1.html#TEMPLATEHOMEDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2760,7 +2745,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TEMPLATESHELL"
+HREF="r1.html#TEMPLATESHELL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2772,7 +2757,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TIMEOFFSET"
+HREF="r1.html#TIMEOFFSET"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2784,7 +2769,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TIMESERVER"
+HREF="r1.html#TIMESERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2796,7 +2781,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TIMESTAMPLOGS"
+HREF="r1.html#TIMESTAMPLOGS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2808,7 +2793,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#TOTALPRINTJOBS"
+HREF="r1.html#TOTALPRINTJOBS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2820,7 +2805,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UNICODE"
+HREF="r1.html#UNICODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2832,7 +2817,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UNIXCHARSET"
+HREF="r1.html#UNIXCHARSET"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2844,7 +2829,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UNIXEXTENSIONS"
+HREF="r1.html#UNIXEXTENSIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2856,7 +2841,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UNIXPASSWORDSYNC"
+HREF="r1.html#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2868,7 +2853,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UPDATEENCRYPTED"
+HREF="r1.html#UPDATEENCRYPTED"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2880,7 +2865,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USEMMAP"
+HREF="r1.html#USEMMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2892,7 +2877,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USERHOSTS"
+HREF="r1.html#USERHOSTS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2904,7 +2889,19 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USERNAMELEVEL"
+HREF="r1.html#USESENDFILE"
+><TT
+CLASS="PARAMETER"
+><I
+>use sendfile</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="r1.html#USERNAMELEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2916,7 +2913,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USERNAMEMAP"
+HREF="r1.html#USERNAMEMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2928,7 +2925,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UTMP"
+HREF="r1.html#UTMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2940,7 +2937,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#UTMPDIRECTORY"
+HREF="r1.html#UTMPDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2952,7 +2949,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WTMPDIRECTORY"
+HREF="r1.html#WTMPDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2964,7 +2961,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDCACHETIME"
+HREF="r1.html#WINBINDCACHETIME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2976,7 +2973,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDENUMUSERS"
+HREF="r1.html#WINBINDENUMUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -2988,7 +2985,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDENUMGROUPS"
+HREF="r1.html#WINBINDENUMGROUPS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3000,7 +2997,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDGID"
+HREF="r1.html#WINBINDGID"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3012,7 +3009,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDSEPARATOR"
+HREF="r1.html#WINBINDSEPARATOR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3024,7 +3021,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDUID"
+HREF="r1.html#WINBINDUID"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3036,7 +3033,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINBINDUSEDEFAULTDOMAIN"
+HREF="r1.html#WINBINDUSEDEFAULTDOMAIN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3048,7 +3045,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINSHOOK"
+HREF="r1.html#WINSHOOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3060,7 +3057,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINSPARTNERS"
+HREF="r1.html#WINSPARTNERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3072,7 +3069,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINSPROXY"
+HREF="r1.html#WINSPROXY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3084,7 +3081,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINSSERVER"
+HREF="r1.html#WINSSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3096,7 +3093,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WINSSUPPORT"
+HREF="r1.html#WINSSUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3108,7 +3105,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WORKGROUP"
+HREF="r1.html#WORKGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3120,7 +3117,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITERAW"
+HREF="r1.html#WRITERAW"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3134,7 +3131,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1003"
+NAME="AEN1007"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3147,7 +3144,7 @@ NAME="AEN1003"
 ><LI
 ><P
 ><A
-HREF="index.html#ADMINUSERS"
+HREF="r1.html#ADMINUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3159,7 +3156,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ALLOWHOSTS"
+HREF="r1.html#ALLOWHOSTS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3171,7 +3168,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#AVAILABLE"
+HREF="r1.html#AVAILABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3183,7 +3180,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BLOCKINGLOCKS"
+HREF="r1.html#BLOCKINGLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3195,7 +3192,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BLOCKSIZE"
+HREF="r1.html#BLOCKSIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3207,7 +3204,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BROWSABLE"
+HREF="r1.html#BROWSABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3219,7 +3216,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#BROWSEABLE"
+HREF="r1.html#BROWSEABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3231,7 +3228,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CASESENSITIVE"
+HREF="r1.html#CASESENSITIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3243,7 +3240,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CASESIGNAMES"
+HREF="r1.html#CASESIGNAMES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3255,7 +3252,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#COMMENT"
+HREF="r1.html#COMMENT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3267,7 +3264,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#COPY"
+HREF="r1.html#COPY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3279,7 +3276,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3291,7 +3288,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CREATEMODE"
+HREF="r1.html#CREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3303,7 +3300,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#CSCPOLICY"
+HREF="r1.html#CSCPOLICY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3315,7 +3312,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEFAULTCASE"
+HREF="r1.html#DEFAULTCASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3327,7 +3324,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DEFAULTDEVMODE"
+HREF="r1.html#DEFAULTDEVMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3339,7 +3336,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEREADONLY"
+HREF="r1.html#DELETEREADONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3351,7 +3348,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DELETEVETOFILES"
+HREF="r1.html#DELETEVETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3363,7 +3360,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DENYHOSTS"
+HREF="r1.html#DENYHOSTS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3375,7 +3372,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DIRECTORY"
+HREF="r1.html#DIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3387,7 +3384,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DIRECTORYMASK"
+HREF="r1.html#DIRECTORYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3399,7 +3396,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DIRECTORYMODE"
+HREF="r1.html#DIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3411,7 +3408,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3423,7 +3420,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DONTDESCEND"
+HREF="r1.html#DONTDESCEND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3435,7 +3432,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOSFILEMODE"
+HREF="r1.html#DOSFILEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3447,7 +3444,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOSFILETIMERESOLUTION"
+HREF="r1.html#DOSFILETIMERESOLUTION"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3459,7 +3456,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#DOSFILETIMES"
+HREF="r1.html#DOSFILETIMES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3471,7 +3468,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#EXEC"
+HREF="r1.html#EXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3483,7 +3480,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FAKEDIRECTORYCREATETIMES"
+HREF="r1.html#FAKEDIRECTORYCREATETIMES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3495,7 +3492,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FAKEOPLOCKS"
+HREF="r1.html#FAKEOPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3507,7 +3504,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FOLLOWSYMLINKS"
+HREF="r1.html#FOLLOWSYMLINKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3519,7 +3516,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCECREATEMODE"
+HREF="r1.html#FORCECREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3531,7 +3528,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCEDIRECTORYMODE"
+HREF="r1.html#FORCEDIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3543,7 +3540,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCEDIRECTORYSECURITYMODE"
+HREF="r1.html#FORCEDIRECTORYSECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3555,7 +3552,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCEGROUP"
+HREF="r1.html#FORCEGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3567,7 +3564,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCESECURITYMODE"
+HREF="r1.html#FORCESECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3579,7 +3576,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FORCEUSER"
+HREF="r1.html#FORCEUSER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3591,7 +3588,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#FSTYPE"
+HREF="r1.html#FSTYPE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3603,7 +3600,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#GROUP"
+HREF="r1.html#GROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3615,7 +3612,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3627,7 +3624,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#GUESTOK"
+HREF="r1.html#GUESTOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3639,7 +3636,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#GUESTONLY"
+HREF="r1.html#GUESTONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3651,7 +3648,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HIDEDOTFILES"
+HREF="r1.html#HIDEDOTFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3663,7 +3660,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HIDEFILES"
+HREF="r1.html#HIDEFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3675,7 +3672,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOSTSALLOW"
+HREF="r1.html#HOSTSALLOW"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3687,7 +3684,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#HOSTSDENY"
+HREF="r1.html#HOSTSDENY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3699,7 +3696,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#INCLUDE"
+HREF="r1.html#INCLUDE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3711,7 +3708,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#INHERITACLS"
+HREF="r1.html#INHERITACLS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3723,7 +3720,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#INHERITPERMISSIONS"
+HREF="r1.html#INHERITPERMISSIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3735,7 +3732,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#INVALIDUSERS"
+HREF="r1.html#INVALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3747,7 +3744,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LEVEL2OPLOCKS"
+HREF="r1.html#LEVEL2OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3759,7 +3756,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LOCKING"
+HREF="r1.html#LOCKING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3771,7 +3768,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LPPAUSECOMMAND"
+HREF="r1.html#LPPAUSECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3783,7 +3780,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LPQCOMMAND"
+HREF="r1.html#LPQCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3795,7 +3792,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LPRESUMECOMMAND"
+HREF="r1.html#LPRESUMECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3807,7 +3804,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#LPRMCOMMAND"
+HREF="r1.html#LPRMCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3819,7 +3816,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAGICOUTPUT"
+HREF="r1.html#MAGICOUTPUT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3831,7 +3828,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAGICSCRIPT"
+HREF="r1.html#MAGICSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3843,7 +3840,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLECASE"
+HREF="r1.html#MANGLECASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3855,7 +3852,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLEDMAP"
+HREF="r1.html#MANGLEDMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3867,7 +3864,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLEDNAMES"
+HREF="r1.html#MANGLEDNAMES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3879,7 +3876,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLINGCHAR"
+HREF="r1.html#MANGLINGCHAR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3891,7 +3888,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MANGLINGMETHOD"
+HREF="r1.html#MANGLINGMETHOD"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3903,7 +3900,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAPARCHIVE"
+HREF="r1.html#MAPARCHIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3915,7 +3912,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAPHIDDEN"
+HREF="r1.html#MAPHIDDEN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3927,7 +3924,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAPSYSTEM"
+HREF="r1.html#MAPSYSTEM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3939,7 +3936,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXCONNECTIONS"
+HREF="r1.html#MAXCONNECTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3951,7 +3948,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MAXPRINTJOBS"
+HREF="r1.html#MAXPRINTJOBS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3963,7 +3960,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MINPRINTSPACE"
+HREF="r1.html#MINPRINTSPACE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3975,7 +3972,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#MSDFSROOT"
+HREF="r1.html#MSDFSROOT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3987,7 +3984,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#NTACLSUPPORT"
+HREF="r1.html#NTACLSUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -3999,7 +3996,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ONLYGUEST"
+HREF="r1.html#ONLYGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4011,7 +4008,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ONLYUSER"
+HREF="r1.html#ONLYUSER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4023,7 +4020,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OPLOCKCONTENTIONLIMIT"
+HREF="r1.html#OPLOCKCONTENTIONLIMIT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4035,7 +4032,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4047,7 +4044,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PATH"
+HREF="r1.html#PATH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4059,7 +4056,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#POSIXLOCKING"
+HREF="r1.html#POSIXLOCKING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4071,7 +4068,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#POSTEXEC"
+HREF="r1.html#POSTEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4083,7 +4080,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#POSTSCRIPT"
+HREF="r1.html#POSTSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4095,7 +4092,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4107,7 +4104,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PREEXECCLOSE"
+HREF="r1.html#PREEXECCLOSE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4119,7 +4116,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRESERVECASE"
+HREF="r1.html#PRESERVECASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4131,7 +4128,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTCOMMAND"
+HREF="r1.html#PRINTCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4143,7 +4140,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTOK"
+HREF="r1.html#PRINTOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4155,7 +4152,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTABLE"
+HREF="r1.html#PRINTABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4167,7 +4164,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTER"
+HREF="r1.html#PRINTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4179,7 +4176,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTERADMIN"
+HREF="r1.html#PRINTERADMIN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4191,7 +4188,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTERDRIVER"
+HREF="r1.html#PRINTERDRIVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4203,7 +4200,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTERDRIVERLOCATION"
+HREF="r1.html#PRINTERDRIVERLOCATION"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4215,7 +4212,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTERNAME"
+HREF="r1.html#PRINTERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4227,7 +4224,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4239,7 +4236,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#PUBLIC"
+HREF="r1.html#PUBLIC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4251,7 +4248,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#QUEUEPAUSECOMMAND"
+HREF="r1.html#QUEUEPAUSECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4263,7 +4260,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#QUEUERESUMECOMMAND"
+HREF="r1.html#QUEUERESUMECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4275,7 +4272,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#READLIST"
+HREF="r1.html#READLIST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4287,7 +4284,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#READONLY"
+HREF="r1.html#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4299,7 +4296,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOTPOSTEXEC"
+HREF="r1.html#ROOTPOSTEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4311,7 +4308,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOTPREEXEC"
+HREF="r1.html#ROOTPREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4323,7 +4320,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#ROOTPREEXECCLOSE"
+HREF="r1.html#ROOTPREEXECCLOSE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4335,7 +4332,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SECURITYMASK"
+HREF="r1.html#SECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4347,7 +4344,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SETDIRECTORY"
+HREF="r1.html#SETDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4359,7 +4356,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SHAREMODES"
+HREF="r1.html#SHAREMODES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4371,7 +4368,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SHORTPRESERVECASE"
+HREF="r1.html#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4383,19 +4380,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STATUS"
-><TT
-CLASS="PARAMETER"
-><I
->status</I
-></TT
-></A
-></P
-></LI
-><LI
-><P
-><A
-HREF="index.html#STRICTALLOCATE"
+HREF="r1.html#STRICTALLOCATE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4407,7 +4392,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STRICTLOCKING"
+HREF="r1.html#STRICTLOCKING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4419,7 +4404,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#STRICTSYNC"
+HREF="r1.html#STRICTSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4431,7 +4416,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#SYNCALWAYS"
+HREF="r1.html#SYNCALWAYS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4443,7 +4428,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USECLIENTDRIVER"
+HREF="r1.html#USECLIENTDRIVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4455,7 +4440,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USER"
+HREF="r1.html#USER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4467,7 +4452,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USERNAME"
+HREF="r1.html#USERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4479,7 +4464,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#USERS"
+HREF="r1.html#USERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4491,7 +4476,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VALIDUSERS"
+HREF="r1.html#VALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4503,7 +4488,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VETOFILES"
+HREF="r1.html#VETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4515,7 +4500,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VETOOPLOCKFILES"
+HREF="r1.html#VETOOPLOCKFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4527,7 +4512,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VFSPATH"
+HREF="r1.html#VFSPATH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4539,7 +4524,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VFSOBJECT"
+HREF="r1.html#VFSOBJECT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4551,7 +4536,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VFSOPTIONS"
+HREF="r1.html#VFSOPTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4563,7 +4548,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#VOLUME"
+HREF="r1.html#VOLUME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4575,7 +4560,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WIDELINKS"
+HREF="r1.html#WIDELINKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4587,7 +4572,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITABLE"
+HREF="r1.html#WRITABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4599,7 +4584,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITECACHESIZE"
+HREF="r1.html#WRITECACHESIZE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4611,7 +4596,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITELIST"
+HREF="r1.html#WRITELIST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4623,7 +4608,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITEOK"
+HREF="r1.html#WRITEOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4635,7 +4620,7 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="index.html#WRITEABLE"
+HREF="r1.html#WRITEABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4665,12 +4650,9 @@ NAME="ABORTSHUTDOWNSCRIPT"
 >abort shutdown script (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >This parameter only exists in the HEAD cvs branch</I
-></SPAN
 >
 		This a full path name to a script called by
 		<A
@@ -4682,7 +4664,7 @@ CLASS="COMMAND"
 ></A
 >  that
 		should stop a shutdown procedure issued by the <A
-HREF="index.html#SHUTDOWNSCRIPT"
+HREF="r1.html#SHUTDOWNSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4693,12 +4675,9 @@ CLASS="PARAMETER"
 ><P
 >This command will be run as user.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None</I
-></SPAN
 >.</P
 ><P
 >Example: <B
@@ -4838,7 +4817,7 @@ CLASS="COMMAND"
 > will return an ACCESS_DENIED error to the client.</P
 ><P
 >See also <A
-HREF="index.html#DELETEPRINTERCOMMAND"
+HREF="r1.html#DELETEPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4846,7 +4825,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4855,7 +4834,7 @@ CLASS="PARAMETER"
 ></A
 >,
 		<A
-HREF="index.html#SHOWADDPRINTERWIZARD"
+HREF="r1.html#SHOWADDPRINTERWIZARD"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4865,12 +4844,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -4977,7 +4953,7 @@ CLASS="PARAMETER"
 ><P
 >		This parameter is only used for add file shares.  To add printer shares, 
 		see the <A
-HREF="index.html#ADDPRINTERCOMMAND"
+HREF="r1.html#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4989,7 +4965,7 @@ CLASS="PARAMETER"
 		</P
 ><P
 >		See also <A
-HREF="index.html#CHANGESHARECOMMAND"
+HREF="r1.html#CHANGESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -4998,7 +4974,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#DELETESHARECOMMAND"
+HREF="r1.html#DELETESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5009,12 +4985,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -5043,7 +5016,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->add machine script = &lt;empty string&gt;
+>add machine script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -5083,12 +5056,9 @@ NAME="ADDUSERSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -5105,12 +5075,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > to create the required UNIX users 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >ON DEMAND</I
-></SPAN
 > when a user accesses the Samba server.</P
 ><P
 >In order to use this option, <A
@@ -5118,12 +5085,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > 
-		must <SPAN
-CLASS="emphasis"
-><I
+		must <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be set to <TT
 CLASS="PARAMETER"
 ><I
@@ -5172,12 +5136,9 @@ CLASS="PARAMETER"
 CLASS="COMMAND"
 >smbd</B
 > will
-		call the specified script <SPAN
-CLASS="emphasis"
-><I
+		call the specified script <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >, expanding 
 		any <TT
 CLASS="PARAMETER"
@@ -5195,7 +5156,7 @@ CLASS="COMMAND"
 		match existing Windows NT accounts.</P
 ><P
 >See also <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5203,7 +5164,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PASSWORDSERVER"
+HREF="r1.html#PASSWORDSERVER"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -5212,7 +5173,7 @@ CLASS="PARAMETER"
 ></A
 >, 
 		<A
-HREF="index.html#DELETEUSERSCRIPT"
+HREF="r1.html#DELETEUSERSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5224,7 +5185,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->add user script = &lt;empty string&gt;
+>add user script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -5242,22 +5203,27 @@ NAME="ADDGROUPSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
-> when a new group is requested. It will expand any <TT
+> when a new group is
+                requested. It will expand any
+                <TT
 CLASS="PARAMETER"
 ><I
 >%g</I
 ></TT
-> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+> to the group name passed.
+                This script is only useful for installations using the
+                Windows NT domain administration tools. The script is
+                free to create a group with an arbitrary name to
+                circumvent unix group name restrictions. In that case
+                the script must print the numeric gid of the created
+                group on stdout.
 		</P
 ></DD
 ><DT
@@ -5275,12 +5241,9 @@ NAME="ADMINUSERS"
 		this list will be able to do anything they like on the share, 
 		irrespective of file permissions.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no admin users</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -5302,12 +5265,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
 > 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >. Any <TT
 CLASS="PARAMETER"
 ><I
@@ -5341,7 +5301,7 @@ NAME="ALLOWHOSTS"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#HOSTSALLOW"
+HREF="r1.html#HOSTSALLOW"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -5390,7 +5350,7 @@ NAME="ALLOWTRUSTEDDOMAINS"
 ><DD
 ><P
 >This option only takes effect when the <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5494,7 +5454,7 @@ NAME="AUTOSERVICES"
 ><DD
 ><P
 >This is a synonym for the <A
-HREF="index.html#PRELOAD"
+HREF="r1.html#PRELOAD"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -5516,7 +5476,7 @@ CLASS="COMMAND"
 >smbd</B
 > will use when authenticating
                 a user.  This option defaults to sensible values based on <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5532,7 +5492,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->auth methods = &lt;empty string&gt;</B
+>auth methods = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -5553,12 +5513,9 @@ CLASS="PARAMETER"
 ><I
 >available = no</I
 ></TT
->, then <SPAN
-CLASS="emphasis"
-><I
+>, then <I
 CLASS="EMPHASIS"
 >ALL</I
-></SPAN
 > 
 		attempts to connect to the service will fail. Such failures are 
 		logged.</P
@@ -5594,7 +5551,7 @@ CLASS="COMMAND"
 >nmbd</B
 > to bind 
 		to ports 137 and 138 on the interfaces listed in the <A
-HREF="index.html#INTERFACES"
+HREF="r1.html#INTERFACES"
 >interfaces</A
 > parameter. <B
 CLASS="COMMAND"
@@ -5648,7 +5605,7 @@ TARGET="_top"
 >smbd(8)</A
 >
 		to bind only to the interface list given in the <A
-HREF="index.html#INTERFACES"
+HREF="r1.html#INTERFACES"
 >		interfaces</A
 > parameter. This restricts the networks that 
 		<B
@@ -5665,12 +5622,9 @@ CLASS="PARAMETER"
 >bind interfaces only</I
 ></TT
 > is set then 
-		unless the network address <SPAN
-CLASS="emphasis"
-><I
+		unless the network address <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > is added 
 		to the <TT
 CLASS="PARAMETER"
@@ -5699,12 +5653,9 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >smbpasswd</B
 >
-		by default connects to the <SPAN
-CLASS="emphasis"
-><I
+		by default connects to the <I
 CLASS="EMPHASIS"
 >localhost - 127.0.0.1</I
-></SPAN
 > 
 		address as an SMB client to issue the password change request. If 
 		<TT
@@ -5713,12 +5664,9 @@ CLASS="PARAMETER"
 >bind interfaces only</I
 ></TT
 > is set then unless the 
-		network address <SPAN
-CLASS="emphasis"
-><I
+		network address <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > is added to the
 		<TT
 CLASS="PARAMETER"
@@ -5767,19 +5715,13 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >nmbd</B
 > at the address 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 > to determine if they are running.  
-		Not adding <SPAN
-CLASS="emphasis"
-><I
+		Not adding <I
 CLASS="EMPHASIS"
 >127.0.0.1</I
-></SPAN
 >  will cause <B
 CLASS="COMMAND"
 >		smbd</B
@@ -5826,7 +5768,7 @@ TARGET="_top"
 ><P
 >If this parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >, then 
 		Samba 2.2 will behave as previous versions of Samba would and 
 		will fail the lock request immediately if the lock range 
@@ -5882,7 +5824,7 @@ NAME="BROWSABLE"
 ><DD
 ><P
 >See the <A
-HREF="index.html#BROWSEABLE"
+HREF="r1.html#BROWSEABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -5912,7 +5854,7 @@ CLASS="COMMAND"
 > call. Normally 
 		set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. You should never need to change 
 		this.</P
 ><P
@@ -5944,7 +5886,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -5961,7 +5903,7 @@ NAME="CASESIGNAMES"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#CASESENSITIVE"
+HREF="r1.html#CASESENSITIVE"
 >case 
 		sensitive</A
 >.</P
@@ -6105,7 +6047,7 @@ CLASS="PARAMETER"
 		</P
 ><P
 >		See also <A
-HREF="index.html#ADDSHARECOMMAND"
+HREF="r1.html#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6114,7 +6056,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#DELETESHARECOMMAND"
+HREF="r1.html#DELETESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6125,12 +6067,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6155,7 +6094,7 @@ CLASS="COMMAND"
 ><P
 >If you want to set the string that is displayed next to the 
 		machine name then see the <A
-HREF="index.html#SERVERSTRING"
+HREF="r1.html#SERVERSTRING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6164,12 +6103,9 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No comment string</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6226,12 +6162,9 @@ NAME="COPY"
 		copied must occur earlier in the configuration file than the 
 		service doing the copying.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6248,7 +6181,7 @@ NAME="CREATEMASK"
 ><P
 >A synonym for this parameter is 
 		<A
-HREF="index.html#CREATEMODE"
+HREF="r1.html#CREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6262,12 +6195,9 @@ CLASS="PARAMETER"
 		calculated according to the mapping from DOS modes to UNIX 
 		permissions, and the resulting UNIX mode is then bit-wise 'AND'ed 
 		with this parameter. This parameter may be thought of as a bit-wise 
-		MASK for the UNIX modes of a file. Any bit <SPAN
-CLASS="emphasis"
-><I
+		MASK for the UNIX modes of a file. Any bit <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > 
 		set here will be removed from the modes set on a file when it is 
 		created.</P
@@ -6277,7 +6207,7 @@ CLASS="EMPHASIS"
 ><P
 >Following this Samba will bit-wise 'OR' the UNIX mode created 
 		from this parameter with the value of the <A
-HREF="index.html#FORCECREATEMODE"
+HREF="r1.html#FORCECREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6289,7 +6219,7 @@ CLASS="PARAMETER"
 ><P
 >This parameter does not affect directory modes. See the 
 		parameter <A
-HREF="index.html#DIRECTORYMODE"
+HREF="r1.html#DIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6300,7 +6230,7 @@ CLASS="PARAMETER"
 > for details.</P
 ><P
 >See also the <A
-HREF="index.html#FORCECREATEMODE"
+HREF="r1.html#FORCECREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6310,7 +6240,7 @@ CLASS="PARAMETER"
 ></A
 > parameter for forcing particular mode 
 		bits to be set on created files. See also the <A
-HREF="index.html#DIRECTORYMODE"
+HREF="r1.html#DIRECTORYMODE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6319,7 +6249,7 @@ CLASS="PARAMETER"
 ></A
 > parameter for masking 
 		mode bits on created directories.  See also the <A
-HREF="index.html#INHERITPERMISSIONS"
+HREF="r1.html#INHERITPERMISSIONS"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6331,7 +6261,7 @@ CLASS="PARAMETER"
 >Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
 		a mask on access control lists also, they need to set the <A
-HREF="index.html#SECURITYMASK"
+HREF="r1.html#SECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6358,7 +6288,7 @@ NAME="CREATEMODE"
 ><DD
 ><P
 >This is a synonym for <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6374,13 +6304,10 @@ NAME="CSCPOLICY"
 >csc policy (S)</DT
 ><DD
 ><P
->This stands for <SPAN
-CLASS="emphasis"
-><I
+>This stands for <I
 CLASS="EMPHASIS"
 >client-side caching 
 		policy</I
-></SPAN
 >, and specifies how clients capable of offline
 		caching will cache the files in the share. The valid values
 		are: manual, documents, programs, disable.</P
@@ -6453,7 +6380,7 @@ NAME="DEBUGHIRESTIMESTAMP"
 		message header when turned on.</P
 ><P
 >Note that the parameter <A
-HREF="index.html#DEBUGTIMESTAMP"
+HREF="r1.html#DEBUGTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6485,7 +6412,7 @@ TARGET="_top"
 		to the timestamp message headers in the logfile when turned on.</P
 ><P
 >Note that the parameter <A
-HREF="index.html#DEBUGTIMESTAMP"
+HREF="r1.html#DEBUGTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6509,7 +6436,7 @@ NAME="DEBUGTIMESTAMP"
 ><P
 >Samba 2.2 debug log messages are timestamped 
 		by default. If you are running at a high <A
-HREF="index.html#DEBUGLEVEL"
+HREF="r1.html#DEBUGLEVEL"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6538,7 +6465,7 @@ NAME="DEBUGUID"
 		in the log file if turned on.</P
 ><P
 >Note that the parameter <A
-HREF="index.html#DEBUGTIMESTAMP"
+HREF="r1.html#DEBUGTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6561,7 +6488,7 @@ NAME="DEBUGLEVEL"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#LOGLEVEL"
+HREF="r1.html#LOGLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6578,7 +6505,7 @@ NAME="DEFAULT"
 ><DD
 ><P
 >A synonym for <A
-HREF="index.html#DEFAULTSERVICE"
+HREF="r1.html#DEFAULTSERVICE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6595,10 +6522,10 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >		NAME MANGLING</A
 >. Also note the <A
-HREF="index.html#SHORTPRESERVECASE"
+HREF="r1.html#SHORTPRESERVECASE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6620,7 +6547,7 @@ NAME="DEFAULTDEVMODE"
 ><DD
 ><P
 >This parameter is only applicable to <A
-HREF="index.html#PRINTOK"
+HREF="r1.html#PRINTOK"
 >printable</A
 > services.  When smbd is serving
 		Printer Drivers to Windows NT/2k/XP clients, each printer on the Samba
@@ -6672,12 +6599,9 @@ NAME="DEFAULTSERVICE"
 ><P
 >This parameter specifies the name of a service
 		which will be connected to if the service actually requested cannot
-		be found. Note that the square brackets are <SPAN
-CLASS="emphasis"
-><I
+		be found. Note that the square brackets are <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 >
 		given in the parameter value (see example below).</P
 ><P
@@ -6686,7 +6610,7 @@ CLASS="EMPHASIS"
 		service results in an error.</P
 ><P
 >Typically the default service would be a <A
-HREF="index.html#GUESTOK"
+HREF="r1.html#GUESTOK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6694,7 +6618,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#READONLY"
+HREF="r1.html#READONLY"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -6719,6 +6643,12 @@ CLASS="PARAMETER"
 ><P
 >Example:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >[global]
@@ -6727,6 +6657,9 @@ CLASS="PROGRAMLISTING"
 [pub]
 	path = /%S
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -6737,12 +6670,9 @@ NAME="DELETEGROUPSCRIPT"
 ><DD
 ><P
 >This is the full pathname to a script that will 
-		be run <SPAN
-CLASS="emphasis"
-><I
+		be run <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > by <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -6814,7 +6744,7 @@ CLASS="COMMAND"
 > will return an ACCESS_DENIED error to the client.</P
 ><P
 >See also <A
-HREF="index.html#ADDPRINTERCOMMAND"
+HREF="r1.html#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6822,7 +6752,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6831,7 +6761,7 @@ CLASS="PARAMETER"
 ></A
 >,
 		<A
-HREF="index.html#SHOWADDPRINTERWIZARD"
+HREF="r1.html#SHOWADDPRINTERWIZARD"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6841,12 +6771,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -6950,7 +6877,7 @@ CLASS="PARAMETER"
 ><P
 >		This parameter is only used to remove file shares.  To delete printer shares, 
 		see the <A
-HREF="index.html#DELETEPRINTERCOMMAND"
+HREF="r1.html#DELETEPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6962,7 +6889,7 @@ CLASS="PARAMETER"
 		</P
 ><P
 >		See also <A
-HREF="index.html#ADDSHARECOMMAND"
+HREF="r1.html#ADDSHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6971,7 +6898,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#CHANGESHARECOMMAND"
+HREF="r1.html#CHANGESHARECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -6982,12 +6909,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7027,7 +6951,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->delete user script = &lt;empty string&gt;
+>delete user script = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -7051,12 +6975,9 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
 > 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 >. Any <TT
 CLASS="PARAMETER"
 ><I
@@ -7092,7 +7013,7 @@ NAME="DELETEVETOFILES"
 >This option is used when Samba is attempting to 
 		delete a directory that contains one or more vetoed directories 
 		(see the <A
-HREF="index.html#VETOFILES"
+HREF="r1.html#VETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7102,14 +7023,14 @@ CLASS="PARAMETER"
 >
 		option).  If this option is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > (the default) then if a vetoed 
 		directory contains any non-vetoed files or directories then the 
 		directory delete will fail. This is usually what you want.</P
 ><P
 >If this option is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, then Samba 
 		will attempt to recursively delete any files and directories within 
 		the vetoed directory. This can be useful for integration with file 
@@ -7128,7 +7049,7 @@ CLASS="COMMAND"
 		is deleted (so long as the user has permissions to do so).</P
 ><P
 >See also the <A
-HREF="index.html#VETOFILES"
+HREF="r1.html#VETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7151,7 +7072,7 @@ NAME="DENYHOSTS"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#HOSTSDENY"
+HREF="r1.html#HOSTSDENY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7196,23 +7117,17 @@ CLASS="FILENAME"
 		third return value can give the block size in bytes. The default 
 		blocksize is 1024 bytes.</P
 ><P
->Note: Your script should <SPAN
-CLASS="emphasis"
-><I
+>Note: Your script should <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be setuid or 
 		setgid and should be owned by (and writeable only by) root!</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >By default internal routines for 
 		determining the disk capacity and remaining space will be used.
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7223,22 +7138,40 @@ CLASS="COMMAND"
 ><P
 >Where the script dfree (which must be made executable) could be:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
 		#!/bin/sh
 		df $1 | tail -1 | awk '{print $2" "$4}'
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >or perhaps (on Sys V based systems):</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 > 
 		#!/bin/sh
 		/usr/bin/df -k $1 | tail -1 | awk '{print $3" "$5}'
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >Note that you may have to replace the command names 
@@ -7252,7 +7185,7 @@ NAME="DIRECTORY"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#PATH"
+HREF="r1.html#PATH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7277,12 +7210,9 @@ NAME="DIRECTORYMASK"
 		calculated according to the mapping from DOS modes to UNIX permissions, 
 		and the resulting UNIX mode is then bit-wise 'AND'ed with this 
 		parameter. This parameter may be thought of as a bit-wise MASK for 
-		the UNIX modes of a directory. Any bit <SPAN
-CLASS="emphasis"
-><I
+		the UNIX modes of a directory. Any bit <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > set 
 		here will be removed from the modes set on a directory when it is 
 		created.</P
@@ -7293,7 +7223,7 @@ CLASS="EMPHASIS"
 ><P
 >Following this Samba will bit-wise 'OR' the UNIX mode 
 		created from this parameter with the value of the <A
-HREF="index.html#FORCEDIRECTORYMODE"
+HREF="r1.html#FORCEDIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7307,7 +7237,7 @@ CLASS="PARAMETER"
 >Note that this parameter does not apply to permissions
 		set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
 		a mask on access control lists also, they need to set the <A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7317,7 +7247,7 @@ CLASS="PARAMETER"
 >.</P
 ><P
 >See the <A
-HREF="index.html#FORCEDIRECTORYMODE"
+HREF="r1.html#FORCEDIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7329,7 +7259,7 @@ CLASS="PARAMETER"
 		bits to always be set on created directories.</P
 ><P
 >See also the <A
-HREF="index.html#CREATEMODE"
+HREF="r1.html#CREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7339,7 +7269,7 @@ CLASS="PARAMETER"
 ></A
 > parameter for masking mode bits on created files, 
 		and the <A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7350,7 +7280,7 @@ CLASS="PARAMETER"
 > parameter.</P
 ><P
 >Also refer to the <A
-HREF="index.html#INHERITPERMISSIONS"
+HREF="r1.html#INHERITPERMISSIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7377,7 +7307,7 @@ NAME="DIRECTORYMODE"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#DIRECTORYMASK"
+HREF="r1.html#DIRECTORYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7408,12 +7338,9 @@ NAME="DIRECTORYSECURITYMASK"
 		meaning a user is allowed to modify all the user/group/world
 		permissions on a directory.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -7424,7 +7351,7 @@ CLASS="CONSTANT"
 >.</P
 ><P
 >See also the <A
-HREF="index.html#FORCEDIRECTORYSECURITYMODE"
+HREF="r1.html#FORCEDIRECTORYSECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7432,7 +7359,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#SECURITYMASK"
+HREF="r1.html#SECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7441,7 +7368,7 @@ CLASS="PARAMETER"
 ></A
 >, 
 		<A
-HREF="index.html#FORCESECURITYMODE"
+HREF="r1.html#FORCESECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7502,17 +7429,14 @@ NAME="DISABLESPOOLSS"
 		Wizard or by using the NT printer properties dialog window.  It will
 		also disable the capability of Windows NT/2000 clients to download
 		print drivers from the Samba host upon demand.
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >Be very careful about enabling this parameter.</I
-></SPAN
 >
 		</P
 ><P
 >See also <A
-HREF="index.html#USECLIENTDRIVER"
+HREF="r1.html#USECLIENTDRIVER"
 >use client driver</A
 >
 		</P
@@ -7576,7 +7500,7 @@ CLASS="COMMAND"
 		action.</P
 ><P
 >See also the parameter <A
-HREF="index.html#WINSSUPPORT"
+HREF="r1.html#WINSSUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -7592,112 +7516,6 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
-NAME="DOMAINADMINGROUP"
-></A
->domain admin group (G)</DT
-><DD
-><P
->This parameter is intended as a temporary solution
-		to enable users to be a member of the "Domain Admins" group when 
-		a Samba host is acting as a PDC.  A complete solution will be provided
-		by a system for mapping Windows NT/2000 groups onto UNIX groups.
-		Please note that this parameter has a somewhat confusing name.  It 
-		accepts a list of usernames and of group names in standard 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
->	notation.
-		</P
-><P
->See also <A
-HREF="index.html#DOMAINGUESTGROUP"
-><TT
-CLASS="PARAMETER"
-><I
->domain
-		guest group</I
-></TT
-></A
->, <A
-HREF="index.html#DOMAINLOGONS"
-><TT
-CLASS="PARAMETER"
-><I
->domain
-		logons</I
-></TT
-></A
->
-		</P
-><P
->Default: <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->no domain administrators</I
-></SPAN
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->domain admin group = root @wheel</B
-></P
-></DD
-><DT
-><A
-NAME="DOMAINGUESTGROUP"
-></A
->domain guest group (G)</DT
-><DD
-><P
->This parameter is intended as a temporary solution
-		to enable users to be a member of the "Domain Guests" group when 
-		a Samba host is acting as a PDC.  A complete solution will be provided
-		by a system for mapping Windows NT/2000 groups onto UNIX groups.
-		Please note that this parameter has a somewhat confusing name.  It 
-		accepts a list of usernames and of group names in standard 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
->	notation.
-		</P
-><P
->See also <A
-HREF="index.html#DOMAINADMINGROUP"
-><TT
-CLASS="PARAMETER"
-><I
->domain
-		admin group</I
-></TT
-></A
->, <A
-HREF="index.html#DOMAINLOGONS"
-><TT
-CLASS="PARAMETER"
-><I
->domain
-		logons</I
-></TT
-></A
->
-		</P
-><P
->Default: <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->no domain guests</I
-></SPAN
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->domain guest group = nobody @guest</B
-></P
-></DD
-><DT
-><A
 NAME="DOMAINLOGONS"
 ></A
 >domain logons (G)</DT
@@ -7705,10 +7523,10 @@ NAME="DOMAINLOGONS"
 ><P
 >If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, the Samba server will serve 
 		Windows 95/98 Domain logons for the <A
-HREF="index.html#WORKGROUP"
+HREF="r1.html#WORKGROUP"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -7750,7 +7568,7 @@ CLASS="COMMAND"
 > to
 		claim a special domain specific NetBIOS name that identifies 
 		it as a domain master browser for its given <A
-HREF="index.html#WORKGROUP"
+HREF="r1.html#WORKGROUP"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -7810,7 +7628,7 @@ CLASS="PARAMETER"
 		strangely and may fail.</P
 ><P
 >If <A
-HREF="index.html#DOMAINLOGONS"
+HREF="r1.html#DOMAINLOGONS"
 ><B
 CLASS="COMMAND"
 >domain logons = yes</B
@@ -7867,13 +7685,10 @@ CLASS="FILENAME"
 >. 
 		Experimentation is the best policy :-)  </P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., all directories are OK 
 		to descend)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -7980,7 +7795,7 @@ CLASS="COMMAND"
 > is acting 
 		on behalf of is not the file owner. Setting this option to <TT
 CLASS="CONSTANT"
->		true</TT
+>		yes</TT
 > allows DOS semantics and <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -8036,7 +7851,7 @@ CLASS="COMMAND"
 ></A
 > program for information on how to set up 
  		and maintain this file), or set the <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 >security = [server|domain|ads]</A
 > parameter which 
 		causes <B
@@ -8117,12 +7932,9 @@ CLASS="PARAMETER"
 		to standard output.  This listing will then be used in response
 		to the level 1 and 2 EnumPorts() RPC.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no enumports command</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8139,7 +7951,7 @@ NAME="EXEC"
 ><DD
 ><P
 >This is a synonym for <A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -8216,7 +8028,7 @@ CLASS="COMMAND"
 		the file.</P
 ><P
 >It is generally much better to use the real <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8288,12 +8100,9 @@ NAME="FORCECREATEMODE"
 ><DD
 ><P
 >This parameter specifies a set of UNIX mode bit 
-		permissions that will <SPAN
-CLASS="emphasis"
-><I
+		permissions that will <I
 CLASS="EMPHASIS"
 >always</I
-></SPAN
 > be set on a 
 		file created by Samba. This is done by bitwise 'OR'ing these bits onto 
 		the mode bits of a file that is being created or having its 
@@ -8308,7 +8117,7 @@ CLASS="PARAMETER"
 		parameter is applied.</P
 ><P
 >See also the parameter <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8319,7 +8128,7 @@ CLASS="PARAMETER"
 > for details on masking mode bits on files.</P
 ><P
 >See also the <A
-HREF="index.html#INHERITPERMISSIONS"
+HREF="r1.html#INHERITPERMISSIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8351,12 +8160,9 @@ NAME="FORCEDIRECTORYMODE"
 ><DD
 ><P
 >This parameter specifies a set of UNIX mode bit 
-		permissions that will <SPAN
-CLASS="emphasis"
-><I
+		permissions that will <I
 CLASS="EMPHASIS"
 >always</I
-></SPAN
 > be set on a directory 
 		created by Samba. This is done by bitwise 'OR'ing these bits onto the 
 		mode bits of a directory that is being created. The default for this 
@@ -8371,7 +8177,7 @@ CLASS="PARAMETER"
 		applied.</P
 ><P
 >See also the parameter <A
-HREF="index.html#DIRECTORYMASK"
+HREF="r1.html#DIRECTORYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8382,7 +8188,7 @@ CLASS="PARAMETER"
 		on created directories.</P
 ><P
 >See also the <A
-HREF="index.html#INHERITPERMISSIONS"
+HREF="r1.html#INHERITPERMISSIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8426,12 +8232,9 @@ NAME="FORCEDIRECTORYSECURITYMODE"
 		allows a user to modify all the user/group/world permissions on a 
 		directory without restrictions.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -8439,7 +8242,7 @@ CLASS="EMPHASIS"
 		it set as 0000.</P
 ><P
 >See also the <A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8447,7 +8250,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#SECURITYMASK"
+HREF="r1.html#SECURITYMASK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -8456,7 +8259,7 @@ CLASS="PARAMETER"
 ></A
 >, 
 		<A
-HREF="index.html#FORCESECURITYMODE"
+HREF="r1.html#FORCESECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8508,7 +8311,7 @@ CLASS="FILENAME"
 		other users will retain their ordinary primary group.</P
 ><P
 >If the <A
-HREF="index.html#FORCEUSER"
+HREF="r1.html#FORCEUSER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8531,7 +8334,7 @@ CLASS="PARAMETER"
 >.</P
 ><P
 >See also <A
-HREF="index.html#FORCEUSER"
+HREF="r1.html#FORCEUSER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8541,12 +8344,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no forced group</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8576,12 +8376,9 @@ NAME="FORCESECURITYMODE"
 		and allows a user to modify all the user/group/world permissions on a file,
 		with no restrictions.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access 
 		the Samba server through other means can easily bypass this restriction, 
 		so it is primarily useful for standalone "appliance" systems.  
@@ -8589,7 +8386,7 @@ CLASS="EMPHASIS"
 		this set to 0000.</P
 ><P
 >See also the <A
-HREF="index.html#FORCEDIRECTORYSECURITYMODE"
+HREF="r1.html#FORCEDIRECTORYSECURITYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8598,7 +8395,7 @@ CLASS="PARAMETER"
 ></A
 >,
 		<A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8607,7 +8404,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#SECURITYMASK"
+HREF="r1.html#SECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8650,7 +8447,7 @@ NAME="FORCEUSER"
 		as the primary group of the connecting user (this was a bug).</P
 ><P
 >See also <A
-HREF="index.html#FORCEGROUP"
+HREF="r1.html#FORCEGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8660,12 +8457,9 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no forced user</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8726,7 +8520,7 @@ NAME="GETWDCACHE"
 		caching algorithm will be used to reduce the time taken for getwd() 
 		calls. This can have a significant impact on performance, especially 
 		when the <A
-HREF="index.html#WIDELINKS"
+HREF="r1.html#WIDELINKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8736,7 +8530,7 @@ CLASS="PARAMETER"
 		</A
 >parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >.</P
 ><P
 >Default: <B
@@ -8752,7 +8546,7 @@ NAME="GROUP"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#FORCEGROUP"
+HREF="r1.html#FORCEGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8771,7 +8565,7 @@ NAME="GUESTACCOUNT"
 ><P
 >This is a username which will be used for access 
 		to services which are specified as <A
-HREF="index.html#GUESTOK"
+HREF="r1.html#GUESTOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8800,17 +8594,14 @@ CLASS="COMMAND"
 >		lp(1)</B
 >.</P
 ><P
->This paramater does not accept % marcos, becouse
+>This paramater does not accept % macros, because
 	        many parts of the system require this value to be
-	        constant for correct operation</P
+	        constant for correct operation.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >specified at compile time, usually 
 		"nobody"</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -8831,7 +8622,7 @@ CLASS="CONSTANT"
 > for 
 		a service, then no password is required to connect to the service. 
 		Privileges will be those of the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8841,7 +8632,7 @@ CLASS="PARAMETER"
 >.</P
 ><P
 >See the section below on <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8869,7 +8660,7 @@ CLASS="CONSTANT"
 > for 
 		a service, then only guest connections to the service are permitted. 
 		This parameter will have no effect if <A
-HREF="index.html#GUESTOK"
+HREF="r1.html#GUESTOK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -8879,7 +8670,7 @@ CLASS="PARAMETER"
 > is not set for the service.</P
 ><P
 >See the section below on <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8936,7 +8727,7 @@ NAME="HIDEFILES"
 		as they are scanned.</P
 ><P
 >See also <A
-HREF="index.html#HIDEDOTFILES"
+HREF="r1.html#HIDEDOTFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8945,7 +8736,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#VETOFILES"
+HREF="r1.html#VETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -8953,7 +8744,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#CASESENSITIVE"
+HREF="r1.html#CASESENSITIVE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -8962,12 +8753,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no file are hidden</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9034,13 +8822,30 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="HIDESPECIALFILES"
+></A
+>hide special files (G)</DT
+><DD
+><P
+>This parameter prevents clients from seeing
+		special files such as sockets, devices and fifo's in directory 
+		listings.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>hide special files = no</B
+></P
+></DD
+><DT
+><A
 NAME="HOMEDIRMAP"
 ></A
 >homedir map (G)</DT
 ><DD
 ><P
 >If<A
-HREF="index.html#NISHOMEDIR"
+HREF="r1.html#NISHOMEDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9050,7 +8855,7 @@ CLASS="PARAMETER"
 ></A
 > is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, and <A
 HREF="smbd.8.html"
 TARGET="_top"
@@ -9079,17 +8884,14 @@ CLASS="COMMAND"
 		that copes with different map formats and also Amd (another 
 		automounter) maps.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE :</I
-></SPAN
 >A working NIS client is required on 
 		the system for this option to work.</P
 ><P
 >See also <A
-HREF="index.html#NISHOMEDIR"
+HREF="r1.html#NISHOMEDIR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9098,7 +8900,7 @@ CLASS="PARAMETER"
 >
 		</A
 >, <A
-HREF="index.html#DOMAINLOGONS"
+HREF="r1.html#DOMAINLOGONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9110,7 +8912,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->homedir map = &lt;empty string&gt;</B
+>homedir map = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -9137,7 +8939,7 @@ CLASS="CONSTANT"
 		to browse Dfs trees hosted on the server.</P
 ><P
 >See also the <A
-HREF="index.html#MSDFSROOT"
+HREF="r1.html#MSDFSROOT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9225,7 +9027,7 @@ CLASS="FILENAME"
 ><P
 >Note that the localhost address 127.0.0.1 will always 
 		be allowed access unless specifically denied by a <A
-HREF="index.html#HOSTSDENY"
+HREF="r1.html#HOSTSDENY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9236,12 +9038,9 @@ CLASS="PARAMETER"
 ><P
 >You can also specify hosts by network/netmask pairs and 
 		by netgroup names if your system supports netgroups. The 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >EXCEPT</I
-></SPAN
 > keyword can also be used to limit a 
 		wildcard list. The following examples may provide some help:</P
 ><P
@@ -9292,13 +9091,10 @@ CLASS="COMMAND"
 > for a way of testing your host access to see if it does 
 		what you expect.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., all hosts permitted access)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9320,12 +9116,9 @@ CLASS="PARAMETER"
 >hosts allow</I
 ></TT
 > 
-		- hosts listed here are <SPAN
-CLASS="emphasis"
-><I
+		- hosts listed here are <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > permitted access to 
 		services unless the specific services have their own lists to override 
 		this one. Where the lists conflict, the <TT
@@ -9336,13 +9129,10 @@ CLASS="PARAMETER"
 > 
 		list takes precedence.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (i.e., no hosts specifically excluded)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9364,7 +9154,7 @@ NAME="HOSTSEQUIV"
 		</P
 ><P
 >This is not be confused with <A
-HREF="index.html#HOSTSALLOW"
+HREF="r1.html#HOSTSALLOW"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -9380,12 +9170,9 @@ CLASS="PARAMETER"
 > may be useful for NT clients which will 
 		not supply passwords to Samba.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE :</I
-></SPAN
 > The use of <TT
 CLASS="PARAMETER"
 ><I
@@ -9402,21 +9189,15 @@ CLASS="PARAMETER"
 ></TT
 > option be only used if you really 
 		know what you are doing, or perhaps on a home network where you trust 
-		your spouse and kids. And only if you <SPAN
-CLASS="emphasis"
-><I
+		your spouse and kids. And only if you <I
 CLASS="EMPHASIS"
 >really</I
-></SPAN
 > trust 
 		them :-).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no host equivalences</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9454,12 +9235,9 @@ CLASS="PARAMETER"
 >.
 		</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no file included</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9499,7 +9277,7 @@ NAME="INHERITPERMISSIONS"
 ><P
 >The permissions on new files and directories 
 		are normally governed by <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9507,7 +9285,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#DIRECTORYMASK"
+HREF="r1.html#DIRECTORYMASK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -9515,7 +9293,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#FORCECREATEMODE"
+HREF="r1.html#FORCECREATEMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9524,7 +9302,7 @@ CLASS="PARAMETER"
 >
 		</A
 > and <A
-HREF="index.html#FORCEDIRECTORYMODE"
+HREF="r1.html#FORCEDIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9541,7 +9319,7 @@ CLASS="PARAMETER"
 >New files inherit their read/write bits from the parent 
 		directory.  Their execute bits continue to be determined by
 		<A
-HREF="index.html#MAPARCHIVE"
+HREF="r1.html#MAPARCHIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9550,7 +9328,7 @@ CLASS="PARAMETER"
 >
 		</A
 >, <A
-HREF="index.html#MAPHIDDEN"
+HREF="r1.html#MAPHIDDEN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9559,7 +9337,7 @@ CLASS="PARAMETER"
 >
 		</A
 > and <A
-HREF="index.html#MAPSYSTEM"
+HREF="r1.html#MAPSYSTEM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9569,12 +9347,9 @@ CLASS="PARAMETER"
 		</A
 > as usual.</P
 ><P
->Note that the setuid bit is <SPAN
-CLASS="emphasis"
-><I
+>Note that the setuid bit is <I
 CLASS="EMPHASIS"
 >never</I
-></SPAN
 > set via 
 		inheritance (the code explicitly prohibits this).</P
 ><P
@@ -9583,7 +9358,7 @@ CLASS="EMPHASIS"
 		share to be used flexibly by each user.</P
 ><P
 >See also <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9592,7 +9367,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#DIRECTORYMASK"
+HREF="r1.html#DIRECTORYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9600,7 +9375,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#FORCECREATEMODE"
+HREF="r1.html#FORCECREATEMODE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -9608,7 +9383,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#FORCEDIRECTORYMODE"
+HREF="r1.html#FORCEDIRECTORYMODE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9684,7 +9459,7 @@ CLASS="COMMAND"
 		The netmasks of the latter two interfaces would be set to 255.255.255.0.</P
 ><P
 >See also <A
-HREF="index.html#BINDINTERFACESONLY"
+HREF="r1.html#BINDINTERFACESONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9694,13 +9469,10 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >all active interfaces except 127.0.0.1 
 		that are broadcast capable</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -9711,12 +9483,9 @@ NAME="INVALIDUSERS"
 ><DD
 ><P
 >This is a list of users that should not be allowed 
-		to login to this service. This is really a <SPAN
-CLASS="emphasis"
-><I
+		to login to this service. This is really a <I
 CLASS="EMPHASIS"
 >paranoid</I
-></SPAN
 > 
 		check to absolutely ensure an improper setting does not breach 
 		your security.</P
@@ -9733,7 +9502,7 @@ CLASS="EMPHASIS"
 		so the value <TT
 CLASS="PARAMETER"
 ><I
->+&amp;group</I
+>+&#38;group</I
 ></TT
 > means check the 
 		UNIX group database, followed by the NIS netgroup database, and 
@@ -9755,7 +9524,7 @@ CLASS="PARAMETER"
 		This is useful in the [homes] section.</P
 ><P
 >See also <A
-HREF="index.html#VALIDUSERS"
+HREF="r1.html#VALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9765,12 +9534,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no invalid users</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -9799,7 +9565,7 @@ CLASS="PARAMETER"
 ><P
 >Keepalives should, in general, not be needed if the socket 
 		being used has the SO_KEEPALIVE attribute set on it (see <A
-HREF="index.html#SOCKETOPTIONS"
+HREF="r1.html#SOCKETOPTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9827,7 +9593,7 @@ NAME="KERNELOPLOCKS"
 ><DD
 ><P
 >For UNIXes that support kernel based <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9854,12 +9620,9 @@ CLASS="COMMAND"
 >
 		</A
 > has oplocked. This allows complete data consistency between 
-		SMB/CIFS, NFS and local file access (and is a <SPAN
-CLASS="emphasis"
-><I
+		SMB/CIFS, NFS and local file access (and is a <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > 
 		cool feature :-).</P
 ><P
@@ -9871,7 +9634,7 @@ CLASS="CONSTANT"
 		You should never need to touch this parameter.</P
 ><P
 >See also the <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9880,7 +9643,7 @@ CLASS="PARAMETER"
 >
 		</A
 > and <A
-HREF="index.html#LEVEL2OPLOCKS"
+HREF="r1.html#LEVEL2OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -9978,12 +9741,9 @@ CLASS="COMMAND"
 		page for more information on how to accmplish this.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10007,7 +9767,7 @@ CLASS="CONSTANT"
 ><P
 >Default : <B
 CLASS="COMMAND"
->ldap filter = (&amp;(uid=%u)(objectclass=sambaAccount))</B
+>ldap filter = (&#38;(uid=%u)(objectclass=sambaAccount))</B
 ></P
 ></DD
 ><DT
@@ -10019,12 +9779,9 @@ NAME="LDAPSSL"
 ><P
 >This option is used to define whether or not Samba should
 		use SSL when connecting to the ldap server
-		This is <SPAN
-CLASS="emphasis"
-><I
+		This is <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > related to
 		Samba's previous SSL support which was enabled by specifying the 
 		<B
@@ -10043,26 +9800,45 @@ CLASS="PARAMETER"
 >ldap ssl</I
 ></TT
 > can be set to one of three values:
-		(a) <TT
-CLASS="CONSTANT"
->on</TT
-> - Always use SSL when contacting the 
-		<TT
+		</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>On</I
+></TT
+>  =  Always use SSL when contacting the 
+			<TT
 CLASS="PARAMETER"
 ><I
 >ldap	server</I
 ></TT
->, (b) <TT
-CLASS="CONSTANT"
->off</TT
-> -
-		Never use SSL when querying the directory, or (c) <TT
-CLASS="CONSTANT"
->start_tls</TT
-> 
-		- Use the LDAPv3 StartTLS extended operation 
-		(RFC2830) for communicating with the directory server.
-		</P
+>.</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Off</I
+></TT
+> = Never use SSL when querying the directory.</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Start_tls</I
+></TT
+> = Use the LDAPv3 StartTLS extended operation 
+			(RFC2830) for communicating with the directory server.</P
+></LI
+></UL
 ><P
 >Default : <B
 CLASS="COMMAND"
@@ -10076,12 +9852,9 @@ NAME="LDAPSUFFIX"
 >ldap suffix (G)</DT
 ><DD
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10094,12 +9867,9 @@ NAME="LDAPUSERSUFFIX"
 >It specifies where users are added to the tree.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -10113,12 +9883,67 @@ NAME="LDAPMACHINESUFFIX"
                 added to the ldap tree.
 		</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
+></P
+></DD
+><DT
+><A
+NAME="LDAPPASSWDSYNC"
+></A
+>ldap passwd sync (G)</DT
+><DD
+><P
+>This option is used to define whether
+		or not Samba should sync the LDAP password with the NT
+		and LM hashes for normal accounts (NOT for
+		workstation, server or domain trusts) on a password
+		change via SAMBA.  
+		</P
+><P
+>		The <TT
+CLASS="PARAMETER"
+><I
+>ldap passwd sync</I
+></TT
+> can be set to one of three values:
+		</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Yes</I
+></TT
+>  =  Try to update the LDAP, NT and LM passwords and update the pwdLastSet time.</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>No</I
+></TT
+> = Update NT and LM passwords and update the pwdLastSet time.</P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>Only</I
+></TT
+> = Only update the LDAP password and let the LDAP server do the rest.</P
+></LI
+></UL
+><P
+>Default : <B
+CLASS="COMMAND"
+>ldap passwd sync = no</B
 ></P
 ></DD
 ><DT
@@ -10152,7 +9977,7 @@ NAME="LEVEL2OPLOCKS"
 >For more discussions on level2 oplocks see the CIFS spec.</P
 ><P
 >Currently, if <A
-HREF="index.html#KERNELOPLOCKS"
+HREF="r1.html#KERNELOPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10166,7 +9991,7 @@ CLASS="CONSTANT"
 >yes</TT
 >). 
 		Note also, the <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10176,12 +10001,12 @@ CLASS="PARAMETER"
 		</A
 > parameter must be set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > on this share in order for 
 		this parameter to have any effect.</P
 ><P
 >See also the <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10190,7 +10015,7 @@ CLASS="PARAMETER"
 >
 		</A
 > and <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10224,10 +10049,10 @@ CLASS="COMMAND"
 		the Samba server in their browse list. This parameter can have three 
 		values, <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >, or
 		<TT
 CLASS="CONSTANT"
@@ -10238,11 +10063,11 @@ CLASS="CONSTANT"
 >.  
 		If set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > Samba will never produce these 
 		broadcasts. If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > Samba will produce 
 		Lanman announce broadcasts at a frequency set by the parameter 
 		<TT
@@ -10265,7 +10090,7 @@ CLASS="PARAMETER"
 >.</P
 ><P
 >See also <A
-HREF="index.html#LMINTERVAL"
+HREF="r1.html#LMINTERVAL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10294,7 +10119,7 @@ NAME="LMINTERVAL"
 ><P
 >If Samba is set to produce Lanman announce 
 		broadcasts needed by OS/2 clients (see the <A
-HREF="index.html#LMANNOUNCE"
+HREF="r1.html#LMANNOUNCE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -10313,7 +10138,7 @@ CLASS="PARAMETER"
 		parameter.</P
 ><P
 >See also <A
-HREF="index.html#LMANNOUNCE"
+HREF="r1.html#LMANNOUNCE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10343,7 +10168,7 @@ NAME="LOADPRINTERS"
 >A boolean variable that controls whether all 
 		printers in the printcap will be loaded for browsing by default. 
 		See the <A
-HREF="index.html#AEN79"
+HREF="r1.html#AEN79"
 >printers</A
 > section for 
 		more details.</P
@@ -10370,7 +10195,7 @@ CLASS="COMMAND"
 > to try and become a local master browser 
 		on a subnet. If set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > then <B
 CLASS="COMMAND"
 >		nmbd</B
@@ -10378,42 +10203,33 @@ CLASS="COMMAND"
 		on a subnet and will also lose in all browsing elections. By
 		default this value is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. Setting this value to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > doesn't
-		mean that Samba will <SPAN
-CLASS="emphasis"
-><I
+		mean that Samba will <I
 CLASS="EMPHASIS"
 >become</I
-></SPAN
 > the local master 
 		browser on a subnet, just that <B
 CLASS="COMMAND"
 >nmbd</B
-> will <SPAN
-CLASS="emphasis"
-><I
+> will <I
 CLASS="EMPHASIS"
 >		participate</I
-></SPAN
 > in elections for local master browser.</P
 ><P
 >Setting this value to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > will cause <B
 CLASS="COMMAND"
 >nmbd</B
 >
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >never</I
-></SPAN
 > to become a local master browser.</P
 ><P
 >Default: <B
@@ -10429,7 +10245,7 @@ NAME="LOCKDIR"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#LOCKDIRECTORY"
+HREF="r1.html#LOCKDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10448,7 +10264,7 @@ NAME="LOCKDIRECTORY"
 >This option specifies the directory where lock 
 		files will be placed.  The lock files are used to implement the 
 		<A
-HREF="index.html#MAXCONNECTIONS"
+HREF="r1.html#MAXCONNECTIONS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10502,7 +10318,7 @@ NAME="LOCKSPINTIME"
 >The time in microseconds that smbd should 
 		pause before attempting to gain a failed lock.  See
 		<A
-HREF="index.html#LOCKSPINCOUNT"
+HREF="r1.html#LOCKSPINCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10543,19 +10359,13 @@ CLASS="COMMAND"
 >, real locking will be performed 
 		by the server.</P
 ><P
->This option <SPAN
-CLASS="emphasis"
-><I
+>This option <I
 CLASS="EMPHASIS"
 >may</I
-></SPAN
 > be useful for read-only 
-		filesystems which <SPAN
-CLASS="emphasis"
-><I
+		filesystems which <I
 CLASS="EMPHASIS"
 >may</I
-></SPAN
 > not need locking (such as 
 		CDROM drives), although setting this parameter of <TT
 CLASS="CONSTANT"
@@ -10626,7 +10436,7 @@ NAME="LOGONDRIVE"
 ><P
 >This parameter specifies the local path to 
 		which the home directory will be connected (see <A
-HREF="index.html#LOGONHOME"
+HREF="r1.html#LOGONHOME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -10695,7 +10505,7 @@ CLASS="COMMAND"
 		but use the whole string when dealing with profiles.</P
 ><P
 >Note that in prior versions of Samba, the <A
-HREF="index.html#LOGONPATH"
+HREF="r1.html#LOGONPATH"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -10742,7 +10552,7 @@ NAME="LOGONPATH"
 		stored.  Contrary to previous versions of these manual pages, it has 
 		nothing to do with Win 9X roaming profiles.  To find out how to 
 		handle roaming profiles for Win 9X system, see the <A
-HREF="index.html#LOGONHOME"
+HREF="r1.html#LOGONHOME"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -10780,12 +10590,9 @@ CLASS="FILENAME"
 >Thereafter, the directories and any of the contents can, 
 		if required, be made read-only.  It is not advisable that the 
 		NTuser.dat file be made read-only - rename it to NTuser.man to 
-		achieve the desired effect (a <SPAN
-CLASS="emphasis"
-><I
+		achieve the desired effect (a <I
 CLASS="EMPHASIS"
 >MAN</I
-></SPAN
 >datory 
 		profile). </P
 ><P
@@ -10826,7 +10633,7 @@ NAME="LOGONSCRIPT"
 ><P
 >The script must be a relative path to the [netlogon] 
 		service.  If the [netlogon] service specifies a <A
-HREF="index.html#PATH"
+HREF="r1.html#PATH"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -10875,12 +10682,9 @@ CLASS="COMMAND"
 >This option is only useful if Samba is set up as a logon 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no logon script defined</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -10937,7 +10741,7 @@ CLASS="PARAMETER"
 		in the lppause command as the PATH may not be available to the server.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11031,7 +10835,7 @@ CLASS="COMMAND"
 >A value of 0 will disable caching completely.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11115,7 +10919,7 @@ CLASS="PARAMETER"
 		print queue listing.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11125,9 +10929,7 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -11135,7 +10937,6 @@ CLASS="PARAMETER"
 >		printing</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11157,7 +10958,7 @@ NAME="LPRESUMECOMMAND"
 >This command should be a program or script which takes 
 		a printer name and job number to resume the print job. See 
 		also the <A
-HREF="index.html#LPPAUSECOMMAND"
+HREF="r1.html#LPPAUSECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11191,7 +10992,7 @@ CLASS="PARAMETER"
 		be available to the server.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11277,7 +11078,7 @@ CLASS="PARAMETER"
 		available to the server.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11287,9 +11088,7 @@ CLASS="PARAMETER"
 ></A
 > parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -11298,7 +11097,6 @@ CLASS="PARAMETER"
 		</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example 1: <B
@@ -11322,7 +11120,7 @@ NAME="MACHINEPASSWORDTIMEOUT"
 ><P
 >If a Samba server is a member of a Windows 
 		NT Domain (see the <A
-HREF="index.html#SECURITYEQUALSDOMAIN"
+HREF="r1.html#SECURITYEQUALSDOMAIN"
 >security = domain</A
 >) 
 		parameter) then periodically a running <A
@@ -11347,7 +11145,7 @@ CLASS="COMMAND"
 		</B
 ></A
 >, and the <A
-HREF="index.html#SECURITYEQUALSDOMAIN"
+HREF="r1.html#SECURITYEQUALSDOMAIN"
 >		security = domain</A
 >) parameter.</P
 ><P
@@ -11366,7 +11164,7 @@ NAME="MAGICOUTPUT"
 >This parameter specifies the name of a file 
 		which will contain output created by a magic script (see the 
 		<A
-HREF="index.html#MAGICSCRIPT"
+HREF="r1.html#MAGICSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11387,7 +11185,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->magic output = &lt;magic script name&gt;.out
+>magic output = &#60;magic script name&#62;.out
 		</B
 ></P
 ><P
@@ -11414,7 +11212,7 @@ NAME="MAGICSCRIPT"
 ><P
 >If the script generates output, output will be sent to 
 		the file specified by the <A
-HREF="index.html#MAGICOUTPUT"
+HREF="r1.html#MAGICOUTPUT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11426,36 +11224,24 @@ CLASS="PARAMETER"
 >Note that some shells are unable to interpret scripts 
 		containing CR/LF instead of CR as 
 		the end-of-line marker. Magic scripts must be executable 
-		<SPAN
-CLASS="emphasis"
-><I
+		<I
 CLASS="EMPHASIS"
 >as is</I
-></SPAN
 > on the host, which for some hosts and 
 		some shells will require filtering at the DOS end.</P
 ><P
->Magic scripts are <SPAN
-CLASS="emphasis"
-><I
+>Magic scripts are <I
 CLASS="EMPHASIS"
 >EXPERIMENTAL</I
-></SPAN
 > and 
-		should <SPAN
-CLASS="emphasis"
-><I
+		should <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be relied upon.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None. Magic scripts disabled.</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11471,7 +11257,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -11522,12 +11308,9 @@ CLASS="FILENAME"
 > off the ends of filenames on some CDROMs (only visible 
 		under some UNIXes). To do this use a map of (*;1 *;).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no mangled map</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -11547,7 +11330,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -11573,7 +11356,7 @@ HREF="index.html#AEN203"
 ><P
 >Note that the character to use may be specified using 
 			the <A
-HREF="index.html#MANGLINGCHAR"
+HREF="r1.html#MANGLINGCHAR"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11692,14 +11475,11 @@ NAME="MANGLINGCHAR"
 ><DD
 ><P
 >This controls what character is used as 
-		the <SPAN
-CLASS="emphasis"
-><I
+		the <I
 CLASS="EMPHASIS"
 >magic</I
-></SPAN
 > character in <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -11737,7 +11517,7 @@ CLASS="PARAMETER"
 >
 		parameter to be set such that owner execute bit is not masked out 
 		(i.e. it must include 100). See the parameter <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -11769,7 +11549,7 @@ CLASS="PARAMETER"
 > 
 		to be set such that the world execute bit is not masked out (i.e. 
 		it must include 001). See the parameter <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -11801,7 +11581,7 @@ CLASS="PARAMETER"
 > 
 		to be set such that the group execute bit is not masked out (i.e. 
 		it must include 010). See the parameter <A
-HREF="index.html#CREATEMASK"
+HREF="r1.html#CREATEMASK"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -11823,7 +11603,7 @@ NAME="MAPTOGUEST"
 ><DD
 ><P
 >This parameter is only useful in <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 >		security</A
 > modes other than <TT
 CLASS="PARAMETER"
@@ -11873,7 +11653,7 @@ CLASS="CONSTANT"
 			logins with an invalid password are rejected, unless the username 
 			does not exist, in which case it is treated as a guest login and 
 			mapped into the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -11890,7 +11670,7 @@ CLASS="CONSTANT"
 > - Means user logins 
 			with an invalid password are treated as a guest login and mapped 
 			into the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 >guest account</A
 >. Note that 
 			this can cause problems as it means that any user incorrectly typing 
@@ -11898,12 +11678,9 @@ HREF="index.html#GUESTACCOUNT"
 			will not know the reason they cannot access files they think
 			they should - there will have been no message given to them
 			that they got their password wrong. Helpdesk services will
-			<SPAN
-CLASS="emphasis"
-><I
+			<I
 CLASS="EMPHASIS"
 >hate</I
-></SPAN
 > you if you set the <TT
 CLASS="PARAMETER"
 ><I
@@ -11922,12 +11699,9 @@ CLASS="PARAMETER"
 ></TT
 > modes other than 
 		share. This is because in these modes the name of the resource being
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client so the server 
 		cannot make authentication decisions at the correct time (connection 
@@ -11969,7 +11743,7 @@ CLASS="PARAMETER"
 ><P
 >Record lock files are used to implement this feature. The 
 		lock files will be stored in the directory specified by the <A
-HREF="index.html#LOCKDIRECTORY"
+HREF="r1.html#LOCKDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12121,7 +11895,7 @@ CLASS="COMMAND"
 ></A
 > will remote "Out of Space" to the client.
 		See all <A
-HREF="index.html#TOTALPRINTJOBS"
+HREF="r1.html#TOTALPRINTJOBS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12177,12 +11951,9 @@ CLASS="CONSTANT"
 ><TT
 CLASS="CONSTANT"
 >LANMAN1</TT
->: First <SPAN
-CLASS="emphasis"
-><I
+>: First <I
 CLASS="EMPHASIS"
 >			modern</I
-></SPAN
 > version of the protocol. Long filename
 			support.</P
 ></LI
@@ -12209,7 +11980,7 @@ CLASS="CONSTANT"
 		the appropriate protocol.</P
 ><P
 >See also <A
-HREF="index.html#MINPROTOCOL"
+HREF="r1.html#MINPROTOCOL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12305,7 +12076,7 @@ TARGET="_top"
 >nmbd(8)
 		</A
 > when acting as a WINS server (<A
-HREF="index.html#WINSSUPPORT"
+HREF="r1.html#WINSSUPPORT"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -12321,7 +12092,7 @@ CLASS="COMMAND"
 		parameter.  The default is 6 days (518400 seconds).</P
 ><P
 >See also the <A
-HREF="index.html#MINWINSTTL"
+HREF="r1.html#MINWINSTTL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12385,13 +12156,10 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >xedit</B
 >, then 
-		removes it afterwards. <SPAN
-CLASS="emphasis"
-><I
+		removes it afterwards. <I
 CLASS="EMPHASIS"
 >NOTE THAT IT IS VERY IMPORTANT 
 		THAT THIS COMMAND RETURN IMMEDIATELY</I
-></SPAN
 >. That's why I 
 		have the '&#38;' on the end. If it doesn't return immediately then 
 		your PCs may freeze when sending messages (they should recover 
@@ -12457,7 +12225,7 @@ CLASS="PARAMETER"
 ><B
 CLASS="COMMAND"
 >message command = /bin/mail -s 'message from %f on 
-		%m' root &lt; %s; rm %s</B
+		%m' root &#60; %s; rm %s</B
 ></P
 ><P
 >If you don't have a message command then the message 
@@ -12473,12 +12241,9 @@ CLASS="COMMAND"
 >message command = rm %s</B
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no message command</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -12495,7 +12260,7 @@ NAME="MINPASSWDLENGTH"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#MINPASSWORDLENGTH"
+HREF="r1.html#MINPASSWORDLENGTH"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -12519,7 +12284,7 @@ CLASS="COMMAND"
 		UNIX password changing.</P
 ><P
 >See also <A
-HREF="index.html#UNIXPASSWORDSYNC"
+HREF="r1.html#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12528,7 +12293,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -12536,7 +12301,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#PASSWDCHATDEBUG"
+HREF="r1.html#PASSWDCHATDEBUG"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12564,7 +12329,7 @@ NAME="MINPRINTSPACE"
 		means a user can always spool a print job.</P
 ><P
 >See also the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12594,7 +12359,7 @@ NAME="MINPROTOCOL"
 >The value of the parameter (a string) is the 
 		lowest SMB protocol dialect than Samba will support.  Please refer
 		to the <A
-HREF="index.html#MAXPROTOCOL"
+HREF="r1.html#MAXPROTOCOL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12612,7 +12377,7 @@ CLASS="FILENAME"
 ><P
 >If you are viewing this parameter as a security measure, you should
 		also refer to the <A
-HREF="index.html#LANMANAUTH"
+HREF="r1.html#LANMANAUTH"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12647,7 +12412,7 @@ TARGET="_top"
 >nmbd(8)</A
 >
 		when acting as a WINS server (<A
-HREF="index.html#WINSSUPPORT"
+HREF="r1.html#WINSSUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12698,7 +12463,7 @@ TARGET="_top"
 >.</P
 ><P
 >See also <A
-HREF="index.html#HOSTMSDFS"
+HREF="r1.html#HOSTMSDFS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12793,7 +12558,7 @@ CLASS="CONSTANT"
 >wins</TT
 > : Query a name with 
 			the IP address listed in the <A
-HREF="index.html#WINSSERVER"
+HREF="r1.html#WINSSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12810,7 +12575,7 @@ CLASS="CONSTANT"
 >bcast</TT
 > : Do a broadcast on 
 			each of the known local interfaces listed in the <A
-HREF="index.html#INTERFACES"
+HREF="r1.html#INTERFACES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12860,7 +12625,7 @@ TARGET="_top"
 		with these capabilities.</P
 ><P
 >See also <A
-HREF="index.html#NETBIOSNAME"
+HREF="r1.html#NETBIOSNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12870,12 +12635,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >empty string (no additional names)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -12898,7 +12660,7 @@ NAME="NETBIOSNAME"
 		advertised under.</P
 ><P
 >See also <A
-HREF="index.html#NETBIOSALIASES"
+HREF="r1.html#NETBIOSALIASES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -12908,12 +12670,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >machine DNS name</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -12957,7 +12716,7 @@ NAME="NISHOMEDIR"
 		it will be mounted on the Samba client directly from the directory 
 		server. When Samba is returning the home share to the client, it 
 		will consult the NIS map specified in <A
-HREF="index.html#HOMEDIRMAP"
+HREF="r1.html#HOMEDIRMAP"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -12998,7 +12757,7 @@ NAME="NONUNIXACCOUNTRANGE"
 ><P
 >Default: <B
 CLASS="COMMAND"
->non unix account range = &lt;empty string&gt;
+>non unix account range = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -13116,7 +12875,7 @@ NAME="OBEYPAMRESTRICTIONS"
 		default behavior is to use PAM for clear text authentication only
 		and to ignore any account or session management.  Note that Samba
 		always ignores PAM for authentication in the case of <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13157,7 +12916,7 @@ CLASS="PARAMETER"
 ></TT
 > list and is only really
 		useful in <A
-HREF="index.html#SECURITYEQUALSSHARE"
+HREF="r1.html#SECURITYEQUALSSHARE"
 >shave level</A
 >
 		security.</P
@@ -13178,7 +12937,7 @@ CLASS="PARAMETER"
 		name of the user.</P
 ><P
 >See also the <A
-HREF="index.html#USER"
+HREF="r1.html#USER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13201,7 +12960,7 @@ NAME="ONLYGUEST"
 ><DD
 ><P
 >A synonym for <A
-HREF="index.html#GUESTONLY"
+HREF="r1.html#GUESTONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13225,13 +12984,10 @@ NAME="OPLOCKBREAKWAITTIME"
 		is the amount of time Samba will wait before sending an oplock break 
 		request to such (broken) clients.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
 		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
-></SPAN
 >.</P
 ><P
 >Default: <B
@@ -13246,12 +13002,9 @@ NAME="OPLOCKCONTENTIONLIMIT"
 >oplock contention limit (S)</DT
 ><DD
 ><P
->This is a <SPAN
-CLASS="emphasis"
-><I
+>This is a <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > advanced 
 		<A
 HREF="smbd.8.html"
@@ -13274,13 +13027,10 @@ CLASS="COMMAND"
 > to behave in a similar 
 		way to Windows NT.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ 
 		AND UNDERSTOOD THE SAMBA OPLOCK CODE</I
-></SPAN
 >.</P
 ><P
 >Default: <B
@@ -13316,7 +13066,7 @@ CLASS="FILENAME"
 ><P
 >Oplocks may be selectively turned off on certain files with a 
 		share. See the <A
-HREF="index.html#VETOOPLOCKFILES"
+HREF="r1.html#VETOOPLOCKFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13335,7 +13085,7 @@ CLASS="PARAMETER"
 > parameter for details.</P
 ><P
 >See also the <A
-HREF="index.html#KERNELOPLOCKS"
+HREF="r1.html#KERNELOPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13344,7 +13094,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#LEVEL2OPLOCKS"
+HREF="r1.html#LEVEL2OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13406,12 +13156,9 @@ CLASS="PARAMETER"
 ></TT
 > in the local broadcast area.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >By default, Samba will win 
 		a local master browsing election over all Microsoft operating 
 		systems except a Windows NT 4.0/2000 Domain Controller.  This 
@@ -13447,8 +13194,8 @@ NAME="OS2DRIVERMAP"
 		path to a file containing a mapping of Windows NT printer driver
 		names to OS/2 printer driver names.  The format is:</P
 ><P
->&lt;nt driver name&gt; = &lt;os2 driver 
-		name&gt;.&lt;device name&gt;</P
+>&#60;nt driver name&#62; = &#60;os2 driver 
+		name&#62;.&#60;device name&#62;</P
 ><P
 >For example, a valid entry using the HP LaserJet 5
 		printer driver would appear as <B
@@ -13473,7 +13220,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->os2 driver map = &lt;empty string&gt;
+>os2 driver map = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -13489,7 +13236,7 @@ NAME="PAMPASSWORDCHANGE"
   		flag for Samba.  If enabled, then PAM will be used for password
  		changes when requested by an SMB client instead of the program listed in 
                 <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13499,7 +13246,7 @@ CLASS="PARAMETER"
 >. 
                 It should be possible to enable this without changing your 
                 <A
-HREF="index.html#PASSWDCHAT"
+HREF="r1.html#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13537,7 +13284,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->panic action = &lt;empty string&gt;</B
+>panic action = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -13603,7 +13350,7 @@ CLASS="COMMAND"
                         Takes a path to the smbpasswd file as an optional argument.</P
 ><P
 >See also <A
-HREF="index.html#NONUNIXACCOUNTRANGE"
+HREF="r1.html#NONUNIXACCOUNTRANGE"
 >                        <TT
 CLASS="PARAMETER"
 ><I
@@ -13620,7 +13367,7 @@ CLASS="COMMAND"
 > - The TDB based password storage
                         backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
                         in the <A
-HREF="index.html#PRIVATEDIR"
+HREF="r1.html#PRIVATEDIR"
 >                        <TT
 CLASS="PARAMETER"
 ><I
@@ -13637,7 +13384,7 @@ CLASS="COMMAND"
 > - The TDB based password storage
                         backend, with non unix account support.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
                         in the <A
-HREF="index.html#PRIVATEDIR"
+HREF="r1.html#PRIVATEDIR"
 >                        <TT
 CLASS="PARAMETER"
 ><I
@@ -13647,7 +13394,7 @@ CLASS="PARAMETER"
 > directory.</P
 ><P
 >See also <A
-HREF="index.html#NONUNIXACCOUNTRANGE"
+HREF="r1.html#NONUNIXACCOUNTRANGE"
 >                        <TT
 CLASS="PARAMETER"
 ><I
@@ -13681,7 +13428,7 @@ CLASS="COMMAND"
 >)</P
 ><P
 >See also <A
-HREF="index.html#NONUNIXACCOUNTRANGE"
+HREF="r1.html#NONUNIXACCOUNTRANGE"
 >                        <TT
 CLASS="PARAMETER"
 ><I
@@ -13758,12 +13505,9 @@ NAME="PASSWDCHAT"
 >passwd chat (G)</DT
 ><DD
 ><P
->This string controls the <SPAN
-CLASS="emphasis"
-><I
+>This string controls the <I
 CLASS="EMPHASIS"
 >"chat"</I
-></SPAN
 > 
 		conversation that takes places between <A
 HREF="smbd.8.html"
@@ -13777,7 +13521,7 @@ TARGET="_top"
 >		smbd(8)</A
 > uses to determine what to send to the 
 		<A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13793,7 +13537,7 @@ CLASS="PARAMETER"
 		etc).</P
 ><P
 >Note that this parameter only is only used if the <A
-HREF="index.html#UNIXPASSWORDSYNC"
+HREF="r1.html#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13805,18 +13549,15 @@ CLASS="PARAMETER"
 CLASS="CONSTANT"
 >yes</TT
 >. This 
-		sequence is then called <SPAN
-CLASS="emphasis"
-><I
+		sequence is then called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > when the SMB password 
 		in the smbpasswd file is being changed, without access to the old 
 		password cleartext. This means that root must be able to reset the user's password
  		without knowing the text of the previous password. In the presence of NIS/YP, 
 		this means that the <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 >passwd program</A
 > must be 
 		executed on the NIS master.
@@ -13852,7 +13593,7 @@ CLASS="CONSTANT"
 		if the expect string is a full stop then no string is expected.</P
 ><P
 >If the <A
-HREF="index.html#PAMPASSWORDCHANGE"
+HREF="r1.html#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13860,13 +13601,16 @@ CLASS="PARAMETER"
  		password change</I
 ></TT
 ></A
-> parameter is set to true, the chat pairs
+> parameter is set to <TT
+CLASS="CONSTANT"
+>yes</TT
+>, the chat pairs
                 may be matched in any order, and success is determined by the PAM result, 
                 not any particular output. The \n macro is ignored for PAM conversions.
   		</P
 ><P
 >See also <A
-HREF="index.html#UNIXPASSWORDSYNC"
+HREF="r1.html#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13875,7 +13619,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13883,7 +13627,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > ,<A
-HREF="index.html#PASSWDCHATDEBUG"
+HREF="r1.html#PASSWDCHATDEBUG"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -13891,7 +13635,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#PAMPASSWORDCHANGE"
+HREF="r1.html#PAMPASSWORDCHANGE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -13921,12 +13665,9 @@ NAME="PASSWDCHATDEBUG"
 ><DD
 ><P
 >This boolean specifies if the passwd chat script 
-		parameter is run in <SPAN
-CLASS="emphasis"
-><I
+		parameter is run in <I
 CLASS="EMPHASIS"
 >debug</I
-></SPAN
 > mode. In this mode the 
 		strings passed to and received from the passwd chat are printed 
 		in the <A
@@ -13935,7 +13676,7 @@ TARGET="_top"
 >smbd(8)</A
 > log with a 
 		<A
-HREF="index.html#DEBUGLEVEL"
+HREF="r1.html#DEBUGLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13962,7 +13703,7 @@ CLASS="PARAMETER"
 > and should 
  		be turned off after this has been done. This option has no effect if the 
                 <A
-HREF="index.html#PAMPASSWORDCHANGE"
+HREF="r1.html#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13973,7 +13714,7 @@ CLASS="PARAMETER"
                 paramter is set. This parameter is off by default.</P
 ><P
 >See also <A
-HREF="index.html#PASSWDCHAT"
+HREF="r1.html#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13982,7 +13723,7 @@ CLASS="PARAMETER"
 >
  		</A
 >, <A
-HREF="index.html#PAMPASSWORDCHANGE"
+HREF="r1.html#PAMPASSWORDCHANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -13991,7 +13732,7 @@ CLASS="PARAMETER"
 >
                 </A
 >, <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14023,24 +13764,18 @@ CLASS="PARAMETER"
 		will be replaced with the user name. The user name is checked for 
 		existence before calling the password changing program.</P
 ><P
->Also note that many passwd programs insist in <SPAN
-CLASS="emphasis"
-><I
+>Also note that many passwd programs insist in <I
 CLASS="EMPHASIS"
 >reasonable
 		</I
-></SPAN
 > passwords, such as a minimum length, or the inclusion 
 		of mixed case chars and digits. This can pose a problem as some clients 
 		(such as Windows for Workgroups) uppercase the password before sending 
 		it.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that if the <TT
 CLASS="PARAMETER"
 ><I
@@ -14049,14 +13784,11 @@ CLASS="PARAMETER"
 ></TT
 > parameter is set to <TT
 CLASS="CONSTANT"
->true
+>yes
 		</TT
-> then this program is called <SPAN
-CLASS="emphasis"
-><I
+> then this program is called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > 
 		before the SMB password in the <A
 HREF="smbpasswd.5.html"
@@ -14076,19 +13808,13 @@ CLASS="PARAMETER"
 >unix password sync</I
 ></TT
 > parameter 
-		is set this parameter <SPAN
-CLASS="emphasis"
-><I
+		is set this parameter <I
 CLASS="EMPHASIS"
 >MUST USE ABSOLUTE PATHS</I
-></SPAN
 > 
-		for <SPAN
-CLASS="emphasis"
-><I
+		for <I
 CLASS="EMPHASIS"
 >ALL</I
-></SPAN
 > programs called, and must be examined 
 		for security implications. Note that by default <TT
 CLASS="PARAMETER"
@@ -14098,11 +13824,11 @@ CLASS="PARAMETER"
 ></TT
 > is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 >.</P
 ><P
 >See also <A
-HREF="index.html#UNIXPASSWORDSYNC"
+HREF="r1.html#UNIXPASSWORDSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14212,7 +13938,7 @@ CLASS="FILENAME"
 ><P
 >The name of the password server is looked up using the 
 		parameter <A
-HREF="index.html#NAMERESOLVEORDER"
+HREF="r1.html#NAMERESOLVEORDER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14227,21 +13953,15 @@ CLASS="PARAMETER"
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE:</I
-></SPAN
 > Using a password server 
 		means your UNIX box (running Samba) is only as secure as your 
-		password server. <SPAN
-CLASS="emphasis"
-><I
+		password server. <I
 CLASS="EMPHASIS"
 >DO NOT CHOOSE A PASSWORD SERVER THAT 
 		YOU DON'T COMPLETELY TRUST</I
-></SPAN
 >.</P
 ><P
 >Never point a Samba server at itself for password 
@@ -14298,7 +14018,7 @@ CLASS="PARAMETER"
 		Primary or Backup Domain controllers to authenticate against by 
 		doing a query for the name <TT
 CLASS="CONSTANT"
->WORKGROUP&lt;1C&gt;</TT
+>WORKGROUP&#60;1C&#62;</TT
 > 
 		and then contacting each server returned in the list of IP 
 		addresses from the name resolution source. </P
@@ -14358,7 +14078,7 @@ CLASS="COMMAND"
 ></UL
 ><P
 >See also the <A
-HREF="index.html#SECURITY"
+HREF="r1.html#SECURITY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14370,7 +14090,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->password server = &lt;empty string&gt;</B
+>password server = &#60;empty string&#62;</B
 >
 		</P
 ><P
@@ -14421,7 +14141,7 @@ CLASS="PARAMETER"
 		up pseudo home directories for users.</P
 ><P
 >Note that this path will be based on <A
-HREF="index.html#ROOTDIR"
+HREF="r1.html#ROOTDIR"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -14430,12 +14150,9 @@ CLASS="PARAMETER"
 ></A
 > if one was specified.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -14512,7 +14229,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See also <A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14522,19 +14239,16 @@ CLASS="PARAMETER"
 		</A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (no command executed)</I
-></SPAN
 >
 		</P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >postexec = echo \"%u disconnected from %S 
-		from %m (%I)\" &gt;&gt; /tmp/log</B
+		from %m (%I)\" &#62;&#62; /tmp/log</B
 ></P
 ></DD
 ><DT
@@ -14583,7 +14297,7 @@ CLASS="COMMAND"
 >Of course, this could get annoying after a while :-)</P
 ><P
 >See also <A
-HREF="index.html#PREEXECCLOSE"
+HREF="r1.html#PREEXECCLOSE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14592,7 +14306,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#POSTEXEC"
+HREF="r1.html#POSTEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14602,18 +14316,15 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (no command executed)</I
-></SPAN
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
 >preexec = echo \"%u connected to %S from %m
-		(%I)\" &gt;&gt; /tmp/log</B
+		(%I)\" &#62;&#62; /tmp/log</B
 ></P
 ></DD
 ><DT
@@ -14625,7 +14336,7 @@ NAME="PREEXECCLOSE"
 ><P
 >This boolean option controls whether a non-zero 
 		return code from <A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14656,7 +14367,7 @@ TARGET="_top"
 ><P
 >If this is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, on startup, <B
 CLASS="COMMAND"
 >nmbd</B
@@ -14666,7 +14377,7 @@ CLASS="COMMAND"
 		used in conjunction with <B
 CLASS="COMMAND"
 ><A
-HREF="index.html#DOMAINMASTER"
+HREF="r1.html#DOMAINMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14687,7 +14398,7 @@ CLASS="COMMAND"
 		capabilities.</P
 ><P
 >See also <A
-HREF="index.html#OSLEVEL"
+HREF="r1.html#OSLEVEL"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14710,7 +14421,7 @@ NAME="PREFEREDMASTER"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#PREFERREDMASTER"
+HREF="r1.html#PREFERREDMASTER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14723,7 +14434,7 @@ CLASS="PARAMETER"
 ><A
 NAME="PRELOAD"
 ></A
->preload</DT
+>preload (G)</DT
 ><DD
 ><P
 >This is a list of services that you want to be 
@@ -14733,7 +14444,7 @@ NAME="PRELOAD"
 ><P
 >Note that if you just want all printers in your 
 		printcap file loaded then the <A
-HREF="index.html#LOADPRINTERS"
+HREF="r1.html#LOADPRINTERS"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -14742,12 +14453,9 @@ CLASS="PARAMETER"
 ></A
 > option is easier.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no preloaded services</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -14765,7 +14473,7 @@ NAME="PRESERVECASE"
 > This controls if new filenames are created
 		with the case that the client passes, or if they are forced to 
 		be the <A
-HREF="index.html#DEFAULTCASE"
+HREF="r1.html#DEFAULTCASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14781,7 +14489,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -14823,12 +14531,9 @@ CLASS="COMMAND"
 >%z - the size of the spooled
 		print job (in bytes)</P
 ><P
->The print command <SPAN
-CLASS="emphasis"
-><I
+>The print command <I
 CLASS="EMPHASIS"
 >MUST</I
-></SPAN
 > contain at least 
 		one occurrence of <TT
 CLASS="PARAMETER"
@@ -14869,7 +14574,7 @@ CLASS="CONSTANT"
 >nobody</TT
 > account. If this happens then create 
 		an alternative guest account that can print and set the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -14886,14 +14591,14 @@ CLASS="PARAMETER"
 ><P
 ><B
 CLASS="COMMAND"
->print command = echo Printing %s &gt;&gt; 
+>print command = echo Printing %s &#62;&#62; 
 		/tmp/print.log; lpr -P %p %s; rm %s</B
 ></P
 ><P
 >You may have to vary this command considerably depending 
 		on how you normally print files on your system. The default for 
 		the parameter varies depending on the setting of the <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -14935,7 +14640,7 @@ CLASS="COMMAND"
 ><P
 >For printing = CUPS :   If SAMBA is compiled against
 		libcups, then <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 >printcap = cups</A
 > 
 		uses the CUPS API to
@@ -14966,7 +14671,7 @@ NAME="PRINTOK"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#PRINTABLE"
+HREF="r1.html#PRINTABLE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -14992,11 +14697,11 @@ CLASS="CONSTANT"
 >Note that a printable service will ALWAYS allow writing 
 		to the service path (user privileges permitting) via the spooling 
 		of print data. The <A
-HREF="index.html#WRITEABLE"
+HREF="r1.html#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable
+>read only
 		</I
 ></TT
 ></A
@@ -15016,7 +14721,7 @@ NAME="PRINTCAP"
 ><DD
 ><P
 >Synonym for 	<A
-HREF="index.html#PRINTCAPNAME"
+HREF="r1.html#PRINTCAPNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15037,7 +14742,7 @@ NAME="PRINTCAPNAME"
 CLASS="FILENAME"
 >		/etc/printcap</TT
 >). See the discussion of the <A
-HREF="index.html#AEN79"
+HREF="r1.html#AEN79"
 >[printers]</A
 > section above for reasons 
 		why you might want to do this.</P
@@ -15048,7 +14753,7 @@ CLASS="COMMAND"
 		</B
 >. This should be supplemented by an addtional setting 
 		<A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 >printing = cups</A
 > in the [global] 
 		section.  <B
@@ -15086,6 +14791,12 @@ CLASS="COMMAND"
 ><P
 >A minimal printcap file would look something like this:</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		print1|My Printer 1
@@ -15094,18 +14805,18 @@ CLASS="PROGRAMLISTING"
 		print4|My Printer 4
 		print5|My Printer 5
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
 >where the '|' separates aliases of a printer. The fact 
 		that the second alias has a space in it gives a hint to Samba 
 		that it's a comment.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE</I
-></SPAN
 >: Under AIX the default printcap 
 		name is <TT
 CLASS="FILENAME"
@@ -15144,7 +14855,7 @@ NAME="PRINTERADMIN"
 ><P
 >Default: <B
 CLASS="COMMAND"
->printer admin = &lt;empty string&gt;</B
+>printer admin = &#60;empty string&#62;</B
 >
 		</P
 ><P
@@ -15160,12 +14871,9 @@ NAME="PRINTERDRIVER"
 >printer driver (S)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15188,7 +14896,7 @@ TARGET="_top"
 		sensitive) that describes the appropriate printer driver for your 
 		system. If you don't know the exact string to use then you should 
 		first try with no <A
-HREF="index.html#PRINTERDRIVER"
+HREF="r1.html#PRINTERDRIVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15200,7 +14908,7 @@ CLASS="PARAMETER"
 		shown in a scroll box after you have chosen the printer manufacturer.</P
 ><P
 >See also <A
-HREF="index.html#PRINTERDRIVERFILE"
+HREF="r1.html#PRINTERDRIVERFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15222,12 +14930,9 @@ NAME="PRINTERDRIVERFILE"
 >printer driver file (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15271,7 +14976,7 @@ CLASS="FILENAME"
 >.</P
 ><P
 >See also <A
-HREF="index.html#PRINTERDRIVERLOCATION"
+HREF="r1.html#PRINTERDRIVERLOCATION"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15280,12 +14985,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None (set in compile).</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15301,12 +15003,9 @@ NAME="PRINTERDRIVERLOCATION"
 >printer driver location (S)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note :</I
-></SPAN
 >This is a deprecated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
@@ -15341,7 +15040,7 @@ CLASS="FILENAME"
 >.</P
 ><P
 >See also <A
-HREF="index.html#PRINTERDRIVERFILE"
+HREF="r1.html#PRINTERDRIVERFILE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15375,16 +15074,13 @@ NAME="PRINTERNAME"
 		name given will be used for any printable service that does 
 		not have its own printer name specified.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >none (but may be <TT
 CLASS="CONSTANT"
 >lp</TT
 > 
 		on many systems)</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15400,7 +15096,7 @@ NAME="PRINTER"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#PRINTERNAME"
+HREF="r1.html#PRINTERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15493,7 +15189,7 @@ TARGET="_top"
 >This option can be set on a per printer basis</P
 ><P
 >See also the discussion in the <A
-HREF="index.html#AEN79"
+HREF="r1.html#AEN79"
 >		[printers]</A
 > section.</P
 ></DD
@@ -15528,7 +15224,7 @@ NAME="PROTOCOL"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#MAXPROTOCOL"
+HREF="r1.html#MAXPROTOCOL"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -15545,7 +15241,7 @@ NAME="PUBLIC"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#GUESTOK"
+HREF="r1.html#GUESTOK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15586,9 +15282,7 @@ CLASS="PARAMETER"
 		path in the command as the PATH may not be available to the 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <TT
 CLASS="PARAMETER"
@@ -15597,7 +15291,6 @@ CLASS="PARAMETER"
 		</I
 ></TT
 ></I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -15616,7 +15309,7 @@ NAME="QUEUERESUMECOMMAND"
 		executed on the server host in order to resume the printer queue. It 
  		is the command to undo the behavior that is caused by the 
 		previous parameter (<A
-HREF="index.html#QUEUEPAUSECOMMAND"
+HREF="r1.html#QUEUEPAUSECOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15646,12 +15339,10 @@ CLASS="PARAMETER"
 		path in the command as the PATH may not be available to the 
 		server.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >depends on the setting of <A
-HREF="index.html#PRINTING"
+HREF="r1.html#PRINTING"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15659,7 +15350,6 @@ CLASS="PARAMETER"
 ></TT
 ></A
 ></I
-></SPAN
 >
 		</P
 ><P
@@ -15703,17 +15393,17 @@ NAME="READLIST"
 >This is a list of users that are given read-only 
 		access to a service. If the connecting user is in this list then 
 		they will not be given write access, no matter what the <A
-HREF="index.html#WRITEABLE"
+HREF="r1.html#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable</I
+>read only</I
 ></TT
 ></A
 >
 		option is set to. The list can include group names using the 
 		syntax described in the <A
-HREF="index.html#INVALIDUSERS"
+HREF="r1.html#INVALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15723,7 +15413,7 @@ CLASS="PARAMETER"
 > parameter.</P
 ><P
 >See also the <A
-HREF="index.html#WRITELIST"
+HREF="r1.html#WRITELIST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15731,7 +15421,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > parameter and the <A
-HREF="index.html#INVALIDUSERS"
+HREF="r1.html#INVALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15743,7 +15433,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->read list = &lt;empty string&gt;</B
+>read list = &#60;empty string&#62;</B
 ></P
 ><P
 >Example: <B
@@ -15758,15 +15448,37 @@ NAME="READONLY"
 >read only (S)</DT
 ><DD
 ><P
->Note that this is an inverted synonym for <A
-HREF="index.html#WRITEABLE"
-><TT
+>An inverted synonym is <A
+HREF="r1.html#WRITEABLE"
+>		<TT
 CLASS="PARAMETER"
 ><I
 >writeable</I
 ></TT
 ></A
 >.</P
+><P
+>If this parameter is <TT
+CLASS="CONSTANT"
+>yes</TT
+>, then users 
+		of a service may not create or modify files in the service's 
+		directory.</P
+><P
+>Note that a printable service (<B
+CLASS="COMMAND"
+>printable = yes</B
+>)
+		will <I
+CLASS="EMPHASIS"
+>ALWAYS</I
+> allow writing to the directory 
+		(user privileges permitting), but only via spooling operations.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>read only = yes</B
+></P
 ></DD
 ><DT
 ><A
@@ -15789,7 +15501,7 @@ NAME="READRAW"
 ><P
 >In general this parameter should be viewed as a system tuning 
 		tool and left severely alone. See also <A
-HREF="index.html#WRITERAW"
+HREF="r1.html#WRITERAW"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -15903,7 +15615,7 @@ CLASS="COMMAND"
 		to the two given IP addresses using the given workgroup names. 
 		If you leave out the workgroup name then the one given in 
 		the <A
-HREF="index.html#WORKGROUP"
+HREF="r1.html#WORKGROUP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -15928,7 +15640,7 @@ CLASS="FILENAME"
 ><P
 >Default: <B
 CLASS="COMMAND"
->remote announce = &lt;empty string&gt;
+>remote announce = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -15978,7 +15690,7 @@ CLASS="COMMAND"
 ><P
 >Default: <B
 CLASS="COMMAND"
->remote browse sync = &lt;empty string&gt;
+>remote browse sync = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -15991,13 +15703,13 @@ NAME="RESTRICTANONYMOUS"
 ><P
 >This is a boolean parameter.  If it is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, then 
 		anonymous access to the server will be restricted, namely in the 
 		case where the server is expecting the client to send a username, 
 		but it doesn't.  Setting it to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > will force these anonymous 
  		connections to be denied, and the client will be required to always 
 		supply a username and password when connecting. Use of this parameter 
@@ -16010,7 +15722,7 @@ CLASS="CONSTANT"
 ><P
 >When restrict anonymous is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, all anonymous connections 
 		are denied no matter what they are for.  This can effect the ability 
 		of a machine to access the Samba Primary Domain Controller to revalidate 
@@ -16034,7 +15746,7 @@ NAME="ROOT"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#ROOTDIRECTORY"
+HREF="r1.html#ROOTDIRECTORY"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16051,7 +15763,7 @@ NAME="ROOTDIR"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#ROOTDIRECTORY"
+HREF="r1.html#ROOTDIRECTORY"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16077,7 +15789,7 @@ CLASS="COMMAND"
 		It may also check for, and deny access to, soft links to other 
 		parts of the filesystem, or attempts to use ".." in file names 
 		to access other directories (depending on the setting of the <A
-HREF="index.html#WIDELINKS"
+HREF="r1.html#WIDELINKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16101,12 +15813,9 @@ CLASS="PARAMETER"
 >root directory</I
 ></TT
 > 
-		option, <SPAN
-CLASS="emphasis"
-><I
+		option, <I
 CLASS="EMPHASIS"
 >including</I
-></SPAN
 > some files needed for 
 		complete operation of the server. To maintain full operability 
 		of the server you will need to mirror some system files 
@@ -16152,7 +15861,7 @@ CLASS="PARAMETER"
 		(such as CDROMs) after a connection is closed.</P
 ><P
 >See also <A
-HREF="index.html#POSTEXEC"
+HREF="r1.html#POSTEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16163,7 +15872,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->root postexec = &lt;empty string&gt;
+>root postexec = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16185,7 +15894,7 @@ CLASS="PARAMETER"
 		connection is opened.</P
 ><P
 >See also <A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16193,7 +15902,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#PREEXECCLOSE"
+HREF="r1.html#PREEXECCLOSE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16204,7 +15913,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->root preexec = &lt;empty string&gt;
+>root preexec = &#60;empty string&#62;
 		</B
 ></P
 ></DD
@@ -16224,7 +15933,7 @@ CLASS="PARAMETER"
 > parameter except that the command is run as root.</P
 ><P
 >See also <A
-HREF="index.html#PREEXEC"
+HREF="r1.html#PREEXEC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16232,7 +15941,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#PREEXECCLOSE"
+HREF="r1.html#PREEXECCLOSE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16326,7 +16035,7 @@ CLASS="COMMAND"
 >security = user</B
 >, see 
 		the <A
-HREF="index.html#MAPTOGUEST"
+HREF="r1.html#MAPTOGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16339,15 +16048,12 @@ CLASS="PARAMETER"
 >It is possible to use <B
 CLASS="COMMAND"
 >smbd</B
-> in a <SPAN
-CLASS="emphasis"
-><I
+> in a <I
 CLASS="EMPHASIS"
 >		hybrid mode</I
-></SPAN
 > where it is offers both user and share 
 		level security under different <A
-HREF="index.html#NETBIOSALIASES"
+HREF="r1.html#NETBIOSALIASES"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16361,13 +16067,10 @@ CLASS="PARAMETER"
 ><A
 NAME="SECURITYEQUALSSHARE"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = SHARE
 		</I
-></SPAN
 ></P
 ><P
 >When clients connect to a share level security server they 
@@ -16385,12 +16088,9 @@ CLASS="COMMAND"
 >Note that <B
 CLASS="COMMAND"
 >smbd</B
-> <SPAN
-CLASS="emphasis"
-><I
+> <I
 CLASS="EMPHASIS"
 >ALWAYS</I
-></SPAN
 > 
 		uses a valid UNIX user to act on behalf of the client, even in
 		<B
@@ -16414,7 +16114,7 @@ CLASS="COMMAND"
 ><LI
 ><P
 >If the <A
-HREF="index.html#GUESTONLY"
+HREF="r1.html#GUESTONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16424,7 +16124,7 @@ CLASS="PARAMETER"
 ></A
 > parameter is set, then all the other 
 			stages are missed and only the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 >			<TT
 CLASS="PARAMETER"
 ><I
@@ -16438,7 +16138,7 @@ CLASS="PARAMETER"
 ><P
 >Is a username is sent with the share connection 
 			request, then this username (after mapping - see <A
-HREF="index.html#USERNAMEMAP"
+HREF="r1.html#USERNAMEMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16450,13 +16150,10 @@ CLASS="PARAMETER"
 ></LI
 ><LI
 ><P
->If the client did a previous <SPAN
-CLASS="emphasis"
-><I
+>If the client did a previous <I
 CLASS="EMPHASIS"
 >logon
 			</I
-></SPAN
 > request (the SessionSetup SMB call) then the 
 			username sent in this SMB will be added as a potential username.
 			</P
@@ -16474,7 +16171,7 @@ CLASS="EMPHASIS"
 ><LI
 ><P
 >Any users on the <A
-HREF="index.html#USER"
+HREF="r1.html#USER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16511,37 +16208,31 @@ CLASS="PARAMETER"
 >, then this 
 		guest user will be used, otherwise access is denied.</P
 ><P
->Note that it can be <SPAN
-CLASS="emphasis"
-><I
+>Note that it can be <I
 CLASS="EMPHASIS"
 >very</I
-></SPAN
 > confusing 
 		in share-level security as to which UNIX username will eventually
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="index.html#AEN236"
+HREF="r1.html#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
 ><A
 NAME="SECURITYEQUALSUSER"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = USER
 		</I
-></SPAN
 ></P
 ><P
 >This is the default security setting in Samba 2.2. 
 		With user-level security a client must first "log-on" with a 
 		valid username and password (which can be mapped using the <A
-HREF="index.html#USERNAMEMAP"
+HREF="r1.html#USERNAMEMAP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16550,7 +16241,7 @@ CLASS="PARAMETER"
 ></A
 > 
 		parameter). Encrypted passwords (see the <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16559,7 +16250,7 @@ CLASS="PARAMETER"
 ></A
 > parameter) can also
 		be used in this security mode. Parameters such as <A
-HREF="index.html#USER"
+HREF="r1.html#USER"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16567,7 +16258,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#GUESTONLY"
+HREF="r1.html#GUESTONLY"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16578,24 +16269,18 @@ CLASS="PARAMETER"
 		may change the UNIX user to use on this connection, but only after 
 		the user has been successfully authenticated.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
 		the server to automatically map unknown users into the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16604,7 +16289,7 @@ CLASS="PARAMETER"
 ></A
 >. 
 		See the <A
-HREF="index.html#MAPTOGUEST"
+HREF="r1.html#MAPTOGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16615,20 +16300,17 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="index.html#AEN236"
+HREF="r1.html#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
 ><A
 NAME="SECURITYEQUALSSERVER"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = SERVER
 		</I
-></SPAN
 ></P
 ><P
 >In this mode Samba will try to validate the username/password 
@@ -16653,12 +16335,9 @@ CLASS="FILENAME"
 > for details on how to set this 
 		up.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that from the client's point of 
 		view <B
 CLASS="COMMAND"
@@ -16670,24 +16349,18 @@ CLASS="COMMAND"
 		with the authentication, it does not in any way affect what the 
 		client sees.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
 		the server to automatically map unknown users into the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16696,7 +16369,7 @@ CLASS="PARAMETER"
 ></A
 >. 
 		See the <A
-HREF="index.html#MAPTOGUEST"
+HREF="r1.html#MAPTOGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16707,12 +16380,12 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="index.html#AEN236"
+HREF="r1.html#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
 >See also the <A
-HREF="index.html#PASSWORDSERVER"
+HREF="r1.html#PASSWORDSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16721,7 +16394,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > parameter and the <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16734,13 +16407,10 @@ CLASS="PARAMETER"
 ><A
 NAME="SECURITYEQUALSDOMAIN"
 ></A
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >SECURITY = DOMAIN
 		</I
-></SPAN
 ></P
 ><P
 >This mode will only work correctly if <A
@@ -16749,7 +16419,7 @@ TARGET="_top"
 >smbpasswd(8)</A
 > has been used to add this 
 		machine into a Windows NT Domain. It expects the <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16759,28 +16429,22 @@ CLASS="PARAMETER"
 		</A
 > parameter to be set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >. In this 
 		mode Samba will try to validate the username/password by passing
 		it to a Windows NT Primary or Backup Domain Controller, in exactly 
 		the same way that a Windows NT Server would do.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that a valid UNIX user must still 
 		exist as well as the account on the Domain Controller to allow 
 		Samba to have a valid UNIX account to map file access to.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that from the client's point 
 		of view <B
 CLASS="COMMAND"
@@ -16792,24 +16456,18 @@ CLASS="COMMAND"
 >. It only affects how the server deals with the authentication, 
 		it does not in any way affect what the client sees.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that the name of the resource being 
-		requested is <SPAN
-CLASS="emphasis"
-><I
+		requested is <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > sent to the server until after 
 		the server has successfully authenticated the client. This is why 
 		guest shares don't work in user level security without allowing 
 		the server to automatically map unknown users into the <A
-HREF="index.html#GUESTACCOUNT"
+HREF="r1.html#GUESTACCOUNT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16818,7 +16476,7 @@ CLASS="PARAMETER"
 ></A
 >. 
 		See the <A
-HREF="index.html#MAPTOGUEST"
+HREF="r1.html#MAPTOGUEST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16828,12 +16486,9 @@ CLASS="PARAMETER"
 		</A
 > parameter for details on doing this.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >BUG:</I
-></SPAN
 > There is currently a bug in the 
 		implementation of <B
 CLASS="COMMAND"
@@ -16846,12 +16501,12 @@ CLASS="COMMAND"
 		Domain Controller. This issue will be addressed in a future release.</P
 ><P
 >See also the section <A
-HREF="index.html#AEN236"
+HREF="r1.html#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
 >See also the <A
-HREF="index.html#PASSWORDSERVER"
+HREF="r1.html#PASSWORDSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16860,7 +16515,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > parameter and the <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16902,12 +16557,9 @@ NAME="SECURITYMASK"
 		a user to modify all the user/group/world permissions on a file.
 		</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Note</I
-></SPAN
 > that users who can access the 
 		Samba server through other means can easily bypass this 
 		restriction, so it is primarily useful for standalone 
@@ -16918,7 +16570,7 @@ CLASS="CONSTANT"
 >.</P
 ><P
 >See also the <A
-HREF="index.html#FORCEDIRECTORYSECURITYMODE"
+HREF="r1.html#FORCEDIRECTORYSECURITYMODE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -16927,7 +16579,7 @@ CLASS="PARAMETER"
 ></A
 >, 
 		<A
-HREF="index.html#DIRECTORYSECURITYMASK"
+HREF="r1.html#DIRECTORYSECURITYMASK"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -16936,7 +16588,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#FORCESECURITYMODE"
+HREF="r1.html#FORCESECURITYMODE"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -17074,12 +16726,9 @@ CLASS="CONSTANT"
 >This option gives full share compatibility and enabled 
 		by default.</P
 ><P
->You should <SPAN
-CLASS="emphasis"
-><I
+>You should <I
 CLASS="EMPHASIS"
 >NEVER</I
-></SPAN
 > turn this parameter 
 		off as many Windows applications will break if you do so.</P
 ><P
@@ -17099,7 +16748,7 @@ NAME="SHORTPRESERVECASE"
 		which conform to 8.3 syntax, that is all in upper case and of 
 		suitable length, are created upper case, or if they are forced 
 		to be the <A
-HREF="index.html#DEFAULTCASE"
+HREF="r1.html#DEFAULTCASE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17108,7 +16757,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >. This  option can be use with <A
-HREF="index.html#PRESERVECASE"
+HREF="r1.html#PRESERVECASE"
 ><B
 CLASS="COMMAND"
 >preserve case = yes</B
@@ -17118,7 +16767,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="index.html#AEN203"
+HREF="r1.html#AEN203"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -17162,17 +16811,14 @@ CLASS="PARAMETER"
 ></TT
 >
 		parameter will always cause the OpenPrinterEx() on the server
-		to fail.  Thus the APW icon will never be displayed. <SPAN
-CLASS="emphasis"
-><I
+		to fail.  Thus the APW icon will never be displayed. <I
 CLASS="EMPHASIS"
 >		Note :</I
-></SPAN
 >This does not prevent the same user from having 
 		administrative privilege on an individual printer.</P
 ><P
 >See also <A
-HREF="index.html#ADDPRINTERCOMMAND"
+HREF="r1.html#ADDPRINTERCOMMAND"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17181,7 +16827,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#DELETEPRINTERCOMMAND"
+HREF="r1.html#DELETEPRINTERCOMMAND"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -17189,7 +16835,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PRINTERADMIN"
+HREF="r1.html#PRINTERADMIN"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17210,12 +16856,9 @@ NAME="SHUTDOWNSCRIPT"
 >shutdown script (G)</DT
 ><DD
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >This parameter only exists in the HEAD cvs branch</I
-></SPAN
 >
 		This a full path name to a script called by
 		<A
@@ -17256,12 +16899,9 @@ CLASS="PARAMETER"
 >%r</I
 ></TT
 > will be substituted with the
-		switch <SPAN
-CLASS="emphasis"
-><I
+		switch <I
 CLASS="EMPHASIS"
 >-r</I
-></SPAN
 >. It means reboot after shutdown
 		for NT.
 		</P
@@ -17272,21 +16912,15 @@ CLASS="PARAMETER"
 >%f</I
 ></TT
 > will be substituted with the
-		switch <SPAN
-CLASS="emphasis"
-><I
+		switch <I
 CLASS="EMPHASIS"
 >-f</I
-></SPAN
 >. It means force the shutdown
 		even if applications do not respond for NT.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >None</I
-></SPAN
 >.</P
 ><P
 >Example: <B
@@ -17295,7 +16929,13 @@ CLASS="COMMAND"
 ></P
 ><P
 >Shutdown script example:
-		<PRE
+		<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >		#!/bin/bash
 		
@@ -17305,12 +16945,15 @@ CLASS="PROGRAMLISTING"
 
 		/sbin/shutdown $3 $4 +$time $1 &#38;
 		</PRE
+></TD
+></TR
+></TABLE
 >
 		Shutdown does not return so we need to launch it in background.
 		</P
 ><P
 >See also <A
-HREF="index.html#ABORTSHUTDOWNSCRIPT"
+HREF="r1.html#ABORTSHUTDOWNSCRIPT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17464,12 +17107,9 @@ TARGET="_top"
 ></LI
 ></UL
 ><P
->Those marked with a <SPAN
-CLASS="emphasis"
-><I
+>Those marked with a <I
 CLASS="EMPHASIS"
 >'*'</I
-></SPAN
 > take an integer 
 		argument. The others can optionally take a 1 or 0 argument to enable 
 		or disable the option, by default they will be enabled if you 
@@ -17541,12 +17181,9 @@ CLASS="COMMAND"
 >SAMBA_NETBIOS_NAME = myhostname</B
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No default value</I
-></SPAN
 ></P
 ><P
 >Examples: <B
@@ -17570,12 +17207,9 @@ NAME="SPNEGO"
 ><P
 > This variable controls controls whether samba will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism.  As of samba 3.0alpha it must be set to "no" for these clients to join a samba domain controller.  It can be set to "yes" to allow samba to participate in an AD domain controlled by a Windows2000 domain controller.</P
 ><P
->Default:  <SPAN
-CLASS="emphasis"
-><I
+>Default:  <I
 CLASS="EMPHASIS"
 >use spnego = yes</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -17617,33 +17251,6 @@ CLASS="PARAMETER"
 >Default: <B
 CLASS="COMMAND"
 >stat cache size = 50</B
-></P
-></DD
-><DT
-><A
-NAME="STATUS"
-></A
->status (G)</DT
-><DD
-><P
->This enables or disables logging of connections 
-		to a status file that <A
-HREF="smbstatus.1.html"
-TARGET="_top"
->smbstatus(1)</A
->
-		can read.</P
-><P
->With this disabled <B
-CLASS="COMMAND"
->smbstatus</B
-> won't be able
-		to tell you what connections are active. You should never need to
-		change this parameter.</P
-><P
->Default: <B
-CLASS="COMMAND"
->status = yes</B
 ></P
 ></DD
 ><DT
@@ -17745,7 +17352,7 @@ TARGET="_top"
 		explorer shell file copies.</P
 ><P
 >See also the <A
-HREF="index.html#SYNCALWAYS"
+HREF="r1.html#SYNCALWAYS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17787,13 +17394,13 @@ NAME="SYNCALWAYS"
 		whether writes will always be written to stable storage before 
 		the write call returns. If this is <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > then the server will be 
 		guided by the client's request in each write call (clients can 
 		set a bit indicating that a particular write should be synchronous). 
 		If this is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > then every write will be followed by a <B
 CLASS="COMMAND"
 >fsync()
@@ -17812,7 +17419,7 @@ CLASS="CONSTANT"
 		any affect.</P
 ><P
 >See also the <A
-HREF="index.html#STRICTSYNC"
+HREF="r1.html#STRICTSYNC"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -17982,7 +17589,7 @@ NAME="TIMESTAMPLOGS"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#DEBUGTIMESTAMP"
+HREF="r1.html#DEBUGTIMESTAMP"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18011,7 +17618,7 @@ TARGET="_top"
 		can be used to prevent a server from exceeding its capacity and is
 		designed as a printing throttle.  See also 
 		<A
-HREF="index.html#MAXPRINTJOBS"
+HREF="r1.html#MAXPRINTJOBS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18095,26 +17702,23 @@ NAME="UNIXPASSWORDSYNC"
 		when the encrypted SMB password in the smbpasswd file is changed. 
 		If this is set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > the program specified in the <TT
 CLASS="PARAMETER"
 ><I
 >passwd
 		program</I
 ></TT
->parameter is called <SPAN
-CLASS="emphasis"
-><I
+>parameter is called <I
 CLASS="EMPHASIS"
 >AS ROOT</I
-></SPAN
 > - 
 		to allow the new UNIX password to be set without access to the 
 		old UNIX password (as the SMB password change code has no 
 		access to the old password cleartext, only the new).</P
 ><P
 >See also <A
-HREF="index.html#PASSWDPROGRAM"
+HREF="r1.html#PASSWDPROGRAM"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18123,7 +17727,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >, <A
-HREF="index.html#PASSWDCHAT"
+HREF="r1.html#PASSWDCHAT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18162,7 +17766,7 @@ CLASS="CONSTANT"
 >.</P
 ><P
 >In order for this parameter to work correctly the <A
-HREF="index.html#ENCRYPTPASSWORDS"
+HREF="r1.html#ENCRYPTPASSWORDS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18225,18 +17829,15 @@ CLASS="COMMAND"
 >If this parameter is enabled for a printer, then any attempt
 		to open the printer with the PRINTER_ACCESS_ADMINISTER right is mapped
 		to PRINTER_ACCESS_USE instead.  Thus allowing the OpenPrinterEx()
-		call to succeed.  <SPAN
-CLASS="emphasis"
-><I
+		call to succeed.  <I
 CLASS="EMPHASIS"
 >This parameter MUST not be able enabled
 		on a print share which has valid print driver installed on the Samba 
 		server.</I
-></SPAN
 ></P
 ><P
 >See also <A
-HREF="index.html#DISABLESPOOLSS"
+HREF="r1.html#DISABLESPOOLSS"
 >disable spoolss</A
 >
 		</P
@@ -18258,7 +17859,7 @@ NAME="USEMMAP"
 		mmap/read-write system memory cache. Currently only HPUX does not have such a
 		coherent cache, and so this parameter is set to <TT
 CLASS="CONSTANT"
->false</TT
+>no</TT
 > by
 		default on HPUX. On all other systems this parameter should be left alone. This
 		parameter is provided to help the Samba developers track down problems with
@@ -18279,7 +17880,7 @@ NAME="USERHOSTS"
 ><P
 >If this global parameter is <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >, it specifies 
 		that the UNIX user's <TT
 CLASS="FILENAME"
@@ -18288,12 +17889,9 @@ CLASS="FILENAME"
 		will be read to find the names of hosts and users who will be allowed 
 		access without specifying a password.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE:</I
-></SPAN
 > The use of <TT
 CLASS="PARAMETER"
 ><I
@@ -18323,7 +17921,7 @@ NAME="USER"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#USERNAME"
+HREF="r1.html#USERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18340,7 +17938,7 @@ NAME="USERS"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#USERNAME"
+HREF="r1.html#USERNAME"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18399,7 +17997,7 @@ CLASS="PARAMETER"
 ><P
 >To restrict a service to a particular set of users you 
 		can use the <A
-HREF="index.html#VALIDUSERS"
+HREF="r1.html#VALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18429,7 +18027,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="index.html#AEN236"
+HREF="r1.html#AEN236"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -18438,7 +18036,7 @@ HREF="index.html#AEN236"
 >Default: <B
 CLASS="COMMAND"
 >The guest account if a guest service, 
-		else &lt;empty string&gt;.</B
+		else &#60;empty string&#62;.</B
 ></P
 ><P
 >Examples:<B
@@ -18512,16 +18110,16 @@ NAME="USERNAMEMAP"
 >If any line begins with a '#' or a ';' then it is 
 		ignored</P
 ><P
->If any line begins with an '!' then the processing 
-		will stop after that line if a mapping was done by the line. 
-		Otherwise mapping continues with every line being processed. 
-		Using '!' is most useful when you have a wildcard mapping line 
+>If any line begins with an '!' then the processing
+		will stop after that line if a mapping was done by the line.
+		Otherwise mapping continues with every line being processed.
+		Using '!' is most useful when you have a wildcard mapping line
 		later in the file.</P
 ><P
 >For example to map from the name <TT
 CLASS="CONSTANT"
 >admin</TT
-> 
+>
 		or <TT
 CLASS="CONSTANT"
 >administrator</TT
@@ -18538,7 +18136,7 @@ CLASS="COMMAND"
 >Or to map anyone in the UNIX group <TT
 CLASS="CONSTANT"
 >system</TT
-> 
+>
 		to the UNIX name <TT
 CLASS="CONSTANT"
 >sys</TT
@@ -18549,10 +18147,10 @@ CLASS="COMMAND"
 >sys = @system</B
 ></P
 ><P
->You can have as many mappings as you like in a username 
+>You can have as many mappings as you like in a username
 		map file.</P
 ><P
->If your system supports the NIS NETGROUP option then 
+>If your system supports the NIS NETGROUP option then
 		the netgroup database is checked before the <TT
 CLASS="FILENAME"
 >/etc/group
@@ -18567,61 +18165,67 @@ CLASS="COMMAND"
 >tridge = "Andrew Tridgell"</B
 ></P
 ><P
->would map the windows username "Andrew Tridgell" to the 
+>would map the windows username "Andrew Tridgell" to the
 		unix username "tridge".</P
 ><P
->The following example would map mary and fred to the 
-		unix user sys, and map the rest to guest. Note the use of the 
-		'!' to tell Samba to stop processing if it gets a match on 
+>The following example would map mary and fred to the
+		unix user sys, and map the rest to guest. Note the use of the
+		'!' to tell Samba to stop processing if it gets a match on
 		that line.</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
 ><PRE
 CLASS="PROGRAMLISTING"
 >		!sys = mary fred
 		guest = *
 		</PRE
+></TD
+></TR
+></TABLE
 ></P
 ><P
->Note that the remapping is applied to all occurrences 
+>Note that the remapping is applied to all occurrences
 		of usernames. Thus if you connect to \\server\fred and <TT
 CLASS="CONSTANT"
 >		fred</TT
 > is remapped to <TT
 CLASS="CONSTANT"
 >mary</TT
-> then you 
-		will actually be connecting to \\server\mary and will need to 
+> then you
+		will actually be connecting to \\server\mary and will need to
 		supply a password suitable for <TT
 CLASS="CONSTANT"
 >mary</TT
-> not 
+> not
 		<TT
 CLASS="CONSTANT"
 >fred</TT
->. The only exception to this is the 
+>. The only exception to this is the
 		username passed to the <A
-HREF="index.html#PASSWORDSERVER"
+HREF="r1.html#PASSWORDSERVER"
 ><TT
 CLASS="PARAMETER"
 ><I
 >		password server</I
 ></TT
 ></A
-> (if you have one). The password 
-		server will receive whatever username the client supplies without 
+> (if you have one). The password
+		server will receive whatever username the client supplies without
 		modification.</P
 ><P
->Also note that no reverse mapping is done. The main effect 
-		this has is with printing. Users who have been mapped may have 
-		trouble deleting print jobs as PrintManager under WfWg will think 
+>Also note that no reverse mapping is done. The main effect
+		this has is with printing. Users who have been mapped may have
+		trouble deleting print jobs as PrintManager under WfWg will think
 		they don't own the print job.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no username map</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18632,18 +18236,42 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="USESENDFILE"
+></A
+>use sendfile (S)</DT
+><DD
+><P
+>If this parameter is <TT
+CLASS="CONSTANT"
+>yes</TT
+>, and Samba
+		was built with the --with-sendfile-support option, and the underlying operating
+		system supports sendfile system call, then some SMB read calls (mainly ReadAndX
+		and ReadRaw) will use the more efficient sendfile system call for files that
+		are exclusively oplocked. This may make more efficient use of the system CPU's
+		and cause Samba to be faster. This is off by default as it's effects are unknown
+		as yet.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>use sendfile = no</B
+></P
+></DD
+><DT
+><A
 NAME="UTMP"
 ></A
 >utmp (G)</DT
 ><DD
 ><P
->This boolean parameter is only available if 
+>This boolean parameter is only available if
 		Samba has been configured and compiled  with the option <B
 CLASS="COMMAND"
 >		--with-utmp</B
 >. If set to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > then Samba will attempt
 		to add utmp or utmpx records (depending on the UNIX system) whenever a
 		connection is made to a Samba server. Sites may use this to record the
@@ -18656,7 +18284,7 @@ CLASS="CONSTANT"
 	        performance on large installations. </P
 ><P
 >See also the <A
-HREF="index.html#UTMPDIRECTORY"
+HREF="r1.html#UTMPDIRECTORY"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18684,7 +18312,7 @@ CLASS="COMMAND"
 >. It specifies a directory pathname that is
 		used to store the utmp or utmpx files (depending on the UNIX system) that
 		record user connections to a Samba server. See also the <A
-HREF="index.html#UTMP"
+HREF="r1.html#UTMP"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -18699,12 +18327,9 @@ CLASS="FILENAME"
 >/var/run/utmp</TT
 > on Linux).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no utmp directory</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18730,7 +18355,7 @@ CLASS="COMMAND"
 		has logged out.
 		
 		See also the <A
-HREF="index.html#UTMP"
+HREF="r1.html#UTMP"
 >		<TT
 CLASS="PARAMETER"
 ><I
@@ -18745,12 +18370,9 @@ CLASS="FILENAME"
 >/var/run/wtmp</TT
 > on Linux).</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >no wtmp directory</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18793,7 +18415,7 @@ CLASS="PARAMETER"
 >. This is useful in the [homes] section.</P
 ><P
 >See also <A
-HREF="index.html#INVALIDUSERS"
+HREF="r1.html#INVALIDUSERS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18803,13 +18425,10 @@ CLASS="PARAMETER"
 ></A
 ></P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No valid users list (anyone can login)
 		</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -18831,12 +18450,9 @@ NAME="VETOFILES"
 		or directories as in DOS wildcards.</P
 ><P
 >Each entry must be a unix path, not a DOS path and 
-		must <SPAN
-CLASS="emphasis"
-><I
+		must <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > include the  unix directory 
 		separator '/'.</P
 ><P
@@ -18852,12 +18468,9 @@ CLASS="PARAMETER"
 		is important to be aware of is Samba's behaviour when
 		trying to delete a directory. If a directory that is
 		to be deleted contains nothing but veto files this
-		deletion will <SPAN
-CLASS="emphasis"
-><I
+		deletion will <I
 CLASS="EMPHASIS"
 >fail</I
-></SPAN
 > unless you also set
 		the <TT
 CLASS="PARAMETER"
@@ -18877,7 +18490,7 @@ CLASS="PARAMETER"
 		for a match as they are scanned.</P
 ><P
 >See also <A
-HREF="index.html#HIDEFILES"
+HREF="r1.html#HIDEFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18886,7 +18499,7 @@ CLASS="PARAMETER"
 ></TT
 ></A
 > and <A
-HREF="index.html#CASESENSITIVE"
+HREF="r1.html#CASESENSITIVE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18895,16 +18508,19 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No files or directories are vetoed.
 		</I
-></SPAN
 ></P
 ><P
->Examples:<PRE
+>Examples:<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
 CLASS="PROGRAMLISTING"
 >; Veto any files containing the word Security, 
 ; any ending in .tmp, and any directory containing the
@@ -18914,6 +18530,9 @@ veto files = /*Security*/*.tmp/*root*/
 ; Veto the Apple specific files that a NetAtalk server
 ; creates.
 veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/</PRE
+></TD
+></TR
+></TABLE
 ></P
 ></DD
 ><DT
@@ -18924,7 +18543,7 @@ NAME="VETOOPLOCKFILES"
 ><DD
 ><P
 >This parameter is only valid when the <A
-HREF="index.html#OPLOCKS"
+HREF="r1.html#OPLOCKS"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18936,7 +18555,7 @@ CLASS="PARAMETER"
 		to selectively turn off the granting of oplocks on selected files that
 		match a wildcarded list, similar to the wildcarded list used in the
 		<A
-HREF="index.html#VETOFILES"
+HREF="r1.html#VETOFILES"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -18946,13 +18565,10 @@ CLASS="PARAMETER"
 > 
 		parameter.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >No files are vetoed for oplock 
 		grants</I
-></SPAN
 ></P
 ><P
 >You might want to do this on files that you know will 
@@ -19010,12 +18626,9 @@ NAME="VFSOBJECT"
 		with a VFS object.  The Samba VFS layer is new to Samba 2.2 and 
 		must be enabled at compile time with --with-vfs.</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19029,7 +18642,7 @@ NAME="VFSOPTIONS"
 		to the vfs layer at initialization time.  The Samba VFS layer 
 		is new to Samba 2.2 and must be enabled at compile time 
 		with --with-vfs.  See also <A
-HREF="index.html#VFSOBJECT"
+HREF="r1.html#VFSOBJECT"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -19038,12 +18651,9 @@ CLASS="PARAMETER"
 ></A
 >.</P
 ><P
->Default : <SPAN
-CLASS="emphasis"
-><I
+>Default : <I
 CLASS="EMPHASIS"
 >no value</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19057,12 +18667,9 @@ NAME="VOLUME"
 		returned for a share. Useful for CDROMs with installation programs 
 		that insist on a particular volume label.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >the name of the share</I
-></SPAN
 ></P
 ></DD
 ><DT
@@ -19140,18 +18747,18 @@ CLASS="PARAMETER"
 >winbind enum users</I
 ></TT
 > parameter is
-		false, calls to the <B
+		<TT
+CLASS="CONSTANT"
+>no</TT
+>, calls to the <B
 CLASS="COMMAND"
 >getpwent</B
 > system call
 		will not return any data. </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Warning:</I
-></SPAN
 > Turning off user
 		enumeration may cause some programs to behave oddly.  For
 		example, the finger program relies on having access to the
@@ -19195,18 +18802,18 @@ CLASS="PARAMETER"
 >winbind enum groups</I
 ></TT
 > parameter is
-		false, calls to the <B
+		<TT
+CLASS="CONSTANT"
+>no</TT
+>, calls to the <B
 CLASS="COMMAND"
 >getgrent()</B
 > system
 		call will not return any data. </P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >Warning:</I
-></SPAN
 > Turning off group
 		enumeration may cause some programs to behave oddly.
 		</P
@@ -19235,7 +18842,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind gid = &lt;empty string&gt;
+>winbind gid = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19306,7 +18913,7 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind uid = &lt;empty string&gt;
+>winbind uid = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19319,7 +18926,7 @@ CLASS="COMMAND"
 >winbind use default domain, <A
 NAME="WINBINDUSEDEFAULTDOMAIN"
 ></A
->winbind use default domain</DT
+>winbind use default domain (G)</DT
 ><DD
 ><P
 >This parameter specifies whether the <A
@@ -19334,13 +18941,13 @@ TARGET="_top"
 ><P
 >Default: <B
 CLASS="COMMAND"
->winbind use default domain = &lt;falseg&gt; 
+>winbind use default domain = &#60;no&#62; 
 		</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind use default domain = true</B
+>winbind use default domain = yes</B
 ></P
 ></DD
 ><DT
@@ -19449,12 +19056,9 @@ TARGET="_top"
 >You should point this at your WINS server if you have a
 		multi-subnetted network.</P
 ><P
-><SPAN
-CLASS="emphasis"
 ><I
 CLASS="EMPHASIS"
 >NOTE</I
-></SPAN
 >. You need to set up Samba to point 
 		to a WINS server if you have multiple subnets and wish cross-subnet 
 		browsing to work correctly.</P
@@ -19465,12 +19069,9 @@ CLASS="FILENAME"
 > 
 		in the docs/ directory of your Samba source distribution.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >not enabled</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -19493,21 +19094,18 @@ TARGET="_top"
 > process in Samba will act as a WINS server. You should 
 		not set this to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 > unless you have a multi-subnetted network and 
 		you wish a particular <B
 CLASS="COMMAND"
 >nmbd</B
 > to be your WINS server. 
-		Note that you should <SPAN
-CLASS="emphasis"
-><I
+		Note that you should <I
 CLASS="EMPHASIS"
 >NEVER</I
-></SPAN
 > set this to <TT
 CLASS="CONSTANT"
->true</TT
+>yes</TT
 >
 		on more than one machine in your network.</P
 ><P
@@ -19526,7 +19124,7 @@ NAME="WORKGROUP"
 >This controls what workgroup your server will 
 		appear to be in when queried by clients. Note that this parameter 
 		also controls the Domain name used with the <A
-HREF="index.html#SECURITYEQUALSDOMAIN"
+HREF="r1.html#SECURITYEQUALSDOMAIN"
 ><B
 CLASS="COMMAND"
 >security = domain</B
@@ -19534,12 +19132,9 @@ CLASS="COMMAND"
 >
 		setting.</P
 ><P
->Default: <SPAN
-CLASS="emphasis"
-><I
+>Default: <I
 CLASS="EMPHASIS"
 >set at compile time to WORKGROUP</I
-></SPAN
 ></P
 ><P
 >Example: <B
@@ -19555,7 +19150,7 @@ NAME="WRITABLE"
 ><DD
 ><P
 >Synonym for <A
-HREF="index.html#WRITEABLE"
+HREF="r1.html#WRITEABLE"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -19573,12 +19168,9 @@ NAME="WRITECACHESIZE"
 ><P
 >If this integer parameter is set to non-zero value,
 		Samba will create an in-memory cache for each oplocked file 
-		(it does <SPAN
-CLASS="emphasis"
-><I
+		(it does <I
 CLASS="EMPHASIS"
 >not</I
-></SPAN
 > do this for 
 		non-oplocked files). All writes that the client does not request 
 		to be flushed directly to disk will be stored in this cache if possible. 
@@ -19618,11 +19210,11 @@ NAME="WRITELIST"
 >This is a list of users that are given read-write 
 		access to a service. If the connecting user is in this list then 
 		they will be given write access, no matter what the <A
-HREF="index.html#WRITEABLE"
+HREF="r1.html#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->writeable</I
+>read only</I
 ></TT
 ></A
 >
@@ -19633,7 +19225,7 @@ CLASS="PARAMETER"
 		write list then they will be given write access.</P
 ><P
 >See also the <A
-HREF="index.html#READLIST"
+HREF="r1.html#READLIST"
 ><TT
 CLASS="PARAMETER"
 ><I
@@ -19645,7 +19237,7 @@ CLASS="PARAMETER"
 ><P
 >Default: <B
 CLASS="COMMAND"
->write list = &lt;empty string&gt;
+>write list = &#60;empty string&#62;
 		</B
 ></P
 ><P
@@ -19686,12 +19278,12 @@ NAME="WRITEOK"
 >write ok (S)</DT
 ><DD
 ><P
->Synonym for <A
-HREF="index.html#WRITEABLE"
+>Inverted synonym for <A
+HREF="r1.html#READONLY"
 ><TT
 CLASS="PARAMETER"
 ><I
->		writeable</I
+>		read only</I
 ></TT
 ></A
 >.</P
@@ -19719,40 +19311,15 @@ NAME="WRITEABLE"
 >writeable (S)</DT
 ><DD
 ><P
->An inverted synonym is <A
-HREF="index.html#READONLY"
->		<TT
+>Inverted synonym for <A
+HREF="r1.html#READONLY"
+><TT
 CLASS="PARAMETER"
 ><I
->read only</I
+>		read only</I
 ></TT
 ></A
 >.</P
-><P
->If this parameter is <TT
-CLASS="CONSTANT"
->no</TT
->, then users 
-		of a service may not create or modify files in the service's 
-		directory.</P
-><P
->Note that a printable service (<B
-CLASS="COMMAND"
->printable = yes</B
->)
-		will <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->ALWAYS</I
-></SPAN
-> allow writing to the directory 
-		(user privileges permitting), but only via spooling operations.</P
-><P
->Default: <B
-CLASS="COMMAND"
->writeable = no</B
-></P
 ></DD
 ></DL
 ></DIV
@@ -19760,7 +19327,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6109"
+NAME="AEN6113"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19790,7 +19357,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6115"
+NAME="AEN6119"
 ></A
 ><H2
 >VERSION</H2
@@ -19801,7 +19368,7 @@ NAME="AEN6115"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6118"
+NAME="AEN6122"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19880,7 +19447,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6138"
+NAME="AEN6142"
 ></A
 ><H2
 >AUTHOR</H2
