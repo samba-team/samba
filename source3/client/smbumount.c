@@ -33,6 +33,8 @@ extern pid_t waitpid(pid_t, int *, int);
 #include <linux/smb_mount.h>
 #include <linux/smb_fs.h>
 
+#include "includes.h"
+
 static char *progname;
 
 static void

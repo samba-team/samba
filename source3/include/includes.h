@@ -293,6 +293,9 @@ typedef unsigned short mode_t;
 /* SunOS doesn't have POSIX atexit */
 #define atexit on_exit
 #define NOSTRCASECMP
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif /* QSORT_CAST */
 #endif
 
 
