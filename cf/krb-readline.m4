@@ -30,7 +30,7 @@ elif test "$ac_cv_func_el_init" = yes; then
 	ac_foo=yes
 	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.la \$(LIB_el_init) \$(LIB_tgetent)"
 else
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.la'
+	LIB_readline="\$(top_builddir)/lib/editline/libeditline.la \$(LIB_tgetent)"
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 AC_DEFINE(HAVE_READLINE, 1, 
