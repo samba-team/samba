@@ -30,7 +30,7 @@ struct pyconv {
 };
 
 PyObject *from_struct(void *s, struct pyconv *conv);
-void to_struct(void *s, PyObject *dict, struct pyconv *conv);
+BOOL to_struct(void *s, PyObject *dict, struct pyconv *conv);
 
 /* Another version of offsetof (-: */
 
