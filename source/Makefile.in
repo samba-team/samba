@@ -1034,7 +1034,7 @@ bin/xml.@SHLIBEXT@: $(XML_OBJ:.o=.po)
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(XML_OBJ:.o=.po) @XML_LIBS@ \
 		@SONAMEFLAG@`basename $@`
 
-bin/winbind_idmap.@SHLIBEXT@: sam/idmap_winbind.po
+bin/idmap_winbind.@SHLIBEXT@: sam/idmap_winbind.po
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS)  -o $@ sam/idmap_winbind.po \
 		@SONAMEFLAG@`basename $@`
