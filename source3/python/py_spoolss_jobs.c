@@ -150,10 +150,10 @@ PyObject *spoolss_hnd_getjob(PyObject *self, PyObject *args, PyObject *kw)
 
 	switch(level) {
 	case 1:
-		py_from_JOB_INFO_1(&result, ctr.job.job_info_1);
+		py_from_JOB_INFO_1(&result, &ctr.job.job_info_1[0]);
 		break;
 	case 2:
-		py_from_JOB_INFO_2(&result, ctr.job.job_info_2);
+		py_from_JOB_INFO_2(&result, &ctr.job.job_info_2[0]);
 		break;
 	}
 
