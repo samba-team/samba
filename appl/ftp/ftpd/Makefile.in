@@ -17,6 +17,7 @@ DEFS 	= @DEFS@
 CFLAGS 	= @CFLAGS@
 LD_FLAGS = @LD_FLAGS@
 LIBS	= @LIBS@
+LIB_DBM = @LIB_DBM@
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
 
 INSTALL = @INSTALL@
@@ -66,7 +67,7 @@ uninstall:
 	done
 
 ftpd$(EXECSUFFIX): $(ftpd_OBJS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftpd_OBJS) -L../common -lcommon $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIBS) $(LIBROKEN)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(ftpd_OBJS) -L../common -lcommon $(LIBKAFS) $(LIBKRB) $(LIBOTP) $(LIBDES) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<
