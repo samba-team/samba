@@ -49,31 +49,6 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 }
 
 /****************************************************************************
-Issue a single SMBreadraw and don't wait for a reply.
-****************************************************************************/
-
-static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
-			   size_t size, int i)
-{
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
-
-	set_message(cli->outbuf,10,0,True);
-		
-	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,fnum);
-	SIVAL(cli->outbuf,smb_vwv1,offset);
-	SSVAL(cli->outbuf,smb_vwv2,size);
-	SSVAL(cli->outbuf,smb_vwv3,size);
-	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
-
-	return cli_send_smb(cli);
-}
-
-/****************************************************************************
   Read size bytes at offset offset using SMBreadX.
 ****************************************************************************/
 
@@ -152,6 +127,32 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	return total;
 }
 
+#if 0  /* relies on client_recieve_smb(), now a static in libsmb/clientgen.c */
+/****************************************************************************
+Issue a single SMBreadraw and don't wait for a reply.
+****************************************************************************/
+
+static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset, 
+			   size_t size, int i)
+{
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,10,0,True);
+		
+	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,fnum);
+	SIVAL(cli->outbuf,smb_vwv1,offset);
+	SSVAL(cli->outbuf,smb_vwv2,size);
+	SSVAL(cli->outbuf,smb_vwv3,size);
+	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+
+	return cli_send_smb(cli);
+}
+
 /****************************************************************************
  Tester for the readraw call.
 ****************************************************************************/
@@ -213,7 +214,7 @@ ssize_t cli_readraw(struct cli_state *cli, int fnum, char *buf, off_t offset, si
 
 	return total;
 }
-
+#endif
 /****************************************************************************
 issue a single SMBwrite and don't wait for a reply
 ****************************************************************************/
