@@ -129,12 +129,11 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
 
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, BOOL io)
+BOOL prs_init(prs_struct *ps, uint32 size, BOOL io)
 {
 	ZERO_STRUCTP(ps);
 	ps->io = io;
 	ps->bigendian_data = False;
-	ps->align = align;
 	ps->is_dynamic = False;
 	ps->data_offset = 0;
 	ps->buffer_size = 0;
@@ -168,12 +167,12 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
  zeros.
  ********************************************************************/
 
-BOOL prs_align(prs_struct *ps)
+BOOL prs_align(prs_struct *ps, int align)
 {
-	uint32 mod = ps->data_offset & (ps->align-1);
+	uint32 mod = ps->data_offset & (align-1);
 
-	if (ps->align != 0 && mod != 0) {
-		uint32 extra_space = (ps->align - mod);
+	if (align != 0 && mod != 0) {
+		uint32 extra_space = (align - mod);
 		if(!prs_grow(ps, extra_space))
 			return False;
 		memset(&ps->data_p[ps->data_offset], '\0', (size_t)extra_space);
@@ -257,6 +256,8 @@ BOOL io_uint32(char *name, prs_struct *ps, int depth, uint32 *data32, unsigned f
 
 	if (!(flags & PARSE_SCALARS)) return True;
 
+	if (!prs_align(ps, 4)) return False;
+
 	q = prs_mem_get(ps, sizeof(uint32));
 	if (q == NULL) return False;
 
@@ -274,6 +275,8 @@ BOOL io_uint16(char *name, prs_struct *ps, int depth, uint16 *data16, unsigned f
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
+
+	if (!prs_align(ps, 2)) return False;
 
 	q = prs_mem_get(ps, sizeof(uint16));
 	if (q == NULL) return False;
@@ -325,6 +328,8 @@ BOOL io_wstring(char *name, prs_struct *ps, int depth, uint16 *data16s, int len,
 	char *q;
 
 	if (!(flags & PARSE_SCALARS)) return True;
+
+	if (!prs_align(ps, 2)) return False;
 
 	q = prs_mem_get(ps, len * sizeof(uint16));
 	if (q == NULL) return False;
