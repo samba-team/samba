@@ -417,6 +417,8 @@ int main (int argc, char **argv)
 	static char *config_file = dyn_CONFIGFILE;
 	static char *new_debuglevel = NULL;
 	static char *account_policy = NULL;
+	static long int account_policy_value = 0;
+	BOOL account_policy_value_set = False;
 
 	struct pdb_context *in;
 	poptContext pc;
@@ -436,10 +438,10 @@ int main (int argc, char **argv)
 		{"delete",	'x',POPT_ARG_VAL,&delete_user,1,"delete user",NULL},
 		{"import",	'i',POPT_ARG_STRING,&backend_in,0,"use different passdb backend",NULL},
 		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
-		{"debuglevel",'D', POPT_ARG_STRING, &new_debuglevel,0,"set debuglevel",NULL},
-		{"configfile",'c',POPT_ARG_STRING, &config_file,0,"use different configuration file",NULL},
-		{"account-policy-get",'P',POPT_ARG_STRING, &account_policy,0,"get the value of an account policy (like maximum password age)",NULL},
-		
+		{"debuglevel",  'D',POPT_ARG_STRING, &new_debuglevel,0,"set debuglevel",NULL},
+		{"configfile",  'c',POPT_ARG_STRING, &config_file,0,"use different configuration file",NULL},
+		{"account-policy",'P',POPT_ARG_STRING, &account_policy,0,"value of an account policy (like maximum password age)",NULL},
+		{"value",       'V',POPT_ARG_LONG, &account_policy_value,'V',"set the account policy to this value", NULL},
 		{0,0,0,0}
 	};
 	
@@ -448,7 +450,13 @@ int main (int argc, char **argv)
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	
-	while((opt = poptGetNextOpt(pc)) != -1);
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case 'V':
+			account_policy_value_set = True;
+			break;
+		}
+	}
 	
 	if (new_debuglevel){
 		debug_parse_levels(new_debuglevel);
@@ -480,8 +488,18 @@ int main (int argc, char **argv)
 			fprintf(stderr, "valid account policy, but unable to fetch value!\n");
 			exit(1);
 		}
-		printf("account policy value for %s is %u\n", account_policy, value);
-		exit(0);
+		if (account_policy_value_set) {
+			printf("account policy value for %s was %u\n", account_policy, value);
+			if (!account_policy_set(field, account_policy_value)){
+				fprintf(stderr, "valid account policy, but unable to set value!\n");
+				exit(1);
+			}
+			printf("account policy value for %s is now %lu\n", account_policy, account_policy_value);
+			exit(0);
+		} else {
+			printf("account policy value for %s is %u\n", account_policy, value);
+			exit(0);
+		}
 	}
 
 	if (!backend_in) {
