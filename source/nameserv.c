@@ -257,6 +257,9 @@ void refresh_my_names(time_t t)
       {
         add_my_name_entry(d,n->name.name,n->name.name_type,
                           n->ip_flgs[0].nb_flags);
+	/* they get a new lease on life :-) */
+	n->death_time += GET_TTL(0);
+	n->refresh_time += GET_TTL(0);
       }
     }
   }
