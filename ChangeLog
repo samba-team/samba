@@ -1,3 +1,12 @@
+Tue Nov 11 02:35:17 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/net_{read,write}.c: change `int fd' to `void *p_fd'.
+	fix callers.
+
+	* lib/krb5/krb5_locl.h: include <asn1.h> and <der.h>
+
+	* include/Makefile.am: add xdbm.h
+
 Tue Nov 11 01:58:22 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/get_cred.c: Implement krb5_get_cred_from_kdc.
