@@ -85,10 +85,8 @@ void smbsrv_invalidate_all_vuids(struct smbsrv_connection *smb_conn)
 
 /**
  *  register that a valid login has been performed, establish 'session'.
- *  @param server_info The token returned from the authentication process. 
+ *  @param session_info The token returned from the authentication process (if the authentication has completed)
  *   (now 'owned' by register_vuid)
- *
- *  @param session_key The User session key for the login session (now also 'owned' by register_vuid)
  *
  *  @param smb_name The untranslated name of the user
  *
@@ -98,8 +96,8 @@ void smbsrv_invalidate_all_vuids(struct smbsrv_connection *smb_conn)
  */
 
 uint16_t smbsrv_register_session(struct smbsrv_connection *smb_conn,
-						struct auth_session_info *session_info,
-						struct gensec_security *gensec_ctx)
+				 struct auth_session_info *session_info,
+				 struct gensec_security *gensec_ctx)
 {
 	struct smbsrv_session *sess = NULL;
 
