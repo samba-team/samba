@@ -577,3 +577,67 @@ if test "$2" != "/usr/lib" ; then
     $1="$$1 -L$2"
 fi
 ])
+
+dnl AC_ENABLE_SHARED - implement the --enable-shared flag
+dnl Usage: AC_ENABLE_SHARED[(DEFAULT)]
+dnl   Where DEFAULT is either `yes' or `no'.  If omitted, it defaults to
+dnl   `yes'.
+AC_DEFUN([AC_ENABLE_SHARED],
+[define([AC_ENABLE_SHARED_DEFAULT], ifelse($1, no, no, yes))dnl
+AC_ARG_ENABLE(shared,
+changequote(<<, >>)dnl
+<<  --enable-shared[=PKGS]    build shared libraries [default=>>AC_ENABLE_SHARED_DEFAULT],
+changequote([, ])dnl
+[p=${PACKAGE-default}
+case $enableval in
+yes) enable_shared=yes ;;
+no) enable_shared=no ;;
+*)
+  enable_shared=no
+  # Look at the argument we got.  We use all the common list separators.
+  IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:,"
+  for pkg in $enableval; do
+    if test "X$pkg" = "X$p"; then
+      enable_shared=yes
+    fi
+
+  done
+  IFS="$ac_save_ifs"
+  ;;
+esac],
+enable_shared=AC_ENABLE_SHARED_DEFAULT)dnl
+])
+
+dnl AC_ENABLE_STATIC - implement the --enable-static flag
+dnl Usage: AC_ENABLE_STATIC[(DEFAULT)]
+dnl   Where DEFAULT is either `yes' or `no'.  If omitted, it defaults to
+dnl   `yes'.
+AC_DEFUN([AC_ENABLE_STATIC],
+[define([AC_ENABLE_STATIC_DEFAULT], ifelse($1, no, no, yes))dnl
+AC_ARG_ENABLE(static,
+changequote(<<, >>)dnl
+<<  --enable-static[=PKGS]    build static libraries [default=>>AC_ENABLE_STATIC_DEFAULT],
+changequote([, ])dnl
+[p=${PACKAGE-default}
+case $enableval in
+yes) enable_static=yes ;;
+no) enable_static=no ;;
+*)
+  enable_static=no
+  # Look at the argument we got.  We use all the common list separators.
+  IFS="${IFS=   }"; ac_save_ifs="$IFS"; IFS="${IFS}:,"
+  for pkg in $enableval; do
+    if test "X$pkg" = "X$p"; then
+      enable_static=yes
+    fi
+  done
+  IFS="$ac_save_ifs"
+  ;;
+esac],
+enable_static=AC_ENABLE_STATIC_DEFAULT)dnl
+])
+
+dnl AC_DISABLE_STATIC - set the default static flag to --disable-static
+AC_DEFUN([AC_DISABLE_STATIC],
+[AC_BEFORE([$0],[AC_LIBTOOL_SETUP])dnl
+AC_ENABLE_STATIC(no)])
