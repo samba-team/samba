@@ -52,39 +52,25 @@ sigterm(int sig)
 int
 main(int argc, char **argv)
 {
-    int c;
+    krb5_error_code ret;
+    EncryptionKey key;
     set_progname(argv[0]);
     
     krb5_init_context(&context);
 
     configure(argc, argv);
 
-    if(keyfile){
-	FILE *f;
-	size_t len;
-	unsigned char buf[1024];
-	EncryptionKey key;
-	f = fopen(keyfile, "r");
-	if(f == NULL){
-	    kdc_log(0, "Failed to open master key file %s", keyfile);
-	    exit(1);
-	}
-	len = fread(buf, 1, sizeof(buf), f);
-	fclose(f);
-	if(decode_EncryptionKey(buf, len, &key, &len)){
-	    kdc_log(0, "Failed to parse contents of master key file %s", keyfile);
-	    exit(1);
-	}	    
-	set_master_key(&key);
+    ret = hdb_read_master_key(context, keyfile, &key);
+    if(ret && ret != ENOENT)
+	krb5_err(context, 1, ret, "Failed to open master key file");
+    if(ret == 0){
+	set_master_key(key);
 	memset(key.keyvalue.data, 0, key.keyvalue.length);
 	free_EncryptionKey(&key);
-    }else{
-	des_cblock key;
-	des_new_random_key(&key);
-	memset(&key, 0, sizeof(key));
-    }
-
-
+	kdc_log(5, "Database is encrypted");
+    }else
+	kdc_log(5, "Database is not encrypted");
+    
     signal(SIGINT, sigterm);
     loop();
     krb5_free_context(context);

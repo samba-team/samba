@@ -66,16 +66,17 @@ db_fetch(krb5_principal principal)
     return ent;
 }
 
-static des_key_schedule master_key;
+static krb5_data master_key;
 static int master_key_set;
 
 void
-set_master_key(EncryptionKey *key)
+set_master_key(EncryptionKey key)
 {
-    if(key->keytype != KEYTYPE_DES || key->keyvalue.length != 8)
-	abort();
-    des_set_random_generator_seed(key->keyvalue.data);
-    des_set_key(key->keyvalue.data, master_key);
+    krb5_error_code ret;
+    ret = hdb_process_master_key(context, key, &master_key);
+    if(ret)
+	krb5_err(context, 1, ret, "Error processing master key file");
+    des_set_random_generator_seed(key.keyvalue.data);
     master_key_set = 1;
 }
 
