@@ -43,7 +43,20 @@ RCSID("$Id$");
 #define REQUIRED_MASK (KADM5_PRINCIPAL)
 #define FORBIDDEN_MASK (KADM5_LAST_PWD_CHANGE | KADM5_MOD_TIME | KADM5_MOD_NAME | KADM5_MKVNO | KADM5_AUX_ATTRIBUTES | KADM5_POLICY_CLR | KADM5_LAST_SUCCESS | KADM5_LAST_FAILED | KADM5_FAIL_AUTH_COUNT | KADM5_KEY_DATA)
 
-#define set_value(X, V) do { (X) = malloc(sizeof(*X)); *(X) = V; } while(0)
+static kadm5_ret_t
+get_default(kadm5_server_context *context, krb5_principal princ, 
+	    kadm5_principal_ent_t def)
+{
+    kadm5_ret_t ret;
+    krb5_principal def_principal;
+    krb5_realm *realm = krb5_princ_realm(context->context, princ);
+    krb5_make_principal(context->context, &def_principal, 
+			*realm, "default", NULL);
+    ret = kadm5_s_get_principal(context, def_principal, def, 
+				KADM5_PRINCIPAL_NORMAL_MASK);
+    krb5_free_principal (context->context, def_principal);
+    return ret;
+}
 
 kadm5_ret_t
 kadm5_s_create_principal(void *server_handle,
@@ -54,6 +67,7 @@ kadm5_s_create_principal(void *server_handle,
     kadm5_server_context *context;
     hdb_entry ent;
     kadm5_ret_t ret;
+    kadm5_principal_ent_rec defrec, *defent;
     context = server_handle;
     if((mask & REQUIRED_MASK) != REQUIRED_MASK)
 	return KADM5_BAD_MASK;
@@ -67,20 +81,15 @@ kadm5_s_create_principal(void *server_handle,
 			       &ent.principal);
     if(ret)
 	return ret;
-    /* set defaults */
-    ent.flags.postdate = 1;
-    ent.flags.forwardable = 1;
-    ent.flags.initial = 0;
-    ent.flags.renewable = 1;
-    ent.flags.proxiable = 1;
-    ent.flags.require_preauth = 0;
-    ent.flags.server = 1;
-    ent.flags.client = 1;
-    ent.flags.change_pw = 0;
-    ent.flags.invalid = 0;
     
-    ret = _kadm5_setup_entry(&ent, princ, mask);
-
+    defent = &defrec;
+    ret = get_default(server_handle, princ->principal, defent);
+    if(ret)
+	defent = NULL;
+    ret = _kadm5_setup_entry(&ent, princ, defent, mask);
+    if(defent)
+	kadm5_free_principal_ent(server_handle, defent);
+    
     /* XXX this should be fixed */
     ent.keys.len = 2;
     ent.keys.val = calloc(ent.keys.len, sizeof(*ent.keys.val));
