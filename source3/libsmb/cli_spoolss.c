@@ -1170,4 +1170,168 @@ NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
 	return result;
 }
 
+/** Add a form to a printer.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to add - should always be 1.
+ * @param form             A pointer to the form to be added.
+ *
+ */
+
+WERROR cli_spoolss_addform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *handle, uint32 level, FORM *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_ADDFORM q;
+	SPOOL_R_ADDFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_addform(&q, handle, level, form);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_addform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ADDFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_addform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Set a form on a printer - this doesn't seem to work very well.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param level            Form info level to set - should always be 1.
+ * @param form             A pointer to the form to be set.
+ *
+ */
+
+WERROR cli_spoolss_setform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			   POLICY_HND *handle, uint32 level, FORM *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETFORM q;
+	SPOOL_R_SETFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_setform(&q, handle, level, form);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_setform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_SETFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_setform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Delete a form on a printer - this doesn't seem to work very well.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param handle           Policy handle opened with cli_spoolss_open_printer_ex 
+ *                         or cli_spoolss_addprinterex.
+ * @param form             The name of the form to delete.
+ *
+ */
+
+WERROR cli_spoolss_deleteform(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *handle, char *form)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_DELETEFORM q;
+	SPOOL_R_DELETEFORM r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_deleteform(&q, handle, form);
+	
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_deleteform("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_DELETEFORM, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_deleteform("", &r, &rbuf, 0))
+		goto done;
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/
