@@ -593,7 +593,7 @@ static BOOL wbinfo_set_auth_user(char *username)
 
 	/* Store in secrets.tdb */
 
-	if (!secrets_store(SECRETS_AUTH_USER, username, 
+	if (!secrets_store(SECRETS_AUTH_USER, user, 
 			   strlen(user) + 1) ||
 	    !secrets_store(SECRETS_AUTH_DOMAIN, domain, 
 			   strlen(domain) + 1) ||
