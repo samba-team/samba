@@ -1,3 +1,32 @@
+Sun Sep 21 15:19:23 1997  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c: use new addr_families functions
+
+	* kpasswd/kpasswdd.c: use new addr_families functions.  Now works
+ 	over IPv6
+
+	* kuser/klist.c: use correct symbols for address families
+
+	* lib/krb5/sock_principal.c: use new addr_families functions
+
+	* lib/krb5/send_to_kdc.c: use new addr_families functions
+
+	* lib/krb5/krb5.h: add KRB5_ADDRESS_INET6
+
+	* lib/krb5/get_addrs.c: use new addr_families functions
+
+	* lib/krb5/changepw.c: use new addr_families functions.  Now works
+ 	over IPv6
+
+	* lib/krb5/auth_context.c: use new addr_families functions
+
+	* lib/krb5/addr_families.c: new file
+
+	* acconfig.h: AC_SOCKADDR_IN6 -> AC_STRUCT_SOCKADDR_IN6.  Updated
+ 	uses.
+
+	* acinclude.m4: new macro `AC_KRB_IPV6'.  Use it.
+
 Sat Sep 13 23:04:23 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/hprop.c: Don't encrypt twice. Complain on non-convertable
