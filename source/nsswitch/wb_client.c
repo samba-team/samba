@@ -31,7 +31,7 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	enum nss_status result;
+	NSS_STATUS result;
 	
 	if (!sid || !name_type)
 		return False;
@@ -42,7 +42,7 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if ((result = (enum nss_status)winbindd_request(WINBINDD_LOOKUPNAME, &request, 
+	if ((result = (NSS_STATUS)winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
 		string_to_sid(sid, response.data.sid.sid);
 		*name_type = (enum SID_NAME_USE)response.data.sid.type;
@@ -57,7 +57,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_N
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	enum nss_status result;
+	NSS_STATUS result;
 	fstring sid_str;
 	
 	/* Initialise request */
@@ -70,7 +70,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_N
 	
 	/* Make request */
 
-	result = (enum nss_status)winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
+	result = (NSS_STATUS)winbindd_request(WINBINDD_LOOKUPSID, &request, &response);
 
 	/* Copy out result */
 
