@@ -347,13 +347,20 @@ void codepage_initialise(int client_codepage)
 for code page %d failed. Using default client codepage 932\n", 
              CODEPAGEDIR, client_codepage, client_codepage));
     cp = cp_932;
+    client_codepage = KANJI_CODEPAGE;
 #else /* KANJI */
     DEBUG(6,("codepage_initialise: loading dynamic codepage file %s/codepage.%d \
 for code page %d failed. Using default client codepage 850\n", 
              CODEPAGEDIR, client_codepage, client_codepage));
     cp = cp_850;
+    client_codepage = MSDOS_LATIN_1_CODEPAGE;
 #endif /* KANJI */
   }
+
+  /*
+   * Setup the function pointers for the loaded codepage.
+   */
+  initialize_multibyte_vectors( client_codepage );
 
   if(cp)
   {

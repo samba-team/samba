@@ -2099,7 +2099,10 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 #endif 
 
 /* Defines needed for multi-codepage support. */
+#define MSDOS_LATIN_1_CODEPAGE 850
 #define KANJI_CODEPAGE 932
+#define HANGUL_CODEPAGE 949
+#define BIG5_CODEPAGE 950
 
 #ifdef KANJI
 /* 
@@ -2110,7 +2113,7 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 /* 
  * Default client code page - 850 - Western European 
  */
-#define DEFAULT_CLIENT_CODE_PAGE 850
+#define DEFAULT_CLIENT_CODE_PAGE MSDOS_LATIN_1_CODEPAGE
 #endif /* KANJI */
 
 /* 

@@ -164,9 +164,6 @@ char *unix2dos_format(char *str,BOOL overwrite)
 
     if (!mapsinited) initmaps();
 
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-      return (*_unix_to_dos)(str, overwrite);
-    else {
       if (overwrite) {
           for (p = str; *p; p++) *p = unix2dos[(unsigned char)*p];
           return str;
@@ -175,7 +172,6 @@ char *unix2dos_format(char *str,BOOL overwrite)
           *dp = 0;
           return cvtbuf;
       }
-    }
 }
 
 /*
@@ -188,9 +184,6 @@ char *dos2unix_format(char *str, BOOL overwrite)
 
     if (!mapsinited) initmaps();
 
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-      return (*_dos_to_unix)(str, overwrite);
-    else {
       if (overwrite) {
           for (p = str; *p; p++) *p = dos2unix[(unsigned char)*p];
           return str;
@@ -199,7 +192,6 @@ char *dos2unix_format(char *str, BOOL overwrite)
           *dp = 0;
           return cvtbuf;
       }
-    }
 }
 
 

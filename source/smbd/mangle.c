@@ -42,7 +42,7 @@ int str_checksum(char *s)
   while( *s )
     {
     c = *s;
-    res ^= (c << (i % 15)) ^ (c >> (15-(i%15)));
+    res ^= (c << (15-(i%15))) ^ (c >> (i % 15));
     s++; i++;
     }
   return(res);
@@ -130,38 +130,25 @@ BOOL is_8_3(char *fname, BOOL check_case)
 
   dot_pos = strchr(fname,'.');
 
-    {
+  {
     char *p = fname;
+    int skip;
 
-    if(lp_client_code_page() == KANJI_CODEPAGE)
+    dot_pos = 0;
+    while (*p)
+    {
+      if((skip = skip_multibyte_char( *p )) != 0)
+        p += skip;
+      else 
       {
-      dot_pos = 0;
-      while (*p)
-        {
-        if (is_shift_jis (*p)) 
-          p += 2;
-        else if (is_kana (*p)) 
-          p ++;
-        else 
-          {
-          if (*p == '.' && !dot_pos)
-            dot_pos = (char *) p;
-          if (!isdoschar(*p))
-            return(False);
-          p++;
-          }
-        }
-      }      
-    else
-      {
-      while (*p)
-        {
+        if (*p == '.' && !dot_pos)
+          dot_pos = (char *) p;
         if (!isdoschar(*p))
           return(False);
         p++;
-        }      
       }
     }
+  }      
 
   /* no dot and less than 9 means OK */
   if (!dot_pos)
@@ -542,6 +529,7 @@ void mangle_name_83(char *s)
   char base[9];
   int baselen = 0;
   int extlen = 0;
+  int skip;
 
   extension[0]=0;
   base[0]=0;
@@ -572,40 +560,29 @@ void mangle_name_83(char *s)
       *p++ = 0;
       while (*p && extlen < 3)
         {
-        if(lp_client_code_page() == KANJI_CODEPAGE)
+        skip = skip_multibyte_char(*p);
+        if (skip == 2)
           {
-          if (is_shift_jis (*p))
+          if (extlen < 2)
             {
-            if (extlen < 2)
-              {
-              extension[extlen++] = p[0];
-              extension[extlen++] = p[1];
-              }
-            else 
-              {
-              extension[extlen++] = base36 (((unsigned char) *p) % 36);
-              }
-            p += 2;
+            extension[extlen++] = p[0];
+            extension[extlen++] = p[1];
             }
-          else
+          else 
             {
-            if( is_kana (*p) )
-              {
-              extension[extlen++] = p[0];
-              p++;
-              }
-            else 
-              {
-              if (isdoschar (*p) && *p != '.')
-                extension[extlen++] = p[0];
-              p++;
-              }
+            extension[extlen++] = base36 (((unsigned char) *p) % 36);
             }
+          p += 2;
           }
-        else
+        else if( skip == 1 )
           {
-          if (isdoschar(*p) && *p != '.')
-            extension[extlen++] = *p;
+          extension[extlen++] = p[0];
+          p++;
+          }
+        else 
+          {
+          if (isdoschar (*p) && *p != '.')
+            extension[extlen++] = p[0];
           p++;
           }
         }
@@ -617,9 +594,8 @@ void mangle_name_83(char *s)
 
   while (*p && baselen < 5)
     {
-    if(lp_client_code_page() == KANJI_CODEPAGE)
-      {
-      if (is_shift_jis (*p))
+      skip = skip_multibyte_char(*p);
+      if (skip == 2)
         {
         if (baselen < 4)
           {
@@ -632,27 +608,17 @@ void mangle_name_83(char *s)
           }
         p += 2;
         }
-      else
+      else if( skip == 1)
         {
-        if( is_kana (*p) )
-          {
-          base[baselen++] = p[0];
-          p++;
-          }
-        else 
-          {
-          if (isdoschar (*p) && *p != '.')
-            base[baselen++] = p[0];
-          p++;
-          }
+        base[baselen++] = p[0];
+        p++;
         }
-      }
-    else
-      {
-      if (isdoschar(*p) && *p != '.')
-        base[baselen++] = *p;
-      p++;
-      }
+      else 
+        {
+        if (isdoschar (*p) && *p != '.')
+          base[baselen++] = p[0];
+        p++;
+        }
     }
   base[baselen] = 0;
 
@@ -679,6 +645,7 @@ static BOOL illegal_name(char *name)
   static unsigned char illegal[256];
   static BOOL initialised=False;
   unsigned char *s;
+  int skip;
 
   if( !initialised )
     {
@@ -690,25 +657,18 @@ static BOOL illegal_name(char *name)
       illegal[*s] = True;
     }
 
-  if(lp_client_code_page() == KANJI_CODEPAGE)
+  for (s = (unsigned char *)name; *s;)
     {
-    for (s = (unsigned char *)name; *s;)
+    skip = skip_multibyte_char( *s );
+    if (skip != 0)
+      s += skip;
+    else
       {
-      if (is_shift_jis (*s))
-        s += 2;
+      if (illegal[*s])
+        return(True);
       else
-        {
-        if (illegal[*s])
-          return(True);
-        else
-          s++;
-        }
+        s++;
       }
-    }
-  else
-    {
-    for (s = (unsigned char *)name;*s;s++)
-      if (illegal[*s]) return(True);
     }
 
   return(False);

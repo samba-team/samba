@@ -9,12 +9,14 @@ BOOL allow_access(char *deny_list,char *allow_list,char *cname,char *caddr);
 /*The following definitions come from  asyncdns.c  */
 
 int asyncdns_fd(void);
+void kill_async_dns_child();
 void start_async_dns(void);
 void run_dns_queue(void);
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
 BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
 		     struct name_record **n);
+void kill_async_dns_child();
 
 /*The following definitions come from  cgi.c  */
 
@@ -206,11 +208,8 @@ int reply_trans(char *inbuf,char *outbuf, int size, int bufsize);
 
 /*The following definitions come from  kanji.c  */
 
-char *sj_strtok(char *s1, char *s2);
-char *sj_strstr(char *s1, char *s2);
-char *sj_strchr (char *s, int c);
-char *sj_strrchr(char *s, int c);
-int interpret_coding_system(char *str);
+void interpret_coding_system(char *str);
+void initialize_multibyte_vectors( int client_codepage);
 
 /*The following definitions come from  loadparm.c  */
 
