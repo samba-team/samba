@@ -331,7 +331,7 @@ static const struct command_set sam_commands[] = {
 	{
 	 "samuserset",
 	 cmd_sam_set_userinfo,
-	 "<username> [-p password] SAM User Set Info (experimental!)",
+	 "<username> [<-p password> [-F fullname] [-H homedrive] [-D homedrive] [-P profilepath] [-L logonscript]] SAM User Set Info (experimental!)",
 	 {complete_samenum_usr, NULL}
 	 },
 	{

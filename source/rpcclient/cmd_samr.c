@@ -2688,11 +2688,29 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	DOM_SID sid;
 	BOOL res = True;
 	BOOL res1 = True;
+	BOOL res2 = True;
 	int opt;
+	BOOL set_info_21 = False;
 	BOOL set_passwd = False;
+	BOOL set_full_name = False;
+	BOOL set_home_dir = False;
+	BOOL set_dir_drive = False;
+	BOOL set_profile_path = False;
+	BOOL set_logon_script = False;
 
 	fstring user_name;
 	fstring password;
+	fstring full_name;
+	fstring home_dir;
+	fstring dir_drive;
+	fstring profile_path;
+	fstring logon_script;
+
+	int len_full_name;
+	int len_home_dir;
+	int len_dir_drive;
+	int len_profile_path;
+	int len_logon_script;
 
 	char *names[1];
 	uint32 num_rids;
@@ -2726,7 +2744,8 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 	if (argc == 0)
 	{
-		report(out_hnd, "samuserset <name> [-p password]\n");
+		report(out_hnd, "samuserset <name> [<-p password> [-F fullname] [-H homedrive]\n");
+		report(out_hnd, "                  [-D homedrive] [-P profilepath] [-L logonscript]]\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -2748,7 +2767,7 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	}
 	else
 	{
-		while ((opt = getopt(argc, argv, "p:")) != EOF)
+		while ((opt = getopt(argc, argv, "p:F:H:D:P:L:")) != EOF)
 		{
 			switch (opt)
 			{
@@ -2759,14 +2778,70 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 						    sizeof(password) - 1);
 					break;
 				}
+				case 'F':
+				{
+					set_info_21 = set_full_name = True;
+					safe_strcpy(full_name, optarg,
+						    sizeof(full_name) - 1);
+					break;
+				}
+				case 'H':
+				{
+					set_info_21 = set_home_dir = True;
+					safe_strcpy(home_dir, optarg,
+						    sizeof(home_dir) - 1);
+					break;
+				}
+				case 'D':
+				{
+					set_info_21 = set_dir_drive = True;
+					safe_strcpy(dir_drive, optarg,
+						    sizeof(dir_drive) - 1);
+					break;
+				}
+				case 'P':
+				{
+					set_info_21 = set_profile_path = True;
+					safe_strcpy(profile_path, optarg,
+						    sizeof(profile_path) - 1);
+					break;
+				}
+				case 'L':
+				{
+					set_info_21 = set_logon_script = True;
+					safe_strcpy(logon_script, optarg,
+						    sizeof(logon_script) - 1);
+					break;
+				}
 			}
 		}
+	}
+
+/* Test for set_passwd if set_info_21 is true.  I can't seem to figure out how to use
+   info level 21 to set the userinfo without having a password handy... UGH. */
+
+	if (set_info_21 && !set_passwd) 
+	{
+		report(out_hnd, "To Change the User Info, you MUST specify -p!\n");
+		DEBUG(5, ("cmd_sam_query_user: failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	sid_to_string(sid_str, &sid);
 
 	report(out_hnd, "SAM Set User Info: %s\n", user_name);
-	report(out_hnd, "Password: %s\n", password);
+	if (set_passwd)
+		report(out_hnd, "Password: %s\n", password);
+	if (set_full_name)
+		report(out_hnd, "Full Name: %s\n", full_name);
+	if (set_home_dir)
+		report(out_hnd, "Home Drive: %s\n", home_dir);
+	if (set_dir_drive)
+		report(out_hnd, "Dir Drive: %s\n", dir_drive);
+	if (set_profile_path)
+		report(out_hnd, "Profile Path: %s\n", profile_path);
+	if (set_logon_script)
+		report(out_hnd, "Logon Script: %s\n", logon_script);
 
 	/* establish a connection. */
 	res = res ? samr_connect(srv_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -2794,25 +2869,61 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 
 		if (set_passwd)
 		{
+			SAM_USER_INFO_24 *p = g_new(SAM_USER_INFO_24, 1);
 			encode_pw_buffer(pwbuf, password,
 					 strlen(password), True);
-		}
-
-		if (True)
-		{
-			SAM_USER_INFO_24 *p = g_new(SAM_USER_INFO_24, 1);
 			make_sam_user_info24(p, pwbuf, strlen(password));
 
 			usr = p;
 			switch_value = 24;
+			if (usr != NULL)
+			{
+				res1 = set_samr_set_userinfo(&pol_dom,
+							     switch_value, rids[0],
+							     usr);
+			}
 		}
 
-		if (False)
+		if (set_passwd && set_info_21)
 		{
 			SAM_USER_INFO_21 *usr21 = ctr.info.id21;
-			SAM_USER_INFO_23 *p = g_new(SAM_USER_INFO_23, 1);
+			SAM_USER_INFO_21 *p = g_new(SAM_USER_INFO_21, 1);
 			/* send user info query, level 0x15 */
-			make_sam_user_info23W(p,
+			report(out_hnd, "Before\n");
+			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr21);
+			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr21);
+			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr21);
+
+			if (set_full_name)
+			{
+			        len_full_name = full_name != NULL ? strlen(full_name) : 0;
+				make_unistr2(&(usr21->uni_full_name), full_name, len_full_name);
+			}
+			if (set_home_dir)
+			{
+			        len_home_dir = home_dir != NULL ? strlen(home_dir) : 0;
+				make_unistr2(&(usr21->uni_home_dir), home_dir, len_home_dir);
+			}
+			if (set_dir_drive)
+			{
+			        len_dir_drive = dir_drive != NULL ? strlen(dir_drive) : 0;
+				make_unistr2(&(usr21->uni_dir_drive), dir_drive, len_dir_drive);
+			}
+			if (set_profile_path)
+			{
+			        len_profile_path = profile_path != NULL ? strlen(profile_path) : 0;
+				make_unistr2(&(usr21->uni_profile_path), profile_path, len_profile_path);
+			}
+			if (set_logon_script)
+			{
+			        len_logon_script = logon_script != NULL ? strlen(logon_script) : 0;
+				make_unistr2(&(usr21->uni_logon_script), logon_script, len_logon_script);
+			}
+			report(out_hnd, "After\n");
+			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr21);
+			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr21);
+			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr21);
+			make_sam_user_info21W(p,
 					      &usr21->logon_time,
 					      &usr21->logoff_time,
 					      &usr21->kickoff_time,
@@ -2829,23 +2940,29 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 					      &usr21->uni_workstations,
 					      &usr21->uni_unknown_str,
 					      &usr21->uni_munged_dial,
-					      0x0,
+					      usr21->lm_pwd,
+					      usr21->nt_pwd,
+					      usr21->user_rid,
 					      usr21->group_rid,
 					      usr21->acb_info,
-					      0x09f827fa,
+					      usr21->unknown_3,
 					      usr21->logon_divs,
 					      &usr21->logon_hrs,
 					      usr21->unknown_5,
-					      pwbuf, usr21->unknown_6);
+					      usr21->unknown_6);
 
 			usr = p;
-			switch_value = 23;
-		}
-		if (usr != NULL)
-		{
-			res1 = set_samr_set_userinfo(&pol_dom,
-						     switch_value, rids[0],
-						     usr);
+			report(out_hnd, "After Make\n");
+			display_sam_user_info_21(out_hnd, ACTION_HEADER, usr);
+			display_sam_user_info_21(out_hnd, ACTION_ENUMERATE, usr);
+			display_sam_user_info_21(out_hnd, ACTION_FOOTER, usr);
+			switch_value = 21;
+			if (usr != NULL)
+			{
+				res2 = set_samr_set_userinfo(&pol_dom,
+							     switch_value, rids[0],
+							     usr);
+			}
 		}
 	}
 
@@ -2856,13 +2973,17 @@ uint32 cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[])
 	res = res ? samr_close(&pol_dom) : False;
 	res = res ? samr_close(&sam_pol) : False;
 
-	if (res1)
+	if (set_passwd && res1 && res2)
 	{
 		report(out_hnd, "Set User Info: OK\n");
 		DEBUG(5, ("cmd_sam_query_user: succeeded\n"));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	report(out_hnd, "Set User Info: Failed\n");
+	if (!res1)
+		report(out_hnd, "Password change failed\n");
+	if (!res2)
+		report(out_hnd, "User Info change failed\n");
 	DEBUG(5, ("cmd_sam_query_user: failed\n"));
 	return NT_STATUS_UNSUCCESSFUL;
 }
