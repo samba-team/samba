@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies
 
 lib_LIBRARIES = libasn1.a
 
-libasn1_a_SOURCES = asn1.c der_get.c der_put.c der_free.c
+libasn1_a_SOURCES = asn1.c der_get.c der_put.c der_free.c der_length.c
 
 
 noinst_PROGRAMS = asn1_compile
