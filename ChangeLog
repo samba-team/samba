@@ -1,5 +1,7 @@
 Sun Nov  9 02:17:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/kadm5: Implement kadm5_get_privs, and kadm5_get_principals.
+
 	* kadmin/kadmin.c: Add get_privileges function.
 
 	* lib/kadm5: Rename KADM5_ACL_* -> KADM5_PRIV_* to conform with

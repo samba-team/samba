@@ -55,9 +55,7 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef HAVE_FNMATCH_H
 #include <fnmatch.h>
-#endif
 #include "admin.h"
 #include "kadm5_err.h"
 #include <hdb.h>
