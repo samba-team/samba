@@ -118,7 +118,7 @@
 		parameter negates the implicit deamon mode when run from the
 		command line. <command>smbd</command> also logs to standard
 		output, as if the <command>-S</command> parameter had been
-		given. </para></listitem>
+		given. 
 		</para></listitem>
 		</varlistentry>
 		

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBGROUPEDIT" "8" "05 November 2002" "" ""
+.TH "SMBGROUPEDIT" "8" "03 January 2003" "" ""
 .SH NAME
 smbgroupedit \- Query/set/change UNIX - Windows NT group mapping
 .SH SYNOPSIS
@@ -111,7 +111,7 @@ map the unix domadm group to the Windows NT
 .nf
 root# \fBsmbgroupedit \\
 -c S-1-5-21-1108995562-3116817432-1375597819-512 \\
--u domadm\fR
+-u domadm -td\fR
 .fi
 
 \fBwarning:\fR don't copy and paste this sample, the

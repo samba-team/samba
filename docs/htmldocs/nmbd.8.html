@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >nmbd</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="NMBD"
-></A
->nmbd</H1
+NAME="NMBD">nmbd</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,20 +29,18 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >nmbd</B
->  [-D] [-a] [-i] [-o] [-h] [-V] [-d &lt;debug level&gt;] [-H &lt;lmhosts file&gt;] [-l &lt;log directory&gt;] [-n &lt;primary netbios name&gt;] [-p &lt;port number&gt;] [-s &lt;configuration file&gt;]</P
+> [-D] [-F] [-S] [-a] [-i] [-o] [-h] [-V] [-d &#60;debug level&#62;] [-H &#60;lmhosts file&#62;] [-l &#60;log directory&#62;] [-n &#60;primary netbios name&#62;] [-p &#60;port number&#62;] [-s &#60;configuration file&#62;]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN23"
+NAME="AEN25"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -72,12 +69,9 @@ CLASS="COMMAND"
 	specified it will respond with the IP number of the host it 
 	is running on.  Its "own NetBIOS name" is by
 	default the primary DNS name of the host it is running on, 
-	but this can be overridden with the <SPAN
-CLASS="emphasis"
-><I
+	but this can be overridden with the <I
 CLASS="EMPHASIS"
 >-n</I
-></SPAN
 > 
 	option (see OPTIONS below). Thus <B
 CLASS="COMMAND"
@@ -117,7 +111,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN40"
+NAME="AEN42"
 ></A
 ><H2
 >OPTIONS</H2
@@ -149,6 +143,48 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
+>-F</DT
+><DD
+><P
+>If specified, this parameter causes
+		the main <B
+CLASS="COMMAND"
+>nmbd</B
+> process to not daemonize,
+		i.e. double-fork and disassociate with the terminal.
+		Child processes are still created as normal to service
+		each connection request, but the main process does not
+		exit. This operation mode is suitable for running
+		<B
+CLASS="COMMAND"
+>nmbd</B
+> under process supervisors such
+		as <B
+CLASS="COMMAND"
+>supervise</B
+> and <B
+CLASS="COMMAND"
+>svscan</B
+>
+		from Daniel J. Bernstein's <B
+CLASS="COMMAND"
+>daemontools</B
+>
+		package, or the AIX process monitor.
+		</P
+></DD
+><DT
+>-S</DT
+><DD
+><P
+>If specified, this parameter causes
+		<B
+CLASS="COMMAND"
+>nmbd</B
+> to log to standard output rather
+		than a file.</P
+></DD
+><DT
 >-a</DT
 ><DD
 ><P
@@ -164,8 +200,15 @@ CLASS="COMMAND"
 		server to run "interactively", not as a daemon, even if the
 		server is executed on the command line of a shell. Setting this
 		parameter negates the implicit daemon mode when run from the
-		command line.
-		</P
+		command line. <B
+CLASS="COMMAND"
+>nmbd</B
+> also logs to standard
+		output, as if the <B
+CLASS="COMMAND"
+>-S</B
+> parameter had been
+		given. </P
 ></DD
 ><DT
 >-o</DT
@@ -190,7 +233,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-H &lt;filename&gt;</DT
+>-H &#60;filename&#62;</DT
 ><DD
 ><P
 >NetBIOS lmhosts file.  The lmhosts 
@@ -209,24 +252,18 @@ CLASS="FILENAME"
 ></A
 >
 		to resolve any NetBIOS name queries needed by the server. Note 
-		that the contents of this file are <SPAN
-CLASS="emphasis"
-><I
+		that the contents of this file are <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > 
 		used by <B
 CLASS="COMMAND"
 >nmbd</B
 > to answer any name queries. 
 		Adding a line to this file affects name NetBIOS resolution 
-		from this host <SPAN
-CLASS="emphasis"
-><I
+		from this host <I
 CLASS="EMPHASIS"
 >ONLY</I
-></SPAN
 >.</P
 ><P
 >The default path to this file is compiled into 
@@ -264,7 +301,7 @@ CLASS="COMMAND"
 >.</P
 ></DD
 ><DT
->-d &lt;debug level&gt;</DT
+>-d &#60;debug level&#62;</DT
 ><DD
 ><P
 >debuglevel is an integer 
@@ -300,7 +337,7 @@ CLASS="FILENAME"
 > file.</P
 ></DD
 ><DT
->-l &lt;log directory&gt;</DT
+>-l &#60;log directory&#62;</DT
 ><DD
 ><P
 >The -l parameter specifies a directory 
@@ -320,12 +357,9 @@ CLASS="FILENAME"
 		<TT
 CLASS="FILENAME"
 >/var/log/log.nmb</TT
->.  <SPAN
-CLASS="emphasis"
-><I
+>.  <I
 CLASS="EMPHASIS"
 >Beware:</I
-></SPAN
 >
                 If the directory specified does not exist, <B
 CLASS="COMMAND"
@@ -335,7 +369,7 @@ CLASS="COMMAND"
 		</P
 ></DD
 ><DT
->-n &lt;primary NetBIOS name&gt;</DT
+>-n &#60;primary NetBIOS name&#62;</DT
 ><DD
 ><P
 >This option allows you to override
@@ -360,7 +394,7 @@ CLASS="FILENAME"
 >.</P
 ></DD
 ><DT
->-p &lt;UDP port number&gt;</DT
+>-p &#60;UDP port number&#62;</DT
 ><DD
 ><P
 >UDP port number is a positive integer value.
@@ -373,7 +407,7 @@ CLASS="COMMAND"
 		won't need help!</P
 ></DD
 ><DT
->-s &lt;configuration file&gt;</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
 >The default configuration file name
@@ -400,7 +434,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN148"
 ></A
 ><H2
 >FILES</H2
@@ -523,12 +557,9 @@ CLASS="FILENAME"
 >If <B
 CLASS="COMMAND"
 >nmbd</B
-> is acting as a <SPAN
-CLASS="emphasis"
-><I
+> is acting as a <I
 CLASS="EMPHASIS"
 >		browse master</I
-></SPAN
 > (see the <A
 HREF="smb.conf.5.html#LOCALMASTER"
 TARGET="_top"
@@ -559,7 +590,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN177"
+NAME="AEN195"
 ></A
 ><H2
 >SIGNALS</H2
@@ -568,12 +599,9 @@ NAME="AEN177"
 CLASS="COMMAND"
 >nmbd</B
 > process it is recommended
-	that SIGKILL (-9) <SPAN
-CLASS="emphasis"
-><I
+	that SIGKILL (-9) <I
 CLASS="EMPHASIS"
 >NOT</I
-></SPAN
 > be used, except as a last
 	resort, as this may leave the name database in an inconsistent state.
 	The correct way to terminate <B
@@ -624,7 +652,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN193"
+NAME="AEN211"
 ></A
 ><H2
 >VERSION</H2
@@ -635,7 +663,7 @@ NAME="AEN193"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN196"
+NAME="AEN214"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -700,7 +728,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN231"
 ></A
 ><H2
 >AUTHOR</H2
