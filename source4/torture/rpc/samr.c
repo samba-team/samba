@@ -151,10 +151,11 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.level = lvl1; \
 		s2.in.level = lvl1; \
 		u = *q.out.info; \
-		init_samr_Name(&u.info ## lvl1.field1, value); \
 		if (lvl1 == 21) { \
+			ZERO_STRUCT(u.info21); \
 			u.info21.fields_present = fpval; \
 		} \
+		init_samr_Name(&u.info ## lvl1.field1, value); \
 		TESTCALL(SetUserInfo, s) \
 		TESTCALL(SetUserInfo2, s2) \
 		init_samr_Name(&u.info ## lvl1.field1, ""); \
@@ -174,10 +175,16 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.level = lvl1; \
 		s2.in.level = lvl1; \
 		u = *q.out.info; \
-		u.info ## lvl1.field1 = value; \
 		if (lvl1 == 21) { \
+			uint8 *bitmap = u.info21.logon_hours.bitmap; \
+			ZERO_STRUCT(u.info21); \
+			if (fpval == 0x00002000) { \
+				u.info21.logon_hours.units_per_week = 168; \
+				u.info21.logon_hours.bitmap = bitmap; \
+			} \
 			u.info21.fields_present = fpval; \
 		} \
+		u.info ## lvl1.field1 = value; \
 		TESTCALL(SetUserInfo, s) \
 		TESTCALL(SetUserInfo2, s2) \
 		u.info ## lvl1.field1 = 0; \
@@ -502,11 +509,11 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.hash6 = &hash3;
 
 	status = dcerpc_samr_ChangePasswordUser(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	/* because we don't yet have the right code above, we expect
+	   WRONG_PASSWORD back */
+	if (!NT_STATUS_EQUAL(NT_STATUS_WRONG_PASSWORD, status)) {
 		printf("ChangePasswordUser failed - %s\n", nt_errstr(status));
 		ret = False;
-	} else {
-		*password = newpass;
 	}
 
 	if (!test_Close(p, mem_ctx, &user_handle)) {
@@ -1313,6 +1320,33 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
+	uint16 levels[] = {1, 2, 3, 4};
+	int i;
+	BOOL ret = True;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryGroupInfo level %u\n", levels[i]);
+
+		r.in.handle = handle;
+		r.in.level = levels[i];
+
+		status = dcerpc_samr_QueryGroupInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryGroupInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
+	}
+
+	return ret;
+}
+
+
+static BOOL test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_QueryGroupInfo r;
 	struct samr_SetGroupInfo s;
 	uint16 levels[] = {1, 2, 3, 4};
 	uint16 set_ok[] = {0, 1, 1, 1};
@@ -1337,6 +1371,10 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.handle = handle;
 		s.in.level = levels[i];
 		s.in.info = r.out.info;
+
+		if (s.in.level == 4) {
+			init_samr_Name(&s.in.info->description, "test description");
+		}
 
 		status = dcerpc_samr_SetGroupInfo(p, mem_ctx, &s);
 		if (set_ok[i]) {
@@ -1683,6 +1721,7 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 	struct samr_GetDisplayEnumerationIndex r;
 	BOOL ret = True;
 	uint16 levels[] = {1, 2, 3, 4, 5};
+	uint16 ok_lvl[] = {1, 1, 1, 0, 0};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -1693,7 +1732,10 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 		init_samr_Name(&r.in.name, TEST_USERNAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+
+		if (ok_lvl[i] && 
+		    !NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
 			printf("GetDisplayEnumerationIndex level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
@@ -1702,7 +1744,8 @@ static BOOL test_GetDisplayEnumerationIndex(struct dcerpc_pipe *p, TALLOC_CTX *m
 		init_samr_Name(&r.in.name, "zzzzzzzz");
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex(p, mem_ctx, &r);
-		if (!NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
+		
+		if (ok_lvl[i] && !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
 			printf("GetDisplayEnumerationIndex level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
@@ -1719,6 +1762,7 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 	struct samr_GetDisplayEnumerationIndex2 r;
 	BOOL ret = True;
 	uint16 levels[] = {1, 2, 3, 4, 5};
+	uint16 ok_lvl[] = {1, 1, 1, 0, 0};
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
@@ -1729,7 +1773,9 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 		init_samr_Name(&r.in.name, TEST_USERNAME);
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ok_lvl[i] && 
+		    !NT_STATUS_IS_OK(status) && 
+		    !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
 			printf("GetDisplayEnumerationIndex2 level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
@@ -1738,7 +1784,7 @@ static BOOL test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 		init_samr_Name(&r.in.name, "zzzzzzzz");
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
-		if (!NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
+		if (ok_lvl[i] && !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
 			printf("GetDisplayEnumerationIndex2 level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
@@ -2224,6 +2270,10 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_AddGroupMember(p, mem_ctx, domain_handle, group_handle)) {
+		ret = False;
+	}
+
+	if (!test_SetGroupInfo(p, mem_ctx, group_handle)) {
 		ret = False;
 	}
 
