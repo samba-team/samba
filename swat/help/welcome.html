@@ -1,74 +1,43 @@
 Welcome to SWAT!<p>
 
-This is a online demonstration of the current version of the Samba Web
-Administration Tool. This tool is still being written so you'll find
-it looks very rough at this stage.<p>
+This is the first release of the Samba Web Administration Tool. This tool 
+is being improved so you may find some things look rough at this stage.<p>
 
-Normally this opening page would contain the (as yet unwritten) welcome
-blurb for SWAT, giving basic instructions on how to use it. I've put
-this bit of waffle in its place for the moment. <p>
+SWAT demands authentication before showing you this page, so that only 
+authenticated users can modify your smb.conf!<p>
 
-Also note that SWAT normally demands authentication before showing you
-this page, otherwise anyone could modify your smb.conf! I've disabled
-that for this demo.<p>
+Here are some features of SWAT:
+
+<ul>
+<li> Built in mini web server so you don't need a web server installed to
+manage a Samba server, you just need a browser.
+<li> Linked into the master source code so it automatically makes available new
+parameters as they are added to Samba.
+<li> Direct links to the html version of the smb.conf man page for help
+on parameters.
+<li> Layout and dialog building is done automatically based on the type 
+of the smb.conf parameter being changed.
+<li> Password and account management built in.
+</ul>
+
 
 <H2>Features</H2>
 
 Here are some of the features we want to eventually incorporate.<p>
 
 <ul>
-<li> manage smbpasswd (add/delete users, change passwords etc)
-<li> be able to run the disgnosis steps from DIAGNOSIS.txt
-<li> wizard style config building
+<li> Secure authentication.
+<li> Running the disgnosis steps from DIAGNOSIS.txt.
+<li> GUI wizard style config building.
 </ul>
-
-There are also some obvious flaws with what has already been done:
-
-<ul>
-<li> help is ghastly
-<li> ordering of parameters needs to be looked at
-<li> images need redoing
-</ul>
-
-On the positive side, here are some good features of SWAT:
-
-<ul>
-<li> built in mini web server so you don't need a web server installed to
-manage a Samba server, you just need a browser
-<li> links to loadparm.c so it automatically makes available new
-parameters as they are added to Samba.
-<li> it's quite small (around 500 lines of code currently) 
-<li> layout and dialog building is done automatically based on the type 
-fields in loadparm.c
-</ul>
-
-
-<H2>Installation</H2>
-
-Before you install SWAT you need to realise that it is still work in
-progress. It does work but don't be totally surprised if you hit
-problems. Also make sure you are prepared to give us some feedback.<p>
-
-If you still want to install it then you will need to fetch the latest
-version of Samba via anonymous CVS. See <A
-HREF="http://samba.anu.edu.au/cvs.html">http://samba.anu.edu.au/cvs.html</A>. Then
-build and install Samba as usual and read the swat/README file that
-comes with the source.
 
 <H2>Feedback</H2>
 
-Join the <A
-HREF="http://samba.anu.edu.au/listproc/">samba-technical</A> mailing
-list if you want to discuss SWAT.
+Please join the <A
+HREF="http://samba.anu.edu.au/listproc/">samba</A> mailing
+list if you want to discuss issues with this release of SWAT.
 
+<H2>Author</H2>
 -- <p>
-<A HREF="http://samba.anu.edu.au/~tridge">Andrew Tridgell</A>
-
-
-
-
-
-
-
-
-
+Swat was written by <A
+HREF="http://samba.anu.edu.au/~tridge">Andrew Tridgell</A>
