@@ -27,11 +27,11 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                30
+    AMERICA - USA                                31
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       32
+    EUROPE                                       33
     MIDDLE EAST                                   1
 
 AFRICA
@@ -366,6 +366,22 @@ The PC Doctor specializes in Linux Internet/Workgroup servers and network
 intergration. We have experience in setup and configuration of SAMBA under
 Caldera/RedHat/Slackware Linux as well as SCO and AIX. We offer workgroup
 Internet gateway servers for Windows client based networks.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+FLORIDA - USA
+
+TradeWeb
+Bill Harris
+(407) 657-8649
+bill@tradeweb.net
+
+http://www.tradeweb.net
+
+We have been working with SAMBA since 1995 and support it in a number of
+large organizations.  We are available to Companies in the Central
+Florida area.  We are well familiar in the integration of SAMBA and NT
+and in SAMBA configuration on AIX, SCO, Linux And SUN Solaris.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
@@ -1236,6 +1252,26 @@ London SW17 ORE.                    | WWW   : http://www.sghms.ac.uk
 Samba Experience:
 Server: Solaris 2.3 & 2.4, Irix 5.2 & 5.3
 Client: WinNT, Win95, WfWg, Win3.1, Ms-LanMan, DHCP support
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+LONDON - ENGLAND
+
+Name:           Paul Dunne
+Address:        30 Onslow Gardens
+                London
+                N10 3JU
+                UK
+Phone:          +44 (0)181-374 8194
+Fax:            None
+E-mail:         paul@tiny1.demon.co.uk
+URL:            http://www.tiny1.demon.co.uk
+ 
+Contact:        Paul Dunne
+Type of support: E-mail and onsite.
+ 
+Expertise:      Installing and troubleshooting Samba, on Linux and Win95.
+Sample prices:  Basic rate £30/hour.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
