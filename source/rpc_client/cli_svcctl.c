@@ -478,4 +478,62 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 	return valid_close;
 }
 
+/****************************************************************************
+do a SVC Query Lookup RIDS
+****************************************************************************/
+BOOL svc_query_unknown_1b(struct cli_state *cli, uint16 fnum, 
+				const POLICY_HND *pol, uint32 switch_value,
+				uint32 unknown_1,
+				uint32 *num_items,
+				uint32 ***items)
+{
+	prs_struct data;
+	prs_struct rdata;
 
+	SVC_Q_UNKNOWN_1B q_o;
+	BOOL valid_query = False;
+
+	if (pol == NULL || num_items == NULL || items == NULL ) return False;
+
+	/* create and send a MSRPC command with api SVC_UNKNOWN_1B */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SVC Query Unknown 1b.\n"));
+
+	/* store the parameters */
+	make_svc_q_unknown_1b(&q_o, pol, switch_value, unknown_1);
+
+	/* turn parameters into data stream */
+	svc_io_q_unknown_1b("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, fnum, SVC_UNKNOWN_1B, &data, &rdata))
+	{
+		SVC_R_UNKNOWN_1B r_o;
+		BOOL p;
+		ZERO_STRUCT(r_o);
+
+		svc_io_r_unknown_1b("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SVC_R_UNKNOWN_1B: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			(*num_items) = r_o.num_items1;
+			(*items) = r_o.items;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_query;
+}

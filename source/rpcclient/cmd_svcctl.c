@@ -341,12 +341,12 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	argc++;
+	argv++;
 	argc--;
 
 	svc_name = argv[0];
 
-	argc++;
+	argv++;
 	argc--;
 
 	/* open SVCCTL session. */
@@ -380,5 +380,86 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_svc_start: failed\n"));
 	}
+}
+
+/****************************************************************************
+nt test service 
+****************************************************************************/
+void cmd_svc_test(struct client_info *info, int argc, char *argv[])
+{
+	uint16 fnum;
+	BOOL res = True;
+	BOOL res1 = True;
+	char *svc_name;
+	BOOL res2 = True;
+	POLICY_HND pol_svc;
+	POLICY_HND pol_scm;
+	uint32 num_items = 0;
+	uint32 **items = NULL;
+	
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->myhostname);
+	strupper(srv_name);
+
+	DEBUG(4,("cmd_svc_test: server:%s\n", srv_name));
+
+	if (argc < 2)
+	{
+		report(out_hnd,"svctest <service name>]\n");
+		return;
+	}
+
+	argv++;
+	argc--;
+
+	svc_name = argv[0];
+
+	argv++;
+	argc--;
+
+	/* open SVCCTL session. */
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
+
+	/* open service control manager receive a policy handle */
+	res = res ? svc_open_sc_man(smb_cli, fnum,
+	                        srv_name, NULL, 0x80000000,
+				&pol_scm) : False;
+
+	res1 = res ? svc_open_service(smb_cli, fnum,
+				       &pol_scm,
+				       svc_name, 0x80000010,
+				       &pol_svc) : False;
+	res2 = res1 ? svc_query_unknown_1b(smb_cli, fnum,
+				       &pol_svc, 1, 0x227,
+	                               &num_items, &items) : False;
+
+	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
+	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
+
+	/* close the session */
+	cli_nt_session_close(smb_cli, fnum);
+
+	if (res2)
+	{
+		uint32 i;
+		report(out_hnd,"Test 0x1b Service %s\n", svc_name);
+		for (i = 0; i < num_items; i++)
+		{
+			if (items[i] != NULL)
+			{
+				report(out_hnd, "%x\n", *items[i]);
+			}
+		}
+		DEBUG(5,("cmd_svc_test: succeeded\n"));
+	}
+	else
+		report(out_hnd,"Failed Test 0x1b (%s)\n", svc_name);
+	{
+		DEBUG(5,("cmd_svc_test: failed\n"));
+	}
+
+	free_uint32_array(num_items, items);
 }
 
