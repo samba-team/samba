@@ -1203,7 +1203,7 @@ int name_mangle( char *In, char *Out, char name_type )
   p[0] = '\0';
 
   /* Add the scope string. */
-  for( i = 0, len = 0; NULL != global_scope(); i++, len++ )
+  for( i = 0, len = 0; *(global_scope()) != '\0'; i++, len++ )
     {
     switch( (global_scope())[i] )
       {
