@@ -89,18 +89,24 @@ otp_get (void *v, OtpContext *ctx)
   key.dptr  = ctx->user;
 
   dat = dbm_fetch (dbm, key);
-  if (dat.dptr == NULL)
+  if (dat.dptr == NULL) {
+    ctx->err = "Entry not found";
     return -1;
+  }
   p = dat.dptr;
   time(&now);
   memcpy (&then, p, sizeof(then));
-  if (then && now - then < OTP_USER_TIMEOUT)
+  if (then && now - then < OTP_USER_TIMEOUT) {
+    ctx->err = "Entry locked";
     return -1;
+  }
   memcpy (p, &now, sizeof(now));
   p += sizeof(now);
   ctx->alg = otp_find_alg (p);
-  if (ctx->alg == NULL)
+  if (ctx->alg == NULL) {
+    ctx->err = "Bad algorithm";
     return -1;
+  }
   p += strlen(p) + 1;
   ctx->n = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
   p += 4;

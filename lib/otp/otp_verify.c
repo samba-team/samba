@@ -48,8 +48,10 @@ otp_verify_user_1 (OtpContext *ctx, char *passwd)
 {
   OtpKey key1, key2;
 
-  if (otp_parse (key1, passwd, ctx->alg))
+  if (otp_parse (key1, passwd, ctx->alg)) {
+    ctx->err = "Syntax error in reply";
     return -1;
+  }
   memcpy (key2, key1, sizeof(key1));
   ctx->alg->next (key2);
   if (memcmp (ctx->key, key2, sizeof(key2)) == 0) {
@@ -66,13 +68,15 @@ otp_verify_user (OtpContext *ctx, char *passwd)
   void *dbm;
   int ret;
 
-  otp_verify_user_1 (ctx, passwd);
+  if (!ctx->challengep)
+    return -1;
+  ret = otp_verify_user_1 (ctx, passwd);
   dbm = otp_db_open ();
   if (dbm == NULL) {
     free(ctx->user);
     return -1;
   }
-  ret = otp_put (dbm, ctx);
+  otp_put (dbm, ctx);
   free(ctx->user);
   otp_db_close (dbm);
   return ret;

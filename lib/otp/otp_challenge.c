@@ -51,12 +51,16 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
 
   ctx->user = strdup(user);
   dbm = otp_db_open ();
-  if (dbm == NULL)
+  if (dbm == NULL) {
+    ctx->err = "Cannot open database";
     return -1;
+  }
   ret = otp_get (dbm, ctx);
   otp_db_close (dbm);
   if (ret)
     return ret;
   sprintf (str, "[ otp-%s %u %s ]", ctx->alg->name, ctx->n-1, ctx->seed);
+  ctx->err = NULL;
+  ctx->challengep = 1;
   return 0;
 }
