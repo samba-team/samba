@@ -29,7 +29,7 @@
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
 {
 	uint8 *info3_ndr;
-	size_t len = response->length - sizeof(response);
+	size_t len = response->length - sizeof(struct winbindd_response);
 	prs_struct ps;
 	if (len > 0) {
 		info3_ndr = response->extra_data;
