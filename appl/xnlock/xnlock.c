@@ -9,7 +9,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #include <protos.h>
-#define KERBEROS
 RCSID("$Id$");
 #endif
 
@@ -23,28 +22,29 @@ RCSID("$Id$");
 #include <X11/Xos.h>
 #include <ctype.h>
 #include <pwd.h>
-#include <xnlock.h>
 
-#ifdef KERBEROS
 #include <krb.h>
 #include <kafs.h>
 
 char inst[100];
 char name[100];
 char realm[REALM_SZ + 1];
-#endif
+
+#define font_height(font)	  	(font->ascent + font->descent)
 
 char *SPACE_STRING = "                                                      ";
 char STRING[] = "****************";
+
 #define MAX_PASSWD_LENGTH (sizeof(STRING))
 
 /* The program should be something that outputs a small amount of text */
 #define DEFAULT_PROGRAM "fortune -s"
 #define DEFAULT_TEXT    "I'm out running around."
-#define font_height(font)	  	(font->ascent + font->descent)
 #define FONT_NAME	"-*-new century schoolbook-*-*-*-18-*"
-#define when 		break;case
-#define otherwise 	break;default
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN BUFSIZ
+#endif /* MAXPATHLEN */
 
 #define PROMPT	    "Password: "
 #define FAIL_MSG    "Sorry, try again"
@@ -434,14 +434,10 @@ post_prompt_box(Window window)
     box_x = prompt_x - 105;
     box_y = prompt_y - 3 * font_height(font);
 
-#ifdef KERBEROS
     if (inst[0] == 0)
 	sprintf (s, "User: %s@%s", name, realm);
     else
 	sprintf (s, "User: %s.%s@%s", name, inst, realm);
-#else
-    sprintf (s, "User: %s", pw->pw_name);
-#endif
     /* erase current guy -- text message may still exist */
     XSetForeground(dpy, gc, Black);
     XFillRectangle(dpy, window, gc, x, y, 64, 64);
@@ -475,7 +471,6 @@ RaiseWindow(Widget w, XEvent *ev, String *s, Cardinal *n)
   if(!XtIsRealized(w))
     return;
   x = XtParent(w);
-  fprintf(stderr, "%s\n", XtName(x));
   XRaiseWindow(dpy, XtWindow(x));
 }
 
@@ -600,7 +595,6 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 		 * continue */
 		signal(SIGHUP, SIG_DFL);
 	    }
-#ifdef KERBEROS
 	/*
 	 * Try to verify as user with kerberos.
 	 */
@@ -627,7 +621,6 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 			leave();
 		    }
 	    }
-#endif /* KERBEROS */
 	/*
 	 * Try to verify as user.
 	 */
@@ -859,13 +852,16 @@ main (int argc, char **argv)
 	ProgName = *argv;
 
     /* getpwuid() returns static pointer, so get root's passwd first */
-    if (!(pw = getpwuid(0)))
-	printf("%s: can't get root's passwd!\n", ProgName), exit(1);
+    if (!(pw = getpwuid(0))){
+	fprintf(stderr, "%s: can't get root's passwd!\n", ProgName);
+	exit(1);
+    }
     strcpy(root_pw, pw->pw_passwd);
-    if (!(pw = getpwuid(getuid())))
-	printf("%s: Intruder alert!\n", ProgName), exit(1);
+    if (!(pw = getpwuid(getuid()))){
+      fprintf(stderr, "%s: Can't get your password entry!\n", ProgName);
+      exit(1);
+    } 
 
-#ifdef KERBEROS
     {
 	int code = KSUCCESS;
 	char *file;
@@ -882,8 +878,6 @@ main (int argc, char **argv)
 		    (code = tf_get_pinst(inst)) == KSUCCESS)
 		    {
 			(void) tf_close(); /* Alles gut */
-			dest_tkt(); /* Nuke old ticket file */
-			creat(file, 0600); /* but keep a place holder */
 		    }
 	    }
 	if (code != KSUCCESS)
@@ -893,7 +887,6 @@ main (int argc, char **argv)
 		    realm[0] = 0; /* No kerberos today */
 	    }
     }
-#endif /* KERBEROS */
     
     XtToolkitInitialize();
     app = XtCreateApplicationContext();
