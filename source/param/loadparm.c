@@ -532,7 +532,8 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
+static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
+static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
@@ -1023,8 +1024,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_uid, NULL, 0},
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_gid, NULL, 0},
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, 0},
@@ -1464,8 +1465,6 @@ FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_domain_admin_users, &Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users, &Globals.szDomainGuestUsers)
-FN_GLOBAL_STRING(lp_winbind_uid, &Globals.szWinbindUID)
-FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
@@ -2442,20 +2441,73 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 
 ***************************************************************************/
 
-/* Do some simple checks on "winbind [ug]id" parameter value */
+/* Some lp_ routines to return winbind [ug]id information */
 
-static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
+static uid_t winbind_uid_low, winbind_uid_high;
+static gid_t winbind_gid_low, winbind_gid_high;
+
+BOOL lp_winbind_uid(uid_t *low, uid_t *high)
+{
+        if (winbind_uid_low == 0 || winbind_uid_high == 0)
+                return False;
+
+        if (low)
+                *low = winbind_uid_low;
+
+        if (high)
+                *high = winbind_uid_high;
+
+        return True;
+}
+
+BOOL lp_winbind_gid(gid_t *low, gid_t *high)
+{
+        if (winbind_gid_low == 0 || winbind_gid_high == 0)
+                return False;
+
+        if (low)
+                *low = winbind_gid_low;
+
+        if (high)
+                *high = winbind_gid_high;
+
+        return True;
+}
+
+/* Do some simple checks on "winbind [ug]id" parameter values */
+
+static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 {
 	int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2)
-	{
+	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low) {
 		return False;
 	}
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
+
+        winbind_uid_low = low;
+        winbind_uid_high = high;
+
+	return True;
+}
+
+static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
+{
+	gid_t low, high;
+
+	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low) {
+		return False;
+	}
+
+	/* Parse OK */
+
+	string_set(ptr, pszParmValue);
+
+        winbind_gid_low = low;
+        winbind_gid_high = high;
 
 	return True;
 }
