@@ -678,6 +678,7 @@ struct passdb_ops *nisplus_initialize_password_db(void)
 
 /* useful code i can't bring myself to delete */
 #if 0
+static void useful_code(void) {
 	/* checks user in unix password database.  don't want to do that, here. */
 	nisname = make_nisname_from_name(newpwd->smb_name, "passwd.org_dir");
 
@@ -692,4 +693,5 @@ struct passdb_ops *nisplus_initialize_password_db(void)
 
 	user_obj = NIS_RES_OBJECT(nis_user);
 	make_nisname_from_name(ENTRY_VAL(user_obj,0), pfile);
+}
 #endif

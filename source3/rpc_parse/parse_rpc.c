@@ -184,20 +184,9 @@ void smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
-creates an RPC_IFACE structure.
-********************************************************************/
-void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version)
-{
-	if (ifc == NULL || data == NULL) return;
-
-	memcpy(ifc->data, data, sizeof(ifc->data)); /* 16 bytes of number */
-	ifc->version = version; /* the interface number */
-}
-
-/*******************************************************************
 reads or writes an RPC_IFACE structure.
 ********************************************************************/
-void smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int depth)
+static void smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int depth)
 {
 	if (ifc == NULL) return;
 
@@ -213,7 +202,7 @@ void smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int depth)
 /*******************************************************************
 creates an RPC_ADDR_STR structure.
 ********************************************************************/
-void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
+static void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
 {
 	if (str == NULL || name == NULL) return;
 
@@ -224,7 +213,7 @@ void make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
 /*******************************************************************
 reads or writes an RPC_ADDR_STR structure.
 ********************************************************************/
-void smb_io_rpc_addr_str(char *desc,  RPC_ADDR_STR *str, prs_struct *ps, int depth)
+static void smb_io_rpc_addr_str(char *desc,  RPC_ADDR_STR *str, prs_struct *ps, int depth)
 {
 	if (str == NULL) return;
 
@@ -239,7 +228,7 @@ void smb_io_rpc_addr_str(char *desc,  RPC_ADDR_STR *str, prs_struct *ps, int dep
 /*******************************************************************
 creates an RPC_HDR_BBA structure.
 ********************************************************************/
-void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid)
+static void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid)
 {
 	if (bba == NULL) return;
 
@@ -251,7 +240,7 @@ void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint
 /*******************************************************************
 reads or writes an RPC_HDR_BBA structure.
 ********************************************************************/
-void smb_io_rpc_hdr_bba(char *desc,  RPC_HDR_BBA *rpc, prs_struct *ps, int depth)
+static void smb_io_rpc_hdr_bba(char *desc,  RPC_HDR_BBA *rpc, prs_struct *ps, int depth)
 {
 	if (rpc == NULL) return;
 
@@ -312,7 +301,7 @@ creates an RPC_RESULTS structure.
 lkclXXXX only one reason at the moment!
 
 ********************************************************************/
-void make_rpc_results(RPC_RESULTS *res, 
+static void make_rpc_results(RPC_RESULTS *res, 
 				uint8 num_results, uint16 result, uint16 reason)
 {
 	if (res == NULL) return;
@@ -328,7 +317,7 @@ reads or writes an RPC_RESULTS structure.
 lkclXXXX only one reason at the moment!
 
 ********************************************************************/
-void smb_io_rpc_results(char *desc,  RPC_RESULTS *res, prs_struct *ps, int depth)
+static void smb_io_rpc_results(char *desc,  RPC_RESULTS *res, prs_struct *ps, int depth)
 {
 	if (res == NULL) return;
 
@@ -408,19 +397,6 @@ void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth
 	prs_uint32("alloc_hint", ps, depth, &(rpc->alloc_hint));
 	prs_uint16("context_id", ps, depth, &(rpc->context_id));
 	prs_uint16("opnum     ", ps, depth, &(rpc->opnum));
-}
-
-/*******************************************************************
-creates an RPC_HDR_RESP structure.
-********************************************************************/
-void make_rpc_hdr_resp(RPC_HDR_RESP *hdr, uint32 data_len)
-{
-	if (hdr == NULL) return;
-
-	hdr->alloc_hint   = data_len - 0x18; /* allocation hint */
-	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->cancel_count = 0;               /* cancel count */
-	hdr->reserved     = 0;               /* 0 - reserved */
 }
 
 /*******************************************************************

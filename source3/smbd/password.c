@@ -84,7 +84,7 @@ BOOL set_challenge(char *challenge)
 /*******************************************************************
 get the last challenge sent
 ********************************************************************/
-BOOL last_challenge(unsigned char *challenge)
+static BOOL last_challenge(unsigned char *challenge)
 {
   if (!challenge_sent) return(False);
   memcpy(challenge,saved_challenge,8);
@@ -299,7 +299,7 @@ void add_session_user(char *user)
 /****************************************************************************
 update the encrypted smbpasswd file from the plaintext username and password
 *****************************************************************************/
-BOOL update_smbpassword_file(char *user, char *password)
+static BOOL update_smbpassword_file(char *user, char *password)
 {
 	struct smb_passwd *smbpw;
 	BOOL ret;

@@ -53,10 +53,10 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 
 }
 
+#if UNUSED_CODE
 /****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
-
 BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
 {
   prs_struct rbuf;
@@ -100,6 +100,7 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
 
   return ok;
 }
+#endif
 
 /****************************************************************************
 LSA Authenticate 2
@@ -389,6 +390,7 @@ password ?).\n", cli->desthost ));
   return ok;
 }
 
+#if UNUSED_CODE
 /***************************************************************************
 LSA SAM Logoff.
 
@@ -398,7 +400,6 @@ send a different info level. Right now though, I'm not sure
 what that needs to be (I need to see one on the wire before
 I can be sure). JRA.
 ****************************************************************************/
-
 BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 {
   DOM_CRED new_clnt_cred;
@@ -463,6 +464,7 @@ password ?).\n", cli->desthost ));
 
   return ok;
 }
+#endif
 
 /*********************************************************
  Change the domain password on the PDC.

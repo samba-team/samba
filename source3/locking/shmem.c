@@ -344,7 +344,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
                       (int)other_pid, (double)seek_back));
 #else
             DEBUG(5,("smb_shm_register_process : erasing stale record for pid %d (seek_back = %d)\n",
-                      (int)other_pid, seek_back));
+                      (int)other_pid, (int)seek_back));
 #endif
 	    other_pid = (pid_t)0;
 	    erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
@@ -372,7 +372,7 @@ static BOOL smb_shm_register_process(char *processreg_file, pid_t pid, BOOL *oth
          (int)pid, (double)free_slot));
 #else /* LARGE_SMB_OFF_T */
    DEBUG(5,("smb_shm_register_process : writing record for pid %d at offset %d\n",
-         (int)pid,free_slot));
+         (int)pid,(int)free_slot));
 #endif /* LARGE_SMB_OFF_T */
 
    sys_lseek(smb_shm_processes_fd, free_slot, SEEK_SET);
@@ -416,7 +416,7 @@ static BOOL smb_shm_unregister_process(char *processreg_file, pid_t pid)
                      (int)other_pid, (double)seek_back));
 #else /* LARGE_SMB_OFF_T */
         DEBUG(5,("smb_shm_unregister_process : erasing record for pid %d (seek_val = %d)\n",
-                     (int)other_pid, seek_back));
+                     (int)other_pid, (int)seek_back));
 #endif /* LARGE_SMB_OFF_T */
         other_pid = (pid_t)0;
         erased_slot = sys_lseek(smb_shm_processes_fd, seek_back, SEEK_CUR);
@@ -785,7 +785,8 @@ struct shmem_ops *smb_shm_open(int ronly)
 #ifdef LARGE_SMB_OFF_T
    DEBUG(5,("smb_shm_open : using shmem file %s to be of size %.0f\n",file_name,(double)size));
 #else /* LARGE_SMB_OFF_T */
-   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",file_name,size));
+   DEBUG(5,("smb_shm_open : using shmem file %s to be of size %d\n",
+	    file_name,(int)size));
 #endif /* LARGE_SMB_OFF_T */
 
    smb_shm_fd = open(file_name, read_only?O_RDONLY:(O_RDWR|O_CREAT),
@@ -863,7 +864,7 @@ struct shmem_ops *smb_shm_open(int ronly)
             (double)filesize, (double)size));
 #else /* LARGE_SMB_OFF_T */
       DEBUG(0,("WARNING smb_shm_open : filesize (%d) != expected size (%d), using filesize\n",
-            filesize,size));
+            (int)filesize,(int)size));
 #endif /* LARGE_SMB_OFF_T */
 
       size = filesize;

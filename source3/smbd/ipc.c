@@ -725,7 +725,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 }
 
 /* This function returns the number of files for a given driver */
-int get_printerdrivernumber(int snum)
+static int get_printerdrivernumber(int snum)
 {
   int i=0,ok=0;
   pstring tok;

@@ -37,8 +37,7 @@ extern pstring global_myname;
 /********************************************************************
  rpc pipe call id 
  ********************************************************************/
-
-uint32 get_rpc_call_id(void)
+static uint32 get_rpc_call_id(void)
 {
   static uint32 call_id = 1;
   return ++call_id;
@@ -157,7 +156,7 @@ static BOOL rpc_check_hdr(prs_struct *rdata, uint8 *pkt_type,
 
  ****************************************************************************/
 
-BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, 
+static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, 
                   prs_struct *param , prs_struct *data,
                   prs_struct *rparam, prs_struct *rdata)
 {
@@ -437,7 +436,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 do an rpc bind
 ****************************************************************************/
 
-BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state)
+static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state)
 {
   BOOL state_set = False;
   char param[2];
@@ -577,7 +576,7 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 do an rpc bind
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
+static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
                    RPC_IFACE *abstract, RPC_IFACE *transfer, BOOL ntlmssp_auth)
 {
   prs_struct hdr;

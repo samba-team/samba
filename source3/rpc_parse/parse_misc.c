@@ -32,7 +32,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 reads or writes a UTIME type.
 ********************************************************************/
-void smb_io_utime(char *desc,  UTIME *t, prs_struct *ps, int depth)
+static void smb_io_utime(char *desc,  UTIME *t, prs_struct *ps, int depth)
 {
 	if (t == NULL) return;
 
@@ -541,27 +541,11 @@ void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid)
 	rid4->rid     = rid;
 }
 
-/*******************************************************************
-reads or writes a DOM_RID4 structure.
-********************************************************************/
-void smb_io_dom_rid4(char *desc,  DOM_RID4 *rid4, prs_struct *ps, int depth)
-{
-	if (rid4 == NULL) return;
-
-	prs_debug(ps, depth, desc, "smb_io_dom_rid4. XXXX !check size of unknown! XXXX");
-	depth++;
-
-	prs_align(ps);
-	
-	prs_uint32("unknown", ps, depth, &(rid4->unknown));
-	prs_uint16("attr   ", ps, depth, &(rid4->attr   ));
-	prs_uint32("rid    ", ps, depth, &(rid4->rid    ));
-}
 
 /*******************************************************************
 makes a DOM_CLNT_SRV structure.
 ********************************************************************/
-void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
+static void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
 {
 	if (log == NULL) return;
 
@@ -591,7 +575,7 @@ void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name)
 /*******************************************************************
 reads or writes a DOM_CLNT_SRV structure.
 ********************************************************************/
-void smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int depth)
+static void smb_io_clnt_srv(char *desc,  DOM_CLNT_SRV *log, prs_struct *ps, int depth)
 {
 	if (log == NULL) return;
 
@@ -861,23 +845,7 @@ void smb_io_pol_hnd(char *desc,  POLICY_HND *pol, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
-void smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	smb_io_dom_query("", d_q, ps, depth);
-}
-
-/*******************************************************************
-reads or writes a dom query structure.
-********************************************************************/
-void smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	smb_io_dom_query("", d_q, ps, depth);
-}
-
-/*******************************************************************
-reads or writes a dom query structure.
-********************************************************************/
-void smb_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int depth)
+static void smb_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int depth)
 {
 	if (d_q == NULL) return;
 
@@ -903,6 +871,23 @@ void smb_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int depth)
 		bzero(&(d_q->dom_sid), sizeof(d_q->dom_sid));
 	}
 }
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+void smb_io_dom_query_3(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	smb_io_dom_query("", d_q, ps, depth);
+}
+
+/*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+void smb_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
+{
+	smb_io_dom_query("", d_q, ps, depth);
+}
+
 
 /*******************************************************************
 reads or writes a DOM_NAME structure.

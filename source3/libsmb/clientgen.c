@@ -51,7 +51,7 @@ struct
 /****************************************************************************
   return a description of an SMB error
 ****************************************************************************/
-char *cli_smb_errstr(struct cli_state *cli)
+static char *cli_smb_errstr(struct cli_state *cli)
 {
 	return smb_errstr(cli->inbuf);
 }
@@ -425,6 +425,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	return (cli->rap_error == 0);
 }
 
+#if UNUSED_CODE
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
@@ -480,6 +481,7 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *)
 
   return(count>0);
 }
+#endif
 
 /****************************************************************************
 call a NetServerEnum for the specified workgroup and servertype mask.
@@ -763,6 +765,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	return CVAL(cli->inbuf,smb_rcls) == 0;
 }
 
+#if UNUSED_CODE
 /****************************************************************************
 rename a file
 ****************************************************************************/
@@ -799,6 +802,7 @@ BOOL cli_mv(struct cli_state *cli, char *fname_src, char *fname_dst)
 
         return True;
 }
+#endif
 
 /****************************************************************************
 delete a file

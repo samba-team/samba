@@ -37,7 +37,7 @@ int num_response_packets = 0;
   Add an expected response record into the list
   **************************************************************************/
 
-void add_response_record(struct subnet_record *subrec,
+static void add_response_record(struct subnet_record *subrec,
 				struct response_record *rrec)
 {
   struct response_record *rrec2;

@@ -235,15 +235,6 @@ int read_pipe(pipes_struct *p, char *data, uint32 pos, int n)
 
 
 /****************************************************************************
-  gets the name of a pipe
-****************************************************************************/
-char *get_rpc_pipe_hnd_name(pipes_struct *p)
-{
-	return p?p->name:NULL;
-}
-
-
-/****************************************************************************
   set device state on a pipe.  exactly what this is for is unknown...
 ****************************************************************************/
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state)

@@ -44,8 +44,7 @@ extern pstring myhostname;
  Here we do a set of 'hard coded' checks for bad
  configuration settings.
 ************************************************/
-
-void do_global_checks(void)
+static void do_global_checks(void)
 {
 	SMB_STRUCT_STAT st;
 	if (lp_security() > SEC_SHARE && lp_revalidate(-1)) {

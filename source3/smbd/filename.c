@@ -28,12 +28,13 @@ extern BOOL short_case_preserve;
 extern fstring remote_machine;
 extern BOOL use_mangled_map;
 
+static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache);
+
 /****************************************************************************
  Check if two filenames are equal.
  This needs to be careful about whether we are case sensitive.
 ****************************************************************************/
-
-BOOL fname_equal(char *name1, char *name2)
+static BOOL fname_equal(char *name1, char *name2)
 {
   int l1 = strlen(name1);
   int l2 = strlen(name2);
@@ -68,8 +69,7 @@ BOOL fname_equal(char *name1, char *name2)
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
-
-BOOL mangled_equal(char *name1, char *name2)
+static BOOL mangled_equal(char *name1, char *name2)
 {
   pstring tmpname;
 
@@ -633,7 +633,7 @@ scan a directory to find a filename, matching without case sensitivity
 
 If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
-BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
+static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL docache)
 {
   void *cur_dir;
   char *dname;

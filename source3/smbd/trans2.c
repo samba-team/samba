@@ -1587,7 +1587,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 #ifdef LARGE_SMB_OFF_T
   DEBUG(6,("size: %.0f ", (double)size));
 #else /* LARGE_SMB_OFF_T */
-  DEBUG(6,("size: %x "   , size));
+  DEBUG(6,("size: %x "   , (int)size));
 #endif /* LARGE_SMB_OFF_T */
   DEBUG(6,("mode: %x\n"  , mode));
 

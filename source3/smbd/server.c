@@ -52,7 +52,7 @@ extern pstring myhostname;
 /****************************************************************************
   when exiting, take the whole family
 ****************************************************************************/
-void *dflt_sig(void)
+static void *dflt_sig(void)
 {
 	exit_server("caught signal");
 	return NULL;
@@ -61,7 +61,7 @@ void *dflt_sig(void)
 /****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
-void  killkids(void)
+static void  killkids(void)
 {
 	if(am_parent) kill(0,SIGTERM);
 }

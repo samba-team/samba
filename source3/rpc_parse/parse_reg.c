@@ -28,18 +28,6 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
-creates a structure.
-********************************************************************/
-void make_reg_q_open_policy(REG_Q_OPEN_POLICY *r_q,
-				uint16 unknown_0, uint32 level, uint16 unknown_1)
-{
-	r_q->ptr = 1;
-	r_q->unknown_0 = unknown_0;
-	r_q->level = level;
-	r_q->unknown_1 = unknown_1;
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, int depth)
@@ -60,18 +48,6 @@ void reg_io_q_open_policy(char *desc,  REG_Q_OPEN_POLICY *r_q, prs_struct *ps, i
 	}
 }
 
-
-/*******************************************************************
-creates a structure.
-********************************************************************/
-void make_reg_r_open_policy(REG_R_OPEN_POLICY *r_r,
-				POLICY_HND *pol, uint32 status)
-{
-	if (r_r == NULL) return;
-
-	memcpy(&(r_r->pol), pol, sizeof(r_r->pol));
-	r_r->status = status;
-}
 
 /*******************************************************************
 reads or writes a structure.
@@ -123,34 +99,6 @@ void reg_io_r_close(char *desc,  REG_R_CLOSE *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	prs_uint32("status", ps, depth, &(r_u->status));
-}
-/*******************************************************************
-creates a structure.
-********************************************************************/
-void make_reg_q_info(REG_Q_INFO *r_q,
-				POLICY_HND *pol, char *product_type,
-				NTTIME *prod_time, uint8 major_version, uint8 minor_version,
-				uint32 unknown)
-{
-	int type_len = strlen(product_type);
-
-	memcpy(&(r_q->pol), pol, sizeof(r_q->pol));
-	make_uni_hdr(&(r_q->hdr_type), type_len, type_len, 1);
-	make_unistr2(&(r_q->uni_type), product_type, type_len);
-
-	r_q->ptr1 = 1;
-	memcpy(&(r_q->time), prod_time, sizeof(r_q->time));
-	r_q->major_version1 = major_version;
-	r_q->minor_version1 = minor_version;
-	bzero(r_q->pad1, sizeof(r_q->pad1));
-
-	r_q->ptr2 = 1;
-	r_q->major_version2 = major_version;
-	r_q->minor_version2 = minor_version;
-	bzero(r_q->pad2, sizeof(r_q->pad2));
-
-	r_q->ptr3 = 1;
-	r_q->unknown = unknown;
 }
 
 /*******************************************************************
@@ -262,25 +210,6 @@ void reg_io_r_info(char *desc,  REG_R_INFO *r_r, prs_struct *ps, int depth)
 	prs_uint32("status", ps, depth, &(r_r->status));
 }
 
-
-/*******************************************************************
-creates a structure.
-********************************************************************/
-void make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q,
-				POLICY_HND *pol, char *name,
-				uint32 unknown_0, uint32 unknown_1, uint16 unknown_2)
-{
-	int len_name = strlen(name);
-
-	memcpy(&(r_q->pol), pol, sizeof(r_q->pol));
-
-	make_uni_hdr(&(r_q->hdr_name), len_name, len_name, 1);
-	make_unistr2(&(r_q->uni_name), name, len_name);
-
-	r_q->unknown_0 = unknown_0;
-	r_q->unknown_1 = unknown_1;
-	r_q->unknown_2 = unknown_2;
-}
 
 /*******************************************************************
 reads or writes a structure.

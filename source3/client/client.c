@@ -47,6 +47,9 @@ extern BOOL doencrypt;
 
 extern pstring user_socket_options;
 
+static int process_tok(fstring tok);
+static void cmd_help(char *dum_in, char *dum_out);
+
 /* 30 second timeout on most commands */
 #define CLIENT_TIMEOUT (30*1000)
 #define SHORT_TIMEOUT (5*1000)
@@ -134,7 +137,7 @@ extern int Client;
 /****************************************************************************
 send an SMBclose on an SMB file handle
 ****************************************************************************/
-void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
+static void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
 {
   bzero(outbuf,smb_size);
   set_message(outbuf,3,0,True);
@@ -148,6 +151,7 @@ void cli_smb_close(char *inbuf, char *outbuf, int clnt_fd, int c_num, int f_num)
   send_smb(clnt_fd, outbuf);
   client_receive_smb(clnt_fd,inbuf,CLIENT_TIMEOUT);
 }
+
 
 /****************************************************************************
 write to a local file with CR/LF->LF translation if appropriate. return the 
@@ -472,7 +476,7 @@ static void display_finfo(file_info *finfo)
     DEBUG(0,("  %-30s%7.7s%10d  %s",
   	   CNV_LANG(finfo->name),
 	   attrib_string(finfo->mode),
-	   finfo->size,
+	   (int)finfo->size,
 	   asctime(LocalTime(&t))));
 #endif /* LARGE_SMB_OFF_T */
     dir_total += finfo->size;
@@ -1206,7 +1210,7 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 #else /* LARGE_SMB_OFF_T */
   DEBUG(2,("getting file %s of size %d bytes as %s ",
 	   CNV_LANG(finfo.name),
-	   finfo.size,
+	   (int)finfo.size,
 	   lname));
 #endif /* LARGE_SMB_OFF_T */
 
@@ -1220,7 +1224,8 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
 #ifdef LARGE_SMB_OFF_T
       DEBUG(3,("nread=%d max_xmit=%d fsize=%.0f\n",nread,max_xmit,(double)finfo.size));
 #else /* LARGE_SMB_OFF_T */
-      DEBUG(3,("nread=%d max_xmit=%d fsize=%d\n",nread,max_xmit,finfo.size));
+      DEBUG(3,("nread=%d max_xmit=%d fsize=%d\n",nread,max_xmit,
+	       (int)finfo.size));
 #endif /* LARGE_SMB_OFF_T */
 
       /* 3 possible read types. readbraw if a large block is required.
@@ -1902,7 +1907,8 @@ static void do_put(char *rname,char *lname,file_info *finfo)
 #ifdef LARGE_SMB_OFF_T
   DEBUG(1,("putting file %s of size %.0f bytes as %s ",lname,(double)finfo->size,CNV_LANG(rname)));
 #else /* LARGE_SMB_OFF_T */
-  DEBUG(1,("putting file %s of size %d bytes as %s ",lname,finfo->size,CNV_LANG(rname)));
+  DEBUG(1,("putting file %s of size %d bytes as %s ",lname,
+	   (int)finfo->size,CNV_LANG(rname)));
 #endif /* LARGE_SMB_OFF_T */
   
   if (!maxwrite)
@@ -3318,7 +3324,7 @@ static int process_tok(fstring tok)
 /****************************************************************************
 help
 ****************************************************************************/
-void cmd_help(char *dum_in, char *dum_out)
+static void cmd_help(char *dum_in, char *dum_out)
 {
   int i=0,j;
   fstring buf;
@@ -3338,6 +3344,8 @@ void cmd_help(char *dum_in, char *dum_out)
 	DEBUG(0,("\n"));
       }
 }
+
+
 
 /****************************************************************************
 wait for keyboard activity, swallowing network packets

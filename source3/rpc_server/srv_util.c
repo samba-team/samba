@@ -81,48 +81,6 @@ rid_name domain_group_rids[] =
     { 0                             , NULL }
 };
 
-/**************************************************************************
- Check if a name matches any of the well known SID values.
-***************************************************************************/
-
-BOOL lookup_wellknown_sid_from_name(char *windows_name, DOM_SID *psid)
-{
-  rid_name *rnp;
-  int i;
-
-  for( i = 0; builtin_alias_rids[i].name != NULL; i++) {
-    rnp = &builtin_alias_rids[i];
-    if(strequal(rnp->name, windows_name)) {
-      string_to_sid( psid, "S-1-5-32" );
-      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
-      psid->sub_auths[psid->num_auths++] = rnp->rid;
-      return True;
-    }
-  }
-
-  for( i = 0; domain_user_rids[i].name != NULL; i++ ) {
-    rnp = &domain_user_rids[i];
-    if(strequal(rnp->name, windows_name)) {
-      *psid = global_machine_sid;
-      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
-      psid->sub_auths[psid->num_auths++] = rnp->rid;
-      return True;
-    }
-  }
-
-  for( i = 0; domain_group_rids[i].name != NULL; i++ ) {
-    rnp = &domain_group_rids[i];
-    if(strequal(rnp->name, windows_name)) {
-      *psid = global_machine_sid;
-      SMB_ASSERT_ARRAY(psid->sub_auths, psid->num_auths+1);
-      psid->sub_auths[psid->num_auths++] = rnp->rid;
-      return True;
-    }
-  }
-
-  return False;
-}
-
 int make_dom_gids(char *gids_str, DOM_GID **ppgids)
 {
   char *ptr;
