@@ -593,7 +593,7 @@ write list
 
 .SS admin users (G)
 
-This is a list of users who will be granted administrative privilages
+This is a list of users who will be granted administrative privileges
 on the share. This means that they will do all file operations as the
 super-user (root).
 
@@ -1107,7 +1107,7 @@ See also "valid users"
 
 .SS include (G)
 
-This allows you to include one config file inside another. the file is
+This allows you to include one config file inside another.  The file is
 included literally, as though typed in place.
 
 It takes the standard substitutions, except %u, %P and %S
@@ -1351,7 +1351,7 @@ Magic scripts are EXPERIMENTAL and should NOT be relied upon.
 .SS mangled map (S)
 This is for those who want to directly map UNIX file names which are
 not representable on DOS.  The mangling of names is not always what is
-needed.  In particular you may have documents with file extensiosn
+needed.  In particular you may have documents with file extensions
 that differ between DOS and UNIX. For example, under UNIX it is common
 to use .html for HTML files, whereas under DOS .htm is more commonly
 used.
@@ -1389,7 +1389,7 @@ the filename are preserved, forced to upper case, and appear as the first (up
 to) five characters of the mangled name.
 
 - a tilde ("~") is appended to the first part of the mangled name, followed
-by a two-character unique sequence, based on the origonal root name 
+by a two-character unique sequence, based on the original root name 
 (i.e., the original filename minus its final extension). The final
 extension is included in the hash calculation only if it contains any upper
 case characters or is longer than three characters.
@@ -1576,7 +1576,7 @@ of the user.
 Oplocks are the way that SMB clients get permission from a server to
 locally cache file operations. If a server grants an oplock
 (opportunistic lock) then the client is free to assume that it is the
-only one accessing the file and it will agressively cache file
+only one accessing the file and it will aggressively cache file
 data. With some oplock types the client may even cache file open/close
 operations. This can give enormous performance benefits.
 
@@ -1584,7 +1584,7 @@ Samba does not support opportunistic locks because they are very
 difficult to do under Unix. Samba can fake them, however, by granting
 a oplock whenever a client asks for one. This is controlled using the
 smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
-you are telling the client that it may agressively cache the file
+you are telling the client that it may aggressively cache the file
 data.
 
 By enabling this option on all read-only shares or shares that you know
@@ -1700,8 +1700,8 @@ This chat sequence is often quite site specific, depending on what
 local methods are used for password control (such as NIS+ etc).
 
 The string can contain the macros %o and %n which are substituted for
-the old and new passwords respectively. It can aso contain the
-standard macros \\n \\r \\t and \\s to give line-feed, carriage-return,
+the old and new passwords respectively. It can also contain the
+standard macros \en \er \et and \es to give line-feed, carriage-return,
 tab and space.
 
 The string can also contain a * which matches any sequence of
@@ -1715,17 +1715,18 @@ then no string is sent. Similarly, is the expect string is a fullstop
 then no string is expected.
 
 .B Example:
-	passwd chat = "*Enter OLD password*" %o\\n "*Enter NEW password*" %n\\n \\
-                      "*Reenter NEW password*" %n\\n "*Password changed*"
+        passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en \e
+                       "*Reenter NEW password*" %n\en "*Password changed*"
+
 
 .B Default:
-	passwd chat = *old*password* %o\\n *new*password* %n\\n *new*password* %n\\n *changed*
+       passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
 
 .SS passwd program (G)
 The name of a program that can be used to set user passwords.
 
 This is only necessary if you have enabled remote password changing at
-compile time. Any occurances of %u will be replaced with the user
+compile time. Any occurrences of %u will be replaced with the user
 name.
 
 Also note that many passwd programs insist in "reasonable" passwords,
@@ -1740,7 +1741,7 @@ Workgroups) uppercase the password before sending it.
 	passwd program = /sbin/passwd %u
 
 .SS password level (G)
-Some client/server conbinations have difficulty with mixed-case passwords.
+Some client/server combinations have difficulty with mixed-case passwords.
 One offending client is Windows for Workgroups, which for some reason forces
 passwords to upper case when using the LANMAN1 protocol, but leaves them alone
 when using COREPLUS!
@@ -1822,8 +1823,8 @@ and the path should be world-writable and have the sticky bit set. This is not
 mandatory of course, but you probably won't get the results you expect if you
 do otherwise.
 
-Any occurances of %u in the path will be replaced with the username
-that the client is connecting as. Any occurances of %m will be
+Any occurrences of %u in the path will be replaced with the username
+that the client is connecting as. Any occurrences of %m will be
 replaced by the name of the machine they are connecting from. These
 replacements are very useful for setting up pseudo home directories
 for users.
@@ -1851,7 +1852,7 @@ See also preexec
       none (no command executed)
 
 .B Example:
-      postexec = echo \"%u disconnected from %S from %m (%I)\" >> /tmp/log
+      postexec = echo \e"%u disconnected from %S from %m (%I)\e" >> /tmp/log
 
 .SS postscript (S)
 This parameter forces a printer to interpret the print files as
@@ -1875,7 +1876,7 @@ connected to. It takes the usual substitutions.
 An interesting example is to send the users a welcome message every
 time they log in. Maybe a message of the day? Here is an example:
 
-preexec = csh -c 'echo \"Welcome to %S!\" | \
+preexec = csh -c 'echo \e"Welcome to %S!\e" | \e
        /usr/local/samba/bin/smbclient -M %m -I %I' &
 
 Of course, this could get annoying after a while :-)
@@ -1886,7 +1887,7 @@ See also postexec
 	none (no command executed)
 
 .B Example:
-	preexec = echo \"%u connected to %S from %m (%I)\" >> /tmp/log
+        preexec = echo \e"%u connected to %S from %m (%I)\e" >> /tmp/log
 
 .SS preferred master (G)
 This boolean parameter controls if Samba is a preferred master browser
@@ -1927,7 +1928,7 @@ below.
 
 The full path name will be used for the filename if %s is not preceded
 by a /. If you don't like this (it can stuff up some lpq output) then
-use %f instead. Any occurances of %f get replaced by the spool
+use %f instead. Any occurrences of %f get replaced by the spool
 filename without the full path at the front.
 
 The print command MUST contain at least one occurrence of "%s" or %f -
@@ -2173,7 +2174,7 @@ This option allows you to setup nmbd to periodically announce itself
 to arbitrary IP addresses with an arbitrary workgroup name. 
 
 This is useful if you want your Samba server to appear in a remote
-workgroup for which the normal browse propogation rules don't
+workgroup for which the normal browse propagation rules don't
 work. The remote workgroup can be anywhere that you can send IP
 packets to.
 
@@ -2196,7 +2197,7 @@ This option replaces similar functionality from the nmbd lmhosts file.
 
 This options controls whether Samba will allow a previously validated
 username/password pair to be used to attach to a share. Thus if you
-connect to \\\\server\\share1 then to \\\\server\\share2 it won't
+connect to \e\eserver\eshare1 then to \e\eserver\eshare2 it won't
 automatically allow the client to request connection to the second
 share as the same username as the first without a password.
 
@@ -2328,7 +2329,7 @@ a connection is closed.
 If 'set directory = no', then users of the service may not use the setdir
 command to change directory.
 
-The setdir comand is only implemented in the Digital Pathworks client. See the
+The setdir command is only implemented in the Digital Pathworks client. See the
 Pathworks documentation for details.
 
 .B Default:
@@ -2350,7 +2351,7 @@ directory" specified in smb.conf must be readable by all users.
 The share modes that are enabled by this option are DENY_DOS,
 DENY_ALL, DENY_READ, DENY_WRITE, DENY_NONE and DENY_FCB.
 
-Enabling this option gives full share compatability but may cost a bit
+Enabling this option gives full share compatibility but may cost a bit
 of processing time on the UNIX server. They are enabled by default.
 
 .B Default:
@@ -2530,7 +2531,7 @@ supplied password will be tested against each username in turn (left to right).
 The username= line is needed only when the PC is unable to supply its own
 username. This is the case for the coreplus protocol or where your
 users have different WfWg usernames to UNIX usernames. In both these
-cases you may also be better using the \\\\server\\share%user syntax
+cases you may also be better using the \e\eserver\eshare%user syntax
 instead. 
 
 The username= line is not a great solution in many cases as it means Samba
@@ -2601,10 +2602,10 @@ would use
 
 You can have as many mappings as you like in a username map file.
 
-Note that the remapping is applied to all occurances of
-usernames. Thus if you connect to "\\\\server\\fred" and "fred" is
+Note that the remapping is applied to all occurrences of
+usernames. Thus if you connect to "\e\eserver\efred" and "fred" is
 remapped to "mary" then you will actually be connecting to
-"\\\\server\\mary" and will need to supply a password suitable for
+"\e\eserver\emary" and will need to supply a password suitable for
 "mary" not "fred". The only exception to this is the username passed
 to the "password server" (if you have one). The password server will
 receive whatever username the client supplies without modification.
@@ -2632,7 +2633,7 @@ between them then it will be taken as an lowercase:uppercase pair.
 
 If you have an editor capable of entering the characters into the
 config file then it is probably easiest to use this method. Otherwise
-you can specify the characters in octal, decimal or hexidecimal form
+you can specify the characters in octal, decimal or hexadecimal form
 using the usual C notation.
 
 For example to add the single character 'Z' to the charset (which is a
@@ -2800,7 +2801,7 @@ If the service is marked "guest only = yes" then steps 1 to 5 are skipped
 Step 1: If the client has passed a username/password pair and that
 username/password pair is validated by the UNIX system's password
 programs then the connection is made as that username. Note that this
-includes the \\\\server\\service%username method of passing a username.
+includes the \e\eserver\eservice%username method of passing a username.
 
 Step 2: If the client has previously registered a username with the
 system and now supplies a correct password for that username then the

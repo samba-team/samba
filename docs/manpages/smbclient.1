@@ -72,7 +72,7 @@ the server, retrieving directory information from the server and so on.
 .B servicename
 is the name of the service you want to use on the server. A service
 name takes the form
-.B "\\\\\\\\server\\\\service"
+.B "\e\eserver\eservice"
 where
 .B server
 is the netbios name of the Lan Manager server offering the desired service and
@@ -81,7 +81,7 @@ is the name of the service offered. Thus to connect to the service "printer"
 on the Lan Manager server "lanman", you would use the servicename
 
 .RS 10
-.B "\\\\\\\\lanman\\\\printer"
+.B "\e\elanman\eprinter"
 .RE
 
 Note that the server name required is NOT necessarily the host name of the
@@ -384,7 +384,7 @@ or
 used as:
 .LP
 smbclient 
-.B "\\\\\\\\server\\\\share"
+.B "\e\eserver\eshare"
 \-TcxIXbgNa
 [
 .IR blocksize
@@ -459,15 +459,15 @@ flags.
 
 .B Examples
 
-smbclient \\\\mypc\\myshare "" -N -Tx backup.tar
+smbclient \e\emypc\emyshare "" -N -Tx backup.tar
 
 Restore from tar file backup.tar into myshare on mypc (no password on share).
 
-smbclient \\\\mypc\\myshare "" -N -TXx backup.tar users/docs
+smbclient \e\emypc\emyshare "" -N -TXx backup.tar users/docs
 
 Restore everything except users/docs
 
-smbclient \\\\mypc\\myshare "" -N -Tc backup.tar users/docs
+smbclient \e\emypc\emyshare "" -N -Tc backup.tar users/docs
 
 Create a tar file of the files beneath users/docs.
 .RE
@@ -497,8 +497,8 @@ This is particularly useful in scripts and for printing stdin to
 the server, e.g. \-c 'print \-'.
 .RE
 .SH OPERATIONS
-Once the client is running, the user is presented with a prompt, "smb: \\>".
-The backslash ("\\") indicates the current working directory on the server,
+Once the client is running, the user is presented with a prompt, "smb: \e>".
+The backslash ("\e") indicates the current working directory on the server,
 and will change if the current working directory is changed.
 
 The prompt indicates that the client is ready and waiting to carry out a user
@@ -1000,13 +1000,12 @@ None.
 Toggle directory recursion for the commands
 .B mget
 and
-.B mput
-.
+.BR mput .
 
 When toggled ON, these commands will process all directories in the source
-directory (ie., the directory they are copying
-.I from
-) and will recurse into any that match the mask specified to the command. Only
+directory (i.e., the directory they are copying
+.IR from )
+and will recurse into any that match the mask specified to the command. Only
 files that match the mask specified using the
 .B mask
 command will be retrieved. See also the

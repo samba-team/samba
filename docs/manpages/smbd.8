@@ -190,7 +190,6 @@ clients. See
 .BR smb.conf (5)
 for more information.
 .RE
-.RE
 .SH LIMITATIONS
 
 On some systems
@@ -223,7 +222,7 @@ setuid. On some systems it may be worthwhile to make smbd setgid to an
 empty group. This is because some systems may have a security hole where
 daemon processes that become a user can be attached to with a
 debugger. Making the smbd file setgid to an empty group may prevent
-this hole from being exploited. This secrity hole and the suggested
+this hole from being exploited. This security hole and the suggested
 fix has only been confirmed on Linux at the time this was written. It
 is possible that this hole only exists in Linux, as testing on other
 systems has thus far shown them to be immune.
@@ -369,7 +368,7 @@ meta-daemon. Some versions of inetd will reread their configuration tables if
 they receive a HUP signal.
 
 If your machine's name is "fred" and your name is "mary", you should now be
-able to connect to the service "\\\\fred\\mary".
+able to connect to the service "\e\efred\emary".
 
 To properly test and experiment with the server, we recommend using the
 smbclient program (see
