@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -483,7 +483,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	return ret;
     ent.principal = log_ent.principal;
     log_ent.principal = NULL;
-    ret = context->db->fetch(context->context, context->db, &ent);
+    ret = context->db->fetch(context->context, context->db, 
+			     HDB_F_DECRYPT, &ent);
     if (ret)
 	return ret;
     if (mask & KADM5_PRINC_EXPIRE_TIME) {
@@ -559,7 +560,8 @@ kadm5_log_replay_modify (kadm5_server_context *context,
 	    copy_Key(&log_ent.keys.val[i],
 		     &ent.keys.val[i]);
     }
-    ret = context->db->store(context->context, context->db, 1, &ent);
+    ret = context->db->store(context->context, context->db, 
+			     HDB_F_REPLACE, &ent);
     hdb_free_entry (context->context, &ent);
     hdb_free_entry (context->context, &log_ent);
     return ret;

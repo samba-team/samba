@@ -56,7 +56,7 @@ kadm5_s_rename_principal(void *server_handle,
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->fetch(context->context, context->db, &ent);
+    ret = context->db->fetch(context->context, context->db, 0, &ent);
     if(ret){
 	context->db->close(context->context, context->db);
 	goto out;
@@ -86,6 +86,8 @@ kadm5_s_rename_principal(void *server_handle,
 	goto out2;
     ent2.principal = ent.principal;
     ent.principal = target;
+
+    hdb_seal_keys(context->db, &ent);
 
     kadm5_log_rename (context,
 		      source,

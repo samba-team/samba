@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -104,7 +104,7 @@ kadm5_s_get_principals(void *server_handle,
     }
     d.princs = NULL;
     d.count = 0;
-    ret = hdb_foreach(context->context, context->db, foreach, &d);
+    ret = hdb_foreach(context->context, context->db, 0, foreach, &d);
     context->db->close(context->context, context->db);
     if(ret == 0)
 	ret = add_princ(&d, NULL);

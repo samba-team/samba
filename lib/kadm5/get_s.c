@@ -54,7 +54,8 @@ kadm5_s_get_principal(void *server_handle,
     ret = context->db->open(context->context, context->db, O_RDONLY, 0);
     if(ret)
 	return ret;
-    ret = context->db->fetch(context->context, context->db, &ent);
+    ret = context->db->fetch(context->context, context->db, 
+			     HDB_F_DECRYPT, &ent);
     context->db->close(context->context, context->db);
     if(ret)
 	return _kadm5_error_code(ret);
@@ -105,8 +106,15 @@ kadm5_s_get_principal(void *server_handle,
 
     if(mask & KADM5_KVNO)
 	out->kvno = ent.kvno;
-    if(mask & KADM5_MKVNO && ent.keys.len)
-	out->mkvno = ent.keys.val[0].mkvno; /* XXX this is not right */
+    if(mask & KADM5_MKVNO) {
+	int n;
+	out->mkvno = 0; /* XXX */
+	for(n = 0; n < ent.keys.len; n++)
+	    if(ent.keys.val[n].mkvno) {
+		out->mkvno = *ent.keys.val[n].mkvno; /* XXX this isn't right */
+		break;
+	    }
+    }
     if(mask & KADM5_AUX_ATTRIBUTES)
 	/* XXX implement */;
     if(mask & KADM5_POLICY)

@@ -117,6 +117,8 @@ kadm5_s_create_principal_with_key(void *server_handle,
     if(ret)
 	goto out;
     
+    hdb_seal_keys(context->db, &ent);
+    
     kadm5_log_create (context, &ent);
 
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
@@ -167,6 +169,8 @@ kadm5_s_create_principal(void *server_handle,
     ent.keys.val[3].key.keytype = ETYPE_DES3_CBC_SHA1;
     ret = _kadm5_set_keys(context, &ent, password);
 
+    hdb_seal_keys(context->db, &ent);
+    
     kadm5_log_create (context, &ent);
 
     ret = context->db->open(context->context, context->db, O_RDWR, 0);

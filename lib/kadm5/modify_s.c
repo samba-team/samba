@@ -58,7 +58,7 @@ modify_principal(void *server_handle,
     ret = context->db->open(context->context, context->db, O_RDWR, 0);
     if(ret)
 	return ret;
-    ret = context->db->fetch(context->context, context->db, &ent);
+    ret = context->db->fetch(context->context, context->db, 0, &ent);
     if(ret)
 	goto out;
     ret = _kadm5_setup_entry(&ent, princ, NULL, mask);
@@ -68,11 +68,14 @@ modify_principal(void *server_handle,
     if(ret)
 	goto out2;
 
+    hdb_seal_keys(context->db, &ent);
+
     kadm5_log_modify (context,
 		      &ent,
 		      mask | KADM5_MOD_NAME | KADM5_MOD_TIME);
 		      
-    ret = context->db->store(context->context, context->db, 1, &ent);
+    ret = context->db->store(context->context, context->db, 
+			     HDB_F_REPLACE, &ent);
 out2:
     hdb_free_entry(context->context, &ent);
 out:
