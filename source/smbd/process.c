@@ -37,9 +37,6 @@ void smbd_process_init(void)
 	}
 	namecache_enable();
 
-	if (!locking_init(0))
-		exit(1);
-
 	if (!share_info_db_init())
 		exit(1);
 

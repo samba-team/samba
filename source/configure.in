@@ -254,8 +254,7 @@ SMB_BINARY(smbclient, [ALL], [BIN],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 
 SMB_BINARY(ndrdump, [ALL], [BIN],
-	[utils/ndrdump.o
-	utils/rewrite.o],
+	[utils/ndrdump.o],
 	[],
 	[LIBSMB CONFIG LIBBASIC LIBCMDLINE])
 

@@ -35,7 +35,6 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		libcli/util/smberr.o 
 		libcli/util/doserr.o 
 		libcli/util/errormap.o 
-		libcli/util/pwd_cache.o 
 		libcli/util/clierror.o 
 		libcli/util/cliutil.o 
 		libcli/util/nterr.o 

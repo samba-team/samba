@@ -44,9 +44,6 @@ void unbecome_root(void)
 BOOL namecache_enable(void)
 { return True; }
 
-BOOL locking_init(int read_only)
-{ return True; }
-
 BOOL share_info_db_init(void)
 { return True; }
 
@@ -57,8 +54,5 @@ BOOL share_access_check(struct request_context *req, struct tcon_context *conn, 
 { return True; }
 
 BOOL init_names(void)
-{ return True; }
-
-BOOL become_user_permanently(uid_t uid, gid_t gid)
 { return True; }
 
