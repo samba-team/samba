@@ -419,6 +419,24 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 
 	if ( !(desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) &&
 		!(share->desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ) {
+
+		/*
+		 * Wrinkle discovered by smbtorture....
+		 * If both are non-io open and requester is asking for delete and current open has delete access
+		 * but neither open has allowed file share delete then deny.... this is very strange and
+		 * seems to be the only case in which non-io opens conflict. JRA.
+		 */
+
+		if ((desired_access & DELETE_ACCESS) && (share->desired_access & DELETE_ACCESS) && 
+				(!GET_ALLOW_SHARE_DELETE(share->share_mode) || !GET_ALLOW_SHARE_DELETE(share_mode))) {
+			DEBUG(5,("check_share_mode: Failing open on file %s as delete access requests conflict.\n",
+				fname ));
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadshare;
+
+			return False;
+		}
+
 		DEBUG(5,("check_share_mode: Allowing open on file %s as both desired access (0x%x) \
 and existing desired access (0x%x) are non-data opens\n", 
 			fname, (unsigned int)desired_access, (unsigned int)share->desired_access ));
