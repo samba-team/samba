@@ -295,14 +295,14 @@
 	/* Function: 0x0e */
 	typedef enum {
 		SID_NAME_USE_NONE = 0,/* NOTUSED */
-		SID_NAME_USER    = 1, /* user */
-		SID_NAME_DOM_GRP = 2, /* domain group */
-		SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
-		SID_NAME_ALIAS   = 4, /* local group */
-		SID_NAME_WKN_GRP = 5, /* well-known group */
-		SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
-		SID_NAME_INVALID = 7, /* invalid account */
-		SID_NAME_UNKNOWN = 8  /* oops. */
+		SID_NAME_USER     = 1, /* user */
+		SID_NAME_DOM_GRP  = 2, /* domain group */
+		SID_NAME_DOMAIN   = 3, /* domain: don't know what this is */
+		SID_NAME_ALIAS    = 4, /* local group */
+		SID_NAME_WKN_GRP  = 5, /* well-known group */
+		SID_NAME_DELETED  = 6, /* deleted account: needed for c2 rating */
+		SID_NAME_INVALID  = 7, /* invalid account */
+		SID_NAME_UNKNOWN  = 8  /* oops. */
 	} lsa_SidType;
 
 	typedef struct {
@@ -438,20 +438,21 @@
 	} lsa_DATA_BUF;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint32 size;
+		[range(0,65536)] uint32 size;
 		[size_is(size)] uint8 *data;
 	} lsa_DATA_BUF2;
 
 	typedef enum {
-		LSA_TRUSTED_DOMAIN_INFO_NAME=1,
-		LSA_TRUSTED_DOMAIN_INFO_2=2,
-		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET=3,
-		LSA_TRUSTED_DOMAIN_INFO_PASSWORD=4,
-		LSA_TRUSTED_DOMAIN_INFO_5=5,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_EX=6,
-		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO=7,
-		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO=8,
-		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL=12
+		LSA_TRUSTED_DOMAIN_INFO_NAME         = 1,
+		LSA_TRUSTED_DOMAIN_INFO_2            = 2,
+		LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET = 3,
+		LSA_TRUSTED_DOMAIN_INFO_PASSWORD     = 4,
+		LSA_TRUSTED_DOMAIN_INFO_5            = 5,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_EX      = 6,
+		LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO    = 7,
+		LSA_TRUSTED_DOMAIN_INFO_FULL_INFO    = 8,
+		LSA_TRUSTED_DOMAIN_INFO_11           = 11,
+		LSA_TRUSTED_DOMAIN_INFO_INFO_ALL     = 12
 	} lsa_TrustDomInfoEnum;
 
 	typedef struct {
@@ -459,59 +460,59 @@
 	} lsa_TrustDomainInfoName;
 
 	typedef struct {
-		uint32        posix_offset;
+		uint32         posix_offset;
 	} lsa_TrustDomainInfoPosixOffset;
 
 	typedef struct {
-		lsa_DATA_BUF *password;
-		lsa_DATA_BUF *old_password;
+		lsa_DATA_BUF  *password;
+		lsa_DATA_BUF  *old_password;
 	} lsa_TrustDomainInfoPassword;
 
 	typedef struct {
 		lsa_String     netbios_name;
-		dom_sid2    *sid;
+		dom_sid2      *sid;
 	} lsa_TrustDomainInfo5;
 
 	typedef struct {
 		lsa_String     domain_name;
 		lsa_String     netbios_name;
-		dom_sid2    *sid;
-		uint32       unknown1;
-		uint32       unknown2;
-		uint32       unknown3;
+		dom_sid2      *sid;
+		uint32         trust_direction;
+		uint32         trust_type;
+		uint32         trust_attributes;
 	} lsa_TrustDomainInfoInfoEx;
 
 	typedef struct {
-		HYPER_T      unknown1;
-		uint32       unknown2;
-		lsa_DATA_BUF2 data;
+		NTTIME_hyper   last_update_time;
+		uint32         secret_type;
+		lsa_DATA_BUF2  data;
 	} lsa_TrustDomainInfoBuffer;
 
 	typedef struct {
-		uint32       unknown1;
-		lsa_TrustDomainInfoBuffer *buff1;
-		lsa_TrustDomainInfoBuffer *buff2;
-		uint32       unknown2;
-		lsa_TrustDomainInfoBuffer *buff3;
-		lsa_TrustDomainInfoBuffer *buff4;
+		uint32 incoming_count;
+		[size_is(incoming_count)] lsa_TrustDomainInfoBuffer *incoming_current_auth_info;
+		[size_is(incoming_count)] lsa_TrustDomainInfoBuffer *incoming_previous_auth_info;
+		uint32 outgoing_count;
+		[size_is(outgoing_count)] lsa_TrustDomainInfoBuffer *outgoing_current_auth_info;
+		[size_is(outgoing_count)] lsa_TrustDomainInfoBuffer *outgoing_previous_auth_info;
 	} lsa_TrustDomainInfoAuthInfo;
 
 	typedef struct {
-		lsa_TrustDomainInfoInfoEx info_ex;
+		lsa_TrustDomainInfoInfoEx      info_ex;
 		lsa_TrustDomainInfoPosixOffset posix_offset;
-		lsa_TrustDomainInfoAuthInfo  auth_info;
+		lsa_TrustDomainInfoAuthInfo    auth_info;
 	} lsa_TrustDomainInfoFullInfo;
 
 	typedef struct {
-		lsa_TrustDomainInfoInfoEx info_ex;
-		lsa_DATA_BUF2        data1;
+		lsa_TrustDomainInfoInfoEx      info_ex;
+		lsa_DATA_BUF2                  data1;
 	} lsa_TrustDomainInfo11;
 
 	typedef struct {
-		lsa_TrustDomainInfoInfoEx info_ex;
-		lsa_DATA_BUF2        data1;
+		lsa_TrustDomainInfoInfoEx      info_ex;
+		lsa_DATA_BUF2                  data1;
 		lsa_TrustDomainInfoPosixOffset posix_offset;
-		lsa_TrustDomainInfoAuthInfo  auth_info;
+		lsa_TrustDomainInfoAuthInfo    auth_info;
 	} lsa_TrustDomainInfoInfoAll;
 
 	typedef union {
@@ -522,14 +523,14 @@
 		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_EX)]      lsa_TrustDomainInfoInfoEx      info_ex;
 		[case(LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO)]    lsa_TrustDomainInfoAuthInfo    auth_info;
 		[case(LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)]    lsa_TrustDomainInfoFullInfo    full_info;
-		[case(11)]    lsa_TrustDomainInfo11 info11;
+		[case(LSA_TRUSTED_DOMAIN_INFO_11)]           lsa_TrustDomainInfo11          info11;
 		[case(LSA_TRUSTED_DOMAIN_INFO_INFO_ALL)]     lsa_TrustDomainInfoInfoAll     info_all;
 	} lsa_TrustedDomainInfo;
 
 	/* Function:       0x1a */
 	NTSTATUS lsa_QueryTrustedDomainInfo(
-		[in,ref]     policy_handle *trustdom_handle,
-		[in]         uint16         level, 
+		[in,ref]     policy_handle                   *trustdom_handle,
+		[in]         lsa_TrustDomInfoEnum             level, 
 		[out,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
