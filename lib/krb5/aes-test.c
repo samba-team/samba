@@ -31,6 +31,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include "krb5_locl.h"
+#include <hex.h>
 
 #ifdef HAVE_OPENSSL
 #include <openssl/evp.h>
@@ -43,19 +44,11 @@ static int verbose = 0;
 static void
 hex_dump_data(krb5_data *data)
 {
-    unsigned char *p = data->data;
-    int i, j;
+    char *p;
 
-    for (i = j = 0; i < data->length; i++) {
-	printf("%02x ", p[i]);
-	if (j > 15) {
-	    printf("\n");
-	    j = 0;
-	} else
-	    j++;
-    }
-    if (j != 0)
-	printf("\n");
+    hex_encode(data->data, data->length, &p);
+    printf("%s\n", p);
+    free(p);
 }
 
 struct {
@@ -68,7 +61,6 @@ struct {
     char *pbkdf2;
     char *key;
 } keys[] = {
-#ifdef ENABLE_AES
     { 
 	"password", "ATHENA.MIT.EDUraeburn", -1,
 	1, 
@@ -186,7 +178,6 @@ struct {
 	"\x4b\x6d\x98\x39\xf8\x44\x06\xdf\x1f\x09\xcc\x16\x6d\xb4\xb8\x3c"
 	"\x57\x18\x48\xb7\x84\xa3\xd6\xbd\xc3\x46\x58\x9a\x3e\x39\x3f\x9e"
     },
-#endif
     {
 	"foo", "", -1, 
 	0,
@@ -229,7 +220,6 @@ string_to_key_test(krb5_context context)
 	opaque.length = sizeof(iter);
 	_krb5_put_int(iter, keys[i].iterations, 4);
 	
-#ifdef ENABLE_AES
 	if (keys[i].pbkdf2) {
 #ifdef HAVE_OPENSSL
 	    char keyout[32];
@@ -279,7 +269,6 @@ string_to_key_test(krb5_context context)
 	    
 	    krb5_free_keyblock_contents(context, &key);
 	}
-#endif
 
 	ret = krb5_string_to_key_data_salt_opaque (context, keys[i].enctype,
 						   password, salt, opaque, 
@@ -311,8 +300,6 @@ string_to_key_test(krb5_context context)
     }
     return val;
 }
-
-#ifdef ENABLE_AES
 
 struct enc_test {
     size_t len;
@@ -597,9 +584,6 @@ encryption_test(krb5_context context, char *key, int keylen,
     return failed;
 }
 
-#endif /* ENABLE_AES */
-
-
 static int
 krb_enc(krb5_context context,
 	krb5_crypto crypto, 
@@ -688,7 +672,6 @@ struct {
     size_t plen;
     void *pdata;
 } krbencs[] =  {
-#ifdef ENABLE_AES
     { 
 	ETYPE_AES256_CTS_HMAC_SHA1_96,
 	7,
@@ -702,7 +685,6 @@ struct {
 	16,
 	"\x54\x68\x69\x73\x20\x69\x73\x20\x61\x20\x74\x65\x73\x74\x2e\x0a"
     }
-#endif
 };
 
 
@@ -800,12 +782,10 @@ main(int argc, char **argv)
 
     val |= string_to_key_test(context);
 
-#ifdef ENABLE_AES
     val |= encryption_test(context, aes_key1, 128,
 			   encs1, sizeof(encs1)/sizeof(encs1[0]));
     val |= encryption_test(context, aes_key2, 256, 
 			   encs2, sizeof(encs2)/sizeof(encs2[0]));
-#endif
     val |= krb_enc_test(context);
     val |= random_to_key(context);
 
