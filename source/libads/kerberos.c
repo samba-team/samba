@@ -362,8 +362,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	}
 
 	if ((err = krb5_get_credentials(ctx, 0, ccache, &creds, &new_creds))) {
-		DEBUG(5,("get_service_ticket: krb5_get_credentials for %s failed: %s\n", 
-			service_s, error_message(err)));
+		DEBUG(5,("get_service_ticket: krb5_get_credentials for %s enctype %d failed: %s\n", 
+			service_s, enctype, error_message(err)));
 		goto out;
 	}
 
@@ -602,23 +602,12 @@ static void kerberos_derive_salting_principal_for_enctype(const char *service_pr
  Go through all the possible enctypes for this principal.
  ************************************************************************/
 
- void kerberos_derive_salting_principal(krb5_context context,
+static void kerberos_derive_salting_principal_direct(krb5_context context,
 					krb5_ccache ccache,
 					krb5_enctype *enctypes,
 					char *service_principal)
 {
 	int i;
-	BOOL free_ccache = False;
-
-	if (ccache == NULL) {
-		krb5_error_code ret;
-		if ((ret = krb5_cc_resolve(context, LIBADS_CCACHE_NAME, &ccache)) != 0) {
-			DEBUG(0, ("kerberos_derive_salting_principal: krb5_cc_resolve for %s failed: %s\n", 
-				LIBADS_CCACHE_NAME, error_message(ret)));
-			return;
-		}
-		free_ccache = True;
-	}
 
 	/* Try for each enctype separately, because the rules are
 	 * different for different enctypes. */
@@ -640,9 +629,48 @@ static void kerberos_derive_salting_principal_for_enctype(const char *service_pr
 								enctypes[i],
 								enctypes);
 	}
+}
 
-	if (free_ccache && ccache) {
-		krb5_cc_close(context, ccache);
+/************************************************************************
+ Wrapper function for the above.
+ ************************************************************************/
+
+void kerberos_derive_salting_principal(char *service_principal)
+{
+	krb5_context context = NULL;
+	krb5_enctype *enctypes = NULL;
+	krb5_ccache ccache = NULL;
+	krb5_error_code ret = 0;
+
+	initialize_krb5_error_table();
+	if ((ret = krb5_init_context(&context)) != 0) {
+		DEBUG(1,("kerberos_derive_cifs_salting_principals: krb5_init_context failed. %s\n",
+			error_message(ret)));
+		return;
+	}
+	if ((ret = get_kerberos_allowed_etypes(context, &enctypes)) != 0) {
+		DEBUG(1,("kerberos_derive_cifs_salting_principals: get_kerberos_allowed_etypes failed. %s\n",
+			error_message(ret)));
+		goto out;
+	}
+
+	if ((ret = krb5_cc_resolve(context, LIBADS_CCACHE_NAME, &ccache)) != 0) {
+		DEBUG(3, ("get_service_ticket: krb5_cc_resolve for %s failed: %s\n", 
+			LIBADS_CCACHE_NAME, error_message(ret)));
+		goto out;
+	}
+
+	kerberos_derive_salting_principal_direct(context, ccache, enctypes, service_principal);
+
+  out: 
+	if (enctypes) {
+		free_kerberos_etypes(context, enctypes);
+	}
+	if (ccache) {
+		krb5_cc_destroy(context, ccache);
+	}
+	if (context) {
+		krb5_free_context(context);
 	}
 }
 
@@ -681,38 +709,38 @@ BOOL kerberos_derive_cifs_salting_principals(void)
 
 	if (asprintf(&service, "%s$", global_myname()) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	if (asprintf(&service, "cifs/%s", global_myname()) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	if (asprintf(&service, "host/%s", global_myname()) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	if (asprintf(&service, "cifs/%s.%s", global_myname(), lp_realm()) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	if (asprintf(&service, "host/%s.%s", global_myname(), lp_realm()) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	name_to_fqdn(my_fqdn, global_myname());
 	if (asprintf(&service, "cifs/%s", my_fqdn) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 	if (asprintf(&service, "host/%s", my_fqdn) != -1) {
 		strlower_m(service);
-		kerberos_derive_salting_principal(context, ccache, enctypes, service);
+		kerberos_derive_salting_principal_direct(context, ccache, enctypes, service);
 		SAFE_FREE(service);
 	}
 

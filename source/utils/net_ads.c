@@ -823,6 +823,20 @@ int net_ads_join(int argc, const char **argv)
 		return -1;
 	}
 
+#ifdef HAVE_KRB5
+	if (!kerberos_derive_salting_principal(machine_account)) {
+		DEBUG(1,("Failed to determine salting principal\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+
+	if (!kerberos_derive_cifs_salting_principals()) {
+		DEBUG(1,("Failed to determine salting principals\n"));
+		ads_destroy(&ads);
+		return -1;
+	}
+#endif
+
 	if (!secrets_store_domain_sid(short_domain_name, &dom_sid)) {
 		DEBUG(1,("Failed to save domain sid\n"));
 		ads_destroy(&ads);
