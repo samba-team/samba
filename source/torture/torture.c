@@ -870,7 +870,7 @@ static BOOL run_locktest1(int dummy)
 	lock_timeout = (1 + (random() % 20));
 	printf("Testing lock timeout with timeout=%u\n", lock_timeout);
 	t1 = time(NULL);
-	if (cli_lock(cli2, fnum3, 0, 4, lock_timeout * 500, WRITE_LOCK)) {
+	if (cli_lock(cli2, fnum3, 0, 4, lock_timeout * 1000, WRITE_LOCK)) {
 		printf("lock3 succeeded! This is a locking bug\n");
 		return False;
 	} else {
