@@ -51,11 +51,11 @@ static int (*Setpag)(void);
 static int
 isSuid()
 {
-  int uid = getuid();
-  int gid = getgid();
-  int euid = getegid();
-  int egid = getegid();
-  return (uid != euid) || (gid != egid);
+    int uid = getuid();
+    int gid = getgid();
+    int euid = getegid();
+    int egid = getegid();
+    return (uid != euid) || (gid != egid);
 }
 
 static int
@@ -92,6 +92,7 @@ aix_setup(void)
 #define AIX_ENTRY_POINTS	5
 #define UNKNOWN_ENTRY_POINT	6
 static int afs_entry_point = UNKNOWN_ENTRY_POINT;
+static int afs_syscalls[2];
 
 
 int
@@ -101,41 +102,27 @@ k_pioctl(char *a_path,
 	 int a_followSymlinks)
 {
 #ifndef NO_AFS
-#ifdef AFS_SYSCALL
-  if (afs_entry_point == SINGLE_ENTRY_POINT)
-    return syscall(AFS_SYSCALL, AFSCALL_PIOCTL,
-		   a_path, o_opcode, a_paramsP, a_followSymlinks);
-#endif
-
-#ifdef AFS_PIOCTL
-    if (afs_entry_point == MULTIPLE_ENTRY_POINT)
-      return syscall(AFS_PIOCTL,
-		     a_path, o_opcode, a_paramsP, a_followSymlinks);
-#endif
-
-#ifdef AFS_SYSCALL2
-  if (afs_entry_point == SINGLE_ENTRY_POINT2)
-    return syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
-		   a_path, o_opcode, a_paramsP, a_followSymlinks);
-#endif
-
-#ifdef AFS_SYSCALL3
-  if (afs_entry_point == SINGLE_ENTRY_POINT3)
-    return syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
-		   a_path, o_opcode, a_paramsP, a_followSymlinks);
-#endif
-
+    switch(afs_entry_point){
+    case SINGLE_ENTRY_POINT:
+    case SINGLE_ENTRY_POINT2:
+    case SINGLE_ENTRY_POINT3:
+	return syscall(afs_syscalls[0], AFSCALL_PIOCTL,
+		       a_path, o_opcode, a_paramsP, a_followSymlinks);
+    case MULTIPLE_ENTRY_POINT:
+	return syscall(afs_syscalls[0],
+		       a_path, o_opcode, a_paramsP, a_followSymlinks);
 #ifdef _AIX
-  if (afs_entry_point == AIX_ENTRY_POINTS)
-      return Pioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
+    case AIX_ENTRY_POINTS:
+	return Pioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
-
-  errno = ENOSYS;
+    }
+    
+    errno = ENOSYS;
 #ifdef SIGSYS
-  kill(getpid(), SIGSYS);	/* You loose! */
+    kill(getpid(), SIGSYS);	/* You loose! */
 #endif
 #endif /* NO_AFS */
-  return -1;
+    return -1;
 }
 
 int
@@ -152,46 +139,34 @@ k_afs_cell_of_file(const char *path, char *cell, int len)
 int
 k_unlog(void)
 {
-  struct ViceIoctl parms;
-  memset(&parms, 0, sizeof(parms));
-  return k_pioctl(0, VIOCUNLOG, &parms, 0);
+    struct ViceIoctl parms;
+    memset(&parms, 0, sizeof(parms));
+    return k_pioctl(0, VIOCUNLOG, &parms, 0);
 }
 
 int
 k_setpag(void)
 {
 #ifndef NO_AFS
-#ifdef AFS_SYSCALL
-  if (afs_entry_point == SINGLE_ENTRY_POINT)
-    return syscall(AFS_SYSCALL, AFSCALL_SETPAG);
-#endif
-
-#ifdef AFS_SETPAG
-  if (afs_entry_point == MULTIPLE_ENTRY_POINT)
-    return syscall(AFS_SETPAG);
-#endif
-
-#ifdef AFS_SYSCALL2
-  if (afs_entry_point == SINGLE_ENTRY_POINT2)
-    return syscall(AFS_SYSCALL2, AFSCALL_SETPAG);
-#endif
-
-#ifdef AFS_SYSCALL3
-  if (afs_entry_point == SINGLE_ENTRY_POINT3)
-    return syscall(AFS_SYSCALL3, AFSCALL_SETPAG);
-#endif
-
+    switch(afs_entry_point){
+    case SINGLE_ENTRY_POINT:
+    case SINGLE_ENTRY_POINT2:
+    case SINGLE_ENTRY_POINT3:
+	return syscall(afs_syscalls[0], AFSCALL_SETPAG);
+    case MULTIPLE_ENTRY_POINT:
+	return syscall(afs_syscalls[1]);
 #ifdef _AIX
-  if (afs_entry_point == AIX_ENTRY_POINTS)
-      return Setpag();
+    case AIX_ENTRY_POINTS:
+	return Setpag();
 #endif
-
-  errno = ENOSYS;
+    }
+    
+    errno = ENOSYS;
 #ifdef SIGSYS
-  kill(getpid(), SIGSYS);	/* You loose! */
+    kill(getpid(), SIGSYS);	/* You loose! */
 #endif
 #endif /* NO_AFS */
-  return -1;
+    return -1;
 }
 
 static jmp_buf catch_SIGSYS;
@@ -201,9 +176,9 @@ static jmp_buf catch_SIGSYS;
 static RETSIGTYPE
 SIGSYS_handler(int sig)
 {
-  errno = 0;
-  signal(SIGSYS, SIGSYS_handler); /* Need to reinstall handler on SYSV */
-  longjmp(catch_SIGSYS, 1);
+    errno = 0;
+    signal(SIGSYS, SIGSYS_handler); /* Need to reinstall handler on SYSV */
+    longjmp(catch_SIGSYS, 1);
 }
 
 #endif
@@ -211,95 +186,100 @@ SIGSYS_handler(int sig)
 int
 k_hasafs(void)
 {
-  int saved_errno;
-  RETSIGTYPE (*saved_func)();
-  struct ViceIoctl parms;
+    int saved_errno;
+    RETSIGTYPE (*saved_func)();
+    struct ViceIoctl parms;
   
-  /*
-   * Already checked presence of AFS syscalls?
-   */
-  if (afs_entry_point != UNKNOWN_ENTRY_POINT)
-    return afs_entry_point != NO_ENTRY_POINT;
+    /*
+     * Already checked presence of AFS syscalls?
+     */
+    if (afs_entry_point != UNKNOWN_ENTRY_POINT)
+	return afs_entry_point != NO_ENTRY_POINT;
 
-  /*
-   * Probe kernel for AFS specific syscalls,
-   * they (currently) come in two flavors.
-   * If the syscall is absent we recive a SIGSYS.
-   */
-  afs_entry_point = NO_ENTRY_POINT;
-  memset(&parms, 0, sizeof(parms));
+    /*
+     * Probe kernel for AFS specific syscalls,
+     * they (currently) come in two flavors.
+     * If the syscall is absent we recive a SIGSYS.
+     */
+    afs_entry_point = NO_ENTRY_POINT;
+    memset(&parms, 0, sizeof(parms));
   
-  saved_errno = errno;
+    saved_errno = errno;
 #ifndef NO_AFS
 #ifdef SIGSYS
-  saved_func = signal(SIGSYS, SIGSYS_handler);
+    saved_func = signal(SIGSYS, SIGSYS_handler);
 #endif
 
 #ifdef AFS_SYSCALL
-  if (setjmp(catch_SIGSYS) == 0)
-    {
-      syscall(AFS_SYSCALL, AFSCALL_PIOCTL,
-	      0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      if (errno == EINVAL)
+    if (setjmp(catch_SIGSYS) == 0)
 	{
-	  afs_entry_point = SINGLE_ENTRY_POINT;
-	  goto done;
+	    syscall(AFS_SYSCALL, AFSCALL_PIOCTL,
+		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	    if (errno == EINVAL)
+		{
+		    afs_entry_point = SINGLE_ENTRY_POINT;
+		    afs_syscalls[0] = AFS_SYSCALL;
+		    goto done;
+		}
 	}
-    }
 #endif /* AFS_SYSCALL */
 
 #ifdef AFS_PIOCTL
-  if (setjmp(catch_SIGSYS) == 0)
-    {
-      syscall(AFS_PIOCTL,
-	      0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      if (errno == EINVAL)
+    if (setjmp(catch_SIGSYS) == 0)
 	{
-	  afs_entry_point = MULTIPLE_ENTRY_POINT;
-	  goto done;
+	    syscall(AFS_PIOCTL,
+		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	    if (errno == EINVAL)
+		{
+		    afs_entry_point = MULTIPLE_ENTRY_POINT;
+		    afs_syscalls[0] = AFS_PIOCTL;
+		    afs_syscalls[1] = AFS_SETPAG;
+		    goto done;
+		}
 	}
-    }
 #endif /* AFS_PIOCTL */
 
 #ifdef AFS_SYSCALL2
-  if (setjmp(catch_SIGSYS) == 0)
-    {
-      syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
-	      0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      if (errno == EINVAL)
+    if (setjmp(catch_SIGSYS) == 0)
 	{
-	  afs_entry_point = SINGLE_ENTRY_POINT2;
-	  goto done;
+	    syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
+		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	    if (errno == EINVAL)
+		{
+		    afs_entry_point = SINGLE_ENTRY_POINT2;
+		    afs_syscalls[0] = AFS_SYSCALL2;
+		    goto done;
+		}
 	}
-    }
 #endif /* AFS_SYSCALL */
 
 #ifdef AFS_SYSCALL3
-  if (setjmp(catch_SIGSYS) == 0)
-    {
-      syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
-	      0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      if (errno == EINVAL)
+    if (setjmp(catch_SIGSYS) == 0)
 	{
-	  afs_entry_point = SINGLE_ENTRY_POINT3;
-	  goto done;
+	    syscall(AFS_SYSCALL3, AFSCALL_PIOCTL,
+		    0, VIOCSETTOK, &parms, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	    if (errno == EINVAL)
+		{
+		    afs_entry_point = SINGLE_ENTRY_POINT3;
+		    afs_syscalls[0] = AFS_SYSCALL3;
+		    goto done;
+		}
 	}
-    }
 #endif /* AFS_SYSCALL */
 
 #ifdef _AIX
-  aix_setup();
-  if(Pioctl != NULL && Setpag != NULL){
-      afs_entry_point = AIX_ENTRY_POINTS;
-      goto done;
-  }
+    aix_setup();
+    if(Pioctl != NULL && Setpag != NULL){
+	afs_entry_point = AIX_ENTRY_POINTS;
+	goto done;
+    }
 #endif
 
- done:
+done:
 #ifdef SIGSYS
-  signal(SIGSYS, saved_func);
+    signal(SIGSYS, saved_func);
 #endif
 #endif /* NO_AFS */
-  errno = saved_errno;
-  return afs_entry_point != NO_ENTRY_POINT;
+    errno = saved_errno;
+    return afs_entry_point != NO_ENTRY_POINT;
 }
