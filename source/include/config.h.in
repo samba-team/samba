@@ -30,6 +30,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef mode_t
 
+/* Define if your C compiler doesn't accept -c and -o together.  */
+#undef NO_MINUS_C_MINUS_O
+
 /* Define to `long' if <sys/types.h> doesn't define.  */
 #undef off_t
 

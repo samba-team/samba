@@ -548,6 +548,10 @@ int main(int argc, char **argv)
 {	
 	static pstring servicesf = CONFIGFILE;
 
+#if defined(HAVE_SET_AUTH_PARAMETERS)
+	set_auth_parameters(argc, argv);
+#endif /* HAVE_SET_AUTH_PARAMETERS */
+
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);

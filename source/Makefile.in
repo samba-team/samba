@@ -293,6 +293,7 @@ MAKEDIR = || exec false; \
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
 	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
+@BROKEN_CC@   -mv `basename $@` $@
 @MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
@@ -306,6 +307,7 @@ MAKEDIR = || exec false; \
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
 	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@
+@BROKEN_CC@   -mv `basename $@` $@
 @MAINT@	@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp

@@ -941,6 +941,10 @@ static void printers_page(void)
 	int opt;
 	char *page;
 
+#if defined(HAVE_SET_AUTH_PARAMETERS)
+    set_auth_parameters(argc, argv);
+#endif /* HAVE_SET_AUTH_PARAMETERS */
+
 	/* just in case it goes wild ... */
 	alarm(300);
 
