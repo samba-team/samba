@@ -16,6 +16,7 @@ SUBDIRS = 					\
 	  popper				\
 	  push					\
 	  rsh					\
+	  rcp					\
 	  su					\
 	  xnlock				\
 	  telnet				\
