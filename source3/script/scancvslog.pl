@@ -37,7 +37,19 @@ open(INFILE,@ARGV[0]) || die "Unable to open @ARGV[0]\n";
 	"September",	8,
 	"October",	9,
 	"November",	10,
-	"December",	11
+	"December",	11,
+	"Jan",		0,
+	"Feb",		1,
+	"Mar",		2,
+	"Apr",		3,
+	"May",		4,
+	"Jun",		5,
+	"Jul",		6,
+	"Aug",		7,
+	"Sep",		8,
+	"Oct",		9,
+	"Nov",		10,
+	"Dec",		11
 );
 
 $Starttime = (@ARGV[1]) ? &make_time(@ARGV[1]) : 0;
@@ -45,6 +57,10 @@ $Tagvalue = @ARGV[2];
 
 while (&get_entry) {
   $_=$Entry[0];
+# get rid of extra white space
+  s/\s+/ /g;
+# get rid of any time string in date
+  s/ \d\d:\d\d:\d\d/,/;
   s/^Date:\s*\w*\s*(\w*)\s*(\w*),\s*(\w*).*/$1 $2 $3/;
   $Testtime = &make_time($_);
   $Testtag = &get_tag;
