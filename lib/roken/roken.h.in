@@ -361,8 +361,6 @@ time_t tm2time (struct tm tm, int local);
 
 int unix_verify_user(char *user, char *password);
 
-void inaddr2str(struct in_addr addr, char *s, size_t len);
-
 void mini_inetd (int port);
 
 int roken_concat (char *s, size_t len, ...);
