@@ -1,3 +1,39 @@
+2002-09-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* appl/kf/kf.c: handle new protocol
+
+	* appl/kf/kfd.c: use krb5_err instead of sysloging directly,
+	handle the new protocol, and bail out if an old client tries to
+	connect
+
+	* appl/kf/kf_locl.h: we need a protocol version string
+
+	* lib/hdb/hdb-ldap.c: use ASN1_MALLOC_ENCODE
+
+	* kdc/kerberos5.c: use ASN1_MALLOC_ENCODE
+
+	* kdc/hprop.c: set AP_OPTS_USE_SUBKEY
+
+	* lib/hdb/common.c: use ASN1_MALLOC_ENCODE
+
+	* lib/asn1/gen.c: add convenience macro that allocates a buffer
+	and encoded into that
+
+	* lib/krb5/get_cred.c (init_tgs_req): use
+	in_creds->session.keytype literally instead of trying to convert
+	to a list of enctypes (it should already be an enctype)
+
+2002-09-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_for_creds.c (krb5_get_forwarded_creds): don't
+	blindly use the local subkey
+
+	* lib/krb5/crypto.c: add function krb5_crypto_getblocksize that
+	extracts the required blocksize from a crypto context
+
+	* lib/krb5/build_auth.c: just get the length of the encoded
+	authenticator instead of trying to grow a buffer
+
 2002-09-03  Assar Westerlund  <assar@kth.se>
 
 	* configure.in: add --disable-mmap option, and tests for
