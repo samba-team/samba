@@ -3758,23 +3758,27 @@ BOOL set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
  Check for POSIX group ACLs. If none use stat entry.
 ****************************************************************************/
 
-static int check_posix_acl_group_write(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *psbuf)
+static int check_posix_acl_group_write(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	extern struct current_user current_user;
 	SMB_ACL_T posix_acl = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
 	int i;
+	BOOL seen_mask = False;
 	int ret = -1;
 
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, dname, SMB_ACL_TYPE_ACCESS)) == NULL) {
+	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS)) == NULL) {
 		goto check_stat;
 	}
 
 	/* First ensure the group mask allows group read. */
+	/* Also check any user entries (these take preference over group). */
+
 	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
+		int have_write = -1;
 
 		/* get_next... */
 		if (entry_id == SMB_ACL_FIRST_ENTRY)
@@ -3788,20 +3792,51 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *dnam
 			goto check_stat;
 		}
 
+		have_write = SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE);
+		if (have_write == -1) {
+			goto check_stat;
+		}
+
 		switch(tagtype) {
 			case SMB_ACL_MASK:
-				if (!SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE)) {
-					/* We don't have group write permission. */
+				if (!have_write) {
+					/* We don't have any group or explicit user write permission. */
 					ret = -1; /* Allow caller to check "other" permissions. */
+					DEBUG(10,("check_posix_acl_group_write: file %s \
+refusing write due to mask.\n", fname));
 					goto done;
 				}
+				seen_mask = True;
 				break;
+			case SMB_ACL_USER:
+			{
+				/* Check against current_user.uid. */
+				uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+				if (puid == NULL) {
+					goto check_stat;
+				}
+				if (current_user.uid == *puid) {
+					/* We have a uid match but we must ensure we have seen the acl mask. */
+					ret = have_write;
+					DEBUG(10,("check_posix_acl_group_write: file %s \
+match on user %u -> %s.\n", fname, (unsigned int)*puid, ret ? "can write" : "cannot write"));
+					if (seen_mask) {
+						goto done;
+					}
+				}
+				break;
+			}
 			default:
 				continue;
 		}
 	}
 
-	/* Now check all group entries. */
+	/* If ret is anything other than -1 we matched on a user entry. */
+	if (ret != -1) {
+		goto done;
+	}
+
+	/* Next check all group entries. */
 	entry_id = SMB_ACL_FIRST_ENTRY;
 	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
@@ -3826,35 +3861,23 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *dnam
 		}
 
 		switch(tagtype) {
-			case SMB_ACL_USER:
-				{
-					/* Check against current_user.uid. */
-					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
-					if (puid == NULL) {
-						goto check_stat;
-					}
-					if (current_user.uid == *puid) {
-						/* We're done now we have a uid match. */
+			case SMB_ACL_GROUP:
+			{
+				gid_t *pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+				if (pgid == NULL) {
+					goto check_stat;
+				}
+				for (i = 0; i < current_user.ngroups; i++) {
+					if (current_user.groups[i] == *pgid) {
+						/* We're done now we have a gid match. */
 						ret = have_write;
+						DEBUG(10,("check_posix_acl_group_write: file %s \
+match on group %u -> %s.\n", fname, (unsigned int)*pgid, ret ? "can write" : "cannot write"));
 						goto done;
 					}
 				}
 				break;
-			case SMB_ACL_GROUP:
-				{
-					gid_t *pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
-					if (pgid == NULL) {
-						goto check_stat;
-					}
-					for (i = 0; i < current_user.ngroups; i++) {
-						if (current_user.groups[i] == *pgid) {
-							/* We're done now we have a gid match. */
-							ret = have_write;
-							goto done;
-						}
-					}
-				}
-				break;
+			}
 			default:
 				continue;
 		}
@@ -3877,7 +3900,7 @@ static int check_posix_acl_group_write(connection_struct *conn, const char *dnam
 }
 
 /****************************************************************************
- Actually emulate the in-kernel access checking for write access. We need
+ Actually emulate the in-kernel access checking for delete access. We need
  this to successfully return ACCESS_DENIED on a file open for delete access.
 ****************************************************************************/
 
@@ -3888,6 +3911,11 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	pstring dname;
 	int ret;
 
+	if (!CAN_WRITE(conn)) {
+		return False;
+	}
+
+	/* Get the parent directory permission mask and owners. */
 	pstrcpy(dname, parent_dirname(fname));
 	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {
 		return False;
@@ -3895,11 +3923,12 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	if (!S_ISDIR(sbuf.st_mode)) {
 		return False;
 	}
-	if (current_user.uid == 0) {
+	if (current_user.uid == 0 || conn->admin_user) {
 		/* I'm sorry sir, I didn't know you were root... */
 		return True;
 	}
 
+	/* Check primary owner write access. */
 	if (current_user.uid == sbuf.st_uid) {
 		return (sbuf.st_mode & S_IWUSR) ? True : False;
 	}
@@ -3918,11 +3947,52 @@ BOOL can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 #endif
 
-	/* Check group ownership. */
+	/* Check group or explicit user acl entry write access. */
 	ret = check_posix_acl_group_write(conn, dname, &sbuf);
 	if (ret == 0 || ret == 1) {
 		return ret ? True : False;
 	}
 
+	/* Finally check other write access. */
+	return (sbuf.st_mode & S_IWOTH) ? True : False;
+}
+
+/****************************************************************************
+ Actually emulate the in-kernel access checking for write access. We need
+ this to successfully check for ability to write for dos filetimes.
+****************************************************************************/
+
+BOOL can_write_to_file(connection_struct *conn, const char *fname)
+{
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT sbuf;  
+	int ret;
+
+	if (!CAN_WRITE(conn)) {
+		return False;
+	}
+
+	if (current_user.uid == 0 || conn->admin_user) {
+		/* I'm sorry sir, I didn't know you were root... */
+		return True;
+	}
+
+	/* Get the file permission mask and owners. */
+	if(SMB_VFS_STAT(conn, fname, &sbuf) != 0) {
+		return False;
+	}
+
+	/* Check primary owner write access. */
+	if (current_user.uid == sbuf.st_uid) {
+		return (sbuf.st_mode & S_IWUSR) ? True : False;
+	}
+
+	/* Check group or explicit user acl entry write access. */
+	ret = check_posix_acl_group_write(conn, fname, &sbuf);
+	if (ret == 0 || ret == 1) {
+		return ret ? True : False;
+	}
+
+	/* Finally check other write access. */
 	return (sbuf.st_mode & S_IWOTH) ? True : False;
 }

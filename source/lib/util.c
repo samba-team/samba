@@ -274,24 +274,6 @@ const char *tmpdir(void)
 }
 
 /****************************************************************************
- Determine whether we are in the specified group.
-****************************************************************************/
-
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
-{
-	int i;
-
-	if (group == current_gid)
-		return(True);
-
-	for (i=0;i<ngroups;i++)
-		if (group == groups[i])
-			return(True);
-
-	return(False);
-}
-
-/****************************************************************************
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
