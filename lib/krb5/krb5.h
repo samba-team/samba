@@ -42,6 +42,7 @@
 #include <asn1_err.h>
 #include <krb5_err.h>
 #include <heim_err.h>
+#include <k524_err.h>
 
 #include <krb5_asn1.h>
 
@@ -291,8 +292,8 @@ typedef union {
 
 #define KRB5_VERIFY_AP_REQ_IGNORE_INVALID	(1 << 0)
 
-#define KRB5_GC_CACHED		1
-#define KRB5_GC_USER_USER	2
+#define KRB5_GC_CACHED			(1U << 0)
+#define KRB5_GC_USER_USER		(1U << 1)
 
 /* constants for compare_creds (and cc_retrieve_cred) */
 #define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
