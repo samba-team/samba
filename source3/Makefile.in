@@ -31,9 +31,8 @@ SHELL=/bin/sh
 
 BASEDIR= @prefix@
 BINDIR = @bindir@
-# we don't use sbindir because we want full compatibility with
-# the previous releases of Samba
-SBINDIR = @bindir@
+# sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
+SBINDIR = @sbindir@
 LIBDIR = @libdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
