@@ -1,4 +1,3 @@
-### SuSE readme begin
 Dear SuSE user,
 
 prebuilt Samba RPMs for all SuSE Linux versions are available at:
@@ -13,8 +12,7 @@ SerNet-supported packages on http://ftp.sernet.de/pub/samba/
 If you encounter any problem with these packages please don't blame the
 Samba Team.  Instead file a bug at https://bugzilla.Samba.org/ pick
 product Samba 3.0, then select 'component' Packaging and set 'assign to'
-to <lmuelle@suse.de.
+to <lmuelle@suse.de>.
 
 Have a lot of fun...
-### SuSE readme end
 
