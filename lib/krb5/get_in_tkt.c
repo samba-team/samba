@@ -64,7 +64,7 @@ krb5_init_etype (krb5_context context,
 	;
     *len = i;
     *val = malloc(i * sizeof(int));
-    if (*val == NULL) {
+    if (i != 0 && *val == NULL) {
 	ret = ENOMEM;
 	goto cleanup;
     }
