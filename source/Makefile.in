@@ -23,7 +23,9 @@ SHELL=/bin/sh
 
 BASEDIR= @prefix@
 BINDIR = @bindir@
-SBINDIR = @sbindir@
+# we don't use sbindir because we want full compatibility with
+# the previous releases of Samba
+SBINDIR = @bindir@
 LIBDIR = @libdir@
 VARDIR = $(BASEDIR)/var
 MANDIR = @mandir@
