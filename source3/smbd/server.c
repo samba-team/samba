@@ -197,6 +197,9 @@ max can be %d\n",
 		fd_set lfds;
 		int num;
 		
+		/* Free up temporary memory from the main smbd. */
+		lp_talloc_free();
+
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
