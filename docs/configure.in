@@ -1,4 +1,4 @@
-AC_INIT(settings.xls.in)
+AC_INIT(settings.xsl.in)
 
 PAPERSIZE=""
 DUPLICATE_ULINKS=""
