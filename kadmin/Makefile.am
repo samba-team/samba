@@ -8,6 +8,10 @@ sbin_PROGRAMS = kadmin
 
 libexec_PROGRAMS = kadmind
 
+man_MANS = kadmind.8
+
+noinst_PROGRAMS = add_random_users
+
 kadmin_SOURCES =				\
 	ank.c					\
 	cpw.c					\
@@ -34,6 +38,8 @@ kadmind_SOURCES = kadmind.c server.c kadmin_locl.h $(version4_c)
 
 EXTRA_kadmind_SOURCES = version4.c
 
+add_random_users_SOURCES = add-random-users.c
+
 COMMON_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_openldap) \
@@ -52,5 +58,11 @@ kadmin_LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(top_builddir)/lib/sl/libsl.la \
 	$(LIB_readline) \
+	$(COMMON_LDADD) \
+	$(LIB_dlopen)
+
+add_random_users_LDADD = \
+	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
+	$(top_builddir)/lib/kadm5/libkadm5srv.la \
 	$(COMMON_LDADD) \
 	$(LIB_dlopen)
