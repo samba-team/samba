@@ -2594,6 +2594,66 @@ int reply_mkdir(char *inbuf,char *outbuf)
   return(outsize);
 }
 
+/****************************************************************************
+Static function used by reply_rmdir to delete an entire directory
+tree recursively.
+****************************************************************************/
+static BOOL recursive_rmdir(char *directory)
+{
+  char *dname = NULL;
+  BOOL ret = False;
+  void *dirptr = OpenDir(-1, directory, False);
+
+  if(dirptr == NULL)
+    return True;
+
+  while((dname = ReadDirName(dirptr)))
+  {
+    pstring fullname;
+    struct stat st;
+
+    if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+      continue;
+
+    /* Construct the full name. */
+    if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
+    {
+      errno = ENOMEM;
+      ret = True;
+      break;
+    }
+    strcpy(fullname, directory);
+    strcat(fullname, "/");
+    strcat(fullname, dname);
+
+    if(sys_lstat(fullname, &st) != 0)
+    {
+      ret = True;
+      break;
+    }
+
+    if(st.st_mode & S_IFDIR)
+    {
+      if(recursive_rmdir(fullname)!=0)
+      {
+        ret = True;
+        break;
+      }
+      if(sys_rmdir(fullname) != 0)
+      {
+        ret = True;
+        break;
+      }
+    }
+    else if(sys_unlink(fullname) != 0)
+    {
+      ret = True;
+      break;
+    }
+  }
+  CloseDir(dirptr);
+  return ret;
+}
 
 /****************************************************************************
   reply to a rmdir
@@ -2662,10 +2722,15 @@ int reply_rmdir(char *inbuf,char *outbuf)
                       if(sys_lstat(fullname, &st) != 0)
                         break;
                       if(st.st_mode & S_IFDIR)
+                      {
+                        if(lp_recursive_veto_delete(SNUM(cnum)))
                         {
-                          if(sys_rmdir(fullname) != 0)
+                          if(recursive_rmdir(fullname) != 0)
                             break;
                         }
+                        if(sys_rmdir(fullname) != 0)
+                          break;
+                      }
                       else if(sys_unlink(fullname) != 0)
                         break;
                     }

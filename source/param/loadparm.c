@@ -265,6 +265,7 @@ typedef struct
   BOOL *copymap;
   BOOL bDeleteReadonly;
   BOOL bFakeOplocks;
+  BOOL bDeleteVetoFiles;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -345,6 +346,7 @@ static service sDefault =
   NULL,  /* copymap */
   False, /* bDeleteReadonly */
   False, /* bFakeOplocks */
+  False, /* bDeleteVetoFiles */
   ""     /* dummy */
 };
 
@@ -521,6 +523,7 @@ struct parm_struct
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL},
   {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL},
+  {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL},
   {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL},
   {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
@@ -936,6 +939,7 @@ FN_LOCAL_BOOL(lp_syncalways,bSyncAlways)
 FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
+FN_LOCAL_BOOL(lp_recursive_veto_delete,bDeleteVetoFiles)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
