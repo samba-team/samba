@@ -366,6 +366,7 @@ get_str(const void *pw, size_t pw_len, const void *salt, size_t salt_len,
     p = malloc(len);
     if(p == NULL)
 	return NULL;
+    memset (p, 0, len);
     memcpy(p, pw, pw_len);
     memcpy(p + pw_len, salt, salt_len);
     *ret_len = len;
