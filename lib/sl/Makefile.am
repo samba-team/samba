@@ -2,7 +2,12 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -DROKEN_RENAME
+if do_roken_rename
+IS = -DROKEN_RENAME
+ES = strtok_r.c snprintf.c strdup.c strupr.c
+endif
+
+INCLUDES += $(IS)
 
 YFLAGS = -d
 
@@ -15,20 +20,14 @@ libss_la_LDFLAGS = -version-info 1:3:1
 libsl_la_LIBADD = @LIB_readline@
 libss_la_LIBADD = @LIB_readline@
 
-RENAME_SRC = roken_rename.h strtok_r.c snprintf.c strdup.c strupr.c
-
-libsl_la_SOURCES = sl_locl.h sl.c $(RENAME_SRC)
+libsl_la_SOURCES = sl_locl.h sl.c $(ES)
 libss_la_SOURCES = $(libsl_la_SOURCES) ss.c ss.h
 
 # install these?
 
 bin_PROGRAMS = mk_cmds
 
-mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l
-
-RENAME_mk_cmds_SRC = roken_rename.h snprintf.c
-
-EXTRA_mk_cmds_SOURCES = snprintf.c roken_rename.h
+mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l $(ES)
 
 ssincludedir = $(includedir)/ss
 ssinclude_HEADERS = ss.h
