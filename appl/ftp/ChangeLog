@@ -1,3 +1,20 @@
+2003-07-19  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftp/security.h: add ftp_do_gss_bindings
+	
+	* ftp/ftp.1: fix mdoc bug
+	
+	* ftp/gssapi.c: Optionally support gss bindings, client does it by
+	default, server not.  This is to make it work for clients behind
+	NAT.
+
+	* ftp/main.c (args): add gss-bindings
+	(main): set ftp_do_gss_bindings to 1 to make client use them
+
+	* ftpd/ftpd.c (args): add gss-bindings
+	
+	* ftpd/ftpd.8: document --gss-bindings
+	
 2003-06-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/gssapi.c (gss_adat): fix name allocation bug
