@@ -124,7 +124,6 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 	fstring filter;
 	fstring sid_string;
 	LDAPMessage *result = NULL;
-	int count;
 	int rc;
 	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
 
@@ -144,7 +143,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 		return True;
 	}
 	
-	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
+	if ((ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
 		DEBUG(3, ("Sid %s already in use - trying next RID\n",
 			  sid_string));
 		ldap_msgfree(result);
@@ -168,7 +167,6 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
                               int rid_type)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	int rc;
 	LDAPMessage *domain_result = NULL;
 	LDAPMessage *entry  = NULL;
 	char *dn;
@@ -291,7 +289,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			}
 		}
 
-		if ((rc = smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
+		if ((smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
 			DOM_SID dom_sid;
 			DOM_SID sid;
 			pstring domain_sid_string;
