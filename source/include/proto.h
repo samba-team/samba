@@ -1618,9 +1618,6 @@ void close_sock(void);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 void free_response(struct winbindd_response *response);
-enum nss_status winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response);
 
 /*The following definitions come from  param/loadparm.c  */
 
@@ -1992,7 +1989,6 @@ char* pdb_get_munged_dial (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown3 (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown5 (SAM_ACCOUNT *sampass);
 uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass);
-void pdb_set_mem_ownership (SAM_ACCOUNT *sampass, BOOL flag);
 BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags);
 BOOL pdb_set_logon_time (SAM_ACCOUNT *sampass, time_t mytime);
 BOOL pdb_set_logoff_time (SAM_ACCOUNT *sampass, time_t mytime);
