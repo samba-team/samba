@@ -820,16 +820,14 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 		if (grp == NULL)
 			return NT_STATUS_NO_MEMORY;
 		
-		while ((num_entries < max_entries) && (grp != NULL)) {
+		for (; (num_entries < max_entries) && (grp != NULL); grp = grp->next) {
 			uint32 trid;
 			
 			if(!get_group_from_gid(grp->gr_gid, &smap)) {
-				grp = grp->next;
 				continue;
 			}
 
 			if (smap.sid_name_use!=SID_NAME_ALIAS) {
-				grp = grp->next;
 				continue;
 			}
 
@@ -838,24 +836,21 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 			/* Don't return winbind groups as they are not local! */
 			if (strchr(smap.nt_name, *sep) != NULL) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
-				grp = grp->next;
 				continue;
 			}
 
 			/* Don't return user private groups... */
 			if (Get_Pwnam(smap.nt_name, False) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
-				grp = grp->next;
 				continue;			
 			}
 
 			for( i = 0; i < num_entries; i++)
-				if ( (*d_grp)[i].rid == trid ) break;
+				if ( (*d_grp)[i].rid == trid )
+					break;
 
-			if ( i < num_entries ) {
-				grp = grp->next;
+			if ( i < num_entries )
 				continue; /* rid was there, dup! */
-			}
 
 			/* JRA - added this for large group db enumeration... */
 
@@ -864,7 +859,6 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 					not very efficient, but hey...
 				*/
 				start_idx--;
-				grp = grp->next;
 				continue;
 			}
 
@@ -877,7 +871,6 @@ static BOOL get_group_alias_entries(DOMAIN_GRP **d_grp, DOM_SID *sid, uint32 sta
 			fstrcpy((*d_grp)[num_entries].name, smap.nt_name);
 			(*d_grp)[num_entries].rid = trid;
 			num_entries++;
-			grp = grp->next;
 		}
 
 		grent_free(glist);
