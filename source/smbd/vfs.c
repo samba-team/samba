@@ -64,7 +64,8 @@ struct vfs_ops default_vfs_ops = {
     vfswrap_lstat,
     vfswrap_unlink,
     vfswrap_chmod,
-    vfswrap_utime
+    vfswrap_utime,
+    vfswrap_ftruncate
 };
 
 /****************************************************************************
@@ -206,6 +207,10 @@ BOOL vfs_init_custom(connection_struct *conn)
     
     if (conn->vfs_ops.utime == NULL) {
 	conn->vfs_ops.utime = default_vfs_ops.utime;
+    }
+    
+    if (conn->vfs_ops.ftruncate == NULL) {
+	conn->vfs_ops.ftruncate= default_vfs_ops.ftruncate;
     }
     
     return True;

@@ -662,7 +662,8 @@ int get_share_modes(connection_struct *conn,
 
 	data = (struct locking_data *)dbuf.dptr;
 	ret = data->num_share_mode_entries;
-	*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
+	if(ret)
+		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
 	free(dbuf.dptr);
 
 	if (! *shares) return 0;

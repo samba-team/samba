@@ -77,11 +77,17 @@ files_struct *file_new(void )
 		}
 
 		DEBUG(0,("ERROR! Out of file structures\n"));
+		unix_ERR_class = ERRSRV;
+		unix_ERR_code = ERRnofids;
 		return NULL;
 	}
 
 	fsp = (files_struct *)malloc(sizeof(*fsp));
-	if (!fsp) return NULL;
+	if (!fsp) {
+		unix_ERR_class = ERRSRV;
+		unix_ERR_code = ERRnofids;
+		return NULL;
+	}
 
 	ZERO_STRUCTP(fsp);
 	fsp->fd = -1;

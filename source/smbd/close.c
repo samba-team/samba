@@ -65,7 +65,8 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 /****************************************************************************
   Common code to close a file or a directory.
 ****************************************************************************/
-static void close_filestruct(files_struct *fsp)
+
+void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     
@@ -106,18 +107,14 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 		return 0;
 	}
 
-	if (lp_share_modes(SNUM(conn))) {
-		lock_share_entry_fsp(fsp);
-		del_share_mode(fsp);
-	}
+	lock_share_entry_fsp(fsp);
+	del_share_mode(fsp);
+	unlock_share_entry_fsp(fsp);
 
 	if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		release_file_oplock(fsp);
 
 	locking_close_file(fsp);
-
-	if (lp_share_modes(SNUM(conn)))
-		unlock_share_entry_fsp(fsp);
 
 	err = fd_close(conn, fsp);
 

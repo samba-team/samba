@@ -1545,23 +1545,18 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
   unix_convert(fname,conn,0,&bad_path,NULL);
     
-  fsp = file_new();
-  if (!fsp)
-    return(ERROR(ERRSRV,ERRnofids));
-
   unixmode = unix_mode(conn,aARCH,fname);
       
-  open_file_shared(fsp,conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
+  fsp = open_file_shared(conn,fname,share_mode,(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
                    unixmode, oplock_request,&rmode,NULL);
 
-  if (!fsp->open)
+  if (!fsp)
   {
     if((errno == ENOENT) && bad_path)
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1639,23 +1634,18 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
   unix_convert(fname,conn,0,&bad_path,NULL);
     
-  fsp = file_new();
-  if (!fsp)
-    return(ERROR(ERRSRV,ERRnofids));
-
   unixmode = unix_mode(conn,smb_attr | aARCH, fname);
       
-  open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
+  fsp = open_file_shared(conn,fname,smb_mode,smb_ofun,unixmode,
 	               oplock_request, &rmode,&smb_action);
       
-  if (!fsp->open)
+  if (!fsp)
   {
     if((errno == ENOENT) && bad_path)
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -1772,10 +1762,6 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode,fname);
   
-  fsp = file_new();
-  if (!fsp)
-    return(ERROR(ERRSRV,ERRnofids));
-
   if(com == SMBmknew)
   {
     /* We should fail if file exists. */
@@ -1788,17 +1774,16 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   }
 
   /* Open file in dos compatibility share mode. */
-  open_file_shared(fsp,conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+  fsp = open_file_shared(conn,fname,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
                    ofun, unixmode, oplock_request, NULL, NULL);
   
-  if (!fsp->open)
+  if (!fsp)
   {
     if((errno == ENOENT) && bad_path) 
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
  
@@ -1844,25 +1829,20 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode,fname);
   
-  fsp = file_new();
-  if (fsp)
-    return(ERROR(ERRSRV,ERRnofids));
-
   pstrcpy(fname2,(char *)smbd_mktemp(fname));
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  open_file_shared(fsp,conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+  fsp = open_file_shared(conn,fname2,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
                    (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
 
-  if (!fsp->open)
+  if (!fsp)
   {
     if((errno == ENOENT) && bad_path)
     {
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -3025,15 +3005,10 @@ int reply_printopen(connection_struct *conn,
 	if (!CAN_PRINT(conn))
 		return(ERROR(ERRDOS,ERRnoaccess));
 
-	fsp = file_new();
-	if (!fsp)
-		return(ERROR(ERRSRV,ERRnofids));
-	
 	/* Open for exclusive use, write only. */
-	print_fsp_open(fsp,conn,"dos.prn");
+	fsp = print_fsp_open(conn,"dos.prn");
 
-	if (!fsp->open) {
-		file_free(fsp);
+	if (!fsp) {
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
@@ -3745,32 +3720,21 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   if (!vfs_file_exist(conn,src,&st))
     return(False);
 
-  fsp1 = file_new();
-  if (!fsp1)
-    return(False);
-
-  open_file_shared(fsp1,conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+  fsp1 = open_file_shared(conn,src,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
 		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
 
-  if (!fsp1->open) {
-	  file_free(fsp1);
+  if (!fsp1) {
 	  return(False);
   }
 
   if (!target_is_directory && count)
     ofun = 1;
 
-  fsp2 = file_new();
-  if (!fsp2) {
-	  close_file(fsp1,False);
-	  return(False);
-  }
-  open_file_shared(fsp2,conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+  fsp2 = open_file_shared(conn,dest,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
 		   ofun,st.st_mode,0,&Access,&action);
 
-  if (!fsp2->open) {
+  if (!fsp2) {
     close_file(fsp1,False);
-    file_free(fsp2);
     return(False);
   }
 

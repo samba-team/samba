@@ -512,8 +512,12 @@ static BOOL api_lsa_query_info(prs_struct *data, prs_struct *rdata)
 
 	switch (q_i.info_class) {
 	case 0x03:
-		fstrcpy(name, global_myworkgroup);
-		sid = &global_sam_sid;
+		if(lp_domain_logons()) {
+			fstrcpy(name, global_myworkgroup);
+			sid = &global_sam_sid;
+		} else {
+			*name = '\0';
+		}
 		break;
 	case 0x05:
 		fstrcpy(name, global_myname);

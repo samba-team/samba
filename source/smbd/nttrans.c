@@ -747,12 +747,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	unix_convert(fname,conn,0,&bad_path,NULL);
 		
-	fsp = file_new();
-	if (!fsp) {
-		restore_case_semantics(file_attributes);
-		return(ERROR(ERRSRV,ERRnofids));
-	}
-		
 	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
 	/* 
@@ -762,13 +756,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		open_directory(fsp, conn, fname, smb_ofun, 
-			       unixmode, &smb_action);
+		fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
-		if(!fsp->open) {
-			file_free(fsp);
+		if(!fsp) {
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
@@ -789,10 +781,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		open_file_shared(fsp,conn,fname,smb_open_mode,
+		fsp = open_file_shared(conn,fname,smb_open_mode,
 				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
 
-		if (!fsp->open) { 
+		if (!fsp) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
@@ -819,17 +811,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					file_free(fsp);
 					restore_case_semantics(file_attributes);
 					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 					return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
 	
 				oplock_request = 0;
-				open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
 				
-				if(!fsp->open) {
-					file_free(fsp);
+				if(!fsp) {
 					restore_case_semantics(file_attributes);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
@@ -845,10 +835,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				oplock_request = 0;
 
-				open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+				fsp = open_file_stat(conn,fname,smb_open_mode,&sbuf,&smb_action);
 
-				if(!fsp->open) {
-					file_free(fsp);
+				if(!fsp) {
 					restore_case_semantics(file_attributes);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
@@ -859,8 +848,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadpath;
 				}
-				
-				file_free(fsp);
 				
 				restore_case_semantics(file_attributes);
 				
@@ -1109,12 +1096,6 @@ static int call_nt_transact_create(connection_struct *conn,
 
     unix_convert(fname,conn,0,&bad_path,NULL);
     
-    fsp = file_new();
-    if (!fsp) {
-	    restore_case_semantics(file_attributes);
-	    return(ERROR(ERRSRV,ERRnofids));
-    }
-
     unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
     /*
@@ -1131,10 +1112,9 @@ static int call_nt_transact_create(connection_struct *conn,
        * CreateDirectory() call.
        */
 
-      open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+      fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
 
-      if(!fsp->open) {
-        file_free(fsp);
+      if(!fsp) {
         restore_case_semantics(file_attributes);
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
@@ -1152,10 +1132,10 @@ static int call_nt_transact_create(connection_struct *conn,
        * Ordinary file case.
        */
 
-      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,unixmode,
+      fsp = open_file_shared(conn,fname,smb_open_mode,smb_ofun,unixmode,
                        oplock_request,&rmode,&smb_action);
 
-      if (!fsp->open) { 
+      if (!fsp) { 
 
 		if(errno == EISDIR) {
 
@@ -1164,17 +1144,15 @@ static int call_nt_transact_create(connection_struct *conn,
 			 */
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
-				file_free(fsp);
 				restore_case_semantics(file_attributes);
 				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
 			}
 	
 			oplock_request = 0;
-			open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+			fsp = open_directory(conn, fname, smb_ofun, unixmode, &smb_action);
 				
-			if(!fsp->open) {
-				file_free(fsp);
+			if(!fsp) {
 				restore_case_semantics(file_attributes);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
@@ -1191,10 +1169,9 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			oplock_request = 0;
 
-			open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+			fsp = open_file_stat(conn,fname,smb_open_mode,&sbuf,&smb_action);
 
-			if(!fsp->open) {
-				file_free(fsp);
+			if(!fsp) {
 				restore_case_semantics(file_attributes);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
@@ -1204,7 +1181,6 @@ static int call_nt_transact_create(connection_struct *conn,
 				unix_ERR_class = ERRDOS;
 				unix_ERR_code = ERRbadpath;
 			}
-			file_free(fsp);
 
 			restore_case_semantics(file_attributes);
 

@@ -67,7 +67,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
   strupper(my_name);
 
   code = SVAL(buf,0);
-  DEBUG(1,("process_logon_packet: Logon from %s: code = %x\n", inet_ntoa(p->ip), code));
+  DEBUG(1,("process_logon_packet: Logon from %s: code = 0x%x\n", inet_ntoa(p->ip), code));
 
   switch (code)
   {
@@ -202,10 +202,15 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       domainsidsize = IVAL(q, 0);
       q += 4;
 
-      if (domainsidsize != 0) {
+      DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d, len = %d\n", domainsidsize, len));
+
+      if (domainsidsize < (len - PTR_DIFF(q, buf)) && (domainsidsize != 0)) {
 	      q += domainsidsize;
 	      q = ALIGN4(q, buf);
       }
+
+      DEBUG(3,("process_logon_packet: len = %d PTR_DIFF(q, buf) = %d\n", len, PTR_DIFF(q, buf) ));
+
       if (len - PTR_DIFF(q, buf) > 8) {
 	      /* with NT5 clients we can sometimes
 		 get additional data - a length specificed string
@@ -213,7 +218,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 		 data (no idea what it is) */
 	      int dom_len = CVAL(q, 0);
 	      q++;
-	      if (dom_len != 0) {
+	      if (dom_len < (len - PTR_DIFF(q, buf)) && (dom_len != 0)) {
 		      q += dom_len + 1;
 	      }
 	      q += 16;

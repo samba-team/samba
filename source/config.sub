@@ -827,7 +827,7 @@ case $os in
 	      | -riscix*  | -lites* \
 	      | -lynxos* | -bosx* | -nextstep* | -cxux* | -aout* | -elf* \
 	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta | -udi \
-	      | -eabi* | -ieee*)
+	      | -eabi* | -ieee* | -qnx*)
 		;;
 	# CYGNUS LOCAL
 	-go32 | -sim | -es1800* | -hms* | -xray | -os68k* | -none* | -v88r* \

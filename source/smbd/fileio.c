@@ -234,6 +234,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
       /* Paranoia .... */
       if (EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type)) {
         DEBUG(0,("write_file: PANIC. share mode entry %d is an exlusive oplock !\n", i ));
+        unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
         abort();
       }
 
@@ -249,6 +250,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
         /* Paranoia check... */
         if(new_fsp == NULL) {
           DEBUG(0,("write_file: PANIC. share mode entry %d is not a local file !\n", i ));
+          unlock_share_entry(fsp->conn, fsp->dev, fsp->inode);
           abort();
         }
         oplock_break_level2(new_fsp, True, token);
