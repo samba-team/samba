@@ -1,3 +1,9 @@
+2005-04-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos4.c (do_version4): check client and server max_life
+	
+	* kdc/kaserver.c (do_getticket): check client max_life
+	
 2005-03-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_keytab.3: stop memory leak in example, expand on
