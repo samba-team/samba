@@ -323,6 +323,12 @@ void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out)
         smbhash(out+8, in+8, p14+7, 0);
 }
 
+void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out)
+{
+        smbhash(out, in, p14, 1);
+        smbhash(out+8, in+8, p14+7, 1);
+}
+
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];

@@ -94,6 +94,8 @@ BOOL cli_qpathinfo2(struct cli_state *cli, char *fname,
 		    time_t *w_time, uint32 *size);
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
+BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
+                             char *old_password);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 			 char *myname);
@@ -1288,6 +1290,7 @@ struct shmem_ops *sysv_shm_open(int ronly);
 void E_P16(unsigned char *p14,unsigned char *p16);
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24);
 void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
+void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void SamOEMhash( unsigned char *data, unsigned char *key);

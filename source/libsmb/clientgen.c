@@ -426,7 +426,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		return False;
 	}
 
-	if ((cli->sec_mode & 2) && *pass && passlen != 24) {
+	if ((cli->sec_mode & 2) && passlen != 24) {
 		passlen = 24;
 		SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
 	} else {
@@ -1207,6 +1207,103 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	return True;
 }
 
+/****************************************************************************
+send a SamOEMChangePassword command
+****************************************************************************/
+BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
+                             char *old_password)
+{
+  char param[16+sizeof(fstring)];
+  char data[532];
+  char *p = param;
+  fstring upper_case_old_pw;
+  fstring upper_case_new_pw;
+  unsigned char old_pw_hash[16];
+  unsigned char new_pw_hash[16];
+  int data_len;
+  int param_len = 0;
+  int new_pw_len = strlen(new_password);
+  char *rparam = NULL;
+  char *rdata = NULL;
+  int rprcnt, rdrcnt;
+
+  cli->error = -1;
+
+  if(strlen(user) >= sizeof(fstring)-1) {
+    DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
+    return False;
+  }
+
+  if(new_pw_len > 512) {
+    DEBUG(0,("cli_oem_change_password: new password for user %s is too long.\n", user));
+    return False;
+  }
+
+  SSVAL(p,0,214); /* SamOEMChangePassword command. */
+  p += 2;
+  strcpy(p, "zsT");
+  p = skip_string(p,1);
+  strcpy(p, "B516B16");
+  p = skip_string(p,1);
+  fstrcpy(p,user);
+  p = skip_string(p,1);
+  SSVAL(p,0,532);
+  p += 2;
+
+  param_len = PTR_DIFF(p,param);
+
+  /*
+   * Now setup the data area.
+   */
+  memset(data, '\0', sizeof(data));
+  fstrcpy( &data[512 - new_pw_len], new_password);
+  SIVAL(data, 512, new_pw_len);
+
+  /*
+   * Get the Lanman hash of the old password, we
+   * use this as the key to SamOEMHash().
+   */
+  memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
+  fstrcpy(upper_case_old_pw, old_password);
+  strupper(upper_case_old_pw);
+  E_P16((uchar *)upper_case_old_pw, old_pw_hash);
+
+  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash);
+
+  /* 
+   * Now place the old password hash in the data.
+   */
+  memset(upper_case_new_pw, '\0', sizeof(upper_case_new_pw));
+  fstrcpy(upper_case_new_pw, new_password);
+  strupper(upper_case_new_pw);
+
+  E_P16((uchar *)upper_case_new_pw, new_pw_hash);
+
+  E_old_pw_hash( new_pw_hash, old_pw_hash, &data[516]);
+
+  data_len = 532;
+   
+  if(cli_send_trans(cli,SMBtrans,PIPE_LANMAN,0,0,
+		 data,param,NULL,
+		 data_len , param_len,0,
+		 0,2,0) == False) {
+    DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
+              user ));
+    return False;
+  }
+
+  if(cli_receive_trans(cli,SMBtrans, &rdrcnt, &rprcnt, &rdata, &rparam)) {
+    if(rparam)
+      cli->error = SVAL(rparam,0);
+  }
+
+  if (rparam)
+    free(rparam);
+  if (rdata)
+    free(rdata);
+
+  return (cli->error == 0);
+}
 
 /****************************************************************************
 send a negprot command

@@ -124,6 +124,8 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 	int             lockfd;
 	char           *pfile = lp_smb_passwd_file();
 
+        pw_buf.acct_ctrl = ACB_NORMAL;
+
 	if (!*pfile) {
 		DEBUG(0, ("No SMB password file set\n"));
 		return (NULL);
@@ -293,6 +295,11 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 		if (!strncasecmp((char *) p, "NO PASSWORD", 11))
 		{
 			pw_buf.smb_passwd = NULL;
+                        /*
+                         * We set this so that the caller can tell
+                         * that there was no old password.
+                         */
+                        pw_buf.acct_ctrl |= ACB_PWNOTREQ;
 		}
 		else
 		{
@@ -323,7 +330,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 
 		fclose(fp);
 		pw_file_unlock(lockfd);
-		DEBUG(5, ("get_smbpwd_entrye: returning passwd entry for user %s, uid %d\n",
+		DEBUG(5, ("get_smbpwd_entry: returning passwd entry for user %s, uid %d\n",
 			  user_name, uidval));
 		return &pw_buf;
 	}
@@ -752,12 +759,6 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	}
 
 	if (*p == '*' || *p == 'X')
-	{
-		fclose(fp);
-		pw_file_unlock(lockfd);
-		return False;
-	}
-	if (!strncasecmp((char *) p, "NO PASSWORD", 11))
 	{
 		fclose(fp);
 		pw_file_unlock(lockfd);

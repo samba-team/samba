@@ -408,6 +408,7 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
 {
   unsigned char unenc_new_pw[16];
   unsigned char unenc_old_pw[16];
+  unsigned char null_pw[16];
   struct smb_passwd *smbpw;
 
   *psmbpw = NULL;
@@ -422,8 +423,13 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
     return False;
   }
 
-  if(smbpw->smb_passwd == NULL)
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
+    unsigned char no_pw[14];
+    memset(no_pw, '\0', 14);
+    E_P16((uchar *)no_pw, (uchar *)null_pw);
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("check_lanman_password: no lanman password !\n"));
     return False;
   }
@@ -454,6 +460,7 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
 BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2)
 {
   unsigned char unenc_new_pw[16];
+  unsigned char null_pw[16];
   BOOL ret;
 
   if(smbpw == NULL)
@@ -462,8 +469,13 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
     return False;
   }
 
-  if(smbpw->smb_passwd == NULL)
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
+    unsigned char no_pw[14];
+    memset(no_pw, '\0', 14);
+    E_P16((uchar *)no_pw, (uchar *)null_pw);
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("change_lanman_password: no lanman password !\n"));
     return False;
   }
@@ -495,6 +507,7 @@ BOOL check_oem_password(char *user, unsigned char *data,
   fstring upper_case_new_passwd;
   unsigned char new_p16[16];
   unsigned char unenc_old_pw[16];
+  unsigned char null_pw[16];
 
   become_root(0);
   *psmbpw = smbpw = get_smbpwd_entry(user, 0);
@@ -506,8 +519,13 @@ BOOL check_oem_password(char *user, unsigned char *data,
     return False;
   }
 
-  if(smbpw->smb_passwd == NULL)
+  if((smbpw->smb_passwd == NULL) && (smbpw->acct_ctrl & ACB_PWNOTREQ))
   {
+    unsigned char no_pw[14];
+    memset(no_pw, '\0', 14);
+    E_P16((uchar *)no_pw, (uchar *)null_pw);
+    smbpw->smb_passwd = null_pw;
+  } else if (smbpw->smb_passwd == NULL) {
     DEBUG(0,("check_oem_password: no lanman password !\n"));
     return False;
   }
@@ -523,7 +541,7 @@ BOOL check_oem_password(char *user, unsigned char *data,
    */
   new_pw_len = IVAL(data,512);
   if(new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
-    DEBUG(0,("check_oem_password: incorrect password length.\n"));
+    DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
     return False;
   }
 
@@ -569,6 +587,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd)
   unsigned char new_nt_p16[16];
   unsigned char new_p16[16];
 
+  memset(upper_case_new_passwd, '\0', sizeof(upper_case_new_passwd));
   fstrcpy(upper_case_new_passwd, new_passwd);
   strupper(upper_case_new_passwd);
 

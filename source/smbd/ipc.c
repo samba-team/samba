@@ -1580,8 +1580,8 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 }
 
 /****************************************************************************
-  set the user password (SamOEM version - gets plaintext).
-  ****************************************************************************/
+  Set the user password (SamOEM version - gets plaintext).
+****************************************************************************/
 
 static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *data,
 				int mdrcnt,int mprcnt,
@@ -1622,6 +1622,15 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
     return True;
   }
 
+  /* 
+   * At this point we have the new case-sensitive plaintext
+   * password in the fstring new_passwd. If we wanted to synchronise
+   * with UNIX passwords we would call a UNIX password changing 
+   * function here. However it would have to be done as root
+   * as the plaintext of the old users password is not 
+   * available. JRA.
+   */
+  
   if(change_oem_password( smbpw, new_passwd)) {
     SSVAL(*rparam,0,NERR_Success);
   }
