@@ -41,6 +41,12 @@ char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
 char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 	PRINTF_ATTRIBUTE(2, 3);
 
+char *talloc_vasprintf_append(TALLOC_CTX *t, char *, const char *, va_list ap)
+	PRINTF_ATTRIBUTE(3, 0);
+
+char *talloc_asprintf_append(TALLOC_CTX *t, char *, const char *, ...)
+	PRINTF_ATTRIBUTE(3, 4);
+
 /** @} */
 
 #endif /* ndef _TALLOC_H_ */

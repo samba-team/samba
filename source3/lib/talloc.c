@@ -1,9 +1,8 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Samba Unix SMB/Netbios implementation.
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
-   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
+   Copyright (C) 2001, 2002 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -286,7 +285,6 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 	va_list ap;
 	char *ret;
 
-	/* work out how long it will be */
 	va_start(ap, fmt);
 	ret = talloc_vasprintf(t, fmt, ap);
 	va_end(ap);
@@ -308,6 +306,80 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 
 	return ret;
 }
+
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and return @p
+ * s, which may have moved.  Good for gradually accumulating output
+ * into a string buffer.
+ **/
+ char *talloc_asprintf_append(TALLOC_CTX *t, char *s,
+			      const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	s = talloc_vasprintf_append(t, s, fmt, ap);
+	va_end(ap);
+	return s;
+}
+
+
+
+/**
+ * Realloc @p s to append the formatted result of @p fmt and @p ap,
+ * and return @p s, which may have moved.  Good for gradually
+ * accumulating output into a string buffer.
+ **/
+ char *talloc_vasprintf_append(TALLOC_CTX *t, char *s,
+			       const char *fmt, va_list ap)
+{	
+	int len, s_len;
+
+	s_len = strlen(s);
+	len = vsnprintf(NULL, 0, fmt, ap);
+
+	s = talloc_realloc(t, s, s_len + len+1);
+	if (!s) return NULL;
+
+	vsnprintf(s+s_len, len+1, fmt, ap);
+
+	return s;
+}
+
+
+/**
+ * Return a human-readable description of all talloc memory usage.
+ * The result is allocated from @p t.
+ **/
+char *talloc_describe_all(TALLOC_CTX *t)
+{
+	int n_pools = 0;
+	size_t total = 0;
+	TALLOC_CTX *titer;
+	char *s;
+
+	s = talloc_asprintf(t, "global talloc allocations in pid%u:\n",
+			    (unsigned) getpid());
+	s = talloc_asprintf_append(t, s, "name\n----\n");
+	
+	for (titer = list_head; titer; titer = titer->next_ctx) {
+		n_pools++;
+		s = talloc_asprintf_append(t, s, "\"%s\"\n", titer->name);
+	}
+
+	s = talloc_asprintf_append(t, s, "-----\nTotal %d pools\n", n_pools);				   
+
+	return s;
+}
+
+
+
+/**
+ * Return an estimated memory usage for the specified pool.  This does
+ * not include memory used by the underlying malloc implementation.
+ **/
+
 
 
 /** @} */
