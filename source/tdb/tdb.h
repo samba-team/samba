@@ -44,6 +44,7 @@ typedef struct {
 	tdb_len map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
 	int *locked; /* set if we have a chain locked */
+	int ecode; /* error code for last tdb error */
 	struct tdb_header header; /* a cached copy of the header */
 } TDB_CONTEXT;
 
@@ -54,9 +55,14 @@ typedef struct {
 /* flags for tdb_open() */
 #define TDB_CLEAR_IF_FIRST 1
 
+/* error codes */
+enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
+		TDB_ERR_OOM, TDB_ERR_EXISTS};
+
 #if STANDALONE
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
+char *tdb_error(TDB_CONTEXT *tdb);
 int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
@@ -65,6 +71,7 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 int tdb_close(TDB_CONTEXT *tdb);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
-int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+int tdb_traverse(TDB_CONTEXT *tdb, 
+		 int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
 #endif
