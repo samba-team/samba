@@ -2756,7 +2756,72 @@ static BOOL run_pipe_number(int dummy)
 	return True;
 }
 
+/*
+  Try with a wrong vuid and check error message.
+ */
 
+static BOOL run_vuidtest(int dummy)
+{
+	struct cli_state *cli;
+	const char *fname = "\\vuid.tst";
+	int fnum;
+	size_t size;
+	time_t c_time, a_time, m_time, w_time, m_time2;
+	BOOL correct = True;
+
+	uint16 orig_vuid;
+	NTSTATUS result;
+
+	printf("starting vuid test\n");
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+
+	cli_unlink(cli->tree, fname);
+
+	fnum = cli_open(cli->tree, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+
+	orig_vuid = cli->session->vuid;
+
+	cli->session->vuid += 1234;
+
+	printf("Testing qfileinfo with wrong vuid\n");
+	
+	if (NT_STATUS_IS_OK(result = cli_qfileinfo(cli->tree, fnum, NULL,
+						   &size, &c_time, &a_time,
+						   &m_time, NULL, NULL))) {
+		printf("ERROR: qfileinfo passed with wrong vuid\n");
+		correct = False;
+	}
+
+	if ( (cli->transport->error.etype != ETYPE_DOS) ||
+	     (cli->transport->error.e.dos.eclass != ERRSRV) ||
+	     (cli->transport->error.e.dos.ecode != ERRbaduid) ) {
+		printf("ERROR: qfileinfo should have returned DOS error "
+		       "ERRSRV:ERRbaduid\n  but returned %s\n",
+		       cli_errstr(cli->tree));
+		correct = False;
+	}
+
+	cli->session->vuid -= 1234;
+
+	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
+		printf("close failed (%s)\n", cli_errstr(cli->tree));
+		correct = False;
+	}
+
+	cli_unlink(cli->tree, fname);
+
+	if (!torture_close_connection(cli)) {
+		correct = False;
+	}
+
+	printf("vuid test finished\n");
+
+	return correct;
+}
 
 /*
   Test open mode returns on read-only files.
@@ -3908,6 +3973,7 @@ static struct {
 	{"DENY2",  torture_denytest2, 0},
 	{"TCON",  run_tcon_test, 0},
 	{"TCONDEV",  run_tcon_devtype_test, 0},
+	{"VUID", run_vuidtest, 0},
 #if 0
 	{"DFSBASIC", torture_dfs_basic, 0},
 	{"DFSRENAME", torture_dfs_rename, 0},
