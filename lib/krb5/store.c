@@ -40,6 +40,14 @@
 
 RCSID("$Id$");
 
+krb5_boolean
+krb5_storage_set_host_byteorder(krb5_storage *sp, krb5_boolean host_byteorder)
+{
+    krb5_boolean save = sp->host_byteorder;
+    sp->host_byteorder = host_byteorder;
+    return save;
+}
+
 /* This is a bit XXX, but used quite many places */
 
 size_t
@@ -115,6 +123,8 @@ krb5_error_code
 krb5_store_int32(krb5_storage *sp,
 		 int32_t value)
 {
+    if(sp->host_byteorder)
+	value = htonl(value);
     return krb5_store_int(sp, value, 4);
 }
 
@@ -138,13 +148,20 @@ krb5_error_code
 krb5_ret_int32(krb5_storage *sp,
 	       int32_t *value)
 {
-    return krb5_ret_int(sp, value, 4);
+    krb5_error_code ret = krb5_ret_int(sp, value, 4);
+    if(ret)
+	return ret;
+    if(sp->host_byteorder)
+	*value = ntohl(*value);
+    return 0;
 }
 
 krb5_error_code
 krb5_store_int16(krb5_storage *sp,
 		 int16_t value)
 {
+    if(sp->host_byteorder)
+	value = htons(value);
     return krb5_store_int(sp, value, 2);
 }
 
@@ -154,10 +171,12 @@ krb5_ret_int16(krb5_storage *sp,
 {
     int32_t v;
     int ret;
-    ret =krb5_ret_int(sp, &v, 2);
+    ret = krb5_ret_int(sp, &v, 2);
     if(ret)
 	return ret;
     *value = v;
+    if(sp->host_byteorder)
+	*value = ntohs(*value);
     return 0;
 }
 
@@ -333,6 +352,8 @@ krb5_ret_principal(krb5_storage *sp,
 	free(p);
 	return ret;
     }
+    /* XXX cache version 1 supposedly counts the realm as a component
+       so we should decrement ncomp by one here */
     p->name.name_type = type;
     p->name.name_string.len = ncomp;
     ret = krb5_ret_string(sp, &p->realm);
@@ -502,5 +523,59 @@ krb5_ret_authdata(krb5_storage *sp, krb5_authdata *auth)
 	ret = krb5_ret_data(sp, &auth->val[i].ad_data);
 	if(ret) break;
     }
+    return ret;
+}
+
+krb5_error_code
+krb5_store_creds(krb5_storage *sp, krb5_creds *creds)
+{
+    krb5_store_principal(sp, creds->client);
+    krb5_store_principal(sp, creds->server);
+    krb5_store_keyblock(sp, creds->session);
+    krb5_store_times(sp, creds->times);
+    krb5_store_int8(sp, 0);  /* this is probably the
+				enc-tkt-in-skey bit from KDCOptions */
+    krb5_store_int32(sp, creds->flags.i);
+    krb5_store_addrs(sp, creds->addresses);
+    krb5_store_authdata(sp, creds->authdata);
+    krb5_store_data(sp, creds->ticket);
+    krb5_store_data(sp, creds->second_ticket);
+    return 0;
+}
+
+krb5_error_code
+krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
+{
+    krb5_error_code ret;
+    int8_t dummy8;
+    int32_t dummy32;
+
+    memset(creds, 0, sizeof(*creds));
+    ret = krb5_ret_principal (sp,  &creds->client);
+    if(ret) goto cleanup;
+    ret = krb5_ret_principal (sp,  &creds->server);
+    if(ret) goto cleanup;
+    ret = krb5_ret_keyblock (sp,  &creds->session);
+    if(ret) goto cleanup;
+    ret = krb5_ret_times (sp,  &creds->times);
+    if(ret) goto cleanup;
+    ret = krb5_ret_int8 (sp,  &dummy8);
+    if(ret) goto cleanup;
+    ret = krb5_ret_int32 (sp,  &dummy32);
+    if(ret) goto cleanup;
+    creds->flags.i = dummy32;
+    ret = krb5_ret_addrs (sp,  &creds->addresses);
+    if(ret) goto cleanup;
+    ret = krb5_ret_authdata (sp,  &creds->authdata);
+    if(ret) goto cleanup;
+    ret = krb5_ret_data (sp,  &creds->ticket);
+    if(ret) goto cleanup;
+    ret = krb5_ret_data (sp,  &creds->second_ticket);
+cleanup:
+    if(ret)
+#if 0	
+	krb5_free_creds_contents(context, creds) /* XXX */
+#endif
+	    ;
     return ret;
 }
