@@ -131,8 +131,6 @@ typedef struct
 	char *szWorkGroup;
 	char *szDomainAdminGroup;
 	char *szDomainGuestGroup;
-	char *szDomainAdminUsers;
-	char *szDomainGuestUsers;
 	char *szDomainHostsallow;
 	char *szDomainHostsdeny;
 	char *szUsernameMap;
@@ -155,7 +153,6 @@ typedef struct
 	char *szAnnounceVersion;	/* This is initialised in init_globals */
 	char *szNetbiosAliases;
 	char *szDomainOtherSIDs;
-	char *szDomainGroups;
 	char *szNameResolveOrder;
 	char *szLdapServer;
 	char *szLdapSuffix;
@@ -883,11 +880,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Domain Options", P_SEP, P_SEPARATOR},
 	
-	{"domain groups", P_STRING, P_GLOBAL, &Globals.szDomainGroups, NULL, NULL, 0},
 	{"domain admin group", P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL, NULL, 0},
 	{"domain guest group", P_STRING, P_GLOBAL, &Globals.szDomainGuestGroup, NULL, NULL, 0},
-	{"domain admin users", P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL, NULL, 0},
-	{"domain guest users", P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL, NULL, 0},
 #ifdef USING_GROUPNAME_MAP
 	
 	{"groupname map", P_STRING, P_GLOBAL, &Globals.szGroupnameMap, NULL, NULL, 0},
@@ -1470,11 +1464,8 @@ FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
-FN_GLOBAL_STRING(lp_domain_groups, &Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
-FN_GLOBAL_STRING(lp_domain_admin_users, &Globals.szDomainAdminUsers)
-FN_GLOBAL_STRING(lp_domain_guest_users, &Globals.szDomainGuestUsers)
 FN_GLOBAL_STRING(lp_winbind_uid, &Globals.szWinbindUID)
 FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
