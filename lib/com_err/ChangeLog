@@ -1,3 +1,9 @@
+2001-05-11  Assar Westerlund  <assar@sics.se>
+
+	* com_err.h (add_to_error_table): add prototype
+	* com_err.c (add_to_error_table): new function, from Derrick J
+	Brashear <shadow@dementia.org>
+
 2001-05-06  Assar Westerlund  <assar@sics.se>
 
 	* com_err.h: add printf formats for gcc
