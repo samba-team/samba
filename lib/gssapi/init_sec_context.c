@@ -168,11 +168,16 @@ init_auth
     goto failure;
   }
 
-  (*context_handle)->auth_context->key.keytype = cred->session.keytype;
-  krb5_data_copy (&(*context_handle)->auth_context->key.keyvalue,
-		  cred->session.keyvalue.data,
-		  cred->session.keyvalue.length);
-
+  {
+      /* XXX ugly */
+      krb5_keyblock *c;
+      krb5_auth_con_getkey(gssapi_krb5_context, 
+			   (*context_handle)->auth_context, 
+			   &c);
+      cred->session = *c;
+      free(c);
+  }
+  
   kret = gssapi_krb5_create_8003_checksum (input_chan_bindings,
 					   flags,
 					   &cksum);
