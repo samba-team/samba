@@ -98,11 +98,7 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
-#ifdef HAVE_OPENSSL
-#include <openssl/des.h>
-#else
-#include <des.h>
-#endif
 #include <krb5.h>
+#include "crypto-headers.h" /* for des_read_pw_string */
 
 #endif /* __KPASSWD_LOCL_H__ */

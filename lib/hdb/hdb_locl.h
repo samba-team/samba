@@ -56,11 +56,7 @@
 #endif
 #include <roken.h>
 
-#ifdef HAVE_OPENSSL
-#include <openssl/des.h>
-#else
-#include <des.h>
-#endif
+#include "crypto-headers.h"
 #include <krb5.h>
 #include <hdb.h>
 #include <hdb-private.h>

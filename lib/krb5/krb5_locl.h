@@ -112,19 +112,7 @@ struct sockaddr_dl;
 #include <parse_time.h>
 #include <base64.h>
 
-#ifdef HAVE_OPENSSL
-#include <openssl/des.h>
-#include <openssl/md4.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#include <openssl/rc4.h>
-#else
-#include <des.h>
-#include <md4.h>
-#include <md5.h>
-#include <sha.h>
-#include <rc4.h>
-#endif
+#include "crypto-headers.h"
 
 #include <krb5_asn1.h>
 #include <der.h>

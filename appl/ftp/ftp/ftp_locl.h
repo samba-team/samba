@@ -131,11 +131,7 @@ struct hostent  *gethostbyname(const char *);
 #include "security.h"
 
 /* des_read_pw_string */
-#ifdef HAVE_OPENSSL
-#include <openssl/des.h>
-#else
-#include <des.h>
-#endif
+#include "crypto-headers.h"
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);

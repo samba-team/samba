@@ -38,15 +38,7 @@ RCSID("$Id$");
 #include "otp_locl.h"
 
 #include "otp_md.h"
-#ifdef HAVE_OPENSSL
-#include <openssl/md4.h>
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-#else
-#include <md4.h>
-#include <md5.h>
-#include <sha.h>
-#endif
+#include "crypto-headers.h"
 
 /*
  * Compress len bytes from md into key
