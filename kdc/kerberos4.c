@@ -203,13 +203,13 @@ do_version4(unsigned char *buf,
 	    krb_create_ticket(&ticket, 0, name, inst, v4_realm,
 			      addr->sin_addr.s_addr, session, life, kdc_time, 
 			      sname, sinst, ekey->key.keyvalue.data);
-	    free_key(ekey);
+	    hdb_free_key(ekey);
 	
 	    ekey = unseal_key(ckey);
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
 			life, server->kvno, &ticket, kdc_time, 
 			ekey->key.keyvalue.data);
-	    free_key(ekey);
+	    hdb_free_key(ekey);
 	    memset(&session, 0, sizeof(session));
 	    r = create_auth_reply(name, inst, realm, req_time, 0, 
 				  client->pw_end ? *client->pw_end : 0, 
@@ -279,7 +279,7 @@ do_version4(unsigned char *buf,
 	auth.length = pos;
 	ekey = unseal_key(tkey);
 	krb_set_key(ekey->key.keyvalue.data, 0);
-	free_key(ekey);
+	hdb_free_key(ekey);
 	{
 	    int e;
 	    e = krb_rd_req(&auth, "krbtgt", realm, 
@@ -380,7 +380,7 @@ do_version4(unsigned char *buf,
 	    krb_create_ticket(&ticket, 0, ad.pname, ad.pinst, ad.prealm,
 			      addr->sin_addr.s_addr, &session, life, kdc_time,
 			      sname, sinst, ekey->key.keyvalue.data);
-	    free_key(ekey);
+	    hdb_free_key(ekey);
 	    
 	    create_ciph(&cipher, session, sname, sinst, v4_realm,
 			life, server->kvno, &ticket,

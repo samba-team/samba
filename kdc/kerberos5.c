@@ -203,7 +203,7 @@ as_rep(KDC_REQ *req,
 				    enc_data.etype,
 				    &ekey->key,
 				    &ts_data);
-		free_key(ekey);
+		hdb_free_key(ekey);
 		free_EncryptedData(&enc_data);
 		if(ret){
 		    e_text = "Failed to decrypt PA-DATA";
@@ -477,7 +477,7 @@ as_rep(KDC_REQ *req,
 				   etype,
 				   &ekey->key,
 				   &rep.ticket.enc_part);
-	free_key(ekey);
+	hdb_free_key(ekey);
 	
 	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
 				  &ek, &len);
@@ -493,7 +493,7 @@ as_rep(KDC_REQ *req,
 				   etype,
 				   &ekey->key,
 				   &rep.enc_part);
-	free_key(ekey);
+	hdb_free_key(ekey);
 	if(ckey->salt){
 	    ALLOC(rep.padata);
 	    rep.padata->len = 1;
@@ -784,7 +784,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
 				   etype,
 				   &ekey->key,
 				   &rep.ticket.enc_part);
-	free_key(ekey);
+	hdb_free_key(ekey);
 		
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
 				   sizeof(buf), &ek, &len);
@@ -939,7 +939,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 			     &ekey->key,
 			     &ap_req_options,
 			     &ticket);
-    free_key(ekey);
+    hdb_free_key(ekey);
 			     
     krb5_free_principal(context, princ);
     if(ret) {
