@@ -116,6 +116,7 @@ recv_conn (int sock, kx_context *kc,
      struct passwd *passwd;
      struct sockaddr_in thisaddr, thataddr;
      char remotehost[MaxHostNameLen];
+     char remoteaddr[INET6_ADDRSTRLEN];
      int ret = 1;
      int flags;
      int len;
@@ -137,8 +138,8 @@ recv_conn (int sock, kx_context *kc,
      kc->thisaddr = thisaddr;
      kc->thataddr = thataddr;
 
-     getnameinfo (&thataddr, addrlen, remotehost, sizeof(remotehost),
-		  NULL, 0, 0);
+     getnameinfo_verified (&thataddr, addrlen, remotehost, sizeof(remotehost),
+			   NULL, 0, 0);
 
      if (net_read (sock, msg, 4) != 4) {
 	 syslog (LOG_ERR, "read: %m");
@@ -224,9 +225,11 @@ recv_conn (int sock, kx_context *kc,
 	 syslog(LOG_ERR, "setting uid/groups: %m");
 	 fatal (kc, sock, "cannot set uid");
      }
+     inet_ntop (thataddr.sin_family,
+		&thataddr.sin_addr, remoteaddr, sizeof(remoteaddr));
+
      syslog (LOG_INFO, "from %s(%s): %s -> %s",
-	     remotehost,
-	     inet_ntoa(thataddr.sin_addr),
+	     remotehost, remoteaddr,
 	     kc->user, user);
      umask(077);
      if (!(flags & PASSIVE)) {
