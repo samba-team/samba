@@ -1,4 +1,4 @@
-.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
+.TH "smb\&.conf " "5" "10 Jan 2001" "Samba" "SAMBA"
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -86,7 +86,7 @@ write access to the path \f(CW/home/bar\fP\&. The share is accessed via
 the share name "foo":
 .PP 
 
-.DS 
+.nf 
  
 
 
@@ -95,7 +95,7 @@ the share name "foo":
  		writeable = true
 
 
-.DE 
+.fi 
  
 
 .PP 
@@ -106,7 +106,7 @@ is via calls to open, write to and close a spool file\&. The
 as the default guest user (specified elsewhere):
 .PP 
 
-.DS 
+.nf 
  
 
  	[aprinter]
@@ -115,7 +115,7 @@ as the default guest user (specified elsewhere):
  		printable = true
  		guest ok = true
 
-.DE 
+.fi 
  
 
 .PP 
@@ -175,13 +175,13 @@ section can specify, though some make more sense than others\&. The
 following is a typical and suitable [homes] section:
 .IP 
 
-.DS 
+.nf 
  
 
  	[homes]
  		writeable = yes
 
-.DE 
+.fi 
  
 
 .IP 
@@ -237,7 +237,7 @@ directory with the sticky bit set on it\&. A typical \fB[printers]\fP entry
 would look like this:
 .IP 
 
-.DS 
+.nf 
  
 
  	[printers]
@@ -245,7 +245,7 @@ would look like this:
  		guest ok = yes
  		printable = yes 
 
-.DE 
+.fi 
  
 
 .IP 
@@ -256,10 +256,10 @@ pseudo-printcap\&. This is a file consisting of one or more lines like
 this:
 .IP 
 
-.DS 
+.nf 
  
         alias|alias|alias|alias\&.\&.\&.    
-.DE 
+.fi 
  
 
 .IP 
@@ -583,6 +583,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBgetwd cache\fP
+.IP 
+.IP o 
+\fBhide local users\fP
 .IP 
 .IP o 
 \fBhomedir map\fP
@@ -1995,7 +1998,7 @@ interesting things\&.
 .IP 
 \fBExample:\fP
 
-.DS 
+.nf 
  
 
 	default service = pub
@@ -2003,7 +2006,7 @@ interesting things\&.
 	[pub]
 		path = /%S
 
-.DE 
+.fi 
  
 
 .IP 
@@ -2140,26 +2143,26 @@ and remaining space will be used\&.\fP
 Where the script dfree (which must be made executable) could be:
 .IP 
 
-.DS 
+.nf 
  
 
 	#!/bin/sh
 	df $1 | tail -1 | awk \'{print $2" "$4}\'
 
-.DE 
+.fi 
  
 
 .IP 
 or perhaps (on Sys V based systems):
 .IP 
 
-.DS 
+.nf 
  
 
 	#!/bin/sh
 	/usr/bin/df -k $1 | tail -1 | awk \'{print $3" "$5}\'
 
-.DE 
+.fi 
  
 
 .IP 
@@ -2798,13 +2801,13 @@ files"\fP and \fB"case sensitive"\fP\&.
 .IP 
 \fBDefault\fP
 
-.DS 
+.nf 
  
 
 	No files or directories are hidden by this option (dot files are
 	hidden by default because of the "hide dot files" option)\&.
 
-.DE 
+.fi 
  
 
 .IP 
@@ -2814,6 +2817,17 @@ files"\fP and \fB"case sensitive"\fP\&.
 The above example is based on files that the Macintosh SMB client
 (DAVE) available from \fBThursby\fP creates for
 internal use, and also still hides all files beginning with a dot\&.
+.IP 
+.IP "\fBhide local users(G)\fP" 
+.IP 
+This parameter toggles the hiding of local UNIX users (root, wheel, floppy, etc)
+from remote clients\&.
+.IP 
+\fBDefault:\fP
+\f(CW hide local users = No\fP
+.IP 
+\fBExample:\fP
+\f(CW hide local users = Yes\fP
 .IP 
 .IP "\fBhomedir map (G)\fP" 
 .IP 
@@ -4482,20 +4496,20 @@ debug"\fP\&.
 .IP 
 \fBExample:\fP 
 
-.DS 
+.nf 
  
  passwd chat = "*Enter OLD password*" %o\en "*Enter NEW password*" %n\en "*Reenter NEW password*" %n\en "*Password changed*"
 
-.DE 
+.fi 
  
 
 .IP 
 \fBDefault:\fP
 
-.DS 
+.nf 
  
        passwd chat = *old*password* %o\en *new*password* %n\en *new*password* %n\en *changed*
-.DE 
+.fi 
  
 
 .IP 
@@ -4747,12 +4761,12 @@ An interesting example is to send the users a welcome message every
 time they log in\&. Maybe a message of the day? Here is an example:
 .IP 
 
-.DS 
+.nf 
  
 
 	preexec = csh -c \'echo \e"Welcome to %S!\e" | /usr/local/samba/bin/smbclient -M %m -I %I\' &
 
-.DE 
+.fi 
  
 
 .IP 
@@ -4937,7 +4951,7 @@ to obtain a printer list\&.
 A minimal printcap file would look something like this:
 .IP 
 
-.DS 
+.nf 
  
 
 	print1|My Printer 1
@@ -4946,7 +4960,7 @@ A minimal printcap file would look something like this:
 	print4|My Printer 4
 	print5|My Printer 5
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6482,13 +6496,13 @@ information on how this parameter determines access to the services\&.
 .IP 
 \fBExamples:\fP
 
-.DS 
+.nf 
  
 
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6572,13 +6586,13 @@ and map the rest to guest\&. Note the use of the \f(CW\'!\'\fP to tell Samba
 to stop processing if it gets a match on that line\&.
 .IP 
 
-.DS 
+.nf 
  
 
 	!sys = mary fred
 	guest = *
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6694,14 +6708,14 @@ is a pointless thing to do as it\'s already there) you could do one of
 the following
 .IP 
 
-.DS 
+.nf 
  
 
 	valid chars = Z
 	valid chars = z:Z
 	valid chars = 0132:0172
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6718,13 +6732,13 @@ See also the \fB"client code page"\fP parameter\&.
 .IP 
 \fBDefault:\fP
 
-.DS 
+.nf 
  
 
 	Samba defaults to using a reasonable set of valid characters
 	for English systems
 
-.DE 
+.fi 
  
 
 .IP 
@@ -6800,7 +6814,7 @@ sensitive"\fP\&.
 Example 1\&.
 .IP 
 
-.DS 
+.nf 
  
 
 
@@ -6810,14 +6824,14 @@ Example 1\&.
 
 	veto files = /*Security*/*\&.tmp/*root*/
 
-.DE 
+.fi 
  
 
 .IP 
 Example 2\&.
 .IP 
 
-.DS 
+.nf 
  
 
     Veto the Apple specific files that a NetAtalk server
@@ -6825,7 +6839,7 @@ Example 2\&.
 
     veto files = /\&.AppleDouble/\&.bin/\&.AppleDesktop/Network Trash Folder/
 
-.DE 
+.fi 
  
 
 .IP 
@@ -7045,14 +7059,14 @@ permitting), but only via spooling operations\&.
 .IP 
 \fBExamples:\fP
 
-.DS 
+.nf 
  
 
  	read only = no
  	writeable = yes
  	write ok = yes
 
-.DE 
+.fi 
  
 
 .IP 
