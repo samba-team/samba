@@ -21,12 +21,8 @@ distdirs="${distdirs} /afs/e.kth.se/home/staff/lha/Public/openssl"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/heimdal/src"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/heimdal/src/snapshots"
 distdirs="${distdirs} /afs/pdc.kth.se/public/ftp/pub/krb/src"
-opt_n=#:
+opt_n= #:
 
-
-mkdir -p ${targetdir}/src
-cd ${targetdir}/src || exit 1
-rm -rf heimdal* openssl* krb4*
 
 logprint () {
     d=`date '+%Y-%m-%d %H:%M:%S'`
@@ -85,8 +81,15 @@ build () {
     return 0
 }
 
+logprint using host `hostname`
+logprint `uname -a`
 logprint clearing logfile
 > ${logfile}
+
+logprint using target dir ${targetdir}
+mkdir -p ${targetdir}/src
+cd ${targetdir}/src || exit 1
+rm -rf heimdal* openssl* krb4*
 
 logprint === building openssl versions
 for vo in ${openssl_versions} ; do
