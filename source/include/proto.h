@@ -899,10 +899,10 @@ void *memcpy_wrapped(void *d,void *s,int l,char *fname,int line);
 
 /*The following definitions come from  reply.c  */
 
-int reply_special(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_special(char *inbuf,char *outbuf);
 int reply_tcon(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize);
-int reply_unknown(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int reply_unknown(char *inbuf,char *outbuf);
 int reply_ioctl(char *inbuf,char *outbuf, int size, int bufsize);
 int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_chkpth(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
