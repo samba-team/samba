@@ -31,8 +31,16 @@
 #define real_link(fn1, fn2)		(syscall(SYS_link, (fn1), (fn2)))
 
 #define real_open(fn,flags,mode)	(syscall(SYS_open, (fn), (flags), (mode)))
-#define real_open64(fn,flags,mode)	(syscall(SYS_open64, (fn), (flags), (mode)))
 
+#ifdef SYS_open64
+#define real_open64(fn,flags,mode)	(syscall(SYS_open64, (fn), (flags), (mode)))
+#elif HAVE__OPEN64
+#define real_open64(fn,flags,mode)    	(_open64(fn,flags,mode))
+#define NO_OPEN64_ALIAS
+#elif HAVE___OPEN64
+#define real_open64(fn,flags,mode)    	(__open64(fn,flags,mode))
+#define NO_OPEN64_ALIAS
+#endif
 
 #ifdef HAVE__OPENDIR
 #define real_opendir(fn)            	(_opendir(fn))
