@@ -391,8 +391,6 @@ static BOOL api_netsec_decode_pdu(rpcsrv_struct *l)
 		return False;
 	}
 
-	a->seq_num++;
-
 	/* restore the [data, now decoded] offset */
 	l->data_i.offset = old_offset;
 

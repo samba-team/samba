@@ -171,7 +171,6 @@ static BOOL create_netsec_pdu(struct cli_connection *con,
 	if (ret)
 	{
 		smb_io_rpc_auth_netsec_chk("auth_sign", &verf, &auth_verf, 0);
-		a->seq_num++;
 	}
 
 	if (ret)
