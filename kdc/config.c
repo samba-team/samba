@@ -97,7 +97,7 @@ struct units byte_units[] = {
 void
 configure(int argc, char **argv)
 {
-    krb5_config_section *cf;
+    krb5_config_section *cf = NULL;
     int optind = 0;
     int e;
     const char *p;
@@ -171,9 +171,10 @@ configure(int argc, char **argv)
     else
 	kdc_warn_pwexpire = 0;
     
-    kdc_openlog(cf);
-    krb5_config_file_free (cf);
 end:
+    kdc_openlog(cf);
+    if(cf)
+	krb5_config_file_free (cf);
     if(max_request == 0)
 	max_request = 64 * 1024;
     if(require_preauth == -1)
