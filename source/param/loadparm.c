@@ -3677,13 +3677,14 @@ char *lp_printername(int snum)
 char **lp_list_make(char *string)
 {
 	char **list, **rlist;
-	char *str;
-	char *tok;
+	char *str, *s;
 	int num, lsize;
+	pstring tok;
 	
 	if (!string || !*string) return NULL;
-	str = strdup(string);
+	s = strdup(string);
 	if (!str || !*str) return NULL;
+	str = s;
 	
 	list = (char**)malloc(((sizeof(char**)) * P_LIST_ABS));
 	if (!list) {
@@ -3695,9 +3696,9 @@ char **lp_list_make(char *string)
 	
 	num = 0;
 	
-	for (tok = strtok(str, LIST_SEP); tok; tok = strtok(NULL, LIST_SEP))
+	while (*str)
 	{
-		if (!*tok) continue;
+		if (!next_token(&str, tok, LIST_SEP, sizeof(pstring))) continue;
 		
 		if ((num +1) == lsize) {
 			lsize += P_LIST_ABS;
@@ -3721,7 +3722,7 @@ char **lp_list_make(char *string)
 		num++;	
 	}
 	
-	free (str);
+	free (s);
 	return list;
 }
 
