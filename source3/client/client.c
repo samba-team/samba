@@ -2502,7 +2502,6 @@ static void usage(char *pname)
   d_printf("\t-N                    don't ask for a password\n");
   d_printf("\t-n netbios name.      Use this name as my netbios name\n");
   d_printf("\t-d debuglevel         set the debuglevel\n");
-  d_printf("\t-P                    connect to service as a printer\n");
   d_printf("\t-p port               connect to the specified port\n");
   d_printf("\t-l log basename.      Basename for log/debug files\n");
   d_printf("\t-h                    Print this help message.\n");
