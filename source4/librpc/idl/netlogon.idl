@@ -92,13 +92,13 @@ interface netlogon
 		NT_OWF_PASSWORD ntpassword;
 	} INTERACTIVE_INFO;
 
-	typedef struct {
-		uint8 chl[8];
-	} netr_Challenge;
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 data[8];
+	} netr_Credential;
 
 	typedef struct {
 		LOGON_IDENTITY_INFO logon_info;
-		netr_Challenge chal;
+		netr_Credential challenge;
 		unistr ntchallengeresponse;
 		unistr lmchallengeresponse;
 	} NETWORK_INFO;
@@ -115,13 +115,9 @@ interface netlogon
 		[case(3)] SERVICE_INFO *sinfo;
 	} netr_LogonLevel;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 cred[8];
-	} netr_Credential;
-
 	typedef struct {
 		netr_Credential cred;
-		uint32 timestamp;
+		time_t timestamp;
 	} netr_Authenticator;
 
 	typedef struct {
