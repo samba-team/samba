@@ -659,6 +659,8 @@ static char *output_conversion(v1, v2, salt)
 /* 
  * UNIX crypt function
  */
+
+ufc_long *_ufc_doit(ufc_long , ufc_long, ufc_long, ufc_long, ufc_long);
    
 char *ufc_crypt(char *key,char *salt)
   { ufc_long *s;
@@ -700,7 +702,7 @@ extern long32 _ufc_sb0[], _ufc_sb1[], _ufc_sb2[], _ufc_sb3[];
 
 #define SBA(sb, v) (*(long32*)((char*)(sb)+(v)))
 
-ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
+static ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
   ufc_long l1, l2, r1, r2, itr;
   { int i;
     long32 s, *k;
@@ -740,7 +742,7 @@ extern long64 _ufc_sb0[], _ufc_sb1[], _ufc_sb2[], _ufc_sb3[];
 
 #define SBA(sb, v) (*(long64*)((char*)(sb)+(v)))
 
-ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
+static ufc_long *_ufc_doit(l1, l2, r1, r2, itr)
   ufc_long l1, l2, r1, r2, itr;
   { int i;
     long64 l, r, s, *k;
