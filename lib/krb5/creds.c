@@ -41,7 +41,7 @@
 RCSID("$Id$");
 
 krb5_error_code
-krb5_free_creds(krb5_context context, krb5_creds *c)
+krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
     krb5_free_principal (context, c->client);
     c->client = NULL;
@@ -52,5 +52,73 @@ krb5_free_creds(krb5_context context, krb5_creds *c)
     krb5_data_free (&c->second_ticket);
     krb5_data_free (&c->authdata);
     krb5_free_addresses (context, &c->addresses);
+    return 0;
+}
+
+krb5_error_code
+krb5_copy_creds_contents (krb5_context context,
+			  const krb5_creds *incred,
+			  krb5_creds *c)
+{
+    krb5_error_code ret;
+
+    ret = krb5_copy_principal (context, incred->client, &c->client);
+    if (ret)
+	goto fail;
+    ret = krb5_copy_principal (context, incred->server, &c->server);
+    if (ret)
+	goto fail;
+    ret = krb5_copy_keyblock_contents (context, &incred->session, &c->session);
+    if (ret)
+	goto fail;
+    c->times = incred->times;
+    ret = krb5_data_copy (&c->ticket,
+			  incred->ticket.data,
+			  incred->ticket.length);
+    if (ret)
+	goto fail;
+    ret = krb5_data_copy (&c->second_ticket,
+			  incred->second_ticket.data,
+			  incred->second_ticket.length);
+    if (ret)
+	goto fail;
+    ret = krb5_data_copy (&c->authdata,
+			  incred->authdata.data,
+			  incred->authdata.length);
+    if (ret)
+	goto fail;
+    ret = krb5_copy_addresses (context,
+			       &incred->addresses,
+			       &c->addresses);
+    if (ret)
+	goto fail;
+    c->flags = incred->flags;
+    return 0;
+
+fail:
+    krb5_free_creds (context, c);
+    return ret;
+}
+
+krb5_error_code
+krb5_copy_creds (krb5_context context,
+		 const krb5_creds *incred,
+		 krb5_creds **outcred)
+{
+    krb5_creds *c;
+
+    c = malloc (sizeof (*c));
+    if (c == NULL)
+	return ENOMEM;
+    memset (c, 0, sizeof(*c));
+    *outcred = c;
+    return krb5_copy_creds_contents (context, incred, c);
+}
+
+krb5_error_code
+krb5_free_creds (krb5_context context, krb5_creds *c)
+{
+    krb5_free_creds_contents (context, c);
+    free (c);
     return 0;
 }
