@@ -1423,11 +1423,6 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn;
 	
-	if (!(tdb->name = (char *)strdup(name))) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
 			 name));
@@ -1503,6 +1498,11 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 			 "%s (%d,%d) is already open in this process\n",
 			 name, st.st_dev, st.st_ino));
 		errno = EBUSY;
+		goto fail;
+	}
+
+	if (!(tdb->name = (char *)strdup(name))) {
+		errno = ENOMEM;
 		goto fail;
 	}
 
