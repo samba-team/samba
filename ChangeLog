@@ -1,4 +1,9 @@
-2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/krb5_ccache.3: add missing name of argument
+	(krb5_context) to most functions
+
+2003-03-13  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/kuserok.c (krb5_kuserok): preserve old behviour of
 	function and return FALSE when there isn't a local account for
@@ -7,7 +12,7 @@
 	* lib/krb5/krb5_kuserok.3: fix prototype, spelling and more text
 	describing the function
 
-2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-12  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/cache.c (krb5_cc_default): if krb5_cc_default_name
 	returned memory, don't return ENOMEM

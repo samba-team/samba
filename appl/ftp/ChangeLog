@@ -1,3 +1,7 @@
+2003-02-25  Love  <lha@stacken.kth.se>
+
+	* ftp/gssapi.c (gss_auth): print out the name we authenticated too
+	
 2003-02-25  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ls.c: use readlink with bufsize - 1, From NetBSD
