@@ -71,7 +71,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_pol("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -135,7 +135,7 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_pol2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENPOLICY2, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -186,7 +186,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_lsa_q_close(&q, pol);
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_CLOSE, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_CLOSE, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -241,7 +241,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_sids(mem_ctx, &q, pol, num_sids, sids, 1);
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -358,7 +358,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_lookup_names(mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -458,7 +458,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query(&q, pol, info_class);
 
 	if (!lsa_io_q_query("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -557,7 +557,7 @@ NTSTATUS cli_lsa_query_info_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query2(&q, pol, info_class);
 
 	if (!lsa_io_q_query_info2("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_QUERYINFO2, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYINFO2, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -655,7 +655,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_q_enum_trust_dom(&q, pol, *enum_ctx, 0x10000);
 
 	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -747,7 +747,7 @@ NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_enum_privs(&q, pol, *enum_context, pref_max_length);
 
 	if (!lsa_io_q_enum_privs("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ENUM_PRIVS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUM_PRIVS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -829,7 +829,7 @@ NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_lsa_priv_get_dispname(&q, pol, name, lang_id, lang_id_sys);
 
 	if (!lsa_io_q_priv_get_dispname("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_PRIV_GET_DISPNAME, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_PRIV_GET_DISPNAME, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -882,7 +882,7 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
         init_lsa_q_enum_accounts(&q, pol, *enum_ctx, pref_max_length);
 
 	if (!lsa_io_q_enum_accounts("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ENUM_ACCOUNTS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUM_ACCOUNTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -956,7 +956,7 @@ NTSTATUS cli_lsa_open_account(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_open_account("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_OPENACCOUNT, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_OPENACCOUNT, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1009,7 +1009,7 @@ NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!lsa_io_q_enum_privsaccount("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ENUMPRIVSACCOUNT, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMPRIVSACCOUNT, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1073,7 +1073,7 @@ NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_lsa_q_lookupprivvalue(&q, pol, name);
 
 	if (!lsa_io_q_lookupprivvalue("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_LOOKUPPRIVVALUE, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_LOOKUPPRIVVALUE, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1125,7 +1125,7 @@ NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_query_sec_obj(&q, pol, sec_info);
 
 	if (!lsa_io_q_query_sec_obj("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_QUERYSECOBJ, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_QUERYSECOBJ, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1180,7 +1180,7 @@ NTSTATUS cli_lsa_enum_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_enum_acct_rights(&q, pol, 2, &sid);
 
 	if (!lsa_io_q_enum_acct_rights("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ENUMACCTRIGHTS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ENUMACCTRIGHTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1232,7 +1232,7 @@ NTSTATUS cli_lsa_add_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	init_q_add_acct_rights(&q, pol, &sid, count, privs_name);
 
 	if (!lsa_io_q_add_acct_rights("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_ADDACCTRIGHTS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_ADDACCTRIGHTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1274,7 +1274,7 @@ NTSTATUS cli_lsa_remove_account_rights(struct cli_state *cli, TALLOC_CTX *mem_ct
 	init_q_remove_acct_rights(&q, pol, &sid, removeall?1:0, count, privs_name);
 
 	if (!lsa_io_q_remove_acct_rights("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, LSA_REMOVEACCTRIGHTS, &qbuf, &rbuf)) {
+	    !rpc_api_pipe_req(cli, PI_LSARPC, LSA_REMOVEACCTRIGHTS, &qbuf, &rbuf)) {
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}

@@ -55,7 +55,7 @@ WERROR cli_spoolss_reply_open_printer(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_replyopenprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_REPLYOPENPRINTER, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_REPLYOPENPRINTER, &qbuf, &rbuf)) 
 		goto done;
 	
 	/* Unmarshall response */
@@ -95,7 +95,7 @@ WERROR cli_spoolss_reply_close_printer(struct cli_state *cli, TALLOC_CTX *mem_ct
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_replycloseprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_REPLYCLOSEPRINTER, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_REPLYCLOSEPRINTER, &qbuf, &rbuf)) 
 		goto done;
 	
 	/* Unmarshall response */
@@ -139,7 +139,7 @@ WERROR cli_spoolss_routerreplyprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx
 	/* Marshall data and send request */
 
 	if (!spoolss_io_q_routerreplyprinter("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req (cli, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) 
+	    !rpc_api_pipe_req (cli, PI_SPOOLSS, SPOOLSS_ROUTERREPLYPRINTER, &qbuf, &rbuf)) 
 		goto done;
 	
 	/* Unmarshall response */
@@ -202,7 +202,7 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if(!spoolss_io_q_reply_rrpcn("", &q,  &qbuf, 0) ||
-	   !rpc_api_pipe_req(cli, SPOOLSS_RRPCN, &qbuf, &rbuf)) 
+	   !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_RRPCN, &qbuf, &rbuf)) 
 		goto done;
 
 	/* Unmarshall response */
@@ -254,7 +254,7 @@ WERROR cli_spoolss_rffpcnex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if(!spoolss_io_q_rffpcnex("", &q,  &qbuf, 0) ||
-	   !rpc_api_pipe_req(cli, SPOOLSS_RFFPCNEX, &qbuf, &rbuf)) 
+	   !rpc_api_pipe_req(cli, PI_SPOOLSS, SPOOLSS_RFFPCNEX, &qbuf, &rbuf)) 
 		goto done;
 
 	/* Unmarshall response */

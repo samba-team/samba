@@ -50,7 +50,7 @@ NTSTATUS cli_reg_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	init_reg_q_shutdown(&q_s, msg, timeout, do_reboot, force);
 
 	if (!reg_io_q_shutdown("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, REG_SHUTDOWN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_SHUTDOWN, &qbuf, &rbuf))
 		goto done;
 	
 	/* Unmarshall response */
@@ -87,7 +87,7 @@ NTSTATUS cli_reg_abort_shutdown(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 	init_reg_q_abort_shutdown(&q_s);
 
 	if (!reg_io_q_abort_shutdown("", &q_s, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, REG_ABORT_SHUTDOWN, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, PI_WINREG, REG_ABORT_SHUTDOWN, &qbuf, &rbuf))
 	    	goto done;
 	
 		/* Unmarshall response */
