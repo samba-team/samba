@@ -712,6 +712,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
 	.have_feature   = gensec_krb5_have_feature,
+	.disabled_by_default = True
 };
 
 static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
@@ -724,6 +725,7 @@ static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 	.session_key	= gensec_krb5_session_key,
 	.session_info	= gensec_krb5_session_info,
 	.have_feature   = gensec_krb5_have_feature,
+	.disabled_by_default = True
 };
 
 
