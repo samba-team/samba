@@ -1,3 +1,8 @@
+Tue Mar 24 05:13:01 1998  assar westerlund  <assar@sics.se>
+
+	* Makefile.in: link with snprintf (From Derrick J Brashear
+ 	<shadow@dementia.org>)
+
 Fri Feb 27 05:01:42 1998  Assar Westerlund  <assar@sics.se>
 
 	* parse.y: initialize ec->next
