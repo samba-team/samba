@@ -1,3 +1,30 @@
+1999-07-19  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (AC_BROKEN): test for copyhostent, freehostent,
+ 	getipnodebyaddr, getipnodebyname
+
+1999-07-15  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/check-der.c: more test cases for integers
+
+	* lib/asn1/der_length.c (length_int): handle the case of the
+ 	largest negative integer by not calling abs
+
+1999-07-14  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/check-der.c (generic_test): check malloc return value
+ 	properly
+
+	* lib/krb5/Makefile.am: add string_to_key_test
+
+	* lib/krb5/prog_setup.c (krb5_program_setup): always initialize
+ 	the context
+
+	* lib/krb5/n-fold-test.c (main): return a relevant return value
+
+	* lib/krb5/krbhst.c: do SRV lookups for admin server as well.
+  	some clean-up.
+
 1999-07-12  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: handle not building X programs
