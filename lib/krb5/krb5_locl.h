@@ -115,7 +115,15 @@ struct sockaddr_dl;
 
 #include "crypto-headers.h"
 
+
 #include <krb5_asn1.h>
+
+/* XXX glue for pkinit */
+struct krb5_pk_identity;
+struct krb5_pk_cert;
+struct ContentInfo;
+typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
+
 #include <der.h>
 
 #include <krb5.h>
@@ -142,9 +150,8 @@ typedef enum {
     KRB5_PA_PAC_REQ_FALSE
 } krb5_get_init_creds_req_pac;
 
-typedef struct krb5_pk_init_ctx_data *krb5_pk_init_ctx;
-
 struct _krb5_get_init_creds_opt_private {
+    int refcount;
     /* ENC_TIMESTAMP */
     const char *password;
     krb5_s2k_proc key_proc;
