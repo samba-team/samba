@@ -133,7 +133,6 @@ mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      smbmount smbumount smbmnt \
       make_smbcodepage make_printerdef rpcclient smbsh smbwrapper.so
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/bin
@@ -144,7 +143,7 @@ install -m755 source/script/$i $RPM_BUILD_ROOT/usr/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat
+for i in smbd nmbd swat smbmount smbumount smbmnt
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
