@@ -1279,7 +1279,7 @@ int main(int argc,char *argv[])
 
   lp_load(servicesf,True,False,False);
 
-  argv_new = poptGetArgs(pc);
+  argv_new = (char **)poptGetArgs(pc);
 
   for (i=0; i<argc; i++) {
     if (argv_new[i] == NULL) {

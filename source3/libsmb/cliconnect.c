@@ -460,8 +460,8 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 
 	/* encrypt the password with the challenge */
 	memcpy(challenge, chal1.data + 24, 8);
-	SMBencrypt(pass, challenge,lmhash);
-	SMBNTencrypt(pass, challenge,nthash);
+	SMBencrypt((unsigned char *)pass, challenge,lmhash);
+	SMBNTencrypt((unsigned char *)pass, challenge,nthash);
 
 #if 0
 	file_save("nthash.dat", nthash, 24);

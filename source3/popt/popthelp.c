@@ -26,7 +26,7 @@ struct poptOption poptHelpOptions[] = {
 } ;
 
 
-/*@observer@*/ /*@null@*/ static const char *const
+/*@observer@*/ /*@null@*/ static const char *
 getTableTranslationDomain(const struct poptOption *table)
 {
   const struct poptOption *opt;
@@ -41,7 +41,7 @@ getTableTranslationDomain(const struct poptOption *table)
   return NULL;
 }
 
-/*@observer@*/ /*@null@*/ static const char *const
+/*@observer@*/ /*@null@*/ static const char *
 getArgDescrip(const struct poptOption * opt, const char *translation_domain)
 {
     if (!(opt->argInfo & POPT_ARG_MASK)) return NULL;

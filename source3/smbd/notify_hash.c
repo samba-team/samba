@@ -116,7 +116,7 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
 			int i;
 			unsigned char tmp_hash[16];
-			mdfour(tmp_hash, fname, strlen(fname));
+			mdfour(tmp_hash, (const unsigned char *)fname, strlen(fname));
 			for (i=0;i<16;i++)
 				data->name_hash[i] ^= tmp_hash[i];
 		}

@@ -311,7 +311,7 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	nt_status = sam_password_ok(sampass, user_info, server_info->session_key);
+	nt_status = sam_password_ok(sampass, user_info, (char *)(server_info->session_key));
 
 	if NT_STATUS_IS_OK(nt_status) {
 		nt_status = sam_account_ok(sampass, user_info);
