@@ -9,11 +9,15 @@
 Kerberos 5 server
 .Sh SYNOPSIS
 .Nm
-.Op Fl c Ar file
-.Op Fl -config-file= Ns Ar file
+.Oo Fl c Ar file \*(Ba Xo
+.Fl -config-file= Ns Ar file Oc
+.Xc
 .Op Fl p | Fl -no-require-preauth
 .Op Fl -max-request= Ns Ar size
 .Op Fl H | Fl -enable-http
+.Oo Fl r Ar string \*(Ba Xo
+.Fl -v4-realm= Ns Ar string Oc
+.Xc
 .Op Fl K | Fl -no-kaserver
 .Op Fl r Ar realm
 .Op Fl -v4-realm= Ns Ar realm
@@ -35,6 +39,8 @@ Options supported:
 Specifies the location of the config file, the default is
 .Pa /var/heimdal/kdc.conf .
 This is the only value that can't be specified in the config file.
+For more information about the contents of the configuration file see
+.Xr kdc.conf 5 .
 .It Fl p
 .It Fl -no-require-preauth
 Turn off the requirement for pre-autentication in the initial AS-REQ
@@ -116,4 +122,5 @@ An example of a config file:
 	key-file = /key-file
 .Ed
 .Sh SEE ALSO
-.Xr kinit 1
+.Xr kinit 1 ,
+.Xr kdc.conf 5
