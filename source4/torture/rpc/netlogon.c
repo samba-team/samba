@@ -1625,6 +1625,14 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 
+static void async_callback(struct rpc_request *req)
+{
+	int *counter = req->async.private;
+	if (NT_STATUS_IS_OK(req->status)) {
+		(*counter)++;
+	}
+}
+
 static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -1636,6 +1644,7 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct creds_CredentialState creds_async[ASYNC_COUNT];
 	struct rpc_request *req[ASYNC_COUNT];
 	int i;
+	int async_counter = 0;
 
 	if (!test_SetupCredentials3(p, mem_ctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, &creds)) {
 		return False;
@@ -1670,6 +1679,13 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 		creds_async[i] = creds;
 		req[i] = dcerpc_netr_LogonGetDomainInfo_send(p, mem_ctx, &r);
+
+		req[i]->async.callback = async_callback;
+		req[i]->async.private = &async_counter;
+
+		/* even with this flush per request a w2k3 server seems to 
+		   clag with multiple outstanding requests. bleergh. */
+		event_loop_once(dcerpc_event_context(p));
 	}
 
 	for (i=0;i<ASYNC_COUNT;i++) {
@@ -1677,18 +1693,18 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(r.out.result)) {
 			printf("netr_LogonGetDomainInfo_async(%d) - %s/%s\n", 
 			       i, nt_errstr(status), nt_errstr(r.out.result));
-			return False;
+			break;
 		}
 
 		if (!creds_client_check(&creds_async[i], &a.cred)) {
 			printf("Credential chaining failed at async %d\n", i);
-			return False;
+			break;
 		}
 	}
 
-	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", ASYNC_COUNT);
+	printf("Testing netr_LogonGetDomainInfo - async count %d OK\n", async_counter);
 
-	return True;
+	return async_counter == ASYNC_COUNT;
 }
 
 

@@ -166,4 +166,9 @@ struct rpc_request {
 		size_t struct_size;
 		TALLOC_CTX *mem_ctx;
 	} ndr;
+
+	struct {
+		void (*callback)(struct rpc_request *);
+		void *private;
+	} async;
 };
