@@ -6215,21 +6215,15 @@ NAME="DEBUGLEVEL"
 >debuglevel (G)</DT
 ><DD
 ><P
->The value of the parameter (an integer) allows 
-		the debug level (logging level) to be specified in the 
-		<TT
-CLASS="FILENAME"
->smb.conf</TT
-> file. This is to give greater 
-		flexibility in the configuration of the system.</P
-><P
->The default will be the debug level specified on 
-		the command line or level zero if none was specified.</P
-><P
->Example: <B
-CLASS="COMMAND"
->debug level = 3</B
-></P
+>Synonym for <A
+HREF="#LOGLEVEL"
+><TT
+CLASS="PARAMETER"
+><I
+>		log level</I
+></TT
+></A
+>.</P
 ></DD
 ><DT
 ><A
@@ -9698,15 +9692,21 @@ NAME="LOGLEVEL"
 >log level (G)</DT
 ><DD
 ><P
->Synonym for <A
-HREF="#DEBUGLEVEL"
-><TT
-CLASS="PARAMETER"
-><I
->		debug level</I
-></TT
-></A
->.</P
+>The value of the parameter (an integer) allows 
+		the debug level (logging level) to be specified in the 
+		<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file. This is to give greater 
+		flexibility in the configuration of the system.</P
+><P
+>The default will be the log level specified on 
+		the command line or level zero if none was specified.</P
+><P
+>Example: <B
+CLASS="COMMAND"
+>log level = 3</B
+></P
 ></DD
 ><DT
 ><A

@@ -1764,15 +1764,9 @@
 
 		<varlistentry>
 		<term><anchor id="DEBUGLEVEL">debuglevel (G)</term>
-		<listitem><para>The value of the parameter (an integer) allows 
-		the debug level (logging level) to be specified in the 
-		<filename>smb.conf</filename> file. This is to give greater 
-		flexibility in the configuration of the system.</para>
-
-		<para>The default will be the debug level specified on 
-		the command line or level zero if none was specified.</para>
-
-		<para>Example: <command>debug level = 3</command></para></listitem>
+		<listitem><para>Synonym for <link linkend="LOGLEVEL"><parameter>
+		log level</parameter></link>.</para>
+		</listitem>
 		</varlistentry>
 
 
@@ -3493,9 +3487,15 @@
 
 		<varlistentry>
 		<term><anchor id="LOGLEVEL">log level (G)</term>
-		<listitem><para>Synonym for <link linkend="DEBUGLEVEL"><parameter>
-		debug level</parameter></link>.</para>
-		</listitem>
+		<listitem><para>The value of the parameter (an integer) allows 
+		the debug level (logging level) to be specified in the 
+		<filename>smb.conf</filename> file. This is to give greater 
+		flexibility in the configuration of the system.</para>
+
+		<para>The default will be the log level specified on 
+		the command line or level zero if none was specified.</para>
+
+		<para>Example: <command>log level = 3</command></para></listitem>
 		</varlistentry>
 
 

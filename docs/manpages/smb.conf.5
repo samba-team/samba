@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "16 May 2001" "" ""
+.TH "SMB.CONF" "5" "18 May 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -2079,15 +2079,7 @@ effect.
 Default: \fBdebug uid = no\fR
 .TP
 \fBdebuglevel (G)\fR
-The value of the parameter (an integer) allows 
-the debug level (logging level) to be specified in the 
-\fIsmb.conf\fR file. This is to give greater 
-flexibility in the configuration of the system.
-
-The default will be the debug level specified on 
-the command line or level zero if none was specified.
-
-Example: \fBdebug level = 3\fR
+Synonym for \fI log level\fR.
 .TP
 \fBdefault (G)\fR
 A synonym for \fI default service\fR.
@@ -3437,7 +3429,15 @@ you to have separate log files for each user or machine.
 Example: \fBlog file = /usr/local/samba/var/log.%m
 \fR.TP
 \fBlog level (G)\fR
-Synonym for \fI debug level\fR.
+The value of the parameter (an integer) allows 
+the debug level (logging level) to be specified in the 
+\fIsmb.conf\fR file. This is to give greater 
+flexibility in the configuration of the system.
+
+The default will be the log level specified on 
+the command line or level zero if none was specified.
+
+Example: \fBlog level = 3\fR
 .TP
 \fBlogon drive (G)\fR
 This parameter specifies the local path to 
