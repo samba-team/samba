@@ -1430,7 +1430,7 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
          */
 
         if (win9x_semantics) {
-          if (*cp2 == '\0' && (strequal(cp1, "*") || str_is_all(cp1, '?')))
+          if (*cp2 == '\0' && str_is_all(cp1, '?'))
             break;
         }
 
