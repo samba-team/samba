@@ -121,7 +121,7 @@ REQUIRED_SUBSYSTEMS = \
 
 ################################################
 # Start BINARY gregedit
-[BINARY::grepedit]
+[BINARY::gregedit]
 OBJ_FILES= \
 		lib/registry/tools/gregedit.o
 REQUIRED_LIBRARIES = \
