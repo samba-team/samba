@@ -522,8 +522,12 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
 	printf("  Size: %10u", (unsigned int)st.st_size);
+#ifdef HAVE_STAT_ST_BLOCKS
 	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+#endif
+#ifdef HAVE_STAT_ST_BLKSIZE
 	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+#endif
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
@@ -586,8 +590,12 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
 	printf("  Size: %10u", (unsigned int)st.st_size);
+#ifdef HAVE_STAT_ST_BLOCKS
 	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+#endif
+#ifdef HAVE_STAT_ST_BLKSIZE
 	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+#endif
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
@@ -638,8 +646,12 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
 	else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
 	printf("  Size: %10u", (unsigned int)st.st_size);
+#ifdef HAVE_STAT_ST_BLOCKS
 	printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+#endif
+#ifdef HAVE_STAT_ST_BLKSIZE
 	printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+#endif
 	printf("  Device: 0x%10x", (unsigned int)st.st_dev);
 	printf(" Inode: %10u", (unsigned int)st.st_ino);
 	printf(" Links: %10u\n", (unsigned int)st.st_nlink);
