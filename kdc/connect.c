@@ -138,6 +138,12 @@ init_socket(struct descr *d, int family, int type, int port)
 	d->s = -1;
 	return;
     }
+#if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
+    {
+	int one = 1;
+	setsockopt(d->s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    }
+#endif
     d->type = type;
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
