@@ -235,6 +235,28 @@ unsigned int ldb_msg_find_uint(const struct ldb_message *msg,
 	return strtoul(v->data, NULL, 0);
 }
 
+int64_t ldb_msg_find_int64(const struct ldb_message *msg, 
+			   const char *attr_name,
+			   int64_t default_value)
+{
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
+		return default_value;
+	}
+	return strtoll(v->data, NULL, 0);
+}
+
+uint64_t ldb_msg_find_uint64(const struct ldb_message *msg, 
+			     const char *attr_name,
+			     uint64_t default_value)
+{
+	const struct ldb_val *v = ldb_msg_find_ldb_val(msg, attr_name);
+	if (!v || !v->data) {
+		return default_value;
+	}
+	return strtoull(v->data, NULL, 0);
+}
+
 double ldb_msg_find_double(const struct ldb_message *msg, 
 			   const char *attr_name,
 			   double default_value)

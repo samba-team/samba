@@ -1031,12 +1031,12 @@ again:
 } while(0)
 
 #define CHECK_NTTIMES_EQUAL(field) do { \
-	if (ABS(nt_time_to_unix(&parm[0].field) - \
-		nt_time_to_unix(&parm[1].field)) > time_skew() && \
+	if (ABS(nt_time_to_unix(parm[0].field) - \
+		nt_time_to_unix(parm[1].field)) > time_skew() && \
 	    !ignore_pattern(#field)) { \
 		printf("Mismatch in %s - 0x%x 0x%x\n", #field, \
-		       (int)nt_time_to_unix(&parm[0].field), \
-		       (int)nt_time_to_unix(&parm[1].field)); \
+		       (int)nt_time_to_unix(parm[0].field), \
+		       (int)nt_time_to_unix(parm[1].field)); \
 		return False; \
 	} \
 } while(0)

@@ -172,4 +172,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 /* macros for accessing SMB protocol elements */
 #define VWV(vwv) ((vwv)*2)
 
+/* 64 bit macros */
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
+
 #endif /* _BYTEORDER_H */

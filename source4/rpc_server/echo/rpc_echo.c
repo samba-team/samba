@@ -84,13 +84,11 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		r->out.info->info3.v = 30;
 		break;
 	case 4:
-		r->out.info->info4.v.low = 40;
-		r->out.info->info4.v.high = 0;
+		r->out.info->info4.v = 40;
 		break;
 	case 5:
 		r->out.info->info5.v1 = 50;
-		r->out.info->info5.v2.low = 60;
-		r->out.info->info5.v2.high = 0;
+		r->out.info->info5.v2 = 60;
 		break;
 	case 6:
 		r->out.info->info6.v1 = 70;
@@ -98,8 +96,7 @@ static NTSTATUS echo_TestCall2(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		break;
 	case 7:
 		r->out.info->info7.v1 = 80;
-		r->out.info->info7.info4.v.low = 90;
-		r->out.info->info7.info4.v.high = 0;
+		r->out.info->info7.info4.v = 90;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;

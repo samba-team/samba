@@ -172,7 +172,7 @@ sub is_scalar_type($)
 {
     my($type) = shift;
 
-    if ($type =~ /uint\d+/) {
+    if ($type =~ /^u?int\d+/) {
 	    return 1;
     }
     if ($type =~ /char|short|long|NTTIME|

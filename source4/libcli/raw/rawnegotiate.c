@@ -106,7 +106,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 
 		/* this time arrives in real GMT */
 		ntt = cli_pull_nttime(req->in.vwv, VWV(11)+1);
-		transport->negotiate.server_time = nt_time_to_unix(&ntt);
+		transport->negotiate.server_time = nt_time_to_unix(ntt);
 		transport->negotiate.capabilities = IVAL(req->in.vwv,VWV(9)+1);
 
 		transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, req->in.data_size);

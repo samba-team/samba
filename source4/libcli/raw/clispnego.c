@@ -141,9 +141,9 @@ BOOL spnego_parse_negTokenInit(DATA_BLOB blob,
 	asn1_start_tag(&data,ASN1_CONTEXT(0));
 	asn1_start_tag(&data,ASN1_SEQUENCE(0));
 	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS; i++) {
-		char *oid = NULL;
-		asn1_read_OID(&data,&oid);
-		OIDs[i] = oid;
+		char *aoid = NULL;
+		asn1_read_OID(&data,&aoid);
+		OIDs[i] = aoid;
 	}
 	OIDs[i] = NULL;
 	asn1_end_tag(&data);
@@ -230,9 +230,9 @@ BOOL parse_negTokenTarg(DATA_BLOB blob, char *OIDs[ASN1_MAX_OIDS], DATA_BLOB *se
 	asn1_start_tag(&data, ASN1_CONTEXT(0));
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
 	for (i=0; asn1_tag_remaining(&data) > 0 && i < ASN1_MAX_OIDS; i++) {
-		char *oid = NULL;
-		asn1_read_OID(&data,&oid);
-		OIDs[i] = oid;
+		char *aoid = NULL;
+		asn1_read_OID(&data,&aoid);
+		OIDs[i] = aoid;
 	}
 	OIDs[i] = NULL;
 	asn1_end_tag(&data);

@@ -499,6 +499,14 @@ typedef int socklen_t;
 #endif
 #endif
 
+#if !defined(uint64)
+#define uint64 uint64_t
+#endif
+
+#if !defined(int64)
+#define int64 int64_t
+#endif
+
 /*
  * Types for devices, inodes and offsets.
  */
@@ -543,11 +551,6 @@ typedef int socklen_t;
 #  endif
 #endif
 
-/* this should really be a 64 bit type if possible */
-#define br_off SMB_BIG_UINT
-
-#define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
-
 /*
  * Set the define that tells us if we can do 64 bit
  * NT SMB calls.
@@ -557,20 +560,6 @@ typedef int socklen_t;
 #  if (defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T)) || (defined(SIZEOF_OFF_T) && (SIZEOF_OFF_T == 8))
 #    define LARGE_SMB_OFF_T 1
 #  endif
-#endif
-
-#ifdef LARGE_SMB_OFF_T
-#define SOFF_T(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
-#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF) )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		(( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
-#else 
-#define SOFF_T(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,v),SIVAL(p,ofs,0))
-#define IVAL_TO_SMB_OFF_T(buf,off) ((SMB_OFF_T)(( ((uint32)(IVAL((buf),(off)))) & 0xFFFFFFFF )))
-#define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((SMB_BIG_UINT)(IVAL((buf),(off)))) & ((SMB_BIG_UINT)0xFFFFFFFF)) | \
-		                (( ((SMB_BIG_UINT)(IVAL((buf),(off+4)))) & ((SMB_BIG_UINT)0xFFFFFFFF) ) << 32 ) )
 #endif
 
 /*
@@ -632,20 +621,6 @@ typedef int socklen_t;
 #    define SMB_F_GETLK F_GETLK
 #  endif
 #endif
-
-#if defined(HAVE_LONGLONG)
-#define SMB_BIG_UINT unsigned long long
-#define SMB_BIG_INT long long
-#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#define BVAL(p, ofs) (IVAL(p,ofs) | (((SMB_BIG_UINT)IVAL(p,(ofs)+4)) << 32))
-#else
-#define SMB_BIG_UINT unsigned long
-#define SMB_BIG_INT long
-#define SBVAL(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#define BVAL(p, ofs) IVAL(p,ofs)
-#endif
-
-#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))

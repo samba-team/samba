@@ -248,36 +248,6 @@ SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 }
 
 /*******************************************************************
- An fseek() wrapper that will deal with 64 bit filesizes.
-********************************************************************/
-
-int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
-{
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
-	return fseek64(fp, offset, whence);
-#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEKO64)
-	return fseeko64(fp, offset, whence);
-#else
-	return fseek(fp, offset, whence);
-#endif
-}
-
-/*******************************************************************
- An ftell() wrapper that will deal with 64 bit filesizes.
-********************************************************************/
-
-SMB_OFF_T sys_ftell(FILE *fp)
-{
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
-	return (SMB_OFF_T)ftell64(fp);
-#elif defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELLO64)
-	return (SMB_OFF_T)ftello64(fp);
-#else
-	return (SMB_OFF_T)ftell(fp);
-#endif
-}
-
-/*******************************************************************
  A creat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 

@@ -153,7 +153,7 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 		ZERO_STRUCT(io->openx.out);
 		io->openx.out.fnum = io2.generic.out.fnum;
 		io->openx.out.attrib = io2.generic.out.attrib;
-		io->openx.out.write_time = nt_time_to_unix(&io2.generic.out.write_time);
+		io->openx.out.write_time = nt_time_to_unix(io2.generic.out.write_time);
 		io->openx.out.size = io2.generic.out.size;
 		
 		return NT_STATUS_OK;
@@ -235,7 +235,7 @@ NTSTATUS ntvfs_map_open(struct request_context *req, union smb_open *io)
 		ZERO_STRUCT(io->openx.out);
 		io->open.out.fnum = io2.generic.out.fnum;
 		io->open.out.attrib = io2.generic.out.attrib;
-		io->open.out.write_time = nt_time_to_unix(&io2.generic.out.write_time);
+		io->open.out.write_time = nt_time_to_unix(io2.generic.out.write_time);
 		io->open.out.size = io2.generic.out.size;
 		io->open.out.rmode = DOS_OPEN_RDWR;
 		
@@ -378,15 +378,15 @@ NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *inf
 	case RAW_FILEINFO_GETATTR:
 		info->getattr.out.attrib = info2->generic.out.attrib & 0xff;
 		info->getattr.out.size = info2->generic.out.size;
-		info->getattr.out.write_time = nt_time_to_unix(&info2->generic.out.write_time);
+		info->getattr.out.write_time = nt_time_to_unix(info2->generic.out.write_time);
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_GETATTRE:
 		info->getattre.out.attrib = info2->generic.out.attrib;
 		info->getattre.out.size = info2->generic.out.size;
-		info->getattre.out.write_time = nt_time_to_unix(&info2->generic.out.write_time);
-		info->getattre.out.create_time = nt_time_to_unix(&info2->generic.out.create_time);
-		info->getattre.out.access_time = nt_time_to_unix(&info2->generic.out.access_time);
+		info->getattre.out.write_time = nt_time_to_unix(info2->generic.out.write_time);
+		info->getattre.out.create_time = nt_time_to_unix(info2->generic.out.create_time);
+		info->getattre.out.access_time = nt_time_to_unix(info2->generic.out.access_time);
 		info->getattre.out.alloc_size = info2->generic.out.alloc_size;
 		return NT_STATUS_OK;
 		
@@ -427,18 +427,18 @@ NTSTATUS ntvfs_map_fileinfo(struct request_context *req, union smb_fileinfo *inf
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_STANDARD:
-		info->standard.out.create_time = nt_time_to_unix(&info2->generic.out.create_time);
-		info->standard.out.access_time = nt_time_to_unix(&info2->generic.out.access_time);
-		info->standard.out.write_time = nt_time_to_unix(&info2->generic.out.write_time);
+		info->standard.out.create_time = nt_time_to_unix(info2->generic.out.create_time);
+		info->standard.out.access_time = nt_time_to_unix(info2->generic.out.access_time);
+		info->standard.out.write_time = nt_time_to_unix(info2->generic.out.write_time);
 		info->standard.out.size = info2->generic.out.size;
 		info->standard.out.alloc_size = info2->generic.out.alloc_size;
 		info->standard.out.attrib = info2->generic.out.attrib;
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_SIZE:
-		info->ea_size.out.create_time = nt_time_to_unix(&info2->generic.out.create_time);
-		info->ea_size.out.access_time = nt_time_to_unix(&info2->generic.out.access_time);
-		info->ea_size.out.write_time = nt_time_to_unix(&info2->generic.out.write_time);
+		info->ea_size.out.create_time = nt_time_to_unix(info2->generic.out.create_time);
+		info->ea_size.out.access_time = nt_time_to_unix(info2->generic.out.access_time);
+		info->ea_size.out.write_time = nt_time_to_unix(info2->generic.out.write_time);
 		info->ea_size.out.size = info2->generic.out.size;
 		info->ea_size.out.alloc_size = info2->generic.out.alloc_size;
 		info->ea_size.out.attrib = info2->generic.out.attrib;

@@ -109,7 +109,8 @@ NTSTATUS samr_ChangePasswordUser(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	status = samdb_set_password(a_state->sam_ctx, mem_ctx,
 				    a_state->account_dn, a_state->domain_state->domain_dn,
-				    &mod, NULL, &new_lmPwdHash, &new_ntPwdHash, True);
+				    &mod, NULL, &new_lmPwdHash, &new_ntPwdHash, 
+				    True, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -210,7 +211,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 				    user_dn, domain_dn, 
 				    &mod, new_pass, 
 				    NULL, NULL,
-				    True);
+				    True, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		samdb_close(sam_ctx);
 		return status;
@@ -241,10 +242,158 @@ NTSTATUS samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   samr_ChangePasswordUser3 
 */
-NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call, 
+				  TALLOC_CTX *mem_ctx,
 				  struct samr_ChangePasswordUser3 *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+{	
+	NTSTATUS status;
+	char new_pass[512];
+	uint32 new_pass_len;
+	void *sam_ctx = NULL;
+	const char *user_dn, *domain_dn = NULL;
+	int ret;
+	struct ldb_message **res, mod;
+	const char * const attrs[] = { "objectSid", "ntPwdHash", NULL };
+	const char * const dom_attrs[] = { "minPwdLength", "pwdHistoryLength", 
+					   "pwdProperties", "minPwdAge", "maxPwdAge", 
+					   NULL };
+	const char *domain_sid;
+	struct samr_Hash *ntPwdHash;
+	struct samr_DomInfo1 *dominfo;
+	struct samr_ChangeReject *reject;
+	uint32 reason = 0;
+
+	ZERO_STRUCT(r->out);
+
+	if (r->in.nt_password == NULL ||
+	    r->in.nt_verifier == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto failed;
+	}
+
+	/* this call doesn't take a policy handle, so we need to open
+	   the sam db from scratch */
+	sam_ctx = samdb_connect();
+	if (sam_ctx == NULL) {
+		status = NT_STATUS_INVALID_SYSTEM_SERVICE;
+		goto failed;
+	}
+
+	/* we need the users dn and the domain dn (derived from the
+	   user SID). We also need the current lm and nt password hashes
+	   in order to decrypt the incoming passwords */
+	ret = samdb_search(sam_ctx, 
+			   mem_ctx, NULL, &res, attrs,
+			   "(&(sAMAccountName=%s)(objectclass=user))",
+			   r->in.account->name);
+	if (ret != 1) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto failed;
+	}
+
+	user_dn = res[0]->dn;
+
+	ret = samdb_result_hashes(mem_ctx, res[0], "ntPwdHash", &ntPwdHash);
+	if (ret != 1) {
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto failed;
+	}
+
+	/* decrypt the password we have been given */
+	SamOEMhash(r->in.nt_password->data, ntPwdHash->hash, 516);
+
+	if (!decode_pw_buffer(r->in.nt_password->data, new_pass, sizeof(new_pass),
+			      &new_pass_len, STR_UNICODE)) {
+		DEBUG(3,("samr: failed to decode password buffer\n"));
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto failed;
+	}
+
+	/* work out the domain dn */
+	domain_sid = samdb_result_sid_prefix(mem_ctx, res[0], "objectSid");
+	if (domain_sid == NULL) {
+		status = NT_STATUS_NO_SUCH_DOMAIN;
+		goto failed;
+	}
+
+	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
+					"(objectSid=%s)", domain_sid);
+	if (!domain_dn) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto failed;
+	}
+
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, user_dn);
+	if (!mod.dn) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	/* set the password - samdb needs to know both the domain and user DNs,
+	   so the domain password policy can be used */
+	status = samdb_set_password(sam_ctx, mem_ctx,
+				    user_dn, domain_dn, 
+				    &mod, new_pass, 
+				    NULL, NULL,
+				    True, &reason);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_replace(sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto failed;
+	}
+
+	samdb_close(sam_ctx);
+	return NT_STATUS_OK;
+
+failed:
+	if (sam_ctx) {
+		samdb_close(sam_ctx);
+	}
+
+	/* on failure we need to fill in the reject reasons */
+	dominfo = talloc_p(mem_ctx, struct samr_DomInfo1);
+	if (dominfo == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	reject = talloc_p(mem_ctx, struct samr_ChangeReject);
+	if (reject == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(dominfo);
+	ZERO_STRUCTP(reject);
+
+	reject->reason = reason;
+
+	r->out.dominfo = dominfo;
+	r->out.reject = reject;
+
+	if (!domain_dn) {
+		return status;
+	}
+
+	ret = samdb_search(sam_ctx, 
+			   mem_ctx, NULL, &res, dom_attrs,
+			   "dn=%s", domain_dn);
+	if (ret != 1) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto failed;
+	}
+
+	dominfo->min_pwd_len         = samdb_result_uint(res[0],  "minPwdLength", 0);
+	dominfo->password_properties = samdb_result_uint(res[0],  "pwdProperties", 0);
+	dominfo->password_history    = samdb_result_uint(res[0],  "pwdHistoryLength", 0);
+	dominfo->max_password_age    = samdb_result_int64(res[0], "maxPwdAge", 0);
+	dominfo->min_password_age    = samdb_result_int64(res[0], "minPwdAge", 0);
+
+	return status;
 }
 
 
@@ -269,12 +418,13 @@ BOOL samdb_password_complexity_ok(const char *pass)
   changes (as is needed by some of the set user info levels)
 */
 NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
-				   const char *user_dn, const char *domain_dn,
-				   struct ldb_message *mod,
- 				   const char *new_pass,
-				   struct samr_Hash *lmNewHash, 
-				   struct samr_Hash *ntNewHash,
-				   BOOL user_change)
+			    const char *user_dn, const char *domain_dn,
+			    struct ldb_message *mod,
+			    const char *new_pass,
+			    struct samr_Hash *lmNewHash, 
+			    struct samr_Hash *ntNewHash,
+			    BOOL user_change,
+			    uint32 *reject_reason)
 {
 	const char * const user_attrs[] = { "userAccountControl", "lmPwdHistory", 
 					    "ntPwdHistory", "unicodePwd", 
@@ -284,7 +434,8 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 					      "maxPwdAge", "minPwdAge", 
 					      "minPwdLength", "pwdLastSet", NULL };
 	const char *unicodePwd;
-	double minPwdAge, pwdLastSet;
+	NTTIME pwdLastSet;
+	int64_t minPwdAge;
 	uint_t minPwdLength, pwdProperties, pwdHistoryLength;
 	uint_t userAccountControl, badPwdCount;
 	struct samr_Hash *lmPwdHistory, *ntPwdHistory, lmPwdHash, ntPwdHash;
@@ -295,12 +446,10 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	int count;
 	time_t now = time(NULL);
 	NTTIME now_nt;
-	double now_double;
 	int i;
 
 	/* we need to know the time to compute password age */
 	unix_to_nt_time(&now_nt, now);
-	now_double = nttime_to_double_nt(now_nt);
 
 	/* pull all the user parameters */
 	count = samdb_search(ctx, mem_ctx, NULL, &res, user_attrs, "dn=%s", user_dn);
@@ -316,7 +465,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 						 "ntPwdHistory", &ntPwdHistory);
 	lmPwdHash =          samdb_result_hash(res[0],   "lmPwdHash");
 	ntPwdHash =          samdb_result_hash(res[0],   "ntPwdHash");
-	pwdLastSet =         samdb_result_double(res[0], "pwdLastSet", 0);
+	pwdLastSet =         samdb_result_uint64(res[0], "pwdLastSet", 0);
 
 	/* pull the domain parameters */
 	count = samdb_search(ctx, mem_ctx, NULL, &res, domain_attrs, "dn=%s", domain_dn);
@@ -326,17 +475,23 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	pwdProperties =    samdb_result_uint(res[0],   "pwdProperties", 0);
 	pwdHistoryLength = samdb_result_uint(res[0],   "pwdHistoryLength", 0);
 	minPwdLength =     samdb_result_uint(res[0],   "minPwdLength", 0);
-	minPwdAge =        samdb_result_double(res[0], "minPwdAge", 0);
+	minPwdAge =        samdb_result_int64(res[0],  "minPwdAge", 0);
 
 	if (new_pass) {
 		/* check the various password restrictions */
 		if (minPwdLength > str_charnum(new_pass)) {
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_TOO_SHORT;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 		
 		/* possibly check password complexity */
 		if (pwdProperties & DOMAIN_PASSWORD_COMPLEX &&
 		    !samdb_password_complexity_ok(new_pass)) {
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_COMPLEXITY;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 		
@@ -351,25 +506,40 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 	if (user_change) {
 		/* are all password changes disallowed? */
 		if (pwdProperties & DOMAIN_REFUSE_PASSWORD_CHANGE) {
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_OTHER;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 		
 		/* can this user change password? */
 		if (userAccountControl & UF_PASSWD_CANT_CHANGE) {
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_OTHER;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 		
 		/* yes, this is a minus. The ages are in negative 100nsec units! */
-		if (pwdLastSet - minPwdAge > now_double) {
+		if (pwdLastSet - minPwdAge > now_nt) {
+			if (reject_reason) {
+				*reject_reason = SAMR_REJECT_OTHER;
+			}
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 
 		/* check the immediately past password */
 		if (pwdHistoryLength > 0) {
 			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
@@ -380,23 +550,38 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		
 		if (pwdHistoryLength > 0) {
 			if (unicodePwd && new_pass && strcmp(unicodePwd, new_pass) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 			if (lmNewHash && memcmp(lmNewHash->hash, lmPwdHash.hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 			if (ntNewHash && memcmp(ntNewHash->hash, ntPwdHash.hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
 		
 		for (i=0; lmNewHash && i<lmPwdHistory_len;i++) {
 			if (memcmp(lmNewHash->hash, lmPwdHistory[i].hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
 		for (i=0; ntNewHash && i<ntPwdHistory_len;i++) {
 			if (memcmp(ntNewHash->hash, ntPwdHistory[i].hash, 16) == 0) {
+				if (reject_reason) {
+					*reject_reason = SAMR_REJECT_COMPLEXITY;
+				}
 				return NT_STATUS_PASSWORD_RESTRICTION;
 			}
 		}
@@ -425,7 +610,7 @@ NTSTATUS samdb_set_password(void *ctx, TALLOC_CTX *mem_ctx,
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "unicodePwd"));
 	}
 
-	CHECK_RET(samdb_msg_add_double(ctx, mem_ctx, mod, "pwdLastSet", now_double));
+	CHECK_RET(samdb_msg_add_uint64(ctx, mem_ctx, mod, "pwdLastSet", now_nt));
 	
 	if (pwdHistoryLength == 0) {
 		CHECK_RET(samdb_msg_add_delete(ctx, mem_ctx, mod, "lmPwdHistory"));
@@ -509,6 +694,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				  account_dn, domain_dn, 
 				  msg, new_pass, 
 				  NULL, NULL,
-				  False /* This is a password set, not change */);
+				  False /* This is a password set, not change */,
+				  NULL);
 }
 

@@ -129,12 +129,13 @@
 		uint16 min_pwd_len;
 		uint16 password_history;
 		uint32 password_properties;
-		ULONG8 max_password_age;
-		ULONG8 min_password_age;
+		/* yes, these are signed. They are in negative 100ns */
+		int64  max_password_age;
+		int64  min_password_age;
 	} samr_DomInfo1;
 
 	typedef struct {
-		ULONG8 force_logoff_time;
+		uint64 force_logoff_time;
 		samr_Name comment;
 		samr_Name domain;  /* domain name */
 		samr_Name primary; /* PDC name if this is a BDC */
@@ -148,7 +149,7 @@
 	} samr_DomInfo2;
 
 	typedef struct {
-		ULONG8 force_logoff_time;
+		uint64 force_logoff_time;
 	} samr_DomInfo3;
 
 	typedef struct {
@@ -180,7 +181,7 @@
 	} samr_DomInfo9;
 
 	typedef struct {
-		ULONG8 force_logoff_time;
+		uint64 force_logoff_time;
 		samr_Name comment;
 		samr_Name domain;
 		samr_Name primary;
@@ -1162,10 +1163,14 @@
 	/************************/
 	/* Function    0x3f     */
 
+	const int SAMR_REJECT_OTHER      = 0;
+	const int SAMR_REJECT_TOO_SHORT  = 1;
+	const int SAMR_REJECT_COMPLEXITY = 2;
+
 	typedef struct {
+		uint32 reason;
 		uint32 unknown1;
 		uint32 unknown2;
-		uint32 unknown3;
 	} samr_ChangeReject;
 
 	NTSTATUS samr_ChangePasswordUser3(
