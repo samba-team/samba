@@ -769,8 +769,6 @@ BOOL local_password_change(char *user_name, int local_flags,
 	struct passwd  *pwd = NULL;
 	SAM_ACCOUNT 	*sam_pass=NULL;
 	SAM_ACCOUNT	*new_sam_acct=NULL;
-	uchar           new_p16[16];
-	uchar           new_nt_p16[16];
 
 	*err_str = '\0';
 	*msg_str = '\0';
@@ -788,9 +786,6 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 	}
-
-	/* Calculate the MD4 hash (NT compatible) of the new password. */
-	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
@@ -827,8 +822,7 @@ account without a valid local system user.\n", user_name);
 		else {
 			/* set the passwords here.  if we get to here it means
 			   we have a valid, active account */
-			pdb_set_lanman_passwd (new_sam_acct, new_p16);
-			pdb_set_nt_passwd     (new_sam_acct, new_nt_p16);
+			pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
 		}
 
 		if (pdb_add_sam_account(new_sam_acct)) {
@@ -854,8 +848,7 @@ account without a valid local system user.\n", user_name);
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if(pdb_get_lanman_passwd(sam_pass) == NULL) {
-			pdb_set_lanman_passwd (sam_pass, new_p16);
-			pdb_set_nt_passwd     (sam_pass, new_nt_p16);
+			pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
@@ -877,8 +870,7 @@ account without a valid local system user.\n", user_name);
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED))
 			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ));
-		pdb_set_lanman_passwd (sam_pass, new_p16);
-		pdb_set_nt_passwd     (sam_pass, new_nt_p16);
+		pdb_set_plaintext_passwd (new_sam_acct, new_passwd);
 	}
 	
 	if(local_flags & LOCAL_DELETE_USER) {
@@ -1502,6 +1494,29 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 		return False;
 
 	memcpy (sampass->lm_pw, pwd, 16);
+
+	return True;
+}
+
+/*********************************************************************
+ Set the user's PLAINTEXT password.  Used as an interface to the above.
+ ********************************************************************/
+
+BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, char *plaintext)
+{
+	uchar new_lanman_p16[16];
+	uchar new_nt_p16[16];
+
+	if (!sampass || !plaintext)
+		return False;
+	
+	nt_lm_owf_gen (plaintext, new_nt_p16, new_lanman_p16);
+
+	if (!pdb_set_nt_passwd (sampass, new_nt_p16)) 
+		return False;
+
+	if (!pdb_set_lanman_passwd (sampass, new_lanman_p16)) 
+		return False;
 
 	return True;
 }
