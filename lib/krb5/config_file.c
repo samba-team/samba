@@ -419,6 +419,31 @@ krb5_config_get_bool (krb5_config_section *c,
     return ret;
 }
 
+int
+krb5_config_vget_time (krb5_config_section *c,
+		       va_list args)
+{
+    const char *str;
+
+    str = krb5_config_vget_string (c, args);
+    if (str == NULL)
+	return -1;
+    else
+	return parse_time (str, NULL);
+}
+
+int
+krb5_config_get_time (krb5_config_section *c,
+		      ...)
+{
+    int ret;
+    va_list args;
+
+    va_start(args, c);
+    ret = krb5_config_vget_time (c, args);
+    va_end(args);
+    return ret;
+}
 
 #ifdef TEST
 
