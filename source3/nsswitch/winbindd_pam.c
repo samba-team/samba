@@ -69,6 +69,10 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	passlen = strlen(state->request.data.auth.pass);
 
+	/* So domain_client_validate() actually opens a new connection
+	   for each authentication performed.  This can theoretically
+	   be optimised to use an already open IPC$ connection. */
+
 	result = domain_client_validate(name_user, name_domain,
 					state->request.data.auth.pass,
 					passlen,
