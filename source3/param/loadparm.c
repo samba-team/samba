@@ -898,7 +898,9 @@ static void init_globals(void)
   string_set(&Globals.szDriverFile, DRIVERFILE);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
+#ifdef WITH_UTMP
   string_set(&Globals.szUtmpDir, "");
+#endif /* WITH_UTMP */
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   pstrcpy(s, "Samba ");
