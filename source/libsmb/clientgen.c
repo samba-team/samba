@@ -3254,7 +3254,7 @@ BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char 
         !cli_initialise(cli) ||
         !cli_connect(cli, desthost, pdest_ip) ||
         !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER.",
+          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER.\n",
                 desthost));
           cli_shutdown(cli);
           return False;
