@@ -2,6 +2,10 @@
 
 	* Makefile.am: add dependencies for libss/libsl shared libraries
 
+2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: bump ss version to 1:1:1
+
 2000-06-27  Assar Westerlund  <assar@sics.se>
 
 	* parse.y (yyerror): static-ize

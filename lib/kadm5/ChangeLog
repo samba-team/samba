@@ -27,6 +27,10 @@
 
 	* admin.h: change void** to void*
 
+2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: bump versions to 7:0:0 and 6:0:2
+
 2000-07-24  Assar Westerlund  <assar@sics.se>
 
 	* log.c (kadm5_log_get_version): rename kadm5_log_get_version_fd
