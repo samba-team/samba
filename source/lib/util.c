@@ -1415,7 +1415,6 @@ void smb_panic(const char *why)
 {
 	char *cmd;
 	int result;
-	size_t i;
 #ifdef HAVE_BACKTRACE_SYMBOLS
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;
@@ -1457,6 +1456,8 @@ void smb_panic(const char *why)
 	DEBUG(0, ("BACKTRACE: %d stack frames:\n", backtrace_size));
 	
 	if (backtrace_strings) {
+		int i;
+
 		for (i = 0; i < backtrace_size; i++)
 			DEBUGADD(0, (" #%u %s\n", i, backtrace_strings[i]));
 
