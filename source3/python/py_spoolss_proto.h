@@ -75,6 +75,12 @@ BOOL py_to_PORT_INFO_1(PORT_INFO_1 *info, PyObject *dict);
 BOOL py_from_PORT_INFO_2(PyObject **dict, PORT_INFO_2 *info);
 BOOL py_to_PORT_INFO_2(PORT_INFO_2 *info, PyObject *dict);
 
+/* The following definitions come from python/py_spoolss_printerdata.c  */
+
+PyObject *spoolss_getprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw);
+
 /* The following definitions come from python/py_spoolss_printers.c  */
 
 PyObject *spoolss_openprinter(PyObject *self, PyObject *args, PyObject *kw);
