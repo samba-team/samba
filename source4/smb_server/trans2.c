@@ -192,6 +192,18 @@ static void trans2_append_data_string(struct smbsrv_request *req,
 	trans2_grow_data(req, trans, offset + ret);
 }
 
+/*
+  align the end of the data section of a trans reply on an even boundary
+*/
+static void trans2_align_data(struct smbsrv_request *req, struct smb_trans2 *trans)
+{
+	if ((trans->out.data.length & 1) == 0) {
+		return;
+	}
+	trans2_grow_data(req, trans, trans->out.data.length+1);
+	SCVAL(trans->out.data.data, trans->out.data.length-1, 0);
+}
+
 
 /*
   trans2 qfsinfo implementation
@@ -623,7 +635,7 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct smb_trans2 *
 	uint16_t level;
 
 	/* make sure we got enough parameters */
-	if (trans->in.params.length < 8) {
+	if (trans->in.params.length < 2) {
 		return NT_STATUS_FOOBAR;
 	}
 
@@ -997,6 +1009,7 @@ static void find_fill_info(struct smbsrv_request *req,
 					24, STR_UNICODE | STR_LEN8BIT);
 		trans2_append_data_string(req, trans, &file->both_directory_info.name, 
 					  ofs + 60, STR_TERMINATE_ASCII);
+		trans2_align_data(req, trans);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
