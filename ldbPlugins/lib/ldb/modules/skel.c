@@ -25,9 +25,9 @@
 /*
  *  Name: ldb
  *
- *  Component: ldb skel plugin
+ *  Component: ldb skel module
  *
- *  Description: add object timestamping functionality
+ *  Description: example module
  *
  *  Author: Simo Sorce
  */
@@ -102,9 +102,9 @@ static const struct ldb_module skel_ops = {
 };
 
 #ifdef HAVE_DLOPEN
-struct ldb_module *init_module(struct ldb_context *ldb)
+struct ldb_module *init_module(struct ldb_context *ldb, const char *options[])
 #else
-struct ldb_module *skel_plugin_init(struct ldb_context *ldb)
+struct ldb_module *skel_plugin_init(struct ldb_context *ldb, const char *options[])
 #endif
 {
 	struct ldb_module *ctx;

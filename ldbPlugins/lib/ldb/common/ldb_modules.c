@@ -123,7 +123,7 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 			const char *errstr;
 
 			if (strcmp(modules[i], "timestamps") == 0) {
-				current = timestamps_module_init(ldb);
+				current = timestamps_module_init(ldb, options);
 				current->next = ldb->module;
 				ldb->module = current;
 				continue;
@@ -150,7 +150,7 @@ int register_ldb_modules(struct ldb_context *ldb, const char *options[])
 				return -1;
 			}
 
-			current = init(ldb);
+			current = init(ldb, options);
 			current->next = ldb->module;
 			ldb->module = current;
 
