@@ -368,7 +368,7 @@ sub ParseElementPushScalar($$$)
 	}
 
 	if (util::has_property($e, "relative")) {
-		pidl "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
+		pidl "\tNDR_CHECK(ndr_push_relative(ndr, NDR_SCALARS, $var_prefix$e->{NAME}));\n";
 	} elsif (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
@@ -520,14 +520,17 @@ sub ParseElementPullScalar($$$)
 
 	start_flags($e);
 
-	if (util::has_property($e, "relative")) {
-		pidl "\tNDR_CHECK(ndr_pull_relative(ndr, (const void **)&$var_prefix$e->{NAME}, sizeof(*$var_prefix$e->{NAME}), (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
-	} elsif (util::is_inline_array($e)) {
+	if (util::is_inline_array($e)) {
 		ParseArrayPull($e, "r->", "NDR_SCALARS");
 	} elsif (util::need_wire_pointer($e)) {
 		pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
 		pidl "\tif (_ptr_$e->{NAME}) {\n";
-		pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
+		if (util::has_property($e, "relative")) {
+			# NOTE: this assumes a pointer can hold a uint32. Not legal C
+			pidl "\t\t$var_prefix$e->{NAME} = (void *)_ptr_$e->{NAME};\n";
+		} else {
+			pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
+		}
 		pidl "\t} else {\n";
 		pidl "\t\t$var_prefix$e->{NAME} = NULL;\n";
 		pidl "\t}\n";
@@ -568,11 +571,12 @@ sub ParseElementPushBuffer($$$)
 
 	if (util::need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
+		if (util::has_property($e, "relative")) {
+			pidl "\t\tNDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, $var_prefix$e->{NAME}));\n";
+		}
 	}
 	    
-	if (util::has_property($e, "relative")) {
-		pidl "\tNDR_CHECK(ndr_push_relative(ndr, NDR_BUFFERS, $cprefix$var_prefix$e->{NAME}, (ndr_push_const_fn_t) ndr_push_$e->{TYPE}));\n";
-	} elsif (util::is_inline_array($e)) {
+	if (util::is_inline_array($e)) {
 		ParseArrayPush($e, "r->", "NDR_BUFFERS");
 	} elsif (util::array_size($e)) {
 		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
@@ -645,14 +649,16 @@ sub ParseElementPullBuffer($$$)
 		return;
 	}
 
-	if (util::has_property($e, "relative")) {
-		return;
-	}
-
 	start_flags($e);
 
 	if (util::need_wire_pointer($e)) {
 		pidl "\tif ($var_prefix$e->{NAME}) {\n";
+		if (util::has_property($e, "relative")) {
+			pidl "\t\tstruct ndr_pull_save _relative_save;\n";
+			pidl "\t\tndr_pull_save(ndr, &_relative_save);\n";
+			pidl "\t\tNDR_CHECK(ndr_pull_set_offset(ndr, (uint32_t)$var_prefix$e->{NAME}));\n";
+			pidl "\t\tNDR_ALLOC(ndr, $var_prefix$e->{NAME});\n";
+		}
 	}
 	    
 	if (util::is_inline_array($e)) {
@@ -682,6 +688,9 @@ sub ParseElementPullBuffer($$$)
 	}
 
 	if (util::need_wire_pointer($e)) {
+		if (util::has_property($e, "relative")) {
+			pidl "\t\tndr_pull_restore(ndr, &_relative_save);\n";
+		}
 		pidl "\t}\n";
 	}	
 
@@ -784,8 +793,7 @@ sub ParseStructPull($)
 
 	# declare any internal pointers we need
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		if (util::need_wire_pointer($e) &&
-		    !util::has_property($e, "relative")) {
+		if (util::need_wire_pointer($e)) {
 			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
 	}
