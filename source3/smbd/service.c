@@ -352,7 +352,7 @@ connection_struct *make_connection(char *service, DATA_BLOB password,
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
 			 remote_machine, client_addr(), service));
-		*status = NT_STATUS_BAD_NETWORK_PATH;
+		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
 
