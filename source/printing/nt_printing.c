@@ -2660,13 +2660,18 @@ void get_printer_subst_params(int snum, fstring *printername, fstring *sharename
 
 /****************************************************************************
  Update the changeid time.
+ This is SO NASTY as some drivers need this to change, others need it
+ static. This value will change every second, and I must hope that this
+ is enough..... DON'T CHANGE THIS CODE WITHOUT A TEST MATRIX THE SIZE OF
+ UTAH ! JRA.
 ****************************************************************************/
 
-static uint32 rev_changeid(uint32 changeid)
+static uint32 rev_changeid(void)
 {
-	if (changeid == 0)
-		changeid = time(NULL);
-	return changeid++;
+	static time_t start_time;
+	if (start_time == 0)
+		start_time = time(NULL);
+	return (((time(NULL) - start_time)+1)*1000);
 }
 
 /*
@@ -2699,7 +2704,7 @@ uint32 mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			   of client's spoolss service in order for the
 			   client's cache to show updates */
 
-			printer.info_2->changeid = rev_changeid(printer.info_2->changeid);
+			printer.info_2->changeid = rev_changeid();
 
 			/*
 			 * Because one day someone will ask:
@@ -2751,7 +2756,7 @@ uint32 add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			 * --jerry
 			 */
 
-			printer.info_2->changeid = rev_changeid(printer.info_2->changeid);
+			printer.info_2->changeid = rev_changeid();
 			printer.info_2->c_setprinter++;
 
 			result=update_a_printer_2(printer.info_2);
