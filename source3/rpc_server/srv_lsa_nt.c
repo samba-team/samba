@@ -577,15 +577,20 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
-		return NT_STATUS_INVALID_HANDLE;
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+		goto done;
+	}
 
 	/* check if the user have enough rights */
-	if (!(handle->access & POLICY_LOOKUP_NAMES))
-		return NT_STATUS_ACCESS_DENIED;
-
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
 	if (!ref || !names)
 		return NT_STATUS_NO_MEMORY;
+
+done:
 
 	/* set up the LSA Lookup SIDs response */
 	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
@@ -615,15 +620,21 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*num_entries);
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
-		return NT_STATUS_INVALID_HANDLE;
+	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle)) {
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+		goto done;
+	}
 
 	/* check if the user have enough rights */
-	if (!(handle->access & POLICY_LOOKUP_NAMES))
-		return NT_STATUS_ACCESS_DENIED;
+	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		r_u->status = NT_STATUS_ACCESS_DENIED;
+		goto done;
+	}
 
 	if (!ref || !rids)
 		return NT_STATUS_NO_MEMORY;
+
+done:
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
