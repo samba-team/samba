@@ -462,20 +462,15 @@ void spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdata");
 	depth++;
 
+	/* grow buffer mem enough */
+	mem_grow_data(&(ps->data), ps->io, r_u->size+100, 0);
+
 	prs_align(ps);
 	prs_uint32("type", ps, depth, &(r_u->type));
 	prs_uint32("size", ps, depth, &(r_u->size));
-
-	switch (r_u->type)
-	{
-		case 0x1:
-		case 0x3:
-		case 0x4:
-		case 0x7:
-			prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size);
-			prs_align(ps);
-			break;
-	}
+	
+	prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size);
+	prs_align(ps);
 	
 	prs_uint32("needed", ps, depth, &(r_u->needed));
 	prs_uint32("status", ps, depth, &(r_u->status));
@@ -969,6 +964,8 @@ static void smb_io_printer_info_2(char *desc, PRINTER_INFO_2 *info, prs_struct *
                                   uint32 *start_offset, uint32 *end_offset)
 {
 	uint32 pipo=0;
+	uint32 devmode_offset;
+	uint32 backup_offset;
 
 	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
@@ -982,8 +979,9 @@ static void smb_io_printer_info_2(char *desc, PRINTER_INFO_2 *info, prs_struct *
 	smb_io_relstr("comment",       ps, depth, &(info->comment), start_offset, end_offset);
 	smb_io_relstr("location",      ps, depth, &(info->location), start_offset, end_offset);
 
-	smb_io_reldevmode("devmode",      ps, depth, info->devmode, start_offset, end_offset);
-
+	devmode_offset=ps->offset;
+	ps->offset=ps->offset+4;
+	
 	smb_io_relstr("sepfile",       ps, depth, &(info->sepfile), start_offset, end_offset);
 	smb_io_relstr("printprocessor",ps, depth, &(info->printprocessor), start_offset, end_offset);
 	smb_io_relstr("datatype",      ps, depth, &(info->datatype), start_offset, end_offset);
@@ -999,6 +997,15 @@ static void smb_io_printer_info_2(char *desc, PRINTER_INFO_2 *info, prs_struct *
 	prs_uint32("status",           ps, depth, &(info->status));
 	prs_uint32("jobs",             ps, depth, &(info->cjobs));
 	prs_uint32("averageppm",       ps, depth, &(info->averageppm));
+
+	/* 
+	  I'm not sure if putting the devmode at the end the struct is worth it
+	  but NT does it
+	 */
+	backup_offset=ps->offset;
+	ps->offset=devmode_offset;
+	smb_io_reldevmode("devmode",   ps, depth, info->devmode, start_offset, end_offset);
+	ps->offset=backup_offset;	
 }
 
 /*******************************************************************
@@ -1184,7 +1191,8 @@ static uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	int size=0;
 		
 	size+=4;      /* the security descriptor */
-	size+=0xDC+4; /* size of the devmode and the ptr */
+	size+=info->devmode->size+4; /* size of the devmode and the ptr */
+	size+=info->devmode->driverextra; /* if a devmode->private section exists, add its size */
 	
 	size+=size_of_relative_string( &(info->servername) );
 	size+=size_of_relative_string( &(info->printername) );
@@ -3307,7 +3315,7 @@ void spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 ********************************************************************/  
 void spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth)
 {	
-	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocessors");
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdata");
 	depth++;
 
 	prs_align(ps);	

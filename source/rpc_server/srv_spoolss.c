@@ -258,16 +258,17 @@ static BOOL set_printer_hnd_printername(PRINTER_HND *hnd, char *printername)
 				    lp_snum_ok(snum) && 
 				    lp_print_ok(snum) )
 				{
-					DEBUGADD(5,("get_printer_snum, share:%s\n",lp_servicename(snum)));
+					DEBUGADD(5,("share:%s\n",lp_servicename(snum)));
 					
 					marche=get_a_printer(&printer, 2, lp_servicename(snum));
-					DEBUGADD(6,("get_printer_snum, marche:%d\n",marche));
+					DEBUGADD(6,("marche:%d\n",marche));
 										
 					if ( marche==0 && ( strlen(printer.info_2->printername) == strlen(back) ) 
 					     && ( !strncasecmp(printer.info_2->printername, back, strlen(back))) 
 					   )
 					{
 						DEBUGADD(4,("Printer found: %s[%x]\n",lp_servicename(snum),snum));
+						ZERO_STRUCT(Printer[pnum].dev.printername);
 						strncpy(Printer[pnum].dev.printername, lp_servicename(snum), strlen(lp_servicename(snum)));
 						free_a_printer(printer, 2);
 						return True;
@@ -280,6 +281,7 @@ static BOOL set_printer_hnd_printername(PRINTER_HND *hnd, char *printername)
 			return False;
 			break;		
 		   case PRINTER_HANDLE_IS_PRINTSERVER:
+			ZERO_STRUCT(Printer[pnum].dev.printerservername);
 			strncpy(Printer[pnum].dev.printerservername, printername, strlen(printername));
 			return True;
 			break;
@@ -310,12 +312,12 @@ static BOOL get_printer_snum(PRINTER_HND *hnd, int *number)
 		switch (Printer[pnum].printer_type)
 		 {
 		   case PRINTER_HANDLE_IS_PRINTER:		   
-			DEBUG(4,("get_printer_snum, short name:%s\n", Printer[pnum].dev.printername));			
+			DEBUG(4,("short name:%s\n", Printer[pnum].dev.printername));			
 			for (snum=0;snum<n_services; snum++)
 			{
 				if (lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
 				{
-					DEBUG(4,("get_printer_snum, share:%s\n",lp_servicename(snum)));
+					DEBUG(4,("share:%s\n",lp_servicename(snum)));
 					if (   ( strlen(lp_servicename(snum)) == strlen( Printer[pnum].dev.printername ) ) 
 					    && ( !strncasecmp(lp_servicename(snum), 
 					                      Printer[pnum].dev.printername,
@@ -522,6 +524,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 size, uint32 *ty
 	return False;
 }
 
+/********************************************************************
+ ********************************************************************/
 static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 size, uint32 *type, 
                                           uint32 *numeric_data, uint8 **data, uint32 *needed )
 {
@@ -541,21 +545,21 @@ static BOOL getprinterdata_printer(PRINTER_HND *handle, fstring value, uint32 si
 		
 		if (get_specific_param(printer, 2, value, &idata, type, &len)) 
 		{
-			switch (*type)
+			/*switch (*type)
 			{
 				case 1:
 				case 3:
-				case 4:
+				case 4:*/
 					*data  = (uint8 *)malloc( size*sizeof(uint8) );
 					bzero(*data, sizeof(uint8)*size);
 					memcpy(*data, idata, len>size?size:len);
 					*needed = len;
 					if (idata) free(idata);
-					break;
+					/*break;*/
 				/*case 4:
 					*numeric_data=atoi(idata);
 					break;*/
-			}
+			/*}*/
 			return (True);
 		}
 		free_a_printer(printer, 2);
@@ -626,7 +630,9 @@ static void spoolss_reply_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u, prs_struct
 		}
 			
 		spoolss_io_r_getprinterdata("", &r_u, rdata, 0);
+		DEBUG(3,("freeing memory\n"));
 		if (r_u.data) free(r_u.data);
+		DEBUG(3,("freeing memory:ok\n"));
 	}	
 }
 
@@ -1723,6 +1729,18 @@ static void enum_all_printers_info_2(PRINTER_INFO_2 ***printers, uint32 *number,
 
 /****************************************************************************
 ****************************************************************************/
+static void free_printer_info_2(PRINTER_INFO_2 *printer)
+{
+	if (printer->devmode->private!=NULL)
+		free(printer->devmode->private);
+	if (printer->devmode!=NULL)
+		free(printer->devmode);
+	if (printer!=NULL)
+		free(printer);
+}
+
+/****************************************************************************
+****************************************************************************/
 static void free_enum_printers_info_1(PRINTER_INFO_1 **printers, uint32 total)
 {
 	int number=0;	
@@ -1750,8 +1768,7 @@ static void free_enum_printers_info_2(PRINTER_INFO_2 **printers, uint32 total)
 		{		
 			if (printers[number] != NULL)
 			{
-				free(printers[number]->devmode);
-				free(printers[number]);
+				free_printer_info_2(printers[number]);
 			}
 		}
 		free(printers);
@@ -1903,8 +1920,7 @@ static void spoolss_reply_getprinter(SPOOL_Q_GETPRINTER *q_u, prs_struct *rdata,
 			r_u.level=q_u->level;
 			spoolss_io_r_getprinter("",&r_u,rdata,0);
 			
-			free(printer->devmode);
-			free(printer);
+			free_printer_info_2(printer);
 				
 			break;
 		}
@@ -3265,7 +3281,7 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 	
 	uint32 type;
 	fstring value;
-	uint8 *data;
+	uint8 *data=NULL;
 	
 	uint32 param_index;
 	uint32 biggest_valuesize;
@@ -3292,6 +3308,7 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 			r_u.type=0;
 			r_u.datasize=0;
 			r_u.realdatasize=0;
+			r_u.status=0;
 			
 			param_index=0;
 			biggest_valuesize=0;
@@ -3306,7 +3323,10 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 			}
 			
 			/* I wrote it, I didn't designed the protocol */
-			SIVAL(&(r_u.value),0, 2*(biggest_valuesize+1) );
+			if (biggest_valuesize!=0)
+			{
+				SIVAL(&(r_u.value),0, 2*(biggest_valuesize+1) );
+			}
 			r_u.data=(uint8 *)malloc(4*sizeof(uint8));
 			SIVAL(r_u.data, 0, biggest_datasize );
 		}
@@ -3347,7 +3367,7 @@ static void spoolss_reply_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_stru
 		free_a_printer(printer, 2);
 	}
 	spoolss_io_r_enumprinterdata("", &r_u, rdata, 0);
-	free(r_u.data);
+	if (r_u.data!=NULL) free(r_u.data);
 }
 
 /****************************************************************************
