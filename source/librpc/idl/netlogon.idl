@@ -64,6 +64,17 @@ interface netlogon
 	/*****************/
 	/* Function 0x02 */
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 data[8];
+	} netr_Credential;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 session_key[8];
+		uint32 sequence;
+		netr_Credential client_cred;
+		netr_Credential server_cred;
+	} netr_CredentialState;
+
 	typedef struct {
 		[value(strlen_m(r->string)*2)] uint16 size;
 		[value(r->size)]               uint16 length;
@@ -90,18 +101,14 @@ interface netlogon
 	} netr_PasswordInfo;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[8];
-	} netr_Credential;
-
-	typedef [flag(NDR_PAHEX)] struct {
 		uint16 length;
 		[value(r->length)] uint16 size;
 		[size_is(size),length_is(length)] uint8 *data;
 	} netr_ChallengeResponse;
 
-	typedef struct {
+	typedef [flag(NDR_PAHEX)] struct {
 		netr_IdentityInfo logon_info;
-		netr_Credential challenge;
+		uint8 challenge[8];
 		netr_ChallengeResponse nt;
 		netr_ChallengeResponse lm;
 	} netr_NetworkInfo;
@@ -232,17 +239,17 @@ interface netlogon
 		);
 
 	WERROR netr_ServerReqChallenge(
-		[in] unistr *server_name,
-		[in] unistr computer_name,
-		[in][out][ref] netr_Credential *credential
+		[in]        unistr *server_name,
+		[in]        unistr computer_name,
+		[in][out]   netr_Credential credentials
 		);
 
 	WERROR netr_ServerAuthenticate(
-		[in] unistr *server_name,
-		[in] unistr username,
-		[in] uint16 secure_challenge_type,
-		[in] unistr computer_name,
-		[in,out,ref] netr_Credential *client_challenge
+		[in]        unistr *server_name,
+		[in]        unistr username,
+		[in]        uint16 secure_challenge_type,
+		[in]        unistr computer_name,
+		[in,out]    netr_Credential credentials
 		);
 
 #if 0
