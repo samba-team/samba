@@ -35,20 +35,69 @@
 .Dt KRB5_CCACHE 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_checksum ,
+.Nm krb5_c_block_size ,
+.Nm krb5_c_decrypt ,
+.Nm krb5_c_encrypt ,
+.Nm krb5_c_encrypt_length ,
+.Nm krb5_c_enctype_compare ,
 .Nm krb5_c_get_checksum ,
 .Nm krb5_c_make_checksum ,
-.Nm krb5_c_verify_checksum ,
+.Nm krb5_c_make_random_key ,
 .Nm krb5_c_set_checksum ,
+.Nm krb5_c_verify_checksum ,
 .Nm krb5_copy_checksum ,
 .Nm krb5_free_checksum ,
 .Nm krb5_free_checksum_contents
-.Nd create and verify checksums
+.Nd kerberos crypto API
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
 .Pp
+.Ft krb5_error_code
+.Fo krb5_c_block_size
+.Fa "krb5_context context"
+.Fa "krb5_enctype enctype"
+.Fa "size_t *blocksize"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_decrypt
+.Fa "krb5_context context"
+.Fa "const krb5_keyblock key"
+.Fa "krb5_keyusage usage"
+.Fa "const krb5_data *ivec"
+.Fa "krb5_enc_data *input"
+.Fa "krb5_data *output"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_encrypt
+.Fa "krb5_context context"
+.Fa "const krb5_keyblock *key"
+.Fa "krb5_keyusage usage"
+.Fa "const krb5_data *ivec"
+.Fa "const krb5_data *input"
+.Fa "krb5_enc_data *output"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_encrypt_length
+.Fa "krb5_context context"
+.Fa "krb5_enctype enctype"
+.Fa "size_t inputlen"
+.Fa "size_t *length"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_enctype_compare
+.Fa "krb5_context context"
+.Fa "krb5_enctype e1"
+.Fa "krb5_enctype e2"
+.Fa "krb5_boolean *similar"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_c_make_random_key
+.Fa "krb5_context context"
+.Fa "krb5_enctype enctype"
+.Fa "krb5_keyblock *random_key"
+.Fc
 .Ft krb5_error_code
 .Fo krb5_c_make_checksum
 .Fa "krb5_context context"
@@ -107,10 +156,48 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 The
 .Li krb5_checksum
 structure holds a Kerberos checksum.
-.Pp
 There is no component inside
 .Li krb5_checksum
 that is directly referable.
+.Pp
+The
+.Li krb5_enc_data
+structure holds and encrypted data.
+There are two public accessable members of
+.Li krb5_enc_data .
+.Li enctype
+that holds the encryption type of the data encrypted and
+.Li ciphertext
+that is a
+.Ft krb5_data
+that might contain the encrypted data.
+.Pp
+.Fn krb5_c_block_size
+returns the blocksize of the encryption type.
+.Pp
+.Fn krb5_c_decrypt
+decrypts
+.Fa input
+and store the data in
+.Fa output.
+If 
+.Fa ivec
+is
+.Dv NULL
+the default initialization vector for that encryption type will be used.
+.Pp
+.Fn krb5_c_encrypt
+encrypts the plaintext in
+.Fa input
+and store the ciphertext in
+.Fa output .
+.Pp
+.Fn krb5_c_encrypt_length
+returns the length the encrypted data given the plaintext length.
+.Pp
+.Fn krb5_c_enctype_compare
+compares to encryption types and returns if they use compatible
+encryption key types.
 .Pp
 .Fn krb5_c_make_checksum
 creates a checksum
