@@ -197,6 +197,11 @@ listtext:
     | listtext ',' anytext { "$_[1] $_[3]" }
 ;
 
+commalisttext:
+    anytext 
+    | commalisttext ',' anytext { "$_[1],$_[3]" }
+;
+
 anytext:  #empty
     { "" }
     | identifier | constant | text
@@ -208,7 +213,7 @@ anytext:  #empty
     | anytext '&' anytext  { "$_[1]$_[2]$_[3]" }
     | anytext '/' anytext  { "$_[1]$_[2]$_[3]" }
     | anytext '+' anytext  { "$_[1]$_[2]$_[3]" }
-    | anytext '(' anytext ')' anytext  { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
+    | anytext '(' commalisttext ')' anytext  { "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 ;
 
 identifier: IDENTIFIER
