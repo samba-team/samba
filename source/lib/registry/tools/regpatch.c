@@ -154,7 +154,7 @@ static void print_line(struct cmd_line *cl)
  */
 static struct cmd_line *get_cmd_line(int fd)
 {
-  struct cmd_line *cl = smb_xmalloc_p(CMD_LINE);
+  CMD_LINE *cl = smb_xmalloc_p(CMD_LINE);
   int i = 0, rc;
   uint8_t ch;
 
