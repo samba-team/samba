@@ -8,14 +8,14 @@
   uuid("46746756-7567-7567-5677-756756756756"),
   version(0.0),
   pointer_default(unique),
-  depends(security)
+  depends(security,netlogon)
 ]
 interface krb5pac
 {
 	typedef struct {
 		NTTIME logon_time;
 		[flag(STR_SIZE2|STR_NOTERM|STR_BYTESIZE)] string account_name;
-	} UNKNOWN_TYPE_10;
+	} PAC_UNKNOWN_10;
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint32 type;
@@ -23,69 +23,11 @@ interface krb5pac
 	} PAC_SIGNATURE_DATA;
 
 	typedef struct {
-		uint32 rid;
-		uint32 attrs;
-	} GROUP_MEMBERSHIP;
-
-	typedef struct {
-		dom_sid2 *sid;
-		uint32 attrs;
-	} EXTRA_SIDS;
-
-	typedef struct {
-		[value(strlen_m(r->string)*2)]	uint16 size;
-		[value(r->size)]		uint16 length;
-		unistr_noterm			*string;
-	} pac_String;
-
-	/* This is awfully similar to a samr_user_info_23, but not identical.
-	   Many of the field names have been swiped from there, because it is
-	   so similar that they are likely the same, but many have been verified.
-	   Some are in a different order, though... */
-	typedef struct {
 		uint32 unknown[5];
-		NTTIME logon_time;            /* logon time */
-		NTTIME logoff_time;           /* logoff time */
-		NTTIME kickoff_time;          /* kickoff time */
-		NTTIME pass_last_set_time;    /* password last set time */
-		NTTIME pass_can_change_time;  /* password can change time */
-		NTTIME pass_must_change_time; /* password must change time */
-
-		pac_String account_name;
-		pac_String full_name;
-		pac_String logon_script;
-		pac_String profile_path;
-		pac_String home_directory;
-		pac_String home_drive;
-
-		uint16 logon_count; /* number of times user has logged onto domain */
-		uint16 reserved12;
-
-		uint32 user_rid;
-		uint32 group_rid;
-
-		uint32 groups_count;
-		[size_is(groups_count)] GROUP_MEMBERSHIP *groups;
-
-		uint32 user_flags;
-
-		uint32 reserved13[4];
-		pac_String dom_controller;
-		pac_String dom_name;
-
-		dom_sid2 *dom_sid;
-
-		uint32 reserved16[2];
-		uint32 acct_flags;      /* looks like it may be acb_info */
-		uint32 reserved18[7];
-
-		uint32 extra_sids_count;
-		[size_is(extra_sids_count)] EXTRA_SIDS *extra_sids;
-
+		netr_SamInfo3 info3;
 		dom_sid2 *res_group_dom_sid;
-
 		uint32 res_groups_count;
-		[size_is(res_groups_count)] GROUP_MEMBERSHIP *res_groups;
+		[size_is(res_groups_count)] netr_GroupMembership *res_groups;
     	} PAC_LOGON_INFO;
 
 	const uint8 PAC_TYPE_LOGON_INFO = 1;
@@ -97,7 +39,7 @@ interface krb5pac
 		[case(PAC_TYPE_LOGON_INFO)]	PAC_LOGON_INFO logon_info;
 		[case(PAC_TYPE_SRV_CHECKSUM)]	PAC_SIGNATURE_DATA srv_cksum;
 		[case(PAC_TYPE_KDC_CHECKSUM)]	PAC_SIGNATURE_DATA kdc_cksum;
-		[case(PAC_TYPE_UNKNOWN_10)]	UNKNOWN_TYPE_10 type_10;
+		[case(PAC_TYPE_UNKNOWN_10)]	PAC_UNKNOWN_10 type_10;
 	} PAC_INFO;
 
 	typedef struct {
