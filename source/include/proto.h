@@ -2217,7 +2217,7 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 char *get_sec_mask_str(uint32 type);
 void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *info);
 void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace);
-void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *acl);
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl);
 void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec);
 char *get_reg_val_type_str(uint32 type);
 void display_reg_value_info(FILE *out_hnd, enum action_type action,

@@ -170,7 +170,7 @@ static BOOL user_is_member(char *user_name, LOCAL_GRP_MEMBER *mem, int num_mem)
 {
 	int i;
 	pstring name;
-	snprintf(name, sizeof(name), "\\%s\\%s", global_sam_name, user_name);
+	slprintf(name, sizeof(name)-1, "\\%s\\%s", global_sam_name, user_name);
 
 	for (i = 0; i < num_mem; i++)
 	{

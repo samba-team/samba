@@ -739,7 +739,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   fsp->fd_ptr = 0;
 
   DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
-        fname, share_mode, ofun, mode,  oplock_request ));
+        fname, share_mode, ofun, (int)mode,  oplock_request ));
 
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) 

@@ -619,7 +619,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	BOOL ret;
 	BOOL auth_verify;
 	BOOL auth_seal;
-	uint32 crc32;
+	uint32 crc32 = 0;
 
 	auth_verify = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SIGN);
 	auth_seal   = IS_BITS_SET_ALL(cli->ntlmssp_srv_flgs, NTLMSSP_NEGOTIATE_SEAL);

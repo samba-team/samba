@@ -34,7 +34,7 @@ static BOOL demo_mode = False;
 /*
  * Password Management Globals
  */
-#define USER "username"
+#define SWAT_USER "username"
 #define OLD_PSWD "old_passwd"
 #define NEW_PSWD "new_passwd"
 #define NEW2_PSWD "new2_passwd"
@@ -627,7 +627,7 @@ static void chg_passwd(void)
 	BOOL rslt;
 
 	/* Make sure users name has been specified */
-	if (strlen(cgi_variable(USER)) == 0) {
+	if (strlen(cgi_variable(SWAT_USER)) == 0) {
 		printf("<p> Must specify \"User Name\" \n");
 		return;
 	}
@@ -676,7 +676,7 @@ static void chg_passwd(void)
 		host = "127.0.0.1";
 	}
 	rslt = change_password(host,
-			       cgi_variable(USER),
+			       cgi_variable(SWAT_USER),
 			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
 			       cgi_variable(ADD_USER_FLAG)? True : False,
 			       cgi_variable(ENABLE_USER_FLAG)? True : False,
@@ -684,9 +684,9 @@ static void chg_passwd(void)
 
 
 	if (rslt == True) {
-		printf("<p> The passwd for '%s' has been changed. \n", cgi_variable(USER));
+		printf("<p> The passwd for '%s' has been changed. \n", cgi_variable(SWAT_USER));
 	} else {
-		printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(USER));
+		printf("<p> The passwd for '%s' has NOT been changed. \n",cgi_variable(SWAT_USER));
 	}
 	
 	return;
@@ -703,8 +703,8 @@ static void passwd_page(void)
 	 * After the first time through here be nice. If the user
 	 * changed the User box text to another users name, remember it.
 	 */
-	if (cgi_variable(USER)) {
-		new_name = cgi_variable(USER);
+	if (cgi_variable(SWAT_USER)) {
+		new_name = cgi_variable(SWAT_USER);
 	} 
 
 	if (!new_name) new_name = "";
@@ -719,7 +719,7 @@ static void passwd_page(void)
 	 * Create all the dialog boxes for data collection
 	 */
 	printf("<tr><td> User Name : </td>\n");
-	printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", USER, new_name);
+	printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", SWAT_USER, new_name);
 	if (am_root() == False) {
 		printf("<tr><td> Old Password : </td>\n");
 		printf("<td><input type=password size=30 name=%s></td></tr> \n",OLD_PSWD);
@@ -762,7 +762,7 @@ static void passwd_page(void)
 	 * Create all the dialog boxes for data collection
 	 */
 	printf("<tr><td> User Name : </td>\n");
-	printf("<td><input type=text size=30 name=%s value=%s></td></tr>\n",USER, new_name);
+	printf("<td><input type=text size=30 name=%s value=%s></td></tr>\n",SWAT_USER, new_name);
 	printf("<tr><td> Old Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",OLD_PSWD);
 	printf("<tr><td> New Password : </td>\n");

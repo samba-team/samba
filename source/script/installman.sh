@@ -3,6 +3,9 @@
 
 MANDIR=$1
 SRCDIR=$2/
+if [ $# -ge 3 ] ; then
+  GROFF=$3                    # sh cmd line, including options 
+fi
 
 echo Installing man pages in $MANDIR
 
@@ -20,9 +23,24 @@ for sect in 1 5 7 8 ; do
   for m in $MANDIR/man$sect ; do
     for s in $SRCDIR../docs/manpages/*$sect; do
       FNAME=$m/`basename $s`
-      echo Installing $FNAME
-      cp $s $m || echo Cannot create $FNAME... does $USER have privileges?
-      chmod 0644 $FNAME
+ 
+       # Test for writability.  Involves 
+       # blowing away existing files.
+ 
+       if (rm -f $FNAME && touch $FNAME); then
+         rm $FNAME
+         if [ ! "$GROFF" ] ; then
+           cp $s $m              # Copy raw nroff 
+         else
+           echo "\t$FNAME"       # groff'ing can be slow, give the user
+                                 #   a warm fuzzy.
+           $GROFF $s > $FNAME    # Process nroff, because man(1) (on
+                                 #   this system) doesn't .
+         fi
+         chmod 0644 $FNAME
+       else
+         echo Cannot create $FNAME... does $USER have privileges?
+       fi
     done
   done
 done

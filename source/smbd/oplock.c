@@ -220,7 +220,7 @@ dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
   /* Validate message from address (must be localhost). */
   if(from.sin_addr.s_addr != htonl(INADDR_LOOPBACK)) {
     DEBUG(0,("receive_local_message: invalid 'from' address \
-(was %x should be 127.0.0.1\n", from.sin_addr.s_addr));
+(was %lx should be 127.0.0.1\n", (long)from.sin_addr.s_addr));
    return False;
   }
 

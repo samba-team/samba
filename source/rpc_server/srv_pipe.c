@@ -160,7 +160,7 @@ BOOL create_rpc_reply(pipes_struct *p,
 
 	if (auth_len > 0)
 	{
-		uint32 crc32;
+		uint32 crc32 = 0;
 
 		DEBUG(5,("create_rpc_reply: sign: %s seal: %s data %d auth %d\n",
 			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
@@ -531,7 +531,7 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 	int data_len;
 	int auth_len;
 	uint32 old_offset;
-	uint32 crc32;
+	uint32 crc32 = 0;
 
 	auth_len = p->hdr.auth_len;
 

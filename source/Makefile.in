@@ -440,7 +440,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(PROGS) $(SCRIPTS)
 
 installman:
-	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installman.sh $(MANDIR) $(srcdir) @ROFF@
 
 uninstall: uninstallman uninstallbin uninstallscripts uninstallcp
 

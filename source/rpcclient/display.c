@@ -1065,7 +1065,7 @@ char *get_sec_mask_str(uint32 type)
 	if (type != 0)
 	{
 		fstring tmp;
-		snprintf(tmp, sizeof(tmp), "[%08x]", type);
+		slprintf(tmp, sizeof(tmp)-1, "[%08x]", type);
 		fstrcat(typestr, tmp);
 	}
 
@@ -1132,28 +1132,28 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *acl)
+void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *sec_acl)
 {
 	switch (action)
 	{
 		case ACTION_HEADER:
 		{
 			fprintf(out_hnd, "\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
-			                 acl->num_aces, acl->revision); 
+			                 sec_acl->num_aces, sec_acl->revision); 
 			fprintf(out_hnd, "\t---\n");
 
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
-			if (acl->size != 0 && acl->num_aces != 0)
+			if (sec_acl->size != 0 && sec_acl->num_aces != 0)
 			{
 				int i;
-				for (i = 0; i < acl->num_aces; i++)
+				for (i = 0; i < sec_acl->num_aces; i++)
 				{
-					display_sec_ace(out_hnd, ACTION_HEADER   , &acl->ace[i]);
-					display_sec_ace(out_hnd, ACTION_ENUMERATE, &acl->ace[i]);
-					display_sec_ace(out_hnd, ACTION_FOOTER   , &acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_HEADER   , &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_ENUMERATE, &sec_acl->ace[i]);
+					display_sec_ace(out_hnd, ACTION_FOOTER   , &sec_acl->ace[i]);
 				}
 			}
 				
@@ -1256,7 +1256,7 @@ char *get_reg_val_type_str(uint32 type)
 			break;
 		}
 	}
-	snprintf(typestr, sizeof(typestr), "[%d]", type);
+	slprintf(typestr, sizeof(typestr)-1, "[%d]", type);
 	return typestr;
 }
 
