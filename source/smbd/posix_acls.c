@@ -841,9 +841,11 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL default_ace)
 {
 	BOOL ret = False;
-	SMB_ACL_T the_acl = sys_acl_init((int)count_canon_ace_list(the_ace));
+	SMB_ACL_T the_acl = sys_acl_init((int)count_canon_ace_list(the_ace) + 1);
 	canon_ace *p_ace;
 	int i;
+	SMB_ACL_ENTRY_T mask_entry;
+	SMB_ACL_PERMSET_T mask_permset;
 	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
 
 	if (the_acl == NULL) {
@@ -903,9 +905,15 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		 * Convert the mode_t perms in the canon_ace to a POSIX permset.
 		 */
 
-		if (map_acl_perms_to_permset(p_ace->perms, &the_permset) == -1) {
-			DEBUG(0,("set_canon_ace_list: Failed to create permset on entry %d. (%s)\n",
+		if (sys_acl_get_permset(the_entry, &the_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to get permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
+			goto done;
+		}
+
+		if (map_acl_perms_to_permset(p_ace->perms, &the_permset) == -1) {
+			DEBUG(0,("set_canon_ace_list: Failed to create permset for mode (%u) on entry %d. (%s)\n",
+				p_ace->perms, i, strerror(errno) ));
 			goto done;
 		}
 
@@ -918,6 +926,35 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 				i, strerror(errno) ));
 			goto done;
 		}
+	}
+
+	/*
+	 * Add in a mask of rwx.
+	 */
+
+	if (sys_acl_create_entry( &the_acl, &mask_entry) == -1) {
+		DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
+		goto done;
+	}
+
+	if (sys_acl_set_tag_type(mask_entry, SMB_ACL_MASK) == -1) {
+		DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
+		goto done;
+	}
+
+	if (sys_acl_get_permset(mask_entry, &mask_permset) == -1) {
+		DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
+		goto done;
+	}
+
+	if (map_acl_perms_to_permset(S_IRUSR|S_IWUSR|S_IXUSR, &mask_permset) == -1) {
+		DEBUG(0,("set_canon_ace_list: Failed to create mask permset. (%s)\n", strerror(errno) ));
+		goto done;
+	}
+
+	if (sys_acl_set_permset(mask_entry, mask_permset) == -1) {
+		DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
+		goto done;
 	}
 
 	/*
