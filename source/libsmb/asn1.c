@@ -320,17 +320,17 @@ int asn1_tag_remaining(ASN1_DATA *data)
 BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8 b;
-	pstring oid;
+	pstring oid_str;
 	fstring el;
 
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
 	asn1_read_uint8(data, &b);
 
-	oid[0] = 0;
+	oid_str[0] = 0;
 	fstr_sprintf(el, "%u",  b/40);
-	pstrcat(oid, el);
+	pstrcat(oid_str, el);
 	fstr_sprintf(el, " %u",  b%40);
-	pstrcat(oid, el);
+	pstrcat(oid_str, el);
 
 	while (asn1_tag_remaining(data) > 0) {
 		unsigned v = 0;
@@ -339,12 +339,12 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
 		fstr_sprintf(el, " %u",  v);
-		pstrcat(oid, el);
+		pstrcat(oid_str, el);
 	}
 
 	asn1_end_tag(data);
 
-	*OID = strdup(oid);
+	*OID = strdup(oid_str);
 
 	return !data->has_error;
 }
