@@ -41,8 +41,8 @@ BOOL cli_api_pipe(struct cli_state *cli, const char *pipe_name,
                  data, data_count, max_data_count);
 
   return (cli_receive_trans(cli, SMBtrans, 
-                            rparam, (int *)rparam_count,
-                            rdata, (int *)rdata_count));
+                            rparam, (unsigned int *)rparam_count,
+                            rdata, (unsigned int *)rdata_count));
 }
 
 /****************************************************************************
@@ -51,8 +51,8 @@ call a remote api
 BOOL cli_api(struct cli_state *cli,
 	     char *param, int prcnt, int mprcnt,
 	     char *data, int drcnt, int mdrcnt,
-	     char **rparam, int *rprcnt,
-	     char **rdata, int *rdrcnt)
+	     char **rparam, unsigned int *rprcnt,
+	     char **rdata, unsigned int *rdrcnt)
 {
   cli_send_trans(cli,SMBtrans,
                  PIPE_LANMAN,             /* Name */
@@ -286,8 +286,8 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   char *p = param;
   unsigned char old_pw_hash[16];
   unsigned char new_pw_hash[16];
-  int data_len;
-  int param_len = 0;
+  unsigned int data_len;
+  unsigned int param_len = 0;
   char *rparam = NULL;
   char *rdata = NULL;
   int rprcnt, rdrcnt;
@@ -368,9 +368,9 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint16 *mode)
 {
-	int data_len = 0;
-	int param_len = 0;
-	int rparam_len, rdata_len;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	unsigned int rparam_len, rdata_len;
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -449,8 +449,8 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 		    time_t *w_time, size_t *size, uint16 *mode,
 		    SMB_INO_T *ino)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -518,8 +518,8 @@ send a qfileinfo QUERY_FILE_NAME_INFO call
 BOOL cli_qfilename(struct cli_state *cli, int fnum, 
 		   pstring name)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QFILEINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -563,8 +563,8 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QFILEINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -631,8 +631,8 @@ send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo_test(struct cli_state *cli, int fnum, int level, char *outdata)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QFILEINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
@@ -677,8 +677,8 @@ send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call
 ****************************************************************************/
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
