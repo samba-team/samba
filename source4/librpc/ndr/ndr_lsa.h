@@ -504,11 +504,23 @@ struct ENUMACCTWITHRIGHT {
 
 };
 
-struct ENUMACCTRIGHTS {
+struct lsa_RightAttribute {
+	const char *name;
+};
+
+struct lsa_RightSet {
+	uint32 count;
+	struct lsa_Name *names;
+};
+
+struct lsa_EnumAccountRights {
 	struct {
+		struct policy_handle *handle;
+		struct dom_sid2 *sid;
 	} in;
 
 	struct {
+		struct lsa_RightSet *rights;
 		NTSTATUS result;
 	} out;
 
@@ -654,7 +666,7 @@ struct QUERYINFO2 {
 #define DCERPC_PRIV_GET_DISPNAME 33
 #define DCERPC_DELETEOBJECT 34
 #define DCERPC_ENUMACCTWITHRIGHT 35
-#define DCERPC_ENUMACCTRIGHTS 36
+#define DCERPC_LSA_ENUMACCOUNTRIGHTS 36
 #define DCERPC_ADDACCTRIGHTS 37
 #define DCERPC_REMOVEACCTRIGHTS 38
 #define DCERPC_QUERYTRUSTDOMINFO 39

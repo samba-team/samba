@@ -507,12 +507,12 @@ NTSTATUS dcerpc_ENUMACCTWITHRIGHT(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, st
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_ENUMACCTRIGHTS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct ENUMACCTRIGHTS *r)
+NTSTATUS dcerpc_lsa_EnumAccountRights(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct lsa_EnumAccountRights *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_ENUMACCTRIGHTS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_ENUMACCTRIGHTS,
-				    (ndr_pull_fn_t) ndr_pull_ENUMACCTRIGHTS,
+	status = dcerpc_ndr_request(p, DCERPC_LSA_ENUMACCOUNTRIGHTS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_EnumAccountRights,
+				    (ndr_pull_fn_t) ndr_pull_lsa_EnumAccountRights,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

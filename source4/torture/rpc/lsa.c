@@ -305,6 +305,36 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_EnumAccountRights(struct dcerpc_pipe *p, 
+				   TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *acct_handle,
+				   struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct lsa_EnumAccountRights r;
+	struct lsa_RightSet rights;
+	int i;
+
+	printf("Testing EnumAccountRights\n");
+
+	r.in.handle = acct_handle;
+	r.in.sid = sid;
+	r.out.rights = &rights;
+
+	status = dcerpc_lsa_EnumAccountRights(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EnumAccountRights failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("received %d rights\n", rights.count);
+	for (i=0;i<rights.count;i++) {
+		printf("\t'%s'\n", rights.names[i].name);
+	}
+
+	return True;
+}
+
 static BOOL test_OpenAccount(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle,
@@ -372,9 +402,10 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	printf("testing all accounts\n");
 	for (i=0;i<sids1.num_sids;i++) {
 		test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
+		test_EnumAccountRights(p, mem_ctx, handle, sids1.sids[i].sid);
 	}
 	printf("\n");
-	
+
 	if (sids1.num_sids < 3) {
 		return True;
 	}
