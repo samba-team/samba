@@ -855,7 +855,7 @@ static struct parm_struct parm_table[] = {
 	{"guest ok", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_HIDE}, 
 
-	{"only user", P_BOOL, P_LOCAL, &sDefault.bOnlyUser, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"only user", P_BOOL, P_LOCAL, &sDefault.bOnlyUser, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 	{"hosts allow", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"allow hosts", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_HIDE}, 
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
