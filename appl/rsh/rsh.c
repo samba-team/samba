@@ -244,7 +244,7 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
     status = krb5_sname_to_principal(context,
 				     hostname,
 				     "host",
-				     KRB5_NT_SRV_INST,
+				     KRB5_NT_SRV_HST,
 				     &server);
     if (status)
 	errx (1, "%s: %s", hostname, krb5_get_err_text(context, status));
