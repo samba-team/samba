@@ -37,14 +37,14 @@ struct spoolss_DeviceMode {
 	uint32 panningheight;
 };
 
-struct spoolss_PrinterEnum1 {
+struct spoolss_PrinterInfo1 {
 	uint32 flags;
 	const char * name;
 	const char * description;
 	const char * comment;
 };
 
-struct spoolss_PrinterEnum2 {
+struct spoolss_PrinterInfo2 {
 	const char * servername;
 	const char * printername;
 	const char * sharename;
@@ -68,9 +68,42 @@ struct spoolss_PrinterEnum2 {
 	uint32 averageppm;
 };
 
+struct spoolss_PrinterInfo3 {
+	uint32 flags;
+	struct security_descriptor *secdesc;
+};
+
+struct spoolss_PrinterInfo4 {
+	const char * printername;
+	const char * servername;
+	uint32 attributes;
+};
+
+struct spoolss_PrinterInfo5 {
+	const char * printername;
+	const char * portname;
+	uint32 attributes;
+	uint32 device_not_selected_timeout;
+	uint32 transmission_retry_timeout;
+};
+
+struct spoolss_PrinterInfo6 {
+	uint32 foo;
+};
+
+struct spoolss_PrinterInfo7 {
+	const char * guid;
+	uint32 action;
+};
+
 union spoolss_PrinterEnum {
-/* [case(1)] */ struct spoolss_PrinterEnum1 info1;
-/* [case(2)] */ struct spoolss_PrinterEnum2 info2;
+/* [case(1)] */ struct spoolss_PrinterInfo1 info1;
+/* [case(2)] */ struct spoolss_PrinterInfo2 info2;
+/* [case(3)] */ struct spoolss_PrinterInfo3 info3;
+/* [case(4)] */ struct spoolss_PrinterInfo4 info4;
+/* [case(5)] */ struct spoolss_PrinterInfo5 info5;
+/* [case(6)] */ struct spoolss_PrinterInfo6 info6;
+/* [case(7)] */ struct spoolss_PrinterInfo7 info7;
 };
 
 struct spoolss_EnumPrinters {
@@ -86,7 +119,7 @@ struct spoolss_EnumPrinters {
 		DATA_BLOB *buffer;
 		uint32 *buf_size;
 		uint32 count;
-		NTSTATUS result;
+		WERROR result;
 	} out;
 
 };
