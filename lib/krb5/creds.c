@@ -97,7 +97,7 @@ krb5_copy_creds_contents (krb5_context context,
     return 0;
 
 fail:
-    krb5_free_creds (context, c);
+    krb5_free_creds_contents (context, c);
     return ret;
 }
 
