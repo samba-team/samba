@@ -145,6 +145,41 @@ MD4_DES_verify (void *p, size_t len, const krb5_keyblock *keyblock,
 }
 
 static void
+MD4_DES_broken_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
+			 void *result)
+{
+    struct md4 md4;
+    des_key_schedule schedule;
+    u_char *r = result;
+
+    md4_init(&md4);
+    md4_update(&md4, p, len);
+    md4_finito(&md4, r);
+    des_set_key((des_cblock*)keyblock->keyvalue.data, schedule);
+    des_cbc_encrypt(result, result, 16, schedule, 
+		    (des_cblock*)keyblock->keyvalue.data, DES_ENCRYPT);
+}
+
+static int
+MD4_DES_broken_verify (void *p, size_t len, const krb5_keyblock *keyblock,
+		       void *other)
+{
+    des_key_schedule schedule;
+    u_char res[16];
+    struct md4 md4;
+
+    des_set_key((des_cblock*)keyblock->keyvalue.data, schedule);
+    des_cbc_encrypt(other, other, 16, schedule, 
+		    (des_cblock*)keyblock->keyvalue.data, DES_DECRYPT);
+
+    md4_init(&md4);
+    md4_update(&md4, p, len);
+    md4_finito(&md4, res);
+
+    return memcmp (res, (u_char *)other, 16);
+}
+
+static void
 MD5_DES_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
 		  void *result)
 {
@@ -200,6 +235,9 @@ static struct checksum_type cm[] = {
   { CKSUMTYPE_RSA_MD4,		16,	KEYTYPE_NULL, MD4_checksum,     NULL},
   { CKSUMTYPE_RSA_MD5,		16,	KEYTYPE_NULL, MD5_checksum,     NULL},
   { CKSUMTYPE_RSA_MD4_DES,	24,	KEYTYPE_DES,  MD4_DES_checksum, MD4_DES_verify},
+#if 0
+  { CKSUMTYPE_RSA_MD4_DES,	16,	KEYTYPE_DES,  MD4_DES_broken_checksum, MD4_DES_broken_verify},
+#endif
   { CKSUMTYPE_RSA_MD5_DES,	24,	KEYTYPE_DES,  MD5_DES_checksum, MD5_DES_verify}
 };
 
