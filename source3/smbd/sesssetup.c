@@ -39,16 +39,14 @@ static NTSTATUS do_map_to_guest(NTSTATUS status, auth_serversupplied_info **serv
 		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
 			DEBUG(3,("No such user %s [%s] - using guest account\n",
 				 user, domain));
-			make_server_info_guest(server_info);
-			status = NT_STATUS_OK;
+			status = make_server_info_guest(server_info);
 		}
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
 			DEBUG(3,("Registered username %s for guest access\n",user));
-			make_server_info_guest(server_info);
-			status = NT_STATUS_OK;
+			status = make_server_info_guest(server_info);
 		}
 	}
 
