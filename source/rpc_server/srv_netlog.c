@@ -506,6 +506,17 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	memcpy(lm_pwd, id1->lm_owf.data, 16);
 	memcpy(nt_pwd, id1->nt_owf.data, 16);
 
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("key:"));
+	dump_data(100, key, 16);
+
+	DEBUG(100,("lm owf password:"));
+	dump_data(100, lm_pwd, 16);
+
+	DEBUG(100,("nt owf password:"));
+	dump_data(100, nt_pwd, 16);
+#endif
+
 	SamOEMhash((uchar *)lm_pwd, key, False);
 	SamOEMhash((uchar *)nt_pwd, key, False);
 
@@ -518,7 +529,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 #endif
 
 	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 &&
-		memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
+	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
 	{
 		status = 0xC0000000 | NT_STATUS_WRONG_PASSWORD;
 	}

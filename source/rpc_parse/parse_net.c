@@ -580,11 +580,11 @@ void make_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 #endif
 
 		memset(key, 0, 16);
-		memcpy(key, sess_key, 16);
+		memcpy(key, sess_key, 8);
 
-		memcpy(lm_cypher, lm_owf, 16);
+		memcpy(lm_owf, lm_cypher, 16);
 		SamOEMhash(lm_owf, key, False);
-		memcpy(lm_cypher, lm_owf, 16);
+		memcpy(nt_owf, nt_cypher, 16);
 		SamOEMhash(nt_owf, key, False);
 
 #ifdef DEBUG_PASSWORD
