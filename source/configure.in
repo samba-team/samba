@@ -319,7 +319,7 @@ DYNEXP=
 
 dnl Add modules that have to be built by default here
 dnl These have to be built static:
-default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_epmapper auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin pdb_gums gums_tdbsam2"
+default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_reg rpc_lsa_ds rpc_wks rpc_net rpc_dfs rpc_srv rpc_spoolss rpc_epmapper auth_rhosts auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin gums_tdbsam2"
 
 dnl These are preferably build shared, and static if dlopen() is not available
 default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap charset_CP850 charset_CP437"
@@ -4314,7 +4314,7 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB,
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
-SMB_MODULE(pdb_gums, passdb/pdb_gums.o, "bin/gums.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_gums, [passdb/pdb_gums.o \$(GUMS_OBJ)], "bin/gums.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 SMB_MODULE(gums_tdbsam2, sam/gums_tdbsam2.o, "bin/tdbsam2.$SHLIBEXT", GUMS)
