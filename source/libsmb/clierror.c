@@ -255,12 +255,18 @@ BOOL cli_is_error(struct cli_state *cli)
 {
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
 
-        if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
-                rcls = IVAL(cli->inbuf, smb_rcls);
-        else
-                rcls = CVAL(cli->inbuf, smb_rcls);
+        if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 
-        return (rcls != 0);
+                /* Return error is error bits are set */
+
+                rcls = IVAL(cli->inbuf, smb_rcls);
+                return (rcls & 0xF0000000) == 0xC0000000;
+        }
+                
+        /* Return error if error class in non-zero */
+
+        rcls = CVAL(cli->inbuf, smb_rcls);
+        return rcls != 0;
 }
 
 /* Return true if the last error was an NT error */
