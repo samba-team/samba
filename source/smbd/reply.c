@@ -553,6 +553,15 @@ static int smb_delete_user(char *unix_user)
 	pstring del_script;
 	int ret;
 
+	/*
+	 * Sanity check -- do not delete 'root' account
+	 */
+
+	if (StrCaseCmp("root", unix_user) == 0) {
+		DEBUG(0,("smb_delete_user: Will not delete the [%s] user account!\n", unix_user));
+		return -1;
+	}
+
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
