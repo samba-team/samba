@@ -48,58 +48,70 @@ krb5_mk_req_extended(krb5_context context,
 		     krb5_creds *in_creds,
 		     krb5_data *outbuf)
 {
-  krb5_error_code r;
+  krb5_error_code ret;
   krb5_data authenticator;
   Checksum c;
   Checksum *c_opt;
   krb5_cksumtype cksumtype;
   krb5_auth_context ac;
+  krb5_enctype enctype;
 
   if(auth_context) {
       if(*auth_context == NULL)
-	  r = krb5_auth_con_init(context, auth_context);
+	  ret = krb5_auth_con_init(context, auth_context);
       else
-	  r = 0;
+	  ret = 0;
       ac = *auth_context;
   } else
-      r = krb5_auth_con_init(context, &ac);
-  if(r)
-      return r;
+      ret = krb5_auth_con_init(context, &ac);
+  if(ret)
+      return ret;
       
   krb5_free_keyblock(context, ac->keyblock);
   krb5_copy_keyblock(context, &in_creds->session, &ac->keyblock);
   
+  if (ac->enctype)
+      enctype = ac->enctype;
+  else {
+      ret = krb5_keytype_to_etype(context,
+				  ac->keyblock->keytype,
+				  &enctype);
+      if (ret)
+	  return ret;
+  }
+
   if (ac->cksumtype)
       cksumtype = ac->cksumtype;
   else
       krb5_keytype_to_cksumtype (context, ac->keyblock->keytype, &cksumtype);
 
   if (in_data) {
-      r = krb5_create_checksum (context,
-				cksumtype,
-				in_data->data,
-				in_data->length,
-				ac->keyblock,
-				&c);
+      ret = krb5_create_checksum (context,
+				  cksumtype,
+				  in_data->data,
+				  in_data->length,
+				  ac->keyblock,
+				  &c);
       c_opt = &c;
   } else {
       c_opt = NULL;
   }
   
-  r = krb5_build_authenticator (context,
-				ac,
-				in_creds,
-				c_opt,
-				NULL,
-				&authenticator);
+  ret = krb5_build_authenticator (context,
+				  ac,
+				  enctype,
+				  in_creds,
+				  c_opt,
+				  NULL,
+				  &authenticator);
   if (c_opt)
       free_Checksum (c_opt);
-  if (r)
-    return r;
+  if (ret)
+    return ret;
 
-  r = krb5_build_ap_req (context, in_creds, ap_req_options,
-			 authenticator, outbuf);
+  ret = krb5_build_ap_req (context, enctype, in_creds, ap_req_options,
+			   authenticator, outbuf);
   if(auth_context == NULL)
       krb5_auth_con_free(context, ac);
-  return r;
+  return ret;
 }
