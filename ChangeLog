@@ -1,3 +1,48 @@
+2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kverify.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
+	* kpasswd/kpasswd-generator.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
+	* kdc/hprop.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free compare
+	a uint32_t with 0xffffffff instead of -1
+
+	* lib/krb5/krb5_425_conv_principal.3: fix [Gt]
+	
+	* kuser/kinit.c: use
+	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): handle
+	password passed in though context
+
+	* lib/krb5/Makefile.am (TESTS): += test_config
+
+	* lib/krb5/aes-test.c: move variable thats used within a #ifdef to
+	be defined within that #ifdef
+
+	* lib/krb5/data.c (krb5_data_free): reset whole krb5_data when
+	freeing it
+
+	* lib/krb5/keyblock.c (krb5_keyblock_zero): new function, zeros
+	out a keyblock
+
+	* lib/krb5/init_creds_pw.c: rewrite/implement
+	krb5_get_init_creds_password with new preauth handing, still it
+	can only work with krb5-pa-enc-timestamp for preauth, but now it
+	can handle etype-info2
+
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_alloc): allocate
+	a opt structure
+	(krb5_get_init_creds_opt_free): free a opt structure
+	(krb5_get_init_creds_opt_set_pa_password): set preauth info for
+	enc-timestamp
+
+	* lib/krb5/krb5_locl.h: add struct
+	_krb5_get_init_creds_opt_private
+
 2003-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5.h: add SAM keyusage numbers, add s2k proc typedef,
