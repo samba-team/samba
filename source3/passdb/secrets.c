@@ -123,8 +123,14 @@ form a key for fetching a domain trust password
 char *trust_keystr(char *domain)
 {
 	static fstring keystr;
-	slprintf(keystr,sizeof(keystr),"%s/%s", SECRETS_MACHINE_ACCT_PASS, domain);
-	dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
+	fstring dos_domain;
+
+	fstrcpy(dos_domain, domain);
+	unix_to_dos(dos_domain, True);
+
+	slprintf(keystr,sizeof(keystr),"%s/%s", 
+		 SECRETS_MACHINE_ACCT_PASS, dos_domain);
+
 	return keystr;
 }
 
@@ -138,7 +144,8 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	struct machine_acct_pass *pass;
 	size_t size;
 
-	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) || size != sizeof(*pass))
+	if (!(pass = secrets_fetch(trust_keystr(domain), &size)) || 
+	    size != sizeof(*pass))
 		return False;
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;

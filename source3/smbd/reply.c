@@ -900,7 +900,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      that */
   if (!sys_getpwnam(user)) {
 	  pstring user2;
-	  slprintf(user2,sizeof(user2),"%s%s%s", dos_to_unix(domain,False), lp_winbind_separator(), user);
+
+	  slprintf(user2,sizeof(user2),"%s%s%s", dos_to_unix(domain,False), 
+		   lp_winbind_separator(), user);
+
 	  if (sys_getpwnam(user2)) {
 		  DEBUG(3,("Using unix username %s\n", user2));
 		  pstrcpy(user, user2);
@@ -1018,7 +1021,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     p = smb_buf(outbuf);
     pstrcpy(p,"Unix"); p = skip_string(p,1);
     pstrcpy(p,"Samba "); pstrcat(p,VERSION); p = skip_string(p,1);
-    pstrcpy(p,global_myworkgroup); p = skip_string(p,1);
+    pstrcpy(p,global_myworkgroup); unix_to_dos(p, True); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }

@@ -43,9 +43,9 @@ prots[] =
 
 
 /****************************************************************************
- Send a session setup. The username is in UNIX character format and must be
- converted to DOS codepage format before sending. If the password is in
- plaintext, the same should be done.
+ Send a session setup. The username and workgroup is in UNIX character
+ format and must be converted to DOS codepage format before sending. If the
+ password is in plaintext, the same should be done.
 ****************************************************************************/
 
 BOOL cli_session_setup(struct cli_state *cli, 
@@ -166,6 +166,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		strupper(p);
 		p = skip_string(p,1);
 		pstrcpy(p,workgroup);
+		unix_to_dos(p,True);
 		strupper(p);
 		p = skip_string(p,1);
 		pstrcpy(p,"Unix");p = skip_string(p,1);

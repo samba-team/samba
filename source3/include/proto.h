@@ -49,7 +49,7 @@ uint32 crc32_calc_buffer( char *buffer, uint32 count);
 
 /*The following definitions come from  lib/debug.c  */
 
-char* debug_classname_from_index(int idx);
+char* debug_classname_from_index(int ndx);
 int debug_lookup_classname(char* classname);
 BOOL debug_parse_params(char **params, int *debuglevel_class);
 BOOL debug_parse_levels(char *params_str);
