@@ -2,9 +2,9 @@
 
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP RPC-SAMLOGON"
-ncalrpc_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP RPC-SAMLOGON"
-ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-ECHO RPC-SAMLOGON"
+ncacn_np_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP RPC-SAMLOGON RPC-ALTERCONTEXT"
+ncalrpc_tests="RPC-SCHANNEL RPC-ECHO RPC-DSSETUP RPC-SAMLOGON RPC-ALTERCONTEXT"
+ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-ECHO RPC-SAMLOGON RPC-ALTERCONTEXT"
 
 if [ $# -lt 4 ]; then
 cat <<EOF
