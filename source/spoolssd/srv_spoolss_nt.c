@@ -1904,6 +1904,17 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 
 	printer->devmode=devmode;
 	
+	if (ntprinter.info_2->secdesc.len != 0)
+	{
+		/* steal the printer info sec_desc structure.  [badly done]. */
+		printer->secdesc = ntprinter.info_2->secdesc.sec;
+		ZERO_STRUCT(ntprinter.info_2->secdesc);
+	}
+	else
+	{
+		printer->secdesc = NULL;
+	}
+
 	safe_free(queue);
 	free_a_printer(ntprinter, 2);
 	return True;

@@ -1510,16 +1510,19 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
 		
-		buffer->string_at_end -= 1024; /* HACK! */
-		
-		prs_set_offset(ps, buffer->string_at_end);
-		
-		/* write the secdesc */
-		if (!sec_io_desc(desc, *secdesc, ps, depth))
-			return False;
+		if (*secdesc != NULL)
+		{
+			buffer->string_at_end -= 1024; /* HACK! */
+			
+			prs_set_offset(ps, buffer->string_at_end);
+			
+			/* write the secdesc */
+			if (!sec_io_desc(desc, *secdesc, ps, depth))
+				return False;
 
-		prs_set_offset(ps, struct_offset);
-		
+			prs_set_offset(ps, struct_offset);
+		}
+
 		relative_offset=buffer->string_at_end - buffer->struct_start;
 		/* write its offset */
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
