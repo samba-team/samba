@@ -1064,6 +1064,93 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	return result;
 }
 
+static NTSTATUS 
+rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	NTSTATUS result;
+	POLICY_HND connect_pol, domain_pol, group_pol;
+	uint32 num_rids, *rids, *rid_types;
+	uint32 num_members, *group_rids, *group_attrs;
+	uint32 num_names;
+	char **names;
+	uint32 *name_types;
+	int i;
+
+	/* Get sam policy handle */
+	
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, 1000,
+				       1, argv, &num_rids, &rids, &rid_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (num_rids != 1) {
+		d_printf("Could not find group %s\n", argv[0]);
+		goto done;
+	}
+
+	if (rid_types[0] != SID_NAME_DOM_GRP) {
+		d_printf("%s is not a domain group\n", argv[0]);
+		goto done;
+	}
+
+	result = cli_samr_open_group(cli, mem_ctx, &domain_pol,
+				     MAXIMUM_ALLOWED_ACCESS,
+				     rids[0], &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_query_groupmem(cli, mem_ctx, &group_pol,
+					 &num_members, &group_rids,
+					 &group_attrs);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, 1000,
+				      num_members, group_rids,
+				      &num_names, &names, &name_types);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	for (i = 0; i < num_members; i++) {
+		printf("%s\n", names[i]);
+	}
+
+ done:
+	return result;
+}
+
+static int rpc_group_members(int argc, const char **argv)
+{
+	if (argc != 1) {
+		return rpc_group_usage(argc, argv);
+	}
+
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_members_internals,
+			       argc, argv);
+}
+
 /** 
  * 'net rpc group' entrypoint.
  * @param argc  Standard main() style argc
@@ -1078,6 +1165,7 @@ int net_rpc_group(int argc, const char **argv)
 		{"add", rpc_group_add},
 		{"delete", rpc_group_delete},
 #endif
+		{"members", rpc_group_members},
 		{NULL, NULL}
 	};
 	
