@@ -1752,7 +1752,7 @@ static struct registry_ops reg_backend_nt4 = {
 	*/
 };
 
-NTSTATUS reg_nt4_init(void)
+NTSTATUS registry_nt4_init(void)
 {
 	return register_backend("registry", &reg_backend_nt4);
 }
