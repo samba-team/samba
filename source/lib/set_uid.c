@@ -27,6 +27,10 @@ extern int DEBUGLEVEL;
 extern struct current_user current_user;
 
 pstring OriginalDir;
+static int become_root_depth = 0;
+static struct current_user current_user_saved;
+static pstring become_root_dir;
+
 
 /****************************************************************************
 get the current security context vuid key
@@ -59,6 +63,8 @@ void init_uid(void)
 	current_user.ngroups = 0;
 	current_user.groups = NULL;
 
+	current_user_saved = current_user;
+
 	dos_ChDir(OriginalDir);
 }
 
@@ -68,7 +74,6 @@ void init_uid(void)
 ****************************************************************************/
 BOOL become_uid(uid_t uid)
 {
-
 	if (uid == (uid_t) - 1
 	    || ((sizeof(uid_t) == 2) && (uid == (uid_t) 65535)))
 	{
@@ -173,6 +178,13 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 	gid_t gid;
 	uid_t uid;
 
+	DEBUG(5, ("become_unix_sec_ctx: %d %d\n", new_uid, new_gid));
+	if (become_root_depth != 0x0)
+	{
+		DEBUG(0,("become_unix_sec_ctx %d %d: non-zero become_root_depth\n", new_uid, new_gid));
+		SMB_ASSERT(False);
+	}
+
 	if (current_user.uid == new_uid &&
 	    current_user.key.pid == k->pid &&
 	    current_user.key.vuid == k->vuid)
@@ -269,10 +281,6 @@ BOOL become_guest(void)
 	return (ret);
 }
 
-static struct current_user current_user_saved;
-static int become_root_depth = 0;
-static pstring become_root_dir;
-
 /****************************************************************************
 This is used when we need to do a privilaged operation (such as mucking
 with share mode files) and temporarily need root access to do it. This
@@ -290,7 +298,10 @@ void become_root(BOOL save_dir)
 	if (save_dir)
 		dos_GetWd(become_root_dir);
 
-	current_user_saved = current_user;
+	if (become_root_depth == 0)
+	{
+		current_user_saved = current_user;
+	}
 	become_root_depth++;
 
 	become_uid(0);
@@ -304,6 +315,10 @@ Set save_dir if you also need to save/restore the CWD
 ****************************************************************************/
 void unbecome_root(BOOL restore_dir)
 {
+	DEBUG(10,("unbecome_root: %d %d\n",
+				current_user_saved.uid,
+				current_user_saved.gid));
+
 	if (become_root_depth <= 0)
 	{
 		DEBUG(0, ("ERROR: unbecome root depth is %d\n",
