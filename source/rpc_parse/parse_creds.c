@@ -287,7 +287,7 @@ void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from)
 		return;
 	}
 	fstrcpy(to->user_name, from->user_name);
-};
+}
 
 void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 {
@@ -315,7 +315,7 @@ void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 		to->num_grps = from->num_grps;
 		memcpy(to->grps, from->grps, size);
 	}
-};
+}
 
 void copy_nt_creds(struct ntuser_creds *to,
 				const struct ntuser_creds *from)
@@ -337,7 +337,7 @@ void copy_nt_creds(struct ntuser_creds *to,
 	DEBUG(10,("copy_nt_creds: user %s domain %s nopw %s flgs: %x\n",
 	       to->user_name, to->domain, BOOLSTR(pwd_is_nullpwd(&to->pwd)),
 	       to->ntlmssp_flags));
-};
+}
 
 void copy_user_creds(struct user_creds *to,
 				const struct user_creds *from)
@@ -386,7 +386,7 @@ void copy_user_creds(struct user_creds *to,
 	{
 		copy_unix_sec_creds(&to->uxs, &from->uxs);
 	}
-};
+}
 
 void free_user_creds(struct user_creds *creds)
 {

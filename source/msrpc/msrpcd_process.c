@@ -140,10 +140,11 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 		{
 			int selrtn;
 			int timeout = SMBD_SELECT_TIMEOUT * 1000;
+			BOOL more;
 
 			smb_read_error = 0;
 
-			selrtn = write_data_outstanding(l->c, timeout);
+			selrtn = write_data_outstanding(l->c, timeout, &more);
 
 			/* Check if error */
 			if (selrtn == -1)
@@ -159,9 +160,13 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 				return;
 			}
 
-			if (!msrpc_send(l->c, &l->rsmb_pdu))
+			if (more)
 			{
-				DEBUG(1,("msrpc_send: failed\n"));
+				if (!msrpc_send(l->c, &l->rsmb_pdu))
+				{
+					prs_free_data(&l->rsmb_pdu);
+				}
+				break;
 			}
 			prs_free_data(&l->rsmb_pdu);
 		}

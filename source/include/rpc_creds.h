@@ -53,7 +53,7 @@ typedef struct unixsec_creds
 
 typedef struct user_creds
 {
-	BOOL reuse;
+	uint32 reuse;
 
 	uint32 ptr_ntc;
 	uint32 ptr_uxc;

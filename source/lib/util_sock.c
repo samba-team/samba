@@ -238,7 +238,7 @@ ssize_t write_socket(int fd, char *buf, size_t len)
 /*******************************************************************
  checks if write data is outstanding.
  ********************************************************************/
-int write_data_outstanding(int fd, unsigned int time_out)
+int write_data_outstanding(int fd, unsigned int time_out, BOOL *more)
 {
 	int selrtn;
 	fd_set fds;
@@ -256,7 +256,8 @@ int write_data_outstanding(int fd, unsigned int time_out)
 	{
 		return selrtn;
 	}
-	return FD_ISSET(fd, &fds) ? 1 : 0;
+	(*more) = FD_ISSET(fd, &fds);
+	return selrtn;
 }
 
 /*******************************************************************

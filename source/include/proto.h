@@ -768,7 +768,7 @@ BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
 void close_sockets(void);
 ssize_t write_socket(int fd, char *buf, size_t len);
-int write_data_outstanding(int fd, unsigned int time_out);
+int write_data_outstanding(int fd, unsigned int time_out, BOOL *more);
 int read_data_outstanding(int fd, unsigned int time_out);
 ssize_t read_udp_socket(int fd, char *buf, size_t len);
 ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
