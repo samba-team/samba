@@ -75,7 +75,6 @@ enum ntlmssp_message_type
 
 struct ntlmssp_state 
 {
-	TALLOC_CTX *mem_ctx;
 	uint_t ref_count;
 	enum ntlmssp_role role;
 	enum samr_Role server_role;
