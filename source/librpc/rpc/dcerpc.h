@@ -161,9 +161,6 @@ struct dcerpc_interface_list {
 	const struct dcerpc_interface_table *table;
 };
 
-extern struct dcerpc_interface_list *dcerpc_pipes;
-
-
 /* this describes a binding to a particular transport/pipe */
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
