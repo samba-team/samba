@@ -362,6 +362,8 @@ static int help(int argc, char **argv);
 static SL_cmd cmds[] = {
     { "list",		kt_list,	"list",		"" },
     { "srvconvert",	srvconv,	"srvconvert [flags]",	"" },
+    { "key2srvtab" },
+    { "srvcreate",	srvcreate,	"srvcreate [flags]",	"" },
     { "srv2keytab" },
     { "add", 		kt_add,		"add", 		"" },
     { "get", 		kt_get,		"get [principal...]", "" },
