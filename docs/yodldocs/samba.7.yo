@@ -1,5 +1,5 @@
 mailto(samba-bugs@samba.anu.edu.au)
-manpage(samba)(7)(23 Oct 1998)()()
+manpage(samba)(7)(23 Oct 1998)(Samba)()
 manpagename(Samba)(A Windows fileserver for UNIX)
 manpagesynopsis()
 bf(Samba)
@@ -25,11 +25,11 @@ startdit()
 dit(bf(smbd)) nl() The bf(smbd) (8) daemon provides the file and print
 services to SMB clients, such as Windows 95/98, Windows NT, Windows
 for Workgroups or LanManager. The configuration file for this daemon
-is described in bf(smb.conf) (5).
+is described in bf(smb.conf (5)).
 
 dit(bf(nmbd)) nl() The bf(nmbd) (8) daemon provides NetBIOS
 nameserving and browsing support. The configuration file for this
-daemon is described in bf(smb.conf) (5).
+daemon is described in bf(smb.conf (5)).
 
 dit(bf(smbclient)) nl() The bf(smbclient) (1) program implements a simple
 ftp-like client. This is useful for accessing SMB shares on other
@@ -38,7 +38,7 @@ a UNIX box to print to a printer attached to any SMB server (such as a
 PC running Windows NT).
 
 dit(bf(testparm)) nl() The bf(testparm) (1) utility allows you to test your
-bf(smb.conf) (5) configuration file.
+bf(smb.conf (5)) configuration file.
 
 dit(bf(smbstatus)) nl() The bf(smbstatus) (1) utility allows you to tell
 who is currently using the bf(smbd) (8) server.

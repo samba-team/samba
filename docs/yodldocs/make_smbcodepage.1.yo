@@ -120,7 +120,7 @@ these to the address below for rectification.
 
 manpageseealso()
 
-bf(smb.conf)(5), bf(smbd) (8)
+bf(smb.conf(5)), bf(smbd (8))
 
 manpageauthor() 
 
