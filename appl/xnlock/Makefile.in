@@ -1,0 +1,72 @@
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+INSTALL = @INSTALL@
+LIBS = @LIBS@
+
+XLIBS=-lXt -lXmu -lXext -lX11
+
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+bindir = $(exec_prefix)/bin
+
+X_PROGS = xnlock
+
+PROG_BIN	= @MAKE_X_PROGS@
+PROG_LIBEXEC	= 
+PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
+
+SOURCES = xnlock.c
+
+OBJECTS = xnlock.o
+
+all: $(PROGS)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+install: all
+	$(MKDIRHIER) $(bindir)
+	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f *.a *.o $(PROGS)
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+
+xnlock: xnlock.o
+	$(CC) $(LDFLAGS) -o $@ xnlock.o $(XLIBS) ../../lib/kafs/libkafs.a ../../lib/krb/libkrb.a ../../lib/des/libdes.a $(LIBS)
+
+$(OBJECTS): ../../config.h
