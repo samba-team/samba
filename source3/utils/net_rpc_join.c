@@ -136,7 +136,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	fstrcat(acct_name, "$");
 	strlower(acct_name);
 
-        acb_info = (lp_server_role() == ROLE_DOMAIN_BDC) ? ACB_SVRTRUST : ACB_WSTRUST;
+        acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
 	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
