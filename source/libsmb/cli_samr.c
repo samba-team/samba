@@ -583,6 +583,84 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Enumerate domain groups */
+
+NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                  POLICY_HND *pol, uint32 *start_idx, 
+                                  uint32 size, struct acct_info **dom_groups,
+                                  uint32 *num_dom_groups)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_ENUM_DOM_ALIASES q;
+	SAMR_R_ENUM_DOM_ALIASES r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 name_idx, i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_enum_dom_aliases(&q, pol, *start_idx, size);
+
+	if (!samr_io_q_enum_dom_aliases("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_ENUM_DOM_ALIASES, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_enum_dom_aliases("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+	if (!NT_STATUS_IS_OK(result) &&
+	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+		goto done;
+	}
+
+	*num_dom_groups = r.num_entries2;
+
+	if (!((*dom_groups) = (struct acct_info *)
+	      talloc(mem_ctx, sizeof(struct acct_info) * *num_dom_groups))) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	memset(*dom_groups, 0, sizeof(struct acct_info) * *num_dom_groups);
+
+	name_idx = 0;
+
+	for (i = 0; i < *num_dom_groups; i++) {
+
+		(*dom_groups)[i].rid = r.sam[i].rid;
+
+		if (r.sam[i].hdr_name.buffer) {
+			unistr2_to_ascii((*dom_groups)[i].acct_name,
+					 &r.uni_grp_name[name_idx],
+					 sizeof(fstring) - 1);
+			name_idx++;
+		}
+
+		*start_idx = r.next_idx;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query alias members */
 
 NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
