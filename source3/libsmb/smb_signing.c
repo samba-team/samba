@@ -764,6 +764,8 @@ isn't sending correct signatures. Turning off.\n"));
 			return True;
 		} else {
 			/* Mandatory signing or bad packet after signing started - fail and disconnect. */
+			if (saved_seq)
+				DEBUG(0, ("srv_check_incoming_message: BAD SIG: seq %u\n", (unsigned int)saved_seq));
 			return False;
 		}
 	} else {
