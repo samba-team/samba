@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "webintl.h"
 
 #define PIDMAP		struct PidMap
 
@@ -40,7 +39,7 @@ static void initPid2Machine (void)
 {
 	/* show machine name rather PID on table "Open Files"? */
 	if (PID_or_Machine) {
-		PIDMAP *p, *q;
+		PIDMAP *p;
 
 		for (p = pidmap; p != NULL; ) {
 			DLIST_REMOVE(pidmap, p);
@@ -105,41 +104,41 @@ static char *tstring(time_t t)
 
 static void print_share_mode(share_mode_entry *e, char *fname)
 {
-	printf("<tr><td>%s</td>",_(mapPid2Machine(e->pid)));
-	printf("<td>");
+	d_printf("<tr><td>%s</td>",_(mapPid2Machine(e->pid)));
+	d_printf("<td>");
 	switch ((e->share_mode>>4)&0xF) {
-	case DENY_NONE: printf(_("DENY_NONE")); break;
-	case DENY_ALL:  printf(_("DENY_ALL   ")); break;
-	case DENY_DOS:  printf(_("DENY_DOS   ")); break;
-	case DENY_READ: printf(_("DENY_READ  ")); break;
-	case DENY_WRITE:printf(_("DENY_WRITE ")); break;
+	case DENY_NONE: d_printf("DENY_NONE"); break;
+	case DENY_ALL:  d_printf("DENY_ALL   "); break;
+	case DENY_DOS:  d_printf("DENY_DOS   "); break;
+	case DENY_READ: d_printf("DENY_READ  "); break;
+	case DENY_WRITE:d_printf("DENY_WRITE "); break;
 	}
-	printf("</td>");
+	d_printf("</td>");
 
-	printf("<td>");
+	d_printf("<td>");
 	switch (e->share_mode&0xF) {
-	case 0: printf(_("RDONLY     ")); break;
-	case 1: printf(_("WRONLY     ")); break;
-	case 2: printf(_("RDWR       ")); break;
+	case 0: d_printf("RDONLY     "); break;
+	case 1: d_printf("WRONLY     "); break;
+	case 2: d_printf("RDWR       "); break;
 	}
-	printf("</td>");
+	d_printf("</td>");
 
-	printf("<td>");
+	d_printf("<td>");
 	if((e->op_type & 
 	    (EXCLUSIVE_OPLOCK|BATCH_OPLOCK)) == 
 	   (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
-		printf(_("EXCLUSIVE+BATCH "));
+		d_printf("EXCLUSIVE+BATCH ");
 	else if (e->op_type & EXCLUSIVE_OPLOCK)
-		printf(_("EXCLUSIVE       "));
+		d_printf("EXCLUSIVE       ");
 	else if (e->op_type & BATCH_OPLOCK)
-		printf(_("BATCH           "));
+		d_printf("BATCH           ");
 	else if (e->op_type & LEVEL_II_OPLOCK)
-		printf(_("LEVEL_II        "));
+		d_printf("LEVEL_II        ");
 	else
-		printf(_("NONE            "));
-	printf("</td>");
+		d_printf("NONE            ");
+	d_printf("</td>");
 
-	printf("<td>%s</td><td>%s</td></tr>\n",
+	d_printf("<td>%s</td><td>%s</td></tr>\n",
 	       fname,tstring(e->time.tv_sec));
 }
 
@@ -179,15 +178,15 @@ static int traverse_fn2(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 
 	addPid2Machine (crec.pid, crec.machine);
 
-	printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
+	d_printf("<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td>\n",
 	       (int)crec.pid,
 	       crec.machine,crec.addr,
 	       tstring(crec.start));
 	if (geteuid() == 0) {
-		printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
+		d_printf("<td><input type=submit value=\"X\" name=\"kill_%d\"></td>\n",
 		       (int)crec.pid);
 	}
-	printf("</tr>\n");
+	d_printf("</tr>\n");
 
 	return 0;
 }
@@ -205,7 +204,7 @@ static int traverse_fn3(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void* st
 	if (crec.cnum == -1 || !process_exists(crec.pid))
 		return 0;
 
-	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
+	d_printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%d</td><td>%s</td><td>%s</td></tr>\n",
 	       crec.name,uidtoname(crec.uid),
 	       gidtoname(crec.gid),(int)crec.pid,
 	       crec.machine,
@@ -270,22 +269,22 @@ void status_page(void)
  
 	initPid2Machine ();
 
-	printf("<H2>%s</H2>\n", _("Server Status"));
+	d_printf("<H2>%s</H2>\n", _("Server Status"));
 
-	printf("<FORM method=post>\n");
+	d_printf("<FORM method=post>\n");
 
 	if (!autorefresh) {
-		printf("<input type=submit value=\"%s\" name=autorefresh>\n", _("Auto Refresh"));
-		printf("<br>%s", _("Refresh Interval: "));
-		printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
+		d_printf("<input type=submit value=\"%s\" name=autorefresh>\n", _("Auto Refresh"));
+		d_printf("<br>%s", _("Refresh Interval: "));
+		d_printf("<input type=text size=2 name=\"refresh_interval\" value=%d>\n", 
 		       refresh_interval);
 	} else {
-		printf("<input type=submit value=\"%s\" name=norefresh>\n", _("Stop Refreshing"));
-		printf("<br>%s%d\n", _("Refresh Interval: "), refresh_interval);
-		printf("<input type=hidden name=refresh value=1>\n");
+		d_printf("<input type=submit value=\"%s\" name=norefresh>\n", _("Stop Refreshing"));
+		d_printf("<br>%s%d\n", _("Refresh Interval: "), refresh_interval);
+		d_printf("<input type=hidden name=refresh value=1>\n");
 	}
 
-	printf("<p>\n");
+	d_printf("<p>\n");
 
 	if (!tdb) {
 		/* open failure either means no connections have been
@@ -293,83 +292,83 @@ void status_page(void)
 	}
 
 
-	printf("<table>\n");
+	d_printf("<table>\n");
 
-	printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), VERSION);
+	d_printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), VERSION);
 
 	fflush(stdout);
-	printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));
+	d_printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (smbd_running()) {
-		printf("<td><input type=submit name=\"smbd_stop\" value=\"%s\"></td>\n", _("Stop smbd"));
+		d_printf("<td><input type=submit name=\"smbd_stop\" value=\"%s\"></td>\n", _("Stop smbd"));
 	    } else {
-		printf("<td><input type=submit name=\"smbd_start\" value=\"%s\"></td>\n", _("Start smbd"));
+		d_printf("<td><input type=submit name=\"smbd_start\" value=\"%s\"></td>\n", _("Start smbd"));
 	    }
-	    printf("<td><input type=submit name=\"smbd_restart\" value=\"%s\"></td>\n", _("Restart smbd"));
+	    d_printf("<td><input type=submit name=\"smbd_restart\" value=\"%s\"></td>\n", _("Restart smbd"));
 	}
-	printf("</tr>\n");
+	d_printf("</tr>\n");
 
 	fflush(stdout);
-	printf("<tr><td>%s</td><td>%s</td>\n", _("nmbd:"), nmbd_running()?_("running"):_("not running"));
+	d_printf("<tr><td>%s</td><td>%s</td>\n", _("nmbd:"), nmbd_running()?_("running"):_("not running"));
 	if (geteuid() == 0) {
 	    if (nmbd_running()) {
-		printf("<td><input type=submit name=\"nmbd_stop\" value=\"%s\"></td>\n", _("Stop nmbd"));
+		d_printf("<td><input type=submit name=\"nmbd_stop\" value=\"%s\"></td>\n", _("Stop nmbd"));
 	    } else {
-		printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n", _("Start nmbd"));
+		d_printf("<td><input type=submit name=\"nmbd_start\" value=\"%s\"></td>\n", _("Start nmbd"));
 	    }
-	    printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
+	    d_printf("<td><input type=submit name=\"nmbd_restart\" value=\"%s\"></td>\n", _("Restart nmbd"));
 	}
-	printf("</tr>\n");
+	d_printf("</tr>\n");
 
-	printf("</table>\n");
+	d_printf("</table>\n");
 	fflush(stdout);
 
-	printf("<p><h3>%s</h3>\n", _("Active Connections"));
-	printf("<table border=1>\n");
-	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th>\n", _("PID"), _("Client"), _("IP address"), _("Date"));
+	d_printf("<p><h3>%s</h3>\n", _("Active Connections"));
+	d_printf("<table border=1>\n");
+	d_printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th>\n", _("PID"), _("Client"), _("IP address"), _("Date"));
 	if (geteuid() == 0) {
-		printf("<th>%s</th>\n", _("Kill"));
+		d_printf("<th>%s</th>\n", _("Kill"));
 	}
-	printf("</tr>\n");
+	d_printf("</tr>\n");
 
 	if (tdb) tdb_traverse(tdb, traverse_fn2, NULL);
 
-	printf("</table><p>\n");
+	d_printf("</table><p>\n");
 
-	printf("<p><h3>%s</h3>\n", _("Active Shares"));
-	printf("<table border=1>\n");
-	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n\n",
+	d_printf("<p><h3>%s</h3>\n", _("Active Shares"));
+	d_printf("<table border=1>\n");
+	d_printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n\n",
 		_("Share"), _("User"), _("Group"), _("PID"), _("Client"), _("Date"));
 
 	if (tdb) tdb_traverse(tdb, traverse_fn3, NULL);
 
-	printf("</table><p>\n");
+	d_printf("</table><p>\n");
 
-	printf("<h3>%s</h3>\n", _("Open Files"));
-	printf("<table border=1>\n");
-	printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n", _("PID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
+	d_printf("<h3>%s</h3>\n", _("Open Files"));
+	d_printf("<table border=1>\n");
+	d_printf("<tr><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th><th>%s</th></tr>\n", _("PID"), _("Sharing"), _("R/W"), _("Oplock"), _("File"), _("Date"));
 
 	locking_init(1);
 	share_mode_forall(print_share_mode);
 	locking_end();
-	printf("</table>\n");
+	d_printf("</table>\n");
 
 	if (tdb) tdb_close(tdb);
 
-	printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"Show Client in col 1\">\n");
-	printf("<input type=submit name=\"show_pid_in_col_1\" value=\"Show PID in col 1\">\n");
+	d_printf("<br><input type=submit name=\"show_client_in_col_1\" value=\"Show Client in col 1\">\n");
+	d_printf("<input type=submit name=\"show_pid_in_col_1\" value=\"Show PID in col 1\">\n");
 
-	printf("</FORM>\n");
+	d_printf("</FORM>\n");
 
 	if (autorefresh) {
 		/* this little JavaScript allows for automatic refresh
                    of the page. There are other methods but this seems
                    to be the best alternative */
-		printf("<script language=\"JavaScript\">\n");
-		printf("<!--\nsetTimeout('window.location.replace(\"%s/status?refresh_interval=%d&refresh=1\")', %d)\n", 
+		d_printf("<script language=\"JavaScript\">\n");
+		d_printf("<!--\nsetTimeout('window.location.replace(\"%s/status?refresh_interval=%d&refresh=1\")', %d)\n", 
 		       cgi_baseurl(),
 		       refresh_interval,
 		       refresh_interval*1000);
-		printf("//-->\n</script>\n");
+		d_printf("//-->\n</script>\n");
 	}
 }

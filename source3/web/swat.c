@@ -19,13 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
-#include "smb.h"
-#include "webintl.h"
 
 #define GLOBALS_SNUM -1
 
@@ -110,24 +104,22 @@ static char *make_parm_name(char *label)
 ****************************************************************************/
 static int include_html(char *fname)
 {
-	FILE *f;
+	int fd;
 	char buf[1024];
 	int ret;
 
-	f = sys_fopen((char*)LN_(fname), "r");
+	fd = web_open(fname, O_RDONLY, 0);
 
-	if (!f) {
-		d_printf(_("ERROR: Can't open %s\n"), fname);
+	if (fd == -1) {
+		d_printf("ERROR: Can't open %s\n", fname);
 		return 0;
 	}
 
-	while (!feof(f)) {
-		ret = fread(buf, 1, sizeof(buf), f);
-		if (ret <= 0) break;
-		fwrite(buf, 1, ret, stdout);
+	while ((ret = read(fd, buf, sizeof(buf))) > 0) {
+		write(1, buf, ret);
 	}
 
-	fclose(f);
+	close(fd);
 	return 1;
 }
 
@@ -475,7 +467,7 @@ static void commit_parameters(int snum)
 /****************************************************************************
   spit out the html for a link with an image 
 ****************************************************************************/
-static void image_link(char *name,char *hlink, char *src)
+static void image_link(const char *name, const char *hlink, const char *src)
 {
 	d_printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(), hlink, src, name);
@@ -1045,6 +1037,8 @@ static void printers_page(void)
 	/* just in case it goes wild ... */
 	alarm(300);
 
+	setlinebuf(stdout);
+
 	/* we don't want any SIGPIPE messages */
 	BlockSignals(True,SIGPIPE);
 
@@ -1071,14 +1065,8 @@ static void printers_page(void)
 	iNumNonAutoPrintServices = lp_numservices();
 	load_printers();
 
-#if I18N_SWAT
-	ln_initln();
-	cgi_setup(SWATDIR, !demo_mode);
-	ln_init_lang_env();
-#else
 	cgi_setup(SWATDIR, !demo_mode);
 
-#endif
 	print_header();
 
 	cgi_load_variables();
