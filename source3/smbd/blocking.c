@@ -22,7 +22,6 @@
 #include "includes.h"
 extern int DEBUGLEVEL;
 extern int Client;
-extern int chain_size;
 extern char *OutBuffer;
 
 /****************************************************************************
