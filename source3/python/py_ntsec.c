@@ -276,7 +276,7 @@ BOOL py_to_SECDESC(SEC_DESC **sd, PyObject *dict, TALLOC_CTX *mem_ctx)
 	{
 		size_t sd_size;
 
-		*sd = make_sec_desc(mem_ctx, revision,
+		*sd = make_sec_desc(mem_ctx, revision, SEC_DESC_SELF_RELATIVE,
 			    got_owner_sid ? &owner_sid : NULL, 
 			    got_group_sid ? &group_sid : NULL,
 			    got_sacl ? &sacl : NULL, 
