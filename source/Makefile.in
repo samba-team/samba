@@ -99,6 +99,8 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
+LIBSTATUS_OBJ = lib/util_status.o 
+
 LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o \
           lib/md5.o lib/hmacmd5.o lib/md4.o \
@@ -108,7 +110,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/access.o lib/smbrun.o \
 	  lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o \
-		lib/util_file.o lib/util_status.o mem_man/mem_man.o \
+		lib/util_file.o mem_man/mem_man.o \
 		lib/util_sock.o lib/unix_sec_ctxt.o
 
 
@@ -191,7 +193,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) 
+		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) 
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -226,7 +228,7 @@ MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
 MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
 
-STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+STATUS_OBJ = utils/status.o $(LIBSTATUS_OBJ) $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \

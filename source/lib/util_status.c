@@ -30,9 +30,12 @@ parse the STATUS..LCK file.  caller is responsible for freeing *crec.
 BOOL get_connection_status(struct connect_record **crec,
 				uint32 *connection_count)
 {
-  FILE *f;
+  int fd;
   pstring fname;
   int conn;
+  int num_recs;
+  struct connect_record *c;
+  int i;
 
   if (crec == NULL || connection_count == NULL)
   {
@@ -44,37 +47,44 @@ BOOL get_connection_status(struct connect_record **crec,
   trim_string(fname,"","/");
   pstrcat(fname,"/STATUS..LCK");
   
-  f = sys_fopen(fname,"r");
-  if (!f) {
+fd = sys_open(fname,O_RDONLY, 0);
+
+  if (fd == -1)
+  {
     DEBUG(0,("Couldn't open status file %s\n",fname));
     return False;
   }
  
-  DEBUG(5,("Opened status file %s\n",fname));
-
-  conn=0;
   (*crec) = NULL;
  
-   while (!feof(f))
-      {
+   num_recs = file_size(fname) / sizeof(*c);
+
+  DEBUG(5,("Opened status file %s, record count %d\n",fname, num_recs));
+
+   for (i = 0, conn = 0; i < num_recs; i++)
+   {
         (*crec) = Realloc((*crec), (conn+1) * sizeof((*crec)[conn]));
         if ((*crec) == NULL)
         {
            DEBUG(0,("Realloc failed in get_connection_status\n"));
            return False;
         }
-	if (fread(&(*crec)[conn],sizeof((*crec)[conn]),1,f) != 1)
+	c = &((*crec)[conn]);
+	if (sys_lseek(fd,i*sizeof(*c),SEEK_SET) != i*sizeof(*c) ||
+	    read(fd,c,sizeof(*c)) != sizeof(*c))
+        {
+          DEBUG(0,("unable to read a crec in get_connection_status\n"));
 	  break;
-	if ((*crec)[conn].cnum == -1) continue;
-	if ( (*crec)[conn].magic == 0x280267 && process_exists((*crec)[conn].pid) 
-	     )
+        }
+	DEBUG(10,("cnum:%u.  pid: %d magic: %x\n",
+	           c->cnum, c->pid, c->magic));
+	if ( c->magic == 0x280267 && process_exists(c->pid) )
 	  {
-		DEBUG(10,("cnun : %u \n",(*crec)[conn].cnum));
 		conn++;
 	  }
       }
 
-    fclose(f);
+    close(fd);
     (*connection_count)=conn;
 
     return True;
