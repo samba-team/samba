@@ -998,6 +998,7 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 			uchar *srv_key = (uchar *)cli->cryptkey;
 			uchar nt_owf[16];
 			uchar kr[16];
+			HMACMD5Context ctx;
 
 			SMBgenclientchals(cli->lm_cli_chal,
 			                  cli->nt_cli_chal,
@@ -1023,6 +1024,11 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 			               cli->nt_cli_chal, cli->nt_cli_chal_len,
 			               &ntpword[cli->nt_cli_chal_len]);
 			*ntpasslen = cli->nt_cli_chal_len + 16;
+
+			hmac_md5_init_limK_to_64(kr, 16, &ctx);
+			hmac_md5_update(cli->nt_cli_chal, cli->nt_cli_chal_len, &ctx);
+			hmac_md5_final(cli->sess_key, &ctx);
+
 		}
 		else
 		{

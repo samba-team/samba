@@ -232,6 +232,23 @@ commands[] =
 	},
 
 	/*
+	 * printer testing
+	 */
+
+	{
+		"spoolgetprinterdata",
+		cmd_spoolss_getprinterdata,
+		"Spool Printer Data Test",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
+		"spoolgetprinter",
+		cmd_spoolss_getprinter,
+		"Spool Printer Test",
+		{COMPL_NONE, COMPL_NONE}
+	},
+
+	/*
 	 * server
 	 */
 	{
@@ -240,7 +257,6 @@ commands[] =
 		"Display remote time",
 		{COMPL_NONE, COMPL_NONE}
 	},
-
 	{
 		"wksinfo",
 		cmd_wks_query_info,

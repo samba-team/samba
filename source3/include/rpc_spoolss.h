@@ -830,7 +830,9 @@ typedef struct spool_q_getprinter
 {
 	PRINTER_HND handle;
 	uint32 level;
+	uint8* buffer;
 	uint32 offered;
+
 } SPOOL_Q_GETPRINTER;
 
 typedef struct spool_r_getprinter
@@ -845,6 +847,7 @@ typedef struct spool_r_getprinter
 		PRINTER_INFO_0 *info0;
 		PRINTER_INFO_1 *info1;
 		PRINTER_INFO_2 *info2;
+		void *info;
 	} printer;
 } SPOOL_R_GETPRINTER;
 

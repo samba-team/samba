@@ -413,6 +413,54 @@ BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct
 	return True;
 }
 
+#if 0
+/*******************************************************************
+ * make a structure.
+ ********************************************************************/
+BOOL make_spoolss_io_q_open_printer(SPOOL_Q_OPEN_PRINTER *q_u, 
+		uint32 unk_0,
+		char *printername,
+		uint32 unk_1, uint32 cbbuf, uint32 devmod, uint32 des_access,
+		char *station,
+		char *username)
+{
+	int len_name = printername != NULL ? strlen(printername) : 0;
+
+	if (q_u == NULL) return False;
+
+	DEBUG(5,("make_spoolss_io_q_open_printer\n"));
+
+	q_u->unknown0 = unk_0;
+	make_unistr2(&(q_u->uni_domain), dom_name, len_name);
+
+
+	prs_uint32("unknown1", ps, depth, &(q_u->unknown1));
+	prs_uint32("cbbuf", ps, depth, &(q_u->cbbuf));
+	prs_uint32("devmod", ps, depth, &(q_u->devmod));
+	prs_uint32("access required", ps, depth, &(q_u->access_required));
+
+	/* don't care to decode end of packet by now */
+	/* but when acl will be implemented, it will be useful */
+
+	prs_uint32("unknown2", ps, depth, &(q_u->unknown2));
+	prs_uint32("unknown3", ps, depth, &(q_u->unknown3));
+	prs_uint32("unknown4", ps, depth, &(q_u->unknown4));
+	prs_uint32("unknown5", ps, depth, &(q_u->unknown5));
+	prs_uint32("unknown6", ps, depth, &(q_u->unknown6));
+	prs_uint32("unknown7", ps, depth, &(q_u->unknown7));
+	prs_uint32("unknown8", ps, depth, &(q_u->unknown8));
+	prs_uint32("unknown9", ps, depth, &(q_u->unknown9));
+	prs_uint32("unknown10", ps, depth, &(q_u->unknown10));
+	prs_uint32("unknown11", ps, depth, &(q_u->unknown11));
+
+	smb_io_unistr2("", &(q_u->station),True,ps,depth);
+	prs_align(ps);
+	smb_io_unistr2("", &(q_u->username),True,ps,depth);
+
+	return True;
+}
+#endif
+
 /*******************************************************************
  * read a structure.
  * called from spoolss_q_open_printer (srv_spoolss.c)
@@ -453,6 +501,27 @@ BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct
 	smb_io_unistr2("", &(q_u->station),True,ps,depth);
 	prs_align(ps);
 	smb_io_unistr2("", &(q_u->username),True,ps,depth);
+
+	return True;
+}
+
+/*******************************************************************
+ * make a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
+				PRINTER_HND *handle,
+				char *valuename,
+				uint32 size)
+{
+	int len_name = valuename != NULL ? strlen(valuename) : 0;
+
+	if (q_u == NULL) return False;
+
+	DEBUG(5,("make_spoolss_q_getprinterdata\n"));
+
+	memcpy(&(q_u->handle), handle, sizeof(q_u->handle));
+	make_unistr2(&(q_u->valuename), valuename, len_name);
+	q_u->size = size;
 
 	return True;
 }
@@ -1719,11 +1788,17 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u,
 		}	
 	}
 
+	if (ps->io)
+	{
+		/* reading */
+		r_u->offered = bufsize_required;
+	}
+
 	DEBUG(4,("spoolss_io_r_getprinterdriver2, size needed: %d\n",bufsize_required));
 	DEBUG(4,("spoolss_io_r_getprinterdriver2, size offered: %d\n",r_u->offered));
 
 	/* check if the buffer is big enough for the datas */
-	if (r_u->offered<bufsize_required)
+	if (r_u->offered < bufsize_required)
 	{	
 		/* it's too small */
 		r_u->status=ERROR_INSUFFICIENT_BUFFER;	/* say so */
@@ -1973,11 +2048,11 @@ BOOL spoolss_io_r_getprinter(char *desc,
 	DEBUG(4,("spoolss_io_r_getprinter, size offered: %d\n",r_u->offered));
 
 	/* check if the buffer is big enough for the datas */
-	if (r_u->offered<bufsize_required)
+	if (r_u->offered < bufsize_required)
 	{	
 		/* it's too small */
-		r_u->status=ERROR_INSUFFICIENT_BUFFER;	/* say so */
-		r_u->offered=0;				/* don't send back the buffer */
+		r_u->status = ERROR_INSUFFICIENT_BUFFER;	/* say so */
+		r_u->offered = 0;				/* don't send back the buffer */
 		
 		DEBUG(4,("spoolss_io_r_getprinter, buffer too small\n"));
 
@@ -1990,6 +2065,16 @@ BOOL spoolss_io_r_getprinter(char *desc,
 		DEBUG(4,("spoolss_io_r_getprinter, buffer large enough\n"));
 	
 		prs_uint32("size of buffer", ps, depth, &(r_u->offered));
+	}
+
+	if (ps->io)
+	{
+		/* reading */
+		r_u->printer.info = Realloc(NULL, r_u->offered);
+	}
+
+	if (bufsize_required <= r_u->offered)
+	{
 		beginning=ps->offset;
 		start_offset=ps->offset;
 		end_offset=start_offset+r_u->offered;
@@ -2046,7 +2131,6 @@ BOOL spoolss_io_r_getprinter(char *desc,
 	 	
 	prs_uint32("size of buffer needed", ps, depth, &(bufsize_required));
 	prs_uint32("status", ps, depth, &(r_u->status));
-			
 
 	return True;
 }
@@ -2061,27 +2145,35 @@ BOOL spoolss_io_r_getprinter(char *desc,
  ********************************************************************/
 static BOOL spoolss_io_read_buffer8(char *desc, prs_struct *ps, uint8 **buffer, uint32 *size,int depth)
 {
-	uint32 useless_ptr;
-
 	prs_debug(ps, depth, desc, "spoolss_io_read_buffer8");
 	depth++;
 
 	prs_align(ps);
 
-	prs_uint32("buffer pointer", ps, depth, &useless_ptr);
+	prs_uint32("buffer size", ps, depth, size);	
+	*buffer = (uint8 *)Realloc(NULL, (*size) * sizeof(uint8) );
+	prs_uint8s(True,"buffer",ps,depth,*buffer,*size);	
+	prs_align(ps);
+
+	return True;
+}
+
+/*******************************************************************
+ * make a structure.
+ * called from spoolss_getprinter (srv_spoolss.c)
+ ********************************************************************/
+BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u,
+				PRINTER_HND *hnd,
+				uint32 level,
+				uint32 buf_size)
+{
+	if (q_u == NULL) return False;
+
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 	
-	if (useless_ptr != 0x0000)
-	{
-		prs_uint32("buffer size", ps, depth, size);	
-		*buffer=(uint8 *)malloc( (*size) * sizeof(uint8) );
-		prs_uint8s(True,"buffer",ps,depth,*buffer,*size);	
-		prs_align(ps);
-	}
-	else
-	{
-		*buffer=0x0000;
-		*size=0x0000;
-	}
+	q_u->level = level;
+	q_u->buffer = (uint8 *)Realloc(NULL, (buf_size) * sizeof(uint8) );
+	q_u->offered = buf_size;
 
 	return True;
 }
@@ -2093,8 +2185,8 @@ static BOOL spoolss_io_read_buffer8(char *desc, prs_struct *ps, uint8 **buffer, 
 BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u,
                                prs_struct *ps, int depth)
 {
-	uint32 count;
-	uint8 *buffer;
+	uint32 count = 0;
+	uint32 buf_ptr = q_u->buffer != NULL ? 1 : 0;
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprinter");
 	depth++;
 
@@ -2104,15 +2196,24 @@ BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u,
 	
 	prs_uint32("level", ps, depth, &(q_u->level));
 
-	spoolss_io_read_buffer8("",ps, &buffer, &count,depth);
-	if (buffer != 0x0000)
+	if (!ps->io)
 	{
-		free(buffer);
+		/* writing */
+		buf_ptr = q_u->buffer != NULL ? 1 : 0;
 	}
-		
+	prs_uint32("buffer pointer", ps, depth, &buf_ptr);
+
+	if (buf_ptr != 0)
+	{
+		spoolss_io_read_buffer8("",ps, &q_u->buffer, &count,depth);
+	}
+	if (q_u->buffer != NULL)
+	{
+		free(q_u->buffer);
+	}
 	prs_uint32("buffer size", ps, depth, &(q_u->offered));	
 
-	return True;
+	return count == q_u->offered;
 }
 
 /*******************************************************************
