@@ -2662,6 +2662,78 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)])
 )
 
 #################################################
+# check for sendfile support
+
+AC_MSG_CHECKING(whether to support sendfile)
+AC_ARG_WITH(sendfile-support,
+[  --with-sendfile-support      Include sendfile support (default=no)],
+[ case "$withval" in
+  yes)
+
+	case "$host_os" in
+	*linux*)
+		AC_CACHE_CHECK([for sendfile64 support],samba_cv_HAVE_SENDFILE64,[
+		AC_TRY_LINK([#include <sys/sendfile.h>],
+[\
+int tofd, fromfd;
+off64_t offset;
+size_t total;
+ssize_t nwritten = sendfile64(tofd, fromfd, &offset, total);
+],
+samba_cv_HAVE_SENDFILE64=yes,samba_cv_HAVE_SENDFILE64=no)])
+
+		AC_CACHE_CHECK([for sendfile support],samba_cv_HAVE_SENDFILE,[
+		AC_TRY_LINK([#include <sys/sendfile.h>],
+[\
+int tofd, fromfd;
+off_t offset;
+size_t total;
+ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
+],
+samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
+
+# Try and cope with broken Linux sendfile....
+		AC_CACHE_CHECK([for broken linux sendfile support],samba_cv_HAVE_BROKEN_LINUX_SENDFILE,[
+		AC_TRY_LINK([\
+#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+#undef _FILE_OFFSET_BITS
+#endif
+#include <sys/sendfile.h>],
+[\
+int tofd, fromfd;
+off_t offset;
+size_t total;
+ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
+],
+samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)])
+
+	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE64)
+		AC_DEFINE(LINUX_SENDFILE_API)
+	elif test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE)
+		AC_DEFINE(LINUX_SENDFILE_API)
+	elif test x"$samba_cv_HAVE_BROKEN_LINUX_SENDFILE" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE)
+		AC_DEFINE(LINUX_BROKEN_SENDFILE_API)
+	else
+		AC_MSG_RESULT(no);
+	fi
+
+	;;
+        *)
+	;;
+        esac
+        ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+
+
+#################################################
 # Check whether winbind is supported on this platform.  If so we need to
 # build and install client programs (WINBIND_TARGETS), sbin programs
 # (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
