@@ -629,6 +629,7 @@ struct vfs_ops {
     struct dirent *(*readdir)(DIR *dirp);
     int (*mkdir)(char *path, mode_t mode);
     int (*rmdir)(char *path);
+    int (*closedir)(DIR *dir);
     
     /* File operations */
     

@@ -524,7 +524,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   if (!p) return(NULL);
   dirp = (Dir *)malloc(sizeof(Dir));
   if (!dirp) {
-    closedir(p);
+    conn->vfs_ops.closedir(p);
     return(NULL);
   }
   dirp->pos = dirp->numentries = dirp->mallocsize = 0;
@@ -554,7 +554,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
     dirp->numentries++;
   }
 
-  closedir(p);
+  conn->vfs_ops.closedir(p);
   return((void *)dirp);
 }
 
