@@ -203,7 +203,6 @@ struct file_data{
     char *filename;
     char *mode;
     FILE *fd;
-    int log_time;
     int keep_open;
 };
 
@@ -215,10 +214,7 @@ log_file(const char *time,
     struct file_data *f = data;
     if(f->keep_open == 0)
 	f->fd = fopen(f->filename, f->mode);
-    if(f->log_time)
-	fprintf(f->fd, "%s %s\n", time, msg);
-    else
-	fprintf(f->fd, "%s\n", msg);
+    fprintf(f->fd, "%s %s\n", time, msg);
     if(f->keep_open == 0)
 	fclose(f->fd);
 }
@@ -234,7 +230,7 @@ close_file(void *data)
 
 static krb5_error_code
 open_file(krb5_context context, krb5_log_facility *fac, int min, int max,
-	  char *filename, char *mode, FILE *f, int log_time, int keep_open)
+	  char *filename, char *mode, FILE *f, int keep_open)
 {
     struct file_data *fd = malloc(sizeof(*fd));
     if(fd == NULL)
@@ -242,7 +238,6 @@ open_file(krb5_context context, krb5_log_facility *fac, int min, int max,
     fd->filename = filename;
     fd->mode = mode;
     fd->fd = f;
-    fd->log_time = log_time;
     fd->keep_open = keep_open;
 
     return krb5_addlog_func(context, fac, min, max, log_file, close_file, fd);
@@ -272,9 +267,9 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *p)
 	p++;
     }
     if(strcmp(p, "STDERR") == 0){
-	ret = open_file(context, f, min, max, NULL, NULL, stderr, 0, 1);
+	ret = open_file(context, f, min, max, NULL, NULL, stderr, 1);
     }else if(strcmp(p, "CONSOLE") == 0){
-	ret = open_file(context, f, min, max, "/dev/console", "w", NULL, 1, 0);
+	ret = open_file(context, f, min, max, "/dev/console", "w", NULL, 0);
     }else if(strncmp(p, "FILE:", 4) == 0 && (p[4] == ':' || p[4] == '=')){
 	char *fn;
 	FILE *file = NULL;
@@ -294,9 +289,9 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *p)
 	    }
 	    keep_open = 1;
 	}
-	ret = open_file(context, f, min, max, fn, "a", file, 1, keep_open);
+	ret = open_file(context, f, min, max, fn, "a", file, keep_open);
     }else if(strncmp(p, "DEVICE=", 6) == 0){
-	ret = open_file(context, f, min, max, strdup(p + 7), "w", NULL, 1, 0);
+	ret = open_file(context, f, min, max, strdup(p + 7), "w", NULL, 0);
     }else if(strncmp(p, "SYSLOG", 6) == 0){
 	char *severity;
 	char *facility;
