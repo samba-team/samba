@@ -4346,9 +4346,9 @@ uint32 _samr_unknown_38(const UNISTR2 *uni_srv_name,
 /*The following definitions come from  samrd/srv_samr_tdb.c  */
 
 BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
-				uint32 rid);
+				TDB_CONTEXT *tdb, uint32 rid);
 BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
-				uint32 *rid);
+				TDB_CONTEXT **tdb, uint32 *rid);
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb);
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
@@ -4367,7 +4367,8 @@ BOOL set_tdbsid(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb, const DOM_SID *sid);
 BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				TDB_CONTEXT **tdb, DOM_SID *sid);
-uint32 samr_open_by_tdbrid( POLICY_HND *pol, uint32 access_mask, uint32 rid);
+uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
+				POLICY_HND *pol, uint32 access_mask, uint32 rid);
 
 /*The following definitions come from  samrd/srv_samr_usr_tdb.c  */
 

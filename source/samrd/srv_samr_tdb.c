@@ -44,6 +44,13 @@ typedef struct tdb_sid_info
 
 } TDB_SID_INFO;
 
+typedef struct tdb_rid_info
+{
+	TDB_CONTEXT *tdb;
+	uint32 rid;
+
+} TDB_RID_INFO;
+
 typedef struct tdb_sam_info
 {
 	TDB_CONTEXT *tdb;
@@ -95,13 +102,14 @@ static void free_tdbsid_info(void *dev)
   set samr rid
 ****************************************************************************/
 BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
-				uint32 rid)
+				TDB_CONTEXT *tdb, uint32 rid)
 {
-	uint32 *dev = malloc(sizeof(uint32));
+	TDB_RID_INFO *dev = malloc(sizeof(*dev));
 
 	if (dev != NULL)
 	{
-		*dev = rid;
+		dev->rid = rid;
+		dev->tdb = tdb;
 		if (set_policy_state(cache, hnd, NULL, (void*)dev))
 		{
 			DEBUG(3,("Service setting policy rid=%x\n", rid));
@@ -118,16 +126,20 @@ BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
   get samr rid
 ****************************************************************************/
 BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
-				uint32 *rid)
+				TDB_CONTEXT **tdb, uint32 *rid)
 {
-	uint32 *dev = (uint32*)get_policy_state_info(cache, hnd);
+	TDB_RID_INFO *dev = (TDB_RID_INFO*)get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
 		if (rid != NULL)
 		{
-			(*rid) = (*dev);
-			DEBUG(3,("Service getting policy rid=%x\n", (*dev)));
+			(*rid) = dev->rid;
+			DEBUG(3,("Service getting policy rid=%x\n", (*rid)));
+		}
+		if (tdb != NULL)
+		{
+			(*tdb) = dev->tdb;
 		}
 		return True;
 	}
@@ -143,9 +155,7 @@ BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 				TDB_CONTEXT *tdb)
 {
 	pstring sidstr;
-	TDB_SAM_INFO *dev;
-
-	dev = malloc(sizeof(*dev));
+	TDB_SAM_INFO *dev = malloc(sizeof(*dev));
 
 	if (dev != NULL)
 	{
@@ -321,7 +331,8 @@ BOOL get_tdbsid(struct policy_cache *cache, const POLICY_HND *hnd,
 /*******************************************************************
  opens a samr entiry by rid, returns a policy handle.
  ********************************************************************/
-uint32 samr_open_by_tdbrid( POLICY_HND *pol, uint32 access_mask, uint32 rid)
+uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
+				POLICY_HND *pol, uint32 access_mask, uint32 rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
 	if (!open_policy_hnd(get_global_hnd_cache(), pol, access_mask))
@@ -330,7 +341,7 @@ uint32 samr_open_by_tdbrid( POLICY_HND *pol, uint32 access_mask, uint32 rid)
 	}
 
 	/* associate a RID with the (unique) handle. */
-	if (!set_tdbrid(get_global_hnd_cache(), pol, rid))
+	if (!set_tdbrid(get_global_hnd_cache(), pol, tdb, rid))
 	{
 		/* close the policy in case we can't associate a group SID */
 		close_policy_hnd(get_global_hnd_cache(), pol);

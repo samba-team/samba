@@ -28,7 +28,7 @@
 
 extern int DEBUGLEVEL;
 
-static uint32 tdb_lookup_user(TDB_CONTEXT *tdb,
+static BOOL tdb_lookup_user(TDB_CONTEXT *tdb,
 				uint32 rid,
 				SAM_USER_INFO_21 *usr)
 {
@@ -38,7 +38,7 @@ static uint32 tdb_lookup_user(TDB_CONTEXT *tdb,
 	prs_init(&key, 0, 4, False);
 	if (!_prs_uint32("rid", &key, 0, &rid))
 	{
-		return NT_STATUS_NO_MEMORY;
+		return False;
 	}
 
 	prs_tdb_fetch(tdb, &key, &data);
@@ -47,13 +47,13 @@ static uint32 tdb_lookup_user(TDB_CONTEXT *tdb,
 	{
 		prs_free_data(&key);
 		prs_free_data(&data);
-		return NT_STATUS_NO_SUCH_USER;
+		return False;
 	}
 
 	prs_free_data(&key);
 	prs_free_data(&data);
 
-	return 0x0;
+	return True;
 }
 
 static BOOL tdb_create_user(TDB_CONTEXT *tdb, uint32 rid, SAM_USER_INFO_21 *usr)
@@ -298,37 +298,22 @@ uint32 _samr_open_user(const POLICY_HND *domain_pol,
 					uint32 access_mask, uint32 user_rid, 
 					POLICY_HND *user_pol)
 {
-	TDB_CONTEXT *tdb_dom = NULL;
-	struct sam_passwd *sam_pass;
-	DOM_SID sid;
+	TDB_CONTEXT *tdb_usr = NULL;
+	DOM_SID dom_sid;
+	SAM_USER_INFO_21 usr;
 
-	/* set up the SAMR open_user response */
-	bzero(user_pol->data, POL_HND_SIZE);
-
-	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), domain_pol, &tdb_dom, &sid))
+	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
+					&tdb_usr, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	/* this should not be hard-coded like this */
-	if (!sid_equal(&sid, &global_sam_sid))
+	if (!tdb_lookup_user(tdb_usr, user_rid, &usr))
 	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	become_root(True);
-	sam_pass = getsam21pwrid(user_rid);
-	unbecome_root(True);
-
-	/* check that the RID exists in our domain. */
-	if (sam_pass == NULL)
-	{
-		close_policy_hnd(get_global_hnd_cache(), user_pol);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	return samr_open_by_tdbrid(user_pol, access_mask, user_rid);
+	return samr_open_by_tdbrid(tdb_usr, user_pol, access_mask, user_rid);
 }
 
 
@@ -356,89 +341,31 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 	return True;
 }
 
-/*************************************************************************
- get_user_info_21
- *************************************************************************/
-static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
-{
-	struct sam_passwd *sam_pass;
-	LOGON_HRS hrs;
-	int i;
-
-	become_root(True);
-	sam_pass = getsam21pwrid(user_rid);
-	unbecome_root(True);
-
-	if (sam_pass == NULL)
-	{
-		DEBUG(4,("User 0x%x not found\n", user_rid));
-		return False;
-	}
-
-	DEBUG(3,("User:[%s]\n", sam_pass->nt_name));
-
-	/* create a LOGON_HRS structure */
-	hrs.len = sam_pass->hours_len;
-	SMB_ASSERT_ARRAY(hrs.hours, hrs.len);
-	for (i = 0; i < hrs.len; i++)
-	{
-		hrs.hours[i] = sam_pass->hours[i];
-	}
-
-	make_sam_user_info21(id21,
-
-			   &sam_pass->logon_time,
-			   &sam_pass->logoff_time,
-			   &sam_pass->kickoff_time,
-			   &sam_pass->pass_last_set_time,
-			   &sam_pass->pass_can_change_time,
-			   &sam_pass->pass_must_change_time,
-
-			   sam_pass->nt_name, /* user_name */
-			   sam_pass->full_name, /* full_name */
-			   sam_pass->home_dir, /* home_dir */
-			   sam_pass->dir_drive, /* dir_drive */
-			   sam_pass->logon_script, /* logon_script */
-			   sam_pass->profile_path, /* profile_path */
-			   sam_pass->acct_desc, /* description */
-			   sam_pass->workstations, /* workstations user can log in from */
-			   sam_pass->unknown_str, /* don't know, yet */
-			   sam_pass->munged_dial, /* dialin info.  contains dialin path and tel no */
-
-			   sam_pass->user_rid, /* RID user_id */
-			   sam_pass->group_rid, /* RID group_id */
-	                   sam_pass->acct_ctrl,
-
-	                   sam_pass->unknown_3, /* unknown_3 */
-	                   sam_pass->logon_divs, /* divisions per week */
-	                   &hrs, /* logon hours */
-	                   sam_pass->unknown_5,
-	                   sam_pass->unknown_6);
-
-	return True;
-}
-
 /*******************************************************************
  samr_reply_query_userinfo
  ********************************************************************/
 uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 				SAM_USERINFO_CTR *ctr)
 {
-	TDB_CONTEXT *tdb = NULL;
+	TDB_CONTEXT *tdb_usr = NULL;
 	uint32 rid = 0x0;
-	DOM_SID group_sid;
+	SAM_USER_INFO_21 usr;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_tdbsid(get_global_hnd_cache(), pol, &tdb, &group_sid))
+	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb_usr, &rid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	sid_split_rid(&group_sid, &rid);
+	if (!tdb_lookup_user(tdb_usr, rid, &usr))
+	{
+		return NT_STATUS_NO_SUCH_USER;
+	}
 
 	DEBUG(5,("samr_reply_query_userinfo: rid:0x%x\n", rid));
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	ctr->switch_value = switch_value;
+
 	switch (switch_value)
 	{
 		case 0x10:
@@ -484,10 +411,7 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
-			if (!get_user_info_21(ctr->info.id21, rid))
-			{
-				return NT_STATUS_NO_SUCH_USER;
-			}
+			memcpy(ctr->info.id21, &usr, sizeof(usr));
 			break;
 		}
 
@@ -846,6 +770,6 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 
 	*unknown_0 = 0x000703ff;
 
-	return samr_open_by_tdbrid(user_pol, access_mask, *user_rid);
+	return samr_open_by_tdbrid(tdb_usr, user_pol, access_mask, *user_rid);
 }
 
