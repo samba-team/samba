@@ -95,7 +95,8 @@ UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
 PARAM_OBJ = param/loadparm.o param/params.o param/pcap.o 
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
-             libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/smberr.o
+             libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
+             libsmb/smberr.o libsmb/credentials.o 
 
 RPC_SERVER_OBJ = rpc_server/srv_ldap_helpers.o rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
@@ -116,13 +117,13 @@ LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
 PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/username.o \
-             passdb/smbpass.o
+             passdb/smbpass.o passdb/password.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
-            smbd/credentials.o smbd/dfree.o smbd/dir.o \
+            smbd/dfree.o smbd/dir.o \
             smbd/groupname.o smbd/ipc.o smbd/ldap.o smbd/mangle.o \
             smbd/message.o smbd/nispass.o smbd/nttrans.o \
-            smbd/password.o smbd/pipes.o smbd/predict.o \
+            smbd/pipes.o smbd/predict.o \
             smbd/print_svid.o smbd/printing.o smbd/quotas.o smbd/reply.o \
             smbd/ssl.o smbd/trans2.o smbd/uid.o 
 
@@ -147,9 +148,14 @@ NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
 NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(PASSDB_OBJ) $(LIB_OBJ)
 
+SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
+           web/swat.o $(PASSDB_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           $(PARAM_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(UBIQX_OBJ) $(LIB_OBJ)
+
 PROTO_OBJ = $(SMBD_OBJ1) $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
-           $(LOCKING_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
+           $(LOCKING_OBJ) $(PASSDB_OBJ) $(SWAT_OBJ) $(LIB_OBJ)
 
 ######################################################################
 # now the rules...
@@ -172,10 +178,13 @@ bin/nmbd: $(NMBD_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LIBS)
 
+bin/swat: $(SWAT_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LIBS) 
 
-smbrun: smbrun.o 
-	@echo Linking smbrun
-	@$(CC) $(FLAGS) -o smbrun smbrun.o $(LIBS)
+bin/smbrun: utils/smbrun.o 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ utils/smbrun.o $(LIBS)
 
 nmblookup: $(LOOKUP_OBJ)
 	@echo Linking nmblookup
@@ -229,10 +238,6 @@ make_printerdef: make_printerdef.o $(UTILOBJ)
 wsmbstatus: wsmbstatus.o $(UTILOBJ)  
 	@echo Linking wsmbstatus
 	@$(CC) $(FLAGS) -o wsmbstatus wsmbstatus.o $(UTILOBJ) $(LIBS)
-
-swat: $(SWAT_OBJ)
-	@echo Linking swat
-	@$(CC) $(FLAGS) -o swat $(SWAT_OBJ) $(LIBS) 
 
 install: installbin installman installscripts installcp installswat
 

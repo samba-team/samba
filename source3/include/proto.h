@@ -344,6 +344,21 @@ void cli_error(struct cli_state *cli, int *eclass, int *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
 
+/*The following definitions come from  libsmb/credentials.c  */
+
+char *credstr(uchar *cred);
+void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
+		      uchar session_key[8]);
+void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
+		 DOM_CHAL *cred);
+int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
+		UTIME timestamp);
+BOOL clnt_deal_with_creds(uchar sess_key[8],
+			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
+BOOL deal_with_creds(uchar sess_key[8],
+		     DOM_CRED *sto_clnt_cred, 
+		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
+
 /*The following definitions come from  libsmb/namequery.c  */
 
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
@@ -1063,6 +1078,37 @@ uint32 pdb_uid_to_user_rid(uid_t uid);
 uint32 pdb_gid_to_group_rid(gid_t gid);
 BOOL pdb_rid_is_well_known(uint32 rid);
 BOOL pdb_rid_is_user(uint32 rid);
+
+/*The following definitions come from  passdb/password.c  */
+
+void generate_next_challenge(char *challenge);
+BOOL set_challenge(char *challenge);
+BOOL last_challenge(unsigned char *challenge);
+user_struct *get_valid_user_struct(uint16 vuid);
+void invalidate_vuid(uint16 vuid);
+char *validated_username(uint16 vuid);
+int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups);
+uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
+void add_session_user(char *user);
+BOOL update_smbpassword_file( char *user, fstring password);
+void dfs_unlogin(void);
+BOOL password_check(char *password);
+BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
+BOOL smb_password_ok(struct smb_passwd *smb_pass,
+                     uchar lm_pass[24], uchar nt_pass[24]);
+BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
+BOOL user_ok(char *user,int snum);
+BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
+		     BOOL *guest,BOOL *force,uint16 vuid);
+BOOL check_hosts_equiv(char *user);
+struct cli_state *server_client(void);
+struct cli_state *server_cryptkey(void);
+BOOL server_validate(char *user, char *domain, 
+		     char *pass, int passlen,
+		     char *ntpass, int ntpasslen);
+BOOL domain_client_validate( char *user, char *domain, 
+                             char *smb_apasswd, int smb_apasslen, 
+                             char *smb_ntpasswd, int smb_ntpasslen);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -1804,21 +1850,6 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
 BOOL yield_connection(int cnum,char *name,int max_connections);
 BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear);
 
-/*The following definitions come from  smbd/credentials.c  */
-
-char *credstr(uchar *cred);
-void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		      uchar session_key[8]);
-void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
-		 DOM_CHAL *cred);
-int cred_assert(DOM_CHAL *cred, uchar session_key[8], DOM_CHAL *stored_cred,
-		UTIME timestamp);
-BOOL clnt_deal_with_creds(uchar sess_key[8],
-			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred);
-BOOL deal_with_creds(uchar sess_key[8],
-		     DOM_CRED *sto_clnt_cred, 
-		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred);
-
 /*The following definitions come from  smbd/dfree.c  */
 
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
@@ -1895,37 +1926,6 @@ void remove_pending_change_notify_requests_by_fid(int fnum);
 void remove_pending_change_notify_requests_by_mid(int mid);
 void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(char *inbuf,char *outbuf,int length,int bufsize);
-
-/*The following definitions come from  smbd/password.c  */
-
-void generate_next_challenge(char *challenge);
-BOOL set_challenge(char *challenge);
-BOOL last_challenge(unsigned char *challenge);
-user_struct *get_valid_user_struct(uint16 vuid);
-void invalidate_vuid(uint16 vuid);
-char *validated_username(uint16 vuid);
-int setup_groups(char *user, int uid, int gid, int *p_ngroups, GID_T **p_groups);
-uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOOL guest);
-void add_session_user(char *user);
-BOOL update_smbpassword_file( char *user, fstring password);
-void dfs_unlogin(void);
-BOOL password_check(char *password);
-BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
-BOOL smb_password_ok(struct smb_passwd *smb_pass,
-                     uchar lm_pass[24], uchar nt_pass[24]);
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
-BOOL user_ok(char *user,int snum);
-BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
-		     BOOL *guest,BOOL *force,uint16 vuid);
-BOOL check_hosts_equiv(char *user);
-struct cli_state *server_client(void);
-struct cli_state *server_cryptkey(void);
-BOOL server_validate(char *user, char *domain, 
-		     char *pass, int passlen,
-		     char *ntpass, int ntpasslen);
-BOOL domain_client_validate( char *user, char *domain, 
-                             char *smb_apasswd, int smb_apasslen, 
-                             char *smb_ntpasswd, int smb_ntpasslen);
 
 /*The following definitions come from  smbd/pipes.c  */
 
@@ -2094,4 +2094,43 @@ BOOL unbecome_user(void );
 int smbrun(char *cmd,char *outfile,BOOL shared);
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
+
+/*The following definitions come from  web/cgi.c  */
+
+void cgi_load_variables(FILE *f1);
+char *cgi_variable(char *name);
+char *cgi_vnum(int i, char **name);
+int cgi_boolean(char *name, int def);
+char *quotedup(char *s);
+char *urlquote(char *s);
+char *quotequotes(char *s);
+void quote_spaces(char *buf);
+void cgi_setup(char *rootdir, int auth_required);
+char *cgi_baseurl(void);
+char *cgi_rooturl(void);
+char *cgi_pathinfo(void);
+char *cgi_remote_host(void);
+char *cgi_remote_addr(void);
+BOOL cgi_waspost(void);
+
+/*The following definitions come from  web/diagnose.c  */
+
+BOOL nmbd_running(void);
+BOOL smbd_running(void);
+
+/*The following definitions come from  web/startstop.c  */
+
+void start_smbd(void);
+void start_nmbd(void);
+void stop_smbd(void);
+void stop_nmbd(void);
+void kill_pid(int pid);
+
+/*The following definitions come from  web/statuspage.c  */
+
+void status_page(void);
+
+/*The following definitions come from  web/swat.c  */
+
+int main(int argc, char *argv[]);
 #endif /* _PROTO_H_ */
