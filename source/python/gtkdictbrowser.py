@@ -169,6 +169,79 @@ class GtkDictBrowser:
     def register_get_value_text_fn(self, regexp, fn):
         self.get_value_text_fns.append((regexp, fn))
 
+#
+# A utility function to convert a string to the standard hex + ascii format.
+# To display all values in hex do:
+#   register_get_value_text_fn("", gtkdictbrowser.hex_string)
+#
+
+def hex_string(data):
+    """Return a hex dump of a string as a string.
+
+    The output produced is in the standard 16 characters per line hex +
+    ascii format:
+
+    00000000: 40 00 00 00 00 00 00 00  40 00 00 00 01 00 04 80  @....... @.......
+    00000010: 01 01 00 00 00 00 00 01  00 00 00 00              ........ ....
+    """
+    
+    pos = 0                             # Position in data
+    line = 0                            # Line of data
+    
+    hex = ""                            # Hex display
+    ascii = ""                          # ASCII display
+
+    result = ""
+    
+    while pos < len(data):
+        
+	# Start with header
+        
+	if pos % 16 == 0:
+            hex = "%08x: " % (line * 16)
+            ascii = ""
+            
+        # Add character
+            
+	hex = hex + "%02x " % (ord(data[pos]))
+        
+        if ord(data[pos]) < 32 or ord(data[pos]) > 176:
+            ascii = ascii + '.'
+        else:
+            ascii = ascii + data[pos]
+                
+        pos = pos + 1
+            
+        # Add separator if half way
+            
+	if pos % 16 == 8:
+            hex = hex + " "
+            ascii = ascii + " "
+
+        # End of line
+
+	if pos % 16 == 0:
+            result = result + "%s %s\n" % (hex, ascii)
+            line = line + 1
+            
+    # Leftover bits
+
+    if pos % 16 != 0:
+
+        # Pad hex string
+
+        for i in range(0, (16 - (pos % 16))):
+            hex = hex + "   "
+
+        # Half way separator
+
+        if (pos % 16) < 8:
+            hex = hex + " "
+
+        result = result + "%s %s\n" % (hex, ascii)
+
+    return result
+
 # For testing purposes, create a fixed dictionary to browse with
 
 if __name__ == "__main__":
