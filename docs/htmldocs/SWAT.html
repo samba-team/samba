@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 32. SWAT - The Samba Web Administration Tool</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="migration.html" title="Part IV. Migration and Updating"><link rel="previous" href="NT4Migration.html" title="Chapter 31. Migration from NT4 PDC to Samba-3 PDC"><link rel="next" href="troubleshooting.html" title="Part V. Troubleshooting"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 32. SWAT - The Samba Web Administration Tool</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="NT4Migration.html">Prev</a> </td><th width="60%" align="center">Part IV. Migration and Updating</th><td width="20%" align="right"> <a accesskey="n" href="troubleshooting.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="SWAT"></a>Chapter 32. SWAT - The Samba Web Administration Tool</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 21, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="SWAT.html#id3003929">Features and Benefits</a></dt><dd><dl><dt><a href="SWAT.html#id3003963">Enabling SWAT for use</a></dt><dt><a href="SWAT.html#id3006322">Securing SWAT through SSL</a></dt><dt><a href="SWAT.html#id3006435">The SWAT Home Page</a></dt><dt><a href="SWAT.html#id3006499">Global Settings</a></dt><dt><a href="SWAT.html#id3006604">Share Settings</a></dt><dt><a href="SWAT.html#id3006669">Printers Settings</a></dt><dt><a href="SWAT.html#id3006733">The SWAT Wizard</a></dt><dt><a href="SWAT.html#id3006781">The Status Page</a></dt><dt><a href="SWAT.html#id3006833">The View Page</a></dt><dt><a href="SWAT.html#id3006856">The Password Change Page</a></dt></dl></dd></dl></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 32. SWAT - The Samba Web Administration Tool</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="migration.html" title="Part IV. Migration and Updating"><link rel="previous" href="NT4Migration.html" title="Chapter 31. Migration from NT4 PDC to Samba-3 PDC"><link rel="next" href="troubleshooting.html" title="Part V. Troubleshooting"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 32. SWAT - The Samba Web Administration Tool</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="NT4Migration.html">Prev</a> </td><th width="60%" align="center">Part IV. Migration and Updating</th><td width="20%" align="right"> <a accesskey="n" href="troubleshooting.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="SWAT"></a>Chapter 32. SWAT - The Samba Web Administration Tool</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 21, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="SWAT.html#id2957030">Features and Benefits</a></dt><dd><dl><dt><a href="SWAT.html#id2957079">Enabling SWAT for use</a></dt><dt><a href="SWAT.html#id2957316">Securing SWAT through SSL</a></dt><dt><a href="SWAT.html#id2957428">The SWAT Home Page</a></dt><dt><a href="SWAT.html#id2957493">Global Settings</a></dt><dt><a href="SWAT.html#id2957601">Share Settings</a></dt><dt><a href="SWAT.html#id2957665">Printers Settings</a></dt><dt><a href="SWAT.html#id2957730">The SWAT Wizard</a></dt><dt><a href="SWAT.html#id2957777">The Status Page</a></dt><dt><a href="SWAT.html#id2957829">The View Page</a></dt><dt><a href="SWAT.html#id2957853">The Password Change Page</a></dt></dl></dd></dl></div><p>
 There are many and varied opinions regarding the usefulness or otherwise of SWAT.
 No matter how hard one tries to produce the perfect configuration tool it remains
 an object of personal taste. SWAT is a tool that will allow web based configuration
@@ -6,7 +6,7 @@ of samba. It has a wizard that may help to get samba configured quickly, it has 
 sensitive help on each smb.conf parameter, it provides for monitoring of current state
 of connection information, and it allows network wide MS Windows network password
 management.
-</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3003929"></a>Features and Benefits</h2></div></div><div></div></div><p>
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2957030"></a>Features and Benefits</h2></div></div><div></div></div><p>
 There are network administrators who believe that it is a good idea to write systems
 documentation inside configuration files, for them SWAT will aways be a nasty tool. SWAT
 does not store the configuration file in any intermediate form, rather, it stores only the
@@ -18,9 +18,9 @@ internal ordering.
 So before using SWAT please be warned - SWAT will completely replace your smb.conf with
 a fully optimised file that has been stripped of all comments you might have placed there
 and only non-default settings will be written to the file.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3003963"></a>Enabling SWAT for use</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957079"></a>Enabling SWAT for use</h3></div></div><div></div></div><p>
 SWAT should be installed to run via the network super daemon. Depending on which system
-your Unix/Linux system has you will have either an <b class="command">inetd</b> or
+your UNIX/Linux system has you will have either an <b class="command">inetd</b> or
 <b class="command">xinetd</b> based system.
 </p><p>
 The nature and location of the network super-daemon varies with the operating system
@@ -72,7 +72,7 @@ So long as you log onto SWAT as the user <span class="emphasis"><em>root</em></s
 full change and commit ability. The buttons that will be exposed includes:
 <span class="guibutton">HOME</span>, <span class="guibutton">GLOBALS</span>, <span class="guibutton">SHARES</span>, <span class="guibutton">PRINTERS</span>, 
 <span class="guibutton">WIZARD</span>, <span class="guibutton">STATUS</span>, <span class="guibutton">VIEW</span>, <span class="guibutton">PASSWORD</span>.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006322"></a>Securing SWAT through SSL</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957316"></a>Securing SWAT through SSL</h3></div></div><div></div></div><p>
 Lots of people have asked about how to setup SWAT with SSL to allow for secure remote
 administration of Samba. Here is a method that works, courtesy of Markus Krieger
 </p><p>
@@ -82,22 +82,22 @@ Modifications to the swat setup are as following:
 	</p></li><li><p>
 	generate certificate and private key
 
-	</p><pre class="screen">
+</p><pre class="screen">
 <tt class="prompt">root# </tt><b class="userinput"><tt>/usr/bin/openssl req -new -x509 -days 365 -nodes -config \
- 	/usr/share/doc/packages/stunnel/stunnel.cnf \
+	/usr/share/doc/packages/stunnel/stunnel.cnf \
 	-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem</tt></b>
-	</pre></li><li><p>
+</pre></li><li><p>
 	remove swat-entry from [x]inetd 
 	</p></li><li><p>
 	start stunnel
 
-	</p><pre class="screen">
+</p><pre class="screen">
 <tt class="prompt">root# </tt><b class="userinput"><tt>stunnel -p /etc/stunnel/stunnel.pem -d 901 \
 	 -l /usr/local/samba/bin/swat swat </tt></b>
-	</pre></li></ol></div><p>
+</pre></li></ol></div><p>
 afterwords simply contact to swat by using the URL <a href="https://myhost:901" target="_top">https://myhost:901</a>, accept the certificate
 and the SSL connection is up.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006435"></a>The SWAT Home Page</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957428"></a>The SWAT Home Page</h3></div></div><div></div></div><p>
 The SWAT title page provides access to the latest Samba documentation. The manual page for
 each samba component is accessible from this page as are the Samba-HOWTO-Collection (this 
 document) as well as the O'Reilly book &quot;Using Samba&quot;.
@@ -105,15 +105,14 @@ document) as well as the O'Reilly book &quot;Using Samba&quot;.
 Administrators who wish to validate their samba configuration may obtain useful information
 from the man pages for the diagnostic utilities. These are available from the SWAT home page
 also. One diagnostic tool that is NOT mentioned on this page, but that is particularly
-useful is <b class="command">ethereal</b>, available from <a href="http://www.ethereal.com" target="_top">
-http://www.ethereal.com</a>.
+useful is <a href="http://www.ethereal.com/" target="_top"><b class="command">ethereal</b></a>.
 </p><div class="warning" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Warning</h3><p>
 SWAT can be configured to run in <span class="emphasis"><em>demo</em></span> mode. This is NOT recommended
 as it runs SWAT without authentication and with full administrative ability. ie: Allows
 changes to smb.conf as well as general operation with root privileges. The option that
 creates this ability is the <tt class="option">-a</tt> flag to swat. <span class="emphasis"><em>Do not use this in any 
 production environment.</em></span>
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006499"></a>Global Settings</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957493"></a>Global Settings</h3></div></div><div></div></div><p>
 The Globals button will expose a page that allows configuration of the global parameters
 in smb.conf. There are three levels of exposure of the parameters:
 </p><div class="itemizedlist"><ul type="disc"><li><p>
@@ -126,8 +125,8 @@ in smb.conf. There are three levels of exposure of the parameters:
 	will want to tamper with.
 	</p></li></ul></div><p>
 To switch to other than <span class="emphasis"><em>Basic</em></span> editing ability click on either the
-<span class="emphasis"><em>Advanced</em></span> or the <span class="emphasis"><em>Developer</em></span> dial, then click the
-<span class="guibutton">Commit Changes</span> button.
+<span class="emphasis"><em>Advanced</em></span> or the <span class="emphasis"><em>Developer</em></span> button. You may also
+do this by clicking on the radio button, then click the <span class="guibutton">Commit Changes</span> button.
 </p><p>
 After making any changes to configuration parameters make sure that you click on the 
 <span class="guibutton">Commit Changes</span> button before moving to another area otherwise
@@ -135,7 +134,7 @@ your changes will be immediately lost.
 </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
 SWAT has context sensitive help. To find out what each parameter is for simply click the
 <span class="guibutton">Help</span> link to the left of the configuration parameter.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006604"></a>Share Settings</h3></div></div><div></div></div><p>
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957601"></a>Share Settings</h3></div></div><div></div></div><p>
 To affect a currently configured share, simply click on the pull down button between the
 <span class="guibutton">Choose Share</span> and the <span class="guibutton">Delete Share</span> buttons,
 select the share you wish to operate on, then to edit the settings click on the
@@ -145,7 +144,7 @@ select the share you wish to operate on, then to edit the settings click on the
 To create a new share, next to the button labelled <span class="guibutton">Create Share</span> enter
 into the text field the name of the share to be created, then click on the 
 <span class="guibutton">Create Share</span> button.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006669"></a>Printers Settings</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957665"></a>Printers Settings</h3></div></div><div></div></div><p>
 To affect a currently configured printer, simply click on the pull down button between the
 <span class="guibutton">Choose Printer</span> and the <span class="guibutton">Delete Printer</span> buttons,
 select the printer you wish to operate on, then to edit the settings click on the
@@ -155,7 +154,7 @@ select the printer you wish to operate on, then to edit the settings click on th
 To create a new printer, next to the button labelled <span class="guibutton">Create Printer</span> enter
 into the text field the name of the share to be created, then click on the 
 <span class="guibutton">Create Printer</span> button.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006733"></a>The SWAT Wizard</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957730"></a>The SWAT Wizard</h3></div></div><div></div></div><p>
 The purpose if the SWAT Wizard is to help the Microsoft knowledgeable network administrator
 to configure Samba with a minimum of effort.
 </p><p>
@@ -171,7 +170,7 @@ Finally, there are a limited set of options that will determine what type of ser
 will be configured for, whether it will be a WINS server, participate as a WINS client, or
 operate with no WINS support. By clicking on one button you can elect to expose (or not) user
 home directories.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006781"></a>The Status Page</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957777"></a>The Status Page</h3></div></div><div></div></div><p>
 The status page serves a limited purpose. Firstly, it allows control of the samba daemons.
 The key daemons that create the samba server environment are: <span class="application">smbd</span>, <span class="application">nmbd</span>, <span class="application">winbindd</span>.
 </p><p>
@@ -182,11 +181,11 @@ conditions with minimal effort.
 </p><p>
 Lastly, the Status page may be used to terminate specific smbd client connections in order to
 free files that may be locked.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006833"></a>The View Page</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957829"></a>The View Page</h3></div></div><div></div></div><p>
 This page allows the administrator to view the optimised <tt class="filename">smb.conf</tt> file and, if you are
 particularly masochistic, will permit you also to see all possible global configuration
 parameters and their settings.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id3006856"></a>The Password Change Page</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2957853"></a>The Password Change Page</h3></div></div><div></div></div><p>
 The Password Change page is a popular tool. This tool allows the creation, deletion, deactivation
 and reactivation of MS Windows networking users on the local machine. Alternatively, you can use
 this tool to change a local password for a user account.
@@ -197,4 +196,4 @@ required.
 </p><p>
 One popular use for this tool is to change user passwords across a range of remote MS Windows
 servers.
-</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="NT4Migration.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="migration.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="troubleshooting.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 31. Migration from NT4 PDC to Samba-3 PDC </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Part V. Troubleshooting</td></tr></table></div></body></html>
+</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="NT4Migration.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="migration.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="troubleshooting.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 31. Migration from NT4 PDC to Samba-3 PDC </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Part V. Troubleshooting</td></tr></table></div></body></html>

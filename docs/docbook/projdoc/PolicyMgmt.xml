@@ -42,7 +42,7 @@ network client workstations.
 </para>
 
 <para>
-A tool new to Samba-3 may become an important part of the future Samba Administrators'
+A tool new to Samba may become an important part of the future Samba Administrators'
 arsenal. The <command>editreg</command> tool is described in this document.
 </para>
 
@@ -88,7 +88,7 @@ be a step forward, but improved functionality comes at a great price.
 Before embarking on the configuration of network and system policies it is highly
 advisable to read the documentation available from Microsoft's web site regarding
 <ulink url="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp">
-Implementing Profiles and Policies in Windows NT 4.0 from http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp</ulink> available from Microsoft.
+Implementing Profiles and Policies in Windows NT 4.0</ulink> available from Microsoft.
 There are a large number of documents in addition to this old one that should also
 be read and understood. Try searching on the Microsoft web site for "Group Policies".
 </para>
@@ -112,7 +112,7 @@ here is incomplete - you are warned.
 	Use the Group Policy Editor to create a policy file that specifies the location of
 	user profiles and/or the <filename>My Documents</filename> etc. Then save these
 	settings in a file called <filename>Config.POL</filename> that needs to be placed in the
-	root of the <parameter>[NETLOGON]</parameter> share. If Win98 is configured to log onto
+	root of the <smbconfsection>[NETLOGON]</smbconfsection> share. If Win98 is configured to log onto
 	the Samba Domain, it will automatically read this file and update the Win9x/Me registry
 	of the machine as it logs on.
 	</para>
@@ -293,7 +293,7 @@ here is incomplete - you are warned.
 <para>
 Policies can define a specific user's settings or the settings for a group of users. The resulting
 policy file contains the registry settings for all users, groups, and computers that will be using
-the policy file. Separate policy files for each user, group, or computer are not not necessary.
+the policy file. Separate policy files for each user, group, or computer are not necessary.
 </para>
 
 <para>
@@ -326,20 +326,27 @@ Common restrictions that are frequently used includes:
 </para>
 
 <para>
-<simplelist>
-	<member>Logon Hours</member>
-	<member>Password Aging</member>
-	<member>Permitted Logon from certain machines only</member>
-	<member>Account type (Local or Global)</member>
-	<member>User Rights</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>Logon Hours</para></listitem>
+	<listitem><para>Password Aging</para></listitem>
+	<listitem><para>Permitted Logon from certain machines only</para></listitem>
+	<listitem><para>Account type (Local or Global)</para></listitem>
+	<listitem><para>User Rights</para></listitem>
+</itemizedlist>
 </para>
 
 	<sect2>
 	<title>Samba Editreg Toolset</title>
 
 	<para>
-	Describe in detail the benefits of <command>editreg</command> and how to use it.
+	A new tool called <command>editreg</command> is under development. This tool can be used
+	to edit registry files (called NTUser.DAT) that are stored in user and group profiles.
+	NTConfig.POL files have the same structure as the NTUser.DAT file and can be editted using
+	this tool. <command>editreg</command> is being built with the intent to enable NTConfig.POL
+	files to be saved in text format and to permit the building of new NTConfig.POL files with
+	extended capabilities. It is proving difficult to realise this capability, so do not be surprised
+	if this feature does not materialise. Formal capabilities will be announced at the time that
+	this tool is released for production use.
 	</para>
 
 	</sect2>
@@ -385,11 +392,11 @@ reboot and as part of the user logon:
 	<listitem><para>
 	Where Active Directory is involved, an ordered list of Group Policy Objects (GPOs) is downloaded
 	and applied. The list may include GPOs that:
-<simplelist>
-	<member>Apply to the location of machines in a Directory</member>
-	<member>Apply only when settings have changed</member>
-	<member>Depend on configuration of scope of applicability: local, site, domain, organizational unit, etc.</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>Apply to the location of machines in a Directory</para></listitem>
+	<listitem><para>Apply only when settings have changed</para></listitem>
+	<listitem><para>Depend on configuration of scope of applicability: local, site, domain, organizational unit, etc.</para></listitem>
+</itemizedlist>
 	No desktop user interface is presented until the above have been processed.
 	</para></listitem>
 
@@ -408,12 +415,12 @@ reboot and as part of the user logon:
 	<listitem><para>
 	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respect of:
 
-<simplelist>
-	<member>Is user a domain member, thus subject to particular policies</member>
-	<member>Loopback enablement, and the state of the loopback policy (Merge or Replace)</member>
-	<member>Location of the Active Directory itself</member>
-	<member>Has the list of GPOs changed. No processing is needed if not changed.</member>
-</simplelist>
+<itemizedlist>
+	<listitem><para>Is user a domain member, thus subject to particular policies</para></listitem>
+	<listitem><para>Loopback enablement, and the state of the loopback policy (Merge or Replace)</para></listitem>
+	<listitem><para>Location of the Active Directory itself</para></listitem>
+	<listitem><para>Has the list of GPOs changed. No processing is needed if not changed.</para></listitem>
+</itemizedlist>
 	</para></listitem>
 
 	<listitem><para>
@@ -446,13 +453,13 @@ collection demonstrates only basic issues.
 <title>Policy Does Not Work</title>
 
 <para>
-Question: We have created the <filename>config.pol</filename> file and put it in the <emphasis>NETLOGON</emphasis> share.
+	<quote>We have created the <filename>config.pol</filename> file and put it in the <emphasis>NETLOGON</emphasis> share.
 It has made no difference to our Win XP Pro machines, they just don't see it. IT worked fine with Win 98 but does not
-work any longer since we upgraded to Win XP Pro. Any hints?
+work any longer since we upgraded to Win XP Pro. Any hints?</quote>
 </para>
 
 <para>
-<emphasis>ANSWER:</emphasis> Policy files are NOT portable between Windows 9x / Me and MS Windows NT4 / 200x / XP based
+Policy files are NOT portable between Windows 9x / Me and MS Windows NT4 / 200x / XP based
 platforms. You need to use the NT4 Group Policy Editor to create a file called <filename>NTConfig.POL</filename> so that
 it is in the correct format for your MS Windows XP Pro clients.
 </para>

@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 33. The Samba checklist</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="troubleshooting.html" title="Part V. Troubleshooting"><link rel="previous" href="troubleshooting.html" title="Part V. Troubleshooting"><link rel="next" href="problems.html" title="Chapter 34. Analysing and solving samba problems"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 33. The Samba checklist</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="troubleshooting.html">Prev</a> </td><th width="60%" align="center">Part V. Troubleshooting</th><td width="20%" align="right"> <a accesskey="n" href="problems.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="diagnosis"></a>Chapter 33. The Samba checklist</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Andrew</span> <span class="surname">Tridgell</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">Wed Jan 15</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="diagnosis.html#id3006072">Introduction</a></dt><dt><a href="diagnosis.html#id3007931">Assumptions</a></dt><dt><a href="diagnosis.html#id3008108">The tests</a></dt><dt><a href="diagnosis.html#id3009283">Still having troubles?</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3006072"></a>Introduction</h2></div></div><div></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 33. The Samba checklist</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="troubleshooting.html" title="Part V. Troubleshooting"><link rel="previous" href="troubleshooting.html" title="Part V. Troubleshooting"><link rel="next" href="problems.html" title="Chapter 34. Analysing and solving samba problems"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 33. The Samba checklist</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="troubleshooting.html">Prev</a> </td><th width="60%" align="center">Part V. Troubleshooting</th><td width="20%" align="right"> <a accesskey="n" href="problems.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="diagnosis"></a>Chapter 33. The Samba checklist</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Andrew</span> <span class="surname">Tridgell</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">Wed Jan 15</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="diagnosis.html#id2957982">Introduction</a></dt><dt><a href="diagnosis.html#id2958022">Assumptions</a></dt><dt><a href="diagnosis.html#id2958249">The tests</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2957982"></a>Introduction</h2></div></div><div></div></div><p>
 This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
 is if it fails any one of these steps. If it passes all these tests
@@ -13,7 +13,7 @@ to solve a problem.
 If you send one of the samba mailing lists  an email saying &quot;it doesn't work&quot;
 and you have not followed this test procedure then you should not be surprised
 if your email is ignored.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3007931"></a>Assumptions</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958022"></a>Assumptions</h2></div></div><div></div></div><p>
 In all of the tests it is assumed you have a Samba server called 
 BIGSERVER and a PC called ACLIENT both in workgroup TESTGROUP.
 </p><p>
@@ -23,14 +23,7 @@ It is also assumed you know the name of an available share in your
 <tt class="filename">smb.conf</tt>. I will assume this share is called <i class="replaceable"><tt>tmp</tt></i>.
 You can add a <i class="replaceable"><tt>tmp</tt></i> share like this by adding the
 following to <tt class="filename">smb.conf</tt>:
-</p><pre class="programlisting">
-
-[tmp]
- comment = temporary files 
- path = /tmp
- read only = yes
-
-</pre><p>
+</p><div class="example"><a name="id2958071"></a><p class="title"><b>Example 33.1. smb.conf with [tmp] share</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[tmp]</tt></i></td></tr><tr><td><i class="parameter"><tt>comment = temporary files </tt></i></td></tr><tr><td><i class="parameter"><tt>path = /tmp</tt></i></td></tr><tr><td><i class="parameter"><tt>read only = yes</tt></i></td></tr></table></div><p>
 </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
 These tests assume version 3.0 or later of the samba suite.
 Some commands shown did not exist in earlier versions. 
@@ -43,7 +36,7 @@ file points to name servers that really do exist.
 Also, if you do not have DNS server access for name resolution please check
 that the settings for your <tt class="filename">smb.conf</tt> file results in <b class="command">dns proxy = no</b>. The
 best way to check this is with <b class="userinput"><tt>testparm smb.conf</tt></b>.
-</p><p>
+</p><a class="indexterm" name="id2958171"></a><p>
 It is helpful to monitor the log files during testing by using the
 <b class="command">tail -F <i class="replaceable"><tt>log_file_name</tt></i></b> in a separate
 terminal console (use ctrl-alt-F1 through F6 or multiple terminals in X). 
@@ -54,7 +47,7 @@ depending on how or if you specified logging in your <tt class="filename">smb.co
 </p><p>
 If you make changes to your <tt class="filename">smb.conf</tt> file while going through these test,
 don't forget to restart <span class="application">smbd</span> and <span class="application">nmbd</span>.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3008108"></a>The tests</h2></div></div><div></div></div><div class="procedure"><p class="title"><b>Procedure 33.1. Diagnosing your samba server</b></p><ol type="1"><li><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2958249"></a>The tests</h2></div></div><div></div></div><div class="procedure"><p class="title"><b>Procedure 33.1. Diagnosing your samba server</b></p><a class="indexterm" name="id2958265"></a><ol type="1"><li><p>
 In the directory in which you store your <tt class="filename">smb.conf</tt> file, run the command
 <b class="userinput"><tt>testparm smb.conf</tt></b>. If it reports any errors then your <tt class="filename">smb.conf</tt>
 configuration file is faulty.
@@ -100,6 +93,8 @@ that file incorrectly. If you installed it as a daemon then check that
 it is running, and check that the netbios-ssn port is in a LISTEN
 state using <b class="userinput"><tt>netstat -a</tt></b>.
 </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+<a class="indexterm" name="id2958530"></a>
+<a class="indexterm" name="id2958538"></a>
 Some Unix / Linux systems use <b class="command">xinetd</b> in place of
 <b class="command">inetd</b>. Check your system documentation for the location
 of the control file/s for your particular system implementation of
@@ -116,26 +111,20 @@ files exist.
 There are a number of reasons for which smbd may refuse or decline
 a session request. The most common of these involve one or more of
 the following <tt class="filename">smb.conf</tt> file entries:
-</p><pre class="programlisting">
-	hosts deny = ALL
-	hosts allow = xxx.xxx.xxx.xxx/yy
-	bind interfaces only = Yes
-</pre><p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>hosts deny = ALL</tt></i></td></tr><tr><td><i class="parameter"><tt>hosts allow = xxx.xxx.xxx.xxx/yy</tt></i></td></tr><tr><td><i class="parameter"><tt>bind interfaces only = Yes</tt></i></td></tr></table><p>
 In the above, no allowance has been made for any session requests that
 will automatically translate to the loopback adapter address 127.0.0.1.
 To solve this problem change these lines to:
-</p><pre class="programlisting">
-	hosts deny = ALL
-	hosts allow = xxx.xxx.xxx.xxx/yy 127.
-</pre><p>
-Do <span class="emphasis"><em>not</em></span> use the <b class="command">bind interfaces only</b> parameter where you 
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>hosts deny = ALL</tt></i></td></tr><tr><td><i class="parameter"><tt>hosts allow = xxx.xxx.xxx.xxx/yy 127.</tt></i></td></tr></table><p>
+Do <span class="emphasis"><em>not</em></span> use the <a class="indexterm" name="id2958698"></a><i class="parameter"><tt>bind interfaces only</tt></i> parameter where you 
 may wish to
 use the samba password change facility, or where <span class="application">smbclient</span> may need to
 access a local service for name resolution or for local resource
-connections. (Note: the <b class="command">bind interfaces only</b> parameter deficiency
+connections. (Note: the <a class="indexterm" name="id2958724"></a><i class="parameter"><tt>bind interfaces only</tt></i> parameter deficiency
 where it will not allow connections to the loopback address will be
 fixed soon).
 </p><p>
+<a class="indexterm" name="id2958744"></a>
 Another common cause of these two errors is having something already running 
 on port <tt class="constant">139</tt>, such as Samba 
 (ie: <span class="application">smbd</span> is running from <span class="application">inetd</span> already) or
@@ -178,20 +167,20 @@ messages from several hosts.
 If this doesn't give a similar result to the previous test then
 nmblookup isn't correctly getting your broadcast address through its
 automatic mechanism. In this case you should experiment with the
-<b class="command">interfaces</b> option in <tt class="filename">smb.conf</tt> to manually configure your IP
+<a class="indexterm" name="id2958915"></a><i class="parameter"><tt>interfaces</tt></i> option in <tt class="filename">smb.conf</tt> to manually configure your IP
 address, broadcast and netmask. 
 </p><p>
 If your PC and server aren't on the same subnet then you will need to
-use the <i class="parameter"><tt>-B</tt></i> option to set the broadcast address to that of the PCs
+use the <tt class="option">-B</tt> option to set the broadcast address to that of the PCs
 subnet.
 </p><p>
 This test will probably fail if your subnet mask and broadcast address are
 not correct. (Refer to TEST 3 notes above).
-</p></li><li><p>
+</p></li><li><a class="indexterm" name="id2958962"></a><p>
 Run the command <b class="userinput"><tt>smbclient //BIGSERVER/TMP</tt></b>. You should 
 then be prompted for a password. You should use the password of the account
 you are logged into the unix box with. If you want to test with
-another account then add the <i class="parameter"><tt>-U <i class="replaceable"><tt>accountname</tt></i></tt></i> option to the end of
+another account then add the <tt class="option">-U <i class="replaceable"><tt>accountname</tt></i></tt> option to the end of
 the command line.  eg: 
 <b class="userinput"><tt>smbclient //bigserver/tmp -Ujohndoe</tt></b>
 </p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
@@ -208,14 +197,13 @@ If it says <span class="errorname">bad password</span> then the likely causes ar
 	you have shadow passwords (or some other password system) but didn't
 	compile in support for them in <span class="application">smbd</span>
 	</p></li><li><p>
-	your <b class="command">valid users</b> configuration is incorrect
+	your <a class="indexterm" name="id2959084"></a><i class="parameter"><tt>valid users</tt></i> configuration is incorrect
 	</p></li><li><p>
-	you have a mixed case password and you haven't enabled the <b class="command">password
-	level</b> option at a high enough level
+	you have a mixed case password and you haven't enabled the <a class="indexterm" name="id2959107"></a><i class="parameter"><tt>password level</tt></i> option at a high enough level
 	</p></li><li><p>
-	the <b class="command">path =</b> line in <tt class="filename">smb.conf</tt> is incorrect. Check it with <span class="application">testparm</span>
+	the <a class="indexterm" name="id2959129"></a><i class="parameter"><tt>path</tt></i> line in <tt class="filename">smb.conf</tt> is incorrect. Check it with <span class="application">testparm</span>
 	</p></li><li><p>
-	you enabled password encryption but didn't map unix to samba users
+		you enabled password encryption but didn't map unix to samba users. Run </p><pre class="screen"><b class="userinput"><tt>smbpasswd -a <i class="replaceable"><tt>username</tt></i></tt></b></pre><p>.
 	</p></li></ol></div><p>
 Once connected you should be able to use the commands 
 <b class="command">dir</b> <b class="command">get</b> <b class="command">put</b> etc. 
@@ -265,14 +253,13 @@ installed or your smb.conf is incorrect. make sure your <b class="command">hosts
 and other config lines in <tt class="filename">smb.conf</tt> are correct.
 </p><p>
 It's also possible that the server can't work out what user name to
-connect you as. To see if this is the problem add the line <i class="parameter"><tt>user =
-<i class="replaceable"><tt>username</tt></i></tt></i> to the <i class="parameter"><tt>[tmp]</tt></i> section of 
+connect you as. To see if this is the problem add the line <a class="indexterm" name="id2959420"></a><i class="parameter"><tt>user</tt></i> = username to the <i class="parameter"><tt>[tmp]</tt></i> section of 
 <tt class="filename">smb.conf</tt> where <i class="replaceable"><tt>username</tt></i> is the
 username corresponding to the password you typed. If you find this
 fixes things you may need the username mapping option. 
 </p><p>
 It might also be the case that your client only sends encrypted passwords 
-and you have <i class="parameter"><tt>encrypt passwords = no</tt></i> in <tt class="filename">smb.conf</tt>
+and you have <a class="indexterm" name="id2959460"></a><i class="parameter"><tt>encrypt passwords</tt></i> = no in <tt class="filename">smb.conf</tt>
 Turn it back on to fix.
 </p></li><li><p>
 Run the command <b class="userinput"><tt>nmblookup -M <i class="replaceable"><tt>testgroup</tt></i></tt></b> where 
@@ -283,20 +270,18 @@ master browser for that workgroup.
 If you don't then the election process has failed. Wait a minute to
 see if it is just being slow then try again. If it still fails after
 that then look at the browsing options you have set in <tt class="filename">smb.conf</tt>. Make
-sure you have <i class="parameter"><tt>preferred master = yes</tt></i> to ensure that 
+sure you have <a class="indexterm" name="id2959524"></a><i class="parameter"><tt>preferred master</tt></i> = yes to ensure that 
 an election is held at startup.
 </p></li><li><p>
-&gt;From file manager try to browse the server. Your samba server should
+From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
-specified in smb.conf). You should be able to double click on the name
+specified in <tt class="filename">smb.conf</tt>). You should be able to double click on the name
 of the server and get a list of shares. If you get a &quot;invalid
 password&quot; error when you do then you are probably running WinNT and it
 is refusing to browse a server that has no encrypted password
 capability and is in user level security mode. In this case either set
-<i class="parameter"><tt>security = server</tt></i> AND 
-<i class="parameter"><tt>password server = Windows_NT_Machine</tt></i> in your
-<tt class="filename">smb.conf</tt> file, or make sure <i class="parameter"><tt>encrypted passwords</tt></i> is
+<a class="indexterm" name="id2959575"></a><i class="parameter"><tt>security</tt></i> = server AND 
+<a class="indexterm" name="id2959589"></a><i class="parameter"><tt>password server</tt></i> = Windows_NT_Machine in your
+<tt class="filename">smb.conf</tt> file, or make sure <a class="indexterm" name="id2959610"></a><i class="parameter"><tt>encrypt passwords</tt></i> is
 set to &quot;yes&quot;.
-</p></li></ol></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id3009283"></a>Still having troubles?</h2></div></div><div></div></div><p>Read the chapter on 
-<a href="problems.html" title="Chapter 34. Analysing and solving samba problems">Analysing and Solving Problems</a>.
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="troubleshooting.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="troubleshooting.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="problems.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part V. Troubleshooting </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 34. Analysing and solving samba problems</td></tr></table></div></body></html>
+</p></li></ol></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="troubleshooting.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="troubleshooting.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="problems.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part V. Troubleshooting </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 34. Analysing and solving samba problems</td></tr></table></div></body></html>

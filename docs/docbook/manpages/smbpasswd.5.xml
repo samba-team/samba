@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbpasswd.5">
 
@@ -140,9 +139,9 @@
 			account has no password (the passwords in the fields LANMAN 
 			Password Hash and NT Password Hash are ignored). Note that this 
 			will only allow users to log on with no password if the <parameter>
-			null passwords</parameter> parameter is set in the <ulink
-			url="smb.conf.5.html#NULLPASSWORDS"><citerefentry><refentrytitle>smb.conf</refentrytitle>
-			<manvolnum>5</manvolnum></citerefentry></ulink> config file. </para></listitem>
+			null passwords</parameter> parameter is set in the 
+			<citerefentry><refentrytitle>smb.conf</refentrytitle>
+			<manvolnum>5</manvolnum></citerefentry> config file. </para></listitem>
 				
 			<listitem><para><emphasis>D</emphasis> - This means the account 
 			is disabled and no SMB/CIFS logins  will be allowed for this user. </para></listitem>
@@ -199,7 +198,7 @@
 	
 	<para>The original Samba man pages were written by Karl Auer. 
 	The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink noescape="1" url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2

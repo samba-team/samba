@@ -1,5 +1,5 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>winbindd</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="winbindd.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>winbindd &#8212; Name Service Switch daemon for resolving names 
-	from NT servers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">winbindd</tt>  [-F] [-S] [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This program is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">winbindd</b> is a daemon that provides 
+	from NT servers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">winbindd</tt>  [-F] [-S] [-i] [-Y] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This program is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">winbindd</b> is a daemon that provides 
 	a service for the Name Service Switch capability that is present 
 	in most modern C libraries.  The Name Service Switch allows user 
 	and system information to be obtained from different databases 
@@ -55,8 +55,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -70,10 +69,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+override the <a class="indexterm" name="id2800127"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-i</span></dt><dd><p>Tells <b class="command">winbindd</b> to not 
@@ -88,11 +86,10 @@ never removed by the client.
 		slower. The results will however be more accurate, since 
 		results from the cache might not be up-to-date. This 
 		might also temporarily hang winbindd if the DC doesn't respond.
-		</p></dd><dt><span class="term">-B</span></dt><dd><p>Dual daemon mode. This means winbindd will run 
-		as 2 threads. The first will answer all requests from the cache, 
-		thus making responses to clients faster. The other will 
-		update the cache for the query that the first has just responded. 
-		Advantage of this is that responses stay accurate and are faster.
+		</p></dd><dt><span class="term">-Y</span></dt><dd><p>Single daemon mode. This means winbindd will run 
+		as a single process (the mode of operation in Samba 2.2).  Winbindd's 
+		default behavior is to launch a child process that is responsible for 
+		updating expired cache entries.
 		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>NAME AND ID RESOLUTION</h2><p>Users and groups on a Windows NT server are assigned 
 	a relative id (rid) which is unique for the domain when the 
 	user or group is created.  To convert the Windows NT user or group 
@@ -110,16 +107,16 @@ never removed by the client.
 	determine which user and group ids correspond to Windows NT user 
 	and group rids. </p></div><div class="refsect1" lang="en"><h2>CONFIGURATION</h2><p>Configuration of the <b class="command">winbindd</b> daemon 
 	is done through configuration parameters in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  All parameters should be specified in the 
-	[global] section of smb.conf. </p><div class="itemizedlist"><ul type="disc"><li><p><a href="smb.conf.5.html#WINBINDSEPARATOR" target="_top">
-		<i class="parameter"><tt>winbind separator</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDUID" target="_top">
-		<i class="parameter"><tt>winbind uid</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDGID" target="_top">
-		<i class="parameter"><tt>winbind gid</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDCACHETIME" target="_top">
-		<i class="parameter"><tt>winbind cache time</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDENUMUSERS" target="_top">
-		<i class="parameter"><tt>winbind enum users</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDENUMGROUPS" target="_top">
-		<i class="parameter"><tt>winbind enum groups</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATEHOMEDIR" target="_top">
-		<i class="parameter"><tt>template homedir</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATESHELL" target="_top">
-		<i class="parameter"><tt>template shell</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN" target="_top">
-		<i class="parameter"><tt>winbind use default domain</tt></i></a></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
+	[global] section of smb.conf. </p><div class="itemizedlist"><ul type="disc"><li><p>
+		<a class="indexterm" name="id2800484"></a><a href="#"><i class="parameter"><tt>winbind separator</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800509"></a><a href="#"><i class="parameter"><tt>idmap uid</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800532"></a><a href="#"><i class="parameter"><tt>idmap gid</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800556"></a><a href="#"><i class="parameter"><tt>winbind cache time</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800581"></a><a href="#"><i class="parameter"><tt>winbind enum users</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800606"></a><a href="#"><i class="parameter"><tt>winbind enum groups</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800630"></a><a href="#"><i class="parameter"><tt>template homedir</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800655"></a><a href="#"><i class="parameter"><tt>template shell</tt></i></a></p></li><li><p>
+		<a class="indexterm" name="id2800679"></a><a href="#"><i class="parameter"><tt>winbind use default domain</tt></i></a></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
 	following setup. This was tested on a RedHat 6.2 Linux box. </p><p>In <tt class="filename">/etc/nsswitch.conf</tt> put the 
 	following:
@@ -138,7 +135,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</b></p><p>The next step is to join the domain. To do that use the 
 	<b class="command">net</b> program like this:  </p><p><b class="command">net join -S PDC -U Administrator</b></p><p>The username after the <i class="parameter"><tt>-U</tt></i> can be any
 	Domain user that has administrator privileges on the machine.
-	Substitute the name or IP of your PDC for &quot;PDC&quot;.</p><p>Next copy <tt class="filename">libnss_winbind.so</tt> to 
+	Substitute the name or IP of your PDC for "PDC".</p><p>Next copy <tt class="filename">libnss_winbind.so</tt> to 
 	<tt class="filename">/lib</tt> and <tt class="filename">pam_winbind.so
 	</tt> to <tt class="filename">/lib/security</tt>.  A symbolic link needs to be
 	made from <tt class="filename">/lib/libnss_winbind.so</tt> to
@@ -152,8 +149,8 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
         winbind cache time = 10
         template shell = /bin/bash
         template homedir = /home/%D/%U
-        winbind uid = 10000-20000
-        winbind gid = 10000-20000
+        idmap uid = 10000-20000
+        idmap gid = 10000-20000
         workgroup = DOMAIN
         security = domain
         password server = *
@@ -179,7 +176,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		apply any parameter changes to the running 
 		version of winbindd.  This signal also clears any cached 
 		user and group information.  The list of other domains trusted 
-		by winbindd is also reloaded.  </p></dd><dt><span class="term">SIGUSR1</span></dt><dd><p>The SIGUSR1 signal will cause <b class="command">
+		by winbindd is also reloaded.  </p></dd><dt><span class="term">SIGUSR2</span></dt><dd><p>The SIGUSR2 signal will cause <b class="command">
 		winbindd</b> to write status information to the winbind 
 		log file including information about the number of user and 
 		group ids allocated by <b class="command">winbindd</b>.</p><p>Log files are stored in the filename specified by the 

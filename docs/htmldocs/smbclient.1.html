@@ -84,12 +84,7 @@
 		messages. </p></dd><dt><span class="term">-p port</span></dt><dd><p>This number is the TCP port number that will be used 
 		when making connections to the server. The standard (well-known)
 		TCP port number for an SMB/CIFS server is 139, which is the 
-		default. </p></dd><dt><span class="term">-l logfilename</span></dt><dd><p>If specified, <i class="replaceable"><tt>logfilename</tt></i> specifies a base filename 
-		into which operational data from the running client will be 
-		logged. </p><p>The default base name is specified at compile time.</p><p>The base name is used to generate actual log file names.
-		For example, if the name specified was &quot;log&quot;, the debug file 
-		would be <tt class="filename">log.client</tt>.</p><p>The log file generated is never removed by the client. 		
-		</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
+		default. </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-I IP-address</span></dt><dd><p><i class="replaceable"><tt>IP address</tt></i> is the address of the server to connect to. 
 		It should be specified in standard &quot;a.b.c.d&quot; notation. </p><p>Normally the client would attempt to locate a named 
 		SMB/CIFS server by looking it up via the NetBIOS name resolution 
@@ -126,8 +121,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -141,9 +135,8 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+override the <a class="indexterm" name="id2797426"></a><i class="parameter"><tt>log level</tt></i> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
 <tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-N</span></dt><dd><p>If specified, this parameter suppresses the normal
@@ -177,10 +170,10 @@ via the <b class="command">ps</b> command.  To be safe always allow
 <b class="command">rpcclient</b> to prompt for a password and type
 it in directly. </p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i class="parameter"><tt>NetBIOS
-name</tt></i></a> parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  However, a command
+to setting the <a class="indexterm" name="id2797632"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
+However, a command
 line setting will take precedence over settings in
-<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
+<tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
 <b class="command">nmblookup</b> will use to communicate with when
 generating NetBIOS names. For details on the use of NetBIOS
 scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are
@@ -192,7 +185,7 @@ smb.conf.  If the domain specified is the same as the servers
 NetBIOS name, it causes the client to log on using the servers local 
 SAM (as opposed to the Domain SAM). </p></dd><dt><span class="term">-O socket options</span></dt><dd><p>TCP socket options to set on the client
 socket. See the socket options parameter in
-the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> manual page for the list of valid
+the <tt class="filename">smb.conf</tt> manual page for the list of valid
 options. </p></dd><dt><span class="term">-T tar options</span></dt><dd><p>smbclient may be used to create <b class="command">tar(1)
 		</b> compatible backups of all the files on an SMB/CIFS
 		share. The secondary tar flags that can be given to this option 

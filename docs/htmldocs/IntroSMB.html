@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 1. Introduction to Samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="introduction.html" title="Part I. General Installation"><link rel="next" href="install.html" title="Chapter 2. How to Install and Test SAMBA"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Introduction to Samba</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="IntroSMB"></a>Chapter 1. Introduction to Samba</h2></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Lechnyr</span></h3><div class="affiliation"><span class="orgname">Unofficial HOWTO<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:david@lechnyr.com">david@lechnyr.com</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 14, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="IntroSMB.html#id2885613">Background</a></dt><dt><a href="IntroSMB.html#id2885824">Terminology</a></dt><dt><a href="IntroSMB.html#id2885978">Related Projects</a></dt><dt><a href="IntroSMB.html#id2886047">SMB Methodology</a></dt><dt><a href="IntroSMB.html#id2886135">Epilogue</a></dt><dt><a href="IntroSMB.html#id2886209">Miscellaneous</a></dt></dl></div><p>&#8220;<span class="quote">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 1. Introduction to Samba</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="introduction.html" title="Part I. General Installation"><link rel="next" href="install.html" title="Chapter 2. How to Install and Test SAMBA"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Introduction to Samba</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="IntroSMB"></a>Chapter 1. Introduction to Samba</h2></div><div><div class="author"><h3 class="author"><span class="firstname">David</span> <span class="surname">Lechnyr</span></h3><div class="affiliation"><span class="orgname">Unofficial HOWTO<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:david@lechnyr.com">david@lechnyr.com</a>&gt;</tt></p></div></div></div></div><div><p class="pubdate">April 14, 2003</p></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="IntroSMB.html#id2817919">Background</a></dt><dt><a href="IntroSMB.html#id2817978">Terminology</a></dt><dt><a href="IntroSMB.html#id2818169">Related Projects</a></dt><dt><a href="IntroSMB.html#id2818237">SMB Methodology</a></dt><dt><a href="IntroSMB.html#id2818345">Epilogue</a></dt><dt><a href="IntroSMB.html#id2818430">Miscellaneous</a></dt></dl></div><p>&#8220;<span class="quote">
 &quot;If you understand what you're doing, you're not learning anything.&quot; 
 -- Anonymous
 </span>&#8221;</p><p>
@@ -7,7 +7,7 @@ transport protocol. In fact, it can support any SMB/CIFS-enabled client. One of 
 strengths is that you can use it to blend your mix of Windows and Linux machines together
 without requiring a separate Windows NT/2000/2003 Server.  Samba is actively being developed
 by a global team of about 30 active programmers and was originally developed by Andrew Tridgell.
-</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2885613"></a>Background</h2></div></div><div></div></div><p>
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817919"></a>Background</h2></div></div><div></div></div><p>
 Once long ago, there was a buzzword referred to as DCE/RPC. This stood for Distributed
 Computing Environment/Remote Procedure Calls and conceptually was a good idea. It was
 originally developed by Apollo/HP as NCA 1.0 (Network Computing Architecture) and only
@@ -33,7 +33,7 @@ been dutifully waded through during the information-gathering stages of this pro
 are *still* many missing pieces... While often tedious, at least the way has been generously
 littered with occurrences of clapping hand to forehead and muttering 'crikey, what are they
 thinking?
-</em></span></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2885824"></a>Terminology</h2></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>
+</em></span></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817978"></a>Terminology</h2></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li><p>
 	SMB: Acronym for &quot;Server Message Block&quot;. This is Microsoft's file and printer sharing protocol.
 	</p></li><li><p>
 	CIFS: Acronym for &quot;Common Internet File System&quot;. Around 1996, Microsoft apparently
@@ -83,7 +83,7 @@ thinking?
 	W3K: Acronym for Windows 2003 Server
 	</p></li></ul></div><p>If you plan on getting help, make sure to subscribe to the Samba Mailing List (available at 
 <a href="http://www.samba.org/" target="_top">http://www.samba.org</a>). 
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2885978"></a>Related Projects</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818169"></a>Related Projects</h2></div></div><div></div></div><p>
 There are currently two network filesystem client projects for Linux that are directly
 related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux kernel itself.
 </p><div class="itemizedlist"><ul type="disc"><li><p>
@@ -105,7 +105,7 @@ nothing to do with acting as a file and print server for SMB/CIFS clients.
 There are other Open Source CIFS client implementations, such as the 
 <a href="http://jcifs.samba.org/" target="_top">jCIFS project</a>
 which provides an SMB client toolkit written in Java.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2886047"></a>SMB Methodology</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818237"></a>SMB Methodology</h2></div></div><div></div></div><p>
 Traditionally, SMB uses UDP port 137 (NetBIOS name service, or netbios-ns),
 UDP port 138 (NetBIOS datagram service, or netbios-dgm), and TCP port 139 (NetBIOS
 session service, or netbios-ssn). Anyone looking at their network with a good
@@ -137,7 +137,7 @@ up a single file. In general, SMB sessions are established in the following orde
 A good way to examine this process in depth is to try out 
 <a href="http://www.securityfriday.com/ToolDownload/SWB/swb_doc.html" target="_top">SecurityFriday's SWB program</a>.
 It allows you to walk through the establishment of a SMB/CIFS session step by step.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2886135"></a>Epilogue</h2></div></div><div></div></div><p>&#8220;<span class="quote">
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818345"></a>Epilogue</h2></div></div><div></div></div><p>&#8220;<span class="quote">
 What's fundamentally wrong is that nobody ever had any taste when they
 did it. Microsoft has been very much into making the user interface look good,
 but internally it's just a complete mess. And even people who program for Microsoft
@@ -166,9 +166,9 @@ not the completely clueless user who probably sits there shivering thinking
 That's what's really irritating to me.&quot;
 </span>&#8221;</p><p>-- 
 <a href="http://hr.uoregon.edu/davidrl/boot.txt" target="_top">Linus Torvalds, from an interview with BOOT Magazine, Sept 1998</a>
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2886209"></a>Miscellaneous</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2818430"></a>Miscellaneous</h2></div></div><div></div></div><p>
 This chapter is Copyright 2003 David Lechnyr (david at lechnyr dot com).
 Permission is granted to copy, distribute and/or modify this document under the terms
 of the GNU Free Documentation License, Version 1.2 or any later version published by the Free
 Software Foundation. A copy of the license is available at http://www.gnu.org/licenses/fdl.txt.
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part I. General Installation </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. How to Install and Test SAMBA</td></tr></table></div></body></html>
+</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="introduction.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="install.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Part I. General Installation </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. How to Install and Test SAMBA</td></tr></table></div></body></html>

@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbcacls.1">
 
@@ -24,7 +23,7 @@
 		<arg choice="req">filename</arg>
 		<arg choice="opt">-D acls</arg>
 		<arg choice="opt">-M acls</arg>
-		<arg choice="opt">-A acls</arg>
+		<arg choice="opt">-a acls</arg>
 		<arg choice="opt">-S acls</arg>
 		<arg choice="opt">-C name</arg>
 		<arg choice="opt">-G name</arg>
@@ -56,7 +55,7 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-A acls</term>
+		<term>-a acls</term>
 		<listitem><para>Add the ACLs specified to the ACL list.  Existing 
 		access control entries are unchanged. </para></listitem>
 		</varlistentry>

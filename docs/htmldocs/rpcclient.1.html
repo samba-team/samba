@@ -5,10 +5,9 @@
 	have now written scripts around it to manage Windows NT clients from 
 	their UNIX workstation. </p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">server</span></dt><dd><p>NetBIOS name of Server to which to connect. 
 		The server can be  any SMB/CIFS server.  The name is 
-		resolved using the <a href="smb.conf.5.html#NAMERESOLVEORDER" target="_top">
-		<i class="parameter"><tt>name resolve order</tt></i></a> line from <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-c|--command='command string'</span></dt><dd><p>execute semicolon separated commands (listed 
+		resolved using the <a class="indexterm" name="id2799808"></a><a href="#"><i class="parameter"><tt>name resolve order</tt></i></a> line from <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-c|--command='command string'</span></dt><dd><p>execute semicolon separated commands (listed 
 		below)) </p></dd><dt><span class="term">-I IP-address</span></dt><dd><p><i class="replaceable"><tt>IP address</tt></i> is the address of the server to connect to. 
-		It should be specified in standard &quot;a.b.c.d&quot; notation. </p><p>Normally the client would attempt to locate a named 
+		It should be specified in standard "a.b.c.d" notation. </p><p>Normally the client would attempt to locate a named 
 		SMB/CIFS server by looking it up via the NetBIOS name resolution 
 		mechanism described above in the <i class="parameter"><tt>name resolve order</tt></i> 
 		parameter above. Using this parameter will force the client
@@ -22,8 +21,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -37,10 +35,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+override the <a class="indexterm" name="id2800110"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-N</span></dt><dd><p>If specified, this parameter suppresses the normal
 password prompt from the client to the user. This is useful when
@@ -73,10 +70,10 @@ via the <b class="command">ps</b> command.  To be safe always allow
 <b class="command">rpcclient</b> to prompt for a password and type
 it in directly. </p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i class="parameter"><tt>NetBIOS
-name</tt></i></a> parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  However, a command
+to setting the <a class="indexterm" name="id2800321"></a><a href="#"><i class="parameter"><tt>netbios name</tt></i></a> parameter in the <tt class="filename">smb.conf</tt> file. 
+However, a command
 line setting will take precedence over settings in
-<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
+<tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-i &lt;scope&gt;</span></dt><dd><p>This specifies a NetBIOS scope that
 <b class="command">nmblookup</b> will use to communicate with when
 generating NetBIOS names. For details on the use of NetBIOS
 scopes, see rfc1001.txt and rfc1002.txt. NetBIOS scopes are
@@ -88,7 +85,7 @@ smb.conf.  If the domain specified is the same as the servers
 NetBIOS name, it causes the client to log on using the servers local 
 SAM (as opposed to the Domain SAM). </p></dd><dt><span class="term">-O socket options</span></dt><dd><p>TCP socket options to set on the client
 socket. See the socket options parameter in
-the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> manual page for the list of valid
+the <tt class="filename">smb.conf</tt> manual page for the list of valid
 options. </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>LSARPC</h3><div class="variablelist"><dl><dt><span class="term">lsaquery</span></dt><dd><p>Query info policy</p></dd><dt><span class="term">lookupsids</span></dt><dd><p>Resolve a list 
 		of SIDs to usernames.
@@ -111,10 +108,10 @@ Help File Name:\
 Language Monitor Name:\
 Default Data Type:\
 Comma Separated list of Files
-</pre><p>Any empty fields should be enter as the string &quot;NULL&quot;. </p><p>Samba does not need to support the concept of Print Monitors
+</pre><p>Any empty fields should be enter as the string "NULL". </p><p>Samba does not need to support the concept of Print Monitors
 		since these only apply to local printers whose driver can make
 		use of a bi-directional link for communication.  This field should 
-		be &quot;NULL&quot;.   On a remote NT print server, the Print Monitor for a 
+		be "NULL".   On a remote NT print server, the Print Monitor for a 
 		driver must already be installed prior to adding the driver or 
 		else the RPC will fail. </p></dd><dt><span class="term">addprinter &lt;printername&gt; 
 		&lt;sharename&gt; &lt;drivername&gt; &lt;port&gt;</span></dt><dd><p>
@@ -158,9 +155,9 @@ Comma Separated list of Files
 		Execute a GetPrinterDriverDirectory()
 		RPC to retrieve the SMB share name and subdirectory for 
 		storing printer driver files for a given architecture.  Possible 
-		values for <i class="parameter"><tt>arch</tt></i> are &quot;Windows 4.0&quot; 
-		(for Windows 95/98), &quot;Windows NT x86&quot;, &quot;Windows NT PowerPC&quot;, &quot;Windows
-		Alpha_AXP&quot;, and &quot;Windows NT R4000&quot;. </p></dd><dt><span class="term">getprinter &lt;printername&gt;</span></dt><dd><p>Retrieve the current printer information.  This command 
+		values for <i class="parameter"><tt>arch</tt></i> are "Windows 4.0" 
+		(for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
+		Alpha_AXP", and "Windows NT R4000". </p></dd><dt><span class="term">getprinter &lt;printername&gt;</span></dt><dd><p>Retrieve the current printer information.  This command 
 		corresponds to the GetPrinter() MS Platform SDK function. 
 		</p></dd><dt><span class="term">getprintprocdir</span></dt><dd><p>Get
 		print processor

@@ -1,26 +1,19 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 20. Stackable VFS modules</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="CUPS-printing.html" title="Chapter 19. CUPS Printing Support in Samba 3.0"><link rel="next" href="winbind.html" title="Chapter 21. Integrated Logon Support using Winbind"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 20. Stackable VFS modules</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="CUPS-printing.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="winbind.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="VFS"></a>Chapter 20. Stackable VFS modules</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Tim</span> <span class="surname">Potter</span></h3></div></div><div><div class="author"><h3 class="author"><span class="firstname">Simo</span> <span class="surname">Sorce</span></h3><span class="contrib">original vfs_skel README</span></div></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Bokovoy</span></h3><span class="contrib">original vfs_netatalk docs</span></div></div><div><div class="author"><h3 class="author"><span class="firstname">Stefan</span> <span class="surname">Metzmacher</span></h3><span class="contrib">Update for multiple modules</span></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="VFS.html#id2978211">Features and Benefits</a></dt><dt><a href="VFS.html#id2978229">Discussion</a></dt><dt><a href="VFS.html#id2978320">Included modules</a></dt><dd><dl><dt><a href="VFS.html#id2978327">audit</a></dt><dt><a href="VFS.html#id2978365">extd_audit</a></dt><dt><a href="VFS.html#id2978489">fake_perms</a></dt><dt><a href="VFS.html#id2978508">recycle</a></dt><dt><a href="VFS.html#id2978645">netatalk</a></dt></dl></dd><dt><a href="VFS.html#id2978690">VFS modules available elsewhere</a></dt><dd><dl><dt><a href="VFS.html#id2978712">DatabaseFS</a></dt><dt><a href="VFS.html#id2978768">vscan</a></dt></dl></dd><dt><a href="VFS.html#id2978797">Common Errors</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2978211"></a>Features and Benefits</h2></div></div><div></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 20. Stackable VFS modules</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="optional.html" title="Part III. Advanced Configuration"><link rel="previous" href="CUPS-printing.html" title="Chapter 19. CUPS Printing Support in Samba 3.0"><link rel="next" href="winbind.html" title="Chapter 21. Winbind: Use of Domain Accounts"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 20. Stackable VFS modules</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="CUPS-printing.html">Prev</a> </td><th width="60%" align="center">Part III. Advanced Configuration</th><td width="20%" align="right"> <a accesskey="n" href="winbind.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="VFS"></a>Chapter 20. Stackable VFS modules</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Tim</span> <span class="surname">Potter</span></h3></div></div><div><div class="author"><h3 class="author"><span class="firstname">Simo</span> <span class="surname">Sorce</span></h3><span class="contrib">original vfs_skel README</span></div></div><div><div class="author"><h3 class="author"><span class="firstname">Alexander</span> <span class="surname">Bokovoy</span></h3><span class="contrib">original vfs_netatalk docs</span></div></div><div><div class="author"><h3 class="author"><span class="firstname">Stefan</span> <span class="surname">Metzmacher</span></h3><span class="contrib">Update for multiple modules</span></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="VFS.html#id2940177">Features and Benefits</a></dt><dt><a href="VFS.html#id2940195">Discussion</a></dt><dt><a href="VFS.html#id2940424">Included modules</a></dt><dd><dl><dt><a href="VFS.html#id2940432">audit</a></dt><dt><a href="VFS.html#id2940474">extd_audit</a></dt><dt><a href="VFS.html#id2940604">fake_perms</a></dt><dt><a href="VFS.html#id2940622">recycle</a></dt><dt><a href="VFS.html#id2940798">netatalk</a></dt></dl></dd><dt><a href="VFS.html#id2940843">VFS modules available elsewhere</a></dt><dd><dl><dt><a href="VFS.html#id2940865">DatabaseFS</a></dt><dt><a href="VFS.html#id2940920">vscan</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2940177"></a>Features and Benefits</h2></div></div><div></div></div><p>
 Since Samba-3, there is support for stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
 This chapter covers all the modules that come with the samba source and references to 
 some external modules.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2978229"></a>Discussion</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2940195"></a>Discussion</h2></div></div><div></div></div><p>
 If not supplied with your platform distribution binary Samba package you may have problems
 to compile these modules, as shared libraries are compiled and linked in different ways
 on different systems.  They currently have been tested against GNU/Linux and IRIX.
 </p><p>
 To use the VFS modules, create a share similar to the one below.  The
-important parameter is the <b class="command">vfs objects</b> parameter where
+important parameter is the <a class="indexterm" name="id2940216"></a><i class="parameter"><tt>vfs objects</tt></i> parameter where
 you can list one or more VFS modules by name. For example, to log all access 
 to files and put deleted files in a recycle bin:
 
-</p><pre class="programlisting">
-[audit]
-        comment = Audited /data directory
-        path = /data
-        vfs objects = audit recycle
-        writeable = yes
-        browseable = yes
-</pre><p>
+</p><div class="example"><a name="id2940233"></a><p class="title"><b>Example 20.1. smb.conf with VFS modules</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[audit]</tt></i></td></tr><tr><td><i class="parameter"><tt>comment = Audited /data directory</tt></i></td></tr><tr><td><i class="parameter"><tt>path = /data</tt></i></td></tr><tr><td><i class="parameter"><tt>vfs objects = audit recycle</tt></i></td></tr><tr><td><i class="parameter"><tt>writeable = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>browseable = yes</tt></i></td></tr></table></div><p>
 </p><p>
 The modules are used in the order in which they are specified.
 </p><p>
@@ -32,46 +25,52 @@ directory in the root directory of the samba installation (usually
 Some modules can be used twice for the same share.
 This can be done using a configuration similar to the one below.
 
-</p><pre class="programlisting">
-[test]
-        comment = VFS TEST
-        path = /data
-        writeable = yes
-        browseable = yes
-        vfs objects = example:example1 example example:test
-		example1: parameter = 1
-		example:  parameter = 5
-		test:	  parameter = 7
-</pre><p>
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2978320"></a>Included modules</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978327"></a>audit</h3></div></div><div></div></div><p>
+</p><div class="example"><a name="id2940333"></a><p class="title"><b>Example 20.2. smb.conf with multiple VFS modules</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[test]</tt></i></td></tr><tr><td><i class="parameter"><tt>comment = VFS TEST</tt></i></td></tr><tr><td><i class="parameter"><tt>path = /data</tt></i></td></tr><tr><td><i class="parameter"><tt>writeable = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>browseable = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>vfs objects = example:example1 example example:test</tt></i></td></tr><tr><td><i class="parameter"><tt>example1: parameter = 1</tt></i></td></tr><tr><td><i class="parameter"><tt>example:  parameter = 5</tt></i></td></tr><tr><td><i class="parameter"><tt>test:	  parameter = 7</tt></i></td></tr></table></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2940424"></a>Included modules</h2></div></div><div></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940432"></a>audit</h3></div></div><div></div></div><p>
 		A simple module to audit file access to the syslog
 		facility.  The following operations are logged:
-		</p><table class="simplelist" border="0" summary="Simple list"><tr><td>share</td></tr><tr><td>connect/disconnect</td></tr><tr><td>directory opens/create/remove</td></tr><tr><td>file open/close/rename/unlink/chmod</td></tr></table><p>
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978365"></a>extd_audit</h3></div></div><div></div></div><p>
+		</p><div class="itemizedlist"><ul type="disc"><li><p>share</p></li><li><p>connect/disconnect</p></li><li><p>directory opens/create/remove</p></li><li><p>file open/close/rename/unlink/chmod</p></li></ul></div><p>
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940474"></a>extd_audit</h3></div></div><div></div></div><p>
 		This module is identical with the <span class="emphasis"><em>audit</em></span> module above except
 		that it sends audit logs to both syslog as well as the smbd log file/s. The 
 		loglevel for this module is set in the smb.conf file. 
 		</p><p>
 		The logging information that will be written to the smbd log file is controlled by
-		the <i class="parameter"><tt>log level</tt></i> parameter in <tt class="filename">smb.conf</tt>. The
+		the <a class="indexterm" name="id2940498"></a><i class="parameter"><tt>log level</tt></i> parameter in <tt class="filename">smb.conf</tt>. The
 		following information will be recorded:
-		</p><div class="table"><a name="id2978406"></a><p class="title"><b>Table 20.1. Extended Auditing Log Information</b></p><table summary="Extended Auditing Log Information" border="1"><colgroup><col><col></colgroup><thead><tr><th align="center">Log Level</th><th align="center">Log Details - File and Directory Operations</th></tr></thead><tbody><tr><td align="center">0</td><td align="left">Creation / Deletion</td></tr><tr><td align="center">1</td><td align="left">Create / Delete / Rename / Permission Changes</td></tr><tr><td align="center">2</td><td align="left">Create / Delete / Rename / Perm Change / Open / Close</td></tr></tbody></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978489"></a>fake_perms</h3></div></div><div></div></div><p>
+		</p><div class="table"><a name="id2940521"></a><p class="title"><b>Table 20.1. Extended Auditing Log Information</b></p><table summary="Extended Auditing Log Information" border="1"><colgroup><col><col></colgroup><thead><tr><th align="center">Log Level</th><th align="center">Log Details - File and Directory Operations</th></tr></thead><tbody><tr><td align="center">0</td><td align="left">Creation / Deletion</td></tr><tr><td align="center">1</td><td align="left">Create / Delete / Rename / Permission Changes</td></tr><tr><td align="center">2</td><td align="left">Create / Delete / Rename / Perm Change / Open / Close</td></tr></tbody></table></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940604"></a>fake_perms</h3></div></div><div></div></div><p>
 		This module was created to allow Roaming Profile files and directories to be set (on the Samba server
 		under Unix) as read only. This module will if installed on the Profiles share will report to the client
 		that the Profile files and directories are writable. This satisfies the client even though the files
 		will never be overwritten as the client logs out or shuts down.
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978508"></a>recycle</h3></div></div><div></div></div><p>
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940622"></a>recycle</h3></div></div><div></div></div><p>
 		A recycle-bin like module. When used any unlink call
 		will be intercepted and files moved to the recycle
-		directory instead of being deleted.
+		directory instead of being deleted. This gives the same 
+		effect as the &quot;Recycle Bin&quot; on Windows computers.
 		</p><p>Supported options:
-		</p><div class="variablelist"><dl><dt><span class="term">recycle:repository</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:keeptree</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:versions</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:touch</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:maxsize</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:exclude</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:exclude_dir</span></dt><dd><p>FIXME</p></dd><dt><span class="term">recycle:noversions</span></dt><dd><p>FIXME</p></dd></dl></div><p>
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978645"></a>netatalk</h3></div></div><div></div></div><p>
+		</p><div class="variablelist"><dl><dt><span class="term">recycle:repository</span></dt><dd><p>Relative path of the directory where deleted files should be moved to</p></dd><dt><span class="term">recycle:keeptree</span></dt><dd><p>Specifies whether the directory structure should 
+					be kept or if the files in the directory that is being 
+					deleted should be kept seperately in the recycle bin.
+			</p></dd><dt><span class="term">recycle:versions</span></dt><dd><p>If this option is set, two files 
+					with the same name that are deleted will both 
+					be kept in the recycle bin. Newer deleted versions 
+					of a file will be called &quot;Copy #x of <i class="replaceable"><tt>filename</tt></i>&quot;.</p></dd><dt><span class="term">recycle:touch</span></dt><dd><p>Specifies whether a file's access 
+					date should be touched when the file is moved to 
+			the recycle bin.</p></dd><dt><span class="term">recycle:maxsize</span></dt><dd><p>Files that are larger than the number 
+					of bytes specified by this parameter will 
+					not be put into the recycle bin.</p></dd><dt><span class="term">recycle:exclude</span></dt><dd><p>List of files that should not 
+					be put into the recycle bin when deleted, but deleted 
+					in the regular way.</p></dd><dt><span class="term">recycle:exclude_dir</span></dt><dd><p>Contains a list of directories. When files from 
+					these directories are deleted, they are not put into the 
+					recycle bin, but deleted in the regular way. 
+			</p></dd><dt><span class="term">recycle:noversions</span></dt><dd><p>Opposite of <i class="parameter"><tt>recycle:versions</tt></i>. If both options are specified, this one takes precedence.</p></dd></dl></div><p>
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940798"></a>netatalk</h3></div></div><div></div></div><p>
 		A netatalk module, that will ease co-existence of samba and
 		netatalk file sharing services.
 		</p><p>Advantages compared to the old netatalk module:
-		</p><table class="simplelist" border="0" summary="Simple list"><tr><td>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</td></tr><tr><td>if a share in <tt class="filename">smb.conf</tt> doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</td></tr></table><p>
-		</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2978690"></a>VFS modules available elsewhere</h2></div></div><div></div></div><p>
+		</p><div class="itemizedlist"><ul type="disc"><li><p>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</p></li><li><p>if a share in <tt class="filename">smb.conf</tt> doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</p></li></ul></div><p>
+		</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2940843"></a>VFS modules available elsewhere</h2></div></div><div></div></div><p>
 This section contains a listing of various other VFS modules that 
 have been posted but don't currently reside in the Samba CVS 
 tree for one reason or another (e.g. it is easy for the maintainer 
@@ -79,7 +78,7 @@ to have his or her own CVS tree).
 </p><p>
 No statements about the stability or functionality of any module
 should be implied due to its presence here.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978712"></a>DatabaseFS</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940865"></a>DatabaseFS</h3></div></div><div></div></div><p>
 		URL: <a href="http://www.css.tayloru.edu/~elorimer/databasefs/index.php" target="_top">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</a>
 		</p><p>By <a href="mailto:elorimer@css.tayloru.edu" target="_top">Eric Lorimer</a>.</p><p>
 		I have created a VFS module which implements a fairly complete read-only
@@ -94,12 +93,10 @@ should be implied due to its presence here.
 		Any feedback would be appreciated: comments, suggestions, patches,
 		etc...  If nothing else, hopefully it might prove useful for someone
 		else who wishes to create a virtual filesystem.
-		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2978768"></a>vscan</h3></div></div><div></div></div><p>URL: <a href="http://www.openantivirus.org/" target="_top">http://www.openantivirus.org/</a></p><p>
+		</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2940920"></a>vscan</h3></div></div><div></div></div><p>URL: <a href="http://www.openantivirus.org/" target="_top">http://www.openantivirus.org/</a></p><p>
 		samba-vscan is a proof-of-concept module for Samba, which
 		uses the VFS (virtual file system) features of Samba 2.2.x/3.0
 		alphaX. Of course, Samba has to be compiled with VFS support. 
 		samba-vscan supports various virus scanners and is maintained 
 		by Rainer Link.
-		</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2978797"></a>Common Errors</h2></div></div><div></div></div><p>
-There must be some gotchas we should record here! Jelmer???
-</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="CUPS-printing.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="winbind.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 19. CUPS Printing Support in Samba 3.0 </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 21. Integrated Logon Support using Winbind</td></tr></table></div></body></html>
+		</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="CUPS-printing.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="optional.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="winbind.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 19. CUPS Printing Support in Samba 3.0 </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 21. Winbind: Use of Domain Accounts</td></tr></table></div></body></html>

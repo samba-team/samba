@@ -38,7 +38,7 @@
 
 	<para>Default: <emphasis>None</emphasis>.</para>
 
-	<para>Example: <command moreinfo="none">abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
+	<para>Example: <command moreinfo="none">shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
 
 	<para>Shutdown script example:
 <programlisting format="linespecific">

@@ -19,4 +19,7 @@
   <xsl:value-of select="refentrytitle"/><xsl:text>.</xsl:text><xsl:value-of select="manvolnum"/><xsl:text>.html</xsl:text>
 </xsl:template>
 
+<xsl:template match="author">
+</xsl:template>
+
 </xsl:stylesheet>

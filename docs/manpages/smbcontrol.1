@@ -47,7 +47,7 @@ Print a summary of command line options\&.
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -194,6 +194,11 @@ Print a human-readable description of all talloc(pool) memory usage by the speci
 .TP
 drvupgrade
 Force clients of printers using specified driver to update their local version of the driver\&. Can only be sent to smbd\&.
+
+
+.TP
+reload-config
+Force daemon to reload smb\&.conf configuration file\&. Can be sent to \fBsmbd\fR, \fBnmbd\fR, or \fBwinbindd\fR\&.
 
 
 .SH "VERSION"

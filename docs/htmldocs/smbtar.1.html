@@ -2,7 +2,7 @@
 	directly to UNIX tape drives</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbtar</tt>  [-r] [-i] [-a] [-v] {-s server} [-p password] [-x services] [-X] [-N filename] [-b blocksize] [-d directory] [-l loglevel] [-u user] [-t tape] {filenames}</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">smbtar</b> is a very small shell script on top 
 	of <a href="smbclient.1.html"><span class="citerefentry"><span class="refentrytitle">smbclient</span>(1)</span></a> which dumps SMB shares directly to tape.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-s server</span></dt><dd><p>The SMB/CIFS server that the share resides 
 		upon.</p></dd><dt><span class="term">-x service</span></dt><dd><p>The share name on the server to connect to. 
-		The default is &quot;backup&quot;.</p></dd><dt><span class="term">-X</span></dt><dd><p>Exclude mode. Exclude filenames... from tar 
+		The default is "backup".</p></dd><dt><span class="term">-X</span></dt><dd><p>Exclude mode. Exclude filenames... from tar 
 		create or restore. </p></dd><dt><span class="term">-d directory</span></dt><dd><p>Change to initial <i class="parameter"><tt>directory
 		</tt></i> before restoring / backing up files. </p></dd><dt><span class="term">-v</span></dt><dd><p>Verbose mode.</p></dd><dt><span class="term">-p password</span></dt><dd><p>The password to use to access a share. 
 		Default: none </p></dd><dt><span class="term">-u user</span></dt><dd><p>The user id to connect as. Default: 

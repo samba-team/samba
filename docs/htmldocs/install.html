@@ -1,48 +1,39 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 2. How to Install and Test SAMBA</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="IntroSMB.html" title="Chapter 1. Introduction to Samba"><link rel="next" href="FastStart.html" title="Chapter 3. Fast Start for the Impatient"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 2. How to Install and Test SAMBA</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="FastStart.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="install"></a>Chapter 2. How to Install and Test SAMBA</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Andrew</span> <span class="surname">Tridgell</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Karl</span> <span class="surname">Auer</span></h3></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="install.html#id2886868">Obtaining and installing samba</a></dt><dt><a href="install.html#id2886909">Configuring samba (smb.conf)</a></dt><dd><dl><dt><a href="install.html#id2886946">Example Configuration</a></dt><dt><a href="install.html#id2887096">SWAT</a></dt></dl></dd><dt><a href="install.html#id2887140">Try listing the shares available on your 
-	server</a></dt><dt><a href="install.html#id2887191">Try connecting with the unix client</a></dt><dt><a href="install.html#id2887292">Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</a></dt><dt><a href="install.html#id2887355">What If Things Don't Work?</a></dt><dt><a href="install.html#id2887388">Common Errors</a></dt><dd><dl><dt><a href="install.html#id2887401">Why are so many smbd processes eating memory?</a></dt><dt><a href="install.html#id2887617">I'm getting &quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot; in the logs</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2886868"></a>Obtaining and installing samba</h2></div></div><div></div></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 2. How to Install and Test SAMBA</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="introduction.html" title="Part I. General Installation"><link rel="previous" href="IntroSMB.html" title="Chapter 1. Introduction to Samba"><link rel="next" href="FastStart.html" title="Chapter 3. Fast Start for the Impatient"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 2. How to Install and Test SAMBA</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><th width="60%" align="center">Part I. General Installation</th><td width="20%" align="right"> <a accesskey="n" href="FastStart.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="install"></a>Chapter 2. How to Install and Test SAMBA</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Andrew</span> <span class="surname">Tridgell</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:tridge@samba.org">tridge@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Jelmer</span> <span class="othername">R.</span> <span class="surname">Vernooij</span></h3><div class="affiliation"><span class="orgname">The Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jelmer@samba.org">jelmer@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Karl</span> <span class="surname">Auer</span></h3></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="install.html#id2883917">Obtaining and installing samba</a></dt><dt><a href="install.html#id2883961">Configuring samba (smb.conf)</a></dt><dd><dl><dt><a href="install.html#id2883999">Example Configuration</a></dt><dt><a href="install.html#id2884191">SWAT</a></dt></dl></dd><dt><a href="install.html#id2884236">Try listing the shares available on your 
+	server</a></dt><dt><a href="install.html#id2884294">Try connecting with the unix client</a></dt><dt><a href="install.html#id2884411">Try connecting from another SMB client</a></dt><dt><a href="install.html#id2884494">What If Things Don't Work?</a></dt><dt><a href="install.html#id2884528">Common Errors</a></dt><dd><dl><dt><a href="install.html#id2884539">Large number of smbd processes</a></dt><dt><a href="install.html#id2884640">&quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot;</a></dt><dt><a href="install.html#id2884661">&quot;The network name cannot be found&quot;</a></dt></dl></dd></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2883917"></a>Obtaining and installing samba</h2></div></div><div></div></div><p>
 	Binary packages of samba are included in almost any Linux or
-	Unix distribution. There are also some packages available at 
+	UNIX distribution. There are also some packages available at 
 	<a href="http://samba.org/" target="_top">the samba homepage</a>.
-	</p><p>If you need to compile samba from source, check the 
-	<a href="compiling.html" title="Chapter 36. How to compile SAMBA">appropriate appendix chapter</a>.</p><p>If you have already installed samba, or if your operating system
+	</p><p>If you need to compile samba from source, check 
+		<a href="compiling.html" title="Chapter 36. How to compile Samba">the chapter about compiling samba from scratch</a>.</p><p>If you have already installed samba, or if your operating system
 	was pre-installed with samba, then you may not need to bother with this
 	chapter. On the other hand, you may want to read this chapter anyhow
-	for information about updating samba.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2886909"></a>Configuring samba (smb.conf)</h2></div></div><div></div></div><p>
+	for information about updating samba.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2883961"></a>Configuring samba (smb.conf)</h2></div></div><div></div></div><p>
 	Samba's configuration is stored in the <tt class="filename">smb.conf</tt> file, 
 	that usually resides in <tt class="filename">/etc/samba/smb.conf</tt> 
 	or <tt class="filename">/usr/local/samba/lib/smb.conf</tt>. You can either 
 	edit this file yourself or do it using one of the many graphical 
 	tools that are available, such as the web-based interface swat, that 
 	is included with samba.
-	</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2886946"></a>Example Configuration</h3></div></div><div></div></div><p>
+	</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2883999"></a>Example Configuration</h3></div></div><div></div></div><p>
 	There are sample configuration files in the examples subdirectory in the
 	distribution. I suggest you read them carefully so you can see how the options
 	go together in practice. See the man page for all the options.
 	</p><p>
 	The simplest useful configuration file would be something like this:
 	</p><p>
-	</p><pre class="programlisting">
-	[global]
-		workgroup = MYGROUP
-
-	[homes]
-		guest ok = no
-		read only = no
-	</pre><p>
+	</p><div class="example"><a name="id2884022"></a><p class="title"><b>Example 2.1. Simplest possible smb.conf file</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td> </td></tr><tr><td><i class="parameter"><tt>[global]</tt></i></td></tr><tr><td><i class="parameter"><tt>workgroup = MIDEARTH</tt></i></td></tr><tr><td> </td></tr><tr><td><i class="parameter"><tt>[homes]</tt></i></td></tr><tr><td><i class="parameter"><tt>guest ok = no</tt></i></td></tr><tr><td><i class="parameter"><tt>read only = no</tt></i></td></tr></table></div><p>
 	</p><p>
 	This will allow connections by anyone with an account on the server, using either
-	their login name or &quot;<i class="parameter"><tt>homes</tt></i>&quot; as the service name.
+	their login name or <i class="parameter"><tt>homes</tt></i>&quot; as the service name.
 	(Note that the workgroup that Samba must also be set.)
 	</p><p>
-	Make sure you put the <tt class="filename">smb.conf</tt> file in the same place 
-	you specified in the <tt class="filename">Makefile</tt> (the default is to 
-	look for it in <tt class="filename">/usr/local/samba/lib/</tt>).
+	Make sure you put the <tt class="filename">smb.conf</tt> file in the correct place 
+	(usually in <tt class="filename">/etc/samba</tt>).
 	</p><p>
 	For more information about security settings for the 
-	<i class="parameter"><tt>[homes]</tt></i> share please refer to the chapter 
-	<a href="securing-samba.html" title="Chapter 15. Securing Samba">Securing Samba</a>.
-	</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2887041"></a>Test your config file with <b class="command">testparm</b></h4></div></div><div></div></div><p>
+	<i class="parameter"><tt>[homes]</tt></i> share please refer to 
+	<a href="securing-samba.html" title="Chapter 15. Securing Samba">&quot;Securing Samba&quot;</a>.
+	</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2884137"></a>Test your config file with <b class="command">testparm</b></h4></div></div><div></div></div><p>
 	It's important that you test the validity of your <tt class="filename">smb.conf</tt>
 	file using the <span class="application">testparm</span> program. If testparm runs OK
 	then it will list the loaded services. If not it will give an error message.
@@ -50,7 +41,7 @@
 	Make sure it runs OK and that the services look reasonable before proceeding.
 	</p><p>
 	Always run testparm again when you change <tt class="filename">smb.conf</tt>!
-	</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2887096"></a>SWAT</h3></div></div><div></div></div><p>
+	</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2884191"></a>SWAT</h3></div></div><div></div></div><p>
 	SWAT is a web-based interface that helps you configure samba. 
 	SWAT might not be available in the samba package on your platform, 
 	but in a separate package. Please read the swat manpage 
@@ -66,9 +57,10 @@
 	machine but connecting from a remote machine leaves your 
 	connection open to password sniffing as passwords will be sent 
 	in the clear over the wire. 
-	</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2887140"></a>Try listing the shares available on your 
-	server</h2></div></div><div></div></div><p><tt class="prompt">$ </tt><b class="userinput"><tt>smbclient -L 
-	<i class="replaceable"><tt>yourhostname</tt></i></tt></b></p><p>You should get back a list of shares available on 
+	</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2884236"></a>Try listing the shares available on your 
+	server</h2></div></div><div></div></div><pre class="screen">
+<tt class="prompt">$ </tt><b class="userinput"><tt>smbclient -L <i class="replaceable"><tt>yourhostname</tt></i></tt></b>
+</pre><p>You should get back a list of shares available on 
 	your server. If you don't then something is incorrectly setup. 
 	Note that this method can also be used to see what shares 
 	are available on other LanManager clients (such as WfWg).</p><p>If you choose user level security then you may find 
@@ -76,68 +68,31 @@
 	See the <b class="command">smbclient</b> man page for details. (you 
 	can force it to list the shares without a password by
 	adding the option -U% to the command line. This will not work 
-	with non-Samba servers)</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2887191"></a>Try connecting with the unix client</h2></div></div><div></div></div><p><tt class="prompt">$ </tt><b class="userinput"><tt>smbclient <i class="replaceable"><tt>
-	//yourhostname/aservice</tt></i></tt></b></p><p>Typically the <i class="replaceable"><tt>yourhostname</tt></i> 
+	with non-Samba servers)</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2884294"></a>Try connecting with the unix client</h2></div></div><div></div></div><p>
+</p><pre class="screen">
+<tt class="prompt">$ </tt><b class="userinput"><tt>smbclient <i class="replaceable"><tt> //yourhostname/aservice</tt></i></tt></b>
+</pre><p>Typically the <i class="replaceable"><tt>yourhostname</tt></i> 
 	would be the name of the host where you installed <span class="application">smbd</span>. 
 	The <i class="replaceable"><tt>aservice</tt></i> is 
 	any service you have defined in the <tt class="filename">smb.conf</tt>
 	file. Try your user name if you just have a <i class="parameter"><tt>[homes]</tt></i>
 	section
 	in <tt class="filename">smb.conf</tt>.</p><p>For example if your unix host is <i class="replaceable"><tt>bambi</tt></i>
-	and your login name is <i class="replaceable"><tt>fred</tt></i> you would type:</p><p><tt class="prompt">$ </tt><b class="userinput"><tt>smbclient //<i class="replaceable"><tt>bambi</tt></i>/<i class="replaceable"><tt>fred</tt></i>
-	</tt></b></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2887292"></a>Try connecting from a DOS, WfWg, Win9x, WinNT, 
-	Win2k, OS/2, etc... client</h2></div></div><div></div></div><p>Try mounting disks. eg:</p><p><tt class="prompt">C:\WINDOWS\&gt; </tt><b class="userinput"><tt>net use d: \\servername\service
-	</tt></b></p><p>Try printing. eg:</p><p><tt class="prompt">C:\WINDOWS\&gt; </tt><b class="userinput"><tt>net use lpt1:
-	\\servername\spoolservice</tt></b></p><p><tt class="prompt">C:\WINDOWS\&gt; </tt><b class="userinput"><tt>print filename
-	</tt></b></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2887355"></a>What If Things Don't Work?</h2></div></div><div></div></div><p>Then you might read the file chapter 
-	<a href="diagnosis.html" title="Chapter 33. The Samba checklist">Diagnosis</a> and the 
-	FAQ. If you are still stuck then try to follow 
-	the <a href="problems.html" title="Chapter 34. Analysing and solving samba problems">Analysing and Solving Problems chapter</a>
-	Samba has been successfully installed at thousands of sites worldwide,
-	so maybe someone else has hit your problem and has overcome it. </p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2887388"></a>Common Errors</h2></div></div><div></div></div><p>
-The following questions and issues get raised on the samba mailing list over and over again.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2887401"></a>Why are so many smbd processes eating memory?</h3></div></div><div></div></div><p>
-&#8220;<span class="quote">
-Site that is running Samba on an AIX box. They are sharing out about 2 terabytes using samba.
-Samba was installed using smitty and the binaries. We seem to be experiencing a memory problem
-with this box.  When I do a <b class="command">svmon -Pu</b> the monitoring program shows that <span class="application">smbd</span> has several
-processes of smbd running:
-</span>&#8221;
-</p><p>
-	&#8220;<span class="quote">
-Is samba suppose to start this many different smbd processes?  Or does it run as one smbd process?  Also
-is it normal for it to be taking up this much memory?
-</span>&#8221;
-</p><p>
+	and your login name is <i class="replaceable"><tt>fred</tt></i> you would type:</p><pre class="screen">
+<tt class="prompt">$ </tt><b class="userinput"><tt>smbclient //<i class="replaceable"><tt>bambi</tt></i>/<i class="replaceable"><tt>fred</tt></i></tt></b>
+</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2884411"></a>Try connecting from another SMB client</h2></div></div><div></div></div><p>Try mounting disks. from a DOS, Windows or OS/2 client, eg:</p><pre class="screen">
+<tt class="prompt">C:\&gt; </tt><b class="userinput"><tt>net use d: \\servername\service</tt></b>
+</pre><p>Try printing. eg:</p><p>
 </p><pre class="screen">
-Inuse * 4096 = amount of memory being used by this process
-
-     Pid Command        Inuse      Pin     Pgsp  Virtual   64-bit    Mthrd
-   20950 smbd           33098     1906      181     5017        N        N
-   22262 smbd            9104     1906      5410
-   21060 smbd            9048     1906      181     5479        N        N
-   25972 smbd            8678     1906      181     5109        N        N
-   24524 smbd            8674     1906      181     5105        N        N
-   19262 smbd            8582     1906      181     5013        N        N
-   20722 smbd            8572     1906      181     5003        N        N
-   21454 smbd            8572     1906      181     5003        N        N
-   28946 smbd            8567     1906      181     4996        N        N
-   24076 smbd            8566     1906      181     4996        N        N
-   20138 smbd            8566     1906      181     4996        N        N
-   17608 smbd            8565     1906      181     4996        N        N
-   21820 smbd            8565     1906      181     4996        N        N
-   26940 smbd            8565     1906      181     4996        N        N
-   19884 smbd            8565     1906      181     4996        N        N
-    9912 smbd            8565     1906      181     4996        N        N
-   25800 smbd            8564     1906      181     4995        N        N
-   20452 smbd            8564     1906      181     4995        N        N
-   18592 smbd            8562     1906      181     4993        N        N
-   28216 smbd            8521     1906      181     4954        N        N
-   19110 smbd            8404     1906      181     4862        N        N
-
-   Total memory used:  841,592,832 bytes
+<tt class="prompt">C:\&gt; </tt><b class="userinput"><tt>net use lpt1:	\\servername\spoolservice</tt></b>
 </pre><p>
-</p><p>
+</p><pre class="screen"><tt class="prompt">C:\&gt; </tt><b class="userinput"><tt>print filename</tt></b>
+</pre></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2884494"></a>What If Things Don't Work?</h2></div></div><div></div></div><p>Then you might read the file chapter <a href="diagnosis.html" title="Chapter 33. The Samba checklist">diagnosis</a>
+	and the FAQ. If you are still stuck then refer to <a href="problems.html" title="Chapter 34. Analysing and solving samba problems">&quot;Analysing and solving problems&quot;</a>.
+	Samba has been successfully installed at thousands of sites worldwide,
+	so maybe someone else has hit your problem and has overcome it.</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2884528"></a>Common Errors</h2></div></div><div></div></div><p>
+The following questions and issues get raised on the samba mailing list over and over again.
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2884539"></a>Large number of smbd processes</h3></div></div><div></div></div><p>
 Samba consists on three core programs:
 <span class="application">nmbd</span>, <span class="application">smbd</span>, <span class="application">winbindd</span>. <span class="application">nmbd</span> is the name server message daemon,
 <span class="application">smbd</span> is the server message daemon, <span class="application">winbindd</span> is the daemon that
@@ -152,4 +107,9 @@ connection made. That is why you are seeing so many of them, one (1) per client 
 </p><p>
 <span class="application">winbindd</span> will run as one or two daemons, depending on whether or not it is being
 run in &quot;split mode&quot; (in which case there will be two instances).
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2887617"></a>I'm getting &quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot; in the logs</h3></div></div><div></div></div><p>Your loopback device isn't working correctly. Make sure it's running.  </p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FastStart.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. Introduction to Samba </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Fast Start for the Impatient</td></tr></table></div></body></html>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2884640"></a>&quot;open_oplock_ipc: Failed to get local UDP socket for address 100007f. Error was Cannot assign requested&quot;</h3></div></div><div></div></div><p>Your loopback device isn't working correctly. Make sure it's configured properly. The loopback device is an internal (virtual) network device with 
+		the ip address 127.0.0.1. Read your OS documentation for details 
+	on how to configure the loopback on your system.</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2884661"></a>&quot;<span class="errorname">The network name cannot be found</span>&quot;</h3></div></div><div></div></div><p>
+			This error can be caused by one of these misconfigurations:
+		</p><div class="itemizedlist"><ul type="disc"><li><p>You specified an nonexisting <a class="indexterm" name="id2884686"></a><i class="parameter"><tt>path</tt></i> for the share in <tt class="filename">smb.conf</tt> </p></li><li><p>The user you are trying to access the share with does not 
+					have sufficient permissions to access the <a class="indexterm" name="id2884714"></a><i class="parameter"><tt>path</tt></i> for the share. Both read (r) and access (x) should be possible.</p></li><li><p>The share you are trying to access does not exist.</p></li></ul></div></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="IntroSMB.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="introduction.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="FastStart.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 1. Introduction to Samba </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 3. Fast Start for the Impatient</td></tr></table></div></body></html>

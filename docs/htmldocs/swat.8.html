@@ -19,8 +19,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-d|--debug=debuglevel</span></dt><dd><p><i class="replaceable"><tt>debuglevel</tt></i> is an integer 
 from 0 to 10.  The default value if this parameter is 
@@ -34,10 +33,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+override the <a class="indexterm" name="id2796899"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>INSTALLATION</h2><p>Swat is included as binary package with most distributions. The 
@@ -62,7 +60,7 @@ never removed by the client.
 		and <tt class="filename">/etc/inetd.conf</tt> you need to send a 
 		HUP signal to inetd. To do this use <b class="command">kill -1 PID
 		</b> where PID is the process ID of the inetd daemon. </p></div></div><div class="refsect1" lang="en"><h2>LAUNCHING</h2><p>To launch SWAT just run your favorite web browser and 
-	point it at &quot;http://localhost:901/&quot;.</p><p>Note that you can attach to SWAT from any IP connected 
+	point it at "http://localhost:901/".</p><p>Note that you can attach to SWAT from any IP connected 
 	machine but connecting from a remote machine leaves your 
 	connection open to password sniffing as passwords will be sent 
 	in the clear over the wire. </p></div><div class="refsect1" lang="en"><h2>FILES</h2><div class="variablelist"><dl><dt><span class="term"><tt class="filename">/etc/inetd.conf</tt></span></dt><dd><p>This file must contain suitable startup 

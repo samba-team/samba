@@ -12,7 +12,7 @@
 
 <!-- Author entities -->
 <!ENTITY person.jelmer '
-<firstname>Jelmer</firstname><surname>Vernooij</surname><othername>R.</othername>
+<firstname>Jelmer</firstname><othername>R.</othername><surname>Vernooij</surname><othername>R.</othername>
 <affiliation>
 	<orgname>The Samba Team</orgname>
 	<address><email>jelmer@samba.org</email></address>
@@ -57,14 +57,14 @@
 	</affiliation>
 </author>'>
 
-<!ENTITY author.jmcd '
-<author>
+<!ENTITY person.jmcd '
 	<firstname>Jim</firstname><surname>McDonough</surname>
 	<affiliation>
 		<orgname>IBM</orgname>
 		<address><email>jmcd@us.ibm.com</email></address>
-	</affiliation>
-</author>'>
+	</affiliation>'>
+
+<!ENTITY author.jmcd '<author>&person.jmcd;</author>'>
 
 <!ENTITY author.vl '
 <author>
@@ -72,6 +72,15 @@
 	<affiliation>
 		<orgname>Samba Team</orgname>
 		<address><email>Volker.Lendecke@SerNet.DE</email></address>
+	</affiliation>
+</author>'>
+
+<!ENTITY author.dbannon '
+<author>
+	<firstname>David</firstname><surname>Bannon</surname>
+	<affiliation>
+		<orgname>Samba Team</orgname>
+		<address><email>dbannon@samba.org</email></address>
 	</affiliation>
 </author>'>
 
@@ -149,9 +158,8 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</para>
 
 <para>Note that specifying this parameter here will 
-override the <ulink url="smb.conf.5.html#loglevel">log
-level</ulink> parameter in the <ulink url="smb.conf.5.html">
-<filename>smb.conf(5)</filename></ulink> file.</para>
+override the <smbconfoption><name>log level</name></smbconfoption> parameter
+in the &smb.conf; file.</para>
 </listitem>
 </varlistentry>'>
 
@@ -163,8 +171,7 @@ configuration details required by the server.  The
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <ulink url="smb.conf.5.html"><filename>
-smb.conf(5)</filename></ulink> for more information.
+to provide. See &smb.conf; for more information.
 The default configuration file name is determined at 
 compile time.</para></listitem>
 </varlistentry>'>
@@ -172,8 +179,8 @@ compile time.</para></listitem>
 <!ENTITY stdarg.version '
 <varlistentry>
 <term>-V</term>
-<listitem><para>Prints the version number for 
-<command>smbd</command>.</para></listitem>
+<listitem><para>Prints the program version number.
+</para></listitem>
 </varlistentry>'>
 
 <!ENTITY stdarg.logfile '
@@ -241,15 +248,13 @@ being on a locally connected subnet.
 </itemizedlist>
 
 <para>If this parameter is not set then the name resolve order 
-defined in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-<manvolnum>5</manvolnum></citerefentry> file parameter  
-(<parameter>name resolve order</parameter>) will be used. </para>
+defined in the &smb.conf; file parameter  
+(<smbconfoption><name>name resolve order</name></smbconfoption>) will be used.
+</para>
 
 <para>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <parameter>name resolve order
-</parameter> parameter of the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-<manvolnum>5</manvolnum></citerefentry> file, the name resolution methods 
-will be attempted in this order. </para></listitem>
+this parameter or any entry in the <smbconfoption><name>name resolve order</name></smbconfoption> parameter of the &smb.conf; file, the name 
+resolution methods will be attempted in this order. </para></listitem>
 </varlistentry>'>
 
 <!ENTITY stdarg.netbios.name '
@@ -257,12 +262,10 @@ will be attempted in this order. </para></listitem>
 <term>-n &lt;primary NetBIOS name&gt;</term>
 <listitem><para>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <ulink url="smb.conf.5.html#netbiosname"><parameter>NetBIOS
-name</parameter></ulink> parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-<manvolnum>5</manvolnum></citerefentry> file.  However, a command
+to setting the <smbconfoption><name>netbios name</name></smbconfoption> parameter in the &smb.conf; file. 
+However, a command
 line setting will take precedence over settings in
-<citerefentry><refentrytitle>smb.conf</refentrytitle>
-<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
+&smb.conf;.</para></listitem>
 </varlistentry>'>
 
 <!ENTITY stdarg.scope '
@@ -292,8 +295,7 @@ SAM (as opposed to the Domain SAM). </para></listitem>
 <term>-O socket options</term>
 <listitem><para>TCP socket options to set on the client
 socket. See the socket options parameter in
-the <citerefentry><refentrytitle>smb.conf</refentrytitle>
-<manvolnum>5</manvolnum></citerefentry> manual page for the list of valid
+the &smb.conf; manual page for the list of valid
 options. </para></listitem>
 </varlistentry>
 '>
@@ -317,12 +319,14 @@ this parameter is specified, the client will request a
 password.</para></listitem>
 </varlistentry>'>
 
+<!ENTITY pct "&#37;">
+
 <!ENTITY stdarg.username '
 <varlistentry>
-<term>-U|--user=username[&percnt;password]</term>
+<term>-U|--user=username[&pct;password]</term>
 <listitem><para>Sets the SMB username or username and password. </para>
 
-<para>If &percnt;password is not specified, the user will be prompted. The
+<para>If &pct;password is not specified, the user will be prompted. The
 client will first check the <envar>USER</envar> environment variable, then the
 <envar>LOGNAME</envar> variable and if either exists, the
 string is uppercased. If these environmental variables are not
@@ -435,13 +439,12 @@ an Active Directory environment.
 <!ENTITY MAN-SMBCLIENT SYSTEM "manpages/smbclient.1.xml">
 <!ENTITY MAN-SMBCONTROL SYSTEM "manpages/smbcontrol.1.xml">
 <!ENTITY MAN-LMHOSTS SYSTEM "manpages/lmhosts.5.xml">
-<!ENTITY MAN-SMBCONF SYSTEM "smbdotconf/smb.conf.5.expanded.xml">
+<!ENTITY MAN-SMBCONF SYSTEM "smbdotconf/smb.conf.5.xml">
 <!ENTITY MAN-SAMBA SYSTEM "manpages/samba.7.xml">
 <!ENTITY MAN-NET SYSTEM "manpages/net.8.xml">
 <!ENTITY MAN-NMBD SYSTEM "manpages/nmbd.8.xml">
 <!ENTITY MAN-PDBEDIT SYSTEM "manpages/pdbedit.8.xml">
 <!ENTITY MAN-SMBD SYSTEM "manpages/smbd.8.xml">
-<!ENTITY MAN-SMBGROUPEDIT SYSTEM "manpages/smbgroupedit.8.xml">
 <!ENTITY MAN-SMBMOUNT SYSTEM "manpages/smbmount.8.xml">
 <!ENTITY MAN-SMBMNT SYSTEM "manpages/smbmnt.8.xml">
 <!ENTITY MAN-SMBPASSWDCONF SYSTEM "manpages/smbpasswd.5.xml">
@@ -507,7 +510,18 @@ an Active Directory environment.
 <!ENTITY unicode SYSTEM "projdoc/unicode.xml">
 <!ENTITY attributions SYSTEM "projdoc/attributions.xml">
 <!ENTITY attributions-dev SYSTEM "devdoc/attributions.xml">
-<!ENTITY windows-debug SYSTEM "devdoc/windows-debug.xml">
+<!ENTITY glossary SYSTEM "projdoc/glossary.xml">
+<!ENTITY foreword-tridge SYSTEM "projdoc/foreword-tridge.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">
+<!ENTITY prompt "<prompt>$ </prompt>">
+<!ENTITY dosprompt "<prompt>C:\&gt; </prompt>">
+
+<!ENTITY example.workgroup "MIDEARTH">
+<!ENTITY example.server.samba "GANDALF">
+<!ENTITY example.server.windows "SARUMAN">
+<!ENTITY example.workstation.windows "FRODO">
+<!ENTITY example.workstation.samba "BILBO">
+<!ENTITY example.pdc.samba "SAURON">
+<!ENTITY example.server.wins "noldor">

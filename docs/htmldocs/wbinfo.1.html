@@ -1,22 +1,32 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>wbinfo</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="wbinfo.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>wbinfo &#8212; Query information from winbind daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">wbinfo</tt>  [-u] [-g] [-N netbios-name] [-I ip] [-n name] [-s sid] [-U uid] [-G gid] [-S sid] [-Y sid] [-t] [-m] [--sequence] [-r user] [-a user%password] [--set-auth-user user%password] [--get-auth-user] [-p]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The <b class="command">wbinfo</b> program queries and returns information 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>wbinfo</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="wbinfo.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>wbinfo &#8212; Query information from winbind daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">wbinfo</tt>  [-a user%password] [-c username] [-C groupname] [--domain domain] [-I ip] [-s sid] [-u] [-U uid] [-g] [--get-auth-user] [-G gid] [-m] [-n name] [-N netbios-name] [-o user:group] [-O user:group] [-p] [-r user] [--set-auth-user user%password] [--sequence] [-S sid] [-t] [-x username] [-X groupname] [-Y sid]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>The <b class="command">wbinfo</b> program queries and returns information 
 	created and used by the <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> daemon. </p><p>The <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> daemon must be configured 
 	and running for the <b class="command">wbinfo</b> program to be able 
-	to return information.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-u</span></dt><dd><p>This option will list all users available 
-		in the Windows NT domain for which the <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> daemon is operating in. Users in all trusted domains 
-		will also be listed.  Note that this operation does not assign 
-		user ids to any users that have not already been seen by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a>
-		.</p></dd><dt><span class="term">-g</span></dt><dd><p>This option will list all groups available 
+	to return information.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-a username%password</span></dt><dd><p>Attempt to authenticate a user via winbindd. 
+                This checks both authenticaion methods and reports its results.
+		</p></dd><dt><span class="term">-c user</span></dt><dd><p>Create a local winbind user.
+		</p></dd><dt><span class="term">-C group</span></dt><dd><p>Create a local winbindd group.
+		</p></dd><dt><span class="term">--domain name</span></dt><dd><p>This parameter sets the domain on which any specified
+		operations will performed.  If special domain name '.' is used to represent
+		the current domain to which winbindd belongs.  Currently only the 
+		<tt class="option">--sequence</tt>,
+		<tt class="option">-u</tt>, and <tt class="option">-g</tt> options honor this parameter.
+		</p></dd><dt><span class="term">-g</span></dt><dd><p>This option will list all groups available 
 		in the Windows NT domain for which the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> daemon is operating in. Groups in all trusted domains
 		will also be listed.  Note that this operation does not assign 
 		group ids to any groups that have not already been 
-		seen by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a>. </p></dd><dt><span class="term">-N name</span></dt><dd><p>The <i class="parameter"><tt>-N</tt></i> option 
-		queries <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> to query the WINS
-		server for the IP address associated with the NetBIOS name
-		specified by the <i class="parameter"><tt>name</tt></i> parameter.
-		</p></dd><dt><span class="term">-I ip</span></dt><dd><p>The <i class="parameter"><tt>-I</tt></i> option 
+		seen by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a>. </p></dd><dt><span class="term">--get-auth-user</span></dt><dd><p>Print username and password used by winbindd
+		during session setup to a domain controller. Username 
+		and password can be set using '-A'. Only available for 
+		root.</p></dd><dt><span class="term">-G gid</span></dt><dd><p>Try to convert a UNIX group id to a Windows 
+		NT SID.  If the gid specified does not refer to one within 
+		the idmap gid range then the operation will fail. </p></dd><dt><span class="term">-I ip</span></dt><dd><p>The <i class="parameter"><tt>-I</tt></i> option 
 		queries <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> to send a node status
 		request to get the NetBIOS name associated with the IP address
 		specified by the <i class="parameter"><tt>ip</tt></i> parameter.
+		</p></dd><dt><span class="term">-m</span></dt><dd><p>Produce a list of domains trusted by the 
+		Windows NT server <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> contacts 
+		when resolving names.  This list does not include the Windows 
+		NT domain the server is a Primary Domain Controller for.
 		</p></dd><dt><span class="term">-n name</span></dt><dd><p>The <i class="parameter"><tt>-n</tt></i> option 
 		queries <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> for the SID 		
 		associated with the name specified. Domain names can be specified 
@@ -24,40 +34,43 @@
 		For example CWDOM1/Administrator refers to the Administrator
 		user in the domain CWDOM1.  If no domain is specified then the 
 		domain used is the one specified in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>	<i class="parameter"><tt>workgroup
-		</tt></i> parameter. </p></dd><dt><span class="term">-s sid</span></dt><dd><p>Use <i class="parameter"><tt>-s</tt></i> to resolve
+		</tt></i> parameter. </p></dd><dt><span class="term">-N name</span></dt><dd><p>The <i class="parameter"><tt>-N</tt></i> option 
+		queries <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> to query the WINS
+		server for the IP address associated with the NetBIOS name
+		specified by the <i class="parameter"><tt>name</tt></i> parameter.
+		</p></dd><dt><span class="term">-o user:group</span></dt><dd><p>Add a winbindd local group as a secondary group 
+		for the specified winbindd local user.
+		</p></dd><dt><span class="term">-O user:group</span></dt><dd><p>Remove a winbindd local group as a secondary group 
+		for the specified winbindd local user.
+		</p></dd><dt><span class="term">-p</span></dt><dd><p>Check whether winbindd is still alive. 
+		Prints out either 'succeeded' or 'failed'.
+		</p></dd><dt><span class="term">-r username</span></dt><dd><p>Try to obtain the list of UNIX group ids
+		to which the user belongs.  This only works for users
+		defined on a Domain Controller.
+		</p></dd><dt><span class="term">-s sid</span></dt><dd><p>Use <i class="parameter"><tt>-s</tt></i> to resolve
 		a SID to a name.  This is the inverse of the <i class="parameter"><tt>-n
 		</tt></i> option above.  SIDs must be specified as ASCII strings 
 		in the traditional Microsoft format. For example,
-		S-1-5-21-1455342024-3071081365-2475485837-500. </p></dd><dt><span class="term">-U uid</span></dt><dd><p>Try to convert a UNIX user id to a Windows NT 
-		SID.  If the uid specified does not refer to one within
-		the winbind uid range then the operation will fail. </p></dd><dt><span class="term">-G gid</span></dt><dd><p>Try to convert a UNIX group id to a Windows 
-		NT SID.  If the gid specified does not refer to one within 
-		the winbind gid range then the operation will fail. </p></dd><dt><span class="term">-S sid</span></dt><dd><p>Convert a SID to a UNIX user id.  If the SID 
-		does not correspond to a UNIX user mapped by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> then the operation will fail. </p></dd><dt><span class="term">-Y sid</span></dt><dd><p>Convert a SID to a UNIX group id.  If the SID 
-		does not correspond to a UNIX group mapped by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> then 
-		the operation will fail. </p></dd><dt><span class="term">-t</span></dt><dd><p>Verify that the workstation trust account 
-		created when the Samba server is added to the Windows NT
-		domain is working. </p></dd><dt><span class="term">-m</span></dt><dd><p>Produce a list of domains trusted by the 
-		Windows NT server <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> contacts 
-		when resolving names.  This list does not include the Windows 
-		NT domain the server is a Primary Domain Controller for.
-		</p></dd><dt><span class="term">--sequence</span></dt><dd><p>Show sequence numbers of 
-		all known domains</p></dd><dt><span class="term">-r username</span></dt><dd><p>Try to obtain the list of UNIX group ids
-		to which the user belongs.  This only works for users
-		defined on a Domain Controller.
-		</p></dd><dt><span class="term">-a username%password</span></dt><dd><p>Attempt to authenticate a user via winbindd. 
-                This checks both authenticaion methods and reports its results.
-		</p></dd><dt><span class="term">--set-auth-user username%password</span></dt><dd><p>Store username and password used by winbindd 
+		S-1-5-21-1455342024-3071081365-2475485837-500. </p></dd><dt><span class="term">--set-auth-user username%password</span></dt><dd><p>Store username and password used by winbindd 
 		during session setup to a domain controller.  This enables
 		winbindd to operate in a Windows 2000 domain with Restrict
 		Anonymous turned on (a.k.a. Permissions compatiable with
 		Windows 2000 servers only).
-		</p></dd><dt><span class="term">--get-auth-user</span></dt><dd><p>Print username and password used by winbindd
-		during session setup to a domain controller. Username 
-		and password can be set using '-A'. Only available for 
-		root.</p></dd><dt><span class="term">-p</span></dt><dd><p>Check whether winbindd is still alive. 
-		Prints out either 'succeeded' or 'failed'.
-		</p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
+		</p></dd><dt><span class="term">--sequence</span></dt><dd><p>Show sequence numbers of 
+		all known domains</p></dd><dt><span class="term">-S sid</span></dt><dd><p>Convert a SID to a UNIX user id.  If the SID 
+		does not correspond to a UNIX user mapped by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> then the operation will fail. </p></dd><dt><span class="term">-t</span></dt><dd><p>Verify that the workstation trust account 
+		created when the Samba server is added to the Windows NT
+		domain is working. </p></dd><dt><span class="term">-u</span></dt><dd><p>This option will list all users available 
+		in the Windows NT domain for which the <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> daemon is operating in. Users in all trusted domains 
+		will also be listed.  Note that this operation does not assign 
+		user ids to any users that have not already been seen by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a>
+		.</p></dd><dt><span class="term">-U uid</span></dt><dd><p>Try to convert a UNIX user id to a Windows NT 
+		SID.  If the uid specified does not refer to one within
+		the idmap uid range then the operation will fail. </p></dd><dt><span class="term">-x user</span></dt><dd><p>Delete an existing local winbind user.
+		</p></dd><dt><span class="term">-X group</span></dt><dd><p>Delete an existing local winbindd group.
+		</p></dd><dt><span class="term">-Y sid</span></dt><dd><p>Convert a SID to a UNIX group id.  If the SID 
+		does not correspond to a UNIX group mapped by <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> then 
+		the operation will fail. </p></dd><dt><span class="term">-V</span></dt><dd><p>Prints the version number for 
 <b class="command">smbd</b>.</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd></dl></div></div><div class="refsect1" lang="en"><h2>EXIT STATUS</h2><p>The wbinfo program returns 0 if the operation 
 	succeeded, or 1 if the operation failed.  If the <a href="winbindd.8.html"><span class="citerefentry"><span class="refentrytitle">winbindd</span>(8)</span></a> daemon is not working <b class="command">wbinfo</b> will always return 

@@ -2,7 +2,7 @@
 %%-- RC Thesis 
 %%---------------------------------------------------
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{xslt/latex/sambadoc}
+\ProvidesClass{sambadoc}
 
 %%---------------------------------------------------
 %%-- Load the base class and modify current macros.

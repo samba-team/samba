@@ -18,7 +18,7 @@
 	    <para><constant>lmhosts</constant> : Lookup an IP 
 	    address in the Samba lmhosts file. If the line in lmhosts has 
 	    no name type attached to the NetBIOS name (see the <ulink 
-            url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
+            noescape="1" url="lmhosts.5.html">lmhosts(5)</ulink> for details) then
 	    any name type matches for lookup.</para>
 	</listitem>
 

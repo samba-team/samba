@@ -27,10 +27,6 @@
 <title>SAMBA Developers Guide</title>
 
 <bookinfo>
-	<author>
-		<surname>SAMBA Team</surname>
-	</author>
-	<address><email>samba@samba.org</email></address>
 <abstract>
 <para>
 <emphasis>Last Update</emphasis> : Fri Jun  6 00:45:54 CEST 2003
@@ -56,18 +52,13 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 
 </abstract>
 
-<legalnotice>
-
-<formalpara>
+</bookinfo>
+<preface>
 	<title>Attributions</title>
 
-	<para>
 	&attributions-dev;
-	</para>
-</formalpara>
+</preface>
 	
-</legalnotice>
-</bookinfo>
 
 <!-- Contents -->
 <toc/>

@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="nmbd.8">
 
@@ -134,8 +133,7 @@
 		<listitem><para>NetBIOS lmhosts file.  The lmhosts 
 		file is a list of NetBIOS names to IP addresses that 
 		is loaded by the nmbd server and used via the name 
-		resolution mechanism <ulink url="smb.conf.5.html#nameresolveorder"><parameter>name resolve
-		order</parameter></ulink> described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
+		resolution mechanism <smbconfoption><name>name resolve order</name></smbconfoption> described in <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> to resolve any 
 		NetBIOS name queries needed by the server. Note 
 		that the contents of this file are <emphasis>NOT</emphasis> 
@@ -174,9 +172,7 @@
 		<listitem><para>If the server is to be run by the
 		<command>inetd</command> meta-daemon, this file
 		must contain suitable startup information for the
-		meta-daemon. See the <ulink
-		url="install.html">install</ulink> document
-		for details.
+		meta-daemon. 
 		</para></listitem>
 		</varlistentry>
 
@@ -187,9 +183,7 @@
 
 		<para>If running the server as a daemon at startup,
 		this file will need to contain an appropriate startup
-		sequence for the server. See the <ulink
-		url="install.html">"How to Install and Test SAMBA"</ulink> document
-		for details.</para></listitem>
+		sequence for the server.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -198,8 +192,7 @@
 		meta-daemon <command>inetd</command>, this file
 		must contain a mapping of service name (e.g., netbios-ssn)
 		to service port (e.g., 139) and protocol type (e.g., tcp).
-		See the <ulink url="install.html">"How to Install and Test SAMBA"</ulink>
-		document for details.</para></listitem>
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -212,7 +205,7 @@
 		and <filename>/etc/samba/smb.conf</filename>.</para>
 
 		<para>When run as a WINS server (see the
-		<ulink url="smb.conf.5.html#WINSSUPPORT"><constant>wins support</constant></ulink>
+			<smbconfoption><name>wins support</name></smbconfoption>
 		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> man page),
 		<command>nmbd</command>
@@ -221,8 +214,7 @@
 		wherever Samba was configured to install itself.</para>
 
 		<para>If <command>nmbd</command> is acting as a <emphasis>
-		browse master</emphasis> (see the <ulink
-		url="smb.conf.5.html#LOCALMASTER"><constant>local master</constant></ulink>
+				browse master</emphasis> (see the <smbconfoption><name>local master</name></smbconfoption>
 		parameter in the <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> man page, <command>nmbd</command>
 		will store the browsing database in the file <filename>browse.dat
@@ -278,7 +270,7 @@
 	<manvolnum>1</manvolnum></citerefentry>, and the Internet 
 	RFC's <filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
-	as a link from the Web page <ulink url="http://samba.org/cifs/"> 
+	as a link from the Web page <ulink noescape="1" url="http://samba.org/cifs/"> 
 	http://samba.org/cifs/</ulink>.</para>
 </refsect1>
 

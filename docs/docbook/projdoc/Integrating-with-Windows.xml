@@ -7,6 +7,7 @@
  
 <title>Integrating MS Windows networks with Samba</title>
  
+<indexterm><primary>NetBIOS</primary></indexterm>
 <para>
 This section deals with NetBIOS over TCP/IP name to IP address resolution. If
 your MS Windows clients are NOT configured to use NetBIOS over TCP/IP then this
@@ -29,7 +30,7 @@ NetBIOS over TCP/IP then this section may help you to resolve networking problem
 
 <para>
 Many MS Windows network administrators have never been exposed to basic TCP/IP
-networking as it is implemented in a Unix/Linux operating system. Likewise, many Unix and
+networking as it is implemented in a UNIX/Linux operating system. Likewise, many UNIX and
 Linux administrators have not been exposed to the intricacies of MS Windows TCP/IP based
 networking (and may have no desire to be either).
 </para>
@@ -63,7 +64,9 @@ Name Service or WINS), TCP port 139 AND TCP port 445 (for actual file and print 
 <para>
 When NetBIOS over TCP/IP is disabled the use of DNS is essential. Most installations that
 disable NetBIOS over TCP/IP today use MS Active Directory Service (ADS). ADS requires
+<indexterm><primary>DNS</primary><secondary>Dynamic</secondary></indexterm>
 Dynamic DNS with Service Resource Records (SRV RR) and with Incremental Zone Transfers (IXFR).
+<indexterm><primary>DHCP</primary></indexterm>
 Use of DHCP with ADS is recommended as a further means of maintaining central control
 over client workstation network configuration.
 </para>
@@ -71,7 +74,7 @@ over client workstation network configuration.
 </sect1>
 
 <sect1>
-<title>Name Resolution in a pure Unix/Linux world</title>
+<title>Name Resolution in a pure UNIX/Linux world</title>
 
 <para>
 The key configuration files covered in this section are:
@@ -91,10 +94,10 @@ The key configuration files covered in this section are:
 Contains a static list of IP addresses and names.
 eg:
 </para>
-<para><screen>
-	127.0.0.1	localhost localhost.localdomain
-	192.168.1.1	bigbox.caldera.com	bigbox	alias4box
-</screen></para>
+<para><programlisting>
+127.0.0.1	localhost localhost.localdomain
+192.168.1.1	bigbox.caldera.com	bigbox	alias4box
+</programlisting></para>
 
 <para>
 The purpose of <filename>/etc/hosts</filename> is to provide a 
@@ -111,6 +114,7 @@ Access Control address, or MAC address. IP addresses are currently
 numbers that are separated by a dot (or period). eg: 168.192.1.1.
 </para>
 
+<indexterm><primary>MAC Addresses</primary></indexterm>
 <para>
 MAC Addresses use 48 bits (or 6 bytes) and are typically represented 
 as two digit hexadecimal numbers separated by colons. eg: 
@@ -152,9 +156,10 @@ contain the MAC address and the primary IP address for each
 interface.
 </para>
 
+<indexterm><primary>/etc/hosts</primary></indexterm>
 <para>
 The <filename>/etc/hosts</filename> file is foundational to all 
-Unix/Linux TCP/IP installations and as a minimum will contain 
+UNIX/Linux TCP/IP installations and as a minimum will contain 
 the localhost and local network interface IP addresses and the 
 primary names by which they are known within the local machine. 
 This file helps to prime the pump so that a basic level of name 
@@ -195,6 +200,7 @@ This file tells the name resolution libraries:
 <title><filename>/etc/host.conf</filename></title>
 
 
+<indexterm><primary>/etc/host.conf</primary></indexterm>
 <para>
 <filename>/etc/host.conf</filename> is the primary means by 
 which the setting in /etc/resolv.conf may be affected. It is a 
@@ -202,10 +208,10 @@ critical configuration file.  This file controls the order by
 which name resolution may proceed. The typical structure is:
 </para>
 
-<para><screen>
-	order hosts,bind
-	multi on
-</screen></para>
+<para><programlisting>
+order hosts,bind
+multi on
+</programlisting></para>
 
 <para>
 then both addresses should be returned. Please refer to the 
@@ -220,34 +226,36 @@ man page for host.conf for further details.
 <sect2>
 <title><filename>/etc/nsswitch.conf</filename></title>
 
+<indexterm><primary>/etc/nsswitch.conf</primary></indexterm>
+
 <para>
 This file controls the actual name resolution targets. The 
 file typically has resolver object specifications as follows:
 </para>
 
 
-<para><screen>
-	# /etc/nsswitch.conf
-	#
-	# Name Service Switch configuration file.
-	#
+<para><programlisting>
+# /etc/nsswitch.conf
+#
+# Name Service Switch configuration file.
+#
 
-	passwd:		compat
-	# Alternative entries for password authentication are:
-	# passwd:	compat files nis ldap winbind
-	shadow:		compat
-	group:		compat
+passwd:		compat
+# Alternative entries for password authentication are:
+# passwd:	compat files nis ldap winbind
+shadow:		compat
+group:		compat
 
-	hosts:		files nis dns
-	# Alternative entries for host name resolution are:
-	# hosts:	files dns nis nis+ hesiod db compat ldap wins
-	networks:	nis files dns
+hosts:		files nis dns
+# Alternative entries for host name resolution are:
+# hosts:	files dns nis nis+ hesiod db compat ldap wins
+networks:	nis files dns
 
-	ethers:		nis files
-	protocols:	nis files
-	rpc:		nis files
-	services:	nis files
-</screen></para>
+ethers:		nis files
+protocols:	nis files
+rpc:		nis files
+services:	nis files
+</programlisting></para>
 
 <para>
 Of course, each of these mechanisms requires that the appropriate 
@@ -259,6 +267,8 @@ It should be noted that unless a network request/message must be
 sent, TCP/IP networks are silent. All TCP/IP communications assumes a 
 principal of speaking only when necessary.
 </para>
+
+<indexterm><primary>libnss_wins.so</primary></indexterm>
 
 <para>
 Starting with version 2.2.0 samba has Linux support for extensions to 
@@ -301,21 +311,36 @@ the client/server.
 The following are typical NetBIOS name/service type registrations:
 </para>
 
-<para><screen>
-	Unique NetBIOS Names:
-		MACHINENAME&lt;00&gt;	= Server Service is running on MACHINENAME
-		MACHINENAME&lt;03&gt; = Generic Machine Name (NetBIOS name)
-		MACHINENAME&lt;20&gt; = LanMan Server service is running on MACHINENAME
-		WORKGROUP&lt;1b&gt; = Domain Master Browser
+<table frame="all">
+<title>Unique NetBIOS names</title>
+<tgroup cols="2">
+<colspec align="left"/>
+<colspec align="justify"/>
+<tbody>
+<row><entry>MACHINENAME&lt;00&gt;</entry><entry>Server Service is running on MACHINENAME</entry></row>
+<row><entry>MACHINENAME&lt;03&gt;</entry><entry>Generic Machine Name (NetBIOS name)</entry></row>
+<row><entry>MACHINENAME&lt;20&gt;</entry><entry>LanMan Server service is running on MACHINENAME</entry></row>
+<row><entry>WORKGROUP&lt;1b&gt;</entry><entry>Domain Master Browser</entry></row>
+</tbody>
+</tgroup>
+</table>
 
-	Group Names:
-		WORKGROUP&lt;03&gt; = Generic Name registered by all members of WORKGROUP
-		WORKGROUP&lt;1c&gt; = Domain Controllers / Netlogon Servers
-		WORKGROUP&lt;1d&gt; = Local Master Browsers
-		WORKGROUP&lt;1e&gt; = Internet Name Resolvers
-</screen></para>
+<table frame="all">
+<title>Group Names</title>
+<tgroup cols="2">
+<colspec align="left"/>
+<colspec align="justify"/>
+<tbody>
+<row><entry>WORKGROUP&lt;03&gt;</entry><entry>Generic Name registered by all members of WORKGROUP</entry></row>
+<row><entry>WORKGROUP&lt;1c&gt;</entry><entry>Domain Controllers / Netlogon Servers</entry></row>
+<row><entry>WORKGROUP&lt;1d&gt;</entry><entry>Local Master Browsers</entry></row>
+<row><entry>WORKGROUP&lt;1e&gt;</entry><entry>Internet Name Resolvers</entry></row>
+</tbody>
+</tgroup>
+</table>
 
 <para>
+<indexterm><primary>NetBIOS</primary></indexterm>
 It should be noted that all NetBIOS machines register their own 
 names as per the above. This is in vast contrast to TCP/IP 
 installations where traditionally the system administrator will 
@@ -323,6 +348,7 @@ determine in the /etc/hosts or in the DNS database what names
 are associated with each IP address.
 </para>
 
+<indexterm><primary>NetBIOS</primary></indexterm>
 <para>
 One further point of clarification should be noted, the <filename>/etc/hosts</filename> 
 file and the DNS records do not provide the NetBIOS name type information 
@@ -390,6 +416,8 @@ lookup will succeed, but the machine can not respond. This can be
 frustrating for users - but it is a characteristic of the protocol.
 </para>
 
+<indexterm><primary>nbtstat</primary></indexterm>
+<indexterm><primary>nmblookup</primary></indexterm>
 <para>
 The MS Windows utility that allows examination of the NetBIOS 
 name cache is called "nbtstat". The Samba equivalent of this 
@@ -401,6 +429,7 @@ is called <command>nmblookup</command>.
 <sect2>
 <title>The LMHOSTS file</title>
 
+<indexterm><primary>LMHOSTS</primary></indexterm>
 <para>
 This file is usually located in MS Windows NT 4.0 or 
 2000 in <filename>C:\WINNT\SYSTEM32\DRIVERS\ETC</filename> and contains 
@@ -413,84 +442,85 @@ to IP address mapping.
 It typically looks like:
 </para>
 
-<para><screen>
-	# Copyright (c) 1998 Microsoft Corp.
-	#
-	# This is a sample LMHOSTS file used by the Microsoft Wins Client (NetBIOS
-	# over TCP/IP) stack for Windows98
-	#
-	# This file contains the mappings of IP addresses to NT computernames
-	# (NetBIOS) names.  Each entry should be kept on an individual line.
-	# The IP address should be placed in the first column followed by the
-	# corresponding computername. The address and the computername
-	# should be separated by at least one space or tab. The "#" character
-	# is generally used to denote the start of a comment (see the exceptions
-	# below).
-	#
-	# This file is compatible with Microsoft LAN Manager 2.x TCP/IP lmhosts
-	# files and offers the following extensions:
-	#
-	#      #PRE
-	#      #DOM:&lt;domain&gt;
-	#      #INCLUDE &lt;filename&gt;
-	#      #BEGIN_ALTERNATE
-	#      #END_ALTERNATE
-	#      \0xnn (non-printing character support)
-	#
-	# Following any entry in the file with the characters "#PRE" will cause
-	# the entry to be preloaded into the name cache. By default, entries are
-	# not preloaded, but are parsed only after dynamic name resolution fails.
-	#
-	# Following an entry with the "#DOM:&lt;domain&gt;" tag will associate the
-	# entry with the domain specified by &lt;domain&gt;. This affects how the
-	# browser and logon services behave in TCP/IP environments. To preload
-	# the host name associated with #DOM entry, it is necessary to also add a
-	# #PRE to the line. The &lt;domain&gt; is always preloaded although it will not
-	# be shown when the name cache is viewed.
-	#
-	# Specifying "#INCLUDE &lt;filename&gt;" will force the RFC NetBIOS (NBT)
-	# software to seek the specified &lt;filename&gt; and parse it as if it were
-	# local. &lt;filename&gt; is generally a UNC-based name, allowing a
-	# centralized lmhosts file to be maintained on a server.
-	# It is ALWAYS necessary to provide a mapping for the IP address of the
-	# server prior to the #INCLUDE. This mapping must use the #PRE directive.
-	# In addition the share "public" in the example below must be in the
-	# LanManServer list of "NullSessionShares" in order for client machines to
-	# be able to read the lmhosts file successfully. This key is under
-	# \machine\system\currentcontrolset\services\lanmanserver\parameters\nullsessionshares
-	# in the registry. Simply add "public" to the list found there.
-	#
-	# The #BEGIN_ and #END_ALTERNATE keywords allow multiple #INCLUDE
-	# statements to be grouped together. Any single successful include
-	# will cause the group to succeed.
-	#
-	# Finally, non-printing characters can be embedded in mappings by
-	# first surrounding the NetBIOS name in quotations, then using the
-	# \0xnn notation to specify a hex value for a non-printing character.
-	#
-	# The following example illustrates all of these extensions:
-	#
-	# 102.54.94.97     rhino         #PRE #DOM:networking  #net group's DC
-	# 102.54.94.102    "appname  \0x14"                    #special app server
-	# 102.54.94.123    popular            #PRE             #source server
-	# 102.54.94.117    localsrv           #PRE             #needed for the include
-	#
-	# #BEGIN_ALTERNATE
-	# #INCLUDE \\localsrv\public\lmhosts
-	# #INCLUDE \\rhino\public\lmhosts
-	# #END_ALTERNATE
-	#
-	# In the above example, the "appname" server contains a special
-	# character in its name, the "popular" and "localsrv" server names are
-	# preloaded, and the "rhino" server name is specified so it can be used
-	# to later #INCLUDE a centrally maintained lmhosts file if the "localsrv"
-	# system is unavailable.
-	#
-	# Note that the whole file is parsed including comments on each lookup,
-	# so keeping the number of comments to a minimum will improve performance.
-	# Therefore it is not advisable to simply add lmhosts file entries onto the
-	# end of this file.
-</screen></para>
+<para><programlisting>
+# Copyright (c) 1998 Microsoft Corp.
+#
+# This is a sample LMHOSTS file used by the Microsoft Wins Client (NetBIOS
+# over TCP/IP) stack for Windows98
+#
+# This file contains the mappings of IP addresses to NT computernames
+# (NetBIOS) names.  Each entry should be kept on an individual line.
+# The IP address should be placed in the first column followed by the
+# corresponding computername. The address and the computername
+# should be separated by at least one space or tab. The "#" character
+# is generally used to denote the start of a comment (see the exceptions
+# below).
+#
+# This file is compatible with Microsoft LAN Manager 2.x TCP/IP lmhosts
+# files and offers the following extensions:
+#
+#      #PRE
+#      #DOM:&lt;domain&gt;
+#      #INCLUDE &lt;filename&gt;
+#      #BEGIN_ALTERNATE
+#      #END_ALTERNATE
+#      \0xnn (non-printing character support)
+#
+# Following any entry in the file with the characters "#PRE" will cause
+# the entry to be preloaded into the name cache. By default, entries are
+# not preloaded, but are parsed only after dynamic name resolution fails.
+#
+# Following an entry with the "#DOM:&lt;domain&gt;" tag will associate the
+# entry with the domain specified by &lt;domain&gt;. This affects how the
+# browser and logon services behave in TCP/IP environments. To preload
+# the host name associated with #DOM entry, it is necessary to also add a
+# #PRE to the line. The &lt;domain&gt; is always preloaded although it will not
+# be shown when the name cache is viewed.
+#
+# Specifying "#INCLUDE &lt;filename&gt;" will force the RFC NetBIOS (NBT)
+# software to seek the specified &lt;filename&gt; and parse it as if it were
+# local. &lt;filename&gt; is generally a UNC-based name, allowing a
+# centralized lmhosts file to be maintained on a server.
+# It is ALWAYS necessary to provide a mapping for the IP address of the
+# server prior to the #INCLUDE. This mapping must use the #PRE directive.
+# In addition the share "public" in the example below must be in the
+# LanManServer list of "NullSessionShares" in order for client machines to
+# be able to read the lmhosts file successfully. This key is under
+# \machine\system\currentcontrolset\services\lanmanserver\
+# parameters\nullsessionshares
+# in the registry. Simply add "public" to the list found there.
+#
+# The #BEGIN_ and #END_ALTERNATE keywords allow multiple #INCLUDE
+# statements to be grouped together. Any single successful include
+# will cause the group to succeed.
+#
+# Finally, non-printing characters can be embedded in mappings by
+# first surrounding the NetBIOS name in quotations, then using the
+# \0xnn notation to specify a hex value for a non-printing character.
+#
+# The following example illustrates all of these extensions:
+#
+# 102.54.94.97     rhino         #PRE #DOM:networking  #net group's DC
+# 102.54.94.102    "appname  \0x14"                    #special app server
+# 102.54.94.123    popular            #PRE             #source server
+# 102.54.94.117    localsrv           #PRE             #needed for the include
+#
+# #BEGIN_ALTERNATE
+# #INCLUDE \\localsrv\public\lmhosts
+# #INCLUDE \\rhino\public\lmhosts
+# #END_ALTERNATE
+#
+# In the above example, the "appname" server contains a special
+# character in its name, the "popular" and "localsrv" server names are
+# preloaded, and the "rhino" server name is specified so it can be used
+# to later #INCLUDE a centrally maintained lmhosts file if the "localsrv"
+# system is unavailable.
+#
+# Note that the whole file is parsed including comments on each lookup,
+# so keeping the number of comments to a minimum will improve performance.
+# Therefore it is not advisable to simply add lmhosts file entries onto the
+# end of this file.
+</programlisting></para>
 
 </sect2>
 
@@ -503,13 +533,15 @@ This file is usually located in MS Windows NT 4.0 or 2000 in
 the IP Address and the IP hostname in matched pairs. It can be 
 used by the name resolution infrastructure in MS Windows, depending 
 on how the TCP/IP environment is configured. This file is in 
-every way the equivalent of the Unix/Linux <filename>/etc/hosts</filename> file.
+every way the equivalent of the UNIX/Linux <filename>/etc/hosts</filename> file.
 </para>
 </sect2>
 
 
 <sect2>
 <title>DNS Lookup</title>
+
+<indexterm><primary>DNS</primary></indexterm>
 
 <para>
 This capability is configured in the TCP/IP setup area in the network 
@@ -529,6 +561,8 @@ lookup is used.
 <sect2>
 <title>WINS Lookup</title>
 
+<indexterm><primary>WINS</primary></indexterm>
+
 <para>
 A WINS (Windows Internet Name Server) service is the equivalent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
@@ -541,24 +575,27 @@ To configure Samba to be a WINS server the following parameter needs
 to be added to the &smb.conf; file:
 </para>
 
-<para><screen>
-	wins support = Yes
-</screen></para>
+<para><smbconfblock>
+<smbconfoption><name>wins support</name><value>Yes</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 To configure Samba to use a WINS server the following parameters are 
 needed in the &smb.conf; file:
 </para>
 
-<para><screen>
-	wins support = No
-	wins server = xxx.xxx.xxx.xxx
-</screen></para>
+<para><smbconfblock>
+<smbconfoption><name>wins support</name><value>No</value></smbconfoption>
+<smbconfoption><name>wins server</name><value>xxx.xxx.xxx.xxx</value></smbconfoption>
+</smbconfblock></para>
 
 <para>
 where <replaceable>xxx.xxx.xxx.xxx</replaceable> is the IP address 
 of the WINS server.
 </para>
+
+<para>For information about setting up Samba as a WINS server, read 
+	<link linkend="NetworkBrowsing">the chapter on network browsing</link>.</para>
 
 </sect2>
 </sect1>
@@ -573,11 +610,11 @@ carelessness. Of course, no one is every deliberately careless!
 </para>
 
 	<sect2>
-	<title>My Boomerang Won't Come Back</title>
+		<title>Pinging works only in one way</title>
 
 	<para>
-	Well, the real complaint said, "I can ping my samba server from Windows, but I can
-	not ping my Windows machine from the samba server."
+		<quote>I can ping my samba server from Windows, but I can
+			not ping my Windows machine from the samba server.</quote>
 	</para>
 
 	<para>
@@ -614,9 +651,9 @@ carelessness. Of course, no one is every deliberately careless!
 	<title>Samba server name change problem</title>
 
 	<para>
-	The name of the samba server was changed, samba was restarted, samba server can not be
+		<quote>The name of the samba server was changed, samba was restarted, samba server can not be
 	pinged by new name from MS Windows NT4 Workstation, but it does still respond to ping using
-	the old name. Why?
+	the old name. Why?</quote>
 	</para>
 
 	<para>
@@ -635,35 +672,35 @@ carelessness. Of course, no one is every deliberately careless!
 	</para>
 
 	<para>
-	<screen>
-	C:\temp\&gt;nbtstat -n
+<screen>
+&dosprompt;<userinput>nbtstat -n</userinput>
 
-	              NetBIOS Local Name Table
+              NetBIOS Local Name Table
 
-	   Name                 Type          Status
-	------------------------------------------------
-	SLACK            &lt;03&gt;  UNIQUE      Registered
-	ADMINISTRATOR    &lt;03&gt;  UNIQUE      Registered
-	SLACK            &lt;00&gt;  UNIQUE      Registered
-	SARDON           &lt;00&gt;  GROUP       Registered
-	SLACK            &lt;20&gt;  UNIQUE      Registered
-	SLACK            &lt;1F&gt;  UNIQUE      Registered
+   Name                 Type          Status
+------------------------------------------------
+&example.workstation.windows;            &lt;03&gt;  UNIQUE      Registered
+ADMINSTRATOR     &lt;03&gt;  UNIQUE      Registered
+&example.workstation.windows;            &lt;00&gt;  UNIQUE      Registered
+SARDON           &lt;00&gt;  GROUP       Registered
+&example.workstation.windows;            &lt;20&gt;  UNIQUE      Registered
+&example.workstation.windows;            &lt;1F&gt;  UNIQUE      Registered
 
 
-	C:\Temp\&gt;nbtstat -c
+&dosprompt;nbtstat -c
 
-	             NetBIOS Remote Cache Name Table
+             NetBIOS Remote Cache Name Table
 
-	   Name                 Type       Host Address     Life [sec]
-	--------------------------------------------------------------
-	FRODO            &lt;20&gt;  UNIQUE      192.168.1.1          240
+   Name                 Type       Host Address     Life [sec]
+--------------------------------------------------------------
+&example.server.samba;	&lt;20&gt;  UNIQUE      192.168.1.1          240
 
-	C:\Temp\&gt;
-	</screen>
+&dosprompt;
+</screen>
 	</para>
 
 	<para>
-	In the above example, FRODO is the Samba server and SLACK is the MS Windows NT4 Workstation.
+	In the above example, &example.server.samba; is the Samba server and &example.workstation.windows; is the MS Windows NT4 Workstation.
 	The first listing shows the contents of the Local Name Table (i.e.: Identity information on
 	the MS Windows workstation), the second shows the NetBIOS name in the NetBIOS name cache.
 	The name cache contains the remote machines known to this workstation.

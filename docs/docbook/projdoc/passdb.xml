@@ -17,8 +17,8 @@
 <title>Account Information Databases</title>
 
 <para>
-Samba-3 implements a new capability to work concurrently with multiple account backends.
-The possible new combinations of password backends allows Samba-3 a degree of flexibility
+Samba 3 implements a new capability to work concurrently with multiple account backends.
+The possible new combinations of password backends allows Samba 3 a degree of flexibility
 and scalability that previously could be achieved only with MS Windows Active Directory.
 This chapter describes the new functionality and how to get the most out of it.
 </para>
@@ -26,10 +26,10 @@ This chapter describes the new functionality and how to get the most out of it.
 <para>
 In the course of development of Samba-3, a number of requests were received to provide the
 ability to migrate MS Windows NT4 SAM accounts to Samba-3 without the need to provide
-matching Unix/Linux accounts. We called this the <emphasis>Non Unix Accounts (NUA)</emphasis>
+matching UNIX/Linux accounts. We called this the <emphasis>Non UNIX Accounts (NUA)</emphasis>
 capability. The intent was that an administrator could decide to use the <emphasis>tdbsam</emphasis>
-backend and by simply specifying <emphasis>"passdb backend = tdbsam_nua, guest"</emphasis>
-this would allow Samba-3 to implement a solution that did not use Unix accounts per se. Late
+backend and by simply specifying <smbconfoption><name>passdb backend</name><value>tdbsam_nua</value></smbconfoption>
+this would allow Samba-3 to implement a solution that did not use UNIX accounts per se. Late
 in the development cycle, the team doing this work hit upon some obstacles that prevents this
 solution from being used. Given the delays with Samba-3 release a decision was made to NOT
 deliver this functionality until a better method of recognising NT Group SIDs from NT User
@@ -37,7 +37,8 @@ SIDs could be found. This feature may thus return during the life cycle for the 
 </para>
 
 <note><para>
-Samba-3.0.0 does NOT support Non-Unix Account (NUA) operation.
+Samba-3 does NOT support Non-UNIX Account (NUA) operation for user accounts.
+Samba-3 does support NUA operation for machine accounts.
 </para></note>
 
 <sect1>
@@ -48,12 +49,14 @@ Samba-3 provides for complete backwards compatibility with Samba-2.2.x functiona
 as follows:
 </para>
 
+<sect2>
+	<title>Backwards Compatibility Backends</title>
+
 <variablelist>
-<title>Backwards Compatibility Backends</title>
 	<varlistentry><term>Plain Text:</term>
 		<listitem>
 			<para>
-			This option uses nothing but the Unix/Linux <filename>/etc/passwd</filename>
+			This option uses nothing but the UNIX/Linux <filename>/etc/passwd</filename>
 			style back end. On systems that have PAM (Pluggable Authentication Modules)
 			support all PAM modules are supported. The behaviour is just as it was with
 			Samba-2.2.x, and the protocol limitations imposed by MS Windows clients
@@ -94,22 +97,18 @@ as follows:
 	</varlistentry>
 </variablelist>
 
+</sect2>
+
+<sect2>
+	<title>New Backends</title>
+
 <para>
 Samba-3 introduces the following new password backend capabilities:
 </para>
 
-<variablelist>
-<title>New Backends</title>
-	<varlistentry><term>guest:</term>
-		<listitem>
-			<para>
-			This is <emphasis>always</emphasis> required as the last backend specified.
-			It provides the ability to handle guest account requirements for access to
-			resources like <parameter>IPC$</parameter> which is used for browsing.
-			</para>
-		</listitem>
-	</varlistentry>
 
+
+<variablelist>
 	<varlistentry><term>tdbsam:</term>
 		<listitem>
 			<para>
@@ -186,16 +185,9 @@ Samba-3 introduces the following new password backend capabilities:
 		</listitem>
 	</varlistentry>
 
-	<varlistentry><term>nisplussam:</term>
-		<listitem>
-			<para>
-			The  NIS+ based passdb backend. Takes name NIS domain as an
-	                optional argument. Only works with Sun NIS+ servers.
-			</para>
-		</listitem>
-	</varlistentry>
-
 </variablelist>
+
+</sect2>
 
 </sect1>
 
@@ -223,10 +215,18 @@ Samba-3 introduces the following new password backend capabilities:
 	In addition to differently encrypted passwords, windows also stores certain data for each
 	user that is not stored in a unix user database. e.g: workstations the user may logon from,
 	the location where the users' profile is stored, and so on. Samba retrieves and stores this
-	information using a <parameter>passdb backend</parameter>.  Commonly available backends are LDAP, plain text
+	information using a <smbconfoption><name>passdb backend</name></smbconfoption>.  Commonly available backends are LDAP, plain text
 	file, MySQL and nisplus.  For more information, see the man page for &smb.conf; regarding the 
-	<parameter>passdb backend</parameter> parameter.
+	<smbconfoption><name>passdb backend</name></smbconfoption> parameter.
 	</para>
+
+
+	<figure id="idmap-diag"><title>IDMAP</title>
+	<mediaobject>
+	<imageobject role="latex"><imagedata fileref="projdoc/imagefiles/idmap" scale="50" scalefit="1"/></imageobject>
+	<imageobject><imagedata fileref="projdoc/imagefiles/idmap.png" scale="50" scalefit="1"/></imageobject>
+	</mediaobject>
+	</figure>
 
 	<sect2>
 	<title>Important Notes About Security</title>
@@ -263,12 +263,12 @@ Samba-3 introduces the following new password backend capabilities:
 		although they may log onto a domain environment:
 		</para>
 
-		<simplelist>
-			<member>MS DOS Network client 3.0 with the basic network redirector installed</member>
-			<member>Windows 95 with the network redirector update installed</member>
-			<member>Windows 98 [se]</member>
-			<member>Windows Me</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>MS DOS Network client 3.0 with the basic network redirector installed</para></listitem>
+			<listitem><para>Windows 95 with the network redirector update installed</para></listitem>
+			<listitem><para>Windows 98 [se]</para></listitem>
+			<listitem><para>Windows Me</para></listitem>
+		</itemizedlist>
 
 		<note>
 		<para>
@@ -281,13 +281,13 @@ Samba-3 introduces the following new password backend capabilities:
 		The following versions of MS Windows fully support domain security protocols.
 		</para>
 
-		<simplelist>
-			<member>Windows NT 3.5x</member>
-			<member>Windows NT 4.0</member>
-			<member>Windows 2000 Professional</member>
-			<member>Windows 200x Server/Advanced Server</member>
-			<member>Windows XP Professional</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>Windows NT 3.5x</para></listitem>
+			<listitem><para>Windows NT 4.0</para></listitem>
+			<listitem><para>Windows 2000 Professional</para></listitem>
+			<listitem><para>Windows 200x Server/Advanced Server</para></listitem>
+			<listitem><para>Windows XP Professional</para></listitem>
+		</itemizedlist>
 			
 		<para>
 		All current release of Microsoft SMB/CIFS clients support authentication via the
@@ -352,37 +352,63 @@ Samba-3 introduces the following new password backend capabilities:
 	</sect2>
 
 	<sect2>
-	<title>Mapping User Identifiers between MS Windows and Unix</title>
+	<title>Mapping User Identifiers between MS Windows and UNIX</title>
 
 	<para>
-	Every operation in Unix/Linux requires a user identifier (UID), just as in
+	Every operation in UNIX/Linux requires a user identifier (UID), just as in
 	MS Windows NT4 / 200x this requires a Security Identifier (SID). Samba provides
-	two means for mapping an MS Windows user to a Unix/Linux UID.
+	two means for mapping an MS Windows user to a UNIX/Linux UID.
 	</para>
 
 	<para>
 	Firstly, all Samba SAM (Security Account Manager database) accounts require
-	a Unix/Linux UID that the account will map to. As users are added to the account
-	information database, Samba-3 will call the <parameter>add user script</parameter>
-	interface to add the account to the Samba host OS. In essence, all accounts in
+	a UNIX/Linux UID that the account will map to. As users are added to the account
+	information database, Samba will call the <smbconfoption><name>add user script</name></smbconfoption>
+	interface to add the account to the Samba host OS. In essence all accounts in
 	the local SAM require a local user account.
 	</para>
 
 	<para>
-	The second way to affect Windows SID to Unix UID mapping is via the
+	The second way to affect Windows SID to UNIX UID mapping is via the
 	<emphasis>idmap uid, idmap gid</emphasis> parameters in &smb.conf;.
 	Please refer to the man page for information about these parameters.
 	These parameters are essential when mapping users from a remote SAM server.
 	</para>
 
 	</sect2>
+
+	<sect2 id="idmapbackend">
+	<title>Mapping Common UIDs/GIDs on Distributed Machines</title>
+
+	<para>
+	Samba-3 has a special facility that makes it possible to maintain identical UIDs and GIDs
+	on all servers in a distributed network. A distributed network is one where there exists
+	a PDC, one or more BDCs and/or one or more domain member servers. Why is this important?
+	This is important if files are being shared over more than one protocol (eg: NFS) and where
+	users are copying files across UNIX/Linux systems using tools such as <command>rsync</command>.
+	</para>
+
+	<para>
+	The special facility is enabled using a parameter called <parameter>idmap backend</parameter>.
+	The default setting for this parameter is an empty string. Administrators should NOT set this
+	parameter except when an LDAP based passdb backend is in use. An example of use is:
+	</para>
+
+	<para>
+<smbconfexample id="idmapbackendexample">
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>idmap backend</name><value>ldapsam://ldap-server.quenya.org:636</value></smbconfoption>
+</smbconfexample>
+	</para>
+
+	</sect2>
 </sect1>
 
-<sect1>
+<sect1 id="acctmgmttools">
 <title>Account Management Tools</title>
 
 <para>
-Samba-3 provides two (2) tools for management of User and machine accounts. These tools are
+Samba provides two (2) tools for management of User and machine accounts. These tools are
 called <command>smbpasswd</command> and <command>pdbedit</command>. A third tool is under
 development but is NOT expected to ship in time for Samba-3.0.0. The new tool will be a TCL/TK
 GUI tool that looks much like the MS Windows NT4 Domain User Manager - hopefully this will
@@ -413,30 +439,30 @@ be announced in time for the Samba-3.0.1 release.
 		<command>smbpasswd</command> can be used to:
 		</para>
 		
-		<simplelist>
-			<member><emphasis>add</emphasis> user or machine accounts</member>
-			<member><emphasis>delete</emphasis> user or machine accounts</member>
-			<member><emphasis>enable</emphasis> user or machine accounts</member>
-			<member><emphasis>disable</emphasis> user or machine accounts</member>
-			<member><emphasis>set to NULL</emphasis> user passwords</member>
-			<member><emphasis>manage interdomain trust accounts</emphasis></member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para><emphasis>add</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>delete</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>enable</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>disable</emphasis> user or machine accounts</para></listitem>
+			<listitem><para><emphasis>set to NULL</emphasis> user passwords</para></listitem>
+			<listitem><para><emphasis>manage interdomain trust accounts</emphasis></para></listitem>
+		</itemizedlist>
 		
 		<para>
 		To run smbpasswd as a normal user just type:
 		</para>
 		
 		<para>
-		<screen>
-		<prompt>$ </prompt><userinput>smbpasswd</userinput>
-		<prompt>Old SMB password: </prompt><userinput><replaceable>secret</replaceable></userinput>
-		</screen>
+<screen>
+&prompt;<userinput>smbpasswd</userinput>
+<prompt>Old SMB password: </prompt><userinput><replaceable>secret</replaceable></userinput>
+</screen>
 		For <replaceable>secret</replaceable> type old value here - or hit return if
 		there was no old password
-		<screen>
-		<prompt>New SMB Password: </prompt><userinput><replaceable>new secret</replaceable></userinput>
-		<prompt>Repeat New SMB Password: </prompt><userinput><replaceable>new secret</replaceable></userinput>
-		</screen>
+<screen>
+<prompt>New SMB Password: </prompt><userinput><replaceable>new secret</replaceable></userinput>
+<prompt>Repeat New SMB Password: </prompt><userinput><replaceable>new secret</replaceable></userinput>
+</screen>
 		</para>
 		
 		<para>
@@ -477,11 +503,11 @@ be announced in time for the Samba-3.0.1 release.
 		manage the passdb backend. <command>pdbedit</command> can be used to:
 		</para>
 
-		<simplelist>
-			<member>add, remove or modify user accounts</member>
-			<member>listing user accounts</member>
-			<member>migrate user accounts</member>
-		</simplelist>
+		<itemizedlist>
+			<listitem><para>add, remove or modify user accounts</para></listitem>
+			<listitem><para>listing user accounts</para></listitem>
+			<listitem><para>migrate user accounts</para></listitem>
+		</itemizedlist>
 
 		<para>
 		The <command>pdbedit</command> tool is the only one that can manage the account
@@ -500,31 +526,54 @@ be announced in time for the Samba-3.0.1 release.
 		a tdbsam password backend. This listing was produced by running:
 		</para>
 
-		<screen>
-		<prompt>$ </prompt><userinput>pdbedit -Lv met</userinput>
-		Unix username:        met
-		NT username:
-		Account Flags:        [UX         ]
-		User SID:             S-1-5-21-1449123459-1407424037-3116680435-2004
-		Primary Group SID:    S-1-5-21-1449123459-1407424037-3116680435-1201
-		Full Name:            Melissa E Terpstra
-		Home Directory:       \\frodo\met\Win9Profile
-		HomeDir Drive:        H:
-		Logon Script:         scripts\logon.bat
-		Profile Path:         \\frodo\Profiles\met
-		Domain:               MIDEARTH
-		Account desc:
-		Workstations:         melbelle
-		Munged dial:
-		Logon time:           0
-		Logoff time:          Mon, 18 Jan 2038 20:14:07 GMT
-		Kickoff time:         Mon, 18 Jan 2038 20:14:07 GMT
-		Password last set:    Sat, 14 Dec 2002 14:37:03 GMT
-		Password can change:  Sat, 14 Dec 2002 14:37:03 GMT
-		Password must change: Mon, 18 Jan 2038 20:14:07 GMT
-		</screen>
+<screen>
+&prompt;<userinput>pdbedit -Lv met</userinput>
+UNIX username:        met
+NT username:
+Account Flags:        [UX         ]
+User SID:             S-1-5-21-1449123459-1407424037-3116680435-2004
+Primary Group SID:    S-1-5-21-1449123459-1407424037-3116680435-1201
+Full Name:            Melissa E Terpstra
+Home Directory:       \\frodo\met\Win9Profile
+HomeDir Drive:        H:
+Logon Script:         scripts\logon.bat
+Profile Path:         \\frodo\Profiles\met
+Domain:               &example.workgroup;
+Account desc:
+Workstations:         melbelle
+Munged dial:
+Logon time:           0
+Logoff time:          Mon, 18 Jan 2038 20:14:07 GMT
+Kickoff time:         Mon, 18 Jan 2038 20:14:07 GMT
+Password last set:    Sat, 14 Dec 2002 14:37:03 GMT
+Password can change:  Sat, 14 Dec 2002 14:37:03 GMT
+Password must change: Mon, 18 Jan 2038 20:14:07 GMT
+</screen>
 
-		<!-- FIXME: Add note about migrating user accounts -->
+		<para>
+		The <command>pdbedit</command> tool allows migration of authentication (account)
+		databases from one backend to another. For example: To migrate accounts from an
+		old <filename>smbpasswd</filename> database to a <parameter>tdbsam</parameter>
+		backend:
+		</para>
+
+		<procedure>
+			<step><para>
+			Set the <smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>.
+			</para></step>
+
+			<step><para>
+			Execute:
+<screen>
+&rootprompt;<userinput>pdbedit -i smbpassed -e tdbsam</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Now remove the <parameter>smbpasswd</parameter> from the passdb backend
+			configuration in &smb.conf;.
+			</para></step>
+		</procedure>
 
 	</sect2>
 </sect1>
@@ -533,7 +582,7 @@ be announced in time for the Samba-3.0.1 release.
 <title>Password Backends</title>
 
 <para>
-Samba-3 offers the greatest flexibility in backend account database design of any SMB/CIFS server
+Samba offers the greatest flexibility in backend account database design of any SMB/CIFS server
 technology available today. The flexibility is immediately obvious as one begins to explore this
 capability.
 </para>
@@ -544,11 +593,9 @@ backends of the same type. For example, to use two different tdbsam databases:
 </para>
 
 <para>
-<programlisting>
-[globals]
-		passdb backend = tdbsam:/etc/samba/passdb.tdb, \
-		tdbsam:/etc/samba/old-passdb.tdb, guest
-</programlisting>
+<smbconfblock>
+<smbconfoption><name>passdb backend</name><value>tdbsam:/etc/samba/passdb.tdb, tdbsam:/etc/samba/old-passdb.tdb</value></smbconfoption>
+</smbconfblock>
 </para>
 
 
@@ -570,8 +617,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 	<title>smbpasswd - Encrypted Password Database</title>
 
 		<para>
-		Traditionally, when configuring <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">encrypt
-		passwords = yes</ulink> in Samba's <filename>smb.conf</filename> file, user account
+		Traditionally, when configuring <smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption> in Samba's &smb.conf; file, user account
 		information such as username, LM/NT password hashes, password change times, and account
 		flags have been stored in the <filename>smbpasswd(5)</filename> file.  There are several
 		disadvantages to this approach for sites with very large numbers of users (counted
@@ -609,7 +655,7 @@ backends of the same type. For example, to use two different tdbsam databases:
 		</para>
 
 		<para>
-		Samba-3 provides an enhanced set of passdb backends that overcome the deficiencies
+		Samba provides an enhanced set of passdb backends that overcome the deficiencies
 		of the smbpasswd plain text database. These are tdbsam, ldapsam, and xmlsam.
 		Of these ldapsam will be of most interest to large corporate or enterprise sites.
 		</para>
@@ -650,20 +696,13 @@ backends of the same type. For example, to use two different tdbsam databases:
 		<para>
 		The second item can be accomplished by using LDAP NSS and PAM modules.  LGPL
 		versions of these libraries can be obtained from PADL Software
-		(<ulink url="http://www.padl.com/">http://www.padl.com/</ulink>). More
+		(<ulink noescape="1" url="http://www.padl.com/">http://www.padl.com/</ulink>). More
 		information about the configuration of these packages may be found at "LDAP,
 		System Administration; Gerald Carter, O'Reilly; Chapter 6: Replacing NIS".
-		Refer to <ulink url="http://safari.oreilly.com/?XmlId=1-56592-491-6">
+		Refer to <ulink noescape="1" url="http://safari.oreilly.com/?XmlId=1-56592-491-6">
 		http://safari.oreilly.com/?XmlId=1-56592-491-6</ulink> for those who might wish to know
                 more about configuration and administration of an OpenLDAP server.
 		</para>
-
-		<note>
-		<para>
-		This section is outdated for Samba-3 schema. Samba-3 introduces a new schema
-		that has not been documented at the time of this publication.
-		</para>
-		</note>
 
 		<para>
 		This document describes how to use an LDAP directory for storing Samba user
@@ -674,9 +713,9 @@ backends of the same type. For example, to use two different tdbsam databases:
 		</para>
 
 		<itemizedlist>
-			<listitem><para>OpenLDAP - <ulink url="http://www.openldap.org/">http://www.openldap.org/</ulink></para></listitem>
+			<listitem><para>OpenLDAP - <ulink noescape="1" url="http://www.openldap.org/">http://www.openldap.org/</ulink></para></listitem>
 			<listitem><para>iPlanet Directory Server -
-			 <ulink url="http://iplanet.netscape.com/directory">http://iplanet.netscape.com/directory</ulink></para></listitem>
+					<ulink noescape="1" url="http://iplanet.netscape.com/directory">http://iplanet.netscape.com/directory</ulink></para></listitem>
 		</itemizedlist>
 
 		<para>
@@ -715,13 +754,15 @@ backends of the same type. For example, to use two different tdbsam databases:
 
 <para>
 <programlisting>
-objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaSamAccount' SUP top AUXILIARY
-    DESC 'Samba Auxiliary Account'
-    MUST ( uid $ rid )
-    MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
-           logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
-           displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
-           description $ userWorkstations $ primaryGroupID $ domain ))
+objectclass ( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY
+    DESC 'Samba 3.0 Auxiliary SAM Account'
+    MUST ( uid $ sambaSID )
+    MAY  ( cn $ sambaLMPassword $ sambaNTPassword $ sambaPwdLastSet $
+          sambaLogonTime $ sambaLogoffTime $ sambaKickoffTime $
+          sambaPwdCanChange $ sambaPwdMustChange $ sambaAcctFlags $
+          displayName $ sambaHomePath $ sambaHomeDrive $ sambaLogonScript $
+          sambaProfilePath $ description $ sambaUserWorkstations $
+          sambaPrimaryGroupSID $ sambaDomainName ))
 </programlisting>
 </para>
 
@@ -730,7 +771,7 @@ objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaSamAccount' SUP top AUXILIARY
 			The OID's are owned by the Samba Team and as such is legal to be openly published.
 			If you translate the schema to be used with Netscape DS, please
 			submit the modified schema file as a patch to
-			<ulink url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
+			<ulink noescape="1" url="mailto:jerry@samba.org">jerry@samba.org</ulink>.
 			</para>
 
 			<para>
@@ -804,7 +845,7 @@ include            /etc/openldap/schema/nis.schema
 		</para>
 
 <para>
-<screen>
+<programlisting>
 # Indices to maintain
 ## required by OpenLDAP
 index objectclass             eq
@@ -826,7 +867,7 @@ index   sambaSID              eq
 index   sambaPrimaryGroupSID  eq
 index   sambaDomainName       eq
 index   default               sub
-</screen>
+</programlisting>
 </para>
 
 		<para>
@@ -835,7 +876,7 @@ index   default               sub
 
 <para>
 <screen>
-./sbin/slapindex -f slapd.conf
+&rootprompt;./sbin/slapindex -f slapd.conf
 </screen>
 </para>
 
@@ -861,35 +902,35 @@ index   default               sub
 		</para>
 		
 <para>
-<screen>
+<programlisting>
 # Organization for Samba Base
-dn: dc=plainjoe,dc=org
+dn: dc=quenya,dc=org
 objectclass: dcObject
 objectclass: organization
-dc: plainjoe
-o: Terpstra Org Network
+dc: quenya
+o: Quenya Org Network
 description: The Samba-3 Network LDAP Example
 
 # Organizational Role for Directory Management
-dn: cn=Manager,dc=plainjoe,dc=org
+dn: cn=Manager,dc=quenya,dc=org
 objectclass: organizationalRole
 cn: Manager
 description: Directory Manager
 
 # Setting up container for users
-dn: ou=People,dc=plainjoe,dc=org
+dn: ou=People,dc=quenya,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: People
 
 # Setting up admin handle for People OU
-dn: cn=admin,ou=People,dc=plainjoe,dc=org
+dn: cn=admin,ou=People,dc=quenya,dc=org
 cn: admin
 objectclass: top
 objectclass: organizationalRole
 objectclass: simpleSecurityObject
 userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
-</screen>
+</programlisting>
 </para>
 
 		<para>
@@ -903,7 +944,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 
 <para>
 <screen>
-<prompt>$ </prompt><userinput>slapadd -v -l initldap.dif</userinput>
+&prompt;<userinput>slapadd -v -l initldap.dif</userinput>
 </screen>
 </para>
 
@@ -916,9 +957,9 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 		<para>
 		Before Samba can access the LDAP server you need to store the LDAP admin password
 		into the Samba-3 <filename>secrets.tdb</filename> database by:
-		<screen>
-&rootprompt; <userinput>smbpasswd -w <replaceable>secret</replaceable></userinput>
-		</screen>
+<screen>
+&rootprompt;<userinput>smbpasswd -w <replaceable>secret</replaceable></userinput>
+</screen>
 		</para>
 		</note>
 
@@ -933,19 +974,18 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			LDAP libraries are found.
 			</para>
 
-		<itemizedlist>
-			<listitem><para><ulink url="smb.conf.5.html#PASSDBBACKEND">passdb backend = ldapsam:url</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPSSL">ldap ssl</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPADMINDN">ldap admin dn</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPSUFFIX">ldap suffix</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPFILTER">ldap filter</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPMACHINSUFFIX">ldap machine suffix</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPUSERSUFFIX">ldap user suffix</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPDELETEDN">ldap delete dn</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPPASSWDSYNC">ldap passwd sync</ulink></para></listitem>
-			<listitem><para><ulink url="smb.conf.5.html#LDAPTRUSTIDS">ldap trust ids</ulink></para></listitem>
-
-		</itemizedlist>
+			<para>LDAP related smb.conf options: 
+				<smbconfoption><name>passdb backend</name><value>ldapsam:url</value></smbconfoption>,
+			<smbconfoption><name>ldap ssl</name></smbconfoption>,
+			<smbconfoption><name>ldap admin dn</name></smbconfoption>,
+			<smbconfoption><name>ldap suffix</name></smbconfoption>,
+			<smbconfoption><name>ldap filter</name></smbconfoption>,
+			<smbconfoption><name>ldap machine suffix</name></smbconfoption>,
+			<smbconfoption><name>ldap user suffix</name></smbconfoption>,
+			<smbconfoption><name>ldap delete dn</name></smbconfoption>,
+			<smbconfoption><name>ldap passwd sync</name></smbconfoption>,
+			<smbconfoption><name>ldap trust ids</name></smbconfoption>.
+		</para>
 
 			<para>
 			These are described in the &smb.conf; man
@@ -954,49 +994,48 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 <para>
-<programlisting>
-## /usr/local/samba/lib/smb.conf
-[global]
-     security = user
-     encrypt passwords = yes
+<smbconfexample>
+	<title>Configuration with LDAP</title>
+	<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>security</name><value>user</value></smbconfoption>
+<smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>TASHTEGO</value></smbconfoption>
+<smbconfoption><name>workgroup</name><value>NARNIA</value></smbconfoption>
 
-     netbios name = TASHTEGO
-     workgroup = NARNIA
+<smbconfcomment>ldap related parameters</smbconfcomment>
 
-     # ldap related parameters
+<smbconfcomment>define the DN to use when binding to the directory servers</smbconfcomment>
+<smbconfcomment>The password for this DN is not stored in smb.conf.  Rather it</smbconfcomment>
+<smbconfcomment>must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the</smbconfcomment>
+<smbconfcomment>passphrase in the secrets.tdb file.  If the "ldap admin dn" values</smbconfcomment>
+<smbconfcomment>change, this password will need to be reset.</smbconfcomment>
+<smbconfoption><name>ldap admin dn</name><value>"cn=Samba Manager,ou=people,dc=samba,dc=org"</value></smbconfoption>
 
-     # define the DN to use when binding to the directory servers
-     # The password for this DN is not stored in smb.conf.  Rather it
-     # must be set by using 'smbpasswd -w <replaceable>secretpw</replaceable>' to store the
-     # passphrase in the secrets.tdb file.  If the "ldap admin dn" values
-     # change, this password will need to be reset.
-     ldap admin dn = "cn=Samba Manager,ou=people,dc=samba,dc=org"
+<smbconfcomment>Define the SSL option when connecting to the directory</smbconfcomment>
+<smbconfcomment>('off', 'start tls', or 'on' (default))</smbconfcomment>
+<smbconfoption><name>ldap ssl</name><value>start tls</value></smbconfoption>
 
-     # Define the SSL option when connecting to the directory
-     # ('off', 'start tls', or 'on' (default))
-     ldap ssl = start tls
+<smbconfcomment>syntax: passdb backend = ldapsam:ldap://server-name[:port]</smbconfcomment>
+<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://funball.samba.org</value></smbconfoption>
 
-     # syntax: passdb backend = ldapsam:ldap://server-name[:port]
-     passdb backend = ldapsam:ldap://funball.samba.org, guest
+<smbconfcomment>smbpasswd -x delete the entire dn-entry</smbconfcomment>
+<smbconfoption><name>ldap delete dn</name><value>no</value></smbconfoption>
 
-     # smbpasswd -x delete the entire dn-entry
-     ldap delete dn = no
+<smbconfcomment>the machine and user suffix added to the base suffix</smbconfcomment>
+<smbconfcomment>wrote WITHOUT quotes. NULL suffixes by default</smbconfcomment>
+<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap machine suffix</name><value>ou=Systems</value></smbconfoption>
 
-     # the machine and user suffix added to the base suffix
-     # wrote WITHOUT quotes. NULL suffixes by default
-     ldap user suffix = ou=People
-     ldap machine suffix = ou=Systems
+<smbconfcomment>Trust unix account information in LDAP</smbconfcomment>
+<smbconfcomment> (see the smb.conf manpage for details)</smbconfcomment>
+<smbconfoption><name>ldap trust ids</name><value>Yes</value></smbconfoption>
 
-     # Trust unix account information in LDAP
-     #  (see the smb.conf manpage for details)
-     ldap trust ids = Yes
+<smbconfcomment> specify the base DN to use when searching the directory</smbconfcomment>
+<smbconfoption><name>ldap suffix</name><value>"ou=people,dc=samba,dc=org"</value></smbconfoption>
 
-     # specify the base DN to use when searching the directory
-     ldap suffix = "ou=people,dc=samba,dc=org"
-
-     # generally the default ldap search filter is ok
-     # ldap filter = "(&amp;(uid=%u)(objectclass=sambaSamAccount))"
-</programlisting>
+<smbconfcomment> generally the default ldap search filter is ok</smbconfcomment>
+<smbconfoption><name>ldap filter</name><value>"(&amp;(uid=%u)(objectclass=sambaSamAccount))"</value></smbconfoption>
+</smbconfexample>
 </para>
 
 		</sect3>
@@ -1013,8 +1052,8 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			Machines accounts are managed with the sambaSamAccount objectclass, just
 			like users accounts. However, it's up to you to store those accounts
 			in a different tree of your LDAP namespace: you should use
-			"ou=Groups,dc=plainjoe,dc=org" to store groups and
-			"ou=People,dc=plainjoe,dc=org" to store users. Just configure your
+			"ou=Groups,dc=quenya,dc=org" to store groups and
+			"ou=People,dc=quenya,dc=org" to store users. Just configure your
 			NSS and PAM accordingly (usually, in the /etc/ldap.conf configuration
 			file).
 			</para>
@@ -1052,13 +1091,13 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 			</para>
 
 			<para>
-				To remedy the first security issue, the <parameter>ldap ssl</parameter> &smb.conf; parameter defaults
-			to require an encrypted session (<parameter>ldap ssl = on</parameter>) using
+				To remedy the first security issue, the <smbconfoption><name>ldap ssl</name></smbconfoption> &smb.conf; parameter defaults
+			to require an encrypted session (<smbconfoption><name>ldap ssl</name><value>on</value></smbconfoption>) using
 			the default port of <constant>636</constant>
 			when contacting the directory server.  When using an OpenLDAP server, it
 			is possible to use the use the StartTLS LDAP extended  operation in the place of
 			LDAPS.  In either case, you are strongly discouraged to disable this security
-			(<parameter>ldap ssl = off</parameter>).
+			(<smbconfoption><name>ldap ssl</name><value>off</value></smbconfoption>).
 			</para>
 
 			<para>
@@ -1077,7 +1116,7 @@ userPassword: {SSHA}c3ZM9tBaBo9autm1dL3waDS21+JSfQVz
 <programlisting>
 ## allow the "ldap admin dn" access, but deny everyone else
 access to attrs=lmPassword,ntPassword
-     by dn="cn=Samba Admin,ou=people,dc=plainjoe,dc=org" write
+     by dn="cn=Samba Admin,ou=people,dc=quenya,dc=org" write
      by * none
 </programlisting>
 </para>
@@ -1094,62 +1133,63 @@ access to attrs=lmPassword,ntPassword
 			<para>
 			<table frame="all">
 				<title>Attributes in the sambaSamAccount objectclass (LDAP)</title>
-			<tgroup cols="2" align="left">
+			<tgroup cols="2" align="justify">
+					<colspec align="left"/>
+					<colspec align="justify"/>
 			<tbody>
-				<row><entry><constant>lmPassword</constant></entry><entry>the LANMAN password 16-byte hash stored as a character
+				<row><entry><constant>sambaLMPassword</constant></entry><entry>the LANMAN password 16-byte hash stored as a character
+representation of a hexadecimal string.</entry></row>
+				<row><entry><constant>sambaNTPassword</constant></entry><entry>the NT password hash 16-byte stored as a character
 						representation of a hexadecimal string.</entry></row>
-				<row><entry><constant>ntPassword</constant></entry><entry>the NT password hash 16-byte stored as a character
-						representation of a hexadecimal string.</entry></row>
-				<row><entry><constant>pwdLastSet</constant></entry><entry>The integer time in seconds since 1970 when the
-				<constant>lmPassword</constant> and <constant>ntPassword</constant> attributes were last set.
+				<row><entry><constant>sambaPwdLastSet</constant></entry><entry>The integer time in seconds since 1970 when the
+						<constant>sambaLMPassword</constant> and <constant>sambaNTPassword</constant> attributes were last set.
 				</entry></row>
 
-				<row><entry><constant>acctFlags</constant></entry><entry>string of 11 characters surrounded by square brackets []
+				<row><entry><constant>sambaAcctFlags</constant></entry><entry>string of 11 characters surrounded by square brackets []
 						representing account flags such as U (user), W(workstation), X(no password expiration),
 						I(Domain trust account), H(Home dir required), S(Server trust account),
 						and D(disabled).</entry></row>
 
-				<row><entry><constant>logonTime</constant></entry><entry>Integer value currently unused</entry></row>
+				<row><entry><constant>sambaLogonTime</constant></entry><entry>Integer value currently unused</entry></row>
 
-				<row><entry><constant>logoffTime</constant></entry><entry>Integer value currently unused</entry></row>
+				<row><entry><constant>sambaLogoffTime</constant></entry><entry>Integer value currently unused</entry></row>
 
-				<row><entry><constant>kickoffTime</constant></entry><entry>Integer value currently unused</entry></row>
+				<row><entry><constant>sambaKickoffTime</constant></entry><entry>Integer value currently unused</entry></row>
 
-				<row><entry><constant>pwdCanChange</constant></entry><entry>Integer value currently unused</entry></row>
+				<row><entry><constant>sambaPwdCanChange</constant></entry><entry>Integer value currently unused</entry></row>
 
-				<row><entry><constant>pwdMustChange</constant></entry><entry>Integer value currently unused</entry></row>
+				<row><entry><constant>sambaPwdMustChange</constant></entry><entry>Integer value currently unused</entry></row>
 
-				<row><entry><constant>homeDrive</constant></entry><entry>specifies the drive letter to which to map the
-				UNC path specified by homeDirectory. The drive letter must be specified in the form "X:"
+				<row><entry><constant>sambaHomeDrive</constant></entry><entry>specifies the drive letter to which to map the
+				UNC path specified by sambaHomePath. The drive letter must be specified in the form "X:"
 				where X is the letter of the drive to map. Refer to the "logon drive" parameter in the
 				smb.conf(5) man page for more information.</entry></row>
 
-				<row><entry><constant>scriptPath</constant></entry><entry>The scriptPath property specifies the path of
+				<row><entry><constant>sambaLogonScript</constant></entry><entry>The sambaLogonScript property specifies the path of
 				the user's logon script, .CMD, .EXE, or .BAT file. The string can be null. The path
-				is relative to the netlogon share.  Refer to the "logon script" parameter in the
-				smb.conf(5) man page for more information.</entry></row>
+				is relative to the netlogon share.  Refer to the <smbconfoption><name>logon script</name></smbconfoption> parameter in the
+				&smb.conf; man page for more information.</entry></row>
 
-				<row><entry><constant>profilePath</constant></entry><entry>specifies a path to the user's profile.
+				<row><entry><constant>sambaProfilePath</constant></entry><entry>specifies a path to the user's profile.
 				This value can be a null string, a local absolute path, or a UNC path.  Refer to the
-				"logon path" parameter in the smb.conf(5) man page for more information.</entry></row>
+				<smbconfoption><name>logon path</name></smbconfoption> parameter in the &smb.conf; man page for more information.</entry></row>
 
-				<row><entry><constant>smbHome</constant></entry><entry>The homeDirectory property specifies the path of
-				the home directory for the user. The string can be null. If homeDrive is set and specifies
-				a drive letter, homeDirectory should be a UNC path. The path must be a network
-				UNC path of the form <filename>\\server\share\directory</filename>. This value can be a null string.
-				Refer to the <command>logon home</command> parameter in the &smb.conf; man page for more information.
+		<row><entry><constant>sambaHomePath</constant></entry><entry>The sambaHomePath property specifies the path of
+the home directory for the user. The string can be null. If sambaHomeDrive is set and specifies
+a drive letter, sambaHomePath should be a UNC path. The path must be a network
+UNC path of the form <filename>\\server\share\directory</filename>. This value can be a null string.
+Refer to the <command>logon home</command> parameter in the &smb.conf; man page for more information.
 				</entry></row>
 
-				<row><entry><constant>userWorkstation</constant></entry><entry>character string value currently unused.
+				<row><entry><constant>sambaUserWorkstations</constant></entry><entry>character string value currently unused.
 				</entry></row>
 
-				<row><entry><constant>rid</constant></entry><entry>the integer representation of the user's relative identifier
-				(RID).</entry></row>
+				<row><entry><constant>sambaSID</constant></entry><entry>The security identifier(SID) of the user. The windows equivalent of unix uid's.</entry></row>
 
-				<row><entry><constant>primaryGroupID</constant></entry><entry>the relative identifier (RID) of the primary group
+				<row><entry><constant>sambaPrimaryGroupSID</constant></entry><entry>the relative identifier (RID) of the primary group
 				of the user.</entry></row>
 
-				<row><entry><constant>domain</constant></entry><entry>domain the user is part of.</entry></row>
+		<row><entry><constant>sambaDomainName</constant></entry><entry>domain the user is part of.</entry></row>
 			</tbody>
 			</tgroup></table>
 			</para>
@@ -1161,22 +1201,22 @@ access to attrs=lmPassword,ntPassword
 			are only stored with the sambaSamAccount entry if the values are non-default values:
 			</para>
 
-			<simplelist>
-				<member>smbHome</member>
-				<member>scriptPath</member>
-				<member>logonPath</member>
-				<member>homeDrive</member>
-			</simplelist>
+			<itemizedlist>
+				<listitem><para>sambaHomePath</para></listitem>
+				<listitem><para>sambaLogonScript</para></listitem>
+				<listitem><para>sambaProfilePath</para></listitem>
+				<listitem><para>sambaHomeDrive</para></listitem>
+			</itemizedlist>
 
 			<para>
 			These attributes are only stored with the sambaSamAccount entry if
 			the values are non-default values.  For example, assume TASHTEGO has now been
-			configured as a PDC and that <parameter>logon home = \\%L\%u</parameter> was defined in
+			configured as a PDC and that <smbconfoption><name>logon home</name><value>\\%L\%u</value></smbconfoption> was defined in
 			its &smb.conf; file. When a user named "becky" logons to the domain,
-			the <parameter>logon home</parameter> string is expanded to \\TASHTEGO\becky.
+			the <smbconfoption><name>logon home</name></smbconfoption> string is expanded to \\TASHTEGO\becky.
 			If the smbHome attribute exists in the entry "uid=becky,ou=people,dc=samba,dc=org",
 			this value is used.  However, if this attribute does not exist, then the value
-			of the <parameter>logon home</parameter> parameter is used in its place.  Samba
+			of the <smbconfoption><name>logon home</name></smbconfoption> parameter is used in its place.  Samba
 			will only write the attribute value to the directory entry if the value is
 			something other than the default (e.g. <filename>\\MOBY\becky</filename>).
 			</para>
@@ -1192,20 +1232,20 @@ access to attrs=lmPassword,ntPassword
 
 	<para>
 	<programlisting>
-	dn: uid=guest2, ou=people,dc=plainjoe,dc=org
-	ntPassword: 878D8014606CDA29677A44EFA1353FC7
-	pwdMustChange: 2147483647
-	primaryGroupID: 1201
-	lmPassword: 552902031BEDE9EFAAD3B435B51404EE
-	pwdLastSet: 1010179124
-	logonTime: 0
+	dn: uid=guest2, ou=people,dc=quenya,dc=org
+	sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
+	sambaPwdMustChange: 2147483647
+	sambaPrimaryGroupSID: S-1-5-21-2447931902-1787058256-3961074038-513
+	sambaNTPassword: 552902031BEDE9EFAAD3B435B51404EE
+	sambaPwdLastSet: 1010179124
+	sambaLogonTime: 0
 	objectClass: sambaSamAccount
 	uid: guest2
-	kickoffTime: 2147483647
-	acctFlags: [UX         ]
-	logoffTime: 2147483647
-	rid: 19006
-	pwdCanChange: 0
+	sambaKickoffTime: 2147483647
+	sambaAcctFlags: [UX         ]
+	sambaLogoffTime: 2147483647
+	sambaSID: S-1-5-21-2447931902-1787058256-3961074038-5006
+	sambaPwdCanChange: 0
 	</programlisting>
 	</para>
 
@@ -1216,14 +1256,14 @@ access to attrs=lmPassword,ntPassword
 
 	<para>
 	<programlisting>
-	dn: uid=gcarter, ou=people,dc=plainjoe,dc=org
-	logonTime: 0
+	dn: uid=gcarter, ou=people,dc=quenya,dc=org
+	sambaLogonTime: 0
 	displayName: Gerald Carter
-	lmPassword: 552902031BEDE9EFAAD3B435B51404EE
-	primaryGroupID: 1201
+	sambaLMPassword: 552902031BEDE9EFAAD3B435B51404EE
+	sambaPrimaryGroupSID: S-1-5-21-2447931902-1787058256-3961074038-1201
 	objectClass: posixAccount
 	objectClass: sambaSamAccount
-	acctFlags: [UX         ]
+	sambaAcctFlags: [UX         ]
 	userPassword: {crypt}BpM2ej8Rkzogo
 	uid: gcarter
 	uidNumber: 9000
@@ -1231,13 +1271,13 @@ access to attrs=lmPassword,ntPassword
 	loginShell: /bin/bash
 	logoffTime: 2147483647
 	gidNumber: 100
-	kickoffTime: 2147483647
-	pwdLastSet: 1010179230
-	rid: 19000
+	sambaKickoffTime: 2147483647
+	sambaPwdLastSet: 1010179230
+	sambaSID: S-1-5-21-2447931902-1787058256-3961074038-5004
 	homeDirectory: /home/tashtego/gcarter
-	pwdCanChange: 0
-	pwdMustChange: 2147483647
-	ntPassword: 878D8014606CDA29677A44EFA1353FC7
+	sambaPwdCanChange: 0
+	sambaPwdMustChange: 2147483647
+	sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 </programlisting>
 	</para>
 
@@ -1251,7 +1291,7 @@ access to attrs=lmPassword,ntPassword
 		using pam_ldap, this allows changing both unix and windows passwords at once.
 		</para>
 
-		<para>The <parameter>ldap passwd sync</parameter> options can have the following values:</para>
+		<para>The <smbconfoption><name>ldap passwd sync</name></smbconfoption> options can have the following values:</para>
 
 		<variablelist>
 		       <varlistentry>
@@ -1268,12 +1308,11 @@ access to attrs=lmPassword,ntPassword
 
 		       <varlistentry>
 			       <term>only</term>
-			       <listitem><para>Only update the LDAP password and let the LDAP server worry
-					       about the other fields. This option is only available when the LDAP server supports LDAP_EXOP_X_MODIFY_PASSWD. </para></listitem>
+				   <listitem><para>Only update the LDAP password and let the LDAP server worry about the other fields. This option is only available on some LDAP servers. <footnote><para>Only when the LDAP server supports LDAP_EXOP_X_MODIFY_PASSWD</para></footnote></para></listitem>
 		       </varlistentry>
 		</variablelist>
 
-		<para>More information can be found in the <ulink url="smb.conf.5.html#LDAPPASSWDSYNC">smb.conf</ulink> manpage.
+		<para>More information can be found in the smb.conf manpage.
 		</para>
 
 		</sect3>
@@ -1300,8 +1339,10 @@ access to attrs=lmPassword,ntPassword
 			for the column names) or use the default table. The file <filename>examples/pdb/mysql/mysql.dump</filename> 
 			contains the correct queries to create the required tables. Use the command :
 
-			<screen><prompt>$ </prompt><userinput>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> \
-<replaceable>databasename</replaceable> &lt; <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></userinput></screen>
+<screen>
+&prompt;<userinput>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> \
+<replaceable>databasename</replaceable> &lt; <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></userinput>
+</screen>
 			</para>
 		</sect3>
 
@@ -1310,36 +1351,38 @@ access to attrs=lmPassword,ntPassword
 
 			<para>This plugin lacks some good documentation, but here is some short info:</para>
 
-			<para>Add a the following to the <parameter>passdb backend</parameter> variable in your &smb.conf;:
-			<programlisting>
-			passdb backend = [other-plugins] mysql:identifier [other-plugins]
-			</programlisting>
+			<para>Add a the following to the <smbconfoption><name>passdb backend</name></smbconfoption> variable in your &smb.conf;:
+				<smbconfblock>
+<smbconfoption><name>passdb backend</name><value>[other-plugins] mysql:identifier [other-plugins]</value></smbconfoption>
+		</smbconfblock>
 			</para>
 
 			<para>The identifier can be any string you like, as long as it doesn't collide with 
 			the identifiers of other plugins or other instances of pdb_mysql. If you 
-			specify multiple pdb_mysql.so entries in <parameter>passdb backend</parameter>, you also need to 
+			specify multiple pdb_mysql.so entries in <smbconfoption><name>passdb backend</name></smbconfoption>, you also need to 
 			use different identifiers!
 			</para>
 
 			<para>
-				Additional options can be given through the &smb.conf; file in the <parameter>[global]</parameter> section.
+				Additional options can be given through the &smb.conf; file in the <smbconfsection>[global]</smbconfsection> section.
 			</para>
 
 		<para>
 			<table frame="all">
 				<title>Basic smb.conf options for MySQL passdb backend</title>
-				<tgroup cols="2" align="left">
+				<tgroup cols="2">
+					<colspec align="left"/>
+					<colspec align="justify"/>
 				<thead>
 					<row><entry>Field</entry><entry>Contents</entry></row>
 				</thead>
 				<tbody>
-					<row><entry>identifier:mysql host</entry><entry>host name, defaults to 'localhost'</entry></row>
-					<row><entry>identifier:mysql password</entry><entry></entry></row>
-					<row><entry>identifier:mysql user</entry><entry>defaults to 'samba'</entry></row>
-					<row><entry>identifier:mysql database</entry><entry>defaults to 'samba'</entry></row>
-					<row><entry>identifier:mysql port</entry><entry>defaults to 3306</entry></row>
-					<row><entry>identifier:table</entry><entry>Name of the table containing users</entry></row>
+					<row><entry>mysql host</entry><entry>host name, defaults to 'localhost'</entry></row>
+					<row><entry>mysql password</entry><entry></entry></row>
+					<row><entry>mysql user</entry><entry>defaults to 'samba'</entry></row>
+					<row><entry>mysql database</entry><entry>defaults to 'samba'</entry></row>
+					<row><entry>mysql port</entry><entry>defaults to 3306</entry></row>
+					<row><entry>table</entry><entry>Name of the table containing users</entry></row>
 				</tbody>
 				</tgroup>
 			</table>
@@ -1348,7 +1391,7 @@ access to attrs=lmPassword,ntPassword
 			<warning>
 			<para>
 			Since the password for the MySQL user is stored in the 
-			&smb.conf; file, you should make the the &smb.conf; file 
+			&smb.conf; file, you should make the &smb.conf; file 
 			readable only to the user that runs Samba This is considered a security 
 			bug and will be fixed soon.
 			</para>
@@ -1359,40 +1402,43 @@ access to attrs=lmPassword,ntPassword
 		<para>
 			<table frame="all">
 				<title>MySQL field names for MySQL passdb backend</title>
-				<tgroup cols="3" align="left">
+				<tgroup cols="3" align="justify">
+					<colspec align="left"/>
+					<colspec align="left"/>
+					<colspec align="justify"/>
 			<thead>		
 				<row><entry>Field</entry><entry>Type</entry><entry>Contents</entry></row>
 			</thead>
 			<tbody>
-				<row><entry>identifier:logon time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:logoff time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:kickoff time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:pass last set time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:pass can change time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:pass must change time column</entry><entry>int(9)</entry><entry></entry></row>
-				<row><entry>identifier:username column</entry><entry>varchar(255)</entry><entry>unix username</entry></row>
-				<row><entry>identifier:domain column</entry><entry>varchar(255)</entry><entry>NT domain user is part of</entry></row>
-				<row><entry>identifier:nt username column</entry><entry>varchar(255)</entry><entry>NT username</entry></row>
-				<row><entry>identifier:fullname column</entry><entry>varchar(255)</entry><entry>Full name of user</entry></row>
-				<row><entry>identifier:home dir column</entry><entry>varchar(255)</entry><entry>Unix homedir path</entry></row>
-				<row><entry>identifier:dir drive column</entry><entry>varchar(2)</entry><entry>Directory drive path (eg: 'H:')</entry></row>
-				<row><entry>identifier:logon script column</entry><entry>varchar(255)</entry><entry>Batch file to run on client side when logging on</entry></row>
-				<row><entry>identifier:profile path column</entry><entry>varchar(255)</entry><entry>Path of profile</entry></row>
-				<row><entry>identifier:acct desc column</entry><entry>varchar(255)</entry><entry>Some ASCII NT user data</entry></row>
-				<row><entry>identifier:workstations column</entry><entry>varchar(255)</entry><entry>Workstations user can logon to (or NULL for all)</entry></row>
-				<row><entry>identifier:unknown string column</entry><entry>varchar(255)</entry><entry>unknown string</entry></row>
-				<row><entry>identifier:munged dial column</entry><entry>varchar(255)</entry><entry>?</entry></row>
-				<row><entry>identifier:user sid column</entry><entry>varchar(255)</entry><entry>NT user SID</entry></row>
-				<row><entry>identifier:group sid column</entry><entry>varchar(255)</entry><entry>NT group ID</entry></row>
-				<row><entry>identifier:lanman pass column</entry><entry>varchar(255)</entry><entry>encrypted lanman password</entry></row>
-				<row><entry>identifier:nt pass column</entry><entry>varchar(255)</entry><entry>encrypted nt passwd</entry></row>
-				<row><entry>identifier:plain pass column</entry><entry>varchar(255)</entry><entry>plaintext password</entry></row>
-				<row><entry>identifier:acct control column</entry><entry>int(9)</entry><entry>nt user data</entry></row>
-				<row><entry>identifier:unknown 3 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
-				<row><entry>identifier:logon divs column</entry><entry>int(9)</entry><entry>?</entry></row>
-				<row><entry>identifier:hours len column</entry><entry>int(9)</entry><entry>?</entry></row>
-				<row><entry>identifier:unknown 5 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
-				<row><entry>identifier:unknown 6 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
+				<row><entry>logon time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>logoff time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>kickoff time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>pass last set time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>pass can change time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>pass must change time column</entry><entry>int(9)</entry><entry></entry></row>
+				<row><entry>username column</entry><entry>varchar(255)</entry><entry>unix username</entry></row>
+				<row><entry>domain column</entry><entry>varchar(255)</entry><entry>NT domain user is part of</entry></row>
+				<row><entry>nt username column</entry><entry>varchar(255)</entry><entry>NT username</entry></row>
+				<row><entry>fullname column</entry><entry>varchar(255)</entry><entry>Full name of user</entry></row>
+				<row><entry>home dir column</entry><entry>varchar(255)</entry><entry>UNIX homedir path</entry></row>
+				<row><entry>dir drive column</entry><entry>varchar(2)</entry><entry>Directory drive path (eg: 'H:')</entry></row>
+				<row><entry>logon script column</entry><entry>varchar(255)</entry><entry>Batch file to run on client side when logging on</entry></row>
+				<row><entry>profile path column</entry><entry>varchar(255)</entry><entry>Path of profile</entry></row>
+				<row><entry>acct desc column</entry><entry>varchar(255)</entry><entry>Some ASCII NT user data</entry></row>
+				<row><entry>workstations column</entry><entry>varchar(255)</entry><entry>Workstations user can logon to (or NULL for all)</entry></row>
+				<row><entry>unknown string column</entry><entry>varchar(255)</entry><entry>unknown string</entry></row>
+				<row><entry>munged dial column</entry><entry>varchar(255)</entry><entry>?</entry></row>
+				<row><entry>user sid column</entry><entry>varchar(255)</entry><entry>NT user SID</entry></row>
+				<row><entry>group sid column</entry><entry>varchar(255)</entry><entry>NT group ID</entry></row>
+				<row><entry>lanman pass column</entry><entry>varchar(255)</entry><entry>encrypted lanman password</entry></row>
+				<row><entry>nt pass column</entry><entry>varchar(255)</entry><entry>encrypted nt passwd</entry></row>
+				<row><entry>plain pass column</entry><entry>varchar(255)</entry><entry>plaintext password</entry></row>
+				<row><entry>acct control column</entry><entry>int(9)</entry><entry>nt user data</entry></row>
+				<row><entry>unknown 3 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
+				<row><entry>logon divs column</entry><entry>int(9)</entry><entry>?</entry></row>
+				<row><entry>hours len column</entry><entry>int(9)</entry><entry>?</entry></row>
+				<row><entry>unknown 5 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
+				<row><entry>unknown 6 column</entry><entry>int(9)</entry><entry>unknown</entry></row>
 			</tbody></tgroup>
 		</table>
 		</para>
@@ -1475,16 +1521,16 @@ access to attrs=lmPassword,ntPassword
 <title>Common Errors</title>
 
 	<sect2>
-	<title>Users can not logon - Users not in Samba SAM</title>
+		<title>Users can not logon</title>
 
-	<para>
-	People forget to put their users in their backend and then complain Samba won't authorize them.
-	</para>
+		<para><quote>I've installed samba, but now I can't log on with my unix account!</quote></para>
+
+		<para>Make sure your user has been added to the current samba <smbconfoption><name>passdb backend</name></smbconfoption>. Read the section <link linkend="acctmgmttools">Account Management Tools</link> for details.</para>
 
 	</sect2>
 
 	<sect2>
-	<title>Users are being added to the wrong backend database</title>
+	<title>Users being added to wrong backend database</title>
 
 	<para>
 	A few complaints have been received from users that just moved to Samba-3. The following
@@ -1493,12 +1539,12 @@ access to attrs=lmPassword,ntPassword
 	</para>
 
 	<para>
-	<programlisting>
-	[globals]
-		...
-		passdb backend = smbpasswd, tdbsam, guest
-		...
-	</programlisting>
+		<smbconfblock>
+			<smbconfsection>[global]</smbconfsection>
+			<member>...</member>
+<smbconfoption><name>passdb backend</name><value>smbpasswd, tdbsam</value></smbconfoption>
+<member>...</member>
+	</smbconfblock>
 	</para>
 
 	<para>
@@ -1507,12 +1553,12 @@ access to attrs=lmPassword,ntPassword
 	</para>
 
 	<para>
-	<programlisting>
-	[globals]
-		...
-		passdb backend = tdbsam, smbpasswd, guest
-		...
-	</programlisting>
+		<smbconfblock>
+			<smbconfsection>[globals]</smbconfsection>
+			<member>...</member>
+<smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>
+			<member>...</member>
+	</smbconfblock>
 	</para>
 
 	</sect2>
@@ -1521,12 +1567,12 @@ access to attrs=lmPassword,ntPassword
 	<title>auth methods does not work</title>
 
 	<para>
-	If you explicitly set an 'auth methods' parameter, guest must be specified as the first
-	entry on the line. Eg: <parameter>auth methods = guest sam</parameter>.
+		If you explicitly set an <smbconfoption><name>auth methods</name></smbconfoption> parameter, guest must be specified as the first
+	entry on the line. Eg: <smbconfoption><name>auth methods</name><value>guest sam</value></smbconfoption>.
 	</para>
 
 	<para>
-	This is the exact opposite of the requirement for the <parameter>passdb backed</parameter>
+	This is the exact opposite of the requirement for the <smbconfoption><name>passdb backend</name></smbconfoption>
 	option, where it must be the <emphasis>LAST</emphasis> parameter on the line.
 	</para>
 

@@ -14,7 +14,7 @@
 
 <para>
 This chapter you should help you to deploy winbind based authentication on any PAM enabled
-Unix/Linux system. Winbind can be used to enable user level application access authentication
+UNIX/Linux system. Winbind can be used to enable user level application access authentication
 from any MS Windows NT Domain, MS Windows 200x Active Directory based domain, or any Samba
 based domain environment. It will also help you to configure PAM based local host access
 controls that are appropriate to your Samba configuration.
@@ -33,7 +33,7 @@ The use of Winbind require more than PAM configuration alone. Please refer to <l
 <title>Features and Benefits</title>
 
 <para>
-A number of Unix systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
+A number of UNIX systems (eg: Sun Solaris), as well as the xxxxBSD family and Linux,
 now utilize the Pluggable Authentication Modules (PAM) facility to provide all authentication, 
 authorization and resource control services. Prior to the introduction of PAM, a decision
 to use an alternative to the system password database (<filename>/etc/passwd</filename>) 
@@ -50,7 +50,7 @@ located in <filename>/etc/pam.d</filename>.
 </para>
 
 <para>
-On PAM enabled Unix/Linux systems it is an easy matter to configure the system to use any
+On PAM enabled UNIX/Linux systems it is an easy matter to configure the system to use any
 authentication backend, so long as the appropriate dynamically loadable library modules
 are available for it. The backend may be local to the system, or may be centralised on a
 remote server.
@@ -61,15 +61,15 @@ PAM support modules are available for:
 </para>
 
 <variablelist>
-	<varlistentry><term><filename>/etc/passwd</filename></term><listitem><para>-</para>
+	<varlistentry><term><filename>/etc/passwd</filename>:</term><listitem>
 		<para>
-		There are several PAM modules that interact with this standard Unix user
+		There are several PAM modules that interact with this standard UNIX user
 		database. The most common are called: pam_unix.so, pam_unix2.so, pam_pwdb.so
 		and pam_userdb.so.
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>Kerberos</term><listitem><para>-</para>
+	<varlistentry><term>Kerberos:</term><listitem>
 		<para>
 		The pam_krb5.so module allows the use of any Kerberos compliant server.
 		This tool is used to access MIT Kerberos, Heimdal Kerberos, and potentially
@@ -77,7 +77,7 @@ PAM support modules are available for:
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>LDAP</term><listitem><para>-</para>
+	<varlistentry><term>LDAP:</term><listitem>
 		<para>
 		The pam_ldap.so module allows the use of any LDAP v2 or v3 compatible backend
 		server. Commonly used LDAP backend servers include: OpenLDAP v2.0 and v2.1,
@@ -85,28 +85,28 @@ PAM support modules are available for:
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>NetWare Bindery</term><listitem><para>-</para>
+	<varlistentry><term>NetWare Bindery:</term><listitem>
 		<para>
 		The pam_ncp_auth.so module allows authentication off any bindery enabled
 		NetWare Core Protocol based server.
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>SMB Password</term><listitem><para>-</para>
+	<varlistentry><term>SMB Password:</term><listitem>
 		<para>
 		This module, called pam_smbpass.so, will allow user authentication off
 		the passdb backend that is configured in the Samba &smb.conf; file.
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>SMB Server</term><listitem><para>-</para>
+	<varlistentry><term>SMB Server:</term><listitem>
 		<para>
 		The pam_smb_auth.so module is the original MS Windows networking authentication
 		tool. This module has been somewhat outdated by the Winbind module.
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>Winbind</term><listitem><para>-</para>
+	<varlistentry><term>Winbind:</term><listitem>
 		<para>
 		The pam_winbind.so module allows Samba to obtain authentication from any
 		MS Windows Domain Controller. It can just as easily be used to authenticate
@@ -114,7 +114,7 @@ PAM support modules are available for:
 		</para>
 	</listitem></varlistentry>
 
-	<varlistentry><term>RADIUS</term><listitem><para>-</para>
+	<varlistentry><term>RADIUS:</term><listitem>
 		<para>
 		There is a PAM RADIUS (Remote Access Dial-In User Service) authentication
 		module. In most cases the administrator will need to locate the source code
@@ -172,9 +172,9 @@ is located outside the default then the path must be specified as:
 </para>
 
 <para>
-<screen>
+<programlisting>
 auth  required  /other_path/pam_strange_module.so
-</screen>
+</programlisting>
 </para>
 
 <sect3>
@@ -183,8 +183,7 @@ auth  required  /other_path/pam_strange_module.so
 <para>
 The remaining information in this subsection was taken from the documentation of the Linux-PAM
 project. For more information on PAM, see 
-<ulink url="http://ftp.kernel.org/pub/linux/libs/pam/">
-http://ftp.kernel.org/pub/linux/libs/pam</ulink> The Official Linux-PAM home page.
+<ulink url="http://ftp.kernel.org/pub/linux/libs/pam/">The Official Linux-PAM home page</ulink>
 </para>
 
 <para>
@@ -192,9 +191,9 @@ A general configuration line of the /etc/pam.conf file has the following form:
 </para>
 
 <para>
-<screen>
+<programlisting>
 service-name   module-type   control-flag   module-path   args
-</screen>
+</programlisting>
 </para>
 
 <para>
@@ -204,7 +203,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 </para>
 
 <variablelist>
-	<varlistentry><term>service-name</term><listitem><para>-</para>
+	<varlistentry><term>service-name:</term><listitem>
 		<para>
 		The name of the service associated with this entry. Frequently the service name is the conventional
 		name of the given application. For example, `ftpd', `rlogind' and `su', etc. .
@@ -214,10 +213,11 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		There is a special service-name, reserved for defining a default authentication mechanism. It has
 		the name `OTHER' and may be specified in either lower or upper case characters. Note, when there
 		is a module specified for a named service, the `OTHER' entries are ignored.
-		</para></listitem>
+		</para>
+		</listitem>
 	</varlistentry>
 
-	<varlistentry><term>module-type</term><listitem><para>-</para>
+	<varlistentry><term>module-type:</term><listitem>
                 <para>
 		One of (currently) four types of module. The four types are as follows:
 		</para>
@@ -250,10 +250,11 @@ Once we have explained the meaning of the above tokens, we will describe this me
 			token associated with the user. Typically, there is one module for each `challenge/response'
 			based authentication (auth) module-type.
 			</para></listitem>
-		</itemizedlist></listitem>
+		</itemizedlist>
+		</listitem>
 	</varlistentry>
 
-	<varlistentry><term>control-flag</term><listitem><para>-</para>
+	<varlistentry><term>control-flag:</term><listitem>
                 <para>
 		The control-flag is used to indicate how the PAM library will react to the success or failure of the
 		module it is associated with. Since modules can be stacked (modules of the same type execute in series,
@@ -316,9 +317,9 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		consists of a series of value=action tokens:
 		</para>
 
-		<para><screen>
-		[value1=action1 value2=action2 ...]
-		</screen></para>
+<para><programlisting>
+[value1=action1 value2=action2 ...]
+</programlisting></para>
 
 		<para>
 		Here, value1 is one of the following return values: success; open_err; symbol_err; service_err;
@@ -409,7 +410,7 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		</listitem>
 	</varlistentry>
 
-	<varlistentry><term>module-path</term><listitem><para>-</para>
+	<varlistentry><term>module-path:</term><listitem>
 		<para>
 		The path-name of the dynamically loadable object file; the pluggable module itself. If the first character of the
 		module path is `/', it is assumed to be a complete path. If this is not the case, the given module path is appended
@@ -427,27 +428,28 @@ Once we have explained the meaning of the above tokens, we will describe this me
 		Note, if you wish to include spaces in an argument, you should surround that argument with square brackets. For example:
 		</para>
 
-<para><screen>
+<para><programlisting>
 squid auth required pam_mysql.so user=passwd_query passwd=mada \
         db=eminence [query=select user_name from internet_service where \
                      user_name='%u' and password=PASSWORD('%p') and \
                      service='web_proxy']
-</screen></para>
+</programlisting></para>
 
 		<para>
 		Note, when using this convention, you can include `[' characters inside the string, and if you wish to include a `]'
 		character inside the string that will survive the argument parsing, you should use `\['. In other words:
 		</para>
 
-<para><screen>
+<para><programlisting><!--FIXME:Diagram-->
 [..[..\]..]    -->   ..[..]..
-</screen></para>
+</programlisting></para>
 
 		<para>
 		Any line in (one of) the configuration file(s), that is not formatted correctly, will generally tend (erring on the
 		side of caution) to make the authentication process fail. A corresponding error is written to the system log files
 		with a call to syslog(3). 
-		</para></listitem>
+		</para>
+		</listitem>
 	</varlistentry>
 </variablelist>
 
@@ -469,7 +471,7 @@ by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 <sect3>
 <title>PAM: original login config</title>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # The PAM configuration file for the `login' service
 #
@@ -484,7 +486,7 @@ session      required    pam_pwdb.so
 # session    optional    pam_lastlog.so
 # password   required    pam_cracklib.so retry=3
 password     required    pam_pwdb.so shadow md5
-</screen></para>
+</programlisting></para>
 
 </sect3>
 
@@ -496,7 +498,7 @@ PAM allows use of replaceable modules. Those available on a sample system includ
 </para>
 
 <para><prompt>$</prompt><userinput>/bin/ls /lib/security</userinput>
-<screen>
+<programlisting>
 pam_access.so    pam_ftp.so          pam_limits.so     
 pam_ncp_auth.so  pam_rhosts_auth.so  pam_stress.so     
 pam_cracklib.so  pam_group.so        pam_listfile.so   
@@ -509,7 +511,7 @@ pam_env.so       pam_ldap.so         pam_motd.so
 pam_radius.so    pam_smbpass.so      pam_unix_acct.so  
 pam_wheel.so     pam_unix_auth.so    pam_unix_passwd.so
 pam_userdb.so    pam_warn.so         pam_unix_session.so
-</screen></para>
+</programlisting></para>
 
 <para>
 The following example for the login program replaces the use of 
@@ -522,7 +524,7 @@ hashes. This database is stored in either
 <filename>/usr/local/samba/private/smbpasswd</filename>, 
 <filename>/etc/samba/smbpasswd</filename>, or in 
 <filename>/etc/samba.d/smbpasswd</filename>, depending on the 
-Samba implementation for your Unix/Linux system. The 
+Samba implementation for your UNIX/Linux system. The 
 <filename>pam_smbpass.so</filename> module is provided by 
 Samba version 2.2.1 or later. It can be compiled by specifying the 
 <option>--with-pam_smbpass</option> options when running Samba's
@@ -532,7 +534,7 @@ in the <filename>source/pam_smbpass</filename> directory of the Samba
 source distribution.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # The PAM configuration file for the `login' service
 #
@@ -540,14 +542,14 @@ auth        required    pam_smbpass.so nodelay
 account     required    pam_smbpass.so nodelay
 session     required    pam_smbpass.so nodelay
 password    required    pam_smbpass.so nodelay
-</screen></para>
+</programlisting></para>
 
 <para>
 The following is the PAM configuration file for a particular 
 Linux system. The default condition uses <filename>pam_pwdb.so</filename>.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # The PAM configuration file for the `samba' service
 #
@@ -555,7 +557,7 @@ auth       required     pam_pwdb.so nullok nodelay shadow audit
 account    required     pam_pwdb.so audit nodelay
 session    required     pam_pwdb.so nodelay
 password   required     pam_pwdb.so shadow md5
-</screen></para>
+</programlisting></para>
 
 <para>
 In the following example the decision has been made to use the 
@@ -565,7 +567,7 @@ thus allow the smbpasswd passwords to be changed using the passwd
 program.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # The PAM configuration file for the `samba' service
 #
@@ -573,7 +575,7 @@ auth       required     pam_smbpass.so nodelay
 account    required     pam_pwdb.so audit nodelay
 session    required     pam_pwdb.so nodelay
 password   required     pam_smbpass.so nodelay smbconf=/etc/samba.d/smb.conf
-</screen></para>
+</programlisting></para>
 
 <note><para>PAM allows stacking of authentication mechanisms. It is 
 also possible to pass information obtained within one PAM module through 
@@ -596,26 +598,25 @@ PAM documentation for further helpful information.
 <title>smb.conf PAM Configuration</title>
 
 <para>
-There is an option in smb.conf called <ulink 
-url="smb.conf.5.html#OBEYPAMRESTRICTIONS">obey pam restrictions</ulink>. 
+	There is an option in smb.conf called <smbconfoption><name>obey pam restrictions</name></smbconfoption>.
 The following is from the on-line help for this option in SWAT;
 </para>
 
 <para>
-When Samba-3 is configured to enable PAM support (i.e. 
+When Samba is configured to enable PAM support (i.e. 
 <option>--with-pam</option>), this parameter will 
 control whether or not Samba should obey PAM's account 
 and session management directives. The default behavior 
 is to use PAM for clear text authentication only and to 
 ignore any account or session management. Note that Samba always 
 ignores PAM for authentication in the case of 
-<ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">encrypt passwords = yes</ulink>. 
+<smbconfoption><name>encrypt passwords</name><value>yes</value></smbconfoption>. 
 The reason is that PAM modules cannot support the challenge/response 
 authentication mechanism needed in the presence of SMB 
 password encryption. 
 </para>
 
-<para>Default: <parameter>obey pam restrictions = no</parameter></para>
+<para>Default: <smbconfoption><name>obey pam restrictions</name><value>no</value></smbconfoption></para>
 
 </sect2>
 
@@ -624,7 +625,7 @@ password encryption.
 
 <para>
 All operating systems depend on the provision of users credentials acceptable to the platform.
-Unix requires the provision of a user identifier (UID) as well as a group identifier (GID).
+UNIX requires the provision of a user identifier (UID) as well as a group identifier (GID).
 These are both simple integer type numbers that are obtained from a password backend such
 as <filename>/etc/passwd</filename>.
 </para>
@@ -683,6 +684,8 @@ Options recognized by this module are as follows:
 <table frame="all">
 	<title>Options recognized by pam_smbpass</title>
 	<tgroup cols="2" align="left">
+		<colspec align="left"/>
+		<colspec align="justify"/>
 	<tbody>
 		<row><entry>debug</entry><entry>log more debugging info</entry></row>
 		<row><entry>audit</entry><entry>like debug, but also logs unknown usernames</entry></row>
@@ -701,18 +704,17 @@ Options recognized by this module are as follows:
 </para>
 
 <para>
-Thanks go to the following people:
-<simplelist>
-	<member><ulink url="mailto:morgan@transmeta.com">Andrew Morgan</ulink>, for providing the Linux-PAM
-	framework, without which none of this would have happened</member>
+<itemizedlist>
+	<listitem><para><ulink url="mailto:morgan@transmeta.com">Andrew Morgan</ulink>, for providing the Linux-PAM
+			framework, without which none of this would have happened</para></listitem>
 
-	<member><ulink url="gafton@redhat.com">Christian Gafton</ulink> and Andrew Morgan again, for the
-	pam_pwdb module upon which pam_smbpass was originally based</member>
+<listitem><para><ulink url="mailto:gafton@redhat.com">Christian Gafton</ulink> and Andrew Morgan again, for the
+		pam_pwdb module upon which pam_smbpass was originally based</para></listitem>
 
-	<member><ulink url="lkcl@switchboard.net">Luke Leighton</ulink> for being receptive to the idea,
+<listitem><para><ulink url="mailto:lkcl@switchboard.net">Luke Leighton</ulink> for being receptive to the idea,
 	and for the occasional good-natured complaint about the project's status
-	that keep me working on it :)</member>
-</simplelist>.
+	that keep me working on it :)</para></listitem>
+</itemizedlist>.
 </para>
 
 <para>
@@ -731,7 +733,7 @@ is changed.  Useful when an expired password might be changed by an
 application (such as ssh).
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # password-sync
 #
@@ -742,7 +744,7 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so nullok use_authtok try_first_pass
 session    required     pam_unix.so
-</screen></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -756,7 +758,7 @@ password migration takes place when users ftp in, login using ssh, pop
 their mail, etc.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # password-migration
 #
@@ -769,7 +771,7 @@ password   requisite   pam_cracklib.so retry=3
 password   requisite   pam_unix.so shadow md5 use_authtok try_first_pass
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 session    required    pam_unix.so
-</screen></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -778,10 +780,10 @@ session    required    pam_unix.so
 <para>
 A sample PAM configuration for a 'mature' smbpasswd installation.
 private/smbpasswd is fully populated, and we consider it an error if
-the smbpasswd doesn't exist or doesn't match the Unix password.
+the smbpasswd doesn't exist or doesn't match the UNIX password.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # password-mature
 #
@@ -792,7 +794,7 @@ password   requisite    pam_cracklib.so retry=3
 password   requisite    pam_unix.so shadow md5 use_authtok try_first_pass
 password   required     pam_smbpass.so use_authtok use_first_pass
 session    required     pam_unix.so
-</screen></para>
+</programlisting></para>
 </sect3>
 
 <sect3>
@@ -804,7 +806,7 @@ pam_krb5.  This could be useful on a Samba PDC that is also a member of
 a Kerberos realm.
 </para>
 
-<para><screen>
+<para><programlisting>
 #%PAM-1.0
 # kdc-pdc
 #
@@ -816,7 +818,7 @@ password   requisite   pam_cracklib.so retry=3
 password   optional    pam_smbpass.so nullok use_authtok try_first_pass
 password   required    pam_krb5.so use_authtok try_first_pass
 session    required    pam_krb5.so
-</screen></para>
+</programlisting></para>
 
 </sect3>
 
@@ -836,11 +838,13 @@ the Samba mailing list.
 	<title>pam_winbind problem</title>
 
 	<para>
-	I have the following PAM configuration:
+		<quote>
+			I have the following PAM configuration:
+		</quote>
 	</para>
 
-<para>
-<screen>
+	<para>
+<programlisting>
 auth required /lib/security/pam_securetty.so
 auth sufficient /lib/security/pam_winbind.so
 auth sufficient /lib/security/pam_unix.so use_first_pass nullok
@@ -849,16 +853,18 @@ auth required /lib/security/pam_nologin.so
 account required /lib/security/pam_stack.so service=system-auth
 account required /lib/security/pam_winbind.so
 password required /lib/security/pam_stack.so service=system-auth
-</screen>
-</para>
-
-	<para>
-	When I open a new console with [ctrl][alt][F1], then I cant log in with my user "pitie".
-	I've tried with user "scienceu+pitie" also.
+</programlisting>
 	</para>
 
 	<para>
-	Answer: The problem may lie with your inclusion of <parameter>pam_stack.so
+		<quote>
+	When I open a new console with [ctrl][alt][F1], then I cant log in with my user "pitie".
+	I've tried with user "scienceu+pitie" also.
+</quote>
+	</para>
+
+	<para>
+		The problem may lie with your inclusion of <parameter>pam_stack.so
 	service=system-auth</parameter>. That file often contains a lot of stuff that may
 	duplicate what you're already doing. Try commenting out the pam_stack lines
 	for auth and account and see if things work. If they do, look at
@@ -869,6 +875,59 @@ password required /lib/security/pam_stack.so service=system-auth
 
 	</sect2>
 
+	<sect2>
+	<title>Winbind is not resolving users and groups</title>
+
+	<para>
+		<quote>
+	My smb.conf file is correctly configured. I have specified 
+	<smbconfoption><name>idmap uid</name><value>12000</value></smbconfoption>, 
+	and <smbconfoption><name>idmap gid</name><value>3000-3500</value></smbconfoption>
+	and <command>winbind</command> is running. When I do the following it all works fine.
+</quote>
+	</para>
+
+<para><screen>
+&rootprompt;<userinput>wbinfo -u</userinput>
+MIDEARTH+maryo
+MIDEARTH+jackb
+MIDEARTH+ameds
+...
+MIDEARTH+root
+
+&rootprompt;<userinput>wbinfo -g</userinput>
+MIDEARTH+Domain Users
+MIDEARTH+Domain Admins
+MIDEARTH+Domain Guests
+...
+MIDEARTH+Accounts
+
+&rootprompt;<userinput>getent passwd</userinput>
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/bin/bash
+...
+maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
+</screen></para>
+
+<para>
+	<quote>
+	But the following command just fails:
+</quote>
+<screen>
+&rootprompt;<userinput>chown 'maryo' a_file</userinput>
+chown: `maryo': invalid user
+</screen>
+<quote>
+This is driving me nuts! What can be wrong?
+</quote>
+	</para>
+
+	<para>
+	Your system is likely running <command>nscd</command>, the name service
+	caching daemon. Shut it down, do NOT restart it! You will find your problem resolved.
+	</para>
+
+	</sect2>
 </sect1>
 
 </chapter>

@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbtar.1">
 
@@ -222,13 +221,13 @@
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</para>
 	
-	<para><ulink url="mailto:poultenr@logica.co.uk">Ricky Poulten</ulink>  
+<para><ulink noescape="1" url="mailto:poultenr@logica.co.uk">Ricky Poulten</ulink>  
 	wrote the tar extension and this man page. The <command>smbtar</command> 
-	script was heavily rewritten and improved by <ulink 
+	script was heavily rewritten and improved by <ulink noescape="1"
 	url="mailto:Martin.Kraemer@mch.sni.de">Martin Kraemer</ulink>. Many 
 	thanks to everyone who suggested extensions, improvements, bug 
 	fixes, etc. The man page sources were converted to YODL format (another 
-	excellent piece of Open Source software, available at <ulink url="ftp://ftp.icce.rug.nl/pub/unix/">
+	excellent piece of Open Source software, available at <ulink noescape="1" url="ftp://ftp.icce.rug.nl/pub/unix/">
 	ftp://ftp.icce.rug.nl/pub/unix/</ulink>) and updated for the Samba 2.0 
 	release by Jeremy Allison.  The conversion to DocBook for 
 	Samba 2.2 was done by Gerald Carter. The conversion to DocBook XML 4.2 for

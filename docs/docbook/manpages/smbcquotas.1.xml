@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="iso8859-1"?>
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-                  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
-
-<!ENTITY % globalentities SYSTEM './../global.ent'> %globalentities;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+				  
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
 <refentry id="smbcquotas.1">
 
@@ -177,7 +176,7 @@
 	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
 
-	<para><command>smbcacls</command> was written by Stefan Metzmacher.</para>
+	<para><command>smbcquotas</command> was written by Stefan Metzmacher.</para>
 </refsect1>
 
 </refentry>

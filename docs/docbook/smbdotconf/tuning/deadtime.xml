@@ -1,4 +1,4 @@
-<samba:parameter name="dead time"
+<samba:parameter name="deadtime"
                  context="G"
                  developer="1"
                  xmlns:samba="http://samba.org/common">

@@ -1,22 +1,21 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 6. Backup Domain Control</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="index.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="samba-pdc.html" title="Chapter 5. Domain Control"><link rel="next" href="domain-member.html" title="Chapter 7. Domain Membership"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 6. Backup Domain Control</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="domain-member.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="samba-bdc"></a>Chapter 6. Backup Domain Control</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Volker</span> <span class="surname">Lendecke</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:Volker.Lendecke@SerNet.DE">Volker.Lendecke@SerNet.DE</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="samba-bdc.html#id2896028">Features And Benefits</a></dt><dt><a href="samba-bdc.html#id2896201">Essential Background Information</a></dt><dd><dl><dt><a href="samba-bdc.html#id2896230">MS Windows NT4 Style Domain Control</a></dt><dt><a href="samba-bdc.html#id2896450">Active Directory Domain Control</a></dt><dt><a href="samba-bdc.html#id2896471">What qualifies a Domain Controller on the network?</a></dt><dt><a href="samba-bdc.html#id2896497">How does a Workstation find its domain controller?</a></dt></dl></dd><dt><a href="samba-bdc.html#id2896542">Backup Domain Controller Configuration</a></dt><dd><dl><dt><a href="samba-bdc.html#id2896645">Example Configuration</a></dt></dl></dd><dt><a href="samba-bdc.html#id2896706">Common Errors</a></dt><dd><dl><dt><a href="samba-bdc.html#id2896719">Machine Accounts keep expiring, what can I do?</a></dt><dt><a href="samba-bdc.html#id2896750">Can Samba be a Backup Domain Controller to an NT4 PDC?</a></dt><dt><a href="samba-bdc.html#id2896783">How do I replicate the smbpasswd file?</a></dt><dt><a href="samba-bdc.html#id2896828">Can I do this all with LDAP?</a></dt></dl></dd></dl></div><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 6. Backup Domain Control</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-doc.html" title="SAMBA Project Documentation"><link rel="up" href="type.html" title="Part II. Server Configuration Basics"><link rel="previous" href="samba-pdc.html" title="Chapter 5. Domain Control"><link rel="next" href="domain-member.html" title="Chapter 7. Domain Membership"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 6. Backup Domain Control</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><th width="60%" align="center">Part II. Server Configuration Basics</th><td width="20%" align="right"> <a accesskey="n" href="domain-member.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="samba-bdc"></a>Chapter 6. Backup Domain Control</h2></div><div><div class="author"><h3 class="author"><span class="firstname">John</span> <span class="othername">H.</span> <span class="surname">Terpstra</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:jht@samba.org">jht@samba.org</a>&gt;</tt></p></div></div></div></div><div><div class="author"><h3 class="author"><span class="firstname">Volker</span> <span class="surname">Lendecke</span></h3><div class="affiliation"><span class="orgname">Samba Team<br></span><div class="address"><p><tt class="email">&lt;<a href="mailto:Volker.Lendecke@SerNet.DE">Volker.Lendecke@SerNet.DE</a>&gt;</tt></p></div></div></div></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="samba-bdc.html#id2889347">Features And Benefits</a></dt><dt><a href="samba-bdc.html#id2889536">Essential Background Information</a></dt><dd><dl><dt><a href="samba-bdc.html#id2889565">MS Windows NT4 Style Domain Control</a></dt><dt><a href="samba-bdc.html#id2889816">Active Directory Domain Control</a></dt><dt><a href="samba-bdc.html#id2889836">What qualifies a Domain Controller on the network?</a></dt><dt><a href="samba-bdc.html#id2889863">How does a Workstation find its domain controller?</a></dt></dl></dd><dt><a href="samba-bdc.html#id2889908">Backup Domain Controller Configuration</a></dt><dd><dl><dt><a href="samba-bdc.html#id2890011">Example Configuration</a></dt></dl></dd><dt><a href="samba-bdc.html#id2890167">Common Errors</a></dt><dd><dl><dt><a href="samba-bdc.html#id2890181">Machine Accounts keep expiring, what can I do?</a></dt><dt><a href="samba-bdc.html#id2890212">Can Samba be a Backup Domain Controller to an NT4 PDC?</a></dt><dt><a href="samba-bdc.html#id2890238">How do I replicate the smbpasswd file?</a></dt><dt><a href="samba-bdc.html#id2890283">Can I do this all with LDAP?</a></dt></dl></dd></dl></div><p>
 Before you continue reading in this section, please make sure that you are comfortable
-with configuring a Samba Domain Controller as described in the
-<a href="samba-pdc.html" title="Chapter 5. Domain Control">Domain Control</a> chapter.
-</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896028"></a>Features And Benefits</h2></div></div><div></div></div><p>
+with configuring a Samba Domain Controller as described in <a href="samba-pdc.html" title="Chapter 5. Domain Control">chapter on setting up Samba as a PDC</a>.
+</p><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2889347"></a>Features And Benefits</h2></div></div><div></div></div><p>
 This is one of the most difficult chapters to summarise. It does not matter what we say here
 for someone will still draw conclusions and / or approach the Samba-Team with expectations
 that are either not yet capable of being delivered, or that can be achieved far more
-effectively using a totally different approach. Since this HOWTO is already so large and
-extensive, we have taken the decision to provide sufficient (but not comprehensive)
-information regarding Backup Domain Control. In the event that you should have a persistent
-concern that is not addressed in this HOWTO document then please email 
+effectively using a totally different approach. In the event that you should have a persistent
+concern that is not addressed in this book then please email
 <a href="mailto:jht@samba.org" target="_top">John H Terpstra</a> clearly setting out your requirements
 and / or question and we will do our best to provide a solution.
 </p><p>
 Samba-3 is capable of acting as a Backup Domain Controller to another Samba Primary Domain
-Controller. A Samba-3 PDC can operate with an LDAP Account backend. The Samba-3 BDC can
-operate with a slave LDAP server for the Account backend. This effectively gives samba a high
-degree of scalability. This is a very sweet (nice) solution for large organisations.
+Controller. A Samba-3 PDC can operate with an LDAP Account backend. The LDAP backend can be
+either a common master LDAP server, or a slave server. The use of a slave LDAP server has the
+benefit that when the master is down clients may still be able to log onto the network.
+This effectively gives samba a high degree of scalability iand is a very sweet (nice) solution
+for large organisations.
 </p><p>
 While it is possible to run a Samba-3 BDC with non-LDAP backend, the administrator will
 need to figure out precisely what is the best way to replicate (copy / distribute) the
@@ -41,8 +40,9 @@ lets consider each possible option and look at the pro's and con's for each theo
 	</p><p>
 	Arguments Against: Complexity
 	</p></li><li><p>
-	Passdb Backend is tdbsam based, BDCs use cron based &quot;net rpc vampire&quot; to
-	suck down the Accounts database from the PDC
+	Passdb Backend is tdbsam based, BDCs use cron based <span class="emphasis"><em>net rpc vampire</em></span> to
+	obtain the Accounts database from the PDC and place them into the Samba SAM.
+	<span class="emphasis"><em>net rpc vampire</em></span> is a Samba function of the &quot;net&quot; command.
 	</p><p>
 	Arguments For: It would be a nice solution
 	</p><p>
@@ -63,7 +63,7 @@ lets consider each possible option and look at the pro's and con's for each theo
 	Arguments Against: All machine trust accounts and user accounts will be locally
 	maintained. Domain users will NOT be able to roam from office to office. This is
 	a broken and flawed solution. Do NOT do this.
-	</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896201"></a>Essential Background Information</h2></div></div><div></div></div><p>
+	</p></li></ul></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2889536"></a>Essential Background Information</h2></div></div><div></div></div><p>
 A Domain Controller is a machine that is able to answer logon requests from network
 workstations. Microsoft LanManager and IBM LanServer were two early products that
 provided this capability. The technology has become known as the LanMan Netlogon service.
@@ -73,7 +73,7 @@ and with it a new form of the network logon service that has extended functional
 This service became known as the NT NetLogon Service. The nature of this service has
 changed with the evolution of MS Windows NT and today provides a very complex array of
 services that are implemented over a complex spectrum of technologies.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896230"></a>MS Windows NT4 Style Domain Control</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2889565"></a>MS Windows NT4 Style Domain Control</h3></div></div><div></div></div><p>
 Whenever a user logs into a Windows NT4 / 200x / XP Professional Workstation,
 the workstation connects to a Domain Controller (authentication server) to validate
 the username and password that the user entered are valid. If the information entered
@@ -131,32 +131,29 @@ one of the BDCs can be promoted to a PDC. If this happens while the original PDC
 line then it is automatically demoted to a BDC. This is an important aspect of Domain
 Controller management. The tool that is used to affect a promotion or a demotion is the
 Server Manager for Domains.
-</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2896379"></a>Example PDC Configuration</h4></div></div><div></div></div><p>
+</p><div class="sect3" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2889716"></a>Example PDC Configuration</h4></div></div><div></div></div><p>
 Since version 2.2 Samba officially supports domain logons for all current Windows Clients,
 including Windows NT4, 2003 and XP Professional. For samba to be enabled as a PDC some
 parameters in the <i class="parameter"><tt>[global]</tt></i>-section of the <tt class="filename">smb.conf</tt> have to be set:
-</p><pre class="programlisting">
-	workgroup = SAMBA
-	domain master = yes
-	domain logons = yes
-</pre><p>
-Several other things like a <i class="parameter"><tt>[homes]</tt></i> and a <i class="parameter"><tt>[netlogon]</tt></i> share also need to be set along with
+</p><div class="example"><a name="id2889747"></a><p class="title"><b>Example 6.1. Minimal smb.conf for being a PDC</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>workgroup = MIDEARTH</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>domain logons = yes</tt></i></td></tr></table></div><p>
+Several other things like a <i class="parameter"><tt>[homes]</tt></i> and a
+<i class="parameter"><tt>[netlogon]</tt></i> share also need to be set along with
 settings for the profile path, the users home drive, etc.. This will not be covered in this
-chapter, for more information please refer to the chapter on <a href="samba-pdc.html" title="Chapter 5. Domain Control">Domain Control</a>.
-</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896450"></a>Active Directory Domain Control</h3></div></div><div></div></div><p>
+chapter, for more information please refer to <a href="samba-pdc.html" title="Chapter 5. Domain Control">the chapter about samba as a PDC</a>.
+</p></div></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2889816"></a>Active Directory Domain Control</h3></div></div><div></div></div><p>
 As of the release of MS Windows 2000 and Active Directory, this information is now stored
 in a directory that can be replicated and for which partial or full administrative control
 can be delegated. Samba-3 is NOT able to be a Domain Controller within an Active Directory
 tree, and it can not be an Active Directory server. This means that Samba-3 also can NOT
 act as a Backup Domain Controller to an Active Directory Domain Controller.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896471"></a>What qualifies a Domain Controller on the network?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2889836"></a>What qualifies a Domain Controller on the network?</h3></div></div><div></div></div><p>
 Every machine that is a Domain Controller for the domain SAMBA has to register the NetBIOS
 group name SAMBA&lt;#1c&gt; with the WINS server and/or by broadcast on the local network.
 The PDC also registers the unique NetBIOS name SAMBA&lt;#1b&gt; with the WINS server.
 The name type &lt;#1b&gt; name is normally reserved for the Domain Master Browser, a role
 that has nothing to do with anything related to authentication, but the Microsoft Domain
 implementation requires the domain master browser to be on the same machine as the PDC.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896497"></a>How does a Workstation find its domain controller?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2889863"></a>How does a Workstation find its domain controller?</h3></div></div><div></div></div><p>
 An MS Windows NT4 / 200x / XP Professional workstation in the domain SAMBA that wants a
 local user to be authenticated has to find the domain controller for SAMBA. It does this
 by doing a NetBIOS name query for the group name SAMBA&lt;#1c&gt;. It assumes that each
@@ -164,22 +161,22 @@ of the machines it gets back from the queries is a domain controller and can ans
 requests. To not open security holes both the workstation and the selected domain controller
 authenticate each other. After that the workstation sends the user's credentials (name and
 password) to the local Domain Controller, for validation.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896542"></a>Backup Domain Controller Configuration</h2></div></div><div></div></div><p>
+</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2889908"></a>Backup Domain Controller Configuration</h2></div></div><div></div></div><p>
 Several things have to be done:
 </p><div class="itemizedlist"><ul type="disc"><li><p>
 	The domain SID has to be the same on the PDC and the BDC. This used to
 	be stored in the file private/MACHINE.SID. This file is not created
-	anymore since Samba 2.2.5 or even earlier. Nowadays the domain SID is
-	stored in the file private/secrets.tdb. Simply copying the secrets.tdb
+	since Samba 2.2.5. Nowadays the domain SID is stored in the file
+	private/secrets.tdb. Simply copying the secrets.tdb
 	from the PDC to the BDC does not work, as the BDC would
 	generate a new SID for itself and override the domain SID with this
 	new BDC SID.</p><p>
 	To retrieve the domain SID from the PDC or an existing BDC and store it in the
 	secrets.tdb, execute:
 	</p><pre class="screen">
-	<tt class="prompt">root# </tt><b class="userinput"><tt>net rpc getsid</tt></b>
-	</pre></li><li><p>
-	The Unix user database has to be synchronized from the PDC to the
+<tt class="prompt">root# </tt><b class="userinput"><tt>net rpc getsid</tt></b>
+</pre></li><li><p>
+	The UNIX user database has to be synchronized from the PDC to the
 	BDC. This means that both the /etc/passwd and /etc/group have to be
 	replicated from the PDC to the BDC. This can be done manually
 	whenever changes are made, or the PDC is set up as a NIS master
@@ -199,23 +196,30 @@ Several things have to be done:
 	BDC. This can be done manually whenever login scripts are changed,
 	or it can be done automatically together with the smbpasswd
 	synchronization.
-	</p></li></ul></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896645"></a>Example Configuration</h3></div></div><div></div></div><p>
+	</p></li></ul></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890011"></a>Example Configuration</h3></div></div><div></div></div><p>
 Finally, the BDC has to be found by the workstations. This can be done by setting:
-</p><pre class="programlisting">
-	workgroup = SAMBA
-	domain master = no
-	domain logons = yes
-</pre><p>
-in the <i class="parameter"><tt>[global]</tt></i>-section of the <tt class="filename">smb.conf</tt> of the BDC. This makes the BDC
+</p><div class="example"><a name="id2890026"></a><p class="title"><b>Example 6.2. Minimal setup for being a BDC</b></p><table class="simplelist" border="0" summary="Simple list"><tr><td><i class="parameter"><tt>workgroup = MIDEARTH</tt></i></td></tr><tr><td><i class="parameter"><tt>domain master = no</tt></i></td></tr><tr><td><i class="parameter"><tt>domain logons = yes</tt></i></td></tr><tr><td><i class="parameter"><tt>idmap backend = ldapsam://slave-ldap.quenya.org</tt></i></td></tr></table></div><p>
+In the <i class="parameter"><tt>[global]</tt></i>-section of the <tt class="filename">smb.conf</tt> of the BDC. This makes the BDC
 only register the name SAMBA&lt;#1c&gt; with the WINS server. This is no
 problem as the name SAMBA&lt;#1c&gt; is a NetBIOS group name that is meant to
-be registered by more than one machine. The parameter 'domain master =
-no' forces the BDC not to register SAMBA&lt;#1b&gt; which as a unique NetBIOS
+be registered by more than one machine. The parameter
+<a class="indexterm" name="id2890094"></a><i class="parameter"><tt>domain master</tt></i> = no
+forces the BDC not to register SAMBA&lt;#1b&gt; which as a unique NetBIOS
 name is reserved for the Primary Domain Controller.
-</p></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2896706"></a>Common Errors</h2></div></div><div></div></div><p>
+</p><p>
+The <i class="parameter"><tt>idmap backend</tt></i> will redirect the <b class="command">winbindd</b> utility to
+use the LDAP database to resolve all UIDs and GIDs for UNIX accounts.
+</p><div class="note" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Note</h3><p>
+Samba-3 has introduced a new ID mapping facility. One of the features of this facility is that it
+allows greater flexibility in how user and group IDs are handled in respect of NT Domain User and Group
+SIDs. One of the new facilities provides for explicitly ensuring that UNIX / Linux UID and GID values
+will be consistent on the PDC, all BDCs and all Domain Member servers. The parameter that controls this
+is called <i class="parameter"><tt>idmap backend</tt></i>. Please refer to the man page for <tt class="filename">smb.conf</tt> for more information
+regarding it's behaviour. Do NOT set this parameter except where an LDAP backend (ldapsam) is in use.
+</p></div></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2890167"></a>Common Errors</h2></div></div><div></div></div><p>
 As this is a rather new area for Samba there are not many examples that we may refer to. Keep
 watching for updates to this section.
-</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896719"></a>Machine Accounts keep expiring, what can I do?</h3></div></div><div></div></div><p>
+</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890181"></a>Machine Accounts keep expiring, what can I do?</h3></div></div><div></div></div><p>
 This problem will occur when occur when the passdb (SAM) files are copied  from a central
 server but the local Backup Domain Controllers.  Local machine trust account password updates
 are not copied back to the central server. The newer machine account password is then over
@@ -226,18 +230,15 @@ to proceed and the account expiry error will be reported.
 </p><p>
 The solution: use a more robust passdb backend, such as the ldapsam backend, setting up
 an slave LDAP server for each BDC, and a master LDAP server for the PDC.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896750"></a>Can Samba be a Backup Domain Controller to an NT4 PDC?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890212"></a>Can Samba be a Backup Domain Controller to an NT4 PDC?</h3></div></div><div></div></div><p>
 With version 2.2, no. The native NT4 SAM replication protocols have not yet been fully
 implemented. The Samba Team is working on understanding and implementing the protocols,
-but this work has not been finished for version 2.2.
+but this work has not been finished for Samba-3.
 </p><p>
-With version 3.0, the work on both the replication protocols and a suitable storage
-mechanism has progressed, and some form of NT4 BDC support is expected soon.
-</p><p>
-Can I get the benefits of a BDC with Samba?  Yes. The main reason for implementing a
+Can I get the benefits of a BDC with Samba?  Yes, but only to a Samba PDC. The main reason for implementing a
 BDC is availability. If the PDC is a Samba machine, a second Samba machine can be set up to
 service logon requests whenever the PDC is down.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896783"></a>How do I replicate the smbpasswd file?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890238"></a>How do I replicate the smbpasswd file?</h3></div></div><div></div></div><p>
 Replication of the smbpasswd file is sensitive. It has to be done whenever changes
 to the SAM are made. Every user's password change is done in the smbpasswd file and
 has to be replicated to the BDC. So replicating the smbpasswd file very often is necessary.
@@ -251,9 +252,9 @@ to type a password.
 As said a few times before, use of this method is broken and flawed. Machine trust 
 accounts will go out of sync, resulting in a very broken domain. This method is
 <span class="emphasis"><em>not</em></span> recommended. Try using LDAP instead.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2896828"></a>Can I do this all with LDAP?</h3></div></div><div></div></div><p>
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2890283"></a>Can I do this all with LDAP?</h3></div></div><div></div></div><p>
 The simple answer is YES.  Samba's pdb_ldap code supports binding to a replica
 LDAP server, and will also follow referrals and rebind to the master if it ever
 needs to make a modification to the database. (Normally BDCs are read only, so
 this will not occur often).
-</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="type.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="domain-member.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 5. Domain Control </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 7. Domain Membership</td></tr></table></div></body></html>
+</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="samba-pdc.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="type.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="domain-member.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 5. Domain Control </td><td width="20%" align="center"><a accesskey="h" href="samba-doc.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 7. Domain Membership</td></tr></table></div></body></html>

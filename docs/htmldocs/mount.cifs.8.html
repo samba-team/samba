@@ -1,0 +1,103 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>mount.cifs</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="mount.cifs.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>mount.cifs &#8212; mount using the Common Internet File System (CIFS)</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">mount.cifs</tt>  {service} {mount-point} [-o options]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p>mount.cifs mounts a Linux CIFS filesystem. It 
+is usually invoked indirectly by
+the <a href="mount.8.html"><span class="citerefentry"><span class="refentrytitle">mount</span>(8)</span></a> command when using the 
+"-t cifs" option. This command only works in Linux, and the kernel must
+support the cifs filesystem. The CIFS protocol is the successor to the 
+SMB protocol and is supported by most Windows servers and many other
+commercial servers and Network Attached Storage appliances as well as 
+by the popular Open Source server Samba.
+	</p><p>
+	The mount.cifs utility attaches the UNC name (exported network resource) to
+	the local directory <span class="emphasis"><em>mount-point</em></span>. It is possible to set the mode for mount.cifs to 
+setuid root to allow non-root users to mount shares to directories for which they
+have write permission.
+	</p><p>
+		Options to <span class="emphasis"><em>mount.cifs</em></span> are specified as a comma-separated
+list of key=value pairs. It is possible to send options other
+than those listed here, assuming that cifs supports them. If
+you get mount failures, check your kernel log for errors on
+unknown options.
+	</p><p><span class="emphasis"><em>mount.cifs</em></span> is a daemon. After mounting it keeps running until
+		the mounted resource is unmounted (usually via the umount utility)
+	</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">username=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>specifies the username to connect as. If
+				this is not given, then the environment variable <span class="emphasis"><em>USER</em></span> is used. This option can also take the
+form "user%password" or "user/workgroup" or
+"user/workgroup%password" to allow the password and workgroup
+to be specified as part of the username.
+		</p></dd><dt><span class="term">password=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>specifies the CIFS password. If this
+option is not given then the environment variable
+<span class="emphasis"><em>PASSWD</em></span> is used. If it can find
+no password <span class="emphasis"><em>mount.cifs</em></span> will prompt
+for a passeword, unless the guest option is
+given. 
+</p><p>Note that password which contain the arguement delimiter
+character (i.e. a comma ',') will failed to be parsed correctly
+on the command line.  However, the same password defined
+in the PASSWD environment variable or a credentials file (see
+below) will be read correctly.
+</p></dd><dt><span class="term">credentials=<i class="replaceable"><tt>filename</tt></i></span></dt><dd><p>
+				specifies a file that contains a username
+				and/or password. The format of the file is:
+			</p><pre class="programlisting">
+.nf
+		username = <i class="replaceable"><tt>value</tt></i>
+		password = <i class="replaceable"><tt>value</tt></i>
+.fi
+</pre><p>
+This is preferred over having passwords in plaintext in a
+shared file, such as <tt class="filename">/etc/fstab</tt>. Be sure to protect any
+credentials file properly.
+		</p></dd><dt><span class="term">uid=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>sets the uid that will own all files on
+	the mounted filesystem.
+	It may be specified as either a username or a numeric uid.
+	This parameter is ignored when the target server supports
+	the CIFS Unix extensions.</p></dd><dt><span class="term">gid=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>sets the gid that will own all files on
+the mounted filesystem.
+It may be specified as either a groupname or a numeric 
+gid. This parameter is ignored when the target server supports
+the CIFS Unix extensions.
+		</p></dd><dt><span class="term">port=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>sets the port number on the server to attempt to contact to negotiate
+CIFS support.  If the CIFS server is not listening on this port or
+if it is not specified, the default ports will be tried i.e. 
+port 445 is tried and if no response then port 139 is tried.
+		</p></dd><dt><span class="term">file_mode=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>If the server does not support the CIFS Unix extensions this
+				overrides default file mode which will be used locally.</p></dd><dt><span class="term">dir_mode=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>If the server does not support the CIFS Unix extensions this
+				overrides the default mode for directories. </p></dd><dt><span class="term">ip=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>sets the destination host or IP address.</p></dd><dt><span class="term">domain=<i class="replaceable"><tt>arg</tt></i></span></dt><dd><p>sets the domain (workgroup) of the user </p></dd><dt><span class="term">guest</span></dt><dd><p>don't prompt for a password </p></dd><dt><span class="term">ro</span></dt><dd><p>mount read-only</p></dd><dt><span class="term">rw</span></dt><dd><p>mount read-write</p></dd><dt><span class="term">rsize</span></dt><dd><p>default network read size</p></dd><dt><span class="term">wsize</span></dt><dd><p>default network write size</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>ENVIRONMENT VARIABLES</h2><p>
+		The variable <span class="emphasis"><em>USER</em></span> may contain the username of the
+person using the client.  This information is used only if the
+protocol level is high enough to support session-level
+passwords. The variable can be used to set both username and
+password by using the format username%password.
+	</p><p>
+		The variable <span class="emphasis"><em>PASSWD</em></span> may contain the password of the
+person using the client.  This information is used only if the
+protocol level is high enough to support session-level
+passwords.
+	</p><p>
+		The variable <span class="emphasis"><em>PASSWD_FILE</em></span> may contain the pathname
+of a file to read the password from. A single line of input is
+read and used as the password.
+	</p></div><div class="refsect1" lang="en"><h2>NOTES</h2><p>This command may be used only by root.</p></div><div class="refsect1" lang="en"><h2>CONFIGURATION</h2><p>
+The primary mechanism for making configuration changes and for reading 
+debug information for the cifs vfs is via the Linux /proc filesystem.
+In the directory /proc/fs/cifs are various configuration files and
+pseudo files which can display debug information.  For more
+information see the kernel file fs/cifs/README
+</p></div><div class="refsect1" lang="en"><h2>BUGS</h2><p>Passwords and other options containing , can not be handled.
+For passwords an alternative way of passing them is in a credentials
+file or in the PASSWD environment.</p><p>The credentials file does not handle usernames or passwords with
+		leading space.</p><p>
+Note that the typical response to a bug report is suggestion
+to try the latest version first. So please try doing that first,
+and always include which versions you use of relevant software
+when reporting bugs (minimum: samba, kernel, distribution)
+</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of 
+	the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p>
+	Documentation/filesystems/cifs.txt and fs/cifs/README in the linux kernel
+	source tree may contain additional options and information.
+</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>Steve French</p><p>The syntax and manpage were loosely based on that of smbmount. It 
+		was converted to Docbook/XML by Jelmer Vernooij.</p><p>The current maintainer of the Linux cifs vfs and the userspace
+		tool <span class="emphasis"><em>mount.cifs</em></span> is <a href="mailto:sfrench@samba.org" target="_top">Steve French</a>.
+		The <a href="mailto:samba@samba.org" target="_top">SAMBA Mailing list</a> 
+		is the preferred place to ask questions regarding these programs. 
+	</p></div></div></body></html>

@@ -22,8 +22,8 @@
 	suggested command would be to add <command moreinfo="none">NET TIME \\SERVER /SET 
 	/YES</command>, to force every machine to synchronize clocks with 
 	the same time server.  Another use would be to add <command moreinfo="none">NET USE 
-	U: \\SERVER\UTILS</command> for commonly used utilities, or <command moreinfo="none">
-	NET USE Q: \\SERVER\ISO9001_QA</command> for example.</para>
+	U: \\SERVER\UTILS</command> for commonly used utilities, or <screen>
+	<userinput>NET USE Q: \\SERVER\ISO9001_QA</userinput></screen> for example.</para>
 
 	<para>Note that it is particularly important not to allow write 
 	access to the [netlogon] share, or to grant users write permission 

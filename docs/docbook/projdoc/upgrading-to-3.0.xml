@@ -1,63 +1,571 @@
 <chapter id="upgrading-to-3.0">
 <chapterinfo>
 	&author.jelmer;
-	<pubdate>25 October 2002</pubdate>
+	&author.jht;
+	&author.jerry;
+	<pubdate>June 30, 2003</pubdate>
 </chapterinfo>
 
 <title>Upgrading from Samba-2.x to Samba-3.0.0</title>
 
-<sect1>
-<title>Charsets</title>
 
-<para>You might experience problems with special characters 
-when communicating with old DOS clients. Codepage 
-support has changed in samba 3.0. Read the chapter
-<link linkend="unicode">Unicode support</link> for details.
+<sect1>
+<title>New Features in Samba-3</title>
+
+<para>
+Major new features:
+</para>
+
+<orderedlist>
+	<listitem><para>
+	Active Directory support. This release is able to join a ADS realm
+	as a member server and authenticate users using LDAP/kerberos.
+	</para></listitem>
+
+	<listitem><para>
+	Unicode support. Samba will now negotiate UNICODE on the wire and
+	internally there is now a much better infrastructure for multi-byte
+	and UNICODE character sets.
+	</para></listitem>
+
+	<listitem><para>
+	New authentication system. The internal authentication system has
+	been almost completely rewritten. Most of the changes are internal,
+	but the new auth system is also very configurable.
+	</para></listitem>
+
+	<listitem><para>
+	New filename mangling system. The filename mangling system has been
+	completely rewritten. An internal database now stores mangling maps
+	persistently. This needs lots of testing.
+	</para></listitem>
+
+	<listitem><para>
+	New "net" command. A new "net" command has been added. It is
+	somewhat similar to the "net" command in windows. Eventually we
+	plan to replace a bunch of other utilities (such as smbpasswd)
+	with subcommands in "net", at the moment only a few things are
+	implemented.
+	</para></listitem>
+
+	<listitem><para>
+	Samba now negotiates NT-style status32 codes on the wire. This
+	improves error handling a lot.
+	</para></listitem>
+
+	<listitem><para>
+	Better Windows 2000/XP/2003 printing support including publishing
+	printer attributes in active directory
+	</para></listitem>
+
+	<listitem><para>
+	New loadable RPC modules
+	</para></listitem>
+
+	<listitem><para>
+	New dual-daemon winbindd support (-B) for better performance
+	</para></listitem>
+
+	<listitem><para>
+	Support for migrating from a Windows NT 4.0 domain to a Samba
+	domain and maintaining user, group and domain SIDs
+	</para></listitem>
+
+	<listitem><para>
+	Support for establishing trust relationships with Windows NT 4.0
+	domain controllers
+	</para></listitem>
+
+	<listitem><para>
+	Initial support for a distributed Winbind architecture using
+	an LDAP directory for storing SID to uid/gid mappings
+	</para></listitem>
+
+	<listitem><para>
+	Major updates to the Samba documentation tree.
+	</para></listitem>
+</orderedlist>
+<para>
+Plus lots of other improvements!
 </para>
 
 </sect1>
 
 <sect1>
-<title>Obsolete configuration options</title>
+<title>Configuration Parameter Changes</title>
 
 <para>
-In 3.0, the following configuration options have been removed.
+This section contains a brief listing of changes to smb.conf options
+in the 3.0.0 release.  Please refer to the smb.conf(5) man page for
+complete descriptions of new or modified parameters.
 </para>
 
-<simplelist>
-<member>printer driver (replaced by new driver procedures) </member>
-<member>printer driver file (replaced by new driver procedures)</member>
-<member>printer driver location (replaced by new driver procedures)</member>
-<member>use rhosts</member>
-<member>postscript</member>
-<member>client code page (replaced by dos charset)</member>
-<member>vfs path</member>
-<member>vfs options</member>
-</simplelist>
+<sect2>
+<title>Removed Parameters</title>
+
+<para>(order alphabetically):</para>
+
+<itemizedlist>
+	<listitem><para>admin log </para></listitem>
+	<listitem><para>alternate permissions </para></listitem>
+	<listitem><para>character set </para></listitem>
+	<listitem><para>client codepage </para></listitem>
+	<listitem><para>code page directory </para></listitem>
+	<listitem><para>coding system </para></listitem>
+	<listitem><para>domain admin group </para></listitem>
+	<listitem><para>domain guest group </para></listitem>
+	<listitem><para>force unknown acl user </para></listitem>
+	<listitem><para>nt smb support </para></listitem>
+	<listitem><para>post script </para></listitem>
+	<listitem><para>printer driver </para></listitem>
+	<listitem><para>printer driver file </para></listitem>
+	<listitem><para>printer driver location </para></listitem>
+	<listitem><para>status </para></listitem>
+	<listitem><para>total print jobs </para></listitem>
+	<listitem><para>use rhosts </para></listitem>
+	<listitem><para>valid chars </para></listitem>
+	<listitem><para>vfs options </para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>New Parameters</title>
+
+<para>(new parameters have been grouped by function):</para>
+
+<para>Remote management</para>
+
+<itemizedlist>
+	<listitem><para>abort shutdown script </para></listitem>
+	<listitem><para>shutdown script </para></listitem>
+</itemizedlist>
+
+<para>User and Group Account Management</para>
+
+<itemizedlist>
+	<listitem><para>add group script </para></listitem>
+	<listitem><para>add machine script </para></listitem>
+	<listitem><para>add user to group script </para></listitem>
+	<listitem><para>algorithmic rid base </para></listitem>
+	<listitem><para>delete group script </para></listitem>
+	<listitem><para>delete user from group script </para></listitem>
+	<listitem><para>passdb backend </para></listitem>
+	<listitem><para>set primary group script </para></listitem>
+</itemizedlist>
+
+<para>Authentication</para>
+
+<itemizedlist>
+	<listitem><para>auth methods </para></listitem>
+	<listitem><para>ads server </para></listitem>
+	<listitem><para>realm </para></listitem>
+</itemizedlist>
+
+<para>Protocol Options</para>
+
+<itemizedlist>
+	<listitem><para>client lanman auth </para></listitem>
+	<listitem><para>client NTLMv2 auth </para></listitem>
+	<listitem><para>client schannel </para></listitem>
+	<listitem><para>client signing </para></listitem>
+	<listitem><para>client use spnego </para></listitem>
+	<listitem><para>disable netbios </para></listitem>
+	<listitem><para>ntlm auth </para></listitem>
+	<listitem><para>paranoid server security </para></listitem>
+	<listitem><para>server schannel </para></listitem>
+	<listitem><para>smb ports </para></listitem>
+	<listitem><para>use spnego </para></listitem>
+</itemizedlist>
+
+<para>File Service</para>
+
+<itemizedlist>
+	<listitem><para>get quota command </para></listitem>
+	<listitem><para>hide special files </para></listitem>
+	<listitem><para>hide unwriteable files </para></listitem>
+	<listitem><para>hostname lookups </para></listitem>
+	<listitem><para>kernel change notify </para></listitem>
+	<listitem><para>mangle prefix </para></listitem>
+	<listitem><para>msdfs proxy </para></listitem>
+	<listitem><para>set quota command </para></listitem>
+	<listitem><para>use sendfile </para></listitem>
+	<listitem><para>vfs objects </para></listitem>
+</itemizedlist>
+
+<para>Printing</para>
+
+<itemizedlist>
+	<listitem><para>max reported print jobs </para></listitem>
+</itemizedlist> 
+
+
+<para>UNICODE and Character Sets</para>
+
+<itemizedlist>
+	<listitem><para>display charset </para></listitem>
+	<listitem><para>dos charset </para></listitem>
+	<listitem><para>unicode </para></listitem>
+	<listitem><para>unix charset </para></listitem>
+</itemizedlist>
+
+<para>SID to uid/gid Mappings</para>
+
+<itemizedlist>
+	<listitem><para>idmap backend </para></listitem>
+	<listitem><para>idmap gid </para></listitem>
+	<listitem><para>idmap only </para></listitem>
+	<listitem><para>idmap uid </para></listitem>
+</itemizedlist>
+
+<para>LDAP</para>
+
+<itemizedlist>
+	<listitem><para>ldap delete dn </para></listitem>
+	<listitem><para>ldap group suffix </para></listitem>
+	<listitem><para>ldap idmap suffix </para></listitem>
+	<listitem><para>ldap machine suffix </para></listitem>
+	<listitem><para>ldap passwd sync </para></listitem>
+	<listitem><para>ldap trust ids </para></listitem>
+	<listitem><para>ldap user suffix </para></listitem>
+</itemizedlist>
+
+<para>General Configuration</para>
+
+<itemizedlist>
+	<listitem><para>preload modules </para></listitem>
+	<listitem><para>privatedir </para></listitem>
+</itemizedlist>
+
+</sect2>
+
+<sect2>
+<title>Modified Parameters (changes in behavior):</title>
+
+<itemizedlist>
+	<listitem><para>encrypt passwords (enabled by default) </para></listitem>
+	<listitem><para>mangling method (set to 'hash2' by default) </para></listitem>
+	<listitem><para>passwd chat </para></listitem>
+	<listitem><para>passwd program </para></listitem>
+	<listitem><para>restrict anonymous (integer value) </para></listitem>
+	<listitem><para>security (new 'ads' value) </para></listitem>
+	<listitem><para>strict locking (enabled by default) </para></listitem>
+	<listitem><para>winbind cache time (increased to 5 minutes) </para></listitem>
+	<listitem><para>winbind uid (deprecated in favor of 'idmap uid') </para></listitem>
+	<listitem><para>winbind gid (deprecated in favor of 'idmap gid') </para></listitem>
+</itemizedlist>
+
+</sect2>
+
 </sect1>
 
 <sect1>
-<title>Password Backend</title>
+<title>New Functionality</title>
 
-<para>
-Effective with the release of samba-3 it is now imperative that the password backend
-be correctly defined in smb.conf.
-</para>
+	<sect2>
+	<title>Databases</title>
 
-<para>
-Those migrating from samba-2.x with plaintext password support need the following:
-<emphasis>passdb backend = guest</emphasis>.
-</para>
+	<para>
+	This section contains brief descriptions of any new databases
+	introduced in Samba 3.0.  Please remember to backup your existing
+	${lock directory}/*tdb before upgrading to Samba 3.0.  Samba will
+	upgrade databases as they are opened (if necessary), but downgrading
+	from 3.0 to 2.2 is an unsupported path.
+	</para>
 
-<para>
-Those migrating from samba-2.x with encrypted password support should add to smb.conf
-<emphasis>passdb backend = smbpasswd, guest</emphasis>.
-</para>
 
-<para>
-LDAP using Samba-2.x systems can continue to operate with the following entry
-<emphasis>passdb backend = ldapsam_compat, guest</emphasis>.
-</para>
+        <table frame='all'><title>TDB File Descriptions</title>
+        <tgroup cols='3'>
+			<colspec align="left"/>
+			<colspec align="justify"/>
+			<colspec align="left"/>
+                <thead>
+                <row>
+                        <entry align="left">Name</entry>
+                        <entry align="justify">Description</entry>
+                        <entry align="center">Backup?</entry>
+                </row>
+                </thead>
+                <tbody>
+                <row>
+                        <entry>account_policy</entry>
+			<entry>User policy settings</entry>
+			<entry>yes</entry>
+		</row>
+		<row>
+			<entry>gencache</entry>
+			<entry>Generic caching db</entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>group_mapping</entry>
+			<entry><para>Mapping table from Windows groups/SID to unix groups</para></entry>
+			<entry>yes</entry>
+		</row>
+		<row>
+			<entry>idmap</entry>
+			<entry><para>new ID map table from SIDS to UNIX uids/gids</para></entry>
+			<entry>yes</entry>
+		</row>
+		<row>
+			<entry>namecache</entry>
+			<entry>Name resolution cache entries</entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>netlogon_unigrp</entry>
+			<entry><para>Cache of universal group membership obtained when operating
+				as a member of a Windows domain</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+			<entry>printing/*.tdb</entry>
+			<entry><para>Cached output from 'lpq command' created on a per print 
+				service basis</para></entry>
+			<entry>no</entry>
+		</row>
+		<row>
+
+			<entry>registry</entry>
+			<entry><para>Read-only samba registry skeleton that provides support for
+				exporting various db tables via the winreg RPCs</para></entry>
+			<entry>no</entry>
+		</row>
+		</tbody>
+	</tgroup>
+	</table>
+
+	</sect2>
+
+	<sect2>
+	<title>Changes in Behavior</title>
+
+	<para>
+	The following issues are known changes in behavior between Samba 2.2 and
+	Samba 3.0 that may affect certain installations of Samba.
+	</para>
+
+	<orderedlist>
+		<listitem><para>
+		When operating as a member of a Windows domain, Samba 2.2 would
+		map any users authenticated by the remote DC to the 'guest account'
+		if a uid could not be obtained via the getpwnam() call.  Samba 3.0
+		rejects the connection as NT_STATUS_LOGON_FAILURE.  There is no
+		current work around to re-establish the 2.2 behavior.
+		</para></listitem>
+
+		<listitem><para>
+		When adding machines to a Samba 2.2 controlled domain, the
+		'add user script' was used to create the UNIX identity of the
+		machine trust account.  Samba 3.0 introduces a new 'add machine
+		script' that must be specified for this purpose.  Samba 3.0 will
+		not fall back to using the 'add user script' in the absence of
+		an 'add machine script'
+		</para></listitem>
+	</orderedlist>
+
+	</sect2>
+
+	<sect2>
+	<title>Charsets</title>
+
+	<para>
+	You might experience problems with special characters when communicating with old DOS
+	clients. Codepage support has changed in samba 3.0. Read the chapter
+	<link linkend="unicode">Unicode support</link> for details.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Passdb Backends and Authentication</title>
+
+	<para>
+	There have been a few new changes that Samba administrators should be
+	aware of when moving to Samba 3.0.
+	</para>
+
+	<orderedlist>
+		<listitem><para>
+		Encrypted passwords have been enabled by default in order to
+		inter-operate better with out-of-the-box Windows client
+		installations.  This does mean that either (a) a samba account
+		must be created for each user, or (b) 'encrypt passwords = no'
+		must be explicitly defined in smb.conf.
+		</para></listitem>
+
+		<listitem><para>
+				Inclusion of new <smbconfoption><name>security</name><value>ads</value></smbconfoption> option for integration
+		with an Active Directory domain using the native Windows
+		Kerberos 5 and LDAP protocols.
+		</para></listitem>
+	</orderedlist>
+
+	<para>
+	Samba 3.0 also includes the possibility of setting up chains
+	of authentication methods 
+	(<smbconfoption><name>auth methods</name></smbconfoption>) and account
+	storage backends 
+	(<smbconfoption><name>passdb backend</name></smbconfoption>). 
+	Please refer to the &smb.conf;
+	man page and <link linkend="passdb">the chapter about account information databases</link> for details.  While both parameters assume sane default
+	values, it is likely that you will need to understand what the
+	values actually mean in order to ensure Samba operates correctly.
+	</para>
+
+	<para>
+	Certain functions of the smbpasswd(8) tool have been split between the
+	new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8)
+	utility.  See the respective man pages for details.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Charsets</title>
+
+	<para>
+	You might experience problems with special characters when communicating with old DOS
+	clients. Codepage support has changed in samba 3.0. Read the chapter
+	<link linkend="unicode">Unicode support</link> for details.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>LDAP</title>
+
+	<para>
+	This section outlines the new features affecting Samba / LDAP integration.
+	</para>
+
+		<sect3>
+		<title>New Schema</title>
+
+		<para>
+		A new object class (sambaSamAccount) has been introduced to replace
+		the old sambaAccount.  This change aids us in the renaming of attributes
+		to prevent clashes with attributes from other vendors.  There is a
+		conversion script (examples/LDAP/convertSambaAccount) to modify and LDIF
+		file to the new schema.
+		</para>
+
+		<para>
+			Example:
+		</para>
+		<para><screen>
+		&prompt;ldapsearch .... -b "ou=people,dc=..." &gt; old.ldif
+		&prompt;convertSambaAccount &lt;DOM SID&gt; old.ldif new.ldif
+		</screen></para>
+
+		<para>
+		The &lt;DOM SID&gt; can be obtained by running 'net getlocalsid &lt;DOMAINNAME&gt;
+		on the Samba PDC as root.
+		</para>
+
+		<para>
+		The old sambaAccount schema may still be used by specifying the
+		"ldapsam_compat" passdb backend.  However, the sambaAccount and
+		associated attributes have been moved to the historical section of
+		the schema file and must be uncommented before use if needed.
+		The 2.2 object class declaration for a sambaAccount has not changed
+		in the 3.0 samba.schema file.
+		</para>
+
+		<para>
+		Other new object classes and their uses include:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>
+			sambaDomain - domain information used to allocate rids
+			for users and groups as necessary.  The attributes are added
+			in 'ldap suffix' directory entry automatically if
+			an idmap uid/gid range has been set and the 'ldapsam'
+			passdb backend has been selected.
+			</para></listitem>
+
+			<listitem><para>
+			sambaGroupMapping - an object representing the
+			relationship between a posixGroup and a Windows
+			group/SID.  These entries are stored in the 'ldap
+			group suffix' and managed by the 'net groupmap' command.
+			</para></listitem>
+
+			<listitem><para>
+			sambaUnixIdPool - created in the 'ldap idmap suffix' entry
+			automatically and contains the next available 'idmap uid' and
+			'idmap gid'
+			</para></listitem>
+
+			<listitem><para>
+			sambaIdmapEntry - object storing a mapping between a
+			SID and a UNIX uid/gid.  These objects are created by the
+			idmap_ldap module as needed.
+			</para></listitem>
+		</itemizedlist>
+
+		</sect3>
+
+		<sect3>
+		<title>New Suffix for Searching</title>
+
+		<para>
+		The following new smb.conf parameters have been added to aid in directing
+		certain LDAP queries when 'passdb backend = ldapsam://...' has been
+		specified.
+		</para>
+
+		<itemizedlist>
+			<listitem><para>ldap suffix         - used to search for user and computer accounts</para></listitem>
+			<listitem><para>ldap user suffix    - used to store user accounts</para></listitem>
+			<listitem><para>ldap machine suffix - used to store machine trust accounts</para></listitem>
+			<listitem><para>ldap group suffix   - location of posixGroup/sambaGroupMapping entries</para></listitem>
+			<listitem><para>ldap idmap suffix   - location of sambaIdmapEntry objects</para></listitem>
+		</itemizedlist>
+
+		<para>
+		If an 'ldap suffix' is defined, it will be appended to all of the
+		remaining sub-suffix parameters.  In this case, the order of the suffix
+		listings in smb.conf is important.  Always place the 'ldap suffix' first
+		in the list.
+		</para>
+
+		<para>
+		Due to a limitation in Samba's smb.conf parsing, you should not surround
+		the DN's with quotation marks.
+		</para>
+
+		</sect3>
+
+		<sect3>
+		<title>IdMap LDAP support</title>
+
+		<para>
+		Samba 3.0 supports an ldap backend for the idmap subsystem.  The
+		following options would inform Samba that the idmap table should be
+		stored on the directory server onterose in the "ou=idmap,dc=plainjoe,
+		dc=org" partition.
+		</para>
+
+		<smbconfblock>
+		<smbconfsection>[global]</smbconfsection>
+		<member>...</member>
+		<smbconfoption><name>idmap backend</name><value>ldap:ldap://onterose/</value></smbconfoption>
+		<smbconfoption><name>ldap idmap suffix</name><value>ou=idmap,dc=plainjoe,dc=org</value></smbconfoption>
+		<smbconfoption><name>idmap uid</name><value>40000-50000</value></smbconfoption>
+		<smbconfoption><name>idmap gid</name><value>40000-50000</value></smbconfoption>
+		</smbconfblock>
+
+		<para>
+		This configuration allows winbind installations on multiple servers to
+		share a uid/gid number space, thus avoiding the interoperability problems
+		with NFS that were present in Samba 2.2.
+		</para>
+
+		</sect3>
+
+	</sect2>
 
 </sect1>
 
