@@ -375,7 +375,6 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL map_domain_sid_to_any_dc(DOM_SID *sid, char *dc_name);
 BOOL split_domain_name(const char *fullname, char *domain, char *name);
 BOOL enumtrustdoms(char ***doms, uint32 *num_entries);
-BOOL enumdomains(char ***doms, uint32 *num_entries);
 
 /*The following definitions come from  lib/signal.c  */
 
