@@ -275,34 +275,12 @@ AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
-AC_CHECK_TYPE(wchar_t, unsigned short)
 
 
 ############################################
 # we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
 AC_SEARCH_LIBS(dlopen, [dl])
 # dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
-
-############################################
-# check if the compiler can do immediate structures
-AC_CACHE_CHECK([for immediate structures],samba_cv_immediate_structures, [
-    AC_TRY_COMPILE([
-#include <stdio.h>],
-[
-   typedef struct {unsigned x;} FOOBAR;
-   #define X_FOOBAR(x) ((FOOBAR) { x })
-   #define FOO_ONE X_FOOBAR(1)
-   FOOBAR f = FOO_ONE;   
-   static struct {
-	FOOBAR y; 
-	} f2[] = {
-		{FOO_ONE}
-	};   
-],
-	samba_cv_immediate_structures=yes,samba_cv_immediate_structures=no)])
-if test x"$samba_cv_immediate_structures" = x"yes"; then
-   AC_DEFINE(HAVE_IMMEDIATE_STRUCTURES,1,[Whether the compiler supports immediate structures])
-fi
 
 ############################################
 # check for unix domain sockets
