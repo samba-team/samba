@@ -186,7 +186,7 @@ try_pipe (struct x_socket *s, int dpy, const char *pattern)
     int ret;
     int fd;
     int pipefd[2];
-
+    
     snprintf (path, sizeof(path), pattern, dpy);
     fd = open (path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     if (fd < 0)
@@ -202,8 +202,11 @@ try_pipe (struct x_socket *s, int dpy, const char *pattern)
 	err (1, "pipe");
 
     ret = ioctl (pipefd[1], I_PUSH, "connld");
-    if (ret < 0)
+    if (ret < 0) {
+	if(errno == ENOSYS)
+	    return -1;
 	err (1, "ioctl I_PUSH");
+    }
 
     ret = fattach (pipefd[1], path);
     if (ret < 0)
@@ -334,7 +337,7 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 	 for (path = x_pipes; *path; ++path) {
 	     tmp = try_pipe (&s[n], dpy, *path);
 	     if (tmp == -1) {
-		 if (errno != ENOTDIR && errno != ENOENT)
+		 if (errno != ENOTDIR && errno != ENOENT && errno != ENOSYS)
 		     return -1;
 	     } else if (tmp == 1) {
 		 while (--n >= 0) {
