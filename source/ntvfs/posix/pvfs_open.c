@@ -137,6 +137,8 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->locking_key = data_blob(NULL, 0);
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
+	f->seek_offset = 0;
+	f->position = 0;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -354,6 +356,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
 	f->access_mask = io->generic.in.access_mask;
+	f->seek_offset = 0;
+	f->position = 0;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -548,6 +552,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
 	f->access_mask = io->generic.in.access_mask;
+	f->seek_offset = 0;
+	f->position = 0;
 
 	DLIST_ADD(pvfs->open_files, f);
 

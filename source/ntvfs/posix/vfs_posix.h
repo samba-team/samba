@@ -125,6 +125,10 @@ struct pvfs_file {
 	uint32_t create_options;
 	uint32_t share_access;
 	uint32_t access_mask;
+
+	/* yes, we need 2 independent positions ... */
+	uint64_t seek_offset;
+	uint64_t position;
 };
 
 

@@ -67,6 +67,8 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
+
+	f->seek_offset = wr->writex.in.offset + ret;
 	
 	wr->writex.out.nwritten = ret;
 	wr->writex.out.remaining = 0; /* should fill this in? */

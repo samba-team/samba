@@ -127,5 +127,9 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 	
-	return pvfs_map_fileinfo(pvfs, req, f->name, info);
+	status = pvfs_map_fileinfo(pvfs, req, f->name, info);
+
+	info->generic.out.position = f->position;
+	
+	return status;
 }
