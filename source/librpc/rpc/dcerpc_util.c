@@ -749,7 +749,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	NTSTATUS status;
 	BOOL retry;
 	struct smbcli_state *cli;
-	const char *pipe_name;
+	const char *pipe_name = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_pipe_connect_ncacn_np");
 	
 	if (!binding->endpoint) {
@@ -772,6 +772,11 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 				break;
 				
 			}
+		}
+
+		if (pipe_name == NULL) {
+			DEBUG(0, ("No default named pipe specified for interface with UUID %s\n", pipe_uuid));
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 	} else {
 		pipe_name = binding->endpoint;
