@@ -50,6 +50,9 @@
 #ifndef T_KEY
 #define T_KEY		25
 #endif
+#ifndef T_AAAA
+#define T_AAAA		28
+#endif
 #ifndef T_SRV
 #define T_SRV		33
 #endif
