@@ -1,13 +1,8 @@
 /* Author: Wietse Venema <wietse@wzv.win.tue.nl> */
 
-#include <config.h>
+#include "bsd_locl.h"
 
 #ifdef SYSV_UTMP
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <utmpx.h>
-#include <string.h>
 
 /* utmpx_login - update utmp and wtmp after login */
 
