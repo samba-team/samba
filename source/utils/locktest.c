@@ -33,8 +33,8 @@ static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
-#define LOCKRANGE 100
-#define LOCKBASE 0
+#define LOCKRANGE 1000
+#define LOCKBASE 0;
 
 /*
 #define LOCKBASE (0x40000000 - 50)
@@ -55,7 +55,7 @@ static BOOL use_oplocks;
 struct record {
 	char r1, r2;
 	char conn, f;
-	unsigned start, len;
+	SMB_BIG_UINT start, len;
 	char needed;
 };
 
@@ -236,8 +236,8 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 {
 	unsigned conn = rec->conn;
 	unsigned f = rec->f;
-	unsigned start = rec->start;
-	unsigned len = rec->len;
+	SMB_BIG_UINT start = rec->start;
+	SMB_BIG_UINT len = rec->len;
 	unsigned r1 = rec->r1;
 	unsigned r2 = rec->r2;
 	unsigned op;
@@ -253,14 +253,14 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	if (r2 < LOCK_PCT) {
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_lock(cli[server][conn], 
-					fnum[server][conn][f],
-					start, len, LOCK_TIMEOUT, op);
+			ret[server] = cli_lock64(cli[server][conn], 
+						 fnum[server][conn][f],
+						 start, len, LOCK_TIMEOUT, op);
 		}
 		if (showall || ret[0] != ret[1]) {
-			printf("lock   conn=%u f=%u range=%u:%u(%u) op=%s -> %u:%u\n",
+			printf("lock   conn=%u f=%u range=%.0f:%.0f(%.0f) op=%s -> %u:%u\n",
 			       conn, f, 
-			       start, start+len-1, len,
+			       (double)start, (double)start+len-1, (double)len,
 			       op==READ_LOCK?"READ_LOCK":"WRITE_LOCK",
 			       ret[0], ret[1]);
 		}
@@ -269,14 +269,14 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	} else if (r2 < LOCK_PCT+UNLOCK_PCT) {
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = cli_unlock(cli[server][conn], 
-						 fnum[server][conn][f],
-						 start, len);
+			ret[server] = cli_unlock64(cli[server][conn], 
+						   fnum[server][conn][f],
+						   start, len);
 		}
 		if (showall || (!hide_unlock_fails && (ret[0] != ret[1]))) {
-			printf("unlock conn=%u f=%u range=%u:%u(%u)       -> %u:%u\n",
+			printf("unlock conn=%u f=%u range=%.0f:%.0f(%.0f)       -> %u:%u\n",
 			       conn, f, 
-			       start, start+len-1, len,
+			       (double)start, (double)start+len-1, (double)len,
 			       ret[0], ret[1]);
 		}
 		if (showall || ret[0] != ret[1]) show_locks();
@@ -442,13 +442,13 @@ static void test_locks(char *share[NSERVERS])
 	close_files(cli, fnum);
 
 	for (i=0;i<n;i++) {
-		printf("{%u, %u, %u, %u, %u, %u, %u},\n",
+		printf("{%u, %u, %u, %u, %.0f, %.0f, %u},\n",
 		       recorded[i].r1,
 		       recorded[i].r2,
 		       recorded[i].conn,
 		       recorded[i].f,
-		       recorded[i].start,
-		       recorded[i].len,
+		       (double)recorded[i].start,
+		       (double)recorded[i].len,
 		       recorded[i].needed);
 	}	
 }
@@ -488,7 +488,7 @@ static void usage(void)
 
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 3) {
+	if (argc < 3 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
