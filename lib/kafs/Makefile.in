@@ -10,7 +10,7 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
-DEFS = @DEFS@ -DLIBDIR='"$(libdir)"'
+DEFS = @DEFS@ -DLIBDIR='"$(libdir)"' @AFS_EXTRA_DEFS@
 CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
@@ -28,12 +28,13 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
+AFS_EXTRA_OBJS	= @AFS_EXTRA_OBJS@
 AFS_EXTRA_LIBS	= @AFS_EXTRA_LIBS@
 LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
 SOURCES = afssys.c afskrb.c common.c afslib.c
 
-OBJECTS = afssys.o afskrb.o common.o
+OBJECTS = afssys.o afskrb.o common.o $(AFS_EXTRA_OBJS)
 
 all: $(LIB)
 
@@ -76,9 +77,9 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS) @AFS_EXTRA_OBJS@
+$(LIBNAME).a: $(OBJECTS)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS) @AFS_EXTRA_OBJS@
+	$(AR) cr $@ $(OBJECTS)
 	-$(RANLIB) $@
 
 
@@ -89,6 +90,6 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead
 afslib.so: afslib.o
-	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
+	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp @AFS_EXTRA_LD@ afslib.o
 
 $(OBJECTS): ../../include/config.h
