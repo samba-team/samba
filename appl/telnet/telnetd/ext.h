@@ -53,7 +53,7 @@ extern int	require_otp;
 #ifdef AUTHENTICATION
 extern int	auth_level;
 #endif
-extern char *new_login;
+extern const char *new_login;
 
 extern slcfun	slctab[NSLC + 1];	/* slc mapping table */
 
