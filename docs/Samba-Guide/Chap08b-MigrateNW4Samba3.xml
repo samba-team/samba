@@ -862,17 +862,18 @@ usersdn="ou=People,${suffix}"
 
 # Where are stored Computers
 # Ex: computersdn="ou=Computers,dc=IDEALX,dc=ORG"
-computersdn="ou=Computers,${suffix}"
+computersdn="ou=People,${suffix}"
 
 # Where are stored Groups
 # Ex groupsdn="ou=Groups,dc=IDEALX,dc=ORG"
 groupsdn="ou=Groups,${suffix}"
+
 # Where are stored Idmap entries (used if samba is a domain member server)
 # Ex groupsdn="ou=Idmap,dc=IDEALX,dc=ORG"
-idmapdn="ou=People,${suffix}"
+idmapdn="ou=Idmap,${suffix}"
 
 # Where to store next uidNumber and gidNumber available
-sambaUnixIdPooldn="ou=People,${suffix}"
+sambaUnixIdPooldn="sambaDomainName=MEGANET2,dc=abmas,dc=biz"
 
 # Default scope Used
 scope="sub"
@@ -883,7 +884,7 @@ scope="sub"
 <title>Idealx smbldap-tools Control File &smbmdash; Part C</title>
 <screen>
 # Unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA)
-hash_encrypt="SSHA"
+hash_encrypt="MD5"
 
 # if hash_encrypt is set to CRYPT, you may set a salt format.
 # default is "%s", but many systems will generate MD5 hashed
