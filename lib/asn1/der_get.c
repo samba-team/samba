@@ -1,11 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "asn1_locl.h"
+
 RCSID("$Id$");
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "der.h"
 
 /*
  * All decoding functions take a pointer `p' to first position in
