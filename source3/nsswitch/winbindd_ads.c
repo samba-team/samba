@@ -364,7 +364,7 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	asprintf(&ldap_exp, "(distinguishedName=%s)", dn);
+	asprintf(&ldap_exp, "(distinguishedName=%s)", escaped_dn);
 	rc = ads_search_retry(ads, &res, ldap_exp, attrs);
 	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_dn);
