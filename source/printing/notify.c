@@ -102,7 +102,7 @@ static void send_spoolss_notify2_msg(struct spoolss_notify_msg *msg)
 {
 	char *buf = NULL;
 	size_t buflen = 0, len;
-	struct notify_queue *pnqueue;
+	struct notify_queue *pnqueue, *tmp_ptr;
 
 	/* Let's not waste any time with this */
 
@@ -155,7 +155,11 @@ again:
 
 	DEBUG(5, ("send_spoolss_notify2_msg: appending message 0x%02x/0x%02x to notify_queue_head\n", msg->type, msg->field));
 		  
-	DLIST_ADD(notify_queue_head, pnqueue);
+	/* Note we add to the end of the list to ensure
+	 * the messages are sent in the order they were received. JRA.
+	 */
+	DLIST_ADD_END(notify_queue_head, pnqueue, tmp_ptr);
+
 	return;
 
   fail:
