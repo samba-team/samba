@@ -8,186 +8,48 @@
 
 <title>Domain Membership</title>
 
-<sect1>
-<title>Domain Member Server</title>
-
 <para>
-This mode of server operation involves the samba machine being made a member
-of a domain security context. This means by definition that all user authentication
-will be done from a centrally defined authentication regime. The authentication
-regime may come from an NT3/4 style (old domain technology) server, or it may be
-provided from an Active Directory server (ADS) running on MS Windows 2000 or later.
+Domain Membership is a subject of vital concern, Samba must be able to participate
+as a member server in a Microsoft Domain security context, and Samba must be capable of
+providing Domain machine member trust accounts, otherwise it would not be capable of offering
+a viable option for many users.
 </para>
 
-<para><emphasis>
-Of course it should be clear that the authentication back end itself could be from any
-distributed directory architecture server that is supported by Samba. This can be
-LDAP (from OpenLDAP), or Sun's iPlanet, of NetWare Directory Server, etc.
-</emphasis></para>
+<para>
+This chapter covers background information pertaining to domain membership, Samba
+configuration for it, and MS Windows client procedures for joining a domain.  Why is
+this necessary? Because both are areas in which there exists within the current MS
+Windows networking world and particularly in the Unix/Linux networking and administration
+world, a considerable level of mis-information, incorrect understanding, and a lack of
+knowledge. Hopefully this chapter will fill the voids.
+</para>
+
+<sect1>
+<title>Features and Benefits</title>
 
 <para>
-Please refer to the section on Howto configure Samba as a Primary Domain Controller
-and for more information regarding how to create a domain machine account for a
-domain member server as well as for information regarding how to enable the samba
-domain member machine to join the domain and to be fully trusted by it.
+MS Windows workstations and servers that want to participate in domain security need to
+be made Domain members. Participating in Domain security is often called 
+<emphasis>Single Sign On</emphasis> or SSO for short. This chapter describes the process
+that must be followed to make a workstation (or another server - be it an MS Windows NT4 / 200x
+server) or a Samba server a member of an MS Windows Domain security context.
+</para>
+
+<para>
+Samba-3 can join an MS Windows NT4 style domain as a native member server, an MS Windows
+Active Directory Domain as a native member server, or a Samba Domain Control network.
 </para>
 
 </sect1>
 
 <sect1>
-<title>Joining an NT4 type Domain with Samba-3</title>
-<para><emphasis>Assumptions:</emphasis>
-<programlisting>
-	NetBIOS name: SERV1
-	Win2K/NT domain name: DOM
-	Domain's PDC NetBIOS name: DOMPDC
-	Domain's BDC NetBIOS names: DOMBDC1 and DOMBDC2
-</programlisting>
-</para>
-
-<para>First, you must edit your &smb.conf; file to tell Samba it should
-now use domain security.</para>
-
-<para>Change (or add) your <ulink url="smb.conf.5.html#SECURITY">
-<parameter>security =</parameter></ulink> line in the [global] section 
-of your &smb.conf; to read:</para>
-
-<para><command>security = domain</command></para>
-
-<para>Next change the <ulink url="smb.conf.5.html#WORKGROUP"><parameter>
-workgroup =</parameter></ulink> line in the [global] section to read: </para>
-
-<para><command>workgroup = DOM</command></para>
-
-<para>as this is the name of the domain we are joining. </para>
-
-<para>You must also have the parameter <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">
-<parameter>encrypt passwords</parameter></ulink> set to <constant>yes
-</constant> in order for your users to authenticate to the NT PDC.</para>
-
-<para>Finally, add (or modify) a <ulink url="smb.conf.5.html#PASSWORDSERVER">
-<parameter>password server =</parameter></ulink> line in the [global]
-section to read: </para>
-
-<para><command>password server = DOMPDC DOMBDC1 DOMBDC2</command></para>
-
-<para>These are the primary and backup domain controllers Samba 
-will attempt to contact in order to authenticate users. Samba will 
-try to contact each of these servers in order, so you may want to 
-rearrange this list in order to spread out the authentication load 
-among domain controllers.</para>
-
-<para>Alternatively, if you want smbd to automatically determine 
-the list of Domain controllers to use for authentication, you may 
-set this line to be :</para>
-
-<para><command>password server = *</command></para>
-
-<para>This method, allows Samba to use exactly the same
-mechanism that NT does. This 
-method either broadcasts or uses a WINS database in order to
-find domain controllers to authenticate against.</para>
-
-<para>In order to actually join the domain, you must run this
-command:</para>
-
-<para><prompt>root# </prompt><userinput>net join -S DOMPDC
--U<replaceable>Administrator%password</replaceable></userinput></para>
-
-<para>
-If the <userinput>-S DOMPDC</userinput> argument is not given then
-the domain name will be obtained from smb.conf.
-</para>
-
-<para>as we are joining the domain DOM and the PDC for that domain 
-(the only machine that has write access to the domain SAM database) 
-is DOMPDC. The <replaceable>Administrator%password</replaceable> is 
-the login name and password for an account which has the necessary 
-privilege to add machines to the domain.  If this is successful 
-you will see the message:</para>
-
-<para><computeroutput>Joined domain DOM.</computeroutput>
-or <computeroutput>Joined 'SERV1' to realm 'MYREALM'</computeroutput>
-</para>
-
-<para>in your terminal window. See the <ulink url="net.8.html">
-net(8)</ulink> man page for more details.</para>
-
-<para>This process joins the server to the domain
-without having to create the machine trust account on the PDC
-beforehand.</para>
-
-<para>This command goes through the machine account password 
-change protocol, then writes the new (random) machine account 
-password for this Samba server into a file in the same directory 
-in which an smbpasswd file would be stored - normally :</para>
-
-<para><filename>/usr/local/samba/private/secrets.tdb</filename></para>
-
-<para>This file is created and owned by root and is not 
-readable by any other user. It is the key to the domain-level 
-security for your system, and should be treated as carefully 
-as a shadow password file.</para>
-
-<para>Finally, restart your Samba daemons and get ready for 
-clients to begin using domain security!</para>
-
-<sect2>
-<title>Why is this better than security = server?</title>
-
-<para>Currently, domain security in Samba doesn't free you from 
-having to create local Unix users to represent the users attaching 
-to your server. This means that if domain user <constant>DOM\fred
-</constant> attaches to your domain security Samba server, there needs 
-to be a local Unix user fred to represent that user in the Unix 
-filesystem. This is very similar to the older Samba security mode 
-<ulink url="smb.conf.5.html#SECURITYEQUALSSERVER">security = server</ulink>, 
-where Samba would pass through the authentication request to a Windows 
-NT server in the same way as a Windows 95 or Windows 98 server would.
-</para>
-
-<para>Please refer to the <ulink url="winbind.html">Winbind 
-paper</ulink> for information on a system to automatically
-assign UNIX uids and gids to Windows NT Domain users and groups.
-</para>
-
-<para>The advantage to domain-level security is that the 
-authentication in domain-level security is passed down the authenticated 
-RPC channel in exactly the same way that an NT server would do it. This 
-means Samba servers now participate in domain trust relationships in 
-exactly the same way NT servers do (i.e., you can add Samba servers into 
-a resource domain and have the authentication passed on from a resource
-domain PDC to an account domain PDC).</para>
-
-<para>In addition, with <command>security = server</command> every Samba 
-daemon on a server has to keep a connection open to the 
-authenticating server for as long as that daemon lasts. This can drain 
-the connection resources on a Microsoft NT server and cause it to run 
-out of available connections. With <command>security = domain</command>, 
-however, the Samba daemons connect to the PDC/BDC only for as long 
-as is necessary to authenticate the user, and then drop the connection, 
-thus conserving PDC connection resources.</para>
-
-<para>And finally, acting in the same manner as an NT server 
-authenticating to a PDC means that as part of the authentication 
-reply, the Samba server gets the user identification information such 
-as the user SID, the list of NT groups the user belongs to, etc. </para>
-
-<note><para> Much of the text of this document 
-was first published in the Web magazine <ulink url="http://www.linuxworld.com"> 	
-LinuxWorld</ulink> as the article <ulink
-url="http://www.linuxworld.com/linuxworld/lw-1998-10/lw-10-samba.html">Doing 
-the NIS/NT Samba</ulink>.</para></note>
-</sect2>
-</sect1>
-
-<sect1>
-<title>Machine Trust Accounts and Domain Membership</title>
+<title>MS Windows Workstation/Server Machine Trust Accounts</title>
 
 <para>
 A machine trust account is an account that is used to authenticate a client machine
 (rather than a user) to the Domain Controller server.  In Windows terminology,
-this is known as a "Computer Account."</para>
+this is known as a "Computer Account."
+</para>
 
 <para>
 The password of a machine trust account acts as the shared secret for
@@ -201,7 +63,8 @@ because it does not possess a machine trust account, and thus has no
 shared secret with the domain controller.
 </para>
 
-<para>A Windows NT4 PDC stores each machine trust account in the Windows
+<para>
+A Windows NT4 PDC stores each machine trust account in the Windows
 Registry. The introduction of MS Windows 2000 saw the introduction of Active Directory,
 the new repository for machine trust accounts.
 </para>
@@ -211,13 +74,31 @@ A Samba PDC, however, stores each machine trust account in two parts,
 as follows:
 
 <itemizedlist>
-    <listitem><para>A Samba account, stored in the same location as user
-    LanMan and NT password hashes (currently <filename>smbpasswd</filename>).
-    The Samba account possesses and uses only the NT password hash.</para></listitem>
+	<listitem><para>
+	A Domain Security Account (stored in the <emphasis>passdb backend</emphasis>
+	that has been configured in the &smb.conf; file. The precise nature of the
+	account information that is stored depends on the type of backend database
+	that has been chosen.
+	</para>
 
-    <listitem><para>A corresponding Unix account, typically stored in
-    <filename>/etc/passwd</filename>. (Future releases will alleviate the need to
-    create <filename>/etc/passwd</filename> entries.) </para></listitem>
+	<para>
+	The older format of this data is the <filename>smbpasswd</filename> database
+	which contains the unix login ID, the Unix user identifier (UID), and the
+	LanMan and NT encrypted passwords. There is also some other information in
+	this file that we do not need to concern ourselves with here.
+	</para>
+
+	<para>
+	The two newer database types are called <emphasis>ldapsam, tdbsam</emphasis>.
+	Both store considerably more data than the older <filename>smbpasswd</filename>
+	file did. The extra information enables new user account controls to be used.
+	</para></listitem>
+
+	<listitem><para>
+	A corresponding Unix account, typically stored in <filename>/etc/passwd</filename>.
+	Work is in progress to allow a simplified mode of operation that does not require
+	Unix user accounts, but this may not be a feature of the early releases of Samba-3.
+	</para></listitem>
 </itemizedlist>
 </para>
 
@@ -226,39 +107,38 @@ There are two ways to create machine trust accounts:
 </para>
 
 <itemizedlist>
-	<listitem><para> Manual creation. Both the Samba and corresponding
-	Unix account are created by hand.</para></listitem>
+	<listitem><para>
+	Manual creation. Both the Samba and corresponding Unix account are created by hand.
+	</para></listitem>
 	
-	<listitem><para> "On-the-fly" creation. The Samba machine trust
-	account is automatically created by Samba at the time the client
-	is joined to the domain. (For security, this is the
-	recommended method.) The corresponding Unix account may be
-	created automatically or manually. </para>
-	</listitem>
-
+	<listitem><para>
+	"On-the-fly" creation. The Samba machine trust account is automatically created by
+	Samba at the time the client is joined to the domain. (For security, this is the
+	recommended method.) The corresponding Unix account may be created automatically or manually. 
+	</para></listitem>
 </itemizedlist>
 
 <sect2>
 <title>Manual Creation of Machine Trust Accounts</title>
 
 <para>
-The first step in manually creating a machine trust account is to
-manually create the corresponding Unix account in
-<filename>/etc/passwd</filename>.  This can be done using
-<command>vipw</command> or other 'add user' command that is normally
-used to create new Unix accounts.  The following is an example for a
-Linux based Samba server:
+The first step in manually creating a machine trust account is to manually create the
+corresponding Unix account in <filename>/etc/passwd</filename>.  This can be done using
+<command>vipw</command> or other 'add user' command that is normally used to create new
+Unix accounts.  The following is an example for a Linux based Samba server:
 </para>
 
 <para>
-  <prompt>root# </prompt><command>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine 
-nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ </command>
+<prompt>root# </prompt><command>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ </command>
 </para>
+
 <para>
 <prompt>root# </prompt><command>passwd -l <replaceable>machine_name</replaceable>$</command>
 </para>
 
-<para>On *BSD systems, this can be done using the 'chpass' utility:</para>
+<para>
+On *BSD systems, this can be done using the 'chpass' utility:
+</para>
 
 <para>
 <prompt>root# </prompt><command>chpass -a "<replaceable>machine_name</replaceable>$:*:101:100::0:0:Workstation <replaceable>machine_name</replaceable>:/dev/null:/sbin/nologin"</command>
@@ -271,9 +151,9 @@ home directory. For example a machine named 'doppy' would have an
 <filename>/etc/passwd</filename> entry like this:
 </para>
 
-<para><programlisting>
+<para>
 doppy$:x:505:501:<replaceable>machine_nickname</replaceable>:/dev/null:/bin/false
-</programlisting></para>
+</para>
 
 <para>
 Above, <replaceable>machine_nickname</replaceable> can be any
@@ -293,7 +173,9 @@ as shown here:
 </para>
 
 <para>
+<programlisting>
 <prompt>root# </prompt><userinput>smbpasswd -a -m <replaceable>machine_name</replaceable></userinput>
+</programlisting>
 </para>
 
 <para>
@@ -325,7 +207,8 @@ the corresponding Unix account.
 <para>
 The second (and recommended) way of creating machine trust accounts is
 simply to allow the Samba server to create them as needed when the client
-is joined to the domain. </para>
+is joined to the domain.
+</para>
 
 <para>Since each Samba machine trust account requires a corresponding
 Unix account, a method for automatically creating the
@@ -357,7 +240,7 @@ The procedure for joining a client to the domain varies with the version of Wind
 </para>
 
 <itemizedlist>
-<listitem><para><emphasis>Windows 2000</emphasis></para>
+	<listitem><para><emphasis>Windows 2000</emphasis></para>
 
 	<para>
 	When the user elects to join the client to a domain, Windows prompts for
@@ -373,31 +256,273 @@ The procedure for joining a client to the domain varies with the version of Wind
 	encryption key for setting the password of the machine trust
 	account. The machine trust account will be created on-the-fly, or
 	updated if it already exists.
-	</para>
+	</para></listitem>
 
-</listitem>
+	<listitem><para><emphasis>Windows NT</emphasis></para>
 
-<listitem><para><emphasis>Windows NT</emphasis></para>
-
-    <para> If the machine trust account was created manually, on the
+	<para>
+	If the machine trust account was created manually, on the
 	Identification Changes menu enter the domain name, but do not
 	check the box "Create a Computer Account in the Domain."  In this case,
 	the existing machine trust account is used to join the machine to
-	the domain.</para>
+	the domain.
+	</para>
 
-    <para> If the machine trust account is to be created
+	<para>
+	If the machine trust account is to be created
 	on-the-fly, on the Identification Changes menu enter the domain
 	name, and check the box "Create a Computer Account in the Domain."  In
 	this case, joining the domain proceeds as above for Windows 2000
 	(i.e., you must supply a Samba administrative account when
-	prompted).</para>
-</listitem>
+	prompted).
+	</para></listitem>
 
-<listitem><para><emphasis>Samba</emphasis></para>
+	<listitem><para><emphasis>Samba</emphasis></para>
 	<para>Joining a samba client to a domain is documented in 
 	the <link linkend="domain-member">Domain Member</link> chapter.
-</para></listitem>
+	</para></listitem>
 </itemizedlist>
+
+</sect2>
+</sect1>
+
+<sect1>
+<title>Domain Member Server</title>
+
+<para>
+This mode of server operation involves the samba machine being made a member
+of a domain security context. This means by definition that all user authentication
+will be done from a centrally defined authentication regime. The authentication
+regime may come from an NT3/4 style (old domain technology) server, or it may be
+provided from an Active Directory server (ADS) running on MS Windows 2000 or later.
+</para>
+
+<para>
+<emphasis>
+Of course it should be clear that the authentication back end itself could be from any
+distributed directory architecture server that is supported by Samba. This can be
+LDAP (from OpenLDAP), or Sun's iPlanet, of NetWare Directory Server, etc.
+</emphasis>
+</para>
+
+<para>
+Please refer to the section on Howto configure Samba as a Primary Domain Controller
+and for more information regarding how to create a domain machine account for a
+domain member server as well as for information regarding how to enable the samba
+domain member machine to join the domain and to be fully trusted by it.
+</para>
+
+<sect2>
+<title>Joining an NT4 type Domain with Samba-3</title>
+
+<para>
+<emphasis>Assumptions:</emphasis>
+<programlisting>
+	NetBIOS name: SERV1
+	Win2K/NT domain name: DOM
+	Domain's PDC NetBIOS name: DOMPDC
+	Domain's BDC NetBIOS names: DOMBDC1 and DOMBDC2
+</programlisting>
+</para>
+
+<para>
+First, you must edit your &smb.conf; file to tell Samba it should
+now use domain security.
+</para>
+
+<para>
+Change (or add) your <ulink url="smb.conf.5.html#SECURITY">
+<parameter>security =</parameter></ulink> line in the [global] section 
+of your &smb.conf; to read:
+</para>
+
+<para>
+<programlisting>
+        <command>security = domain</command>
+</programlisting>
+</para>
+
+<para>
+Next change the <ulink url="smb.conf.5.html#WORKGROUP"><parameter>
+workgroup =</parameter></ulink> line in the [global] section to read: 
+</para>
+
+<para>
+<programlisting>
+        <command>workgroup = DOM</command>
+</programlisting>
+</para>
+
+<para>
+as this is the name of the domain we are joining.
+</para>
+
+<para>
+You must also have the parameter <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">
+<parameter>encrypt passwords</parameter></ulink> set to <constant>yes
+</constant> in order for your users to authenticate to the NT PDC.
+</para>
+
+<para>
+Finally, add (or modify) a <ulink url="smb.conf.5.html#PASSWORDSERVER">
+<parameter>password server =</parameter></ulink> line in the [global]
+section to read: 
+</para>
+
+<para>
+<programlisting>
+        <command>password server = DOMPDC DOMBDC1 DOMBDC2</command>
+</programlisting>
+</para>
+
+<para>
+These are the primary and backup domain controllers Samba 
+will attempt to contact in order to authenticate users. Samba will 
+try to contact each of these servers in order, so you may want to 
+rearrange this list in order to spread out the authentication load 
+among domain controllers.
+</para>
+
+<para>
+Alternatively, if you want smbd to automatically determine 
+the list of Domain controllers to use for authentication, you may 
+set this line to be:
+</para>
+
+<para>
+<programlisting>
+        <command>password server = *</command>
+</programlisting>
+</para>
+
+<para>
+This method, allows Samba to use exactly the same mechanism that NT does. This 
+method either broadcasts or uses a WINS database in order to
+find domain controllers to authenticate against.
+</para>
+
+<para>
+In order to actually join the domain, you must run this command:
+</para>
+
+<para>
+<programlisting>
+        <prompt>root# </prompt><userinput>net join -S DOMPDC -U<replaceable>Administrator%password</replaceable></userinput>
+</programlisting>
+</para>
+
+<para>
+If the <userinput>-S DOMPDC</userinput> argument is not given then
+the domain name will be obtained from smb.conf.
+</para>
+
+<para>
+As we are joining the domain DOM and the PDC for that domain 
+(the only machine that has write access to the domain SAM database) 
+is DOMPDC. The <replaceable>Administrator%password</replaceable> is 
+the login name and password for an account which has the necessary 
+privilege to add machines to the domain.  If this is successful 
+you will see the message:
+</para>
+
+<para>
+<computeroutput>Joined domain DOM.</computeroutput>
+or <computeroutput>Joined 'SERV1' to realm 'MYREALM'</computeroutput>
+</para>
+
+<para>
+in your terminal window. See the <ulink url="net.8.html">
+net(8)</ulink> man page for more details.
+</para>
+
+<para>
+This process joins the server to the domain without having to create the machine
+trust account on the PDC beforehand.
+</para>
+
+<para>
+This command goes through the machine account password 
+change protocol, then writes the new (random) machine account 
+password for this Samba server into a file in the same directory 
+in which an smbpasswd file would be stored - normally :
+</para>
+
+<para>
+<filename>/usr/local/samba/private/secrets.tdb</filename>
+</para>
+
+<para>
+This file is created and owned by root and is not 
+readable by any other user. It is the key to the domain-level 
+security for your system, and should be treated as carefully 
+as a shadow password file.
+</para>
+
+<para>
+Finally, restart your Samba daemons and get ready for 
+clients to begin using domain security!
+</para>
+
+</sect2>
+
+<sect2>
+<title>Why is this better than security = server?</title>
+
+<para>
+Currently, domain security in Samba doesn't free you from 
+having to create local Unix users to represent the users attaching 
+to your server. This means that if domain user <constant>DOM\fred
+</constant> attaches to your domain security Samba server, there needs 
+to be a local Unix user fred to represent that user in the Unix 
+filesystem. This is very similar to the older Samba security mode 
+<ulink url="smb.conf.5.html#SECURITYEQUALSSERVER">security = server</ulink>, 
+where Samba would pass through the authentication request to a Windows 
+NT server in the same way as a Windows 95 or Windows 98 server would.
+</para>
+
+<para>
+Please refer to the <ulink url="winbind.html">Winbind 
+paper</ulink> for information on a system to automatically
+assign UNIX uids and gids to Windows NT Domain users and groups.
+</para>
+
+<para>
+The advantage to domain-level security is that the 
+authentication in domain-level security is passed down the authenticated 
+RPC channel in exactly the same way that an NT server would do it. This 
+means Samba servers now participate in domain trust relationships in 
+exactly the same way NT servers do (i.e., you can add Samba servers into 
+a resource domain and have the authentication passed on from a resource
+domain PDC to an account domain PDC).
+</para>
+
+<para>
+In addition, with <command>security = server</command> every Samba 
+daemon on a server has to keep a connection open to the 
+authenticating server for as long as that daemon lasts. This can drain 
+the connection resources on a Microsoft NT server and cause it to run 
+out of available connections. With <command>security = domain</command>, 
+however, the Samba daemons connect to the PDC/BDC only for as long 
+as is necessary to authenticate the user, and then drop the connection, 
+thus conserving PDC connection resources.
+</para>
+
+<para>
+And finally, acting in the same manner as an NT server 
+authenticating to a PDC means that as part of the authentication 
+reply, the Samba server gets the user identification information such 
+as the user SID, the list of NT groups the user belongs to, etc. 
+</para>
+
+<note>
+<para>
+Much of the text of this document 
+was first published in the Web magazine <ulink url="http://www.linuxworld.com"> 	
+LinuxWorld</ulink> as the article <ulink
+url="http://www.linuxworld.com/linuxworld/lw-1998-10/lw-10-samba.html">Doing 
+the NIS/NT Samba</ulink>.
+</para>
+</note>
 
 </sect2>
 </sect1>
@@ -413,7 +538,9 @@ Windows2000 KDC.
 <sect2>
 <title>Setup your <filename>smb.conf</filename></title>
 
-<para>You must use at least the following 3 options in smb.conf:</para>
+<para>
+You must use at least the following 3 options in smb.conf:
+</para>
 
 <para><programlisting>
 	realm = your.kerberos.REALM
@@ -429,21 +556,25 @@ In case samba can't figure out your ads server using your realm name, use the
 </programlisting>
 </para>
 
-<note><para>You do *not* need a smbpasswd file, and older clients will
-  be authenticated as if <command>security = domain</command>,
-  although it won't do any harm
-  and allows you to have local users not in the domain.
-  I expect that the above required options will change soon when we get better
-  active directory integration.</para></note>
+<note><para>
+You do *not* need a smbpasswd file, and older clients will be authenticated as if
+<command>security = domain</command>, although it won't do any harm and allows you
+to have local users not in the domain. I expect that the above required options will
+change soon when we get better active directory integration.
+</para></note>
 
 </sect2>
   
 <sect2>
 <title>Setup your <filename>/etc/krb5.conf</filename></title>
 
-<para>Note: you will need the krb5 workstation, devel, and libs installed</para>
+<para>
+Note: you will need the krb5 workstation, devel, and libs installed
+</para>
 
-<para>The minimal configuration for <filename>krb5.conf</filename> is:</para>
+<para>
+The minimal configuration for <filename>krb5.conf</filename> is:
+</para>
 
 <para><programlisting>
 	[realms]
@@ -452,17 +583,22 @@ In case samba can't figure out your ads server using your realm name, use the
 	    }
 </programlisting></para>
 
-<para>Test your config by doing a <userinput>kinit
+<para>
+Test your config by doing a <userinput>kinit
 <replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and
 making sure that your password is accepted by the Win2000 KDC.
 </para>
 
-<note><para>The realm must be uppercase or you will get "Cannot find KDC for requested
-realm while getting initial credentials" error </para></note>
+<note><para>
+The realm must be uppercase or you will get "Cannot find KDC for requested
+realm while getting initial credentials" error
+</para></note>
 
-<note><para>Time between the two servers must be synchronized.  You will get a
+<note><para>
+Time between the two servers must be synchronized.  You will get a
 "kinit(v5): Clock skew too great while getting initial credentials" if the time
-difference is more than five minutes. </para></note>
+difference is more than five minutes. 
+</para></note>
 
 <para>
 You also must ensure that you can do a reverse DNS lookup on the IP
@@ -554,11 +690,16 @@ specify the <parameter>-k</parameter> option to choose kerberos authentication.
 <sect2>
 <title>Notes</title>
 
-<para>You must change administrator password at least once after DC 
-install, to create the right encoding types</para>
+<para>
+You must change administrator password at least once after DC 
+install, to create the right encoding types
+</para>
 
-<para>w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
-   their defaults DNS setup. Maybe fixed in service packs?</para>
+<para>
+w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
+their defaults DNS setup. Maybe fixed in service packs?
+</para>
+
 </sect2>
 
 </sect1>
