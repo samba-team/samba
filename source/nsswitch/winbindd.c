@@ -587,6 +587,7 @@ static void process_loop(void)
 		int maxfd, listen_sock, listen_priv_sock, selret;
 		struct timeval timeout;
 
+	again:
 		/* Handle messages */
 
 		message_dispatch();
@@ -715,6 +716,15 @@ static void process_loop(void)
 			for (state = winbindd_client_list(); state; 
 			     state = state->next) {
                 
+				/* Data available for writing */
+                
+				if (FD_ISSET(state->sock, &w_fds))
+					client_write(state);
+			}
+                
+			for (state = winbindd_client_list(); state; 
+			     state = state->next) {
+                
 				/* Data available for reading */
                 
 				if (FD_ISSET(state->sock, &r_fds)) {
@@ -747,13 +757,10 @@ static void process_loop(void)
 					if (state->read_buf_len == 
 					    sizeof(state->request)) {
 						winbind_process_packet(state);
+						winbindd_demote_client(state);
+						goto again;
 					}
 				}
-                
-				/* Data available for writing */
-                
-				if (FD_ISSET(state->sock, &w_fds))
-					client_write(state);
 			}
 		}
 

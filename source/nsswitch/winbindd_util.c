@@ -736,6 +736,14 @@ void winbindd_remove_client(struct winbindd_cli_state *cli)
 	_num_clients--;
 }
 
+/* Demote a client to be the last in the list */
+
+void winbindd_demote_client(struct winbindd_cli_state *cli)
+{
+	struct winbindd_cli_state *tmp;
+	DLIST_DEMOTE(_client_list, cli, tmp);
+}
+
 /* Close all open clients */
 
 void winbindd_kill_all_clients(void)
