@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -77,7 +77,7 @@ OM_uint32 gss_accept_sec_context
   krb5_data indata;
   krb5_flags ap_options;
   OM_uint32 flags;
-  krb5_ticket *ticket;
+  krb5_ticket *ticket = NULL;
   krb5_keytab keytab = NULL;
 
   gssapi_krb5_init ();
@@ -95,6 +95,7 @@ OM_uint32 gss_accept_sec_context
   (*context_handle)->target = NULL;
   (*context_handle)->flags = 0;
   (*context_handle)->more_flags = 0;
+  (*context_handle)->ticket = NULL;
 
   kret = krb5_auth_con_init (gssapi_krb5_context,
 			     &(*context_handle)->auth_context);
@@ -216,9 +217,18 @@ OM_uint32 gss_accept_sec_context
     output_token->length = 0;
   }
 
+  (*context_handle)->ticket = ticket;
+  ticket = NULL;
+
+#if 0
+  krb5_free_ticket (context, ticket);
+#endif
+
   return GSS_S_COMPLETE;
 
 failure:
+  if (ticket != NULL)
+    krb5_free_ticket (gssapi_krb5_context, ticket);
   krb5_auth_con_free (gssapi_krb5_context,
 		      (*context_handle)->auth_context);
   if((*context_handle)->source)
