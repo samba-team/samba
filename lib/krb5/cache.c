@@ -213,30 +213,7 @@ krb5_cc_retrieve_cred(krb5_context context,
     krb5_cc_cursor cursor;
     krb5_cc_start_seq_get(context, id, &cursor);
     while((ret = krb5_cc_next_cred(context, id, creds, &cursor)) == 0){
-	if(krb5_principal_compare(context, mcreds->server, creds->server)){
-	    ret = 0;
-	    break;
-	}
-	krb5_free_creds_contents (context, creds);
-    }
-    krb5_cc_end_seq_get(context, id, &cursor);
-    return ret;
-}
-
-krb5_error_code
-krb5_cc_retrieve_cred_any_realm(krb5_context context,
-				krb5_ccache id,
-				krb5_flags whichfields,
-				krb5_creds *mcreds,
-				krb5_creds *creds)
-{
-    krb5_error_code ret;
-    krb5_cc_cursor cursor;
-    krb5_cc_start_seq_get(context, id, &cursor);
-    while((ret = krb5_cc_next_cred(context, id, creds, &cursor)) == 0){
-	if(krb5_principal_compare_any_realm(context, 
-					    mcreds->server, 
-					    creds->server)){
+	if(krb5_compare_creds(context, whichfields, mcreds, creds)){
 	    ret = 0;
 	    break;
 	}
