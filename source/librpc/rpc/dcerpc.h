@@ -108,7 +108,8 @@ struct dcerpc_packet {
 			const char *secondary_address;
 			uint8 num_results;
 			struct {
-				uint32 result;
+				uint16 result;
+				uint16 reason;
 				struct dcerpc_syntax_id syntax;
 			} *ctx_list;
 			DATA_BLOB auth_verifier;
