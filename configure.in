@@ -279,8 +279,7 @@ AC_EGREP_HEADER(ut_pid, utmp.h, AC_DEFINE(HAVE_UT_PID))
 AC_EGREP_HEADER(ut_id, utmp.h, AC_DEFINE(HAVE_UT_ID))
 AC_EGREP_HEADER(ut_syslen, utmpx.h, AC_DEFINE(HAVE_UT_SYSLEN))
 
-AC_EGREP_HEADER(sockaddr_in6, netinet/in.h, AC_DEFINE(HAVE_SOCKADDR_IN6))
-AC_EGREP_HEADER(sockaddr_in6, netinet/in6.h, AC_DEFINE(HAVE_SOCKADDR_IN6))
+AC_KRB_IPV6
 
 dnl
 dnl Check for struct winsize
