@@ -31,6 +31,10 @@
 static void userinfo_handler(struct rpc_request *req);
 
 
+/**
+ * Stage 1: Open user policy handle in SAM server.
+ */
+
 static NTSTATUS userinfo_openuser(struct composite_context *c,
 				  struct rpc_composite_userinfo *io)
 {
@@ -63,6 +67,10 @@ failure:
 }
 
 
+/**
+ * Stage 2: Get requested user information.
+ */
+
 static NTSTATUS userinfo_getuser(struct composite_context *c,
 				 struct rpc_composite_userinfo *io)
 {
@@ -93,6 +101,10 @@ static NTSTATUS userinfo_getuser(struct composite_context *c,
 }
 
 
+/**
+ * Stage3: Close policy handle associated with opened user.
+ */
+
 static NTSTATUS userinfo_closeuser(struct composite_context *c,
 				   struct rpc_composite_userinfo *io)
 {
@@ -110,11 +122,19 @@ static NTSTATUS userinfo_closeuser(struct composite_context *c,
 }
 
 
+/**
+ * Event handler for asynchronous request. Handles transition through
+ * intermediate stages of the call.
+ *
+ * @param req rpc call context
+ */
+
 static void userinfo_handler(struct rpc_request *req)
 {
 	struct composite_context *c = req->async.private;
 	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
-
+	
+	/* Stages of the call */
 	switch (s->stage) {
 	case USERINFO_OPENUSER:
 		c->status = userinfo_openuser(c, &s->io);
@@ -139,6 +159,13 @@ static void userinfo_handler(struct rpc_request *req)
 	}
 }
 
+
+/**
+ * Sends asynchronous userinfo request
+ *
+ * @param p dce/rpc call pipe 
+ * @param io arguments and results of the call
+ */
 
 struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 						      struct rpc_composite_userinfo *io)
@@ -187,12 +214,22 @@ failure:
 }
 
 
+/**
+ * Waits for and receives result of asynchronous userinfo call
+ * 
+ * @param c composite context returned by asynchronous userinfo call
+ * @param mem_ctx memory context of the call
+ * @param io pointer to results (and arguments) of the call
+ * @return nt status code of execution
+ */
+
 NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 				     struct rpc_composite_userinfo *io)
 {
 	NTSTATUS status;
 	struct userinfo_state *s;
 	
+	/* wait for results of sending request */
 	status = composite_wait(c);
 	
 	if (NT_STATUS_IS_OK(status) && io) {
@@ -200,11 +237,21 @@ NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *me
 		talloc_steal(mem_ctx, &s->io.out.info);
 		io->out.info = s->io.out.info;
 	}
-
+	
+	/* memory context associated to composite context is no longer needed */
 	talloc_free(c);
 	return status;
 }
 
+
+/**
+ * Synchronous version of userinfo call
+ *
+ * @param pipe dce/rpc call pipe
+ * @param mem_ctx memory context for the call
+ * @param io arguments and results of the call
+ * @return nt status code of execution
+ */
 
 NTSTATUS rpc_composite_userinfo(struct dcerpc_pipe *pipe,
 				TALLOC_CTX *mem_ctx,
