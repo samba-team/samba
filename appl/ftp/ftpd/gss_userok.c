@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,6 +79,7 @@ gss_userok(void *app_data, char *username)
            krb5_ccache ccache = NULL; 
            char* ticketfile;
            struct passwd *pw;
+	   OM_uint32 minor_status;
            
            pw = getpwnam(username);
            
@@ -93,8 +94,9 @@ gss_userok(void *app_data, char *username)
            if (ret)
               goto fail;
            
-           ret = krb5_cc_copy_cache(gssapi_krb5_context, 
-                     data->delegated_cred_handle->ccache, ccache);
+           ret = gss_krb5_copy_ccache(&minor_status,
+				      data->delegated_cred_handle,
+				      ccache);
            if (ret)
               goto fail;
            
