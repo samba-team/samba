@@ -678,8 +678,8 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
  * @param val The value to add - NULL means DELETE
  * @return ADS STATUS indicating success of add
  **/
-ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-		       const char *name, const struct berval *val)
+static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
+			      const char *name, const struct berval *val)
 {
 	const struct berval *values[2] = {val, NULL};
 	if (!val)
