@@ -29,41 +29,76 @@ static void pong_message(void *msg_ctx, void *private,
 	(*count)++;
 }
 
+static void exit_message(void *msg_ctx, void *private, 
+			 uint32_t msg_type, servid_t src, DATA_BLOB *data)
+{
+	talloc_free(private);
+	exit(0);
+}
+
 /*
   test ping speed
 */
 static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *ev = event_context_init(mem_ctx);
-	void *msg_ctx1, *msg_ctx2;
+	void *msg_ctx;
 	int ping_count = 0;
 	int pong_count = 0;
 	BOOL ret = True;
 
-	msg_ctx1 = messaging_init(mem_ctx, 1, ev);
-	msg_ctx2 = messaging_init(mem_ctx, 2, ev);
+	if (fork() == 0) {
+		void *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
+		messaging_register(msg_ctx2, mem_ctx, -1, exit_message);
+		event_loop_wait(ev);
+		exit(0);
+	}
 
-	messaging_register(msg_ctx2, &pong_count, MSG_PONG, pong_message);
+	sleep(2);
+
+	msg_ctx = messaging_init(mem_ctx, 2, ev);
+
+	messaging_register(msg_ctx, &pong_count, MSG_PONG, pong_message);
 
 	start_timer();
 
 	printf("Sending pings for 10 seconds\n");
 	while (end_timer() < 10.0) {
 		DATA_BLOB data;
-		data.data = "testing";
+		NTSTATUS status1, status2;
+
+		data.data = discard_const_p(char, "testing");
 		data.length = strlen(data.data);
 
-		messaging_send(msg_ctx2, 1, MSG_PING, &data);
-		messaging_send(msg_ctx2, 1, MSG_PING, NULL);
-		ping_count += 2;
-		event_loop_once(ev);
-		event_loop_once(ev);
+		status1 = messaging_send(msg_ctx, 1, MSG_PING, &data);
+		status2 = messaging_send(msg_ctx, 1, MSG_PING, NULL);
+
+		if (!NT_STATUS_IS_OK(status1)) {
+			printf("Failed to send msg1 (%s) (done %d)\n", nt_errstr(status1), ping_count);
+		} else {
+			ping_count++;
+		}
+
+		if (!NT_STATUS_IS_OK(status2)) {
+			printf("Failed to send msg2 (%s) (done %d)\n", nt_errstr(status2), ping_count);
+		} else {
+			ping_count++;
+		}
+
+		while (pong_count < ping_count) {
+			event_loop_once(ev);
+		}
 	}
 
-	printf("waiting for %d remaining replies\n", ping_count - pong_count);
+	printf("waiting for %d remaining replies (done %d)\n", 
+	       ping_count - pong_count, pong_count);
 	while (end_timer() < 30 && pong_count < ping_count) {
 		event_loop_once(ev);
 	}
+
+	printf("sending exit\n");
+	messaging_send(msg_ctx, 1, -1, NULL);
+	event_loop_once(ev);
 
 	if (ping_count != pong_count) {
 		printf("ping test failed! received %d, sent %d\n", pong_count, ping_count);
@@ -72,8 +107,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	printf("ping rate of %.0f messages/sec\n", (ping_count+pong_count)/end_timer());
 
-	talloc_free(msg_ctx1);
-	talloc_free(msg_ctx2);
+	talloc_free(msg_ctx);
 
 	event_context_destroy(ev);
 	return ret;
