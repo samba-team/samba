@@ -28,16 +28,16 @@
 ADS_STATUS ads_find_user_acct(ADS_STRUCT *ads, void **res, const char *user)
 {
 	ADS_STATUS status;
-	char *exp;
+	char *ldap_exp;
 	const char *attrs[] = {"*", NULL};
 	char *escaped_user = escape_ldap_string_alloc(user);
 	if (!escaped_user) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	asprintf(&exp, "(samAccountName=%s)", escaped_user);
-	status = ads_search(ads, res, exp, attrs);
-	SAFE_FREE(exp);
+	asprintf(&ldap_exp, "(samAccountName=%s)", escaped_user);
+	status = ads_search(ads, res, ldap_exp, attrs);
+	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_user);
 	return status;
 }
