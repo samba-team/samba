@@ -222,7 +222,7 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 
 	/* Register a home dir service for this user */
 	if ((!vuser->guest) && vuser->unix_homedir && *(vuser->unix_homedir)) {
-		DEBUG(3, ("Adding/updating homes service for user '%s' using home direcotry: '%s'\n", 
+		DEBUG(3, ("Adding/updating homes service for user '%s' using home directory: '%s'\n", 
 			  vuser->user.unix_name, vuser->unix_homedir));
 		vuser->homes_snum = add_home_service(vuser->user.unix_name, vuser->user.unix_name, vuser->unix_homedir);	  
 	} else {
