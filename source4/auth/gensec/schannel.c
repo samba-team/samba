@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_schannel.h"
 #include "auth/auth.h"
-#include "libcli/auth/schannel.h"
+#include "auth/gensec/schannel.h"
 
 static size_t schannel_sig_size(struct gensec_security *gensec_security)
 {
