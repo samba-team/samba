@@ -53,7 +53,7 @@ static void NTLMSSPcalc_ap( unsigned char *hash, unsigned char *data, int len)
     hash[257] = index_j;
 }
 
-static void calc_hash(unsigned char hash[258], const char *k2, int k2l)
+static void calc_hash(unsigned char hash[258], unsigned char *k2, int k2l)
 {
 	unsigned char j = 0;
 	int ind;
@@ -390,7 +390,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		
 		DEBUG(5, ("NTLMSSP Sign/Seal - using LM KEY\n"));
 
-		calc_hash(ntlmssp_state->ntlmssp_hash, (const char *)(ntlmssp_state->session_key.data), 8);
+		calc_hash(ntlmssp_state->ntlmssp_hash, ntlmssp_state->session_key.data, 8);
 		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	} else {
@@ -402,7 +402,7 @@ NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
 		
 		DEBUG(5, ("NTLMSSP Sign/Seal - using NT KEY\n"));
 
-		calc_hash(ntlmssp_state->ntlmssp_hash, (const char *)(ntlmssp_state->session_key.data), 16);
+		calc_hash(ntlmssp_state->ntlmssp_hash, ntlmssp_state->session_key.data, 16);
 		dump_data_pw("NTLMSSP hash:\n", ntlmssp_state->ntlmssp_hash,
 			     sizeof(ntlmssp_state->ntlmssp_hash));
 	}
