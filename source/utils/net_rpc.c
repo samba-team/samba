@@ -989,7 +989,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				printf("%-21.21s %-50.50s\n",
 				       group, desc);
 			else
-				printf("%-21.21s\n", group);
+				printf("%s\n", group);
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 	/* query domain aliases */
@@ -1030,7 +1030,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				       groups[i].acct_name,
 				       description);
 			} else {
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%s\n", groups[i].acct_name);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
@@ -1081,7 +1081,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				       groups[i].acct_name,
 				       description);
 			} else {
-				printf("%-21.21s\n", groups[i].acct_name);
+				printf("%s\n", groups[i].acct_name);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
