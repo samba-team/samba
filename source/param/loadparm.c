@@ -1459,7 +1459,7 @@ static void init_globals(void)
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 
-	Globals.winbind_cache_time = 15;
+	Globals.winbind_cache_time = 120;
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
