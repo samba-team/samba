@@ -3209,86 +3209,80 @@ int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring d
 }
 
 /****************************************************************************
-  reply to a mkdir
+ Reply to a mkdir.
 ****************************************************************************/
+
 int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-  pstring directory;
-  int outsize;
-  START_PROFILE(SMBmkdir);
+	pstring directory;
+	int outsize;
+	START_PROFILE(SMBmkdir);
  
-  srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
+	srvstr_pull(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), -1, STR_TERMINATE);
 
-  outsize=mkdir_internal(conn, inbuf, outbuf, directory);
-  if(outsize == 0)
-    outsize = set_message(outbuf,0,0,True);
+	outsize=mkdir_internal(conn, inbuf, outbuf, directory);
+	if(outsize == 0)
+		outsize = set_message(outbuf,0,0,True);
 
-  DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
+	DEBUG( 3, ( "mkdir %s ret=%d\n", directory, outsize ) );
 
-  END_PROFILE(SMBmkdir);
-  return(outsize);
+	END_PROFILE(SMBmkdir);
+	return(outsize);
 }
 
 /****************************************************************************
-Static function used by reply_rmdir to delete an entire directory
-tree recursively.
+ Static function used by reply_rmdir to delete an entire directory
+ tree recursively. Return False on ok, True on fail.
 ****************************************************************************/
 
 static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 {
-  char *dname = NULL;
-  BOOL ret = False;
-  void *dirptr = OpenDir(NULL, directory, False);
+	char *dname = NULL;
+	BOOL ret = False;
+	void *dirptr = OpenDir(conn, directory, False);
 
-  if(dirptr == NULL)
-    return True;
+	if(dirptr == NULL)
+		return True;
 
-  while((dname = ReadDirName(dirptr)))
-  {
-    pstring fullname;
-    SMB_STRUCT_STAT st;
+	while((dname = ReadDirName(dirptr))) {
+		pstring fullname;
+		SMB_STRUCT_STAT st;
 
-    if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-      continue;
+		if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+			continue;
 
-    /* Construct the full name. */
-    if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
-    {
-      errno = ENOMEM;
-      ret = True;
-      break;
-    }
-    pstrcpy(fullname, directory);
-    pstrcat(fullname, "/");
-    pstrcat(fullname, dname);
+		/* Construct the full name. */
+		if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname)) {
+			errno = ENOMEM;
+			ret = True;
+			break;
+		}
 
-    if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
-    {
-      ret = True;
-      break;
-    }
+		pstrcpy(fullname, directory);
+		pstrcat(fullname, "/");
+		pstrcat(fullname, dname);
 
-    if(st.st_mode & S_IFDIR)
-    {
-      if(recursive_rmdir(conn, fullname)!=0)
-      {
-        ret = True;
-        break;
-      }
-      if(vfs_rmdir(conn,fullname) != 0)
-      {
-        ret = True;
-        break;
-      }
-    }
-    else if(vfs_unlink(conn,fullname) != 0)
-    {
-      ret = True;
-      break;
-    }
-  }
-  CloseDir(dirptr);
-  return ret;
+		if(conn->vfs_ops.lstat(conn,fullname, &st) != 0) {
+			ret = True;
+			break;
+		}
+
+		if(st.st_mode & S_IFDIR) {
+			if(recursive_rmdir(conn, fullname)!=0) {
+				ret = True;
+				break;
+			}
+			if(vfs_rmdir(conn,fullname) != 0) {
+				ret = True;
+				break;
+			}
+		} else if(vfs_unlink(conn,fullname) != 0) {
+			ret = True;
+			break;
+		}
+	}
+	CloseDir(dirptr);
+	return ret;
 }
 
 /****************************************************************************
@@ -3297,86 +3291,77 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 
 BOOL rmdir_internals(connection_struct *conn, char *directory)
 {
-  BOOL ok;
+	BOOL ok;
 
-  ok = (vfs_rmdir(conn,directory) == 0);
-  if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn)))
-  {
-    /* 
-     * Check to see if the only thing in this directory are
-     * vetoed files/directories. If so then delete them and
-     * retry. If we fail to delete any of them (and we *don't*
-     * do a recursive delete) then fail the rmdir.
-     */
-    BOOL all_veto_files = True;
-    char *dname;
-    void *dirptr = OpenDir(conn, directory, False);
+	ok = (vfs_rmdir(conn,directory) == 0);
+	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
+		/* 
+		 * Check to see if the only thing in this directory are
+		 * vetoed files/directories. If so then delete them and
+		 * retry. If we fail to delete any of them (and we *don't*
+		 * do a recursive delete) then fail the rmdir.
+		 */
+		BOOL all_veto_files = True;
+		char *dname;
+		void *dirptr = OpenDir(conn, directory, False);
 
-    if(dirptr != NULL)
-    {
-      int dirpos = TellDir(dirptr);
-      while ((dname = ReadDirName(dirptr)))
-      {
-        if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-          continue;
-        if(!IS_VETO_PATH(conn, dname))
-        {
-          all_veto_files = False;
-          break;
-        }
-      }
-      if(all_veto_files)
-      {
-        SeekDir(dirptr,dirpos);
-        while ((dname = ReadDirName(dirptr)))
-        {
-          pstring fullname;
-          SMB_STRUCT_STAT st;
+		if(dirptr != NULL) {
+			int dirpos = TellDir(dirptr);
+			while ((dname = ReadDirName(dirptr))) {
+				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+					continue;
+				if(!IS_VETO_PATH(conn, dname)) {
+					all_veto_files = False;
+					break;
+				}
+			}
 
-          if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
-            continue;
+			if(all_veto_files) {
+				SeekDir(dirptr,dirpos);
+				while ((dname = ReadDirName(dirptr))) {
+					pstring fullname;
+					SMB_STRUCT_STAT st;
 
-          /* Construct the full name. */
-          if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname))
-          {
-            errno = ENOMEM;
-            break;
-          }
-          pstrcpy(fullname, directory);
-          pstrcat(fullname, "/");
-          pstrcat(fullname, dname);
+					if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+						continue;
+
+					/* Construct the full name. */
+					if(strlen(directory) + strlen(dname) + 1 >= sizeof(fullname)) {
+						errno = ENOMEM;
+						break;
+					}
+
+					pstrcpy(fullname, directory);
+					pstrcat(fullname, "/");
+					pstrcat(fullname, dname);
                      
-          if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
-            break;
-          if(st.st_mode & S_IFDIR)
-          {
-            if(lp_recursive_veto_delete(SNUM(conn)))
-            {
-              if(recursive_rmdir(conn, fullname) != 0)
-                break;
-            }
-            if(vfs_rmdir(conn,fullname) != 0)
-              break;
-          }
-          else if(vfs_unlink(conn,fullname) != 0)
-            break;
-        }
-        CloseDir(dirptr);
-        /* Retry the rmdir */
-        ok = (vfs_rmdir(conn,directory) == 0);
-      }
-      else
-        CloseDir(dirptr);
-    }
-    else
-      errno = ENOTEMPTY;
-  }
-          
-  if (!ok)
-    DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n",
-          directory,strerror(errno)));
+					if(conn->vfs_ops.lstat(conn,fullname, &st) != 0)
+						break;
+					if(st.st_mode & S_IFDIR) {
+						if(lp_recursive_veto_delete(SNUM(conn))) {
+							if(recursive_rmdir(conn, fullname) != 0)
+								break;
+						}
+						if(vfs_rmdir(conn,fullname) != 0)
+							break;
+					} else if(vfs_unlink(conn,fullname) != 0)
+						break;
+				}
+				CloseDir(dirptr);
+				/* Retry the rmdir */
+				ok = (vfs_rmdir(conn,directory) == 0);
+			} else {
+				CloseDir(dirptr);
+			}
+		} else {
+			errno = ENOTEMPTY;
+		}
+	}
 
-  return ok;
+	if (!ok)
+		DEBUG(3,("rmdir_internals: couldn't remove directory %s : %s\n", directory,strerror(errno)));
+
+	return ok;
 }
 
 /****************************************************************************
