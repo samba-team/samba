@@ -112,6 +112,68 @@ int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v)
 }
 
 /****************************************************************************
+ Fetch a uint32 value by a arbitrary blob key, return -1 if not found.
+ Output is uint32 in native byte order.
+****************************************************************************/
+
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 *value)
+{
+	TDB_DATA key, data;
+
+	key.dptr = keyval;
+	key.dsize = len;
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr || data.dsize != sizeof(uint32))
+		return False;
+	
+	*value = IVAL(data.dptr,0);
+	SAFE_FREE(data.dptr);
+	return True;
+}
+
+/****************************************************************************
+ Fetch a uint32 value by string key, return -1 if not found.
+ Output is uint32 in native byte order.
+****************************************************************************/
+
+BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 *value)
+{
+	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+}
+
+/****************************************************************************
+ Store a uint32 value by an arbitary blob key, return 0 on success, -1 on failure.
+ Input is uint32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, uint32 value)
+{
+	TDB_DATA key, data;
+	uint32 v_store;
+	BOOL ret = True;
+
+	key.dptr = keystr;
+	key.dsize = len;
+	SIVAL(&v_store, 0, value);
+	data.dptr = (void *)&v_store;
+	data.dsize = sizeof(uint32);
+
+	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
+		ret = False;
+
+	return ret;
+}
+
+/****************************************************************************
+ Store a uint32 value by string key, return 0 on success, -1 on failure.
+ Input is uint32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+BOOL tdb_store_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 value)
+{
+	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+}
+/****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -1
  on failure.
 ****************************************************************************/
@@ -171,6 +233,40 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 		goto err_out;
 
 	ret = 0;
+
+  err_out:
+
+	tdb_unlock_bystring(tdb, keystr);
+	return ret;
+}
+
+/****************************************************************************
+ Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
+****************************************************************************/
+
+BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, uint32 change_val)
+{
+	uint32 val;
+	BOOL ret = False;
+
+	if (tdb_lock_bystring(tdb, keystr) == -1)
+		return False;
+
+	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+			goto err_out;
+
+		val = *oldval;
+
+	} else {
+		*oldval = val;
+		val += change_val;
+	}
+		
+	if (!tdb_store_uint32(tdb, keystr, val))
+		goto err_out;
+
+	ret = True;
 
   err_out:
 
