@@ -104,6 +104,9 @@
 /* define if the system is missing a prototype for strtok_r() */
 #undef NEED_STRTOK_R_PROTO
 
+/* define if the system is missing a prototype for strtok_r() */
+#undef NEED_HSTRERROR_PROTO
+
 /* Define this if your `struct tm' has a field `tm_gmtoff' */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
 
