@@ -479,61 +479,73 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 }
 
 /****************************************************************************
-do a SVC Query Lookup RIDS
+do a SVC Change Service Config
 ****************************************************************************/
-BOOL svc_query_unknown_1b(struct cli_state *cli, uint16 fnum, 
-				const POLICY_HND *pol, uint32 switch_value,
-				uint32 unknown_1,
-				uint32 *num_items,
-				uint32 ***items)
+BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				uint32 service_type, uint32 start_type,
+				uint32 unknown_0,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* password,
+				char* disp_name)
 {
-	prs_struct data;
-	prs_struct rdata;
+	prs_struct rbuf;
+	prs_struct buf; 
+	SVC_Q_CHANGE_SVC_CONFIG q_c;
+	BOOL valid_cfg = False;
 
-	SVC_Q_UNKNOWN_1B q_o;
-	BOOL valid_query = False;
+	if (hnd == NULL) return False;
 
-	if (pol == NULL || num_items == NULL || items == NULL ) return False;
+	/* create and send a MSRPC command with api SVC_CHANGE_SVC_CONFIG */
 
-	/* create and send a MSRPC command with api SVC_UNKNOWN_1B */
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
-	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
-	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
-
-	DEBUG(4,("SVC Query Unknown 1b.\n"));
+	DEBUG(4,("SVC Change Service Config\n"));
 
 	/* store the parameters */
-	make_svc_q_unknown_1b(&q_o, pol, switch_value, unknown_1);
+	make_svc_q_change_svc_config(&q_c, hnd, 
+				service_type, start_type,
+	                        unknown_0, error_control,
+				bin_path_name, load_order_grp, 
+				tag_id,
+				dependencies, service_start_name,
+				password, disp_name);
 
 	/* turn parameters into data stream */
-	svc_io_q_unknown_1b("", &q_o,  &data, 0);
+	svc_io_q_change_svc_config("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_UNKNOWN_1B, &data, &rdata))
+	if (rpc_api_pipe_req(cli, fnum, SVC_CHANGE_SVC_CONFIG, &buf, &rbuf))
 	{
-		SVC_R_UNKNOWN_1B r_o;
+		SVC_R_CHANGE_SVC_CONFIG r_c;
 		BOOL p;
-		ZERO_STRUCT(r_o);
 
-		svc_io_r_unknown_1b("", &r_o, &rdata, 0);
-		p = rdata.offset != 0;
-		
-		if (p && r_o.status != 0)
+		ZERO_STRUCT (r_c);
+
+		svc_io_r_change_svc_config("", &r_c, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_c.status != 0)
 		{
 			/* report error code */
-			DEBUG(4,("SVC_R_UNKNOWN_1B: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(1,("SVC_CHANGE_SVC_CONFIG: %s\n", get_nt_error_msg(r_c.status)));
 			p = False;
 		}
 
 		if (p)
 		{
-			(*num_items) = r_o.num_items1;
-			(*items) = r_o.items;
+			valid_cfg = True;
 		}
 	}
 
-	prs_mem_free(&data   );
-	prs_mem_free(&rdata  );
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
 
-	return valid_query;
+	return valid_cfg;
 }
+
+

@@ -26,15 +26,15 @@
 
 
 /* svcctl pipe */
-#define SVC_OPEN_SC_MAN      0x0f
-#define SVC_ENUM_SVCS_STATUS 0x0e
-#define SVC_QUERY_SVC_CONFIG 0x11
-#define SVC_QUERY_DISP_NAME  0x14
-#define SVC_OPEN_SERVICE     0x10
-#define SVC_START_SERVICE    0x13
-#define SVC_STOP_SERVICE     0x01
-#define SVC_UNKNOWN_1B       0x1b
-#define SVC_CLOSE            0x00
+#define SVC_OPEN_SC_MAN       0x0f
+#define SVC_ENUM_SVCS_STATUS  0x0e
+#define SVC_QUERY_SVC_CONFIG  0x11
+#define SVC_QUERY_DISP_NAME   0x14
+#define SVC_CHANGE_SVC_CONFIG 0x0b
+#define SVC_OPEN_SERVICE      0x10
+#define SVC_START_SERVICE     0x13
+#define SVC_STOP_SERVICE      0x01
+#define SVC_CLOSE             0x00
 
 
 /* SVC_Q_OPEN_SC_MAN */
@@ -244,30 +244,45 @@ typedef struct r_svc_close_info
 
 } SVC_R_CLOSE;
 
-/* SVC_Q_UNKNOWN_1B */
-typedef struct q_svc_unk_1b_info
+/* SVC_Q_CHANGE_SVC_CONFIG */
+typedef struct q_svc_change_svc_cfg_info
 {
-	POLICY_HND pol; /* service policy handle */
-	uint32 switch_value;	/* 0x01 */
-	uint32 unknown_1;	/* 0x0000 0228 */
+	POLICY_HND pol;
+	uint32 service_type;
+	uint32 start_type;
+	uint32 unknown_0;
+	uint32 error_control;
 
-} SVC_Q_UNKNOWN_1B;
+	uint32 ptr_bin_path_name; 
+	UNISTR2 uni_bin_path_name;
 
-/* SVC_R_UNKNOWN_1B */
-typedef struct r_svc_unk_1b_info
+	uint32 ptr_load_order_grp; 
+	UNISTR2 uni_load_order_grp;
+
+	uint32 tag_id;
+
+	uint32 ptr_dependencies;
+	UNISTR2 uni_dependencies;
+
+	uint32 ptr_service_start_name;
+	UNISTR2 uni_service_start_name;
+
+	uint32 ptr_password;
+	STRING2 str_password;
+
+	uint32 ptr_display_name;
+	UNISTR2 uni_display_name;
+
+} SVC_Q_CHANGE_SVC_CONFIG;
+
+/* SVC_R_CHANGE_SVC_CONFIG */
+typedef struct r_svc_change_svc_cfg_info
 {
-	uint32 switch_value1;	/* 0x01 */
-	uint32 ptr;
-	uint32 switch_value2;	/* 0x01 */
-	uint32 unknown_1;	/* 0x0000 0228 */
-	uint32 num_items1;
-	uint32 *ptr_items;
-	uint32 num_items2;
-	uint32 **items;
+	uint32 unknown_0;             /* */
+	uint32 status;             /* return status */
 
-	uint32 status;
+} SVC_R_CHANGE_SVC_CONFIG;
 
-} SVC_R_UNKNOWN_1B;
 
 #endif /* _RPC_SVCCTL_H */
 

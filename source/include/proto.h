@@ -2136,11 +2136,16 @@ BOOL svc_query_svc_cfg(struct cli_state *cli, uint16 fnum,
 				QUERY_SERVICE_CONFIG *cfg,
 				uint32 *buf_size);
 BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd);
-BOOL svc_query_unknown_1b(struct cli_state *cli, uint16 fnum, 
-				const POLICY_HND *pol, uint32 switch_value,
-				uint32 unknown_1,
-				uint32 *num_items,
-				uint32 ***items);
+BOOL svc_change_svc_cfg(struct cli_state *cli, uint16 fnum,
+				POLICY_HND *hnd,
+				uint32 service_type, uint32 start_type,
+				uint32 unknown_0,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* password,
+				char* disp_name);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
@@ -2445,7 +2450,8 @@ BOOL make_buffer2_multi(BUFFER2 *str, char *const* const buf, uint32 num);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
-BOOL make_string2(STRING2 *str, char *buf, int len);
+BOOL make_string2(STRING2 *str, const char *buf, int len);
+BOOL make_buf_string2(STRING2 *str, uint32 *ptr, const char *buf);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
 BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
@@ -3434,16 +3440,19 @@ BOOL svc_io_r_query_disp_name(char *desc, SVC_R_QUERY_DISP_NAME *r_u, prs_struct
 BOOL make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
 BOOL svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);
-BOOL make_svc_q_unknown_1b(SVC_Q_UNKNOWN_1B *q_u,
-		const POLICY_HND *pol, uint32 switch_value,
-		uint32 unknown_1);
-BOOL svc_io_q_unknown_1b(char *desc,  SVC_Q_UNKNOWN_1B *q_u, prs_struct *ps, int depth);
-BOOL make_svc_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u,
-		uint32 switch_value, uint32 unknown_1,
-		uint32 num_items, uint32 **item,
-		uint32 status);
-BOOL svc_io_r_unknown_1b(char *desc, SVC_R_UNKNOWN_1B *r_u, prs_struct *ps, int depth);
-void svc_free_r_unknown_1b(SVC_R_UNKNOWN_1B *r_u);
+BOOL make_svc_q_change_svc_config(SVC_Q_CHANGE_SVC_CONFIG *q_u, POLICY_HND *hnd,
+				uint32 service_type, uint32 start_type,
+				uint32 unknown_0,
+				uint32 error_control,
+				char* bin_path_name, char* load_order_grp, 
+				uint32 tag_id,
+				char* dependencies, char* service_start_name,
+				char* password,
+				char* disp_name);
+BOOL svc_io_q_change_svc_config(char *desc,  SVC_Q_CHANGE_SVC_CONFIG *q_u, prs_struct *ps, int depth);
+BOOL make_svc_r_change_svc_config(SVC_R_CHANGE_SVC_CONFIG *r_c, 
+				uint32 unknown_0, uint32 status);
+BOOL svc_io_r_change_svc_config(char *desc,  SVC_R_CHANGE_SVC_CONFIG *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
@@ -3681,7 +3690,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 void cmd_svc_enum(struct client_info *info, int argc, char *argv[]);
 void cmd_svc_stop(struct client_info *info, int argc, char *argv[]);
 void cmd_svc_start(struct client_info *info, int argc, char *argv[]);
-void cmd_svc_test(struct client_info *info, int argc, char *argv[]);
+void cmd_svc_set(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 

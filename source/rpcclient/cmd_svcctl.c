@@ -383,19 +383,21 @@ void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 }
 
 /****************************************************************************
-nt test service 
+nt service set
 ****************************************************************************/
-void cmd_svc_test(struct client_info *info, int argc, char *argv[])
+void cmd_svc_set(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
-	BOOL res1 = True;
-	char *svc_name;
 	BOOL res2 = True;
+	BOOL res3;
 	POLICY_HND pol_svc;
+	QUERY_SERVICE_CONFIG cfg;
+	uint32 svc_buf_size = 0x8000;
+
+	char *svc_name;
+
 	POLICY_HND pol_scm;
-	uint32 num_items = 0;
-	uint32 **items = NULL;
 	
 	fstring srv_name;
 
@@ -403,63 +405,59 @@ void cmd_svc_test(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->myhostname);
 	strupper(srv_name);
 
-	DEBUG(4,("cmd_svc_test: server:%s\n", srv_name));
+	DEBUG(4,("cmd_svc_set: server:%s\n", srv_name));
 
 	if (argc < 2)
 	{
-		report(out_hnd,"svctest <service name>]\n");
+		report(out_hnd,"svcset <service name>\n");
 		return;
 	}
 
-	argv++;
-	argc--;
-
-	svc_name = argv[0];
-
-	argv++;
-	argc--;
+	svc_name = argv[1];
 
 	/* open SVCCTL session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SVCCTL, &fnum) : False;
 
 	/* open service control manager receive a policy handle */
 	res = res ? svc_open_sc_man(smb_cli, fnum,
-	                        srv_name, NULL, 0x80000000,
+	                        srv_name, NULL, 0x80000004,
 				&pol_scm) : False;
 
-	res1 = res ? svc_open_service(smb_cli, fnum,
+	res2 = res ? svc_open_service(smb_cli, fnum,
 				       &pol_scm,
-				       svc_name, 0x80000010,
+				       svc_name, 0x80000001,
 				       &pol_svc) : False;
-	res2 = res1 ? svc_query_unknown_1b(smb_cli, fnum,
-				       &pol_svc, 1, 0x227,
-	                               &num_items, &items) : False;
+	res3 = res2 ? svc_query_svc_cfg(smb_cli, fnum,
+				       &pol_svc, &cfg,
+				       &svc_buf_size) : False;
 
-	res1 = res1 ? svc_close(smb_cli, fnum, &pol_svc) : False;
-	res  = res  ? svc_close(smb_cli, fnum, &pol_scm) : False;
+	if (res3)
+	{
+		res3 = svc_change_svc_cfg(smb_cli, fnum, &pol_svc,
+		                   cfg.service_type,
+		                   cfg.start_type,
+		                   0xffffffff,
+		                   0,
+		                   NULL, NULL,
+		                   cfg.tag_id,
+		                   NULL, "administrator", NULL, NULL);
+			
+	}
+
+	res2 = res2 ? svc_close(smb_cli, fnum, &pol_svc) : False;
+
+	res = res ? svc_close(smb_cli, fnum, &pol_scm) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (res2)
+	if (res3)
 	{
-		uint32 i;
-		report(out_hnd,"Test 0x1b Service %s\n", svc_name);
-		for (i = 0; i < num_items; i++)
-		{
-			if (items[i] != NULL)
-			{
-				report(out_hnd, "%x\n", *items[i]);
-			}
-		}
-		DEBUG(5,("cmd_svc_test: succeeded\n"));
+		DEBUG(5,("cmd_svc_set: change succeeded\n"));
 	}
 	else
-		report(out_hnd,"Failed Test 0x1b (%s)\n", svc_name);
 	{
-		DEBUG(5,("cmd_svc_test: failed\n"));
+		DEBUG(5,("cmd_svc_set: change failed\n"));
 	}
-
-	free_uint32_array(num_items, items);
 }
 

@@ -158,9 +158,9 @@ commands[] =
 	},
 
 	{
-		"svctest",
-		cmd_svc_test,
-		"<service> Test Service",
+		"svcset",
+		cmd_svc_set,
+		"<service> Test Set Service",
 		{COMPL_SVCLST, COMPL_NONE}
 	},
 
