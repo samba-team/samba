@@ -36,8 +36,6 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	POLICY_HND dom_pol;
 	BOOL got_dom_pol = False;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
 	int i;
 
 	*num_entries = 0;
@@ -58,16 +56,21 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	got_dom_pol = True;
 
-	ctr.sam.info1 = &info1;
-
 	i = 0;
 	do {
+		SAM_DISPINFO_CTR ctr;
+		SAM_DISPINFO_1 info1;
 		uint32 count = 0, start=i;
 		int j;
-		
+		TALLOC_CTX *ctx2;
 
+		ctr.sam.info1 = &info1;
+
+		ctx2 = talloc_init_named("winbindd dispinfo");
+		if (!ctx2) return NT_STATUS_NO_MEMORY;
+		
 		/* Query display info level 1 */
-		result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
+		result = cli_samr_query_dispinfo(hnd->cli, ctx2,
 						 &dom_pol, &start, 1,
 						 &count, 0xFFFF, &ctr);
 
@@ -96,6 +99,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			   something like that. */
 			(*info)[i].group_rid = DOMAIN_GROUP_RID_USERS;
 		}
+
+		talloc_destroy(ctx2);
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
