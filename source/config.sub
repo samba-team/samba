@@ -146,7 +146,7 @@ case $basic_machine in
 	tahoe | i[345]86 | i860 | m68k | m68000 | m88k | ns32k | arm | armeb \
 		| armel | pyramid \
 		| tron | a29k | 580 | i960 | h8300 | hppa1.0 | hppa1.1 \
-		| alpha | we32k | ns16k | clipper | sparclite | i370 | sh \
+		| alpha | we32k | ns16k | clipper | sparclite | i370 | s390 | sh \
 		| powerpc | powerpcle | sparc64 | 1750a | dsp16xx | mips64 | mipsel \
 		| pdp11 | mips64el | mips64orion | mips64orionel \
 		| sparc | sparc8 | supersparc | microsparc | ultrasparc)
@@ -587,6 +587,10 @@ case $basic_machine in
 		;;
 	rtpc | rtpc-*)
 		basic_machine=romp-ibm
+		;;
+	s390*)
+		basic_machine=s390-ibm
+		os=-linux
 		;;
 	sa29200)					# CYGNUS LOCAL
 		basic_machine=a29k-amd
