@@ -8,7 +8,7 @@
 RCSID("$Id$");
 
 
-#ifdef KERBEROS
+#if defined(KRB4) || defined(KRB5)
 
 static int
 net_read(POP *p, int fd, void *buf, size_t len)
@@ -123,7 +123,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 static int
 krb_authenticate(POP *p, struct sockaddr_in *addr)
 {
-#ifdef KERBEROS
+#if defined(KRB4) || defined(KRB5)
     u_char buf[BUFSIZ];
 
     if (net_read (p, 0, buf, 4) != 4) {
@@ -145,7 +145,7 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
 #endif
     exit (1);
 	
-#endif /* KERBEROS */
+#endif /* defined(KRB4) || defined(KRB5) */
 
     return(POP_SUCCESS);
 }
@@ -167,7 +167,7 @@ static int help_flag;
 static int version_flag;
 
 static struct getargs args[] = {
-#ifdef KERBEROS
+#if defined(KRB4) || defined(KRB5)
     { "kerberos", 'k', arg_flag, &kerberos_flag, "use kerberos" },
 #endif
     { "auth-mode", 'a', arg_string, &auth_str, "required authentication" },
@@ -281,7 +281,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 	trace_file_name = trace_file;
     }
 
-#ifdef KERBEROS
+#if defined(KRB4) || defined(KRB5)
     p->kerberosp = kerberos_flag;
 #endif
 
