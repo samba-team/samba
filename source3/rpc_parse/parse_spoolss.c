@@ -7528,3 +7528,31 @@ BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u,
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
+			     uint32 flags, uint32 options, char *localmachine,
+			     uint32 printerlocal, SPOOL_NOTIFY_OPTION *option)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	q_u->flags = flags;
+	q_u->options = options;
+
+	q_u->localmachine_ptr = 1;
+
+	init_unistr2(&q_u->localmachine, localmachine, 
+		     strlen(localmachine) + 1);
+
+	q_u->printerlocal = printerlocal;
+
+	if (option)
+		q_u->option_ptr = 1;
+
+	q_u->option = option;
+
+	return True;
+}
