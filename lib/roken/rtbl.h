@@ -44,22 +44,6 @@ typedef struct rtbl_data *rtbl_t;
 /* flags */
 #define RTBL_HEADER_STYLE_NONE	1
 
-rtbl_t rtbl_create (void);
-
-void rtbl_destroy (rtbl_t);
-
-void rtbl_set_flags (rtbl_t, unsigned int);
-
-unsigned int rtbl_get_flags (rtbl_t);
-
-int rtbl_set_prefix (rtbl_t, const char*);
-
-int rtbl_set_separator (rtbl_t table, const char *separator);
-
-int rtbl_set_column_prefix (rtbl_t, const char*, const char*);
-
-int rtbl_set_column_affix_by_id(rtbl_t, unsigned int, const char*, const char*);
-
 int rtbl_add_column (rtbl_t, const char*, unsigned int);
 
 int rtbl_add_column_by_id (rtbl_t, unsigned int, const char*, unsigned int);
@@ -68,6 +52,24 @@ int rtbl_add_column_entry (rtbl_t, const char*, const char*);
 
 int rtbl_add_column_entry_by_id (rtbl_t, unsigned int, const char*);
 
+rtbl_t rtbl_create (void);
+
+void rtbl_destroy (rtbl_t);
+
 int rtbl_format (rtbl_t, FILE*);
+
+unsigned int rtbl_get_flags (rtbl_t);
+
+int rtbl_new_row (rtbl_t); int rtbl_new_row(rtbl_t);
+
+int rtbl_set_column_affix_by_id (rtbl_t, unsigned int, const char*, const char*);
+
+int rtbl_set_column_prefix (rtbl_t, const char*, const char*);
+
+void rtbl_set_flags (rtbl_t, unsigned int);
+
+int rtbl_set_prefix (rtbl_t, const char*);
+
+int rtbl_set_separator (rtbl_t, const char*);
 
 #endif /* __rtbl_h__ */
