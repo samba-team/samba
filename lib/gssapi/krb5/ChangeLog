@@ -1,3 +1,13 @@
+2000-02-12  Assar Westerlund  <assar@sics.se>
+
+	* gssapi_locl.h: add flags for import/export
+	* import_sec_context.c (import_sec_context: add flags for what
+	fields are included.  do not include the authenticator for now.
+	* export_sec_context.c (export_sec_context: add flags for what
+	fields are included.  do not include the authenticator for now.
+	* accept_sec_context.c (gss_accept_sec_context): set target in
+	context_handle
+
 2000-02-11  Assar Westerlund  <assar@sics.se>
 
 	* delete_sec_context.c (gss_delete_sec_context): set context to
