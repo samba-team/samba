@@ -1,7 +1,9 @@
 #!/usr/bin/perl
+require "pwd.pl" || die "Required pwd.pl not found";
 
 # This perl script automatically generates the samba.idb file
 
+&initpwd;
 $curdir = $ENV{"PWD"};
 
 # get a complete list of all files in the tree
