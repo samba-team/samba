@@ -18,8 +18,21 @@ NULL_encrypt(void *p, size_t len, const krb5_keyblock *keyblock, int encrypt)
 }
 
 static void
-DES_encrypt(void *p, size_t len, 
-		const krb5_keyblock *keyblock, int encrypt)
+DES_encrypt_null_ivec(void *p, size_t len, 
+		      const krb5_keyblock *keyblock, int encrypt)
+{
+    des_cblock key;
+    des_cblock ivec;
+    des_key_schedule schedule;
+    memcpy(&key, keyblock->keyvalue.data, sizeof(key));
+    des_set_key(&key, schedule);
+    memset (&ivec, 0, sizeof(ivec));
+    des_cbc_encrypt(p, p, len, schedule, &ivec, encrypt);
+}
+
+static void
+DES_encrypt_key_ivec(void *p, size_t len, 
+		     const krb5_keyblock *keyblock, int encrypt)
 {
     des_cblock key;
     des_key_schedule schedule;
@@ -35,9 +48,12 @@ DES3_encrypt(void *p, size_t len, const krb5_keyblock *keyblock, int encrypt)
 }
 
 static struct encryption_type em [] = {
-    { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_CRC32 },
-    { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_RSA_MD4 },
-    { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt,  KEYTYPE_DES,  CKSUMTYPE_RSA_MD5 },
+    { ETYPE_DES_CBC_CRC, 8, 8, DES_encrypt_key_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_CRC32 },
+    { ETYPE_DES_CBC_MD4, 8, 8, DES_encrypt_null_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD4 },
+    { ETYPE_DES_CBC_MD5, 8, 8, DES_encrypt_null_ivec,
+      KEYTYPE_DES,  CKSUMTYPE_RSA_MD5 },
     { ETYPE_NULL,        1, 0, NULL_encrypt, KEYTYPE_NULL, CKSUMTYPE_NONE },
 };
 
@@ -106,7 +122,7 @@ krb5_do_encrypt(krb5_context context,
     krb5_generate_random_block(p, et->confoundersize); /* XXX */
     memcpy(p + et->confoundersize + checksumsize, ptr, len);
 
-    krb5_create_checksum(context, et->cksumtype, p, sz, &cksum);
+    krb5_create_checksum(context, et->cksumtype, p, sz, NULL, &cksum);
     memcpy(p + et->confoundersize, cksum.checksum.data, checksumsize);
     free_Checksum(&cksum);
     (*et->encrypt)(p, sz, keyblock, 1);
@@ -144,6 +160,7 @@ krb5_do_decrypt(krb5_context context,
     ret = krb5_verify_checksum (context,
 				ptr, 
 				len,
+				NULL,
 				&cksum);
     free_Checksum(&cksum);
     if(ret)
