@@ -1313,7 +1313,10 @@ static void req_alias_info(struct client_info *info, uint16 fnum,
 /****************************************************************************
 experimental SAM users enum.
 ****************************************************************************/
-void cmd_sam_enum_users(struct client_info *info)
+int msrpc_sam_enum_users(struct client_info *info,
+			BOOL request_user_info,
+			BOOL request_group_info,
+			BOOL request_alias_info)
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -1324,25 +1327,23 @@ void cmd_sam_enum_users(struct client_info *info)
 	int user_idx;
 	BOOL res = True;
 	BOOL res1 = True;
-	BOOL request_user_info  = False;
-	BOOL request_group_info = False;
-	BOOL request_alias_info = False;
 	uint16 start_idx = 0x0;
 	uint16 unk_0 = 0x0;
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
 	uint32 ace_perms = 0x304; /* access control permissions */
-	fstring tmp;
-	int i;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
+	info->dom.sam = NULL;
+	info->dom.num_sam_entries = 0;
+
 	if (sid1.num_auths == 0)
 	{
 		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		return 0;
 	}
 
 
@@ -1350,53 +1351,14 @@ void cmd_sam_enum_users(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	for (i = 0; i < 3; i++)
-	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-		{
-			request_user_info  |= strequal(tmp, "-u");
-			request_group_info |= strequal(tmp, "-g");
-			request_alias_info |= strequal(tmp, "-a");
-		}
-		else
-		{
-			break;
-		}
-	}
-
-#ifdef DEBUG_TESTING
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		start_idx = (uint32)strtol(tmp, (char**)NULL, 10);
-	}
-
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		unk_0 = (uint16)strtol(tmp, (char**)NULL, 16);
-	}
-
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		acb_mask = (uint16)strtol(tmp, (char**)NULL, 16);
-	}
-
-	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-	{
-		unk_1 = (uint16)strtol(tmp, (char**)NULL, 16);
-	}
-#endif
-
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
 	report(out_hnd, "SAM Enumerate Users\n");
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
-#ifdef DEBUG_TESTING
 	DEBUG(5,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
 	          start_idx, unk_0, acb_mask, unk_1));
-#endif
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -1416,8 +1378,6 @@ void cmd_sam_enum_users(struct client_info *info)
 	            &info->dom.samr_pol_connect, ace_perms, &sid_1_5_20,
 	            &info->dom.samr_pol_open_builtindom) : False;
 
-	info->dom.sam = NULL;
-
 	/* read some users */
 	res = res ? samr_enum_dom_users(smb_cli, fnum, 
 	             &info->dom.samr_pol_open_domain,
@@ -1432,7 +1392,8 @@ void cmd_sam_enum_users(struct client_info *info)
 	if (res)
 	{
 		/* query all the users */
-		for (user_idx = 0; res && user_idx < info->dom.num_sam_entries; user_idx++)
+		for (user_idx = 0; res && user_idx <
+		              info->dom.num_sam_entries; user_idx++)
 		{
 			uint32 user_rid = info->dom.sam[user_idx].rid;
 
@@ -1469,18 +1430,53 @@ void cmd_sam_enum_users(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (info->dom.sam != NULL)
-	{
-		free(info->dom.sam);
-	}
-
 	if (res)
 	{
-		DEBUG(5,("cmd_sam_enum_users: succeeded\n"));
+		DEBUG(5,("msrpc_sam_enum_users: succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_enum_users: failed\n"));
+		DEBUG(5,("msrpc_sam_enum_users: failed\n"));
+	}
+
+	return info->dom.num_sam_entries;
+}
+
+
+/****************************************************************************
+experimental SAM users enum.
+****************************************************************************/
+void cmd_sam_enum_users(struct client_info *info)
+{
+	BOOL request_user_info  = False;
+	BOOL request_group_info = False;
+	BOOL request_alias_info = False;
+	fstring tmp;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		{
+			request_user_info  |= strequal(tmp, "-u");
+			request_group_info |= strequal(tmp, "-g");
+			request_alias_info |= strequal(tmp, "-a");
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	msrpc_sam_enum_users(info,
+	                     request_user_info,
+	                     request_group_info,
+	                     request_alias_info);
+
+	if (info->dom.sam != NULL)
+	{
+		free(info->dom.sam);
 	}
 }
 
