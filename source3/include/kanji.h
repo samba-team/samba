@@ -139,10 +139,10 @@
 /* Ensure we use our definitions in all other files than kanji.c. */
 
 /* Function pointers we will replace. */
-extern char *(*multibyte_strchr)(char *s, int c);
-extern char *(*multibyte_strrchr)(char *s, int c);
-extern char *(*multibyte_strstr)(char *s1, char *s2);
-extern char *(*multibyte_strtok)(char *s1, char *s2);
+extern char *(*multibyte_strchr)(const char *s, int c);
+extern char *(*multibyte_strrchr)(const char *s, int c);
+extern char *(*multibyte_strstr)(const char *s1, const char *s2);
+extern char *(*multibyte_strtok)(char *s1, const char *s2);
 extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
 extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
 extern BOOL (*is_multibyte_char)(char c);

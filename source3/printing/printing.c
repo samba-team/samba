@@ -227,10 +227,12 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   pstrcpy(line2,line);
 
 #ifdef	OSF1
-  int length;
-  length = strlen(line2);
-  if (line2[length-3] == ':')
-	return(False);
+  {
+    size_t length;
+    length = strlen(line2);
+    if (line2[length-3] == ':')
+      return(False);
+  }
 #endif	/* OSF1 */
 
   tok[0] = strtok(line2," \t");

@@ -32,10 +32,10 @@
  * are loaded.
  */
 
-char *(*multibyte_strchr)(char *, int ) = (char *(*)(char *, int )) strchr;
-char *(*multibyte_strrchr)(char *, int ) = (char *(*)(char *, int )) strrchr;
-char *(*multibyte_strstr)(char *, char *) = (char *(*)(char *, char *)) strstr;
-char *(*multibyte_strtok)(char *, char *) = (char *(*)(char *, char *)) strtok;
+char *(*multibyte_strchr)(const char *, int ) = (char *(*)(const char *, int )) strchr;
+char *(*multibyte_strrchr)(const char *, int ) = (char *(*)(const char *, int )) strrchr;
+char *(*multibyte_strstr)(const char *, const char *) = (char *(*)(const char *, const char *)) strstr;
+char *(*multibyte_strtok)(char *, const char *) = (char *(*)(char *, const char *)) strtok;
 
 /*
  * Kanji is treated differently here due to historical accident of
@@ -94,7 +94,7 @@ static char hex_tag = HEXTAG;
  S1 contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strtok(char *s1, char *s2)
+static char *sj_strtok(char *s1, const char *s2)
 {
   static char *s = NULL;
   char *q;
@@ -134,9 +134,9 @@ static char *sj_strtok(char *s1, char *s2)
  S1 contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strstr(char *s1, char *s2)
+static char *sj_strstr(const char *s1, const char *s2)
 {
-  int len = strlen ((char *) s2);
+  size_t len = strlen (s2);
   if (!*s2) 
     return (char *) s1;
   for (;*s1;) {
@@ -158,7 +158,7 @@ static char *sj_strstr(char *s1, char *s2)
  S contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strchr (char *s, int c)
+static char *sj_strchr (const char *s, int c)
 {
   for (; *s; ) {
     if (*s == c)
@@ -177,7 +177,7 @@ static char *sj_strchr (char *s, int c)
  S contains SHIFT JIS chars.
 ********************************************************************/
 
-static char *sj_strrchr(char *s, int c)
+static char *sj_strrchr(const char *s, int c)
 {
   char *q;
 
@@ -262,7 +262,7 @@ static BOOL simpch_is_multibyte_char_1(char c)
  S1 contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strtok(char *s1, char *s2)
+static char *generic_multibyte_strtok(char *s1, const char *s2)
 {
   static char *s = NULL;
   char *q;
@@ -300,9 +300,9 @@ static char *generic_multibyte_strtok(char *s1, char *s2)
  S1 contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strstr(char *s1, char *s2)
+static char *generic_multibyte_strstr(const char *s1, const char *s2)
 {
-  int len = strlen ((char *) s2);
+  size_t len = strlen (s2);
   if (!*s2)
     return (char *) s1;
   for (;*s1;) {
@@ -324,7 +324,7 @@ static char *generic_multibyte_strstr(char *s1, char *s2)
  S contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strchr(char *s, int c)
+static char *generic_multibyte_strchr(const char *s, int c)
 {
   for (; *s; ) {
     if (*s == c)
@@ -343,7 +343,7 @@ static char *generic_multibyte_strchr(char *s, int c)
  S contains generic multibyte chars.
 ********************************************************************/
 
-static char *generic_multibyte_strrchr(char *s, int c)
+static char *generic_multibyte_strrchr(const char *s, int c)
 {
   char *q;
  
@@ -1182,37 +1182,37 @@ void initialize_multibyte_vectors( int client_codepage)
   switch( client_codepage )
   {
   case KANJI_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) sj_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) sj_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) sj_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) sj_strtok;
+    multibyte_strchr = sj_strchr;
+    multibyte_strrchr = sj_strrchr;
+    multibyte_strstr = sj_strstr;
+    multibyte_strtok = sj_strtok;
     _skip_multibyte_char = skip_kanji_multibyte_char;
     is_multibyte_char_1 = is_kanji_multibyte_char_1;
     is_multibyte_codepage_val = True;
     break;
   case HANGUL_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    multibyte_strchr = generic_multibyte_strchr;
+    multibyte_strrchr = generic_multibyte_strrchr;
+    multibyte_strstr = generic_multibyte_strstr;
+    multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = hangul_is_multibyte_char_1;
     is_multibyte_codepage_val = True;
     break;
   case BIG5_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    multibyte_strchr = generic_multibyte_strchr;
+    multibyte_strrchr = generic_multibyte_strrchr;
+    multibyte_strstr = generic_multibyte_strstr;
+    multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = big5_is_multibyte_char_1;
     is_multibyte_codepage_val = True;
     break;
   case SIMPLIFIED_CHINESE_CODEPAGE:
-    multibyte_strchr = (char *(*)(char *, int )) generic_multibyte_strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) generic_multibyte_strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) generic_multibyte_strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) generic_multibyte_strtok;
+    multibyte_strchr = generic_multibyte_strchr;
+    multibyte_strrchr = generic_multibyte_strrchr;
+    multibyte_strstr = generic_multibyte_strstr;
+    multibyte_strtok = generic_multibyte_strtok;
     _skip_multibyte_char = skip_generic_multibyte_char;
     is_multibyte_char_1 = simpch_is_multibyte_char_1;
     is_multibyte_codepage_val = True;
@@ -1221,10 +1221,10 @@ void initialize_multibyte_vectors( int client_codepage)
    * Single char size code page.
    */
   default:
-    multibyte_strchr = (char *(*)(char *, int )) strchr;
-    multibyte_strrchr = (char *(*)(char *, int )) strrchr;
-    multibyte_strstr = (char *(*)(char *, char *)) strstr;
-    multibyte_strtok = (char *(*)(char *, char *)) strtok;
+    multibyte_strchr = (char *(*)(const char *, int )) strchr;
+    multibyte_strrchr = (char *(*)(const char *, int )) strrchr;
+    multibyte_strstr = (char *(*)(const char *, const char *)) strstr;
+    multibyte_strtok = (char *(*)(char *, const char *)) strtok;
     _skip_multibyte_char = skip_non_multibyte_char;
     is_multibyte_char_1 = not_multibyte_char_1;
     is_multibyte_codepage_val = False;
