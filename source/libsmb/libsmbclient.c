@@ -68,7 +68,6 @@ static int smbc_initialized = 0;
 static smbc_get_auth_data_fn smbc_auth_fn = NULL;
 /*static int smbc_debug;*/
 static int smbc_start_fd;
-static int smbc_max_fd = 10000;
 static struct smbc_file **smbc_file_table;
 static struct smbc_server *smbc_srvs;
 static pstring  my_netbios_name;
