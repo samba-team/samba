@@ -45,6 +45,9 @@ RCSID("$Id$");
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "proto.h"
+#include "roken.h"
 #include "otp.h"
 
 struct e {
@@ -2120,8 +2123,9 @@ get_stdword (char *s, void *v)
 
   e.s = s;
   e.n = -1;
-  r = bsearch (&e, inv_std_dict, sizeof(inv_std_dict)/sizeof(*inv_std_dict),
-	       sizeof(*inv_std_dict), cmp);
+  r = (struct e *) bsearch (&e, inv_std_dict,
+			    sizeof(inv_std_dict)/sizeof(*inv_std_dict),
+			    sizeof(*inv_std_dict), cmp);
   if (r)
     return r->n;
   else

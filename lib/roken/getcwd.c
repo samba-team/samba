@@ -43,6 +43,9 @@ RCSID("$Id$");
 
 #include <sys/param.h>
 
+#include "protos.h"
+#include "roken.h"
+
 char*
 getcwd(char *path, int size)
 {
