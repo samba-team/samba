@@ -515,7 +515,7 @@ static void usage(void)
 {
 	printf(
 "Usage:\n\
-  locktest //server1/share1 //server2/share2 [options..]\n\
+  locktest //server1/share1 //server2/share2 /path1 /path2 [options..]\n\
   options:\n\
         -U user%%pass\n\
         -s seed\n\
@@ -544,7 +544,7 @@ static void usage(void)
 
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 5) {
+	if (argc < 5 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
