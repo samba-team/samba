@@ -42,31 +42,50 @@ RCSID("$Id$");
 extern char *logfile;
 extern int loglevel;
 
+char*
+kdc_log_msg_va(int level, const char *fmt, va_list ap)
+{
+    FILE *f;
+    char *s;
+    
+    if(level > loglevel)
+	return NULL;
+
+    if(logfile == NULL)
+	return NULL;
+    f = fopen(logfile, "a");
+    if(f == NULL)
+	return NULL;
+    
+    vasprintf(&s, fmt, ap);
+    
+    if(s){
+	char buf[128];
+	strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&kdc_time));
+	fprintf(f, "%s %s\n", buf, s);
+    }
+    fclose(f);
+    return s;
+}
+
+char*
+kdc_log_msg(int level, const char *fmt, ...)
+{
+    va_list ap;
+    char *s;
+    va_start(ap, fmt);
+    s = kdc_log_msg_va(level, fmt, ap);
+    va_end(ap);
+    return s;
+}
+
 void
 kdc_log(int level, const char *fmt, ...)
 {
     va_list ap;
-    FILE *f;
-    char buf[128];
     char *s;
-    
-    if(level > loglevel)
-	return;
-
-    if(logfile == NULL)
-	return;
-    f = fopen(logfile, "a");
-    if(f == NULL)
-	return;
-    
     va_start(ap, fmt);
-    vasprintf(&s, fmt, ap);
+    s = kdc_log_msg_va(level, fmt, ap);
+    if(s) free(s);
     va_end(ap);
-	
-    if(s == NULL)
-	return;
-    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&kdc_time));
-    fprintf(f, "%s %s\n", buf, s);
-    fclose(f);
-    free(s);
 }
