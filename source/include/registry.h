@@ -98,6 +98,9 @@ typedef void (*value_notification_function) (void);
  *  - just one hive (example: nt4, w95)
  *  - several hives (example: rpc).
  * 
+ * Backends should always do case-insensitive compares 
+ * (everything is case-insensitive but case-preserving, 
+ * just like the FS)
  */ 
 
 struct hive_operations {
