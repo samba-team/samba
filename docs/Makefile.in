@@ -104,43 +104,39 @@ htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
 
 # Intermediate docbook docs
 
-$(DOCBOOKDIR):
-	mkdir $@
-
-$(DOCBOOKDIR)/%.xml: %/index.xml $(DOCBOOKDIR) xslt/expand-sambadoc.xsl
+$(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam noreference 1 --stringparam imagedir "$($(subst -,_,$*)_IMAGEDIR)/" --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml $(DOCBOOKDIR) xslt/expand-sambadoc.xsl
+$(DOCBOOKDIR)/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam noreference 1 --output $@ xslt/expand-sambadoc.xsl $<
 
-manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
+$(DOCBOOKDIR)/manpages.xml: $(MANPAGES_SOURCES) xslt/manpage-summary.xsl
+	mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
 	for I in $(MANPAGES_SOURCES); do $(XSLTPROC) xslt/manpage-summary.xsl $$I >> $@; done
 	echo "</variablelist></article>" >> $@
 
 # HTML docs
 
-$(HTMLDIR)/index.html: htmldocs.html $(HTMLDIR)
+$(HTMLDIR)/index.html: htmldocs.html
+	mkdir -p $(@D)
 	cp $< $@
 	
-$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/% $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
+$(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css  xslt/html-chunk.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
 	-mkdir $(HTMLDIR)/$*/images
 
 # Single large HTML files
-$(HTMLDIR):
-	mkdir $(HTMLDIR)
-	mkdir $(HTMLDIR)/images
-
 $(OUTPUTDIR)/%/samba.css: xslt/html/samba.css
+	mkdir -p $(@D)
 	cp $< $@
 
-$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR) $(HTMLDIR)/samba.css $(patsubst %.png,$(HTMLDIR)/images/%.png,$(%_IMAGES_PNG)) xslt/html.xsl
-	echo $^
+$(HTMLDIR)/%.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/samba.css $(patsubst %.png,$(HTMLDIR)/images/%.png,$(%_IMAGES_PNG)) xslt/html.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/html.xsl $<
-
-$(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%,$(MAIN_DOCS)): $(HTMLDIR)
-	-mkdir $@
 
 %-attributions.xml: 
 	echo "<para/>" > $@
@@ -154,14 +150,13 @@ clean:
 	rm -f $(patsubst $(DOCBOOKDIR)/%.xml,%.*,$(MAIN_DOCS))
 
 # Text files
-$(TXTDIR):
-	mkdir $(TXTDIR)
-
-$(TXTDIR)/%.txt: $(HTMLDIR)/%.html $(TXTDIR)
+$(TXTDIR)/%.txt: $(HTMLDIR)/%.html
+	mkdir -p $(@D)
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
 
 # Tex files
 %.tex: $(DOCBOOKDIR)/%.xml xslt/latex.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 
 gpl.tex:
@@ -170,63 +165,58 @@ gpl.tex:
 latexfigures: $(LATEX_FIGURES)
 
 %.aux: %.tex
-	-$(PDFLATEX) $<
-	
+	-$(LATEX) $<
+
 %.idx: %.aux
 	$(MAKEINDEX) $*
 
+$(PDFDIR)/%.pdf: %.pdf
+	mkdir -p $(@D)
+	cp $< $@
+
 # Adobe PDF files
-$(PDFDIR)/%.pdf: %.tex %.aux %.idx latexfigures gpl.tex $(PDFDIR) $(%_IMAGES_PNG)
-	-$(PDFLATEX) $<
+%.pdf %.aux: %.tex %.aux %.idx latexfigures gpl.tex $(%_IMAGES_PNG)
 	-$(PDFLATEX) $<
 	$(THUMBPDF) $*.pdf
 	-$(PDFLATEX) $<
-	mv $*.pdf $@
 
 # DVI files
-$(DVIDIR)/%.dvi: %.tex %.aux %.idx gpl.tex $(DVIDIR) $(%_IMAGES_EPS)
+$(DVIDIR)/%.dvi: %.dvi
+	mkdir -p $(@D)
+	cp $< $@
+
+%.dvi %.aux: %.tex %.aux %.idx gpl.tex $(%_IMAGES_EPS)
 	-$(LATEX) $< 
 	-$(LATEX) $< 
-	mv $*.dvi $@
 
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
 # PostScript files
-$(PSDIR)/%.ps: $(DVIDIR)/%.dvi $(PSDIR)
+$(PSDIR)/%.ps: $(DVIDIR)/%.dvi
+	mkdir -p $(@D)
 	$(DVIPS) -o $@ $<
 
 xslt/figures/%.pdf: xslt/figures/%.eps
 	$(EPSTOPDF) $<
 
 # Fo
-$(FODIR):
-	mkdir $(FODIR)
-
-$(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml $(FODIR)
+$(FODIR)/%.fo: $(DOCBOOKDIR)/%.xml
+	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $<
 
 # HTML Help
-$(HTMLHELPDIR):
-	mkdir $(HTMLHELPDIR)
-
 $(HTMLHELPDIR)/%/images/%.png: $(%_IMAGEDIR)/%.png
+	mkdir -p $(@D)
 	cp $< $@
 
-$(HTMLHELPDIR)/%/images: $(HTMLHELPDIR)/%
-	mkdir -p $@
-
-$(HTMLHELPDIR)/%/images/: $@ $(subst $($*_IMAGEDIR),$@/,$($*_IMAGES_PNG))
-
-$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml $(HTMLHELPDIR) $(HTMLHELPDIR)/%/images/
+$(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml #$(patsubst $(%_IMAGEDIR)/%.png,$(HTMLHELPDIR)/%/images/%.png,$(%_IMAGEDIR)/*.png)
 	-mkdir $@
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm --stringparam manifest.in.base.dir "$@/" --stringparam base.dir "$@/" http://docbook.sourceforge.net/release/xsl/current/htmlhelp/htmlhelp.xsl $<
 
 # Plucker docs
-$(PLUCKERDIR):
-	mkdir $(PLUCKERDIR)
-
 $(PLUCKERDIR)/%.pdb: $(HTMLDIR)/%.html $(PLUCKERDIR)
+	mkdir -p $(@D)
 	$(PLUCKERBUILD) -v -M1 --stayonhost  --noimages --zlib-compression -H file:$< -f $* -p $(PLUCKERDIR)
 
 # Manpages
@@ -241,32 +231,27 @@ $(SMBDOTCONFDOC)/parameters.global.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SM
 $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(SMBDOTCONFDOC)/generate-context.xsl
 	$(XSLTPROC) --xinclude --param smb.context "'S'" --output $(SMBDOTCONFDOC)/parameters.service.xml $(SMBDOTCONFDOC)/generate-context.xsl $<
 
-$(MANDIR): 
-	mkdir $(MANDIR)
-
 $(MANDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/man.xsl $<
 
 # Pearson compatible XML
 
-$(PEARSONDIR):
-	mkdir $@
-
-$(PEARSONDIR)/%.xml: $(DOCBOOKDIR)/%.xml $(PEARSONDIR) xslt/pearson.xsl
+$(PEARSONDIR)/%.xml: $(DOCBOOKDIR)/%.xml xslt/pearson.xsl
+	mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --output $@ xslt/pearson.xsl $<
 
 $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
+	mkdir -p $(@D)
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
 # Validation verification
 
-$(VALIDATEDIR):
-	mkdir $@
-
 $(VALIDATEDIR)/%.report.html: $(DOCBOOKDIR)/%.xml
+	mkdir -p $(@D)
 	$(XMLLINT) --valid --noout --htmlout $< 2> $@
 
-verify: $(VALIDATEDIR) $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
+verify: $(VALIDATEDIR)/Samba-HOWTO-Collection.report.html $(VALIDATEDIR)/Samba-Developers-Guide.report.html $(VALIDATEDIR)/Samba-Guide.report.html 
 
 # Find undocumented parameters
 
@@ -276,22 +261,17 @@ undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl sc
 
 # Examples and the like
 
-$(EXAMPLESDIR):
-	mkdir $(EXAMPLESDIR)
-
-files: $(HOWTODIR)/index.xml $(EXAMPLESDIR) xslt/extract-smbfiles.xsl
+files: $(HOWTODIR)/index.xml xslt/extract-smbfiles.xsl
 	$(XSLTPROC) xslt/extract-smbfiles.xsl $< > /dev/null
 
-samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml $(EXAMPLESDIR) xslt/extract-examples.xsl scripts/indent-smb.conf.pl
+samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
+	mkdir -p $(EXAMPLESDIR)
 	$(XSLTPROC) --xinclude xslt/extract-examples.xsl $< > /dev/null 2> examples/README
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
 
 # Archiving
-
-$(ARCHIVEDIR):
-	mkdir $(ARCHIVEDIR)
-
-archive: $(ARCHIVEDIR) guide howto
+archive: guide howto
+	mkdir -p $(ARCHIVEDIR)
 	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d`.pdf
 	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d`.pdf
 
