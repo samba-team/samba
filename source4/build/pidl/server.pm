@@ -124,6 +124,8 @@ pidl "
 	}
 
 	if (dce_call->fault_code != 0) {
+		dcerpc_log_packet(&dcerpc_table_$name, opnum, NDR_IN,
+				  &dce_call->pkt.u.request.stub_and_verifier);
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
