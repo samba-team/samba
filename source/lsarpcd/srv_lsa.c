@@ -470,14 +470,29 @@ api_lsa_priv_info
 static BOOL api_lsa_priv_get_dispname(prs_struct *data, prs_struct *rdata)
 {
 	LSA_Q_PRIV_GET_DISPNAME q_i;
+	LSA_R_PRIV_GET_DISPNAME r_i;
+	UNISTR2 *uni_disp = NULL;
+
 	ZERO_STRUCT(q_i);
+	ZERO_STRUCT(r_i);
 
 	if (!lsa_io_q_priv_get_dispname("", &q_i, data, 0))
 	{
 		return False;
 	}
 
-	return False;
+	r_i.status = _lsa_priv_get_dispname(&q_i.pol,
+					&q_i.name, q_i.lang_id, q_i.lang_id_sys,
+					&uni_disp, &r_i.lang_id);
+
+	if (uni_disp)
+	{
+		r_i.ptr_info = 1;
+		copy_unistr2(&r_i.desc, uni_disp);
+		unistr2_free(uni_disp);
+	}
+
+	return lsa_io_r_priv_get_dispname("", &r_i, rdata, 0);
 }
 
 /***************************************************************************

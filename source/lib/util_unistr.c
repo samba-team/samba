@@ -136,6 +136,9 @@ char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	size_t len;
 	register uint16 c;
 
+	if (str == NULL)
+		return NULL;
+
 	src = str->buffer;
 
 	if (dest == NULL)

@@ -1788,7 +1788,6 @@ BOOL lsa_io_q_priv_get_dispname(char *desc, LSA_Q_PRIV_GET_DISPNAME * q_q,
 	if (!smb_io_unistr2("name", &q_q->name, q_q->hdr_name.buffer,
 			    ps, depth))
 		return False;
-	prs_align(ps);
 
 	prs_uint16("lang_id    ", ps, depth, &q_q->lang_id);
 	prs_uint16("lang_id_sys", ps, depth, &q_q->lang_id_sys);

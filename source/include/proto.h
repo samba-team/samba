@@ -1365,6 +1365,10 @@ uint32 _lsa_open_secret(const POLICY_HND * hnd,
 			POLICY_HND * hnd_secret);
 uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		       uint32 *count, LSA_PRIV_ENTRY **entries);
+uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
+			      const UNISTR2 *name,
+			      uint16 lang_id, uint16 lang_id_sys,
+			      UNISTR2 **desc, uint16 *ret_lang_id);
 
 /*The following definitions come from  msdfs/msdfs.c  */
 

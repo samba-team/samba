@@ -1301,6 +1301,42 @@ BOOL lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 }
 
 /****************************************************************************
+do a LSA Enum Privileges
+****************************************************************************/
+BOOL lsa_enum_privs2(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
+		     uint32 *count, LSA_PRIV_ENTRY **entries)
+{
+	BOOL valid_resp = False;
+	prs_struct rbuf;
+	prs_struct buf;
+	LSA_Q_ENUM_PRIVS q_q;
+
+	if (hnd == NULL)
+		return False;
+
+	prs_init(&buf, 0, 4, False);
+	prs_init(&rbuf, 0, 4, True);
+
+	DEBUG(4, ("LSA Enum Privileges\n"));
+
+	/* store the parameters */
+	q_q.pol = *hnd;
+	q_q.unk0 = unk0;
+	q_q.unk1 = unk1;
+
+	/* turn parameters into data stream */
+	if (lsa_io_q_enum_privs("", &q_q, &buf, 0) &&
+	    rpc_hnd_pipe_req(hnd, LSA_ENUM_PRIVS2, &buf, &rbuf))
+	{
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf);
+
+	return valid_resp;
+}
+
+/****************************************************************************
 do a LSA Privileges Info
 ****************************************************************************/
 uint32 lsa_priv_get_dispname(const POLICY_HND *hnd, const UNISTR2 *name,

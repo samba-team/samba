@@ -824,6 +824,13 @@ uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 	if (hnd == NULL || count == NULL || entries == NULL)
 		return NT_STATUS_INVALID_PARAMETER;
 
+	if (unk0 == 0x17)
+		/* no idea at all, what's happening here */
+		return NT_STATUS_UNABLE_TO_FREE_VM;
+
+	if (unk0 != 0)
+		return NT_STATUS_INVALID_INFO_CLASS;
+
 	if (find_policy_by_hnd(get_global_hnd_cache(), hnd) == -1)
 	{
 		return NT_STATUS_INVALID_HANDLE;
@@ -842,6 +849,28 @@ uint32 _lsa_enum_privs(POLICY_HND *hnd, uint32 unk0, uint32 unk1,
 		entry->luid_low = privs[i].num;
 		entry->luid_high = 0;
 	}
+
+	return NT_STATUS_NOPROBLEMO;
+}
+
+uint32 _lsa_priv_get_dispname(const POLICY_HND *hnd,
+			      const UNISTR2 *name,
+			      uint16 lang_id, uint16 lang_id_sys,
+			      UNISTR2 **desc, uint16 *ret_lang_id)
+{
+	char *name_asc;
+	fstring desc_asc;
+	if (hnd == NULL || name == NULL || desc == NULL || ret_lang_id == NULL)
+		return NT_STATUS_INVALID_PARAMETER;
+
+	name_asc = unistr2_to_ascii(NULL, name, 0);
+
+	fstrcpy(desc_asc, "Privilege ");
+	fstrcat(desc_asc, name_asc);
+	safe_free(name_asc);
+
+	(*desc) = unistr2_new(desc_asc);
+	(*ret_lang_id) = 0x0;
 
 	return NT_STATUS_NOPROBLEMO;
 }
