@@ -440,6 +440,11 @@ krb5_get_init_creds_password(krb5_context context,
 	    done = 1;
 	    break;
 	case KRB5KDC_ERR_KEY_EXPIRED :
+	    /* try to avoid recursion */
+
+	    if (strcmp (in_tkt_service, "kadmin/changepw") == 0)
+		goto out;
+
 	    ret = change_password (context,
 				   client,
 				   password,
