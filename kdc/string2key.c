@@ -72,7 +72,7 @@ usage(int status)
     exit(status);
 }
 
-void
+static void
 tokey(krb5_context context, const char *password, krb5_data *salt, 
       krb5_keytype keytype, const char *label)
 {
