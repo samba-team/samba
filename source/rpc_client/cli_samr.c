@@ -4,6 +4,7 @@
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell              1994-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Elrond                            2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -330,6 +331,8 @@ uint32 samr_enum_dom_groups(  POLICY_HND *pol,
 	{
 		SAMR_R_ENUM_DOM_GROUPS r_e;
 		BOOL p;
+
+		ZERO_STRUCT(r_e);
 
 		samr_io_r_enum_dom_groups("", &r_e, &rdata, 0);
 
@@ -2024,7 +2027,7 @@ BOOL samr_query_useraliases(  const POLICY_HND *pol,
 	prs_init(&rdata, 0, 4, True );
 
 	/* store the parameters */
-	make_samr_q_query_useraliases(&q_o, pol, ptr_sid, sid);
+	make_samr_q_query_useraliases(&q_o, pol, 1, ptr_sid, sid);
 
 	/* turn parameters into data stream */
 	if (samr_io_q_query_useraliases("", &q_o,  &data, 0) &&

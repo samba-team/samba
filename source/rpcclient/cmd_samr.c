@@ -3040,19 +3040,16 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 	sid_to_string(sid, &sid1);
 	fstrcpy(domain, info->dom.level5_dom);
 
-	if (sid1.num_auths == 0)
-	{
-		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
-		{
-			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-			return;
-		}
-	}
-
-	while ((opt = getopt(argc, argv, "ma")) != EOF)
+	while ((opt = getopt(argc, argv, "mad:")) != EOF)
 	{
 		switch (opt)
 		{
+			case 'd':
+			{
+				fill_domain_sid(srv_name, optarg,
+						domain, &sid1);
+				break;
+			}
 			case 'm':
 			{
 				request_member_info  = True;
@@ -3063,6 +3060,15 @@ void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[])
 				request_alias_info = True;
 				break;
 			}
+		}
+	}
+
+	if (sid1.num_auths == 0)
+	{
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
 		}
 	}
 

@@ -5,6 +5,7 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Elrond                            2000
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -313,7 +314,8 @@ BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd,
 
 	if (p && p->open)
 	{
-		DEBUG(3,("Setting policy state pnum=%x\n", p->pnum));
+		DEBUG(3, ("policy(pnum=%x %s): Setting policy state\n",
+			  p->pnum, pol_get_name(p)));
 
 		p->dev = dev;
 		p->free_fn = fn;

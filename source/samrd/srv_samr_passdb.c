@@ -193,12 +193,9 @@ static uint32 samr_open_by_sid( const POLICY_HND *parent_pol,
  ********************************************************************/
 uint32 _samr_close(POLICY_HND *hnd)
 {
-	/* set up the SAMR unknown_1 response */
-
 	/* close the policy handle */
 	if (close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
-		bzero(hnd, sizeof(*hnd));
 		return NT_STATUS_NOPROBLEMO;
 	}
 	return NT_STATUS_OBJECT_NAME_INVALID;
@@ -311,7 +308,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf)
 #endif
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return samr_make_usr_obj_sd(buf, &usr_sid);
 }
 
 /*******************************************************************

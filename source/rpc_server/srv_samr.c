@@ -28,12 +28,6 @@
 
 extern int DEBUGLEVEL;
 
-extern fstring global_sam_name;
-extern pstring global_myname;
-extern DOM_SID global_sam_sid;
-extern DOM_SID global_sid_S_1_1;
-extern DOM_SID global_sid_S_1_5_20;
-
 /*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
@@ -123,6 +117,10 @@ static BOOL api_samr_query_sec_obj( rpcsrv_struct *p, prs_struct *data, prs_stru
 	}
 
 	r_u.status = _samr_query_sec_obj(&q_u.user_pol, &r_u.buf);
+	if (r_u.buf.len == 0)
+	{
+		return False;
+	}
 	r_u.ptr = 1; /* man, we don't have any choice!  NT bombs otherwise! */
 	return samr_io_r_query_sec_obj("", &r_u, rdata, 0);
 }

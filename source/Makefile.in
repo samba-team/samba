@@ -307,19 +307,22 @@ SAMRTDBLIB_OBJ = lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_usr_tdb.o \
 		samrd/srv_samr_grp_tdb.o \
 		samrd/srv_samr_als_tdb.o \
-		samrd/srv_samr_tdb.o
+		samrd/srv_samr_tdb.o \
+		samrd/samr_util.o
 
 SAMRNT5LDAPLIB_OBJ = lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_usr_nt5ldap.o \
 		samrd/srv_samr_dom_nt5ldap.o \
-		samrd/srv_samr_nt5ldap.o
+		samrd/srv_samr_nt5ldap.o \
+		samrd/samr_util.o
 #		samrd/srv_samr_sam_nt5ldap.o \
 #		samrd/srv_samr_grp_nt5ldap.o \
 #		samrd/srv_samr_als_nt5ldap.o \
 
 SAMRPASSLIB_OBJ = rpc_server/srv_lookup.o \
 		samrd/srv_samr_passdb.o \
-		smbd/chgpasswd.o
+		smbd/chgpasswd.o \
+		samrd/samr_util.o
 
 SAMRD_OBJ1 = samrd/samrd.o \
 		rpc_server/srv_pipe_ntlmssp.o \
@@ -411,13 +414,17 @@ LIBSURS_OBJ = lib/surs.o lib/sursalgdomonly.o \
 		lib/sursalgnt5ldap.o \
 		lib/surstdb.o
 
-SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) $(LIBSURS)
+SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) \
+			$(LIBSURS)
 
-SAMRPASSD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB)
+SAMRPASSD_LIBS    = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRPASSLIB) $(SMBPWLIB) \
+			$(LIBSURS)
 
-SAMRTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)
+SAMRTDBD_LIBS     = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB) \
+			$(LIBSURS)
 
-SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)
+SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB) \
+			$(LIBSURS)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \

@@ -21,12 +21,13 @@
 */
 
 #include "includes.h"
+#include "rpcclient.h"
 
 
 /****************************************************************************
 convert a security permissions into a string
 ****************************************************************************/
-char *get_sec_mask_str(uint32 type)
+static const char *get_sec_mask_str(uint32 type)
 {
 	static fstring typestr;
 	int i;
@@ -90,7 +91,7 @@ char *get_sec_mask_str(uint32 type)
 /****************************************************************************
  display sec_access structure
  ****************************************************************************/
-void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *const info)
+static void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *const info)
 {
 	switch (action)
 	{
@@ -113,7 +114,7 @@ void display_sec_access(FILE *out_hnd, enum action_type action, SEC_ACCESS *cons
 /****************************************************************************
  display sec_ace structure
  ****************************************************************************/
-void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
+static void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 {
 	switch (action)
 	{
@@ -125,6 +126,11 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 		case ACTION_ENUMERATE:
 		{
 			fstring sid_str;
+
+			report(out_hnd,
+			       "\t\tType:%2x  Flags:%2x  Perms:%04x\n",
+			       ace->type, ace->flags,
+			       (uint32) ace->info.mask);
 
 			display_sec_access(out_hnd, ACTION_HEADER   , &ace->info);
 			display_sec_access(out_hnd, ACTION_ENUMERATE, &ace->info);
@@ -143,7 +149,7 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
 /****************************************************************************
  display sec_acl structure
  ****************************************************************************/
-void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl)
+static void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl)
 {
 	if (sec_acl == NULL)
 	{

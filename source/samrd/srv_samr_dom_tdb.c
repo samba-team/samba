@@ -104,6 +104,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	policy_hnd_set_name(get_global_hnd_cache(), domain_pol, "domain_pol");
+
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_tdbdomsid(get_global_hnd_cache(), domain_pol,
 			   NULL, NULL, NULL, NULL, NULL, sid))

@@ -65,6 +65,11 @@ typedef struct tdb_sam_info
 }
 TDB_SAM_INFO;
 
+
+#define POL_TYPE_TDBRID  1
+#define POL_TYPE_TDBSAM  2
+
+
 static void free_tdbdom_info(void *dev)
 {
 	TDB_DOM_INFO *tdbi = (TDB_DOM_INFO *) dev;
@@ -152,6 +157,8 @@ BOOL set_tdbrid(struct policy_cache *cache, POLICY_HND *hnd,
 				     (void *)dev))
 		{
 			DEBUG(3, ("Service setting policy rid=%x\n", rid));
+			policy_hnd_set_state_type(cache, hnd,
+						  POL_TYPE_TDBRID);
 			return True;
 		}
 		free(dev);
@@ -168,8 +175,14 @@ BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
 		TDB_CONTEXT ** usr_tdb,
 		TDB_CONTEXT ** grp_tdb, TDB_CONTEXT ** als_tdb, uint32 * rid)
 {
-	TDB_RID_INFO *dev =
-		(TDB_RID_INFO *) get_policy_state_info(cache, hnd);
+	TDB_RID_INFO *dev;
+
+	if (!policy_hnd_check_state_type(cache, hnd, POL_TYPE_TDBRID))
+	{
+		DEBUG(1, ("WARNING: get_tdbrid: handle has wrong type!\n"));
+	}
+
+	dev = (TDB_RID_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
@@ -203,7 +216,6 @@ BOOL get_tdbrid(struct policy_cache *cache, const POLICY_HND *hnd,
 BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 		TDB_CONTEXT * tdb)
 {
-	pstring sidstr;
 	TDB_SAM_INFO *dev = malloc(sizeof(*dev));
 
 	if (dev != NULL)
@@ -213,7 +225,9 @@ BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 		if (set_policy_state
 		    (cache, hnd, free_tdbsam_info, (void *)dev))
 		{
-			DEBUG(3, ("Service setting policy sid=%s\n", sidstr));
+			DEBUG(3, ("Service setting policy sam\n"));
+			policy_hnd_set_state_type(cache, hnd,
+						  POL_TYPE_TDBSAM);
 			return True;
 		}
 		free(dev);
@@ -229,8 +243,14 @@ BOOL set_tdbsam(struct policy_cache *cache, POLICY_HND *hnd,
 BOOL get_tdbsam(struct policy_cache *cache, const POLICY_HND *hnd,
 		TDB_CONTEXT ** tdb)
 {
-	TDB_SAM_INFO *dev =
-		(TDB_SAM_INFO *) get_policy_state_info(cache, hnd);
+	TDB_SAM_INFO *dev;
+
+	if (!policy_hnd_check_state_type(cache, hnd, POL_TYPE_TDBSAM))
+	{
+		DEBUG(1, ("WARNING: get_tdbsam: handle has wrong type!\n"));
+	}
+
+	dev = (TDB_SAM_INFO *) get_policy_state_info(cache, hnd);
 
 	if (dev != NULL)
 	{
@@ -426,6 +446,8 @@ uint32 samr_open_user_tdb(const POLICY_HND *parent_pol,
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	policy_hnd_set_name(get_global_hnd_cache(), pol, "sam_user");
 
 	if (usr_tdb == NULL && ace_perms == SEC_RIGHTS_MAXIMUM_ALLOWED)
 	{

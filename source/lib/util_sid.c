@@ -47,7 +47,7 @@ char *sid_to_string(pstring sidstr_out, const DOM_SID *sid)
     pstrcat(sidstr_out, subauth);
   }
 
-  DEBUG(7,("sid_to_string returning %s\n", sidstr_out));
+  DEBUG(20, ("sid_to_string returning %s\n", sidstr_out));
   return sidstr_out;
 }
 

@@ -143,6 +143,8 @@ static uint32 tdb_samr_connect( POLICY_HND *pol, uint32 ace_perms)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	policy_hnd_set_name(get_global_hnd_cache(), pol, "sam_connect");
+
 	become_root(True);
 	sam_tdb = tdb_open(passdb_path("sam.tdb"), 0, 0, O_RDONLY, 0644);
 	unbecome_root(True);
@@ -306,14 +308,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf)
 {
 	uint32 rid;
 	DOM_SID usr_sid;
-	DOM_SID adm_sid;
-	DOM_SID glb_sid;
 	TDB_CONTEXT *tdb = NULL;
-	SEC_ACL *dacl = NULL;
-	SEC_ACE *dace = NULL;
-	SEC_ACCESS mask;
-	SEC_DESC *sec = NULL;
-	int len;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_tdbrid(get_global_hnd_cache(), pol, &tdb, NULL, NULL, &rid))
@@ -321,45 +316,10 @@ uint32 _samr_query_sec_obj(const POLICY_HND *pol, SEC_DESC_BUF *buf)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	dacl = malloc(sizeof(*dacl));
-	dace = malloc(3 * sizeof(*dace));
-	sec = malloc(sizeof(*sec));
-
-	if (dacl == NULL || dace == NULL || sec == NULL)
-	{
-		safe_free(dacl);
-		safe_free(dace);
-		safe_free(sec);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	sid_copy(&usr_sid, &global_sam_sid);
 	sid_append_rid(&usr_sid, rid);
 
-	sid_copy(&adm_sid, &global_sid_S_1_5_20);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&glb_sid, &global_sid_S_1_1);
-	sid_append_rid(&glb_sid, 0x0);
-
-
-	mask.mask = 0x20044;
-	make_sec_ace(&dace[0], &usr_sid, 0, mask, 0);
-	mask.mask = 0xf07ff;
-	make_sec_ace(&dace[1], &adm_sid, 0, mask, 0);
-	mask.mask = 0x2035b;
-	make_sec_ace(&dace[2], &glb_sid, 0, mask, 0);
-
-	make_sec_acl(dacl, 2, 3, dace);
-
-	len = make_sec_desc(sec, 1,
-	              SEC_DESC_DACL_PRESENT|SEC_DESC_SELF_RELATIVE,
-	              NULL, NULL, NULL, dacl);
-
-	make_sec_desc_buf(buf, len, sec);
-	buf->undoc = 0x1;
-
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return samr_make_usr_obj_sd(buf, &usr_sid);;
 }

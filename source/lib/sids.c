@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Andrew Tridgell 1992-2000,
+   Copyright (C) Elrond               2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,6 +71,8 @@ DOM_SID global_sid_S_1_3;    /* Creator Owner */
 DOM_SID global_sid_S_1_5;    /* NT Authority */
 DOM_SID global_sid_system;   /* NT System */
 DOM_SID global_sid_S_1_1_0;  /* everyone */
+
+const DOM_SID *global_sid_everyone = NULL;
 
 struct sid_map
 {
@@ -228,6 +231,8 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_3   , "S-1-3"   );
 	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
 	string_to_sid(&global_sid_system  , "S-1-5-17");
+
+	global_sid_everyone = &global_sid_S_1_1_0;
 }
 
 /****************************************************************************

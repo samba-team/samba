@@ -36,4 +36,6 @@ extern DOM_SID global_sid_S_1_3;    /* Creator Owner */
 extern DOM_SID global_sid_S_1_5;    /* NT Authority */
 extern DOM_SID global_sid_system;   /* SYSTEM */
 
+extern const DOM_SID *global_sid_everyone;
+
 #endif /* _SIDS_H */
