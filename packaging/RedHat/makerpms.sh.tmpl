@@ -50,6 +50,10 @@ case $RPMVER in
        ;;
     4.*)
        echo Building for RPM v4.1 or later
+       ## we can do a little better here on the spec and
+       ## source directories
+       SPECDIR=`rpm -E %_specdir`
+       SOURCEDIR=`rpm -E %_sourcedir`
        RPM="rpmbuild"
        sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
