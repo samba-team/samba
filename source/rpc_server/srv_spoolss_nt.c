@@ -30,7 +30,6 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
-/* #define EMULATE_WIN2K_HACK	1 */
 
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
@@ -962,60 +961,60 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		{
 			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
-		/* Are we monitoring this event? */
+			/* Are we monitoring this event? */
 
-		if (!is_monitoring_event(p, msg->type, msg->field))
-			continue;
+			if (!is_monitoring_event(p, msg->type, msg->field))
+				continue;
 
 			
-		DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
-			msg->type, msg->field, p->dev.handlename));
+			DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
+				msg->type, msg->field, p->dev.handlename));
 
-		/* 
-		 * if the is a printer notification handle and not a job notification 
-		 * type, then set the id to 0.  Other wise just use what was specified
-		 * in the message.  
-		 *
-		 * When registering change notification on a print server handle 
-		 * we always need to send back the id (snum) matching the printer
-		 * for which the change took place.  For change notify registered
-		 * on a printer handle, this does not matter and the id should be 0.
-		 *
-		 * --jerry
-		 */
+			/* 
+			 * if the is a printer notification handle and not a job notification 
+			 * type, then set the id to 0.  Other wise just use what was specified
+			 * in the message.  
+			 *
+			 * When registering change notification on a print server handle 
+			 * we always need to send back the id (snum) matching the printer
+			 * for which the change took place.  For change notify registered
+			 * on a printer handle, this does not matter and the id should be 0.
+			 *
+			 * --jerry
+			 */
 
-		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
-			id = 0;
-		else
-		id = msg->id;
+			if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
+				id = 0;
+			else
+				id = msg->id;
 
 
-		/* Convert unix jobid to smb jobid */
+			/* Convert unix jobid to smb jobid */
 
 			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
 			{
-			id = sysjob_to_jobid(msg->id);
+				id = sysjob_to_jobid(msg->id);
 
-			if (id == -1) {
-				DEBUG(3, ("no such unix jobid %d\n", msg->id));
-				goto done;
+				if (id == -1) {
+					DEBUG(3, ("no such unix jobid %d\n", msg->id));
+					goto done;
+				}
 			}
-		}
 
 			construct_info_data( &data[data_len], msg->type, msg->field, id );
 
-		switch(msg->type) {
-		case PRINTER_NOTIFY_TYPE:
+			switch(msg->type) {
+			case PRINTER_NOTIFY_TYPE:
 				if ( !printer_notify_table[msg->field].fn )
-				goto done;
-					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					goto done;
+				printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 				
-			break;
+				break;
 			
-		case JOB_NOTIFY_TYPE:
+			case JOB_NOTIFY_TYPE:
 				if ( !job_notify_table[msg->field].fn )
-				goto done;
-					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					goto done;
+				job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 
 				break;
 
@@ -2153,7 +2152,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	
 	DEBUG(8,("getprinterdata_printer_server:%s\n", value));
 		
-	if (!strcmp(value, "W3SvcInstalled")) {
+	if (!StrCaseCmp(value, "W3SvcInstalled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc_zero(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
@@ -2161,7 +2160,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!strcmp(value, "BeepEnabled")) {
+	if (!StrCaseCmp(value, "BeepEnabled")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
@@ -2170,7 +2169,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!strcmp(value, "EventLog")) {
+	if (!StrCaseCmp(value, "EventLog")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
@@ -2180,7 +2179,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!strcmp(value, "NetPopup")) {
+	if (!StrCaseCmp(value, "NetPopup")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
@@ -2189,20 +2188,20 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!strcmp(value, "MajorVersion")) {
+	if (!StrCaseCmp(value, "MajorVersion")) {
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-#ifndef EMULATE_WIN2K_HACK /* JERRY */
-		SIVAL(*data, 0, 2);
-#else
+#ifdef HAVE_ADS
 		SIVAL(*data, 0, 3);
+#else
+		SIVAL(*data, 0, 2);
 #endif
 		*needed = 0x4;
 		return WERR_OK;
 	}
 
-   	if (!strcmp(value, "DefaultSpoolDirectory")) {
+   	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		fstring string;
 
 		fstrcpy(string, string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
@@ -2220,7 +2219,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		return WERR_OK;
 	}
 
-	if (!strcmp(value, "Architecture")) {			
+	if (!StrCaseCmp(value, "Architecture")) {			
 		pstring string="Windows NT x86";
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);	
@@ -2233,8 +2232,35 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		}			
 		return WERR_OK;
 	}
-	
-	return WERR_INVALID_PARAM;
+
+	if (!StrCaseCmp(value, "DsPresent")) {
+		*type = 0x4;
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+			return WERR_NOMEM;
+		SIVAL(*data, 0, 0x01);
+		*needed = 0x4;
+		return WERR_OK;
+	}
+
+	if (!StrCaseCmp(value, "DNSMachineName")) {			
+		pstring hostname;
+		
+		if (!get_myfullname(hostname))
+			return WERR_BADFILE;
+		*type = 0x1;			
+		*needed = 2*(strlen(hostname)+1);	
+		if((*data  = (uint8 *)talloc(ctx, ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
+			return WERR_NOMEM;
+		memset(*data, 0, (*needed > in_size) ? *needed:in_size);
+		for (i=0; i<strlen(hostname); i++) {
+			(*data)[2*i]=hostname[i];
+			(*data)[2*i+1]='\0';
+		}			
+		return WERR_OK;
+	}
+
+
+	return WERR_BADFILE;
 }
 
 /********************************************************************
@@ -2315,7 +2341,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 done:
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		DEBUG(5, ("error: allocating %d\n", *out_size));
+		DEBUG(5, ("error %d: allocating %d\n", W_ERROR_V(status),*out_size));
 		
 		/* reply this param doesn't exist */
 		
@@ -3789,12 +3815,12 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	printer->global_counter = global_counter;
 	printer->total_pages = 0;
-#ifndef EMULATE_WIN2K_HACK	/* JERRY */
-	printer->major_version = 0x0004; 	/* NT 4 */
-	printer->build_version = 0x0565; 	/* build 1381 */
-#else
+#ifdef HAVE_ADS
 	printer->major_version = 0x0005; 	/* NT 5 */
 	printer->build_version = 0x0893; 	/* build 2195 */
+#else
+	printer->major_version = 0x0004; 	/* NT 4 */
+	printer->build_version = 0x0565; 	/* build 1381 */
 #endif
 	printer->unknown7 = 0x1;
 	printer->unknown8 = 0x0;
@@ -4118,6 +4144,18 @@ static BOOL construct_printer_info_5(PRINTER_INFO_5 *printer, int snum)
 	printer->transmission_retry_timeout = 0xafc8;
 
 	free_a_printer(&ntprinter, 2);
+	return True;
+}
+
+/********************************************************************
+ * construct_printer_info_5
+ * fill a printer_info_5 struct
+ ********************************************************************/
+
+static BOOL construct_printer_info_7(PRINTER_INFO_7 *printer)
+{
+	init_unistr(&printer->guid, "");
+	printer->action = 0;
 	return True;
 }
 
@@ -4677,6 +4715,37 @@ static WERROR getprinter_level_5(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	return WERR_OK;	
 }
 
+static WERROR getprinter_level_7(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
+{
+	PRINTER_INFO_7 *printer=NULL;
+
+	if((printer=(PRINTER_INFO_7*)malloc(sizeof(PRINTER_INFO_7)))==NULL)
+		return WERR_NOMEM;
+
+	if (!construct_printer_info_7(printer))
+		return WERR_NOMEM;
+	
+	/* check the required size. */	
+	*needed += spoolss_size_printer_info_7(printer);
+
+	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_info_7(printer);
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	/* fill the buffer with the structures */
+	smb_io_printer_info_7("", buffer, printer, 0);	
+	
+	/* clear memory */
+	free_printer_info_7(printer);
+	
+	if (*needed > offered) {
+		return WERR_INSUFFICIENT_BUFFER;
+	}
+
+	return WERR_OK;	
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -4712,6 +4781,8 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 		return getprinter_level_4(snum, buffer, offered, needed);
 	case 5:		
 		return getprinter_level_5(snum, buffer, offered, needed);
+	case 7:
+		return getprinter_level_7(snum, buffer, offered, needed);
 	}
 	return WERR_UNKNOWN_LEVEL;
 }	
@@ -5852,6 +5923,34 @@ done:
 
 /****************************************************************************
 ****************************************************************************/
+static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
+				   const SPOOL_PRINTER_INFO_LEVEL *info)
+{
+#ifdef HAVE_ADS
+	SPOOL_PRINTER_INFO_LEVEL_7 *info7 = info->info_7;
+	int snum;
+	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	WERROR result;
+
+	DEBUG(5,("publish_or_unpublish_printer, action = %d\n",info7->action));
+
+	result = WERR_OK;
+
+	if (!Printer)
+		return WERR_BADFID;
+
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+	
+	nt_printer_publish(snum, info7->action);
+	
+	return WERR_OK;
+#else
+	return WERR_UNKNOWN_LEVEL;
+#endif
+}
+/****************************************************************************
+****************************************************************************/
 
 WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SETPRINTER *r_u)
 {
@@ -5878,6 +5977,8 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 		case 3:
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);
+		case 7:
+			return publish_or_unpublish_printer(p, handle, info);
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}

@@ -2442,7 +2442,149 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, char* key, fstring **subkeys 
 
 	return num_subkeys;
 }
- 
+
+/****************************************************************************
+ * Map the NT_PRINTER_INFO_LEVEL_2 data into DsSpooler keys for publishing.
+ *
+ * @param info2 NT_PRINTER_INFO_LEVEL_2 describing printer - gets modified
+ * @return BOOL indicating success or failure
+ ***************************************************************************/
+
+static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
+{
+	REGVAL_CTR *ctr = NULL;
+	smb_ucs2_t conv_str[1024];
+	size_t str_size;
+	fstring longname;
+        char *uncname;
+	uint32 dword;
+	int i;
+
+	for (i=0; i < info2->data.num_keys; i++)
+		if (!(StrCaseCmp(SPOOL_DSSPOOLER_KEY, 
+				 info2->data.keys[i].name)))
+			ctr = &info2->data.keys[i].values;
+
+	if (!ctr) {
+		add_new_printer_key(&info2->data, SPOOL_DSSPOOLER_KEY);
+		ctr = &info2->data.keys[info2->data.num_keys - 1].values;
+	}
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_PRINTERNAME);
+	str_size = push_ucs2(NULL, conv_str, info2->sharename, 
+			     sizeof(conv_str), STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_PRINTERNAME, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_SHORTSERVERNAME);
+	str_size = push_ucs2(NULL, conv_str, global_myname(), sizeof(conv_str),
+			     STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_SHORTSERVERNAME, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_SERVERNAME);
+	get_myfullname(longname);
+	str_size = push_ucs2(NULL, conv_str, longname, sizeof(conv_str),
+			     STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_SERVERNAME, REG_SZ, 
+			    (char *) conv_str, str_size);
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_VERSIONNUMBER);
+	dword = 4;
+	regval_ctr_addvalue(ctr, SPOOL_REG_VERSIONNUMBER, REG_DWORD, 
+			    (char *) &dword, sizeof(dword));
+
+	regval_ctr_delvalue(ctr, SPOOL_REG_UNCNAME);
+	asprintf(&uncname, "\\\\%s\\%s", longname, info2->sharename);
+	str_size = push_ucs2(NULL, conv_str, uncname, sizeof(conv_str),
+			     STR_TERMINATE | STR_NOALIGN);
+	regval_ctr_addvalue(ctr, SPOOL_REG_UNCNAME, REG_SZ, (char *) conv_str,
+			    str_size);
+
+	return True;
+}
+
+/****************************************************************************
+ * Publish a printer in the directory
+ *
+ * @param snum describing printer service
+ * @return WERROR indicating status of publishing
+ ***************************************************************************/
+
+WERROR nt_printer_publish(int snum, int action)
+{
+#ifdef HAVE_ADS
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	WERROR win_rc;
+	ADS_STATUS ads_rc;
+	TALLOC_CTX *ctx = talloc_init();
+	ADS_MODLIST mods = ads_init_mods(ctx);
+	char *prt_dn = NULL, *srv_dn, **srv_cn;
+	void *res = NULL;
+	ADS_STRUCT *ads;
+
+	win_rc = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(win_rc))
+		return win_rc;
+
+	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action) ||
+	    (SPOOL_DS_REPUBLISH == action)) {
+		if (!(map_nt_printer_info2_to_dsspooler(printer->info_2)))
+			return WERR_NOMEM;
+
+		win_rc = mod_a_printer(*printer, 2);
+		if (!W_ERROR_IS_OK(win_rc)) {
+			DEBUG(3, ("nt_printer_publish: err %d saving data\n",
+				  W_ERROR_V(win_rc)));
+			free_a_printer(&printer, 2);
+			return win_rc;
+		}
+
+		get_local_printer_publishing_data(ctx, &mods, 
+						  &printer->info_2->data);
+		ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, 
+			    lp_servicename(snum));
+	}
+
+	ads = ads_init(NULL, NULL, lp_ads_server());
+
+	ads_rc = ads_connect(ads);
+
+	if ((SPOOL_DS_UNPUBLISH == action) || (SPOOL_DS_REPUBLISH == action)) {
+		ads_rc = ads_find_printer_on_server(ads, &res, 
+				printer->info_2->sharename, global_myname());
+		if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+				prt_dn = ads_get_dn(ads, res);
+				ads_msgfree(ads, res);
+				ads_rc = ads_del_dn(ads, prt_dn);
+				ads_memfree(ads, prt_dn);
+		}
+	}
+
+	if ((SPOOL_DS_PUBLISH == action) || (SPOOL_DS_UPDATE == action) ||
+	    (SPOOL_DS_REPUBLISH == action)) {
+		ads_find_machine_acct(ads, &res, global_myname());
+		srv_dn = ldap_get_dn(ads->ld, res);
+		ads_msgfree(ads, res);
+		srv_cn = ldap_explode_dn(srv_dn, 1);
+		asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn[0], 
+			 printer->info_2->sharename, srv_dn);
+		ads_memfree(ads, srv_dn);
+
+		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+		if (LDAP_ALREADY_EXISTS == ads_rc.err.rc)
+			ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx,&mods);
+		safe_free(prt_dn);
+		ads_destroy(&ads);
+	}
+
+	free_a_printer(&printer, 2);
+	return WERR_OK;
+#else
+	return WERR_OK;
+#endif
+}
+
 /****************************************************************************
  ***************************************************************************/
  
