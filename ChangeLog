@@ -1,3 +1,11 @@
+Mon Nov 10 22:41:53 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/ticket.c: Implement copy_ticket.
+
+	* lib/krb5/get_in_tkt.c: Make `options' parameter MIT-compatible.
+
+	* lib/krb5/data.c: Implement free_data and copy_data.
+
 Sun Nov  9 02:17:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/kadm5: Implement kadm5_get_privs, and kadm5_get_principals.
