@@ -696,3 +696,314 @@ BOOL winbind_sid_to_gid_query(gid_t *pgid, const DOM_SID *sid)
 
 /***********************************************************************/
 
+static int lsa_socket(void)
+{
+	static int fd = -1;
+
+	if (fd != -1) {
+		struct timeval tv;
+		fd_set r_fds;
+
+		/* Catch pipe close on other end by checking if a read() call
+		   would not block by calling select(). */
+
+		FD_ZERO(&r_fds);
+		FD_SET(fd, &r_fds);
+		ZERO_STRUCT(tv);
+		
+		if ( (select(fd + 1, &r_fds, NULL, NULL, &tv) == -1) ||
+		     FD_ISSET(fd, &r_fds) ) {
+			close(fd);
+			fd = -1;
+		}
+	}
+
+	if (fd != -1)
+		return fd;
+
+	fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR, "lsa");
+
+	return fd;
+}
+
+/* Write data to winbindd socket */
+
+static int wb_write_sock(int fd, const void *buffer, int count)
+{
+	int result, nwritten;
+	
+ restart:
+	
+	/* Write data to socket */
+	
+	nwritten = 0;
+	
+	while(nwritten < count) {
+		struct timeval tv;
+		fd_set r_fds;
+		
+		/* Catch pipe close on other end by checking if a read()
+		   call would not block by calling select(). */
+
+		FD_ZERO(&r_fds);
+		FD_SET(fd, &r_fds);
+		ZERO_STRUCT(tv);
+		
+		if (select(fd + 1, &r_fds, NULL, NULL, &tv) == -1) {
+			close(fd);
+			return -1;                   /* Select error */
+		}
+		
+		/* Write should be OK if fd not available for reading */
+		
+		if (!FD_ISSET(fd, &r_fds)) {
+			
+			/* Do the write */
+			
+			result = write(fd, (const char *)buffer + nwritten, 
+				       count - nwritten);
+			
+			if ((result == -1) || (result == 0)) {
+				
+				/* Write failed */
+				
+				return -1;
+			}
+
+			nwritten += result;
+
+		} else {
+
+			/* Pipe has closed on remote end */
+
+			close(fd);
+			goto restart;
+		}
+	}
+
+	return nwritten;
+}
+
+/* Read data from winbindd socket */
+
+static int wb_read_sock(int fd, void *buffer, int count)
+{
+	int result = 0, nread = 0;
+	int total_time = 0, selret;
+
+	/* Read data from socket */
+	while(nread < count) {
+		struct timeval tv;
+		fd_set r_fds;
+		
+		/* Catch pipe close on other end by checking if a read()
+		   call would not block by calling select(). */
+
+		FD_ZERO(&r_fds);
+		FD_SET(fd, &r_fds);
+		ZERO_STRUCT(tv);
+		/* Wait for 5 seconds for a reply. May need to parameterise
+		 * this... */
+		tv.tv_sec = 5;
+
+		if ((selret = select(fd + 1, &r_fds, NULL, NULL, &tv)) == -1) {
+			return -1;                   /* Select error */
+		}
+		
+		if (selret == 0) {
+			/* Not ready for read yet... */
+			if (total_time >= 30) {
+				/* Timeout */
+				return -1;
+			}
+			total_time += 5;
+			continue;
+		}
+
+		if (FD_ISSET(fd, &r_fds)) {
+			
+			/* Do the Read */
+			
+			result = read(fd, (char *)buffer + nread, 
+				      count - nread);
+			
+			if ((result == -1) || (result == 0)) {
+				
+				/* Read failed.  I think the only useful thing
+				   we can do here is just return -1 and fail
+				   since the transaction has failed half way
+				   through. */
+			
+				return -1;
+			}
+			
+			nread += result;
+			
+		}
+	}
+	
+	return result;
+}
+
+BOOL wb_single_request(TALLOC_CTX *mem_ctx, int fd,
+		       const char *request, char **response)
+{
+	fstring header;
+	int response_len;
+
+	if (wb_write_sock(fd, request, strlen(request)) < 0)
+		return False;
+
+	if (wb_read_sock(fd, header, 12) < 0)
+		return False;
+
+	if (strncmp(header, "OK ", strlen("OK ")) != 0)
+		return False;
+
+	response_len = strtol(&header[3], NULL, 10);
+
+	*response = talloc(mem_ctx, response_len+1);
+
+	if (wb_read_sock(fd, *response, response_len) < 0)
+		return False;
+
+	(*response)[response_len] = '\0';
+
+	return True;
+}
+
+
+BOOL wb_sidtoname(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+		  char **domain, char **name, enum SID_NAME_USE *type)
+{
+	int fd = lsa_socket();
+	fstring request;
+	char *response;
+	char *p, *q;
+
+	if (fd == -1)
+		return False;
+
+	fstr_sprintf(request, "sidtoname %s\n", sid_string_static(sid));
+
+	if (!wb_single_request(mem_ctx, fd, request, &response))
+		return False;
+
+	p = strchr(response, '\\');
+	if (p == NULL)
+		return False;
+
+	*p = '\0';
+	*domain = talloc_strdup(mem_ctx, response);
+
+	p += 1;
+	q = strchr(p, '\\');
+	if (q == NULL)
+		return False;
+
+	*q = '\0';
+	*name = talloc_strdup(mem_ctx, p);
+
+	q += 1;
+	*type = strtol(q, NULL, 10);
+
+	return True;
+}
+
+BOOL wb_nametosid(TALLOC_CTX *mem_ctx, const char *name, DOM_SID *sid)
+{
+	int fd = lsa_socket();
+	fstring request;
+	char *response;
+
+	if (fd == -1)
+		return False;
+
+	fstr_sprintf(request, "nametosid %s\n", name);
+
+	if (!wb_single_request(mem_ctx, fd, request, &response))
+		return False;
+
+	if (!string_to_sid(sid, response))
+		return False;
+
+	return True;
+}
+
+BOOL wb_enumtrust(TALLOC_CTX *mem_ctx, int *num, char ***names, DOM_SID **sids)
+{
+	int fd = lsa_socket();
+	fstring request;
+	char *p, *response;
+	int i;
+
+	if (fd == -1)
+		return False;
+
+	fstr_sprintf(request, "enumtrust\n");
+
+	if (!wb_single_request(mem_ctx, fd, request, &response))
+		return False;
+
+	*num = strtol(response, &p, 10);
+
+	if (*num == 0) {
+		*names = NULL;
+		*sids = NULL;
+		return True;
+	}
+
+	if ( (p==NULL) || (*p != '\n') )
+		return False;
+
+	p +=1;
+
+	*names = talloc(mem_ctx, (*num) * sizeof(**names));
+	*sids  = talloc(mem_ctx, (*num) * sizeof(**sids));
+
+	for (i=0; i<(*num); i++) {
+		char *q = strchr(p, '\\');
+
+		if (q == NULL)
+			return False;
+		*q++ = '\0';
+		(*names)[i] = talloc_strdup(mem_ctx, p);
+
+		p = strchr(q, '\n');
+		if (p == NULL)
+			return False;
+		*p++ = '\0';
+		if (!string_to_sid(&(*sids)[i], q))
+			return False;
+	}
+	return True;
+}
+
+BOOL wb_dominfo(TALLOC_CTX *mem_ctx, char **name, DOM_SID *sid)
+{
+	int fd = lsa_socket();
+	fstring request;
+	char *response;
+	char *p;
+
+	if (fd == -1)
+		return False;
+
+	fstr_sprintf(request, "dominfo\n");
+
+	if (!wb_single_request(mem_ctx, fd, request, &response))
+		return False;
+
+	p = strchr(response, '\\');
+	if (p == NULL)
+		return False;
+
+	*p++ = '\0';
+
+	*name = talloc_strdup(mem_ctx, response);
+
+	if (!string_to_sid(sid, p))
+		return False;
+
+	return True;
+}

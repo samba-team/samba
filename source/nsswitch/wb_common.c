@@ -167,7 +167,7 @@ static int make_safe_fd(int fd)
 
 /* Connect to winbindd socket */
 
-static int winbind_named_pipe_sock(const char *dir)
+int winbind_named_pipe_sock(const char *dir, const char *name)
 {
 	struct sockaddr_un sunaddr;
 	struct stat st;
@@ -195,7 +195,7 @@ static int winbind_named_pipe_sock(const char *dir)
 	strncat(path, "/", sizeof(path) - 1 - strlen(path));
 	path[sizeof(path) - 1] = '\0';
 	
-	strncat(path, WINBINDD_SOCKET_NAME, sizeof(path) - 1 - strlen(path));
+	strncat(path, name, sizeof(path) - 1 - strlen(path));
 	path[sizeof(path) - 1] = '\0';
 	
 	ZERO_STRUCT(sunaddr);
@@ -310,7 +310,8 @@ int winbind_open_pipe_sock(void)
 		return winbindd_fd;
 	}
 
-	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR)) == -1) {
+	if ((winbindd_fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR,
+						   WINBINDD_SOCKET_NAME)) == -1) {
 		return -1;
 	}
 
@@ -325,7 +326,8 @@ int winbind_open_pipe_sock(void)
 
 	if (winbindd_request(WINBINDD_PRIV_PIPE_DIR, &request, &response) == NSS_STATUS_SUCCESS) {
 		int fd;
-		if ((fd = winbind_named_pipe_sock(response.extra_data)) != -1) {
+		if ((fd = winbind_named_pipe_sock(response.extra_data,
+						  WINBINDD_SOCKET_NAME)) != -1) {
 			close(winbindd_fd);
 			winbindd_fd = fd;
 		}

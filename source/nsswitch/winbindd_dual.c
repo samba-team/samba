@@ -212,3 +212,891 @@ void do_dual_daemon(void)
 	}
 }
 
+struct winbindd_single_client {
+	struct winbindd_single_client *next, *prev;
+	int sock;
+	BOOL reading;
+	BOOL finished;
+	int bytes_read, bytes_written;
+	fstring request;
+	char *response;
+};
+
+enum wb_connection_type { WB_LSA_CONNECTION, WB_SAMR_CONNECTION };
+
+struct winbindd_connection {
+	enum wb_connection_type type;
+	fstring socket_name;
+	fstring dc_name;
+	struct in_addr dc_ip;
+
+	fstring domain_name; 	/* For samr children */
+	DOM_SID sam_sid;
+};
+
+struct winbindd_single_daemon {
+	struct winbindd_connection conn;
+	int socket;
+	struct cli_state *cli;
+	POLICY_HND pol;
+
+	struct winbindd_single_function *functions;
+	struct winbindd_single_client *clients;
+	int num_clients;
+};
+
+struct winbindd_child {
+
+	struct winbindd_child *prev, *next;
+
+	struct winbindd_connection conn;
+
+	pid_t pid;
+	BOOL seen;
+};
+
+struct winbindd_single_function {
+	const char *name;
+	NTSTATUS (*process)(struct winbindd_single_daemon *d,
+			    TALLOC_CTX *mem_ctx,
+			    struct winbindd_single_client *cli,
+			    const char *request_data);
+};
+
+static void winbindd_init_single_daemon(struct winbindd_single_daemon *d)
+{
+	d->socket = -1;
+	d->cli = NULL;
+	ZERO_STRUCT(d->pol);
+	d->clients = NULL;
+	d->num_clients = 0;
+}
+
+static struct winbindd_single_client *
+winbindd_single_client_list(struct winbindd_single_daemon *d)
+{
+	return d->clients;
+}
+	
+/* Add a connection to the list */
+
+static void winbindd_add_single_client(struct winbindd_single_daemon *d,
+				       struct winbindd_single_client *cli)
+{
+	DLIST_ADD(d->clients, cli);
+	d->num_clients++;
+}
+
+/* Remove a client from the list */
+
+static void winbindd_remove_single_client(struct winbindd_single_daemon *d,
+					  struct winbindd_single_client *cli)
+{
+	DLIST_REMOVE(d->clients, cli);
+	d->num_clients--;
+}
+
+static void new_single_client(struct winbindd_single_daemon *d, int listen_sock)
+{
+	struct sockaddr_un sunaddr;
+	struct winbindd_single_client *client;
+	socklen_t len;
+	int sock;
+	
+	/* Accept connection */
+	
+	len = sizeof(sunaddr);
+
+	do {
+		sock = accept(listen_sock, (struct sockaddr *)&sunaddr, &len);
+	} while (sock == -1 && errno == EINTR);
+
+	if (sock == -1)
+		return;
+	
+	DEBUG(6,("accepted socket %d\n", sock));
+	
+	/* Create new connection structure */
+
+	client = (struct winbindd_single_client *)malloc(sizeof(*client));
+
+	if (client == NULL)
+		return;
+	
+	client->sock = sock;
+	client->reading = True;
+	client->bytes_read = 0;
+	client->finished = False;
+	client->response = NULL;
+	winbindd_add_single_client(d, client);
+}
+
+static NTSTATUS winbindd_lsa_nametosid(struct winbindd_single_daemon *d,
+				       TALLOC_CTX *mem_ctx,
+				       struct winbindd_single_client *client,
+				       const char *request_data)
+{
+	DOM_SID *sids;
+	uint32 *types;
+	NTSTATUS result;
+
+	result = cli_lsa_lookup_names(d->cli, mem_ctx, &d->pol, 1, &request_data,
+				      &sids, &types);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%s %d\n", sid_string_static(&sids[0]),
+		 types[0]);
+	return result;
+}
+
+static NTSTATUS winbindd_lsa_sidtoname(struct winbindd_single_daemon *d,
+				       TALLOC_CTX *mem_ctx,
+				       struct winbindd_single_client *client,
+				       const char *request_data)
+{
+	char **domains;
+	char **names;
+	uint32 *types;
+	DOM_SID sid;
+	NTSTATUS result;
+
+	if (!string_to_sid(&sid, request_data))
+		return NT_STATUS_INVALID_PARAMETER;
+
+	result = cli_lsa_lookup_sids(d->cli, mem_ctx, &d->pol, 1, &sid,
+				     &domains, &names, &types);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%s\\%s\\%d\n", domains[0], names[0],
+		 types[0]);
+	return result;
+}
+
+static NTSTATUS winbindd_lsa_dominfo(struct winbindd_single_daemon *d,
+				     TALLOC_CTX *mem_ctx,
+				     struct winbindd_single_client *client,
+				     const char *request_data)
+{
+	char *domain_name;
+	DOM_SID *domain_sid;
+	NTSTATUS result;
+
+	result = cli_lsa_query_info_policy(d->cli, mem_ctx, &d->pol, 3,
+					   &domain_name, &domain_sid);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	asprintf(&client->response, "%s\\%s\n", domain_name,
+		 sid_string_static(domain_sid));
+	return result;
+}
+
+static NTSTATUS winbindd_lsa_enumtrust(struct winbindd_single_daemon *d,
+				       TALLOC_CTX *mem_ctx,
+				       struct winbindd_single_client *client,
+				       const char *request_data)
+{
+	char **names;
+	DOM_SID *sids;
+	int i, num_domains;
+	uint32 enum_ctx = 0;
+	NTSTATUS result;
+
+	result = cli_lsa_enum_trust_dom(d->cli, mem_ctx, &d->pol, &enum_ctx,
+					&num_domains, &names, &sids);
+
+	if (!NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
+	    !NT_STATUS_IS_OK(result))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	asprintf(&client->response, "%d\n", num_domains);
+
+	for (i=0; i<num_domains; i++) {
+		char *tmp = client->response;
+		asprintf(&client->response, "%s%s\\%s\n", client->response,
+			 names[i], sid_string_static(&sids[i]));
+		free(tmp);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbindd_samr_groupmem(struct winbindd_single_daemon *d,
+				       TALLOC_CTX *mem_ctx,
+				       struct winbindd_single_client *client,
+				       const char *request_data)
+{
+	uint32 rid;
+	POLICY_HND group_pol;
+	NTSTATUS result;
+	int i, num_rids;
+	uint32 *rids;
+	uint32 *types;
+
+	rid = strtol(request_data, NULL, 10);
+
+	result = cli_samr_open_group(d->cli, mem_ctx, &d->pol,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     rid, &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_query_groupmem(d->cli, mem_ctx, &group_pol, &num_rids,
+					 &rids, &types);
+
+	cli_samr_close(d->cli, mem_ctx, &group_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	client->response = strdup("");
+
+	for (i=0; i<num_rids; i++) {
+		char *tmp = client->response;
+		asprintf(&client->response, "%s%d\n", client->response, rids[i]);
+		free(tmp);
+	}
+
+	return result;
+}
+
+static NTSTATUS winbindd_samr_usergroups(struct winbindd_single_daemon *d,
+					 TALLOC_CTX *mem_ctx,
+					 struct winbindd_single_client *client,
+					 const char *request_data)
+{
+	uint32 rid;
+	POLICY_HND user_pol;
+	NTSTATUS result;
+	int i, num_rids;
+	DOM_GID *rids;
+
+	rid = strtol(request_data, NULL, 10);
+
+	result = cli_samr_open_user(d->cli, mem_ctx, &d->pol,
+				    SEC_RIGHTS_MAXIMUM_ALLOWED,
+				    rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	result = cli_samr_query_usergroups(d->cli, mem_ctx, &user_pol, &num_rids,
+					   &rids);
+
+	cli_samr_close(d->cli, mem_ctx, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	client->response = strdup("");
+
+	for (i=0; i<num_rids; i++) {
+		char *tmp = client->response;
+		asprintf(&client->response, "%s%d\n", client->response,
+			 rids[i].g_rid);
+		free(tmp);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS winbindd_samr_enumusers(struct winbindd_single_daemon *d,
+					TALLOC_CTX *mem_ctx,
+					struct winbindd_single_client *client,
+					const char *request_data)
+{
+	uint32 resume;
+	NTSTATUS result;
+	char **users;
+	uint32 *rids;
+	uint32 i, num_users;
+
+	resume = strtol(request_data, NULL, 10);
+
+	result = cli_samr_enum_dom_users(d->cli, mem_ctx, &d->pol, &resume,
+					 ACB_NORMAL, 0xffff, &users, &rids,
+					 &num_users);
+
+	if (NT_STATUS_IS_OK(result)) {
+		client->response = strdup("DONE\n");
+	} else if (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+		asprintf(&client->response, "RESUME %d\n", resume);
+	} else {
+		return result;
+	}
+
+	for (i=0; i<num_users; i++) {
+		char *tmp = client->response;
+		asprintf(&client->response, "%s%d %s\n", client->response,
+			 rids[i], users[i]);
+		free(tmp);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void winbind_single_process(struct winbindd_single_daemon *d,
+				   struct winbindd_single_client *client)
+{
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_single_function *function;
+	BOOL found = False;
+
+	DEBUG(10, ("processing %s\n", client->request));
+
+	mem_ctx = talloc_init("single_process");
+
+	for (function = d->functions; function->name != NULL; function++) {
+
+		if (strncmp(client->request, function->name,
+			    strlen(function->name)) != 0)
+			continue;
+
+		found = True;
+		result = (function->process)(d, mem_ctx, client,
+					     client->request +
+					     strlen(function->name)+1);
+		break;
+	}
+
+	if (!found) {
+
+		if (strcmp(client->request, "pid") != 0) {
+			client->response = strdup("ERR        \n");
+			goto done;
+		}
+
+		/* Generic probe request: Return pid */
+		asprintf(&client->response, "%d\n", getpid());
+		result = NT_STATUS_OK;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL) &&
+	    (d->cli->fd == -1)) {
+		/* Disconnected */
+		exit(1);
+	}
+
+	if (NT_STATUS_IS_OK(result)) {
+		char *response = client->response;
+		asprintf(&client->response, "OK %08d\n%s",
+			 strlen(response), response);
+		free(response);
+	} else {
+		client->response = strdup("ERR        \n");
+	}
+
+ done:
+	talloc_destroy(mem_ctx);
+}
+
+static void winbind_single_read_line(struct winbindd_single_client *client)
+{
+	int n;
+
+	n = sys_read(client->sock, client->request + client->bytes_read,
+		     sizeof(client->request) - client->bytes_read);
+
+	DEBUG(10, ("Read %d bytes. Need %d more for a full request.\n",
+		   n, sizeof(client->request) - n - client->bytes_read));
+
+	if (n <= 0) {
+		DEBUG(5, ("Read failed on socket %d: %s\n",
+			  client->sock,
+			  (n == -1) ? strerror(errno) : "EOF"));
+		client->finished = True;
+		return;
+	}
+
+	client->bytes_read += n;
+
+	if (client->bytes_read == sizeof(client->request)) {
+		DEBUG(5, ("Request overflow\n"));
+		client->finished = True;
+	}
+
+	return;
+}
+
+static void winbind_single_write_line(struct winbindd_single_client *client)
+{
+	int to_write = strlen(client->response) - client->bytes_written;
+	int n;
+
+	n = sys_write(client->sock, client->response + client->bytes_written,
+		      to_write);
+
+	if (n <= 0) {
+		DEBUG(5, ("Write failed on socket %d: %s\n",
+			  client->sock,
+			  (n == -1) ? strerror(errno) : "EOF"));
+		client->finished = True;
+		return;
+	}
+
+	client->bytes_written += n;
+
+	if (n != to_write)
+		return;
+
+	/* Wrote everything, prepare for the next request */
+
+	client->reading = True;
+	client->bytes_read = 0;
+	SAFE_FREE(client->response);
+}
+
+static int open_single_socket(struct winbindd_single_daemon *d)
+{
+	if (d->socket == -1) {
+		d->socket = create_pipe_sock(WINBINDD_SOCKET_DIR,
+					     d->conn.socket_name, 0755);
+		DEBUG(10, ("open_winbindd_socket: opened socket fd %d\n",
+			   d->socket));
+	}
+
+	return d->socket;
+}
+
+static BOOL do_sigterm = False;
+
+static void single_termination_handler(int signum)
+{
+	do_sigterm = True;
+	sys_select_signal();
+}
+
+static void process_single_loop(struct winbindd_single_daemon *d)
+{
+	struct winbindd_single_client *client;
+	fd_set r_fds, w_fds;
+	int maxfd, listen_sock, selret;
+	struct timeval timeout;
+
+	/* Free up temporary memory */
+
+	lp_talloc_free();
+	main_loop_talloc_free();
+
+	if (do_sigterm)
+		exit(0);
+
+	/* Initialise fd lists for select() */
+
+	listen_sock = open_single_socket(d);
+
+	if (listen_sock == -1) {
+		perror("open_single_socket");
+		exit(1);
+	}
+
+	maxfd = listen_sock;
+
+	FD_ZERO(&r_fds);
+	FD_ZERO(&w_fds);
+	FD_SET(listen_sock, &r_fds);
+
+	timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
+	timeout.tv_usec = 0;
+
+	/* Set up client readers and writers */
+	
+	client = winbindd_single_client_list(d);
+
+	while (client != NULL) {
+
+		if (client->finished) {
+			struct winbindd_single_client *next = client->next;
+			winbindd_remove_single_client(d, client);
+			close(client->sock);
+			SAFE_FREE(client->response);
+			SAFE_FREE(client);
+			client = next;
+			continue;
+		}
+
+		if (client->sock > maxfd)
+			maxfd = client->sock;
+
+		if (client->reading)
+			FD_SET(client->sock, &r_fds);
+		else
+			FD_SET(client->sock, &w_fds);
+
+		client = client->next;
+	}
+
+	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
+
+	if (selret == 0)
+		return;
+
+	if (selret == -1 && errno != EINTR) {
+		perror("select");
+		exit(1);
+	}
+
+	if (FD_ISSET(listen_sock, &r_fds))
+		new_single_client(d, listen_sock);
+
+	for (client = winbindd_single_client_list(d); client != NULL;
+	     client = client->next) {
+
+		if (FD_ISSET(client->sock, &r_fds))
+			winbind_single_read_line(client);
+
+		if ((client->reading) &&
+		    (client->bytes_read > 0) &&
+		    (client->request[client->bytes_read-1] == '\n')) {
+			client->request[client->bytes_read-1] = '\0';
+			winbind_single_process(d, client);
+			client->reading = False;
+			client->bytes_written = 0;
+		}
+
+		if (FD_ISSET(client->sock, &w_fds))
+			winbind_single_write_line(client);
+	}
+}
+
+static struct winbindd_single_function lsa_functions[] = {
+	{ "nametosid", winbindd_lsa_nametosid },
+	{ "sidtoname", winbindd_lsa_sidtoname },
+	{ "enumtrust", winbindd_lsa_enumtrust },
+	{ "dominfo", winbindd_lsa_dominfo },
+	{ NULL, NULL }
+};
+
+
+static struct winbindd_single_function samr_functions[] = {
+	{ "enumusers", winbindd_samr_enumusers },
+	{ "groupmem", winbindd_samr_groupmem },
+	{ "usergroups", winbindd_samr_usergroups },
+	{ NULL, NULL }
+};
+
+static NTSTATUS prepare_lsa_pol(TALLOC_CTX *mem_ctx,
+				struct winbindd_single_daemon *d)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!cli_nt_session_open(d->cli, PI_LSARPC)) {
+		DEBUG(0, ("Child: Could not open pipe: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
+
+	result = cli_lsa_open_policy(d->cli, mem_ctx, True,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     &d->pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not open lsa policy: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
+
+	return result;
+}
+
+static NTSTATUS prepare_samr_pol(TALLOC_CTX *mem_ctx,
+				 struct winbindd_single_daemon *d)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND connect_pol;
+
+	if (!cli_nt_session_open(d->cli, PI_SAMR)) {
+		DEBUG(0, ("Child: Could not open pipe: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
+
+	result = cli_samr_connect(d->cli, mem_ctx, SEC_RIGHTS_MAXIMUM_ALLOWED,
+				  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not connect to SAM: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
+
+	result = cli_samr_open_domain(d->cli, mem_ctx, &connect_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &d->conn.sam_sid,
+				      &d->pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not open domain %s: %s\n",
+			  sid_string_static(&d->conn.sam_sid),
+			  nt_errstr(result)));
+		return result;
+	}
+	return result;
+}
+
+static struct winbindd_child *children = NULL;
+
+static BOOL check_child(TALLOC_CTX *mem_ctx, struct winbindd_child *child)
+{
+	int fd;
+	fstring request;
+	char *response;
+	pid_t pid;
+
+	fd = winbind_named_pipe_sock(WINBINDD_SOCKET_DIR,
+				     child->conn.socket_name);
+
+	if (fd < 0)
+		return False;
+
+	fstrcpy(request, "pid\n");
+
+	if (!wb_single_request(mem_ctx, fd, request, &response)) {
+		close(fd);
+		return False;
+	}
+
+	close(fd);
+
+	pid = strtol(response, NULL, 0);
+
+	if (pid != child->pid) {
+		kill(pid, SIGTERM);
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL restart_child(TALLOC_CTX *mem_ctx, struct winbindd_child *child)
+{
+	struct winbindd_single_daemon d;
+	NTSTATUS result;
+
+	child->pid = fork();
+
+	if (child->pid != 0) {
+		if (check_child(mem_ctx, child))
+			return True;
+		smb_msleep(100);
+		return check_child(mem_ctx, child);
+	}
+
+	winbindd_init_single_daemon(&d);
+	d.conn = child->conn;
+
+	if (open_single_socket(&d) < 0) {
+		DEBUG(0, ("Could not open socket\n"));
+		exit(1);
+	}
+
+	DEBUG(0, ("Child %s\n", d.conn.socket_name));
+
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all() == -1) {
+		DEBUG(0,("tdb_reopen_all failed.\n"));
+		_exit(0);
+	}
+
+	result = cli_full_connection(&d.cli, global_myname(), d.conn.dc_name,
+				     &d.conn.dc_ip, 0, "IPC$", "IPC",
+				     "", "", "", 0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("Child: Could not open IPC$: %s\n",
+			  nt_errstr(result)));
+		exit(0);
+	}
+
+	switch (child->conn.type) {
+	case WB_LSA_CONNECTION:
+		d.functions = lsa_functions;
+		result = prepare_lsa_pol(mem_ctx, &d);
+		break;
+	case WB_SAMR_CONNECTION:
+		d.functions = samr_functions;
+		result = prepare_samr_pol(mem_ctx, &d);
+		break;
+	default:
+		smb_panic("Unknown child type\n");
+		break;
+	}
+
+	if (!NT_STATUS_IS_OK(result))
+		exit(1);
+
+	CatchSignal(SIGINT, single_termination_handler);
+	CatchSignal(SIGQUIT, single_termination_handler);
+	CatchSignal(SIGTERM, single_termination_handler);
+
+	while (1)
+		process_single_loop(&d);
+}
+
+static BOOL new_samr_child(TALLOC_CTX *mem_ctx,
+			   const char *domain_name, const DOM_SID *sid)
+{
+	struct winbindd_child *child;
+
+	child = malloc(sizeof(*child));
+
+	if (child == NULL) {
+		DEBUG(0, ("Could not malloc child\n"));
+		return False;
+	}
+
+	child->conn.type = WB_SAMR_CONNECTION;
+	fstr_sprintf(child->conn.socket_name, "samr-%s",
+		     sid_string_static(sid));
+	fstrcpy(child->conn.domain_name, domain_name);
+	sid_copy(&child->conn.sam_sid, sid);
+	child->pid = -1;
+
+	if (!get_dc_name(child->conn.domain_name, NULL, child->conn.dc_name,
+			 &child->conn.dc_ip)) {
+		DEBUG(0, ("Could not find our DC\n"));
+		free(child);
+		return False;
+	}
+
+	DLIST_ADD(children, child);
+
+	return restart_child(mem_ctx, child);
+}
+
+static void add_ourself(TALLOC_CTX *mem_ctx, int *num_domains,
+			char ***domain_names, DOM_SID **sids)
+{
+	char *my_name;
+	DOM_SID my_sid;
+
+	if (!wb_dominfo(mem_ctx, &my_name, &my_sid))
+		return;
+
+	*domain_names = Realloc((*domain_names),
+				((*num_domains)+1) * sizeof(**domain_names));
+	*sids =         Realloc((*sids),
+				((*num_domains)+1) * sizeof(**sids));
+
+	(*domain_names)[*num_domains] = my_name;
+	sid_copy(&((*sids)[*num_domains]), &my_sid);
+	*num_domains += 1;
+}
+
+void check_children(void)
+{
+	TALLOC_CTX *mem_ctx;
+	struct winbindd_child *child;
+	struct winbindd_child *lsa_child;
+
+	int num_domains;
+	char **domain_names;
+	DOM_SID *sids;
+	int i;
+
+	mem_ctx = talloc_init("check_children");
+
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("Could not talloc_init\n"));
+		return;
+	}
+
+	lsa_child = NULL;
+
+	for (child = children; child != NULL; child = child->next) {
+
+		child->seen = False;
+
+		if (child->conn.type != WB_LSA_CONNECTION)
+			continue;
+		SMB_ASSERT(lsa_child == NULL);
+		lsa_child = child;
+	}
+
+	/* We have to have one and only one lsa child */
+	SMB_ASSERT(lsa_child != NULL);
+
+	/* The LSA child must always stay */
+	lsa_child->seen = True;
+
+	if (!check_child(mem_ctx, lsa_child) &&
+	    !restart_child(mem_ctx, lsa_child)) {
+		DEBUG(1, ("Could not connect/restart to LSA\n"));
+		return;
+	}
+
+	if (!wb_enumtrust(mem_ctx, &num_domains, &domain_names, &sids)) {
+		DEBUG(1, ("Could not list trusted domains\n"));
+		return;
+	}
+
+	add_ourself(mem_ctx, &num_domains, &domain_names, &sids);
+
+	for (i=0; i<num_domains; i++) {
+
+		BOOL found = False;
+
+		for (child = children; child != NULL; child = child->next) {
+
+			if (child->conn.type != WB_SAMR_CONNECTION)
+				continue;
+
+			if (sid_compare(&child->conn.sam_sid, &sids[i]) != 0)
+				continue;
+
+			found = True;
+			child->seen = True;
+
+			if (!check_child(mem_ctx, child) &&
+			    !restart_child(mem_ctx, child)) {
+				DEBUG(1, ("Could not restart SAMR for %s\n",
+					  sid_string_static(&sids[i])));
+			}
+		}
+
+		if (found)
+			continue;
+
+		/* New trust */
+
+		if (!new_samr_child(mem_ctx, domain_names[i], &sids[i])) {
+			DEBUG(1, ("Could not start new child for %s\n",
+				  domain_names[i]));
+		}
+	}
+}	
+
+void do_single_daemons(void)
+{
+	struct winbindd_child *child;
+
+	child = malloc(sizeof(*child));
+
+	if (child == NULL) {
+		DEBUG(0, ("Could not malloc child\n"));
+		return;
+	}
+
+	child->conn.type = WB_LSA_CONNECTION;
+	fstrcpy(child->conn.socket_name, "lsa");
+	fstrcpy(child->conn.domain_name, lp_workgroup());
+	child->pid = -1;
+
+	if (!get_dc_name(child->conn.domain_name, NULL, child->conn.dc_name,
+			 &child->conn.dc_ip)) {
+		DEBUG(0, ("Could not find our DC\n"));
+		free(child);
+		return;
+	}
+
+	DLIST_ADD(children, child);
+
+	check_children();
+}
