@@ -69,7 +69,7 @@ static void show_service(int snum, int allparameters)
 		sname = SDEFAULTS;
 	else sname = lp_servicename(snum);
 
-	printf("\n<p><table border=0>\n<tr>\n<td>\n\n");
+	printf("\n<p><table border=0>\n<tr>\n<td></td><td>\n\n");
 	printf("<form method=POST>\n");
 	printf("<H3>%s</H3>\n", sname);
 	printf("<input type=hidden name=service value=\"%s\">\n", sname);

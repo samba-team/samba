@@ -1,5 +1,3 @@
-#ifdef SMB_PASSWD
-
 /*
  * Unix SMB/Netbios implementation. Version 1.9. smbpasswd module. Copyright
  * (C) Jeremy Allison 1995-1997.
@@ -20,7 +18,6 @@
  */
 
 #include "includes.h"
-#include "des.h"
 
 /* Static buffers we will return. */
 static struct smb_passwd pw_buf;
@@ -569,14 +566,3 @@ Error was %d. Password file may be corrupt ! Please examine by hand !\n",
   return 0;
 }
 
-#else
-
-#include "includes.h"
-
-int 
-main(int argc, char **argv)
-{
-  printf("smb password encryption not selected in Makefile\n");
-  return 0;
-}
-#endif

@@ -42,8 +42,7 @@ char hex_tag = HEXTAG;
  search token from S1 separated any char of S2
  S1 contain SHIFT JIS chars.
 ********************************************************************/
-char *
-sj_strtok (char *s1, const char *s2)
+char *sj_strtok(char *s1, char *s2)
 {
     static char *s = NULL;
     char *q;
@@ -82,10 +81,9 @@ sj_strtok (char *s1, const char *s2)
  search string S2 from S1
  S1 contain SHIFT JIS chars.
 ********************************************************************/
-char *
-sj_strstr (const char *s1, const char *s2)
+char *sj_strstr(char *s1, char *s2)
 {
-    register int len = strlen ((char *) s2);
+    int len = strlen ((char *) s2);
     if (!*s2) 
 	return (char *) s1;
     for (;*s1;) {
@@ -106,8 +104,7 @@ sj_strstr (const char *s1, const char *s2)
  Search char C from beginning of S.
  S contain SHIFT JIS chars.
 ********************************************************************/
-char *
-sj_strchr (const char *s, int c)
+char *sj_strchr (char *s, int c)
 {
     for (; *s; ) {
 	if (*s == c)
@@ -125,10 +122,9 @@ sj_strchr (const char *s, int c)
  Search char C end of S.
  S contain SHIFT JIS chars.
 ********************************************************************/
-char *
-sj_strrchr (const char *s, int c)
+char *sj_strrchr(char *s, int c)
 {
-    register char *q;
+    char *q;
 
     for (q = 0; *s; ) {
 	if (*s == c) {
@@ -152,8 +148,7 @@ static char cvtbuf[1024];
 /*******************************************************************
   EUC <-> SJIS
 ********************************************************************/
-static int
-euc2sjis (register int hi, register int lo)
+static int euc2sjis (int hi, int lo)
 {
     if (hi & 1)
 	return ((hi / 2 + (hi < 0xdf ? 0x31 : 0x71)) << 8) |
@@ -162,8 +157,7 @@ euc2sjis (register int hi, register int lo)
 	return ((hi / 2 + (hi < 0xdf ? 0x30 : 0x70)) << 8) | (lo - 2);
 }
 
-static int
-sjis2euc (register int hi, register int lo)
+static int sjis2euc (int hi, int lo)
 {
     if (lo >= 0x9f)
 	return ((hi * 2 - (hi >= 0xe0 ? 0xe0 : 0x60)) << 8) | (lo + 2);
@@ -176,10 +170,9 @@ sjis2euc (register int hi, register int lo)
  Convert FROM contain SHIFT JIS codes to EUC codes
  return converted buffer
 ********************************************************************/
-static char *
-sj_to_euc (const char *from, BOOL overwrite)
+static char *sj_to_euc(char *from, BOOL overwrite)
 {
-    register char *out;
+    char *out;
     char *save;
 
     save = (char *) from;
@@ -209,10 +202,9 @@ sj_to_euc (const char *from, BOOL overwrite)
  Convert FROM contain EUC codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-euc_to_sj (const char *from, BOOL overwrite)
+static char *euc_to_sj(char *from, BOOL overwrite)
 {
-    register char *out;
+    char *out;
     char *save;
 
     save = (char *) from;
@@ -241,8 +233,7 @@ euc_to_sj (const char *from, BOOL overwrite)
 /*******************************************************************
   JIS7,JIS8,JUNET <-> SJIS
 ********************************************************************/
-static int
-sjis2jis (register int hi, register int lo)
+static int sjis2jis(int hi, int lo)
 {
     if (lo >= 0x9f)
 	return ((hi * 2 - (hi >= 0xe0 ? 0x160 : 0xe0)) << 8) | (lo - 0x7e);
@@ -251,8 +242,7 @@ sjis2jis (register int hi, register int lo)
 	    (lo - (lo >= 0x7f ? 0x20 : 0x1f));
 }
 
-static int
-jis2sjis (register int hi, register int lo)
+static int jis2sjis(int hi, int lo)
 {
     if (hi & 1)
 	return ((hi / 2 + (hi < 0x5f ? 0x71 : 0xb1)) << 8) |
@@ -265,11 +255,10 @@ jis2sjis (register int hi, register int lo)
  Convert FROM contain JIS codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-jis8_to_sj (const char *from, BOOL overwrite)
+static char *jis8_to_sj(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -316,11 +305,10 @@ jis8_to_sj (const char *from, BOOL overwrite)
  Convert FROM contain SHIFT JIS codes to JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-sj_to_jis8 (const char *from, BOOL overwrite)
+static char *sj_to_jis8(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -373,11 +361,10 @@ sj_to_jis8 (const char *from, BOOL overwrite)
  Convert FROM contain 7 bits JIS codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-jis7_to_sj (const char *from, BOOL overwrite)
+static char *jis7_to_sj(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -433,11 +420,10 @@ jis7_to_sj (const char *from, BOOL overwrite)
  Convert FROM contain SHIFT JIS codes to 7 bits JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-sj_to_jis7 (const char *from, BOOL overwrite)
+static char *sj_to_jis7(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -510,11 +496,10 @@ sj_to_jis7 (const char *from, BOOL overwrite)
  Convert FROM contain 7 bits JIS(junet) codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *
-junet_to_sj (const char *from, BOOL overwrite)
+static char *junet_to_sj(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -567,11 +552,10 @@ junet_to_sj (const char *from, BOOL overwrite)
  Convert FROM contain SHIFT JIS codes to 7 bits JIS(junet) codes
  return converted buffer
 ********************************************************************/
-static char *
-sj_to_junet (const char *from, BOOL overwrite)
+static char *sj_to_junet(char *from, BOOL overwrite)
 {
-    register char *out;
-    register int shifted;
+    char *out;
+    int shifted;
     char *save;
 
     shifted = _KJ_ROMAN;
@@ -637,8 +621,7 @@ sj_to_junet (const char *from, BOOL overwrite)
   HEX <-> SJIS
 ********************************************************************/
 /* ":xx" -> a byte */
-static char *
-hex_to_sj (const char *from, BOOL overwrite)
+static char *hex_to_sj(char *from, BOOL overwrite)
 {
     char *sp, *dp;
     
@@ -663,8 +646,7 @@ hex_to_sj (const char *from, BOOL overwrite)
 /*******************************************************************
   kanji/kana -> ":xx" 
 ********************************************************************/
-static char *
-sj_to_hex (const char *from, BOOL overwrite)
+static char *sj_to_hex(char *from, BOOL overwrite)
 {
     unsigned char *sp, *dp;
     
@@ -700,8 +682,7 @@ sj_to_hex (const char *from, BOOL overwrite)
 /*******************************************************************
   kanji/kana -> ":xx" 
 ********************************************************************/
-static char *
-sj_to_cap (const char *from, BOOL overwrite)
+static char *sj_to_cap(char *from, BOOL overwrite)
 {
     unsigned char *sp, *dp;
 
@@ -729,8 +710,7 @@ sj_to_cap (const char *from, BOOL overwrite)
 /*******************************************************************
  sj to sj
 ********************************************************************/
-static char *
-sj_to_sj (const char *from, BOOL overwrite)
+static char *sj_to_sj(char *from, BOOL overwrite)
 {
     if (!overwrite) {
 	strcpy (cvtbuf, (char *) from);
@@ -745,11 +725,10 @@ sj_to_sj (const char *from, BOOL overwrite)
  _dos_to_unix		_unix_to_dos
 ************************************************************************/
 
-char* (*_dos_to_unix) (const char *str, BOOL overwrite) = sj_to_sj;
-char* (*_unix_to_dos) (const char *str, BOOL overwrite) = sj_to_sj;
+char *(*_dos_to_unix)(char *str, BOOL overwrite) = sj_to_sj;
+char *(*_unix_to_dos)(char *str, BOOL overwrite) = sj_to_sj;
 
-static int
-setup_string_function (int codes)
+static int setup_string_function(int codes)
 {
     switch (codes) {
     default:

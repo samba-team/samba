@@ -2814,19 +2814,15 @@ int reply_lanman1(char *outbuf)
 
   set_message(outbuf,13,doencrypt?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
-#ifdef SMB_PASSWD
   /* Create a token value and add it to the outgoing packet. */
   if (doencrypt) 
     generate_next_challenge(smb_buf(outbuf));
-#endif
 
   Protocol = PROTOCOL_LANMAN1;
 
   if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
     DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
   if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
@@ -2865,11 +2861,9 @@ int reply_lanman2(char *outbuf)
 
   set_message(outbuf,13,doencrypt?8:0,True);
   SSVAL(outbuf,smb_vwv1,secword); 
-#ifdef SMB_PASSWD
   /* Create a token value and add it to the outgoing packet. */
   if (doencrypt) 
     generate_next_challenge(smb_buf(outbuf));
-#endif
 
   SIVAL(outbuf,smb_vwv6,getpid());
 
@@ -2877,9 +2871,7 @@ int reply_lanman2(char *outbuf)
 
   if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
     DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
     if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
@@ -2949,7 +2941,6 @@ int reply_nt1(char *outbuf)
 #endif
 
   CVAL(outbuf,smb_vwv1) = secword;
-#ifdef SMB_PASSWD
   /* Create a token value and add it to the outgoing packet. */
   if (doencrypt)
   {
@@ -2958,15 +2949,12 @@ int reply_nt1(char *outbuf)
     /* Tell the nt machine how long the challenge is. */
     SSVALS(outbuf,smb_vwv16+1,challenge_len);
   }
-#endif
 
   Protocol = PROTOCOL_NT1;
 
   if (lp_security() == SEC_SERVER && server_cryptkey(outbuf)) {
     DEBUG(3,("using password server validation\n"));
-#ifdef SMB_PASSWD
     if (doencrypt) set_challenge(smb_buf(outbuf));    
-#endif
   }
 
   SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */

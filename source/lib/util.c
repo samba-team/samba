@@ -807,7 +807,7 @@ char *attrib_string(int mode)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(const char *s, const char *t)
+int StrCaseCmp(char *s, char *t)
 {
   /* compare until we run out of string, either t or s, or find a difference */
   /* We *must* use toupper rather than tolower here due to the
@@ -871,7 +871,7 @@ int StrCaseCmp(const char *s, const char *t)
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(const char *s, const char *t, int n)
+int StrnCaseCmp(char *s, char *t, int n)
 {
   /* compare until we run out of string, either t or s, or chars */
   /* We *must* use toupper rather than tolower here due to the
@@ -945,7 +945,7 @@ int StrnCaseCmp(const char *s, const char *t, int n)
 /*******************************************************************
   compare 2 strings 
 ********************************************************************/
-BOOL strequal(const char *s1, const char *s2)
+BOOL strequal(char *s1, char *s2)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2) return(False);
@@ -956,7 +956,7 @@ BOOL strequal(const char *s1, const char *s2)
 /*******************************************************************
   compare 2 strings up to and including the nth char.
   ******************************************************************/
-BOOL strnequal(const char *s1,const char *s2,int n)
+BOOL strnequal(char *s1,char *s2,int n)
 {
   if (s1 == s2) return(True);
   if (!s1 || !s2 || !n) return(False);
@@ -3923,7 +3923,7 @@ void file_unlock(int fd)
 is the name specified one of my netbios names
 returns true is it is equal, false otherwise
 ********************************************************************/
-BOOL is_myname(const char *s)
+BOOL is_myname(char *s)
 {
   int n;
   BOOL ret = False;

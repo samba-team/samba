@@ -120,6 +120,10 @@ int reply_trans(char *inbuf,char *outbuf);
 
 /*The following definitions come from  kanji.c  */
 
+char *sj_strtok(char *s1, char *s2);
+char *sj_strstr(char *s1, char *s2);
+char *sj_strchr (char *s, int c);
+char *sj_strrchr(char *s, int c);
 int interpret_coding_system(char *str, int def);
 
 /*The following definitions come from  loadparm.c  */
@@ -309,14 +313,14 @@ BOOL set_share_mode(share_lock_token token,int fnum);
 
 /*The following definitions come from  make_smbcodepage.c  */
 
-void codepage_usage(const char *progname);
+void codepage_usage(char *progname);
 void read_line( char **buf, char *line_buf, int size);
 int clean_data( char **buf, uint32 *size);
 BOOL parse_byte(char *buf, unsigned char *bp);
 BOOL parse_bool(char *buf, unsigned char *bp);
 void parse_error(char *buf, char *msg);
-int do_compile(int codepage, const char *input_file, const char *output_file);
-int do_decompile( int codepage, const char *input_file, const char *output_file);
+int do_compile(int codepage, char *input_file, char *output_file);
+int do_decompile( int codepage, char *input_file, char *output_file);
 int main(int argc, char **argv);
 
 /*The following definitions come from  mangle.c  */
@@ -565,6 +569,7 @@ BOOL reload_services(BOOL test);
 
 /*The following definitions come from  nmblib.c  */
 
+char *lookup_opcode_name( int opcode );
 void debug_nmb_packet(struct packet_struct *p);
 char *namestr(struct nmb_name *n);
 void free_nmb_packet(struct nmb_packet *nmb);
@@ -778,10 +783,12 @@ BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
 
+/*The following definitions come from  smbdes.c  */
+
+void smbdes(unsigned char *out, unsigned char *in, unsigned char *key);
+
 /*The following definitions come from  smbencrypt.c  */
 
-void str_to_key(uchar *str,uchar *key);
-void D1(uchar *k, uchar *d, uchar *out);
 void E1(uchar *k, uchar *d, uchar *out);
 void E_P16(uchar *p14,uchar *p16);
 void E_P24(uchar *p21, uchar *c8, uchar *p24);
@@ -799,6 +806,9 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 
 /*The following definitions come from  smbrun.c  */
+
+
+/*The following definitions come from  smbwizard.c  */
 
 
 /*The following definitions come from  status.c  */
@@ -901,10 +911,10 @@ time_t file_modtime(char *fname);
 BOOL directory_exist(char *dname,struct stat *st);
 uint32 file_size(char *file_name);
 char *attrib_string(int mode);
-int StrCaseCmp(const char *s, const char *t);
-int StrnCaseCmp(const char *s, const char *t, int n);
-BOOL strequal(const char *s1, const char *s2);
-BOOL strnequal(const char *s1,const char *s2,int n);
+int StrCaseCmp(char *s, char *t);
+int StrnCaseCmp(char *s, char *t, int n);
+BOOL strequal(char *s1, char *s2);
+BOOL strnequal(char *s1,char *s2,int n);
 BOOL strcsequal(char *s1,char *s2);
 void strlower(char *s);
 void strupper(char *s);
@@ -997,7 +1007,7 @@ void free_namearray(name_compare_entry *name_array);
 BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
-BOOL is_myname(const char *s);
+BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
 
