@@ -218,7 +218,7 @@ int find_service(fstring service)
  do some basic sainity checks on the share.  
  This function modifies dev, ecode.
 ****************************************************************************/
-static NTSTATUS share_sanity_checks(int snum, pstring dev) 
+static NTSTATUS share_sanity_checks(int snum, fstring dev) 
 {
 	
 	if (!lp_snum_ok(snum) || 
@@ -326,14 +326,17 @@ static void set_admin_user(connection_struct *conn, gid_t *groups, size_t n_grou
 
 static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 					       DATA_BLOB password, 
-					       char *dev, NTSTATUS *status)
+					       const char *pdev, NTSTATUS *status)
 {
 	struct passwd *pass = NULL;
 	BOOL guest = False;
 	connection_struct *conn;
 	struct stat st;
 	fstring user;
+	fstring dev;
+
 	*user = 0;
+	fstrcpy(dev, pdev);
 
 	if (NT_STATUS_IS_ERR(*status = share_sanity_checks(snum, dev))) {
 		return NULL;
@@ -717,7 +720,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
  **************************************************************************************/
  
 connection_struct *make_connection_with_chdir(const char *service_in, DATA_BLOB password, 
-				   char *dev, uint16 vuid, NTSTATUS *status)
+				   const char *dev, uint16 vuid, NTSTATUS *status)
 {
 	connection_struct *conn = NULL;
 	
@@ -747,12 +750,15 @@ connection_struct *make_connection_with_chdir(const char *service_in, DATA_BLOB 
 ****************************************************************************/
 
 connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
-				   char *dev, uint16 vuid, NTSTATUS *status)
+				   const char *pdev, uint16 vuid, NTSTATUS *status)
 {
 	uid_t euid;
 	user_struct *vuser = NULL;
 	fstring service;
+	fstring dev;
 	int snum = -1;
+	
+	fstrcpy(dev, pdev);
 
 	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
 	if (!non_root_mode() && (euid = geteuid()) != 0) {
