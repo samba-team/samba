@@ -98,7 +98,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			goto out;
 		}
 		/* Look for a CIFS ticket */
-		if (!StrnCaseCmp(princ_name, "cifs/", 5) || (!StrnCaseCmp(princ_name, "host/", 5))) {
+		if (!strncasecmp(princ_name, "cifs/", 5) || (!strncasecmp(princ_name, "host/", 5))) {
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
 			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.keyblock);
 #else
