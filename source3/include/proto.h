@@ -2558,7 +2558,6 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
                                           prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
                                           prs_struct *ps, int depth);
-BOOL uniarray_2_ascarray(BUFFER5 *buf5, char ***ar);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
@@ -3590,8 +3589,8 @@ int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
-int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
-int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
+int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 int tdb_store_by_string(TDB_CONTEXT *tdb, char *keystr, void *buffer, int len);
