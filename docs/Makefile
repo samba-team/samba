@@ -53,6 +53,7 @@ pdf: $(patsubst $(DOCBOOKDIR)/%.xml,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
 dvi: $(patsubst $(DOCBOOKDIR)/%.xml,$(DVIDIR)/%.dvi,$(MAIN_DOCS))
 ps: $(patsubst $(DOCBOOKDIR)/%.xml,$(PSDIR)/%.ps,$(MAIN_DOCS))
 txt: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%.txt,$(MAIN_DOCS))
+txt-chunks: $(patsubst $(DOCBOOKDIR)/%.xml,$(TXTDIR)/%/,$(MAIN_DOCS))
 fo: $(patsubst $(DOCBOOKDIR)/%.xml,$(FODIR)/%.fo,$(MAIN_DOCS))
 tex: $(patsubst $(DOCBOOKDIR)/%.xml,%.tex,$(MAIN_DOCS))
 manpages: $(patsubst $(MANPAGEDIR)/%.xml,$(MANDIR)/%,$(MANPAGES)) 
@@ -120,6 +121,9 @@ clean:
 $(TXTDIR)/%.txt: $(HTMLDIR)/%.html
 	mkdir -p $(@D)
 	$(HTML2TEXT) -nobs -style pretty -o $@ $<
+
+$(TXTDIR)/%/: $(HTMLDIR)/%/index.html 
+	$(MAKE) `echo $(HTMLDIR)/$*/*.html | $(PERL) -p -e 's|$(HTMLDIR)|$(TXTDIR)|g;s/\.html/\.txt/g;'`
 
 # Tex files
 %.tex: $(DOCBOOKDIR)/%.xml xslt/latex.xsl
