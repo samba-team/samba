@@ -96,17 +96,6 @@ struct winbindd_domain {
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */
 
-typedef enum {
-    SURS_POSIX_UID_AS_USR,     /* User id as user */
-    SURS_POSIX_GID_AS_GRP,     /* Group id as domain group */
-    SURS_POSIX_GID_AS_ALS      /* Group id as alias */
-} winbindd_posix_type;
-
-typedef struct {
-    uint32 id;                 /* user/group id */
-    winbindd_posix_type type;  /* id type */
-} WINBINDD_POSIX_ID;
-
 #include "winbindd_proto.h"
 
 #include "rpc_parse.h"
