@@ -155,7 +155,6 @@ static BOOL api_samr_set_sec_obj(pipes_struct *p)
 		return False;
 	}
 	
-	
 	return True;
 }
 

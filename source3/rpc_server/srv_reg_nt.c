@@ -131,7 +131,6 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	if ( fetch_reg_keys( regkey, &subkeys ) == -1 )  {
 	
 		/* don't really know what to return here */
-		
 		result = NT_STATUS_NO_SUCH_FILE;
 	}
 	else {

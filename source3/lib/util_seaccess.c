@@ -468,11 +468,11 @@ NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
 
 	/*basic access for every one*/
-	init_sec_access(&mask, SAMR_EXECUTE | SAMR_READ);
+	init_sec_access(&mask, GENERIC_RIGHTS_SAM_EXECUTE | GENERIC_RIGHTS_SAM_READ);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, SAMR_ALL_ACCESS);
+	init_sec_access(&mask, GENERIC_RIGHTS_SAM_ALL_ACCESS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
