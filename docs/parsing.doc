@@ -1,0 +1,181 @@
+Chris Hertel, Samba Team
+November 1997
+
+This is a quick overview of the lexical analysis, syntax, and semantics
+of the smb.conf file.
+
+Lexical Analysis:
+
+  Basically, the file is processed on a line by line basis.  There are
+  four types of lines that are recognized by the lexical analyzer
+  (params.c):
+
+  Blank lines           - Lines containing only whitespace.
+  Comment lines         - Lines beginning with either a semi-colon or a
+                          pound sign (';' or '#').
+  Section header lines  - Lines beginning with an open square bracket
+                          ('[').
+  Parameter lines       - Lines beginning with any other character.
+                          (The default line type.)
+
+  The first two are handled exclusively by the lexical analyzer, which
+  ignores them.  The latter two line types are scanned for
+
+  - Section names
+  - Parameter names
+  - Parameter values
+
+  These are the only tokens passed to the parameter loader
+  (loadparm.c).  Parameter names and values are divided from one
+  another by an equal sign: '='.
+
+
+  Handling of Whitespace:
+
+  Whitespace is defined as all characters recognized by the isspace()
+  function (see ctype(3C)) except for the newline character ('\n')
+  The newline is excluded because it identifies the end of the line.
+
+  - The lexical analyzer scans past white space at the beginning of a
+    line.
+
+  - Section and parameter names may contain internal white space.  All
+    whitespace within a name is compressed to a single space character. 
+
+  - Internal whitespace within a parameter value is kept verbatim with
+    the exception of carriage return characters ('\r'), all of which
+    are removed.
+
+  - Leading and trailing whitespace is removed from names and values.
+
+
+  Handling of Line Continuation:
+
+  Long section header and parameter lines may be extended across
+  multiple lines by use of the backslash character ('\\').  Line
+  continuation is ignored for blank and comment lines.
+
+  If the last (non-whitespace) character within a section header or on
+  a parameter line is a backslash, then the next line will be
+  (logically) concatonated with the current line by the lexical
+  analyzer.  For example:
+
+    param name = parameter value string \
+    with line continuation.
+
+  Would be read as
+
+    param name = parameter value string     with line continuation.
+
+  Note that there are five spaces following the word 'string',
+  representing the one space between 'string' and '\\' in the top
+  line, plus the four preceeding the word 'with' in the second line.
+  (Yes, I'm counting the indentation.)
+
+  Line continuation characters are ignored on blank lines and at the end
+  of comments.  They are *only* recognized within section and parameter
+  lines.
+
+
+  Line Continuation Quirks:
+  
+  Note the following example:
+
+    param name = parameter value string \
+    \
+    with line continuation.
+
+  The middle line is *not* parsed as a blank line because it is first
+  concatonated with the top line.  The result is
+
+    param name = parameter value string         with line continuation.
+
+  The same is true for comment lines.
+
+    param name = parameter value string \
+    ; comment \
+    with a comment.
+
+  This becomes:
+  
+    param name = parameter value string     ; comment     with a comment.
+
+  On a section header line, the closing bracket (']') is considered a
+  terminating character, and the rest of the line is ignored.  The lines
+  
+    [ section   name ] garbage \
+    param  name  = value
+
+  are read as
+
+    [section name]
+    param name = value
+
+
+
+Syntax:
+
+  The syntax of the smb.conf file is as follows:
+
+  <file>            :==  { <section> } EOF
+
+  <section>         :==  <section header> { <parameter line> }
+
+  <section header>  :==  '[' NAME ']'
+
+  <parameter line>  :==  NAME '=' VALUE NL
+
+
+  Basically, this means that
+  
+    - a file is made up of zero or more sections, and is terminated by
+      an EOF (we knew that).
+
+    - A section is made up of a section header followed by zero or more
+      parameter lines.
+
+    - A section header is identified by an opening bracket and
+      terminated by the closing bracket.  The enclosed NAME identifies
+      the section.
+
+    - A parameter line is divided into a NAME and a VALUE.  The *first*
+      equal sign on the line separates the NAME from the VALUE.  The
+      VALUE is terminated by a newline character (NL = '\n').
+
+
+About params.c:
+
+  The parsing of the config file is a bit unusual if you are used to
+  lex, yacc, bison, etc.  Both lexical analysis (scanning) and parsing
+  are performed by params.c.  Values are loaded via callbacks to
+  loadparm.c.
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
