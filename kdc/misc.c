@@ -56,7 +56,7 @@ db_fetch(krb5_principal principal)
     }
     ALLOC(ent);
     ent->principal = principal;
-    ret = db->fetch(context, db, ent);
+    ret = db->fetch(context, db, HDB_F_DECRYPT, ent);
     db->close(context, db);
     if(ret){
 	free(ent);
