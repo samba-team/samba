@@ -649,9 +649,17 @@
 		[out,ref] policy_handle *handle
 		);
 
+	/**********************/
+	/* Function:     0x2d */
+	typedef struct {
+		lsa_String *string;
+	} lsa_StringPointer;
 
-	/* Function:    0x2d */
-	NTSTATUS lsa_GetUserName();
+	NTSTATUS lsa_GetUserName(
+		[in] unistr *system_name,
+		[in,out] lsa_String *account_name,
+		[in,out] lsa_StringPointer *unknown_name
+		);
 
 	/**********************/
 	/* Function:          0x2e */
