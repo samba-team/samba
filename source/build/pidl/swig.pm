@@ -219,7 +219,7 @@ sub ParseFunction($)
     $res .= "\tstruct $fn->{NAME} *s;\n\n";
 
     $res .= "\tif (!PyDict_Check(obj)) {\n";
-    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n\n";
 
@@ -257,7 +257,11 @@ sub ParseFunction($)
 
     $res .= "%typemap(in) struct $fn->{NAME} * {\n";
     $res .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(int) $fn->{NAME}\");\n\n";
-    $res .= "\t\$1 = $fn->{NAME}_ptr_from_python(mem_ctx, \$input, \"<function params>\");\n";
+    $res .= "\t\$1 = $fn->{NAME}_ptr_from_python(mem_ctx, \$input, \"<function params>\");\n\n";
+
+    $res .= "\tif (PyErr_Occurred())\n";
+    $res .= "\t\t\treturn NULL;\n\n";
+
     $res .= "}\n\n";
 
     # Output typemap
@@ -267,9 +271,6 @@ sub ParseFunction($)
     $res .= "\tlong status = PyLong_AsLong(resultobj);\n";
     $res .= "\tPyObject *dict;\n";
     $res .= "\n";
-
-    $res .= "\tif (PyErr_Occurred())\n";
-    $res .= "\t\t\treturn NULL;\n\n";
 
     $res .= "\tif (status != 0) {\n";
     $res .= "\t\tset_ntstatus_exception(status);\n";
@@ -298,12 +299,17 @@ sub ParseStruct($)
     $res .= "{\n";
     $res .= "\tstruct $s->{NAME} *s;\n\n";
 
+    $res .= "\tif (obj == NULL) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", name);\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
     $res .= "\tif (obj == Py_None) {\n";
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n\n";
 
     $res .= "\tif (!PyDict_Check(obj)) {\n";
-    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n\n";
 
@@ -322,8 +328,13 @@ sub ParseStruct($)
     $res .= "void $s->{NAME}_from_python(TALLOC_CTX *mem_ctx, struct $s->{NAME} *s, PyObject *obj, char *name)\n";
     $res .= "{\n";
 
+    $res .= "\tif (obj == NULL) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", name);\n";
+    $res .= "\t\treturn;\n";
+    $res .= "\t}\n\n";
+
     $res .= "\tif (!PyDict_Check(obj)) {\n";
-    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
     $res .= "\t\treturn;\n";
     $res .= "\t}\n\n";
 
@@ -369,8 +380,13 @@ sub ParseUnion($)
     $res .= "\tunion $u->{NAME} *u;\n";
     $res .= "\tPyObject *dict;\n\n";
     
+    $res .= "\tif (obj == NULL) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", name);\n";
+    $res .= "\t\treturn NULL;\n";
+    $res .= "\t}\n\n";
+
     $res .= "\tif (!PyDict_Check(obj)) {\n";
-    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n\n";
 
@@ -412,8 +428,13 @@ sub ParseUnion($)
     $res .= "{\n";
     $res .= "\tPyObject *dict;\n\n";
 
+    $res .= "\tif (obj == NULL) {\n";
+    $res .= "\t\tPyErr_Format(PyExc_ValueError, \"Expecting key '%s'\", name);\n";
+    $res .= "\t\treturn;\n";
+    $res .= "\t}\n\n";
+
     $res .= "\tif (!PyDict_Check(obj)) {\n";
-    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for %s\", name);\n";
+    $res .= "\t\tPyErr_Format(PyExc_TypeError, \"Expecting dict value for key '%s'\", name);\n";
     $res .= "\t\treturn;\n";
     $res .= "\t}\n\n";
 
