@@ -813,28 +813,67 @@ uninstallscripts:
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
 
-clean: delheaders
-	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-	$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
+# NB: According to the GNU standards, "make clean" should not delete
+# things that normally come with the distribution, even if they could
+# possibly be rebuilt.  For Samba, that includes the header files.
+clean: 
+	-rm -f core *.o *.po */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
+	$(TOPFILES) $(PROGS) $(SPROGS) .proto.stamp .proto.check
 
 winbindd_proto:
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(AWK) \
 	  -h _WINBINDD_PROTO_H_ nsswitch/winbindd_proto.h \
 	  $(WINBINDD_OBJ1)
 
+# We don't kill .proto.stamp, because we don't want to force
+# rebuilding of everything.
 delheaders:
-	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h
-	@/bin/rm -f include/proto.h include/build_env.h
+	@rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h
+	@rm -f $(srcdir)/.proto.check
+	@rm -f $(builddir)/.proto.check
+	@rm -f include/proto.h include/build_env.h 
 
-# we want our generated headers to be rebuilt if they don't exist, but not rebuilt every time
-.headers.stamp:
-	@[ -f $@ ] || touch $@
+# Intended new behaviour for proto.h, whenever source is being
+# compiled: -- mbp
+#
+# If proto.h does not exist, it is built.
+#
+# If any source files have changed since proto.h was last checked
+# (.proto.check), then proto.h is checked.  If there are no actual
+# changes since last time, its mtime is not changed, but we do
+# remember the time at which it was checked.
+#
+# Whenever we try to build a .o, we need to check the headers are up
+# to date.  However, rebuilding the prototypes does not (yet) imply
+# rebuilding all object files.  (To change this behaviour, make
+# PROTO_OBJ depend on proto.h)
+#
+# Also to allow people to build on machines without Awk, we never try
+# to use it unless a source file has changed.  I guess if we wanted,
+# we could have lack of Awk only cause a warning, not failure.
 
-$(PROTO_OBJ) : .headers.stamp
+$(PROTO_OBJ): .proto.stamp
 
-include/proto.h:
-	@echo rebuilding include/proto.h
-	@cd $(srcdir) && $(AWK) -f script/mkproto.awk `echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` > $(builddir)/include/proto.h
+# Whenever a source file changes, we regenerate the prototypes and see if they're
+# different to the existing ones.
+$(srcdir)/include/proto.h: .proto.check
+
+.proto.check: $(srcdir)/*.c $(srcdir)/*/*.c
+	@echo Checking $(srcdir)/include/proto.h
+	@cd $(srcdir) && $(AWK) -f script/mkproto.awk \
+	`echo $(PROTO_OBJ) | tr ' ' '\n' | sed -e 's/\.o/\.c/g' | sort -u | egrep -v 'ubiqx/|wrapped'` \
+	> $(builddir)/include/proto.h.new && \
+	touch $(builddir)/.proto.check && \
+	if test -f include/proto.h && cmp -s $(builddir)/include/proto.h.new include/proto.h; \
+	then rm -f $(builddir)/include/proto.h.new; \
+	echo No changes to include/proto.h; \
+	else \
+	echo Installing new proto.h; \
+	mv $(builddir)/include/proto.h.new include/proto.h; \
+	fi
+
+.proto.stamp: .proto.check
+	@[ -f .proto.stamp ] || touch .proto.stamp
 
 include/build_env.h:
 	@echo rebuilding include/build_env.h
@@ -846,7 +885,7 @@ include/wrepld_proto.h:
 	  -h _WREPLD_PROTO_H_ $(builddir)/include/wrepld_proto.h \
 	  $(WREPL_OBJ1)
 
-headers: delheaders include/proto.h include/build_env.h include/wrepld_proto.h .headers.stamp
+headers: .proto.check $(srcdir)/include/proto.h include/build_env.h include/wrepld_proto.h
 
 proto: headers winbindd_proto
 
