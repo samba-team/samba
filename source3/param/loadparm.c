@@ -3085,6 +3085,9 @@ void lp_add_one_printer(char *name, char *comment)
 			ServicePtrs[i]->autoloaded = True;
 		}
 	}
+
+	/* free up temporary memory */
+	lp_talloc_free();
 }
 
 /***************************************************************************
