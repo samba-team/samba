@@ -33,7 +33,7 @@ static char *get_socket_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
+	socklen_t length = sizeof(sa);
 	static fstring addr_buf;
 
 	fstrcpy(addr_buf,"0.0.0.0");
@@ -58,7 +58,8 @@ static char *get_socket_addr(int fd)
 
 BOOL is_a_socket(int fd)
 {
-	int v,l;
+	int v;
+	socklen_t l;
 	l = sizeof(int);
 	return(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&v, &l) == 0);
 }
@@ -115,7 +116,8 @@ static const smb_socket_option socket_options[] = {
 
 static void print_socket_options(int s)
 {
-	int value, vlen = 4;
+	int value;
+	socklen_t vlen = 4;
 	const smb_socket_option *p = &socket_options[0];
 
 	/* wrapped in if statement to prevent streams leak in SCO Openserver 5.0 */
@@ -838,7 +840,7 @@ char *client_socket_addr(void)
 struct in_addr *client_inaddr(struct sockaddr *sa)
 {
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (sa);
-	int     length = sizeof(*sa);
+	socklen_t  length = sizeof(*sa);
 	
 	if (getpeername(client_fd, sa, &length) < 0) {
 		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
@@ -963,7 +965,7 @@ char *get_peer_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
+	socklen_t length = sizeof(sa);
 	static fstring addr_buf;
 
 	fstrcpy(addr_buf,"0.0.0.0");
