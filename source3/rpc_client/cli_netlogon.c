@@ -628,7 +628,7 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list)
   unsigned char old_trust_passwd_hash[16];
   unsigned char new_trust_passwd_hash[16];
   time_t lct;
-  BOOL res;
+  BOOL res = False;
 
   if(!get_trust_account_password( old_trust_passwd_hash, &lct)) {
     DEBUG(0,("change_trust_account_password: unable to read the machine \

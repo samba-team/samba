@@ -1800,7 +1800,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
             if(delete_on_close && !GET_DELETE_ON_CLOSE_FLAG(fsp->share_mode))
             {
-              int token;
               int i;
               files_struct *iterate_fsp;
               SMB_DEV_T dev = fsp->fd_ptr->dev;
@@ -1808,7 +1807,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
               int num_share_modes;
               share_mode_entry *current_shares = NULL;
 
-              if(lock_share_entry(fsp->conn, dev, inode, &token) == False)
+              if(lock_share_entry(fsp->conn, dev, inode) == False)
                 return(ERROR(ERRDOS,ERRnoaccess));
 
               /*
@@ -1818,7 +1817,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
                * file at this point.
                */
 
-              num_share_modes = get_share_modes(conn, token, dev, inode, &current_shares);
+              num_share_modes = get_share_modes(conn, dev, inode, &current_shares);
               for(i = 0; i < num_share_modes; i++)
               {
                 if(!GET_ALLOW_SHARE_DELETE(current_shares[i].share_mode))
@@ -1830,7 +1829,7 @@ file %s as a share exists that was not opened with FILE_DELETE access.\n",
                    * Release the lock.
                    */
 
-                  unlock_share_entry(fsp->conn, dev, inode, token);
+                  unlock_share_entry(fsp->conn, dev, inode);
 
                   /*
                    * current_shares was malloced by get_share_modes - free it here.
@@ -1875,7 +1874,7 @@ dev = %x, inode = %.0f from %x to %x\n",
                       iterate_fsp->fnum, iterate_fsp->fsp_name, (unsigned int)dev, 
                       (double)inode, iterate_fsp->share_mode, new_share_mode ));
 
-                if(modify_share_mode(token, iterate_fsp, new_share_mode, iterate_fsp->oplock_type)==False)
+                if(modify_share_mode(iterate_fsp, new_share_mode, iterate_fsp->oplock_type)==False)
                   DEBUG(0,("call_trans2setfilepathinfo: failed to change delete on close for fnum %d, \
 dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode));
               }
@@ -1887,7 +1886,7 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
                */
              fsp->fd_ptr->delete_on_close = delete_on_close;
 
-             unlock_share_entry(fsp->conn, dev, inode, token);
+             unlock_share_entry(fsp->conn, dev, inode);
 
              DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
                    delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));

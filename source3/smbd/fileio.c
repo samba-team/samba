@@ -213,11 +213,11 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
     int num_share_modes = 0;
     int i;
 
-    if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+    if (lock_share_entry(fsp->conn, dev, inode) == False) {
       DEBUG(0,("write_file: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
     }
 
-    num_share_modes = get_share_modes(fsp->conn, token, dev, inode, &share_list);
+    num_share_modes = get_share_modes(fsp->conn, dev, inode, &share_list);
 
     for(i = 0; i < num_share_modes; i++) {
       share_mode_entry *share_entry = &share_list[i];
@@ -268,7 +268,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
     }
  
     free((char *)share_list);
-    unlock_share_entry(fsp->conn, dev, inode, token);
+    unlock_share_entry(fsp->conn, dev, inode);
   }
 
   /* Paranoia check... */

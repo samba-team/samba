@@ -858,6 +858,22 @@ struct connections_data {
 	time_t start;
 };
 
+
+/* key and data records in the tdb locking database */
+struct locking_key {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+};
+
+struct locking_data {
+	int num_share_mode_entries;
+	/* the following two entries are implicit 
+	   share_mode_entry modes[num_share_mode_entries];
+           char file_name[];
+	*/
+};
+
+
 /* the following are used by loadparm for option lists */
 typedef enum
 {
