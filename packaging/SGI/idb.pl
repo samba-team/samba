@@ -113,11 +113,7 @@ chdir $curdir;
 # add my local files to the list of binaries to install
 @bins = sort byfilename (@sprogs,@progs,@progs1,@progs2,@mprogs,@scripts,@winbind_progs,@winbind_sprogs,("/findsmb","/sambalp","/smbprint"));
 
-# add libnss_wins.so if it was built
-if (-e "$SRCDIR/source/nsswitch/libnss_wins.so") {
-  $libns_wins = "nsswitch/libnss_wins.so";
-}
-@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs,$libns_wins);
+@nsswitch = sort byfilename (@winbind_lprogs,@winbind_pam_progs);
 
 # get a complete list of all files in the tree
 chdir "$SRCDIR/";
@@ -141,9 +137,13 @@ chdir $curdir;
 open(IDB,"> $curdir/$PKG.idb") || die "Unable to open $PKG.idb for output\n";
 
 print IDB "f 0644 root sys etc/config/samba $SRCPFX/packaging/SGI/samba.config $PKG.sw.base config(update)\n";
+print IDB "f 0644 root sys etc/config/winbind $SRCPFX/packaging/SGI/winbindd.config $PKG.sw.base config(update)\n";
 print IDB "f 0755 root sys etc/init.d/samba $SRCPFX/packaging/SGI/samba.rc $PKG.sw.base\n";
-print IDB "l 0000 root sys etc/rc0.d/K39samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
+print IDB "f 0755 root sys etc/init.d/winbind $SRCPFX/packaging/SGI/winbindd.rc $PKG.sw.base\n";
+print IDB "l 0000 root sys etc/rc0.d/K36winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
+print IDB "l 0000 root sys etc/rc0.d/K37samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
 print IDB "l 0000 root sys etc/rc2.d/S81samba $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/samba)\n";
+print IDB "l 0000 root sys etc/rc2.d/S82winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
 
 if ($PKG eq "samba_irix") {
   print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
@@ -219,12 +219,17 @@ while (@docs) {
   }
 }
 
+print IDB "d 0755 root sys usr/samba/include $SRCPFX/packaging/SGI $PKG.sw.base\n";
+print IDB "f 0644 root sys usr/samba/include/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+
 print IDB "d 0755 root sys usr/samba/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib/codepages $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while (@codepage) {
   $nextpage = shift @codepage;
   print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
 }
+print IDB "f 0644 root sys usr/samba/lib/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
+print IDB "f 0644 root sys usr/samba/lib/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
 
 print IDB "d 0755 lp sys usr/samba/printer $SRCPFX/packaging/SGI $PKG.sw.base\n";
