@@ -165,8 +165,8 @@ There are three ways to create machine trust accounts:
 	corresponding UNIX account are created by hand.
 	</para></listitem>
 
-	<indexterm><primary>Server Manager</primary></indexterm>
 	<listitem><para>
+	<indexterm><primary>Server Manager</primary></indexterm>
 	Using the MS Windows NT4 Server Manager (either from an NT4 Domain member
 	server, or using the Nexus toolkit available from the Microsoft web site.
 	This tool can be run from any MS Windows machine so long as the user is
@@ -189,10 +189,11 @@ The first step in manually creating a machine trust account is to manually
 create the corresponding UNIX account in <filename>/etc/passwd</filename>. 
 This can be done using <command>vipw</command> or another 'add user' command
 that is normally used to create new UNIX accounts.  The following is an example for a Linux based Samba server:
-</para>
-
 <indexterm><primary>useradd</primary></indexterm>
 <indexterm><primary>vipw</primary></indexterm>
+
+
+</para>
 
 <para>
 <screen>
@@ -203,9 +204,9 @@ that is normally used to create new UNIX accounts.  The following is an example 
 </screen>
 </para>
 
-<indexterm><primary>chpass</primary></indexterm>
 
 <para>
+<indexterm><primary>chpass</primary></indexterm>
 On *BSD systems, this can be done using the <command>chpass</command> utility:
 </para>
 

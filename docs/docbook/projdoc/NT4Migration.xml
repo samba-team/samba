@@ -346,9 +346,9 @@ Minimise down-stream problems by:
 
 <table frame="all"><title>Nature of the Conversion Choices</title>
 <tgroup cols="3">
-	<colspec align="justify" width="1*"/>
-	<colspec align="justify" width="1*"/>
-	<colspec align="justify" width="1*"/>
+	<colspec align="justify"/>
+	<colspec align="justify"/>
+	<colspec align="justify"/>
 	<thead>
 	<row><entry>Simple</entry><entry>Upgraded</entry><entry>Redesign</entry></row>
 	</thead>
@@ -392,7 +392,7 @@ Minimise down-stream problems by:
 <title>Samba-3 Implementation Choices</title>
 
 <variablelist>
-	<varlistentry><term>Authentication database/back end:</term><listitem><para>-</para>
+	<varlistentry><term>Authentication database/back end:</term><listitem>
 		<para>
 		Samba-3 can use an external authentication backend:
 		</para>
@@ -414,7 +414,7 @@ Minimise down-stream problems by:
 		</listitem>
 	</varlistentry>
 
-        <varlistentry><term>Access Control Points:</term><listitem><para>-</para>
+        <varlistentry><term>Access Control Points:</term><listitem>
 		<itemizedlist>
                         <listitem><para>On the Share itself - using Share ACLs</para></listitem>
                         <listitem><para>On the file system - using UNIX permissions on files and directories</para>
@@ -424,7 +424,7 @@ Minimise down-stream problems by:
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>Policies (migrate or create new ones):</term><listitem><para>-</para>
+        <varlistentry><term>Policies (migrate or create new ones):</term><listitem>
                 <itemizedlist>
                         <listitem><para>Using Group Policy Editor (NT4)</para></listitem>
                         <listitem><para>- Watch out for Tattoo effect</para></listitem>
@@ -432,7 +432,7 @@ Minimise down-stream problems by:
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>User and Group Profiles:</term><listitem><para>-</para>
+        <varlistentry><term>User and Group Profiles:</term><listitem>
                 <para>
 		Platform specific so use platform tool to change from a Local to a Roaming profile
 		Can use new profiles tool to change SIDs (NTUser.DAT)
@@ -440,14 +440,14 @@ Minimise down-stream problems by:
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>Logon Scripts:</term><listitem><para>-</para>
+        <varlistentry><term>Logon Scripts:</term><listitem>
                 <para>
 		Know how they work
 		</para>
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>User and Group mapping to Unix/Linux:</term><listitem><para>-</para>
+        <varlistentry><term>User and Group mapping to Unix/Linux:</term><listitem>
                 <itemizedlist>
                         <listitem><para>username map facility may be needed</para></listitem>
                         <listitem><para>Use 'net groupmap' to connect NT4 groups to Unix groups</para></listitem>
@@ -462,7 +462,7 @@ Minimise down-stream problems by:
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>OS specific scripts/programs may be needed:</term><listitem><para>-</para>
+        <varlistentry><term>OS specific scripts/programs may be needed:</term><listitem>
                 <itemizedlist>
                         <listitem><para>Add/Delete Users: Note OS limits on size of name
 				(Linux 8 chars) NT4 up to 254 chars</para></listitem>
@@ -475,7 +475,7 @@ Minimise down-stream problems by:
                 </listitem>
         </varlistentry>
 
-        <varlistentry><term>Migration Tools:</term><listitem><para>-</para>
+        <varlistentry><term>Migration Tools:</term><listitem>
                 <para>
 		Domain Control (NT4 Style) Profiles, Policies, Access Controls, Security
 		<itemizedlist>
