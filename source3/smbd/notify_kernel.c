@@ -39,7 +39,7 @@ static SIG_ATOMIC_T signals_received;
 
 
 #ifndef RT_SIGNAL_NOTIFY
-#define RT_SIGNAL_NOTIFY 34
+#define RT_SIGNAL_NOTIFY (SIGRTMIN+2)
 #endif
 
 #ifndef F_SETSIG
@@ -232,6 +232,9 @@ struct cnotify_fns *kernel_notify_init(void)
 	cnotify.check_notify = kernel_check_notify;
 	cnotify.remove_notify = kernel_remove_notify;
 	cnotify.select_time = -1;
+
+	/* the signal can start off blocked due to a bug in bash */
+	BlockSignals(False, RT_SIGNAL_NOTIFY);
 
 	return &cnotify;
 }

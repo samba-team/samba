@@ -864,6 +864,10 @@ struct printjob;
 #define SIGCLD SIGCHLD
 #endif
 
+#ifndef SIGRTMIN
+#define SIGRTMIN 32
+#endif
+
 #ifndef MAP_FILE
 #define MAP_FILE 0
 #endif
