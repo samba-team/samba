@@ -130,10 +130,11 @@ for fnum = %d, name = %s\n", length, (int)blr->expire_time, lock_timeout,
 
 static void send_blocking_reply(char *outbuf, int outsize)
 {
-  if(outsize > 4)
-    smb_setlen(outbuf,outsize - 4);
+	if(outsize > 4)
+		smb_setlen(outbuf,outsize - 4);
 
-  send_smb(smbd_server_fd(),outbuf);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("send_blocking_reply: send_smb failed.\n");
 }
 
 /****************************************************************************
@@ -171,15 +172,16 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 
 static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, int32 ecode)
 {
-  char *outbuf = OutBuffer;
-  char *inbuf = blr->inbuf;
-  construct_reply_common(inbuf, outbuf);
+	char *outbuf = OutBuffer;
+	char *inbuf = blr->inbuf;
+	construct_reply_common(inbuf, outbuf);
 
-  if(eclass == 0) /* NT Error. */
-    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+	if(eclass == 0) /* NT Error. */
+		SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 
-  ERROR(eclass,ecode);
-  send_smb(smbd_server_fd(),outbuf);
+	ERROR(eclass,ecode);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("generic_blocking_lock_error: send_smb failed.\n");
 }
 
 /****************************************************************************

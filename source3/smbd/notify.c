@@ -71,7 +71,8 @@ static void change_notify_reply_packet(char *inbuf, uint32 error_code)
 	 */
 	set_message(outbuf,18,0,False);
 
-	send_smb(smbd_server_fd(),outbuf);
+	if (!send_smb(smbd_server_fd(),outbuf))
+		exit_server("change_notify_reply_packet: send_smb failed.\n");
 }
 
 /****************************************************************************
