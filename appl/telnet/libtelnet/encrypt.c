@@ -89,7 +89,7 @@ static int autoencrypt = 0;
 static int autodecrypt = 0;
 static int havesessionkey = 0;
 static int Server = 0;
-static char *Name = "Noname";
+static const char *Name = "Noname";
 
 #define	typemask(x)	((x) > 0 ? 1 << ((x)-1) : 0)
 
@@ -175,7 +175,7 @@ static struct key_info {
 };
 
 void
-encrypt_init(char *name, int server)
+encrypt_init(const char *name, int server)
 {
     Encryptions *ep = encryptions;
 
