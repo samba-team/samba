@@ -842,7 +842,7 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 like strncpy but copies up to the character marker.  always null terminates.
 returns a pointer to the character marker in the source string (src).
 ****************************************************************************/
-char *strncpyn(char *dest, const char *src,size_t n, char c)
+char *strncpyn(char *dest, char *src,size_t n, char c)
 {
 	char *p;
 	size_t str_len;

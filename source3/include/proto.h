@@ -237,7 +237,7 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx);
 void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
 			HMACMD5Context *ctx);
 void hmac_md5_update(const uchar* text, int text_len, HMACMD5Context *ctx);
-void hmac_md5_final(caddr_t digest, HMACMD5Context *ctx);
+void hmac_md5_final(uchar *digest, HMACMD5Context *ctx);
 
 /*The following definitions come from  lib/interface.c  */
 
@@ -280,7 +280,7 @@ BOOL mem_buf_copy(char *copy_into, struct mem_buf *buf,
 BOOL mem_buf_init(struct mem_buf **buf, uint32 margin);
 void mem_buf_free(struct mem_buf **buf);
 void mem_free_data(struct mem_buf *buf);
-BOOL mem_realloc_data(struct mem_buf *buf, int new_size);
+BOOL mem_realloc_data(struct mem_buf *buf, size_t new_size);
 BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow);
 uint32 mem_buf_len(struct mem_buf *buf);
 char *mem_data(struct mem_buf **buf, uint32 offset);
@@ -536,6 +536,7 @@ void sid_copy(DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_front_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2);
 int sid_size(const DOM_SID *sid);
+DOM_SID *sid_dup(DOM_SID *src);
 
 /*The following definitions come from  lib/util_sock.c  */
 
@@ -590,7 +591,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength);
 char *safe_strcat(char *dest, const char *src, size_t maxlength);
 char *StrCpy(char *dest,const char *src);
 char *StrnCpy(char *dest,const char *src,size_t n);
-char *strncpyn(char *dest, const char *src,size_t n, char c);
+char *strncpyn(char *dest, char *src,size_t n, char c);
 size_t strhex_to_str(char *p, size_t len, const char *strhex);
 BOOL in_list(char *s,char *list,BOOL casesensitive);
 BOOL string_init(char **dest,const char *src);
@@ -605,14 +606,14 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default);
 /*The following definitions come from  lib/util_unistr.c  */
 
 char *ascii_to_unibuf(char *dest, const char *src, int maxlen);
-const char *unibuf_to_ascii(char *dest, const char *src, int maxlen);
+const char* unibuf_to_ascii(char *dest, const char *src, int maxlen);
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen);
 void unistr_to_ascii(char *dest, const uint16 *src, int len);
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, int maxlen);
+void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen);
 char *skip_unibuf(char *srcbuf, int len);
 char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
-void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen);
+void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -2120,14 +2121,14 @@ BOOL make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
                            uint32 status);
 BOOL lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth);
-BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids);
+BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, uint32 num_entries, DOM_SID **sids);
 BOOL make_q_lookup_sids(LSA_Q_LOOKUP_SIDS *q_l, POLICY_HND *hnd,
 				int num_sids, DOM_SID **sids,
 				uint16 level);
 BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, int depth);
 BOOL make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, char **names);
+				uint32 num_names, char **names);
 BOOL lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
 BOOL lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 BOOL make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
@@ -2163,7 +2164,7 @@ BOOL smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
 BOOL make_unistr(UNISTR *str, char *buf);
 BOOL smb_io_unistr(char *desc,  UNISTR *uni, prs_struct *ps, int depth);
 BOOL make_buffer3_uint32(BUFFER3 *str, uint32 val);
-BOOL make_buffer3_str(BUFFER3 *str, char *buf, int len);
+BOOL make_buffer3_str(BUFFER3 *str, const char *buf, int len);
 BOOL make_buffer3_hex(BUFFER3 *str, char *buf);
 BOOL make_buffer3_bytes(BUFFER3 *str, uint8 *buf, int len);
 BOOL smb_io_buffer3(char *desc,  BUFFER3 *buf3, prs_struct *ps, int depth);
@@ -2931,11 +2932,11 @@ BOOL make_srv_share_info1_str(SH_INFO_1_STR *sh1, char *net_name, char *remark);
 BOOL make_srv_share_info1(SH_INFO_1 *sh1, char *net_name, uint32 type, char *remark);
 BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
 				char *net_name, char *remark,
-				char *path, char *passwd);
+				char *path, char *pass);
 BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *passwd);
+				char *path, char *pass);
 BOOL make_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				char *srv_name, 
 				uint32 share_level, SRV_SHARE_INFO_CTR *ctr,

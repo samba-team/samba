@@ -337,7 +337,7 @@ BOOL svc_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p)
 		{
 			/* check that the returned policy handle is all zeros */
-			int i;
+			uint32 i;
 			valid_close = True;
 
 			for (i = 0; i < sizeof(r_c.pol.data); i++)

@@ -66,7 +66,7 @@ reads or writes a DOM_R_REF structure.
 ********************************************************************/
 static BOOL lsa_io_dom_r_ref(char *desc,  DOM_R_REF *r_r, prs_struct *ps, int depth)
 {
-	int i, s, n;
+	uint32 i, s, n;
 
 	prs_debug(ps, depth, desc, "smb_io_dom_r_ref");
 	depth++;
@@ -716,9 +716,9 @@ BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int dept
 /*******************************************************************
 makes a LSA_SID_ENUM structure.
 ********************************************************************/
-BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, int num_entries, DOM_SID **sids)
+BOOL make_lsa_sid_enum(LSA_SID_ENUM *sen, uint32 num_entries, DOM_SID **sids)
 {
-	int i, i2;
+	uint32 i, i2;
 	if (sen == NULL || sids == NULL) return False;
 
 	DEBUG(5,("make_lsa_sid_enum\n"));
@@ -752,7 +752,7 @@ reads or writes a LSA_SID_ENUM structure.
 static BOOL lsa_io_sid_enum(char *desc, LSA_SID_ENUM *sen,
 				prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sen == NULL) return False;
 
@@ -792,7 +792,7 @@ reads or writes a structure.
 static BOOL lsa_io_trans_names(char *desc, LSA_TRANS_NAME_ENUM *trn,
 				prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (trn == NULL) return False;
 
@@ -906,9 +906,9 @@ BOOL lsa_io_r_lookup_sids(char *desc,  LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, i
 makes a structure.
 ********************************************************************/
 BOOL make_q_lookup_names(LSA_Q_LOOKUP_NAMES *q_l, POLICY_HND *hnd,
-				int num_names, char **names)
+				uint32 num_names, char **names)
 {
-	int i;
+	uint32 i;
 	if (q_l == NULL) return False;
 
 	DEBUG(5,("make_q_lookup_names\n"));
@@ -941,7 +941,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL lsa_io_q_lookup_names(char *desc,  LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (q_r == NULL) return False;
 
@@ -981,7 +981,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL lsa_io_r_lookup_names(char *desc,  LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_r == NULL) return False;
 

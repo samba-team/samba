@@ -58,8 +58,8 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
 {
   DIR *dp = opendir(name);
   pstring fullname;
-  int len_left;
-  int fullname_len;
+  size_t len_left;
+  size_t fullname_len;
   char *pos;
 
   pstrcpy(fullname, name);

@@ -116,8 +116,8 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 
 	if (ctr->ptr_share_info != 0)
 	{
-		int i;
-		int num_entries = ctr->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ctr->num_entries_read;
 		if (num_entries > MAX_SHARE_ENTRIES)
 		{
 			num_entries = MAX_SHARE_ENTRIES; /* report this! */
@@ -150,7 +150,7 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 ********************************************************************/
 BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
 				char *net_name, char *remark,
-				char *path, char *passwd)
+				char *path, char *pass)
 {
 	if (sh2 == NULL) return False;
 
@@ -159,7 +159,7 @@ BOOL make_srv_share_info2_str(SH_INFO_2_STR *sh2,
 	make_unistr2(&(sh2->uni_netname), net_name, strlen(net_name)+1);
 	make_unistr2(&(sh2->uni_remark ), remark  , strlen(remark  )+1);
 	make_unistr2(&(sh2->uni_path   ), path    , strlen(path    )+1);
-	make_unistr2(&(sh2->uni_passwd ), passwd  , strlen(passwd  )+1);
+	make_unistr2(&(sh2->uni_passwd ), pass    , strlen(pass    )+1);
 
 	return True;
 }
@@ -194,7 +194,7 @@ static BOOL srv_io_share_info2_str(char *desc,  SH_INFO_2_STR *ss2, SH_INFO_2 *s
 BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
-				char *path, char *passwd)
+				char *path, char *pass)
 {
 	if (sh2 == NULL) return False;
 
@@ -208,7 +208,7 @@ BOOL make_srv_share_info2(SH_INFO_2 *sh2,
 	sh2->num_uses    = num_uses;
 	sh2->type        = type;
 	sh2->ptr_path    = path     != NULL ? 1 : 0;
-	sh2->ptr_passwd  = passwd   != NULL ? 1 : 0;
+	sh2->ptr_passwd  = pass     != NULL ? 1 : 0;
 
 	return True;
 }
@@ -254,8 +254,8 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 
 	if (ctr->ptr_share_info != 0)
 	{
-		int i;
-		int num_entries = ctr->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ctr->num_entries_read;
 		if (num_entries > MAX_SHARE_ENTRIES)
 		{
 			num_entries = MAX_SHARE_ENTRIES; /* report this! */
@@ -368,7 +368,7 @@ BOOL srv_io_q_net_share_enum(char *desc,  SRV_Q_NET_SHARE_ENUM *q_n, prs_struct 
 
 	prs_uint32("share_level", ps, depth, &(q_n->share_level  ));
 
-	if (q_n->share_level != -1)
+	if (((int)q_n->share_level) != -1)
 	{
 		srv_io_srv_share_ctr("share_ctr", q_n->ctr, ps, depth);
 	}
@@ -485,8 +485,8 @@ static BOOL srv_io_srv_sess_info_0(char *desc,  SRV_SESS_INFO_0 *ss0, prs_struct
 
 	if (ss0->ptr_sess_info != 0)
 	{
-		int i;
-		int num_entries = ss0->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss0->num_entries_read;
 		if (num_entries > MAX_SESS_ENTRIES)
 		{
 			num_entries = MAX_SESS_ENTRIES; /* report this! */
@@ -610,8 +610,8 @@ static BOOL srv_io_srv_sess_info_1(char *desc,  SRV_SESS_INFO_1 *ss1, prs_struct
 
 	if (ss1->ptr_sess_info != 0)
 	{
-		int i;
-		int num_entries = ss1->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss1->num_entries_read;
 		if (num_entries > MAX_SESS_ENTRIES)
 		{
 			num_entries = MAX_SESS_ENTRIES; /* report this! */
@@ -735,7 +735,7 @@ BOOL srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *p
 
 	prs_uint32("sess_level", ps, depth, &(q_n->sess_level  ));
 	
-	if (q_n->sess_level != -1)
+	if (((int)q_n->sess_level) != -1)
 	{
 		srv_io_srv_sess_ctr("sess_ctr", q_n->ctr, ps, depth);
 	}
@@ -761,7 +761,7 @@ BOOL srv_io_r_net_sess_enum(char *desc,  SRV_R_NET_SESS_ENUM *r_n, prs_struct *p
 
 	prs_uint32("sess_level", ps, depth, &(r_n->sess_level));
 
-	if (r_n->sess_level != -1)
+	if (((int)r_n->sess_level) != -1)
 	{
 		srv_io_srv_sess_ctr("sess_ctr", r_n->ctr, ps, depth);
 	}
@@ -821,8 +821,8 @@ static BOOL srv_io_srv_conn_info_0(char *desc,  SRV_CONN_INFO_0 *ss0, prs_struct
 
 	if (ss0->ptr_conn_info != 0)
 	{
-		int i;
-		int num_entries = ss0->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss0->num_entries_read;
 		if (num_entries > MAX_CONN_ENTRIES)
 		{
 			num_entries = MAX_CONN_ENTRIES; /* report this! */
@@ -940,8 +940,8 @@ static BOOL srv_io_srv_conn_info_1(char *desc,  SRV_CONN_INFO_1 *ss1, prs_struct
 
 	if (ss1->ptr_conn_info != 0)
 	{
-		int i;
-		int num_entries = ss1->num_entries_read;
+		uint32 i;
+		uint32 num_entries = ss1->num_entries_read;
 		if (num_entries > MAX_CONN_ENTRIES)
 		{
 			num_entries = MAX_CONN_ENTRIES; /* report this! */
@@ -1058,7 +1058,7 @@ BOOL srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *p
 
 	prs_uint32("conn_level", ps, depth, &(q_n->conn_level  ));
 	
-	if (q_n->conn_level != -1)
+	if (((int)q_n->conn_level) != -1)
 	{
 		srv_io_srv_conn_ctr("conn_ctr", q_n->ctr, ps, depth);
 	}
@@ -1084,7 +1084,7 @@ BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *p
 
 	prs_uint32("conn_level", ps, depth, &(r_n->conn_level));
 
-	if (r_n->conn_level != -1)
+	if (((int)r_n->conn_level) != -1)
 	{
 		srv_io_srv_conn_ctr("conn_ctr", r_n->ctr, ps, depth);
 	}
@@ -1187,8 +1187,9 @@ static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct
 	prs_uint32("ptr_file_fl3", ps, depth, &(fl3->ptr_file_info));
 	if (fl3->ptr_file_info != 0)
 	{
-		int i;
-		int num_entries = fl3->num_entries_read;
+		uint32 i;
+		uint32 num_entries = fl3->num_entries_read;
+
 		if (num_entries > MAX_FILE_ENTRIES)
 		{
 			num_entries = MAX_FILE_ENTRIES; /* report this! */
@@ -1302,7 +1303,7 @@ BOOL srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *p
 	prs_uint32("file_id   ", ps, depth, &(q_n->file_id   ));
 	prs_uint32("file_level", ps, depth, &(q_n->file_level));
 
-	if (q_n->file_level != -1)
+	if (((int)q_n->file_level) != -1)
 	{
 		srv_io_srv_file_ctr("file_ctr", q_n->ctr, ps, depth);
 	}

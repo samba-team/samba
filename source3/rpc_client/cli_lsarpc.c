@@ -282,7 +282,7 @@ BOOL lsa_lookup_names(struct cli_state *cli, uint16 fnum,
 		}
 		if (valid_response)
 		{
-			int i;
+			uint32 i;
 			for (i = 0; i < r_l.num_entries; i++)
 			{
 				if (t_rids[i].rid_idx >= ref.num_ref_doms_1 &&
@@ -428,7 +428,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 		}
 		if (valid_response)
 		{
-			int i;
+			uint32 i;
 			for (i = 0; i < t_names.num_entries; i++)
 			{
 				if (t_names.name[i].domain_idx >= ref.num_ref_doms_1)
@@ -648,7 +648,7 @@ BOOL lsa_close(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd)
 		if (p)
 		{
 			/* check that the returned policy handle is all zeros */
-			int i;
+			uint32 i;
 			valid_close = True;
 
 			for (i = 0; i < sizeof(r_c.pol.data); i++)

@@ -296,7 +296,7 @@ makes an NET_R_TRUST_DOM_LIST structure.
 BOOL make_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 			uint32 num_doms, char *dom_name)
 {
-	int i = 0;
+	uint32 i = 0;
 
 	if (r_t == NULL) return False;
 
@@ -329,7 +329,7 @@ reads or writes an NET_R_TRUST_DOM_LIST structure.
 ********************************************************************/
 BOOL net_io_r_trust_dom(char *desc,  NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	if (r_t == NULL) return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_trust_dom");
@@ -939,7 +939,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
-	int i;
+	uint32 i;
 	int num_other_sids = 0;
 
 	int len_user_name    = strlen(user_name   );
@@ -1029,7 +1029,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (usr == NULL) return False;
 
@@ -1440,7 +1440,7 @@ static BOOL net_io_sam_account_info(char *desc, uint8 sess_key[16],
 			SAM_ACCOUNT_INFO *info, prs_struct *ps, int depth)
 {
 	BUFHDR2 hdr_priv_data;
-	int i;
+	uint32 i;
 
 	if (info == NULL) return False;
 
@@ -1567,7 +1567,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO *info, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	fstring tmp;
 
 	if (info == NULL) return False;
@@ -1653,7 +1653,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	fstring tmp;
 
 	if (info == NULL) return False;
@@ -1767,7 +1767,7 @@ reads or writes a structure.
 BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 				NET_R_SAM_SYNC *r_s, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_s == NULL) return False;
 
