@@ -362,23 +362,11 @@ dfree command
 
 dns proxy
 
-domain allow hosts
-
 domain controller
-
-domain deny hosts
-
-domain group
-
-domain hosts allow
-
-domain hosts deny
 
 domain logons
 
 domain master
-
-domain sid
 
 encrypt passwords
 
@@ -1269,53 +1257,6 @@ logons from Win95 machines to. You should never need to set this parameter.
 .B Default:
 	 domain controller = no
 
-.SS domain groups (G)
-
-Specifies the NT Domain groups that the user belongs to, and the attributes
-associated with that group.  This parameter is a white-space separated list
-of group ids (in decimal), followed by an option attribute (in decimal) which
-defaults to a value of 7 if not specified.  A group id and the user attributes
-associated with it are separated by "/".
-
-.B
-It is known that attributes are ignored by NT 4.0 Workstation, but not by
-NT 3.51 Workstation.  Furthermore, no information on the exact meaning of
-NT Domain groups is presently known.  
-
-.B Default:
-	 domain groups = 776/7
-
-.B Example:
- 	 domain groups = 776 1024/7 777
-
-.SS domain hosts allow (G)
-A synonym for this parameter is 'domain allow hosts'.
-
-This parameter is a comma delimited set of hosts which are permitted to access
-a Domain. 
-
-Note that access still requires suitable user-level passwords for the Domain.
-See 'allow hosts' for a description of the syntax of this parameter.
-
-.B Default:
- 	none (i.e., all hosts permitted login access to the domain)
-
-.B Example:
- 	domain hosts allow = 150.203.5. myhost.mynet.edu.au
-
-.SS domain hosts deny (G)
-A synonym for this parameter is 'domain deny hosts'.
-
-The opposite of 'domain hosts deny' - hosts listed here are NOT permitted
-to Login to the Domain from those NT Workstations.  Where the lists conflict,
-the 'allow' list takes precedence.
-
-.B Default:
- 	none (i.e., no hosts specifically excluded login access to the domain)
-
-.B Example:
-  	domain hosts deny = guest_wksta 150.203.4. badhost.mynet.edu.au
-
 .SS domain logons (G)
 
 If set to true, the Samba server will serve Windows 95 domain logons
@@ -1336,18 +1277,6 @@ broadcast-isolated subnet.
 
 .B Default:
  	domain master = no
-
-.SS domain sid (G)
-
-Specifies the SID when using Samba as a Logon Server for NT Workstations.
-The format of SIDs supported by samba at present is S-1-N-nnn-nnn-nnn-nnn-nnn.
-The number N indicates the number of sub-authorities (nnn).
-
-.B Default:
-	 domain sid = none
-
-.B Example:
- 	 domain sid = S-1-5-21-123-456-789-123
 
 .SS dont descend (S)
 There are certain directories on some systems (eg., the /proc tree under
