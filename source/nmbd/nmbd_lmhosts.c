@@ -64,13 +64,13 @@ void load_lmhosts_file(char *fname)
     if(name_type == -1)
     {
       /* Add the (0) and (0x20) names directly into the namelist for this subnet. */
-      add_name_to_subnet(subrec,name,0x00,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
-      add_name_to_subnet(subrec,name,0x20,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
+      (void)add_name_to_subnet(subrec,name,0x00,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
+      (void)add_name_to_subnet(subrec,name,0x20,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
     }
     else
     {
       /* Add the given name type to the subnet namelist. */
-      add_name_to_subnet(subrec,name,name_type,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
+      (void)add_name_to_subnet(subrec,name,name_type,(uint16)NB_ACTIVE,PERMANENT_TTL,source,1,&ipaddr);
     }
   }
    

@@ -277,11 +277,14 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
     return True;
   }
 
-  for(subrec = FIRST_SUBNET, i = 0; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec), i++ )
+  for( subrec = FIRST_SUBNET, i = 0; 
+       subrec;
+       subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec), i++ )
     ip_list[i] = subrec->myip;
 
-  add_name_to_subnet(unicast_subnet, nmbname->name, nmbname->name_type, 
-                     nb_flags, lp_max_ttl(), SELF_NAME, num_ips, ip_list);
+  (void)add_name_to_subnet( unicast_subnet, nmbname->name, nmbname->name_type,
+                            nb_flags, lp_max_ttl(), SELF_NAME,
+                            num_ips, ip_list);
 
   /* Now try and register the name, num_ips times. On the last time use
      the given success and fail functions. */
