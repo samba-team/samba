@@ -588,6 +588,7 @@ typedef struct connection_struct
 	BOOL ipc;
 	BOOL read_only;
 	BOOL admin_user;
+        BOOL printer_admin;
 	char *dirpath;
 	char *connectpath;
 	char *origpath;
