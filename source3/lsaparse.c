@@ -25,6 +25,41 @@ extern int DEBUGLEVEL;
 
 
 /*******************************************************************
+makes an LSA_Q_OPEN_POL structure.
+********************************************************************/
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+			uint32 attributes, uint32 sec_qos,
+			uint16 desired_access)
+{
+	if (r_q == NULL) return;
+
+	DEBUG(5,("make_open_pol\n"));
+
+	make_unistr2 (&(r_q->uni_server_name), server_name, strlen(server_name));
+	make_obj_attr(&(r_q->attr           ), attributes, sec_qos);
+
+	r_q->des_access = desired_access;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_OPEN_POL structure.
+********************************************************************/
+char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int align, int depth)
+{
+	if (r_q == NULL) return NULL;
+
+	DEBUG(5,("%s%04x lsa_io_q_open_pol\n", tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = smb_io_unistr2 (io, &(r_q->uni_server_name), q, base, align, depth);
+	q = smb_io_obj_attr(io, &(r_q->attr           ), q, base, align, depth);
+
+	DBG_RW_SVAL("des_access", depth, base, io, q, r_q->des_access); q += 2;
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes an LSA_R_OPEN_POL structure.
 ********************************************************************/
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth)

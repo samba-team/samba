@@ -265,6 +265,7 @@ typedef fstring string;
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"
+#define PIPE_LSARPC   "\\PIPE\\lsarpc"
 
 /* NETLOGON opcodes and data structures */
 
@@ -579,6 +580,27 @@ typedef struct lsa_policy_info
 
 } LSA_POL_HND;
 
+/* OBJ_ATTR (object attributes) */
+typedef struct object_attributes_info
+{
+	uint32 len;          /* 0x18 - length (in bytes) inc. the length field. */
+	uint32 ptr_root_dir; /* 0 - root directory (pointer) */
+	uint32 ptr_obj_name; /* 0 - object name (pointer) */
+	uint32 attributes;   /* 0 - attributes (undocumented) */
+	uint32 ptr_sec_desc; /* 0 - security descriptior (pointer) */
+	uint32 sec_qos;      /* 0 - security quality of service */
+
+} LSA_OBJ_ATTR;
+
+/* LSA_Q_OPEN_POL - LSA Query Open Policy */
+typedef struct lsa_q_open_pol_info
+{
+	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
+	LSA_OBJ_ATTR attr           ; /* object attributes */
+
+	uint32 des_access; /* desired access attributes */
+
+} LSA_Q_OPEN_POL;
 
 /* LSA_R_OPEN_POL - response to LSA Open Policy */
 typedef struct lsa_r_open_pol_info

@@ -85,6 +85,102 @@ static uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, 
 }
 
 /****************************************************************************
+do a LSA Open Policy
+****************************************************************************/
+static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	pstring data; /* only 1024 bytes */
+	uint16 setup[2]; /* only need 2 uint16 setup parameters */
+	LSA_Q_OPEN_POL q_o;
+	int call_id = 0x1;
+    BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	/* create and send a MSRPC command with api LSA_OPENPOLICY */
+
+	DEBUG(4,("LSA Open Policy\n"));
+
+	/* store the parameters */
+	make_q_open_pol(&q_o, server_name, 0, 0, 0x1);
+
+	/* turn parameters into data stream */
+	p = lsa_io_q_open_pol(False, &q_o, data + 0x18, data, 4, 0);
+
+	/* create the request RPC_HDR with no data */
+	create_rpc_request(call_id, LSA_OPENPOLICY, data, PTR_DIFF(p, data));
+
+	/* create setup parameters. */
+	SIVAL(setup, 0, 0x0026); /* 0x26 indicates "transact named pipe" */
+	SIVAL(setup, 2, fnum); /* file handle, from the SMBcreateX pipe, earlier */
+
+	/* send the data on \PIPE\ */
+	if (cli_call_api("\\PIPE\\", 0, PTR_DIFF(p, data), 2, 1024,
+                BUFFER_SIZE,
+				&rprcnt, &rdrcnt,
+				NULL, data, setup,
+				&rparam, &rdata))
+	{
+		LSA_R_OPEN_POL r_o;
+		RPC_HDR hdr;
+		int hdr_len;
+		int pkt_len;
+
+		DEBUG(5, ("cli_call_api: return OK\n"));
+
+		p = rdata;
+
+		if (p) p = smb_io_rpc_hdr   (True, &hdr, p, rdata, 4, 0);
+		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
+
+		hdr_len = PTR_DIFF(p, rdata);
+
+		if (p && hdr_len != hdr.frag_len - hdr.alloc_hint)
+		{
+			/* header length not same as calculated header length */
+			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint\n",
+			          hdr_len, hdr.frag_len - hdr.alloc_hint));
+			p = NULL;
+		}
+
+		if (p) p = lsa_io_r_open_pol(True, &r_o, p, rdata, 4, 0);
+		
+		pkt_len = PTR_DIFF(p, rdata);
+
+		if (p && pkt_len != hdr.frag_len)
+		{
+			/* packet data size not same as reported fragment length */
+			DEBUG(2,("do_lsa_open_policy: pkt_len %x != frag_len \n",
+			                           pkt_len, hdr.frag_len));
+			p = NULL;
+		}
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_REQ_CHAL: nt_status error %lx\n", r_o.status));
+			p = NULL;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
+			valid_pol = True;
+		}
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a LSA Request Challenge
 ****************************************************************************/
 static BOOL do_lsa_req_chal(uint16 fnum,
@@ -554,6 +650,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	DOM_ID_INFO_1 id1;
 	LSA_USER_INFO user_info1;
+	LSA_POL_HND pol;
 
 	UTIME zerotime;
 
@@ -561,6 +658,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	char nt_owf_mach_pwd[16];
 	fstring mach_acct;
 	fstring mach_pwd;
+	fstring server_name;
 
 	uint16 fnum;
 	char *inbuf,*outbuf; 
@@ -576,6 +674,33 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 	
+	/******************* open the \PIPE\lsarpc file *****************/
+
+	if ((fnum = open_rpc_pipe(inbuf, outbuf, PIPE_LSARPC, Client, cnum)) == 0xffff)
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/******************* Open Policy ********************/
+
+	fstrcpy(server_name, ("\\\\"));
+	fstrcpy(&server_name[2], myhostname);
+
+	/* send an open policy request; receive a policy handle */
+	if (!do_lsa_open_policy(fnum, server_name, &pol))
+	{
+		cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/******************* close the \PIPE\lsarpc file *******************/
+
+	cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+	
+
+
 	/******************* open the \PIPE\NETLOGON file *****************/
 
 	if ((fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
@@ -696,7 +821,11 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 
+	/******************** close the \PIPE\NETLOGON file **************/
+
 	cli_smb_close(inbuf, outbuf, Client, cnum, fnum);
+
+	/* free memory used in all rpc transactions, above */
 	free(inbuf); free(outbuf);
 
 	return True;

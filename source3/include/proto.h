@@ -373,6 +373,10 @@ struct share_ops *locking_slow_init(int ronly);
 
 /*The following definitions come from  lsaparse.c  */
 
+void make_q_open_pol(LSA_Q_OPEN_POL *r_q, char *server_name,
+			uint32 attributes, uint32 sec_qos,
+			uint16 desired_access);
+char* lsa_io_q_open_pol(BOOL io, LSA_Q_OPEN_POL *r_q, char *q, char *base, int align, int depth);
 char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int align, int depth);
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth);
 char* lsa_io_r_query(BOOL io, LSA_R_QUERY_INFO *r_q, char *q, char *base, int align, int depth);
@@ -944,6 +948,8 @@ char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int dept
 void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
 				uint32 call_id, int data_len, uint8 opnum);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
+void make_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
+char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int align, int depth);
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);

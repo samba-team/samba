@@ -840,6 +840,58 @@ char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int 
 }
 
 /*******************************************************************
+makes an LSA_OBJ_ATTR structure.
+********************************************************************/
+void make_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos)
+{
+	if (attr == NULL) return;
+
+	DEBUG(5,("make_obj_attr\n"));
+
+	attr->len = 0x18; /* length of object attribute block, in bytes */
+	attr->ptr_root_dir = 0;
+	attr->ptr_obj_name = 0;
+	attr->attributes = attributes;
+	attr->ptr_sec_desc = 0;
+	attr->sec_qos = sec_qos;
+}
+
+/*******************************************************************
+reads or writes an LSA_OBJ_ATTR structure.
+********************************************************************/
+char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int align, int depth)
+{
+	char *start;
+
+	if (attr == NULL) return NULL;
+
+	DEBUG(5,("%s%04x smb_io_obj_attr\n",  tab_depth(depth), PTR_DIFF(q, base)));
+	depth++;
+
+	q = align_offset(q, base, align);
+	
+	start = q;
+
+	/* these pointers had _better_ be zero, because we don't know
+	   what they point to!
+	 */
+	DBG_RW_IVAL("len"         , depth, base, io, q, attr->len         ); q += 4; /* 0x18 - length (in bytes) inc. the length field. */
+	DBG_RW_IVAL("ptr_root_dir", depth, base, io, q, attr->ptr_root_dir); q += 4; /* 0 - root directory (pointer) */
+	DBG_RW_IVAL("ptr_obj_name", depth, base, io, q, attr->ptr_obj_name); q += 4; /* 0 - object name (pointer) */
+	DBG_RW_IVAL("attributes"  , depth, base, io, q, attr->attributes  ); q += 4; /* 0 - attributes (undocumented) */
+	DBG_RW_IVAL("ptr_sec_desc", depth, base, io, q, attr->ptr_sec_desc); q += 4; /* 0 - security descriptior (pointer) */
+	DBG_RW_IVAL("sec_qos"     , depth, base, io, q, attr->sec_qos     ); q += 4; /* 0 - security quality of service */
+
+	if (attr->len != PTR_DIFF(q, start))
+	{
+		DEBUG(3,("smb_io_obj_attr: length %lx does not match size %lx\n",
+		         attr->len, PTR_DIFF(q, start)));
+	}
+
+	return q;
+}
+
+/*******************************************************************
 reads or writes an LSA_POL_HND structure.
 ********************************************************************/
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth)
