@@ -140,20 +140,25 @@ main(int argc, char **argv)
 
     if(version5 && principal == NULL){
 	printf("Kerberos v5 principal: ");
-	fgets(buf, sizeof(buf), stdin);
-	buf[strlen(buf) - 1] = 0;
-	principal = strdup(buf);
+	if(fgets(buf, sizeof(buf), stdin) == NULL)
+	    return 1;
+	if(buf[strlen(buf) - 1] == '\n')
+	    buf[strlen(buf) - 1] = '\0';
+	principal = estrdup(buf);
     }
     if(afs && cell == NULL){
 	printf("AFS cell: ");
-	fgets(buf, sizeof(buf), stdin);
-	buf[strlen(buf) - 1] = 0;
-	cell = strdup(buf);
+	if(fgets(buf, sizeof(buf), stdin) == NULL)
+	    return 1;
+	if(buf[strlen(buf) - 1] == '\n')
+	    buf[strlen(buf) - 1] = '\0';
+	cell = estrdup(buf);
     }
     if(argv[0])
 	password = argv[0];
     if(password == NULL){
-	des_read_pw_string(buf, sizeof(buf), "Password: ", 0);
+	if(des_read_pw_string(buf, sizeof(buf), "Password: ", 0))
+	    return 1;
 	password = buf;
     }
 	
