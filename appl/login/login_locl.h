@@ -90,6 +90,13 @@
 #define _PATH_WTMP "/var/adm/wtmp"
 #endif
 #endif
+#ifndef _PATH_UTMP
+#ifdef UTMP_FILE
+#define _PATH_UTMP UTMP_FILE
+#else
+#define _PATH_UTMP "/var/adm/utmp"
+#endif
+#endif
 
 char *clean_ttyname (char*);
 char *make_id (char*);
