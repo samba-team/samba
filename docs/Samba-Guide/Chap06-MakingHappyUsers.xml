@@ -575,8 +575,8 @@
 	</para>
 
 	<image id="ch6-LDAPdiag">
-		<description>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</description>
-		<imagefile scale="70">UNIX-Samba-and-LDAP.png</imagefile>
+		<imagedescription>The Interaction of LDAP, UNIX Posix Accounts and Samba Accounts</imagedescription>
+		<imagefile scale="70">UNIX-Samba-and-LDAP</imagefile>
 	</image>
 
 	<para><indexterm>
@@ -959,8 +959,8 @@
 	</para>
 
 	<image id="chap6net">
-		<description>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</description>
-		<imagefile scale="70">chap6-net.png</imagefile>
+		<imagedescription>Network Topology &smbmdash; 500 User Network Using ldapsam passdb backend.</imagedescription>
+		<imagefile scale="70">chap6-net</imagefile>
 	</image>
 
       <para><indexterm>
@@ -3131,8 +3131,8 @@ HKEY_LOCAL_MACHINE\Default\Software\Microsoft\Windows\
 	</procedure>
 
 	<image id="XP-screen001">
-		<description>Windows XP Professional &smbmdash; User Shared Folders</description>
-		<imagefile scale="65">XP-screen001.png</imagefile>
+		<imagedescription>Windows XP Professional &smbmdash; User Shared Folders</imagedescription>
+		<imagefile scale="65">XP-screen001</imagefile>
 	</image>
 
 <table id="proffold">

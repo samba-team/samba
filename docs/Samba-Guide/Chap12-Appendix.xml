@@ -1195,8 +1195,8 @@ example:
 	</para>
 
 	<image id="lam-login">
-		<description>The LDAP Account Manager Login Screen</description>
-		<imagefile scale="50">lam-login.png</imagefile>
+		<imagedescription>The LDAP Account Manager Login Screen</imagedescription>
+		<imagefile scale="50">lam-login</imagefile>
 	</image>
 
       <para><indexterm>
@@ -1214,8 +1214,8 @@ example:
 	</para>
 
 	<image id="lam-config">
-		<description>The LDAP Account Manager Configuration Screen</description>
-		<imagefile scale="50">lam-config.png</imagefile>
+		<imagedescription>The LDAP Account Manager Configuration Screen</imagedescription>
+		<imagefile scale="50">lam-config</imagefile>
 	</image>
 
       <para><indexterm>
@@ -1241,8 +1241,8 @@ example:
 	</para>
 
 	<image id="lam-user">
-		<description>The LDAP Account Manager User Edit Screen</description>
-		<imagefile scale="50">lam-users.png</imagefile>
+		<imagedescription>The LDAP Account Manager User Edit Screen</imagedescription>
+		<imagefile scale="50">lam-users</imagefile>
 	</image>
 
 	<para>
@@ -1253,13 +1253,13 @@ example:
 	</para>
 
 	<image id="lam-group">
-		<description>The LDAP Account Manager Group Edit Screen</description>
-		<imagefile scale="50">lam-groups.png</imagefile>
+		<imagedescription>The LDAP Account Manager Group Edit Screen</imagedescription>
+		<imagefile scale="50">lam-groups</imagefile>
 	</image>
 
 	<image id="lam-group-mem">
-		<description>The LDAP Account Manager Group Membership Edit Screen</description>
-		<imagefile scale="50">lam-group-members.png</imagefile>
+		<imagedescription>The LDAP Account Manager Group Membership Edit Screen</imagedescription>
+		<imagefile scale="50">lam-group-members</imagefile>
 	</image>
 
       <para><indexterm>
@@ -1273,8 +1273,8 @@ example:
 	</para>
 
 	<image id="lam-host">
-		<description>The LDAP Account Manager Host Edit Screen</description>
-		<imagefile scale="50">lam-hosts.png</imagefile>
+		<imagedescription>The LDAP Account Manager Host Edit Screen</imagedescription>
+		<imagefile scale="50">lam-hosts</imagefile>
 	</image>
 
 	<para>

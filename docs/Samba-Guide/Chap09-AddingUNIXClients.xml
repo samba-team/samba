@@ -29,8 +29,8 @@
 	</para>
 
 	<image id="ch09openmag">
-		<description>Open Magazine Samba Survey</description>
-		<imagefile scale="60">openmag.png</imagefile>
+		<imagedescription>Open Magazine Samba Survey</imagedescription>
+		<imagefile scale="60">openmag</imagefile>
 	</image>
 
 	<para>
@@ -516,8 +516,8 @@
 	</para>
 
 <image id="ch9-sambadc">
-	<description>Samba Domain: Samba Member Server</description>
-	<imagefile scale="75">chap9-SambaDC.png</imagefile>
+	<imagedescription>Samba Domain: Samba Member Server</imagedescription>
+	<imagefile scale="75">chap9-SambaDC</imagefile>
 </image>
 
 	<para><indexterm>
@@ -1098,8 +1098,8 @@ aliases:        files
 	</para>
 
 	<image id="ch9-adsdc">
-		<description>Active Directory Domain: Samba Member Server</description>
-		<imagefile scale="75">chap9-ADSDC.png</imagefile>
+		<imagedescription>Active Directory Domain: Samba Member Server</imagedescription>
+		<imagefile scale="75">chap9-ADSDC</imagefile>
 	</image>
 
 	<procedure>

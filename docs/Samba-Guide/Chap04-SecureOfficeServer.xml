@@ -163,8 +163,8 @@
 		</table>
 
 		<image id="ch04net">
-			<description>Abmas Network Topology &smbmdash; 130 Users</description>
-			<imagefile scale="90">chap4-net.png</imagefile>
+			<imagedescription>Abmas Network Topology &smbmdash; 130 Users</imagedescription>
+			<imagefile scale="90">chap4-net</imagefile>
 		</image>
 
 		<para>

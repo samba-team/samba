@@ -289,13 +289,13 @@
 		</para>
 
 		<image id="pktcap01">
-			<imagefile scale="53">WINREPRESSME-Capture.png</imagefile>
-			<description>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</description>
+			<imagefile scale="53">WINREPRESSME-Capture</imagefile>
+			<imagedescription>Windows Me &smbmdash; Broadcasts &smbmdash; The First 10 Minutes</imagedescription>
 		</image>
 
 		<image id="pktcap02">
-			<description>Windows Me &smbmdash; Later Broadcast Sample</description>
-			<imagefile scale="57">WINREPRESSME-Capture2.png</imagefile>
+			<imagedescription>Windows Me &smbmdash; Later Broadcast Sample</imagedescription>
+			<imagefile scale="57">WINREPRESSME-Capture2</imagefile>
 		</image>
 
 	  <para><indexterm>
@@ -601,8 +601,8 @@
 		</sect3>
 
 		<image id="hostannounce">
-			<description>Typical Windows 9x/Me Host Announcement</description>
-			<imagefile scale="55">HostAnnouncment.png</imagefile>
+			<imagedescription>Typical Windows 9x/Me Host Announcement</imagedescription>
+			<imagefile scale="55">HostAnnouncment</imagefile>
 		</image>
 
 	</sect2>
@@ -725,9 +725,9 @@
 		</para>
 
 		<image id="nullconnect">
-			<description>Typical Windows 9x/Me NULL SessionSetUp AndX Request</description>
+			<imagedescription>Typical Windows 9x/Me NULL SessionSetUp AndX Request</imagedescription>
 
-			<imagefile scale="65">NullConnect.png</imagefile>
+			<imagefile scale="65">NullConnect</imagefile>
 		</image>
 
 		<para>
@@ -743,8 +743,8 @@
 		</para>
 
 		<image id="userconnect">
-			<description>Typical Windows 9x/Me User SessionSetUp AndX Request</description>
-			<imagefile scale="65">UserConnect.png</imagefile>
+			<imagedescription>Typical Windows 9x/Me User SessionSetUp AndX Request</imagedescription>
+			<imagefile scale="65">UserConnect</imagefile>
 		</image>
 
 	 	<para>
@@ -898,13 +898,13 @@
 	</procedure>
 
 	<image id="XPCap01">
-        <description>Typical Windows XP NULL Session Setup AndX Request</description>
-		<imagefile scale="70">WindowsXP-NullConnection.png</imagefile>
+        <imagedescription>Typical Windows XP NULL Session Setup AndX Request</imagedescription>
+		<imagefile scale="70">WindowsXP-NullConnection</imagefile>
 	</image>
 
 	<image id="XPCap02">
-        <description>Typical Windows XP User Session Setup AndX Request</description>
-		<imagefile scale="70">WindowsXP-UserConnection.png</imagefile>
+        <imagedescription>Typical Windows XP User Session Setup AndX Request</imagedescription>
+		<imagefile scale="70">WindowsXP-UserConnection</imagefile>
 	</image>
 
 		<sect3>
