@@ -549,7 +549,6 @@ cmd
 	| SITE SP KAUTH check_login SP STRING CRLF
 		{
 			char *p;
-			size_t s;
 			
 			if(guest)
 				reply(500, "Can't be done as guest.");
@@ -558,11 +557,7 @@ cmd
 				    p = strpbrk($6, " \t");
 				    if(p){
 					*p++ = 0;
-					s = strspn(p, " \t");				
-					if(s >= 0)
-					    kauth($6, p + s);
-					else
-					    kauth($6, p);
+					kauth($6, p + strspn(p, " \t"));
 				    }else
 					kauth($6, NULL);
 				}
