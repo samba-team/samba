@@ -115,7 +115,7 @@ struct cli_state *server_cryptkey(void)
   - Validate a password with the password server.
 ****************************************************************************/
 
-NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
 	static unsigned char badpass[24];
@@ -134,8 +134,8 @@ NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_ser
 	if(badpass[0] == 0)
 		memset(badpass, 0x1f, sizeof(badpass));
 
-	if((user_info->nt_resp.len == sizeof(badpass)) && 
-	   !memcmp(badpass, user_info->nt_resp.buffer, sizeof(badpass))) {
+	if((user_info->nt_resp.length == sizeof(badpass)) && 
+	   !memcmp(badpass, user_info->nt_resp.data, sizeof(badpass))) {
 		/* 
 		 * Very unlikely, our random bad password is the same as the users
 		 * password.
@@ -206,11 +206,11 @@ use this machine as the password server.\n"));
 	 * not guest enabled, we can try with the real password.
 	 */
 
-	if (!cli_session_setup(cli, user_info->smb_username.str, 
-			       (char *)user_info->lm_resp.buffer, 
-			       user_info->lm_resp.len, 
-			       (char *)user_info->nt_resp.buffer, 
-			       user_info->nt_resp.len, 
+	if (!cli_session_setup(cli, user_info->smb_name.str, 
+			       (char *)user_info->lm_resp.data, 
+			       user_info->lm_resp.length, 
+			       (char *)user_info->nt_resp.data, 
+			       user_info->nt_resp.length, 
 			       user_info->domain.str)) {
 		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
 		/* Make this cli_nt_error() when the conversion is in */
@@ -226,6 +226,17 @@ use this machine as the password server.\n"));
 	}
 
 	cli_ulogoff(cli);
+
+	if NT_STATUS_IS_OK(nt_status) {
+		struct passwd *pass = Get_Pwnam(user_info->internal_username.str);
+		if (pass) {
+			if (!make_server_info_pw(server_info, pass)) { 
+				nt_status = NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			nt_status = NT_STATUS_NO_SUCH_USER;
+		}
+	}
 
 	return(nt_status);
 }

@@ -82,22 +82,27 @@ check if a username/password is OK assuming the password
 in PLAIN TEXT
 ****************************************************************************/
 
-NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_unix_security(const auth_usersupplied_info *user_info, auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	struct passwd *pass = NULL;
 
 	become_root();
-	
-	pass = Get_Pwnam(user_info->unix_username.str);
+	pass = Get_Pwnam(user_info->internal_username.str);
 
 	nt_status = pass_check(pass,
-				pass ? pass->pw_name : user_info->unix_username.str, 
-				user_info->plaintext_password.str,
-				user_info->plaintext_password.len,
+				pass ? pass->pw_name : user_info->internal_username.str, 
+				(char *)user_info->plaintext_password.data,
+				user_info->plaintext_password.length-1,
 				lp_update_encrypted() ? 
 				update_smbpassword_file : NULL,
 				True);
+	
+	if NT_STATUS_IS_OK(nt_status) {
+		if (pass) {
+			make_server_info_pw(server_info, pass);
+		}
+	}
 
 	unbecome_root();
 

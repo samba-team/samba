@@ -1574,7 +1574,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 {
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	fstring null_pw;
+	DATA_BLOB null_pw;
 	pstring filename;
 	pstring qualname;
 	files_struct *fsp = NULL;
@@ -1594,12 +1594,12 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
-	*null_pw = '\0';
+	null_pw = data_blob(NULL, 0);
 
 	get_current_user(&user, p);	
 	
 	become_root();
-	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1678,7 +1678,7 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 									SRV_R_NET_FILE_SET_SECDESC *r_u)
 {
 	BOOL ret;
-	fstring null_pw;
+	DATA_BLOB null_pw;
 	pstring filename;
 	pstring qualname;
 	files_struct *fsp = NULL;
@@ -1698,12 +1698,12 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
 	/* Null password is ok - we are already an authenticated user... */
-	*null_pw = '\0';
+	null_pw = data_blob(NULL, 0);
 
 	get_current_user(&user, p);	
 	
 	become_root();
-	conn = make_connection(qualname, null_pw, 0, "A:", user.vuid, &nt_status);
+	conn = make_connection(qualname, null_pw, "A:", user.vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {

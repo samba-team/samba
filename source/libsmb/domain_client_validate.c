@@ -271,7 +271,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
 ************************************************************************/
 
 NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info, 
-			      auth_serversupplied_info *server_info, 
+			      auth_serversupplied_info **server_info, 
 			      char *server, unsigned char *trust_passwd,
 			      time_t last_change_time)
 {
@@ -282,6 +282,7 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	uint32 smb_uid_low;
 	BOOL connected_ok = False;
 	NTSTATUS status;
+	struct passwd *pass;
 
 	/* 
 	 * Check that the requested domain is not our own machine name.
@@ -330,34 +331,48 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
-                         "Error was %s.\n", user_info->smb_username.str,
+                         "Error was %s.\n", user_info->smb_name.str,
                          user_info->domain.str, cli.srv_name_slash, 
                          get_nt_error_msg(status)));
-	}
+	} else {
 
-	/*
-	 * Here, if we really want it, we have lots of info about the user
-	 * in info3.  
-         */
+		/*
+		 * Here, if we really want it, we have lots of info about the user
+		 * in info3.  
+		 */
+
+		pass = Get_Pwnam(user_info->internal_username.str);
+		if (pass) {
+			make_server_info_pw(server_info, pass);
+			if (!server_info) {
+				status = NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			status = NT_STATUS_NO_SUCH_USER;
+		}
+	}
 
         /* Store the user group information in the server_info returned to
            the caller. */
-
-        if ((server_info->group_rids = malloc(info3.num_groups2 *
-                                        sizeof(uint32))) == NULL) {
-                DEBUG(1, ("out of memory allocating rid group membership\n"));
-                status = NT_STATUS_NO_MEMORY;
-        } else {
-                int i;
-
-                server_info->n_rids = info3.num_groups2;
-                
-                for (i = 0; i < server_info->n_rids; i++) {
-                        server_info->group_rids[i] = info3.gids[i].g_rid;
-                        DEBUG(5, ("** adding group rid 0x%x\n",
-                                  info3.gids[i].g_rid));
-                }
-        }
+	
+	if (NT_STATUS_IS_OK(status)) {
+		if (((*server_info)->group_rids = malloc(info3.num_groups2 *
+						      sizeof(uint32))) == NULL) {
+			DEBUG(1, ("out of memory allocating rid group membership\n"));
+			status = NT_STATUS_NO_MEMORY;
+			free_server_info(server_info);
+		} else {
+			int i;
+			
+			(*server_info)->n_rids = info3.num_groups2;
+			
+			for (i = 0; i < (*server_info)->n_rids; i++) {
+				(*server_info)->group_rids[i] = info3.gids[i].g_rid;
+				DEBUG(5, ("** adding group rid 0x%x\n",
+					  info3.gids[i].g_rid));
+			}
+		}
+	}
 
 #if 0
 	/* 

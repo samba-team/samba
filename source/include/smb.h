@@ -591,8 +591,8 @@ typedef struct sam_passwd
 	pstring unknown_str ; /* don't know what this is, yet. */
 	pstring munged_dial ; /* munged path name and dial-back tel number */
 
-        uid_t uid;          /* this is actually the unix uid_t */
-        gid_t gid;          /* this is actually the unix gid_t */
+        uid_t *uid;          /* this is a pointer to the unix uid_t */
+        gid_t *gid;          /* this is a pointer to the unix gid_t */
         uint32 user_rid;    /* Primary User ID */
         uint32 group_rid;   /* Primary Group ID */
 

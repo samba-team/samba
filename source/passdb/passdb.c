@@ -135,8 +135,9 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 
 	pdb_set_username(*new_sam_acct, pwd->pw_name);
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
-	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
-	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
+
+	pdb_set_uid(*new_sam_acct, &pwd->pw_uid);
+	pdb_set_gid(*new_sam_acct, &pwd->pw_gid);
 
 	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
 	pdb_set_group_rid(*new_sam_acct, pdb_gid_to_group_rid(pwd->pw_gid));
@@ -186,6 +187,9 @@ static BOOL pdb_free_sam_contents(SAM_ACCOUNT *user)
 
 	SAFE_FREE(user->nt_pw);
 	SAFE_FREE(user->lm_pw);
+
+	SAFE_FREE(user->uid);
+	SAFE_FREE(user->gid);
 	
 	return True;	
 }
@@ -1113,20 +1117,20 @@ uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 		return (-1);
 }
 
-uid_t pdb_get_uid (const SAM_ACCOUNT *sampass)
+uid_t *pdb_get_uid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->uid);
 	else
-		return ((uid_t)-1);
+		return (NULL);
 }
 
-gid_t pdb_get_gid (const SAM_ACCOUNT *sampass)
+gid_t *pdb_get_gid (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->gid);
 	else
-		return ((gid_t)-1);
+		return (NULL);
 }
 
 const char* pdb_get_username (const SAM_ACCOUNT *sampass)
@@ -1330,22 +1334,62 @@ BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
 	return True;
 }
 
-BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
+/*********************************************************************
+ Set the user's UNIX uid, as a pointer to malloc'ed memory.
+ ********************************************************************/
+
+BOOL pdb_set_uid (SAM_ACCOUNT *sampass, const uid_t *uid)
 {
 	if (!sampass)
 		return False;
+	
+	if (!uid) {
+		/* Allow setting to NULL */
+		SAFE_FREE(sampass->uid);
+		return True;
+	}
 
-	sampass->uid = uid;
+	if (sampass->uid!=NULL)
+		DEBUG(4,("pdb_set_nt_passwd: uid non NULL overwritting ?\n"));
+	else
+		sampass->uid=(uid_t *)malloc(sizeof(uid_t));
+	
+	if (sampass->uid==NULL)
+		return False;
+
+	*sampass->uid = *uid; 
+
 	return True;
+
 }
 
-BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid)
+/*********************************************************************
+ Set the user's UNIX gid, as a pointer to malloc'ed memory.
+ ********************************************************************/
+
+BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t *gid)
 {
 	if (!sampass)
 		return False;
+	
+	if (!gid) {
+		/* Allow setting to NULL */
+		SAFE_FREE(sampass->gid);
+		return True;
+	}
 
-	sampass->gid = gid;
+	if (sampass->gid!=NULL)
+		DEBUG(4,("pdb_set_nt_passwd: gid non NULL overwritting ?\n"));
+	else
+		sampass->gid=(gid_t *)malloc(sizeof(gid_t));
+	
+	if (sampass->gid==NULL)
+		return False;
+
+	*sampass->gid = *gid; 
+
 	return True;
+
 }
 
 BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)

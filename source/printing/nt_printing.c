@@ -927,7 +927,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	int               action;
 	NTSTATUS          nt_status;
 	pstring           driverpath;
-	fstring           null_pw;
+	DATA_BLOB         null_pw;
 	files_struct      *fsp = NULL;
 	BOOL              bad_path;
 	SMB_STRUCT_STAT   st;
@@ -943,10 +943,10 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	/* Null password is ok - we are already an authenticated user... */
-	*null_pw = '\0';
+	null_pw = data_blob(NULL, 0);
 
 	become_root();
-	conn = make_connection("print$", null_pw, 0, "A:", user->vuid, &nt_status);
+	conn = make_connection("print$", null_pw, "A:", user->vuid, &nt_status);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1230,7 +1230,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring new_dir;
 	pstring old_name;
 	pstring new_name;
-	fstring null_pw;
+	DATA_BLOB null_pw;
 	connection_struct *conn;
 	NTSTATUS nt_status;
 	int ver = 0;
@@ -1252,8 +1252,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
 	/* Null password is ok - we are already an authenticated user... */
-	*null_pw = '\0';
-	conn = make_connection("print$", null_pw, 0, "A:", user->vuid, &nt_status);
+	null_pw = data_blob(NULL, 0);
+	conn = make_connection("print$", null_pw, "A:", user->vuid, &nt_status);
 
 	if (conn == NULL) {
 		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));

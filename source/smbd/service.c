@@ -79,7 +79,7 @@ BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
  Add a home service. Returns the new service number or -1 if fail.
 ****************************************************************************/
 
-int add_home_service(char *service, char *homedir)
+int add_home_service(const char *service, const char *homedir)
 {
 	int iHomeService;
 	int iService;
@@ -320,8 +320,8 @@ static void set_admin_user(connection_struct *conn)
  Make a connection to a service.
 ****************************************************************************/
 
-connection_struct *make_connection(char *service,char *password, 
-				   int pwlen, char *dev,uint16 vuid, NTSTATUS *status)
+connection_struct *make_connection(char *service, DATA_BLOB password, 
+				   char *dev,uint16 vuid, NTSTATUS *status)
 {
 	int snum;
 	struct passwd *pass = NULL;
@@ -361,7 +361,7 @@ connection_struct *make_connection(char *service,char *password,
 			if (validated_username(vuid)) {
 				fstring unix_username;
 				fstrcpy(unix_username,validated_username(vuid));
-				return(make_connection(unix_username,password,pwlen,dev,vuid,status));
+				return(make_connection(unix_username,password,dev,vuid,status));
 			}
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
@@ -370,7 +370,7 @@ connection_struct *make_connection(char *service,char *password,
 				fstring unix_username;
 				fstrcpy(unix_username,current_user_info.smb_name);
 				map_username(unix_username);
-				return(make_connection(unix_username,password,pwlen,dev,vuid,status));
+				return(make_connection(unix_username,password,dev,vuid,status));
 			}
 		}
 	}
@@ -387,7 +387,7 @@ connection_struct *make_connection(char *service,char *password,
 
 
 	/* shall we let them in? */
-	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
+	if (!authorise_login(snum,user,password,&guest,&force,vuid)) {
 		DEBUG( 2, ( "Invalid username/password for %s [%s]\n", service, user ) );
 		*status = NT_STATUS_WRONG_PASSWORD;
 		return NULL;

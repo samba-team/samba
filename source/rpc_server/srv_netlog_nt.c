@@ -484,123 +484,6 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	return r_u->status;
 }
 
-/*************************************************************************
- _net_logon_any:  Use the new authentications subsystem to log in.
- *************************************************************************/
-
-static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, char *workstation, char *sess_key)
-{
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-
-	unsigned char local_lm_response[24];
-	unsigned char local_nt_response[24];
-
-	auth_usersupplied_info user_info;
-	auth_serversupplied_info server_info;
-	AUTH_STR ourdomain, theirdomain, smb_username, wksta_name;
-
-	DEBUG(5, ("_net_logon_any: entered with user %s and domain %s\n", user, domain));
-		
-	ZERO_STRUCT(user_info);
-	ZERO_STRUCT(server_info);
-	ZERO_STRUCT(ourdomain);
-	ZERO_STRUCT(theirdomain);
-	ZERO_STRUCT(smb_username);
-	ZERO_STRUCT(wksta_name);
-	
-	ourdomain.str = lp_workgroup();
-	ourdomain.len = strlen(ourdomain.str);
-
-	theirdomain.str = domain;
-	theirdomain.len = strlen(theirdomain.str);
-
-	user_info.requested_domain = theirdomain;
-	user_info.domain = ourdomain;
-	
-	smb_username.str = user;
-	smb_username.len = strlen(smb_username.str);
-
-	user_info.unix_username = smb_username;  /* For the time-being */
-	user_info.smb_username = smb_username;
-
-	user_info.wksta_name.str = workstation;
-	user_info.wksta_name.len = strlen(workstation);
-
-	user_info.wksta_name = wksta_name;
-
-	DEBUG(10,("_net_logon_any: Attempting validation level %d.\n", ctr->switch_value));
-	switch (ctr->switch_value) {
-	case NET_LOGON_TYPE:
-		/* Standard challange/response authenticaion */
-
-		user_info.lm_resp.buffer = (uint8 *)ctr->auth.id2.lm_chal_resp.buffer;
-		user_info.lm_resp.len = ctr->auth.id2.lm_chal_resp.str_str_len;
-		user_info.nt_resp.buffer = (uint8 *)ctr->auth.id2.nt_chal_resp.buffer;
-		user_info.nt_resp.len = ctr->auth.id2.nt_chal_resp.str_str_len;
-		memcpy(user_info.chal, ctr->auth.id2.lm_chal, 8);
-		break;
-	case INTERACTIVE_LOGON_TYPE:
-		/* 'Interactive' autheticaion, supplies the password in its MD4 form, encrypted
-		   with the session key.  We will convert this to challange/responce for the 
-		   auth subsystem to chew on */
-	{
-		char nt_pwd[16];
-		char lm_pwd[16];
-		unsigned char key[16];
-		
-		memset(key, 0, 16);
-		memcpy(key, sess_key, 8);
-		
-		memcpy(lm_pwd, ctr->auth.id1.lm_owf.data, 16);
-		memcpy(nt_pwd, ctr->auth.id1.nt_owf.data, 16);
-
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("key:"));
-		dump_data(100, (char *)key, 16);
-		
-		DEBUG(100,("lm owf password:"));
-		dump_data(100, lm_pwd, 16);
-		
-		DEBUG(100,("nt owf password:"));
-		dump_data(100, nt_pwd, 16);
-#endif
-		
-		SamOEMhash((uchar *)lm_pwd, key, 16);
-		SamOEMhash((uchar *)nt_pwd, key, 16);
-		
-#ifdef DEBUG_PASSWORD
-		DEBUG(100,("decrypt of lm owf password:"));
-		dump_data(100, lm_pwd, 16);
-		
-		DEBUG(100,("decrypt of nt owf password:"));
-		dump_data(100, nt_pwd, 16);
-#endif
-
-		generate_random_buffer(user_info.chal, 8, False);
-		SMBOWFencrypt((const unsigned char *)lm_pwd, user_info.chal, local_lm_response);
-		SMBOWFencrypt((const unsigned char *)nt_pwd, user_info.chal, local_nt_response);
-		user_info.lm_resp.buffer = (uint8 *)local_lm_response;
-		user_info.lm_resp.len = 24;
-		user_info.nt_resp.buffer = (uint8 *)local_nt_response;
-		user_info.nt_resp.len = 24;
-		break;
-	}
-	default:
-		DEBUG(2,("SAM Logon: unsupported switch value\n"));
-		return NT_STATUS_INVALID_INFO_CLASS;
-	} /* end switch */
-	
-	nt_status = check_password(&user_info, &server_info);
-
-	DEBUG(5, ("_net_logon_any: exited with status %s\n", 
-		  get_nt_error_msg(nt_status)));
-
-        free_serversupplied_info(&server_info); /* No info needed */
-
-	return nt_status;
-}
-
-
 
 /*************************************************************************
  _net_sam_logon
@@ -610,15 +493,16 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
+	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
 	DOM_CRED srv_cred;
 	SAM_ACCOUNT *sampass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
 	UNISTR2 *uni_samlogon_domain = NULL;
 	UNISTR2 *uni_samlogon_workstation = NULL;
 	fstring nt_username, nt_domain, nt_workstation;
-        
-	BOOL ret;
-
+	auth_usersupplied_info *user_info;
+	auth_serversupplied_info *server_info;
+	        
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
 		return NT_STATUS_NO_MEMORY;
@@ -647,16 +531,17 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
     
 	switch (q_u->sam_id.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
-		uni_samlogon_user = &q_u->sam_id.ctr->auth.id1.uni_user_name;
- 		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id1.uni_domain_name;
-                uni_samlogon_workstation = &q_u->sam_id.ctr->auth.id1.uni_wksta_name;
+		uni_samlogon_user = &ctr->auth.id1.uni_user_name;
+ 		uni_samlogon_domain = &ctr->auth.id1.uni_domain_name;
+
+                uni_samlogon_workstation = &ctr->auth.id1.uni_wksta_name;
             
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
-		uni_samlogon_user = &q_u->sam_id.ctr->auth.id2.uni_user_name;
-		uni_samlogon_domain = &q_u->sam_id.ctr->auth.id2.uni_domain_name;
-		uni_samlogon_workstation = &q_u->sam_id.ctr->auth.id2.uni_wksta_name;
+		uni_samlogon_user = &ctr->auth.id2.uni_user_name;
+		uni_samlogon_domain = &ctr->auth.id2.uni_domain_name;
+		uni_samlogon_workstation = &ctr->auth.id2.uni_wksta_name;
             
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
@@ -678,29 +563,51 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 	 * Convert to a UNIX username.
 	 */
 
-	map_username(nt_username);
+	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
 
-	DEBUG(10,("Attempting validation level %d for mapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
+	switch (ctr->switch_value) {
+	case NET_LOGON_TYPE:
+		/* Standard challange/response authenticaion */
+		make_user_info_netlogon_network(&user_info, 
+						nt_username, nt_domain, 
+						nt_workstation, ctr->auth.id2.lm_chal, 
+						ctr->auth.id2.lm_chal_resp.buffer,
+						ctr->auth.id2.lm_chal_resp.str_str_len,
+						ctr->auth.id2.nt_chal_resp.buffer,
+						ctr->auth.id2.nt_chal_resp.str_str_len);
+		break;
+	case INTERACTIVE_LOGON_TYPE:
+		/* 'Interactive' autheticaion, supplies the password in its MD4 form, encrypted
+		   with the session key.  We will convert this to challange/responce for the 
+		   auth subsystem to chew on */
+	{
+		make_user_info_netlogon_interactive(&user_info, 
+					   nt_username, nt_domain, 
+					   nt_workstation, 
+					   ctr->auth.id1.lm_owf.data, 16, 
+					   ctr->auth.id1.lm_owf.data, 16, 
+					   p->dc.sess_key);
+		break;
+	}
+	default:
+		DEBUG(2,("SAM Logon: unsupported switch value\n"));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	} /* end switch */
+	
+	status = check_password(user_info, &server_info);
 
-	status = _net_logon_any(q_u->sam_id.ctr, nt_username, nt_domain, nt_workstation, (char *)p->dc.sess_key);
+	free_user_info(&user_info);
+	
+	DEBUG(5, ("_net_sam_logon: exiting with status %s\n", 
+		  get_nt_error_msg(status)));
 
 	/* Check account and password */
     
-	if (NT_STATUS_IS_ERR(status))
+	if (NT_STATUS_IS_ERR(status)) {
+		free_server_info(&server_info);
 		return status;
-
-	pdb_init_sam(&sampass);
-
-	/* get the account information */
-	become_root();
-	ret = pdb_getsampwnam(sampass, nt_username);
-	unbecome_root();
-
-	if (ret == False) {
-		pdb_free_sam(&sampass);
-		return NT_STATUS_NO_SUCH_USER;
 	}
-        
+
 	/* This is the point at which, if the login was successful, that
            the SAM Local Security Authority should record that the user is
            logged in to the domain.  */
@@ -748,12 +655,14 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
                             num_gids,    /* uint32 num_groups */
                             gids    , /* DOM_GID *gids */
                             0x20    , /* uint32 user_flgs (?) */
-                            NULL, /* char sess_key[16] */
+                            NULL, /* uchar sess_key[16] */
                             my_name     , /* char *logon_srv */
                             my_workgroup, /* char *logon_dom */
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
 	}
-	pdb_free_sam(&sampass);
+	free_server_info(&server_info);
 	return status;
 }
+
+

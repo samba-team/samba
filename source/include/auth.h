@@ -35,57 +35,43 @@ typedef struct unicode_string
 	uchar *unistr;
 } AUTH_UNISTR;
 
-/* AUTH_BUFFER - 8-bit byte buffer */
-typedef struct auth_buffer
-{
-	int len;
-	uint8 *buffer;
-} AUTH_BUFFER;
-
-typedef struct net_password
-{
-	AUTH_BUFFER lm_resp;
-	AUTH_BUFFER nt_resp;
-} auth_net_password;
-
 typedef struct interactive_password
 {
 	OWF_INFO          lm_owf;              /* LM OWF Password */
 	OWF_INFO          nt_owf;              /* NT OWF Password */
 } auth_interactive_password;
 
-typedef struct plaintext_password
-{
-	AUTH_STR password;
-} auth_plaintext_password;
-
 typedef struct usersupplied_info
 {
 	
- 	AUTH_BUFFER lm_resp;
-	AUTH_BUFFER nt_resp;
+ 	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
 	auth_interactive_password * interactive_password;
-        AUTH_STR plaintext_password;
+ 	DATA_BLOB plaintext_password;
 	
-	uint8 chal[8];
+	BOOL encrypted;
+	
+	uint32 ntlmssp_flags;
 
-	AUTH_STR           requested_domain;     /* domain name string */
+	DATA_BLOB sec_blob;
+
+	AUTH_STR           client_domain;          /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */
-	AUTH_STR           unix_username;        /* username after mapping */
-	AUTH_STR           smb_username;         /* username before mapping */
+	AUTH_STR           internal_username;    /* username after mapping */
+	AUTH_STR           smb_name;        /* username before mapping */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
 	
 } auth_usersupplied_info;
 
+#define SAM_FILL_NAME  0x01
+#define SAM_FILL_INFO3 0x02
+#define SAM_FILL_SAM   0x04
+#define SAM_FILL_UNIX  0x08
+#define SAM_FILL_ALL (SAM_FILL_NAME | SAM_FILL_INFO3 | SAM_FILL_SAM | SAM_FILL_UNIX)
+
 typedef struct serversupplied_info
 {
-	AUTH_STR full_name;
-	AUTH_STR unix_user;
-	
 	BOOL guest;
-	
-	uid_t unix_uid;
-	gid_t unix_gid;
 	
 	/* This groups info is needed for when we become_user() for this uid */
 	int n_groups;
@@ -98,6 +84,11 @@ typedef struct serversupplied_info
 	
 	uchar session_key[16];
 	
+	uint8 first_8_lm_hash[8];
+
+	uint32 sam_fill_level;  /* How far is this structure filled? */
+
+	SAM_ACCOUNT *sam_account;
 } auth_serversupplied_info;
 
 #endif /* _SMBAUTH_H_ */
