@@ -4876,9 +4876,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 	PRINTER_MESSAGE_INFO msg;
 	WERROR result;
-	uint32 change_flag = 0x0;
 
 	DEBUG(8,("update_printer\n"));
+
+	ZERO_STRUCT(msg);
 	
 	result = WERR_OK;
 
@@ -4994,7 +4995,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		 */
 		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)){
 			set_driver_init(printer, 2);
-			change_flag |= PRINTER_MESSAGE_DRIVER;
+			msg.flags |= PRINTER_MESSAGE_DRIVER;
 		}
 	}
 
@@ -5005,28 +5006,31 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	   all the possible changes                                         */
 
 	if (!strequal(printer->info_2->comment, old_printer->info_2->comment))
-		change_flag |= PRINTER_MESSAGE_COMMENT;
+		msg.flags |= PRINTER_MESSAGE_COMMENT;
 
 	if (!strequal(printer->info_2->sharename, old_printer->info_2->sharename))
-		change_flag |= PRINTER_MESSAGE_SHARENAME;
+		msg.flags |= PRINTER_MESSAGE_SHARENAME;
 
 	if (!strequal(printer->info_2->portname, old_printer->info_2->portname))
-		change_flag |= PRINTER_MESSAGE_PORT;
+		msg.flags |= PRINTER_MESSAGE_PORT;
 
 	if (!strequal(printer->info_2->location, old_printer->info_2->location))
-		change_flag |= PRINTER_MESSAGE_LOCATION;
+		msg.flags |= PRINTER_MESSAGE_LOCATION;
 
 	ZERO_STRUCT(msg);
 	
 	msg.low = PRINTER_CHANGE_ADD_PRINTER;
 	fstrcpy(msg.printer_name, printer->info_2->printername);
-	msg.flags = change_flag;
 
-	/* send to myself before replying to SetPrinter() */	
-	send_spoolss_event_notification(&msg);
+	/* only send a notify if something changed */
+	if (msg.flags)
+	{
+		/* send to myself before replying to SetPrinter() */	
+		send_spoolss_event_notification(&msg);
 	
-	/* send to other smbd's */
-	srv_spoolss_sendnotify(printer->info_2->printername, 0, PRINTER_CHANGE_ADD_PRINTER, change_flag);
+		/* send to other smbd's */
+		srv_spoolss_sendnotify(msg.printer_name, 0, PRINTER_CHANGE_ADD_PRINTER, msg.flags);
+	}
 
 done:
 	free_a_printer(&printer, 2);
@@ -5271,8 +5275,8 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 	}
 
 	for (i=0; i<*returned; i++)
-		fill_job_info_2(
-			&info[i], &queue[i], i, snum, ntprinter, devmode);
+		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
+				devmode);
 
 	free_a_printer(&ntprinter, 2);
 	SAFE_FREE(queue);
@@ -7194,8 +7198,8 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	ZERO_STRUCTP(info_2);
 
 	if (info_2 == NULL) {
-		SAFE_FREE(queue);
-		return WERR_NOMEM;
+		ret = WERR_NOMEM;
+		goto done;
 	}
 
 	for (i=0; i<count && found==False; i++) {
@@ -7204,39 +7208,47 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	}
 	
 	if (found==False) {
-		SAFE_FREE(queue);
-		SAFE_FREE(info_2);
-		/* NT treats not found as bad param... yet another bad choice */
-		return WERR_INVALID_PARAM;
+		/* NT treats not found as bad param... yet another bad
+		   choice */
+		ret = WERR_INVALID_PARAM;
+		goto done;
 	}
 	
 	ret = get_a_printer(&ntprinter, 2, lp_servicename(snum));
-	if (!W_ERROR_IS_OK(ret)) {
-		SAFE_FREE(queue);
-		return ret;
+	if (!W_ERROR_IS_OK(ret))
+		goto done;
+	if (construct_dev_mode(snum) == NULL) {
+		ret = WERR_NOMEM;
+		goto done;
 	}
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
-	free_a_printer(&ntprinter, 2);
-	SAFE_FREE(queue);
-	
 	*needed += spoolss_size_job_info_2(info_2);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		SAFE_FREE(info_2);
-		return WERR_INSUFFICIENT_BUFFER;
+		ret = WERR_INSUFFICIENT_BUFFER;
+		goto done;
 	}
 
 	smb_io_job_info_2("", buffer, info_2, 0);
 
-	free_job_info_2(info_2);
+	if (*needed > offered) {
+		ret = WERR_INSUFFICIENT_BUFFER;
+		goto done;
+	}
+
+	ret = WERR_OK;
+	
+ done:
+	/* Cleanup allocated memory */
+
+	SAFE_FREE(queue);
+	free_job_info_2(info_2);	/* Also frees devmode */
 	SAFE_FREE(info_2);
+	free_a_printer(&ntprinter, 2);
 
-	if (*needed > offered)
-		return WERR_INSUFFICIENT_BUFFER;
-
-	return WERR_OK;
+	return ret;
 }
 
 /****************************************************************************

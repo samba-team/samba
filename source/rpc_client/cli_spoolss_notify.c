@@ -444,6 +444,10 @@ NTSTATUS cli_spoolss_reply_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (r_s.unknown0 == 0x00080000) {
+		DEBUG(8,("cli_spoolss_reply_rrpcn: I think the spooler resonded that the notification was ignored.\n"));
+	}
+
 	result = werror_to_ntstatus(r_s.status);
 
 done:
