@@ -45,8 +45,9 @@ extern int DEBUGLEVEL;
  int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual)
  int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
  int sys_acl_valid( SMB_ACL_T theacl )
- int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
  int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
+ int sys_acl_delete_def_file(const char *path)
 
  This next one is not POSIX complient - but we *have* to have it !
  More POSIX braindamage.
@@ -160,7 +161,7 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return acl_valid(theacl);
 }
 
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return acl_set_file(name, acltype, theacl);
 }
@@ -168,6 +169,11 @@ int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 {
 	return acl_set_fd(fd, theacl);
+}
+
+int sys_acl_delete_def_file(const char *name)
+{
+	return acl_delete_def_file(name);
 }
 
 int sys_acl_free_text(char *text)
@@ -659,7 +665,7 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 	return 0;
 }
 
-int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 {
 	struct stat	s;
 	struct acl	*acl_p;
@@ -1003,7 +1009,7 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 	return acl_valid(acl_d->aclp);
 }
 
-int sys_acl_set_file(char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 {
 	return acl_set_file(name, type, acl_d->aclp);
 }
@@ -1076,7 +1082,7 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return acl_valid(theacl);
 }
 
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return acl_set_file(name, acltype, theacl);
 }
@@ -1914,7 +1920,7 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return(0);
 }
 
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	struct acl_entry_link *acl_entry_link = NULL;
 	struct acl *file_acl = NULL;
@@ -2234,13 +2240,19 @@ int sys_acl_valid( SMB_ACL_T theacl )
 	return -1;
 }
 
-int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+int sys_acl_delete_def_file(const char *name)
 {
 	errno = ENOSYS;
 	return -1;
