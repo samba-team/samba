@@ -1642,38 +1642,36 @@ BOOL domain_client_validate( char *user, char *domain,
      other means.  We merge this into the NT_USER_TOKEN associated with the vuid
      later on. */
  
-  if (pptoken) {
+  if (pptoken && (info3.num_groups2 != 0)) {
     NT_USER_TOKEN *ptok;
     int i;
     DOM_SID domain_sid;
  
     *pptoken = NULL;
  
-    if (info3.num_groups2 != 0) {
-      if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
-        DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
-        return False;
-      }
- 
-      ptok->num_sids = (size_t)info3.num_groups2;
-      if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
-        DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
-        free(ptok);
-        return False;
-      }
- 
-      if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
-        DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
-        delete_nt_token(&ptok);
-        return False;
-      }
- 
-      for (i = 0; i < ptok->num_sids; i++) {
-        sid_copy(&ptok->user_sids[i], &domain_sid);
-        sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
-      }
-      *pptoken = ptok;
+    if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+      DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+      return False;
     }
+ 
+    ptok->num_sids = (size_t)info3.num_groups2;
+    if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
+      DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
+      free(ptok);
+      return False;
+    }
+ 
+    if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+      DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+      delete_nt_token(&ptok);
+      return False;
+    }
+ 
+    for (i = 0; i < ptok->num_sids; i++) {
+      sid_copy(&ptok->user_sids[i], &domain_sid);
+      sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
+    }
+    *pptoken = ptok;
   }
 
 #if 0
