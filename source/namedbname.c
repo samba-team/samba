@@ -220,6 +220,7 @@ void dump_names(void)
   if (!f)
   {
     DEBUG(3,("Can't open %s - %s\n",fnamenew,strerror(errno)));
+    return;
   }
   
   DEBUG(4,("Dump of local name table:\n"));
