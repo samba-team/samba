@@ -113,6 +113,7 @@ done:
 	talloc_destroy(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		gensec_end(&p->security_state.generic_state);
 		ZERO_STRUCT(p->security_state);
 	} else {
 		/* Authenticated connections use the generic session key */
