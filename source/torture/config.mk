@@ -50,7 +50,8 @@ ADD_OBJ_FILES = \
 		torture/raw/eas.o \
 		torture/raw/streams.o \
 		torture/raw/acls.o \
-		torture/raw/seek.o
+		torture/raw/seek.o \
+		torture/raw/composite.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB LIBCLI_LSA
 # End SUBSYSTEM TORTURE_RAW

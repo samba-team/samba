@@ -134,3 +134,6 @@ struct security_ace;
 struct lsa_RightSet;
 
 struct ldb_val;
+
+struct smb_composite_loadfile;
+
