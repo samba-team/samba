@@ -234,14 +234,14 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv
 	}
 
 #if 0	/* JERRY */
-	safe_free(sids);
-	safe_free(types);      
+	SAFE_FREE(sids);
+	SAFE_FREE(types);      
 
 	for (i = 0; i < num_names; i++) {
-		safe_free(names[i]);
+		SAFE_FREE(names[i]);
 	}
 
-	safe_free(names);
+	SAFE_FREE(names);
 #endif
 
  done:

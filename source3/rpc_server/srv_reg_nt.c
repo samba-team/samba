@@ -39,7 +39,7 @@ static void free_reg_info(void *ptr)
 {
 	struct reg_info *info = (struct reg_info *)ptr;
 
-	safe_free(info);
+	SAFE_FREE(info);
 }
 
 /*******************************************************************

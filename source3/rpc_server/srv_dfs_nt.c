@@ -96,7 +96,7 @@ WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
     {
       memcpy(jn.referral_list, old_referral_list, 
 	     sizeof(struct referral)*jn.referral_count-1);
-      free(old_referral_list);
+      SAFE_FREE(old_referral_list);
     }
   
   jn.referral_list[jn.referral_count-1].proximity = 0;

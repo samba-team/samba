@@ -285,7 +285,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	/* Set up for non-authenticated user. */
 	delete_nt_token(&p->pipe_user.nt_user_token);
 	p->pipe_user.ngroups = 0;
-	safe_free( p->pipe_user.groups);
+	SAFE_FREE( p->pipe_user.groups);
 
 	/* 
 	 * Setup an empty password for a guest user.
@@ -1232,7 +1232,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		if (data) {
 			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
-			free(data);
+			SAFE_FREE(data);
 		}
 
 	}

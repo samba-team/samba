@@ -305,12 +305,12 @@ static BOOL api_spoolss_rfnpcnex(pipes_struct *p)
 	r_u.status = _spoolss_rfnpcnex(p, &q_u, &r_u);
 
 	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
-		safe_free(r_u.info.data);
+		SAFE_FREE(r_u.info.data);
 		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
 		return False;
 	}
 
-	safe_free(r_u.info.data);
+	SAFE_FREE(r_u.info.data);
 
 	return True;
 }

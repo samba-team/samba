@@ -52,9 +52,7 @@ struct samr_info {
 
 static void free_samr_info(void *ptr)
 {
-	struct samr_info *samr = (struct samr_info *)ptr;
-
-	safe_free(samr);
+	SAFE_FREE(ptr);
 }
 
 /*******************************************************************
@@ -820,7 +818,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 
 		}
 		
-		safe_free(map);
+		SAFE_FREE(map);
 		
 	} else if (sid_equal(sid, &global_sam_sid) && !lp_hide_local_users()) {
 		char *sep;
@@ -931,7 +929,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 	*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
 	if (num_entries!=0 && *d_grp==NULL){
-		safe_free(map);
+		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -942,7 +940,7 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 		(*d_grp)[i].attr=SID_NAME_DOM_GRP;
 	}
 
-	safe_free(map);
+	SAFE_FREE(map);
 
 	*p_num_entries = num_entries;
 
@@ -3184,7 +3182,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 			if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
 				return NT_STATUS_NO_SUCH_GROUP;
 			init_samr_group_info1(&ctr->group.info1, map.nt_name, map.comment, num_uids);
-			safe_free(uid);
+			SAFE_FREE(uid);
 			break;
 		case 4:
 			ctr->switch_value1 = 4;

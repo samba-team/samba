@@ -159,14 +159,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if ((p->mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
 	if (!init_pipe_handle_list(p, pipe_name)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -923,11 +923,11 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	DLIST_REMOVE(Pipes, p);
 
 	delete_nt_token(&p->pipe_user.nt_user_token);
-	safe_free(p->pipe_user.groups);
+	SAFE_FREE(p->pipe_user.groups);
 
 	ZERO_STRUCTP(p);
 
-	free(p);
+	SAFE_FREE(p);
 	
 	return True;
 }
