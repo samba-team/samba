@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -292,15 +292,12 @@ do_version4(unsigned char *buf,
 	memcpy(&auth.dat, buf, pos);
 	auth.length = pos;
 	krb_set_key(tkey->key.keyvalue.data, 0);
-	{
-	    int e;
-	    e = krb_rd_req(&auth, "krbtgt", realm, 
-			   addr->sin_addr.s_addr, &ad, 0);
-	    if(e){
-		kdc_log(0, "krb_rd_req: %s", krb_get_err_text(e));
-		make_err_reply(reply, ret, NULL);
-		goto out2;
-	    }
+	ret = krb_rd_req(&auth, "krbtgt", realm, 
+			 addr->sin_addr.s_addr, &ad, 0);
+	if(ret){
+	    kdc_log(0, "krb_rd_req: %s", krb_get_err_text(ret));
+	    make_err_reply(reply, ret, NULL);
+	    goto out2;
 	}
 	
 	RCHECK(krb5_ret_int32(sp, &req_time), out2);
