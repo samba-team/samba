@@ -32,7 +32,7 @@ BOOL init_change_notify(void)
 { return True; }
 
 
-BOOL pcap_printername_ok(const char *service, char *foo)
+BOOL pcap_printername_ok(const char *service, const char *foo)
 { return True; }
 
 BOOL namecache_enable(void)

@@ -23,7 +23,7 @@
 int nbench_line_count = 0;
 static int timelimit = 600;
 static int warmup;
-static char *loadfile;
+static const char *loadfile;
 
 #define ival(s) strtol(s, NULL, 0)
 
@@ -165,7 +165,7 @@ BOOL torture_nbench(int dummy)
 	BOOL correct = True;
 	extern int torture_nprocs;
 	struct cli_state *cli;
-	char *p;
+	const char *p;
 
 	p = lp_parm_string(-1, "torture", "timelimit");
 	if (p && *p) {
