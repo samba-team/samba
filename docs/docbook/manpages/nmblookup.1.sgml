@@ -1,5 +1,5 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
-<refentry id="findsmb">
+<refentry id="nmblookup">
 
 <refmeta>
 	<refentrytitle>nmblookup</refentrytitle>
@@ -15,7 +15,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>findsmb</command>
+		<command>nmblookup</command>
 		<arg choice="opt">-M</arg>
 		<arg choice="opt">-R</arg>
 		<arg choice="opt">-S</arg>
