@@ -181,9 +181,12 @@ print_entry_long(kadm5_principal_ent_t princ)
 
 	if (cmp_salt(&def_salt, k) == 0)
 	    salt = strdup("");
+	else if(k->key_data_length[1] == 0)
+	    salt = strdup("()");
 	else
 	    asprintf (&salt, "(%.*s)", k->key_data_length[1],
 		      (char *)k->key_data_contents[1]);
+
 
 	printf ("%s%s(%s%s)", (i != 0) ? ", " : "", e_string, s_string, salt);
 	free (e_string);
