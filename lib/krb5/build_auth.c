@@ -79,14 +79,11 @@ krb5_build_authenticator (krb5_context context,
       auth->ctime = sec;
       auth->cusec = usec;
   }
-#if 0
-  auth->subkey = NULL;
-#else
   krb5_generate_subkey (context, &cred->session, &auth->subkey);
   free_EncryptionKey (&auth_context->local_subkey);
   copy_EncryptionKey (auth->subkey,
 		      &auth_context->local_subkey);
-#endif
+
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     krb5_generate_seq_number (context,
 			      &cred->session, 
