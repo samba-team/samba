@@ -198,6 +198,9 @@
 /* the maximum age in seconds of a password. Should be a lp_ parameter */
 #define MAX_PASSWORD_AGE (21*24*60*60)
 
+/* Default allocation roundup. */
+#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
+
 /* shall we deny oplocks to clients that get timeouts? */
 #define FASCIST_OPLOCK_BACKOFF 1
 
