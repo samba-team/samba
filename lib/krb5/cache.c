@@ -40,6 +40,12 @@
 
 RCSID("$Id$");
 
+/*
+ * Add a new ccache type with operations `ops', overwriting any
+ * existing one if `override'.
+ * Return an error code or 0.
+ */
+
 krb5_error_code
 krb5_cc_register(krb5_context context, 
 		 const krb5_cc_ops *ops, 
@@ -47,25 +53,21 @@ krb5_cc_register(krb5_context context,
 {
     int i;
 
-    if(context->cc_ops == NULL){
-	context->num_cc_ops = 4;
-	context->cc_ops = calloc(context->num_cc_ops, sizeof(*context->cc_ops));
-    }
-    for(i = 0; context->cc_ops[i].prefix && i < context->num_cc_ops; i++){
-	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0){
+    for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
+	if(strcmp(context->cc_ops[i].prefix, ops->prefix) == 0) {
 	    if(override)
 		free(context->cc_ops[i].prefix);
 	    else
-		return KRB5_CC_TYPE_EXISTS; /* XXX */
+		return KRB5_CC_TYPE_EXISTS;
 	}
     }
-    if(i == context->num_cc_ops){
-	krb5_cc_ops *o = realloc(context->cc_ops, 
-				 (context->num_cc_ops + 4) * 
+    if(i == context->num_cc_ops) {
+	krb5_cc_ops *o = realloc(context->cc_ops,
+				 (context->num_cc_ops + 1) *
 				 sizeof(*context->cc_ops));
 	if(o == NULL)
 	    return KRB5_CC_NOMEM;
-	context->num_cc_ops += 4;
+	context->num_cc_ops++;
 	context->cc_ops = o;
 	memset(context->cc_ops + i, 0, 
 	       (context->num_cc_ops - i) * sizeof(*context->cc_ops));
@@ -78,6 +80,11 @@ krb5_cc_register(krb5_context context,
     return 0;
 }
 
+/*
+ * Allocate memory for a new ccache in `id' with operations `ops'
+ * and name `residual'.
+ * Return 0 or an error code.
+ */
 
 static krb5_error_code
 allocate_ccache (krb5_context context,
@@ -101,11 +108,13 @@ allocate_ccache (krb5_context context,
 
 /*
  * Find and allocate a ccache in `id' from the specification in `residual'.
+ * If the ccache name doesn't contain any colon, interpret it as a file name.
+ * Return 0 or an error code.
  */
 
 krb5_error_code
 krb5_cc_resolve(krb5_context context,
-		const char *residual,
+		const char *name,
 		krb5_ccache *id)
 {
     int i;
@@ -113,18 +122,23 @@ krb5_cc_resolve(krb5_context context,
     for(i = 0; i < context->num_cc_ops && context->cc_ops[i].prefix; i++) {
 	size_t prefix_len = strlen(context->cc_ops[i].prefix);
 
-	if(strncmp(context->cc_ops[i].prefix, residual, prefix_len) == 0
-	   && residual[prefix_len] == ':') {
+	if(strncmp(context->cc_ops[i].prefix, name, prefix_len) == 0
+	   && name[prefix_len] == ':') {
 	    return allocate_ccache (context, &context->cc_ops[i],
-				    residual + prefix_len + 1,
+				    name + prefix_len + 1,
 				    id);
 	}
     }
-    if (strchr (residual, ':') == NULL)
-	return allocate_ccache (context, &krb5_fcc_ops, residual, id);
+    if (strchr (name, ':') == NULL)
+	return allocate_ccache (context, &krb5_fcc_ops, name, id);
     else
 	return KRB5_CC_UNKNOWN_TYPE;
 }
+
+/*
+ * Generate a new ccache of type `ops' in `id'.
+ * Return 0 or an error code.
+ */
 
 krb5_error_code
 krb5_cc_gen_new(krb5_context context,
@@ -141,12 +155,20 @@ krb5_cc_gen_new(krb5_context context,
     return p->ops->gen_new(context, id);
 }
 
+/*
+ * Return the name of the ccache `id'
+ */
+
 const char*
 krb5_cc_get_name(krb5_context context,
 		 krb5_ccache id)
 {
     return id->ops->get_name(context, id);
 }
+
+/*
+ * Return the type of the ccache `id'.
+ */
 
 const char*
 krb5_cc_get_type(krb5_context context,
@@ -155,16 +177,20 @@ krb5_cc_get_type(krb5_context context,
     return id->ops->prefix;
 }
 
+/*
+ * Return a pointer to a static string containing the default ccache name.
+ */
+
 const char*
 krb5_cc_default_name(krb5_context context)
 {
     static char name[1024];
     char *p;
+
     p = getenv("KRB5CCNAME");
-    if(p) {
-	strncpy (name, p, sizeof(name));
-	name[sizeof(name) - 1] = '\0';
-    } else
+    if(p)
+	strlcpy (name, p, sizeof(name));
+    else
 	snprintf(name,
 		 sizeof(name),
 		 "FILE:/tmp/krb5cc_%u",
@@ -172,8 +198,10 @@ krb5_cc_default_name(krb5_context context)
     return name;
 }
 
-
-
+/*
+ * Open the default ccache in `id'.
+ * Return 0 or an error code.
+ */
 
 krb5_error_code
 krb5_cc_default(krb5_context context,
@@ -184,6 +212,11 @@ krb5_cc_default(krb5_context context,
 			   id);
 }
 
+/*
+ * Create a new ccache in `id' for `primary_principal'.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_initialize(krb5_context context,
 		   krb5_ccache id,
@@ -192,6 +225,11 @@ krb5_cc_initialize(krb5_context context,
     return id->ops->init(context, id, primary_principal);
 }
 
+
+/*
+ * Remove the ccache `id'.
+ * Return 0 or an error code.
+ */
 
 krb5_error_code
 krb5_cc_destroy(krb5_context context,
@@ -204,6 +242,11 @@ krb5_cc_destroy(krb5_context context,
     return ret;
 }
 
+/*
+ * Stop using the ccache `id' and free the related resources.
+ * Return 0 or an error code.
+u */
+
 krb5_error_code
 krb5_cc_close(krb5_context context,
 	      krb5_ccache id)
@@ -214,6 +257,11 @@ krb5_cc_close(krb5_context context,
     return ret;
 }
 
+/*
+ * Store `creds' in the ccache `id'.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_store_cred(krb5_context context,
 		   krb5_ccache id,
@@ -222,11 +270,17 @@ krb5_cc_store_cred(krb5_context context,
     return id->ops->store(context, id, creds);
 }
 
+/*
+ * Retrieve the credential identified by `mcreds' (and `whichfields')
+ * from `id' in `creds'.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_retrieve_cred(krb5_context context,
 		      krb5_ccache id,
 		      krb5_flags whichfields,
-		      krb5_creds *mcreds,
+		      const krb5_creds *mcreds,
 		      krb5_creds *creds)
 {
     krb5_error_code ret;
@@ -243,6 +297,11 @@ krb5_cc_retrieve_cred(krb5_context context,
     return ret;
 }
 
+/*
+ * Return the principal of `id' in `principal'.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_get_principal(krb5_context context,
 		      krb5_ccache id,
@@ -251,30 +310,50 @@ krb5_cc_get_principal(krb5_context context,
     return id->ops->get_princ(context, id, principal);
 }
 
+/*
+ * Start iterating over `id', `cursor' is initialized to the
+ * beginning.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_start_seq_get (krb5_context context,
-		       krb5_ccache id,
+		       const krb5_ccache id,
 		       krb5_cc_cursor *cursor)
 {
     return id->ops->get_first(context, id, cursor);
 }
 
+/*
+ * Retrieve the next cred pointed to by (`id', `cursor') in `creds'
+ * and advance `cursor'.
+ * Return 0 or an error code.
+ */
+
 krb5_error_code
 krb5_cc_next_cred (krb5_context context,
-		   krb5_ccache id,
+		   const krb5_ccache id,
 		   krb5_creds *creds,
 		   krb5_cc_cursor *cursor)
 {
     return id->ops->get_next(context, id, cursor, creds);
 }
 
+/*
+ * Destroy the cursor `cursor'.
+ */
+
 krb5_error_code
 krb5_cc_end_seq_get (krb5_context context,
-		     krb5_ccache id,
+		     const krb5_ccache id,
 		     krb5_cc_cursor *cursor)
 {
     return id->ops->end_get(context, id, cursor);
 }
+
+/*
+ * Remove the credential identified by `cred', `which' from `id'.
+ */
 
 krb5_error_code
 krb5_cc_remove_cred(krb5_context context,
@@ -285,6 +364,10 @@ krb5_cc_remove_cred(krb5_context context,
     return id->ops->remove_cred(context, id, which, cred);
 }
 
+/*
+ * Set the flags of `id' to `flags'.
+ */
+
 krb5_error_code
 krb5_cc_set_flags(krb5_context context,
 		  krb5_ccache id,
@@ -293,15 +376,20 @@ krb5_cc_set_flags(krb5_context context,
     return id->ops->set_flags(context, id, flags);
 }
 		    
+/*
+ * Copy the contents of `from' to `to'.
+ */
+
 krb5_error_code
 krb5_cc_copy_cache(krb5_context context,
-		   krb5_ccache from,
+		   const krb5_ccache from,
 		   krb5_ccache to)
 {
     krb5_error_code ret;
     krb5_cc_cursor cursor;
     krb5_creds cred;
     krb5_principal princ;
+
     ret = krb5_cc_get_principal(context, from, &princ);
     if(ret)
 	return ret;
@@ -324,9 +412,13 @@ krb5_cc_copy_cache(krb5_context context,
     return ret;
 }
 
+/*
+ * Return the version of `id'.
+ */
+
 krb5_error_code
 krb5_cc_get_version(krb5_context context,
-		    krb5_ccache id)
+		    const krb5_ccache id)
 {
     if(id->ops->get_version)
 	return id->ops->get_version(context, id);
