@@ -9,4 +9,4 @@ SMB_SUBSYSTEM(LIBSMB,[],
 		libcli/climessage.o
 		libcli/clideltree.o],
 		[],
-		[LIBCLI LIBRPC])
+		[LIBCLI LIBRPC SOCKET])
