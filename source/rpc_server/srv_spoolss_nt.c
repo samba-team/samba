@@ -1422,34 +1422,71 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	fstring				driver;
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
+	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
+	struct current_user		user;
+	WERROR				status;
+	WERROR				status_win2k = WERR_ACCESS_DENIED;
 	 
 	unistr2_to_dos(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_dos(arch,   &q_u->arch,   sizeof(arch)-1   );
+	get_current_user(&user, p);
+	 
+	unistr2_to_dos(arch,   &q_u->arch,   sizeof(arch)-1   );
 	
 	/* check that we have a valid driver name first */
-	if ((version=get_version_id(arch)) == -1) {
-		/* this is what NT returns */
+	
+	if ((version=get_version_id(arch)) == -1) 
 		return WERR_INVALID_ENVIRONMENT;
-	}
-		
-	/* if they said "Windows NT x86", then try for version 2 & 3 */
-	
-	if ( version == 2 )
-		version = DRIVER_ANY_VERSION;
-		
+				
 	ZERO_STRUCT(info);
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
-		return WERR_UNKNOWN_PRINTER_DRIVER;
+	ZERO_STRUCT(info_win2k);
+	
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
+	{
+		/* try for Win2k driver if "Windows NT x86" */
+		
+		if ( version == 2 ) {
+			version = 3;
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+				status = WERR_UNKNOWN_PRINTER_DRIVER;
+				goto done;
+			}
+		}
 	}
 	
-
-	if (printer_driver_in_use(arch, driver))
-	{
-		return WERR_PRINTER_DRIVER_IN_USE;
+	if (printer_driver_in_use(info.info_3)) {
+		status = WERR_PRINTER_DRIVER_IN_USE;
+		goto done;
 	}
-
-	return delete_printer_driver(info.info_3, NULL, version, False);
+		
+	if ( version == 2 )
+	{		
+		if (W_ERROR_IS_OK(get_a_printer_driver(&info_win2k, 3, driver, arch, 3)))
+		{
+			/* if we get to here, we now have 2 driver info structures to remove */
+			/* remove the Win2k driver first*/
+		
+			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, False );
+			free_a_printer_driver( info_win2k, 3 );
+			
+			/* this should not have failed---if it did, report to client */
+			if ( !W_ERROR_IS_OK(status_win2k) )
+				goto done;
+		}
+	}
+	
+	status = delete_printer_driver(info.info_3, &user, version, False);
+	
+	/* if at least one of the deletes succeeded return OK */
+	
+	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
+		status = WERR_OK;
+	
+done:
+	free_a_printer_driver( info, 3 );
+	
+	return status;
 }
 
 /********************************************************************
