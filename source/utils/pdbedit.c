@@ -251,13 +251,15 @@ static int fix_users_list (struct pdb_context *in)
 	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
 
 	while (check && (ret = NT_STATUS_IS_OK(in->pdb_getsampwent (in, sam_pwent)))) {
+		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
+	
 		if (!pdb_update_sam_account(sam_pwent)) {
-			DEBUG(0, ("Update of user %s failed!\n", pdb_get_username(sam_pwent)));
+			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
 		}
 		pdb_free_sam(&sam_pwent);
 		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
 		if (!check) {
-			DEBUG(0, ("Failed to initialise new SAM_ACCOUNT structure (out of memory?)\n"));
+			fprintf(stderr, "Failed to initialise new SAM_ACCOUNT structure (out of memory?)\n");
 		}
 			
 	}
