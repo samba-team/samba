@@ -670,8 +670,8 @@ void server_terminate(struct server_context *smb)
 /*
   called when a SMB socket becomes readable
 */
-static void smbd_read_handler(struct event_context *ev, struct fd_event *fde, 
-			      time_t t, uint16 flags)
+void smbd_read_handler(struct event_context *ev, struct fd_event *fde, 
+		       time_t t, uint16 flags)
 {
 	struct request_context *req;
 	struct server_context *smb = fde->private;
@@ -713,7 +713,8 @@ void smbd_process_async(struct server_context *smb)
   initialise a server_context from a open socket and register a event handler
   for reading from that socket
 */
-void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int fd)
+void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int fd,
+		     void (*read_handler)(struct event_context *, struct fd_event *, time_t, uint16))
 {
 	struct server_context *smb;
 	TALLOC_CTX *mem_ctx;
@@ -757,14 +758,14 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	/* setup a event handler for this socket. We are initially
 	   only interested in reading from the socket */
 	fde.fd = fd;
-	fde.handler = smbd_read_handler;
+	fde.handler = read_handler;
 	fde.private = smb;
 	fde.flags = EVENT_FD_READ;
 
 	event_add_fd(ev, &fde);
 
 	/* setup the DCERPC server subsystem */
-	dcesrv_init(smb);
+	dcesrv_init(&smb->dcesrv);
 }
 
 

@@ -7,6 +7,7 @@
 [
  uuid(e1af8308-5d1f-11c9-91a4-08002b14a0fa), 
  version(3.0), 
+ endpoints(epmapper, TCP-135),
  pointer_default(unique)
 ]
 interface epmapper

@@ -45,7 +45,8 @@ static int get_id(struct request_context *req)
 /*
   called when a listening socket becomes readable
 */
-static void accept_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+static void accept_connection(struct event_context *ev, struct fd_event *fde, 
+			      time_t t, uint16 flags)
 {
 	int accepted_fd, rc;
 	struct sockaddr addr;
@@ -71,7 +72,45 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde, ti
 	*/
 	ev = event_context_init();
 	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
-	init_smbsession(ev, model_ops, accepted_fd);
+	init_smbsession(ev, model_ops, accepted_fd, smbd_read_handler);
+	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
+	
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
+	rc = pthread_create(&thread_id, &thread_attr, &connection_thread, ev);
+	pthread_attr_destroy(&thread_attr);
+	if (rc == 0) {
+		DEBUG(4,("accept_connection_thread: created thread_id=%lu for fd=%d\n", 
+			(unsigned long int)thread_id, accepted_fd));
+	} else {
+		DEBUG(0,("accept_connection_thread: thread create failed for fd=%d, rc=%d\n", accepted_fd, rc));
+	}
+}
+
+
+/*
+  called when a rpc listening socket becomes readable
+*/
+static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+{
+	int accepted_fd, rc;
+	struct sockaddr addr;
+	socklen_t in_addrlen = sizeof(addr);
+	pthread_t thread_id;
+	pthread_attr_t thread_attr;
+	
+	/* accept an incoming connection */
+	accepted_fd = accept(fde->fd,&addr,&in_addrlen);
+			
+	if (accepted_fd == -1) {
+		DEBUG(0,("accept_connection_thread: accept: %s\n",
+			 strerror(errno)));
+		return;
+	}
+	
+	ev = event_context_init();
+	MUTEX_LOCK_BY_ID(MUTEX_SMBD);
+	init_rpcsession(ev, fde->private, accepted_fd);
 	MUTEX_UNLOCK_BY_ID(MUTEX_SMBD);
 	
 	pthread_attr_init(&thread_attr);
@@ -416,6 +455,7 @@ void process_model_thread_init(void)
 	/* fill in all the operations */
 	ops.model_startup = model_startup;
 	ops.accept_connection = accept_connection;
+	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
 	ops.exit_server = NULL;
 	ops.get_id = get_id;

@@ -240,7 +240,7 @@ static NTSTATUS ipc_open(struct request_context *req, union smb_open *oi)
 	endpoint.type = ENDPOINT_SMB;
 	endpoint.info.smb_pipe = p->pipe_name;
 
-	status = dcesrv_endpoint_connect(req->smb, &endpoint, &p->pipe_state);
+	status = dcesrv_endpoint_connect(&req->smb->dcesrv, &endpoint, &p->pipe_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		return status;

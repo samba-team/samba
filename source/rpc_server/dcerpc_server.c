@@ -25,11 +25,11 @@
 /*
   find the set of endpoint operations for an endpoint server
 */
-static const struct dcesrv_endpoint_ops *find_endpoint(struct server_context *smb,
+static const struct dcesrv_endpoint_ops *find_endpoint(struct dcesrv_context *dce,
 						       const struct dcesrv_endpoint *endpoint)
 {
 	struct dce_endpoint *ep;
-	for (ep=smb->dcesrv.endpoint_list; ep; ep=ep->next) {
+	for (ep=dce->endpoint_list; ep; ep=ep->next) {
 		if (ep->endpoint_ops->query_endpoint(endpoint)) {
 			return ep->endpoint_ops;
 		}
@@ -54,7 +54,7 @@ static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_state *dce, uint
 /*
   register an endpoint server
 */
-BOOL dcesrv_endpoint_register(struct server_context *smb, 
+BOOL dcesrv_endpoint_register(struct dcesrv_context *dce, 
 			      const struct dcesrv_endpoint_ops *ops)
 {
 	struct dce_endpoint *ep;
@@ -63,26 +63,20 @@ BOOL dcesrv_endpoint_register(struct server_context *smb,
 		return False;
 	}
 	ep->endpoint_ops = ops;
-	DLIST_ADD(smb->dcesrv.endpoint_list, ep);
+	DLIST_ADD(dce->endpoint_list, ep);
 	return True;
 }
 
 /*
   connect to a dcerpc endpoint
 */
-NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
-				 const struct dcesrv_endpoint *endpoint,
-				 struct dcesrv_state **p)
+NTSTATUS dcesrv_endpoint_connect_ops(struct dcesrv_context *dce,
+				     const struct dcesrv_endpoint *endpoint,
+				     const struct dcesrv_endpoint_ops *ops,
+				     struct dcesrv_state **p)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	const struct dcesrv_endpoint_ops *ops;
-
-	/* make sure this endpoint exists */
-	ops = find_endpoint(smb, endpoint);
-	if (!ops) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
 
 	mem_ctx = talloc_init("dcesrv_endpoint_connect");
 	if (!mem_ctx) {
@@ -95,7 +89,7 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*p)->smb = smb;
+	(*p)->dce = dce;
 	(*p)->mem_ctx = mem_ctx;
 	(*p)->endpoint = *endpoint;
 	(*p)->ops = ops;
@@ -115,6 +109,24 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	}
 	
 	return NT_STATUS_OK;
+}
+
+/*
+  connect to a dcerpc endpoint
+*/
+NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce,
+				 const struct dcesrv_endpoint *endpoint,
+				 struct dcesrv_state **p)
+{
+	const struct dcesrv_endpoint_ops *ops;
+
+	/* make sure this endpoint exists */
+	ops = find_endpoint(dce, endpoint);
+	if (!ops) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	return dcesrv_endpoint_connect_ops(dce, endpoint, ops, p);
 }
 
 
@@ -646,27 +658,35 @@ int dcesrv_lookup_endpoints(const struct dcerpc_interface_table *table,
 			    TALLOC_CTX *mem_ctx,
 			    struct dcesrv_ep_iface **e)
 {
-	*e = talloc_p(mem_ctx, struct dcesrv_ep_iface);
+	int i;
+	*e = talloc_array_p(mem_ctx, struct dcesrv_ep_iface, table->endpoints->count);
 	if (! *e) {
 		return -1;
 	}
 
-	(*e)->name = table->name;
-	(*e)->uuid = table->uuid;
-	(*e)->if_version = table->if_version;
-	(*e)->endpoint.type = ENDPOINT_SMB;
-	(*e)->endpoint.info.smb_pipe = table->endpoints->names[0];
+	for (i=0;i<table->endpoints->count;i++) {
+		(*e)[i].name = table->name;
+		(*e)[i].uuid = table->uuid;
+		(*e)[i].if_version = table->if_version;
+		if (strncmp(table->endpoints->names[i], "TCP-", 4) == 0) {
+			(*e)[i].endpoint.type = ENDPOINT_TCP;
+			(*e)[i].endpoint.info.tcp_port = atoi(table->endpoints->names[i]+4);
+		} else {
+			(*e)[i].endpoint.type = ENDPOINT_SMB;
+			(*e)[i].endpoint.info.smb_pipe = table->endpoints->names[i];
+		}
+	}
 
-	return 1;
+	return i;
 }
 
 
 /*
   initialise the dcerpc server subsystem
 */
-BOOL dcesrv_init(struct server_context *smb)
+BOOL dcesrv_init(struct dcesrv_context *dce)
 {
-	rpc_echo_init(smb);
-	rpc_epmapper_init(smb);
+	rpc_echo_init(dce);
+	rpc_epmapper_init(dce);
 	return True;
 }

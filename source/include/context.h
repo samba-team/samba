@@ -335,6 +335,9 @@ struct model_ops {
 
 	/* function to accept new connection */
 	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16);
+
+	/* function to accept new rpc over tcp connection */
+	void (*accept_rpc_connection)(struct event_context *, struct fd_event *, time_t, uint16);
 				
 	/* function to terminate a connection */
 	void (*terminate_connection)(struct server_context *smb, const char *reason);

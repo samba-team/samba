@@ -25,9 +25,6 @@ void load_printers(void)
 void file_init(void)
 {}
 
-void init_rpc_pipe_hnd(void)
-{}
-
 BOOL init_oplocks(void)
 { return True; }
 

@@ -59,7 +59,8 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde, ti
 	/* Child code ... */
 
 	/* close all the listening sockets */
-	event_remove_fd_all_handler(ev, accept_connection);
+	event_remove_fd_all_handler(ev, model_ops->accept_connection);
+	event_remove_fd_all_handler(ev, model_ops->accept_rpc_connection);
 			
 	/* tdb needs special fork handling */
 	if (tdb_reopen_all() == -1) {
@@ -72,9 +73,44 @@ static void accept_connection(struct event_context *ev, struct fd_event *fde, ti
 	/* initialize new process */
 	smbd_process_init();
 		
-	init_smbsession(ev, model_ops, accepted_fd); 
+	init_smbsession(ev, model_ops, accepted_fd, smbd_read_handler);
 
 	/* return to the event loop */
+}
+
+/*
+  called when a rpc listening socket becomes readable
+*/
+static void accept_rpc_connection(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+{
+	int accepted_fd;
+	struct sockaddr addr;
+	socklen_t in_addrlen = sizeof(addr);
+	pid_t pid;
+
+	accepted_fd = accept(fde->fd,&addr,&in_addrlen);
+	if (accepted_fd == -1) {
+		DEBUG(0,("accept_connection_standard: accept: %s\n",
+			 strerror(errno)));
+		return;
+	}
+
+	pid = fork();
+
+	if (pid != 0) {
+		/* parent or error code ... */
+		close(accepted_fd);
+		/* go back to the event loop */
+		return;
+	}
+
+	/* Child code ... */
+
+	/* close all the listening sockets */
+	event_remove_fd_all_handler(ev, accept_connection);
+	event_remove_fd_all_handler(ev, accept_rpc_connection);
+			
+	init_rpc_session(ev, fde->private, accepted_fd); 
 }
 
 /* called when a SMB connection goes down */
@@ -102,6 +138,7 @@ void process_model_standard_init(void)
 	/* fill in all the operations */
 	ops.model_startup = model_startup;
 	ops.accept_connection = accept_connection;
+	ops.accept_rpc_connection = accept_rpc_connection;
 	ops.terminate_connection = terminate_connection;
 	ops.get_id = get_id;
 
