@@ -252,7 +252,7 @@
 
 ROKEN_CPP_START
 
-#ifndef(IRIX4) /* fix for compiler bug */
+#ifndef IRIX4 /* fix for compiler bug */
 #ifdef RETSIGTYPE
 typedef RETSIGTYPE (*SigAction)(int);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
