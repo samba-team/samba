@@ -225,7 +225,6 @@ interface drsuapi
 		[case(-1)] drsuapi_DsGetDCInfoCtr01 ctr01;
 	} drsuapi_DsGetDCInfoCtr;
 
-	/* maybe WERROR function */
 	WERROR drsuapi_DsGetDomainControllerInfo(
 		[in,ref] policy_handle *bind_handle,
 		[in, out] int32 level,
