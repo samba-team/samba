@@ -986,7 +986,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 
 	if (enum_context > num_account) {
 		DEBUG(5, ("samr_reply_query_dispinfo: enumeration handle over total entries\n"));
-		return NT_STATUS_OK;
+		return NT_STATUS_NO_MORE_ENTRIES;
 	}
 
 	/* verify we won't overflow */
