@@ -734,9 +734,10 @@ int main(int argc, char ** argv)
 
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
+		return -1;
 	}
 
-	if(stat (mountpoint, &statbuf)) {
+	if(stat (".", &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
 		return -1;
 	}
@@ -782,6 +783,12 @@ int main(int argc, char ** argv)
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
 	options = malloc(optlen + 10);
+
+	if(options == NULL) {
+		printf("Could not allocate memory for mount options\n");
+		return -1;
+	}
+		
 
 	options[0] = 0;
 	strncat(options,"unc=",4);
