@@ -3276,7 +3276,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:A")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:Ld:Ac:")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
