@@ -4382,8 +4382,9 @@ unnecessarily.
 label(remoteannounce)
 dit(bf(remote announce (G)))
 
-This option allows you to setup nmbd to periodically announce itself
-to arbitrary IP addresses with an arbitrary workgroup name.
+This option allows you to setup url(bf(nmbd))(nmbd.8.html) to
+periodically announce itself to arbitrary IP addresses with an
+arbitrary workgroup name.
 
 This is useful if you want your Samba server to appear in a remote
 workgroup for which the normal browse propagation rules don't
@@ -4403,27 +4404,36 @@ The IP addresses you choose would normally be the broadcast addresses
 of the remote networks, but can also be the IP addresses of known
 browse masters if your network config is that stable.
 
+See the documentation file BROWSING.txt in the docs/ directory.
 
-.SS remote browse sync (G)
+  bf(Default:)
+	remote announce = <empty string>
 
-This option allows you to setup nmbd to periodically request synchronisation
-of browse lists with the master browser of a samba server that is on a remote
-segment. This option will allow you to gain browse lists for multiple
-workgroups across routed networks. This is done in a manner that does not work
-with any non-samba servers.
+  bf(Example:)
+tt(	remote announce = 192.168.2.255/SERVERS 192.168.4.255/STAFF)
 
-This is useful if you want your Samba server and all local clients
-to appear in a remote workgroup for which the normal browse propagation
-rules don't work. The remote workgroup can be anywhere that you can send IP
-packets to.
+label(remotebrowsesync)
+dit(bf(remote browse sync (G)))
+
+This option allows you to setup url(bf(nmbd))(nmbd.8.html) to
+periodically request synchronisation of browse lists with the master
+browser of a samba server that is on a remote segment. This option
+will allow you to gain browse lists for multiple workgroups across
+routed networks. This is done in a manner that does not work with any
+non-samba servers.
+
+This is useful if you want your Samba server and all local clients to
+appear in a remote workgroup for which the normal browse propagation
+rules don't work. The remote workgroup can be anywhere that you can
+send IP packets to.
 
 For example:
 
-       remote browse sync = 192.168.2.255 192.168.4.255
+tt(	remote browse sync = 192.168.2.255 192.168.4.255)
 
-the above line would cause nmbd to request the master browser on the
-specified subnets or addresses to synchronise their browse lists with
-the local server.
+the above line would cause url(bf(nmbd))(nmbd.8.html) to request the
+master browser on the specified subnets or addresses to synchronise
+their browse lists with the local server.
 
 The IP addresses you choose would normally be the broadcast addresses
 of the remote networks, but can also be the IP addresses of known
@@ -4432,204 +4442,341 @@ address is given Samba makes NO attempt to validate that the remote
 machine is available, is listening, nor that it is in fact the browse
 master on it's segment.
 
+  bf(Default:)
+	remote browse sync = <empty string>
 
-.SS revalidate (S)
+  bf(Example:)
+tt(	remote browse sync = 192.168.2.255 192.168.4.255)
+
+label(revalidate)
+dit(bf(revalidate (S)))
+
+Note that this option only works with
+link(bf("security=share"))(security) and will be ignored if this is
+not the case.
 
 This option controls whether Samba will allow a previously validated
 username/password pair to be used to attach to a share. Thus if you
-connect to \e\eserver\eshare1 then to \e\eserver\eshare2 it won't
+connect to tt(\\server\share1) then to tt(\\server\share2) it won't
 automatically allow the client to request connection to the second
 share as the same username as the first without a password.
 
-Note that this option only works with security=share and will
-be ignored if this is not the case.
+If bf("revalidate") is tt("True") then the client will be denied
+automatic access as the same username.
 
-If "revalidate" is True then the client will be denied automatic
-access as the same username.
-
-.B Default:
+  bf(Default:)
 	revalidate = False
 
-.B Example:
+  bf(Example:)
 	revalidate = True
 
-.SS root (G)
-See
-.B root directory.
-.SS root dir (G)
-See
-.B root directory.
-.SS root directory (G)
-Synonyms for this parameter are 'root dir' and 'root'.
+label(root)
+dit(bf(root (G)))
 
-The server will chroot() to this directory on startup. This is not 
-strictly necessary for secure operation. Even without it the server
-will deny access to files not in one of the service entries. It may 
-also check for, and deny access to, soft links to other parts of the 
-filesystem, or attempts to use .. in file names to access other 
-directories (depending on the setting of the "wide links" parameter).
+Synonym for link(bf("root directory"))(rootdirectory).
 
-Adding a "root dir" entry other than "/" adds an extra level of security, 
-but at a price. It absolutely ensures that no access is given to files not
-in the sub-tree specified in the "root dir" option, *including* some files 
-needed for complete operation of the server. To maintain full operability
-of the server you will need to mirror some system files into the "root dir"
-tree. In particular you will need to mirror /etc/passwd (or a subset of it),
-and any binaries or configuration files needed for printing (if required). 
-The set of files that must be mirrored is operating system dependent.
+label(rootdir)
+dit(bf(root dir (G)))
 
-.B Default:
- 	root directory = /
+Synonym for link(bf("root directory"))(rootdirectory).
 
-.B Example:
- 	root directory = /homes/smb
-.SS root postexec (S)
+label(rootdirectory)
+dit(bf(root directory (G)))
 
-This is the same as postexec except that the command is run as
-root. This is useful for unmounting filesystems (such as cdroms) after
-a connection is closed.
+The server will tt("chroot()") (ie. Change it's root directory) to
+this directory on startup. This is not strictly necessary for secure
+operation. Even without it the server will deny access to files not in
+one of the service entries. It may also check for, and deny access to,
+soft links to other parts of the filesystem, or attempts to use
+tt("..") in file names to access other directories (depending on the
+setting of the link(bf("wide links"))(widelinks) parameter).
 
-.SS root preexec (S)
+Adding a bf("root directory") entry other than tt("/") adds an extra
+level of security, but at a price. It absolutely ensures that no
+access is given to files not in the sub-tree specified in the bf("root
+directory") option, em(*including*) some files needed for complete
+operation of the server. To maintain full operability of the server
+you will need to mirror some system files into the bf("root
+directory") tree. In particular you will need to mirror /etc/passwd
+(or a subset of it), and any binaries or configuration files needed
+for printing (if required). The set of files that must be mirrored is
+operating system dependent.
 
-This is the same as preexec except that the command is run as
-root. This is useful for mounting filesystems (such as cdroms) before
-a connection is finalised.
+  bf(Default:)
+tt(	root directory = /)
 
-.SS security (G)
-This option affects how clients respond to Samba.
+bf(Example:)
+tt(	root directory = /homes/smb)
 
-The option sets the "security mode bit" in replies to protocol negotiations
-to turn share level security on or off. Clients decide based on this bit 
-whether (and how) to transfer user and password information to the server.
+label(rootpostexec)
+dit(bf(root postexec (S)))
 
-The default is "security=SHARE", mainly because that was the only
-option at one stage.
+This is the same as the link(bf("postexec"))(postexec) parameter
+except that the command is run as root. This is useful for unmounting
+filesystems (such as cdroms) after a connection is closed.
 
-The alternatives are "security = user" or "security = server". 
+See also link(bf("postexec"))(postexec).
+
+label(rootpreexec)
+dit(bf(root preexec (S)))
+
+This is the same as the link(bf("preexec"))(preexec) parameter except
+that the command is run as root. This is useful for mounting
+filesystems (such as cdroms) before a connection is finalised.
+
+See also link(bf("preexec"))(preexec).
+
+label(security)
+dit(bf(security (G)))
+
+This option affects how clients respond to Samba and is one of the most
+important settings in the bf(smb.conf) file.
+
+The option sets the tt("security mode bit") in replies to protocol
+negotiations with url(bf(smbd))(smbd.8.html) to turn share level
+security on or off. Clients decide based on this bit whether (and how)
+to transfer user and password information to the server.
+
+The default is bf("security=user"), as this is the most common setting
+needed when talking to Windows 98 and Windows NT4.0 SP3.
+
+The alternatives are bf("security = share") or bf("security = server") or
+bf("security=domain").
+
+em(*****NOTE THAT THIS DEFAULT IS DIFFERENT IN SAMBA2.0 THAN FOR
+PREVIOUS VERSIONS OF SAMBA *******).
+
+In previous versions of Samba the default was "security=share") mainly
+because that was the only option at one stage.
+
+There is a bug in WfWg that has relevence to this setting. When in
+user or server level security a WfWg client will totally ignore the
+password you type in the "connect drive" dialog box. This makes it
+very difficult (if not impossible) to connect to a Samba service as
+anyone except the user that you are logged into WfWg as.
 
 If your PCs use usernames that are the same as their usernames on the
-UNIX machine then you will want to use "security = user". If you
+UNIX machine then you will want to use bf("security = user"). If you
 mostly use usernames that don't exist on the UNIX box then use
-"security = share".
+bf("security = share").
 
-There is a bug in WfWg that may affect your decision. When in user
-level security a WfWg client will totally ignore the password you type
-in the "connect drive" dialog box. This makes it very difficult (if
-not impossible) to connect to a Samba service as anyone except the
-user that you are logged into WfWg as.
+The different settings will now be explained.
 
-If you use "security = server" then Samba will try to validate the
-username/password by passing it to another SMB server, such as an NT
-box. If this fails it will revert to "security = USER", but note that
-if encrypted passwords have been negotiated then Samba cannot revert
-back to checking the UNIX password file, it must have a valid 
-smbpasswd file to check users against. See the documentation
-docs/ENCRYPTION.txt for details on how to set this up.
+startdit()
 
-See the "password server" option for more details.
+dit(bf("security=share")) When clients connect to a share level
+security server then need not log onto the server with a valid
+username and password before attempting to connect to a shared
+resource. Instead, the clients send authentication information on a
+per-share basis, at the time they attempt to connect to that
+share.
 
-.B Default:
- 	security = SHARE
+Note that url(bf(smbd))(smbd.8.html) em(*ALWAYS*) uses a valid UNIX
+user to act on behalf of the client, even in bf("security=share")
+level security. There are no tt("anonymous") users.
 
-.B Example:
+As clients are not required to send a username to the server
+in share level security, url(bf(smbd))(smbd.8.html) uses several
+techniques to determine the correct UNIX user to use on behalf
+of the client. 
+
+startit()
+
+it() Parameters such as link(bf("user"))(user) and link(bf("guest
+only"))(guestonly), if set, will determine the UNIX user to use.
+
+it() Is a username is sent with the share connection request, then
+this is used as the UNIX username (see also link(bf("username
+map"))(usernamemap).
+
+it() If a username is not sent to the server, then
+url(bf(smbd))(smbd.8.html) will try the NetBIOS name of the client as
+a potential UNIX username.
+
+it() If no username can be determined then if the share is marked as
+available to the link(bf("guest account"))(guestaccount), then this
+guest user will be used.
+
+endit()
+
+Note that it can be confusing in share-level security as to which UNIX
+username will eventually be used in granting access.
+
+Note also that share-level security cannot support link(bf("encrypted
+passwords"))(encryptpasswords).
+
+dit(bf("security=user"))
+
+This is the default security setting in Samba2.0. With user-level
+security a client must first tt("log-on") with a valid username and
+password (which can be mapped using the link(bf("username
+map"))(usernamemap) parameter). Encrypted passwords (see the
+link(bf("encrypted passwords"))(encryptpasswords) parameter) can also
+be used in this security mode. Parameters such as
+link(bf("user"))(user) and link(bf("guest only"))(guestonly), if set
+are then applied and may change the UNIX user to use on this
+connection, but only after the user has been successfully
+authenticated.
+
+dit(bf("security=server"))
+
+In this mode Samba will try to validate the username/password by
+passing it to another SMB server, such as an NT box. If this fails it
+will revert to bf("security = user"), but note that if encrypted
+passwords have been negotiated then Samba cannot revert back to
+checking the UNIX password file, it must have a valid smbpasswd file
+to check users against. See the documentation file in the docs/
+directory ENCRYPTION.txt for details on how to set this up.
+
+See also the link(bf("password server"))(passwordserver) parameter.
+and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
+
+dit(bf("security=domain"))
+
+This mode will only work correctly if
+url(bf(smbpasswd))(smbpasswd.8.html) has been used to add this machine
+into a Windows NT Domain. It expects the link(bf("encrypted
+passwords"))(encryptpasswords) parameter to be set to tt("true"). In
+this mode Samba will try to validate the username/password by passing
+it to a Windows NT Primary or Backup Domain Controller, in exactly the
+same way that a Windows NT Server would do.
+
+em(Note) that a valid UNIX user must still exist as well as the
+account on the Domain Controller to allow Samba to have a valid
+UNIX account to map file access to.
+
+See also the link(bf("password server"))(passwordserver) parameter.
+and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
+
+enddit()
+
+  bf(Default:)
  	security = USER
-.SS server string (G)
+
+  bf(Example:)
+ 	security = DOMAIN
+
+label(serverstring)
+dit(bf(server string (G)))
+
 This controls what string will show up in the printer comment box in
-print manager and next to the IPC connection in "net view". It can be
+print manager and next to the IPC connection in tt("net view"). It can be
 any string that you wish to show to your users.
 
-It also sets what will appear in browse lists next to the machine name.
+It also sets what will appear in browse lists next to the machine
+name.
 
-A %v will be replaced with the Samba version number.
+A tt("%v") will be replaced with the Samba version number.
 
-A %h will be replaced with the hostname.
+A tt("%h") will be replaced with the hostname.
 
-.B Default:
-	server string = Samba %v
+  bf(Default:)
+tt(	server string = Samba %v)
 
-.B Example:
-	server string = University of GNUs Samba Server
+  bf(Example:)
+tt(	server string = University of GNUs Samba Server)
 
-.SS set directory (S)
-If 'set directory = no', then users of the service may not use the setdir
-command to change directory.
+label(setdirectory)
+dit(bf(set directory (S)))
 
-The setdir command is only implemented in the Digital Pathworks client. See the
-Pathworks documentation for details.
+If tt("set directory = no"), then users of the service may not use the
+setdir command to change directory.
 
-.B Default:
+The setdir command is only implemented in the Digital Pathworks
+client. See the Pathworks documentation for details.
+
+  bf(Default:)
  	set directory = no
 
-.B Example:
+  bf(Example:)
  	set directory = yes
 
-.SS shared file entries (G)
-This parameter has been removed (as of Samba 1.9.18 and above). The new
-System V shared memory code prohibits the user from allocating the
-share hash bucket size directly.
+label(sharemodes)
+dit(bf(share modes (S)))
 
-.SS shared mem size (G)
-This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
-It specifies the size of the shared memory (in bytes) to use between smbd 
-processes. You should never change this parameter unless you have studied 
-the source and know what you are doing. This parameter defaults to 1024
-multiplied by the setting of the maximum number of open files in the
-file local.h in the Samba source code. MAX_OPEN_FILES is normally set
-to 100, so this parameter defaults to 102400 bytes.
-
-.B Default
-	shared mem size = 102400
-
-.SS smb passwd file (G)
-This option sets the path to the encrypted smbpasswd file. This is a *VERY
-DANGEROUS OPTION* if the smb.conf is user writable. By default the path
-to the smbpasswd file is compiled into Samba.
-
-.SS smbrun (G)
-This sets the full path to the smbrun binary. This defaults to the
-value in the Makefile.
-
-You must get this path right for many services to work correctly.
-
-.B Default:
-taken from Makefile
-
-.B Example:
-	smbrun = /usr/local/samba/bin/smbrun
-
-.SS share modes (S)
-
-This enables or disables the honouring of the "share modes" during a
+This enables or disables the honouring of the tt("share modes") during a
 file open. These modes are used by clients to gain exclusive read or
-write access to a file. 
+write access to a file.
 
 These open modes are not directly supported by UNIX, so they are
-simulated using lock files in the "lock directory". The "lock
-directory" specified in smb.conf must be readable by all users.
+simulated using shared memory, or lock files if your UNIX doesn't
+support shared memory (almost all do).
 
 The share modes that are enabled by this option are DENY_DOS,
 DENY_ALL, DENY_READ, DENY_WRITE, DENY_NONE and DENY_FCB.
 
-Enabling this option gives full share compatibility but may cost a bit
-of processing time on the UNIX server. They are enabled by default.
+This option gives full share compatibility and enabled by default.
 
-.B Default:
+You should em(*NEVER*) turn this parameter off as many Windows
+applications will break if you do so.
+
+  bf(Default:)
 	share modes = yes
 
-.B Example:
-	share modes = no
+label(sharedmemsize)
+dit(bf(shared mem size (G)))
 
-.SS short preserve case (S)
+It specifies the size of the shared memory (in bytes) to use between
+url(bf(smbd))(smbd.8.html) processes. This parameter defaults to one
+megabyte of shared memory. It is possible that if you have a large
+server with many files open simultaneously that you may need to
+increase this parameter. Signs that this parameter is set too low are
+users reporting strange problems trying to save files (locking errors)
+and error messages in the smbd log looking like tt("ERROR
+smb_shm_alloc : alloc of XX bytes failed").
 
-This controls if new short filenames are created with the case that
-the client passes, or if they are forced to be the "default" case.
+  bf(Default:)
+tt(	shared mem size = 1048576)
 
-.B Default:
-       short preserve case = no
+  bf(Example:)
+tt(	shared mem size = 5242880 ; Set to 5mb for a large number of files.)
 
-See the section on "NAME MANGLING" for a fuller discussion.
+label(shortpreservecase)
+dit(bf(short preserve case (G)))
 
-.SS socket address (G)
+This boolean parameter controls if new files which conform to 8.3
+syntax, that is all in upper case and of suitable length, are created
+upper case, or if they are forced to be the tt("default") case. This
+option can be use with link(bf("preserve case
+=yes"))(preservecaseoption) to permit long filenames to retain their
+case, while short names are lowered. Default em(Yes).
+
+See the section on link(bf(NAME MANGLING))(NAMEMANGLING).
+
+  bf(Default:)
+	short preserve case = yes
+
+label(smbpasswdfile)
+dit(bf(smb passwd file (G)))
+
+This option sets the path to the encrypted smbpasswd file.  By default
+the path to the smbpasswd file is compiled into Samba.
+
+  bf(Default:)
+	smb passwd file= <compiled default>
+
+  bf(Example:)
+	smb passwd file = /usr/samba/private/smbpasswd
+
+label(smbrun)
+dit(bf(smbrun (G)))
+
+This sets the full path to the bf(smbrun) binary. This defaults to the
+value in the Makefile.
+
+You must get this path right for many services to work correctly.
+
+You should not need to change this parameter so long as Samba
+is installed correctly.
+
+  bf(Default:)
+	smbrun=<compiled default>
+
+  bf(Example:)
+	smbrun = /usr/local/samba/bin/smbrun
+
+label(socketaddress)
+dit(bf(socket address (G)))
 
 This option allows you to control what address Samba will listen for
 connections on. This is used to support multiple virtual interfaces on
@@ -4637,13 +4784,14 @@ the one server, each with a different configuration.
 
 By default samba will accept connections on any address.
 
-.B Example:
+  bf(Example:)
 	socket address = 192.168.2.20
 
-.SS socket options (G)
-This option (which can also be invoked with the -O command line
-option) allows you to set socket options to be used when talking with
-the client.
+label(socketoptions)
+dit(bf(socket options (G)))
+
+This option allows you to set socket options to be used when talking
+with the client.
 
 Socket options are controls on the networking layer of the operating
 systems which allow the connection to be tuned.
@@ -4651,15 +4799,15 @@ systems which allow the connection to be tuned.
 This option will typically be used to tune your Samba server for
 optimal performance for your local network. There is no way that Samba
 can know what the optimal parameters are for your net, so you must
-experiment and choose them yourself. I strongly suggest you read the
+experiment and choose them yourself. We strongly suggest you read the
 appropriate documentation for your operating system first (perhaps
-"man setsockopt" will help).
+bf("man setsockopt") will help).
 
 You may find that on some systems Samba will say "Unknown socket
 option" when you supply an option. This means you either mis-typed it
 or you need to add an include file to includes.h for your OS. If the
-latter is the case please send the patch to me
-(samba-bugs@samba.anu.edu.au).
+latter is the case please send the patch to
+email(samba-bugs@samba.anu.edu.au).
 
 Any of the supported socket options may be combined in any way you
 like, as long as your OS allows it.
@@ -4667,27 +4815,31 @@ like, as long as your OS allows it.
 This is the list of socket options currently settable using this
 option:
 
-  SO_KEEPALIVE
+startit()
 
-  SO_REUSEADDR
+it() SO_KEEPALIVE
 
-  SO_BROADCAST
+it() SO_REUSEADDR
 
-  TCP_NODELAY
+it() SO_BROADCAST
 
-  IPTOS_LOWDELAY
+it() TCP_NODELAY
 
-  IPTOS_THROUGHPUT
+it() IPTOS_LOWDELAY
 
-  SO_SNDBUF *
+it() IPTOS_THROUGHPUT
 
-  SO_RCVBUF *
+it() SO_SNDBUF *
 
-  SO_SNDLOWAT *
+it() SO_RCVBUF *
 
-  SO_RCVLOWAT *
+it() SO_SNDLOWAT *
 
-Those marked with a * take an integer argument. The others can
+it() SO_RCVLOWAT *
+
+endit()
+
+Those marked with a tt(*) take an integer argument. The others can
 optionally take a 1 or 0 argument to enable or disable the option, by
 default they will be enabled if you don't specify 1 or 0.
 
@@ -4699,8 +4851,7 @@ If you are on a local network then a sensible option might be
 
 socket options = IPTOS_LOWDELAY
 
-If you have an almost unloaded local network and you don't mind a lot
-of extra CPU usage in the server then you could try
+If you have a local network then you could try:
 
 socket options = IPTOS_LOWDELAY TCP_NODELAY
 
@@ -4710,10 +4861,10 @@ IPTOS_THROUGHPUT.
 Note that several of the options may cause your Samba server to fail
 completely. Use these options with caution!
 
-.B Default:
-	no socket options
+  bf(Default:)
+	socket options = TCP_NODELAY
 
-.B Example:
+  bf(Example:)
 	socket options = IPTOS_LOWDELAY	
 
 
