@@ -148,32 +148,35 @@ interface security
 
 
 	/*
-	  privilege names
+	  privilege IDs. Please keep the IDs below 64. If we get more
+	  than 64 then we need to change security_token
 	*/
-	const string SEC_PRIV_SECURITY                 = "SeSecurityPrivilege";
-	const string SEC_PRIV_BACKUP                   = "SeBackupPrivilege";
-	const string SEC_PRIV_RESTORE                  = "SeRestorePrivilege";
-	const string SEC_PRIV_SYSTEMTIME               = "SeSystemtimePrivilege";
-	const string SEC_PRIV_SHUTDOWN                 = "SeShutdownPrivilege";
-	const string SEC_PRIV_REMOTE_SHUTDOWN          = "SeRemoteShutdownPrivilege";
-	const string SEC_PRIV_TAKE_OWNERSHIP           = "SeTakeOwnershipPrivilege";
-	const string SEC_PRIV_DEBUG                    = "SeDebugPrivilege";
-	const string SEC_PRIV_SYSTEM_ENVIRONMENT       = "SeSystemEnvironmentPrivilege";
-	const string SEC_PRIV_SYSTEM_PROFILE           = "SeSystemProfilePrivilege";
-	const string SEC_PRIV_PROFILE_SINGLE_PROCESS   = "SeProfileSingleProcessPrivilege";
-	const string SEC_PRIV_INCREASE_BASE_PRIORITY   = "SeIncreaseBasePriorityPrivilege";
-	const string SEC_PRIV_LOAD_DRIVER              = "SeLoadDriverPrivilege";
-	const string SEC_PRIV_CREATE_PAGEFILE          = "SeCreatePagefilePrivilege";
-	const string SEC_PRIV_INCREASE_QUOTA           = "SeIncreaseQuotaPrivilege";
-	const string SEC_PRIV_CHANGE_NOTIFY            = "SeChangeNotifyPrivilege";
-	const string SEC_PRIV_UNDOCK                   = "SeUndockPrivilege";
-	const string SEC_PRIV_MANAGE_VOLUME            = "SeManageVolumePrivilege";
-	const string SEC_PRIV_IMPERSONATE              = "SeImpersonatePrivilege";
-	const string SEC_PRIV_CREATE_GLOBAL            = "SeCreateGlobalPrivilege";
-	const string SEC_PRIV_ENABLE_DELEGATION        = "SeEnableDelegationPrivilege";
-	const string SEC_PRIV_INTERACTIVE_LOGON        = "SeInteractiveLogonRight";
-	const string SEC_PRIV_NETWORK_LOGON            = "SeNetworkLogonRight";
-	const string SEC_PRIV_REMOTE_INTERACTIVE_LOGON = "SeRemoteInteractiveLogonRight";
+	typedef enum {
+		SEC_PRIV_SECURITY                  = 1,
+		SEC_PRIV_BACKUP                    = 2,
+		SEC_PRIV_RESTORE                   = 3,
+		SEC_PRIV_SYSTEMTIME                = 4,
+		SEC_PRIV_SHUTDOWN                  = 5,
+		SEC_PRIV_REMOTE_SHUTDOWN           = 6,
+		SEC_PRIV_TAKE_OWNERSHIP            = 7,
+		SEC_PRIV_DEBUG                     = 8,
+		SEC_PRIV_SYSTEM_ENVIRONMENT        = 9,
+		SEC_PRIV_SYSTEM_PROFILE            = 10,
+		SEC_PRIV_PROFILE_SINGLE_PROCESS    = 11,
+		SEC_PRIV_INCREASE_BASE_PRIORITY    = 12,
+		SEC_PRIV_LOAD_DRIVER               = 13,
+		SEC_PRIV_CREATE_PAGEFILE           = 14,
+		SEC_PRIV_INCREASE_QUOTA            = 15,
+		SEC_PRIV_CHANGE_NOTIFY             = 16,
+		SEC_PRIV_UNDOCK                    = 17,
+		SEC_PRIV_MANAGE_VOLUME             = 18,
+		SEC_PRIV_IMPERSONATE               = 19,
+		SEC_PRIV_CREATE_GLOBAL             = 20,
+		SEC_PRIV_ENABLE_DELEGATION         = 21,
+		SEC_PRIV_INTERACTIVE_LOGON         = 22,
+		SEC_PRIV_NETWORK_LOGON             = 23,
+		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 24
+	} sec_privilege;
 
 
 	/* a domain SID. Note that unlike Samba3 this contains a pointer,
@@ -273,24 +276,4 @@ interface security
 		[range(0,0x40000),value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
-
-	typedef [public,printonly] struct {
-		/* TODO */
-		uint32 flags;
-	} security_privilege;
-
-	typedef [public,printonly] struct {
-		uint32 flags;
-		dom_sid *user_sid;
-		dom_sid *group_sid;
-		dom_sid *logon_sid;
-		uint32 num_sids;
-		dom_sid sids[num_sids];
-		uint32 num_restricted_sids;
-		dom_sid restricted_sids[num_restricted_sids];
-		uint32 num_privileges;
-		security_privilege privileges[num_privileges];
-		security_acl *dacl;
-	} security_token;
-
 }

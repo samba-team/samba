@@ -609,7 +609,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct PAC_LOGON_INFO *logon_info;
-	struct nt_user_token *ptoken;
+	struct security_token *ptoken;
 	struct dom_sid *sid;
 	char *p;
 	char *principal;
@@ -684,15 +684,15 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 		talloc_free(server_info);
 
-		ptoken = talloc_p(session_info, struct nt_user_token);
-		if (!ptoken) {
+		ptoken = security_token_initialise(session_info);
+		if (ptoken == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		ptoken->num_sids = 0;
-		
-		ptoken->user_sids = talloc_array_p(ptoken, struct dom_sid*, logon_info->groups_count + 2);
-		if (!ptoken->user_sids) {
+		ptoken->num_sids = 0;		
+		ptoken->sids = talloc_array_p(ptoken, struct dom_sid *, 
+					      logon_info->groups_count + 2);
+		if (!ptoken->sids) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		
@@ -702,21 +702,24 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		sid = dom_sid_dup(server_info, logon_info->dom_sid);
 		server_info->primary_group_sid = dom_sid_add_rid(server_info, sid, logon_info->group_rid);
 
-		ptoken->user_sids[0] = talloc_reference(session_info, server_info->user_sid);
+		ptoken->user_sid = server_info->user_sid;
+		ptoken->group_sid = server_info->primary_group_sid;
+		ptoken->sids[0] = talloc_reference(ptoken, ptoken->user_sid);
 		ptoken->num_sids++;
-		ptoken->user_sids[1] = talloc_reference(session_info, server_info->primary_group_sid);
+		ptoken->sids[1] = talloc_reference(ptoken, ptoken->group_sid);
 		ptoken->num_sids++;
 
-		for (;ptoken->num_sids < (logon_info->groups_count + 2); ptoken->num_sids++) {
+		for (;ptoken->num_sids < (logon_info->groups_count + 2); 
+		     ptoken->num_sids++) {
 			sid = dom_sid_dup(session_info, logon_info->dom_sid);
-			ptoken->user_sids[ptoken->num_sids]
+			ptoken->sids[ptoken->num_sids]
 				= dom_sid_add_rid(session_info, sid, 
 						  logon_info->groups[ptoken->num_sids - 2].rid);
 		}
 		
-		debug_nt_user_token(DBGC_AUTH, 0, ptoken);
+		debug_security_token(DBGC_AUTH, 0, ptoken);
 		
-		session_info->nt_user_token = ptoken;
+		session_info->security_token = ptoken;
 	} else {
 		TALLOC_CTX *mem_ctx = talloc_named(gensec_krb5_state, 0, "PAC-less session info discovery for %s@%s", username, realm);
 		if (!mem_ctx) {

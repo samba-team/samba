@@ -431,10 +431,11 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		/* get the string onto the context */
 		grouplist = talloc_strdup(session_info, "");
 		
-		for (i=0; i< session_info->nt_user_token->num_sids; i++) {
-			grouplist = talloc_asprintf_append(grouplist, "%s,", 
-							   dom_sid_string(session_info, 
-									  session_info->nt_user_token->user_sids[i]));
+		for (i=0; i<session_info->security_token->num_sids; i++) {
+			struct security_token *token = session_info->security_token; 
+			const char *sidstr = dom_sid_string(session_info, 
+							    token->sids[i]);
+			grouplist = talloc_asprintf_append(grouplist, "%s,", sidstr);
 		}
 
 		mux_printf(mux_id, "GL %s\n", grouplist);
