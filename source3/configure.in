@@ -2277,10 +2277,14 @@ LIBS=""
   ########################################################
   # now see if we can find the ldap libs in standard paths
   if test x$have_ldap != xyes; then
-  AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
-	LDAP_OBJ=lib/ldap.o;
-	AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])])
-	AC_CHECK_HEADERS([ldap.h lber.h], [default_static_modules="$default_static_modules pdb_ldap"])
+        AC_CHECK_LIB(ldap, ldap_init, [
+           LIBS="$LIBS -lldap";
+           AC_CHECK_LIB(ldap, ldap_domain2hostlist, [
+	      AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
+	      AC_CHECK_HEADERS([ldap.h lber.h], 
+                 [default_static_modules="$default_static_modules pdb_ldap"])
+           ])
+        ])
 
 	########################################################
 	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
