@@ -17,6 +17,7 @@ ADD_OBJ_FILES = \
 		torture/basic/delete.o \
 		torture/basic/unlink.o \
 		torture/basic/disconnect.o \
+		torture/basic/delaywrite.o \
 		torture/basic/attr.o 
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB

@@ -315,18 +315,8 @@ BOOL torture_raw_mux(void)
 
 	mem_ctx = talloc_init("torture_raw_mux");
 
-	/* cleanup */
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
-		printf("(%s) Failed to cleanup " BASEDIR "\n", __location__);
-		ret = False;
-		goto done;
-	}
-
-
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create %s\n", BASEDIR);
-		ret = False;
-		goto done;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
 	}
 
 	if (!test_mux_open(cli, mem_ctx)) {
@@ -341,7 +331,6 @@ BOOL torture_raw_mux(void)
 		ret = False;
 	}
 
-done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);

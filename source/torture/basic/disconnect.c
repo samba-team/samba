@@ -136,17 +136,8 @@ BOOL torture_disconnect(void)
 		return False;
 	}
 
-	/* cleanup */
-	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
-		printf("(%s) Failed to cleanup " BASEDIR "\n", __location__);
-		ret = False;
-		goto done;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create %s\n", BASEDIR);
-		ret = False;
-		goto done;
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
 	}
 
 	for (i=0;i<100;i++) {
@@ -161,7 +152,6 @@ BOOL torture_disconnect(void)
 		}
 	}
 
-done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);

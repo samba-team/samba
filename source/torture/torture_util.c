@@ -25,6 +25,20 @@
 
 
 /*
+  setup a directory ready for a test
+*/
+BOOL torture_setup_dir(struct smbcli_state *cli, const char *dname)
+{
+	smb_raw_exit(cli->session);
+	if (smbcli_deltree(cli->tree, dname) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
+		printf("Unable to setup %s - %s\n", dname, smbcli_errstr(cli->tree));
+		return False;
+	}
+	return True;
+}
+
+/*
   create a directory, returning a handle to it
 */
 int create_directory_handle(struct smbcli_tree *tree, const char *dname)
