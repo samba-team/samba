@@ -1,5 +1,5 @@
-#ifndef ubi_sLinkList_H
-#define ubi_sLinkList_H
+#ifndef UBI_SLINKLIST_H
+#define UBI_SLINKLIST_H
 /* ========================================================================== **
  *                              ubi_sLinkList.h
  *
@@ -27,6 +27,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_sLinkList.h,v 
+ * Revision 0.8  1998/06/04 21:29:27  crh
+ * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
+ * This is more "standard", and is what people expect.  Weird, eh?
+ *
  * Revision 0.7  1998/06/03 18:06:03  crh
  * Further fiddling with sys_include.h, which has been moved from the .c file
  * to the .h file.
@@ -228,4 +232,4 @@ ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr, ubi_slNodePtr After );
    */
 
 /* ================================ The End ================================= */
-#endif /* ubi_sLinkList_H */
+#endif /* UBI_SLINKLIST_H */

@@ -1,5 +1,5 @@
-#ifndef ubi_SplayTree_H
-#define ubi_SplayTree_H
+#ifndef UBI_SPLAYTREE_H
+#define UBI_SPLAYTREE_H
 /* ========================================================================== **
  *                              ubi_SplayTree.h
  *
@@ -39,6 +39,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.h,v 
+ * Revision 4.4  1998/06/04 21:29:27  crh
+ * Upper-cased defined constants (eg UBI_BINTREE_H) in some header files.
+ * This is more "standard", and is what people expect.  Weird, eh?
+ *
  * Revision 4.3  1998/06/03 17:45:05  crh
  * Further fiddling with sys_include.h.  It's now in ubi_BinTree.h which is
  * included by all of the binary tree files.
@@ -364,4 +368,4 @@ int ubi_sptModuleID( int size, char *list[] );
 #define ubi_trModuleID( s, l ) ubi_sptModuleID( s, l )
 
 /* ================================ The End ================================= */
-#endif /* ubi_SplayTree_H */
+#endif /* UBI_SPLAYTREE_H */
