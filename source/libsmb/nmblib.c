@@ -180,26 +180,32 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   int ret = 0;
   BOOL got_pointer=False;
 
-  if (length - offset < 2) return(0);  
+  if (length - offset < 2)
+    return(0);  
 
   /* handle initial name pointers */
-  if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret)) return(0);
+  if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret))
+    return(0);
   
   m = ubuf[offset];
 
-  if (!m) return(0);
-  if ((m & 0xC0) || offset+m+2 > length) return(0);
+  if (!m)
+    return(0);
+  if ((m & 0xC0) || offset+m+2 > length)
+    return(0);
 
   memset((char *)name,'\0',sizeof(*name));
 
   /* the "compressed" part */
-  if (!got_pointer) ret += m + 2;
+  if (!got_pointer)
+    ret += m + 2;
   offset++;
-  while (m) {
+  while (m > 0) {
     unsigned char c1,c2;
     c1 = ubuf[offset++]-'A';
     c2 = ubuf[offset++]-'A';
-    if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1)) return(0);
+    if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1))
+      return(0);
     name->name[n++] = (c1<<4) | c2;
     m -= 2;
   }
@@ -213,21 +219,27 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
     /* remove trailing spaces */
     name->name[15] = 0;
     n = 14;
-    while (n && name->name[n]==' ') name->name[n--] = 0;  
+    while (n && name->name[n]==' ')
+      name->name[n--] = 0;  
   }
 
   /* now the domain parts (if any) */
   n = 0;
   while (ubuf[offset]) {
     /* we can have pointers within the domain part as well */
-    if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret)) return(0);
+    if (!handle_name_ptrs(ubuf,&offset,length,&got_pointer,&ret))
+      return(0);
 
     m = ubuf[offset];
-    if (!got_pointer) ret += m+1;
-    if (n) name->scope[n++] = '.';
-    if (m+2+offset>length || n+m+1>sizeof(name->scope)) return(0);
+    if (!got_pointer)
+      ret += m+1;
+    if (n)
+      name->scope[n++] = '.';
+    if (m+2+offset>length || n+m+1>sizeof(name->scope))
+      return(0);
     offset++;
-    while (m--) name->scope[n++] = (char)ubuf[offset++];
+    while (m--)
+      name->scope[n++] = (char)ubuf[offset++];
   }
   name->scope[n++] = 0;  
 

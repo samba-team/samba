@@ -329,8 +329,9 @@ BOOL reload_services(BOOL test)
 
 
 /****************************************************************************
-this prevents zombie child processes
+ Catch a sighup.
 ****************************************************************************/
+
 VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
 
 static void sig_hup(int sig)

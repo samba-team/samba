@@ -3803,7 +3803,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
 SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL *err)
 {
-  SMB_OFF_T count;
+  SMB_OFF_T count = 0;
 
   *err = False;
 
@@ -3824,11 +3824,21 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
       DEBUG(0,("get_lock_count: Error : a large file count (%x << 32) was sent and we don't \
 support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) ));
 
-      *err = True;
-      return (SMB_OFF_T)-1;
-    }
+      /*
+       * Before we error out, see if we can sensibly map the top bits
+       * down to the lower bits. It seems that NT has this horrible bug
+       * where it will send 64 bit lock requests even if told not to. JRA.
+       */
 
-    count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
+      if(IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
+        count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset));
+      else {
+        *err = True;
+        return (SMB_OFF_T)-1;
+      }
+    }
+    else
+      count = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset));
 
 #endif /* LARGE_SMB_OFF_T */
   }
@@ -3841,7 +3851,7 @@ support large counts.\n", (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(da
 
 SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL *err)
 {
-  SMB_OFF_T offset;
+  SMB_OFF_T offset = 0;
 
   *err = False;
 
@@ -3862,11 +3872,21 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
       DEBUG(0,("get_lock_count: Error : a large file offset (%x << 32) was sent and we don't \
 support large offsets.\n", (unsigned int)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) ));
 
-      *err = True;
-      return (SMB_OFF_T)-1;
-    }
+      /*
+       * Before we error out, see if we can sensibly map the top bits
+       * down to the lower bits. It seems that NT has this horrible bug
+       * where it will send 64 bit lock requests even if told not to. JRA.
+       */
 
-    offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
+      if(IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset)) == (uint32)0xFFFFFFFF)
+        offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
+      else {
+        *err = True;
+        return (SMB_OFF_T)-1;
+      }
+    }
+    else
+      offset = (SMB_OFF_T)IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
 
 #endif /* LARGE_SMB_OFF_T */
   }

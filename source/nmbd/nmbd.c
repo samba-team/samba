@@ -86,6 +86,8 @@ static void sig_term(int sig)
 /**************************************************************************** **
  catch a sighup
  **************************************************************************** */
+static VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+
 static void sig_hup(int sig)
 {
   BlockSignals( True, SIGHUP );
@@ -95,9 +97,8 @@ static void sig_hup(int sig)
   write_browse_list( 0, True );
 
   dump_all_namelists();
-  reload_services( True );
 
-  set_samba_nb_type();
+  reload_after_sighup = True;
 
   BlockSignals(False,SIGHUP);
 
@@ -395,6 +396,16 @@ static void process(void)
      * regularly sync with any other DMBs we know about 
      */
     sync_all_dmbs(t);
+
+    /*
+     * Reload the services file if we got a sighup.
+     */
+
+    if(reload_after_sighup) {
+      reload_services( True );
+      reload_after_sighup = False;
+    }
+
   }
 } /* process */
 
