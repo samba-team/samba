@@ -1,6 +1,7 @@
 If you'd like to work on any of these, please contact jerry@samba.org or jelmer@samba.org.
 
 Outdated docs:
+Manifest
 docs/announce - out of date (announces 2.2.0) - should it go away?
 docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 docs/docbook/manpages/net.8.sgml - Still not finished
@@ -8,8 +9,6 @@ docs/docbook/manpages/rpcclient.1.sgml - Command documentation might be outdated
 docs/docbook/manpages/samba.7.sgml - Listing of samba programs is not complete
 docs/docbook/manpages/smbcontrol.1.sgml - Document -s, samsync, samrepl, pool-usage, dmalloc-mark, dmalloc-log-changed, shutdown, change_id
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
-docs/docbook/projdoc/DOMAIN_MEMBER.sgml - Needs update to 3.0
-docs/docbook/projdoc/ADS-HOWTO.sgml - seems outdated (it says we require 'ads server' when in ads mode, though that's not true, according to the manpages...)
 docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
 docs/docbook/projdoc/PAM-Authentication-And-Samba.sgml
 docs/docbook/projdoc/Printing.sgml - Cups is not documented, smbprint, printing /to/ a windows server... - Kurt Pfeifle

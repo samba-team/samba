@@ -217,6 +217,64 @@ on this system just substitute the correct package name
 	</userinput></para>
 	
 	<para>if you find this version a disaster!</para>
+
+	<sect2>
+	<title>Compiling samba with Active Directory support</title>
+	
+	<para>In order to compile samba with ADS support, you need to have installed
+	on your system: 
+	<simplelist>
+	<member>the MIT kerberos development libraries (either install from the sources or use a package). The heimdal libraries will not work.</member>
+	<member>the OpenLDAP development libraries.</member>
+	</simplelist>
+
+	<para>If your kerberos libraries are in a non-standard location then
+	  remember to add the configure option --with-krb5=DIR.</para>
+
+    <para>After you run configure make sure that <filename>include/config.h</filename> it generates contains lines like this:</para>
+
+		  <para><programlisting>
+#define HAVE_KRB5 1
+#define HAVE_LDAP 1
+		  </programlisting></para>
+
+	  <para>If it doesn't then configure did not find your krb5 libraries or
+	    your ldap libraries. Look in config.log to figure out why and fix
+		  it.</para>
+
+	<sect3>
+	<title>Installing the required packages for Debian</title>
+
+	<para>On Debian you need to install the following packages:</para>
+	<para>
+	<simplelist>
+	<member>libkrb5-dev</member>
+	<member>krb5-user</member>
+	</simplelist>
+	</para>
+	</sect3>
+
+	<sect3>
+	<title>Installing the required packages for RedHat</title>
+
+	<para>On RedHat this means you should have at least: </para>
+	<para>
+	<simplelist>
+	<member>krb5-workstation (for kinit)</member>
+	<member>krb5-libs (for linking with)</member>
+	<member>krb5-devel (because you are compiling from source)</member>
+	</simplelist>
+	</para>
+
+	<para>in addition to the standard development environment.</para>
+
+	<para>Note that these are not standard on a RedHat install, and you may need
+	to get them off CD2.</para>
+
+	</sect3>
+	
+	</sect2>
+			  
 </sect1>
 
 <sect1>
