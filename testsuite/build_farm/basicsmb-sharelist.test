@@ -12,7 +12,10 @@ test_sharelist() {
 	return 0
 }
 
-(test_smb_conf_setup) || exit 1
+# Need guest account
+password=samba
+security=USER
+(test_smb_conf_setup && test_smbpasswd $password ) || exit 1
 
 test_sharelist || exit 1
 
