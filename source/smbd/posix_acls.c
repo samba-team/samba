@@ -306,6 +306,21 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
 }
 
 /****************************************************************************
+ Map generic UNIX permissions to POSIX ACL perms.
+****************************************************************************/
+
+static acl_perm_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x_mask)
+{
+	acl_perm_t ret = 0;
+
+	ret |= (mode & r_mask) ? ACL_READ : 0;
+	ret |= (mode & w_mask) ? ACL_WRITE : 0;
+	ret |= (mode & x_mask) ? ACL_EXECUTE : 0;
+
+	return ret;
+}
+
+/****************************************************************************
  Count a linked list of canonical ACE entries.
 ****************************************************************************/
 
@@ -333,6 +348,76 @@ static void free_canon_ace_list( canon_ace *list_head )
 	}
 }
 
+/******************************************************************************
+ Fall back to the generic 3 element UNIX permissions.
+********************************************************************************/
+
+static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbuf,
+										DOM_SID *powner, DOM_SID *pgroup)
+{
+	extern DOM_SID global_sid_World;
+	canon_ace *list_head = NULL;
+	canon_ace *owner_ace = NULL;
+	canon_ace *group_ace = NULL;
+	canon_ace *other_ace = NULL;
+
+	/*
+	 * Create 3 linked list entries.
+	 */
+
+	if ((owner_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+		goto fail;
+
+	if ((gtoup_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+		goto fail;
+
+	if ((other_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+		goto fail;
+
+	ZERO_STRUCTP(owner_ace);
+	ZERO_STRUCTP(group_ace);
+	ZERO_STRUCTP(other_ace);
+
+	acl_tag_t type;
+	acl_perm_t perms;
+	DOM_SID sid;
+
+	owner_ace->type = ACL_USER_OBJ;
+	owner_ace->sid = *powner;
+
+	group_ace->type = ACL_GROUP_OBJ;
+	group_ace->sid = *pgroup;
+
+	other_ace->type = ACL_OTHER_OBJ;
+	other_ace->sid = global_sid_World;
+
+	if (!fsp->is_directory) {
+		owner_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+		group_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+		other_ace->perms = unix_perms_to_acl_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH);
+	} else {
+		mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
+
+		owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
+		group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
+		other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
+	}
+
+	DLIST_ADD(list_head, other_ace);
+	DLIST_ADD(list_head, group_ace);
+	DLIST_ADD(list_head, owner_ace);
+
+	return list_head;
+
+  fail:
+
+	safe_free(owner_ace);
+	safe_free(group_ace);
+	safe_free(other_ace);
+
+	return NULL;
+}
+
 /****************************************************************************
  Create a linked list of canonical ACE entries. This is sorted so that DENY
  entries are at the front of the list, as NT requires.
@@ -347,9 +432,6 @@ static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 	canon_ace *next_ace = NULL;
 	int entry_id = ACL_FIRST_ENTRY;
 	acl_entry_t entry;
-
-	if (posix_acl == NULL)
-		return default_canonicalise_acl(psbuf);
 
 	while ( acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		acl_tag_t tagtype;
@@ -525,11 +607,19 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	create_file_sids(&sbuf, &owner_sid, &group_sid);
 
 	/* Create the canon_ace lists. */
-	file_ace = canonicalise_acl( posix_acl, &sbuf);
+	if (posix_acl)
+		file_ace = canonicalise_acl( posix_acl, &sbuf);
+	else
+		file_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid);
+
 	num_acls = count_canon_ace_list(file_ace);
 
 	if (fsp->is_directory) { 
-		dir_ace = canonicalise_acl( dir_acl, &sbuf);
+		if (dir_ace)
+			dir_ace = canonicalise_acl( dir_acl, &sbuf);
+		else
+			dir_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid);
+
 		num_dir_acls = count_canon_ace_list(dir_ace);
 	}
 
@@ -595,75 +685,6 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		free_sec_acl(&psa);
 
 	return sd_size;
-}
-
-	} else {
-
-		/*
-		 * Fall back to the generic 3 element UNIX permissions.
-		 */
-
-		owner_access = map_unix_perms(&owner_acl_type, sbuf.st_mode,
-						S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
-		group_access = map_unix_perms(&grp_acl_type, sbuf.st_mode,
-								S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
-		other_access = map_unix_perms(&other_acl_type, sbuf.st_mode,
-						S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
-
-	if(owner_access.mask)
-		init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type, owner_access, 0);
-
-	if(group_access.mask)
-		init_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type, group_access, 0);
-
-	if(other_access.mask)
-		init_sec_ace(&ace_list[num_acls++], &global_sid_World, other_acl_type, other_access, 0);
-
-  if(fsp->is_directory) {
-    /*
-     * For directory ACLs we also add in the inherited permissions
-     * ACE entries. These are the permissions a file would get when
-     * being created in the directory.
-     */
-    mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
-
-    owner_access = map_unix_perms(&owner_acl_type, mode,
-                          S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
-    group_access = map_unix_perms(&grp_acl_type, mode,
-                          S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory);
-    other_access = map_unix_perms(&other_acl_type, mode,
-                          S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory);
-
-    if(owner_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &owner_sid, owner_acl_type,
-                   owner_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
-
-    if(group_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &group_sid, grp_acl_type,
-                   group_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
-
-    if(other_access.mask)
-      init_sec_ace(&ace_list[num_acls++], &global_sid_World, other_acl_type,
-                   other_access, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
-  }
-
-  if(num_acls) {
-    if((psa = make_sec_acl( ACL_REVISION, num_acls, ace_list)) == NULL) {
-      DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
-      return 0;
-    }
-  }
-
-  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sd_size);
-
-  if(!*ppdesc) {
-    DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
-    sd_size = 0;
-  }
-
-  free_sec_acl(&psa);
-
-  return sd_size;
 }
 
 /****************************************************************************
