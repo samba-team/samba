@@ -76,7 +76,7 @@ log files. This fix should help a *lot* of people who were
 reporting smbd aborting in the middle of a copy operation.
 7). SIGALRM bugfix to ensure infinate file locks time out.
 8). New code to implement NT ACL reporting for cacls.exe program.
-9). UDP lookback socket rebind fix for Solaris.
+9). UDP loopback socket rebind fix for Solaris.
 10). Ensure all UNICODE strings are correctly in little-endian
 format.
 11). smbpasswd file locking fix.
