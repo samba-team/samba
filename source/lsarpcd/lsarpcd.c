@@ -120,17 +120,15 @@ static void update_trust_account(void)
 	}
 	if (s2 == NT_STATUS_NOPROBLEMO)
 	{
-		int len;
-		if (!secret_get_data(&secret, old_trust, &len) || len != 16)
+		if (secret_to_nt_owf(old_trust, &secret))
 		{
-			s2 = NT_STATUS_ACCESS_DENIED;
+			dump_data_pw("$MACHINE.ACC-hashed:", old_trust, 16);
 		}
 		else
 		{
-			dump_data_pw("$MACHINE.ACC:", old_trust, 16);
+			DEBUG(0,("old secret to OWF: failed\n"));
 		}
 	}
-
 
 	cur_time = time(NULL);
 	sec_time = nt_time_to_unix(&ntlct);
@@ -168,7 +166,6 @@ static void update_trust_account(void)
 
 		if (!strequal("\\\\.", srv_name))
 		{
-
 			res2 = res2 ?
 				modify_trust_password(global_myworkgroup,
 						      srv_name, old_trust,
@@ -194,6 +191,7 @@ static void update_trust_account(void)
 	{
 		_lsa_close(&lsa_pol);
 	}
+	DEBUG(10,("update_trust_account: %d\n", __LINE__));
 }
 
 /****************************************************************************

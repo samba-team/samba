@@ -328,6 +328,10 @@ BOOL secret_get_data(const STRING2 * secret, uchar * data, uint32 * len)
 	{
 		return False;
 	}
+	if ((*len) > 1024)
+	{
+		DEBUG(0,("secret_get_data: length too long!\n"));
+	}
 	memcpy(data, secret->buffer + 8, *len);
 	return True;
 }
@@ -338,7 +342,7 @@ obtains a trust account password
 BOOL secret_to_nt_owf(uchar trust_passwd[16], const STRING2 * secret)
 {
 	UNISTR2 uni_pwd;
-	uint32 len;
+	uint32 len = 0;
 	pstring data;
 	int i;
 

@@ -28,16 +28,6 @@
 
 extern int DEBUGLEVEL;
 
-#ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 64
-#endif
-
-#define POL_NO_INFO 0
-#define POL_REG_INFO 1
-#define POL_SAMR_INFO 2
-#define POL_CLI_INFO 3
-#define POL_SVC_INFO 4
-
 
 struct policy
 {
@@ -51,7 +41,7 @@ struct policy
 	char *name;
 
 	int type;
-	void (*free_fn)(void*);
+	void (*free_fn) (void *);
 	void *dev;
 };
 
@@ -74,10 +64,11 @@ struct policy_cache *get_global_hnd_cache(void)
 ****************************************************************************/
 static void create_pol_hnd(POLICY_HND *hnd)
 {
-	static uint32 pol_hnd_low  = 0;
+	static uint32 pol_hnd_low = 0;
 	NTTIME ntt;
 
-	if (hnd == NULL) return;
+	if (hnd == NULL)
+		return;
 
 	ZERO_STRUCTP(hnd);
 
@@ -89,8 +80,8 @@ static void create_pol_hnd(POLICY_HND *hnd)
 	hnd->uuid.time_low = ntt.low;
 	hnd->uuid.time_mid = (ntt.high & 0xffff);
 	hnd->uuid.time_hi_and_version = ((ntt.high >> 16) & 0xffff);
-	SIVAL(hnd->uuid.remaining, 0, getpid()); 
-	SIVAL(hnd->uuid.remaining, 4, pol_hnd_low); 
+	SIVAL(hnd->uuid.remaining, 0, getpid());
+	SIVAL(hnd->uuid.remaining, 4, pol_hnd_low);
 }
 
 /****************************************************************************
@@ -119,20 +110,36 @@ void free_policy_cache(struct policy_cache *cache)
   find policy by handle
 ****************************************************************************/
 static struct policy *find_policy(struct policy_cache *cache,
-				const POLICY_HND *hnd)
+				  const POLICY_HND *hnd)
 {
 	struct policy *p;
 
-	for (p=cache->Policy;p;p=p->next) {
-		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
-			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
-			dump_data(4, (const char *)hnd,
-			sizeof(*hnd));
+	if (cache == NULL)
+	{
+		DEBUG(0, ("find_policy: NULL cache\n"));
+		SMB_ASSERT(False);
+	}
+
+	if (hnd == NULL)
+	{
+		DEBUG(0, ("find_policy: NULL handle\n"));
+		SMB_ASSERT(False);
+		return NULL;
+	}
+
+	for (p = cache->Policy; p; p = p->next)
+	{
+		DEBUG(10, ("Compare policy hnd[%x] ", p->pnum));
+		dump_data(10, (const char *)hnd, sizeof(*hnd));
+		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0)
+		{
+			DEBUG(4, ("Found policy hnd[%x] ", p->pnum));
+			dump_data(4, (const char *)hnd, sizeof(*hnd));
 			return p;
 		}
 	}
 
-	DEBUG(4,("cache->Policy not found: "));
+	DEBUG(4, ("cache->Policy not found: "));
 	dump_data(4, (const char *)hnd, sizeof(*hnd));
 
 	return NULL;
@@ -198,8 +205,7 @@ const char *policy_hnd_get_name(struct policy_cache *cache,
 		return "(invalid POLICY_HND)";
 	}
 	name = pol_get_name(p);
-	DEBUG(4, ("policy(pnum=%x %s): getting name\n",
-		  p->pnum, name));
+	DEBUG(4, ("policy(pnum=%x %s): getting name\n", p->pnum, name));
 	return name;
 }
 
@@ -208,8 +214,7 @@ const char *policy_hnd_get_name(struct policy_cache *cache,
   find first available policy slot.  copies a policy handle for you.
 ****************************************************************************/
 BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from)
+		    POLICY_HND *hnd, const POLICY_HND *from)
 {
 	struct policy *p = find_policy(cache, from);
 
@@ -217,7 +222,7 @@ BOOL dup_policy_hnd(struct policy_cache *cache,
 	{
 		return False;
 	}
-	DEBUG(3,("Duplicating policy state pnum=%x\n", p->pnum));
+	DEBUG(3, ("Duplicating policy state pnum=%x\n", p->pnum));
 	return register_policy_hnd(cache, &p->key, hnd, p->access_mask);
 }
 
@@ -225,9 +230,8 @@ BOOL dup_policy_hnd(struct policy_cache *cache,
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
 BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask)
+			 const vuser_key * key,
+			 POLICY_HND *hnd, uint32 access_mask)
 {
 	struct policy *p;
 	static int count = 1;
@@ -235,13 +239,13 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 	p = (struct policy *)malloc(sizeof(*p));
 	if (!p)
 	{
-		DEBUG(0,("ERROR: out of memory!\n"));
+		DEBUG(0, ("ERROR: out of memory!\n"));
 		return False;
 	}
 
 	ZERO_STRUCTP(p);
 
-	p->open = True;				
+	p->open = True;
 	p->pnum = count++;
 	p->access_mask = access_mask;
 	if (key != NULL)
@@ -256,10 +260,10 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 
 
 	DLIST_ADD(cache->Policy, p);
-	
-	DEBUG(4,("Opened policy hnd[%x] ", p->pnum));
-	DEBUG(10,("register_policy_hnd: vuser [%d, %x]\n",
-	           p->key.pid, p->key.vuid));
+
+	DEBUG(4, ("Opened policy hnd[%x] ", p->pnum));
+	DEBUG(10, ("register_policy_hnd: vuser [%d, %x]\n",
+		   p->key.pid, p->key.vuid));
 
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 	dump_data(4, (char *)hnd, sizeof(*hnd));
@@ -270,10 +274,9 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask)
+BOOL open_policy_hnd(struct policy_cache *cache,
+		     const vuser_key * key,
+		     POLICY_HND *hnd, uint32 access_mask)
 {
 	create_pol_hnd(hnd);
 	return register_policy_hnd(cache, key, hnd, access_mask);
@@ -282,10 +285,9 @@ BOOL open_policy_hnd(struct policy_cache *cache,
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask)
+BOOL open_policy_hnd_link(struct policy_cache *cache,
+			  const POLICY_HND *parent_hnd,
+			  POLICY_HND *hnd, uint32 access_mask)
 {
 	const vuser_key *key = get_policy_vuser_key(cache, parent_hnd);
 	if (key == NULL)
@@ -303,15 +305,15 @@ int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
-	return p?p->pnum:-1;
+	return p ? p->pnum : -1;
 }
 
 
 /****************************************************************************
   set pol state.
 ****************************************************************************/
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev)
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd,
+		      void (*fn) (void *), void *dev)
 {
 	struct policy *p = find_policy(cache, hnd);
 
@@ -323,9 +325,9 @@ BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd,
 		p->dev = dev;
 		p->free_fn = fn;
 		return True;
-	} 
+	}
 
-	DEBUG(3,("Error setting policy state\n"));
+	DEBUG(3, ("Error setting policy state\n"));
 
 	return False;
 }
@@ -344,7 +346,7 @@ void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd)
 		return p->dev;
 	}
 
-	DEBUG(3,("Error getting policy state\n"));
+	DEBUG(3, ("Error getting policy state\n"));
 	return NULL;
 }
 
@@ -401,7 +403,7 @@ BOOL policy_hnd_check_state_type(struct policy_cache *cache,
 		return False;
 	}
 
-	ret = (p->type==type);
+	ret = (p->type == type);
 
 	if (ret)
 	{
@@ -426,13 +428,15 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 
 	if (!p)
 	{
-		DEBUG(3,("Error closing policy\n"));
+		DEBUG(3, ("Error closing policy\n"));
 		return False;
 	}
 
 	DEBUG(3, ("policy(pnum=%x %s): Closing\n", p->pnum, pol_get_name(p)));
 
 	DLIST_REMOVE(cache->Policy, p);
+
+	ZERO_STRUCTP(hnd);
 
 	if (p->free_fn != NULL)
 	{
@@ -444,10 +448,9 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 	}
 
 	safe_free(p->name);
-
 	free(p);
 
-	ZERO_STRUCTP(hnd);
+	DEBUG(10, ("policy closed\n"));
 
 	return True;
 }
@@ -456,20 +459,20 @@ BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
   get pol state.
 ****************************************************************************/
 BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to)
+		     POLICY_HND *to)
 {
 	struct policy *p = find_policy(cache, hnd);
 	struct policy *pto = find_policy(cache, to);
 
 	if (p != NULL && p->open && pto != NULL && pto->open)
 	{
-		DEBUG(3,("Linking policy key pnum=%x pid=%d vuid=%x\n",
-		          p->key.pid, p->key.vuid, p->pnum));
+		DEBUG(3, ("Linking policy key pnum=%x pid=%d vuid=%x\n",
+			  p->key.pid, p->key.vuid, p->pnum));
 		pto->key = p->key;
 		return True;
 	}
 
-	DEBUG(3,("Error getting policy link states\n"));
+	DEBUG(3, ("Error getting policy link states\n"));
 	return False;
 }
 
@@ -477,18 +480,18 @@ BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
   get pol state.
 ****************************************************************************/
 const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd)
+				      const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
 	if (p != NULL && p->open)
 	{
-		DEBUG(3,("Getting policy vuser_key pnum=%x pid=%d vuid=%x\n",
-		          p->pnum, p->key.pid, p->key.vuid));
+		DEBUG(3, ("Getting policy vuser_key pnum=%x pid=%d vuid=%x\n",
+			  p->pnum, p->key.pid, p->key.vuid));
 		return &p->key;
 	}
 
-	DEBUG(3,("Error getting policy state\n"));
+	DEBUG(3, ("Error getting policy state\n"));
 	return NULL;
 }
 
@@ -496,7 +499,7 @@ const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
   get user session key.
 ****************************************************************************/
 BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16])
+			 uchar usr_sess_key[16])
 {
 	const vuser_key *key = get_policy_vuser_key(cache, hnd);
 	user_struct *vuser;
@@ -509,11 +512,10 @@ BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 	vuser = get_valid_user_struct(key);
 	if (vuser == NULL)
 	{
-		DEBUG(10,("pol_get_usr_sesskey: no vuser struct\n"));
+		DEBUG(10, ("pol_get_usr_sesskey: no vuser struct\n"));
 		return False;
 	}
 	memcpy(usr_sess_key, vuser->usr.user_sess_key, 16);
 	vuid_free_user_struct(vuser);
 	return True;
 }
-

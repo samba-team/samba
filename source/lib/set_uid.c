@@ -124,6 +124,8 @@ BOOL become_gid(gid_t gid)
 ****************************************************************************/
 BOOL unbecome_to_initial_uid(void)
 {
+	DEBUG(10,("unbecome_to_initial_uid: %d\n", __LINE__));
+
 	if (!current_user.conn)
 		return (False);
 
@@ -178,10 +180,11 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 	gid_t gid;
 	uid_t uid;
 
-	DEBUG(5, ("become_unix_sec_ctx: %d %d\n", new_uid, new_gid));
 	if (become_root_depth != 0x0)
 	{
-		DEBUG(0,("become_unix_sec_ctx %d %d: non-zero become_root_depth\n", new_uid, new_gid));
+		DEBUG(0,
+		      ("become_unix_sec_ctx %d %d: non-zero become_root_depth\n",
+		       new_uid, new_gid));
 		SMB_ASSERT(False);
 	}
 
@@ -194,6 +197,26 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 	}
 
 	unbecome_to_initial_uid();
+
+	safe_free(current_user.groups);
+
+	if (n_groups != 0 && groups != NULL)
+	{
+		int i;
+		gid_t *groups_copy = g_new(gid_t, n_groups);
+		if (groups_copy == NULL)
+		{
+			return False;
+		}
+		for (i = 0; i < n_groups; i++)
+		{
+			groups_copy[i] = groups[i];
+		}
+		groups = groups_copy;
+	}
+
+	DEBUG(5, ("become_unix_sec_ctx: %d %d %d %p\n", new_uid, new_gid,
+		  n_groups, groups));
 
 	uid = new_uid;
 	gid = new_gid;
@@ -210,7 +233,7 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 		if (current_user.ngroups > 0)
 		{
 			if (sys_setgroups(current_user.ngroups,
-				      current_user.groups) < 0)
+					  current_user.groups) < 0)
 			{
 				DEBUG(0, ("sys_setgroups call failed!\n"));
 			}
@@ -218,7 +241,8 @@ BOOL become_unix_sec_ctx(const vuser_key * k, connection_struct * conn,
 	}
 	{
 		int i;
-		DEBUG(3, ("Setting %d in %d groups: ", (int)new_uid, n_groups));
+		DEBUG(3,
+		      ("Setting %d in %d groups: ", (int)new_uid, n_groups));
 		for (i = 0; i < n_groups; i++)
 		{
 			DEBUG(3, ("%s%d", (i ? ", " : ""), (int)groups[i]));
@@ -257,6 +281,8 @@ BOOL become_guest(void)
 	BOOL ret;
 	const struct passwd *pass = NULL;
 
+	DEBUG(10, ("become_guest\n"));
+
 	if (!pass)
 		pass = Get_Pwnam(lp_guestaccount(-1), True);
 	if (!pass)
@@ -277,6 +303,9 @@ BOOL become_guest(void)
 
 	current_user.conn = NULL;
 	current_user.key.vuid = UID_FIELD_INVALID;
+	current_user.ngroups = 0;
+	safe_free(current_user.groups);
+	current_user.groups = NULL;
 
 	return (ret);
 }
@@ -300,9 +329,16 @@ void become_root(BOOL save_dir)
 
 	if (become_root_depth == 0)
 	{
+		DEBUG(10, ("become_root_depth zero: saving %d %d %d %p\n",
+			   current_user.uid,
+			   current_user.gid,
+			   current_user.ngroups, current_user.groups));
 		current_user_saved = current_user;
 	}
 	become_root_depth++;
+
+	DEBUG(10, ("become_root: %d %d\n",
+		   current_user_saved.uid, current_user_saved.gid));
 
 	become_uid(0);
 	become_gid(0);
@@ -315,9 +351,20 @@ Set save_dir if you also need to save/restore the CWD
 ****************************************************************************/
 void unbecome_root(BOOL restore_dir)
 {
-	DEBUG(10,("unbecome_root: %d %d\n",
-				current_user_saved.uid,
-				current_user_saved.gid));
+	int i;
+
+	DEBUG(10, ("unbecome_root: %d %d %d %p\n",
+		   current_user_saved.uid,
+		   current_user_saved.gid,
+		   current_user_saved.ngroups, current_user_saved.groups));
+
+	for (i = 0; i < current_user_saved.ngroups; i++)
+	{
+		DEBUG(10,
+		      ("%s%d", (i ? ", " : ""),
+		       (int)current_user_saved.groups[i]));
+	}
+	DEBUG(10, ("\n"));
 
 	if (become_root_depth <= 0)
 	{
@@ -334,6 +381,7 @@ void unbecome_root(BOOL restore_dir)
 			   become_root_depth));
 		return;
 	}
+
 	/* we might have done a become_user() while running as root,
 	   if we have then become root again in order to become 
 	   non root! */
@@ -353,7 +401,7 @@ void unbecome_root(BOOL restore_dir)
 	if (current_user_saved.ngroups > 0)
 	{
 		if (sys_setgroups(current_user_saved.ngroups,
-			      current_user_saved.groups) < 0)
+				  current_user_saved.groups) < 0)
 			DEBUG(0, ("ERROR: sys_setgroups call failed!\n"));
 	}
 #endif

@@ -553,6 +553,9 @@ static void usage(char *pname)
 		fn->reload_services(True);
 		msrpcd_process(fn, p.l, p.name);
 	}
+
+	DEBUG(10,("msrpc close: %d\n", __LINE__));
+
 	if (ClientMSRPC != -1)
 	{
 		close(ClientMSRPC);

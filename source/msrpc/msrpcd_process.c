@@ -454,11 +454,11 @@ void msrpcd_process(msrpc_service_fns * fn, rpcsrv_struct * l,
 					  strerror(errno)));
 			}
 
+			unbecome_to_initial_uid();
+
 			if (fn->idle != NULL)
 			{
-				become_root(False);
 				fn->idle();
-				unbecome_root(False);
 			}
 
 			return;
