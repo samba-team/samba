@@ -27,47 +27,13 @@
       directory creation times
    3. tar now accepts both UNIX path names and DOS path names. I prefer
       those lovely /'s to those UGLY \'s :-)
-   4. the files to exclude can be specified as a regular expression by adding
-      an r flag to the other tar flags. Eg:
 
-         -TcrX file.tar "*.(obj|exe)"
-
-      will skip all .obj and .exe files
 */
 
 
 #include "includes.h"
 #include "clitar.h"
-#ifdef HAVE_REGEX_H
 #include <regex.h>
-#endif
-
-typedef struct file_info_struct file_info2;
-
-struct file_info_struct
-{
-  int size;
-  int mode;
-  int uid;
-  int gid;
-  /* These times are normally kept in GMT */
-  time_t mtime;
-  time_t atime;
-  time_t ctime;
-  char *name;     /* This is dynamically allocate */
-
-  file_info2 *next, *prev;  /* Used in the stack ... */
-
-};
-
-typedef struct
-{
-  file_info2 *top;
-  int items;
-
-} stack;
-
-stack dir_stack = {NULL, 0}; /* Want an empty stack */
 
 extern BOOL recurse;
 
@@ -94,11 +60,6 @@ BOOL tar_inc=False;
 BOOL tar_reset=False;
 /* Include / exclude mode (true=include, false=exclude) */
 BOOL tar_excl=True;
-/* use regular expressions for search on file names */
-BOOL tar_re_search=False;
-#ifdef HAVE_REGEX_H
-regex_t *preg;
-#endif
 /* Dump files with System attribute */
 BOOL tar_system=False;
 /* Dump files with Hidden attribute */
@@ -125,84 +86,17 @@ int tarhandle;
 
 static void writetarheader(int f,  char *aname, int size, time_t mtime,
 			   char *amode, unsigned char ftype);
-static void do_atar();
-static void do_tar();
-static void oct_it(long value, int ndgs, char *p);
+
+/* Forward references. */
 static void fixtarname(char *tptr, char *fp, int l);
 static int dotarbuf(int f, char *b, int n);
-static void dozerobuf();
-static void dotareof();
-static void initarbuf();
-static int do_setrattr();
-
-/* restore functions */
-static long readtarheader();
+static void oct_it (long value, int ndgs, char *p);
 static long unoct(char *p, int ndgs);
-static void do_tarput();
 static void unfixtarname(char *tptr, char *fp, int l);
 
 /*
  * tar specific utitlities
  */
-
-/*
- * Stack routines, push_dir, pop_dir, top_dir_name
- */
-
-static BOOL push_dir(stack *dir_stack, file_info2 *dir)
-{
-  dir -> next = dir_stack -> top;
-  dir -> prev = NULL;
-  dir_stack -> items++;
-  dir_stack -> top = dir;
-  return(True);
-
-}
-
-static file_info2 *pop_dir(stack *dir_stack)
-{
-  file_info2 *ptr;
-  
-  ptr = dir_stack -> top;
-  if (dir_stack -> top != NULL) {
-
-    dir_stack -> top = dir_stack -> top -> next;
-    dir_stack -> items--;
-
-  }
-
-  return ptr;
-
-}
-
-static char *top_dir_name(stack *dir_stack)
-{
-
-  return(dir_stack -> top != NULL?dir_stack -> top -> name:NULL);
-
-}
-
-static BOOL sub_dir(char *dir1, char *dir2)
-{
-
-}
-
-/* Create a string of size size+1 (for the null) */
-static char * string_create_s(int size)
-{
-  char *tmp;
-
-  tmp = (char *)malloc(size+1);
-
-  if (tmp == NULL) {
-
-    DEBUG(0, ("Out of memory in string_create_s\n"));
-
-  }
-
-  return(tmp);
-
-}
 
 /****************************************************************************
 Write a tar header to buffer
@@ -214,7 +108,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   int i, chk, l;
   char *jp;
 
-  DEBUG(5, ("WriteTarHdr, Type = %c, Size= %i, Name = %s\n", ftype, size, aname));
+  DEBUG(5, ("WriteTarHdr, Type = %c, Name = %s\n", ftype, aname));
 
   memset(hb.dummy, 0, sizeof(hb.dummy));
   
@@ -231,7 +125,6 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 	  memset(b, 0, l+TBLOCK+100);
 	  fixtarname(b, aname, l+1);
 	  i = strlen(b)+1;
-	  DEBUG(5, ("File name in tar file: %s, size=%i, \n", b, strlen(b)));
 	  dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
 	  free(b);
   }
@@ -265,7 +158,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 /****************************************************************************
 Read a tar header into a hblock structure, and validate
 ***************************************************************************/
-static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
+static long readtarheader(union hblock *hb, file_info *finfo, char *prefix)
 {
   long chk, fchk;
   int i;
@@ -298,13 +191,6 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
       DEBUG(0, ("checksums don't match %d %d\n", fchk, chk));
       return -1;
     }
-
-  if ((finfo->name = string_create_s(strlen(prefix) + strlen(hb -> dbuf.name) + 3)) == NULL) {
-
-    DEBUG(0, ("Out of space creating file_info2 for %s\n", hb -> dbuf.name));
-    return(-1);
-
-  }
 
   strcpy(finfo->name, prefix);
 
@@ -412,7 +298,7 @@ static void dozerobuf(int f, int n)
 /****************************************************************************
 Malloc tape buffer
 ****************************************************************************/
-static void initarbuf()
+static void initarbuf(void)
 {
   /* initialize tar buffer */
   tbufsiz=blocksize*TBLOCK;
@@ -560,8 +446,6 @@ static int do_setrtime(char *fname, int mtime)
 {
   char *inbuf, *outbuf, *p;
   char *name;
-
-  DEBUG(5, ("Setting time on: %s, fnlen=%i.\n", fname, strlen(fname)));
 
   name = (char *)malloc(strlen(fname) + 1 + 1);
   if (name == NULL) {
@@ -716,7 +600,7 @@ static int do_setrattr(char *fname, int attr, int setit)
 /****************************************************************************
 Create a file on a share
 ***************************************************************************/
-static BOOL smbcreat(file_info2 finfo, int *fnum, char *inbuf, char *outbuf)
+static BOOL smbcreat(file_info finfo, int *fnum, char *inbuf, char *outbuf)
 {
   char *p;
   /* *must* be called with buffer ready malloc'ed */
@@ -796,7 +680,7 @@ static BOOL smbwrite(int fnum, int n, int low, int high, int left,
 /****************************************************************************
 Close a file on a share
 ***************************************************************************/
-static BOOL smbshut(file_info2 finfo, int fnum, char *inbuf, char *outbuf)
+static BOOL smbshut(file_info finfo, int fnum, char *inbuf, char *outbuf)
 {
   /* *must* be called with buffer ready malloc'ed */
 
@@ -891,20 +775,10 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
   /* *must* be called with buffer ready malloc'ed */
   /* ensures path exists */
 
-  char *partpath, *ffname;
+  pstring partpath, ffname;
   char *p=fname, *basehack;
 
   DEBUG(5, ( "Ensurepath called with: %s\n", fname));
-
-  partpath = string_create_s(strlen(fname));
-  ffname = string_create_s(strlen(fname));
-
-  if ((partpath == NULL) || (ffname == NULL)){
-
-    DEBUG(0, ("Out of memory in ensurepath: %s\n", fname));
-    return(False);
-
-  }
 
   *partpath = 0;
 
@@ -947,7 +821,7 @@ int padit(char *buf, int bufsize, int padsize)
   int berr= 0;
   int bytestowrite;
   
-  DEBUG(5, ("Padding with %d zeros\n", padsize));
+  DEBUG(0, ("Padding with %d zeros\n", padsize));
   memset(buf, 0, bufsize);
   while( !berr && padsize > 0 ) {
     bytestowrite= MIN(bufsize, padsize);
@@ -1091,7 +965,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	  datalen = 0;
 	}
 
-      DEBUG(3,("getting file %s of size %d bytes as a tar file %s",
+      DEBUG(2,("getting file %s of size %d bytes as a tar file %s",
 	       finfo.name,
 	       finfo.size,
 	       lname));
@@ -1356,7 +1230,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       get_total_size += finfo.size;
 
       /* Thanks to Carel-Jan Engel (ease@mail.wirehub.nl) for this one */
-      DEBUG(3,("(%g kb/s) (average %g kb/s)\n",
+      DEBUG(2,("(%g kb/s) (average %g kb/s)\n",
 	       finfo.size / MAX(0.001, (1.024*this_time)),
 	       get_total_size / MAX(0.001, (1.024*get_total_time_ms))));
       if (tar_noisy)
@@ -1391,14 +1265,7 @@ static void do_tar(file_info *finfo)
     strcat(exclaim, "\\");
     strcat(exclaim, finfo->name);
 
-    DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
-
-    if ((!tar_re_search && clipfind(cliplist, clipn, exclaim)) ||
-#ifdef HAVE_REGEX_H
-	(tar_re_search && !regexec(preg, exclaim, 0, NULL, 0))) {
-#else
-        (tar_re_search && mask_match(exclaim, cliplist[0], True, False))) {
-#endif
+    if (clipfind(cliplist, clipn, exclaim)) {
       DEBUG(3,("Skipping file %s\n", exclaim));
       return;
     }
@@ -1478,186 +1345,15 @@ static void unfixtarname(char *tptr, char *fp, int l)
   }
 }
 
-/****************************************************************************
-Move to the next block in the buffer, which may mean read in another set of
-blocks.
-****************************************************************************/
-static int next_block(char *tarbuf, char *bufferp, int bufsiz)
+static void do_tarput(void)
 {
-  int bufread, total = 0;
-
-  if (bufferp >= (tarbuf + bufsiz)) {
-    
-    for (bufread = read(tarhandle, tarbuf, bufsiz); total += bufread; total < bufsiz) {
-
-      if (bufread <= 0) { /* An error, return false */
-	return (total > 0 ? -2 : bufread);
-      }
-
-    }
-
-    bufferp = tarbuf;
-
-  }
-  else {
-
-    bufferp += TBLOCK;
-
-  }
-
-}
-
-static int skip_file()
-{
-
-}
-
-static int get_file(file_info2 finfo)
-{
-
-
-}
-
-static int get_dir(file_info2 finfo)
-{
-
-}
-
-static char * get_longfilename(file_info2 finfo)
-{
-
-}
-
-static char * bufferp;
-
-static void do_tarput2()
-{
-  file_info2 finfo;
-  struct timeval tp_start;
-  char *inbuf, *outbuf, *longfilename = NULL;
-  int skip = False;
-
-  GetTimeOfDay(&tp_start);
-
-  bufferp = tarbuf + tbufsiz;  /* init this to force first read */
-
-  inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-  outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
-
-  if (!inbuf || !outbuf) {
-
-    DEBUG(0, ("Out of memory during allocate of inbuf and outbuf!\n"));
-    return;
-
-  }
-
-  if (next_block(tarbuf, bufferp, tbufsiz) <= 0) {
-
-    DEBUG(0, ("Empty file or short tar file: %s\n", strerror(errno)));
-
-  }
-
-  /* Now read through those files ... */
-
-  while (True) {
-
-    switch (readtarheader((union hblock *) bufferp, &finfo, cur_dir)) {
-
-    case -2:    /* Hmm, not good, but not fatal */
-      DEBUG(0, ("Skipping %s...\n", finfo.name));
-      if ((next_block(tarbuf, bufferp, tbufsiz) <= 0) &&
-          !skip_file(finfo.size)) {
-
-	DEBUG(0, ("Short file, bailing out...\n"));
-	free(inbuf); free(outbuf);
-	continue;
-
-      }
-
-      break;
-
-    case -1:
-      DEBUG(0, ("abandoning restore, -1 from read tar header\n"));
-      free(inbuf); free(outbuf);
-      return;
-
-    case 0: /* chksum is zero - looks like an EOF */
-      DEBUG(0, ("total of %d tar files restored to share\n", ntarf));
-      free(inbuf); free(outbuf);
-      return;        /* Hmmm, bad here ... */
-
-    default:
-      break;
-
-    }
-
-    /* Now, do we have a long file name? */
-
-    if (longfilename != NULL) {
-      if (strlen(longfilename) < sizeof(finfo.name)) { /* if we have space */
-
-	strncpy(finfo.name, longfilename, sizeof(finfo.name) - 1);
-	free(longfilename);
-	longfilename = NULL;
-
-      }
-      else {
-
-	DEBUG(0, ("filename: %s too long, skipping\n", strlen(longfilename)));
-	skip = True;
-
-      }
-    }
-
-    /* Well, now we have a header, process the file ... */
-
-    /* Should we skip the file?                         */
-
-    if (skip) {
-
-      skip_file(finfo);
-      continue;
-
-    }
-
-    /* We only get this far if we should process the file */
-
-    switch (((union hblock *)bufferp) -> dbuf.linkflag) {
-
-    case '0':  /* Should use symbolic names--FIXME */
-      get_file(finfo);
-      break;
-
-    case '5':
-      get_dir(finfo);
-      break;
-
-    case 'L':
-      longfilename = get_longfilename(finfo);
-      break;
-
-    default:
-      skip_file(finfo);  /* Don't handle these yet */
-      break;
-
-    }
-
-  }
-
-
-}
-
-static void do_tarput()
-{
-  file_info2 finfo;
+  file_info finfo;
   int nread=0, bufread;
   char *inbuf,*outbuf, *longname = NULL; 
   int fsize=0;
   int fnum;
   struct timeval tp_start;
   BOOL tskip=False;       /* We'll take each file as it comes */
-
-  finfo.name = NULL;      /* No name in here ... */
 
   GetTimeOfDay(&tp_start);
   
@@ -1726,13 +1422,6 @@ static void do_tarput()
 
             }
             next_header = 0;    /* Don't want the next one ... */
-
-	    if (finfo.name != NULL) { /* Free the space */
-
-	      free(finfo.name);
-	      finfo.name = NULL;
-
-	    }
 	    switch (readtarheader((union hblock *) bufferp, &finfo, cur_dir))
 	      {
 	      case -2:             /* something dodgy but not fatal about this */
@@ -1762,10 +1451,7 @@ static void do_tarput()
 
             if (longname != NULL) {
 
-	      free(finfo.name);  /* Free the name in the finfo */
-	      finfo.name = string_create_s(strlen(longname) + 2);
-              strncpy(finfo.name, longname, strlen(longname) + 1);
-	      DEBUG(5, ("Long name = \"%s\", filename=\"%s\"\n", longname, finfo.name));
+              strncpy(finfo.name, longname, sizeof(pstring) - 1);
               free(longname);
               longname = NULL;
 
@@ -1780,7 +1466,6 @@ static void do_tarput()
                  fix the name and skip the name. Hmmm, what about end of
                  buffer??? */
 
-	      DEBUG(5, ("Buffer size = %i\n", finfo.size + strlen(cur_dir) +1));
               longname = malloc(finfo.size + strlen(cur_dir) + 1);
               if (longname == NULL) {
 
@@ -1803,9 +1488,8 @@ static void do_tarput()
 
               }
 
-              strncpy(longname, cur_dir, strlen(cur_dir) + 1); 
+              strncpy(longname, cur_dir, strlen(cur_dir)); 
               unfixtarname(longname+strlen(cur_dir), bufferp, finfo.size);
-	      DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, bufferp));
 
               /* Next rounds up to next TBLOCK and takes care of us being right
                  on a TBLOCK boundary */
@@ -1816,12 +1500,7 @@ static void do_tarput()
             }
           }
 	  tskip=clipn
-	    && ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl)
-#ifdef HAVE_REGEX_H
-		|| (tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
-#else
-	        || (tar_re_search && mask_match(finfo.name, cliplist[0], True, False)));
-#endif
+	    && (clipfind(cliplist, clipn, finfo.name) ^ tar_excl);
 	  if (tskip) {
 	    bufferp+=TBLOCK;
 	    if (finfo.mode & aDIR)
@@ -1843,10 +1522,9 @@ static void do_tarput()
 
 	  if (finfo.mode & aDIR)
 	    {
-
-	      DEBUG(5, ("Creating directory: %s\n", finfo.name));
-
 	      if (!ensurepath(finfo.name, inbuf, outbuf))
+/*	      if (!smbchkpath(finfo.name, inbuf, outbuf)
+		  && !smbmkdir(finfo.name, inbuf, outbuf))*/
 		{
 		  DEBUG(0, ("abandoning restore, problems ensuring path\n"));
 		  free(inbuf); free(outbuf);
@@ -1856,7 +1534,7 @@ static void do_tarput()
 		{
 		  /* Now we update the creation date ... */
 
-		  DEBUG(0, ("Updating creation date on %s\n", finfo.name));
+		  DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
 		  if (!do_setrtime(finfo.name, finfo.mtime)) {
 
@@ -1884,13 +1562,13 @@ static void do_tarput()
 	  DEBUG(0 ,("restore tar file %s of size %d bytes\n",
 		   finfo.name,finfo.size));
 
-	  /*          if (!finfo.size) {
+          if (!finfo.size) {
 	    if (!smbshut(finfo, fnum, inbuf, outbuf)){
               DEBUG(0, ("Error closing remote file of length 0: %s\n", finfo.name));
 	      free(inbuf);free(outbuf);
               return;
             }
-	    } */
+	  }
 
 	  nread=0;
 	  if ((bufferp+=TBLOCK) >= endofbuffer) break;	  
@@ -1936,7 +1614,6 @@ static void do_tarput()
 		    (long) bufferp, (long)(bufferp - tarbuf)));
 	  ntarf++;
 	  fsize=0;
-
 	}
     } while (bufferp < endofbuffer);
   }
@@ -2114,7 +1791,7 @@ int process_tar(char *inbuf, char *outbuf)
       pstring tarmac;
 
       for (i=0; i<clipn; i++) {
-	DEBUG(5,("arg %d = %s\n", i, cliplist[i]));
+	DEBUG(0,("arg %d = %s\n", i, cliplist[i]));
 
 	if (*(cliplist[i]+strlen(cliplist[i])-1)=='\\') {
 	  *(cliplist[i]+strlen(cliplist[i])-1)='\0';
@@ -2255,10 +1932,6 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
       }
       tar_clipfl='X';
       break;
-    case 'r':
-      DEBUG(0, ("tar_re_search set\n"));
-      tar_re_search = True;
-      break;
     default:
       DEBUG(0,("Unknown tar option\n"));
       return 0;
@@ -2270,8 +1943,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
   }
 
   tar_excl=tar_clipfl!='X';
-
-  if (Optind+1<argc && !tar_re_search) { /* For backwards compatibility */
+  if (Optind+1<argc) {
     char *tmpstr;
     char **tmplist;
     int clipcount;
@@ -2305,35 +1977,6 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     }
     cliplist = tmplist;
   }
-
-  if (Optind+1<argc && tar_re_search) {  /* Doing regular expression seaches */
-#ifdef HAVE_REGEX_H
-    int errcode;
-
-    if ((preg = (regex_t *)malloc(65536)) == NULL) {
-
-      DEBUG(0, ("Could not allocate buffer for regular expression search\n"));
-      return;
-
-    }
-
-    if (errcode = regcomp(preg, argv[Optind + 1], REG_EXTENDED)) {
-      char errstr[1024];
-      size_t errlen;
-
-      errlen = regerror(errcode, preg, errstr, sizeof(errstr) - 1);
-      
-      DEBUG(0, ("Could not compile pattern buffer for re search: %s\n%s\n", argv[Optind + 1], errstr));
-      return;
-
-    }
-#endif
-
-    clipn=argc-Optind-1;
-    cliplist=argv+Optind+1;
-
-  }
-
   if (Optind>=argc || !strcmp(argv[Optind], "-")) {
     /* Sets tar handle to either 0 or 1, as appropriate */
     tarhandle=(tar_type=='c');
