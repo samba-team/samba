@@ -113,6 +113,23 @@ static void smbw_share_add(const char *share, uint32 type, const char *comment)
 
 
 /***************************************************** 
+add a server to a directory listing
+*******************************************************/
+static void smbw_server_add(const char *name, uint32 type, 
+			    const char *comment)
+{
+	struct file_info finfo;
+
+	ZERO_STRUCT(finfo);
+
+	pstrcpy(finfo.name, name);
+	finfo.mode = aRONLY | aDIR;	
+
+	smbw_dir_add(&finfo);
+}
+
+
+/***************************************************** 
 add a entry to a directory listing
 *******************************************************/
 static void smbw_printjob_add(struct print_job_info *job)
@@ -145,7 +162,7 @@ int smbw_dir_open(const char *fname)
 	struct smbw_dir *dir=NULL;
 	pstring mask;
 	int fd;
-	char *s;
+	char *s, *p;
 
 	DEBUG(4,("%s\n", __FUNCTION__));
 
@@ -181,7 +198,13 @@ int smbw_dir_open(const char *fname)
 	slprintf(mask, sizeof(mask)-1, "%s\\*", path);
 	string_sub(mask,"\\\\","\\");
 
-	if (strcmp(srv->cli.dev,"IPC") == 0) {
+	if ((p=strstr(srv->server_name,"#1D"))) {
+		DEBUG(4,("doing NetServerEnum\n"));
+		*p = 0;
+		cli_NetServerEnum(&srv->cli, srv->server_name, SV_TYPE_ALL,
+				  smbw_server_add);
+		*p = '#';
+	} else if (strcmp(srv->cli.dev,"IPC") == 0) {
 		DEBUG(4,("doing NetShareEnum\n"));
 		if (cli_RNetShareEnum(&srv->cli, smbw_share_add) < 0) {
 			errno = smbw_errno(&srv->cli);

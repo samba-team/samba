@@ -420,7 +420,6 @@ void endlmhosts(FILE *fp)
  or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-
 BOOL resolve_name(char *name, struct in_addr *return_ip)
 {
   int i;
@@ -572,4 +571,44 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
   }
 
   return False;
+}
+
+
+
+/********************************************************
+find the IP address of the master browser for a workgroup
+*********************************************************/
+BOOL find_master(char *group, struct in_addr *master_ip)
+{
+	int sock;
+	struct in_addr *iplist = NULL;
+        int count, i;
+        int num_interfaces = iface_count();
+
+	sock = open_socket_in( SOCK_DGRAM, 0, 3,
+			       interpret_addr(lp_socket_address()) );
+
+	if (sock == -1) return False;
+
+        set_socket_options(sock,"SO_BROADCAST");
+
+        /*
+         * Lookup the name on all the interfaces, return on
+         * the first successful match.
+         */
+        for( i = 0; i < num_interfaces; i++) {
+		struct in_addr sendto_ip;
+		/* Done this way to fix compiler error on IRIX 5.x */
+		sendto_ip = *iface_bcast(*iface_n_ip(i));
+		iplist = name_query(sock, group, 0x1D, True, False, 
+				    sendto_ip, &count, NULL);
+		if(iplist != NULL) {
+			*master_ip = iplist[0];
+			free((char *)iplist);
+			close(sock);
+			return True;
+		}
+        }
+        close(sock);
+	return False;
 }
