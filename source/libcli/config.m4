@@ -40,28 +40,13 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		libcli/util/smbencrypt.o 
 		libcli/util/dom_sid.o])
 
-SMB_SUBSYSTEM(LIBCLI_AUTH,[],
-		[libcli/auth/spnego.o
-		libcli/auth/spnego_parse.o
-		libcli/auth/ntlmssp.o
-		libcli/auth/ntlmssp_parse.o
-		libcli/auth/ntlmssp_sign.o
-		libcli/auth/schannel.o
-		libcli/auth/credentials.o
-		libcli/auth/session.o
-		libcli/auth/ntlm_check.o
-		libcli/auth/kerberos.o
-		libcli/auth/kerberos_verify.o
-		libcli/auth/clikrb5.o
-		libcli/auth/gensec.o
-		libcli/auth/gensec_ntlmssp.o],
-		[], [AUTH SCHANNELDB])
-
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
 		[libcli/unexpected.o
 		libcli/namecache.o
 		libcli/nmblib.o
 		libcli/namequery.o])
+
+SMB_SUBSYSTEM_MK(LIBCLI_AUTH,libcli/config.mk)
 
 SMB_SUBSYSTEM(LIBCLI,[],[],[],
 		[LIBCLI_RAW LIBCLI_UTILS LIBCLI_AUTH LIBCLI_NMB])
