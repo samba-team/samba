@@ -79,15 +79,15 @@ static char *fix_backslash(char *str)
 	return newstring;
 }
 
-static char *stripspace(char *str)
+static char *stripspaceupper(char *str)
 {
-static char newstring[1024];
-char *p = newstring;
+	static char newstring[1024];
+	char *p = newstring;
 
-        while (*str) {
-                if (*str != ' ') *p++ = *str;
-                ++str;
-        }
+	while (*str) {
+		if (*str != ' ') *p++ = toupper(*str);
+		++str;
+	}
 	*p = '\0';
 	return newstring;
 }
@@ -200,7 +200,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td>%s</td><td>", get_parm_translated(stripspace(parm->label), _("Help"), parm->label));
+	printf("<tr><td>%s</td><td>", get_parm_translated(stripspaceupper(parm->label), _("Help"), parm->label));
 	switch (parm->type) {
 	case P_CHAR:
 		d_printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
