@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Privileges handling functions
-   Copyright (C) Jean François Micouleau	1998-2001
+   Copyright (C) Jean FranÃ§ois Micouleau	1998-2001
    Copyright (C) Simo Sorce			2002-2003
    Copyright (C) Gerald (Jerry) Carter          2004
    
@@ -29,11 +29,11 @@
 
 static const SE_PRIV se_priv_all  = SE_ALL_PRIVS;
 static const SE_PRIV se_priv_end  = SE_END;
-static const SE_PRIV se_priv_none = SE_NONE;
 
 /* Define variables for all privileges so we can use the
    SE_PRIV* in the various se_priv_XXX() functions */
 
+const SE_PRIV se_priv_none       = SE_NONE;
 const SE_PRIV se_machine_account = SE_MACHINE_ACCOUNT;
 const SE_PRIV se_print_operator  = SE_PRINT_OPERATOR;
 const SE_PRIV se_add_users       = SE_ADD_USERS;
