@@ -18,6 +18,7 @@
 		<command>testparm</command>
 		<arg choice="opt">-s</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-v</arg>
 		<arg choice="opt">-L &lt;servername&gt;</arg>
 		<arg choice="req">config filename</arg>
 		<arg choice="opt">hostname  hostIP</arg>
@@ -77,6 +78,13 @@
 		%L macro. </para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>-v</term>
+		<listitem><para>If this option is specified, testparm 
+		will also output all options that were not used in 
+		<filename>smb.conf</filename> and are thus set to
+		their defaults.</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term>configfilename</term>
