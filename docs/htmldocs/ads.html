@@ -11,7 +11,7 @@ TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
 TITLE="Type of installation"
-HREF="p544.html"><LINK
+HREF="type.html"><LINK
 REL="PREVIOUS"
 TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
 HREF="samba-bdc.html"><LINK
@@ -74,7 +74,7 @@ CLASS="CHAPTER"
 ><A
 NAME="ADS"
 ></A
->Chapter 8. Samba as a ADS domain member</H1
+>Chapter 9. Samba as a ADS domain member</H1
 ><P
 >This is a VERY ROUGH guide to setting up the current (November 2001)
 pre-alpha version of Samba 3.0 with kerberos authentication against a
@@ -113,9 +113,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1178"
+NAME="AEN1203"
 ></A
->8.1. Installing the required packages for Debian</H1
+>9.1. Installing the required packages for Debian</H1
 ><P
 >On Debian you need to install the following packages:
 <P
@@ -142,9 +142,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1184"
+NAME="AEN1209"
 ></A
->8.2. Installing the required packages for RedHat</H1
+>9.2. Installing the required packages for RedHat</H1
 ><P
 >On RedHat this means you should have at least: 
 <P
@@ -180,9 +180,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1193"
+NAME="AEN1218"
 ></A
->8.3. Compile Samba</H1
+>9.3. Compile Samba</H1
 ><P
 >If your kerberos libraries are in a non-standard location then
   remember to add the configure option --with-krb5=DIR.</P
@@ -225,9 +225,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1205"
+NAME="AEN1230"
 ></A
->8.4. Setup your /etc/krb5.conf</H1
+>9.4. Setup your /etc/krb5.conf</H1
 ><P
 >The minimal configuration for krb5.conf is:</P
 ><P
@@ -264,9 +264,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1215"
+NAME="AEN1240"
 ></A
->8.5. Create the computer account</H1
+>9.5. Create the computer account</H1
 ><P
 >Do a "kinit" as a user that has authority to change arbitrary
 passwords on the KDC ("Administrator" is a good choice). Then as a
@@ -281,9 +281,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1219"
+NAME="AEN1244"
 ></A
->8.5.1. Possible errors</H2
+>9.5.1. Possible errors</H2
 ><P
 ><P
 ></P
@@ -312,9 +312,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1231"
+NAME="AEN1256"
 ></A
->8.6. Test your server setup</H1
+>9.6. Test your server setup</H1
 ><P
 >On a Windows 2000 client try <B
 CLASS="COMMAND"
@@ -332,9 +332,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1236"
+NAME="AEN1261"
 ></A
->8.7. Testing with smbclient</H1
+>9.7. Testing with smbclient</H1
 ><P
 >On your Samba server try to login to a Win2000 server or your Samba
 server using smbclient and kerberos. Use smbclient as usual, but
@@ -345,9 +345,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1239"
+NAME="AEN1264"
 ></A
->8.8. Notes</H1
+>9.8. Notes</H1
 ><P
 >You must change administrator password at least once after DC install,
  to create the right encoding types</P
@@ -406,7 +406,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p544.html"
+HREF="type.html"
 ACCESSKEY="U"
 >Up</A
 ></TD

@@ -11,7 +11,7 @@ TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
 TITLE="Optional configuration"
-HREF="p1346.html"><LINK
+HREF="optional.html"><LINK
 REL="PREVIOUS"
 TITLE="Unified Logons between Windows NT and UNIX using Winbind"
 HREF="winbind.html"><LINK
@@ -80,7 +80,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2590"
+NAME="AEN2579"
 ></A
 >17.1. Building</H1
 ><P
@@ -101,7 +101,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2596"
+NAME="AEN2585"
 ></A
 >17.2. Configuring</H1
 ><P
@@ -164,7 +164,7 @@ identifier:user sid column               - varchar(255) - NT user SID
 identifier:group sid column              - varchar(255) - NT group ID
 identifier:lanman pass column            - varchar(255) - encrypted lanman password
 identifier:nt pass column                - varchar(255) - encrypted nt passwd
-identifier:plaintext pass column         - varchar(255) - plaintext password
+identifier:plain pass column             - varchar(255) - plaintext password
 identifier:acct control column           - int(9) - nt user data
 identifier:unknown 3 column              - int(9) - unknown
 identifier:logon divs column             - int(9) - ?
@@ -183,22 +183,22 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2611"
+NAME="AEN2600"
 ></A
 >17.3. Using plaintext passwords or encrypted password</H1
 ><P
 >I strongly discourage the use of plaintext passwords, however, you can use them:</P
 ><P
->If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plaintext pass column' to the name of the column containing the plaintext passwords. </P
+>If you would like to use plaintext passwords, set 'identifier:lanman pass column' and 'identifier:nt pass column' to 'NULL' (without the quotes) and 'identifier:plain pass column' to the name of the column containing the plaintext passwords. </P
 ><P
->If you use encrypted passwords, set the 'identifier:plaintext pass column' to 'NULL' (without the quotes). This is the default.</P
+>If you use encrypted passwords, set the 'identifier:plain pass column' to 'NULL' (without the quotes). This is the default.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2616"
+NAME="AEN2605"
 ></A
 >17.4. Getting non-column data from the table</H1
 ><P
@@ -269,7 +269,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p1346.html"
+HREF="optional.html"
 ACCESSKEY="U"
 >Up</A
 ></TD

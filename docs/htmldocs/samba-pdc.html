@@ -11,10 +11,10 @@ TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
 REL="UP"
 TITLE="Type of installation"
-HREF="p544.html"><LINK
+HREF="type.html"><LINK
 REL="PREVIOUS"
-TITLE="Type of installation"
-HREF="p544.html"><LINK
+TITLE="User and Share security level (for servers not in a domain)"
+HREF="securitylevels.html"><LINK
 REL="NEXT"
 TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
 HREF="samba-bdc.html"></HEAD
@@ -45,7 +45,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="p544.html"
+HREF="securitylevels.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -74,15 +74,15 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-PDC"
 ></A
->Chapter 6. How to Configure Samba as a NT4 Primary Domain Controller</H1
+>Chapter 7. How to Configure Samba as a NT4 Primary Domain Controller</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN566"
+NAME="AEN591"
 ></A
->6.1. Prerequisite Reading</H1
+>7.1. Prerequisite Reading</H1
 ><P
 >Before you continue reading in this chapter, please make sure 
 that you are comfortable with configuring basic files services
@@ -108,9 +108,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN572"
+NAME="AEN597"
 ></A
->6.2. Background</H1
+>7.2. Background</H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -260,9 +260,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN611"
+NAME="AEN636"
 ></A
->6.3. Configuring the Samba Domain Controller</H1
+>7.3. Configuring the Samba Domain Controller</H1
 ><P
 >The first step in creating a working Samba PDC is to 
 understand the parameters necessary in smb.conf.  I will not
@@ -472,9 +472,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN654"
+NAME="AEN679"
 ></A
->6.4. Creating Machine Trust Accounts and Joining Clients to the
+>7.4. Creating Machine Trust Accounts and Joining Clients to the
 Domain</H1
 ><P
 >A machine trust account is a Samba account that is used to
@@ -546,9 +546,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN673"
+NAME="AEN698"
 ></A
->6.4.1. Manual Creation of Machine Trust Accounts</H2
+>7.4.1. Manual Creation of Machine Trust Accounts</H2
 ><P
 >The first step in manually creating a machine trust account is to
 manually create the corresponding Unix account in
@@ -736,9 +736,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN714"
+NAME="AEN739"
 ></A
->6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
+>7.4.2. "On-the-Fly" Creation of Machine Trust Accounts</H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
 simply to allow the Samba server to create them as needed when the client
@@ -773,9 +773,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN723"
+NAME="AEN748"
 ></A
->6.4.3. Joining the Client to the Domain</H2
+>7.4.3. Joining the Client to the Domain</H2
 ><P
 >The procedure for joining a client to the domain varies with the
 version of Windows.</P
@@ -841,9 +841,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN738"
+NAME="AEN763"
 ></A
->6.5. Common Problems and Errors</H1
+>7.5. Common Problems and Errors</H1
 ><P
 ></P
 ><P
@@ -1051,9 +1051,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN786"
+NAME="AEN811"
 ></A
->6.6. System Policies and Profiles</H1
+>7.6. System Policies and Profiles</H1
 ><P
 >Much of the information necessary to implement System Policies and
 Roving User Profiles in a Samba domain is the same as that for 
@@ -1228,9 +1228,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN830"
+NAME="AEN855"
 ></A
->6.7. What other help can I get?</H1
+>7.7. What other help can I get?</H1
 ><P
 >There are many sources of information available in the form 
 of mailing lists, RFC's and documentation.  The docs that come 
@@ -1648,9 +1648,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN944"
+NAME="AEN969"
 ></A
->6.8. Domain Control for Windows 9x/ME</H1
+>7.8. Domain Control for Windows 9x/ME</H1
 ><DIV
 CLASS="NOTE"
 ><P
@@ -1782,9 +1782,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN970"
+NAME="AEN995"
 ></A
->6.8.1. Configuration Instructions:	Network Logons</H2
+>7.8.1. Configuration Instructions:	Network Logons</H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 
 server configuration is that</P
@@ -1888,9 +1888,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN989"
+NAME="AEN1014"
 ></A
->6.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
+>7.8.2. Configuration Instructions:	Setting up Roaming User Profiles</H2
 ><DIV
 CLASS="WARNING"
 ><P
@@ -1941,9 +1941,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN997"
+NAME="AEN1022"
 ></A
->6.8.2.1. Windows NT Configuration</H3
+>7.8.2.1. Windows NT Configuration</H3
 ><P
 >To support WinNT clients, in the [global] section of smb.conf set the
 following (for example):</P
@@ -1992,9 +1992,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1005"
+NAME="AEN1030"
 ></A
->6.8.2.2. Windows 9X Configuration</H3
+>7.8.2.2. Windows 9X Configuration</H3
 ><P
 >To support Win9X clients, you must use the "logon home" parameter. Samba has
 now been fixed so that "net use/home" now works as well, and it, too, relies
@@ -2023,9 +2023,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1013"
+NAME="AEN1038"
 ></A
->6.8.2.3. Win9X and WinNT Configuration</H3
+>7.8.2.3. Win9X and WinNT Configuration</H3
 ><P
 >You can support profiles for both Win9X and WinNT clients by setting both the
 "logon home" and "logon path" parameters. For example:</P
@@ -2068,9 +2068,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1020"
+NAME="AEN1045"
 ></A
->6.8.2.4. Windows 9X Profile Setup</H3
+>7.8.2.4. Windows 9X Profile Setup</H3
 ><P
 >When a user first logs in on Windows 9X, the file user.DAT is created,
 as are folders "Start Menu", "Desktop", "Programs" and "Nethood".  
@@ -2228,9 +2228,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1056"
+NAME="AEN1081"
 ></A
->6.8.2.5. Windows NT Workstation 4.0</H3
+>7.8.2.5. Windows NT Workstation 4.0</H3
 ><P
 >When a user first logs in to a Windows NT Workstation, the profile
 NTuser.DAT is created.  The profile location can be now specified
@@ -2342,9 +2342,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1069"
+NAME="AEN1094"
 ></A
->6.8.2.6. Windows NT Server</H3
+>7.8.2.6. Windows NT Server</H3
 ><P
 >There is nothing to stop you specifying any path that you like for the
 location of users' profiles.  Therefore, you could specify that the
@@ -2356,9 +2356,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1072"
+NAME="AEN1097"
 ></A
->6.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
+>7.8.2.7. Sharing Profiles between W95 and NT Workstation 4.0</H3
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2449,9 +2449,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1082"
+NAME="AEN1107"
 ></A
->6.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</H1
+>7.9. DOMAIN_CONTROL.txt : Windows NT Domain Control &#38; Samba</H1
 ><DIV
 CLASS="WARNING"
 ><P
@@ -2598,7 +2598,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="p544.html"
+HREF="securitylevels.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -2626,13 +2626,13 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Type of installation</TD
+>User and Share security level (for servers not in a domain)</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="p544.html"
+HREF="type.html"
 ACCESSKEY="U"
 >Up</A
 ></TD
