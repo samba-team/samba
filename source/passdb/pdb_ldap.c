@@ -880,7 +880,7 @@ static BOOL init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		make_a_mod(mods, ldap_op, "smbHome", pdb_get_homedir(sampass));
 		
 	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE))
-		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dirdrive(sampass));
+		make_a_mod(mods, ldap_op, "homeDrive", pdb_get_dir_drive(sampass));
 	
 	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT))
 		make_a_mod(mods, ldap_op, "scriptPath", pdb_get_logon_script(sampass));

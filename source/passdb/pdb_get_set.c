@@ -250,7 +250,7 @@ const char* pdb_get_unix_homedir (const SAM_ACCOUNT *sampass)
 		return (NULL);
 }
 
-const char* pdb_get_dirdrive (const SAM_ACCOUNT *sampass)
+const char* pdb_get_dir_drive (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
 		return (sampass->private.dir_drive);

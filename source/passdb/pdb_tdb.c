@@ -354,7 +354,8 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
 	 * Only updates fields which have been set (not defaults from smb.conf)
 	 */
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) dir_drive = pdb_get_dirdrive(sampass);
+	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) 
+	  dir_drive = pdb_get_dir_drive(sampass);
 	else dir_drive = NULL;
 	if (dir_drive) dir_drive_len = strlen(dir_drive) +1;
 	else dir_drive_len = 0;

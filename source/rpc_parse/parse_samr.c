@@ -5945,7 +5945,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	const char*		user_name = pdb_get_username(pw);
 	const char*		full_name = pdb_get_fullname(pw);
 	const char*		home_dir  = pdb_get_homedir(pw);
-	const char*		dir_drive = pdb_get_dirdrive(pw);
+	const char*		dir_drive = pdb_get_dir_drive(pw);
 	const char*		logon_script = pdb_get_logon_script(pw);
 	const char*		profile_path = pdb_get_profile_path(pw);
 	const char*		description = pdb_get_acct_desc(pw);
