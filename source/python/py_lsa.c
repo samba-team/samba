@@ -270,7 +270,7 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 	ntstatus = cli_lsa_enum_trust_dom(hnd->cli, hnd->mem_ctx,
 					  &hnd->pol, &enum_ctx,
 					  &num_domains, &domain_names,
-					  &domain_sids);
+					  &domain_names, &domain_sids);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
