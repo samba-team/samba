@@ -1156,8 +1156,7 @@ static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli,
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli, 
-                                      TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                       int argc, char **argv)
 {
 	POLICY_HND		pol;
@@ -1186,7 +1185,7 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	/* Get a printer handle */
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
-					     MAXIMUM_ALLOWED_ACCESS,
+					     PRINTER_ALL_ACCESS,
 					     servername, user, &pol);
 
 	if (!W_ERROR_IS_OK(result))
@@ -1199,12 +1198,10 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	ZERO_STRUCT (info2);
 	ctr.printers_2 = &info2;
 
-	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
-					&pol, level, &ctr);
+	result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, level, &ctr);
 
 	if (W_ERROR_V(result) == ERRinsufficientbuffer)
-		result = cli_spoolss_getprinter(
-			cli, mem_ctx, needed, NULL, &pol, level, &ctr);
+		result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, level, &ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf ("Unable to retrieve printer information!\n");

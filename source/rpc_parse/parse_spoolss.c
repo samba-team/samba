@@ -2071,6 +2071,10 @@ static BOOL smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEM
 		/* read the offset */
 		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
+		if (buffer->string_at_end == 0) {
+			*devmode = NULL;
+			return True;
+		}
 
 		old_offset = prs_offset(ps);
 		if(!prs_set_offset(ps, buffer->string_at_end + buffer->struct_start))
