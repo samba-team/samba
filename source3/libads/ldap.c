@@ -1674,7 +1674,8 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 			   &range_start) == 1) {
 			*more_strings = False;
 		} else {
-			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n", range_attr));
+			DEBUG(1, ("ads_pull_strings_range:  Cannot parse Range attriubte (%s)\n", 
+				  range_attr));
 			ldap_memfree(range_attr);
 			*more_strings = False;
 			return NULL;
@@ -1682,7 +1683,8 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	}
 
 	if ((*num_strings) != range_start) {
-		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) doesn't start at %u, but at %lu - aborting range retreival\n",
+		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) doesn't start at %u, but at %lu"
+			  " - aborting range retreival\n",
 			  range_attr, *num_strings + 1, range_start));
 		ldap_memfree(range_attr);
 		*more_strings = False;
@@ -1692,8 +1694,10 @@ char **ads_pull_strings_range(ADS_STRUCT *ads,
 	new_strings = ads_pull_strings(ads, mem_ctx, msg, range_attr, &num_new_strings);
 	
 	if (*more_strings && ((*num_strings + num_new_strings) != (range_end + 1))) {
-		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) tells us we have %lu strings in this bunch, but we only got %lu - aborting range retreival\n",
-			  range_attr, (unsigned long int)range_end - range_start + 1, (unsigned long int)num_new_strings));
+		DEBUG(1, ("ads_pull_strings_range: Range attribute (%s) tells us we have %lu "
+			  "strings in this bunch, but we only got %lu - aborting range retreival\n",
+			  range_attr, (unsigned long int)range_end - range_start + 1, 
+			  (unsigned long int)num_new_strings));
 		ldap_memfree(range_attr);
 		*more_strings = False;
 		return NULL;
@@ -1996,7 +2000,8 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	p = strchr(value, ':');
 	if (!p) {
 		talloc_destroy(ctx);
-		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' so was deemed invalid\n"));
+		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' "
+			  "so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
@@ -2006,7 +2011,8 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	p = strchr(ads->config.ldap_server_name, '$');
 	if (!p || p[1] != '@') {
 		talloc_destroy(ctx);
-		DEBUG(1, ("ads_server_info: returned ldap server name (%s) does not contain '$@' so was deemed invalid\n", ads->config.ldap_server_name));
+		DEBUG(1, ("ads_server_info: returned ldap server name (%s) does not contain '$@'"
+			  " so was deemed invalid\n", ads->config.ldap_server_name));
 		SAFE_FREE(ads->config.ldap_server_name);
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
