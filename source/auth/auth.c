@@ -157,7 +157,8 @@ uint32 pass_check_smb_with_chal(char *user, char *domain, uchar chal[8],
 
 	memcpy(user_info.chal, chal, 8);
 
-	if (lm_pwd_len >= 24 || (lp_encrypted_passwords() && (lm_pwd_len == 0) && lp_null_passwords())) {
+	if ((lm_pwd_len >= 24 || nt_pwd_len >= 24) || 
+	    (lp_encrypted_passwords() && (lm_pwd_len == 0) && lp_null_passwords())) {
 		/* if 24 bytes long assume it is an encrypted password */
 	  
 		user_info.lm_resp.buffer = (uint8 *)lm_pwd;
