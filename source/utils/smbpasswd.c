@@ -646,7 +646,7 @@ int main(int argc, char **argv)
 		  vp = startsampwent(True);
 	  }
   }
-  if (!fp) {
+  if (!vp) {
 	  err = errno;
 	  fprintf(stderr, "%s: Failed to open password file %s.\n",
 		  prog_name, lp_smb_passwd_file());
