@@ -416,7 +416,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
      * request would never have been queued. JRA.
      */
     errno = 0;
-    if(!do_lock(fsp,conn,count,lock_pid,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
+    if(!do_lock(fsp,conn,lock_pid,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode))
       break;
   }
