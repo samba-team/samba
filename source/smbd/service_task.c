@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "process_model.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "smbd/service_task.h"
 
 /*

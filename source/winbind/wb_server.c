@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "dlinklist.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
 

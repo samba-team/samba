@@ -37,6 +37,7 @@ sub smb_build_main($)
 		"lib/tdb/config.mk",
 		"lib/registry/config.mk",
 		"lib/messaging/config.mk",
+		"lib/events/config.mk",
 		"smb_server/config.mk",
 		"rpc_server/config.mk",
 		"ldap_server/config.mk",

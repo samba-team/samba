@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 
 enum {MY_PING=1000, MY_PONG, MY_EXIT};
 

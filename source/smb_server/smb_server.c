@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "system/time.h"
 #include "dlinklist.h"
 #include "smbd/service_stream.h"

@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "lib/events/events.h"
 #include "smb_server/smb_server.h"
 
 /*
