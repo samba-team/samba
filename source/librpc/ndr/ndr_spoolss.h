@@ -96,7 +96,7 @@ struct spoolss_PrinterInfo7 {
 	uint32 action;
 };
 
-union spoolss_PrinterEnum {
+union spoolss_PrinterInfo {
 /* [case(1)] */ struct spoolss_PrinterInfo1 info1;
 /* [case(2)] */ struct spoolss_PrinterInfo2 info2;
 /* [case(3)] */ struct spoolss_PrinterInfo3 info3;
@@ -212,15 +212,14 @@ struct spoolss_GetPrinter {
 	struct {
 		struct policy_handle *handle;
 		uint32 level;
-		struct uint8_buf *buffer;
-		uint32 offered;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
 	} in;
 
 	struct {
-		struct uint8_buf *buffer;
-		uint32 needed;
-		uint32 returned;
-		NTSTATUS result;
+		DATA_BLOB *buffer;
+		uint32 *buf_size;
+		WERROR result;
 	} out;
 
 };
@@ -434,7 +433,7 @@ struct spoolss_ClosePrinter {
 
 	struct {
 		struct policy_handle *handle;
-		NTSTATUS result;
+		WERROR result;
 	} out;
 
 };
@@ -864,7 +863,7 @@ struct spoolss_OpenPrinterEx {
 
 	struct {
 		struct policy_handle *handle;
-		NTSTATUS result;
+		WERROR result;
 	} out;
 
 };
