@@ -65,7 +65,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	fprintf(out_hnd, "SAM NT Password Change\n");
+	report(out_hnd, "SAM NT Password Change\n");
 
 #if 0
 	struct pwd_info new_pwd;
@@ -107,11 +107,11 @@ void cmd_sam_ntchange_pwd(struct client_info *info)
 
 	if (res)
 	{
-		fprintf(out_hnd, "NT Password changed OK\n");
+		report(out_hnd, "NT Password changed OK\n");
 	}
 	else
 	{
-		fprintf(out_hnd, "NT Password change FAILED\n");
+		report(out_hnd, "NT Password change FAILED\n");
 	}
 }
 
@@ -133,7 +133,7 @@ void cmd_sam_test(struct client_info *info)
 /*
 	if (strlen(sid) == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 */
@@ -141,7 +141,7 @@ void cmd_sam_test(struct client_info *info)
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	fprintf(out_hnd, "SAM Encryption Test\n");
+	report(out_hnd, "SAM Encryption Test\n");
 
 	cli_nt_set_ntlmssp_flgs(smb_cli,
 		                    NTLMSSP_NEGOTIATE_UNICODE |
@@ -191,11 +191,11 @@ void cmd_sam_lookup_domain(struct client_info *info)
 
 	if (!next_token(NULL, domain, NULL, sizeof(domain)))
 	{
-		fprintf(out_hnd, "lookupdomain: <name>\n");
+		report(out_hnd, "lookupdomain: <name>\n");
 		return;
 	}
 
-	fprintf(out_hnd, "Lookup Domain in SAM Server\n");
+	report(out_hnd, "Lookup Domain in SAM Server\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -219,13 +219,13 @@ void cmd_sam_lookup_domain(struct client_info *info)
 		DEBUG(5,("cmd_sam_lookup_domain: succeeded\n"));
 
 		sid_to_string(str_sid, &dom_sid);
-		fprintf(out_hnd, "%s SID: %s\n", domain, str_sid);
-		fprintf(out_hnd, "Lookup Domain: OK\n");
+		report(out_hnd, "%s SID: %s\n", domain, str_sid);
+		report(out_hnd, "Lookup Domain: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_lookup_domain: failed\n"));
-		fprintf(out_hnd, "Lookup Domain: FAILED\n");
+		report(out_hnd, "Lookup Domain: FAILED\n");
 	}
 }
 
@@ -254,7 +254,7 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -264,12 +264,12 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
+		report(out_hnd, "delaliasmem: <alias rid> [member sid1] [member sid2] ...\n");
 		return;
 	}
 	alias_rid = get_number(tmp);
 
-	fprintf(out_hnd, "SAM Domain Alias Member\n");
+	report(out_hnd, "SAM Domain Alias Member\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -297,7 +297,7 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 
 		if (res2)
 		{
-			fprintf(out_hnd, "SID deleted from Alias 0x%x: %s\n", alias_rid, tmp);
+			report(out_hnd, "SID deleted from Alias 0x%x: %s\n", alias_rid, tmp);
 		}
 	}
 
@@ -311,12 +311,12 @@ void cmd_sam_del_aliasmem(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_del_aliasmem: succeeded\n"));
-		fprintf(out_hnd, "Delete Domain Alias Member: OK\n");
+		report(out_hnd, "Delete Domain Alias Member: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_del_aliasmem: failed\n"));
-		fprintf(out_hnd, "Delete Domain Alias Member: FAILED\n");
+		report(out_hnd, "Delete Domain Alias Member: FAILED\n");
 	}
 }
 
@@ -348,7 +348,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -358,11 +358,11 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 
 	if (!next_token(NULL, name, NULL, sizeof(name)))
 	{
-		fprintf(out_hnd, "delalias <alias name>\n");
+		report(out_hnd, "delalias <alias name>\n");
 		return;
 	}
 
-	fprintf(out_hnd, "SAM Delete Domain Alias\n");
+	report(out_hnd, "SAM Delete Domain Alias\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -406,12 +406,12 @@ void cmd_sam_delete_dom_alias(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_delete_dom_alias: succeeded\n"));
-		fprintf(out_hnd, "Delete Domain Alias: OK\n");
+		report(out_hnd, "Delete Domain Alias: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_delete_dom_alias: failed\n"));
-		fprintf(out_hnd, "Delete Domain Alias: FAILED\n");
+		report(out_hnd, "Delete Domain Alias: FAILED\n");
 	}
 }
 
@@ -447,7 +447,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -469,11 +469,11 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 
 	if (num_names < 2)
 	{
-		fprintf(out_hnd, "addaliasmem <group name> [member name1] [member name2] ...\n");
+		report(out_hnd, "addaliasmem <group name> [member name1] [member name2] ...\n");
 		return;
 	}
 	
-	fprintf(out_hnd, "SAM Domain Alias Member\n");
+	report(out_hnd, "SAM Domain Alias Member\n");
 
 	/* open LSARPC session. */
 	res3 = res3 ? cli_nt_session_open(smb_cli, PIPE_LSARPC, &fnum_lsa) : False;
@@ -541,7 +541,7 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 		if (res2)
 		{
 			sid_to_string(tmp, &sids[i]);
-			fprintf(out_hnd, "SID added to Alias 0x%x: %s\n", alias_rid, tmp);
+			report(out_hnd, "SID added to Alias 0x%x: %s\n", alias_rid, tmp);
 		}
 	}
 
@@ -572,12 +572,12 @@ void cmd_sam_add_aliasmem(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_add_aliasmem: succeeded\n"));
-		fprintf(out_hnd, "Add Domain Alias Member: OK\n");
+		report(out_hnd, "Add Domain Alias Member: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_add_aliasmem: failed\n"));
-		fprintf(out_hnd, "Add Domain Alias Member: FAILED\n");
+		report(out_hnd, "Add Domain Alias Member: FAILED\n");
 	}
 }
 
@@ -605,7 +605,7 @@ void cmd_sam_create_dom_user(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -616,7 +616,7 @@ void cmd_sam_create_dom_user(struct client_info *info)
 
 	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
 	{
-		fprintf(out_hnd, "createuser: <acct name> [acct description]\n");
+		report(out_hnd, "createuser: <acct name> [acct description]\n");
 	}
 
 	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
@@ -625,8 +625,8 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	}
 
 
-	fprintf(out_hnd, "SAM Create Domain User\n");
-	fprintf(out_hnd, "Domain: %s Name: %s Description: %s\n",
+	report(out_hnd, "SAM Create Domain User\n");
+	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
 
 	/* open SAMR session.  negotiate credentials */
@@ -659,12 +659,12 @@ void cmd_sam_create_dom_user(struct client_info *info)
 	if (res && res1)
 	{
 		DEBUG(5,("cmd_sam_create_dom_user: succeeded\n"));
-		fprintf(out_hnd, "Create Domain User: OK\n");
+		report(out_hnd, "Create Domain User: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_create_dom_user: failed\n"));
-		fprintf(out_hnd, "Create Domain User: FAILED\n");
+		report(out_hnd, "Create Domain User: FAILED\n");
 	}
 }
 
@@ -692,7 +692,7 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -703,7 +703,7 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 
 	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
 	{
-		fprintf(out_hnd, "createalias: <acct name> [acct description]\n");
+		report(out_hnd, "createalias: <acct name> [acct description]\n");
 	}
 
 	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
@@ -712,8 +712,8 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	}
 
 
-	fprintf(out_hnd, "SAM Create Domain Alias\n");
-	fprintf(out_hnd, "Domain: %s Name: %s Description: %s\n",
+	report(out_hnd, "SAM Create Domain Alias\n");
+	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
 
 	/* open SAMR session.  negotiate credentials */
@@ -746,12 +746,12 @@ void cmd_sam_create_dom_alias(struct client_info *info)
 	if (res && res1)
 	{
 		DEBUG(5,("cmd_sam_create_dom_alias: succeeded\n"));
-		fprintf(out_hnd, "Create Domain Alias: OK\n");
+		report(out_hnd, "Create Domain Alias: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_create_dom_alias: failed\n"));
-		fprintf(out_hnd, "Create Domain Alias: FAILED\n");
+		report(out_hnd, "Create Domain Alias: FAILED\n");
 	}
 }
 
@@ -781,7 +781,7 @@ void cmd_sam_del_groupmem(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -791,12 +791,12 @@ void cmd_sam_del_groupmem(struct client_info *info)
 
 	if (!next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		fprintf(out_hnd, "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
+		report(out_hnd, "delgroupmem: <group rid> [member rid1] [member rid2] ...\n");
 		return;
 	}
 	group_rid = get_number(tmp);
 
-	fprintf(out_hnd, "SAM Add Domain Group member\n");
+	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -824,7 +824,7 @@ void cmd_sam_del_groupmem(struct client_info *info)
 
 		if (res2)
 		{
-			fprintf(out_hnd, "RID deleted from Group 0x%x: 0x%x\n", group_rid, member_rid);
+			report(out_hnd, "RID deleted from Group 0x%x: 0x%x\n", group_rid, member_rid);
 		}
 	}
 
@@ -838,12 +838,12 @@ void cmd_sam_del_groupmem(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_del_groupmem: succeeded\n"));
-		fprintf(out_hnd, "Add Domain Group Member: OK\n");
+		report(out_hnd, "Add Domain Group Member: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_del_groupmem: failed\n"));
-		fprintf(out_hnd, "Add Domain Group Member: FAILED\n");
+		report(out_hnd, "Add Domain Group Member: FAILED\n");
 	}
 }
 
@@ -876,7 +876,7 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -886,11 +886,11 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 
 	if (!next_token(NULL, name, NULL, sizeof(name)))
 	{
-		fprintf(out_hnd, "delgroup <group name>\n");
+		report(out_hnd, "delgroup <group name>\n");
 		return;
 	}
 
-	fprintf(out_hnd, "SAM Delete Domain Group\n");
+	report(out_hnd, "SAM Delete Domain Group\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -934,12 +934,12 @@ void cmd_sam_delete_dom_group(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_delete_dom_group: succeeded\n"));
-		fprintf(out_hnd, "Delete Domain Group: OK\n");
+		report(out_hnd, "Delete Domain Group: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_delete_dom_group: failed\n"));
-		fprintf(out_hnd, "Delete Domain Group: FAILED\n");
+		report(out_hnd, "Delete Domain Group: FAILED\n");
 	}
 }
 
@@ -980,7 +980,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1005,11 +1005,11 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	if (num_names < 1)
 	{
-		fprintf(out_hnd, "addgroupmem <group name> [member name1] [member name2] ...\n");
+		report(out_hnd, "addgroupmem <group name> [member name1] [member name2] ...\n");
 		return;
 	}
 	
-	fprintf(out_hnd, "SAM Add Domain Group member\n");
+	report(out_hnd, "SAM Add Domain Group member\n");
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
@@ -1054,7 +1054,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 	if (group_type == SID_NAME_ALIAS)
 	{
-		fprintf(out_hnd, "%s is a local alias, not a group.  Use addaliasmem command instead\n",
+		report(out_hnd, "%s is a local alias, not a group.  Use addaliasmem command instead\n",
 			group_name);
 		return;
 	}
@@ -1069,7 +1069,7 @@ void cmd_sam_add_groupmem(struct client_info *info)
 
 		if (res2)
 		{
-			fprintf(out_hnd, "RID added to Group 0x%x: 0x%x\n", group_rid, rid[i]);
+			report(out_hnd, "RID added to Group 0x%x: 0x%x\n", group_rid, rid[i]);
 		}
 	}
 
@@ -1096,12 +1096,12 @@ void cmd_sam_add_groupmem(struct client_info *info)
 	if (res && res1 && res2)
 	{
 		DEBUG(5,("cmd_sam_add_groupmem: succeeded\n"));
-		fprintf(out_hnd, "Add Domain Group Member: OK\n");
+		report(out_hnd, "Add Domain Group Member: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_add_groupmem: failed\n"));
-		fprintf(out_hnd, "Add Domain Group Member: FAILED\n");
+		report(out_hnd, "Add Domain Group Member: FAILED\n");
 	}
 }
 
@@ -1129,7 +1129,7 @@ void cmd_sam_create_dom_group(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1140,7 +1140,7 @@ void cmd_sam_create_dom_group(struct client_info *info)
 
 	if (!next_token(NULL, acct_name, NULL, sizeof(acct_name)))
 	{
-		fprintf(out_hnd, "creategroup: <acct name> [acct description]\n");
+		report(out_hnd, "creategroup: <acct name> [acct description]\n");
 	}
 
 	if (!next_token(NULL, acct_desc, NULL, sizeof(acct_desc)))
@@ -1149,8 +1149,8 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	}
 
 
-	fprintf(out_hnd, "SAM Create Domain Group\n");
-	fprintf(out_hnd, "Domain: %s Name: %s Description: %s\n",
+	report(out_hnd, "SAM Create Domain Group\n");
+	report(out_hnd, "Domain: %s Name: %s Description: %s\n",
 	                  domain, acct_name, acct_desc);
 
 	/* open SAMR session.  negotiate credentials */
@@ -1183,12 +1183,12 @@ void cmd_sam_create_dom_group(struct client_info *info)
 	if (res && res1)
 	{
 		DEBUG(5,("cmd_sam_create_dom_group: succeeded\n"));
-		fprintf(out_hnd, "Create Domain Group: OK\n");
+		report(out_hnd, "Create Domain Group: OK\n");
 	}
 	else
 	{
 		DEBUG(5,("cmd_sam_create_dom_group: failed\n"));
-		fprintf(out_hnd, "Create Domain Group: FAILED\n");
+		report(out_hnd, "Create Domain Group: FAILED\n");
 	}
 }
 
@@ -1341,7 +1341,7 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1389,8 +1389,8 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	string_to_sid(&sid_1_5_20, "S-1-5-32");
 
-	fprintf(out_hnd, "SAM Enumerate Users\n");
-	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	report(out_hnd, "SAM Enumerate Users\n");
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
 #ifdef DEBUG_TESTING
@@ -1426,7 +1426,7 @@ void cmd_sam_enum_users(struct client_info *info)
 
 	if (res && info->dom.num_sam_entries == 0)
 	{
-		fprintf(out_hnd, "No users\n");
+		report(out_hnd, "No users\n");
 	}
 
 	if (res)
@@ -1436,7 +1436,7 @@ void cmd_sam_enum_users(struct client_info *info)
 		{
 			uint32 user_rid = info->dom.sam[user_idx].rid;
 
-			fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
+			report(out_hnd, "User RID: %8x  User Name: %s\n",
 			        user_rid,
 			        info->dom.sam[user_idx].acct_name);
 
@@ -1511,13 +1511,13 @@ void cmd_sam_query_user(struct client_info *info)
 
 	if (sid.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
 	if (!next_token(NULL, user_name, NULL, sizeof(user_name)))
 	{
-		fprintf(out_hnd, "samuser <name>\n");
+		report(out_hnd, "samuser <name>\n");
 		return;
 	}
 
@@ -1527,8 +1527,8 @@ void cmd_sam_query_user(struct client_info *info)
 
 	sid_to_string(sid_str, &sid);
 
-	fprintf(out_hnd, "SAM Query User: %s\n", user_name);
-	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	report(out_hnd, "SAM Query User: %s\n", user_name);
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid_str);
 
 	/* open SAMR session.  negotiate credentials */
@@ -1601,7 +1601,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 
 	if (strlen(sid) == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1616,8 +1616,8 @@ void cmd_sam_query_dominfo(struct client_info *info)
 		switch_value = strtoul(info_str, (char**)NULL, 10);
 	}
 
-	fprintf(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
-	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	report(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
@@ -1683,7 +1683,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 #endif
 	if (strlen(sid) == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1699,8 +1699,8 @@ void cmd_sam_enum_aliases(struct client_info *info)
 		request_member_info |= strequal(tmp, "-m");
 	}
 
-	fprintf(out_hnd, "SAM Enumerate Aliases\n");
-	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	report(out_hnd, "SAM Enumerate Aliases\n");
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
@@ -1726,7 +1726,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 
 	if (res && info->dom.num_sam_entries == 0)
 	{
-		fprintf(out_hnd, "No aliases\n");
+		report(out_hnd, "No aliases\n");
 	}
 
 	if (res)
@@ -1735,7 +1735,7 @@ void cmd_sam_enum_aliases(struct client_info *info)
 	{
 		uint32 alias_rid = info->dom.sam[alias_idx].rid;
 
-		fprintf(out_hnd, "Alias RID: %8x  Group Name: %s\n",
+		report(out_hnd, "Alias RID: %8x  Group Name: %s\n",
 				  alias_rid,
 				  info->dom.sam[alias_idx].acct_name);
 
@@ -1891,7 +1891,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 
 	if (sid1.num_auths == 0)
 	{
-		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -1917,8 +1917,8 @@ void cmd_sam_enum_groups(struct client_info *info)
 		}
 	}
 
-	fprintf(out_hnd, "SAM Enumerate Groups\n");
-	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	report(out_hnd, "SAM Enumerate Groups\n");
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
 	                  info->myhostname, srv_name, domain, sid);
 
 	/* open SAMR session.  negotiate credentials */
@@ -1944,7 +1944,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 
 	if (res && info->dom.num_sam_entries == 0)
 	{
-		fprintf(out_hnd, "No groups\n");
+		report(out_hnd, "No groups\n");
 	}
 
 	if (res)
@@ -1953,7 +1953,7 @@ void cmd_sam_enum_groups(struct client_info *info)
 		{
 			uint32 group_rid = info->dom.sam[group_idx].rid;
 
-			fprintf(out_hnd, "Group RID: %8x  Group Name: %s\n",
+			report(out_hnd, "Group RID: %8x  Group Name: %s\n",
 					  group_rid,
 					  info->dom.sam[group_idx].acct_name);
 
