@@ -267,9 +267,11 @@ kerberos4_send_oneway(Authenticator *ap)
 void
 kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 {
+    struct sockaddr_in addr;
     char realm[REALM_SZ];
     char instance[INST_SZ];
     int r;
+    int addr_len;
 
     if (cnt-- < 1)
 	return;
@@ -290,8 +292,16 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    printf("\r\n");
 	}
 	k_getsockinst(0, instance, sizeof(instance));
+	addr_len = sizeof(addr);
+	if(getpeername(0, (struct sockaddr *)&addr, &addr_len) < 0) {
+	    if(auth_debug_mode)
+		printf("getpeername failed\r\n");
+	    Data(ap, KRB_REJECT, "getpeername failed", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    return;
+	}
 	r = krb_rd_req(&auth, KRB_SERVICE_NAME,
-		       instance, 0, &adat, "");
+		       instance, addr.sin_addr.s_addr, &adat, "");
 	if (r) {
 	    if (auth_debug_mode)
 		printf("Kerberos failed him as %s\r\n", name);
