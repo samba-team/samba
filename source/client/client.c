@@ -1897,7 +1897,8 @@ struct cli_state *do_connect(char *server, char *share)
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
-		DEBUG(0,("session request to %s failed\n", called.name));
+		DEBUG(0,("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(c)));
 		cli_shutdown(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20, "");
