@@ -184,7 +184,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 }
 
 static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
-					DATA_BLOB *blob, size_t wantlen, uint32_t flags)
+			      DATA_BLOB *blob, size_t wantlen, uint32_t flags)
 {
 	ssize_t gotlen;
 	void *buf;
@@ -235,7 +235,7 @@ static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 	}
 
 	blob->length = gotlen;
-	blob->data = talloc_realloc(buf, gotlen);
+	blob->data = talloc_realloc(mem_ctx, buf, gotlen);
 	if (!blob->data) {
 		return NT_STATUS_NO_MEMORY;
 	}

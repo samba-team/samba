@@ -1428,8 +1428,9 @@ BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
 {
 	char *dup_str = talloc_strdup(mem_ctx, str);
 
-	*strings = talloc_realloc(*strings,
-				  ((*num)+1) * sizeof(**strings));
+	*strings = talloc_realloc_p(mem_ctx,
+				    *strings,
+				    const char *, ((*num)+1));
 
 	if ((*strings == NULL) || (dup_str == NULL))
 		return False;

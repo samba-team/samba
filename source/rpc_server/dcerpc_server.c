@@ -819,7 +819,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 		}
 
 		call->pkt.u.request.stub_and_verifier.data = 
-			talloc_realloc(call->pkt.u.request.stub_and_verifier.data, alloc_size);
+			talloc_realloc(call, call->pkt.u.request.stub_and_verifier.data, alloc_size);
 		if (!call->pkt.u.request.stub_and_verifier.data) {
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
@@ -874,7 +874,8 @@ NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
 	NTSTATUS status;
 
-	dce_conn->partial_input.data = talloc_realloc(dce_conn->partial_input.data,
+	dce_conn->partial_input.data = talloc_realloc(dce_conn,
+						      dce_conn->partial_input.data,
 						      dce_conn->partial_input.length + data->length);
 	if (!dce_conn->partial_input.data) {
 		return NT_STATUS_NO_MEMORY;

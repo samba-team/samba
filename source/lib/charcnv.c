@@ -208,11 +208,7 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	outbuf = NULL;
 convert:
 	destlen = destlen * 2;
-	if (outbuf == NULL) {
-		ob = talloc_array_p(ctx, char, destlen);
-	} else {
-		ob = (char *)talloc_realloc(outbuf, destlen);
-	}
+	ob = (char *)talloc_realloc(ctx, outbuf, destlen);
 	if (!ob) {
 		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
 		talloc_free(outbuf);
@@ -245,7 +241,7 @@ convert:
 	
 	destlen = destlen - o_len;
 	/* +2 for mandetory null termination, UTF8 or UTF16 */
-	*dest = (char *)talloc_realloc(ob,destlen+2);
+	*dest = (char *)talloc_realloc(ctx, ob, destlen+2);
 	if (!*dest) {
 		DEBUG(0, ("convert_string_talloc: out of memory!\n"));
 		talloc_free(ob);

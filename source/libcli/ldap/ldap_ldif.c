@@ -51,7 +51,7 @@ static char *next_chunk(TALLOC_CTX *mem_ctx,
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
-			c2 = talloc_realloc(chunk, alloc_size);
+			c2 = talloc_realloc(mem_ctx, chunk, alloc_size);
 			if (!c2) {
 				errno = ENOMEM;
 				return NULL;
@@ -156,11 +156,12 @@ static int next_attr(char **s, const char **attr, struct ldap_val *value)
 }
 
 BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
-				struct ldap_attribute *attrib)
+			 struct ldap_attribute *attrib)
 {
-	attrib->values = talloc_realloc(attrib->values,
-					sizeof(*attrib->values) *
-					(attrib->num_values+1));
+	attrib->values = talloc_realloc_p(mem_ctx, 
+					  attrib->values,
+					  DATA_BLOB,
+					  attrib->num_values+1);
 	if (attrib->values == NULL)
 		return False;
 
@@ -175,8 +176,10 @@ BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       struct ldap_attribute **attribs,
 				       int *num_attribs)
 {
-	*attribs = talloc_realloc(*attribs,
-				  sizeof(**attribs) * (*num_attribs+1));
+	*attribs = talloc_realloc_p(mem_ctx,
+				    *attribs,
+				    struct ldap_attribute,
+				    *num_attribs+1);
 
 	if (*attribs == NULL)
 		return False;
@@ -207,9 +210,10 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 		}
 
 		if (attrib == NULL) {
-			r->attributes = talloc_realloc(r->attributes,
-						       sizeof(*r->attributes) *
-						       (r->num_attributes+1));
+			r->attributes = talloc_realloc_p(msg->mem_ctx,
+							 r->attributes,
+							 struct ldap_attribute,
+							 r->num_attributes+1);
 			if (r->attributes == NULL)
 				return False;
 
@@ -231,8 +235,7 @@ BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod **mods,
 				    int *num_mods)
 {
-	*mods = talloc_realloc(*mods,
-			       sizeof(**mods) * ((*num_mods)+1));
+	*mods = talloc_realloc_p(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
 
 	if (*mods == NULL)
 		return False;

@@ -39,7 +39,7 @@ static void trans2_grow_data_allocation(struct smbsrv_request *req,
 	if (new_size <= trans->out.data.length) {
 		return;
 	}
-	trans->out.data.data = talloc_realloc(trans->out.data.data, new_size);
+	trans->out.data.data = talloc_realloc(req, trans->out.data.data, new_size);
 }
 
 
