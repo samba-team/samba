@@ -304,7 +304,7 @@ SMBD_OBJ = $(SMBD_OBJ1) $(UBIQX_OBJ) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) 
-		
+
 
 SRVSVCD_OBJ = $(MSRPCD_OBJ) $(SRVSVCD_OBJ1) \
 		$(UBIQX_OBJ) \
