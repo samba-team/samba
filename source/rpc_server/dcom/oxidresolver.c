@@ -89,21 +89,30 @@ static WERROR ServerAlive(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 */
 static WERROR ResolveOxid2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ResolveOxid2 *r)
 {
+	ZERO_STRUCT(r->out);
+	r->out.ComVersion.MajorVersion = COM_MAJOR_VERSION;
+	r->out.ComVersion.MinorVersion = COM_MINOR_VERSION;
 	return WERR_NOT_SUPPORTED;
 }
 
+struct DUALSTRINGARRAY *dcom_server_generate_dual_string(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *state)
+{
+	return NULL; /* FIXME */
+}
 
 /* 
   ServerAlive2 
 */
 static WERROR ServerAlive2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ServerAlive2 *r)
 {
-	return WERR_NOT_SUPPORTED;
+	ZERO_STRUCT(r->out);
+	r->out.info.version.MajorVersion = COM_MAJOR_VERSION;
+	r->out.info.version.MinorVersion = COM_MINOR_VERSION;
+	r->out.dualstring = *dcom_server_generate_dual_string(mem_ctx, dce_call);
+	return WERR_OK;
 }
 
-/* FIXME: Regularly ping objects in use by local programs on 
- * remote servers */
-
+/* FIXME: Garbage collect objects that haven't been pinged */
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_oxidresolver_s.c"

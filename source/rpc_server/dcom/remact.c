@@ -24,25 +24,8 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "librpc/gen_ndr/ndr_remact.h"
+#include "librpc/gen_ndr/ndr_oxidresolver.h"
 #include "rpc_server/dcom/dcom.h"
-
-static void register_dcom_class(void *_c)
-{
-	struct dcom_class *class = _c;
-	/* FIXME */
-}
-
-struct dcom_object *dcom_object_by_oid(struct GUID *oid)
-{
-	/* FIXME */
-	return NULL;
-}
-
-struct dcom_class *dcom_class_by_clsid(struct GUID *clsid)
-{
-	/* FIXME */
-	return NULL;
-}
 
 struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 {
@@ -57,10 +40,38 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 {
 	/* FIXME: CoGetClassObject() */
 	/* FIXME: IClassFactory::CreateInstance() */
+	/* FIXME: Register newly created object with dcerpc subsystem */
 	/* FIXME: IClassFactory::Release() */
+	
+	ZERO_STRUCT(r->out);
+	r->out.ServerVersion.MajorVersion = COM_MAJOR_VERSION;
+	r->out.ServerVersion.MinorVersion = COM_MINOR_VERSION;
+
+	/* FIXME: */
+	r->out.hr = WERR_NOT_SUPPORTED;
+	r->out.pOxid = 0;
+	r->out.AuthnHint = 0;
+	/* FIXME: Loop thru given interfaces and set r->out.results and 
+	 * r->out.interfaces */
+	
 	return WERR_NOT_SUPPORTED;
 }
 
+NTSTATUS dcerpc_server_dcom_init(void)
+{
+	NTSTATUS status;
+	status = dcerpc_server_IOXIDResolver_init();
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	status = dcerpc_server_IRemoteActivation_init();
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_remact_s.c"

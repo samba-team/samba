@@ -12,21 +12,12 @@ ADD_OBJ_FILES = \
 ################################################
 
 ################################################
-# Start MODULE dcerpc_IOXIDResolver
-[MODULE::dcerpc_IOXIDResolver]
-INIT_FUNCTION = dcerpc_server_IOXIDResolver_init
+# Start MODULE dcerpc_DCOM
+[MODULE::dcerpc_dcom]
+INIT_FUNCTION = dcerpc_server_dcom_init
 INIT_OBJ_FILES = \
-		rpc_server/dcom/oxidresolver.o
-REQUIRED_SUBSYSTEMS = \
-		DCERPC_COMMON
-# End MODULE dcerpc_IOXIDResolver
-################################################
-
-################################################
-# Start MODULE dcerpc_IRemoteActivation
-[MODULE::dcerpc_IRemoteActivation]
-INIT_FUNCTION = dcerpc_server_IRemoteActivation_init
-INIT_OBJ_FILES = \
+		rpc_server/dcom/oxidresolver.o \
+		rpc_server/dcom/rot.o \
 		rpc_server/dcom/remact.o
 REQUIRED_SUBSYSTEMS = \
 		DCERPC_COMMON
