@@ -727,25 +727,177 @@ static struct notify2_message_table job_notify_table[] = {
 	/* 0x17 */ { "JOB_NOTIFY_BYTES_PRINTED", NULL },
 };
 
+
+/***********************************************************************
+ Allocate talloc context for container object
+ **********************************************************************/
+ 
+static void notify_msg_ctr_init( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return;
+
+	ctr->ctx = talloc_init();
+		
+	return;
+}
+
+/***********************************************************************
+ release all allocated memory and zero out structure
+ **********************************************************************/
+ 
+static void notify_msg_ctr_destroy( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return;
+
+	if ( ctr->ctx )
+		talloc_destroy(ctr->ctx);
+		
+	ZERO_STRUCTP(ctr);
+		
+	return;
+}
+
+/***********************************************************************
+ **********************************************************************/
+ 
+static TALLOC_CTX* notify_ctr_getctx( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return NULL;
+		
+	return ctr->ctx;
+}
+
+/***********************************************************************
+ **********************************************************************/
+ 
+static SPOOLSS_NOTIFY_MSG_GROUP* notify_ctr_getgroup( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 index )
+{
+	if ( !ctr || !ctr->msg_groups )
+		return NULL;
+	
+	if ( index >= ctr->num_groups )
+		return NULL;
+		
+	return &ctr->msg_groups[index];
+
+}
+
+/***********************************************************************
+ How many groups of change messages do we have ?
+ **********************************************************************/
+ 
+static int notify_msg_ctr_numgroups( SPOOLSS_NOTIFY_MSG_CTR *ctr )
+{
+	if ( !ctr )
+		return 0;
+		
+	return ctr->num_groups;
+}
+
+/***********************************************************************
+ Add a SPOOLSS_NOTIFY_MSG_CTR to the correct group
+ **********************************************************************/
+ 
+static int notify_msg_ctr_addmsg( SPOOLSS_NOTIFY_MSG_CTR *ctr, SPOOLSS_NOTIFY_MSG *msg )
+{
+	SPOOLSS_NOTIFY_MSG_GROUP	*groups = NULL;
+	SPOOLSS_NOTIFY_MSG_GROUP	*msg_grp = NULL;
+	SPOOLSS_NOTIFY_MSG		*msg_list = NULL;
+	int				i, new_slot;
+	
+	if ( !ctr || !msg )
+		return 0;
+	
+	/* loop over all groups looking for a matching printer name */
+	
+	for ( i=0; i<ctr->num_groups; i++ ) {
+		if ( strcmp(ctr->msg_groups[i].printername, msg->printer) == 0 )
+			break;
+	}
+	
+	/* add a new group? */
+	
+	if ( i == ctr->num_groups )
+	{
+		ctr->num_groups++;
+
+		if ( !(groups = talloc_realloc( ctr->ctx, ctr->msg_groups, sizeof(SPOOLSS_NOTIFY_MSG_GROUP)*ctr->num_groups)) ) {
+			DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed!\n"));
+			return 0;
+		}
+		ctr->msg_groups = groups;
+
+		/* clear the new entry and set the printer name */
+		
+		ZERO_STRUCT( ctr->msg_groups[ctr->num_groups-1] );
+		fstrcpy( ctr->msg_groups[ctr->num_groups-1].printername, msg->printer );
+	}
+	
+	/* add the change messages; 'i' is the correct index now regardless */
+	
+	msg_grp = &ctr->msg_groups[i];
+	
+	msg_grp->num_msgs++;
+	
+	if ( !(msg_list =  talloc_realloc( ctr->ctx, msg_grp->msgs, sizeof(SPOOLSS_NOTIFY_MSG)*msg_grp->num_msgs )) ) {
+		DEBUG(0,("notify_msg_ctr_addmsg: talloc_realloc() failed for new message [%d]!\n", msg_grp->num_msgs));
+		return 0;
+	}
+	msg_grp->msgs = msg_list;
+	
+	new_slot = msg_grp->num_msgs-1;
+	memcpy( &msg_grp->msgs[new_slot], msg, sizeof(SPOOLSS_NOTIFY_MSG) );
+	
+	/* need to allocate own copy of data */
+	
+	if ( msg->len != 0 ) 
+		msg_grp->msgs[new_slot].notify.data = talloc_memdup( ctr->ctx, msg->notify.data, msg->len );
+	
+	return ctr->num_groups;
+}
+
 /***********************************************************************
  Send a change notication message on all handles which have a call 
  back registered
  **********************************************************************/
 
-static void process_notify2_message(struct spoolss_notify_msg *msg, TALLOC_CTX *mem_ctx)
+static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 index )
 {
-	Printer_entry *p;
-
-	DEBUG(8,("process_notify2_message: Enter...[%s]\n", msg->printer));
+	Printer_entry 		 *p;
+	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
+	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, index );
+	SPOOLSS_NOTIFY_MSG       *messages;
 	
-	for (p = printers_list; p; p = p->next) {
+	
+	if ( !msg_group ) {
+		DEBUG(5,("send_notify2_changes() called with no msg group!\n"));
+		return;
+	}
+	
+	messages = msg_group->msgs;
+	
+	if ( !messages ) {
+		DEBUG(5,("send_notify2_changes() called with no messages!\n"));
+		return;
+	}
+	
+	DEBUG(8,("send_notify2_changes: Enter...[%s]\n", msg_group->printername));
+	
+	/* loop over all printers */
+	
+	for (p = printers_list; p; p = p->next) 
+	{
 		SPOOL_NOTIFY_INFO_DATA *data;
-		uint32 data_len = 1;
-		uint32 id;
+		uint32	data_len = 0;
+		uint32 	id;
+		int 	i;
 
 		/* Is there notification on this handle? */
 
-		if (!p->notify.client_connected)
+		if ( !p->notify.client_connected )
 			continue;
 		
 		DEBUG(10,("Client connected! [%s]\n", p->dev.handlename));
@@ -754,134 +906,129 @@ static void process_notify2_message(struct spoolss_notify_msg *msg, TALLOC_CTX *
                    notifications. */
 
 		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER )  &&
-		    ( !strequal(msg->printer, p->dev.handlename) ) )
+		    ( !strequal(msg_group->printername, p->dev.handlename) ) )
 			continue;
 
 		DEBUG(10,("Our printer\n"));
 		
-		/* Are we monitoring this event? */
-
-		if (!is_monitoring_event(p, msg->type, msg->field))
-			continue;
-			
-		DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
-			msg->type, msg->field, p->dev.handlename));
-
-		/* OK - send the event to the client */
-
-		data = talloc(mem_ctx, sizeof(SPOOL_NOTIFY_INFO_DATA));
-
+		/* allocate the max entries possible */
+		
+		data = talloc( mem_ctx, msg_group->num_msgs*sizeof(SPOOL_NOTIFY_INFO_DATA) );
 		ZERO_STRUCTP(data);
-
-		/* 
-		 * if the is a printer notification handle and not a job notification 
-		 * type, then set the id to 0.  Other wise just use what was specified
-		 * in the message.  
-		 *
-		 * When registering change notification on a print server handle 
-		 * we always need to send back the id (snum) matching the printer
-		 * for which the change took place.  For change notify registered
-		 * on a printer handle, this does not matter and the id should be 0.
-		 *
-		 * --jerry
-		 */
-
-		if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
-			id = 0;
-		else
-			id = msg->id;
-
-
-		/* Convert unix jobid to smb jobid */
-
-		if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) {
-
-			id = sysjob_to_jobid(msg->id);
-
-			if (id == -1) {
-				DEBUG(3, ("no such unix jobid %d\n", msg->id));
-				goto done;
-			}
-		}
-
-		construct_info_data(data, msg->type, msg->field, id);
-
-		switch(msg->type) {
-			case PRINTER_NOTIFY_TYPE:
-				if ( !printer_notify_table[msg->field].fn )
-					goto done;
-					
-				printer_notify_table[msg->field].fn(msg, data, mem_ctx);
-				
-				break;
+		
+		/* build the array of change notifications */
+		
+		for ( i=0; i<msg_group->num_msgs; i++ )
+		{
+			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
-			case JOB_NOTIFY_TYPE:
-				if ( !job_notify_table[msg->field].fn )
+			/* Are we monitoring this event? */
+
+			if (!is_monitoring_event(p, msg->type, msg->field))
+				continue;
+			
+			
+			DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
+				msg->type, msg->field, p->dev.handlename));
+
+			/* 
+			 * if the is a printer notification handle and not a job notification 
+			 * type, then set the id to 0.  Other wise just use what was specified
+			 * in the message.  
+			 *
+			 * When registering change notification on a print server handle 
+			 * we always need to send back the id (snum) matching the printer
+			 * for which the change took place.  For change notify registered
+			 * on a printer handle, this does not matter and the id should be 0.
+			 *
+			 * --jerry
+			 */
+
+			if ( ( p->printer_type == PRINTER_HANDLE_IS_PRINTER ) && ( msg->type == PRINTER_NOTIFY_TYPE ) )
+				id = 0;
+			else
+				id = msg->id;
+
+
+			/* Convert unix jobid to smb jobid */
+
+			if (msg->flags & SPOOLSS_NOTIFY_MSG_UNIX_JOBID) 
+			{
+				id = sysjob_to_jobid(msg->id);
+
+				if (id == -1) {
+					DEBUG(3, ("no such unix jobid %d\n", msg->id));
 					goto done;
+				}
+			}
+
+			construct_info_data( &data[data_len], msg->type, msg->field, id );
+
+			switch(msg->type) {
+				case PRINTER_NOTIFY_TYPE:
+					if ( !printer_notify_table[msg->field].fn )
+						goto done;
+					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+				
+					break;
+			
+				case JOB_NOTIFY_TYPE:
+					if ( !job_notify_table[msg->field].fn )
+						goto done;
+					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
 					
-				job_notify_table[msg->field].fn(msg, data, mem_ctx);
-				
-				break;
-				
-			default:
-				DEBUG(5, ("Unknown notification type %d\n", msg->type));
-				goto done;
+					break;
+					
+				default:
+					DEBUG(5, ("Unknown notification type %d\n", msg->type));
+					goto done;
+			}
+			
+			data_len++;
 		}
 
 		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
 				data_len, data, p->notify.change, 0 );
 	}
+	
 done:
-	DEBUG(8,("process_notify2_message: Exit...\n"));
+	DEBUG(8,("send_notify2_changes: Exit...\n"));
 	return;
 }
 
-/********************************************************************
- Receive a notify2 message
- ********************************************************************/
+/***********************************************************************
+ **********************************************************************/
+ 
+static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, void *buf, size_t len )
+{ 
 
-static void receive_notify2_message(void *buf, size_t len)
-{
-	struct spoolss_notify_msg msg;
 	int offset = 0;
-	TALLOC_CTX *mem_ctx = talloc_init();
 
 	/* Unpack message */
 
-	ZERO_STRUCT(msg);
-
 	offset += tdb_unpack((char *)buf + offset, len - offset, "f",
-			     msg.printer);
+			     msg->printer);
 	
 	offset += tdb_unpack((char *)buf + offset, len - offset, "ddddd",
-			     &msg.type, &msg.field, &msg.id, &msg.len, &msg.flags);
+			     &msg->type, &msg->field, &msg->id, &msg->len, &msg->flags);
 
-	if (msg.len == 0)
+	if (msg->len == 0)
 		tdb_unpack((char *)buf + offset, len - offset, "dd",
-			   &msg.notify.value[0], &msg.notify.value[1]);
+			   &msg->notify.value[0], &msg->notify.value[1]);
 	else
 		tdb_unpack((char *)buf + offset, len - offset, "B", 
-			   &msg.len, &msg.notify.data);
+			   &msg->len, &msg->notify.data);
+			   
+	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg->type, msg->field, msg->flags));
 
-	DEBUG(3, ("got NOTIFY2 message, type %d, field 0x%02x, flags 0x%04x\n",
-		  msg.type, msg.field, msg.flags));
-
-	if (msg.len == 0)
-		DEBUG(3, ("value1 = %d, value2 = %d\n", msg.notify.value[0],
-			  msg.notify.value[1]));
+	if (msg->len == 0)
+		DEBUG(3, ("notify2_unpack_msg: value1 = %d, value2 = %d\n", msg->notify.value[0],
+			  msg->notify.value[1]));
 	else
-		dump_data(3, msg.notify.data, msg.len);
-
-	/* Process message */
-
-	process_notify2_message(&msg, mem_ctx);
-
-	/* Free message */
-
-	if (msg.len > 0)
-		free(msg.notify.data);
-
-	talloc_destroy(mem_ctx);
+		dump_data(3, msg->notify.data, msg->len);
+	
+	return True;
 }
 
 /********************************************************************
@@ -890,43 +1037,86 @@ static void receive_notify2_message(void *buf, size_t len)
 
 static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, size_t len)
 {
-	size_t msg_count, i;
-	char *buf = (char *)msg;
-	char *msg_ptr;
+	size_t 			msg_count, i;
+	char 			*buf = (char *)msg;
+	char 			*msg_ptr;
+	size_t 			msg_len;
+	SPOOLSS_NOTIFY_MSG	notify;
+	SPOOLSS_NOTIFY_MSG_CTR	messages;
+	int			num_groups;
 
-	if (len < 4)
-		goto bad_msg;
-
+	if (len < 4) {
+		DEBUG(0,("receive_notify2_message_list: bad message format (len < 4)!\n"));
+		return;
+	}
+	
 	msg_count = IVAL(buf, 0);
 	msg_ptr = buf + 4;
 
 	DEBUG(5, ("receive_notify2_message_list: got %d messages in list\n", msg_count));
 
-	if (msg_count == 0)
-		goto bad_msg;
+	if (msg_count == 0) {
+		DEBUG(0,("receive_notify2_message_list: bad message format (msg_count == 0) !\n"));
+		return;
+	}
 
-	for (i = 0; i < msg_count; i++) {
-		size_t msg_len;
-
-		if (msg_ptr + 4 - buf > len)
-			goto bad_msg;
+	/* initialize the container */
+	
+	ZERO_STRUCT( messages );
+	notify_msg_ctr_init( &messages );
+	
+	/* 
+	 * build message groups for each printer identified
+	 * in a change_notify msg.  Remember that a PCN message
+	 * includes the handle returned for the srv_spoolss_replyopenprinter()
+	 * call.  Therefore messages are grouped according to printer handle.
+	 */
+	 
+	for ( i=0; i<msg_count; i++ ) 
+	{
+		if (msg_ptr + 4 - buf > len) {
+			DEBUG(0,("receive_notify2_message_list: bad message format (len > buf_size) !\n"));
+			return;
+		}
 
 		msg_len = IVAL(msg_ptr,0);
 		msg_ptr += 4;
 
-		if (msg_ptr + msg_len - buf > len)
-			goto bad_msg;
-		receive_notify2_message(msg_ptr, msg_len);
+		if (msg_ptr + msg_len - buf > len) {
+			DEBUG(0,("receive_notify2_message_list: bad message format (bad len) !\n"));
+			return;
+		}
+		
+		/* unpack messages */
+		
+		ZERO_STRUCT( notify );
+		notify2_unpack_msg( &notify, msg_ptr, msg_len );
 		msg_ptr += msg_len;
+		
+		/* add to correct list in container */
+		
+		notify_msg_ctr_addmsg( &messages, &notify );
+		
+		/* free memory that might have been allocated by notify2_unpack_msg() */
+		
+		if ( notify.len != 0 )
+			SAFE_FREE( notify.notify.data );
 	}
-
-	DEBUG(10,("receive_notify2_message_list: processed %u messages\n",
-		(unsigned int)msg_count ));
+	
+	/* process each group of messages */
+	
+	num_groups = notify_msg_ctr_numgroups( &messages );
+	for ( i=0; i<num_groups; i++ )
+		send_notify2_changes( &messages, i );
+	
+	
+	/* cleanup */
+		
+	DEBUG(10,("receive_notify2_message_list: processed %u messages\n", (uint32)msg_count ));
+		
+	notify_msg_ctr_destroy( &messages );
+	
 	return;
-
-  bad_msg:
-
-	DEBUG(0,("receive_notify2_message_list: bad message format !\n"));
 }
 
 /********************************************************************
