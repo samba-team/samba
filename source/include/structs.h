@@ -90,11 +90,16 @@ struct auth_context;
 struct auth_method_context;
 struct request_buffer;
 
+struct ntvfs_context;
+struct ntvfs_module_context;
+
 struct pvfs_dir;
 struct pvfs_filename;
 struct pvfs_state;
 struct pvfs_file;
 struct pvfs_file_handle;
+
+struct stat;
 
 struct dcesrv_context;
 struct dcesrv_interface;
@@ -127,6 +132,7 @@ struct test_join_ads_dc;
 
 struct netr_LMSessionKey;
 
+struct ldb_val;
 struct ldb_message;
 
 struct dom_sid;
@@ -136,9 +142,8 @@ struct security_ace;
 
 struct lsa_RightSet;
 
-struct ldb_val;
-
 struct composite_context;
+
 struct smb_composite_loadfile;
 struct smb_composite_savefile;
 struct smb_composite_connect;
