@@ -264,6 +264,8 @@ RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o rpc_server/srv_util.o \
 
 RPC_ECHO_OBJ = rpc_server/srv_echo.o rpc_server/srv_echo_nt.o
 
+RPC_EPMAPPER_OBJ = rpc_server/srv_epmapper.o rpc_server/srv_epmapper_nt.o
+
 RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 
 # this includes only the low level parse code, not stuff
@@ -580,9 +582,10 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) \
 	    $(PASSDB_OBJ) $(GROUPDB_OBJ) $(MSDFS_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(LIB_SMBD_OBJ) $(SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
-	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
-	    $(RPC_ECHO_OBJ) $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o
+	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) \
+	    $(RPC_LSA_DS_OBJ) $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) \
+	    $(RPC_SPOOLSS_OBJ) $(RPC_ECHO_OBJ) $(RPC_EPMAPPER_OBJ) \
+	    $(SMBLDAP_OBJ) $(IDMAP_OBJ) libsmb/spnego.o
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ)
@@ -1003,6 +1006,11 @@ bin/librpc_netdfs.@SHLIBEXT@: $(RPC_DFS_OBJ)
 bin/librpc_echo.@SHLIBEXT@: $(RPC_ECHO_OBJ)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_ECHO_OBJ) -lc \
+		@SONAMEFLAG@`basename $@`
+
+bin/librpc_epmapper.@SHLIBEXT@: $(RPC_EPMAPPER_OBJ)
+	@echo "Linking $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(RPC_EPMAPPER_OBJ) -lc \
 		@SONAMEFLAG@`basename $@`
 
 bin/winbindd@EXEEXT@: $(WINBINDD_OBJ) @BUILD_POPT@ bin/.dummy
