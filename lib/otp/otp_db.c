@@ -38,6 +38,10 @@ RCSID("$Id$");
 
 #include "otp_locl.h"
 
+#ifdef HAVE_DB3
+#include "ndbm_wrap.h"
+#endif
+
 #define RETRIES 5
 
 void *
