@@ -2393,7 +2393,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	if ((fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
 		
-		fprintf(stderr, "Error, fname=%s, errno=%i\n", fname, errno);
+		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		return -1;  /* smbc_open sets errno */
 		
 	}
