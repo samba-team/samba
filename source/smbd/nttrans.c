@@ -24,8 +24,7 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
-extern int chain_fnum;
-extern files_struct Files[];
+extern files_struct *chain_fsp;
 extern int Client;  
 extern int oplock_sock;
 extern int smb_read_error;
@@ -388,7 +387,8 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
   if (pnum < 0)
     return(ERROR(ERRSRV,ERRnofids));
 
-  *ppnum = pnum + 0x800; /* Mark file handle up into high range. */
+  *ppnum = pnum + PIPE_HANDLE_OFFSET; /* Mark file handle up into high
+					 range. */
   return 0;
 }
 
@@ -399,7 +399,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 char *inbuf,char *outbuf,int length,int bufsize)
 {  
 	pstring fname;
-	int fnum = -1;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
@@ -413,7 +412,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
-	int unixmode;
+	int unixmode, pnum = -1;
 	int fmode=0,mtime=0,rmode=0;
 	off_t file_len = 0;
 	struct stat sbuf;
@@ -449,10 +448,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	/* If it's an IPC, use the pipe handler. */
 	if (IS_IPC(conn)) {
-		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &fnum);
+		int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
 		if(ret != 0)
 			return ret;
-		fsp = &Files[fnum];
 		smb_action = FILE_WAS_OPENED;
 	} else {
 
@@ -468,20 +466,18 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 		unix_convert(fname,conn,0,&bad_path);
 		
-		fnum = find_free_file();
-		if (fnum < 0) {
+		fsp = find_free_file();
+		if (!fsp) {
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRSRV,ERRnofids));
 		}
-		
-		fsp = &Files[fnum];
 		
 		if (!check_name(fname,conn)) { 
 			if((errno == ENOENT) && bad_path) {
 				unix_ERR_class = ERRDOS;
 				unix_ERR_code = ERRbadpath;
 			}
-			fsp->reserved = False;
+			file_free(fsp);
 			
 			restore_case_semantics(file_attributes);
 			
@@ -500,13 +496,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		if(flags & OPEN_DIRECTORY) {
 			oplock_request = 0;
 			
-			open_directory(fnum, conn, fname, smb_ofun, 
+			open_directory(fsp, conn, fname, smb_ofun, 
 				       unixmode, &smb_action);
 			
 			restore_case_semantics(file_attributes);
 
 			if(!fsp->open) {
-				fsp->reserved = False;
+				file_free(fsp);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 		} else {
@@ -527,7 +523,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 * before issuing an oplock break request to
 			 * our client. JRA.  */
 
-			open_file_shared(fnum,conn,fname,smb_open_mode,
+			open_file_shared(fsp,conn,fname,smb_open_mode,
 					 smb_ofun,unixmode,
 					 oplock_request,&rmode,&smb_action);
 
@@ -551,10 +547,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				if(errno == EISDIR) {
 					oplock_request = 0;
 					
-					open_directory(fnum, conn, fname, smb_ofun, unixmode, &smb_action);
+					open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
 					
 					if(!fsp->open) {
-						fsp->reserved = False;
+						file_free(fsp);
 						restore_case_semantics(file_attributes);
 						return(UNIXERROR(ERRDOS,ERRnoaccess));
 					}
@@ -564,7 +560,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 						unix_ERR_code = ERRbadpath;
 					}
 					
-					fsp->reserved = False;
+					file_free(fsp);
 					
 					restore_case_semantics(file_attributes);
 					
@@ -575,13 +571,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 		if(fsp->is_directory) {
 			if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
-				close_directory(fnum);
+				close_directory(fsp);
 				restore_case_semantics(file_attributes);
 				return(ERROR(ERRDOS,ERRnoaccess));
 			}
 		} else {
 			if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-				close_file(fnum,False);
+				close_file(fsp,False);
 				restore_case_semantics(file_attributes);
 				return(ERROR(ERRDOS,ERRnoaccess));
 			} 
@@ -595,7 +591,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			fmode = FILE_ATTRIBUTE_NORMAL;
 		mtime = sbuf.st_mtime;
 		if (!fsp->is_directory && (fmode & aDIR)) {
-			close_file(fnum,False);
+			close_file(fsp,False);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		} 
 		
@@ -623,7 +619,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
 	p++;
-	SSVAL(p,0,fnum);
+	if (IS_IPC(conn)) {
+		SSVAL(p,0,pnum);
+	} else {
+		SSVAL(p,0,fsp->fnum);
+	}
 	p += 2;
 	SIVAL(p,0,smb_action);
 	p += 4;
@@ -664,11 +664,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		SCVAL(p,0,fsp->is_directory ? 1 : 0);
 	}
 	
-	chain_fnum = fnum;
+	chain_fsp = fsp;
 
-	
-	DEBUG(5,("reply_ntcreate_and_X: open fnum = %d, name = %s\n",
-		 fnum, fsp->fsp_name));
+	DEBUG(5,("reply_ntcreate_and_X: open name = %s\n",
+		 fsp->fsp_name));
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
@@ -683,7 +682,6 @@ static int call_nt_transact_create(connection_struct *conn,
 				   char **ppdata)
 {
   pstring fname;
-  int fnum = -1;
   char *params = *ppparams;
   uint32 flags = IVAL(params,0);
   uint32 desired_access = IVAL(params,8);
@@ -698,7 +696,7 @@ static int call_nt_transact_create(connection_struct *conn,
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = 0;
-  int unixmode;
+  int unixmode, pnum = -1;
   int fmode=0,mtime=0,rmode=0;
   off_t file_len = 0;
   struct stat sbuf;
@@ -732,7 +730,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
   /* If it's an IPC, use the pipe handler. */
   if (IS_IPC(conn)) {
-    int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &fnum);
+    int ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum);
     if(ret != 0)
       return ret;
     smb_action = FILE_WAS_OPENED;
@@ -745,13 +743,11 @@ static int call_nt_transact_create(connection_struct *conn,
 
     unix_convert(fname,conn,0,&bad_path);
     
-    fnum = find_free_file();
-    if (fnum < 0) {
-      restore_case_semantics(file_attributes);
-      return(ERROR(ERRSRV,ERRnofids));
+    fsp = find_free_file();
+    if (!fsp) {
+	    restore_case_semantics(file_attributes);
+	    return(ERROR(ERRSRV,ERRnofids));
     }
-
-    fsp = &Files[fnum];
 
     if (!check_name(fname,conn)) { 
       if((errno == ENOENT) && bad_path) {
@@ -784,10 +780,10 @@ static int call_nt_transact_create(connection_struct *conn,
        * CreateDirectory() call.
        */
 
-      open_directory(fnum, conn, fname, smb_ofun, unixmode, &smb_action);
+      open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
 
       if(!fsp->open) {
-        fsp->reserved = False;
+        file_free(fsp);
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
     } else {
@@ -796,7 +792,7 @@ static int call_nt_transact_create(connection_struct *conn,
        * Ordinary file case.
        */
 
-      open_file_shared(fnum,conn,fname,smb_open_mode,smb_ofun,unixmode,
+      open_file_shared(fsp,conn,fname,smb_open_mode,smb_ofun,unixmode,
                        oplock_request,&rmode,&smb_action);
 
       if (!fsp->open) { 
@@ -804,7 +800,7 @@ static int call_nt_transact_create(connection_struct *conn,
           unix_ERR_class = ERRDOS;
           unix_ERR_code = ERRbadpath;
         }
-        fsp->reserved = False;
+        file_free(fsp);
 
         restore_case_semantics(file_attributes);
 
@@ -812,7 +808,7 @@ static int call_nt_transact_create(connection_struct *conn,
       } 
   
       if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-        close_file(fnum,False);
+        close_file(fsp,False);
 
         restore_case_semantics(file_attributes);
 
@@ -826,7 +822,7 @@ static int call_nt_transact_create(connection_struct *conn,
       mtime = sbuf.st_mtime;
 
       if (fmode & aDIR) {
-        close_file(fnum,False);
+        close_file(fsp,False);
         restore_case_semantics(file_attributes);
         return(ERROR(ERRDOS,ERRnoaccess));
       } 
@@ -855,7 +851,11 @@ static int call_nt_transact_create(connection_struct *conn,
   p = params;
   SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? 1 : 0));
   p += 2;
-  SSVAL(p,0,fnum);
+  if (IS_IPC(conn)) {
+	  SSVAL(p,0,pnum);
+  } else {
+	  SSVAL(p,0,fsp->fnum);
+  }
   p += 2;
   SIVAL(p,0,smb_action);
   p += 8;
@@ -940,17 +940,17 @@ static int call_nt_transact_rename(connection_struct *conn,
 {
   char *params = *ppparams;
   pstring new_name;
-  int fnum = SVAL(params, 0);
+  files_struct *fsp = GETFSP(params, 0);
   BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
   uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
                          ((uint32)sizeof(new_name)-1));
   int outsize = 0;
 
-  CHECK_FNUM(fnum, conn);
+  CHECK_FSP(fsp, conn);
   StrnCpy(new_name,params+4,fname_len);
   new_name[fname_len] = '\0';
 
-  outsize = rename_internals(conn, inbuf, outbuf, Files[fnum].fsp_name,
+  outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
                              new_name, replace_if_exists);
   if(outsize == 0) {
     /*
@@ -959,7 +959,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     send_nt_replies(outbuf, bufsize, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
-          Files[fnum].fsp_name, new_name));
+          fsp->fsp_name, new_name));
 
     outsize = -1;
   }
@@ -976,7 +976,7 @@ static int call_nt_transact_rename(connection_struct *conn,
 
 typedef struct {
   ubi_slNode msg_next;
-  int fnum;
+  files_struct *fsp;
   connection_struct *conn;
   time_t next_check_time;
   time_t modify_time; /* Info from the directory we're monitoring. */ 
@@ -1023,14 +1023,13 @@ static void change_notify_reply_packet(char *inbuf, int error_class, uint32 erro
 /****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
-
-void remove_pending_change_notify_requests_by_fid(int fnum)
+void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
 {
   change_notify_buf *cnbp = (change_notify_buf *)ubi_slFirst( &change_notify_queue );
   change_notify_buf *prev = NULL;
 
   while(cnbp != NULL) {
-    if(cnbp->fnum == fnum) {
+    if(cnbp->fsp == fsp) {
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -1085,9 +1084,8 @@ void process_pending_change_notify_queue(time_t t)
 
   while((cnbp != NULL) && (cnbp->next_check_time <= t)) {
     struct stat st;
-    int fnum = cnbp->fnum;
+    files_struct *fsp = cnbp->fsp;
     connection_struct *conn = cnbp->conn;
-    files_struct *fsp = &Files[fnum];
     uint16 vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : 
                   SVAL(cnbp->request_buf,smb_uid);
 
@@ -1133,8 +1131,8 @@ Error was %s.\n", fsp->fsp_name, strerror(errno) ));
       /*
        * Remove the entry and return a change notify to the client.
        */
-      DEBUG(5,("process_pending_change_notify_queue: directory fnum = %d, name = %s changed\n",
-            fnum, fsp->fsp_name ));
+      DEBUG(5,("process_pending_change_notify_queue: directory name = %s changed\n",
+            fsp->fsp_name ));
       change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_NOTIFY_ENUM_DIR);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
@@ -1164,18 +1162,15 @@ static int call_nt_transact_notify_change(connection_struct *conn,
 {
   char *setup = *ppsetup;
   files_struct *fsp;
-  int fnum = -1;
   change_notify_buf *cnbp;
   struct stat st;
 
-  fnum = SVAL(setup,4);
+  fsp = GETFSP(setup,4);
 
-  DEBUG(3,("call_nt_transact_notify_change: fnum = %d.\n", fnum));
+  DEBUG(3,("call_nt_transact_notify_change\n"));
 
-  if(!VALID_FNUM(fnum))
+  if(!fsp)
     return(ERROR(ERRDOS,ERRbadfid));
-
-  fsp = &Files[fnum];
 
   if((!fsp->open) || (!fsp->is_directory) || (conn != fsp->conn))
     return(ERROR(ERRDOS,ERRbadfid));
@@ -1198,14 +1193,14 @@ static int call_nt_transact_notify_change(connection_struct *conn,
    */
 
   if(sys_stat(fsp->fsp_name, &st) < 0) {
-    DEBUG(0,("call_nt_transact_notify_change: Unable to stat fnum = %d, name = %s. \
-Error was %s\n", fnum, fsp->fsp_name, strerror(errno) ));
+    DEBUG(0,("call_nt_transact_notify_change: Unable to stat name = %s. \
+Error was %s\n", fsp->fsp_name, strerror(errno) ));
     free((char *)cnbp);
     return(UNIXERROR(ERRDOS,ERRbadfid));
   }
  
   memcpy(cnbp->request_buf, inbuf, smb_size);
-  cnbp->fnum = fnum;
+  cnbp->fsp = fsp;
   cnbp->conn = conn;
   cnbp->modify_time = st.st_mtime;
   cnbp->status_time = st.st_ctime;
@@ -1221,7 +1216,7 @@ Error was %s\n", fnum, fsp->fsp_name, strerror(errno) ));
   ubi_slAddTail(&change_notify_queue, cnbp);
 
   DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
-fid=%d, name = %s\n", fnum, fsp->fsp_name ));
+name = %s\n", fsp->fsp_name ));
 
   return -1;
 }

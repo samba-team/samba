@@ -37,7 +37,6 @@
 #ifdef FAST_SHARE_MODES
 
 extern int DEBUGLEVEL;
-extern files_struct Files[];
 
 static struct shmem_ops *shmops;
 
@@ -258,7 +257,7 @@ static int shm_get_share_modes(connection_struct *conn,
 /*******************************************************************
 del the share mode of a file.
 ********************************************************************/
-static void shm_del_share_mode(int token, int fnum)
+static void shm_del_share_mode(int token, files_struct *fsp)
 {
   uint32 dev, inode;
   int *mode_array;
@@ -270,8 +269,8 @@ static void shm_del_share_mode(int token, int fnum)
   BOOL found = False;
   int pid = getpid();
 
-  dev = Files[fnum].fd_ptr->dev;
-  inode = Files[fnum].fd_ptr->inode;
+  dev = fsp->fd_ptr->dev;
+  inode = fsp->fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 
@@ -329,7 +328,7 @@ static void shm_del_share_mode(int token, int fnum)
   {
     if( (pid == entry_scanner_p->e.pid) && 
           (memcmp(&entry_scanner_p->e.time, 
-                 &Files[fnum].open_time,sizeof(struct timeval)) == 0) )
+                 &fsp->open_time,sizeof(struct timeval)) == 0) )
     {
       found = True;
       break;
@@ -386,9 +385,8 @@ static void shm_del_share_mode(int token, int fnum)
 /*******************************************************************
 set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
-static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
+static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type)
 {
-  files_struct *fs_p = &Files[fnum];
   int32 dev, inode;
   int *mode_array;
   unsigned int hash_entry;
@@ -398,8 +396,8 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   int new_entry_offset;
   BOOL found = False;
 
-  dev = fs_p->fd_ptr->dev;
-  inode = fs_p->fd_ptr->inode;
+  dev = fsp->fd_ptr->dev;
+  inode = fsp->fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 
@@ -428,7 +426,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     /* We must create a share_mode_record */
     share_mode_record *new_mode_p = NULL;
     int new_offset = shmops->shm_alloc(sizeof(share_mode_record) +
-				   strlen(fs_p->fsp_name) + 1);
+				   strlen(fsp->fsp_name) + 1);
     if(new_offset == 0) {
 	    DEBUG(0,("ERROR:set_share_mode shmops->shm_alloc fail!\n"));
 	    return False;
@@ -439,7 +437,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     new_mode_p->st_ino = inode;
     new_mode_p->num_share_mode_entries = 0;
     new_mode_p->share_mode_entries = 0;
-    pstrcpy(new_mode_p->file_name, fs_p->fsp_name);
+    pstrcpy(new_mode_p->file_name, fsp->fsp_name);
 
     /* Chain onto the start of the hash chain (in the hope we will be used first). */
     new_mode_p->next_offset = mode_array[hash_entry];
@@ -448,7 +446,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
     file_scanner_p = new_mode_p;
 
     DEBUG(3,("set_share_mode: Created share record for %s (dev %d inode %d)\n", 
-	     fs_p->fsp_name, dev, inode));
+	     fsp->fsp_name, dev, inode));
   }
  
   /* Now create the share mode entry */ 
@@ -466,10 +464,10 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   new_entry_p = shmops->offset2addr(new_entry_offset);
 
   new_entry_p->e.pid = getpid();
-  new_entry_p->e.share_mode = fs_p->share_mode;
+  new_entry_p->e.share_mode = fsp->share_mode;
   new_entry_p->e.op_port = port;
   new_entry_p->e.op_type = op_type;
-  memcpy( (char *)&new_entry_p->e.time, (char *)&fs_p->open_time, sizeof(struct timeval));
+  memcpy( (char *)&new_entry_p->e.time, (char *)&fsp->open_time, sizeof(struct timeval));
 
   /* Chain onto the share_mode_record */
   new_entry_p->next_share_mode_entry = file_scanner_p->share_mode_entries;
@@ -487,7 +485,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
   file_scanner_p->num_share_mode_entries += 1;
 
   DEBUG(3,("set_share_mode: Created share entry for %s with mode 0x%X pid=%d\n",
-	   fs_p->fsp_name, fs_p->share_mode, new_entry_p->e.pid));
+	   fsp->fsp_name, fsp->share_mode, new_entry_p->e.pid));
 
   return(True);
 }
@@ -495,7 +493,7 @@ static BOOL shm_set_share_mode(int token, int fnum, uint16 port, uint16 op_type)
 /*******************************************************************
 Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
-static BOOL shm_remove_share_oplock(int fnum, int token)
+static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
 {
   uint32 dev, inode;
   int *mode_array;
@@ -507,8 +505,8 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
   BOOL found = False;
   int pid = getpid();
 
-  dev = Files[fnum].fd_ptr->dev;
-  inode = Files[fnum].fd_ptr->inode;
+  dev = fsp->fd_ptr->dev;
+  inode = fsp->fd_ptr->inode;
 
   hash_entry = HASH_ENTRY(dev, inode);
 
@@ -565,9 +563,9 @@ static BOOL shm_remove_share_oplock(int fnum, int token)
   while(entry_scanner_p)
   {
     if( (pid == entry_scanner_p->e.pid) && 
-        (entry_scanner_p->e.share_mode == Files[fnum].share_mode) &&
+        (entry_scanner_p->e.share_mode == fsp->share_mode) &&
         (memcmp(&entry_scanner_p->e.time, 
-                &Files[fnum].open_time,sizeof(struct timeval)) == 0) )
+                &fsp->open_time,sizeof(struct timeval)) == 0) )
     {
       /* Delete the oplock info. */
       entry_scanner_p->e.op_port = 0;

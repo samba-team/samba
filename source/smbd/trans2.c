@@ -26,13 +26,13 @@
 
 extern int DEBUGLEVEL;
 extern int Protocol;
-extern files_struct Files[];
 extern BOOL case_sensitive;
 extern int Client;
 extern int oplock_sock;
 extern int smb_read_error;
 extern fstring local_machine;
 extern int global_oplock_break;
+extern files_struct *chain_fsp;
 
 /****************************************************************************
   Send the required number of replies back.
@@ -200,7 +200,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   int16 namelen = strlen(pname)+1;
 
   pstring fname;
-  int fnum = -1;
   int unixmode;
   int size=0,fmode=0,mtime=0,rmode;
   int32 inode = 0;
@@ -218,11 +217,9 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   unix_convert(fname,conn,0,&bad_path);
     
-  fnum = find_free_file();
-  if (fnum < 0)
+  fsp = find_free_file();
+  if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
-
-  fsp = &Files[fnum];
 
   if (!check_name(fname,conn))
   {
@@ -231,13 +228,13 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   unixmode = unix_mode(conn,open_attr | aARCH);
       
-  open_file_shared(fnum,conn,fname,open_mode,open_ofun,unixmode,
+  open_file_shared(fsp,conn,fname,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
       
   if (!fsp->open)
@@ -247,12 +244,12 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
       unix_ERR_class = ERRDOS;
       unix_ERR_code = ERRbadpath;
     }
-    fsp->reserved = False;
+    file_free(fsp);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
   if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
     
@@ -261,7 +258,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   mtime = sbuf.st_mtime;
   inode = sbuf.st_ino;
   if (fmode & aDIR) {
-    close_file(fnum,False);
+    close_file(fsp,False);
     return(ERROR(ERRDOS,ERRnoaccess));
   }
 
@@ -271,7 +268,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(ERROR(ERRDOS,ERRnomem));
 
   bzero(params,28);
-  SSVAL(params,0,fnum);
+  SSVAL(params,0,fsp->fnum);
   SSVAL(params,2,fmode);
   put_dos_date2(params,4, mtime);
   SIVAL(params,8, size);
@@ -1212,18 +1209,18 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   BOOL bad_path = False;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
-    int16 fnum = SVALS(params,0);
+    files_struct *fsp = GETFSP(params,0);
     info_level = SVAL(params,2);
 
-    CHECK_FNUM(fnum,conn);
-    CHECK_ERROR(fnum);
+    CHECK_FSP(fsp,conn);
+    CHECK_ERROR(fsp);
 
-    fname = Files[fnum].fsp_name;
-    if (fstat(Files[fnum].fd_ptr->fd,&sbuf) != 0) {
-      DEBUG(3,("fstat of fnum %d failed (%s)\n",fnum, strerror(errno)));
+    fname = fsp->fsp_name;
+    if (fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
       return(UNIXERROR(ERRDOS,ERRbadfid));
     }
-    pos = lseek(Files[fnum].fd_ptr->fd,0,SEEK_CUR);
+    pos = lseek(fsp->fd_ptr->fd,0,SEEK_CUR);
   } else {
     /* qpathinfo */
     info_level = SVAL(params,0);
@@ -1437,14 +1434,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     return(ERROR(ERRSRV,ERRaccess));
 
   if (tran_call == TRANSACT2_SETFILEINFO) {
-    int16 fnum = SVALS(params,0);
+    files_struct *fsp = GETFSP(params,0);
     info_level = SVAL(params,2);    
 
-    CHECK_FNUM(fnum,conn);
-    CHECK_ERROR(fnum);
+    CHECK_FSP(fsp,conn);
+    CHECK_ERROR(fsp);
 
-    fname = Files[fnum].fsp_name;
-    fd = Files[fnum].fd_ptr->fd;
+    fname = fsp->fsp_name;
+    fd = fsp->fd_ptr->fd;
 
     if(fstat(fd,&st)!=0) {
       DEBUG(3,("fstat of %s failed (%s)\n", fname, strerror(errno)));

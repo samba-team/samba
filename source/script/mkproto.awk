@@ -80,7 +80,7 @@ END {
   next;
 }
 
-!/^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE/ {
+!/^file_fd_struct|^files_struct|^connection_struct|^uid_t|^gid_t|^unsigned|^mode_t|^DIR|^user|^int|^char|^uint|^struct|^BOOL|^void|^time|^smb_shm_offset_t|^shm_offset_t|^enum remote_arch_types|^FILE/ {
   next;
 }
 

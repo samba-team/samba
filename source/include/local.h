@@ -29,6 +29,10 @@
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
 
+/* max number of directories open at once */
+/* note that with the new directory code this no longer requires a
+   file handle per directory, but large numbers do use more memory */
+#define MAX_OPEN_DIRECTORIES 64
 
 /* define what facility to use for syslog */
 #ifndef SYSLOG_FACILITY
@@ -40,18 +44,13 @@
    MAX_CONNECTIONS services, but any number of machines may connect at
    one time. */
 #define MAX_CONNECTIONS 127
-#define MAX_OPEN_FILES 100
 
-/* max number of directories open at once */
-/* note that with the new directory code this no longer requires a
-   file handle per directory, but large numbers do use more memory */
-#define MAX_OPEN_DIRECTORIES 64
-
-#define MAX_FNUMS (MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES)
+/* this must be larger than the sum of the open files and directories */
+#define PIPE_HANDLE_OFFSET 0x7000
 
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
-#define SHMEM_SIZE (1024*(MAX_OPEN_FILES+MAX_OPEN_DIRECTORIES))
+#define SHMEM_SIZE (1024*1024)
 #endif
 
 /* the max number of simultanous connections to the server by all clients */

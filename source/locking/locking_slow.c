@@ -37,7 +37,6 @@
 #ifndef FAST_SHARE_MODES
 
 extern int DEBUGLEVEL;
-extern files_struct Files[];
 
 /* 
  * Locking file header lengths & offsets. 
@@ -534,7 +533,7 @@ mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
 /*******************************************************************
 del a share mode from a share mode file.
 ********************************************************************/
-static void slow_del_share_mode(int token, int fnum)
+static void slow_del_share_mode(int token, files_struct *fsp)
 {
   pstring fname;
   int fd = (int)token;
@@ -543,15 +542,14 @@ static void slow_del_share_mode(int token, int fnum)
   int num_entries;
   int newsize;
   int i;
-  files_struct *fs_p = &Files[fnum];
   int pid;
   BOOL deleted = False;
   BOOL new_file;
 
-  share_name(fs_p->conn, fs_p->fd_ptr->dev, 
-                       fs_p->fd_ptr->inode, fname);
+  share_name(fsp->conn, fsp->fd_ptr->dev, 
+                       fsp->fd_ptr->inode, fname);
 
-  if(read_share_file( fs_p->conn, fd, fname, &buf, &new_file) != 0)
+  if(read_share_file( fsp->conn, fd, fname, &buf, &new_file) != 0)
   {
     DEBUG(0,("ERROR: del_share_mode: Failed to read share file %s\n",
                   fname));
@@ -562,7 +560,7 @@ static void slow_del_share_mode(int token, int fnum)
   {
     DEBUG(0,("ERROR:del_share_mode: share file %s is new (size zero), deleting it.\n",
               fname));
-    delete_share_file(fs_p->conn, fname);
+    delete_share_file(fsp->conn, fname);
     return;
   }
 
@@ -586,7 +584,7 @@ for share file %d\n", num_entries, fname));
               fname));
     if(buf)
       free(buf);
-    delete_share_file(fs_p->conn, fname);
+    delete_share_file(fsp->conn, fname);
     return;
   }
 
@@ -602,9 +600,9 @@ for share file %d\n", num_entries, fname));
   {
     char *p = base + (i*SMF_ENTRY_LENGTH);
 
-    if((IVAL(p,SME_SEC_OFFSET) != fs_p->open_time.tv_sec) || 
-       (IVAL(p,SME_USEC_OFFSET) != fs_p->open_time.tv_usec) ||
-       (IVAL(p,SME_SHAREMODE_OFFSET) != fs_p->share_mode) || 
+    if((IVAL(p,SME_SEC_OFFSET) != fsp->open_time.tv_sec) || 
+       (IVAL(p,SME_USEC_OFFSET) != fsp->open_time.tv_usec) ||
+       (IVAL(p,SME_SHAREMODE_OFFSET) != fsp->share_mode) || 
        (IVAL(p,SME_PID_OFFSET) != pid))
       continue;
 
@@ -637,7 +635,7 @@ for share file %d\n", num_entries, fname));
              fname));
     if(buf)
       free(buf);
-    delete_share_file(fs_p->conn,fname);
+    delete_share_file(fsp->conn,fname);
     return;
   }
 
@@ -675,9 +673,8 @@ mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
 /*******************************************************************
 set the share mode of a file
 ********************************************************************/
-static BOOL slow_set_share_mode(int token,int fnum, uint16 port, uint16 op_type)
+static BOOL slow_set_share_mode(int token,files_struct *fsp, uint16 port, uint16 op_type)
 {
-  files_struct *fs_p = &Files[fnum];
   pstring fname;
   int fd = (int)token;
   int pid = (int)getpid();
@@ -687,8 +684,8 @@ static BOOL slow_set_share_mode(int token,int fnum, uint16 port, uint16 op_type)
   int header_size;
   char *p;
 
-  share_name(fs_p->conn, fs_p->fd_ptr->dev,
-                       fs_p->fd_ptr->inode, fname);
+  share_name(fsp->conn, fsp->fd_ptr->dev,
+                       fsp->fd_ptr->inode, fname);
 
   if(fstat(fd, &sb) != 0)
   {
@@ -735,7 +732,7 @@ locking version (was %d, should be %d).\n",fname, IVAL(buf,SMF_VERSION_OFFSET),
                     LOCKING_VERSION));
       if(buf)
         free(buf);
-      delete_share_file(fs_p->conn, fname);
+      delete_share_file(fsp->conn, fname);
       return False;
     }   
 
@@ -748,7 +745,7 @@ locking version (was %d, should be %d).\n",fname, IVAL(buf,SMF_VERSION_OFFSET),
 deleting it.\n", fname));
       if(buf)
         free(buf);
-      delete_share_file(fs_p->conn, fname);
+      delete_share_file(fsp->conn, fname);
       return False;
     }
 
@@ -757,23 +754,23 @@ deleting it.\n", fname));
   {
     /* New file - just use a single_entry. */
     if((buf = (char *)malloc(SMF_HEADER_LENGTH + 
-                  strlen(fs_p->name) + 1 + SMF_ENTRY_LENGTH)) == NULL)
+                  strlen(fsp->name) + 1 + SMF_ENTRY_LENGTH)) == NULL)
     {
       DEBUG(0,("ERROR: set_share_mode: malloc failed for single entry.\n"));
       return False;
     }
     SIVAL(buf,SMF_VERSION_OFFSET,LOCKING_VERSION);
     SIVAL(buf,SMF_NUM_ENTRIES_OFFSET,0);
-    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fs_p->name) + 1);
-    pstrcpy(buf + SMF_HEADER_LENGTH, fs_p->name);
+    SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fsp->name) + 1);
+    pstrcpy(buf + SMF_HEADER_LENGTH, fsp->name);
   }
 
   num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);
   header_size = SMF_HEADER_LENGTH + SVAL(buf,SMF_FILENAME_LEN_OFFSET);
   p = buf + header_size + (num_entries * SMF_ENTRY_LENGTH);
-  SIVAL(p,SME_SEC_OFFSET,fs_p->open_time.tv_sec);
-  SIVAL(p,SME_USEC_OFFSET,fs_p->open_time.tv_usec);
-  SIVAL(p,SME_SHAREMODE_OFFSET,fs_p->share_mode);
+  SIVAL(p,SME_SEC_OFFSET,fsp->open_time.tv_sec);
+  SIVAL(p,SME_USEC_OFFSET,fsp->open_time.tv_usec);
+  SIVAL(p,SME_SHAREMODE_OFFSET,fsp->share_mode);
   SIVAL(p,SME_PID_OFFSET,pid);
   SSVAL(p,SME_PORT_OFFSET,port);
   SSVAL(p,SME_OPLOCK_TYPE_OFFSET,op_type);
@@ -796,7 +793,7 @@ deleting it.\n", fname));
   {
     DEBUG(2,("ERROR: set_share_mode: Failed to write share file %s - \
 deleting it (%s).\n",fname, strerror(errno)));
-    delete_share_file(fs_p->conn, fname);
+    delete_share_file(fsp->conn, fname);
     if(buf)
       free(buf);
     return False;
@@ -818,7 +815,7 @@ mode file %s to size %d (%s)\n", fname, header_size + (SMF_ENTRY_LENGTH*num_entr
     free(buf);
 
   DEBUG(3,("set_share_mode: Created share file %s with \
-mode 0x%X pid=%d\n",fname,fs_p->share_mode,pid));
+mode 0x%X pid=%d\n",fname,fsp->share_mode,pid));
 
   return True;
 }
@@ -826,7 +823,7 @@ mode 0x%X pid=%d\n",fname,fs_p->share_mode,pid));
 /*******************************************************************
 Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
-static BOOL slow_remove_share_oplock(int fnum, int token)
+static BOOL slow_remove_share_oplock(files_struct *fsp, int token)
 {
   pstring fname;
   int fd = (int)token;
@@ -835,15 +832,14 @@ static BOOL slow_remove_share_oplock(int fnum, int token)
   int num_entries;
   int fsize;
   int i;
-  files_struct *fs_p = &Files[fnum];
   int pid;
   BOOL found = False;
   BOOL new_file;
 
-  share_name(fs_p->conn, fs_p->fd_ptr->dev, 
-                       fs_p->fd_ptr->inode, fname);
+  share_name(fsp->conn, fsp->fd_ptr->dev, 
+                       fsp->fd_ptr->inode, fname);
 
-  if(read_share_file( fs_p->conn, fd, fname, &buf, &new_file) != 0)
+  if(read_share_file( fsp->conn, fd, fname, &buf, &new_file) != 0)
   {
     DEBUG(0,("ERROR: remove_share_oplock: Failed to read share file %s\n",
                   fname));
@@ -854,7 +850,7 @@ static BOOL slow_remove_share_oplock(int fnum, int token)
   {
     DEBUG(0,("ERROR: remove_share_oplock: share file %s is new (size zero), \
 deleting it.\n", fname));
-    delete_share_file(fs_p->conn, fname);
+    delete_share_file(fsp->conn, fname);
     return False;
   }
 
@@ -878,7 +874,7 @@ for share file %d\n", num_entries, fname));
               fname));
     if(buf)
       free(buf);
-    delete_share_file(fs_p->conn, fname);
+    delete_share_file(fsp->conn, fname);
     return False;
   }
 
@@ -894,9 +890,9 @@ for share file %d\n", num_entries, fname));
   {
     char *p = base + (i*SMF_ENTRY_LENGTH);
 
-    if((IVAL(p,SME_SEC_OFFSET) != fs_p->open_time.tv_sec) || 
-       (IVAL(p,SME_USEC_OFFSET) != fs_p->open_time.tv_usec) ||
-       (IVAL(p,SME_SHAREMODE_OFFSET) != fs_p->share_mode) || 
+    if((IVAL(p,SME_SEC_OFFSET) != fsp->open_time.tv_sec) || 
+       (IVAL(p,SME_USEC_OFFSET) != fsp->open_time.tv_usec) ||
+       (IVAL(p,SME_SHAREMODE_OFFSET) != fsp->share_mode) || 
        (IVAL(p,SME_PID_OFFSET) != pid))
       continue;
 

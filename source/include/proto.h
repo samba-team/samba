@@ -474,12 +474,12 @@ char *smb_errstr(char *inbuf);
 
 BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
 void process_blocking_lock_queue(time_t t);
-BOOL is_locked(int fnum,connection_struct *conn,
+BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       uint32 count,uint32 offset, int lock_type);
-BOOL do_lock(int fnum,connection_struct *conn,
+BOOL do_lock(files_struct *fsp,connection_struct *conn,
 	     uint32 count,uint32 offset,int lock_type,
              int *eclass,uint32 *ecode);
-BOOL do_unlock(int fnum,connection_struct *conn,
+BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	       uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
@@ -490,9 +490,9 @@ BOOL unlock_share_entry(connection_struct *conn,
 int get_share_modes(connection_struct *conn, 
 		    int token, uint32 dev, uint32 inode, 
 		    share_mode_entry **shares);
-void del_share_mode(int token, int fnum);
-BOOL set_share_mode(int token, int fnum, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int fnum, int token);
+void del_share_mode(int token, files_struct *fsp);
+BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
+BOOL remove_share_oplock(files_struct *fsp, int token);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 void share_status(FILE *f);
 
@@ -1941,6 +1941,20 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum );
 char *DirCacheCheck( char *path, char *name, int snum );
 void DirCacheFlush(int snum);
 
+/*The following definitions come from  smbd/files.c  */
+
+files_struct *find_free_file(void );
+file_fd_struct *fd_get_already_open(struct stat *sbuf);
+file_fd_struct *fd_get_new(void);
+void file_close_conn(connection_struct *conn);
+void file_init(void);
+files_struct *file_fsp(int fnum);
+void file_close_user(int vuid);
+files_struct *file_find_dit(int dev, int inode, struct timeval *tval);
+files_struct *file_find_print(void);
+void file_sync_all(connection_struct *conn);
+void file_free(files_struct *fsp);
+
 /*The following definitions come from  smbd/groupname.c  */
 
 void load_groupname_map(void);
@@ -1979,7 +1993,7 @@ int reply_ntcancel(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
 int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
-void remove_pending_change_notify_requests_by_fid(int fnum);
+void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
 void remove_pending_change_notify_requests_by_mid(int mid);
 void process_pending_change_notify_queue(time_t t);
 int reply_nttrans(connection_struct *conn,
@@ -2114,22 +2128,23 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times);
 BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime);
 BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component, BOOL *bad_path);
 BOOL check_name(char *name,connection_struct *conn);
-void sync_file(connection_struct *conn, int fnum);
-void close_file(int fnum, BOOL normal_close);
-void close_directory(int fnum);
-int open_directory(int fnum,connection_struct *conn,
+void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
+void sync_file(connection_struct *conn, files_struct *fsp);
+void close_file(files_struct *fsp, BOOL normal_close);
+void close_directory(files_struct *fsp);
+int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, int unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
                       BOOL fcbopen, int *flags);
-void open_file_shared(int fnum,connection_struct *conn,char *fname,int share_mode,int ofun,
+void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action);
-int seek_file(int fnum,uint32 pos);
-int read_file(int fnum,char *data,uint32 pos,int n);
-int write_file(int fnum,char *data,int n);
+int seek_file(files_struct *fsp,uint32 pos);
+int read_file(files_struct *fsp,char *data,uint32 pos,int n);
+int write_file(files_struct *fsp,char *data,int n);
 BOOL become_service(connection_struct *conn,BOOL do_chdir);
 int find_service(char *service);
-int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line);
+int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line);
 int unix_error_packet(char *inbuf,char *outbuf,int def_class,uint32 def_code,int line);
 int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int line);
 BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval);
@@ -2139,7 +2154,7 @@ BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int tim
 BOOL snum_used(int snum);
 BOOL reload_services(BOOL test);
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode);
-int find_free_file(void );
+BOOL attempt_close_oplocked_file(files_struct *fsp);
 int reply_corep(char *outbuf);
 int reply_coreplus(char *outbuf);
 int reply_lanman1(char *outbuf);

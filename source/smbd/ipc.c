@@ -36,7 +36,6 @@
 
 extern int DEBUGLEVEL;
 extern int max_send;
-extern files_struct Files[];
 
 extern fstring local_machine;
 extern fstring global_myworkgroup;
@@ -1913,108 +1912,105 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
   			     char **rdata,char **rparam,
   			     int *rdata_len,int *rparam_len)
 {
-  struct pack_desc desc;
-  char *str1 = param+2;
-  char *str2 = skip_string(str1,1);
-  char *p = skip_string(str2,1);
-  int jobid, snum;
-  int uLevel = SVAL(p,2);
-  int function = SVAL(p,4);	/* what is this ?? */
-  int i;
-  char *s = data;
+	struct pack_desc desc;
+	char *str1 = param+2;
+	char *str2 = skip_string(str1,1);
+	char *p = skip_string(str2,1);
+	int jobid, snum;
+	int uLevel = SVAL(p,2);
+	int function = SVAL(p,4);	/* what is this ?? */
+	int i;
+	char *s = data;
+	files_struct *fsp;
 
-  printjob_decode(SVAL(p,0), &snum, &jobid);
+	printjob_decode(SVAL(p,0), &snum, &jobid);
    
-  *rparam_len = 4;
-  *rparam = REALLOC(*rparam,*rparam_len);
+	*rparam_len = 4;
+	*rparam = REALLOC(*rparam,*rparam_len);
   
-  *rdata_len = 0;
-  
-  /* check it's a supported varient */
-  if ((strcmp(str1,"WWsTP")) || (!check_printjob_info(&desc,uLevel,str2)))
-    return(False);
+	*rdata_len = 0;
+	
+	/* check it's a supported varient */
+	if ((strcmp(str1,"WWsTP")) || 
+	    (!check_printjob_info(&desc,uLevel,str2)))
+		return(False);
    
-  switch (function) {
-  case 0x6:	/* change job place in the queue, data gives the new place */
-    if (snum >= 0 && VALID_SNUM(snum))
-      {
-	print_queue_struct *queue=NULL;
-	int count;
+	switch (function) {
+	case 0x6:	/* change job place in the queue, 
+			   data gives the new place */
+		if (snum >= 0 && VALID_SNUM(snum)) {
+			print_queue_struct *queue=NULL;
+			int count;
   
-	lpq_reset(snum);
-	count = get_printqueue(snum,conn,&queue,NULL);
-	for (i=0;i<count;i++)	/* find job */
-	  if ((queue[i].job&0xFF) == jobid) break;
+			lpq_reset(snum);
+			count = get_printqueue(snum,conn,&queue,NULL);
+			for (i=0;i<count;i++)	/* find job */
+				if ((queue[i].job&0xFF) == jobid) break;
  	    
-	if (i==count) {
-	  desc.errcode=NERR_JobNotFound;
-	  if (queue) free(queue);
-	}
-	else {
-	  desc.errcode=NERR_Success;
-	  i++;
+			if (i==count) {
+				desc.errcode=NERR_JobNotFound;
+				if (queue) free(queue);
+			} else {
+				desc.errcode=NERR_Success;
+				i++;
 #if 0	
-	  {
-	    int place= SVAL(data,0);
-	    /* we currently have no way of doing this. Can any unix do it? */
-	    if (i < place)	/* move down */;
-	    else if (i > place )	/* move up */;
-	  }
+				{
+					int place= SVAL(data,0);
+					/* we currently have no way of
+					   doing this. Can any unix do it? */
+					if (i < place)	/* move down */;
+					else if (i > place )	/* move up */;
+				}
 #endif
-	  desc.errcode=NERR_notsupported; /* not yet supported */
-	  if (queue) free(queue);
-	}
-      }
-    else desc.errcode=NERR_JobNotFound;
-    break;
-  case 0xb:   /* change print job name, data gives the name */
-    /* jobid, snum should be zero */
-    if (isalpha((int)*s))
-      {
-	pstring name;
-	int l = 0;
-	while (l<64 && *s)
-	  {
-	    if (issafe(*s)) name[l++] = *s;
-	    s++;
-	  }      
-	name[l] = 0;
-	
-	DEBUG(3,("Setting print name to %s\n",name));
-	
-        become_root(True);
-
-	for (i=0;i<MAX_FNUMS;i++)
-	  if (Files[i].open && Files[i].print_file)
-	    {
-	      pstring wd;
-	      connection_struct *fconn = Files[i].conn;
-	      GetWd(wd);
-	      unbecome_user();
-	      
-	      if (!become_user(fconn,vuid) || 
-		  !become_service(fconn,True))
+				desc.errcode=NERR_notsupported; /* not yet 
+								   supported */
+				if (queue) free(queue);
+			}
+		} else {
+			desc.errcode=NERR_JobNotFound;
+		}
 		break;
-	      
-	      if (sys_rename(Files[i].fsp_name,name) == 0) {
-		      string_set(&Files[i].fsp_name,name);
-	      }
-	      break;
-	    }
 
-         unbecome_root(True);
-      }
-    desc.errcode=NERR_Success;
-  
-    break;
-  default:			/* not implemented */
-    return False;
-  }
+	case 0xb:   /* change print job name, data gives the name */
+		/* jobid, snum should be zero */
+		if (isalpha((int)*s)) {
+			pstring name;
+			int l = 0;
+			while (l<64 && *s) {
+				if (issafe(*s)) name[l++] = *s;
+				s++;
+			}      
+			name[l] = 0;
+	
+			DEBUG(3,("Setting print name to %s\n",name));
+	
+			fsp = file_find_print();	
+
+			if (fsp) {
+				connection_struct *fconn = fsp->conn;
+				unbecome_user();
+	      
+				if (!become_user(fconn,vuid) || 
+				    !become_service(fconn,True))
+					break;
+	      
+				if (sys_rename(fsp->fsp_name,name) == 0) {
+					string_set(&fsp->fsp_name,name);
+				}
+				break;
+			}
+		}
+		desc.errcode=NERR_Success;
+		break;
+
+	default:			/* not implemented */
+		return False;
+	}
  
-  SSVALS(*rparam,0,desc.errcode);
-  SSVAL(*rparam,2,0);		/* converter word */
-  
-  return(True);
+	SSVALS(*rparam,0,desc.errcode);
+	SSVAL(*rparam,2,0);		/* converter word */
+	
+	return(True);
 }
 
 

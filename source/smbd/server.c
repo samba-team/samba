@@ -66,14 +66,6 @@ extern int dcelogin_atmost_once;
 extern DOM_SID global_machine_sid;
 
 static connection_struct Connections[MAX_CONNECTIONS];
-files_struct Files[MAX_FNUMS];
-
-/*
- * Indirection for file fd's. Needed as POSIX locking
- * is based on file/process, not fd/process.
- */
-file_fd_struct FileFd[MAX_OPEN_FILES];
-int max_file_fd_used = 0;
 
 extern int Protocol;
 
@@ -89,8 +81,8 @@ int max_send = BUFFER_SIZE;
  */
 int max_recv = BUFFER_SIZE;
 
-/* a fnum to use when chaining */
-int chain_fnum = -1;
+/* a fsp to use when chaining */
+files_struct *chain_fsp = NULL;
 
 /* number of open connections */
 static int num_connections_open = 0;
@@ -807,7 +799,7 @@ static int fd_attempt_open(char *fname, int flags, int mode)
 Cache a uid_t currently with this file open. This is an optimization only
 used when multiple sessionsetup's have been done to one smbd.
 ****************************************************************************/
-static void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u)
+void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u)
 {
   if(fd_ptr->uid_cache_count >= sizeof(fd_ptr->uid_users_cache)/sizeof(uid_t))
     return;
@@ -844,67 +836,6 @@ static BOOL fd_is_in_uid_cache(file_fd_struct *fd_ptr, uid_t u)
   return False;
 }
 
-/****************************************************************************
-fd support routines - attempt to find an already open file by dev
-and inode - increments the ref_count of the returned file_fd_struct *.
-****************************************************************************/
-static file_fd_struct *fd_get_already_open(struct stat *sbuf)
-{
-  int i;
-  file_fd_struct *fd_ptr;
-
-  if(sbuf == 0)
-    return 0;
-
-  for(i = 0; i <= max_file_fd_used; i++) {
-    fd_ptr = &FileFd[i];
-    if((fd_ptr->ref_count > 0) &&
-       (((uint32)sbuf->st_dev) == fd_ptr->dev) &&
-       (((uint32)sbuf->st_ino) == fd_ptr->inode)) {
-      fd_ptr->ref_count++;
-      DEBUG(3,
-       ("Re-used file_fd_struct %d, dev = %x, inode = %x, ref_count = %d\n",
-        i, fd_ptr->dev, fd_ptr->inode, fd_ptr->ref_count));
-      return fd_ptr;
-    }
-  }
-  return 0;
-}
-
-/****************************************************************************
-fd support routines - attempt to find a empty slot in the FileFd array.
-Increments the ref_count of the returned entry.
-****************************************************************************/
-static file_fd_struct *fd_get_new(void)
-{
-  extern struct current_user current_user;
-  int i;
-  file_fd_struct *fd_ptr;
-
-  for(i = 0; i < MAX_OPEN_FILES; i++) {
-    fd_ptr = &FileFd[i];
-    if(fd_ptr->ref_count == 0) {
-      fd_ptr->dev = (uint32)-1;
-      fd_ptr->inode = (uint32)-1;
-      fd_ptr->fd = -1;
-      fd_ptr->fd_readonly = -1;
-      fd_ptr->fd_writeonly = -1;
-      fd_ptr->real_open_flags = -1;
-      fd_ptr->uid_cache_count = 0;
-      fd_add_to_uid_cache(fd_ptr, (uid_t)current_user.uid);
-      fd_ptr->ref_count++;
-      /* Increment max used counter if neccessary, cuts down
-         on search time when re-using */
-      if(i > max_file_fd_used)
-        max_file_fd_used = i;
-      DEBUG(3,("Allocated new file_fd_struct %d, dev = %x, inode = %x\n",
-               i, fd_ptr->dev, fd_ptr->inode));
-      return fd_ptr;
-    }
-  }
-  DEBUG(1,("ERROR! Out of file_fd structures - perhaps increase MAX_OPEN_FILES?\n"));
-  return 0;
-}
 
 /****************************************************************************
 fd support routines - attempt to re-open an already open fd as O_RDWR.
@@ -934,8 +865,7 @@ static int fd_attempt_close(file_fd_struct *fd_ptr)
 {
   extern struct current_user current_user;
 
-  DEBUG(3,("fd_attempt_close on file_fd_struct %d, fd = %d, dev = %x, inode = %x, open_flags = %d, ref_count = %d.\n",
-          fd_ptr - &FileFd[0],
+  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %x, open_flags = %d, ref_count = %d.\n",
           fd_ptr->fd, fd_ptr->dev, fd_ptr->inode,
           fd_ptr->real_open_flags,
           fd_ptr->ref_count));
@@ -1034,14 +964,13 @@ static BOOL check_access_allowed_for_current_user( char *fname, int accmode )
 /****************************************************************************
 open a file
 ****************************************************************************/
-static void open_file(int fnum,connection_struct *conn,
+static void open_file(files_struct *fsp,connection_struct *conn,
 		      char *fname1,int flags,int mode, struct stat *sbuf)
 {
   extern struct current_user current_user;
   pstring fname;
   struct stat statbuf;
   file_fd_struct *fd_ptr;
-  files_struct *fsp = &Files[fnum];
   int accmode = (flags & (O_RDONLY | O_WRONLY | O_RDWR));
 
   fsp->open = False;
@@ -1296,13 +1225,13 @@ static void open_file(int fnum,connection_struct *conn,
      */
     if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
 	    DEBUG(3,("Writing postscript line\n"));
-	    write_file(fnum,"%!\n",3);
+	    write_file(fsp,"%!\n",3);
     }
       
-    DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
+    DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
 	     *sesssetup_user ? sesssetup_user : conn->user,fname,
 	     BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
-	     conn->num_files_open,fnum));
+	     conn->num_files_open));
 
   }
 
@@ -1325,28 +1254,28 @@ static void open_file(int fnum,connection_struct *conn,
 /*******************************************************************
 sync a file
 ********************************************************************/
-void sync_file(connection_struct *conn, int fnum)
+void sync_file(connection_struct *conn, files_struct *fsp)
 {
 #ifdef HAVE_FSYNC
     if(lp_strict_sync(SNUM(conn)))
-      fsync(Files[fnum].fd_ptr->fd);
+      fsync(fsp->fd_ptr->fd);
 #endif
 }
 
 /****************************************************************************
 run a file if it is a magic script
 ****************************************************************************/
-static void check_magic(int fnum,connection_struct *conn)
+static void check_magic(files_struct *fsp,connection_struct *conn)
 {
   if (!*lp_magicscript(SNUM(conn)))
     return;
 
-  DEBUG(5,("checking magic for %s\n",Files[fnum].fsp_name));
+  DEBUG(5,("checking magic for %s\n",fsp->fsp_name));
 
   {
     char *p;
-    if (!(p = strrchr(Files[fnum].fsp_name,'/')))
-      p = Files[fnum].fsp_name;
+    if (!(p = strrchr(fsp->fsp_name,'/')))
+      p = fsp->fsp_name;
     else
       p++;
 
@@ -1358,7 +1287,7 @@ static void check_magic(int fnum,connection_struct *conn)
     int ret;
     pstring magic_output;
     pstring fname;
-    pstrcpy(fname,Files[fnum].fsp_name);
+    pstrcpy(fname,fsp->fsp_name);
 
     if (*lp_magicoutput(SNUM(conn)))
       pstrcpy(magic_output,lp_magicoutput(SNUM(conn)));
@@ -1379,7 +1308,7 @@ static void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     
-	fsp->reserved = False; 
+	file_free(fsp); 
 	fsp->open = False;
 	fsp->is_directory = False; 
     
@@ -1405,69 +1334,66 @@ static void close_filestruct(files_struct *fsp)
  the closing of the connection. In the latter case printing and
  magic scripts are not run.
 ****************************************************************************/
-void close_file(int fnum, BOOL normal_close)
+void close_file(files_struct *fsp, BOOL normal_close)
 {
-	files_struct *fs_p = &Files[fnum];
-	uint32 dev = fs_p->fd_ptr->dev;
-	uint32 inode = fs_p->fd_ptr->inode;
+	uint32 dev = fsp->fd_ptr->dev;
+	uint32 inode = fsp->fd_ptr->inode;
 	int token;
-	connection_struct *conn = fs_p->conn;
+	connection_struct *conn = fsp->conn;
 
-	close_filestruct(fs_p);
+	close_filestruct(fsp);
 
 #if USE_READ_PREDICTION
-	invalidate_read_prediction(fs_p->fd_ptr->fd);
+	invalidate_read_prediction(fsp->fd_ptr->fd);
 #endif
 
 	if (lp_share_modes(SNUM(conn))) {
 		lock_share_entry(conn, dev, inode, &token);
-		del_share_mode(token, fnum);
+		del_share_mode(token, fsp);
 	}
 
-	fd_attempt_close(fs_p->fd_ptr);
+	fd_attempt_close(fsp->fd_ptr);
 
 	if (lp_share_modes(SNUM(conn)))
 		unlock_share_entry(conn, dev, inode, token);
 
 	/* NT uses smbclose to start a print - weird */
-	if (normal_close && fs_p->print_file)
-		print_file(conn, fs_p);
+	if (normal_close && fsp->print_file)
+		print_file(conn, fsp);
 
 	/* check for magic scripts */
 	if (normal_close) {
-		check_magic(fnum,conn);
+		check_magic(fsp,conn);
 	}
 
-	if(fs_p->granted_oplock == True)
+	if(fsp->granted_oplock == True)
 		global_oplocks_open--;
 
-	fs_p->sent_oplock_break = False;
+	fsp->sent_oplock_break = False;
 
 	DEBUG(2,("%s closed file %s (numopen=%d)\n",
-		 conn->user,fs_p->fsp_name,
+		 conn->user,fsp->fsp_name,
 		 conn->num_files_open));
 
-	if (fs_p->fsp_name) {
-		string_free(&fs_p->fsp_name);
+	if (fsp->fsp_name) {
+		string_free(&fsp->fsp_name);
 	}
 
-	/* we will catch bugs faster by zeroing this structure */
-	memset(fs_p, 0, sizeof(*fs_p));
+	file_free(fsp);
 }
 
 /****************************************************************************
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-void close_directory(int fnum)
+void close_directory(files_struct *fsp)
 {
-  files_struct *fsp = &Files[fnum];
 
   /* TODO - walk the list of pending
      change notify requests and free
-     any pertaining to this fnum. */
+     any pertaining to this fsp. */
 
-  remove_pending_change_notify_requests_by_fid(fnum);
+  remove_pending_change_notify_requests_by_fid(fsp);
 
   /*
    * Do the code common to files and directories.
@@ -1477,18 +1403,16 @@ void close_directory(int fnum)
   if (fsp->fsp_name)
     string_free(&fsp->fsp_name);
 
-  /* we will catch bugs faster by zeroing this structure */
-  memset(fsp, 0, sizeof(*fsp));
+  file_free(fsp);
 }
 
 /****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
-int open_directory(int fnum,connection_struct *conn,
+int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, int unixmode, int *action)
 {
 	extern struct current_user current_user;
-	files_struct *fsp = &Files[fnum];
 	struct stat st;
 
 	if (smb_ofun & 0x10) {
@@ -1521,8 +1445,8 @@ int open_directory(int fnum,connection_struct *conn,
 		*action = FILE_WAS_OPENED;
 	}
 	
-	DEBUG(5,("open_directory: opening directory %s, fnum = %d\n",
-		 fname, fnum ));
+	DEBUG(5,("open_directory: opening directory %s\n",
+		 fname));
 
 	/*
 	 * Setup the files_struct for it.
@@ -1745,19 +1669,17 @@ free_and_exit:
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
-static void truncate_unless_locked(int fnum, connection_struct *conn, int token, 
+static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, int token, 
 				   BOOL *share_locked)
 {
-  files_struct *fsp = &Files[fnum];
-
   if (fsp->can_write){
-    if (is_locked(fnum,conn,0x3FFFFFFF,0,F_WRLCK)){
+    if (is_locked(fsp,conn,0x3FFFFFFF,0,F_WRLCK)){
       /* If share modes are in force for this connection we
          have the share entry locked. Unlock it before closing. */
       if (*share_locked && lp_share_modes(SNUM(conn)))
         unlock_share_entry( conn, fsp->fd_ptr->dev, 
                             fsp->fd_ptr->inode, token);
-      close_file(fnum,False);   
+      close_file(fsp,False);   
       /* Share mode no longer locked. */
       *share_locked = False;
       errno = EACCES;
@@ -1813,10 +1735,9 @@ int check_share_mode( share_mode_entry *share, int deny_mode, char *fname,
 /****************************************************************************
 open a file with a share mode
 ****************************************************************************/
-void open_file_shared(int fnum,connection_struct *conn,char *fname,int share_mode,int ofun,
+void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      int mode,int oplock_request, int *Access,int *action)
 {
-  files_struct *fs_p = &Files[fnum];
   int flags=0;
   int flags2=0;
   int deny_mode = (share_mode>>4)&7;
@@ -1829,8 +1750,8 @@ void open_file_shared(int fnum,connection_struct *conn,char *fname,int share_mod
   uint32 inode = 0;
   int num_share_modes = 0;
 
-  fs_p->open = False;
-  fs_p->fd_ptr = 0;
+  fsp->open = False;
+  fsp->fd_ptr = 0;
 
   /* this is for OS/2 EAs - try and say we don't support them */
   if (strstr(fname,".+,;=[].")) 
@@ -1992,22 +1913,22 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,mode));
 
-  open_file(fnum,conn,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
-  if (!fs_p->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 
+  open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
+  if (!fsp->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 
   {
     flags = O_RDONLY;
-    open_file(fnum,conn,fname,flags,mode,file_existed ? &sbuf : 0 );
+    open_file(fsp,conn,fname,flags,mode,file_existed ? &sbuf : 0 );
   }
 
-  if (fs_p->open) 
+  if (fsp->open) 
   {
     int open_mode=0;
 
     if((share_locked == False) && lp_share_modes(SNUM(conn)))
     {
       /* We created the file - thus we must now lock the share entry before creating it. */
-      dev = fs_p->fd_ptr->dev;
-      inode = fs_p->fd_ptr->inode;
+      dev = fsp->fd_ptr->dev;
+      inode = fsp->fd_ptr->inode;
       lock_share_entry(conn, dev, inode, &token);
       share_locked = True;
     }
@@ -2025,7 +1946,7 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
         break;
     }
 
-    fs_p->share_mode = (deny_mode<<4) | open_mode;
+    fsp->share_mode = (deny_mode<<4) | open_mode;
 
     if (Access)
       (*Access) = open_mode;
@@ -2051,8 +1972,8 @@ dev = %x, inode = %x\n", old_shares[i].op_type, fname, dev, inode));
       if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
 	      !IS_VETO_OPLOCK_PATH(conn,fname))
       {
-        fs_p->granted_oplock = True;
-        fs_p->sent_oplock_break = False;
+        fsp->granted_oplock = True;
+        fsp->sent_oplock_break = False;
         global_oplocks_open++;
         port = oplock_port;
 
@@ -2065,11 +1986,11 @@ dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
         port = 0;
         oplock_request = 0;
       }
-      set_share_mode(token, fnum, port, oplock_request);
+      set_share_mode(token, fsp, port, oplock_request);
     }
 
     if ((flags2&O_TRUNC) && file_existed)
-      truncate_unless_locked(fnum,conn,token,&share_locked);
+      truncate_unless_locked(fsp,conn,token,&share_locked);
   }
 
   if (share_locked && lp_share_modes(SNUM(conn)))
@@ -2079,10 +2000,9 @@ dev = %x, inode = %x\n", oplock_request, fname, dev, inode));
 /****************************************************************************
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
-int seek_file(int fnum,uint32 pos)
+int seek_file(files_struct *fsp,uint32 pos)
 {
   uint32 offset = 0;
-  files_struct *fsp = &Files[fnum];
 
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
@@ -2094,10 +2014,9 @@ int seek_file(int fnum,uint32 pos)
 /****************************************************************************
 read from a file
 ****************************************************************************/
-int read_file(int fnum,char *data,uint32 pos,int n)
+int read_file(files_struct *fsp,char *data,uint32 pos,int n)
 {
   int ret=0,readret;
-  files_struct *fsp = &Files[fnum];
 
 #if USE_READ_PREDICTION
   if (!fsp->can_write)
@@ -2129,7 +2048,7 @@ int read_file(int fnum,char *data,uint32 pos,int n)
   if (n <= 0)
     return(ret);
 
-  if (seek_file(fnum,pos) != pos)
+  if (seek_file(fsp,pos) != pos)
     {
       DEBUG(3,("Failed to seek to %d\n",pos));
       return(ret);
@@ -2147,9 +2066,8 @@ int read_file(int fnum,char *data,uint32 pos,int n)
 /****************************************************************************
 write to a file
 ****************************************************************************/
-int write_file(int fnum,char *data,int n)
+int write_file(files_struct *fsp,char *data,int n)
 {
-  files_struct *fsp = &Files[fnum];
 
   if (!fsp->can_write) {
     errno = EPERM;
@@ -2318,16 +2236,16 @@ int find_service(char *service)
 /****************************************************************************
   create an error packet from a cached error.
 ****************************************************************************/
-int cached_error_packet(char *inbuf,char *outbuf,int fnum,int line)
+int cached_error_packet(char *inbuf,char *outbuf,files_struct *fsp,int line)
 {
-  write_bmpx_struct *wbmpx = Files[fnum].wbmpx_ptr;
+  write_bmpx_struct *wbmpx = fsp->wbmpx_ptr;
 
   int32 eclass = wbmpx->wr_errclass;
   int32 err = wbmpx->wr_error;
 
   /* We can now delete the auxiliary struct */
   free((char *)wbmpx);
-  Files[fnum].wbmpx_ptr = NULL;
+  fsp->wbmpx_ptr = NULL;
   return error_packet(inbuf,outbuf,eclass,err,line);
 }
 
@@ -2890,7 +2808,6 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   char *inbuf = NULL;
   char *outbuf = NULL;
   files_struct *fsp = NULL;
-  int fnum;
   time_t start_time;
   BOOL shutdown_server = False;
   connection_struct *saved_conn;
@@ -2906,18 +2823,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   /* We need to search the file open table for the
      entry containing this dev and inode, and ensure
      we have an oplock on it. */
-  for( fnum = 0; fnum < MAX_FNUMS; fnum++)
-  {
-    if(OPEN_FNUM(fnum))
-    {
-      if((Files[fnum].fd_ptr->dev == dev) && (Files[fnum].fd_ptr->inode == inode) &&
-         (Files[fnum].open_time.tv_sec == tval->tv_sec) && 
-         (Files[fnum].open_time.tv_usec == tval->tv_usec)) {
-	      fsp = &Files[fnum];
-	      break;
-      }
-    }
-  }
+  fsp = file_find_dit(dev, inode, tval);
 
   if(fsp == NULL)
   {
@@ -2925,7 +2831,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
     if( DEBUGLVL( 0 ) )
       {
       dbgtext( "oplock_break: cannot find open file with " );
-      dbgtext( "dev = %x, inode = %x (fnum = %d) ", dev, inode, fnum );
+      dbgtext( "dev = %x, inode = %x ", dev, inode);
       dbgtext( "allowing break to succeed.\n" );
       }
     return True;
@@ -2944,8 +2850,8 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   {
     if( DEBUGLVL( 0 ) )
       {
-      dbgtext( "oplock_break: file %s (fnum = %d, ", fsp->fsp_name, fnum );
-      dbgtext( "dev = %x, inode = %x) has no oplock.\n", dev, inode );
+      dbgtext( "oplock_break: file %s ", fsp->fsp_name );
+      dbgtext( "(dev = %x, inode = %x) has no oplock.\n", dev, inode );
       dbgtext( "Allowing break to succeed regardless.\n" );
       }
     return True;
@@ -2957,8 +2863,8 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
     if( DEBUGLVL( 0 ) )
       {
       dbgtext( "oplock_break: ERROR: oplock_break already sent for " );
-      dbgtext( "file %s (fnum = %d, ", fsp->fsp_name, fnum );
-      dbgtext( "dev = %x, inode = %x)\n", dev, inode );
+      dbgtext( "file %s ", fsp->fsp_name);
+      dbgtext( "(dev = %x, inode = %x)\n", dev, inode );
       }
 
     /* We have to fail the open here as we cannot send another oplock break on
@@ -3000,7 +2906,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   SSVAL(outbuf,smb_uid,0);
   SSVAL(outbuf,smb_mid,0xFFFF);
   SCVAL(outbuf,smb_vwv0,0xFF);
-  SSVAL(outbuf,smb_vwv2,fnum);
+  SSVAL(outbuf,smb_vwv2,fsp->fnum);
   SCVAL(outbuf,smb_vwv3,LOCKING_ANDX_OPLOCK_RELEASE);
   /* Change this when we have level II oplocks. */
   SCVAL(outbuf,smb_vwv3+1,OPLOCKLEVEL_NONE);
@@ -3029,7 +2935,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   GetWd(saved_dir);
   unbecome_user();
 
-  while(OPEN_FNUM(fnum) && fsp->granted_oplock)
+  while(OPEN_FSP(fsp) && fsp->granted_oplock)
   {
     if(receive_smb(Client,inbuf,OPLOCK_BREAK_TIMEOUT * 1000) == False)
     {
@@ -3048,7 +2954,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
                      OPLOCK_BREAK_TIMEOUT ) );
 
       DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->fsp_name ) );
-      DEBUGADD( 0, ( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode));
+      DEBUGADD( 0, ( "(dev = %x, inode = %x).\n", dev, inode));
       shutdown_server = True;
       break;
     }
@@ -3075,7 +2981,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
         dbgtext( "oplock_break: no break received from client " );
         dbgtext( "within %d seconds.\n", OPLOCK_BREAK_TIMEOUT );
         dbgtext( "oplock_break failed for file %s ", fsp->fsp_name );
-        dbgtext( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode );
+        dbgtext( "(dev = %x, inode = %x).\n", dev, inode );
         }
       shutdown_server = True;
       break;
@@ -3118,7 +3024,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
     exit_server("oplock break failure");
   }
 
-  if(OPEN_FNUM(fnum))
+  if(OPEN_FSP(fsp))
   {
     /* The lockingX reply will have removed the oplock flag 
        from the sharemode. */
@@ -3139,7 +3045,7 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   if( DEBUGLVL( 3 ) )
     {
     dbgtext( "oplock_break: returning success for " );
-    dbgtext( "fnum = %d, dev = %x, inode = %x.\n", fnum, dev, inode );
+    dbgtext( "dev = %x, inode = %x.\n", dev, inode );
     dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
     }
 
@@ -3791,8 +3697,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
   Used as a last ditch attempt to free a space in the 
   file table when we have run out.
 ****************************************************************************/
-
-static BOOL attempt_close_oplocked_file(files_struct *fsp)
+BOOL attempt_close_oplocked_file(files_struct *fsp)
 {
 
   DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
@@ -3808,75 +3713,6 @@ static BOOL attempt_close_oplocked_file(files_struct *fsp)
   }
 
   return False;
-}
-
-/****************************************************************************
-  find first available file slot
-****************************************************************************/
-int find_free_file(void )
-{
-	int i;
-	static int first_file;
-
-	/* we want to give out file handles differently on each new
-	   connection because of a common bug in MS clients where they try to
-	   reuse a file descriptor from an earlier smb connection. This code
-	   increases the chance that the errant client will get an error rather
-	   than causing corruption */
-	if (first_file == 0) {
-		first_file = (getpid() ^ (int)time(NULL)) % MAX_FNUMS;
-		if (first_file == 0) first_file = 1;
-	}
-
-	if (first_file >= MAX_FNUMS)
-		first_file = 1;
-
-	for (i=first_file;i<MAX_FNUMS;i++)
-		if (!Files[i].open && !Files[i].reserved) {
-			memset(&Files[i], 0, sizeof(Files[i]));
-			first_file = i+1;
-			Files[i].reserved = True;
-			return(i);
-		}
-
-	/* returning a file handle of 0 is a bad idea - so we start at 1 */
-	for (i=1;i<first_file;i++)
-		if (!Files[i].open && !Files[i].reserved) {
-			memset(&Files[i], 0, sizeof(Files[i]));
-			first_file = i+1;
-			Files[i].reserved = True;
-			return(i);
-		}
-
-        /* 
-         * Before we give up, go through the open files 
-         * and see if there are any files opened with a
-         * batch oplock. If so break the oplock and then
-         * re-use that entry (if it becomes closed).
-         * This may help as NT/95 clients tend to keep
-         * files batch oplocked for quite a long time
-         * after they have finished with them.
-         */
-        for (i=first_file;i<MAX_FNUMS;i++) {
-          if(attempt_close_oplocked_file( &Files[i])) {
-            memset(&Files[i], 0, sizeof(Files[i]));
-            first_file = i+1;
-            Files[i].reserved = True;
-            return(i);
-          }
-        }
-
-        for (i=1;i<MAX_FNUMS;i++) {
-          if(attempt_close_oplocked_file( &Files[i])) {
-            memset(&Files[i], 0, sizeof(Files[i]));
-            first_file = i+1;
-            Files[i].reserved = True;
-            return(i);
-          }
-        }
-
-	DEBUG(1,("ERROR! Out of file structures - perhaps increase MAX_OPEN_FILES?\n"));
-	return(-1);
 }
 
 
@@ -4267,23 +4103,6 @@ static int reply_negprot(connection_struct *conn,
 
 
 /****************************************************************************
-close all open files for a connection
-****************************************************************************/
-static void close_open_files(connection_struct *conn)
-{
-  int i;
-  for (i=0;i<MAX_FNUMS;i++)
-    if (Files[i].conn == conn && Files[i].open) {
-      if(Files[i].is_directory)
-        close_directory(i); 
-      else                  
-        close_file(i,False); 
-    }
-}
-
-
-
-/****************************************************************************
 close a cnum
 ****************************************************************************/
 void close_cnum(connection_struct *conn, uint16 vuid)
@@ -4309,7 +4128,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (lp_status(SNUM(conn)))
 		yield_connection(conn,"STATUS.",MAXSTATUS);
 
-	close_open_files(conn);
+	file_close_conn(conn);
 	dptr_closecnum(conn);
 
 	/* execute any "postexec = " line */
@@ -4702,7 +4521,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       }
 
       /* load service specific parameters */
-      if (OPEN_CNUM(conn) && 
+      if (OPEN_CONN(conn) && 
 	  !become_service(conn,(flags & AS_USER)?True:False)) {
         return(ERROR(ERRSRV,ERRaccess));
       }
@@ -4881,7 +4700,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   smb_last_time = time(NULL);
 
   chain_size = 0;
-  chain_fnum = -1;
+  chain_fsp = NULL;
   reset_chain_pnum();
 
   if (msg_type != 0)
@@ -5135,23 +4954,7 @@ static void init_structs(void )
       string_init(&Connections[i].origpath,"");
     }
 
-  for (i=0;i<MAX_FNUMS;i++)
-    {
-      Files[i].open = False;
-      string_init(&Files[i].fsp_name,"");
-    }
-
-  for (i=0;i<MAX_OPEN_FILES;i++)
-    {
-      file_fd_struct *fd_ptr = &FileFd[i];
-      fd_ptr->ref_count = 0;
-      fd_ptr->dev = (int32)-1;
-      fd_ptr->inode = (int32)-1;
-      fd_ptr->fd = -1;
-      fd_ptr->fd_readonly = -1;
-      fd_ptr->fd_writeonly = -1;
-      fd_ptr->real_open_flags = -1;
-    }
+  file_init();
 
   /* for RPC pipes */
   init_rpc_pipe_hnd();
@@ -5297,25 +5100,6 @@ static void usage(char *pname)
   DEBUG( 1, ( "smbd version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1992-1997\n" ) );
 
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_NOFILE
-  {
-    struct rlimit rlp;
-    getrlimit(RLIMIT_NOFILE, &rlp);
-    /*
-     * Set the fd limit to be MAX_OPEN_FILES + 10 to account for the
-     * extra fd we need to read directories, as well as the log files
-     * and standard handles etc.
-     */
-    rlp.rlim_cur = (MAX_OPEN_FILES+10>rlp.rlim_max)? rlp.rlim_max:MAX_OPEN_FILES+10;
-    setrlimit(RLIMIT_NOFILE, &rlp);
-    getrlimit(RLIMIT_NOFILE, &rlp);
-    DEBUG(3,("Maximum number of open files per session is %d\n",(int)rlp.rlim_cur));
-  }
-#endif
-#endif
-
-  
   DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 	(int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
 
