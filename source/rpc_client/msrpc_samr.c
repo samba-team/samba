@@ -155,8 +155,8 @@ uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 	BOOL res1 = True;
 	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	const char *names[1];
-	uint32 *rids;
-	uint32 *types;
+	uint32 *rids = NULL;
+	uint32 *types = NULL;
 	uint32 num_rids;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
@@ -505,8 +505,8 @@ BOOL msrpc_sam_query_user( const char* srv_name,
 
 	const char *names[1];
 	uint32 num_rids;
-	uint32 *rid;
-	uint32 *type;
+	uint32 *rid = NULL;
+	uint32 *type = NULL;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 
@@ -1245,8 +1245,8 @@ BOOL create_samr_domain_user( POLICY_HND *pol_dom,
 	{
 		uint32 num_rids;
 		const char *names[1];
-		uint32 *types;
-		uint32 *rids;
+		uint32 *types = NULL;
+		uint32 *rids = NULL;
 
 		names[0] = acct_name;
 		res1 = samr_query_lookup_names( pol_dom, 0x3e8,
@@ -1905,6 +1905,62 @@ BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user,
 	{
 		cli_connection_unlink(con);
 	}
+
+	return res1;
+}
+
+/****************************************************************************
+experimental SAM user query.
+****************************************************************************/
+BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
+				const char *user_name, uint16 info_level,
+				SAM_USERINFO_CTR *ctr)
+{
+	BOOL res = True;
+	BOOL res1 = True;
+
+	const char *names[1];
+	uint32 num_rids;
+	uint32 *rids = NULL;
+	uint32 *types = NULL;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	/* establish a connection to a domain */
+	res = res ? samr_connect( srv_name, 0x02000000, &sam_pol) : False;
+	res = res ? samr_open_domain( &sam_pol, 0x304, sid, &pol_dom) : False;
+
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
+					1, names,
+					&num_rids, &rids, &types) : False;
+
+	/* send user info query */
+	if (res1 && num_rids == 1)
+	{
+		res1 = get_samr_query_userinfo( &pol_dom,
+				    info_level, rids[0], ctr);
+	}
+	else
+	{
+		res1 = False;
+	}
+
+	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
+
+	if (res1)
+	{
+		DEBUG(5,("msrpc_sam_query_userinfo: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("msrpc_sam_query_userinfo: failed\n"));
+	}
+
+	safe_free(rids);
+	safe_free(types);
 
 	return res1;
 }

@@ -884,15 +884,10 @@ void smbd_process(void)
 
       if (keepalive && (counter-last_keepalive)>keepalive) 
       {
-	      struct cli_state *cli = server_client();
 	      if (!send_keepalive(Client)) {
 		      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
 		      return;
 	      }	    
-	      /* also send a keepalive to the password server if its still
-		 connected */
-	      if (cli && cli->initialised)
-		      send_keepalive(cli->fd);
 	      last_keepalive = counter;
       }
 

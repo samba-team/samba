@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
 
@@ -153,82 +154,6 @@ void creds_free_unix_sec(CREDS_UNIX_SEC *r_u)
 }
 
 /*******************************************************************
-makes a CREDS_NT_SEC structure.
-********************************************************************/
-BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
-		DOM_SID *sid, uint32 num_grps, uint32 *grps)
-{
-	int i;
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("make_creds_unix_sec\n"));
-
-	sid_copy(&r_u->sid, sid);
-	r_u->num_grps = num_grps;
-	r_u->grp_rids = (uint32*)Realloc(NULL, sizeof(r_u->grp_rids[0]) *
-				       r_u->num_grps);
-
-	if (r_u->grp_rids == NULL && num_grps != 0)
-	{
-		return False;
-	}
-	for (i = 0; i < num_grps; i++)
-	{
-		r_u->grp_rids[i] = grps[i];
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth)
-{
-	int i;
-	if (r_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "creds_io_nt");
-	depth++;
-
-	prs_align(ps);
-
-	smb_io_dom_sid ("sid", &r_u->sid, ps, depth);
-	prs_align(ps);
-
-	prs_uint32("num_grps", ps, depth, &(r_u->num_grps));
-	if (r_u->num_grps != 0)
-	{
-		r_u->grp_rids = (uint32*)Realloc(r_u->grp_rids,
-				       sizeof(r_u->grp_rids[0]) *
-				       r_u->num_grps);
-		if (r_u->grp_rids == NULL)
-		{
-			creds_free_nt_sec(r_u);
-			return False;
-		}
-	}
-	for (i = 0; i < r_u->num_grps; i++)
-	{
-		prs_uint32("", ps, depth, &(r_u->grp_rids[i]));
-	}
-
-	return True;
-}
-
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void creds_free_nt_sec(CREDS_NT_SEC *r_u)
-{
-	if (r_u->grp_rids != NULL)
-	{
-		free(r_u->grp_rids);
-		r_u->grp_rids = NULL;
-	}
-}
-
-/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth)
@@ -335,7 +260,6 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	prs_uint32("ptr_uxc", ps, depth, &(r_u->ptr_uxc));
 	prs_uint32("ptr_nts", ps, depth, &(r_u->ptr_nts));
 	prs_uint32("ptr_uxs", ps, depth, &(r_u->ptr_uxs));
-	prs_uint32("ptr_ssk", ps, depth, &(r_u->ptr_ssk));
 	if (r_u->ptr_ntc != 0)
 	{
 		if (!creds_io_nt  ("ntc", &r_u->ntc, ps, depth)) return False;
@@ -346,19 +270,11 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	}
 	if (r_u->ptr_nts != 0)
 	{
-		if (!creds_io_nt_sec  ("nts", &r_u->nts, ps, depth)) return False;
+		if (!net_io_user_info3("nts", &r_u->nts, ps, depth)) return False;
 	}
 	if (r_u->ptr_uxs != 0)
 	{
 		if (!creds_io_unix_sec("uxs", &r_u->uxs, ps, depth)) return False;
-	}
-	if (r_u->ptr_ssk != 0)
-	{
-		prs_uint8s(False, "usr_sess_key", ps, depth, (char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
-	}
-	else
-	{
-		memset(r_u->usr_sess_key, 0, sizeof(r_u->usr_sess_key));
 	}
 	return True;
 }
@@ -371,30 +287,6 @@ void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from)
 		return;
 	}
 	fstrcpy(to->user_name, from->user_name);
-};
-
-void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from)
-{
-	if (from == NULL)
-	{
-		ZERO_STRUCTP(to);
-		return;
-	}
-	sid_copy(&to->sid, &from->sid);
-	to->num_grps = 0;
-	to->grp_rids = NULL;
-
-	if (from->num_grps != 0)
-	{
-		size_t size = from->num_grps * sizeof(from->grp_rids[0]);
-		to->grp_rids = (uint32*)malloc(size);
-		if (to->grp_rids == NULL)
-		{
-			return;
-		}
-		to->num_grps = from->num_grps;
-		memcpy(to->grp_rids, from->grp_rids, size);
-	}
 };
 
 void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
@@ -457,10 +349,12 @@ void copy_user_creds(struct user_creds *to,
 		to->ptr_uxc = 0;
 		to->ptr_nts = 0;
 		to->ptr_uxs = 0;
-		to->ptr_ssk = 0;
 		copy_nt_creds(&to->ntc, NULL);
 		copy_unix_creds(&to->uxc, NULL);
+		memset(&to->nts, 0, sizeof(to->nts));
+#if 0
 		copy_nt_sec_creds(&to->nts, NULL);
+#endif
 		copy_unix_sec_creds(&to->uxs, NULL);
 		to->reuse = False;
 		return;
@@ -472,7 +366,6 @@ void copy_user_creds(struct user_creds *to,
 	to->ptr_uxs = from->ptr_uxs;
 	to->ptr_ntc = from->ptr_ntc;
 	to->ptr_uxc = from->ptr_uxc;
-	to->ptr_ssk = from->ptr_ssk;
 
 	if (to->ptr_ntc != 0)
 	{
@@ -484,16 +377,14 @@ void copy_user_creds(struct user_creds *to,
 	}
 	if (to->ptr_nts != 0)
 	{
+		memcpy(&to->nts, &from->nts, sizeof(to->nts));
+#if 0
 		copy_nt_sec_creds(&to->nts, &from->nts);
+#endif
 	}
 	if (to->ptr_uxs != 0)
 	{
 		copy_unix_sec_creds(&to->uxs, &from->uxs);
-	}
-	if (to->ptr_ssk != 0)
-	{
-		memcpy(to->usr_sess_key, from->usr_sess_key,
-		        sizeof(to->usr_sess_key));
 	}
 };
 
@@ -502,7 +393,9 @@ void free_user_creds(struct user_creds *creds)
 	creds_free_unix(&creds->uxc);
 	creds_free_nt  (&creds->ntc);
 	creds_free_unix_sec(&creds->uxs);
+#if 0
 	creds_free_nt_sec  (&creds->nts);
+#endif
 }
 
 /*******************************************************************

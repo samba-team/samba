@@ -101,16 +101,16 @@ BOOL cli_nt_login_general(const char* srv_name, const char* myhostname,
 BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
 				uint32 luid_low,
-				uchar *lm_owf_user_pwd,
-				uchar *nt_owf_user_pwd,
+				const uchar *lm_owf_user_pwd,
+				const uchar *nt_owf_user_pwd,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3);
 BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
-				uint32 luid_low, char lm_chal[8],
-				char *lm_chal_resp,
+				uint32 luid_low, const char lm_chal[8],
+				const char *lm_chal_resp,
 				int lm_chal_len,
-				char *nt_chal_resp,
+				const char *nt_chal_resp,
 				int nt_chal_len,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3);
@@ -490,12 +490,11 @@ BOOL msrpc_lsa_query_secret(const char* srv_name,
 
 /*The following definitions come from  rpc_client/msrpc_netlogon.c  */
 
-uint32 check_domain_security(char *orig_user, char *domain, 
-				uchar *challenge,
-				char *smb_apasswd, int smb_apasslen,
-				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16],
-				char lm_pw8[8]);
+uint32 check_domain_security(const char *orig_user, const char *domain, 
+				const uchar *challenge,
+				const char *smb_apasswd, int smb_apasslen,
+				const char *smb_ntpasswd, int smb_ntpasslen,
+				NET_USER_INFO_3 *info3);
 
 /*The following definitions come from  rpc_client/msrpc_samr.c  */
 
@@ -674,4 +673,7 @@ BOOL msrpc_sam_ntpasswd_set(const char* srv_name, const char *user,
 				const uchar lm_hshhash[16],
 				const uchar nt_newpass[516],
 				const uchar nt_hshhash[16]);
+BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
+				const char *user_name, uint16 info_level,
+				SAM_USERINFO_CTR *ctr);
 #endif /* _RPC_CLIENT_PROTO_H_ */

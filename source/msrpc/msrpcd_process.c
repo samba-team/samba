@@ -367,7 +367,7 @@ BOOL msrpcd_init(int c, msrpc_pipes_struct *p)
 	                               usr.uxc.requested_name,
 	                               usr.uxc.real_name,
 	                               usr.uxc.guest,
-	                               usr.usr_sess_key);
+	                               &usr.nts);
 
 	if (vuid == UID_FIELD_INVALID)
 	{

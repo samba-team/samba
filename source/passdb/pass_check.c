@@ -748,39 +748,51 @@ the function pointer fn() points to a function to call when a successful
 match is found and is used to update the encrypted password file 
 return True on correct match, False otherwise
 ****************************************************************************/
-BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
-		BOOL (*fn)(char *, char *))
+BOOL pass_check(const char *_user, const char *_password,
+				int pwlen, const struct passwd *pwd,
+				BOOL (*fn)(const char *, const char *))
 {
 	pstring pass2;
 	int level = lp_passwordlevel();
 	const struct passwd *pass;
+	fstring password;
+	fstring user;
 
-	if (password) password[pwlen] = 0;
+	fstrcpy(user, _user);
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("checking user=[%s] pass=",user));
 	dump_data(100, password, strlen(password));
 #endif
 
-	if (!password) {
+	if (!_password)
+	{
 		return(False);
 	}
+
+	pwlen = MIN(sizeof(password)-1, pwlen);
+	memset(password, 0, sizeof(password));
+	memcpy(password, _password, pwlen);
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords()) {
 		return(False);
 	}
 
-	if (pwd && !user) {
-		pass = (struct passwd *) pwd;
-		user = pass->pw_name;
-	} else {
+	if (pwd != NULL && _user == NULL)
+	{
+		pass = (const struct passwd *) pwd;
+		fstrcpy(user, pass->pw_name);
+	}
+	else
+	{
 		pass = Get_Pwnam(user,True);
 	}
 
 
 	DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
 
-	if (!pass) {
+	if (pass == NULL)
+	{
 		DEBUG(3,("Couldn't find user %s\n",user));
 		return(False);
 	}

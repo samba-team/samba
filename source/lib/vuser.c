@@ -86,7 +86,7 @@ tell random client vuid's (normally zero) from valid vuids.
 uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
 				char *unix_name, char *requested_name,
 				char *real_name,
-				BOOL guest, uchar user_sess_key[16])
+				BOOL guest, const NET_USER_INFO_3 *info3)
 {
   user_struct *vuser;
 	uint16 vuid;
@@ -111,15 +111,15 @@ uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
   fstrcpy(vuser->name,unix_name);
   fstrcpy(vuser->requested_name,requested_name);
   fstrcpy(vuser->real_name,real_name);
-  memcpy(vuser->user_sess_key, user_sess_key, sizeof(vuser->user_sess_key));
+  memcpy(&vuser->usr, info3, sizeof(vuser->usr));
 
   vuser->n_groups = n_groups;
 	vuser->groups = groups;
 
   vuid = (uint16)((num_validated_users - 1) + VUID_OFFSET);
   DEBUG(3,("uid %d vuid %d registered to name %s\n",(int)uid, vuid, unix_name));
-  dump_data_pw("vuid usr sess key:\n", vuser->user_sess_key,
-               sizeof(vuser->user_sess_key));
+  dump_data_pw("vuid usr sess key:\n", vuser->usr.user_sess_key,
+               sizeof(vuser->usr.user_sess_key));
 
   return vuid;
 }
@@ -129,7 +129,7 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16])
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, const NET_USER_INFO_3 *info3)
 {
 	int n_groups = 0;
 	gid_t *groups = NULL;
@@ -194,7 +194,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   return create_vuid(uid, gid, n_groups, groups,
 				unix_name, requested_name,
 				real_name,
-				guest, user_sess_key);
+				guest, info3);
 }
 
 /*******************************************************************

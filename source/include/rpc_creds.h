@@ -51,14 +51,6 @@ typedef struct unixsec_creds
 
 } CREDS_UNIX_SEC;
 
-typedef struct ntsec_creds
-{
-	DOM_SID sid;
-	uint32 num_grps;
-	uint32 *grp_rids;
-
-} CREDS_NT_SEC;
-
 typedef struct user_creds
 {
 	BOOL reuse;
@@ -67,15 +59,12 @@ typedef struct user_creds
 	uint32 ptr_uxc;
 	uint32 ptr_nts;
 	uint32 ptr_uxs;
-	uint32 ptr_ssk;
 
 	CREDS_NT   ntc;
 	CREDS_UNIX uxc;
 
-	CREDS_NT_SEC   nts;
+	NET_USER_INFO_3 nts;
 	CREDS_UNIX_SEC uxs;
-
-	uchar usr_sess_key[16];
 
 } CREDS_HYBRID;
 

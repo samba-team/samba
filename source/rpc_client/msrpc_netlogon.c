@@ -2,10 +2,9 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Jeremy Allison                    1998.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
+ *  Copyright (C) Jeremy Allison               1998-2000.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,17 +37,15 @@ extern pstring global_myworkgroup;
  Do the same as security=server, but using NT Domain calls and a session
  key from the workstation trust account password.
 ************************************************************************/
-static uint32 domain_client_validate( char *user, char *domain, 
-				char *acct_name, uint16 acct_type,
-				char *challenge,
-				char *smb_apasswd, int smb_apasslen, 
-				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16],
-				char lm_pw8[8])
+static uint32 domain_client_validate( const char *user, const char *domain, 
+				const char *acct_name, uint16 acct_type,
+				const char *challenge,
+				const char *smb_apasswd, int smb_apasslen, 
+				const char *smb_ntpasswd, int smb_ntpasslen,
+				NET_USER_INFO_3 *info3)
 {
 	unsigned char trust_passwd[16];
 	NET_ID_INFO_CTR ctr;
-	NET_USER_INFO_3 info3;
 	uint32 smb_uid_low;
 	uint32 status;
 	fstring trust_acct;
@@ -118,7 +115,7 @@ static uint32 domain_client_validate( char *user, char *domain,
 	                domain, user,
 	                smb_uid_low, 
 			smb_apasswd, smb_ntpasswd, 
-			&ctr, &info3);
+			&ctr, info3);
 	}
 	else if (challenge == NULL)
 	{
@@ -127,22 +124,17 @@ static uint32 domain_client_validate( char *user, char *domain,
 	                domain, user,
 	                smb_uid_low, 
 			smb_apasswd, 
-			&ctr, &info3);
+			&ctr, info3);
 	}
 	else
 	{
 		status = cli_nt_login_network(srv_name,
 			global_myname, 
 	                domain, user,
-		        smb_uid_low, (char *)challenge,
-			(uchar*)smb_apasswd, smb_apasslen,
-			(uchar*)smb_ntpasswd, smb_ntpasslen,
-			&ctr, &info3);
-
-		if (lm_pw8 != NULL)
-		{
-			memcpy(lm_pw8, info3.padding, 8);
-		}
+		        smb_uid_low, (const char *)challenge,
+			(const uchar*)smb_apasswd, smb_apasslen,
+			(const uchar*)smb_ntpasswd, smb_ntpasslen,
+			&ctr, info3);
 	}
 
 	if (status == (NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT|0xc0000000))
@@ -173,14 +165,6 @@ static uint32 domain_client_validate( char *user, char *domain,
 		return status;
 	}
 
-	/* grab the user session key - really important, this */
-	if (user_sess_key != NULL)
-	{
-		memcpy(user_sess_key, info3.user_sess_key,
-		       sizeof(info3.user_sess_key));
-		dump_data_pw("user session key\n", user_sess_key, 16);
-	}
-
 	/*
 	 * Here, if we really want it, we have lots of info about the user in info3.
 	 * LKCLXXXX - really important to check things like "is this user acct
@@ -196,12 +180,11 @@ static uint32 domain_client_validate( char *user, char *domain,
 /****************************************************************************
  Check for a valid username and password in security=domain mode.
 ****************************************************************************/
-uint32 check_domain_security(char *orig_user, char *domain, 
-				uchar *challenge,
-				char *smb_apasswd, int smb_apasslen,
-				char *smb_ntpasswd, int smb_ntpasslen,
-				uchar user_sess_key[16],
-				char lm_pw8[8])
+uint32 check_domain_security(const char *orig_user, const char *domain, 
+				const uchar *challenge,
+				const char *smb_apasswd, int smb_apasslen,
+				const char *smb_ntpasswd, int smb_ntpasslen,
+				NET_USER_INFO_3 *info3)
 {
 	fstring acct_name;
 	uint16 acct_type = 0;
@@ -236,5 +219,5 @@ uint32 check_domain_security(char *orig_user, char *domain,
 	                        challenge,
 	                        smb_apasswd, smb_apasslen,
 	                        smb_ntpasswd, smb_ntpasslen,
-	                        user_sess_key, lm_pw8);
+				info3);
 }

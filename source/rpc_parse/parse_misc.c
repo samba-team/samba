@@ -1241,7 +1241,7 @@ BOOL smb_io_clnt_info(char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int dept
 /*******************************************************************
 makes an OWF_INFO structure.
 ********************************************************************/
-BOOL make_owf_info(OWF_INFO *hash, uint8 data[16])
+BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16])
 {
 	if (hash == NULL) return False;
 

@@ -829,7 +829,7 @@ BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 *new_passwd,
 /****************************************************************************
 update the encrypted smbpasswd file from the plaintext username and password
 *****************************************************************************/
-BOOL update_smbpassword_file(char *user, char *password)
+BOOL update_smbpassword_file(const char *user, const char *password)
 {
 	struct smb_passwd *smbpw;
 	UNISTR2 newpw;

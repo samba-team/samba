@@ -198,8 +198,8 @@ given the current design of the NT Domain system. JRA.
 BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
 				uint32 luid_low,
-				uchar *lm_owf_user_pwd,
-				uchar *nt_owf_user_pwd,
+				const uchar *lm_owf_user_pwd,
+				const uchar *nt_owf_user_pwd,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3)
 {
@@ -227,17 +227,6 @@ BOOL cli_nt_login_interactive(const char* srv_name, const char* myhostname,
 	                            (char *)sess_key,
 	                            lm_owf_user_pwd, nt_owf_user_pwd);
 
-	/* Ensure we overwrite all the plaintext password
-	equivalents. */
-	if (lm_owf_user_pwd != NULL)
-	{
-		memset(lm_owf_user_pwd, 0, 16);
-	}
-	if (nt_owf_user_pwd != NULL)
-	{
-		memset(nt_owf_user_pwd, 0, 16);
-	}
-
 	/* Send client sam-logon request - update credentials on success. */
 	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);
 
@@ -257,10 +246,10 @@ password equivalents over the network. JRA.
 
 BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 				const char *domain, const char *username, 
-				uint32 luid_low, char lm_chal[8],
-				char *lm_chal_resp,
+				uint32 luid_low, const char lm_chal[8],
+				const char *lm_chal_resp,
 				int lm_chal_len,
-				char *nt_chal_resp,
+				const char *nt_chal_resp,
 				int nt_chal_len,
 				NET_ID_INFO_CTR *ctr,
 				NET_USER_INFO_3 *user_info3)
@@ -282,9 +271,9 @@ BOOL cli_nt_login_network(const char* srv_name, const char* myhostname,
 	make_id_info2(&ctr->auth.id2, domain, 0, 
 		luid_low, 0,
 		username, myhostname,
-		(uchar *)lm_chal,
-	        (uchar *)lm_chal_resp, lm_chal_len,
-	        (uchar *)nt_chal_resp, nt_chal_len);
+		lm_chal,
+	        lm_chal_resp, lm_chal_len,
+	        nt_chal_resp, nt_chal_len);
 
 	/* Send client sam-logon request - update credentials on success. */
 	ret = cli_net_sam_logon(srv_name, myhostname, ctr, user_info3);

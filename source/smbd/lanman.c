@@ -1630,18 +1630,6 @@ static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *
 
   DEBUG(3,("api_SamOEMChangePassword: Change password for <%s>\n",user));
 
-  /*
-   * Pass the user through the NT -> unix user mapping
-   * function.
-   */
-
-  (void)map_username(user);
-
-  /*
-   * Do any UNIX username case mangling.
-   */
-  (void)Get_Pwnam( user, True);
-
   if (msrpc_sam_ntpasswd_set("\\\\.", user, NULL,
                              (uchar*) data, (uchar *)&data[516], /* lm pw */
                              NULL, NULL)) /* nt pw */

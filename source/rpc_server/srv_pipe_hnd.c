@@ -106,8 +106,8 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	usr.ptr_uxs = 1;
 	make_creds_unix_sec(&usr.uxs, vuser->uid, vuser->gid,
 	                              vuser->n_groups, vuser->groups);
-	usr.ptr_ssk = 1;
-	memcpy(usr.usr_sess_key, vuser->user_sess_key, sizeof(usr.usr_sess_key));
+	usr.ptr_nts = 1;
+	memcpy(&usr.nts, &vuser->usr, sizeof(usr.nts));
 
 	/* set up nt credentials from the smb side, to feed over the pipe */
 	/* lkclXXXX todo!

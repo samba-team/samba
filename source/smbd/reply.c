@@ -383,11 +383,12 @@ static int session_trust_account(connection_struct *conn,
 
 	if (last_challenge(last_chal))
 	{
+		NET_USER_INFO_3 info3;
 		status = check_domain_security(user, domain,
 	                            last_chal, 
 	                            (uchar *)smb_passwd, smb_passlen,
 	                            (uchar *)smb_nt_passwd, smb_nt_passlen,
-	                            NULL, NULL);
+	                            &info3);
 	}
 	else
 	{
@@ -410,7 +411,7 @@ reply to a session setup command
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 sess_vuid;
-  uchar user_sess_key[16];
+  NET_USER_INFO_3 info3;
   int gid;
   int uid;
   int   smb_bufsize;    
@@ -611,7 +612,7 @@ user %s attempted down-level SMB connection\n", user));
 		if(!password_ok(orig_user, domain,
 				smb_apasswd,smb_apasslen,
 				smb_ntpasswd,smb_ntpasslen,
-				NULL, user_sess_key))
+				NULL, &info3))
 		{
 			DEBUG(0,("SMB LM/NT Password did not match!\n"));
 
@@ -692,7 +693,7 @@ user %s attempted down-level SMB connection\n", user));
 
   /* register the name and uid as being validated, so further connections
      to a uid can get through without a password, on the same VC */
-  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest,user_sess_key);
+  sess_vuid = register_vuid(uid,gid,user,sesssetup_user,guest,&info3);
  
   SSVAL(outbuf,smb_uid,sess_vuid);
   SSVAL(inbuf,smb_uid,sess_vuid);

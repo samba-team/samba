@@ -111,15 +111,6 @@ static int reply_lanman2(char *outbuf)
   char cryptkey[8];
   char crypt_len = 0;
 
-  if (lp_security() == SEC_SERVER) {
-	  cli = server_cryptkey();
-  }
-
-  if (cli) {
-	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((cli->sec_mode & 2) != 0);
-  }
-
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
 
@@ -164,7 +155,6 @@ static int reply_nt1(char *outbuf)
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
   int data_len;
-  struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
 
@@ -190,24 +180,9 @@ static int reply_nt1(char *outbuf)
                      CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
  */
 
-	if (lp_security() == SEC_SERVER)
-	{
-		cli = server_cryptkey();
-	}
-
-  if (cli) {
-	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((cli->sec_mode & 2) != 0);
-  }
-
   if (doencrypt) {
 	  crypt_len = 8;
-	  if (!cli) {
-		  generate_next_challenge(cryptkey);
-	  } else {
-		  memcpy(cryptkey, cli->cryptkey, 8);
-		  set_challenge(cli->cryptkey);
-	  }
+	  generate_next_challenge(cryptkey);
   }
 
   if (lp_readraw() && lp_writeraw()) {

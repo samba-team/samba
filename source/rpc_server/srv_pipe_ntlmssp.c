@@ -218,9 +218,10 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	const struct passwd *pw = NULL;
 	fstring unix_user;
 	fstring nt_user;
-	uchar user_sess_key[16];
+	NET_USER_INFO_3 info3;
 	BOOL guest = False;
 
+	ZERO_STRUCT(info3);
 	memset(password, 0, sizeof(password));
 
 	DEBUG(5,("api_ntlmssp_verify: checking user details\n"));
@@ -280,31 +281,25 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 	if (anonymous)
 	{
 		DEBUG(5,("anonymous user session\n"));
-		mdfour(user_sess_key, password, 16);
-		l->auth_validated = True;
 		guest = True;
 		safe_strcpy(unix_user, lp_guestaccount(-1), sizeof(unix_user)-1);
 		nt_user[0] = 0;
 		pw = Get_Pwnam(unix_user, True);
-		l->auth_validated = pw != NULL;
 	}
-	else
-	{
-		DEBUG(5,("user: %s domain: %s wks: %s\n",
+	DEBUG(5,("user: %s domain: %s wks: %s\n",
 		          user_name, domain, wks));
 
-		l->auth_validated = check_domain_security(user_name, domain,
-				      (uchar*)a->ntlmssp_chal.challenge,
+	l->auth_validated = check_domain_security(user_name, domain,
+				      (const uchar*)a->ntlmssp_chal.challenge,
 				      lm_owf, lm_owf_len,
 				      nt_owf, nt_owf_len,
-				      user_sess_key,
-				      password) == 0x0;
-		if (l->auth_validated)
-		{
-			pw = map_nt_and_unix_username(domain, user_name,
-			                              unix_user, nt_user);
-			l->auth_validated = pw != NULL;
-		}
+				      &info3) == 0x0;
+
+	if (!anonymous && l->auth_validated)
+	{
+		pw = map_nt_and_unix_username(domain, user_name,
+		                              unix_user, nt_user);
+		l->auth_validated = pw != NULL;
 	}
 
 	if (l->auth_validated)
@@ -312,7 +307,7 @@ static BOOL api_ntlmssp_verify(rpcsrv_struct *l,
 		become_root(False);
 		l->vuid = register_vuid(pw->pw_uid, pw->pw_gid,
 					unix_user, nt_user,
-					guest, user_sess_key);
+					guest, &info3);
 		unbecome_root(False);
 		l->auth_validated = l->vuid != UID_FIELD_INVALID;
 	}

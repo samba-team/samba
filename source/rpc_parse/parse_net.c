@@ -558,10 +558,14 @@ static int make_dom_sid2s(const char *sids_str, DOM_SID2 *sids, int max_sids)
 makes a NET_ID_INFO_1 structure.
 ********************************************************************/
 BOOL make_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
-				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				const char *user_name, const char *wksta_name,
-				char sess_key[16],
-				uchar lm_cypher[16], uchar nt_cypher[16])
+				uint32 param_ctrl,
+				uint32 log_id_low,
+				uint32 log_id_high,
+				const char *user_name,
+				const char *wksta_name,
+				const char sess_key[16],
+				const uchar lm_cypher[16],
+				const uchar nt_cypher[16])
 {
 	int len_domain_name = strlen(domain_name);
 	int len_user_name   = strlen(user_name  );
@@ -773,10 +777,10 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 				uint32 param_ctrl,
 				uint32 log_id_low, uint32 log_id_high,
 				const char *user_name, const char *wksta_name,
-				uchar lm_challenge[8],
-				uchar *lm_chal_resp,
+				const uchar lm_challenge[8],
+				const uchar *lm_chal_resp,
 				int lm_chal_len,
-				uchar *nt_chal_resp,
+				const uchar *nt_chal_resp,
 				int nt_chal_len)
 {
 	int len_domain_name = strlen(domain_name);
@@ -821,8 +825,8 @@ BOOL make_id_info2(NET_ID_INFO_2 *id, const char *domain_name,
 	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
 	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
 
-	make_string2(&(id->nt_chal_resp ), (char *)nt_chal_resp , nt_chal_len);
-	make_string2(&(id->lm_chal_resp ), (char *)lm_chal_resp , lm_chal_len);
+	make_string2(&(id->nt_chal_resp ), nt_chal_resp , nt_chal_len);
+	make_string2(&(id->lm_chal_resp ), lm_chal_resp , lm_chal_len);
 
 	return True;
 }
@@ -1227,7 +1231,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 *usr,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
+BOOL net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth)
 {
 	uint32 i;
 

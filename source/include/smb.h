@@ -618,25 +618,6 @@ struct dcinfo
   uchar  md4pw[16];   /* md4(machine password) */
 };
 
-typedef struct
-{
-  uid_t uid; /* uid of a validated user */
-  gid_t gid; /* gid of a validated user */
-
-  fstring requested_name; /* user name from the client */
-  fstring name; /* unix user name of a validated user */
-  fstring real_name;   /* to store real name from password file - simeon */
-  BOOL guest;
-
-  /* following groups stuff added by ih */
-  /* This groups info is needed for when we become_user() for this uid */
-  int n_groups;
-  gid_t *groups;
-
-	uchar user_sess_key[16];
-
-} user_struct;
-
 
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
@@ -1703,6 +1684,25 @@ extern int unix_ERR_code;
 
 #include "nt_printing.h"
 #include "ntdomain.h"
+
+typedef struct
+{
+  uid_t uid; /* uid of a validated user */
+  gid_t gid; /* gid of a validated user */
+
+  fstring requested_name; /* user name from the client */
+  fstring name; /* unix user name of a validated user */
+  fstring real_name;   /* to store real name from password file - simeon */
+  BOOL guest;
+
+  /* following groups stuff added by ih */
+  /* This groups info is needed for when we become_user() for this uid */
+  int n_groups;
+  gid_t *groups;
+
+	NET_USER_INFO_3 usr;
+
+} user_struct;
 
 /* A netbios name structure. */
 struct nmb_name {

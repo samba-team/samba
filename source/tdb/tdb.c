@@ -54,6 +54,10 @@
 
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
 
+#ifndef MAP_FILE
+#define MAP_FILE 0
+#endif
+
 /* the body of the database is made of one list_struct for the free space
    plus a separate data list for each hash value */
 struct list_struct {
@@ -814,7 +818,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	}
 
 	/* Read the record. */
-	if (rec_read(tdb, rec_ptr, &rec) == 0) {
+	if (rec_read(tdb, rec_ptr, &rec) == -1) {
 		tdb_unlock(tdb, hbucket);
 		return null_data;
 	}

@@ -55,129 +55,27 @@ void add_session_user(char *user)
 }
 
 /****************************************************************************
-validate a password with the password server
-****************************************************************************/
-static BOOL check_server_security(char *user, char *domain, 
-		     char *pass, int passlen,
-		     char *ntpass, int ntpasslen)
-{
-  struct cli_state *cli;
-  static unsigned char badpass[24];
-  static BOOL tested_password_server = False;
-  static BOOL bad_password_server = False;
-
-  if(lp_security() != SEC_SERVER)
-    return False;
-
-  DEBUG(10,("check_server_security\n"));
-
-  cli = server_client();
-
-  if (!cli->initialised)
-  {
-    DEBUG(1,("password server %s is not connected\n", cli->desthost));
-    return False;
-  }  
-
-  if(badpass[0] == 0)
-    memset(badpass, 0x1f, sizeof(badpass));
-
-  if((passlen == sizeof(badpass)) && !memcmp(badpass, pass, passlen)) {
-    /* 
-     * Very unlikely, our random bad password is the same as the users
-     * password. */
-    memset(badpass, badpass[0]+1, sizeof(badpass));
-  }
-
-  /*
-   * Attempt a session setup with a totally incorrect password.
-   * If this succeeds with the guest bit *NOT* set then the password
-   * server is broken and is not correctly setting the guest bit. We
-   * need to detect this as some versions of NT4.x are broken. JRA.
-   */
-
-  if(!tested_password_server) {
-    if (cli_session_setup(cli, global_myname,
-	                       user, (char *)badpass, sizeof(badpass), 
-                              (char *)badpass, sizeof(badpass), domain)) {
-
-      /*
-       * We connected to the password server so we
-       * can say we've tested it.
-       */
-      tested_password_server = True;
-
-      if ((SVAL(cli->inbuf,smb_vwv2) & 1) == 0) {
-        DEBUG(0,("server_validate: password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
-        DEBUG(0,("server_validate: This is broken (and insecure) behaviour. Please do not \
-use this machine as the password server.\n"));
-        cli_ulogoff(cli);
-
-        /*
-         * Password server has the bug.
-         */
-        bad_password_server = True;
-        return False;
-      }
-      cli_ulogoff(cli);
-    }
-  } else {
-
-    /*
-     * We have already tested the password server.
-     * Fail immediately if it has the bug.
-     */
-
-    if(bad_password_server) {
-      DEBUG(0,("server_validate: [1] password server %s allows users as non-guest \
-with a bad password.\n", cli->desthost));
-      DEBUG(0,("server_validate: [1] This is broken (and insecure) behaviour. Please do not \
-use this machine as the password server.\n"));
-      return False;
-    }
-  }
-
-  /*
-   * Now we know the password server will correctly set the guest bit, or is
-   * not guest enabled, we can try with the real password.
-   */
-
-  if (!cli_session_setup(cli, global_myname,
-	                       user, pass, passlen, ntpass, ntpasslen, domain)) {
-    DEBUG(1,("password server %s rejected the password\n", cli->desthost));
-    return False;
-  }
-
-  /* if logged in as guest then reject */
-  if ((SVAL(cli->inbuf,smb_vwv2) & 1) != 0) {
-    DEBUG(1,("password server %s gave us guest only\n", cli->desthost));
-    cli_ulogoff(cli);
-    return False;
-  }
-
-
-  cli_ulogoff(cli);
-
-  return(True);
-}
-
-
-/****************************************************************************
 check if a username/password pair is OK either via the system password
 database or the encrypted SMB password database
 return True if the password is correct, False otherwise
 ****************************************************************************/
-BOOL password_ok(char *orig_user, char *domain,
-				char *smb_apasswd, int smb_apasslen,
-				char *smb_ntpasswd, int smb_ntpasslen,
+BOOL password_ok(const char *orig_user, const char *domain,
+				const char *smb_apasswd, int smb_apasslen,
+				const char *smb_ntpasswd, int smb_ntpasslen,
 				struct passwd *pwd,
-				uchar user_sess_key[16])
+				NET_USER_INFO_3 *info3)
 {
 	uchar last_chal[8];
 	BOOL cleartext = smb_apasslen != 24 && smb_ntpasslen == 0;
 	uchar *chal = NULL;
 
+	if (info3 == NULL)
+	{
+		DEBUG(0,("password_ok: no NET_USER_INFO_3 parameter!\n"));
+		return False;
+	}
+
+	ZERO_STRUCTP(info3);
 	/*
 	 * SMB password check
 	 */
@@ -186,15 +84,7 @@ BOOL password_ok(char *orig_user, char *domain,
 	    (lp_encrypted_passwords() && smb_apasslen == 0 &&
 	     lp_null_passwords()))
 	{
-		/* check security = server */
-		if (!cleartext &&
-		    check_server_security(orig_user, domain,
-					  smb_apasswd, smb_apasslen,
-					  smb_ntpasswd, smb_ntpasslen))
-		{
-			DEBUG(10,("password_ok: server auth succeeded\n"));
-			return True;
-		}
+		DEBUG(10,("password_ok: check SMB auth\n"));
 
 		/* check security = user / domain */
 		if ((!cleartext) && last_challenge(last_chal))
@@ -206,7 +96,7 @@ BOOL password_ok(char *orig_user, char *domain,
 					  chal,
 					  smb_apasswd, smb_apasslen,
 					  smb_ntpasswd, smb_ntpasslen,
-					  user_sess_key, NULL) == 0x0)
+					  info3) == 0x0)
 		{
 			DEBUG(10,("password_ok: domain auth succeeded\n"));
 			return True;
@@ -236,7 +126,7 @@ BOOL password_ok(char *orig_user, char *domain,
 validate a group username entry. Return the username or NULL
 ****************************************************************************/
 static char *validate_group(char *group,char *password,int pwlen,int snum,
-				uchar user_sess_key[16])
+				NET_USER_INFO_3 *info3)
 {
 #if defined(HAVE_NETGROUP) && defined(HAVE_GETNETGRENT) && defined(HAVE_SETNETGRENT) && defined(HAVE_ENDNETGRENT)
   {
@@ -245,7 +135,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user,NULL,password,pwlen,NULL,0,NULL,user_sess_key))
+	    password_ok(user,NULL,password,pwlen,NULL,0,NULL,info3))
 	{
 	  endnetgrent();
 	  return(user);
@@ -268,7 +158,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum,
 	    static fstring name;
 	    fstrcpy(name,*member);
 	    if (user_ok(name,snum) &&
-	password_ok(name,NULL,password,pwlen,NULL,0,NULL, user_sess_key))
+	password_ok(name,NULL,password,pwlen,NULL,0,NULL, info3))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -335,14 +225,14 @@ BOOL authorise_login(int snum,char *user, char *domain,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,domain, password, pwlen, NULL, 0, NULL, vuser->user_sess_key);
+	ok = password_ok(user,domain, password, pwlen, NULL, 0, NULL, &vuser->usr);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, domain, password, pwlen, NULL, 0, NULL, vuser->user_sess_key)) {
+	    password_ok(vuser->name, domain, password, pwlen, NULL, 0, NULL, &vuser->usr)) {
 	  fstrcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -367,7 +257,7 @@ BOOL authorise_login(int snum,char *user, char *domain,
         if (!user_ok(user2,snum)) continue;
 		  
         if (password_ok(user2, domain, password, pwlen, NULL, 0, NULL,
-                        vuser->user_sess_key))
+                        &vuser->usr))
         {
           ok = True;
           fstrcpy(user,user2);
@@ -407,7 +297,7 @@ BOOL authorise_login(int snum,char *user, char *domain,
 	  {
 	    if (*auser == '@')
 	      {
-		auser = validate_group(auser+1,password,pwlen,snum, vuser->user_sess_key);
+		auser = validate_group(auser+1,password,pwlen,snum, &vuser->usr);
 		if (auser)
 		  {
 		    ok = True;
@@ -421,7 +311,7 @@ BOOL authorise_login(int snum,char *user, char *domain,
 		fstrcpy(user2,auser);
 		if (user_ok(user2,snum) && 
 		    password_ok(user2,domain,password,pwlen,NULL, 0,
-		                NULL, vuser->user_sess_key))
+		                NULL, &vuser->usr))
 		  {
 		    ok = True;
 		    fstrcpy(user,user2);
@@ -597,25 +487,4 @@ BOOL check_hosts_equiv(char *user)
   return False;
 }
 
-
-/****************************************************************************
-return the client state structure
-****************************************************************************/
-struct cli_state *server_client(void)
-{
-	static struct cli_state pw_cli;
-	return &pw_cli;
-}
-
-/****************************************************************************
-support for server level security 
-****************************************************************************/
-struct cli_state *server_cryptkey(void)
-{
-	if (cli_connect_serverlist(server_client(), lp_passwordserver()))
-	{
-		return server_client();
-	}
-	return NULL;
-}
 

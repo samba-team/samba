@@ -131,7 +131,7 @@ BOOL trust_password_delete( char *domain, char *name )
  The user of this function must have locked the trust password file.
 ************************************************************************/
 
-BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
+BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time)
 {
   char linebuf[256];
 
@@ -211,7 +211,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
  The user of this function must have locked the trust password file.
 ************************************************************************/
 
-BOOL set_trust_account_password( unsigned char *md4_new_pwd)
+BOOL set_trust_account_password( uchar *md4_new_pwd)
 {
   char linebuf[64];
 
@@ -235,7 +235,8 @@ account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
   return True;
 }
 
-BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *myname)
+BOOL trust_get_passwd( uchar trust_passwd[16],
+				const char *domain, const char *myname)
 {
   time_t lct;
 

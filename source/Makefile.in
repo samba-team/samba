@@ -170,6 +170,7 @@ LIBSMB_OBJ = libsmb/clientgen.o \
 		libsmb/pwd_cache.o \
 	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
                  rpc_parse/parse_creds.o \
+                rpc_parse/parse_net.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
 		 rpc_parse/parse_misc.o
 
@@ -181,7 +182,6 @@ RPC_SERVER_OBJ = \
 		rpc_server/srv_pipe.o 
 
 RPC_PARSE_OBJ1 = rpc_parse/parse_lsa.o \
-                rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o \
                 rpc_parse/parse_samr.o \
 		rpc_parse/parse_srv.o \
