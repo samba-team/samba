@@ -215,6 +215,8 @@ struct cnotify_fns *kernel_notify_init(void)
 	static struct cnotify_fns cnotify;
         struct sigaction act;
 
+	ZERO_STRUCT(act);
+
         act.sa_handler = NULL;
         act.sa_sigaction = signal_handler;
         act.sa_flags = SA_SIGINFO;
