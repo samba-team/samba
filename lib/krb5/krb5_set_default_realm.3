@@ -139,6 +139,10 @@ If there is no configuration or DNS information found,
 assumes it can use the domain part of the
 .Fa host
 to form a realm.
+Caller must free
+.Fa realmlist
+with
+.Fn krb5_free_host_realm .
 .Pp
 .Fn krb5_set_default_realm
 sets the default realm for the
