@@ -557,7 +557,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 				set_remote_arch( RA_WIN95);
 			}
 		}
-		
+
 		if (!doencrypt) {
 			/* both Win95 and WinNT stuff up the password lengths for
 			   non-encrypting systems. Uggh. 
@@ -607,6 +607,21 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		p += srvstr_pull_buf(inbuf, native_lanman, p, sizeof(native_lanman), STR_TERMINATE);
 		DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 			 domain,native_os,native_lanman));
+
+		/* 
+		 * we distinguish between 2K and XP by the "Native Lan Manager" string
+		 *   WinXP => "Windows 2002 5.1"
+		 *   Win2k => "Windows 2000 5.0"
+		 *   NT4   => "Windows NT 4.0" 
+		 *   Win9x => "Windows 4.0"
+		 */
+		 
+		if ( ra_type == RA_WIN2K ) {
+			if ( 0 == strcmp( native_lanman, "Windows 2002 5.1" ) )
+				set_remote_arch( RA_WINXP );
+		}
+		
+
 	}
 	
 	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, get_remote_machine_name()));
