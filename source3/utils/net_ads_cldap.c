@@ -45,7 +45,7 @@ static unsigned pull_len_string(char **ret, const char *p)
 	unsigned len = *p;
 	(*ret) = NULL;
 	if (len == 0) return 1;
-	(*ret) = strndup(p+1, len);
+	(*ret) = smb_xstrndup(p+1, len);
 	return len+1;
 }
 
@@ -156,8 +156,9 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	blob = data_blob(NULL, 8192);
 
 	ret = read(sock, blob.data, blob.length);
+
 	if (ret <= 0) {
-		d_printf("no reply to cldap netlogon\n");
+		d_printf("no reply received to cldap netlogon\n");
 		return -1;
 	}
 	blob.length = ret;
@@ -179,6 +180,11 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
 	asn1_end_tag(&data);
+
+	if (data.has_error) {
+		d_printf("Failed to parse cldap reply\n");
+		return -1;
+	}
 
 	file_save("cldap_reply_core.dat", os3.data, os3.length);
 
@@ -208,6 +214,18 @@ static int recv_cldap_netlogon(int sock, struct cldap_netlogon_reply *reply)
 
 
 /*
+  free a cldap reply packet
+*/
+static void cldap_reply_free(struct cldap_netlogon_reply *reply)
+{
+	SAFE_FREE(reply->domain);
+	SAFE_FREE(reply->server_name);
+	SAFE_FREE(reply->domain_flatname);
+	SAFE_FREE(reply->server_flatname);
+	SAFE_FREE(reply->dns_name);
+}
+
+/*
   do a cldap netlogon query
 */
 int ads_cldap_netlogon(ADS_STRUCT *ads)
@@ -233,6 +251,10 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	ret = recv_cldap_netlogon(sock, &reply);
 	close(sock);
 
+	if (ret == -1) {
+		return -1;
+	}
+
 	d_printf("Version: 0x%x\n", reply.version);
 	d_printf("GUID: "); 
 	print_guid(&reply.guid);
@@ -242,6 +264,8 @@ int ads_cldap_netlogon(ADS_STRUCT *ads)
 	d_printf("Flatname: %s\n", reply.domain_flatname);
 	d_printf("Server Name2: %s\n", reply.server_flatname);
 	d_printf("DNS Name: %s\n", reply.dns_name);
+
+	cldap_reply_free(&reply);
 	
 	return ret;
 }
