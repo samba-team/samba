@@ -2469,9 +2469,18 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-	if (fsp && fsp->pending_modtime) {
-		/* the pending modtime overrides the current modtime */
-		sbuf.st_mtime = fsp->pending_modtime;
+	if (fsp) {
+		if (fsp->pending_modtime) {
+			/* the pending modtime overrides the current modtime */
+			sbuf.st_mtime = fsp->pending_modtime;
+		}
+	} else {
+		/* Do we have this path open ? */
+		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
+		if (fsp1 && fsp1->pending_modtime) {
+			/* the pending modtime overrides the current modtime */
+			sbuf.st_mtime = fsp1->pending_modtime;
+		}
 	}
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
@@ -3323,9 +3332,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				tvs.modtime = write_time;
 			}
 			/* Prefer a defined time to an undefined one. */
-			if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
-				tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
-					? changed_time : write_time);
+			if (null_mtime(tvs.modtime)) {
+				tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
+			}
 
 			/* attributes */
 			dosmode = IVAL(pdata,32);
@@ -3805,11 +3814,13 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
+	if (null_mtime(tvs.actime)) {
 		tvs.actime = sbuf.st_atime;
+	}
 
-	if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+	if (null_mtime(tvs.modtime)) {
 		tvs.modtime = sbuf.st_mtime;
+	}
 
 	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
@@ -3841,30 +3852,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * Try and set the times, size and mode of this file -
 	 * if they are different from the current values
 	 */
-	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
-		if(fsp != NULL) {
-			/*
-			 * This was a setfileinfo on an open file.
-			 * NT does this a lot. We also need to 
-			 * set the time here, as it can be read by 
-			 * FindFirst/FindNext and with the patch for bug #2045
-			 * in smbd/fileio.c it ensures that this timestamp is
-			 * kept sticky even after a write. We save the request
-			 * away and will set it on file close and after a write. JRA.
-			 */
-
-			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
-				fsp->pending_modtime = tvs.modtime;
-			}
-
-			DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
-
-			if(file_utime(conn, fname, &tvs)!=0) {
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-		}
-	}
 
 	/* check the mode isn't different, before changing it */
 	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, &sbuf))) {
@@ -3877,6 +3864,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 	}
 
+	/* Now the size. */
 	if (size != get_file_size(sbuf)) {
 
 		int ret;
@@ -3915,6 +3903,34 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		if (ret == -1)
 			return (UNIXERROR(ERRHRD,ERRdiskfull));
+	}
+
+	/*
+	 * Finally the times.
+	 */
+	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
+		if(fsp != NULL) {
+			/*
+			 * This was a setfileinfo on an open file.
+			 * NT does this a lot. We also need to 
+			 * set the time here, as it can be read by 
+			 * FindFirst/FindNext and with the patch for bug #2045
+			 * in smbd/fileio.c it ensures that this timestamp is
+			 * kept sticky even after a write. We save the request
+			 * away and will set it on file close and after a write. JRA.
+			 */
+
+			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
+				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
+				fsp_set_pending_modtime(fsp, tvs.modtime);
+			}
+
+		}
+		DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
+
+		if(file_utime(conn, fname, &tvs)!=0) {
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
 	}
 
 	SSVAL(params,0,0);

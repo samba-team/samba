@@ -2876,6 +2876,13 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 			 conn->num_files_open));
  
 		/*
+		 * Take care of any time sent in the close.
+		 */
+
+		mtime = make_unix_date3(inbuf+smb_vwv1);
+		fsp_set_pending_modtime(fsp, mtime);
+
+		/*
 		 * close_file() returns the unix errno if an error
 		 * was detected on close - normally this is due to
 		 * a disk full error. If not then it was probably an I/O error.
@@ -2886,16 +2893,6 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 			END_PROFILE(SMBclose);
 			return (UNIXERROR(ERRHRD,ERRgeneral));
 		}
-
-		/*
-		 * Now take care of any time sent in the close.
-		 */
-
-		mtime = make_unix_date3(inbuf+smb_vwv1);
-		
-		/* try and set the date */
-		set_filetime(conn, file_name, mtime);
-
 	}  
 
 	/* We have a cached error */
@@ -4233,7 +4230,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 	close_file(fsp1,False);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp2->pending_modtime = src_sbuf.st_mtime;
+	fsp_set_pending_modtime( fsp2, src_sbuf.st_mtime);
 
 	/*
 	 * As we are opening fsp1 read-only we only expect
@@ -4917,7 +4914,7 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 	 * Sometimes times are sent as zero - ignore them.
 	 */
 
-	if ((unix_times.actime == 0) && (unix_times.modtime == 0)) {
+	if (null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
 		/* Ignore request */
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
@@ -4925,12 +4922,13 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 		}
 		END_PROFILE(SMBsetattrE);
 		return(outsize);
-	} else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) {
-		/* set modify time = to access time if modify time was 0 */
+	} else if (!null_mtime(unix_times.actime) && null_mtime(unix_times.modtime)) {
+		/* set modify time = to access time if modify time was unset */
 		unix_times.modtime = unix_times.actime;
 	}
 
 	/* Set the date on this file */
+	/* Should we set pending modtime here ? JRA */
 	if(file_utime(conn, fsp->fsp_name, &unix_times)) {
 		END_PROFILE(SMBsetattrE);
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -5170,6 +5168,7 @@ int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 
 	put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
 	put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+	/* Should we check pending modtime here ? JRA */
 	put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
 
 	if (mode & aDIR) {

@@ -1698,7 +1698,7 @@ static NTSTATUS copy_internals(connection_struct *conn, char *oldname, char *new
 	close_file(fsp1,False);
 
 	/* Ensure the modtime is set correctly on the destination file. */
-	fsp2->pending_modtime = sbuf1.st_mtime;
+	fsp_set_pending_modtime(fsp2, sbuf1.st_mtime);
 
 	close_ret = close_file(fsp2,False);
 
