@@ -68,6 +68,10 @@ o   Stefan Metzmacher <metze@samba.org>
       backtrace if an error occurs the OpenLDAP client libs.
 
 
+o   MORIYAMA Masayuki <moriyama@miraclelinux.com>
+    * BUG 570: Ensure that configure honors the LDFLAGS variable.
+
+
 Changes since 3.0.2pre1
 -----------------------
 
