@@ -48,6 +48,7 @@ extern int DEBUGLEVEL;
 /* are we running as non-root? This is used by the regresison test code,
    and potentially also for sites that want non-root smbd */
 static uid_t initial_uid;
+static gid_t initial_gid;
 
 /****************************************************************************
 remember what uid we got started as - this allows us to run correctly
@@ -56,6 +57,7 @@ as non-root while catching trapdoor systems
 void sec_init(void)
 {
 	initial_uid = geteuid();
+	initial_gid = getegid();
 }
 
 /****************************************************************************
@@ -64,6 +66,14 @@ some code (eg. winbindd) needs to know what uid we started as
 uid_t sec_initial_uid(void)
 {
 	return initial_uid;
+}
+
+/****************************************************************************
+some code (eg. winbindd, profiling shm) needs to know what gid we started as
+****************************************************************************/
+gid_t sec_initial_gid(void)
+{
+	return initial_gid;
 }
 
 /****************************************************************************
