@@ -111,6 +111,9 @@ static NTSTATUS ipv4_connect(struct socket_context *sock,
 	}
 
 	srv_ip = interpret_addr2(srv_address);
+	if (!srv_ip.addr) {
+		return NT_STATUS_BAD_NETWORK_NAME;
+	}
 
 	ZERO_STRUCT(srv_addr);
 #ifdef HAVE_SOCK_SIN_LEN
