@@ -1521,9 +1521,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (num_rids > MAX_SAM_ENTRIES) {
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
+	if (num_rids > 1000) {
+		DEBUG(0, ("Got asked for %d rids (more than 1000) -- according "
+			  "to samba4 idl this is not possible\n", num_rids));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (num_rids) {
