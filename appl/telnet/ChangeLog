@@ -1,3 +1,8 @@
+2002-05-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* telnet/telnet.c: only try to negotiate encryption if we're
+	talking to a real telnet
+
 2002-03-31  Johan Danielsson  <joda@pdc.kth.se>
 
 	* telnet/commands.c: fix an old cut-n-paste typo (via debian)
