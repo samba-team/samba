@@ -81,7 +81,7 @@ static NTSTATUS ipv4_tcp_connect(struct socket_context *sock,
 	srv_addr.sin_port	= htons(srv_port);
 	srv_addr.sin_family	= PF_INET;
 
-	if (!(flags & SOCKET_OPTION_BLOCK)) {
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
 		ret = set_blocking(sock->fd, False);
 		if (ret == -1) {
 			/* TODO: we need to map from errno to NTSTATUS here! */
@@ -136,6 +136,14 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 		return NT_STATUS_FOOBAR;
 	}
 
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		ret = set_blocking(sock->fd, False);
+		if (ret == -1) {
+			/* TODO: we need to map from errno to NTSTATUS here! */
+			return NT_STATUS_FOOBAR;
+		}
+	}
+
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -144,20 +152,11 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 	struct sockaddr_in cli_addr;
 	socklen_t cli_addr_len = 0;
 	int new_fd;
-	int ret;
 
 	new_fd = accept(sock->fd, &cli_addr, &cli_addr_len);
 	if (new_fd == -1) {
 		/* TODO: we need to map from errno to NTSTATUS here! */
 		return NT_STATUS_FOOBAR;
-	}
-
-	if (!(flags & SOCKET_OPTION_BLOCK)) {
-		ret = set_blocking(sock->fd, False);
-		if (ret == -1) {
-			/* TODO: we need to map from errno to NTSTATUS here! */
-			return NT_STATUS_FOOBAR;
-		}
 	}
 
 	/* TODO: we could add a 'accept_check' hook here
@@ -181,7 +180,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 	(*new_sock)->private_data	= NULL;
 	(*new_sock)->ops		= sock->ops;
 
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
@@ -196,17 +195,46 @@ static NTSTATUS ipv4_tcp_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* TODO: we need to map the flags here */
+	/* TODO: we need to map all flags here */
+	if (flags & SOCKET_FLAG_PEEK) {
+		flgs |= MSG_PEEK;
+	}
+
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		flgs |= MSG_DONTWAIT;
+	}
 
 	gotlen = recv(sock->fd, buf, wantlen, flgs);
-	if (gotlen == -1) {
+	if (gotlen == 0) {
 		talloc_free(buf);
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_END_OF_FILE;
+	} else if (gotlen == -1) {
+		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+		switch (errno) {
+			case EBADF:
+			case ENOTCONN:
+			case ENOTSOCK:
+			case EFAULT:
+			case EINVAL:
+				status = NT_STATUS_INVALID_PARAMETER;
+				break;
+			case EAGAIN:
+			case EINTR:
+				status = STATUS_MORE_ENTRIES;
+				break;
+			case ECONNREFUSED:
+				status = NT_STATUS_CONNECTION_REFUSED;
+				break;
+		}
+		talloc_free(buf);
+		return status;
 	}
 
 	blob->length = gotlen;
-	blob->data = buf;
+	blob->data = talloc_realloc(buf, gotlen);
+	if (!blob->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -215,14 +243,43 @@ static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 					const DATA_BLOB *blob, size_t *sendlen, uint32_t flags)
 {
 	ssize_t len;
-	int flgs = 0;
+	int flgs = MSG_NOSIGNAL;
 
-	/* TODO: we need to map the flags here */
+	/* TODO: we need to map all flags here */
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		flgs |= MSG_DONTWAIT;
+	}
 
 	len = send(sock->fd, blob->data, blob->length, flgs);
 	if (len == -1) {
-		/* TODO: we need to map from errno to NTSTATUS here! */
-		return NT_STATUS_FOOBAR;
+		NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+		switch (errno) {
+			case EBADF:
+			case ENOTSOCK:
+			case EFAULT:
+			case EINVAL:
+				status = NT_STATUS_INVALID_PARAMETER;
+				break;
+			case EMSGSIZE:
+				status = NT_STATUS_INVALID_BUFFER_SIZE;
+				break;
+			case EAGAIN:
+			/*case EWOULDBLOCK: this is an alis of EAGAIN --metze */
+			case EINTR:
+				*sendlen = 0;
+				status = STATUS_MORE_ENTRIES;
+				break;
+			case ENOBUFS:
+				status = NT_STATUS_FOOBAR;
+				break;
+			case ENOMEM:
+				status = NT_STATUS_NO_MEMORY;
+				break;
+			case EPIPE:
+				status = NT_STATUS_CONNECTION_DISCONNECTED;
+				break;
+		}
+		return status;
 	}	
 
 	*sendlen = len;
@@ -232,10 +289,11 @@ static NTSTATUS ipv4_tcp_send(struct socket_context *sock, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS ipv4_tcp_set_option(struct socket_context *sock, const char *option, const char *val)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	set_socket_options(sock->fd, option);
+	return NT_STATUS_OK;
 }
 
-static const char *ipv4_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static char *ipv4_tcp_get_peer_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	return NULL;
 }
@@ -245,7 +303,7 @@ static int ipv4_tcp_get_peer_port(struct socket_context *sock, TALLOC_CTX *mem_c
 	return -1;
 }
 
-static const char *ipv4_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
+static char *ipv4_tcp_get_my_addr(struct socket_context *sock, TALLOC_CTX *mem_ctx)
 {
 	return NULL;
 }

@@ -55,9 +55,9 @@ struct socket_ops {
 
 	NTSTATUS (*set_option)(struct socket_context *sock, const char *option, const char *val);
 
-	const char *(*get_peer_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	char *(*get_peer_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
 	int (*get_peer_port)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
-	const char *(*get_my_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
+	char *(*get_my_addr)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
 	int (*get_my_port)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
 
 	int (*get_fd)(struct socket_context *sock, TALLOC_CTX *mem_ctx);
@@ -77,7 +77,8 @@ enum socket_state {
 	SOCKET_STATE_SERVER_ERROR
 };
 
-#define SOCKET_OPTION_BLOCK 0x00000001
+#define SOCKET_FLAG_BLOCK 0x00000001
+#define SOCKET_FLAG_PEEK  0x00000002
 
 struct socket_context {
 	enum socket_type type;
