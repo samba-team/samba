@@ -242,15 +242,15 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
 	/* this should go someplace else */
 	(*out_creds)->times.endtime = in_creds->times.endtime;
 
-	ret = extract_ticket(context,
-			     &rep,
-			     *out_creds,
-			     &krbtgt->session,
-			     NULL,
-			     &krbtgt->addresses,
-			     nonce,
-			     NULL,
-			     NULL);
+	ret = _krb5_extract_ticket(context,
+				   &rep,
+				   *out_creds,
+				   &krbtgt->session,
+				   NULL,
+				   &krbtgt->addresses,
+				   nonce,
+				   NULL,
+				   NULL);
 	krb5_free_kdc_rep(context, &rep);
 	if (ret)
 	    goto out;

@@ -112,15 +112,15 @@ decrypt_tkt (krb5_context context,
 }
 
 int
-extract_ticket(krb5_context context, 
-	       krb5_kdc_rep *rep, 
-	       krb5_creds *creds,		
-	       krb5_keyblock *key,
-	       krb5_const_pointer keyseed,
-	       krb5_addresses *addrs,
-	       unsigned nonce,
-	       krb5_decrypt_proc decrypt_proc,
-	       krb5_const_pointer decryptarg)
+_krb5_extract_ticket(krb5_context context, 
+		     krb5_kdc_rep *rep, 
+		     krb5_creds *creds,		
+		     krb5_keyblock *key,
+		     krb5_const_pointer keyseed,
+		     krb5_addresses *addrs,
+		     unsigned nonce,
+		     krb5_decrypt_proc decrypt_proc,
+		     krb5_const_pointer decryptarg)
 {
     krb5_error_code err;
     krb5_principal tmp_principal;
@@ -569,8 +569,8 @@ krb5_get_in_cred(krb5_context context,
     if (ret)
 	return ret;
 	
-    ret = extract_ticket(context, &rep, creds, key, keyseed, 
-			 NULL, nonce, decrypt_proc, decryptarg);
+    ret = _krb5_extract_ticket(context, &rep, creds, key, keyseed, 
+			      NULL, nonce, decrypt_proc, decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock (context, key);
     free (key);
