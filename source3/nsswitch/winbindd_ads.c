@@ -112,7 +112,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -214,7 +214,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 	rc = ads_search_retry(ads, &res, "(objectCategory=group)", attrs);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("enum_dom_groups ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -431,7 +431,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	free(ldap_exp);
 	free(sidstr);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("query_user(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -507,7 +507,7 @@ static NTSTATUS lookup_usergroups_alt(struct winbindd_domain *domain,
 	rc = ads_search_retry(ads, &res, ldap_exp, group_attrs);
 	free(ldap_exp);
 	
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("lookup_usergroups ads_search member=%s: %s\n", user_dn, ads_errstr(rc)));
 		return ads_ntstatus(rc);
 	}
@@ -607,7 +607,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	free(ldap_exp);
 	free(sidstr);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -624,7 +624,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		ads_msgfree(ads, msg);
 
 	rc = ads_search_retry_dn(ads, &msg, user_dn, attrs2);
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !msg) {
 		DEBUG(1,("lookup_usergroups(sid=%s) ads_search tokenGroups: %s\n", sid_to_string(sid_string, sid), ads_errstr(rc)));
 		goto done;
 	}
@@ -713,7 +713,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	free(ldap_exp);
 	free(sidstr);
 
-	if (!ADS_ERR_OK(rc)) {
+	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
