@@ -672,7 +672,7 @@ usage (int ret)
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
 		    NULL,
-		    "host command");
+		    "host [command]");
     exit (ret);
 }
 
@@ -736,14 +736,17 @@ main(int argc, char **argv)
     }
 	
     if (host == NULL) {
-	if (argc - optind < 2)
+	if (argc - optind < 1)
 	    usage (1);
 	else
 	    host = argv[host_index = optind++];
     }
 
-    if (optind == argc)
-	errx (1, "no command given.  Try rlogin if that's what you wanted.");
+    if (optind == argc) {
+	argv[0] = "rlogin";
+	execvp ("rlogin", argv);
+	err (1, "execvp rlogin");
+    }
 
     if (port_str) {
 	struct servent *s = roken_getservbyname (port_str, "tcp");
