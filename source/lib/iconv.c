@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    minimal iconv implementation
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Jelmer Vernooij 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,25 +31,48 @@ static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
-/*
-  for each charset we have a function that pulls from that charset to 
-  a ucs2 buffer, and a function that pushes to a ucs2 buffer 
-*/
-static struct {
-	char *name;
-	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-} charsets[] = {
-	{"UCS-2LE",  iconv_copy, iconv_copy},
-	{"UTF8",   utf8_pull,  utf8_push},
-	{"ASCII", ascii_pull, ascii_push},
-	{"WEIRD", weird_pull, weird_push},
-	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
-	{NULL, NULL, NULL}
+struct charset_functions builtin_functions[] = {
+		{"UCS-2LE",  iconv_copy, iconv_copy},
+		{"UTF8",   utf8_pull,  utf8_push},
+		{"ASCII", ascii_pull, ascii_push},
+		{"WEIRD", weird_pull, weird_push},
+		{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
+		{NULL, NULL, NULL}
 };
 
+static struct charset_functions *charsets = NULL;
+
+BOOL smb_register_charset(struct charset_functions *funcs) 
+{
+	struct charset_functions *c = charsets;
+
+	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
+	/* Check whether we already have this charset... */
+	while(c) {
+		if(!strcasecmp(c->name, funcs->name)){ 
+			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
+			return False;
+		}
+		c = c->next;
+	}
+
+	funcs->next = funcs->prev = NULL;
+	DEBUG(5, ("Registered charset %s\n", c->name));
+	DLIST_ADD(charsets, funcs);
+	return True;
+}
+
+void lazy_initialize_iconv(void)
+{
+	static BOOL initialized = False;
+	int i;
+
+	if (!initialized) {
+		initialized = True;
+		for(i = 0; builtin_functions[i].name; i++) 
+			smb_register_charset(&builtin_functions[i]);
+	}
+}
 
 /* if there was an error then reset the internal state,
    this ensures that we don't have a shift state remaining for
@@ -115,7 +139,11 @@ size_t smb_iconv(smb_iconv_t cd,
 smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	smb_iconv_t ret;
-	int from, to;
+	struct charset_functions *from, *to;
+	
+	lazy_initialize_iconv();
+	from = charsets;
+	to = charsets;
 
 	ret = (smb_iconv_t)malloc(sizeof(*ret));
 	if (!ret) {
@@ -133,48 +161,52 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 		return ret;
 	}
 
-	for (from=0; charsets[from].name; from++) {
-		if (strcasecmp(charsets[from].name, fromcode) == 0) break;
+	while (from) {
+		if (strcasecmp(from->name, fromcode) == 0) break;
+		from = from->next;
 	}
-	for (to=0; charsets[to].name; to++) {
-		if (strcasecmp(charsets[to].name, tocode) == 0) break;
+
+	while (to) {
+		if (strcasecmp(to->name, tocode) == 0) break;
+		to = to->next;
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if (!charsets[from].name) {
+	if (!from) {
 		ret->pull = sys_iconv;
 		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
 		if (ret->cd_pull == (iconv_t)-1) goto failed;
 	}
-	if (!charsets[to].name) {
+
+	if (!to) {
 		ret->push = sys_iconv;
 		ret->cd_push = iconv_open(tocode, "UCS-2LE");
 		if (ret->cd_push == (iconv_t)-1) goto failed;
 	}
 #else
-	if (!charsets[from].name || !charsets[to].name) {
+	if (!from || !to) {
 		goto failed;
 	}
 #endif
 
 	/* check for conversion to/from ucs2 */
-	if (from == 0 && charsets[to].name) {
-		ret->direct = charsets[to].push;
+	if (strcasecmp(fromcode, "UCS-2LE") == 0 && to) {
+		ret->direct = to->push;
 		return ret;
 	}
-	if (to == 0 && charsets[from].name) {
-		ret->direct = charsets[from].pull;
+	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
+		ret->direct = from->pull;
 		return ret;
 	}
 
 #ifdef HAVE_NATIVE_ICONV
-	if (from == 0) {
+	if (strcasecmp(fromcode, "UCS-2LE") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_push;
 		ret->cd_push = NULL;
 		return ret;
 	}
-	if (to == 0) {
+	if (strcasecmp(tocode, "UCS-2LE") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
@@ -183,8 +215,8 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 #endif
 
 	/* the general case has to go via a buffer */
-	if (!ret->pull) ret->pull = charsets[from].pull;
-	if (!ret->push) ret->push = charsets[to].push;
+	if (!ret->pull) ret->pull = from->pull;
+	if (!ret->push) ret->push = to->push;
 	return ret;
 
 failed:

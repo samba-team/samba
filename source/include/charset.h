@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    charset defines
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Jelmer Vernooij 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,3 +23,18 @@
 typedef enum {CH_UCS2=0, CH_UNIX=1, CH_DISPLAY=2, CH_DOS=3, CH_UTF8=4} charset_t;
 
 #define NUM_CHARSETS 5
+
+/*
+ *   for each charset we have a function that pulls from that charset to
+ *     a ucs2 buffer, and a function that pushes to a ucs2 buffer
+ *     */
+
+struct charset_functions {
+	char *name;
+	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
+				   char **outbuf, size_t *outbytesleft);
+	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
+				   char **outbuf, size_t *outbytesleft);
+	struct charset_functions *prev, *next;
+};
+
