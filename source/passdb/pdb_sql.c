@@ -141,8 +141,14 @@ static const char * config_value_write(const char *location, const char *name, c
 	swrite = strrchr(v, ':');
 
 	/* Default to the same field as read field */
-	if (!swrite)
+	if (!swrite) {
+
+		/* Updating NULL does not make much sense */
+		if (!strcmp(v, "NULL")) 
+			return NULL;
+
 		return v;
+	}
 
 	swrite++;
 
