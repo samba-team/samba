@@ -113,7 +113,7 @@ typedef enum krb5_salttype {
     KRB5_PA_AFS3_SALT = pa_afs3_salt
 }krb5_salttype;
 
-typedef PA_KEY_INFO krb5_preauthinfo;
+typedef ETYPE_INFO krb5_preauthinfo;
 
 typedef struct {
     krb5_preauthtype type;
@@ -289,6 +289,8 @@ typedef struct krb5_context_data {
     int num_ops;
     krb5_boolean ktype_is_etype;
     const char *http_proxy;
+    const char *time_fmt;
+    krb5_boolean log_utc;
 } krb5_context_data;
 
 enum {
