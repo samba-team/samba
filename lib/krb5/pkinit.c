@@ -1589,6 +1589,7 @@ ssl_pass_cb(char *buf, int size, int rwflag, void *u)
     krb5_error_code ret;
     krb5_prompt prompt;
     krb5_data password_data;
+    krb5_prompter_fct prompter = u;
    
     password_data.data   = buf;
     password_data.length = size;
@@ -1597,7 +1598,7 @@ ssl_pass_cb(char *buf, int size, int rwflag, void *u)
     prompt.reply  = &password_data;
     prompt.type   = KRB5_PROMPT_TYPE_PASSWORD;
    
-    ret = krb5_prompter_posix(NULL, NULL, NULL, NULL, 1, &prompt);
+    ret = (*prompter)(NULL, NULL, NULL, NULL, 1, &prompt);
     if (ret) {
 	memset (buf, 0, size);
 	return 0;
@@ -1612,11 +1613,13 @@ _krb5_pk_load_openssl_id(krb5_context context,
 			 const char *cert_file,
 			 const char *key_file,
 			 const char *x509_anchors,
+			 krb5_prompter_fct prompter,
 			 char *password)
 {
     struct krb5_pk_identity *id = NULL;
     STACK_OF(X509) *certificate = NULL, *trusted_certs = NULL;
     EVP_PKEY *private_key = NULL;
+    int no_password;
     krb5_error_code ret;
     struct dirent *file;
     char *dirname;
@@ -1679,9 +1682,12 @@ _krb5_pk_load_openssl_id(krb5_context context,
 	krb5_set_error_string(context, "open %s: %s", key_file, strerror(ret));
 	goto out;
     }
-    private_key = PEM_read_PrivateKey(f, NULL, 
-				      (password == NULL||password[0] == '\0') ?
-				      ssl_pass_cb : NULL, password);
+    if (password == NULL || password[0] == '\0') {
+	if (prompter == NULL)
+	    prompter = krb5_prompter_posix;
+	private_key = PEM_read_PrivateKey(f, NULL, ssl_pass_cb, prompter);
+    else
+	private_key = PEM_read_PrivateKey(f, NULL, NULL, password);
     fclose(f);
     if (private_key == NULL) {
 	krb5_set_error_string(context, "Can't read private key");
@@ -1811,6 +1817,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   const char *key_file,
 				   const char *x509_anchors,
 				   int flags,
+				   krb5_prompter_fct prompter,
 				   char *password)
 {
 #ifdef PKINIT
@@ -1833,6 +1840,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 				   cert_file,
 				   key_file,
 				   x509_anchors,
+				   prompter,
 				   password);
     if (ret) {
 	free(opt->private->pk_init_ctx);
