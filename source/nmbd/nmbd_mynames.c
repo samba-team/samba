@@ -180,6 +180,10 @@ void refresh_my_names(time_t t)
   {
     struct name_record *namerec;
 	  
+    /* B nodes don't send out name refresh requests, see RFC 1001, 15.5.1 */
+    if (subrec != unicast_subnet)
+      continue;
+          
     for( namerec = (struct name_record *)ubi_trFirst( subrec->namelist );
          namerec;
          namerec = (struct name_record *)ubi_trNext( namerec ) )

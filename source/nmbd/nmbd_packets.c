@@ -245,7 +245,11 @@ static BOOL create_and_init_additional_record(struct packet_struct *packet,
   nmb->additional->rr_type  = RR_TYPE_NB;
   nmb->additional->rr_class = RR_CLASS_IN;
 
-  nmb->additional->ttl = lp_max_ttl();
+  /* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
+  if (nmb->header.nm_flags.bcast)
+    nmb->additional->ttl = PERMANENT_TTL;
+  else
+    nmb->additional->ttl = lp_max_ttl();
 
   nmb->additional->rdlength = 6;
 
