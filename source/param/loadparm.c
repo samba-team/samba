@@ -1410,6 +1410,15 @@ static char *lp_string(const char *s)
 	size_t len = s ? strlen(s) : 0;
 	char *ret;
 
+	/* The follow debug is useful for tracking down memory problems
+	   especially if you have an inner loop that is calling a lp_*()
+	   function that returns a string.  Perhaps this debug should be
+	   present all the time? */
+
+#if 0
+	DEBUG(10, ("lp_string(%s)\n", s));
+#endif
+
 	if (!lp_talloc)
 		lp_talloc = talloc_init_named("lp_talloc");
 
