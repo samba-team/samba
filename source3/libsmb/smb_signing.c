@@ -497,6 +497,7 @@ BOOL cli_simple_set_signing(struct cli_state *cli,
 void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
 {
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
+	uint32 reply_seq_num;
 
 	if (!cli->sign_info.doing_signing || !data)
 		return;
@@ -504,9 +505,16 @@ void cli_signing_trans_start(struct cli_state *cli, uint16 mid)
 	data->trans_info = smb_xmalloc(sizeof(struct trans_info_context));
 	ZERO_STRUCTP(data->trans_info);
 
-	data->trans_info->send_seq_num = data->send_seq_num-2;
+	/* This ensures the sequence is pulled off the outstanding packet list */
+	if (!get_sequence_for_reply(&data->outstanding_packet_list, 
+				    mid, &reply_seq_num)) {
+		DEBUG(1, ("get_sequence_for_reply failed - did we enter the trans signing state without sending a packet?\n")); 
+	    return;
+	}
+
+	data->trans_info->send_seq_num = reply_seq_num - 1;
 	data->trans_info->mid = mid;
-	data->trans_info->reply_seq_num = data->send_seq_num-1;
+	data->trans_info->reply_seq_num = reply_seq_num;
 
 	DEBUG(10,("cli_signing_trans_start: storing mid = %u, reply_seq_num = %u, send_seq_num = %u \
 data->send_seq_num = %u\n",
