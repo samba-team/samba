@@ -17,6 +17,7 @@ krb5_mk_req(krb5_context context,
   char **realms;
   Authenticator *auth;
   krb5_data realm_data, authenticator;
+  Checksum c;
 
   if (*auth_context == NULL) {
       r = krb5_auth_con_init(context, auth_context);
@@ -54,10 +55,16 @@ krb5_mk_req(krb5_context context,
 		  cred->session.contents.data,
 		  cred->session.contents.length);
 
+  r = krb5_create_checksum (context,
+			    CKSUMTYPE_RSA_MD4,
+			    in_data->data,
+			    in_data->length,
+			    &c);
+  
   r = krb5_build_authenticator (context,
 				*auth_context,
 				cred,
-				NULL,
+				&c,
 				&auth,
 				&authenticator);
   if (r)
