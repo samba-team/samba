@@ -736,6 +736,7 @@ int main(int argc, char **argv)
 	}
 
 	TimeInit();
+        charset_initialise(); /* For *&#^%'s sake don't remove this */
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
