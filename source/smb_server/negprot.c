@@ -320,6 +320,7 @@ static void reply_nt1(struct request_context *req, uint16 choice)
 			SCVAL(req->out.vwv+1, VWV(16), 8);
 		}
 		req_push_str(req, NULL, lp_workgroup(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
+		req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
 #if 0
