@@ -734,6 +734,8 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	smb_ucs2_t *uni_name = NULL;
 	char *givenpass;
+	fstring password;
+	uchar nthash[16];
 	time_t lct;
 	
 	if (!dom_name) return -1;
@@ -774,8 +776,19 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 		
 	/* password */
 	givenpass = getpass("password:");
-	memset(trust.private.pass, '\0', FSTRING_LEN);
-	strncpy(trust.private.pass, givenpass, FSTRING_LEN);
+	memset(password, '\0', sizeof(password));
+	memset(trust.private.pass, '\0', sizeof(trust.private.pass));
+	strncpy(password, givenpass, FSTRING_LEN);
+
+	/* trust password is either in hashed form (NT) or plaintext (ADS)
+	   so let's prepare one */
+	if (trust.private.flags & PASS_TRUST_NT) {
+		E_md4hash(password, nthash);
+		pdb_sethexpwd(trust.private.pass, nthash, 0);
+
+	} else if (trust.private.flags & PASS_TRUST_ADS) {
+		strncpy(trust.private.pass, password, sizeof(trust.private.pass));
+	}	
 	
 	/* last change time */
 	lct = time(NULL);
@@ -816,6 +829,8 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	smb_ucs2_t *uni_name = NULL;
 	char *givenpass = NULL;
+	fstring password;
+	uchar nthash[16];
 	time_t lct;
 
 	if (!dom_name) return -1;
@@ -842,10 +857,19 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 
 	/* password */
 	givenpass = getpass("password (type Enter to leave it untouched):");
-	if (strlen(givenpass))
-		strncpy(trust.private.pass, givenpass, FSTRING_LEN);
-	else
-		trust.private.pass[0] = '\0';
+	memset(password, '\0', sizeof(password));
+	memset(trust.private.pass, '\0', sizeof(trust.private.pass));
+	strncpy(password, givenpass, FSTRING_LEN);
+
+	/* trust password is either in hashed form (NT) or plaintext (ADS)
+	   so let's prepare one */
+	if (trust.private.flags & PASS_TRUST_NT) {
+		E_md4hash(password, nthash);
+		pdb_sethexpwd(trust.private.pass, nthash, 0);
+
+	} else if (trust.private.flags & PASS_TRUST_ADS) {
+		strncpy(trust.private.pass, password, sizeof(trust.private.pass));
+	}	
 
 	/* last change time */
 	lct = time(NULL);
