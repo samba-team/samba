@@ -51,6 +51,21 @@
 #define MASK_ALWAYS_GOOD	0x0000001F
 #define MASK_USER_GOOD		0x00401F00
 
+/*****************************************************************************
+ stubb functions
+****************************************************************************/
+
+void become_root( void )
+{
+        return;
+}
+
+void unbecome_root( void )
+{
+        return;
+}
+
+
 /*********************************************************
  Add all currently available users to another db
  ********************************************************/
