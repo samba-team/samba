@@ -480,10 +480,16 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
+void free_void_array(uint32 num_entries, void **entries,
+		void(free_item)(void*));
+BOOL add_item_to_array(uint32 *len, void ***array, const void *item,
+	void*(item_dup)(const void*));
 void free_char_array(uint32 num_entries, char **entries);
 BOOL add_chars_to_array(uint32 *len, char ***array, const char *name);
-BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
+void free_unistr_array(uint32 num_entries, UNISTR2 **entries);
+BOOL add_unistr_to_array(uint32 *len, UNISTR2 ***array, UNISTR2 *name);
 void free_sid_array(uint32 num_entries, DOM_SID **entries);
+BOOL add_sid_to_array(uint32 *len, DOM_SID ***array, const DOM_SID *sid);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -2214,7 +2220,9 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
-BOOL copy_unistr2(UNISTR2 *str, UNISTR2 *from);
+BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
+UNISTR2 *unistr2_dup(const UNISTR2 *name);
+void unistr2_free(UNISTR2 *name);
 BOOL make_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
