@@ -46,6 +46,8 @@ BINDIR = @bindir@
 # sbindir is mapped to bindir when compiling SAMBA in 2.0.x compatibility mode.
 SBINDIR = @sbindir@
 LIBDIR = @libdir@
+VFSLIBDIR = $(LIBDIR)/vfs
+CONFIGDIR = @configdir@
 VARDIR = @localstatedir@
 MANDIR = @mandir@
 
@@ -56,8 +58,9 @@ INSTALLPERMS = 0755
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
 LOGFILEBASE = @logfilebase@
-CONFIGFILE = $(LIBDIR)/smb.conf
-LMHOSTSFILE = $(LIBDIR)/lmhosts
+CONFIGFILE = $(CONFIGDIR)/smb.conf
+LMHOSTSFILE = $(CONFIGDIR)/lmhosts
+
 # This is where smbpasswd et al go
 PRIVATEDIR = @privatedir@
 
@@ -92,8 +95,9 @@ PATH_FLAGS1 = -DCONFIGFILE=\"$(CONFIGFILE)\"  -DSBINDIR=\"$(SBINDIR)\"
 PATH_FLAGS2 = $(PATH_FLAGS1) -DBINDIR=\"$(BINDIR)\" -DDRIVERFILE=\"$(DRIVERFILE)\" 
 PATH_FLAGS3 = $(PATH_FLAGS2) -DLMHOSTSFILE=\"$(LMHOSTSFILE)\" 
 PATH_FLAGS4 = $(PATH_FLAGS3) -DSWATDIR=\"$(SWATDIR)\"  -DLOCKDIR=\"$(LOCKDIR)\" -DPIDDIR=\"$(PIDDIR)\"
-PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\"
-PATH_FLAGS = $(PATH_FLAGS5) $(PASSWD_FLAGS)
+PATH_FLAGS5 = $(PATH_FLAGS4) -DLIBDIR=\"$(LIBDIR)\" -DLOGFILEBASE=\"$(LOGFILEBASE)\" 
+PATH_FLAGS6 = $(PATH_FLAGS5) -DCONFIGDIR=\"$(CONFIGFIR)\"
+PATH_FLAGS = $(PATH_FLAGS6) $(PASSWD_FLAGS)
 
 SBIN_PROGS = bin/smbd bin/nmbd bin/swat bin/wrepld @EXTRA_SBIN_PROGS@
 
@@ -895,6 +899,14 @@ bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
 
 install: installbin installman installscripts installdat installswat 
 
+# DESTDIR is used here to prevent packagers wasting their time
+# duplicating the Makefile. Remove it and you will have the privelege
+# of package each samba release for muliple versions of multiple
+# distributions and operating systems, or at least supplying patches
+# to all the packaging files required for this, prior to committing
+# the removal of DESTDIR. Do not remove it even though you think it
+# is not used
+
 installdirs:
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(PRIVATEDIR)
 
@@ -906,7 +918,7 @@ installbin: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(BIN_PROGS)
 
 installmodules: all installdirs
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(LIBDIR) $(MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(VFSLIBDIR) $(MODULES)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(DESTDIR)$(BINDIR) $(SCRIPTS)
