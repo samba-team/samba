@@ -132,6 +132,8 @@ void sig_usr2( int sig )
 
   DEBUG( 0, ( "Got SIGUSR2; set debug level to %d.\n", DEBUGLEVEL ) );
 
+  sys_select_signal();
+
 #if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 #endif
@@ -153,6 +155,8 @@ void sig_usr1( int sig )
     DEBUGLEVEL = 10;
 
   DEBUG( 0, ( "Got SIGUSR1; set debug level to %d.\n", DEBUGLEVEL ) );
+
+  sys_select_signal();
 
 #if !defined(HAVE_SIGACTION)
   CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );

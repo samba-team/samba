@@ -183,6 +183,12 @@ void pidfile_create(char *name);
 
 char *rep_inet_ntoa(struct in_addr ip);
 
+/*The following definitions come from  lib/select.c  */
+
+void sys_select_signal(void);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval);
+
 /*The following definitions come from  lib/signal.c  */
 
 void BlockSignals(BOOL block,int signum);
@@ -212,9 +218,6 @@ void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
 /*The following definitions come from  lib/system.c  */
 
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
-int sys_select_intr(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_usleep(long usecs);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
@@ -3251,9 +3254,16 @@ BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
 void remove_pending_change_notify_requests_by_mid(int mid);
 void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
-BOOL process_pending_change_notify_queue(time_t t);
 BOOL change_notifies_pending(void);
+BOOL process_pending_change_notify_queue(time_t t);
 BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags);
+BOOL init_change_notify(void);
+#endif
+
+/*The following definitions come from  smbd/notify_hash.c  */
+
+#if OLD_NTDOMAIN
+struct cnotify_fns *hash_notify_init(void) ;
 #endif
 
 /*The following definitions come from  smbd/nttrans.c  */
@@ -3299,6 +3309,18 @@ BOOL request_oplock_break(share_mode_entry *share_entry,
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
 BOOL init_oplocks(void);
+#endif
+
+/*The following definitions come from  smbd/oplock_irix.c  */
+
+#if OLD_NTDOMAIN
+struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
+#endif
+
+/*The following definitions come from  smbd/oplock_linux.c  */
+
+#if OLD_NTDOMAIN
+struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
 #endif
 
 /*The following definitions come from  smbd/password.c  */

@@ -218,16 +218,16 @@ static BOOL irix_kernel_oplock_parse(char *msg_start, int msg_len, SMB_INO_T *in
 {
 	/* Ensure that the msg length is correct. */
 	if(msg_len != KERNEL_OPLOCK_BREAK_MSG_LEN) {
-		DEBUG(0,("process_local_message: incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, \
-should be %d).\n", msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
+		DEBUG(0,("incorrect length for KERNEL_OPLOCK_BREAK_CMD (was %d, should be %d).\n", 
+			 msg_len, KERNEL_OPLOCK_BREAK_MSG_LEN));
 		return False;
 	}
 
         memcpy((char *)inode, msg_start+KERNEL_OPLOCK_BREAK_INODE_OFFSET, sizeof(*inode));
         memcpy((char *)dev, msg_start+KERNEL_OPLOCK_BREAK_DEV_OFFSET, sizeof(*dev));
 
-        DEBUG(5,("process_local_message: kernel oplock break request for \
-file dev = %x, inode = %.0f\n", (unsigned int)*dev, (double)*inode));
+        DEBUG(5,("kernel oplock break request for file dev = %x, inode = %.0f\n", 
+		 (unsigned int)*dev, (double)*inode));
 
 	return True;
 }

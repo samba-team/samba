@@ -71,43 +71,46 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
   smb_read_error = 0;
 
   if(timeout != 0) {
-    struct timeval to;
-    int selrtn;
-    int maxfd = oplock_sock;
+	  struct timeval to;
+	  int selrtn;
+	  int maxfd = oplock_sock;
 
-    if (koplocks && koplocks->notification_fd != -1) {
-	    FD_SET(koplocks->notification_fd, fds);
-    }
+	  if (koplocks && koplocks->notification_fd != -1) {
+		  FD_SET(koplocks->notification_fd, fds);
+		  maxfd = MAX(maxfd, koplocks->notification_fd);
+	  }
 
-    to.tv_sec = timeout / 1000;
-    to.tv_usec = (timeout % 1000) * 1000;
+	  to.tv_sec = timeout / 1000;
+	  to.tv_usec = (timeout % 1000) * 1000;
 
-    selrtn = sys_select(maxfd+1,fds,&to);
+	  selrtn = sys_select(maxfd+1,fds,&to);
 
-    if (selrtn == -1 && errno == EINTR) {
-	    /* could be a kernel oplock interrupt */
-	    if (koplocks && koplocks->msg_waiting(fds)) {
-		    return koplocks->receive_message(fds, buffer, buffer_len);
-	    }
-    }
+	  if (selrtn == -1 && errno == EINTR) {
+		  /* could be a kernel oplock interrupt */
+		  if (koplocks && koplocks->msg_waiting(fds)) {
+			  return koplocks->receive_message(fds, buffer, buffer_len);
+		  }
+	  }
 
-    /* Check if error */
-    if(selrtn == -1) {
-      /* something is wrong. Maybe the socket is dead? */
-      smb_read_error = READ_ERROR;
-      return False;
-    }
+	  /* Check if error */
+	  if(selrtn == -1) {
+		  /* something is wrong. Maybe the socket is dead? */
+		  smb_read_error = READ_ERROR;
+		  return False;
+	  }
 
-    /* Did we timeout ? */
-    if (selrtn == 0) {
-      smb_read_error = READ_TIMEOUT;
-      return False;
-    }
+	  /* Did we timeout ? */
+	  if (selrtn == 0) {
+		  smb_read_error = READ_TIMEOUT;
+		  return False;
+	  }
   }
 
   if (koplocks && koplocks->msg_waiting(fds)) {
 	  return koplocks->receive_message(fds, buffer, buffer_len);
   }
+
+  if (!FD_ISSET(oplock_sock, fds)) return False;
 
   /*
    * From here down we deal with the smbd <--> smbd

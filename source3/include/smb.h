@@ -1636,6 +1636,16 @@ struct kernel_oplocks {
 
 #define CMD_REPLY 0x8000
 
+/* this structure defines the functions for doing change notify in
+   various implementations */
+struct cnotify_fns {
+	void * (*register_notify)(connection_struct *conn, char *path, uint32 flags);
+	BOOL (*check_notify)(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *data, time_t t);
+	void (*remove_notify)(void *data);
+};
+
+
+
 #include "smb_macros.h"
 
 /* A netbios name structure. */

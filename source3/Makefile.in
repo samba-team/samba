@@ -108,7 +108,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/util_seaccess.o \
+	  lib/ms_fnmatch.o lib/util_seaccess.o lib/select.o \
 	  $(TDB_OBJ)
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
@@ -159,10 +159,12 @@ PROFILE_OBJ = profile/profile.o
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
 
+NOTIFY_OBJ = smbd/notify.o smbd/notify_hash.o 
+
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
-            smbd/message.o smbd/nttrans.o smbd/notify.o smbd/pipes.o \
+            smbd/message.o smbd/nttrans.o smbd/pipes.o \
             smbd/reply.o smbd/trans2.o smbd/uid.o \
 	    smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o smbd/blocking.o \
 	    smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
@@ -180,7 +182,7 @@ MSDFS_OBJ = msdfs/msdfs.o
 SMBD_OBJ = $(SMBD_OBJ1) $(MSDFS_OBJ) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(PASSDB_OBJ) $(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) \
-	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ)
+	   $(PRINTBACKEND_OBJ) $(QUOTAOBJS) $(OPLOCK_OBJ) $(NOTIFY_OBJ)
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
