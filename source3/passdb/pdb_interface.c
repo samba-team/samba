@@ -66,7 +66,7 @@ static void context_endsampwent(struct pdb_context *context)
 		return;
 	}
 
-	if(context->pwent_methods && context->pwent_methods->endsampwent)
+	if (context->pwent_methods && context->pwent_methods->endsampwent)
 		context->pwent_methods->endsampwent(context->pwent_methods);
 
 	/* So we won't get strange data when calling getsampwent now */
@@ -80,18 +80,19 @@ static BOOL context_getsampwent(struct pdb_context *context, SAM_ACCOUNT *user)
 		return False;
 	}
 	/* Loop until we find something useful */
-	while((!context->pwent_methods->getsampwent) || 
+	while ((!context->pwent_methods->getsampwent) || 
 		  context->pwent_methods->getsampwent(context->pwent_methods, user) == False){
 
-		if(context->pwent_methods->endsampwent)
+		if (context->pwent_methods->endsampwent)
 			context->pwent_methods->endsampwent(context->pwent_methods);
 
 		context->pwent_methods = context->pwent_methods->next;
 
 		/* All methods are checked now. There are no more entries */
-		if(context->pwent_methods == NULL)return False;
+		if (context->pwent_methods == NULL)
+			return False;
 	
-		if(!context->pwent_methods->setsampwent){
+		if (!context->pwent_methods->setsampwent){
 			DEBUG(5, ("invalid context->pwent_methods->setsampwent\n"));
 			return False;
 		}
@@ -110,8 +111,8 @@ static BOOL context_getsampwnam(struct pdb_context *context, SAM_ACCOUNT *sam_ac
 		return False;
 	}
 	curmethods = context->pdb_methods;
-	while(curmethods){
-		if(curmethods->getsampwnam && curmethods->getsampwnam(curmethods, sam_acct, username) == True){
+	while (curmethods){
+		if (curmethods->getsampwnam && curmethods->getsampwnam(curmethods, sam_acct, username) == True){
 			sam_acct->methods = curmethods;
 			return True;
 		}
@@ -131,8 +132,8 @@ static BOOL context_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_ac
 	
 	curmethods = context->pdb_methods;
 
-	while(curmethods){
-		if(curmethods->getsampwrid && curmethods->getsampwrid(curmethods, sam_acct, rid) == True){
+	while (curmethods){
+		if (curmethods->getsampwrid && curmethods->getsampwrid(curmethods, sam_acct, rid) == True){
 			sam_acct->methods = curmethods;
 			return True;
 		}
@@ -163,12 +164,12 @@ static BOOL context_update_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 		return False;
 	}
 
-	if(!sam_acct || !sam_acct->methods){
+	if (!sam_acct || !sam_acct->methods){
 		DEBUG(0, ("invalid sam_acct specified\n"));
 		return False;
 	}
 
-	if(!sam_acct->methods->update_sam_account){
+	if (!sam_acct->methods->update_sam_account){
 		DEBUG(0, ("invalid sam_acct->methods\n"));
 		return False;
 	}
@@ -186,12 +187,12 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 		return False;
 	}
 
-	if(!sam_acct->methods){
+	if (!sam_acct->methods){
 		pdb_selected = context->pdb_methods;
 		/* There's no passdb backend specified for this account.
 		 * Try to delete it in every passdb available */
-		while(pdb_selected){
-			if(pdb_selected->delete_sam_account && pdb_selected->delete_sam_account(pdb_selected, sam_acct)){
+		while (pdb_selected){
+			if (pdb_selected->delete_sam_account && pdb_selected->delete_sam_account(pdb_selected, sam_acct)){
 				return True;
 			}
 			pdb_selected = pdb_selected->next;
@@ -199,7 +200,7 @@ static BOOL context_delete_sam_account(struct pdb_context *context, SAM_ACCOUNT 
 		return False;
 	}
 
-	if(!sam_acct->methods->delete_sam_account){
+	if (!sam_acct->methods->delete_sam_account){
 		DEBUG(0,("invalid sam_acct->methods->delete_sam_account\n"));
 		return False;
 	}
@@ -211,8 +212,8 @@ static void free_pdb_context(struct pdb_context **context)
 {
 	struct pdb_methods *pdb_selected = (*context)->pdb_methods;
 
-	while(pdb_selected){
-		if(pdb_selected->free_private_data)
+	while (pdb_selected){
+		if (pdb_selected->free_private_data)
 			pdb_selected->free_private_data(pdb_selected->private_data);
 		pdb_selected = pdb_selected->next;
 	}

@@ -34,24 +34,24 @@ int export_database (struct pdb_context *in, char *db){
 	struct pdb_context *context;
 	SAM_ACCOUNT *user = NULL;
 
-	if(!NT_STATUS_IS_OK(make_pdb_context_name(&context, db))){
+	if (!NT_STATUS_IS_OK(make_pdb_context_name(&context, db))){
 		fprintf(stderr, "Can't initialize %s.\n", db);
 		return 1;
 	}
 
-	if(!in->pdb_setsampwent(in, 0)){
+	if (!in->pdb_setsampwent(in, 0)){
 		fprintf(stderr, "Can't sampwent!\n");
 		return 1;
 	}
 
-	if(!NT_STATUS_IS_OK(pdb_init_sam(&user))){
+	if (!NT_STATUS_IS_OK(pdb_init_sam(&user))){
 		fprintf(stderr, "Can't initialize new SAM_ACCOUNT!\n");
 		return 1;
 	}
 
-	while(in->pdb_getsampwent(in,user)){
+	while (in->pdb_getsampwent(in,user)){
 		context->pdb_add_sam_account(context,user);
-		if(!NT_STATUS_IS_OK(pdb_reset_sam(user))){
+		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
 			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
 			return 1;
 		}
@@ -411,7 +411,7 @@ int main (int argc, char **argv)
 	static char *logon_script = NULL;
 	static char *profile_path = NULL;
 	static char *config_file = dyn_CONFIGFILE;
-	static int new_debuglevel = -1;
+	static char *new_debuglevel = NULL;
 
 	struct pdb_context *in;
 	poptContext pc;
@@ -431,22 +431,21 @@ int main (int argc, char **argv)
 		{"delete",	'x',POPT_ARG_VAL,&delete_user,1,"delete user",NULL},
 		{"import",	'i',POPT_ARG_STRING,&backend_in,0,"use different passdb backend",NULL},
 		{"export",	'e',POPT_ARG_STRING,&backend_out,0,"export user accounts to backend", NULL},
-		{"debuglevel",'D', POPT_ARG_INT, &new_debuglevel,0,"set debuglevel",NULL},
+		{"debuglevel",'D', POPT_ARG_STRING, &new_debuglevel,0,"set debuglevel",NULL},
 		{"configfile",'c',POPT_ARG_STRING, &config_file,0,"use different configuration file",NULL},
 		{0,0,0,0}
 	};
 
-	DEBUGLEVEL = 1;
 	setup_logging("pdbedit", True);
-	AllowDebugChange = False;
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
 						POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1);
 
-	if (new_debuglevel != -1) {
-		DEBUGLEVEL = new_debuglevel;
+	if (new_debuglevel){
+		debug_parse_levels(new_debuglevel);
+		AllowDebugChange = False;
 	}
 
 	if (!lp_load(config_file,True,False,False)) {
@@ -454,6 +453,7 @@ int main (int argc, char **argv)
 				config_file);
 		exit(1);
 	}
+
 
 	if (!backend_in) {
 		backend_in = lp_passdb_backend();
@@ -467,7 +467,7 @@ int main (int argc, char **argv)
 	}
 
 
-	if(!NT_STATUS_IS_OK(make_pdb_context_name(&in, backend_in))){
+	if (!NT_STATUS_IS_OK(make_pdb_context_name(&in, backend_in))){
 		fprintf(stderr, "Can't initialize %s.\n", backend_in);
 		return 1;
 	}

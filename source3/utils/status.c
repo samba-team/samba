@@ -546,7 +546,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 {
 	int c;
 	static int profile_only = 0;
-	static int new_debuglevel = -1;
+	static char *new_debuglevel = NULL;
 	TDB_CONTEXT *tdb;
 	poptContext pc;
 	struct poptOption long_options[] = {
@@ -559,7 +559,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"brief",	'b', POPT_ARG_NONE, 	&brief},
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
-		{"debug",	'd', POPT_ARG_INT,	&new_debuglevel},
+		{"debug",	'd', POPT_ARG_STRING,	&new_debuglevel},
 		{ 0, 0, 0, 0}
 	};
 
@@ -597,8 +597,8 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		return (-1);
 	}
 	
-	if (new_debuglevel != -1) {
-		DEBUGLEVEL = new_debuglevel;
+	if (new_debuglevel) {
+		debug_parse_levels(new_debuglevel);
 	}
 
 	if (verbose) {

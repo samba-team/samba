@@ -77,6 +77,7 @@ BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 /*
   run a function from a function table. If not found then
@@ -356,7 +357,7 @@ static struct functable net_func[] = {
 	const char ** argv_new;
 	poptContext pc;
 	static char *servicesf = dyn_CONFIGFILE;
-	static int debuglevel = 0;
+	static char *debuglevel = NULL;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -367,8 +368,8 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"conf",	's', POPT_ARG_STRING, &servicesf},
-		{"debug",	'd', POPT_ARG_INT,    &debuglevel},
-		{"debuglevel",	'd', POPT_ARG_INT,    &debuglevel},
+		{"debug",	'd', POPT_ARG_STRING,    &debuglevel},
+		{"debuglevel",	'd', POPT_ARG_STRING,    &debuglevel},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
@@ -416,9 +417,12 @@ static struct functable net_func[] = {
 		}
 	}
 
-	lp_load(servicesf,True,False,False);       
+	if (debuglevel) {
+		debug_parse_levels(debuglevel);
+		AllowDebugChange = False;
+	}
 
-	DEBUGLEVEL = debuglevel;
+	lp_load(servicesf,True,False,False);       
 
 	argv_new = (const char **)poptGetArgs(pc);
 
