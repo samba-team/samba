@@ -279,16 +279,16 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	[local] WERROR QueryInterface([in] IID *riid,
+	[local] WERROR IUnknown_QueryInterface([in] IID *riid,
 	   [out,iid_is(riid)] MInterfacePointer *data);
 
 	/*****************/
 	/* Function 0x01 */
-	[local] uint32 AddRef();
+	[local] uint32 IUnknown_AddRef();
 
 	/*****************/
 	/* Function 0x02 */
-	[local] uint32 Release();
+	[local] uint32 IUnknown_Release();
 }
 
 
