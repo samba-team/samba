@@ -3284,7 +3284,6 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 {
 	fstring sidstr, mtime_str, flags_str, attr_val;
 	const DOM_SID *sid;
-	char hexpwd[16];
 	int ret;
 	const char *attr_domain, *attr_ntpw, *attr_sid, *attr_lct, *attr_flags;
 
@@ -3315,20 +3314,19 @@ static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMess
 	}
 
 	/* Trust password itself */
-	pdb_sethexpwd(hexpwd, pdb_get_tp_pass(trustpw), 0);
 	if (entry) {
 		/* in case of updating we only need to do that if anything has been
 		   entered at new password prompt */
 		if (strlen(pdb_get_tp_pass(trustpw))) {
 			ret = smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry,
 							   attr_ntpw, attr_val, sizeof(attr_val));
-			if (ret && strncmp(hexpwd, attr_val, sizeof(attr_val)))
+			if (ret && strncmp(pdb_get_tp_pass(trustpw), attr_val, sizeof(attr_val)))
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-						 attr_ntpw, hexpwd);
+						 attr_ntpw, pdb_get_tp_pass(trustpw));
 		}
 	} else {
 		smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
-				 attr_ntpw, hexpwd);
+				 attr_ntpw, pdb_get_tp_pass(trustpw));
 	}
 
 	/* SID of the trust password */
