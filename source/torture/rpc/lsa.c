@@ -51,7 +51,7 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.system_name = &system_name;
 	r.in.attr = &attr;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.handle = &handle;
 
 	status = dcerpc_lsa_OpenPolicy(p, mem_ctx, &r);
@@ -88,7 +88,7 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.system_name = "\\";
 	r.in.attr = &attr;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.handle = handle;
 
 	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r);
@@ -267,7 +267,7 @@ static BOOL test_CreateAccount(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.sid = newsid;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_CreateAccount(p, mem_ctx, &r);
@@ -303,7 +303,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.info = &trustinfo;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.dom_handle = &dom_handle;
 
 	status = dcerpc_lsa_CreateTrustedDomain(p, mem_ctx, &r);
@@ -348,7 +348,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	init_lsa_Name(&r.in.name, secname);
 
 	r.in.handle = handle;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.sec_handle = &sec_handle;
 
 	status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
@@ -358,7 +358,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	}
 
 	r2.in.handle = handle;
-	r2.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r2.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r2.in.name = r.in.name;
 	r2.out.sec_handle = &sec_handle2;
 
@@ -501,7 +501,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.sid = sid;
-	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	r.out.acct_handle = &acct_handle;
 
 	status = dcerpc_lsa_OpenAccount(p, mem_ctx, &r);

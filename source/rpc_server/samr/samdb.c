@@ -205,6 +205,26 @@ const char *samdb_search_string(void *ctx,
 	return str;
 }
 
+/*
+  return the count of the number of records in the sam matching the query
+*/
+int samdb_search_count(void *ctx,
+		       TALLOC_CTX *mem_ctx,
+		       const char *basedn,
+		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
+{
+	va_list ap;
+	struct ldb_message **res;
+	const char * const attrs[] = { NULL };
+	int ret;
+
+	va_start(ap, format);
+	ret = samdb_search_v(ctx, mem_ctx, basedn, &res, attrs, format, ap);
+	va_end(ap);
+
+	return ret;
+}
+
 
 /*
   search the sam for a single integer attribute in exactly 1 record

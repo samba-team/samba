@@ -99,7 +99,7 @@
 	NTSTATUS lsa_OpenPolicy (
 		[in]       uint16 *system_name,
 		[in,ref]   lsa_ObjectAttribute *attr,
-		[in]       uint32 desired_access,
+		[in]       uint32 access_mask,
 		[out,ref]  policy_handle *handle
 		);
 	
@@ -191,18 +191,18 @@
 	} lsaPolicyInfo;
 
 	typedef union {
-		[case(1)]  lsa_AuditLogInfo audit_log;
-		[case(2)]  lsa_AuditEventsInfo audit_events;
-		[case(3)]  lsa_DomainInfo domain;
-		[case(4)]  lsa_PDAccountInfo pd;
-		[case(5)]  lsa_DomainInfo account_domain;
-		[case(6)]  lsa_ServerRole role;
-		[case(7)]  lsa_ReplicaSourceInfo replica;
-		[case(8)]  lsa_DefaultQuotaInfo quota;
-		[case(9)]  lsa_ModificationInfo db;
-		[case(10)] lsa_AuditFullSetInfo auditfullset;
-		[case(11)] lsa_AuditFullQueryInfo auditfullquery;
-		[case(12)] lsa_DnsDomainInfo dns;
+		[case(LSA_POLICY_INFO_AUDIT_LOG)]        lsa_AuditLogInfo       audit_log;
+		[case(LSA_POLICY_INFO_AUDIT_EVENTS)]     lsa_AuditEventsInfo    audit_events;
+		[case(LSA_POLICY_INFO_DOMAIN)]           lsa_DomainInfo         domain;
+		[case(LSA_POLICY_INFO_PD)]               lsa_PDAccountInfo      pd;
+		[case(LSA_POLICY_INFO_ACCOUNT_DOMAIN)]   lsa_DomainInfo         account_domain;
+		[case(LSA_POLICY_INFO_ROLE)]             lsa_ServerRole         role;
+		[case(LSA_POLICY_INFO_REPLICA)]          lsa_ReplicaSourceInfo  replica;
+		[case(LSA_POLICY_INFO_QUOTA)]            lsa_DefaultQuotaInfo   quota;
+		[case(LSA_POLICY_INFO_DB)]               lsa_ModificationInfo   db;
+		[case(LSA_POLICY_INFO_AUDIT_FULL_SET)]   lsa_AuditFullSetInfo   auditfullset;
+		[case(LSA_POLICY_INFO_AUDIT_FULL_QUERY)] lsa_AuditFullQueryInfo auditfullquery;
+		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (
@@ -224,7 +224,7 @@
 	NTSTATUS lsa_CreateAccount (
 		[in,ref]    policy_handle *handle,
 		[in,ref]    dom_sid2 *sid,
-		[in]        uint32 desired_access,
+		[in]        uint32 access_mask,
 		[out,ref]   policy_handle *acct_handle
 		);
 
@@ -258,7 +258,7 @@
 	NTSTATUS lsa_CreateTrustedDomain(
 		[in,ref]     policy_handle *handle,
 		[in,ref]     lsa_TrustInformation *info,
-		[in]         uint32 desired_access,
+		[in]         uint32 access_mask,
 		[out,ref]    policy_handle *dom_handle
 		);
 
@@ -343,7 +343,7 @@
 	NTSTATUS lsa_CreateSecret(
 		[in,ref]     policy_handle *handle,
 		[in]         lsa_Name       name,
-		[in]         uint32         desired_access,
+		[in]         uint32         access_mask,
 		[out,ref]    policy_handle *sec_handle
 		);
 
@@ -353,7 +353,7 @@
 	NTSTATUS lsa_OpenAccount (
 		[in,ref]     policy_handle *handle,
 		[in,ref]     dom_sid2 *sid,
-		[in]         uint32 desired_access,
+		[in]         uint32 access_mask,
 		[out,ref]    policy_handle *acct_handle
 		);
 
@@ -406,7 +406,7 @@
 	NTSTATUS lsa_OpenSecret(
 		[in,ref]     policy_handle *handle,
 		[in]         lsa_Name       name,
-		[in]         uint32         desired_access,
+		[in]         uint32         access_mask,
 		[out,ref]    policy_handle *sec_handle
 		);
 
@@ -493,7 +493,7 @@
 	NTSTATUS lsa_OpenPolicy2 (
 		[in]      unistr *system_name,
 		[in,ref]  lsa_ObjectAttribute *attr,
-		[in]      uint32 desired_access,
+		[in]      uint32 access_mask,
 		[out,ref] policy_handle *handle
 		);
 
@@ -502,20 +502,4 @@
 	NTSTATUS UNK_GET_CONNUSER ();
 	/* Function:          0x2e */
 	NTSTATUS QUERYINFO2 ();
-}
-
-
-[ 
-  uuid(3919286a-b10c-11d0-9ba8-00c04fd92ef5),
-  version(0.0),
-  endpoints(lsarpc,lsass),
-  pointer_default(unique)
-] 
-interface lsads
-{
-
-	/*****************/
-        /* Function 0x00 */
-	void lsads_Unknown0();
-
 }

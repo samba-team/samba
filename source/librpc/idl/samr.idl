@@ -125,6 +125,14 @@
 	/************************/
 	/* Function    0x08     */
 
+	/* server roles */
+	typedef enum {
+		ROLE_STANDALONE    = 0,
+		ROLE_DOMAIN_MEMBER = 1,
+		ROLE_DOMAIN_BDC    = 2,
+		ROLE_DOMAIN_PDC    = 3
+	} samr_Role;
+
 	typedef struct {
 		uint16 min_pwd_len;
 		uint16 password_history;
