@@ -340,7 +340,12 @@
 
 
 	/* Function:        0x10 */
-	NTSTATUS CREATESECRET ();
+	NTSTATUS lsa_CreateSecret(
+		[in,ref]     policy_handle *handle,
+		[in]         lsa_Name       name,
+		[in]         uint32         desired_access,
+		[out,ref]    policy_handle *sec_handle
+		);
 
 
 	/*****************************************/

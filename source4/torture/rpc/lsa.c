@@ -380,6 +380,35 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 	return True;
 }
 
+static BOOL test_CreateSecret(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx, 
+			      struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_CreateSecret r;
+	struct policy_handle sec_handle;
+
+	printf("Testing CreateSecret\n");
+
+	init_lsa_Name(&r.in.name, "torturesecret");
+
+	r.in.handle = handle;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.sec_handle = &sec_handle;
+
+	status = dcerpc_lsa_CreateSecret(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("CreateSecret failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!test_Delete(p, mem_ctx, &sec_handle)) {
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_EnumAccountRights(struct dcerpc_pipe *p, 
 				   TALLOC_CTX *mem_ctx, 
 				   struct policy_handle *acct_handle,
@@ -672,6 +701,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_CreateAccount(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_CreateSecret(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
