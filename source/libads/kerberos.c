@@ -320,6 +320,8 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	krb5_auth_context auth_context = NULL;
 	krb5_error_code err = 0;
 
+	ZERO_STRUCT(creds);
+
 	asprintf(&machine_account, "%s$@%s", global_myname(), lp_realm());
 	if (machine_account == NULL) {
 		goto out;
@@ -340,7 +342,6 @@ static krb5_error_code get_service_ticket(krb5_context ctx,
 	   ticket to ourselves. */
 
 	/* Set up the enctype and client and server principal fields for krb5_get_credentials. */
-	memset(&creds, '\0', sizeof(creds));
 	kerberos_set_creds_enctype(&creds, enctype);
 
 	if ((err = krb5_cc_get_principal(ctx, ccache, &creds.client))) {

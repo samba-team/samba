@@ -113,6 +113,10 @@ struct winbindd_domain {
 
 	void *private; 
 
+	/* A working DC */
+	fstring dcname;
+	struct sockaddr_in dcaddr;
+
 	/* Sequence number stuff */
 
 	time_t last_seq_check;

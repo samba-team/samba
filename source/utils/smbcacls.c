@@ -657,6 +657,14 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			}
 		}
 
+		if (sd->owner_sid) {
+			old->owner_sid = sd->owner_sid;
+		}
+
+		if (sd->grp_sid) { 
+			old->grp_sid = sd->grp_sid;
+		}
+
 		break;
 
 	case SMB_ACL_ADD:
@@ -674,7 +682,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 	sort_acl(old->dacl);
 
 	/* Create new security descriptor and set it */
-	sd = make_sec_desc(ctx,old->revision, old->type, NULL, NULL,
+	sd = make_sec_desc(ctx,old->revision, old->type, old->owner_sid, old->grp_sid,
 			   NULL, old->dacl, &sd_size);
 
 	fnum = cli_nt_create(cli, filename, WRITE_DAC_ACCESS);
@@ -761,7 +769,7 @@ static struct cli_state *connect_one(const char *share)
 
 	ctx=talloc_init("main");
 
-	/* set default debug level to 0 regardless of what smb.conf sets */
+	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", True );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	dbf = x_stderr;

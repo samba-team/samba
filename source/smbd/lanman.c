@@ -760,18 +760,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 		return(True);
 	}
  
-	snum = lp_servicenumber(QueueName);
-	if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
-		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0) {
-			lp_add_printer(QueueName,pnum);
-			snum = lp_servicenumber(QueueName);
-		}
-	}
-  
-	if (snum < 0 || !VALID_SNUM(snum))
-		return(False);
-
+	snum = find_service(QueueName);
+	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+		return False;
+		
 	if (uLevel==52) {
 		count = get_printerdrivernumber(snum);
 		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
@@ -1501,6 +1493,8 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   data_len = fixed_len = string_len = 0;
   for (i=0;i<count;i++) {
     fstring servicename_dos;
+    if (!(lp_browseable(i) && lp_snum_ok(i)))
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
@@ -1529,6 +1523,8 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   for( i = 0; i < count; i++ )
     {
     fstring servicename_dos;
+    if (!(lp_browseable(i) && lp_snum_ok(i)))
+	    continue;
     push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
@@ -1740,13 +1736,15 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	int count=0;
 	SAM_ACCOUNT *sampw = NULL;
 	BOOL ret = False;
-        DOM_GID *gids = NULL;
-        int num_groups = 0;
+	DOM_SID *sids;
+	gid_t *gids;
+	int num_groups;
 	int i;
 	fstring grp_domain;
 	fstring grp_name;
 	enum SID_NAME_USE grp_type;
-	DOM_SID sid, dom_sid;
+	struct passwd *passwd;
+	NTSTATUS result;
 
 	*rparam_len = 8;
 	*rparam = SMB_REALLOC_LIMIT(*rparam,*rparam_len);
@@ -1777,6 +1775,11 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 
 	/* Lookup the user information; This should only be one of 
 	   our accounts (not remote domains) */
+
+	passwd = getpwnam_alloc(UserName);
+
+	if (passwd == NULL)
+		return False;
 	   
 	pdb_init_sam( &sampw );
 	
@@ -1785,35 +1788,26 @@ static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *para
 	if ( !pdb_getsampwnam(sampw, UserName) )
 		goto out;
 
-	/* this next set of code is horribly inefficient, but since 
-	   it is rarely called, I'm going to leave it like this since 
-	   it easier to follow      --jerry                          */
-	   
-	/* get the list of group SIDs */
-	
-	if ( !get_domain_user_groups(conn->mem_ctx, &num_groups, &gids, sampw) ) {
-		DEBUG(1,("api_NetUserGetGroups: get_domain_user_groups() failed!\n"));
-		goto out;
-        }
+	sids = NULL;
+	num_groups = 0;
 
-	/* convert to names (we don't support universal groups so the domain
-	   can only be ours) */
-	
-	sid_copy( &dom_sid, get_global_sam_sid() );
+	result = pdb_enum_group_memberships(pdb_get_username(sampw),
+					    passwd->pw_gid,
+					    &sids, &gids, &num_groups);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto out;
+
 	for (i=0; i<num_groups; i++) {
 	
-		/* make the DOM_GID into a DOM_SID and then lookup 
-		   the name */
-		
-		sid_copy( &sid, &dom_sid );
-		sid_append_rid( &sid, gids[i].g_rid );
-		
-		if ( lookup_sid(&sid, grp_domain, grp_name, &grp_type) ) {
+		if ( lookup_sid(&sids[i], grp_domain, grp_name, &grp_type) ) {
 			pstrcpy(p, grp_name); 
 			p += 21; 
 			count++;
 		}
 	}
+
+	SAFE_FREE(sids);
 	
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -1826,6 +1820,7 @@ out:
 	unbecome_root();				/* END ROOT BLOCK */
 
 	pdb_free_sam( &sampw );
+	passwd_free(&passwd);
 
 	return ret;
 }
@@ -2139,6 +2134,12 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 
 	if (!print_job_exists(sharename, jobid)) {
 		errcode = NERR_JobNotFound;
+		goto out;
+	}
+
+	snum = lp_servicenumber( sharename);
+	if (snum == -1) {
+		errcode = NERR_DestNotFound;
 		goto out;
 	}
 
@@ -2967,6 +2968,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
     return False;
 
+  snum = lp_servicenumber( sharename);
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = print_queue_status(snum,&queue,&status);
@@ -3037,20 +3039,18 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   DEBUG(3,("WPrintJobEnumerate uLevel=%d name=%s\n",uLevel,name));
 
   /* check it's a supported variant */
-  if (strcmp(str1,"zWrLeh") != 0) return False;
-  if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
-  if (!check_printjob_info(&desc,uLevel,str2)) return False;
+  if (strcmp(str1,"zWrLeh") != 0) 
+    return False;
+    
+  if (uLevel > 2) 
+    return False;	/* defined only for uLevel 0,1,2 */
+    
+  if (!check_printjob_info(&desc,uLevel,str2)) 
+    return False;
 
-  snum = lp_servicenumber(name);
-  if (snum < 0 && pcap_printername_ok(name,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(name,pnum);
-      snum = lp_servicenumber(name);
-    }
-  }
-
-  if (snum < 0 || !VALID_SNUM(snum)) return(False);
+  snum = find_service(name);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
+    return False;
 
   count = print_queue_status(snum,&queue,&status);
   if (mdrcnt > 0) *rdata = SMB_REALLOC_LIMIT(*rdata,mdrcnt);
@@ -3153,16 +3153,8 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   if (strcmp(str1,"zWrLh") != 0) return False;
   if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
-  snum = lp_servicenumber(PrinterName);
-  if (snum < 0 && pcap_printername_ok(PrinterName,NULL)) {
-    int pnum = lp_servicenumber(PRINTERS_NAME);
-    if (pnum >= 0) {
-      lp_add_printer(PrinterName,pnum);
-      snum = lp_servicenumber(PrinterName);
-    }
-  }
-
-  if (snum < 0) {
+  snum = find_service(PrinterName);
+  if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
     *rdata_len = 0;
     desc.errcode = NERR_DestNotFound;
     desc.neededlen = 0;

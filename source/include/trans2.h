@@ -329,6 +329,13 @@ Byte offset   Type     name                description
 #define SMB_FS_FULL_SIZE_INFORMATION			1007
 #define SMB_FS_OBJECTID_INFORMATION			1008
 
+/* flags on trans2 findfirst/findnext that control search */
+#define FLAG_TRANS2_FIND_CLOSE          0x1
+#define FLAG_TRANS2_FIND_CLOSE_IF_END   0x2
+#define FLAG_TRANS2_FIND_REQUIRE_RESUME 0x4
+#define FLAG_TRANS2_FIND_CONTINUE       0x8
+#define FLAG_TRANS2_FIND_BACKUP_INTENT  0x10
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
@@ -452,4 +459,81 @@ Offset Size         Name
 
 /* ... more as we think of them :-). */
 
+/* SMB POSIX ACL definitions. */
+/* Wire format is (all little endian) :
+
+[2 bytes]              -     Version number.
+[2 bytes]              -     Number of ACE entries to follow.
+[2 bytes]              -     Number of default ACE entries to follow.
+-------------------------------------
+^
+|
+ACE entries
+|
+v
+-------------------------------------
+^
+|
+Default ACE entries
+|
+v
+-------------------------------------
+
+Where an ACE entry looks like :
+
+[1 byte]           - Entry type.
+
+Entry types are :
+
+ACL_USER_OBJ            0x01
+ACL_USER                0x02
+ACL_GROUP_OBJ           0x04
+ACL_GROUP               0x08
+ACL_MASK                0x10
+ACL_OTHER               0x20
+
+[1 byte]          - permissions (perm_t)
+
+perm_t types are :
+
+ACL_READ                0x04
+ACL_WRITE               0x02
+ACL_EXECUTE             0x01
+
+[8 bytes]         - uid/gid to apply this permission to.
+
+In the same format as the uid/gid fields in the other
+UNIX extensions definitions. Use 0xFFFFFFFFFFFFFFFF for
+the MASK and OTHER entry types.
+
+If the Number of ACE entries for either file or default ACE's
+is set to 0xFFFF this means ignore this kind of ACE (and the
+number of entries sent will be zero.
+
+*/
+
+/* The query/set info levels for POSIX ACLs. */
+#define SMB_QUERY_POSIX_ACL  0x204
+#define SMB_SET_POSIX_ACL  0x204
+
+/* Current on the wire ACL version. */
+#define SMB_POSIX_ACL_VERSION 1
+
+/* ACE entry type. */
+#define SMB_POSIX_ACL_USER_OBJ            0x01
+#define SMB_POSIX_ACL_USER                0x02
+#define SMB_POSIX_ACL_GROUP_OBJ           0x04
+#define SMB_POSIX_ACL_GROUP               0x08
+#define SMB_POSIX_ACL_MASK                0x10
+#define SMB_POSIX_ACL_OTHER               0x20
+
+/* perm_t types. */
+#define SMB_POSIX_ACL_READ                0x04
+#define SMB_POSIX_ACL_WRITE               0x02
+#define SMB_POSIX_ACL_EXECUTE             0x01
+
+#define SMB_POSIX_ACL_HEADER_SIZE         6
+#define SMB_POSIX_ACL_ENTRY_SIZE         10
+
+#define SMB_POSIX_IGNORE_ACE_ENTRIES	0xFFFF
 #endif

@@ -184,7 +184,7 @@
  void get_auth_data_from_tkt(DATA_BLOB *auth_data, krb5_ticket *tkt)
 {
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt->enc_part2)
+	if (tkt->enc_part2 && tkt->enc_part2->authorization_data && tkt->enc_part2->authorization_data[0] && tkt->enc_part2->authorization_data[0]->length)
 		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
 			tkt->enc_part2->authorization_data[0]->length);
 #else
@@ -233,7 +233,7 @@
 		return -1;
 	}
 
-	sa = malloc( sizeof(struct sockaddr) * num_kdcs );
+	sa = SMB_MALLOC_ARRAY( struct sockaddr, num_kdcs );
 	if (!sa) {
 		DEBUG(0, ("krb5_locate_kdc: malloc failed\n"));
 		krb5_krbhst_free(ctx, hnd);
@@ -241,8 +241,7 @@
 		return -1;
 	}
 
-	*addr_pp = malloc(sizeof(struct sockaddr) * num_kdcs);
-	memset(*addr_pp, '\0', sizeof(struct sockaddr) * num_kdcs );
+	memset(sa, '\0', sizeof(struct sockaddr) * num_kdcs );
 
 	for (i = 0; i < num_kdcs && (rc = krb5_krbhst_next(ctx, hnd, &hinfo) == 0); i++) {
 

@@ -466,7 +466,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 
 	ldap_mods_free( mods, True );
 	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("ldap_allocate_id: Failed to allocate new %s.  ldap_modify() failed.\n",
+		DEBUG(1,("ldap_allocate_id: Failed to allocate new %s.  ldap_modify() failed.\n",
 			type));
 		goto out;
 	}

@@ -395,6 +395,15 @@ typedef struct bufhdr2_info
 }
 BUFHDR2;
 
+/* BUFHDR4 - another buffer header */
+typedef struct bufhdr4_info
+{
+	uint32 size;
+	uint32 buffer;
+
+}
+BUFHDR4;
+
 /* BUFFER4 - simple length and buffer */
 typedef struct buffer4_info
 {

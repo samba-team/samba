@@ -217,7 +217,8 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 
         dbuf = tdb_fetch(tdb, kbuf);
         if (!dbuf.dptr) {
-		DEBUG(0,("register_message_flags: tdb_fetch failed\n"));
+		DEBUG(0,("register_message_flags: tdb_fetch failed: %s\n",
+			tdb_errorstr(tdb)));
 		return False;
 	}
 
@@ -228,7 +229,7 @@ BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
 		pcrec->bcast_msg_flags &= ~msg_flags;
 
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-		DEBUG(0,("register_message_flags: tdb_store failed with error %s.\n",
+		DEBUG(0,("register_message_flags: tdb_store failed: %s.\n",
 			tdb_errorstr(tdb) ));
 		SAFE_FREE(dbuf.dptr);
 		return False;

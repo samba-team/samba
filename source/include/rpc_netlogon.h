@@ -168,7 +168,9 @@ typedef struct net_user_info_3
 	UNIHDR hdr_logon_dom; /* logon domain unicode string header */
 
 	uint32 buffer_dom_id; /* undocumented logon domain id pointer */
-	uint8 padding[40];    /* unused padding bytes.  expansion room */
+	uint8 lm_sess_key[8];	/* lm session key */
+	uint32 acct_flags;	/* account flags */
+	uint32 unknown[7];	/* unknown */
 
 	uint32 num_other_sids; /* number of foreign/trusted domain sids */
 	uint32 buffer_other_sids;
@@ -595,6 +597,27 @@ typedef struct sam_delta_hdr_info
 
 } SAM_DELTA_HDR;
 
+/* LOCKOUT_STRING */
+typedef struct account_lockout_string {
+	uint32 array_size;
+	uint32 offset;
+	uint32 length;
+/*	uint16 *bindata;	*/
+	UINT64_S lockout_duration;
+	UINT64_S reset_count;
+	uint32 bad_attempt_lockout;
+	uint32 dummy;
+
+} LOCKOUT_STRING;
+
+/* HDR_LOCKOUT_STRING */
+typedef struct hdr_account_lockout_string {
+	uint16 size;
+	uint16 length;
+	uint32 buffer;
+
+} HDR_LOCKOUT_STRING;
+
 /* SAM_DOMAIN_INFO (0x1) */
 typedef struct sam_domain_info_info
 {
@@ -608,16 +631,32 @@ typedef struct sam_domain_info_info
 	UINT64_S min_pwd_age;
 	UINT64_S dom_mod_count;
 	NTTIME   creation_time;
+	uint32   security_information;
 
-	BUFHDR2 hdr_sec_desc; /* security descriptor */
-	UNIHDR hdr_unknown;
-	uint8 reserved[40];
+	BUFHDR4 hdr_sec_desc; /* security descriptor */
+
+	HDR_LOCKOUT_STRING hdr_account_lockout;
+
+	UNIHDR hdr_unknown2;
+	UNIHDR hdr_unknown3;
+	UNIHDR hdr_unknown4;
 
 	UNISTR2 uni_dom_name;
-	UNISTR2 buf_oem_info; /* never seen */
+	UNISTR2 buf_oem_info; 
 
 	BUFFER4 buf_sec_desc;
-	UNISTR2 buf_unknown;
+
+	LOCKOUT_STRING account_lockout;
+
+	UNISTR2 buf_unknown2;
+	UNISTR2 buf_unknown3;
+	UNISTR2 buf_unknown4;
+
+	uint32 logon_chgpass;
+	uint32 unknown6;
+	uint32 unknown7;
+	uint32 unknown8;
+
 
 } SAM_DOMAIN_INFO;
 

@@ -742,6 +742,14 @@ BOOL local_lookup_sid(const DOM_SID *sid, char *name, enum SID_NAME_USE *psid_na
 	GROUP_MAP map;
 	BOOL ret;
 
+	if (sid_equal(get_global_sam_sid(), sid)) {
+		*psid_name_use = SID_NAME_DOMAIN;
+		fstrcpy(name, "");
+		DEBUG(5,("local_lookup_sid: SID is our own domain-sid: %s.\n", 
+			sid_string_static(sid)));
+		return True;
+	}
+
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
 		DEBUG(0,("local_lookup_sid: sid_peek_check_rid return False! SID: %s\n",
 			sid_string_static(&map.sid)));
@@ -2213,6 +2221,28 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	}
 
 	return (buflen);
+}
+
+BOOL pdb_copy_sam_account(const SAM_ACCOUNT *src, SAM_ACCOUNT **dst)
+{
+	BOOL result;
+	uint8 *buf;
+	int len;
+
+	if ((*dst == NULL) && (!NT_STATUS_IS_OK(pdb_init_sam(dst))))
+		return False;
+
+	len = init_buffer_from_sam_v2(&buf, src, False);
+
+	if (len == -1)
+		return False;
+
+	result = init_sam_from_buffer_v2(*dst, buf, len);
+	(*dst)->methods = src->methods;
+
+	free(buf);
+
+	return result;
 }
 
 /**********************************************************************

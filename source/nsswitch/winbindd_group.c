@@ -932,7 +932,7 @@ static void add_local_gids_from_sid(DOM_SID *sid, gid_t **gids, int *num)
 
 	/* Add nested group memberships */
 
-	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
 		return;
 
 	for (j=0; j<num_aliases; j++) {
@@ -1029,7 +1029,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, 
 					 &name_type)) {
-		DEBUG(1, ("user '%s' does not exist\n", name_user));
+		DEBUG(4, ("user '%s' does not exist\n", name_user));
 		goto done;
 	}
 
@@ -1085,9 +1085,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			add_gids_from_group_sid(&info3->other_sids[i].sid,
 						&gid_list, &num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 
 		for (i = 0; i < info3->num_groups2; i++) {
@@ -1099,9 +1096,6 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 			add_gids_from_group_sid(&group_sid, &gid_list,
 						&num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 
 		SAFE_FREE(info3);
@@ -1119,11 +1113,12 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		for (i = 0; i < num_groups; i++) {
 			add_gids_from_group_sid(user_grpsids[i],
 						&gid_list, &num_gids);
-
-			if (gid_list == NULL)
-				goto done;
 		}
 	}
+
+	/* We want at least one group... */
+	if (gid_list == NULL)
+		goto done;
 
 	remove_duplicate_gids( &num_gids, gid_list );
 
@@ -1142,7 +1137,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	return result;
 }
 
-static void add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+static void add_sid_to_parray_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 				    DOM_SID ***sids, int *num_sids)
 {
 	int i;
@@ -1170,15 +1165,15 @@ static void add_local_sids_from_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	DOM_SID *aliases = NULL;
 	int i, num_aliases = 0;
 
-	if (!pdb_enum_alias_memberships(sid, &aliases, &num_aliases))
+	if (!pdb_enum_alias_memberships(sid, 1, &aliases, &num_aliases))
 		return;
 
 	if (num_aliases == 0)
 		return;
 
 	for (i=0; i<num_aliases; i++)
-		add_sid_to_array_unique(mem_ctx, &aliases[i], user_grpsids,
-					num_groups);
+		add_sid_to_parray_unique(mem_ctx, &aliases[i], user_grpsids,
+					 num_groups);
 
 	SAFE_FREE(aliases);
 

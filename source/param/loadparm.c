@@ -127,6 +127,7 @@ typedef struct
 	char *szSocketOptions;
 	char *szRealm;
 	char *szAfsUsernameMap;
+	int iAfsTokenLifetime;
 	char *szUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
@@ -386,7 +387,7 @@ typedef struct
 	BOOL bMap_archive;
 	BOOL bStoreDosAttributes;
 	BOOL bLocking;
-	BOOL bStrictLocking;
+	int iStrictLocking;
 	BOOL bPosixLocking;
 	BOOL bShareModes;
 	BOOL bOpLocks;
@@ -511,7 +512,7 @@ static service sDefault = {
 	True,			/* bMap_archive */
 	False,			/* bStoreDosAttributes */
 	True,			/* bLocking */
-	True,			/* bStrictLocking */
+	True,			/* iStrictLocking */
 	True,			/* bPosixLocking */
 	True,			/* bShareModes */
 	True,			/* bOpLocks */
@@ -794,8 +795,8 @@ static struct parm_struct parm_table[] = {
 	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC | FLAG_ADVANCED}, 
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED}, 
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED}, 
-	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
-	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED}, 
+	{"min password length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_DEPRECATED}, 
+	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_DEPRECATED}, 
 	{"map to guest", P_ENUM, P_GLOBAL, &Globals.map_to_guest, NULL, enum_map_to_guest, FLAG_ADVANCED}, 
 	{"null passwords", P_BOOL, P_GLOBAL, &Globals.bNullPasswords, NULL, NULL, FLAG_ADVANCED}, 
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, &Globals.bObeyPamRestrictions, NULL, NULL, FLAG_ADVANCED}, 
@@ -1075,7 +1076,7 @@ static struct parm_struct parm_table[] = {
 	{"oplock break wait time", P_INTEGER, P_GLOBAL, &Globals.oplock_break_wait_time, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL}, 
 	{"oplock contention limit", P_INTEGER, P_LOCAL, &sDefault.iOplockContentionLimit, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
-	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
+	{"strict locking", P_ENUM, P_LOCAL, &sDefault.iStrictLocking, NULL, enum_bool_auto, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"share modes", P_BOOL, P_LOCAL,  &sDefault.bShareModes, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR}, 
@@ -1125,6 +1126,7 @@ static struct parm_struct parm_table[] = {
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, FLAG_ADVANCED}, 
 	{"homedir map", P_STRING, P_GLOBAL, &Globals.szNISHomeMapName, NULL, NULL, FLAG_ADVANCED}, 
 	{"afs username map", P_STRING, P_GLOBAL, &Globals.szAfsUsernameMap, NULL, NULL, FLAG_ADVANCED}, 
+	{"afs token lifetime", P_INTEGER, P_GLOBAL, &Globals.iAfsTokenLifetime, NULL, NULL, FLAG_ADVANCED},
 	{"time offset", P_INTEGER, P_GLOBAL, &extra_time_offset, NULL, NULL, FLAG_ADVANCED}, 
 	{"NIS homedir", P_BOOL, P_GLOBAL, &Globals.bNISHomeMap, NULL, NULL, FLAG_ADVANCED}, 
 	{"-valid", P_BOOL, P_LOCAL, &sDefault.valid, NULL, NULL, FLAG_HIDE}, 
@@ -1226,8 +1228,6 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szLpresumecommand, "");
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
-
-	                string_set(&Globals.szPrintcapname, "cups");
 #else
 			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
 			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
@@ -1236,7 +1236,6 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
 			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
 			string_set(&pService->szQueueresumecommand, "/usr/bin/enable '%p'");
-			string_set(&Globals.szPrintcapname, "lpstat");
 #endif /* HAVE_CUPS */
 			break;
 
@@ -1346,7 +1345,6 @@ static void init_globals(void)
 	string_set(&Globals.szWorkgroup, lp_workgroup());
 	
 	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
 	string_set(&Globals.szPidDir, dyn_PIDDIR);
 	string_set(&Globals.szLockDir, dyn_LOCKDIR);
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
@@ -1375,7 +1373,7 @@ static void init_globals(void)
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
-	Globals.lpqcachetime = 10;
+	Globals.lpqcachetime = 30;	/* changed to handle large print servers better -- jerry */
 	Globals.bDisableSpoolss = False;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
 	Globals.pwordlevel = 0;
@@ -1477,6 +1475,11 @@ static void init_globals(void)
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
 	Globals.ldap_timeout = LDAP_CONNECT_DEFAULT_TIMEOUT;
+
+	/* This is what we tell the afs client. in reality we set the token 
+	 * to never expire, though, when this runs out the afs client will 
+	 * forget the token. Set to 0 to get NEVERDATE.*/
+	Globals.iAfsTokenLifetime = 604800;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1626,7 +1629,6 @@ FN_GLOBAL_STRING(lp_smb_passwd_file, &Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_private_dir, &Globals.szPrivateDir)
 FN_GLOBAL_STRING(lp_serverstring, &Globals.szServerString)
 FN_GLOBAL_INTEGER(lp_printcap_cache_time, &Globals.PrintcapCacheTime)
-FN_GLOBAL_STRING(lp_printcapname, &Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_enumports_cmd, &Globals.szEnumPortsCommand)
 FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
@@ -1652,6 +1654,7 @@ FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
 FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
+FN_GLOBAL_INTEGER(lp_afs_token_lifetime, &Globals.iAfsTokenLifetime)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1863,7 +1866,7 @@ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_store_dos_attributes, bStoreDosAttributes)
 FN_LOCAL_BOOL(lp_locking, bLocking)
-FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
+FN_LOCAL_INTEGER(lp_strict_locking, iStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
@@ -2697,7 +2700,7 @@ BOOL lp_file_list_changed(void)
 		time_t mod_time;
 
 		pstrcpy(n2, f->name);
-		standard_sub_basic(current_user_info.smb_name, n2,sizeof(n2));
+		standard_sub_basic( username, n2, sizeof(n2) );
 
 		DEBUGADD(6, ("file %s -> %s  last mod_time: %s\n",
 			     f->name, n2, ctime(&f->modtime)));
@@ -4280,13 +4283,33 @@ int lp_maxprintjobs(int snum)
 	return maxjobs;
 }
 
+const char *lp_printcapname(void)
+{
+	if ((Globals.szPrintcapname != NULL) &&
+	    (Globals.szPrintcapname[0] != '\0'))
+		return Globals.szPrintcapname;
+
+	if (sDefault.iPrinting == PRINT_CUPS) {
+#ifdef HAVE_CUPS
+		return "cups";
+#else
+		return "lpstat";
+#endif
+	}
+
+	if (sDefault.iPrinting == PRINT_BSD)
+		return "/etc/printcap";
+
+	return PRINTCAP_NAME;
+}
+
 /*******************************************************************
  Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
 BOOL lp_use_sendfile(int snum)
 {
-	extern int Protocol;
+	extern enum protocol_types Protocol;
 	/* Using sendfile blows the brains out of any DOS or Win9x TCP stack... JRA. */
 	if (Protocol < PROTOCOL_NT1) {
 		return False;

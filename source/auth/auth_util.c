@@ -657,47 +657,27 @@ static NTSTATUS get_user_groups(const char *username, uid_t uid, gid_t gid,
 
 	*n_groups = 0;
 	*groups   = NULL;
+
+	if (strchr(username, *lp_winbind_separator()) == NULL) {
+		NTSTATUS result;
+
+		become_root();
+		result = pdb_enum_group_memberships(username, gid, groups,
+						    unix_groups, n_groups);
+		unbecome_root();
+		return result;
+	}
+
+	/* We have the separator, this must be winbind */
 	
-	/* Try winbind first */
+	n_unix_groups = winbind_getgroups( username, unix_groups );
 
-	if ( strchr(username, *lp_winbind_separator()) ) {
-		n_unix_groups = winbind_getgroups( username, unix_groups );
-
-		DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n", username, 
-			  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
+	DEBUG(10,("get_user_groups: winbind_getgroups(%s): result = %s\n",
+		  username,  n_unix_groups == -1 ? "FAIL" : "SUCCESS"));
 			  
-		if ( n_unix_groups == -1 )
-			return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */	
-	}
-	else {
-		/* fallback to getgrouplist() */
-		
-		n_unix_groups = groups_max();
-		
-		if ((*unix_groups = SMB_MALLOC_ARRAY( gid_t, n_unix_groups ) ) == NULL) {
-			DEBUG(0, ("get_user_groups: Out of memory allocating unix group list\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
-	
-		if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-		
-			gid_t *groups_tmp;
-			
-			groups_tmp = SMB_REALLOC_ARRAY(*unix_groups, gid_t, n_unix_groups);
-			
-			if (!groups_tmp) {
-				SAFE_FREE(*unix_groups);
-				return NT_STATUS_NO_MEMORY;
-			}
-			*unix_groups = groups_tmp;
-
-			if (sys_getgrouplist(username, gid, *unix_groups, &n_unix_groups) == -1) {
-				DEBUG(0, ("get_user_groups: failed to get the unix group list\n"));
-				SAFE_FREE(*unix_groups);
-				return NT_STATUS_NO_SUCH_USER; /* what should this return value be? */
-			}
-		}
-	}
+	if ( n_unix_groups == -1 )
+		return NT_STATUS_NO_SUCH_USER; /* what should this return
+						* value be? */	
 
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, n_unix_groups, *unix_groups);
 	
@@ -884,7 +864,7 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
 
-NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	SAM_ACCOUNT *sampass = NULL;
@@ -917,6 +897,49 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	}
 
 	return nt_status;
+}
+
+static auth_serversupplied_info *copy_serverinfo(auth_serversupplied_info *src)
+{
+	auth_serversupplied_info *dst;
+
+	if (!NT_STATUS_IS_OK(make_server_info(&dst)))
+		return NULL;
+
+	dst->guest = src->guest;
+	dst->uid = src->uid;
+	dst->gid = src->gid;
+	dst->n_groups = src->n_groups;
+	if (src->n_groups != 0)
+		dst->groups = memdup(src->groups, sizeof(gid_t)*dst->n_groups);
+	else
+		dst->groups = NULL;
+	dst->ptok = dup_nt_token(src->ptok);
+	dst->user_session_key = data_blob(src->user_session_key.data,
+					  src->user_session_key.length);
+	dst->lm_session_key = data_blob(src->lm_session_key.data,
+					  src->lm_session_key.length);
+	pdb_copy_sam_account(src->sam_account, &dst->sam_account);
+	dst->pam_handle = NULL;
+	dst->unix_name = smb_xstrdup(src->unix_name);
+
+	return dst;
+}
+
+static auth_serversupplied_info *guest_info = NULL;
+
+BOOL init_guest_info(void)
+{
+	if (guest_info != NULL)
+		return True;
+
+	return NT_STATUS_IS_OK(make_new_server_info_guest(&guest_info));
+}
+
+NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+{
+	*server_info = copy_serverinfo(guest_info);
+	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
 /***************************************************************************
@@ -1301,11 +1324,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		(*server_info)->user_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
 	}
 
-	if (memcmp(info3->padding, zeros, sizeof(zeros)) == 0) {
+	if (memcmp(info3->lm_sess_key, zeros, 8) == 0) {
 		(*server_info)->lm_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->lm_session_key = data_blob(info3->padding, 16);
-	}
+		(*server_info)->lm_session_key = data_blob(info3->lm_sess_key, sizeof(info3->lm_sess_key));
+	} 
+
 	return NT_STATUS_OK;
 }
 

@@ -48,6 +48,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
+	SSVAL(cli->outbuf,smb_vwv7,((size >> 16) & 1));
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	if (bigoffset)
@@ -75,7 +76,11 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * rounded down to a multiple of 1024.
 	 */
 
-	readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	if (cli->capabilities & CAP_LARGE_READX) {
+		readsize = CLI_MAX_LARGE_READX_SIZE;
+	} else {
+		readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	}
 
 	while (total < size) {
 		readsize = MIN(readsize, size-total);
@@ -117,6 +122,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
+		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7) & 1)) << 16);
 
 		if (size2 > readsize) {
 			DEBUG(5,("server returned more than we wanted!\n"));
@@ -253,7 +259,7 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 			    size_t size, int i)
 {
 	char *p;
-	BOOL bigoffset = False;
+	BOOL large_writex = False;
 
 	if (size > cli->bufsize) {
 		cli->outbuf = SMB_REALLOC(cli->outbuf, size + 1024);
@@ -266,10 +272,11 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	if ((SMB_BIG_UINT)offset >> 32) 
-		bigoffset = True;
+	if (((SMB_BIG_UINT)offset >> 32) || (size > 0xFFFF)) {
+		large_writex = True;
+	}
 
-	if (bigoffset)
+	if (large_writex)
 		set_message(cli->outbuf,14,0,True);
 	else
 		set_message(cli->outbuf,12,0,True);
@@ -297,7 +304,7 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset,
 	SSVAL(cli->outbuf,smb_vwv11,
 	      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
 
-	if (bigoffset)
+	if (large_writex)
 		SIVAL(cli->outbuf,smb_vwv12,(offset>>32) & 0xffffffff);
 	
 	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);

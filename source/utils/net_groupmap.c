@@ -113,6 +113,9 @@ static int net_groupmap_list(int argc, const char **argv)
 	int i;
 	fstring ntgroup = "";
 	fstring sid_string = "";
+
+	if (opt_verbose || opt_long_list_entries)
+		long_list = True;
 	
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
@@ -689,7 +692,7 @@ static int net_groupmap_memberships(int argc, const char **argv)
 		return -1;
 	}
 
-	if (!pdb_enum_alias_memberships(&member, &aliases, &num)) {
+	if (!pdb_enum_alias_memberships(&member, 1, &aliases, &num)) {
 		d_printf("Could not list memberships for sid %s: %s\n",
 			 argv[0], nt_errstr(result));
 		return -1;

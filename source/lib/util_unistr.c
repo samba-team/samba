@@ -708,16 +708,6 @@ BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
   The char* arguments must NOT be multibyte - to be completely sure
   of this only pass string constants */
 
-
-void pstrcpy_wa(smb_ucs2_t *dest, const char *src)
-{
-	int i;
-	for (i=0;i<PSTRING_LEN;i++) {
-		dest[i] = UCS2_CHAR(src[i]);
-		if (src[i] == 0) return;
-	}
-}
-
 int strcmp_wa(const smb_ucs2_t *a, const char *b)
 {
 	while (*b && *a == UCS2_CHAR(*b)) { a++; b++; }

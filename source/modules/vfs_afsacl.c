@@ -37,6 +37,8 @@ extern DOM_SID global_sid_Builtin_Backup_Operators;
 extern DOM_SID global_sid_Authenticated_Users;
 extern DOM_SID global_sid_NULL;
 
+static char space_replacement = '%';
+
 extern int afs_syscall(int, char *, int, char *, int);
 
 struct afs_ace {
@@ -83,7 +85,7 @@ static void free_afs_acl(struct afs_acl *acl)
 
 static struct afs_ace *clone_afs_ace(TALLOC_CTX *mem_ctx, struct afs_ace *ace)
 {
-	struct afs_ace *result = talloc(mem_ctx, sizeof(struct afs_ace));
+	struct afs_ace *result = TALLOC_P(mem_ctx, struct afs_ace);
 
 	if (result == NULL)
 		return NULL;
@@ -167,7 +169,7 @@ static struct afs_ace *new_afs_ace(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = talloc(mem_ctx, sizeof(struct afs_ace));
+	result = TALLOC_P(mem_ctx, struct afs_ace);
 
 	if (result == NULL) {
 		DEBUG(0, ("Could not talloc AFS ace\n"));
@@ -260,10 +262,12 @@ static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 	for (aces = nplus+nminus; aces > 0; aces--)
 	{
 
-		const char *name;
+		const char *namep;
+		fstring name;
 		uint32 rights;
+		char *space;
 
-		name = p;
+		namep = p;
 
 		if ((p = strchr(p, '\t')) == NULL)
 			return False;
@@ -276,6 +280,11 @@ static BOOL parse_afs_acl(struct afs_acl *acl, const char *acl_str)
 		if ((p = strchr(p, '\n')) == NULL)
 			return False;
 		p += 1;
+
+		fstrcpy(name, namep);
+
+		while ((space = strchr_m(name, space_replacement)) != NULL)
+			*space = ' ';
 
 		add_afs_ace(acl, nplus>0, name, rights);
 
@@ -488,6 +497,17 @@ static struct static_dir_ace_mapping {
 	{ 0, SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT,
 	  0x00120089, 8 /* l */ },
 
+	/* some stupid workaround for preventing fallbacks */ 	
+	{ 0, 0x3, 0x0012019F, 9 /* rl */ },
+	{ 0, 0x13, PERMS_FULL, 127 /* full */ },
+	
+	/* read, delete and execute access plus synchronize */
+	{ 0, 0x3, 0x001300A9, 9 /* should be rdl, set to rl */},
+	/* classical read list */
+	{ 0, 0x13, 0x001200A9, 9 /* rl */},
+	/* almost full control, no delete */
+	{ 0, 0x13, PERMS_CHANGE, 63 /* rwidlk */},
+
 	/* List folder */
 	{ 0, SEC_ACE_FLAG_CONTAINER_INHERIT,
 	  PERMS_READ, 8 /* l */ },
@@ -527,8 +547,8 @@ static uint32 nt_to_afs_dir_rights(const char *filename, const SEC_ACE *ace)
 			return m->afs_rights;
 	}
 
-	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s\n",
-		  ace->type, ace->flags, ace->info.mask, filename));
+	DEBUG(1, ("AFSACL FALLBACK: 0x%X 0x%X 0x%X %s %X\n",
+		  ace->type, ace->flags, ace->info.mask, filename, rights));
 
 	if (rights & (GENERIC_ALL_ACCESS|WRITE_DAC_ACCESS)) {
 		result |= PRSFS_READ | PRSFS_WRITE | PRSFS_INSERT |
@@ -599,7 +619,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	uid_to_sid(&owner_sid, sbuf.st_uid);
 	gid_to_sid(&group_sid, sbuf.st_gid);
 
-	nt_ace_list = (SEC_ACE *)malloc(afs_acl->num_aces * sizeof(SEC_ACE));
+	nt_ace_list = SMB_MALLOC_ARRAY(SEC_ACE, afs_acl->num_aces);
 
 	if (nt_ace_list == NULL)
 		return 0;
@@ -698,6 +718,7 @@ static BOOL nt_to_afs_acl(const char *filename,
 		fstring dom_name;
 		fstring name;
 		enum SID_NAME_USE name_type;
+		char *p;
 
 		if (ace->type != SEC_ACE_TYPE_ACCESS_ALLOWED) {
 			/* First cut: Only positive ACEs */
@@ -751,6 +772,9 @@ static BOOL nt_to_afs_acl(const char *filename,
 				strlower_m(name);
 			}
 		}
+
+		while ((p = strchr_m(name, ' ')) != NULL)
+			*p = space_replacement;
 
 		add_afs_ace(afs_acl, True, name,
 			    nt_to_afs_rights(filename, ace));
@@ -971,9 +995,26 @@ BOOL afsacl_set_nt_acl(vfs_handle_struct *handle,
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
+static int afsacl_connect(vfs_handle_struct *handle, 
+			  connection_struct *conn, 
+			  const char *service, 
+			  const char *user)
+{
+	char *spc;
+
+	spc = lp_parm_const_string(SNUM(handle->conn), "afsacl", "space", "%");
+
+	if (spc != NULL)
+		space_replacement = spc[0];
+	
+	return SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple afsacl_ops[] = {	
+	{SMB_VFS_OP(afsacl_connect), SMB_VFS_OP_CONNECT,
+	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(afsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(afsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,

@@ -84,6 +84,15 @@ static const char *charset_name(charset_t ch)
 		}
 		ret = ln;
 	}
+#ifdef HAVE_SETLOCALE
+	/* We set back the locale to C to get ASCII-compatible toupper/lower functions.
+	   For now we do not need any other POSIX localisations anyway. When we should
+	   really need localized string functions one day we need to write our own
+	   ascii_tolower etc.
+	*/
+	setlocale(LC_ALL, "C");
+ #endif
+
 #endif
 
 	if (!ret || !*ret) ret = "ASCII";
@@ -372,7 +381,7 @@ size_t convert_string(charset_t from, charset_t to,
 		unsigned char *q = (unsigned char *)dest;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 		size_t retval = 0;
 
 		/* If all characters are ascii, fast path here. */
@@ -408,7 +417,7 @@ size_t convert_string(charset_t from, charset_t to,
 		size_t retval = 0;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
 		while (((slen == (size_t)-1) || (slen >= 2)) && dlen) {
@@ -444,7 +453,7 @@ size_t convert_string(charset_t from, charset_t to,
 		size_t retval = 0;
 		size_t slen = srclen;
 		size_t dlen = destlen;
-		unsigned char lastp;
+		unsigned char lastp = '\0';
 
 		/* If all characters are ascii, fast path here. */
 		while (slen && (dlen >= 2)) {

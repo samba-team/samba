@@ -3309,7 +3309,7 @@ BOOL srv_io_r_net_disk_enum(const char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_stru
 		DISK_INFO *dinfo;
 
 		if(!(dinfo = PRS_ALLOC_MEM(ps, DISK_INFO, entries_read3)))
-		return False;
+			return False;
 		r_n->disk_enum_ctr.disk_info = dinfo;
 	}
 

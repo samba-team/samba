@@ -36,6 +36,45 @@ static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
 	d_printf("\n");
 }
 
+
+static const char *display_time(NTTIME *nttime)
+{
+	static fstring string;
+
+	float high;
+	float low;
+	int sec;
+	int days, hours, mins, secs;
+	int offset = 1;
+
+	if (nttime->high==0 && nttime->low==0)
+		return "Now";
+
+	if (nttime->high==0x80000000 && nttime->low==0)
+		return "Never";
+
+	high = 65536;	
+	high = high/10000;
+	high = high*65536;
+	high = high/1000;
+	high = high * (~nttime->high);
+
+	low = ~nttime->low;	
+	low = low/(1000*1000*10);
+
+	sec=high+low;
+	sec+=offset;
+
+	days=sec/(60*60*24);
+	hours=(sec - (days*60*60*24)) / (60*60);
+	mins=(sec - (days*60*60*24) - (hours*60*60) ) / 60;
+	secs=sec - (days*60*60*24) - (hours*60*60) - (mins*60);
+
+	fstr_sprintf(string, "%u days, %u hours, %u minutes, %u seconds", days, hours, mins, secs);
+	return (string);
+}
+
+
 static void display_alias_info(uint32 rid, SAM_ALIAS_INFO *a)
 {
 	d_printf("Alias '%s' ", unistr2_static(&a->uni_als_name));
@@ -81,7 +120,25 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 
 static void display_domain_info(SAM_DOMAIN_INFO *a)
 {
+	time_t u_logout;
+
+	u_logout = nt_time_to_unix_abs((NTTIME *)&a->force_logoff);
+
 	d_printf("Domain name: %s\n", unistr2_static(&a->uni_dom_name));
+
+	d_printf("Minimal Password Length: %d\n", a->min_pwd_len);
+	d_printf("Password History Length: %d\n", a->pwd_history_len);
+
+	d_printf("Force Logoff: %d\n", (int)u_logout);
+
+	d_printf("Max Password Age: %s\n", display_time((NTTIME *)&a->max_pwd_age));
+	d_printf("Min Password Age: %s\n", display_time((NTTIME *)&a->min_pwd_age));
+
+	d_printf("Lockout Time: %s\n", display_time((NTTIME *)&a->account_lockout.lockout_duration));
+	d_printf("Lockout Reset Time: %s\n", display_time((NTTIME *)&a->account_lockout.reset_count));
+
+	d_printf("Bad Attempt Lockout: %d\n", a->account_lockout.bad_attempt_lockout);
+	d_printf("User must logon to change password: %d\n", a->logon_chgpass);
 }
 
 static void display_group_info(uint32 rid, SAM_GROUP_INFO *a)
@@ -322,6 +379,14 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
+	if (delta->hdr_parameters.buffer) {
+		old_string = pdb_get_munged_dial(account);
+		new_string = unistr2_static(&delta->uni_parameters);
+
+		if (STRING_CHANGED)
+			pdb_set_munged_dial(account, new_string, PDB_CHANGED);
+	}
+
 	/* User and group sid */
 	if (pdb_get_user_rid(account) != delta->user_rid)
 		pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
@@ -347,8 +412,11 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
 
 	/* TODO: logon hours */
-	/* TODO: bad password count */
-	/* TODO: logon count */
+	if (pdb_get_bad_password_count(account) != delta->bad_pwd_count)
+		pdb_set_bad_password_count(account, delta->bad_pwd_count, PDB_CHANGED);
+
+	if (pdb_get_logon_count(account) != delta->logon_count)
+		pdb_set_logon_count(account, delta->logon_count, PDB_CHANGED);
 
 	if (!nt_time_is_zero(&delta->pwd_last_set_time)) {
 		unix_time = nt_time_to_unix(&delta->pwd_last_set_time);
@@ -795,7 +863,7 @@ fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_members = talloc_zero(t, sizeof(char *) * delta->num_members);
+	nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members);
 
 	for (i=0; i<delta->num_members; i++) {
 		NTSTATUS nt_status;
@@ -886,6 +954,58 @@ fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
+{
+	time_t u_max_age, u_min_age, u_logout, u_lockoutreset, u_lockouttime;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	pstring domname;
+
+	u_max_age = nt_time_to_unix_abs((NTTIME *)&delta->max_pwd_age);
+	u_min_age = nt_time_to_unix_abs((NTTIME *)&delta->min_pwd_age);
+	u_logout = nt_time_to_unix_abs((NTTIME *)&delta->force_logoff);
+	u_lockoutreset = nt_time_to_unix_abs((NTTIME *)&delta->account_lockout.reset_count);
+	u_lockouttime = nt_time_to_unix_abs((NTTIME *)&delta->account_lockout.lockout_duration);
+
+	unistr2_to_ascii(domname, &delta->uni_dom_name, sizeof(domname) - 1);
+
+	/* we don't handle BUILTIN account policies */	
+	if (!strequal(domname, get_global_sam_name())) {
+		printf("skipping SAM_DOMAIN_INFO delta for '%s' (is not my domain)\n", domname);
+		return NT_STATUS_OK;
+	}
+
+
+	if (!account_policy_set(AP_PASSWORD_HISTORY, delta->pwd_history_len))
+		return nt_status;
+
+	if (!account_policy_set(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
+		return nt_status;
+
+	if (!account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
+		return nt_status;
+
+	if (!account_policy_set(AP_MIN_PASSWORD_AGE, (uint32)u_min_age))
+		return nt_status;
+
+	if (!account_policy_set(AP_TIME_TO_LOGOUT, (uint32)u_logout))
+		return nt_status;
+
+	if (!account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
+		return nt_status;
+
+	if (!account_policy_set(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
+		return nt_status;
+
+	if (!account_policy_set(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime/60))
+		return nt_status;
+
+	if (!account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
+		return nt_status;
+
+	return NT_STATUS_OK;
+}
+
+
 static void
 fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		DOM_SID dom_sid)
@@ -911,10 +1031,11 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		fetch_alias_mem(hdr_delta->target_rid,
 				&delta->als_mem_info, dom_sid);
 		break;
-	/* The following types are recognised but not handled */
 	case SAM_DELTA_DOMAIN_INFO:
-		d_printf("SAM_DELTA_DOMAIN_INFO not handled\n");
+		fetch_domain_info(hdr_delta->target_rid,
+				&delta->domain_info);
 		break;
+	/* The following types are recognised but not handled */
 	case SAM_DELTA_RENAME_GROUP:
 		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
 		break;

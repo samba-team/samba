@@ -186,6 +186,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
+	int maxfd = 0;
 	int i;
 	char *ports;
 
@@ -241,7 +242,9 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
 				unsigned port = atoi(tok);
-				if (port == 0) continue;
+				if (port == 0) {
+					continue;
+				}
 				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
 				if(s == -1)
 					return False;
@@ -259,6 +262,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 					return False;
 				}
 				FD_SET(s,&listen_set);
+				maxfd = MAX( maxfd, s);
 
 				num_sockets++;
 				if (num_sockets >= FD_SETSIZE) {
@@ -301,6 +305,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 
 			fd_listenset[num_sockets] = s;
 			FD_SET(s,&listen_set);
+			maxfd = MAX( maxfd, s);
 
 			num_sockets++;
 
@@ -335,7 +340,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
+		num = sys_select(maxfd+1,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
@@ -482,9 +487,10 @@ BOOL reload_services(BOOL test)
 		return(True);
 
 	lp_killunused(conn_snum_used);
-	
+
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
+	remove_stale_printers();
 	load_printers();
 
 	/* perhaps the config filename is now set */
@@ -780,6 +786,9 @@ void build_options(BOOL screen);
 
 	init_structs();
 
+	if (!init_guest_info())
+		return -1;
+
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
@@ -855,7 +864,7 @@ void build_options(BOOL screen);
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
 
-	if ( is_daemon )
+	if ( is_daemon && !interactive )
 		start_background_queue(); 
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))

@@ -452,6 +452,24 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
+					       const char *username,
+					       gid_t primary_gid,
+					       DOM_SID **sids, gid_t **gids,
+					       int *num_groups)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->
+		enum_group_memberships(context->pdb_methods, username,
+				       primary_gid, sids, gids, num_groups);
+}
+
 static NTSTATUS context_find_alias(struct pdb_context *context,
 				   const char *name, DOM_SID *sid)
 {
@@ -587,7 +605,8 @@ static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
 }
 	
 static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
-					       const DOM_SID *sid,
+					       const DOM_SID *members,
+					       int num_members,
 					       DOM_SID **aliases, int *num)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -598,8 +617,8 @@ static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->
-		enum_alias_memberships(context->pdb_methods, sid, aliases,
-				       num);
+		enum_alias_memberships(context->pdb_methods, members,
+				       num_members, aliases, num);
 }
 	
 /******************************************************************
@@ -717,6 +736,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
 
 	(*context)->pdb_find_alias = context_find_alias;
 	(*context)->pdb_create_alias = context_create_alias;
@@ -870,6 +890,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwent(pdb_context, user));
 }
 
+static SAM_ACCOUNT *sam_account_cache = NULL;
+
 BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username) 
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -878,7 +900,17 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 		return False;
 	}
 
-	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context, sam_acct, username));
+	if (!NT_STATUS_IS_OK(pdb_context->pdb_getsampwnam(pdb_context,
+							  sam_acct, username)))
+		return False;
+
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
+	}
+
+	pdb_copy_sam_account(sam_acct, &sam_account_cache);
+	return True;
 }
 
 BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid) 
@@ -888,6 +920,10 @@ BOOL pdb_getsampwsid(SAM_ACCOUNT *sam_acct, const DOM_SID *sid)
 	if (!pdb_context) {
 		return False;
 	}
+
+	if ((sam_account_cache != NULL) &&
+	    (sid_equal(sid, pdb_get_user_sid(sam_account_cache))))
+		return pdb_copy_sam_account(sam_account_cache, &sam_acct);
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_getsampwsid(pdb_context, sam_acct, sid));
 }
@@ -911,6 +947,11 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 		return False;
 	}
 
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
+	}
+
 	return NT_STATUS_IS_OK(pdb_context->pdb_update_sam_account(pdb_context, sam_acct));
 }
 
@@ -920,6 +961,11 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT *sam_acct)
 
 	if (!pdb_context) {
 		return False;
+	}
+
+	if (sam_account_cache != NULL) {
+		pdb_free_sam(&sam_account_cache);
+		sam_account_cache = NULL;
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->pdb_delete_sam_account(pdb_context, sam_acct));
@@ -1009,6 +1055,21 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	return NT_STATUS_IS_OK(pdb_context->
 			       pdb_enum_group_mapping(pdb_context, sid_name_use,
 						      rmap, num_entries, unix_only));
+}
+
+NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
+				    DOM_SID **sids, gid_t **gids,
+				    int *num_groups)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_context->pdb_enum_group_memberships(pdb_context, username,
+						       primary_gid, sids, gids,
+						       num_groups);
 }
 
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
@@ -1125,7 +1186,7 @@ BOOL pdb_enum_aliasmem(const DOM_SID *alias,
 						 members, num_members));
 }
 
-BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
+BOOL pdb_enum_alias_memberships(const DOM_SID *members, int num_members,
 				DOM_SID **aliases, int *num)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1135,7 +1196,8 @@ BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_alias_memberships(pdb_context, sid,
+			       pdb_enum_alias_memberships(pdb_context, members,
+							  num_members,
 							  aliases, num));
 }
 
@@ -1222,6 +1284,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	(*methods)->enum_group_memberships = pdb_default_enum_group_memberships;
 	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;

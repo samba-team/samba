@@ -27,12 +27,13 @@
 #include "includes.h"
 
 /* look in server.c for some explanation of these variables */
-extern int Protocol;
+extern enum protocol_types Protocol;
 extern int max_send;
 extern int max_recv;
 extern char magic_char;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
+extern uint32 global_client_caps;
 
 extern BOOL global_encrypted_passwords_negotiated;
 
@@ -257,8 +258,6 @@ int reply_special(char *inbuf,char *outbuf)
 
 		reload_services(True);
 		reopen_logs();
-
-		claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
 		already_got_session = True;
 		break;
@@ -718,7 +717,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			mode &= ~aDIR;
 
 		if (check_name(fname,conn)) {
-			ok = (file_set_dosmode(conn,fname,mode,NULL) == 0);
+			ok = (file_set_dosmode(conn,fname,mode,&sbuf,False) == 0);
 		}
 	} else {
 		ok = True;
@@ -1716,7 +1715,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Fail for readbraw.
 ****************************************************************************/
 
-void fail_readraw(void)
+static void fail_readraw(void)
 {
 	pstring errstr;
 	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)",
@@ -1724,12 +1723,46 @@ void fail_readraw(void)
 	exit_server(errstr);
 }
 
+#if defined(WITH_SENDFILE)
+/****************************************************************************
+ Fake (read/write) sendfile. Returns -1 on read or write fail.
+****************************************************************************/
+
+static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread, char *buf, int bufsize)
+{
+	ssize_t ret=0;
+
+	/* Paranioa check... */
+	if (nread > bufsize) {
+		fail_readraw();
+	}
+
+	if (nread > 0) {
+		ret = read_file(fsp,buf,startpos,nread);
+		if (ret == -1) {
+			return -1;
+		}
+	}
+
+	/* If we had a short read, fill with zeros. */
+	if (ret < nread) {
+		memset(buf, '\0', nread - ret);
+	}
+
+	if (write_data(smbd_server_fd(),buf,nread) != nread) {
+		return -1;
+	}	
+
+	return (ssize_t)nread;
+}
+#endif
+
 /****************************************************************************
  Use sendfile in readbraw.
 ****************************************************************************/
 
 void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T startpos, size_t nread,
-		ssize_t mincount, char *outbuf)
+		ssize_t mincount, char *outbuf, int out_buffsize)
 {
 	ssize_t ret=0;
 
@@ -1750,13 +1783,27 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 		header.free = NULL;
 
 		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, nread) == -1) {
-			/*
-			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
-			 * return ENOSYS then pretend we just got a normal read.
-			 */
+			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
+				goto normal_readbraw;
+			}
+
+			/*
+			 * Special hack for broken Linux with no working sendfile. If we
+			 * return EINTR we sent the header but not the rest of the data.
+			 * Fake this up by doing read/write calls.
+			 */
+			if (errno == EINTR) {
+				/* Ensure we don't do this again. */
 				set_use_sendfile(SNUM(conn), False);
-				goto normal_read;
+				DEBUG(0,("send_file_readbraw: sendfile not available. Faking..\n"));
+
+				if (fake_sendfile(fsp, startpos, nread, outbuf + 4, out_buffsize - 4) == -1) {
+					DEBUG(0,("send_file_readbraw: fake_sendfile failed for file %s (%s).\n",
+						fsp->fsp_name, strerror(errno) ));
+					exit_server("send_file_readbraw fake_sendfile failed");
+				}
+				return;
 			}
 
 			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
@@ -1766,7 +1813,8 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
 
 	}
 
-  normal_read:
+  normal_readbraw:
+
 #endif
 
 	if (nread > 0) {
@@ -1789,7 +1837,7 @@ void send_file_readbraw(connection_struct *conn, files_struct *fsp, SMB_OFF_T st
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
-int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
+int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int out_buffsize)
 {
 	extern struct current_user current_user;
 	ssize_t maxcount,mincount;
@@ -1878,7 +1926,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
 
-	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (!is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		SMB_OFF_T size = fsp->size;
 		SMB_OFF_T sizeneeded = startpos + maxcount;
   
@@ -1904,7 +1952,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	DEBUG( 3, ( "readbraw fnum=%d start=%.0f max=%d min=%d nread=%d\n", fsp->fnum, (double)startpos,
 				(int)maxcount, (int)mincount, (int)nread ) );
   
-	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf);
+	send_file_readbraw(conn, fsp, startpos, nread, mincount, outbuf, out_buffsize);
 
 	DEBUG(5,("readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -2038,7 +2086,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 
 	data = smb_buf(outbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtoread,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBread);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2068,9 +2116,10 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Reply to a read and X - possibly using sendfile.
 ****************************************************************************/
 
-int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, 
+int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length, int len_outbuf,
 		files_struct *fsp, SMB_OFF_T startpos, size_t smb_maxcnt)
 {
+	int outsize = 0;
 	ssize_t nread = -1;
 	char *data = smb_buf(outbuf);
 
@@ -2107,6 +2156,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 		SSVAL(outbuf,smb_vwv5,smb_maxcnt);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+		SSVAL(outbuf,smb_vwv7,((smb_maxcnt >> 16) & 1));
 		SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
 		SCVAL(outbuf,smb_vwv0,0xFF);
 		set_message(outbuf,12,smb_maxcnt,False);
@@ -2114,14 +2164,33 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		header.length = data - outbuf;
 		header.free = NULL;
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt) == -1) {
-			/*
-			 * Special hack for broken Linux with no 64 bit clean sendfile. If we
-			 * return ENOSYS then pretend we just got a normal read.
-			 */
+		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fd, &header, startpos, smb_maxcnt)) == -1) {
+			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
-				set_use_sendfile(SNUM(conn), False);
 				goto normal_read;
+			}
+
+			/*
+			 * Special hack for broken Linux with no working sendfile. If we
+			 * return EINTR we sent the header but not the rest of the data.
+			 * Fake this up by doing read/write calls.
+			 */
+
+			if (errno == EINTR) {
+				/* Ensure we don't do this again. */
+				set_use_sendfile(SNUM(conn), False);
+				DEBUG(0,("send_file_readX: sendfile not available. Faking..\n"));
+
+				if ((nread = fake_sendfile(fsp, startpos, smb_maxcnt, data,
+							len_outbuf - (data-outbuf))) == -1) {
+					DEBUG(0,("send_file_readX: fake_sendfile failed for file %s (%s).\n",
+						fsp->fsp_name, strerror(errno) ));
+					exit_server("send_file_readX: fake_sendfile failed");
+				}
+				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
+					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+				/* Returning -1 here means successful sendfile. */
+				return -1;
 			}
 
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
@@ -2131,6 +2200,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+		/* Returning -1 here means successful sendfile. */
 		return -1;
 	}
 
@@ -2145,15 +2215,18 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	}
 
+	outsize = set_message(outbuf,12,nread,False);
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,nread);
 	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+	SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 	SSVAL(smb_buf(outbuf),-2,nread);
   
 	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 		fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
-	return nread;
+	/* Returning the number of bytes we want to send back - including header. */
+	return outsize;
 }
 
 /****************************************************************************
@@ -2183,6 +2256,18 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	set_message(outbuf,12,0,True);
 
+	if (global_client_caps & CAP_LARGE_READX) {
+		if (SVAL(inbuf,smb_vwv7) == 1) {
+			smb_maxcnt |= (1<<16);
+		}
+		if (smb_maxcnt > BUFFER_SIZE) {
+			DEBUG(0,("reply_read_and_X - read too large (%u) for reply buffer %u\n",
+				(unsigned int)smb_maxcnt, (unsigned int)BUFFER_SIZE));
+			END_PROFILE(SMBreadX);
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
 	if(CVAL(inbuf,smb_wct) == 12) {
 #ifdef LARGE_SMB_OFF_T
 		/*
@@ -2207,12 +2292,12 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)smb_maxcnt,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
 
-	nread = send_file_readX(conn, inbuf, outbuf, length, fsp, startpos, smb_maxcnt);
+	nread = send_file_readX(conn, inbuf, outbuf, length, bufsize, fsp, startpos, smb_maxcnt);
 	if (nread != -1)
 		nread = chain_reply(inbuf,outbuf,length,bufsize);
 
@@ -2263,7 +2348,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SCVAL(inbuf,smb_com,SMBwritec);
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwritebraw);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}
@@ -2378,8 +2463,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf,
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, 
-		      WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteunlock);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2447,7 +2531,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 	startpos = IVAL_TO_SMB_OFF_T(inbuf,smb_vwv2);
 	data = smb_buf(inbuf) + 3;
   
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwrite);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2558,7 +2642,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteX);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -2829,7 +2913,7 @@ int reply_writeclose(connection_struct *conn,
 	mtime = make_unix_date3(inbuf+smb_vwv4);
 	data = smb_buf(inbuf) + 1;
   
-	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+	if (numtowrite && is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK)) {
 		END_PROFILE(SMBwriteclose);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -3223,7 +3307,7 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	}
 
 	if (check_name(directory, conn))
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
+		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
 	
 	if (ret == -1) {
 	        if(errno == ENOENT) {
@@ -4518,7 +4602,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 	
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
@@ -4733,7 +4817,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 	tcount = maxcount;
 	total_read = 0;
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK)) {
 		END_PROFILE(SMBreadBmpx);
 		return ERROR_DOS(ERRDOS,ERRlock);
 	}
@@ -4859,7 +4943,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		not an SMBwritebmpx - set this up now so we don't forget */
 	SCVAL(outbuf,smb_com,SMBwritec);
 
-	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK,False)) {
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK)) {
 		END_PROFILE(SMBwriteBmpx);
 		return(ERROR_DOS(ERRDOS,ERRlock));
 	}

@@ -1938,11 +1938,16 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
 	SAM_ACCOUNT *sam_pass=NULL;
+	struct passwd *passwd;
 	DOM_SID  sid;
+	DOM_SID *sids;
 	DOM_GID *gids = NULL;
 	int num_groups = 0;
+	gid_t *unix_gids;
+	int i, num_gids, num_sids;
 	uint32 acc_granted;
 	BOOL ret;
+	NTSTATUS result;
 
 	/*
 	 * from the SID in the request:
@@ -1981,18 +1986,51 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
-	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
+
+	passwd = getpwnam_alloc(pdb_get_username(sam_pass));
+	if (passwd == NULL) {
 		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_GROUP;
+		return NT_STATUS_NO_SUCH_USER;
 	}
+
+	sids = NULL;
+	num_sids = 0;
+
+	become_root();
+	result = pdb_enum_group_memberships(pdb_get_username(sam_pass),
+					    passwd->pw_gid,
+					    &sids, &unix_gids, &num_groups);
+	unbecome_root();
+
+	pdb_free_sam(&sam_pass);
+	passwd_free(&passwd);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	SAFE_FREE(unix_gids);
+
+	gids = NULL;
+	num_gids = 0;
+
+	for (i=0; i<num_groups; i++) {
+		uint32 rid;
+
+		if (!sid_peek_check_rid(get_global_sam_sid(),
+					&(sids[i]), &rid))
+			continue;
+
+		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
+		gids[num_gids].attr=7;
+		gids[num_gids].g_rid = rid;
+		num_gids += 1;
+	}
+	SAFE_FREE(sids);
 	
 	/* construct the response.  lkclXXXX: gids are not copied! */
 	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
 	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
-	
-	pdb_free_sam(&sam_pass);
 	
 	return r_u->status;
 }
@@ -2075,10 +2113,15 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			}
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
-			
+
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			u_logout = account_policy_temp;
+
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases);
+			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
+				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
@@ -2094,6 +2137,9 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			break;
 		case 0x07:
 			init_unk_info7(&ctr->info.inf7);
+			break;
+		case 0x08:
+			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
 			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
@@ -3114,31 +3160,19 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	int num_groups = 0, tmp_num_groups=0;
-	uint32 *rids=NULL, *new_rids=NULL, *tmp_rids=NULL;
+	int num_groups = 0;
+	uint32 *rids=NULL;
 	struct samr_info *info = NULL;
-	int i,j;
+	int i;
 		
 	NTSTATUS ntstatus1;
 	NTSTATUS ntstatus2;
 
-	/* until i see a real useraliases query, we fack one up */
+	DOM_SID *members;
+	DOM_SID *aliases;
+	int num_aliases;
+	BOOL res;
 
-	/* I have seen one, JFM 2/12/2001 */
-	/*
-	 * Explanation of what this call does:
-	 * for all the SID given in the request:
-	 * return a list of alias (local groups)
-	 * that have those SID as members.
-	 *
-	 * and that's the alias in the domain specified
-	 * in the policy_handle
-	 *
-	 * if the policy handle is on an incorrect sid
-	 * for example a user's sid
-	 * we should reply NT_STATUS_OBJECT_TYPE_MISMATCH
-	 */
-	
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_query_useraliases: %d\n", __LINE__));
@@ -3161,40 +3195,42 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	    !sid_check_is_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
+	members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, q_u->num_sids1);
 
-	for (i=0; i<q_u->num_sids1; i++) {
+	if (members == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-		r_u->status=get_alias_user_groups(p->mem_ctx, &info->sid, &tmp_num_groups, &tmp_rids, &(q_u->sid[i].sid));
+	for (i=0; i<q_u->num_sids1; i++)
+		sid_copy(&members[i], &q_u->sid[i].sid);
 
-		/*
-		 * if there is an error, we just continue as
-		 * it can be an unfound user or group
-		 */
-		if (!NT_STATUS_IS_OK(r_u->status)) {
-			DEBUG(10,("_samr_query_useraliases: an error occured while getting groups\n"));
+	become_root();
+	res = pdb_enum_alias_memberships(members,
+					 q_u->num_sids1, &aliases,
+					 &num_aliases);
+	unbecome_root();
+
+	if (!res)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	rids = NULL;
+	num_groups = 0;
+
+	for (i=0; i<num_aliases; i++) {
+		uint32 rid;
+
+		if (!sid_peek_check_rid(&info->sid, &aliases[i], &rid))
 			continue;
-		}
 
-		if (tmp_num_groups==0) {
-			DEBUG(10,("_samr_query_useraliases: no groups found\n"));
-			continue;
-		}
+		rids = TALLOC_REALLOC_ARRAY(p->mem_ctx, rids, uint32, num_groups+1);
 
-		new_rids=TALLOC_REALLOC_ARRAY(p->mem_ctx, rids, uint32, num_groups+tmp_num_groups);
-		if (new_rids==NULL) {
-			DEBUG(0,("_samr_query_useraliases: could not realloc memory\n"));
+		if (rids == NULL)
 			return NT_STATUS_NO_MEMORY;
-		}
-		rids=new_rids;
 
-		for (j=0; j<tmp_num_groups; j++)
-			rids[j+num_groups]=tmp_rids[j];
-		
-		safe_free(tmp_rids);
-		
-		num_groups+=tmp_num_groups;
+		rids[num_groups] = rid;
+		num_groups += 1;
 	}
-	
+	SAFE_FREE(aliases);
+
 	init_samr_r_query_useraliases(r_u, num_groups, rids, NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
@@ -4329,9 +4365,14 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			num_groups=info->disp_info.num_group_account;
 			free_samr_db(info);
 
+			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
+			u_logout = account_policy_temp;
+
+			unix_to_nt_time_abs(&nt_logout, u_logout);
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases);
+			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
+				       num_users, num_groups, num_aliases, nt_logout);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
@@ -4349,6 +4390,9 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			break;
 		case 0x07:
 			init_unk_info7(&ctr->info.inf7);
+			break;
+		case 0x08:
+			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
 			break;
 		case 0x0c:
 			account_policy_get(AP_LOCK_ACCOUNT_DURATION, &account_policy_temp);
