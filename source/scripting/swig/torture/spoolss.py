@@ -6,7 +6,8 @@ def test_OpenPrinterEx(pipe, printer):
     print 'testing spoolss_OpenPrinterEx(%s)' % printer
 
     r = {}
-    r['printername'] = '\\\\win2k3dc\\%s' % printer
+    r['printername'] = '\\\\%s\\%s' % \
+                       (dcerpc.dcerpc_server_name(pipe), printer)
     r['datatype'] = None
     r['devmode_ctr'] = {}
     r['devmode_ctr']['size'] = 0
@@ -41,15 +42,15 @@ def test_GetPrinter(pipe, handle):
     r = {}
     r['handle'] = handle
 
-    for level in [1, 2, 3]:
+    for level in [0, 1, 2, 3, 4, 5, 6, 7]:
+
+        print 'test_GetPrinter(level = %d)' % level
 
         r['level'] = level
         r['buffer'] = None
         r['buf_size'] = 0
 
         result = dcerpc.spoolss_GetPrinter(pipe, r)
-
-        print result
 
         if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
             r['buffer'] = result['buf_size'] * '\x00'
@@ -59,6 +60,47 @@ def test_GetPrinter(pipe, handle):
 
             print result
 
+def test_EnumForms(pipe, handle):
+
+    print 'testing spoolss_EnumForms'
+
+    r = {}
+    r['handle'] = handle
+    r['level'] = 1
+    r['buffer'] = None
+    r['buf_size'] = 0
+
+    result = dcerpc.spoolss_EnumForms(pipe, r)
+
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+        r['buffer'] = result['buf_size'] * '\x00'
+        r['buf_size'] = result['buf_size']
+
+        result = dcerpc.spoolss_EnumForms(pipe, r)
+
+    print result
+           
+
+def test_EnumPorts(pipe, handle):
+
+    print 'testing spoolss_EnumPorts'
+
+    r = {}
+    r['handle'] = handle
+    r['level'] = 1
+    r['buffer'] = None
+    r['buf_size'] = 0
+
+    result = dcerpc.spoolss_EnumPorts(pipe, r)
+
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+        r['buffer'] = result['buf_size'] * '\x00'
+        r['buf_size'] = result['buf_size']
+
+        result = dcerpc.spoolss_EnumPorts(pipe, r)
+
+    print result
+           
 
 def test_EnumPrinters(pipe):
 
@@ -70,7 +112,9 @@ def test_EnumPrinters(pipe):
     r['flags'] = 0x02
     r['server'] = None
 
-    for level in [1, 2, 4, 5]:
+    for level in [0, 1, 4, 5]:
+
+        print 'test_EnumPrinters(level = %d)' % level
 
         r['level'] = level
         r['buf_size'] = 0
@@ -87,7 +131,10 @@ def test_EnumPrinters(pipe):
         printers = dcerpc.unmarshall_spoolss_PrinterInfo_array(
             result['buffer'], r['level'], result['count'])
 
-        if printer_names is None:
+        from pprint import pprint
+        pprint(printers)
+
+        if level == 1:
             printer_names = map(
                 lambda x: string.split(x['info1']['name'], ',')[0], printers)
 

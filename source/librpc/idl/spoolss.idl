@@ -123,7 +123,7 @@
 		[relative] nstring *printprocessor;
 		[relative] nstring *datatype;
 		[relative] nstring *parameters;
-		[relative] security_descriptor *secdesc;
+		[relative,subcontext(0)] security_descriptor *secdesc;
 		uint32 attributes;
 		uint32 priority;
 		uint32 defaultpriority;
@@ -136,7 +136,7 @@
 
 	typedef struct {
 		uint32 flags;
-		security_descriptor secdesc;
+		[subcontext(0)] security_descriptor secdesc;
 	} spoolss_PrinterInfo3;
 
 	typedef struct {
