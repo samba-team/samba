@@ -41,6 +41,7 @@ RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif
@@ -55,6 +56,7 @@ RCSID("$Id$");
 #endif
 
 #ifdef HAVE_USERSEC_H
+struct aud_rec;
 #include <usersec.h>
 #endif
 #ifdef HAVE_USERCONF_H
@@ -120,35 +122,37 @@ static char **
 initshells()
 {
     char **sp, *cp;
-#ifndef HAVE_GETCONFATTR
+#ifdef HAVE_GETCONFATTR
+    char *tmp;
+    int nsh;
+#else
     FILE *fp;
 #endif
     struct stat statb;
 
-    if (shells != NULL)
-	free(shells);
+    free(shells);
     shells = NULL;
-    if (strings != NULL)
-	free(strings);
+    free(strings);
     strings = NULL;
 #ifdef HAVE_GETCONFATTR
-    shells = calloc(47, sizeof(*shells));
+    if(getconfattr(SC_SYS_LOGIN, SC_SHELLS, &tmp, SEC_LIST) != 0)
+	return okshells;
+
+    for(cp = tmp, nsh = 0; *cp; cp += strlen(cp) + 1, nsh++);
+
+    shells = calloc(nsh + 1, sizeof(*shells));
     if(shells == NULL)
 	return okshells;
-    if(getconfattr(SC_SYS_LOGIN, SC_SHELLS, &cp, SEC_LIST) != 0) {
-	free(shells);
-	shells = NULL;
-	return okshells;
-    }
-    strings = strdup(cp);
+
+    strings = malloc(cp - tmp);
     if(strings == NULL) {
 	free(shells);
 	shells = NULL;
 	return okshells;
     }
-    for(sp = shells, cp = strings; cp; cp += strlen(cp) + 1, sp++) {
+    memcpy(strings, tmp, cp - tmp);
+    for(sp = shells, cp = strings; *cp; cp += strlen(cp) + 1, sp++)
 	*sp = cp;
-    }
 #else
     if ((fp = fopen(_PATH_SHELLS, "r")) == NULL)
 	return (okshells);
