@@ -56,7 +56,11 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 
   if (user.uid != 0) {
 	DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
-	return NT_STATUS_ACCESS_DENIED;
+
+	/* RPC calls return Windows errors. NT_STATUS_ACCESS_DENIED 
+	   doesn't work as a return code for RPC calls
+	*/
+	return ERRnoaccess;
   }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
@@ -106,7 +110,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   if(!create_msdfs_link(&jn, exists))
     return NERR_DfsCantCreateJunctionPoint;
 
-  return NT_STATUS_OK;
+  return ERRsuccess;
 }
 
 uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u)
@@ -117,12 +121,17 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 
   pstring dfspath, servername, sharename;
   pstring altpath;
+  int consumedcnt;
+  BOOL self_referral;
 
   get_current_user(&user,p);
 
   if (user.uid != 0) {
 	DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
-	return NT_STATUS_ACCESS_DENIED;
+	/* NT_STATUS_ACCESS_DENIED will not work as a status code
+	   for RPC calls 
+	*/
+	return ERRnoaccess;
   }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
@@ -145,7 +154,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
   if(!create_junction(dfspath, &jn))
     return NERR_DfsNoSuchServer;
 
-  if(!get_referred_path(dfspath, &jn, NULL, NULL))
+  if(!get_referred_path(dfspath, &jn, &consumedcnt, &self_referral))
     return NERR_DfsNoSuchVolume;
 
   /* if no server-share pair given, remove the msdfs link completely */
@@ -185,7 +194,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 	}
     }
 
-  return NT_STATUS_OK;
+  return ERRsuccess;
 }
 
 static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int num_j)

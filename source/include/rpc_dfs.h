@@ -35,7 +35,6 @@
 #define DFSFLAG_ADD_VOLUME           0x00000001
 #define DFSFLAG_RESTORE_VOLUME       0x00000002
 
-/* API errors from lmerr.h */
 #ifndef NERR_BASE
 #define NERR_BASE (2100)
 #endif
