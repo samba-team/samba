@@ -50,22 +50,11 @@ static struct port_desc *ports;
 static int num_ports;
 
 static void
-add_port(int family, const char *port_str, const char *protocol)
+add_port(int family, int port, const char *protocol)
 {
-    struct servent *sp;
     int type;
-    int port;
     int i;
 
-    sp = roken_getservbyname(port_str, protocol);
-    if(sp){
-	port = sp->s_port;
-    }else{
-	char *end;
-	port = htons(strtol(port_str, &end, 0));
-	if(end == port_str)
-	    return;
-    }
     if(strcmp(protocol, "udp") == 0)
 	type = SOCK_DGRAM;
     else if(strcmp(protocol, "tcp") == 0)
@@ -86,19 +75,46 @@ add_port(int family, const char *port_str, const char *protocol)
 }
 
 static void
+add_port_service(int family, const char *service, int port,
+		 const char *protocol)
+{
+    port = krb5_getportbyname (context, service, protocol, port);
+    add_port (family, port, protocol);
+}
+
+static void
+add_port_string (int family, const char *port_str, const char *protocol)
+{
+    struct servent *sp;
+    int port;
+
+    sp = roken_getservbyname (port_str, protocol);
+    if (sp != NULL) {
+	port = sp->s_port;
+    } else {
+	char *end;
+
+	port = htons(strtol(port_str, &end, 0));
+	if (end == port_str)
+	    return;
+    }
+    return add_port (family, port, protocol);
+}
+
+static void
 add_standard_ports (int family)
 {
-    add_port(family, "kerberos", "udp");
-    add_port(family, "kerberos", "tcp");
-    add_port(family, "kerberos-sec", "udp");
-    add_port(family, "kerberos-sec", "tcp");
-    add_port(family, "kerberos-iv", "udp");
-    add_port(family, "kerberos-iv", "tcp");
+    add_port_service(family, "kerberos", 88, "udp");
+    add_port_service(family, "kerberos", 88, "tcp");
+    add_port_service(family, "kerberos-sec", 88, "udp");
+    add_port_service(family, "kerberos-sec", 88, "tcp");
+    add_port_service(family, "kerberos-iv", 750, "udp");
+    add_port_service(family, "kerberos-iv", 750, "tcp");
     if(enable_http)
-	add_port(family, "http", "tcp");
+	add_port_service(family, "http", 80, "tcp");
 #ifdef KASERVER
     if (enable_kaserver)
-	add_port(family, "7004", "udp");
+	add_port_service(family, "afs3-kaserver", 7004 "udp");
 #endif
 }
 
@@ -121,16 +137,16 @@ parse_ports(const char *str)
 	    if(q){
 		*q++ = 0;
 #ifdef HAVE_IPV6
-		add_port(AF_INET6, p, q);
+		add_port_string(AF_INET6, p, q);
 #endif
-		add_port(AF_INET, p, q);
+		add_port_string(AF_INET, p, q);
 	    }else {
 #ifdef HAVE_IPV6
-		add_port(AF_INET6, p, "udp");
-		add_port(AF_INET6, p, "tcp");
+		add_port_string(AF_INET6, p, "udp");
+		add_port_string(AF_INET6, p, "tcp");
 #endif
-		add_port(AF_INET, p, "udp");
-		add_port(AF_INET, p, "tcp");
+		add_port_string(AF_INET, p, "udp");
+		add_port_string(AF_INET, p, "tcp");
 	    }
 	}
 	    
@@ -433,6 +449,188 @@ de_http(char *buf)
 
 #define TCP_TIMEOUT 4
 
+/*
+ * accept a new TCP connection on `d[index]'
+ */
+
+static void
+add_new_tcp (struct descr *d, int index, int min_free)
+{
+    size_t sa_size;
+    char *sa_buf;
+    struct sockaddr *sa;
+    int s;
+    int from_len;
+
+    sa_size = krb5_max_sockaddr_size ();
+    sa_buf = malloc(sa_size);
+    if (sa_buf == NULL) {
+	kdc_log(0, "Failed to allocate %u bytes", sa_size);
+	return;
+    }
+    sa = (struct sockaddr *)sa_buf;
+
+    from_len = sa_size;
+    s = accept(d[index].s, sa, &from_len);
+    if(s < 0){
+	krb5_warn(context, errno, "accept");
+	goto out;
+    }
+    if(min_free == -1){
+	close(s);
+	goto out;
+    }
+	    
+    d[min_free].s = s;
+    d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
+    d[min_free].type = SOCK_STREAM;
+out:
+    free (sa);
+}
+
+/*
+ * Grow `d' to handle at least `n'.
+ * Return != 0 if fails
+ */
+
+static int
+grow_descr (struct descr *d, size_t n)
+{
+    if (d->size - d->len < n) {
+	unsigned char *tmp;
+
+	d->size += max(1024, d->len + n);
+	if (d->size >= max_request) {
+	    kdc_log(0, "Request exceeds max request size (%u bytes).",
+		    d->size);
+	    clear_descr(d);
+	    return -1;
+	}
+	tmp = realloc (d->buf, d->size);
+	if (tmp == NULL) {
+	    kdc_log(0, "Failed to re-allocate %u bytes.", d->size);
+	    clear_descr(d);
+	    return -1;
+	}
+	d->buf = tmp;
+    }
+    return 0;
+}
+
+/*
+ * Try to handle the TCP data at `d->buf, d->len'.
+ * Return -1 if failed, 0 if succesful, and 1 if data is complete.
+ */
+
+static int
+handle_vanilla_tcp (struct descr *d)
+{
+    krb5_storage *sp;
+    int32_t len;
+
+    sp = krb5_storage_from_mem(d->buf, d->len);
+    if (sp == NULL) {
+	kdc_log (0, "krb5_storage_from_mem failed");
+	return -1;
+    }
+    krb5_ret_int32(sp, &len);
+    krb5_storage_free(sp);
+    if(d->len - 4 >= len) {
+	memcpy(d->buf, d->buf + 4, d->len - 4);
+	return 1;
+    }
+    return 0;
+}
+
+/*
+ * Try to handle the TCP/HTTP data at `d->buf, d->len'.
+ * Return -1 if failed, 0 if succesful, and 1 if data is complete.
+ */
+
+static int
+handle_http_tcp (struct descr *d, const char *addr)
+{
+    char *s, *p, *t;
+    void *data;
+    char *proto;
+    int len;
+
+    s = (char *)d->buf;
+
+    p = strstr(s, "\r\n");
+    if (p == NULL) {
+	kdc_log(0, "Malformed HTTP request from %s", addr);
+	return -1;
+    }
+    *p = 0;
+
+    p = NULL;
+    t = strtok_r(s, " \t", &p);
+    if (t == NULL) {
+	kdc_log(0, "Malformed HTTP request from %s", addr);
+	return -1;
+    }
+    t = strtok_r(NULL, " \t", &p);
+    if(t == NULL) {
+	kdc_log(0, "Malformed HTTP request from %s", addr);
+	return -1;
+    }
+    data = malloc(strlen(t));
+    if (data == NULL) {
+	kdc_log(0, "Failed to allocate %u bytes", strlen(t));
+	return -1;
+    }
+    if(*t == '/')
+	t++;
+    if(de_http(t) != 0) {
+	kdc_log(0, "Malformed HTTP request from %s", addr);
+	kdc_log(5, "Request: %s", t);
+	free(data);
+	return -1;
+    }
+    proto = strtok_r(NULL, " \t", &p);
+    if (proto == NULL) {
+	kdc_log(0, "Malformed HTTP request from %s", addr);
+	free(data);
+	return -1;
+    }
+    len = base64_decode(t, data);
+    if(len <= 0){
+	const char *msg = 
+	    " 404 Not found\r\n"
+	    "Server: Heimdal/" VERSION "\r\n"
+	    "Content-type: text/html\r\n"
+	    "Content-transfer-encoding: 8bit\r\n\r\n"
+	    "<TITLE>404 Not found</TITLE>\r\n"
+	    "<H1>404 Not found</H1>\r\n"
+	    "That page doesn't exist, maybe you are looking for "
+	    "<A HREF=\"http://www.pdc.kth.se/heimdal\">Heimdal</A>?\r\n";
+	write(d->s, proto, strlen(proto));
+	write(d->s, msg, strlen(msg));
+	kdc_log(0, "HTTP request from %s is non KDC request", addr);
+	kdc_log(5, "Request: %s", t);
+	free(data);
+	return -1;
+    }
+    {
+	const char *msg = 
+	    " 200 OK\r\n"
+	    "Server: Heimdal/" VERSION "\r\n"
+	    "Content-type: application/octet-stream\r\n"
+	    "Content-transfer-encoding: binary\r\n\r\n";
+	write(d->s, proto, strlen(proto));
+	write(d->s, msg, strlen(msg));
+    }
+    memcpy(d->buf, data, len);
+    d->len = len;
+    free(data);
+    return 1;
+}
+
+/*
+ * Handle incoming data to the TCP socket in `d[index]'
+ */
+
 static void
 handle_tcp(struct descr *d, int index, int min_free)
 {
@@ -443,6 +641,12 @@ handle_tcp(struct descr *d, int index, int min_free)
     int sa_size;
     int from_len;
     int n;
+    int ret;
+
+    if (d[index].timeout == 0) {
+	add_new_tcp (d, index, min_free);
+	return;
+    }
 
     sa_size = krb5_max_sockaddr_size ();
     sa_buf = malloc(sa_size);
@@ -452,25 +656,6 @@ handle_tcp(struct descr *d, int index, int min_free)
     }
     sa = (struct sockaddr *)sa_buf;
 
-    if(d[index].timeout == 0){
-	int s;
-
-	from_len = sa_size;
-	s = accept(d[index].s, sa, &from_len);
-	if(s < 0){
-	    krb5_warn(context, errno, "accept");
-	    goto out;
-	}
-	if(min_free == -1){
-	    close(s);
-	    goto out;
-	}
-	    
-	d[min_free].s = s;
-	d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
-	d[min_free].type = SOCK_STREAM;
-	goto out;
-    }
     from_len = sa_size;
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, 
 		 sa, &from_len);
@@ -479,112 +664,37 @@ handle_tcp(struct descr *d, int index, int min_free)
 	goto out;
     }
     /* sometimes recvfrom doesn't return an address */
-    if(from_len == 0){
+    if(from_len == 0) {
 	from_len = sa_size;
 	getpeername(d[index].s, sa, &from_len);
     }
     addr_to_string(sa, from_len, addr, sizeof(addr));
-    if(d[index].size - d[index].len < n){
-	unsigned char *tmp;
-	d[index].size += 1024;
-	if(d[index].size >= max_request){
-	    kdc_log(0, "Request exceeds max request size (%u bytes).",
-		    d[index].size);
-	    clear_descr(d + index);
-	    goto out;
-	}
-	tmp = realloc(d[index].buf, d[index].size);
-	if(tmp == NULL){
-	    kdc_log(0, "Failed to re-allocate %u bytes.", d[index].size);
-	    clear_descr(d + index);
-	    goto out;
-	}
-	d[index].buf = tmp;
-    }
+    if (grow_descr (&d[index], n))
+	goto out;
     memcpy(d[index].buf + d[index].len, buf, n);
     d[index].len += n;
-    if(d[index].len > 4 && d[index].buf[0] == 0){
-	krb5_storage *sp;
-	int32_t len;
-	sp = krb5_storage_from_mem(d[index].buf, d[index].len);
-	krb5_ret_int32(sp, &len);
-	krb5_storage_free(sp);
-	if(d[index].len - 4 >= len){
-	    memcpy(d[index].buf, d[index].buf + 4, d[index].len - 4);
-	    n = 0;
-	}
+    if(d[index].len > 4 && d[index].buf[0] == 0) {
+	ret = handle_vanilla_tcp (&d[index]);
+    } else if(enable_http &&
+	      strncmp((char *)d[index].buf, "GET ", 4) == 0 && 
+	      strncmp((char *)d[index].buf + d[index].len - 4,
+		      "\r\n\r\n", 4) == 0) {
+	ret = handle_http_tcp (&d[index], addr);
+	if (ret < 0)
+	    clear_descr (d + index);
+    } else {
+	kdc_log (0, "TCP data of strange type from %s", addr);
+	goto out;
     }
-    else if(enable_http &&
-	    strncmp((char *)d[index].buf, "GET ", 4) == 0 && 
-	    strncmp((char *)d[index].buf + d[index].len - 4,
-		    "\r\n\r\n", 4) == 0){
-	char *s, *p, *t;
-	void *data;
-	int len;
-	s = (char *)d[index].buf;
-	p = strstr(s, "\r\n");
-	*p = 0;
-	p = NULL;
-	strtok_r(s, " \t", &p);
-	t = strtok_r(NULL, " \t", &p);
-	if(t == NULL){
-	    kdc_log(0, "Malformed HTTP request from %s", addr);
-	    clear_descr(d + index);
-	    goto out;
-	}
-	data = malloc(strlen(t));
-	if (data == NULL) {
-	    kdc_log(0, "Failed to allocate %u bytes", strlen(t));
-	    goto out;
-	}
-	if(*t == '/')
-	    t++;
-	if(de_http(t) != 0) {
-	    kdc_log(0, "Malformed HTTP request from %s", addr);
-	    kdc_log(5, "Request: %s", t);
-	    clear_descr(d + index);
-	    free(data);
-	    goto out;
-	}
-	len = base64_decode(t, data);
-	if(len <= 0){
-	    const char *msg = 
-		"HTTP/1.1 404 Not found\r\n"
-		"Server: Heimdal/" VERSION "\r\n"
-		"Content-type: text/html\r\n"
-		"Content-transfer-encoding: 8bit\r\n\r\n"
-		"<TITLE>404 Not found</TITLE>\r\n"
-		"<H1>404 Not found</H1>\r\n"
-		"That page doesn't exist, maybe you are looking for "
-		"<A HREF=\"http://www.pdc.kth.se/heimdal\">Heimdal</A>?\r\n";
-	    write(d[index].s, msg, strlen(msg));
-	    kdc_log(0, "HTTP request from %s is non KDC request", addr);
-	    kdc_log(5, "Request: %s", t);
-	    free(data);
-	    clear_descr(d + index);
-	    goto out;
-	}
-	{
-	    const char *msg = 
-		"HTTP/1.1 200 OK\r\n"
-		"Server: Heimdal/" VERSION "\r\n"
-		"Content-type: application/octet-stream\r\n"
-		"Content-transfer-encoding: binary\r\n\r\n";
-	    write(d[index].s, msg, strlen(msg));
-	}
-	memcpy(d[index].buf, data, len);
-	d[index].len = len;
-	n = 0;
-	free(data);
-    }
-    if(n == 0){
+    if (ret < 0)
+	goto out;
+    else if (ret == 1) {
 	do_request(d[index].buf, d[index].len, 1,
 		   d[index].s, sa, from_len);
 	clear_descr(d + index);
     }
 out:
     free (sa_buf);
-    return;
 }
 
 void
