@@ -606,22 +606,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 #endif
 	
-#if CHECK_PATH_ON_TCONX
 	/* win2000 does not check the permissions on the directory
 	   during the tree connect, instead relying on permission
 	   check during individual operations. To match this behaviour
 	   I have disabled this chdir check (tridge) */
-	if (vfs_ChDir(conn,conn->connectpath) != 0) {
-		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
-			 get_remote_machine_name(), conn->client_address,
-			 conn->connectpath,strerror(errno)));
-		change_to_root_user();
-		yield_connection(conn, lp_servicename(SNUM(conn)));
-		conn_free(conn);
-		*status = NT_STATUS_BAD_NETWORK_NAME;
-		return NULL;
-	}
-#else
 	/* the alternative is just to check the directory exists */
 	if (SMB_VFS_STAT(conn, conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("'%s' does not exist or is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
@@ -631,7 +619,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
-#endif
 	
 	string_set(&conn->origpath,conn->connectpath);
 	
