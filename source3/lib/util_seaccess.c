@@ -221,7 +221,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 	*status = NT_STATUS_OK;
 	*acc_granted = 0;
 
-	DEBUG(10,("se_access_check: requested access %x, for  NT token with %u entries and first sid %s.\n",
+	DEBUG(10,("se_access_check: requested access 0x%08x, for NT token with %u entries and first sid %s.\n",
 		 (unsigned int)acc_desired, (unsigned int)token->num_sids,
 		sid_to_string(sid_str, &token->user_sids[0])));
 
