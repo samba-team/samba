@@ -24,7 +24,7 @@
 
 void uuid_generate_random(struct GUID *out)
 {
-	generate_random_buffer(out, sizeof(struct GUID), False);
+	generate_random_buffer(out, sizeof(struct GUID));
 	out->clock_seq[0] = (out->clock_seq[0] & 0x3F) | 0x80;
 	out->time_hi_and_version = (out->time_hi_and_version & 0x0FFF) | 0x4000;
 }

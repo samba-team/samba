@@ -22,39 +22,50 @@
 
 #include "includes.h"
 
-static uint8_t hash[258];
-static uint32_t counter;
-static uint8_t *reseed_data;
-static size_t reseed_data_size;
+static unsigned char hash[258];
+static uint32 counter;
+
+static BOOL done_reseed = False;
+static void (*reseed_callback)(int *newseed);
 
 /**************************************************************** 
  Copy any user given reseed data.
 *****************************************************************/
 
-void set_rand_reseed_data(uint8_t *data, size_t len)
+void set_rand_reseed_callback(void (*fn)(int *))
 {
-	SAFE_FREE(reseed_data);
-	reseed_data_size = 0;
+	reseed_callback = fn;
+	set_need_random_reseed();
+}
 
-	reseed_data = (uint8_t *)memdup(data, len);
-	if (reseed_data)
-		reseed_data_size = len;
+void set_need_random_reseed(void)
+{
+	done_reseed = False;
+}
+
+static void get_rand_reseed_data(int *reseed_data)
+{
+	if (reseed_callback) {
+		reseed_callback(reseed_data);
+	} else {
+		*reseed_data = 0;
+	}
 }
 
 /**************************************************************** 
  Setup the seed.
 *****************************************************************/
 
-static void seed_random_stream(uint8_t *seedval, size_t seedlen)
+static void seed_random_stream(unsigned char *seedval, size_t seedlen)
 {
-	uint8_t j = 0;
+	unsigned char j = 0;
 	size_t ind;
 
 	for (ind = 0; ind < 256; ind++)
-		hash[ind] = (uint8_t)ind;
+		hash[ind] = (unsigned char)ind;
 
 	for( ind = 0; ind < 256; ind++) {
-		uint8_t tc;
+		unsigned char tc;
 
 		j += (hash[ind] + seedval[ind%seedlen]);
 
@@ -71,15 +82,15 @@ static void seed_random_stream(uint8_t *seedval, size_t seedlen)
  Get datasize bytes worth of random data.
 *****************************************************************/
 
-static void get_random_stream(uint8_t *data, size_t datasize)
+static void get_random_stream(unsigned char *data, size_t datasize)
 {
-	uint8_t index_i = hash[256];
-	uint8_t index_j = hash[257];
+	unsigned char index_i = hash[256];
+	unsigned char index_j = hash[257];
 	size_t ind;
 
 	for( ind = 0; ind < datasize; ind++) {
-		uint8_t tc;
-		uint8_t t;
+		unsigned char tc;
+		unsigned char t;
 
 		index_i++;
 		index_j += hash[index_i];
@@ -101,10 +112,10 @@ static void get_random_stream(uint8_t *data, size_t datasize)
  Note that the hash is not initialised.
 *****************************************************************/
 
-static void do_filehash(const char *fname, uint8_t *the_hash)
+static void do_filehash(const char *fname, unsigned char *the_hash)
 {
-	uint8_t buf[1011]; /* deliberate weird size */
-	uint8_t tmp_md4[16];
+	unsigned char buf[1011]; /* deliberate weird size */
+	unsigned char tmp_md4[16];
 	int fd, n;
 
 	fd = sys_open(fname,O_RDONLY,0);
@@ -133,8 +144,9 @@ static void do_filehash(const char *fname, uint8_t *the_hash)
 
 static int do_reseed(BOOL use_fd, int fd)
 {
-	uint8_t seed_inbuf[40];
-	uint32_t v1, v2; struct timeval tval; pid_t mypid;
+	unsigned char seed_inbuf[40];
+	uint32 v1, v2; struct timeval tval; pid_t mypid;
+	int reseed_data = 0;
 
 	if (use_fd) {
 		if (fd != -1)
@@ -166,10 +178,11 @@ static int do_reseed(BOOL use_fd, int fd)
 	 * Add any user-given reseed data.
 	 */
 
+	get_rand_reseed_data(&reseed_data);
 	if (reseed_data) {
 		size_t i;
 		for (i = 0; i < sizeof(seed_inbuf); i++)
-			seed_inbuf[i] ^= reseed_data[i % reseed_data_size];
+			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
 	seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
@@ -181,15 +194,14 @@ static int do_reseed(BOOL use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( uint8_t *out, int len, BOOL do_reseed_now)
+void generate_random_buffer( unsigned char *out, int len)
 {
-	static BOOL done_reseed = False;
 	static int urand_fd = -1;
-	uint8_t md4_buf[64];
-	uint8_t tmp_buf[16];
-	uint8_t *p;
+	unsigned char md4_buf[64];
+	unsigned char tmp_buf[16];
+	unsigned char *p;
 
-	if(!done_reseed || do_reseed_now) {
+	if(!done_reseed) {
 		urand_fd = do_reseed(True, urand_fd);
 		done_reseed = True;
 	}
@@ -224,7 +236,6 @@ void generate_random_buffer( uint8_t *out, int len, BOOL do_reseed_now)
 		len -= copy_len;
 	}
 }
-
 
 /*
   very basic password quality checker
@@ -262,7 +273,7 @@ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 		return NULL;
 
 again:
-	generate_random_buffer(retstr, len, False);
+	generate_random_buffer(retstr, len);
 	for (i = 0; i < len; i++)
 		retstr[i] = c_list[retstr[i] % (sizeof(c_list)-1) ];
 

@@ -452,7 +452,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16, False);
+	generate_random_buffer((uint8_t *)confounder, 16);
 
 	MD5Init(&ctx);
 	MD5Update(&ctx, confounder, 16);
@@ -506,7 +506,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16, False);
+	generate_random_buffer((uint8_t *)confounder, 16);
 
 	MD5Init(&ctx);
 	MD5Update(&ctx, confounder, 16);
