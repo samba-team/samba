@@ -165,7 +165,22 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
   BOOL first = True;
   BOOL last  = True;
 
-  /* prepare return data and params */
+  /*
+   * Setup the pointers from the incoming.
+   */
+  char *pparams = param ? param->data->data;
+  int params_len = param ? param->data->data_used;
+  char *pdata = data ? data->data->data;
+  int data_len = data ? data->data->data_used;
+
+  /*
+   * Setup the pointers to the outgoing.
+   */
+  char **pp_ret_params = rparam ? &rparam->data->data : NULL;
+  uint32 *p_ret_params_len = rparam ? &rparam->data->data_used : NULL;
+
+  char **pp_ret_data = rdata ? &rdata->data->data : NULL;
+  uint32 *p_ret_data_len = rdata ? &rdata->data->data_used : NULL;
 
   /* create setup parameters. */
   setup[0] = cmd; 
@@ -173,16 +188,11 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
 
   /* send the data: receive a response. */
   if (!cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
-	            param != NULL ? param->data->data_used : 0,
-	            data  != NULL ? data ->data->data_used : 0,
-	            2,
-	            0,
-	            data  != NULL ? 1024 : 0 ,
-	            param != NULL ? param->data->data : NULL,
-	            data  != NULL ? data ->data->data : NULL,
-	            setup,
-	            rparam != NULL ? rparam->data : NULL,
-	            rdata  != NULL ? rdata ->data : NULL))
+                    setup, 2, 0,                     /* Setup, length, max */
+                    pparams, params_len, 0,          /* Params, length, max */
+                    pdata, data_len, 1024,           /* data, length, max */                  
+                    pp_ret_params, p_ret_params_len, /* return params, len */
+                    pp_ret_data, p_ret_data_len))    /* return data, len */
   {
     DEBUG(5, ("cli_pipe: return critical error\n"));
     return False;
@@ -199,6 +209,11 @@ BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, uint16 fnum,
   rdata->data->offset.start = 0;
   rdata->data->offset.end   = rdata->data->data_used;
   rdata->offset = 0;
+
+  /* cli_api_pipe does an ordinary Realloc - we have no margins now. */
+  rdata->data->margin = 0;
+  if(rparam)
+    rparam->data->margin = 0;
 
   if (!rpc_check_hdr(rdata, &pkt_type, &first, &last, &len))
     return False;
@@ -422,27 +437,21 @@ do an rpc bind
 BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, 
                             uint16 fnum, uint16 device_state)
 {
-  prs_struct param;
-  prs_struct rdata;
-  prs_struct rparam;
   BOOL state_set = False;
+  char param[2];
   uint16 setup[2]; /* only need 2 uint16 setup parameters */
+  char *rparam = NULL;
+  char *rdata = NULL;
+  uint32 rparam_len, rdata_len;
 
   if (pipe_name == NULL)
     return False;
 
-  prs_init(&param , 2, 4, 0            , False);
-  prs_init(&rdata , 0, 4, SAFETY_MARGIN, True );
-  prs_init(&rparam, 0, 4, SAFETY_MARGIN, True );
-
-  param.data->offset.start = 0;
-  param.data->offset.end   = 2;
-
   DEBUG(5,("Set Handle state Pipe[%x]: %s - device state:%x\n",
               fnum, pipe_name, device_state));
 
-  /* create data parameters: device state */
-  SSVAL(param.data->data, 0, device_state);
+  /* create parameters: device state */
+  SSVAL(param, 0, device_state);
 
   /* create setup parameters. */
   setup[0] = 0x0001; 
@@ -450,18 +459,20 @@ BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name,
 
   /* send the data on \PIPE\ */
   if (cli_api_pipe(cli, "\\PIPE\\\0\0\0", 8,
-                   2, 0, 2,
-                   0, 1024,
-                   param.data->data, NULL, setup,
-                   rparam.data, rdata.data))
+                   setup, 2, 0,                /* setup, length, max */
+                   param, 2, 0,                /* param, length, max */
+                   NULL, 0, 1024,              /* data, length, max */
+                   &rparam, rparam_len,        /* return param, length */
+                   &rdata, rdata_len))         /* return data, length */
   {
     DEBUG(5, ("Set Handle state: return OK\n"));
     state_set = True;
   }
 
-  prs_mem_free(&param );
-  prs_mem_free(&rparam);
-  prs_mem_free(&rdata );
+  if(rparam)
+    free(rparam);
+  if(rdata)
+    free(rdata);
 
   return state_set;
 }
