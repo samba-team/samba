@@ -81,6 +81,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	uid_t uid = geteuid();
 	struct passwd* pass;
 	
+	DEBUG(5,("ldap_open_connection: starting...\n"));
 	/*
 	 * using sys_getpwnam() here since I'm assuming that the 
  	 * ldapsam is only used on a standalone server or PDC.
@@ -106,6 +107,9 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 		port = lp_ldap_port();
 	}
 
+	DEBUG(10,("Initializing connection to %s on port %d\n", 
+		lp_ldap_server(), port ));
+		
 	if ((*ldap_struct = ldap_init(lp_ldap_server(), port)) == NULL)	{
 		DEBUG(0, ("The LDAP server is not responding !\n"));
 		return False;
@@ -155,6 +159,8 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
+			
+			DEBUG(0,("LDAPS option set...!\n"));
 #else
 			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
 			return False;
