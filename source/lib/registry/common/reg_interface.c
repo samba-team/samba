@@ -185,6 +185,7 @@ WERROR reg_import_hive(struct registry_context *h, const char *backend, const ch
 	ret->functions = entry->functions;
 	ret->backend_data = NULL;
 	ret->reg_ctx = h;
+	ret->name = NULL;
 
 	werr = entry->functions->open_hive(mem_ctx, ret, &ret->root);
 

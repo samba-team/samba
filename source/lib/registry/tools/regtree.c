@@ -32,10 +32,13 @@ static void print_tree(int l, struct registry_key *p, int fullpath, int novals)
 	for(i = 0; i < l; i++) putchar(' ');
 	
 	/* Hive name */
-	if(p->hive->root == p) printf("%s\n", p->hive->name);
-	else if(!p->name) printf("<No Name>\n");
-	else if(fullpath) printf("%s\n", p->path);
-	else printf("%s\n", p->name);
+	if(p->hive->root == p) {
+		if(p->hive->name) printf("%s\n", p->hive->name); else printf("<No Name>\n");
+	} else {
+		if(!p->name) printf("<No Name>\n");
+		if(fullpath) printf("%s\n", p->path);
+		else printf("%s\n", p->name);
+	}
 
 	mem_ctx = talloc_init("print_tree");
 	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx, p, i, &subkey)); i++) {
