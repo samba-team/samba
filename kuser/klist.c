@@ -300,7 +300,7 @@ display_tokens(int do_verbose)
 
     for (i = 0; k_pioctl(NULL, VIOCGETTOK, &parms, 0) == 0; i++) {
         int32_t size_secret_tok, size_public_tok;
-        char *cell;
+        unsigned char *cell;
 	struct ClearToken ct;
 	unsigned char *r = t;
 	struct timeval tv;

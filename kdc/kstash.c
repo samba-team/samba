@@ -86,7 +86,7 @@ static int
 convert_file(void)
 {
     FILE *f;
-    char buf[1024];
+    unsigned char buf[1024];
     char *fn;
     size_t len;
     EncryptionKey key;

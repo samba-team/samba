@@ -43,7 +43,7 @@ RCSID("$Id$");
 OM_uint32
 gssapi_krb5_verify_header(u_char **str,
 			  size_t total_len,
-			  u_char *type)
+			  char *type)
 {
     size_t len, len_len, mech_len, foo;
     int e;
@@ -85,7 +85,7 @@ OM_uint32
 gssapi_krb5_decapsulate(
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
-			u_char *type
+			char *type
 )
 {
     u_char *p;

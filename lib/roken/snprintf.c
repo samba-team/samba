@@ -125,7 +125,7 @@ as_append_char (struct state *state, unsigned char c)
 
 static int
 append_number(struct state *state,
-	      unsigned long num, unsigned base, unsigned char *rep,
+	      unsigned long num, unsigned base, char *rep,
 	      int width, int prec, int flags, int minusp)
 {
   int len = 0;
