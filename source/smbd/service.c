@@ -353,8 +353,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pass = getpwnam_alloc(guestname);
 		if (!pass) {
 			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
-			*status = NT_STATUS_NO_SUCH_USER;
 			conn_free(conn);
+			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
 		fstrcpy(user,pass->pw_name);
@@ -366,15 +366,15 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		if (vuser->guest) {
 			if (!lp_guest_ok(snum)) {
 				DEBUG(2, ("guest user (from session setup) not permitted to access this share (%s)", lp_servicename(snum)));
-				      *status = NT_STATUS_ACCESS_DENIED;
 				      conn_free(conn);
+				      *status = NT_STATUS_ACCESS_DENIED;
 				      return NULL;
 			}
 		} else {
 			if (!user_ok(vuser->user.unix_name, snum)) {
 				DEBUG(2, ("user '%s' (from session setup) not permitted to access this share (%s)", vuser->user.unix_name, lp_servicename(snum)));
-				*status = NT_STATUS_ACCESS_DENIED;
 				conn_free(conn);
+				*status = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			}
 		}
@@ -456,8 +456,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			DEBUG(3,("Forced user %s\n",user));	  
 		} else {
 			DEBUG(1,("Couldn't find user %s\n",fuser));
-			*status = NT_STATUS_NO_SUCH_USER;
 			conn_free(conn);
+			*status = NT_STATUS_NO_SUCH_USER;
 			return NULL;
 		}
 	}
@@ -509,8 +509,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			}
 		} else {
 			DEBUG(1,("Couldn't find group %s\n",gname));
-			*status = NT_STATUS_NO_SUCH_GROUP;
 			conn_free(conn);
+			*status = NT_STATUS_NO_SUCH_GROUP;
+			return NULL;
 		}
 	}
 #endif /* HAVE_GETGRNAM */
@@ -548,10 +549,10 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		if (!can_write) {
 			if (!share_access_check(conn, snum, vuser, FILE_READ_DATA)) {
 				/* No access, read or write. */
-				*status = NT_STATUS_ACCESS_DENIED;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					  lp_servicename(snum)));
 				conn_free(conn);
+				*status = NT_STATUS_ACCESS_DENIED;
 				return NULL;
 			} else {
 				conn->read_only = True;
@@ -563,6 +564,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
 		conn_free(conn);
+		*status = NT_STATUS_UNSUCCESSFUL;
 		return NULL;
 	}
 
@@ -573,8 +575,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			      lp_max_connections(SNUM(conn)),
 			      False)) {
 		DEBUG(1,("too many connections - rejected\n"));
-		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		conn_free(conn);
+		*status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		return NULL;
 	}  
 
@@ -691,9 +693,9 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (conn->vfs_ops.connect) {
 		if (conn->vfs_ops.connect(conn, lp_servicename(snum), user) < 0) {
 			DEBUG(0,("make_connection: VFS make connection failed!\n"));
-			*status = NT_STATUS_UNSUCCESSFUL;
 			change_to_root_user();
 			conn_free(conn);
+			*status = NT_STATUS_UNSUCCESSFUL;
 			return NULL;
 		}
 	}
@@ -726,6 +728,7 @@ connection_struct *make_connection_with_chdir(const char *service_in, DATA_BLOB 
 			 conn->connectpath,strerror(errno)));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
+		*status = NT_STATUS_UNSUCCESSFUL;
 		return NULL;
 	}
 	
