@@ -1071,7 +1071,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       SSVAL(outbuf,smb_vwv1,PTR_DIFF(p,outbuf) - 4);
       memset(p,0,200);
       p -= smb_wct;
-      SSVAL(p,smb_wct,10);
+      SCVAL(p,smb_wct,10);
       SSVAL(p,smb_vwv0,0xFF);
       SSVAL(p,smb_vwv5,MIN(max_xmit-500,finfo.size));
       SSVAL(p,smb_vwv9,MIN(0xFFFF,finfo.size));

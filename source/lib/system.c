@@ -195,7 +195,7 @@ int sys_ftruncate(int fd, SMB_OFF_T offset)
  An lseek() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
-int sys_lseek(int fd, SMB_OFF_T offset, int whence)
+SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 {
 #if defined(HAVE_OFF64_T) && defined(HAVE_LSEEK64)
   return lseek64(fd, offset, whence);
