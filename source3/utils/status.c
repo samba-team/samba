@@ -309,17 +309,19 @@ static void print_share_mode(share_mode_entry *e, char *fname)
   printf("\n");
 
   if (!shares_only) {
+	  if (!locking_init(1)) {
+		  printf("Can't initialise shared memory - exiting\n");
+		  exit(1);
+	  }
 
-    locking_init(1);
-
-    if (share_mode_forall(print_share_mode) <= 0)
-      printf("No locked files\n");
-    
-    printf("\n");
-
-    share_status(stdout);
-
-    locking_end();
+	  if (share_mode_forall(print_share_mode) <= 0)
+		  printf("No locked files\n");
+	  
+	  printf("\n");
+	  
+	  share_status(stdout);
+	  
+	  locking_end();
   }
 
   return (0);
