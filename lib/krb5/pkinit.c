@@ -373,7 +373,7 @@ build_auth_pack(krb5_context context,
     krb5_timestamp sec;
     int32_t usec;
 
-    if ((context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE) || 1)
+    if (context->pkinit_flags & KRB5_PKINIT_PACKET_CABLE)
 	cksum = CKSUMTYPE_RSA_MD5;
     else
 	cksum = CKSUMTYPE_SHA1;
@@ -1051,7 +1051,7 @@ _krb5_pk_verify_sign(krb5_context context,
 	free_oid(eContentType);
 	krb5_data_free(eContent);
     }
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
@@ -1225,7 +1225,10 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	}
 
 	tmp_key.keytype = ETYPE_DES3_CBC_NONE;
-	ret = krb5_crypto_init(context, &tmp_key,ETYPE_DES3_CBC_NONE, &crypto);
+	ret = krb5_crypto_init(context,
+			       &tmp_key,
+			       0,
+			       &crypto);
 	if (ret) {
 	    free_octet_string(&encryptedContent);
 	    goto out;
@@ -1278,11 +1281,8 @@ pk_rd_pa_reply_enckey(krb5_context context,
 			       &eContentType,
 			       &eContent,
 			       &host);
-    if (ret) {
-	krb5_set_error_string(context, "failed verify signature of reply: %d",
-			      ret);
+    if (ret)
 	goto out;
-    }
 
     /* make sure that it is the kdc's certificate */
     ret = pk_verify_host(context, host);
