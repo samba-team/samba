@@ -320,6 +320,13 @@ typedef struct krb5_keytab_data {
 
 typedef struct krb5_keytab_data *krb5_keytab;
 
+struct krb5_keytab_key_proc_args {
+    krb5_keytab keytab;
+    krb5_principal principal;
+};
+
+typedef struct krb5_keytab_key_proc_args krb5_keytab_key_proc_args;
+
 typedef struct krb5_keytab_entry {
     krb5_principal principal;
     krb5_kvno vno;
