@@ -121,6 +121,14 @@ struct nmb_name {
   int name_type;
 };
 
+/* a netbios flags + ip address structure */
+/* this is used for multi-homed systems and for internet group names */
+struct nmb_ip
+{
+  struct in_addr ip; /* ip address of host that owns this name */
+  int nb_flags;      /* netbios flags */
+};
+
 /* this is the structure used for the local netbios name list */
 struct name_record
 {
@@ -128,8 +136,8 @@ struct name_record
   struct name_record *prev;
 
   struct nmb_name name;    /* the netbios name */
-  struct in_addr ip;       /* ip address of host that owns this name */
-  int nb_flags;            /* netbios flags */
+  struct nmb_ip *ip_flgs;  /* the ip + flags */
+  int num_ips;             /* number of ip+flags entries */
 
   enum name_source source; /* where the name came from */
 

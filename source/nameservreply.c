@@ -135,7 +135,7 @@ void reply_name_release(struct packet_struct *p)
 					search, ip);
   
   /* XXXX under what conditions should we reject the removal?? */
-  if (n && n->nb_flags == nb_flags)
+  if (n && n->ip_flgs[0].nb_flags == nb_flags)
   {
       success = True;
       
@@ -212,14 +212,14 @@ void reply_name_reg(struct packet_struct *p)
   {
     if (!group) /* unique names */
 	{
-	  if (n->source == SELF || NAME_GROUP(n->nb_flags))
+	  if (n->source == SELF || NAME_GROUP(n->ip_flgs[0].nb_flags))
 	  {
 	      /* no-one can register one of samba's names, nor can they
 		 register a name that's a group name as a unique name */
 	      
 	      success = False;
 	  }
-	  else if(!ip_equal(ip, n->ip))
+	  else if(!ip_equal(ip, n->ip_flgs[0].ip))
 	  {
 	      /* XXXX rfc1001.txt says:
 	       * if we are doing secured WINS, we must send a Wait-Acknowledge
@@ -235,9 +235,9 @@ void reply_name_reg(struct packet_struct *p)
 	  }
 	  else
 	  {
-	      n->ip = ip;
+	      n->ip_flgs[0].ip = ip;
 	      n->death_time = ttl?p->timestamp+ttl*3:0;
-	      DEBUG(3,("%s owner: %s\n",namestr(&n->name),inet_ntoa(n->ip)));
+	      DEBUG(3,("%s owner: %s\n",namestr(&n->name),inet_ntoa(n->ip_flgs[0].ip)));
 	  }
 	}
     else
@@ -276,7 +276,7 @@ void reply_name_reg(struct packet_struct *p)
   {
     char rdata[2];
 
-    /* XXXX luke is confused. RSVAL or SSVAL? assume NMB byte ordering */
+    /* XXXX i am confused. RSVAL or SSVAL? assume NMB byte ordering */
     RSSVAL(rdata,0,(nmb->header.opcode&0xf) + ((nb_flags&0xff) << 4));
   
     /* XXXX mistake in rfc1002.txt? 4.2.16: NULL is 0xa see 4.2.1.3 
@@ -296,7 +296,7 @@ void reply_name_reg(struct packet_struct *p)
 						 NAME_REGISTER_CHALLENGE,
 						 reply_name->name,reply_name->name_type,
 	                     nb_flags,0,0,NULL,NULL,
-						 False, False, n->ip, p->ip);
+						 False, False, n->ip_flgs[0].ip, p->ip);
   }
   else
   {
@@ -379,7 +379,7 @@ void reply_name_status(struct packet_struct *p)
         
         /* put name type and netbios flags in buffer */
         buf[15] = name_type;
-        buf[16]  = n->nb_flags;
+        buf[16]  = n->ip_flgs[0].nb_flags;
         
         buf += 18;
       
@@ -472,7 +472,7 @@ void reply_name_query(struct packet_struct *p)
 
   int search = bcast ? FIND_LOCAL | FIND_SELF : FIND_WINS;
   
-  if (name_type == 0x1b || name_type == 0x0 || name_type == 0x20)
+  if (name_type == 0x1b)
   {
     search |= FIND_WINS;
   }
@@ -504,13 +504,20 @@ void reply_name_query(struct packet_struct *p)
     success = False;
   }
 
+  if (!bcast && name_type == 0x1d)
+  {
+    /* see WINS manager HELP - 'How WINS Handles Special Names' */
+    /* a WINS query (unicasted) for a 0x1d name must always return False */
+    success = False;
+  }
+
   if (success && (n = search_for_name(&d,question,p->ip,p->timestamp, search)))
   {
       /* don't respond to broadcast queries unless the query is for
          a name we own or it is for a Primary Domain Controller name */
 
       if (bcast && n->source != SELF && name_type != 0x1b) {
-	    if (!lp_wins_proxy() || same_net(p->ip,n->ip,*iface_nmask(p->ip))) {
+	    if (!lp_wins_proxy() || same_net(p->ip,n->ip_flgs[0].ip,*iface_nmask(p->ip))) {
 	      /* never reply with a negative response to broadcast queries */
 	      return;
 	    }
@@ -527,8 +534,8 @@ void reply_name_query(struct packet_struct *p)
          not a WINS server ourselves
        */
       ttl = n->death_time ? n->death_time - p->timestamp : GET_TTL(0);
-      retip = n->ip;
-      nb_flags = n->nb_flags;
+      retip = n->ip_flgs[0].ip;
+      nb_flags = n->ip_flgs[0].nb_flags;
   }
   else
   {
