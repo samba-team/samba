@@ -59,6 +59,7 @@ static NTSTATUS check_guest_password(auth_serversupplied_info **server_info)
 	
 	nt_status = check_password(user_info, auth_info, server_info);
 	free_auth_info(&auth_info);
+	SAFE_FREE(user_info);
 	return nt_status;
 }
 
@@ -279,7 +280,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     DATA_BLOB blob1)
 {
 	DATA_BLOB auth;
-	char *workgroup, *user, *machine;
+	char *workgroup = NULL, *user = NULL, *machine = NULL;
 	DATA_BLOB lmhash, nthash, sess_key;
 	DATA_BLOB plaintext_password = data_blob(NULL, 0);
 	uint32 ntlmssp_command, neg_flags;
@@ -329,6 +330,10 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 				neg_flags, True)) {
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
+
+	SAFE_FREE(workgroup);
+	SAFE_FREE(user);
+	SAFE_FREE(machine);
 	
 	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
 	
