@@ -225,6 +225,8 @@ char *smbw_parse_path(const char *fname, char *server, char *share, char *path)
 	char *p, *p2;
 	int len;
 
+	*server = *share = *path = 0;
+
 	if (fname[0] == '/') {
 		pstrcpy(s, fname);
 	} else {
@@ -299,7 +301,11 @@ BOOL smbw_path(const char *path)
 	fstring server, share;
 	pstring s;
 	char *cwd;
-	int l;
+	int l=strlen(SMBW_PREFIX)-1;
+
+	if (path[0] == '/' && strncmp(path,SMBW_PREFIX,l)) {
+		return False;
+	}
 
 	if (smbw_busy) return False;
 
@@ -308,8 +314,6 @@ BOOL smbw_path(const char *path)
 	DEBUG(3,("smbw_path(%s)\n", path));
 
 	cwd = smbw_parse_path(path, server, share, s);
-
-	l = strlen(SMBW_PREFIX)-1;
 
 	if (strncmp(cwd,SMBW_PREFIX,l) == 0 &&
 	    (cwd[l] == '/' || cwd[l] == 0)) {
@@ -428,6 +432,15 @@ struct smbw_server *smbw_server(char *server, char *share)
 	if (!srv->share_name) {
 		errno = ENOMEM;
 		goto failed;
+	}
+
+	/* some programs play with file descriptors fairly intimately. We
+	   try to get out of the way by duping to a high fd number */
+	if (fcntl(SMBW_CLI_FD, F_GETFD) && errno == EBADF) {
+		if (dup2(srv->cli.fd, SMBW_CLI_FD) == SMBW_CLI_FD) {
+			close(srv->cli.fd);
+			srv->cli.fd = SMBW_CLI_FD;
+		}
 	}
 
 	DLIST_ADD(smbw_srvs, srv);
@@ -1242,6 +1255,148 @@ int smbw_rename(const char *oldname, const char *newname)
 		errno = smbw_errno(&srv->cli);
 		goto failed;
 	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+
+/***************************************************** 
+a wrapper for utime()
+*******************************************************/
+int smbw_utime(const char *fname, struct utimbuf *buf)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+	uint32 mode;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_getatr(&srv->cli, path, &mode, NULL, NULL)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	if (!cli_setatr(&srv->cli, path, mode, buf->modtime)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+/***************************************************** 
+a wrapper for chown()
+*******************************************************/
+int smbw_chown(const char *fname, uid_t owner, gid_t group)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+	uint32 mode;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_getatr(&srv->cli, path, &mode, NULL, NULL)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+	
+	/* assume success */
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+/***************************************************** 
+a wrapper for chmod()
+*******************************************************/
+int smbw_chmod(const char *fname, mode_t newmode)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+	uint32 mode;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_getatr(&srv->cli, path, &mode, NULL, NULL)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+	
+	/* assume success for the moment - need to add attribute mapping */
 
 	smbw_busy--;
 	return 0;

@@ -198,7 +198,8 @@ SMBWRAPPER_OBJ = smbwrapper/open.o smbwrapper/stat.o \
 		smbwrapper/lstat.o smbwrapper/close.o smbwrapper/getdents.o \
 		smbwrapper/fcntl.o smbwrapper/access.o smbwrapper/chdir.o \
 		smbwrapper/write.o smbwrapper/readlink.o smbwrapper/unlink.o \
-		smbwrapper/rename.o \
+		smbwrapper/rename.o smbwrapper/utime.o smbwrapper/chown.o \
+		smbwrapper/chmod.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
