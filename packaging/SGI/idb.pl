@@ -146,6 +146,13 @@ print IDB "l 0000 root sys etc/rc2.d/S81samba $SRCPFX/packaging/SGI $PKG.sw.base
 print IDB "l 0000 root sys etc/rc2.d/S82winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
 
 if ($PKG eq "samba_irix") {
+  print IDB "d 0755 root sys usr/include/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/include/samba/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+
+  print IDB "d 0755 root sys usr/lib32/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/lib32/samba/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/lib32/samba/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
+
   print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/TC build/TC $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z build/ch1.z $PKG.man.relnotes\n";
@@ -219,8 +226,10 @@ while (@docs) {
   }
 }
 
-print IDB "d 0755 root sys usr/samba/include $SRCPFX/packaging/SGI $PKG.sw.base\n";
-print IDB "f 0644 root sys usr/samba/include/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+if ($PKG ne "samba_irix") {
+  print IDB "d 0755 root sys usr/samba/include $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/samba/include/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+}
 
 print IDB "d 0755 root sys usr/samba/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib/codepages $SRCPFX/packaging/SGI $PKG.sw.base\n";
@@ -228,8 +237,10 @@ while (@codepage) {
   $nextpage = shift @codepage;
   print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
 }
-print IDB "f 0644 root sys usr/samba/lib/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
-print IDB "f 0644 root sys usr/samba/lib/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
+if ($PKG ne "samba_irix") {
+  print IDB "f 0644 root sys usr/samba/lib/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/samba/lib/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
+}
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
 
 print IDB "d 0755 lp sys usr/samba/printer $SRCPFX/packaging/SGI $PKG.sw.base\n";
