@@ -255,12 +255,12 @@ NTSTATUS dcerpc_lsa_OpenAccount(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, stru
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_ENUMPRIVSACCOUNT(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct ENUMPRIVSACCOUNT *r)
+NTSTATUS dcerpc_lsa_EnumPrivsAccount(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct lsa_EnumPrivsAccount *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_ENUMPRIVSACCOUNT, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_ENUMPRIVSACCOUNT,
-				    (ndr_pull_fn_t) ndr_pull_ENUMPRIVSACCOUNT,
+	status = dcerpc_ndr_request(p, DCERPC_LSA_ENUMPRIVSACCOUNT, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_lsa_EnumPrivsAccount,
+				    (ndr_pull_fn_t) ndr_pull_lsa_EnumPrivsAccount,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

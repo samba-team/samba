@@ -20,6 +20,7 @@
 		[in,ref]     policy_handle *handle
 		);
 
+
 	/******************/
 	/* Function: 0x02 */
 
@@ -47,13 +48,16 @@
 		[out,ref]    lsa_PrivArray *privs
 		);
 
+
 	/******************/
 	/* Function: 0x03 */
 	NTSTATUS lsa_QuerySecObj ();
 
+
 	/******************/
 	/* Function: 0x04 */
 	NTSTATUS lsa_SetSecObj ();
+
 
 	/******************/
 	/* Function: 0x05 */
@@ -225,8 +229,31 @@
 		);
 
 
-	/* Function:    0x12 */
-	NTSTATUS ENUMPRIVSACCOUNT ();
+	/****************************************/
+	/* Function:    0x12                    */
+
+	typedef struct {
+		uint32 low;
+		uint32 high;
+	} lsa_LUID;
+	
+	typedef struct {
+		lsa_LUID luid;
+		uint32 attribute;
+	} lsa_LUIDAttribute;
+	
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_LUIDAttribute set[*];
+	} lsa_PrivilegeSet;
+	
+	NTSTATUS lsa_EnumPrivsAccount (
+		[in,ref]     policy_handle *handle,
+		[out]        lsa_PrivilegeSet *privs,
+		[out]        uint32 unknown
+		);
+
+
 	/* Function:            0x13 */
 	NTSTATUS ADDPRIVS ();
 	/* Function:         0x14 */

@@ -726,7 +726,6 @@ NTSTATUS ndr_push_lsa_LookupNames(struct ndr_push *ndr, struct lsa_LookupNames *
 NTSTATUS ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, struct lsa_LookupNames *r)
 {
 	uint32 _ptr_domains;
-	NDR_ALLOC(ndr, r->out.domains);
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domains));
 	if (_ptr_domains) {
 		NDR_ALLOC(ndr, r->out.domains);
@@ -818,7 +817,6 @@ NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, struct lsa_LookupSids *r)
 NTSTATUS ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, struct lsa_LookupSids *r)
 {
 	uint32 _ptr_domains;
-	NDR_ALLOC(ndr, r->out.domains);
 	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domains));
 	if (_ptr_domains) {
 		NDR_ALLOC(ndr, r->out.domains);
@@ -865,14 +863,96 @@ NTSTATUS ndr_pull_lsa_OpenAccount(struct ndr_pull *ndr, struct lsa_OpenAccount *
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_ENUMPRIVSACCOUNT(struct ndr_push *ndr, struct ENUMPRIVSACCOUNT *r)
+static NTSTATUS ndr_push_lsa_LUID(struct ndr_push *ndr, int ndr_flags, struct lsa_LUID *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->low));
+	NDR_CHECK(ndr_push_uint32(ndr, r->high));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_LUID(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUID *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->low));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->high));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_LUIDAttribute(struct ndr_push *ndr, int ndr_flags, struct lsa_LUIDAttribute *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_lsa_LUID(ndr, NDR_SCALARS, &r->luid));
+	NDR_CHECK(ndr_push_uint32(ndr, r->attribute));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_push_lsa_LUID(ndr, ndr_flags, &r->luid));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_LUIDAttribute(struct ndr_pull *ndr, int ndr_flags, struct lsa_LUIDAttribute *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_lsa_LUID(ndr, NDR_SCALARS, &r->luid));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->attribute));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_LUID(ndr, ndr_flags, &r->luid));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_PrivilegeSet(struct ndr_push *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_lsa_LUIDAttribute(ndr, NDR_SCALARS, r->set));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->set, sizeof(r->set[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_LUIDAttribute));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr_flags, struct lsa_PrivilegeSet *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_ALLOC_N_SIZE(ndr, r->set, r->count, sizeof(r->set[0]));
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)r->set, sizeof(r->set[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_LUIDAttribute));
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_lsa_EnumPrivsAccount(struct ndr_push *ndr, struct lsa_EnumPrivsAccount *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_ENUMPRIVSACCOUNT(struct ndr_pull *ndr, struct ENUMPRIVSACCOUNT *r)
+NTSTATUS ndr_pull_lsa_EnumPrivsAccount(struct ndr_pull *ndr, struct lsa_EnumPrivsAccount *r)
 {
+	uint32 _ptr_privs;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_privs));
+	if (_ptr_privs) {
+		NDR_ALLOC(ndr, r->out.privs);
+	} else {
+		r->out.privs = NULL;
+	}
+	if (r->out.privs) {
+		NDR_CHECK(ndr_pull_lsa_PrivilegeSet(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.privs));
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->out.unknown));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
