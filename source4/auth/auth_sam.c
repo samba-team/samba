@@ -118,7 +118,7 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 		return False;
 	}
 
-	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, value_from_encryption);
+	SMBOWFencrypt_ntv2(kr, &sec_blob, &client_key_data, value_from_encryption);
 	if (user_sess_key != NULL)
 	{
 		SMBsesskeygen_ntv2(kr, value_from_encryption, user_sess_key);

@@ -465,3 +465,8 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return ret;	
 }
 #endif
+
+const char *global_myname(void)
+{
+	return lp_netbios_name();
+}

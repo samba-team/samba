@@ -76,13 +76,12 @@ void E_deshash(const char *passwd, uchar p16[16])
 {
 	fstring dospwd; 
 	ZERO_STRUCT(dospwd);
-	ZERO_STRUCTP(p16);
 	
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
-	push_ascii(dospwd, (const char *)passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
+	push_ascii(dospwd, passwd, sizeof(dospwd), STR_UPPER|STR_TERMINATE);
 
 	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
-	E_P16(dospwd, p16);
+	E_P16((const unsigned char *)dospwd, p16);
 
 	ZERO_STRUCT(dospwd);	
 }
@@ -248,23 +247,23 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
-/* Does the md5 encryption from the NT hash for NTLMv2. */
+/* Does the md5 encryption from the Key Response for NTLMv2. */
 void SMBOWFencrypt_ntv2(const uchar kr[16],
-			const DATA_BLOB srv_chal,
-			const DATA_BLOB cli_chal,
+			const DATA_BLOB *srv_chal,
+			const DATA_BLOB *cli_chal,
 			uchar resp_buf[16])
 {
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
-	hmac_md5_update(srv_chal.data, srv_chal.length, &ctx);
-	hmac_md5_update(cli_chal.data, cli_chal.length, &ctx);
+	hmac_md5_update(srv_chal->data, srv_chal->length, &ctx);
+	hmac_md5_update(cli_chal->data, cli_chal->length, &ctx);
 	hmac_md5_final(resp_buf, &ctx);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, cli_chal, resp_buf\n"));
-	dump_data(100, srv_chal.data, srv_chal.length);
-	dump_data(100, cli_chal.data, cli_chal.length);
+	dump_data(100, srv_chal->data, srv_chal->length);
+	dump_data(100, cli_chal->data, cli_chal->length);
 	dump_data(100, resp_buf, 16);
 #endif
 }
@@ -272,6 +271,8 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 void SMBsesskeygen_ntv2(const uchar kr[16],
 			const uchar * nt_resp, uint8 sess_key[16])
 {
+	/* a very nice, 128 bit, variable session key */
+	
 	HMACMD5Context ctx;
 
 	hmac_md5_init_limK_to_64(kr, 16, &ctx);
@@ -287,6 +288,9 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 void SMBsesskeygen_ntv1(const uchar kr[16],
 			const uchar * nt_resp, uint8 sess_key[16])
 {
+	/* yes, this session key does not change - yes, this 
+	   is a problem - but it is 128 bits */
+	
 	mdfour((unsigned char *)sess_key, kr, 16);
 
 #ifdef DEBUG_PASSWORD
@@ -295,36 +299,125 @@ void SMBsesskeygen_ntv1(const uchar kr[16],
 #endif
 }
 
-DATA_BLOB NTLMv2_generate_response(uchar ntlm_v2_hash[16],
-				   DATA_BLOB server_chal, size_t client_chal_length)
+void SMBsesskeygen_lmv1(const uchar lm_hash[16],
+			const uchar lm_resp[24], /* only uses 8 */ 
+			uint8 sess_key[16])
+{
+	/* Calculate the LM session key (effective length 40 bits,
+	   but changes with each session) */
+
+	uchar p24[24];
+	uchar partial_lm_hash[16];
+	
+	memcpy(partial_lm_hash, lm_hash, 8);
+	memset(partial_lm_hash + 8, 0xbd, 8);    
+
+	SMBOWFencrypt(lm_hash, lm_resp, p24);
+	
+	memcpy(sess_key, p24, 16);
+	sess_key[5] = 0xe5;
+	sess_key[6] = 0x38;
+	sess_key[7] = 0xb0;
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBsesskeygen_lmv1:\n"));
+	dump_data(100, sess_key, 16);
+#endif
+}
+
+DATA_BLOB NTLMv2_generate_names_blob(const char *hostname, 
+				     const char *domain)
+{
+	DATA_BLOB names_blob = data_blob(NULL, 0);
+	
+	msrpc_gen(&names_blob, "aaa", 
+		  True, NTLMSSP_NAME_TYPE_DOMAIN, domain,
+		  True, NTLMSSP_NAME_TYPE_SERVER, hostname,
+		  True, 0, "");
+	return names_blob;
+}
+
+static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob) 
+{
+	uchar client_chal[8];
+	DATA_BLOB response = data_blob(NULL, 0);
+	char long_date[8];
+
+	generate_random_buffer(client_chal, sizeof(client_chal), False);
+
+	put_long_date(long_date, time(NULL));
+
+	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
+
+	msrpc_gen(&response, "ddbbdb", 
+		  0x00000101,     /* Header  */
+		  0,              /* 'Reserved'  */
+		  long_date, 8,	  /* Timestamp */
+		  client_chal, 8, /* client challenge */
+		  0,		  /* Unknown */
+		  names_blob->data, names_blob->length);	/* End of name list */
+
+	return response;
+}
+
+static DATA_BLOB NTLMv2_generate_response(const uchar ntlm_v2_hash[16],
+					  const DATA_BLOB *server_chal,
+					  const DATA_BLOB *names_blob)
 {
 	uchar ntlmv2_response[16];
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
 	
 	/* NTLMv2 */
+	/* generate some data to pass into the response function - including
+	   the hostname and domain name of the server */
+	ntlmv2_client_data = NTLMv2_generate_client_data(names_blob);
 
-	/* We also get to specify some random data */
-	ntlmv2_client_data = data_blob(NULL, client_chal_length);
-	generate_random_buffer(ntlmv2_client_data.data, ntlmv2_client_data.length, False);
-	
 	/* Given that data, and the challenge from the server, generate a response */
-	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, ntlmv2_client_data, ntlmv2_response);
+	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
 	
-	/* put it into nt_response, for the code below to put into the packet */
-	final_response = data_blob(NULL, ntlmv2_client_data.length + sizeof(ntlmv2_response));
+	final_response = data_blob(NULL, sizeof(ntlmv2_response) + ntlmv2_client_data.length);
+
 	memcpy(final_response.data, ntlmv2_response, sizeof(ntlmv2_response));
-	/* after the first 16 bytes is the random data we generated above, so the server can verify us with it */
-	memcpy(final_response.data + sizeof(ntlmv2_response), ntlmv2_client_data.data, ntlmv2_client_data.length);
+
+	memcpy(final_response.data+sizeof(ntlmv2_response), 
+	       ntlmv2_client_data.data, ntlmv2_client_data.length);
+
 	data_blob_free(&ntlmv2_client_data);
 
 	return final_response;
 }
 
+static DATA_BLOB LMv2_generate_response(const uchar ntlm_v2_hash[16],
+					const DATA_BLOB *server_chal)
+{
+	uchar lmv2_response[16];
+	DATA_BLOB lmv2_client_data = data_blob(NULL, 8);
+	DATA_BLOB final_response = data_blob(NULL, 24);
+	
+	/* LMv2 */
+	/* client-supplied random data */
+	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length, False);	
+
+	/* Given that data, and the challenge from the server, generate a response */
+	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &lmv2_client_data, lmv2_response);
+	memcpy(final_response.data, lmv2_response, sizeof(lmv2_response));
+
+	/* after the first 16 bytes is the random data we generated above, 
+	   so the server can verify us with it */
+	memcpy(final_response.data+sizeof(lmv2_response), 
+	       lmv2_client_data.data, lmv2_client_data.length);
+
+	data_blob_free(&lmv2_client_data);
+
+	return final_response;
+}
+
 BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
-		      const DATA_BLOB server_chal, 
+		      const DATA_BLOB *server_chal, 
+		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *session_key) 
+		      DATA_BLOB *nt_session_key) 
 {
 	uchar nt_hash[16];
 	uchar ntlm_v2_hash[16];
@@ -338,18 +431,24 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 		return False;
 	}
 	
-	*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
+	if (nt_response) {
+		*nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal,
+							names_blob); 
+		if (nt_session_key) {
+			*nt_session_key = data_blob(NULL, 16);
+			
+			/* The NTLMv2 calculations also provide a session key, for signing etc later */
+			/* use only the first 16 bytes of nt_response for session key */
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, nt_session_key->data);
+		}
+	}
 	
 	/* LMv2 */
 	
-	*lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
+	if (lm_response) {
+		*lm_response = LMv2_generate_response(ntlm_v2_hash, server_chal);
+	}
 	
-	*session_key = data_blob(NULL, 16);
-	
-	/* The NTLMv2 calculations also provide a session key, for signing etc later */
-	/* use only the first 16 bytes of nt_response for session key */
-	SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, session_key->data);
-
 	return True;
 }
 
@@ -416,3 +515,4 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 	
 	return True;
 }
+

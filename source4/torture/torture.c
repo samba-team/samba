@@ -142,8 +142,7 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 
 	DEBUG(2,("Connecting to dcerpc server %s:%s\n", host, port));
 
-	status = dcerpc_pipe_open_tcp(p, host, atoi(port),
-				      pipe_uuid, pipe_version);
+	status = dcerpc_pipe_open_tcp(p, host, atoi(port));
 	if (!NT_STATUS_IS_OK(status)) {
                 printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
@@ -152,6 +151,16 @@ static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p,
 
 	/* always do NDR validation in smbtorture */
 	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
+
+	/* bind to the pipe, using the uuid as the key */
+	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
+				       lp_workgroup(),
+				       lp_parm_string(-1, "torture", "username"),
+				       lp_parm_string(-1, "torture", "password"));
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_pipe_close(*p);
+		return status;
+	}
  
         return status;
 }
@@ -176,17 +185,35 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (! *lp_parm_string(-1, "torture", "share")) {
+		lp_set_cmdline("torture:share", "ipc$");
+	}
+
 	if (!torture_open_connection(&cli)) {
                 return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name, pipe_uuid, pipe_version);
+	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
                 printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
 		torture_close_connection(cli);
                 return status;
         }
+
+	/* bind to the pipe, using the uuid as the key */
+#if 1
+	status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
+				       lp_workgroup(),
+				       lp_parm_string(-1, "torture", "username"),
+				       lp_parm_string(-1, "torture", "password"));
+#else
+	status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
+#endif
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_pipe_close(*p);
+		return status;
+	}
 
 	/* always do NDR validation in smbtorture */
 	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;

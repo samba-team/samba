@@ -756,7 +756,7 @@ extern int errno;
 #include "md5.h"
 #include "hmacmd5.h"
 
-#include "ntlmssp.h"
+#include "libcli/auth/ntlmssp.h"
 
 #include "auth.h"
 #include "passdb.h"
