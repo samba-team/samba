@@ -396,9 +396,10 @@ interface netlogon
 	} netr_DELTA_DOMAIN;
 
 	typedef struct {
-		netr_String groupname;
-		netr_GroupMembership group_membership;
-		netr_String comment;
+		netr_String group_name;
+		uint32 rid;
+		uint32 attributes;
+		netr_String description;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
 		netr_String unknown1;
@@ -439,7 +440,7 @@ interface netlogon
 		uint32 rid;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
-		netr_String unknown1;
+		netr_String description;
 		netr_String unknown2;
 		netr_String unknown3;
 		netr_String unknown4;

@@ -371,7 +371,7 @@
 
 	typedef struct {
 		samr_String name;
-		uint32 unknown;
+		uint32 attributes;
 		uint32 num_members;
 		samr_String description;
 	} samr_GroupInfoAll;

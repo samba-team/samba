@@ -515,6 +515,101 @@ static BOOL samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 	return False;
 }
 
+static BOOL samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+				 int database_id, struct netr_DELTA_ENUM *delta) 
+{
+	uint32 rid = delta->delta_id_union.rid;
+	struct netr_DELTA_ALIAS *alias = delta->delta_union.alias;
+	NTSTATUS nt_status;
+	BOOL ret = True;
+
+	struct samr_OpenAlias r;
+	struct samr_QueryAliasInfo q;
+	struct policy_handle alias_handle;
+
+	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
+		printf("SamSync needs domain information before the users\n");
+		return False;
+	}
+
+	r.in.domain_handle = samsync_state->domain_handle[database_id];
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.alias_handle = &alias_handle;
+
+	nt_status = dcerpc_samr_OpenAlias(samsync_state->p_samr, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
+		return False;
+	}
+
+	q.in.alias_handle = &alias_handle;
+	q.in.level = 1;
+
+	nt_status = dcerpc_samr_QueryAliasInfo(samsync_state->p_samr, mem_ctx, &q);
+	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &alias_handle)) {
+		return False;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("QueryAliasInfo level %u failed - %s\n", 
+		       q.in.level, nt_errstr(nt_status));
+		return False;
+	}
+
+	TEST_STRING_EQUAL(q.out.info->all.name, alias->alias_name);
+	TEST_STRING_EQUAL(q.out.info->all.description, alias->description);
+	return False;
+}
+
+static BOOL samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+				 int database_id, struct netr_DELTA_ENUM *delta) 
+{
+	uint32 rid = delta->delta_id_union.rid;
+	struct netr_DELTA_GROUP *group = delta->delta_union.group;
+	NTSTATUS nt_status;
+	BOOL ret = True;
+
+	struct samr_OpenGroup r;
+	struct samr_QueryGroupInfo q;
+	struct policy_handle group_handle;
+
+	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
+		printf("SamSync needs domain information before the users\n");
+		return False;
+	}
+
+	r.in.domain_handle = samsync_state->domain_handle[database_id];
+	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.rid = rid;
+	r.out.group_handle = &group_handle;
+
+	nt_status = dcerpc_samr_OpenGroup(samsync_state->p_samr, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("OpenUser(%u) failed - %s\n", rid, nt_errstr(nt_status));
+		return False;
+	}
+
+	q.in.group_handle = &group_handle;
+	q.in.level = 1;
+
+	nt_status = dcerpc_samr_QueryGroupInfo(samsync_state->p_samr, mem_ctx, &q);
+	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, &group_handle)) {
+		return False;
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		printf("QueryGroupInfo level %u failed - %s\n", 
+		       q.in.level, nt_errstr(nt_status));
+		return False;
+	}
+
+	TEST_STRING_EQUAL(q.out.info->all.name, group->group_name);
+	TEST_INT_EQUAL(q.out.info->all.attributes, group->attributes);
+	TEST_STRING_EQUAL(q.out.info->all.description, group->description);
+	return False;
+}
+
 static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				  int database_id, struct netr_DELTA_ENUM *delta) 
 {
@@ -577,8 +672,7 @@ static BOOL samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	}
 
 	if (q.out.new_val->buf == NULL) {
-		printf("No secret buffer returned\n");
-		ret = False;
+		/* probably just not available due to ACLs */
 	} else {
 		lsa_blob1.data = q.out.new_val->buf->data;
 		lsa_blob1.length = q.out.new_val->buf->length;
@@ -675,6 +769,14 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 					ret &= samsync_handle_user(mem_ctx, samsync_state, 
 								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
+				case NETR_DELTA_GROUP:
+					ret &= samsync_handle_group(mem_ctx, samsync_state, 
+								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
+				case NETR_DELTA_ALIAS:
+					ret &= samsync_handle_alias(mem_ctx, samsync_state, 
+								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
 				case NETR_DELTA_TRUSTED_DOMAIN:
 					ret &= samsync_handle_trusted_domain(mem_ctx, samsync_state, 
 									     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
@@ -703,8 +805,6 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 	for (t=samsync_state->trusted_domains; t; t=t->next) {
 		char *secret_name = talloc_asprintf(mem_ctx, "G$$%s", t->name);
 		for (s=samsync_state->secrets; s; s=s->next) {
-			printf("Checking secret %s against %s\n",
-			       s->name, secret_name);
 			if (StrCaseCmp(s->name, secret_name) == 0) {
 				NTSTATUS nt_status;
 				struct samr_Password nt_hash;
@@ -718,7 +818,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 							  &nt_hash,
 							  NULL);
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT)) {
-					printf("Could not verify trust password to %s: %s\n", 
+					printf("Verifiction of trust password to %s: should have failed (nologon interdomain trust account), instead: %s\n", 
 					       t->name, nt_errstr(nt_status));
 					ret = False;
 				}
@@ -733,7 +833,7 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 							  NULL);
 				
 				if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
-					printf("Verifiction of trust password to %s: should have failed (nologon interdomain trust account), instead: %s\n", 
+					printf("Verifiction of trust password to %s: should have failed (wrong password), instead: %s\n", 
 					       t->name, nt_errstr(nt_status));
 					ret = False;
 					ret = False;
@@ -906,6 +1006,11 @@ BOOL torture_rpc_samsync(void)
 				  "Tortured by Samba4: %s", 
 				  timestring(mem_ctx, time(NULL)));
 	status = dcerpc_samr_SetDomainInfo(samsync_state->p_samr, mem_ctx, &s);
+
+	if (!test_samr_handle_Close(samsync_state->p_samr, mem_ctx, domain_policy)) {
+		ret = False;
+		goto failed;
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetDomainInfo level %u failed - %s\n", 
