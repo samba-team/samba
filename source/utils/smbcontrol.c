@@ -46,8 +46,8 @@ static void usage(BOOL doexit)
 {
 	int i;
 	if (doexit) {
-		printf("Usage: smbcontrol -i -s configfile\n");
-		printf("       smbcontrol <destination> <message-type> <parameters>\n\n");
+		printf("Usage: smbcontrol [-d debuglevel] [-s configfile] [-i]\n");
+		printf("       smbcontrol [-d debuglevel] [-s configfile] <destination> <message-type> <parameters>\n\n");
 	} else {
 		printf("<destination> <message-type> <parameters>\n\n");
 	}
@@ -357,8 +357,11 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	if (argc < 2) usage(True);
 
-	while ((opt = getopt(argc, argv,"is:")) != EOF) {
+	while ((opt = getopt(argc, argv,"is:d:")) != EOF) {
 		switch (opt) {
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 		case 'i':
 			interactive = True;
 			break;
@@ -380,7 +383,7 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 
 	if (!interactive) {
 		if (argc < 2) usage(True);
-		return (do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0));
+		return (!do_command(argv[0],argv[1], argc-2, argc > 2 ? &argv[2] : 0));
 	}
 
 	while (True) {
