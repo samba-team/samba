@@ -1692,7 +1692,7 @@ sub FunctionTable($)
 			pidl "\t},\n";
 		}
 	}
-	pidl "\t{ NULL, 0, NULL, NULL }\n};\n\n";
+	pidl "\t{ NULL, 0, NULL, NULL, NULL }\n};\n\n";
 
 	# If no endpoint is set, default to the interface name as a named pipe
 	if (! defined $interface->{PROPERTIES}->{endpoint}) {
