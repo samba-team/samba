@@ -19,4 +19,5 @@ SUBDIRS = 					\
 	  test					\
 	  kx					\
 	  kf					\
+	  $(APPL_dce)
 	  # kauth
