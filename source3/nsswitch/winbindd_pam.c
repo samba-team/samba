@@ -96,8 +96,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	user_info.smb_username.str = name_user;
 	user_info.smb_username.len = strlen(name_user);
 
-	user_info.requested_username.str = name_user;
-	user_info.requested_username.len = strlen(name_user);
+	user_info.unix_username.str = name_user;
+	user_info.unix_username.len = strlen(name_user);
 
 	user_info.wksta_name.str = global_myname;
 	user_info.wksta_name.len = strlen(user_info.wksta_name.str);
@@ -172,8 +172,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	user_info.smb_username.str = name_user;
 	user_info.smb_username.len = strlen(name_user);
 
-	user_info.requested_username.str = name_user;
-	user_info.requested_username.len = strlen(name_user);
+	user_info.unix_username.str = name_user;
+	user_info.unix_username.len = strlen(name_user);
 
 	user_info.wksta_name.str = global_myname;
 	user_info.wksta_name.len = strlen(user_info.wksta_name.str);

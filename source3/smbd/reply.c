@@ -462,7 +462,7 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
 	smb_username.str = user;
 	smb_username.len = strlen(smb_username.str);
 
-	user_info.requested_username = smb_username;  /* For the time-being */
+	user_info.unix_username = smb_username;  /* For the time-being */
 	user_info.smb_username = smb_username;
 	
 	user_info.wksta_name = wksta_name;
@@ -776,7 +776,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   add_session_user(user);
 
   if (!guest) {
-	  valid_password = NT_STATUS_IS_OK(pass_check_smb(user, domain, 
+	  valid_password = NT_STATUS_IS_OK(pass_check_smb(orig_user, user, 
+                                                          domain, 
 							  (unsigned char *)smb_apasswd, 
 							  smb_apasslen, 
 							  (unsigned char *)smb_ntpasswd,

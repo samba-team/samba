@@ -368,7 +368,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 		become_root();
 
 		p->ntlmssp_auth_validated = 
-			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, domain,
+			NT_STATUS_IS_OK(pass_check_smb_with_chal(pipe_user_name, NULL, domain,
 								 (uchar*)p->challenge, 
 								 lm_owf, lm_pw_len, 
 								 nt_owf, nt_pw_len));

@@ -362,4 +362,3 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	cli_shutdown(&cli);
 	return status;
 }
-

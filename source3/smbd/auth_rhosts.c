@@ -174,7 +174,7 @@ NTSTATUS check_rhosts_security(const auth_usersupplied_info *user_info,
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	become_root();
-	if (check_hosts_equiv(user_info->smb_username.str)) {
+	if (check_hosts_equiv(user_info->unix_username.str)) {
 		nt_status = NT_STATUS_OK;
 	}
 	unbecome_root();

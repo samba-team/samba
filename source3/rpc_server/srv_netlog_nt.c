@@ -505,7 +505,7 @@ static NTSTATUS _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, c
 	smb_username.str = user;
 	smb_username.len = strlen(smb_username.str);
 
-	user_info.requested_username = smb_username;  /* For the time-being */
+	user_info.unix_username = smb_username;  /* For the time-being */
 	user_info.smb_username = smb_username;
 
 #if 0
