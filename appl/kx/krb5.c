@@ -84,7 +84,7 @@ krb5_authenticate (kx_context *kc, int s)
     ret = krb5_sname_to_principal (context,
 				   host, "host", KRB5_NT_SRV_HST, &server);
     if (ret) {
-	krb5_warn (context, ret, "krb5_sname_to_principal: %s", host)
+	krb5_warn (context, ret, "krb5_sname_to_principal: %s", host);
 	return 1;
     }
 
