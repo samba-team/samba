@@ -2063,10 +2063,6 @@ int
 tn(int argc, char **argv)
 {
     struct servent *sp = 0;
-#if defined(IP_OPTIONS) && defined(IPPROTO_IP)
-    char *srp = 0;
-    int srlen;
-#endif
     char *cmd, *hostp = 0, *portp = 0;
     char *user = 0;
     int port = 0;
@@ -2122,6 +2118,22 @@ tn(int argc, char **argv)
     if (hostp == 0)
 	goto usage;
 
+    strlcpy (_hostname, hostp, sizeof(_hostname));
+    if (hostp[0] == '@' || hostp[0] == '!') {
+	char *p;
+	hostname = NULL;
+	for (p = hostp + 1; *p; p++) {
+	    if (*p == ',' || *p == '@')
+		hostname = p;
+	}
+	if (hostname == NULL) {
+	    fprintf(stderr, "%s: bad source route specification\n", hostp);
+	    return 0;
+	}
+	*hostname++ = '\0';
+    } else
+	hostname = hostp;
+
     if (portp) {
 	if (*portp == '-') {
 	    portp++;
@@ -2166,14 +2178,12 @@ tn(int argc, char **argv)
 
 	snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
-	error = getaddrinfo (hostp, portstr, &hints, &ai);
+	error = getaddrinfo (hostname, portstr, &hints, &ai);
 	if (error) {
-	    fprintf (stderr, "%s: %s\r\n", hostp, gai_strerror (error));
+	    fprintf (stderr, "%s: %s\r\n", hostname, gai_strerror (error));
 	    setuid (getuid ());
 	    return 0;
 	}
-	strlcpy (_hostname, hostp, sizeof(_hostname));
-	hostname = _hostname;
 
 	for (a = ai; a != NULL && connected == 0; a = a->ai_next) {
 	    char addrstr[256];
@@ -2194,11 +2204,23 @@ tn(int argc, char **argv)
 		warn ("socket");
 		continue;
 	    }
+
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP) && defined(HAVE_SETSOCKOPT)
-	    if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS,
-				      (void *)srp, srlen) < 0)
-		perror("setsockopt (IP_OPTIONS)");
+	if (hostp[0] == '@' || hostp[0] == '!') {
+	    char *srp = 0;
+	    int srlen;
+	    int proto, opt;
+
+	    if ((srlen = sourceroute(a, hostp, &srp, &proto, &opt)) < 0) {
+		(void) NetClose(net);
+		net = -1;
+		continue;
+	    }
+	    if (srp && setsockopt(net, proto, opt, srp, srlen) < 0)
+		perror("setsockopt (source route)");
+	}
 #endif
+
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 	    if (a->ai_family == AF_INET) {
 # if	defined(HAVE_GETTOSBYNAME)
@@ -2450,16 +2472,15 @@ help(int argc, char **argv)
 }
 
 
-#if 0 /* XXX - broken */
-
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
 
 /*
  * Source route is handed in as
- *	[!]@hop1@hop2...[@|:]dst
- * If the leading ! is present, it is a
- * strict source route, otherwise it is
- * assmed to be a loose source route.
+ *	[!]@hop1@hop2...@dst
+ *
+ * If the leading ! is present, it is a strict source route, otherwise it is
+ * assmed to be a loose source route.  Note that leading ! is effective
+ * only for IPv4 case.
  *
  * We fill in the source route option as
  *	hop1,hop2,hop3...dest
@@ -2467,134 +2488,197 @@ help(int argc, char **argv)
  * be the address to connect() to.
  *
  * Arguments:
- *	arg:	pointer to route list to decipher
+ *	ai:	The address (by struct addrinfo) for the final destination.
  *
- *	cpp: 	If *cpp is not equal to NULL, this is a
- *		pointer to a pointer to a character array
- *		that should be filled in with the option.
+ *	arg:	Pointer to route list to decipher
  *
+ *	cpp: 	Pointer to a pointer, so that sourceroute() can return
+ *		the address of result buffer (statically alloc'ed).
+ *
+ *	protop/optp:
+ *		Pointer to an integer.  The pointed variable
  *	lenp:	pointer to an integer that contains the
  *		length of *cpp if *cpp != NULL.
  *
  * Return values:
  *
- *	Returns the address of the host to connect to.  If the
+ *	Returns the length of the option pointed to by *cpp.  If the
  *	return value is -1, there was a syntax error in the
- *	option, either unknown characters, or too many hosts.
- *	If the return value is 0, one of the hostnames in the
- *	path is unknown, and *cpp is set to point to the bad
- *	hostname.
+ *	option, either arg contained unknown characters or too many hosts,
+ *	or hostname cannot be resolved.
  *
- *	*cpp:	If *cpp was equal to NULL, it will be filled
- *		in with a pointer to our static area that has
- *		the option filled in.  This will be 32bit aligned.
+ *	The caller needs to pass return value (len), *cpp, *protop and *optp
+ *	to setsockopt(2).
  *
- *	*lenp:	This will be filled in with how long the option
- *		pointed to by *cpp is.
+ *	*cpp:	Points to the result buffer.  The region is statically
+ *		allocated by the function.
+ *
+ *	*protop:
+ *		protocol # to be passed to setsockopt(2).
+ *
+ *	*optp:	option # to be passed to setsockopt(2).
  *
  */
-unsigned long
-sourceroute(char *arg, char **cpp, int *lenp)
+int
+sourceroute(struct addrinfo *ai,
+	    char *arg,
+	    char **cpp,
+	    int *protop,
+	    int *optp)
 {
-	static char lsr[44];
 	char *cp, *cp2, *lsrp, *lsrep;
-	int tmp;
-	struct in_addr sin_addr;
-	struct hostent *host = 0;
-	char c;
+	struct addrinfo hints, *res;
+	int len, error;
+	struct sockaddr_in *sin;
+	register char c;
+	static char lsr[44];
+#ifdef INET6
+	struct cmsghdr *cmsg;
+	struct sockaddr_in6 *sin6;
+	static char rhbuf[1024];
+#endif
 
 	/*
-	 * Verify the arguments, and make sure we have
-	 * at least 7 bytes for the option.
+	 * Verify the arguments.
 	 */
-	if (cpp == NULL || lenp == NULL)
-		return((unsigned long)-1);
-	if (*cpp != NULL && *lenp < 7)
-		return((unsigned long)-1);
-	/*
-	 * Decide whether we have a buffer passed to us,
-	 * or if we need to use our own static buffer.
-	 */
-	if (*cpp) {
-		lsrp = *cpp;
-		lsrep = lsrp + *lenp;
-	} else {
-		*cpp = lsrp = lsr;
-		lsrep = lsrp + 44;
-	}
+	if (cpp == NULL)
+		return -1;
 
 	cp = arg;
 
-	/*
-	 * Next, decide whether we have a loose source
-	 * route or a strict source route, and fill in
-	 * the begining of the option.
-	 */
-	if (*cp == '!') {
+	*cpp = NULL;
+	switch (ai->ai_family) {
+	case AF_INET:
+		lsrp = lsr;
+		lsrep = lsrp + sizeof(lsr);
+
+		/*
+		 * Next, decide whether we have a loose source
+		 * route or a strict source route, and fill in
+		 * the begining of the option.
+		 */
+		if (*cp == '!') {
+			cp++;
+			*lsrp++ = IPOPT_SSRR;
+		} else
+			*lsrp++ = IPOPT_LSRR;
+		if (*cp != '@')
+			return -1;
+		lsrp++;		/* skip over length, we'll fill it in later */
+		*lsrp++ = 4;
 		cp++;
-		*lsrp++ = IPOPT_SSRR;
-	} else
-		*lsrp++ = IPOPT_LSRR;
+		*protop = IPPROTO_IP;
+		*optp = IP_OPTIONS;
+		break;
+#ifdef INET6
+	case AF_INET6:
+		cmsg = inet6_rthdr_init(rhbuf, IPV6_RTHDR_TYPE_0);
+		if (*cp != '@')
+			return -1;
+		cp++;
+		*protop = IPPROTO_IPV6;
+		*optp = IPV6_PKTOPTIONS;
+		break;
+#endif
+	default:
+		return -1;
+	}
 
-	if (*cp != '@')
-		return((unsigned long)-1);
-
-	lsrp++;		/* skip over length, we'll fill it in later */
-	*lsrp++ = 4;
-
-	cp++;
-
-	sin_addr.s_addr = 0;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = ai->ai_family;
+	hints.ai_socktype = SOCK_STREAM;
 
 	for (c = 0;;) {
 		if (c == ':')
 			cp2 = 0;
-		else for (cp2 = cp; (c = *cp2); cp2++) {
+		else for (cp2 = cp; (c = *cp2) != '\0'; cp2++) {
 			if (c == ',') {
 				*cp2++ = '\0';
 				if (*cp2 == '@')
 					cp2++;
 			} else if (c == '@') {
 				*cp2++ = '\0';
-			} else if (c == ':') {
+			}
+#if 0	/*colon conflicts with IPv6 address*/
+			else if (c == ':') {
 				*cp2++ = '\0';
-			} else
+			}
+#endif
+			else
 				continue;
 			break;
 		}
 		if (!c)
 			cp2 = 0;
 
-		if ((tmp = inet_addr(cp)) != -1) {
-			sin_addr.s_addr = tmp;
-		} else if ((host = roken_gethostbyname(cp))) {
-			memmove(&sin_addr,
-				host->h_addr_list[0],
-				sizeof(sin_addr));
-		} else {
-			*cpp = cp;
-			return(0);
+		error = getaddrinfo(cp, NULL, &hints, &res);
+		if (error) {
+			fprintf(stderr, "%s: %s\n", cp, gai_strerror(error));
+			return -1;
 		}
-		memmove(lsrp, &sin_addr, 4);
-		lsrp += 4;
+		if (ai->ai_family != res->ai_family) {
+			freeaddrinfo(res);
+			return -1;
+		}
+		if (ai->ai_family == AF_INET) {
+			/*
+			 * Check to make sure there is space for address
+			 */
+			if (lsrp + 4 > lsrep) {
+				freeaddrinfo(res);
+				return -1;
+			}
+			sin = (struct sockaddr_in *)res->ai_addr;
+			memcpy(lsrp, &sin->sin_addr, sizeof(struct in_addr));
+			lsrp += sizeof(struct in_addr);
+		}
+#ifdef INET6
+		else if (ai->ai_family == AF_INET6) {
+			sin6 = (struct sockaddr_in6 *)res->ai_addr;
+			inet6_rthdr_add(cmsg, &sin6->sin6_addr,
+				IPV6_RTHDR_LOOSE);
+		}
+#endif
+		else {
+			freeaddrinfo(res);
+			return -1;
+		}
+		freeaddrinfo(res);
 		if (cp2)
 			cp = cp2;
 		else
 			break;
-		/*
-		 * Check to make sure there is space for next address
-		 */
+	}
+	if (ai->ai_family == AF_INET) {
+		/* record the last hop */
 		if (lsrp + 4 > lsrep)
-			return((unsigned long)-1);
-	}
-	if ((*(*cpp+IPOPT_OLEN) = lsrp - *cpp) <= 7) {
-		*cpp = 0;
-		*lenp = 0;
-		return((unsigned long)-1);
-	}
-	*lsrp++ = IPOPT_NOP; /* 32 bit word align it */
-	*lenp = lsrp - *cpp;
-	return(sin_addr.s_addr);
-}
+			return -1;
+		sin = (struct sockaddr_in *)ai->ai_addr;
+		memcpy(lsrp, &sin->sin_addr, sizeof(struct in_addr));
+		lsrp += sizeof(struct in_addr);
+#ifndef	sysV88
+		lsr[IPOPT_OLEN] = lsrp - lsr;
+		if (lsr[IPOPT_OLEN] <= 7 || lsr[IPOPT_OLEN] > 40)
+			return -1;
+		*lsrp++ = IPOPT_NOP;	/*32bit word align*/
+		len = lsrp - lsr;
+		*cpp = lsr;
+#else
+		ipopt.io_len = lsrp - lsr;
+		if (ipopt.io_len <= 5)	/*is 3 better?*/
+			return -1;
+		*cpp = (char 8)&ipopt;
 #endif
+	}
+#ifdef INET6
+	else if (ai->ai_family == AF_INET6) {
+		inet6_rthdr_lasthop(cmsg, IPV6_RTHDR_LOOSE);
+		len = cmsg->cmsg_len;
+		*cpp = rhbuf;
+	}
+#endif
+	else
+		return -1;
+	return len;
+}
 #endif
