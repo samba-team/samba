@@ -593,7 +593,7 @@ BOOL file_save(const char *fname, void *packet, size_t length)
 	if (fd == -1) {
 		return False;
 	}
-	if (write(fd, packet, length) != length) {
+	if (write(fd, packet, length) != (size_t)length) {
 		return False;
 	}
 	close(fd);
