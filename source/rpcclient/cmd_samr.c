@@ -5,8 +5,8 @@
 
    Copyright (C) Andrew Tridgell              1992-2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
-   Copyright (C) Elrond                            2000
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Elrond                            2000,
+   Copyright (C) Tim Potter                        2000
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -482,14 +482,98 @@ static uint32 cmd_samr_query_groupmem(struct cli_state *cli, int argc, char **ar
 	return result;
 }
 
+/* Enumerate domain groups */
+
+static uint32 cmd_samr_enum_dom_groups(struct cli_state *cli, int argc, 
+				       char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	BOOL got_connect_pol = False, got_domain_pol = False;
+	TALLOC_CTX *mem_ctx;
+	fstring server;
+	uint32 start_idx, size, num_dom_groups, i;
+	struct acct_info *dom_groups;
+
+	if (argc != 1) {
+		printf("Usage: %s\n", argv[0]);
+		return 0;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0, ("cmd_samr_enum_dom_groups: talloc_init returned "
+			  "NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	fetch_domain_sid(cli);
+
+	/* Initialise RPC connection */
+
+	if (!cli_nt_session_open (cli, PIPE_SAMR)) {
+		fprintf (stderr, "Could not initialize samr pipe!\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(server);
+
+	/* Get sam policy handle */
+
+	if ((result = cli_samr_connect(cli, mem_ctx, server, 
+				       MAXIMUM_ALLOWED_ACCESS, 
+				       &connect_pol)) !=
+	    NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_connect_pol = True;
+
+	/* Get domain policy handle */
+
+	if ((result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+					   MAXIMUM_ALLOWED_ACCESS,
+					   &domain_sid, &domain_pol))
+	     != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	got_domain_pol = True;
+
+	/* Enumerate domain groups */
+
+	start_idx = 0;
+	size = 0xffff;
+
+	result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
+					  &start_idx, size,
+					  &dom_groups, &num_dom_groups);
+
+	for (i = 0; i < num_dom_groups; i++)
+		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
+		       dom_groups[i].rid);
+
+ done:
+	if (got_domain_pol) cli_samr_close(cli, mem_ctx, &domain_pol);
+	if (got_connect_pol) cli_samr_close(cli, mem_ctx, &connect_pol);
+
+	cli_nt_session_close(cli);
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set samr_commands[] = {
 	{ "SAMR", 		NULL,		 		"" },
+
 	{ "queryuser", 		cmd_samr_query_user, 		"Query user info" },
 	{ "querygroup", 	cmd_samr_query_group, 		"Query group info" },
 	{ "queryusergroups", 	cmd_samr_query_usergroups, 	"Query user groups" },
 	{ "querygroupmem", 	cmd_samr_query_groupmem, 	"Query group membership" },
+	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       "Enumerate domain groups" },
+
 	{ NULL, NULL, NULL }
 };
 
