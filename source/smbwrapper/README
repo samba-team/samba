@@ -6,9 +6,10 @@ Currently this code has only been tested on:
 
 - Linux 2.0 with glibc2 (RH5.1)
 - Linux 2.1 with glibc2
-- Solaris 2.5 with gcc
 - Solaris 2.5.1 with gcc
 - Solaris 2.6 with gcc
+- SunOS 4.1.3 with gcc
+- IRIX 6.4 with cc
 
 It probably won't run on other systems without some porting.
 
@@ -17,8 +18,15 @@ To use it you need to do this:
 1) build smbwrapper.so using the command "make smbwrapper"
 3) run smbsh
 
-then try to access /smb/SERVER for some SMB server name and see what
-happens.
+You will be asked for a username and password. After that you will be
+returned to a shell prompt. It is actually a subshell running with
+smbwrapper enabled. You can confirm this by checking if the SMBW_USER
+environment variable is defined.
+
+Now try to access /smb/SERVER for some SMB server name and see what
+happens. If you set SMBW_WORKGROUP to your workgroup or have workgroup
+set in yoru smb.conf then listing /smb/ should list all SMB servers in
+your workgroup.
 
 For debugging you can set SMBW_DEBUG to an integer debug level.
 

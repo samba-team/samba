@@ -628,7 +628,12 @@
 #endif
 
 #ifdef HAVE_UTIMES
+#if LINUX
+ /* glibc2 gets the prototype wrong */
+ int utimes(const char *name,struct timeval tvp[2])
+#else
  int utimes(const char *name,const struct timeval tvp[2])
+#endif
 {
 	if (smbw_path(name)) {
 		return smbw_utimes(name, tvp);
