@@ -504,7 +504,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	}
 
 	/* Quit if the account was disabled. */
-	if(smb_pass->acct_ctrl & ACB_DISABLED) {
+	if (smb_pass->acct_ctrl & ACB_DISABLED) {
 		DEBUG(3,("account for user %s was disabled.\n", user));
 		return False;
         }
@@ -512,7 +512,7 @@ BOOL pass_check_smb(char *user, char *domain, uchar *chal,
 	/* Ensure the uid's match */
 	if (smb_pass->unix_uid != pass->pw_uid)
 	{
-		DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
+		DEBUG(3,("Error : UNIX (%d) and SMB (%d) uids in password files do not match !\n", pass->pw_uid, smb_pass->unix_uid));
 		return False;
 	}
 
