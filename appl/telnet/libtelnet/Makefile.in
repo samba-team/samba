@@ -16,17 +16,9 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-LIBOBJS=@LIBOBJS@
+SOURCES=auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c read_password.c
 
-SOURCES=auth.c encrypt.c genget.c \
-	misc.c kerberos.c kerberos5.c forward.c spx.c enc_des.c \
-	rsaencpwd.c krb4encpwd.c read_password.c \
-	getent.c herror.c memmove.c setenv.c strcasecmp.c \
-	strchr.c strdup.c strerror.c strftime.c strrchr.c signal.c
-
-OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o \
-        read_password.o signal.o \
-	$(LIBOBJS)
+OBJECTS=auth.o encrypt.o genget.o enc_des.o misc.o kerberos.o read_password.o
 
 all: libtelnet.a
 
