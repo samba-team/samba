@@ -126,6 +126,7 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 	TDB_DATA d;
 	d.dptr = (void *)pjob;
 	d.dsize = sizeof(*pjob);
+
 	return (0 == tdb_store(tdb, print_key(jobid), d, TDB_REPLACE));
 }
 
@@ -196,6 +197,13 @@ static void print_unix_job(int snum, print_queue_struct *q)
 {
 	int jobid = q->job + UNIX_JOB_START;
 	struct printjob pj;
+
+	/* Don't re-insert a unix job if it already exists as it mucks
+	   up the timestamp. */
+
+	if (tdb_exists(tdb, print_key(jobid))) {
+		return;
+	}
 
 	ZERO_STRUCT(pj);
 
