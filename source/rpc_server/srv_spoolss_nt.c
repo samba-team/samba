@@ -224,9 +224,19 @@ static void free_printer_entry(void *ptr)
 {
 	Printer_entry *Printer = (Printer_entry *)ptr;
 
-	if (Printer->notify.client_connected==True)
-		srv_spoolss_replycloseprinter(print_queue_snum(Printer->dev.handlename),
-				&Printer->notify.client_hnd);
+	if (Printer->notify.client_connected==True) {
+		int snum = -1;
+
+		if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER) {
+			snum = -1;
+			srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
+		} else if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) {
+			snum = print_queue_snum(Printer->dev.handlename);
+			if (snum != -1)
+				srv_spoolss_replycloseprinter(snum,
+						&Printer->notify.client_hnd);
+		}
+	}
 
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
@@ -2473,7 +2483,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	uint32 options = q_u->options;
 	UNISTR2 *localmachine = &q_u->localmachine;
 	uint32 printerlocal = q_u->printerlocal;
-	int snum;
+	int snum = -1;
 	SPOOL_NOTIFY_OPTION *option = q_u->option;
 
 	/* store the notify value in the printer struct */
@@ -2484,9 +2494,6 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 		DEBUG(2,("_spoolss_rffpcnex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
-
-	if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) && !get_printer_snum(p, handle, &snum) )
-		return WERR_BADFID;
 
 	Printer->notify.flags=flags;
 	Printer->notify.options=options;
@@ -2501,6 +2508,12 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 		       sizeof(Printer->notify.localmachine)-1);
 
 	/* Connect to the client machine and send a ReplyOpenPrinter */
+
+	if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+		snum = -1;
+	else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
+			!get_printer_snum(p, handle, &snum) )
+		return WERR_BADFID;
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
@@ -5889,7 +5902,6 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-	int snum;
 	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 	
 	if (!Printer) {
@@ -5897,11 +5909,17 @@ WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 		return WERR_BADFID;
 	}
 
-	if (!get_printer_snum(p, handle, &snum))
-		return WERR_BADFID;
+	if (Printer->notify.client_connected==True) {
+		int snum = -1;
 
-	if (Printer->notify.client_connected==True)
+		if ( Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+			snum = -1;
+		else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
+				!get_printer_snum(p, handle, &snum) )
+			return WERR_BADFID;
+
 		srv_spoolss_replycloseprinter(snum, &Printer->notify.client_hnd);
+	}
 
 	Printer->notify.flags=0;
 	Printer->notify.options=0;
