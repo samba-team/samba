@@ -103,7 +103,6 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 	      uint32 stype = IVAL(p,18);
 	      int comment_offset = IVAL(p,22) & 0xFFFF;
 	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
-	      
 	      struct work_record *w = work;
 	      
 	      DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
@@ -111,16 +110,17 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 	      if (stype & SV_TYPE_DOMAIN_ENUM)
 		{
 		  /* creates workgroup on remote subnet */
-		  if ((w = find_workgroupstruct(d,sname, False)))
+		  if ((w = find_workgroupstruct(d,sname, True)))
 		    {
 		      if (ismybcast(d->bcast_ip))
 			{
 			  announce_request(w, d->bcast_ip);
 			}
 		    }
-		}
+		}	      
 	      
-	      add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
+	      if (w)
+		add_server_entry(d,w,sname,stype,lp_max_ttl(),cmnt,False);
 	    }
 	}
     }

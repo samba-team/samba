@@ -388,6 +388,33 @@ BOOL ismybcast(struct in_addr bcast)
   return False;
 }
 
+/****************************************************************************
+  how many interfaces do we have
+  **************************************************************************/
+int iface_count(void)
+{
+  int ret = 0;
+  struct interface *i;
+
+  for (i=interfaces;i;i=i->next)
+    ret++;
+  return ret;
+}
+
+/****************************************************************************
+  return IP of the Nth interface
+  **************************************************************************/
+struct in_addr *iface_n_ip(int n)
+{
+  struct interface *i;
+  
+  for (i=interfaces;i && n;i=i->next)
+    n--;
+
+  if (i) return &i->ip;
+  return NULL;
+}
+
 static struct interface *iface_find(struct in_addr ip)
 {
   struct interface *i;

@@ -93,6 +93,7 @@ extern int  lp_maxdisksize(void);
 extern int  lp_lpqcachetime(void);
 extern int  lp_syslog(void);
 extern int  lp_deadtime(void);
+extern int  lp_readsize(void);
 extern int  lp_debuglevel(void);
 extern int  lp_maxprotocol(void);
 extern int  lp_maxpacket(void);

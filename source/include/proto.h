@@ -67,6 +67,8 @@ void load_interfaces(void);
 void iface_set_default(char *ip,char *bcast,char *nmask);
 BOOL ismyip(struct in_addr ip);
 BOOL ismybcast(struct in_addr bcast);
+int iface_count(void);
+struct in_addr *iface_n_ip(int n);
 struct in_addr *iface_bcast(struct in_addr ip);
 struct in_addr *iface_nmask(struct in_addr ip);
 struct in_addr *iface_ip(struct in_addr ip);
@@ -197,7 +199,7 @@ void sync_server(enum cmd_type cmd, char *serv_name, char *work_name,
 		 int name_type,
 		 struct in_addr ip);
 void update_from_reg(char *name, int type, struct in_addr ip);
-void add_my_domains(void);
+void add_my_domains(char *group);
 BOOL same_context(struct dgram_packet *dgram);
 BOOL listening_name(struct work_record *work, struct nmb_name *n);
 void process_logon_packet(struct packet_struct *p,char *buf,int len);
@@ -239,6 +241,9 @@ BOOL server_cryptkey(char *buf);
 BOOL server_validate(char *buf);
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)());
+int read_predict(int fd,int offset,char *buf,char **ptr,int num);
+void do_read_prediction();
+void invalidate_read_prediction(int fd);
 void lpq_reset(int snum);
 void print_file(int fnum);
 int get_printqueue(int snum,int cnum,print_queue_struct **queue,
@@ -457,9 +462,6 @@ int TvalDiff(struct timeval *tvalold,struct timeval *tvalnew);
 BOOL send_keepalive(int client);
 int read_data(int fd,char *buffer,int N);
 int write_data(int fd,char *buffer,int N);
-int read_predict(int fd,int offset,char *buf,char **ptr,int num);
-void do_read_prediction();
-void invalidate_read_prediction(int fd);
 int transfer_file(int infd,int outfd,int n,char *header,int headlen,int align);
 int read_smb_length(int fd,char *inbuf,int timeout);
 BOOL receive_smb(int fd,char *buffer,int timeout);

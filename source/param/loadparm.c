@@ -56,7 +56,6 @@
 BOOL bLoaded = False;
 
 extern int DEBUGLEVEL;
-extern int ReadSize;
 extern pstring user_socket_options;
 
 #ifndef GLOBAL_NAME
@@ -149,6 +148,7 @@ typedef struct
   int syslog;
   int os_level;
   int max_ttl;
+  int ReadSize;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
   BOOL bPreferredMaster;
@@ -409,7 +409,7 @@ struct parm_struct
   {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL},
   {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL},
-  {"read size",        P_INTEGER, P_GLOBAL, &ReadSize,                  NULL},
+  {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL},
 #ifdef KANJI
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
 #endif /* KANJI */
@@ -582,6 +582,7 @@ static void init_globals(void)
   Globals.bBrowseList = True;
   Globals.bWINSsupport = True;
   Globals.bWINSproxy = False;
+  Globals.ReadSize = 16*1024;
 
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
@@ -735,6 +736,7 @@ FN_GLOBAL_INTEGER(lp_maxmux,&Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_maxpacket,&Globals.max_packet)
 FN_GLOBAL_INTEGER(lp_keepalive,&keepalive)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
+FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
 FN_GLOBAL_INTEGER(lp_deadtime,&Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol,&Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security,&Globals.security)

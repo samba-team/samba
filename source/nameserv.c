@@ -267,6 +267,11 @@ void add_my_names(void)
   add_netbios_entry("*",0x0,NB_ACTIVE,0,SELF,ip,False);
   add_netbios_entry("__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip,False);
   add_netbios_entry("__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False);
+
+  if (lp_wins_support()) {
+    /* the 0x1c name gets added by any WINS server it seems */
+    add_name_entry(my_workgroup(),0x1c,NB_ACTIVE|NB_GROUP);      
+  }
 }
 
 /*******************************************************************

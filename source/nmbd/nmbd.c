@@ -492,7 +492,7 @@ static void usage(char *pname)
     return(-1);	
 
   if (*group)
-    add_domain_entry(*iface_bcast(ipzero),*iface_nmask(ipzero),group, True);
+    add_my_domains(group);
 
   if (!is_daemon && !is_a_socket(0)) {
     DEBUG(0,("standard input is not a socket, assuming -D option\n"));
@@ -519,7 +519,7 @@ static void usage(char *pname)
   string_sub(ServerComment,"%h",myhostname);
 
   add_my_names();
-  add_my_domains();
+  add_my_domains(lp_workgroup());
 
   DEBUG(3,("Checked names\n"));
   
