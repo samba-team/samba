@@ -65,10 +65,6 @@
 
 #include <termios.h>
 
-#ifdef HAVE_CURSES_H
-#include <curses.h>
-#endif
-
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
