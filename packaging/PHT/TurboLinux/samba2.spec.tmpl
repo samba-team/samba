@@ -9,6 +9,7 @@ Patch: makefile-path.patch
 Patch1: smbw.patch
 Packager: John H Terpstra [Samba-Team] <jht@samba.anu.edu.au>
 Requires: pam >= 0.64
+Prereq: chkconfig fileutils
 BuildRoot: /tmp/samba
 
 %description
@@ -51,14 +52,26 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 * Fri Aug 21 1998 John H Terpstra <jht@samba.anu.edu.au>
  - Updated for Samba version 2.0 building
 
-* Sat Jul 4 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Tue Jul 07 1998 Erik Troan <ewt@redhat.com>
+  - updated postun triggerscript to check $0
+  - clear /etc/codepages from %preun instead of %postun
+
+* Sat Jul 04 1998 John H Terpstra <jht@samba.anu.edu.au>
  - fixed codepage preservation during update via -Uvh
+
+* Mon Jun 08 1998 Erik Troan <ewt@redhat.com>
+  - made the %postun script a tad less agressive; no reason to remove
+    the logs or lock file 
+  - the %postun and %preun should only exectute if this is the final
+    removal
+  - migrated %triggerpostun from Red Hat's samba package to work around
+    packaging problems in some Red Hat samba releases
 
 * Sun Apr 26 1998 John H Terpstra <jht@samba.anu.edu.au>
  - Tidy up for early alpha releases
  - added findsmb from SGI packaging
 
-* Thu Apr 9 1998 John H Terpstra <jht@samba.anu.edu.au>
+* Thu Apr 09 1998 John H Terpstra <jht@samba.anu.edu.au>
  - Updated spec file
  - Included new codepage.936
 
@@ -185,30 +198,53 @@ if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
 killall -1 inetd
 fi
 
-
 %preun
-/sbin/chkconfig --del smb
+if [ $1 = 0 ] ; then
+    /sbin/chkconfig --del smb
+
+    for n in /etc/codepages/*; do
+	if [ $n != /etc/codepages/src ]; then
+	    rm -rf $n
+	fi
+    done
+    # We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
+    if [ -e /var/lock/samba/browse.dat ]; then
+	    rm -f /var/lock/samba/browse.dat
+    fi
+    if [ -e /var/lock/samba/wins.dat ]; then
+	    rm -f /var/lock/samba/wins.dat
+    fi
+fi
 
 %postun
-if [ -x /etc/pam.d/samba ]; then
-  rm -f /etc/pam.d/samba
+# Only delete remnants of samba if this is the final deletion.
+if [ $1 != 0 ] ; then
+    exit 0
+
+    if [ -x /etc/pam.d/samba ]; then
+      rm -f /etc/pam.d/samba
+    fi
+    if [ -e /var/log/samba ]; then
+      rm -rf /var/log/samba
+    fi
+    if [ -e /var/lock/samba ]; then
+      rm -rf /var/lock/samba
+    fi
+
+    # Remove swat entries from /etc/inetd.conf and /etc/services
+    cd /etc
+    tmpfile=/etc/tmp.$$
+    sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
+    mv $tmpfile inetd.conf
+    sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
+    mv $tmpfile services
 fi
-if [ -e /etc/codepages ]; then
-  rm -rf /etc/codepages
+
+%triggerpostun -- samba < samba-2.0.0
+if [ $0 != 0 ]; then
+    /sbin/chkconfig --add smb
 fi
-if [ -e /var/log/samba ]; then
-  rm -rf /var/log/samba
-fi
-if [ -e /var/lock/samba ]; then
-  rm -rf /var/lock/samba
-fi
-# Remove swat entries from /etc/inetd.conf and /etc/services
-cd /etc
-tmpfile=/etc/tmp.$$
-sed -e '/^[:space:]*swat.*$/d' /etc/inetd.conf > $tmpfile
-mv $tmpfile inetd.conf
-sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
-mv $tmpfile services
+
 
 %files
 %doc README COPYING Manifest Read-Manifest-Now
