@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1999-2001, PADL Software Pty Ltd.
+ * Copyright (c) 1999-2001, 2003, PADL Software Pty Ltd.
+ * Copyright (c) 2004, Andrew Bartlett.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,24 +48,87 @@ static krb5_error_code
 LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 		   hdb_entry * ent);
 
-static char *krb5kdcentry_attrs[] =
-    { "krb5PrincipalName", "cn", "krb5PrincipalRealm",
-    "krb5KeyVersionNumber", "krb5Key",
-    "krb5ValidStart", "krb5ValidEnd", "krb5PasswordEnd",
-    "krb5MaxLife", "krb5MaxRenew", "krb5KDCFlags", "krb5EncryptionType",
-    "modifiersName", "modifyTimestamp", "creatorsName", "createTimestamp",
+static char *krb5kdcentry_attrs[] = { 
+    "cn",
+    "createTimestamp",
+    "creatorsName",
+    "krb5EncryptionType",
+    "krb5KDCFlags",
+    "krb5Key",
+    "krb5KeyVersionNumber",
+    "krb5MaxLife",
+    "krb5MaxRenew",
+    "krb5PasswordEnd",
+    "krb5PrincipalName",
+    "krb5PrincipalRealm",
+    "krb5ValidEnd",
+    "krb5ValidStart",
+    "modifiersName",
+    "modifyTimestamp",
+    "objectClass",
+    "sambaAcctFlags",
+    "sambaNTPassword",
+    "sambaPwdLastSet",
+    "sambaPwdMustChange",
     NULL
 };
 
-static char *krb5principal_attrs[] =
-    { "krb5PrincipalName", "cn", "krb5PrincipalRealm",
-    "modifiersName", "modifyTimestamp", "creatorsName", "createTimestamp",
+static char *krb5principal_attrs[] = {
+    "cn",
+    "createTimestamp",
+    "creatorsName",
+    "krb5PrincipalName",
+    "krb5PrincipalRealm",
+    "modifiersName",
+    "modifyTimestamp",
+    "objectClass",
+    "uid",
     NULL
 };
 
 static krb5_error_code
+LDAP__hex2bytes(const char *hex_in, char *buffer, size_t len)
+{
+    size_t i;
+    const char *p;
+	
+    if (strlen(hex_in) != (2 * len))
+	return EINVAL;
+
+    p = hex_in;
+    for (i = 0; i < len; i++) {
+	char p3[3];
+	strncpy(p3, &hex_in[i*2], 2);
+	p3[2] = '\0';
+	buffer[i] = strtoul(p3, NULL, 16);
+    }
+    return 0;
+}
+
+static krb5_error_code
+LDAP__bytes2hex(const char *buffer, size_t buf_len, char **out)
+{
+    const static char hexchar[] = "0123456789ABCDEF";
+    size_t i;
+    char *p;
+
+    p = malloc(buf_len * 2 + 1);
+    if (p == NULL)
+	return ENOMEM;
+    
+    for (i = 0; i < buf_len; i++) {
+	p[i * 2] = hexchar[(unsigned char)buffer[i] & 0xf];
+	p[i * 2 + 1] = hexchar[((unsigned char)buffer[i] >> 4) & 0xf];
+    }
+    p[i * 2] = '\0';
+    *out = p;
+
+    return 0;
+}
+
+static krb5_error_code
 LDAP__setmod(LDAPMod *** modlist, int modop, const char *attribute,
-	int *pIndex)
+	     int *pIndex)
 {
     int cMods;
 
@@ -200,10 +264,10 @@ LDAP_addmod_generalized_time(LDAPMod *** mods, int modop,
 			     const char *attribute, KerberosTime * time)
 {
     char buf[22];
+    struct tm tm_buf;
     struct tm *tm;
-
-    /* XXX not threadsafe */
-    tm = gmtime(time);
+    
+    tm = gmtime_r(time, &tm_buf);
     strftime(buf, sizeof(buf), "%Y%m%d%H%M%SZ", tm);
 
     return LDAP_addmod(mods, modop, attribute, buf);
@@ -287,51 +351,75 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     hdb_entry orig;
     unsigned long oflags, nflags;
 
+    krb5_boolean is_samba_account = FALSE;
+    krb5_boolean is_account = FALSE;
+    krb5_boolean is_heimdal_entry = FALSE;
+    krb5_boolean is_heimdal_principal = FALSE;
+
     if (msg != NULL) {
+	char **values;
 	ret = LDAP_message2entry(context, db, msg, &orig);
 	if (ret != 0) {
 	    goto out;
 	}
 	is_new_entry = FALSE;
+	    
+	values = ldap_get_values((LDAP *) db->hdb_db, msg, "objectClass");
+	    
+	if ( values ) {
+	    int num_objectclasses = ldap_count_values(values);
+	    for (i=0; i < num_objectclasses; i++) {
+		if (strcasecmp(values[i], "sambaSamAccount") == 0) {
+		    is_samba_account = TRUE;
+		} else if (strcasecmp(values[i], "account") == 0) {
+		    is_account = TRUE;
+		} else if (strcasecmp(values[i], "krb5Principal") == 0) {
+		    is_heimdal_principal = TRUE;
+		} else if (strcasecmp(values[i], "krb5KDCEntry") == 0) {
+		    is_heimdal_entry = TRUE;
+		}
+	    }
+	    ldap_value_free(values);
+	}
     } else {
 	/* to make it perfectly obvious we're depending on
 	 * orig being intiialized to zero */
 	memset(&orig, 0, sizeof(orig));
 	is_new_entry = TRUE;
-    }
 
-    if (is_new_entry) {
 	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "top");
 	if (ret != 0) {
 	    goto out;
 	}
-	/* person is the structural object class */
-	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "person");
+
+	/* account is the structural object class */
+	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "account");
+	is_account = TRUE;
 	if (ret != 0) {
 	    goto out;
 	}
-	ret =
-	    LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass",
-			"krb5Principal");
+
+	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "krb5Principal");
+	is_heimdal_principal = TRUE;
 	if (ret != 0) {
 	    goto out;
 	}
-	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass",
-			  "krb5KDCEntry");
+
+	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "objectClass", "krb5KDCEntry");
+	is_heimdal_entry = TRUE;
 	if (ret != 0) {
 	    goto out;
 	}
     }
 
-    if (is_new_entry ||
-	krb5_principal_compare(context, ent->principal, orig.principal) ==
-	FALSE) {
+    if (((is_heimdal_principal == TRUE) || (is_heimdal_entry == TRUE)) && (is_new_entry ||
+									   krb5_principal_compare(context, ent->principal, orig.principal) ==
+									   FALSE)) {
 	ret = krb5_unparse_name(context, ent->principal, &tmp);
 	if (ret != 0) {
 	    goto out;
 	}
-	ret =
-	    LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5PrincipalName", tmp);
+	ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "krb5PrincipalName", tmp);
 	if (ret != 0) {
 	    free(tmp);
 	    goto out;
@@ -339,7 +427,23 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	free(tmp);
     }
 
-    if (ent->kvno != orig.kvno) {
+    if (((is_account == TRUE) || (is_samba_account == TRUE)) && (is_new_entry ||
+								 krb5_principal_compare(context, ent->principal, orig.principal) ==
+								 FALSE)) {
+	ret = krb5_unparse_name_short(context, ent->principal, &tmp);
+	if (ret != 0) {
+	    goto out;
+	}
+	ret =
+	    LDAP_addmod(&mods, LDAP_MOD_REPLACE, "uid", tmp);
+	if (ret != 0) {
+	    free(tmp);
+	    goto out;
+	}
+	free(tmp);
+    }
+
+    if ((is_heimdal_entry == TRUE) && (ent->kvno != orig.kvno)) {
 	rc = asprintf(&tmp, "%d", ent->kvno);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
@@ -355,7 +459,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (ent->valid_start) {
+    if ((is_heimdal_entry == TRUE) && ent->valid_start) {
 	if (orig.valid_end == NULL
 	    || (*(ent->valid_start) != *(orig.valid_start))) {
 	    ret =
@@ -368,7 +472,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (ent->valid_end) {
+    if ((is_heimdal_entry == TRUE) && ent->valid_end) {
 	if (orig.valid_end == NULL
 	    || (*(ent->valid_end) != *(orig.valid_end))) {
 	    ret =
@@ -383,17 +487,50 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 
     if (ent->pw_end) {
 	if (orig.pw_end == NULL || (*(ent->pw_end) != *(orig.pw_end))) {
-	    ret =
-		LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
-					     "krb5PasswordEnd",
-					     ent->pw_end);
+	    if ((is_heimdal_entry == TRUE)) {
+		ret =
+		    LDAP_addmod_generalized_time(&mods, LDAP_MOD_REPLACE,
+						 "krb5PasswordEnd",
+						 ent->pw_end);
+		if (ret != 0) {
+		    goto out;
+		}
+	    }
+
+	    if (is_samba_account == TRUE) {
+		rc = asprintf(&tmp, "%ld", *(ent->pw_end));
+		if (rc < 0) {
+		    krb5_set_error_string(context, "asprintf: out of memory");
+		    ret = ENOMEM;
+		    goto out;
+		}
+		ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaPwdMustChange", tmp);
+		free(tmp);
+		if (ret != 0) {
+		    goto out;
+		}
+	    }
+	}
+    }
+
+    
+    if ((is_samba_account == TRUE) && ent->last_pw_change) {
+	if (orig.last_pw_change == NULL || (*(ent->last_pw_change) != *(orig.last_pw_change))) {
+	    rc = asprintf(&tmp, "%ld", *(ent->last_pw_change));
+	    if (rc < 0) {
+		krb5_set_error_string(context, "asprintf: out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaPwdLastSet", tmp);
+	    free(tmp);
 	    if (ret != 0) {
 		goto out;
 	    }
 	}
     }
 
-    if (ent->max_life) {
+    if ((is_heimdal_entry == TRUE) && ent->max_life) {
 	if (orig.max_life == NULL
 	    || (*(ent->max_life) != *(orig.max_life))) {
 	    rc = asprintf(&tmp, "%d", *(ent->max_life));
@@ -410,7 +547,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (ent->max_renew) {
+    if ((is_heimdal_entry == TRUE) && ent->max_renew) {
 	if (orig.max_renew == NULL
 	    || (*(ent->max_renew) != *(orig.max_renew))) {
 	    rc = asprintf(&tmp, "%d", *(ent->max_renew));
@@ -431,7 +568,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     oflags = HDBFlags2int(orig.flags);
     nflags = HDBFlags2int(ent->flags);
 
-    if (oflags != nflags) {
+    if ((is_heimdal_entry == TRUE) && (oflags != nflags)) {
 	rc = asprintf(&tmp, "%lu", nflags);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
@@ -445,7 +582,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    if (is_new_entry == FALSE && orig.keys.len > 0) {
+    /* Test each key for replacement */
+
+    if ((is_new_entry == FALSE) && (orig.keys.len > 0)) {
 	/* for the moment, clobber and replace keys. */
 	ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5Key", NULL);
 	if (ret != 0) {
@@ -454,40 +593,77 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     }
 
     for (i = 0; i < ent->keys.len; i++) {
-	unsigned char *buf;
-	size_t len;
 
-	ASN1_MALLOC_ENCODE(Key, buf, len, &ent->keys.val[i], &len, ret);
-	if (ret != 0)
-	    goto out;
-
-	/* addmod_len _owns_ the key, doesn't need to copy it */
-	ret = LDAP_addmod_len(&mods, LDAP_MOD_ADD, "krb5Key", buf, len);
-	if (ret != 0) {
-	    goto out;
+	if ((is_samba_account == TRUE) && (ent->keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)) {
+	    char *ntHexPassword;
+	    char *nt;
+		    
+	    /* the key might have been 'sealed', but samba passwords
+	       are clear in the directory */
+	    ret = hdb_unseal_key(context, db, &ent->keys.val[i]);
+	    if (ret != 0) {
+		goto out;
+	    }
+		    
+	    nt = ent->keys.val[i].key.keyvalue.data;
+	    /* store in ntPassword, not krb5key */
+	    ret = LDAP__bytes2hex(nt, 16, &ntHexPassword);
+	    if (ret)
+		goto out;
+	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaNTPassword", 
+			      ntHexPassword);
+	    free(ntHexPassword);
+		    
+	    if (ret != 0)
+		goto out;
+		    
+	    /* have to kill the LM passwod in this case */
+	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "sambaLMPassword", NULL);
+		    
+	    if (ret != 0)
+		goto out;
+		    
+	} else if (is_heimdal_entry == TRUE) {
+	    unsigned char *buf;
+	    size_t len, buf_size;
+		    
+	    ASN1_MALLOC_ENCODE(Key, buf, buf_size, &ent->keys.val[i], &len, ret);
+	    if (ret != 0)
+		goto out;
+	    if(buf_size != len)
+		krb5_abortx(context, "internal error in ASN.1 encoder");
+		    
+	    /* addmod_len _owns_ the key, doesn't need to copy it */
+	    ret = LDAP_addmod_len(&mods, LDAP_MOD_ADD, "krb5Key", buf, len);
+	    if (ret != 0) {
+		goto out;
+	    }
 	}
     }
 
     if (ent->etypes) {
 	/* clobber and replace encryption types. */
 	if (is_new_entry == FALSE) {
-	    ret =
-		LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5EncryptionType",
-			    NULL);
+	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5EncryptionType",
+			      NULL);
 	}
 	for (i = 0; i < ent->etypes->len; i++) {
-	    rc = asprintf(&tmp, "%d", ent->etypes->val[i]);
-	    if (rc < 0) {
-		krb5_set_error_string(context, "asprintf: out of memory");
-		ret = ENOMEM;
-		goto out;
-	    }
-	    free(tmp);
-	    ret =
-		LDAP_addmod(&mods, LDAP_MOD_ADD, "krb5EncryptionType",
-			    tmp);
-	    if (ret != 0) {
-		goto out;
+	    if ((is_samba_account == TRUE) 
+		&& (ent->keys.val[i].key.keytype == ETYPE_ARCFOUR_HMAC_MD5)) {
+	    } else if ((is_heimdal_entry == TRUE)) {
+		    
+		rc = asprintf(&tmp, "%d", ent->etypes->val[i]);
+		if (rc < 0) {
+		    krb5_set_error_string(context, "asprintf: out of memory");
+		    ret = ENOMEM;
+		    goto out;
+		}
+		ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "krb5EncryptionType",
+				  tmp);
+		free(tmp);
+		if (ret != 0) {
+		    goto out;
+		}
 	    }
 	}
     }
@@ -495,7 +671,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
     /* for clarity */
     ret = 0;
 
-  out:
+ out:
 
     if (ret == 0) {
 	*pmods = mods;
@@ -525,9 +701,9 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 	krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
 	ret = HDB_ERR_BADVERSION;
 	goto out;
-     }
+    }
 
-    rc = ldap_search_s((LDAP *) db->hdb_db, dn, LDAP_SCOPE_BASE,
+    rc = ldap_search_s((LDAP *) db->hdb_db, dn, LDAP_SCOPE_SUBTREE,
 		       "(objectclass=krb5Principal)", krb5principal_attrs,
 		       0, &res);
     if (rc != LDAP_SUCCESS) {
@@ -551,7 +727,7 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
     ret = krb5_parse_name(context, values[0], principal);
     ldap_value_free(values);
 
-  out:
+ out:
     if (res != NULL) {
 	ldap_msgfree(res);
     }
@@ -560,6 +736,7 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 
 static krb5_error_code
 LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
+		   const char *userid,
 		   LDAPMessage ** msg)
 {
     krb5_error_code ret;
@@ -570,7 +747,7 @@ LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
 
     rc =
 	asprintf(&filter,
-		 "(&(objectclass=krb5KDCEntry)(krb5PrincipalName=%s))",
+		 "(&(objectclass=krb5Principal)(krb5PrincipalName=%s))",
 		 princname);
     if (rc < 0) {
 	krb5_set_error_string(context, "asprintf: out of memory");
@@ -585,7 +762,7 @@ LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
 	goto out;
     }
 
-    rc = ldap_search_s((LDAP *) db->hdb_db, db->hdb_name, LDAP_SCOPE_ONELEVEL, filter, 
+    rc = ldap_search_s((LDAP *) db->hdb_db, db->hdb_name, LDAP_SCOPE_SUBTREE, filter, 
 		       krb5kdcentry_attrs, 0, msg);
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_search_s: %s", ldap_err2string(rc));
@@ -593,9 +770,35 @@ LDAP__lookup_princ(krb5_context context, HDB * db, const char *princname,
 	goto out;
     }
 
+    if (userid && ldap_count_entries((LDAP *) db->hdb_db, *msg) == 0) {
+	rc = asprintf(&filter,
+		      "(&(objectclass=account)(uid=%s))",
+		      userid);
+	if (rc < 0) {
+	    krb5_set_error_string(context, "asprintf: out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	    
+	rc = ldap_set_option((LDAP *) db->hdb_db, LDAP_OPT_SIZELIMIT, (const void *)&limit);
+	if (rc != LDAP_SUCCESS) {
+	    krb5_set_error_string(context, "ldap_set_option: %s", ldap_err2string(rc));
+	    ret = HDB_ERR_BADVERSION;
+	    goto out;
+	}
+	    
+	rc = ldap_search_s((LDAP *) db->hdb_db, db->hdb_name, LDAP_SCOPE_SUBTREE, filter, 
+			   krb5kdcentry_attrs, 0, msg);
+	if (rc != LDAP_SUCCESS) {
+	    krb5_set_error_string(context, "ldap_search_s: %s", ldap_err2string(rc));
+	    ret = HDB_ERR_NOENTRY;
+	    goto out;
+	}
+    }
+
     ret = 0;
 
-  out:
+ out:
     if (filter != NULL) {
 	free(filter);
     }
@@ -607,15 +810,30 @@ LDAP_principal2message(krb5_context context, HDB * db,
 		       krb5_principal princ, LDAPMessage ** msg)
 {
     char *princname = NULL;
+    char *princname_short = NULL;
     krb5_error_code ret;
+    krb5_realm r;
 
     ret = krb5_unparse_name(context, princ, &princname);
     if (ret != 0) {
+	free(princname);
 	return ret;
     }
 
-    ret = LDAP__lookup_princ(context, db, princname, msg);
+    ret = krb5_get_default_realm(context, &r);
+    if(ret)
+	return ret;
+    if(strcmp(krb5_principal_get_realm(context, princ), r) == 0) {
+	ret = krb5_unparse_name_short(context, princ, &princname_short);
+	if (ret != 0) {
+	    return ret;
+	}
+    }
+    free(r);
+
+    ret = LDAP__lookup_princ(context, db, princname, princname_short, msg);
     free(princname);
+    free(princname_short);
 
     return ret;
 }
@@ -627,25 +845,34 @@ static krb5_error_code
 LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 		   hdb_entry * ent)
 {
-    char *unparsed_name = NULL, *dn = NULL;
+    char *unparsed_name = NULL, *dn = NULL, *ntPasswordIN = NULL;
+    char *samba_acct_flags = NULL;
     int ret;
     unsigned long tmp;
     struct berval **keys;
     char **values;
-
+    int tmp_time;
+    
     memset(ent, 0, sizeof(*ent));
     ent->flags = int2HDBFlags(0);
 
     ret =
 	LDAP_get_string_value(db, msg, "krb5PrincipalName",
 			      &unparsed_name);
-    if (ret != 0) {
-	return ret;
-    }
-
-    ret = krb5_parse_name(context, unparsed_name, &ent->principal);
-    if (ret != 0) {
-	goto out;
+    if (ret == 0) {
+	ret = krb5_parse_name(context, unparsed_name, &ent->principal);
+	if (ret != 0) {
+	    goto out;
+	}
+    } else {
+	ret = LDAP_get_string_value(db, msg, "uid",
+				    &unparsed_name);
+	if (ret == 0) {
+	    ret = krb5_parse_name(context, unparsed_name, &ent->principal);
+	    if (ret != 0) {
+		goto out;
+	    }
+	}
     }
 
     ret =
@@ -685,6 +912,70 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ret = HDB_ERR_NOENTRY;
 	goto out;
 #endif
+    }
+
+    values = ldap_get_values((LDAP *) db->hdb_db, msg, "krb5EncryptionType");
+    if (values != NULL) {
+	int i;
+
+	ent->etypes = malloc(sizeof(*(ent->etypes)));
+	if (ent->etypes == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    ret = ENOMEM;
+	    goto out;
+	}
+	ent->etypes->len = ldap_count_values(values);
+	ent->etypes->val = calloc(ent->etypes->len, sizeof(int));
+	for (i = 0; i < ent->etypes->len; i++) {
+	    ent->etypes->val[i] = atoi(values[i]);
+	}
+	ldap_value_free(values);
+    }
+
+    /* manually construct the NT (type 23) key */
+    ret = LDAP_get_string_value(db, msg, "sambaNTPassword", &ntPasswordIN);
+    if (ret == 0) {
+	if (!ent->keys.val) {
+	    ent->keys.len = 1;
+	    ent->keys.val = (Key *) malloc(sizeof(Key));
+	} else {
+	    Key *old_keys = ent->keys.val;
+	    ent->keys.len++;
+	    ent->keys.val = realloc(ent->keys.val, ent->keys.len * sizeof(Key));
+	    if (!ent->keys.val) {
+		free(old_keys);
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;			    
+	    }
+	}
+	memset(&ent->keys.val[ent->keys.len-1], '\0', sizeof(Key));
+	ent->keys.val[ent->keys.len-1].key.keytype = ETYPE_ARCFOUR_HMAC_MD5;
+	krb5_data_alloc (&ent->keys.val[ent->keys.len-1].key.keyvalue, 16);
+	LDAP__hex2bytes(ntPasswordIN, ent->keys.val[ent->keys.len-1].key.keyvalue.data, 16);
+	free(ntPasswordIN);
+
+	if (!ent->etypes) {
+	    ent->etypes = malloc(sizeof(*(ent->etypes)));
+	    if (ent->etypes == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    ent->etypes->len = 1;
+	    ent->etypes->val = (int *) malloc(sizeof(int));
+	} else {
+	    int *old_etypes = ent->etypes->val;
+	    ent->etypes->len++;
+	    ent->etypes->val = realloc(ent->etypes->val, ent->etypes->len * sizeof(int));
+	    if (!ent->etypes->val) {
+		free(old_etypes);
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;			    
+	    }
+	}
+	ent->etypes->val[ent->etypes->len-1] = ETYPE_ARCFOUR_HMAC_MD5;
     }
 
     ret =
@@ -741,6 +1032,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ent->valid_start = NULL;
     }
 
+
     if ((ent->valid_end = (KerberosTime *) malloc(sizeof(KerberosTime))) ==
 	NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
@@ -756,19 +1048,51 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	ent->valid_end = NULL;
     }
 
+
     if ((ent->pw_end = (KerberosTime *) malloc(sizeof(KerberosTime))) ==
 	NULL) {
 	krb5_set_error_string(context, "malloc: out of memory");
 	ret = ENOMEM;
 	goto out;
     }
-    ret =
-	LDAP_get_generalized_time_value(db, msg, "krb5PasswordEnd",
-					ent->pw_end);
+    ret = LDAP_get_generalized_time_value(db, msg, "krb5PasswordEnd",
+					  ent->pw_end);
     if (ret != 0) {
 	/* OPTIONAL */
 	free(ent->pw_end);
 	ent->pw_end = NULL;
+    }
+
+
+    ret = LDAP_get_integer_value(db, msg, "sambaPwdMustChange",
+				 &tmp_time);
+
+    if (ret == 0) {
+	if (!ent->pw_end) {
+	    if ((ent->pw_end = (KerberosTime *) malloc(sizeof(KerberosTime))) ==
+		NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	}
+	*ent->pw_end = tmp_time;
+    }
+
+    if ((ent->last_pw_change = (KerberosTime *) malloc(sizeof(KerberosTime))) ==
+	NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+
+    ret = LDAP_get_integer_value(db, msg, "sambaPwdLastSet", &tmp_time);
+    if (ret != 0) {
+	/* OPTIONAL */
+	free(ent->last_pw_change);
+	ent->last_pw_change = NULL;
+    } else {
+	*ent->last_pw_change = tmp_time;
     }
 
     ent->max_life = (int *) malloc(sizeof(int));
@@ -806,29 +1130,88 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     } else {
 	tmp = 0;
     }
+
     ent->flags = int2HDBFlags(tmp);
 
-    values = ldap_get_values((LDAP *) db->hdb_db, msg, "krb5EncryptionType");
-    if (values != NULL) {
+    /* Try and find Samba flags to put into the mix */
+    ret = LDAP_get_string_value(db, msg, "sambaAcctFlags", &samba_acct_flags);
+    if (ret == 0) {
+	/* parse the [UXW...] string:
+	       
+	'N'    No password	 
+	'D'    Disabled	 
+	'H'    Homedir required	 
+	'T'    Temp account.	 
+	'U'    User account (normal) 	 
+	'M'    MNS logon user account - what is this ? 	 
+	'W'    Workstation account	 
+	'S'    Server account 	 
+	'L'    Locked account	 
+	'X'    No Xpiry on password 	 
+	'I'    Interdomain trust account	 
+	    
+	*/	 
+	    
 	int i;
+	int flags_len = strlen(samba_acct_flags);
 
-	ent->etypes = malloc(sizeof(*(ent->etypes)));
-	if (ent->etypes == NULL) {
-	    krb5_set_error_string(context, "malloc: out of memory");
-	    ret = ENOMEM;
-	    goto out;
+	if (flags_len < 2)
+	    goto out2;
+
+	if (flags_len > 2 && samba_acct_flags[0] == '[' 
+	    && samba_acct_flags[flags_len - 1] == ']') 
+	    goto out2;
+
+	for (i=0; i< flags_len; i++) {
+	    switch (samba_acct_flags[i]) {
+	    case ' ':
+	    case '[':
+	    case ']':
+		break;
+	    case 'N':
+		/* how to handle no password in kerberos? */
+		break;
+	    case 'D':
+		ent->flags.invalid = TRUE;
+		break;
+	    case 'H':
+		break;
+	    case 'T':
+		/* temp duplicate */
+		ent->flags.invalid = TRUE;
+		break;
+	    case 'U':
+		ent->flags.client = TRUE;
+		break;
+	    case 'M':
+		break;
+	    case 'W':
+	    case 'S':
+		ent->flags.server = TRUE;
+		ent->flags.client = TRUE;
+		break;
+	    case 'L':
+		ent->flags.invalid = TRUE;
+		break;
+	    case 'X':
+		if (ent->pw_end) {
+		    free(ent->pw_end);
+		    ent->pw_end = NULL;
+		}
+		break;
+	    case 'I':
+		ent->flags.server = TRUE;
+		ent->flags.client = TRUE;
+		break;
+	    }
 	}
-	ent->etypes->len = ldap_count_values(values);
-	ent->etypes->val = calloc(ent->etypes->len, sizeof(int));
-	for (i = 0; i < ent->etypes->len; i++) {
-	    ent->etypes->val[i] = atoi(values[i]);
-	}
-	ldap_value_free(values);
+    out2:
+	free(samba_acct_flags);
     }
 
     ret = 0;
 
-  out:
+ out:
     if (unparsed_name != NULL) {
 	free(unparsed_name);
     }
@@ -931,7 +1314,7 @@ LDAP_firstkey(krb5_context context, HDB * db, unsigned flags,
     }
 
     msgid = ldap_search((LDAP *) db->hdb_db, db->hdb_name,
-			LDAP_SCOPE_ONELEVEL, "(objectclass=krb5KDCEntry)",
+			LDAP_SCOPE_SUBTREE, "(objectclass=krb5Principal)",
 			krb5kdcentry_attrs, 0);
     if (msgid < 0) {
 	return HDB_ERR_NOENTRY;
@@ -969,7 +1352,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     if (db->hdb_db != NULL) {
 	/* connection has been opened. ping server. */
 	struct sockaddr_un addr;
-	socklen_t len;
+	socklen_t len = sizeof(addr);
 	int sd;
 
 	if (ldap_get_option((LDAP *) db->hdb_db, LDAP_OPT_DESC, &sd) == 0 &&
@@ -1055,7 +1438,7 @@ LDAP_fetch(krb5_context context, HDB * db, unsigned flags,
 	}
     }
 
-  out:
+ out:
     ldap_msgfree(msg);
 
     return ret;
@@ -1072,14 +1455,15 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     LDAPMessage *msg = NULL, *e = NULL;
     char *dn = NULL, *name = NULL;
 
-    ret = krb5_unparse_name(context, entry->principal, &name);
-    if (ret != 0) {
-	goto out;
-    }
-
-    ret = LDAP__lookup_princ(context, db, name, &msg);
+    ret = LDAP_principal2message(context, db, entry->principal, &msg);
     if (ret == 0) {
 	e = ldap_first_entry((LDAP *) db->hdb_db, msg);
+    }
+
+    ret = krb5_unparse_name(context, entry->principal, &name);
+    if (ret != 0) {
+	free(name);
+	return ret;
     }
 
     ret = hdb_seal_keys(context, db, entry);
@@ -1094,37 +1478,13 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     }
 
     if (e == NULL) {
-	/* Doesn't exist yet. */
-	char *p;
-
 	e = NULL;
-
-	/* normalize the naming attribute */
-	for (p = name; *p != '\0'; p++) {
-	    *p = (char) tolower((int) *p);
-	}
-
-	/*
-	 * We could do getpwnam() on the local component of
-	 * the principal to find cn/sn but that's probably
-	 * bad thing to do from inside a KDC. Better leave
-	 * it to management tools.
-	 */
-	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "cn", name);
-	if (ret < 0) {
-	    goto out;
-	}
-
-	ret = LDAP_addmod(&mods, LDAP_MOD_ADD, "sn", name);
-	if (ret < 0) {
-	    goto out;
-	}
-
+	    
 	if (db->hdb_name != NULL) {
-	    ret = asprintf(&dn, "cn=%s,%s", name, db->hdb_name);
+	    ret = asprintf(&dn, "krb5PrincipalName=%s,%s", name, db->hdb_name);
 	} else {
 	    /* A bit bogus, but we don't have a search base */
-	    ret = asprintf(&dn, "cn=%s", name);
+	    ret = asprintf(&dn, "krb5PrincipalName=%s", name);
 	}
 	if (ret < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
@@ -1154,12 +1514,15 @@ LDAP_store(krb5_context context, HDB * db, unsigned flags,
     if (rc == LDAP_SUCCESS) {
 	ret = 0;
     } else {
-	krb5_set_error_string(context, "%s: %s (dn=%s) %s", 
-			      errfn, name, dn, ldap_err2string(rc));
+	char *ld_error = NULL;
+	ldap_get_option((LDAP *) db->hdb_db, LDAP_OPT_ERROR_STRING,
+			&ld_error);
+	krb5_set_error_string(context, "%s: %s (dn=%s) %s: %s", 
+			      errfn, name, dn, ldap_err2string(rc), ld_error);
 	ret = HDB_ERR_CANT_LOCK_DB;
     }
 
-  out:
+ out:
     /* free stuff */
     if (dn != NULL) {
 	free(dn);
@@ -1220,7 +1583,7 @@ LDAP_remove(krb5_context context, HDB * db, hdb_entry * entry)
 	ret = HDB_ERR_CANT_LOCK_DB;
     }
 
-  out:
+ out:
     if (dn != NULL) {
 	free(dn);
     }
@@ -1295,5 +1658,15 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 
     return 0;
 }
+
+#ifdef OPENLDAP_MODULE
+
+struct hdb_so_method hdb_ldap_interface = {
+    HDB_INTERFACE_VERSION,
+    "ldap",
+    hdb_ldap_create
+};
+
+#endif
 
 #endif				/* OPENLDAP */
