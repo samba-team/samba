@@ -926,7 +926,7 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		tdiff = 1000000 *(tval.tv_sec - ldap_state->last_rebind.tv_sec) + 
 			(tval.tv_usec - ldap_state->last_rebind.tv_usec);
 
-		sleep_time = ((1000*lp_ldap_rebind_sleep())-tdiff)/1000;
+		sleep_time = ((1000*lp_ldap_replication_sleep())-tdiff)/1000;
 
 		if (sleep_time > 0) {
 			/* we wait for the LDAP replication */
