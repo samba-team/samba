@@ -624,11 +624,6 @@ static int cacl_set(struct cli_state *cli, char *filename,
 						old->dacl->ace[k] = old->dacl->ace[k+1];
 					}
 					old->dacl->num_aces--;
-					if (old->dacl->num_aces == 0) {
-						SAFE_FREE(old->dacl->ace);
-						SAFE_FREE(old->dacl);
-						old->off_dacl = 0;
-					}
 					found = True;
 					break;
 				}
