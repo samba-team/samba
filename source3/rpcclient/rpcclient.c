@@ -170,7 +170,10 @@ static char* next_command (char** cmdstr)
 	if (p)
 		*p = '\0';
 	pstrcpy(command, *cmdstr);
-	*cmdstr = p + 1;
+	if (p)
+		*cmdstr = p + 1;
+	else
+		*cmdstr = NULL;
 	
 	return command;
 }
