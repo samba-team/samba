@@ -562,27 +562,25 @@ static void open_file(files_struct *fsp,connection_struct *conn,
 static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, int token, 
 				   BOOL *share_locked)
 {
-  if (fsp->can_write){
-#ifdef LARGE_SMB_OFF_T
-    if (is_locked(fsp,conn,0x3FFFFFFFFFFFFFFFLL,0,F_WRLCK)){
-#else
-    if (is_locked(fsp,conn,0x3FFFFFFF,0,F_WRLCK)){
-#endif
-      /* If share modes are in force for this connection we
-         have the share entry locked. Unlock it before closing. */
-      if (*share_locked && lp_share_modes(SNUM(conn)))
-        unlock_share_entry( conn, fsp->fd_ptr->dev, 
-                            fsp->fd_ptr->inode, token);
-      close_file(fsp,False);   
-      /* Share mode no longer locked. */
-      *share_locked = False;
-      errno = EACCES;
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRlock;
-    }
-    else
-      sys_ftruncate(fsp->fd_ptr->fd,0); 
-  }
+	if (fsp->can_write){
+		SMB_OFF_T mask = ((SMB_OFF_T)0xC) << (SMB_OFF_T_BITS-4);
+		
+		if (is_locked(fsp,conn,~mask,0,F_WRLCK)){
+			/* If share modes are in force for this connection we
+			   have the share entry locked. Unlock it before closing. */
+			if (*share_locked && lp_share_modes(SNUM(conn)))
+				unlock_share_entry( conn, fsp->fd_ptr->dev, 
+						    fsp->fd_ptr->inode, token);
+			close_file(fsp,False);   
+			/* Share mode no longer locked. */
+			*share_locked = False;
+			errno = EACCES;
+			unix_ERR_class = ERRDOS;
+		  unix_ERR_code = ERRlock;
+		} else {
+			sys_ftruncate(fsp->fd_ptr->fd,0); 
+		}
+	}
 }
 
 
