@@ -1,5 +1,7 @@
 2001-05-11  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/kerberos5.c: don't use NULL where we mean 0
+
 	* kdc/kerberos5.c: put referral test code in separate function,
 	and test for KRB5_NT_SRV_INST
 
