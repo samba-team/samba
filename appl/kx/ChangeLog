@@ -1,3 +1,7 @@
+1999-06-20  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (main): hopefully do inetd confusion right
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* krb4.c (krb4_authenticate): get rid of a warning
