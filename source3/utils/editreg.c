@@ -304,7 +304,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <unistd.h>
 #include <sys/mman.h>
 #include <string.h>
-
+#include <fcntl.h>
 /* 
  * These definitions are for the in-memory registry structure.
  * It is a tree structure that mimics what you see with tools like regedit
@@ -448,7 +448,13 @@ typedef struct sk_map_s {
  * If you add stuff here that is dynamically allocated, add the 
  * appropriate free statements below.
  */
+
+#define REGF_REGTYPE_NONE 0
+#define REGF_REGTYPE_NT   1
+#define REGF_REGTYPE_W9X  2
+ 
 typedef struct regf_struct_s {
+  int reg_type;
   char *regfile_name, *outfile_name;
   int fd;
   struct stat sbuf;
@@ -468,6 +474,16 @@ int nt_set_regf_output_file(REGF *regf, char *filename)
 {
   return ((regf->outfile_name = strdup(filename)) != NULL); 
 }
+
+/* Create a regf structure and init it */
+
+REGF *nt_create_regf()
+{
+  REGF *tmp = (REGF *)malloc(sizeof(REGF));
+  if (!tmp) return tmp;
+  bzero(tmp, sizeof(REGF));
+  return tmp;
+} 
 
 /* Free all the bits and pieces ... Assumes regf was malloc'd */
 /* If you add stuff to REGF, add the relevant free bits here  */
@@ -492,10 +508,35 @@ int nt_free_regf(REGF *regf)
 
 }
 
-/* Get the header of the registry */
+/* Get the header of the registry 
+   If the mmap'd area has not been allocated, then mmap the input file
+*/
 int nt_get_regf_hdr(REGF *regf)
 {
+  if (!regf)
+    return -1; /* What about errors */
 
+  if (!regf->regfile_name)
+    return -1; /* What about errors */
+
+  if (!regf->base) { /* Try to mmap etc the file */
+
+    if ((regf->fd = open(regf->regfile_name, O_RDONLY, 0000)) <0) {
+      return regf->fd; /* What about errors */
+    }
+
+    if (fstat(regf->fd, &regf->sbuf) < 0) {
+      return -1;
+    }
+
+    regf->base = mmap(0, regf->sbuf.st_size, PROT_READ, MAP_SHARED, regf->fd, 0);
+
+    if ((int)regf->base == 1) {
+      fprintf(stderr, "Could not mmap file: %s, %s\n", regf->regfile_name,
+	      strerror(errno));
+      return -1;
+    }
+  }
 
 }
 
