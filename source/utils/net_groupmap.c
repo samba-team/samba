@@ -712,11 +712,11 @@ int net_help_groupmap(int argc, const char **argv)
 		"\n  Update a group mapping\n");
 	d_printf("net groupmap delete"\
 		"\n  Remove a group mapping\n");
-	d_printf("net groupmap addmember"\
+	d_printf("net groupmap addmem"\
 		 "\n  Add a foreign alias member\n");
-	d_printf("net groupmap delmember"\
+	d_printf("net groupmap delmem"\
 		 "\n  Delete a foreign alias member\n");
-	d_printf("net groupmap listmembers"\
+	d_printf("net groupmap listmem"\
 		 "\n  List foreign group members\n");
 	d_printf("net groupmap memberships"\
 		 "\n  List foreign group memberships\n");
