@@ -1,3 +1,11 @@
+1999-10-10  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.h (krb5_ccache_data): make `ops' const
+
+	* lib/krb5/crypto.c (krb5_string_to_salttype): new function
+
+	* **/*.[ch]: const-ize
+
 1999-10-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/copy_host_realm.c (krb5_copy_host_realm): copy all the

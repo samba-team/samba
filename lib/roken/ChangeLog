@@ -1,3 +1,11 @@
+1999-10-10  Assar Westerlund  <assar@sics.se>
+
+	* socket.c: const-ize and comment
+
+	* net_write.c: const-ize
+
+	* base64.c: const-ize
+
 1999-10-06  Assar Westerlund  <assar@sics.se>
 
 	* getarg.c (getarg): also set optind when returning error
