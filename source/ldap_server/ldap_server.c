@@ -42,6 +42,9 @@ static void add_socket(struct server_service *service,
 
 	srv_sock = service_setup_socket(service, model_ops, ip_str, &port);
 
+	port = 3268;
+	srv_sock = service_setup_socket(service, model_ops, ip_str, &port);
+
 	talloc_free(ip_str);
 }
 
