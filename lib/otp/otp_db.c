@@ -135,7 +135,10 @@ otp_get_internal (void *v, OtpContext *ctx, int lockp)
     return -1;
   }
   p += strlen(p) + 1;
-  ctx->n = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+  {
+    unsigned char *up = (unsigned char *)p;
+    ctx->n = (up[0] << 24) | (up[1] << 16) | (up[2] << 8) | up[3];
+  }
   p += 4;
   memcpy (ctx->key, p, OTPKEYSIZE);
   p += OTPKEYSIZE;
@@ -187,10 +190,14 @@ otp_put (void *v, OtpContext *ctx)
   p += sizeof(zero);
   strcpy (p, ctx->alg->name);
   p += strlen(p) + 1;
-  *p++ = (ctx->n >> 24) & 0xFF;
-  *p++ = (ctx->n >> 16) & 0xFF;
-  *p++ = (ctx->n >>  8) & 0xFF;
-  *p++ = (ctx->n >>  0) & 0xFF;
+  {
+    unsigned char *up = (unsigned char *)p;
+    *up++ = (ctx->n >> 24) & 0xFF;
+    *up++ = (ctx->n >> 16) & 0xFF;
+    *up++ = (ctx->n >>  8) & 0xFF;
+    *up++ = (ctx->n >>  0) & 0xFF;
+  }
+  p += 4;
   memcpy (p, ctx->key, OTPKEYSIZE);
   p += OTPKEYSIZE;
   strcpy (p, ctx->seed);
