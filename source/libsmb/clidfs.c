@@ -235,53 +235,6 @@ BOOL cli_dfs_get_referral( struct cli_state *cli, const char *path,
 	return True;
 }
 
-#if 0
-/********************************************************************
-********************************************************************/
-
-BOOL cli_dfs_handle_referral( struct cli_state *cli, const char *path )
-{
-	struct cli_state *cli_ipc;
-	pstring fullpath;
-	CLIENT_DFS_REFERRAL *refs = NULL;
-	size_t num_refs;
-	uint16 consumed;
-	fstring server, share;
-				
-	if ( !cli_dfs_check_error(cli) )
-		return False;
-						
-	if ( !(cli_ipc = cli_cm_open( cli->desthost, "IPC$", False )) )
-		return False;
-				
-	make_full_path( fullpath, cli->desthost, cli->share, path );
-	
-	if ( !cli_dfs_get_referral( cli_ipc, fullpath, &refs, &num_refs, &consumed ) ) {
-		d_printf("cli_get_dfs_referral() failed!\n");
-		/* reset the current client connection */
-		cli_cm_open( cli->desthost, cli->share, False );
-		
-		return False;
-	}
-				
-	/* just pick the first one */
-	if ( num_refs ) {
-		split_dfs_path( refs[0].alternate_path, server, share );
-		if ( cli_cm_open( server, share, False ) == NULL ) {
-			d_printf("Unable to follow dfs referral [\\\\%s\\%s]\n",
-				server, share );
-			cli_cm_open( cli->desthost, cli->share, False );
-			
-			return False;
-		}
-	}
-		
-	SAFE_FREE( refs );
-	
-	return True;
-}
-#endif
-
 /********************************************************************
 ********************************************************************/
 
@@ -295,6 +248,8 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 	pstring fullpath, cleanpath;
 	int pathlen;
 	fstring server, share;
+	struct cli_state *newcli;
+	pstring newpath;
 	
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
@@ -349,6 +304,14 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 			server, share );
 			
 		return False;
+	}
+
+	/* check for another dfs refeerrali, note that we are not 
+	   checking for loops here */
+
+	if ( cli_resolve_path( *targetcli, targetpath, &newcli, newpath ) ) {
+		*targetcli = newcli;
+		pstrcpy( targetpath, newpath );
 	}
 	
 	return True;
