@@ -5207,6 +5207,44 @@ static BOOL sam_io_user_info12(const char *desc, SAM_USER_INFO_12 * u,
 }
 
 /*******************************************************************
+inits a SAM_USER_INFO_7 structure.
+********************************************************************/
+
+void init_sam_user_info7(SAM_USER_INFO_7 * usr, const char *name)
+{
+	DEBUG(5, ("init_sam_user_info7\n"));
+
+	init_unistr2(&usr->uni_name, name, UNI_FLAGS_NONE);	/* unicode string for name */
+	init_uni_hdr(&usr->hdr_name, &usr->uni_name);		/* unicode header for name */
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+static BOOL sam_io_user_info7(const char *desc, SAM_USER_INFO_7 * usr,
+			prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_user_info7");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_unihdr("unihdr", &usr->hdr_name, ps, depth))
+		return False;
+
+	if(!smb_io_unistr2("unistr2", &usr->uni_name, True, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a SAM_USER_INFO_10 structure.
 ********************************************************************/
 
@@ -6277,7 +6315,7 @@ NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 				    uint16 switch_value,
 				    SAM_USER_INFO_21 * usr)
 {
-	DEBUG(5, ("init_samr_userinfo_ctr\n"));
+	DEBUG(5, ("make_samr_userinfo_ctr_usr21\n"));
 
 	ctr->switch_value = switch_value;
 	ctr->info.id = NULL;
@@ -6360,8 +6398,10 @@ static void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, DATA_BLOB *sess_key,
 		dump_data(100, (char *)sess_key->data, sess_key->length);
 		dump_data(100, (char *)ctr->info.id23->pass, 516);
 		break;
+	case 0x07:
+		break;
 	default:
-		DEBUG(4,("init_samr_userinfo_ctr: unsupported switch level\n"));
+		DEBUG(4,("init_samr_userinfo_ctr: unsupported switch level: %d\n", switch_value));
 	}
 }
 
@@ -6397,6 +6437,15 @@ static BOOL samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 	ret = False;
 
 	switch (ctr->switch_value) {
+	case 0x07:
+		if (UNMARSHALLING(ps))
+			ctr->info.id7 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_7,1);
+		if (ctr->info.id7 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info7("", ctr->info.id7, ps, depth);
+		break;
 	case 0x10:
 		if (UNMARSHALLING(ps))
 			ctr->info.id10 = PRS_ALLOC_MEM(ps,SAM_USER_INFO_10,1);

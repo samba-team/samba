@@ -412,6 +412,13 @@ typedef struct sam_user_info_10
 
 } SAM_USER_INFO_10;
 
+/* SAM_USER_INFO_7 */
+typedef struct sam_user_info_7
+{
+	UNIHDR hdr_name;  /* unicode header for name */
+	UNISTR2 uni_name; /* unicode string for name */
+
+} SAM_USER_INFO_7;
 
 
 /* SAMR_Q_CLOSE_HND - probably a policy handle close */
@@ -1273,6 +1280,7 @@ typedef struct sam_userinfo_ctr_info
 
 	union
 	{
+		SAM_USER_INFO_7  *id7;  /* auth-level 0x07 */
 		SAM_USER_INFO_10 *id10; /* auth-level 0x10 */
 		SAM_USER_INFO_11 *id11; /* auth-level 0x11 */
 		SAM_USER_INFO_12 *id12; /* auth-level 0x12 */
