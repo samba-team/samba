@@ -147,7 +147,7 @@ pop_send(POP *p)
     }
     /*  Send the message body */
     {
-	int blank_line = 0;
+	int blank_line = 1;
 	while (fgets(buffer, MAXMSGLINELEN-1, p->drop)) {
 	    /*  Look for the start of the next message */
 	    if (!IS_MAILDIR(p) && blank_line && strncmp(buffer,"From ",5) == 0)
