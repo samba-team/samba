@@ -27,9 +27,8 @@ struct samdb_context {
 };
 
 
-#define ALLOC_CHECK(ptr, call) do {\
+#define ALLOC_CHECK(ptr) do {\
 	if (!(ptr)) {\
-		ldapsrv_terminate_connection(call->conn, "no memory");\
 		return NT_STATUS_NO_MEMORY;\
 	}\
 } while(0)
@@ -37,15 +36,17 @@ struct samdb_context {
 static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
 {
+	NTSTATUS status;
 	struct ldap_Result *done;
 	struct ldap_SearchResEntry *ent;
 	struct ldapsrv_reply *ent_r, *done_r;
-	int result = 32;
+	int result = 80;
 	struct samdb_context *samdb;
 	struct ldb_message **res;
 	int i, j, y, count;
 	struct ldb_context *ldb;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
+	const char **attrs = NULL;
 
 	DEBUG(0, ("sldb_Search: %s\n", r->filter));
 
@@ -64,38 +65,52 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			break;
 	}
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
-	count = ldb_search(ldb, r->basedn, scope, r->filter, r->attributes, &res);
+	if (r->num_attributes >= 1) {
+		attrs = talloc_array_p(samdb, const char *, r->num_attributes+1);
+		ALLOC_CHECK(attrs);
 
-	if (count == 0) {
+		for (i=0; i < r->num_attributes; i++) {
+			attrs[i] = r->attributes[i];
+		}
+		attrs[i] = NULL;
+	}
+
+	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	count = ldb_search(ldb, r->basedn, scope, r->filter, attrs, &res);
+
+	if (count > 0) {
+		result = 0;
+	} else if (count == 0) {
 		result = 32;
 	} else if (count == -1) {
-		result = 80;
+		result = 1;
 	}
 
 	for (i=0; i < count; i++) {
 		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-		if (!ent_r) {
-			ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-			return NT_STATUS_NO_MEMORY;
-		}
+		ALLOC_CHECK(ent_r);
 
 		ent = &ent_r->msg.r.SearchResultEntry;
 		ent->dn = talloc_steal(ent_r, res[i]->dn);
+		ent->num_attributes = 0;
+		ent->attributes = NULL;
+		if (res[i]->num_elements == 0) {
+			continue;
+		}
 		ent->num_attributes = res[i]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
-		ALLOC_CHECK(ent->attributes, call);
+		ALLOC_CHECK(ent->attributes);
 		for (j=0; j < ent->num_attributes; j++) {
 			ent->attributes[j].name = talloc_steal(ent->attributes, res[i]->elements[j].name);
-			if (r->attributesonly) {
-				ent->attributes[j].num_values = 0;
-				ent->attributes[j].values = NULL;
+			ent->attributes[j].num_values = 0;
+			ent->attributes[j].values = NULL;
+			if (r->attributesonly && (res[i]->elements[j].num_values == 0)) {
 				continue;
 			}
 			ent->attributes[j].num_values = res[i]->elements[j].num_values;
 			ent->attributes[j].values = talloc_array_p(ent->attributes,
 							DATA_BLOB, ent->attributes[j].num_values);
-			ALLOC_CHECK(ent->attributes[j].values, call);
+			ALLOC_CHECK(ent->attributes[j].values);
 			for (y=0; y < ent->attributes[j].num_values; y++) {
 				ent->attributes[j].values[y].length = res[i]->elements[j].values[y].length;
 				ent->attributes[j].values[y].data = talloc_steal(ent->attributes[j].values,
@@ -103,16 +118,16 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 			}
 		}
 
-		ldapsrv_queue_reply(call, ent_r);
+		status = ldapsrv_queue_reply(call, ent_r);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	talloc_free(samdb);
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
-	if (!done_r) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return NT_STATUS_NO_MEMORY;
-	}
+	ALLOC_CHECK(done_r);
 
 	done = &done_r->msg.r.SearchResultDone;
 	done->resultcode = result;
@@ -120,9 +135,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	done->errormessage = NULL;
 	done->referral = NULL;
 
-	ldapsrv_queue_reply(call, done_r);
-
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, done_r);
 }
 
 static const struct ldapsrv_partition_ops sldb_ops = {

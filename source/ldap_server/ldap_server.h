@@ -45,6 +45,8 @@ struct ldapsrv_call {
 
 	struct ldapsrv_connection *conn;
 
+	const struct auth_session_info *session_info;
+
 	struct ldap_message request;
 
 	struct ldapsrv_reply {
@@ -60,7 +62,7 @@ struct ldapsrv_connection {
 	struct server_connection *connection;
 
 	struct gensec_security *gensec_ctx;
-	struct auth_session_info *session_info;
+	const struct auth_session_info *session_info;
 
 	struct rw_buffer in_buffer;
 	struct rw_buffer out_buffer;
@@ -73,6 +75,8 @@ struct ldapsrv_connection {
 struct ldapsrv_partition;
 
 struct ldapsrv_partition_ops {
+	const char *name;
+	NTSTATUS (*Init)(struct ldapsrv_partition *partition, struct ldapsrv_connection *conn);
 	NTSTATUS (*Bind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_BindRequest *r);
 	NTSTATUS (*Unbind)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_UnbindRequest *r);
 	NTSTATUS (*Search)(struct ldapsrv_partition *partition, struct ldapsrv_call *call, struct ldap_SearchRequest *r);
