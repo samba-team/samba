@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <signal.h>
 #include "tdb.h"
 #include <gdbm.h>
 
