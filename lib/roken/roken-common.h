@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -136,5 +136,8 @@ int ROKEN_LIB_FUNCTION simple_execvp(const char*, char *const[]);
 int ROKEN_LIB_FUNCTION simple_execlp(const char*, ...);
 
 void ROKEN_LIB_FUNCTION print_version(const char *);
+
+void *ROKEN_LIB_FUNCTION emalloc (size_t);
+void *ROKEN_LIB_FUNCTION erealloc (void *, size_t);
 
 #endif /* __ROKEN_COMMON_H__ */
