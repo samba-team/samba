@@ -363,6 +363,35 @@ krb5_domain_x500_encode(char **realms, int num_realms, krb5_data *encoding)
     return 0;
 }
 
+krb5_error_code
+krb5_check_transited_realms(krb5_context context,
+			    const char *const *realms, 
+			    int num_realms, 
+			    int *bad_realm)
+{
+    int i;
+    int ret = 0;
+    char **bad_realms = krb5_config_get_strings(context, NULL, 
+						"libdefaults", 
+						"transited_realms_reject", 
+						NULL);
+    if(bad_realms == NULL)
+	return 0;
+
+    for(i = 0; i < num_realms; i++) {
+	char **p;
+	for(p = bad_realms; *p; p++)
+	    if(strcmp(*p, realms[i]) == 0) {
+		ret = KRB5KRB_AP_ERR_ILL_CR_TKT;
+		if(bad_realm)
+		    *bad_realm = i;
+		break;
+	    }
+    }
+    krb5_config_free_strings(bad_realms);
+    return ret;
+}
+
 #if 0
 int
 main(int argc, char **argv)
