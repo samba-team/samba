@@ -1,3 +1,11 @@
+2000-05-28  Assar Westerlund  <assar@sics.se>
+
+	* kuser/klist.c: continue even we have no v5 ccache.  make showing
+	your krb4 tickets the default (if build with krb4 support)
+	* kuser/kinit.c: add a fallback that tries to get a v4 ticket if
+	built with krb4 support and we got back a version error from the
+	KDC
+
 2000-05-23  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab_keyfile.c: make this actually work
