@@ -697,19 +697,19 @@ struct cmd_set lsarpc_commands[] = {
 
 	{ "LSARPC" },
 
-	{ "lsaquery", 	         cmd_lsa_query_info_policy,  PI_LSARPC, "Query info policy",                    "" },
-	{ "lookupsids",          cmd_lsa_lookup_sids,        PI_LSARPC, "Convert SIDs to names",                "" },
-	{ "lookupnames",         cmd_lsa_lookup_names,       PI_LSARPC, "Convert names to SIDs",                "" },
-	{ "enumtrust", 	         cmd_lsa_enum_trust_dom,     PI_LSARPC, "Enumerate trusted domains",            "Usage: [preferred max number] [enum context (0)]" },
-	{ "enumprivs", 	         cmd_lsa_enum_privilege,     PI_LSARPC, "Enumerate privileges",                 "" },
-	{ "getdispname",         cmd_lsa_get_dispname,       PI_LSARPC, "Get the privilege name",               "" },
-	{ "lsaenumsid",          cmd_lsa_enum_sids,          PI_LSARPC, "Enumerate the LSA SIDS",               "" },
-	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
-	{ "lsaenumacctrights",   cmd_lsa_enum_acct_rights,   PI_LSARPC, "Enumerate the rights of an SID",   "" },
-	{ "lsaaddacctrights",    cmd_lsa_add_acct_rights,    PI_LSARPC, "Add rights to an account",   "" },
-	{ "lsaremoveacctrights", cmd_lsa_remove_acct_rights, PI_LSARPC, "Remove rights from an account",   "" },
-	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
-	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PI_LSARPC, "Query LSA security object", "" },
+	{ "lsaquery", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_query_info_policy,  NULL, PI_LSARPC, "Query info policy",                    "" },
+	{ "lookupsids",          RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_sids,        NULL, PI_LSARPC, "Convert SIDs to names",                "" },
+	{ "lookupnames",         RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_names,       NULL, PI_LSARPC, "Convert names to SIDs",                "" },
+	{ "enumtrust", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_trust_dom,     NULL, PI_LSARPC, "Enumerate trusted domains",            "Usage: [preferred max number] [enum context (0)]" },
+	{ "enumprivs", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privilege,     NULL, PI_LSARPC, "Enumerate privileges",                 "" },
+	{ "getdispname",         RPC_RTYPE_NTSTATUS, cmd_lsa_get_dispname,       NULL, PI_LSARPC, "Get the privilege name",               "" },
+	{ "lsaenumsid",          RPC_RTYPE_NTSTATUS, cmd_lsa_enum_sids,          NULL, PI_LSARPC, "Enumerate the LSA SIDS",               "" },
+	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
+	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, "Enumerate the rights of an SID",   "" },
+	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, "Add rights to an account",   "" },
+	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
+	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookupprivvalue,    NULL, PI_LSARPC, "Get a privilege value given its name", "" },
+	{ "lsaquerysecobj",      RPC_RTYPE_NTSTATUS, cmd_lsa_query_secobj,       NULL, PI_LSARPC, "Query LSA security object", "" },
 
 	{ NULL }
 };

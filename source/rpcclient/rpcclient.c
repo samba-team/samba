@@ -73,7 +73,10 @@ static char **completion_fn(char *text, int start, int end)
 		for (i=0; commands->cmd_set[i].name; i++)
 		{
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
-				commands->cmd_set[i].fn) 
+				(( commands->cmd_set[i].returntype == RPC_RTYPE_NTSTATUS &&
+                        commands->cmd_set[i].ntfn ) || 
+                      ( commands->cmd_set[i].returntype == RPC_RTYPE_WERROR &&
+                        commands->cmd_set[i].wfn)))
 			{
 				matches[count] = strdup(commands->cmd_set[i].name);
 				if (!matches[count]) 
@@ -393,18 +396,18 @@ static struct cmd_set rpcclient_commands[] = {
 
 	{ "GENERAL OPTIONS" },
 
-	{ "help", 	cmd_help, 	  -1,	"Get help on commands", "[command]" },
-	{ "?", 		cmd_help, 	  -1,	"Get help on commands", "[command]" },
-	{ "debuglevel", cmd_debuglevel,   -1,	"Set debug level", "level" },
-	{ "list",	cmd_listcommands, -1,	"List available commands on <pipe>", "pipe" },
-	{ "exit", 	cmd_quit, 	  -1,	"Exit program", "" },
-	{ "quit", 	cmd_quit, 	  -1,	"Exit program", "" },
+	{ "help", RPC_RTYPE_NTSTATUS, cmd_help, NULL, 	  -1,	"Get help on commands", "[command]" },
+	{ "?", 	RPC_RTYPE_NTSTATUS, cmd_help, NULL,	  -1,	"Get help on commands", "[command]" },
+	{ "debuglevel", RPC_RTYPE_NTSTATUS, cmd_debuglevel, NULL,   -1,	"Set debug level", "level" },
+	{ "list",	RPC_RTYPE_NTSTATUS, cmd_listcommands, NULL, -1,	"List available commands on <pipe>", "pipe" },
+	{ "exit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,   -1,	"Exit program", "" },
+	{ "quit", RPC_RTYPE_NTSTATUS, cmd_quit, NULL,	  -1,	"Exit program", "" },
 
 	{ NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", NULL,	-1,	"----------------------" },
+	{ "---------------", MAX_RPC_RETURN_TYPE, NULL, NULL,	-1,	"----------------------" },
 	{ NULL }
 };
 
@@ -458,7 +461,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		       struct cmd_set *cmd_entry,
 		       int argc, char **argv)
 {
-	NTSTATUS result;
+     NTSTATUS ntresult;
+     WERROR wresult;
 	
 	TALLOC_CTX *mem_ctx;
 
@@ -477,9 +481,22 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-	/* Run command */
+     /* Run command */
 
-	result = cmd_entry->fn(cli, mem_ctx, argc, (const char **) argv);
+     if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
+          ntresult = cmd_entry->ntfn(cli, mem_ctx, argc, (const char **) argv);
+          if (!NT_STATUS_IS_OK(ntresult)) {
+              printf("result was %s\n", nt_errstr(ntresult));
+          }
+     } else {
+          wresult = cmd_entry->wfn( cli, mem_ctx, argc, (const char **) argv);
+          /* print out the DOS error */
+          if (!W_ERROR_IS_OK(wresult)) {
+                  printf( "result was %s\n", dos_errstr(wresult));
+          }
+          ntresult = W_ERROR_IS_OK(wresult)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
+     }
+            
 
 	/* Cleanup */
 
@@ -488,7 +505,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	talloc_destroy(mem_ctx);
 
-	return result;
+	return ntresult;
 }
 
 
@@ -517,7 +534,8 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 
 		while (temp_set->name) {
 			if (strequal(argv[0], temp_set->name)) {
-				if (!temp_set->fn) {
+				if (!(temp_set->returntype == RPC_RTYPE_NTSTATUS && temp_set->ntfn ) &&
+                         !(temp_set->returntype == RPC_RTYPE_WERROR && temp_set->wfn )) {
 					fprintf (stderr, "Invalid command\n");
 					goto out_free;
 				}
@@ -535,9 +553,11 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	}
 
 out_free:
+/* moved to do_cmd()
 	if (!NT_STATUS_IS_OK(result)) {
 		printf("result was %s\n", nt_errstr(result));
 	}
+*/
 
 	if (argv) {
 		/* NOTE: popt allocates the whole argv, including the
@@ -591,6 +611,8 @@ out_free:
 		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ NULL }
 	};
+
+	ZERO_STRUCT(server_ip);
 
 	setlinebuf(stdout);
 
@@ -674,13 +696,6 @@ out_free:
 	if (!init_names())
 		return 1;
 
-	/* Resolve the IP address */
-
-	if (!opt_ipaddr && !resolve_name(server, &server_ip, 0x20))  {
-		fprintf(stderr, "Unable to resolve %s\n", server);
-		return 1;
-	}
-	
 	/*
 	 * Get password
 	 * from stdin if necessary
@@ -697,7 +712,7 @@ out_free:
 		get_username(username);
 		
 	nt_status = cli_full_connection(&cli, global_myname(), server, 
-					&server_ip, 0,
+					opt_ipaddr ? &server_ip : NULL, 0,
 					"IPC$", "IPC",  
 					username, domain,
 					password, 0, NULL);
