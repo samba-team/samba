@@ -122,8 +122,3 @@ NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, c
 	return NT_STATUS_OK;
 }
 
-int pdb_guest_init(void)
-{
-    return smb_register_passdb("guest", pdb_init_guestsam, PASSDB_INTERFACE_VERSION);
-}
-

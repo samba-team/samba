@@ -317,10 +317,7 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 				 "gave %d\n", add_script, add_ret));
 		}
 
-		if (!pdb_getsampwnam(sam_account, account)) {
-			try_add = True;
-			/* still not there, hope the backend likes NUAs */
-		}
+		try_add = True;
 	}
 
 	sam_account_from_delta(sam_account, delta);

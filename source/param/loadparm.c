@@ -1395,9 +1395,9 @@ static void init_globals(void)
 #ifdef WITH_LDAP_SAMCONFIG
 	string_set(&Globals.szLdapServer, "localhost");
 	Globals.ldap_port = 636;
-	Globals.szPassdbBackend = str_list_make("ldapsam unixsam", NULL);
+	Globals.szPassdbBackend = str_list_make("ldapsam guest", NULL);
 #else
-	Globals.szPassdbBackend = str_list_make("smbpasswd unixsam", NULL);
+	Globals.szPassdbBackend = str_list_make("smbpasswd guest", NULL);
 #endif /* WITH_LDAP_SAMCONFIG */
 
 	string_set(&Globals.szLdapSuffix, "");
