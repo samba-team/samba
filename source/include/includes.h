@@ -522,6 +522,7 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/tcp.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#include <termios.h>
 #if __FreeBSD__ >= 3
 #include <dirent.h>
 #else

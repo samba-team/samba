@@ -98,14 +98,22 @@ static int findpty(char **slave)
   return (-1);
 }
 
-static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
+static int dochild(int master,char *slavedev, char *name, char *passwordprogram, BOOL as_root)
 {
   int slave;
   struct termios stermios;
   struct passwd *pass = Get_Pwnam(name,True);
-  int gid = pass->pw_gid;
-  int uid = pass->pw_uid;
+  int gid;
+  int uid;
 
+  if(pass == NULL) {
+    DEBUG(0,("dochild: user name %s doesn't exist in the UNIX password database.\n",
+              name));
+    return False;
+  }
+
+  gid = pass->pw_gid;
+  uid = pass->pw_uid;
 #ifdef USE_SETRES
   setresuid(0,0,0);
 #else /* USE_SETRES */
@@ -169,19 +177,21 @@ static int dochild(int master,char *slavedev, char *name, char *passwordprogram)
   }
 
   /* make us completely into the right uid */
+  if(!as_root) {
 #ifdef USE_SETRES
-  setresgid(0,0,0);
-  setresuid(0,0,0);
-  setresgid(gid,gid,gid);
-  setresuid(uid,uid,uid);      
+    setresgid(0,0,0);
+    setresuid(0,0,0);
+    setresgid(gid,gid,gid);
+    setresuid(uid,uid,uid);      
 #else      
-  setuid(0);
-  seteuid(0);
-  setgid(gid);
-  setegid(gid);
-  setuid(uid);
-  seteuid(uid);
+    setuid(0);
+    seteuid(0);
+    setgid(gid);
+    setegid(gid);
+    setuid(uid);
+    seteuid(uid);
 #endif
+  }
 
   /* execl() password-change application */
   if (execl("/bin/sh","sh","-c",passwordprogram,NULL) < 0) {
@@ -279,7 +289,7 @@ static int talktochild(int master, char *chatsequence)
 }
 
 
-BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence)
+BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root)
 {
   char *slavedev;
   int master;
@@ -328,18 +338,25 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence)
     /* make sure it doesn't freeze */
     alarm(20);
 
+    if(as_root)
+      become_root(False);
     DEBUG(3,("Dochild for user %s (uid=%d,gid=%d)\n",name,getuid(),getgid()));
-    chstat = dochild(master, slavedev, name, passwordprogram);
+    chstat = dochild(master, slavedev, name, passwordprogram, as_root);
+
+    if(as_root)
+      unbecome_root(False);
   }
   DEBUG(3,("Password change %ssuccessful for user %s\n", (chstat?"":"un"), name));
   return (chstat);
 }
 
 
-BOOL chgpasswd(char *name,char *oldpass,char *newpass)
+BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   pstring passwordprogram;
   pstring chatsequence;
+  int i;
+  int len;
 
   strlower(name); 
   DEBUG(3,("Password change for user: %s\n",name));
@@ -381,6 +398,27 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass)
     return(False);
   }
 
+  /* 
+   * Check the old and new passwords don't contain any control
+   * characters.
+   */
+
+  len = strlen(oldpass); 
+  for(i = 0; i < len; i++) {
+    if(iscntrl(oldpass[i])) {
+      DEBUG(0,("chat_with_program: oldpass contains control characters (disallowed).\n"));
+      return False;
+    }
+  }
+
+  len = strlen(newpass);
+  for(i = 0; i < len; i++) {
+    if(iscntrl(newpass[i])) {
+      DEBUG(0,("chat_with_program: newpass contains control characters (disallowed).\n"));
+      return False;
+    }
+  }
+
   string_sub(passwordprogram,"%u",name);
   string_sub(passwordprogram,"%o",oldpass);
   string_sub(passwordprogram,"%n",newpass);
@@ -388,11 +426,11 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass)
   string_sub(chatsequence,"%u",name);
   string_sub(chatsequence,"%o",oldpass);
   string_sub(chatsequence,"%n",newpass);
-  return(chat_with_program(passwordprogram,name,chatsequence));
+  return(chat_with_program(passwordprogram,name,chatsequence, as_root));
 }
 
 #else
-BOOL chgpasswd(char *name,char *oldpass,char *newpass)
+BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root)
 {
   DEBUG(0,("Password changing not compiled in (user=%s)\n",name));
   return(False);
@@ -420,6 +458,12 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
   if(smbpw == NULL)
   {
     DEBUG(0,("check_lanman_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
     return False;
   }
 
@@ -466,6 +510,12 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
   if(smbpw == NULL)
   { 
     DEBUG(0,("change_lanman_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(0,("change_lanman_password: account %s disabled.\n", smbpw->smb_name));
     return False;
   }
 
@@ -516,6 +566,12 @@ BOOL check_oem_password(char *user, unsigned char *data,
   if(smbpw == NULL)
   {
     DEBUG(0,("check_oem_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->acct_ctrl & ACB_DISABLED)
+  {
+    DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
     return False;
   }
 

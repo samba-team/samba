@@ -1551,7 +1551,7 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
    */
 
   if (password_ok(user,pass1,strlen(pass1),NULL) &&
-      chgpasswd(user,pass1,pass2))
+      chgpasswd(user,pass1,pass2,False))
   {
     SSVAL(*rparam,0,NERR_Success);
   }
@@ -1631,6 +1631,8 @@ static BOOL api_SamOEMChangePassword(int cnum,uint16 vuid, char *param,char *dat
    * as the plaintext of the old users password is not 
    * available. JRA.
    */
+  if(lp_unix_password_sync())
+    chgpasswd(user,"", new_passwd, True);
   
   if(change_oem_password( smbpw, new_passwd)) {
     SSVAL(*rparam,0,NERR_Success);

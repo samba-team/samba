@@ -44,9 +44,9 @@ void add_char_string(char *s);
 
 /*The following definitions come from  chgpasswd.c  */
 
-BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence);
-BOOL chgpasswd(char *name,char *oldpass,char *newpass);
-BOOL chgpasswd(char *name,char *oldpass,char *newpass);
+BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL as_root);
+BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
+BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
                            unsigned char *pass2, struct smb_passwd **psmbpw);
 BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
@@ -286,6 +286,7 @@ BOOL lp_nis_home_map(void);
 BOOL lp_time_server(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_net_wksta_user_logon(void);
+BOOL lp_unix_password_sync(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);

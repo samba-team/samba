@@ -201,6 +201,7 @@ typedef struct
   BOOL bTimeServer;
   BOOL bBindInterfacesOnly;
   BOOL bNetWkstaUserLogon;
+  BOOL bUnixPasswdSync;
 } global;
 
 static global Globals;
@@ -546,6 +547,7 @@ static struct parm_struct
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL,   NULL},
   {"unix realname",    P_BOOL,    P_GLOBAL, &Globals.bUnixRealname,     NULL,   NULL},
   {"NIS homedir",      P_BOOL,    P_GLOBAL, &Globals.bNISHomeMap,       NULL,   NULL},
+  {"unix password sync", P_BOOL,  P_GLOBAL, &Globals.bUnixPasswdSync,   NULL,   NULL},
   {"time server",      P_BOOL,    P_GLOBAL, &Globals.bTimeServer,	NULL,   NULL},
   {"printer driver file", P_STRING,  P_GLOBAL, &Globals.szDriverFile,   NULL,   NULL},
   {"-valid",           P_BOOL,    P_LOCAL,  &sDefault.valid,            NULL,   NULL},
@@ -743,6 +745,7 @@ static void init_globals(void)
   Globals.bTimeServer = False;
   Globals.bBindInterfacesOnly = False;
   Globals.bNetWkstaUserLogon = True;
+  Globals.bUnixPasswdSync = False;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -967,6 +970,7 @@ FN_GLOBAL_BOOL(lp_nis_home_map,&Globals.bNISHomeMap)
 FN_GLOBAL_BOOL(lp_time_server,&Globals.bTimeServer)
 FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_net_wksta_user_logon,&Globals.bNetWkstaUserLogon)
+FN_GLOBAL_BOOL(lp_unix_password_sync,&Globals.bUnixPasswdSync)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
