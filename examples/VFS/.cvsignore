@@ -1,2 +1,6 @@
 .libs
 *.so
+Makefile
+config.status
+config.log
+config.cache

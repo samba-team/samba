@@ -857,6 +857,7 @@ case "$host_os" in
 			SONAMEFLAG="-h "
 			if test "${GCC}" = "yes"; then
 				PICFLAG="-fPIC"
+				DYNEXP"-Wl,-E"
 			else
 				PICFLAG="-KPIC"
 				## ${CFLAGS} added for building 64-bit shared 
@@ -900,7 +901,13 @@ case "$host_os" in
 		*aix*) AC_DEFINE(AIX)
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
-			PICFLAG="-O2 -qmaxmem=6000"
+			DYNEXP="-Wl,-brtl,-bexpall"
+			if test "${GCC}" = "yes"; then
+				PICFLAG="-O2"
+			else
+				PICFLAG="-O2 -qmaxmem=6000"
+			fi
+
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)
 		;;
 		*hpux*) AC_DEFINE(HPUX)
@@ -2653,11 +2660,14 @@ case "$host_os" in
 	*hpux11*)
 		HAVE_WINBIND=yes
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_solaris.o"
+               ;;
+	*aix4*)
+		HAVE_WINBIND=yes
 		;;
         *)
 		HAVE_WINBIND=no
                 winbind_no_reason=", unsupported on $host_os"
-                ;;
+		;;
 esac
 
 # Check the setting of --with-winbindd
