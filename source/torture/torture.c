@@ -2629,6 +2629,50 @@ static BOOL run_deletetest(int dummy)
 	return correct;
 }
 
+
+/*
+  Test ntcreate calls made by xcopy
+ */
+static BOOL run_xcopy(int dummy)
+{
+	static struct cli_state cli1;
+	char *fname = "\\test.txt";
+	BOOL correct = True;
+	int fnum1, fnum2;
+
+	printf("starting xcopy test\n");
+	
+	if (!torture_open_connection(&cli1)) {
+		return False;
+	}
+	
+	fnum1 = cli_nt_create_full(&cli1, fname, 
+				   0xf019f, 0x20,
+				   0, 5, 
+				   0x4044);
+
+	if (fnum1 == -1) {
+		printf("First open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	fnum2 = cli_nt_create_full(&cli1, fname, 
+				   0xe0080, 0,
+				   0x7, 1, 
+				   0x200000);
+	if (fnum2 == -1) {
+		printf("second open failed - %s\n", cli_errstr(&cli1));
+		return False;
+	}
+	
+	if (!torture_close_connection(&cli1)) {
+		correct = False;
+	}
+	
+	return correct;
+}
+
+
 /*
   Test open mode returns on read-only files.
  */
@@ -3090,6 +3134,7 @@ static struct {
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
 	{"OPEN", run_opentest, 0},
+	{"XCOPY", run_xcopy, 0},
 	{"DELETE", run_deletetest, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
