@@ -1243,7 +1243,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   pstrcpy(fname,smb_buf(inbuf)+1);
   unix_convert(fname,conn,0,&bad_path);
     
-  fsp = find_free_file();
+  fsp = file_new();
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
@@ -1344,7 +1344,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   pstrcpy(fname,smb_buf(inbuf));
   unix_convert(fname,conn,0,&bad_path);
     
-  fsp = find_free_file();
+  fsp = file_new();
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
@@ -1487,7 +1487,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode);
   
-  fsp = find_free_file();
+  fsp = file_new();
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
@@ -1567,7 +1567,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   
   unixmode = unix_mode(conn,createmode);
   
-  fsp = find_free_file();
+  fsp = file_new();
   if (fsp)
     return(ERROR(ERRSRV,ERRnofids));
 
@@ -2588,7 +2588,7 @@ int reply_printopen(connection_struct *conn,
 		slprintf(fname,sizeof(fname)-1, "%s.XXXXXX",s);  
 	}
 
-	fsp = find_free_file();
+	fsp = file_new();
 	if (!fsp)
 		return(ERROR(ERRSRV,ERRnofids));
 	
@@ -3273,7 +3273,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 
   if (!file_exist(src,&st)) return(False);
 
-  fsp1 = find_free_file();
+  fsp1 = file_new();
   if (!fsp1) return(False);
   open_file_shared(fsp1,conn,src,(DENY_NONE<<4),
 		   1,0,0,&Access,&action);
@@ -3286,7 +3286,7 @@ static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
   if (!target_is_directory && count)
     ofun = 1;
 
-  fsp2 = find_free_file();
+  fsp2 = file_new();
   if (!fsp2) {
 	  close_file(fsp1,False);
 	  return(False);

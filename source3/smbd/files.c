@@ -41,7 +41,7 @@ static int max_file_fd_used = 0;
 /****************************************************************************
   find first available file slot
 ****************************************************************************/
-files_struct *find_free_file(void )
+files_struct *file_new(void )
 {
 	int i;
 	static int first_file;

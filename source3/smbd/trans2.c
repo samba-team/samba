@@ -217,7 +217,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   unix_convert(fname,conn,0,&bad_path);
     
-  fsp = find_free_file();
+  fsp = file_new();
   if (!fsp)
     return(ERROR(ERRSRV,ERRnofids));
 

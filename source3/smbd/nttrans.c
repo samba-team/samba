@@ -466,7 +466,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 		unix_convert(fname,conn,0,&bad_path);
 		
-		fsp = find_free_file();
+		fsp = file_new();
 		if (!fsp) {
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRSRV,ERRnofids));
@@ -743,7 +743,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
     unix_convert(fname,conn,0,&bad_path);
     
-    fsp = find_free_file();
+    fsp = file_new();
     if (!fsp) {
 	    restore_case_semantics(file_attributes);
 	    return(ERROR(ERRSRV,ERRnofids));
