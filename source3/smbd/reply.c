@@ -2452,7 +2452,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
 
       dptr_closepath(directory,SVAL(inbuf,smb_pid));
       ok = (sys_rmdir(directory) == 0);
-      if(!ok && (errno == ENOTEMPTY) && lp_veto_files())
+      if(!ok && (errno == ENOTEMPTY) && lp_veto_files(SNUM(cnum)))
         {
           /* Check to see if the only thing in this directory are
              vetoed files/directories. If so then delete them and
@@ -2460,7 +2460,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
              do a recursive delete) then fail the rmdir. */
           BOOL all_veto_files = True;
           char *dname;
-          void *dirptr = OpenDir(directory, False);
+          void *dirptr = OpenDir(SNUM(cnum), directory, False);
 
           if(dirptr != NULL)
             {
@@ -2469,7 +2469,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
 	            {
                   if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
                     continue;
-                  if(!is_vetoed_name(dname))
+                  if(!is_vetoed_name(SNUM(cnum), dname))
                     {
                       all_veto_files = False;
                       break;
