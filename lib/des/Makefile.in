@@ -43,9 +43,15 @@ LIB = $(LIBNAME).$(LIBEXT)
 
 # Generated with lorder *.o | tsort | xargs echo
 
-LIBSRC = cbc3_enc.c cbc_enc.c cfb64ede.c cfb64enc.c cfb_enc.c ecb3_enc.c ede_enc.c fcrypt.c key_par.c ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c str2key.c cbc_cksm.c ecb_enc.c set_key.c md4.c md5.c sha.c
+LIBSRC = cbc3_enc.c cbc_enc.c cfb64ede.c cfb64enc.c cfb_enc.c \
+	ecb3_enc.c ede_enc.c fcrypt.c key_par.c ncbc_enc.c ofb64ede.c \
+	ofb64enc.c ofb_enc.c pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
+	str2key.c cbc_cksm.c ecb_enc.c set_key.c md4.c md5.c sha.c
 
-LIBOBJ = cbc3_enc.o cbc_enc.o cfb64ede.o cfb64enc.o cfb_enc.o ecb3_enc.o ede_enc.o fcrypt.o key_par.o ncbc_enc.o ofb64ede.o ofb64enc.o ofb_enc.o pcbc_enc.o qud_cksm.o read_pwd.o rnd_keys.o str2key.o cbc_cksm.o ecb_enc.o set_key.o md4.o md5.o sha.o
+LIBOBJ = cbc3_enc.o cbc_enc.o cfb64ede.o cfb64enc.o cfb_enc.o \
+	ecb3_enc.o ede_enc.o fcrypt.o key_par.o ncbc_enc.o ofb64ede.o \
+	ofb64enc.o ofb_enc.o pcbc_enc.o qud_cksm.o read_pwd.o rnd_keys.o \
+	str2key.o cbc_cksm.o ecb_enc.o set_key.o md4.o md5.o sha.o
 
 all: $(LIB) $(PROGS)
 
@@ -54,21 +60,6 @@ Wall:
 
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $(PICFLAGS) $<
-
-destest.o: destest.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
-
-des.o: des.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
-
-rpw.o: rpw.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
-
-speed.o: speed.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
-
-mdtest.o: mdtest.c
-	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
