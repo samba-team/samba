@@ -165,7 +165,7 @@ sub NeededFunction($)
 
 	# Add entries for function arguments
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 
 		$e->{PARENT} = $fn;
 		$needed{"pull_$e->{TYPE}"} = 1;
@@ -280,17 +280,17 @@ sub NeededTypedef($)
 
 	if ($t->{DATA}->{TYPE} eq "UNION") {
 
-		for my $e (@{$t->{DATA}->{DATA}}) {
+		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 
 			$e->{PARENT} = $t->{DATA};
 
 			if ($e->{TYPE} eq "UNION_ELEMENT") {
 
 				if ($needed{"pull_$t->{NAME}"}) {
-					$needed{"pull_$e->{DATA}->{TYPE}"} = 1;
+					$needed{"pull_$e->{ELEMENTS}->{TYPE}"} = 1;
 				}
 
-				$needed{"ett_$e->{DATA}{TYPE}"} = 1;
+				$needed{"ett_$e->{ELEMENTS}{TYPE}"} = 1;
 			}
 		}
 

@@ -110,7 +110,7 @@ sub ValidFunction($)
 {
 	my($fn) = shift;
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		$e->{PARENT} = $fn;
 		if (util::has_property($e, "ref") && !$e->{POINTERS}) {
 			fatal "[ref] variables must be pointers ($fn->{NAME}/$e->{NAME})\n";

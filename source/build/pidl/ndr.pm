@@ -177,7 +177,7 @@ sub find_sibling($$)
 	}
 
 	if ($fn->{TYPE} eq "FUNCTION") {
-		for my $e2 (@{$fn->{DATA}}) {
+		for my $e2 (@{$fn->{ELEMENTS}}) {
 			if ($e2->{NAME} eq $name) {
 				return $e2;
 			}
@@ -340,11 +340,12 @@ sub align_type
     }
 
 	if (defined $typedefs{$e}) {
-		if ($typedefs{$e}->{DATA}->{TYPE} eq "STRUCT" or $typedefs{$e}->{DATA}->{TYPE} eq "UNION") {
-			return struct_alignment($typedefs{$e}->{DATA});
-		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "ENUM") {
+		my $dt = $typedefs{$e}->{DATA};
+		if ($dt->{TYPE} eq "STRUCT" or $dt->{TYPE} eq "UNION") {
+			return struct_alignment($dt);
+		} elsif ($dt->{TYPE} eq "ENUM") {
 	    	return align_type(util::enum_type_fn(util::get_enum($e)));
-		} elsif ($typedefs{$e}->{DATA}->{TYPE} eq "BITMAP") {
+		} elsif ($dt->{TYPE} eq "BITMAP") {
 			return align_type(util::bitmap_type_fn(util::get_bitmap($e)));
 		}
 	} 
@@ -975,7 +976,7 @@ sub ParseBitmapPull($)
 
 #####################################################################
 # generate a print function for an bitmap
-sub ParseBintmapPrintElement($$)
+sub ParseBitmapPrintElement($$)
 {
 	my($e) = shift;
 	my($bitmap) = shift;
@@ -1007,7 +1008,7 @@ sub ParseBitmapPrint($)
 
 	pidl "\tndr->depth++;\n";
 	foreach my $e (@{$bitmap->{ELEMENTS}}) {
-		ParseBintmapPrintElement($e, $bitmap);
+		ParseBitmapPrintElement($e, $bitmap);
 	}
 	pidl "\tndr->depth--;\n";
 
@@ -1524,7 +1525,8 @@ sub ParseFunctionPrint($)
 	pidl "\tif (flags & NDR_IN) {\n";
 	pidl "\t\tndr_print_struct(ndr, \"in\", \"$fn->{NAME}\");\n";
 	pidl "\tndr->depth++;\n";
-	foreach my $e (@{$fn->{DATA}}) {
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
 			ParseElementPrintScalar($e, "r->in.");
 		}
@@ -1535,7 +1537,7 @@ sub ParseFunctionPrint($)
 	pidl "\tif (flags & NDR_OUT) {\n";
 	pidl "\t\tndr_print_struct(ndr, \"out\", \"$fn->{NAME}\");\n";
 	pidl "\tndr->depth++;\n";
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
 			ParseElementPrintScalar($e, "r->out.");
 		}
@@ -1589,7 +1591,7 @@ sub ParseFunctionPush($)
 
 	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPush($e, "in");
 		}		
@@ -1598,7 +1600,7 @@ sub ParseFunctionPush($)
 	pidl "\nndr_out:\n";
 	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
 			ParseFunctionElementPush($e, "out");
 		}		
@@ -1694,7 +1696,7 @@ sub ParseFunctionPull($)
 	pidl $static . "NTSTATUS ndr_pull_$fn->{NAME}(struct ndr_pull *ndr, int flags, struct $fn->{NAME} *r)\n{\n";
 
 	# declare any internal pointers we need
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (need_wire_pointer($e)) {
 			pidl "\tuint32_t _ptr_$e->{NAME};\n";
 		}
@@ -1706,14 +1708,14 @@ sub ParseFunctionPull($)
 	# this was a bad idea as it hides bugs, but coping correctly
 	# with initialisation and not wiping ref vars is turning
 	# out to be too tricky (tridge)
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
 			pidl "\tZERO_STRUCT(r->out);\n\n";
 			last;
 		}
 	}
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPull($e, "in");
 		}
@@ -1724,7 +1726,7 @@ sub ParseFunctionPull($)
 		}
 	}
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
 			CheckArraySizes($e, "r->in.");
 		}
@@ -1733,13 +1735,13 @@ sub ParseFunctionPull($)
 	pidl "\nndr_out:\n";
 	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
 			ParseFunctionElementPull($e, "out");
 		}
 	}
 
-	foreach my $e (@{$fn->{DATA}}) {
+	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
 			CheckArraySizes($e, "r->out.");
 		}
