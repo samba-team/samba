@@ -18,7 +18,8 @@ See the cvs log for SAMBA_2_2 for more details
     than 2 GBytes.
 4)  Fix for xcopy /s problem with old DOS clients not sending correct
     attributes on subsequent SMBsearch calls.
-
+5)  Fix bug in call to standard_sub_advanced giving a 0 length. This
+    fixes the string overflow in string_sub errors.
 
 
               =========================================
