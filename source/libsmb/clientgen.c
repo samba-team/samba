@@ -3122,7 +3122,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				char *passwd_report,
 				char *username, char *user_pass, char *workgroup,
 				char *service, char *service_type,
-				BOOL do_shutdown, BOOL do_tcon)
+				BOOL do_shutdown, BOOL do_tcon, BOOL encrypted)
 {
 	fstring passwd;
 	uchar lm_owf_passwd[16];
@@ -3131,21 +3131,15 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	uchar nt_sess_pwd[24];
 	int pass_len = 0;
 
-	char *password = NULL;
+	if (passwd_report != NULL && (user_pass == NULL || user_pass[0] == 0))
+	{
+		/* grab a password */
+		user_pass = (char*)getpass(passwd_report);
+	}
 
 	if (user_pass != NULL && user_pass[0] != 0)
 	{
-		password = user_pass;
-	}
-	else
-	{
-		/* grab a password */
-		password = (char*)getpass(passwd_report);
-	}
-
-	if (password != NULL && password[0] != 0)
-	{
-		fstrcpy(passwd, password);
+		fstrcpy(passwd, user_pass);
 		pass_len = strlen(passwd);
 	}
 	else
@@ -3208,32 +3202,52 @@ BOOL cli_establish_connection(struct cli_state *cli,
 #endif
 
 	/* attempt encrypted session; attempt clear-text session */
-	if (!cli_session_setup(cli, username,
+	if (encrypted)
+	{
+		/* attempt encrypted session */
+		if (!cli_session_setup(cli, username,
 	                       lm_owf_passwd, sizeof(lm_owf_passwd),
 	                       nt_owf_passwd, sizeof(nt_owf_passwd),
-	                       workgroup) ||
-		!cli_session_setup(cli, username,
-	                       passwd, pass_len,
-	                       "", 0,
 	                       workgroup))
-	{
-		DEBUG(1,("failed session setup\n"));
-		if (do_shutdown) cli_shutdown(cli);
-		return False;
-	}
-
-	if (do_tcon)
-	{
-		if (!cli_send_tconX(cli, service, service_type, passwd       , pass_len) ||
-			!cli_send_tconX(cli, service, service_type, nt_owf_passwd, sizeof(nt_owf_passwd)))
 		{
-			DEBUG(1,("failed tcon_X\n"));
+			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown) cli_shutdown(cli);
 			return False;
 		}
+		if (do_tcon)
+		{
+			if (!cli_send_tconX(cli, service, service_type,
+			                    nt_owf_passwd, sizeof(nt_owf_passwd)))
+			{
+				DEBUG(1,("failed tcon_X\n"));
+				if (do_shutdown) cli_shutdown(cli);
+				return False;
+			}
+		}
 	}
-
-	DEBUG(5,("cli_establish_connection %d\n", __LINE__));
+	else
+	{
+		/* attempt clear-text session */
+		if (!cli_session_setup(cli, username,
+	                       passwd, pass_len,
+	                       "", 0,
+	                       workgroup))
+		{
+			DEBUG(1,("failed session setup\n"));
+			if (do_shutdown) cli_shutdown(cli);
+			return False;
+		}
+		if (do_tcon)
+		{
+			if (!cli_send_tconX(cli, service, service_type,
+			                    passwd, pass_len))
+			{
+				DEBUG(1,("failed tcon_X\n"));
+				if (do_shutdown) cli_shutdown(cli);
+				return False;
+			}
+		}
+	}
 
 	if (do_shutdown) cli_shutdown(cli);
 

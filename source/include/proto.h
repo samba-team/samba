@@ -147,7 +147,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				char *passwd_report,
 				char *username, char *user_pass, char *workgroup,
 				char *service, char *service_type,
-				BOOL do_tcon, BOOL do_shutdown);
+				BOOL do_shutdown, BOOL do_tcon, BOOL encrypted);
 
 /*The following definitions come from  clitar.c  */
 

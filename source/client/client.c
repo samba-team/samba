@@ -1456,7 +1456,7 @@ static BOOL process(struct cli_state *cli, struct client_info *info,
       }
 
       if ((i = process_tok(tok)) >= 0)
-	commands[i].fn(cli);
+	commands[i].fn(cli, info);
       else if (i == -2)
 	DEBUG(0,("%s: command abbreviation ambiguous\n", CNV_LANG(tok)));
       else
@@ -1506,13 +1506,11 @@ static void usage(char *pname)
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
-	pstring query_host;
 	BOOL message = False;
 	BOOL nt_domain_logon = False;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	char *p;
-	int name_type = 0x0;
 	BOOL got_pass = False;
 	char *cmd_str="";
 	int myumask = 0755;
@@ -1520,16 +1518,25 @@ static void usage(char *pname)
 	struct cli_state smb_cli;
 	struct client_info cli_info;
 
+	pstring query_host;
 	pstring desthost;
-	pstring myhostname;
-	pstring password;
-	pstring username;
-	pstring workgroup;
-	pstring service;
-	fstring svc_type;
 	struct in_addr dest_ip;
+	int name_type = 0x0;
+
+	pstring myhostname;
+	pstring workgroup;
+
+	pstring username;
+	pstring password;
+
+	pstring service;
+	pstring share;
+	fstring svc_type;
+	pstring tmp;
 
 	dest_ip.s_addr = 0;
+	desthost[0] = 0;
+	query_host[0] = 0;
 
 	strcpy(svc_type, "A:");
 
@@ -1540,8 +1547,6 @@ static void usage(char *pname)
 	#else /* KANJI */
 	*term_code = 0;
 	#endif /* KANJI */
-
-	*query_host = 0;
 
 	DEBUGLEVEL = 2;
 
@@ -1729,7 +1734,6 @@ static void usage(char *pname)
 				break;
 			}
 
-
 			case 'U':
 			{
 				char *lp;
@@ -1831,18 +1835,19 @@ static void usage(char *pname)
 			}
 
 			default:
+			{
 				usage(pname);
 				exit(1);
 				break;
 			}
 		}
+	}
 
 	if (!cli_info.tar.type && !*query_host && !*service && !message)
 	{
 		usage(pname);
 		exit(1);
 	}
-
 
 	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
@@ -1874,32 +1879,6 @@ static void usage(char *pname)
 	get_myname((*myname)?NULL:myname,NULL);  
 	strupper(myname);
 
-	if (cli_info.tar.type)
-	{
-		int ret = 0;
-		cli_info.recurse_dir = True;
-
-		if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
-		     myhostname,
-			 "Enter Password:", username, password, workgroup,
-		     service, svc_type,
-		     False, True))
-		{
-			cli_shutdown(&smb_cli);
-			return 1;
-		}
-
-		bzero(smb_cli.outbuf,smb_size);
-		if (*cli_info.base_dir)
-		{
-			do_cd(&smb_cli, &cli_info, cli_info.base_dir);
-		}
-		ret = process_tar(&smb_cli, &cli_info);
-
-		cli_shutdown(&smb_cli);
-		return ret;
-	}
-
 	if (*query_host && !nt_domain_logon)
 	{
 		sprintf(service,"\\\\%s\\IPC$",query_host);
@@ -1908,9 +1887,10 @@ static void usage(char *pname)
 
 		if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
 		     myhostname,
-		     "Enter Password:", username, password, workgroup,
+		     got_pass ? NULL : "Enter Password:",
+		     username, password, workgroup,
 		     service, svc_type,
-		     False, True))
+		     False, True, False))
 		{
 			cli_shutdown(&smb_cli);
 			return 1;
@@ -1930,9 +1910,10 @@ static void usage(char *pname)
 		int ret = 0;
 		if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
 		     myhostname,
-		     "Enter Password:", username, password, workgroup,
+		     got_pass ? NULL : "Enter Password:",
+		     username, password, workgroup,
 		     service, svc_type,
-		     False, False))
+		     False, False, True))
 		{
 			cli_shutdown(&smb_cli);
 			return 1;
@@ -1964,20 +1945,62 @@ static void usage(char *pname)
 		return(0);
 	}
 #endif 
+	
+	/* extract destination host (if there isn't one) and share from service */
+	pstrcpy(tmp, service);
+	p = strtok(tmp, "\\/");
+	if (desthost[0] == 0)
+	{
+		strcpy(desthost, p);
+	}
+	p = strtok(NULL, "\\/");
+	strcpy(share, p);
 
-	strcpy(desthost,strtok(service,"\\/"));
-
-	if (desthost[0] == '0')
+	if (desthost[0] == 0)
 	{
 		DEBUG(0,("Could not get host name from service %s\n", service));
 		return 1;
 	}
 
+	if (share[0] == 0)
+	{
+		DEBUG(0,("Could not get share name from service %s\n", service));
+		return 1;
+	}
+
+	if (cli_info.tar.type)
+	{
+		int ret = 0;
+		cli_info.recurse_dir = True;
+
+		if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
+		     myhostname,
+		     got_pass ? NULL : "Enter Password:",
+		     username, password, workgroup,
+		     service, svc_type,
+		     False, True, True))
+		{
+			cli_shutdown(&smb_cli);
+			return 1;
+		}
+
+		bzero(smb_cli.outbuf,smb_size);
+		if (*cli_info.base_dir)
+		{
+			do_cd(&smb_cli, &cli_info, cli_info.base_dir);
+		}
+		ret = process_tar(&smb_cli, &cli_info);
+
+		cli_shutdown(&smb_cli);
+		return ret;
+	}
+
 	if (!cli_establish_connection(&smb_cli, desthost, name_type, &dest_ip,
 		   myhostname,
-	       "Enter Password:", username, password, workgroup,
-	       service, svc_type,
-	       False, True))
+		   got_pass ? NULL : "Enter Password:",
+		   username, password, workgroup,
+	       share, svc_type,
+	       False, True, True))
 	{
 		cli_shutdown(&smb_cli);
 		return 1;

@@ -3621,26 +3621,27 @@ void get_home_server_and_dir(char *user_name,
 		char *home = get_home_dir(user_name);
 		if (home)
 		{
-			pstrcpy(server_name, home);
+			pstrcpy(server_dir, home);
 		}
 		else
 		{
-			server_name[0] = 0;
+			server_dir[0] = 0;
 		}
 	}
 
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
+	if (server_name || server_dir)
 	{
 		pstring home_srv;
 		pstring home_dir;
 
 		automount_server_share(user_name, home_srv, home_dir);
 
-		if (*home_srv)
+		if (server_name && *home_srv)
 		{
 			strcpy(server_name, home_srv);
 		}
-		if (*home_dir)
+		if (server_dir && *home_dir)
 		{
 			pstrcpy(server_dir, home_dir);
 		}
