@@ -1,5 +1,18 @@
 2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_err.et: sync with mit krb5_err.et (require major
+	version bump) add KRB5_DELTAT_BADFORMAT
+	
+	* lib/krb5/krb5.conf.5: time defaults to "s"
+	
+	* lib/krb5/time.c (krb5_string_to_deltat): default to "s" again,
+	MIT's behavior was actually that it failed to parse the number
+	(and thus used the default). Even better, ticket_lifetime (that
+	was a consumer supposed a of the interface) was documented but
+	never implemented, when it was implemented, people configuraiton
+	files started to fail.  Also, use KRB5_DELTAT_BADFORMAT as a
+	failure code.
+
 	* lib/asn1/k5.asn1: sync enctypes with pkinit branch
 	
 	* lib/asn1/parse.y (readd) support negative numbers
