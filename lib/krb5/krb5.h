@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -223,6 +223,8 @@ typedef union {
 #define KRB5_TC_MATCH_KEYTYPE		(1 << 30)
 
 typedef AuthorizationData krb5_authdata;
+
+typedef KRB_ERROR krb5_error;
 
 typedef struct krb5_creds {
     krb5_principal client;
