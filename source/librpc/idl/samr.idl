@@ -292,7 +292,7 @@
 
 	NTSTATUS samr_GetAliasMembership(
 		[in,ref]      policy_handle *handle,
-		[in,ref]  lsa_SidArray  *sids,
+		[in,ref]      lsa_SidArray  *sids,
 		[out]         samr_Ids *rids
 		);
 
@@ -679,7 +679,31 @@
 
 	/************************/
 	/* Function    0x26     */
-	NTSTATUS samr_CHANGE_PASSWORD_USER();
+	
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 hash[16];
+	} samr_Hash;
+
+	/*
+	  this interface is quite mysterious. I can make w2k3 give me
+	  NT_STATUS_PASSWORD_RESTRICTION and NT_STATUS_WRONG_PASSWORD
+	  with various options, but so far I haven't managed a successful
+	  password change. Perhaps this interface is disabled now?
+	  Needs testing against NT4
+	*/
+	NTSTATUS samr_ChangePasswordUser(
+		[in,ref]    policy_handle *handle,
+		[in]        bool8 unknown1,
+		[in]        samr_Hash *hash1,
+		[in]        samr_Hash *hash2,
+		[in]        bool8 unknown2,
+		[in]        samr_Hash *hash3,
+		[in]        samr_Hash *hash4,
+		[in]        bool8 unknown3,
+		[in]        samr_Hash *hash5,
+		[in]        bool8 unknown4,
+		[in]        samr_Hash *hash6
+		);
 
 	/************************/
 	/* Function    0x27     */
@@ -764,17 +788,48 @@
 		[out,switch_is(level)] samr_DispInfo info
 		);
 
+
 	/************************/
 	/* Function    0x29     */
-	NTSTATUS samr_GET_DISPLAY_ENUMERATION_INDEX();
+
+	/*
+	  this seems to be an alphabetic search function. The returned index
+	  is the index for samr_QueryDisplayInfo needed to get names occurring
+	  after the specified name. The supplied name does not need to exist
+	  in the database (for example you can supply just a first letter for 
+	  searching starting at that letter)
+
+	  The level corresponds to the samr_QueryDisplayInfo level
+	*/
+	NTSTATUS samr_GetDisplayEnumerationIndex(
+		[in,ref]    policy_handle *handle,
+		[in]        uint16 level,
+		[in]        samr_Name name,
+		[out]       uint32 idx
+		);
+
+
 
 	/************************/
 	/* Function    0x2a     */
-	NTSTATUS samr_TEST_PRIVATE_FUNCTIONS_DOMAIN();
+
+	/*
+	  w2k3 return NT_STATUS_NOT_IMPLEMENTED for this
+	*/
+	NTSTATUS samr_TestPrivateFunctionsDomain(
+		[in,ref]    policy_handle *handle
+		);
+
 
 	/************************/
 	/* Function    0x2b     */
-	NTSTATUS samr_TEST_PRIVATE_FUNCTIONS_USER();
+
+	/*
+	  w2k3 return NT_STATUS_NOT_IMPLEMENTED for this
+	*/
+	NTSTATUS samr_TestPrivateFunctionsUser(
+		[in,ref]    policy_handle *handle
+		);
 
 
 	/************************/
@@ -799,7 +854,10 @@
 
 	/************************/
 	/* Function    0x2d     */
-	NTSTATUS samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN();
+	NTSTATUS samr_RemoveMemberFromForeignDomain(
+		[in,ref]    policy_handle *handle,
+		[in,ref]    dom_sid2 *sid
+		);
 
 	/************************/
 	/* Function    0x2e     */
