@@ -205,6 +205,11 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset,
 
 	if (ret == -1) {
 		if (!probe && lck_type != F_SETLK) {
+			/* Ensure error code is set for log fun to examine. */
+			if (errno == EINTR && palarm_fired && *palarm_fired)
+				tdb->ecode = TDB_ERR_LOCK_TIMEOUT;
+			else
+				tdb->ecode = TDB_ERR_LOCK;
 			TDB_LOG((tdb, 5,"tdb_brlock failed (fd=%d) at offset %d rw_type=%d lck_type=%d\n", 
 				 tdb->fd, offset, rw_type, lck_type));
 		}
@@ -312,6 +317,8 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 		return 0;
 	if (tdb->flags & TDB_INTERNAL) {
 		if (!probe) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, 0,"tdb_oob len %d beyond internal malloc size %d\n",
 				 (int)len, (int)tdb->map_size));
 		}
@@ -323,6 +330,8 @@ static int tdb_oob(TDB_CONTEXT *tdb, tdb_off len, int probe)
 
 	if (st.st_size < (size_t)len) {
 		if (!probe) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, 0,"tdb_oob len %d beyond eof at %d\n",
 				 (int)len, (int)st.st_size));
 		}
@@ -351,6 +360,8 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off off, void *buf, tdb_len len)
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || write(tdb->fd, buf, len) != (ssize_t)len) {
 #endif
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, 0,"tdb_write failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -372,6 +383,8 @@ static int tdb_read(TDB_CONTEXT *tdb,tdb_off off,void *buf,tdb_len len,int cv)
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || read(tdb->fd, buf, len) != (ssize_t)len) {
 #endif
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_IO;
 		TDB_LOG((tdb, 0,"tdb_read failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -387,6 +400,8 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 	char *buf;
 
 	if (!(buf = malloc(len))) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_OOM;
 		TDB_LOG((tdb, 0,"tdb_alloc_read malloc failed len=%d (%s)\n",
 			   len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_OOM, buf);
@@ -415,6 +430,8 @@ static int rec_read(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 	if (tdb_read(tdb, offset, rec, sizeof(*rec),DOCONV()) == -1)
 		return -1;
 	if (TDB_BAD_MAGIC(rec)) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_CORRUPT;
 		TDB_LOG((tdb, 0,"rec_read bad magic 0x%x at offset=%d\n", rec->magic, offset));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 	}
@@ -443,6 +460,8 @@ static int rec_free_read(TDB_CONTEXT *tdb, tdb_off off, struct list_struct *rec)
 	}
 
 	if (rec->magic != TDB_FREE_MAGIC) {
+		/* Ensure ecode is set for log fn. */
+		tdb->ecode = TDB_ERR_CORRUPT;
 		TDB_LOG((tdb, 0,"rec_free_read bad magic 0x%x at offset=%d\n", 
 			   rec->magic, off));
 		return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
@@ -1809,7 +1828,11 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 }
 
-/* close a database */
+/**
+ * Close a database.
+ *
+ * @returns -1 for error; 0 for success.
+ **/
 int tdb_close(TDB_CONTEXT *tdb)
 {
 	TDB_CONTEXT **i;
