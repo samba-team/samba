@@ -98,23 +98,23 @@ void announce_request(struct work_record *work, struct in_addr ip)
 void do_announce_request(char *info, char *to_name, int announce_type, int from,
 			 int to, struct in_addr dest_ip)
 {
-	pstring outbuf;
-	char *p;
-
-	bzero(outbuf,sizeof(outbuf));
-	p = outbuf;
-	CVAL(p,0) = announce_type; /* announce request */
-	p++;
-
-	DEBUG(2,("Sending announce type %d: info %s to %s - server %s(%x)\n",
-	          announce_type, info, inet_ntoa(dest_ip),to_name,to));
-
-	StrnCpy(p,info,16);
-	strupper(p);
-	p = skip_string(p,1);
-
-	send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		 myname,to_name,from,to,dest_ip,myip);
+  pstring outbuf;
+  char *p;
+  
+  bzero(outbuf,sizeof(outbuf));
+  p = outbuf;
+  CVAL(p,0) = announce_type; /* announce request */
+  p++;
+  
+  DEBUG(2,("Sending announce type %d: info %s to %s - server %s(%x)\n",
+	   announce_type, info, inet_ntoa(dest_ip),to_name,to));
+  
+  StrnCpy(p,info,16);
+  strupper(p);
+  p = skip_string(p,1);
+  
+  send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
+		      myname,to_name,from,to,dest_ip,myip);
 }
 
 /****************************************************************************
@@ -192,135 +192,133 @@ void announce_backup(void)
   **************************************************************************/
 void announce_host(void)
 {
-	time_t t = time(NULL);
-	pstring outbuf;
-	char *p;
-	char *namep;
-	char *stypep;
-	char *commentp;
-	pstring comment;
-	char *my_name;
-	struct domain_record *d;
+  time_t t = time(NULL);
+  pstring outbuf;
+  char *p;
+  char *namep;
+  char *stypep;
+  char *commentp;
+  pstring comment;
+  char *my_name;
+  struct domain_record *d;
 
-	StrnCpy(comment, *ServerComment ? ServerComment : "NoComment", 43);
+  StrnCpy(comment, *ServerComment ? ServerComment : "NoComment", 43);
 
-	my_name = *myname ? myname : "NoName";
+  my_name = *myname ? myname : "NoName";
 
-	for (d = domainlist; d; d = d->next)
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+      
+      if (!ip_equal(bcast_ip,d->bcast_ip))
+	continue;
+
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
+	  uint32 stype = work->ServerType;
+	  struct server_record *s;
+	  BOOL announce = False;
+	  
+	  if (work->needannounce) {
+	    /* drop back to a max 3 minute announce - this is to prevent a
+	       single lost packet from stuffing things up for too long */
+	    work->announce_interval = MIN(work->announce_interval,3*60);
+	    work->lastannounce_time = t - (work->announce_interval+1);
+	  }
+	  
+	  /* announce every minute at first then progress to every 12 mins */
+	  if (work->lastannounce_time && 
+	      (t - work->lastannounce_time) < work->announce_interval)
+	    continue;
+	  
+	  if (work->announce_interval < 12*60) 
+	    work->announce_interval += 60;
+	  
+	  work->lastannounce_time = t;
 
-		if (!ip_equal(bcast_ip,d->bcast_ip))
+	  DEBUG(2,("Sending announcement to subnet %s for workgroup %s\n",
+		   inet_ntoa(d->bcast_ip),work->work_group));
+
+	  if (!ip_equal(bcast_ip,d->bcast_ip)) {
+	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
+		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
+		       SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
+	  }
+
+	  for (s = work->serverlist; s; s = s->next) {
+	    if (strequal(myname, s->serv.name)) { 
+	      announce = True; 
+	      break; 
+	    }
+	  }
+	  
+	  if (announce)
+	    {
+	      bzero(outbuf,sizeof(outbuf));
+	      p = outbuf+1;
+	      
+	      CVAL(p,0) = updatecount;
+	      SIVAL(p,1,work->announce_interval*1000); /* ms - despite the spec */
+	      namep = p+5;
+	      StrnCpy(namep,my_name,16);
+	      strupper(namep);
+	      CVAL(p,21) = 2; /* major version */
+	      CVAL(p,22) = 2; /* minor version */
+	      stypep = p+23;
+	      SIVAL(p,23,stype);
+	      SSVAL(p,27,0xaa55); /* browse signature */
+	      SSVAL(p,29,1); /* browse version */
+	      commentp = p+31;
+	      strcpy(commentp,comment);
+	      p = p+31;
+	      p = skip_string(p,1);
+	      
+	      if (ip_equal(bcast_ip,d->bcast_ip))
 		{
-			continue;
+		  if (AM_MASTER(work))
+		    {
+		      SIVAL(stypep,0,work->ServerType);
+		      
+		      CVAL(outbuf,0) = 15; /* local member announce */
+		      
+		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+					  PTR_DIFF(p,outbuf),
+					  my_name,work->work_group,0,
+					  0x1e,d->bcast_ip,myip);
+		      
+		      CVAL(outbuf,0) = 12; /* domain announce */
+		      
+		      StrnCpy(namep,work->work_group,15);
+		      strupper(namep);
+		      StrnCpy(commentp,myname,15);
+		      strupper(commentp);
+		      
+		      SIVAL(stypep,0,(unsigned)0x80000000);
+		      p = commentp + strlen(commentp) + 1;
+		      
+		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+					  PTR_DIFF(p,outbuf),
+					  my_name,MSBROWSE,0,0x01,d->bcast_ip,myip);
+		    }
+		  else
+		    {
+		      CVAL(outbuf,0) = 1; /* host announce */
+		      
+		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
+					  PTR_DIFF(p,outbuf),
+					  my_name,work->work_group,0,0x1d,d->bcast_ip,myip);
+		    }
 		}
-
-		for (work = d->workgrouplist; work; work = work->next)
-		{
-			uint32 stype = work->ServerType;
-			struct server_record *s;
-			BOOL announce = False;
-
-			if (work->needannounce)
-			{
-				/* drop back to a max 3 minute announce - this is to prevent a
-				single lost packet from stuffing things up for too long */
-				work->announce_interval = MIN(work->announce_interval,3*60);
-				work->lastannounce_time = t - (work->announce_interval+1);
-			}
-
-			/* announce every minute at first then progress to every 12 mins */
-			if (work->lastannounce_time && 
-			   (t - work->lastannounce_time) < work->announce_interval)
-			{
-				continue;
-			}
-
-			if (work->announce_interval < 12*60) work->announce_interval += 60;
-
-			work->lastannounce_time = t;
-
-			DEBUG(2,("Sending announcement to subnet %s for workgroup %s\n",
-			           inet_ntoa(d->bcast_ip),work->work_group));
-
-			if (!ip_equal(bcast_ip,d->bcast_ip))
-			{
-				stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
-						SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
-						SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
-			}
-
-			for (s = work->serverlist; s; s = s->next)
-			{
-				if (strequal(myname, s->serv.name)) { announce = True; break; }
-			}
-
-			if (announce)
-			{
-				bzero(outbuf,sizeof(outbuf));
-				p = outbuf+1;
-
-				CVAL(p,0) = updatecount;
-				SIVAL(p,1,work->announce_interval*1000); /* ms - despite the spec */
-				namep = p+5;
-				StrnCpy(namep,my_name,16);
-				strupper(namep);
-				CVAL(p,21) = 2; /* major version */
-				CVAL(p,22) = 2; /* minor version */
-				stypep = p+23;
-				SIVAL(p,23,stype);
-				SSVAL(p,27,0xaa55); /* browse signature */
-				SSVAL(p,29,1); /* browse version */
-				commentp = p+31;
-				strcpy(commentp,comment);
-				p = p+31;
-				p = skip_string(p,1);
-
-				if (ip_equal(bcast_ip,d->bcast_ip))
-				{
-					if (AM_MASTER(work))
-					{
-						SIVAL(stypep,0,work->ServerType);
-
-						CVAL(outbuf,0) = 15; /* local member announce */
-
-						send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-							   PTR_DIFF(p,outbuf),
-							   my_name,work->work_group,0,0x1e,d->bcast_ip,myip);
-
-						CVAL(outbuf,0) = 12; /* domain announce */
-
-						StrnCpy(namep,work->work_group,15);
-						strupper(namep);
-						StrnCpy(commentp,myname,15);
-						strupper(commentp);
-
-						SIVAL(stypep,0,(unsigned)0x80000000);
-						p = commentp + strlen(commentp) + 1;
-
-						send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-							   PTR_DIFF(p,outbuf),
-							   my_name,MSBROWSE,0,0x01,d->bcast_ip,myip);
-					}
-					else
-					{
-						CVAL(outbuf,0) = 1; /* host announce */
-
-						send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
-							 PTR_DIFF(p,outbuf),
-							 my_name,work->work_group,0,0x1d,d->bcast_ip,myip);
-					}
-				}
-			}
-
-			if (work->needannounce)
-			{
-				work->needannounce = False;
-				break;
-				/* sorry: can't do too many announces. do some more later */
-			}
-		}
+	    }
+	  
+	  if (work->needannounce)
+	    {
+	      work->needannounce = False;
+	      break;
+	      /* sorry: can't do too many announces. do some more later */
+	    }
 	}
+    }
 }
 
 
@@ -337,108 +335,108 @@ void announce_host(void)
   **************************************************************************/
 void announce_master(void)
 {
-	struct domain_record *d;
-	static time_t last=0;
-	time_t t = time(NULL);
-	BOOL am_master = False; /* are we a master of some sort? :-) */
+  struct domain_record *d;
+  static time_t last=0;
+  time_t t = time(NULL);
+  BOOL am_master = False; /* are we a master of some sort? :-) */
 
 #ifdef TEST_CODE
-	if (last && (t-last < 2*60)) return;
+  if (last && (t-last < 2*60)) return;
 #else
-	if (last && (t-last < 15*60)) return; 
+  if (last && (t-last < 15*60)) return; 
 #endif
 
-	last = t;
+  last = t;
 
-	for (d = domainlist; d; d = d->next)
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
-		for (work = d->workgrouplist; work; work = work->next)
-		{
-			if (AM_MASTER(work))
-			{
-				am_master = True;
-			}
-		}
+	  if (AM_MASTER(work))
+	    {
+	      am_master = True;
+	    }
 	}
-
-	if (!am_master) return; /* only proceed if we are a master browser */
-
-	for (d = domainlist; d; d = d->next)
+    }
+  
+  if (!am_master) return; /* only proceed if we are a master browser */
+  
+  for (d = domainlist; d; d = d->next)
+    {
+      struct work_record *work;
+      for (work = d->workgrouplist; work; work = work->next)
 	{
-		struct work_record *work;
-		for (work = d->workgrouplist; work; work = work->next)
+	  struct server_record *s;
+	  for (s = work->serverlist; s; s = s->next)
+	    {
+	      if (strequal(s->serv.name, myname)) continue;
+	      
+	      /* all PDCs (which should also be master browsers) */
+	      if (s->serv.type & SV_TYPE_DOMAIN_CTRL)
 		{
-			struct server_record *s;
-			for (s = work->serverlist; s; s = s->next)
+		  /* check the existence of a pdc for this workgroup, and if
+		     one exists at the specified ip, sync with it and announce
+		     ourselves as a master browser to it */
+		  
+		  if (!*lp_domain_controller() ||
+		      !strequal(lp_domain_controller(), s->serv.name))
+		    {
+		      if (!lp_wins_support() && *lp_wins_server())
 			{
-				if (strequal(s->serv.name, myname)) continue;
-
-				/* all PDCs (which should also be master browsers) */
-				if (s->serv.type & SV_TYPE_DOMAIN_CTRL)
-				{
-					/* check the existence of a pdc for this workgroup, and if
-					   one exists at the specified ip, sync with it and announce
-					   ourselves as a master browser to it */
-
-					if (!*lp_domain_controller() ||
-						!strequal(lp_domain_controller(), s->serv.name))
-					{
-						if (!lp_wins_support() && *lp_wins_server())
-						{
-							struct in_addr ip;
-							ip = ipzero;
-
-							queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
-									MASTER_SERVER_CHECK,
-									work->work_group,0x1b,0,
-									False, False, ip);
-						}
-						else
-						{
-							struct domain_record *d2;
-							for (d2 = domainlist; d2; d2 = d2->next)
-							{
-								queue_netbios_packet(ClientNMB,NMB_QUERY,
-										MASTER_SERVER_CHECK,
-										work->work_group,0x1b,0,
-										True, False, d2->bcast_ip);
-							}
-						}
-					}
-				}
+			  struct in_addr ip;
+			  ip = ipzero;
+			  
+			  queue_netbios_pkt_wins(ClientNMB,NMB_QUERY,
+						 MASTER_SERVER_CHECK,
+						 work->work_group,0x1b,0,
+						 False, False, ip);
 			}
-
-			/* now do primary domain controller - the one that's not
-			   necessarily in our browse lists, although it ought to be
-			   this pdc is the one that we get TOLD about through smb.conf.
-			   basically, if it's on a subnet that we know about, it may end
-			   up in our browse lists (which is why it's explicitly excluded
-			   in the code above) */
-
-			if (*lp_domain_controller())
+		      else
 			{
-				struct in_addr ip;
-				BOOL bcast = False;
-
-				ip = *interpret_addr2(lp_domain_controller());
-
-				if (zero_ip(ip))
-				{
-					ip = bcast_ip;
-					bcast = True;
-				}
-
-				DEBUG(2, ("Searching for PDC %s at %s\n",
-						 lp_domain_controller(), inet_ntoa(ip)));
-
-				/* check the existence of a pdc for this workgroup, and if
-				   one exists at the specified ip, sync with it and announce
-				   ourselves as a master browser to it */
-				queue_netbios_pkt_wins(ClientNMB, NMB_QUERY,MASTER_SERVER_CHECK,
-									work->work_group,0x1b, 0,
-									bcast, False, ip);
+			  struct domain_record *d2;
+			  for (d2 = domainlist; d2; d2 = d2->next)
+			    {
+			      queue_netbios_packet(ClientNMB,NMB_QUERY,
+						   MASTER_SERVER_CHECK,
+						   work->work_group,0x1b,0,
+						   True, False, d2->bcast_ip);
+			    }
 			}
+		    }
 		}
+	    }
+	  
+	  /* now do primary domain controller - the one that's not
+	     necessarily in our browse lists, although it ought to be
+	     this pdc is the one that we get TOLD about through smb.conf.
+	     basically, if it's on a subnet that we know about, it may end
+	     up in our browse lists (which is why it's explicitly excluded
+	     in the code above) */
+	  
+	  if (*lp_domain_controller())
+	    {
+	      struct in_addr ip;
+	      BOOL bcast = False;
+	      
+	      ip = *interpret_addr2(lp_domain_controller());
+	      
+	      if (zero_ip(ip))
+		{
+		  ip = bcast_ip;
+		  bcast = True;
+		}
+
+	      DEBUG(2, ("Searching for PDC %s at %s\n",
+			lp_domain_controller(), inet_ntoa(ip)));
+	      
+	      /* check the existence of a pdc for this workgroup, and if
+		 one exists at the specified ip, sync with it and announce
+		 ourselves as a master browser to it */
+	      queue_netbios_pkt_wins(ClientNMB, NMB_QUERY,MASTER_SERVER_CHECK,
+				     work->work_group,0x1b, 0,
+				     bcast, False, ip);
+	    }
 	}
+    }
 }

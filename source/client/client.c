@@ -3599,6 +3599,7 @@ static BOOL list_servers()
   pstring param;
   int uLevel = 1;
   int count = 0;
+  BOOL ok = False;
 
   /* now send a SMBtrans command with api ServerEnum? */
   p = param;
@@ -3645,7 +3646,8 @@ static BOOL list_servers()
 	  printf("\t%-16.16s     %s\n",
 		 sname,
 		 comment_offset?rdata+comment_offset-converter:"");
-	  
+
+	  ok=True;
 	  p2 += 26;
 	}
       }
@@ -3683,6 +3685,7 @@ static BOOL list_servers()
 		 sname,
 		 comment_offset?rdata+comment_offset-converter:"");
 	  
+	  ok=True;
 	  p2 += 26;
 	}
       }
@@ -3691,7 +3694,7 @@ static BOOL list_servers()
   if (rparam) free(rparam);
   if (rdata) free(rdata);
 
-  return(count>0);
+  return(ok);
 }
 
 

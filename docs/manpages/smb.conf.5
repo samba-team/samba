@@ -1962,14 +1962,6 @@ merits of each are discussed in the README file.
 
 .B Example:
 	protocol = LANMAN1
-.SS proxy name resolution (G)
-
-This is a boolean that controls if nmbd will respond to broadcast name
-queries on behalf of other hosts. You may need to set this to no for
-some older clients.
-
-.B Default:
-	proxy name resolution = yes
 .SS public (S)
 A synonym for this parameter is 'guest ok'.
 
@@ -2548,6 +2540,33 @@ only to areas that are outside the directory tree being exported.
 .B Example:
  	wide links = no
 
+.SS wins proxy (G)
+
+This is a boolean that controls if nmbd will respond to broadcast name
+queries on behalf of other hosts. You may need to set this to no for
+some older clients.
+
+.B Default:
+	wins proxy = no
+.SS wins support (G)
+
+This boolean controls if Samba will act as a WINS server. You should
+normally set this to true unless you already have another WINS server
+on the network.
+
+.B Default:
+	wins support = yes
+.SS wins server (G)
+
+This specifies the DNS name of the WINS server that Samba should
+register with. If you have a WINS server on your network then you
+should set this to the WINS servers name.
+
+This option only takes effect if Samba is not acting as a WINS server
+itself. 
+
+.B Default:
+	wins server = 
 .SS workgroup (G)
 
 This controls what workgroup your server will appear to be in when

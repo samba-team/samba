@@ -245,29 +245,6 @@ uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
 }
 
 
-void send_name_reg(void)
-{
-  struct packet_struct p;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  int rcode = 0;
-
-  nmb->header.opcode = 5; 
-  nmb->header.response = True;
-  nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = CanRecurse;
-  nmb->header.nm_flags.recursion_desired = CanRecurse;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = True; 
-  nmb->header.qdcount = 0;
-  nmb->header.ancount = 1;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
-  nmb->header.rcode = rcode;
-  
-  send_packet(&p);  
-}
-
-
 /****************************************************************************
   wrapper function to override a broadcast message and send it to the WINS
   name server instead, if it exists. if wins is false, and there has been no
@@ -349,7 +326,8 @@ void queue_netbios_packet(int fd,int quest_type,enum cmd_type cmd,char *name,
 
   if (id == 0) return;
   
-  if ((n = make_name_query_record(cmd,id,fd,name,name_type,bcast,recurse,to_ip)))
+  if ((n = 
+       make_name_query_record(cmd,id,fd,name,name_type,bcast,recurse,to_ip)))
     {
       add_response_record(n);
     }
@@ -453,13 +431,41 @@ void listen_for_packets(BOOL run_election)
   if (FD_ISSET(ClientNMB,&fds))
     {
       struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
-      if (packet) queue_packet(packet);
+      if (packet) {
+#if 0
+	if (ip_equal(packet->ip,myip) &&
+	    (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
+	  DEBUG(3,("discarding packet from %s:%d\n",
+		   inet_ntoa(packet->ip),packet->port));	  
+	  DEBUG(3,("myip=%s eq=%d\n",
+		   inet_ntoa(myip),ip_equal(packet->ip,myip)));
+	  free_packet(packet);
+	} else 
+#endif
+	  {
+	    queue_packet(packet);
+	  }
+      }
     }
 
   if (FD_ISSET(ClientDGRAM,&fds))
     {
       struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
-      if (packet) queue_packet(packet);
+      if (packet) {
+#if 0
+	if (ip_equal(packet->ip,myip) &&
+	      (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
+	  DEBUG(3,("discarding packet from %s:%d\n",
+		   inet_ntoa(packet->ip),packet->port));	  
+	  DEBUG(3,("myip=%s eq=%d\n",
+		   inet_ntoa(myip),ip_equal(packet->ip,myip)));
+	  free_packet(packet);
+	} else
+#endif 
+	  {
+	    queue_packet(packet);
+	  }
+      }
     }
 }
 
@@ -615,7 +621,7 @@ BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
 
   p.ip = dest_ip;
   p.port = DGRAM_PORT;
-  p.fd = fd;
+  p.fd = ClientDGRAM;
   p.timestamp = time(NULL);
   p.packet_type = DGRAM_PACKET;
 
