@@ -1,3 +1,13 @@
+Fri Apr  3 03:54:54 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* kadmin/util.c (foreach_principal): Print error message if
+ 	`kadm5_get_principals' fails.
+
+	* kadmin/kadmind.c: Use `kadmind_loop'.
+
+	* lib/kadm5/server.c: Replace several other functions with
+ 	`kadmind_loop'.
+
 Tue Mar 24 00:40:33 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/keytab.c: MIT compatible changes: add and use sizes to
