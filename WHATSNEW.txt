@@ -1,20 +1,20 @@
-          WHATS NEW IN 1.9.18alpha13 Dec 15th 1997
+          WHATS NEW IN 1.9.18alpha14 Dec 23rd 1997
           ========================================
 
 This is NOT a production release of Samba code.
-For production servers please run Samba 1.9.17p4
+For production servers please run Samba 1.9.17p5
 or later releases in the 1.9.17 series.
 
-In this release (1.9.18alpha13) the Domain controller 
+In this release (1.9.18alpha14) the Domain controller 
 code should not be turned on. The Domain controller 
 code stream is now being developed in a separate code 
 development branch. To participate in this important 
-work, send an email to :
+work, read the instructions on how to get the source
+code for the BRANCH_NTDOM Samba branch in the document 
 
-samba-bugs@samba.anu.edu.au
+docs/CVS_ACCESS.txt 
 
-to get instructions on how to gain access to
-the latest Domain controller code.
+available in this Samba release.
 
 This release contains three major changes to the 
 1.9.17 series and much re-written code.
@@ -182,6 +182,15 @@ Nascent web interface for configuration.
 
 source/wsmbconf.c is a cgi-bin program for editing smb.conf. It can
 also be run standalone. This is in a very early stage of development.
+
+Debugging support.
+------------------
+
+smbd and nmbd will now modify their debug log level when
+they receive a USR1 signal (increase debug level by one)
+and USR2 signal (decrease debug level by one). This has
+been added to aid administrators track down faults that
+only occur after long periods of time, or transiently.
 
 Reporting bugs.
 ---------------
