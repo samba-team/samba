@@ -291,3 +291,220 @@ struct smb_passwd *get_smbpwnam(char *name)
 	pw_file_unlock(lockfd);
 	return NULL;
 }
+/*
+ * Routine to search the smbpasswd file for an entry matching the username.
+ */
+BOOL add_smbpwnam(struct smb_passwd* pwd)
+{
+	/* Static buffers we will return. */
+	static pstring  user_name;
+
+	char            linebuf[256];
+	char            readbuf[16 * 1024];
+	unsigned char   c;
+	unsigned char  *p;
+	long            linebuf_len;
+	FILE           *fp;
+	int             lockfd;
+	char           *pfile = lp_smb_passwd_file();
+
+	int i;
+	int wr_len;
+
+	int fd;
+	int new_entry_length;
+	char *new_entry;
+	long offpos;
+
+	if (!*pfile)
+	{
+		DEBUG(0, ("No SMB password file set\n"));
+		return False;
+	}
+	DEBUG(10, ("add_smbpwnam: opening file %s\n", pfile));
+
+	fp = fopen(pfile, "r+");
+
+	if (fp == NULL)
+	{
+		DEBUG(0, ("add_smbpwnam: unable to open file %s\n", pfile));
+		return False;
+	}
+	/* Set a 16k buffer to do more efficient reads */
+	setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
+
+	if ((lockfd = pw_file_lock(pfile, F_RDLCK | F_WRLCK, 5)) < 0)
+	{
+		DEBUG(0, ("add_smbpwnam: unable to lock file %s\n", pfile));
+		fclose(fp);
+		return False;
+	}
+	/* make sure it is only rw by the owner */
+	chmod(pfile, 0600);
+
+	/* We have a write lock on the file. */
+	/*
+	* Scan the file, a line at a time and check if the name matches.
+	*/
+	while (!feof(fp))
+	{
+		linebuf[0] = '\0';
+
+		fgets(linebuf, 256, fp);
+		if (ferror(fp))
+		{
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+
+		/*
+		 * Check if the string is terminated with a newline - if not
+		 * then we must keep reading and discard until we get one.
+		 */
+		linebuf_len = strlen(linebuf);
+		if (linebuf[linebuf_len - 1] != '\n')
+		{
+			c = '\0';
+			while (!ferror(fp) && !feof(fp))
+			{
+				c = fgetc(fp);
+				if (c == '\n')
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			linebuf[linebuf_len - 1] = '\0';
+		}
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100, ("add_smbpwnam: got line |%s|\n", linebuf));
+#endif
+
+		if ((linebuf[0] == 0) && feof(fp))
+		{
+			DEBUG(4, ("add_smbpwnam: end of file reached\n"));
+			break;
+		}
+
+		/*
+		* The line we have should be of the form :-
+		* 
+		* username:uid:[32hex bytes]:....other flags presently
+		* ignored....
+		* 
+		* or,
+		*
+		* username:uid:[32hex bytes]:[32hex bytes]:....ignored....
+		*
+		* if Windows NT compatible passwords are also present.
+		*/
+
+		if (linebuf[0] == '#' || linebuf[0] == '\0')
+		{
+			DEBUG(6, ("add_smbpwnam: skipping comment or blank line\n"));
+			continue;
+		}
+
+		p = (unsigned char *) strchr(linebuf, ':');
+
+		if (p == NULL)
+		{
+			DEBUG(0, ("add_smbpwnam: malformed password entry (no :)\n"));
+			continue;
+		}
+
+		/*
+		 * As 256 is shorter than a pstring we don't need to check
+		 * length here - if this ever changes....
+		 */
+		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
+		user_name[PTR_DIFF(p, linebuf)] = '\0';
+		if (strequal(user_name, pwd->smb_name))
+		{
+			DEBUG(6, ("add_smbpwnam: entry already exists\n"));
+			return False;
+		}
+	}
+
+	/* ok - entry doesn't exist.  we can add it */
+
+	/* Create a new smb passwd entry and set it to the given password. */
+	/* The add user write needs to be atomic - so get the fd from 
+	   the fp and do a raw write() call.
+	 */
+	fd = fileno(fp);
+
+	if((offpos = lseek(fd, 0, SEEK_END)) == -1)
+	{
+		DEBUG(0, ("add_smbpwnam(lseek): Failed to add entry for user %s to file %s. \
+Error was %s\n", pwd->smb_name, pfile, strerror(errno)));
+
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	new_entry_length = strlen(pwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 2;
+
+	if((new_entry = (char *)malloc( new_entry_length )) == 0)
+	{
+		DEBUG(0, ("add_smbpwnam(malloc): Failed to add entry for user %s to file %s. \
+Error was %s\n", 
+		pwd->smb_name, pfile, strerror(errno)));
+
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	sprintf(new_entry, "%s:%u:", pwd->smb_name, (unsigned)pwd->smb_userid);
+	p = &new_entry[strlen(new_entry)];
+
+	for( i = 0; i < 16; i++)
+	{
+		sprintf(&p[i*2], "%02X", pwd->smb_passwd[i]);
+	}
+	p += 32;
+
+	*p++ = ':';
+
+	for( i = 0; i < 16; i++)
+	{
+		sprintf(&p[i*2], "%02X", pwd->smb_nt_passwd[i]);
+	}
+	p += 32;
+
+	*p++ = ':';
+	sprintf(p,"\n");
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100, ("add_smbpwnam(%d): new_entry_len %d entry_len %d made line |%s|\n", 
+		             fd, new_entry_length, strlen(new_entry), new_entry));
+#endif
+
+	if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen(new_entry))
+	{
+		DEBUG(0, ("add_smbpwnam(write): %d Failed to add entry for user %s to file %s. \
+Error was %s\n", wr_len, pwd->smb_name, pfile, strerror(errno)));
+
+		/* Remove the entry we just wrote. */
+		if(ftruncate(fd, offpos) == -1)
+		{
+			DEBUG(0, ("add_smbpwnam: ERROR failed to ftruncate file %s. \
+Error was %s. Password file may be corrupt ! Please examine by hand !\n", 
+			pwd->smb_name, strerror(errno)));
+		}
+
+		fclose(fp);
+		pw_file_unlock(lockfd);
+		return False;
+	}
+
+	fclose(fp);
+	pw_file_unlock(lockfd);
+	return True;
+}

@@ -130,6 +130,8 @@ typedef struct
   char *szDomainController;
   char *szDomainAdminUsers;
   char *szDomainGuestUsers;
+  char *szDomainHostsallow; 
+  char *szDomainHostsdeny;
   char *szUsernameMap;
   char *szCharacterSet;
   char *szLogonScript;
@@ -450,11 +452,15 @@ struct parm_struct
   {"valid chars",      P_STRING,  P_GLOBAL, &Globals.szValidChars,      handle_valid_chars},
   {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL},
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL},
-  {"domain other sids", P_USTRING, P_GLOBAL, &Globals.szDomainOtherSIDs, NULL},
-  {"domain groups",    P_USTRING, P_GLOBAL, &Globals.szDomainGroups,    NULL},
+  {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL},
+  {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL},
   {"domain controller",P_STRING,  P_GLOBAL, &Globals.szDomainController,NULL},
-  {"domain admin users",P_STRING,  P_GLOBAL, &Globals.szDomainAdminUsers, NULL},
-  {"domain guest users",P_STRING,  P_GLOBAL, &Globals.szDomainGuestUsers, NULL},
+  {"domain admin users",P_STRING, P_GLOBAL, &Globals.szDomainAdminUsers, NULL},
+  {"domain guest users",P_STRING, P_GLOBAL, &Globals.szDomainGuestUsers, NULL},
+  {"domain hosts allow",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL},
+  {"domain allow hosts",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL},
+  {"domain hosts deny", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL},
+  {"domain deny hosts", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL},
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
@@ -878,6 +884,9 @@ FN_GLOBAL_STRING(lp_domain_other_sids,&Globals.szDomainOtherSIDs)
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_users,&Globals.szDomainAdminUsers)
 FN_GLOBAL_STRING(lp_domain_guest_users,&Globals.szDomainGuestUsers)
+FN_GLOBAL_STRING(lp_domain_hostsallow,&Globals.szDomainHostsallow)
+FN_GLOBAL_STRING(lp_domain_hostsdeny,&Globals.szDomainHostsdeny)
+
 
 FN_GLOBAL_BOOL(lp_dns_proxy,&Globals.bDNSproxy)
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
