@@ -52,8 +52,17 @@ struct ndr_ofs_list {
 	struct ndr_ofs_list *next;
 };
 
+
 typedef long long gNTTIME;
 typedef long long gHYPER_T;
+typedef guint32 gNTSTATUS;
+typedef guint32 gWERROR;
+
+typedef struct 
+{
+	int foobar;
+	/* FIXME */
+} gDATA_BLOB;
 
 #include "packet-dcerpc-proto.h"
 
@@ -64,7 +73,8 @@ struct e_ndr_pull *ndr_pull_init(tvbuff_t *tvb, int offset, packet_info *pinfo,
 void ndr_pull_free(struct e_ndr_pull *ndr);
 void ndr_pull_ptr(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint32 *ptr);
 void ndr_pull_level(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gint16 *data);
-void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, proto_tree *tree, int hf);
+void ndr_pull_NTSTATUS(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gNTSTATUS *data);
+void ndr_pull_WERROR(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gWERROR *data);
 void ndr_pull_uint8(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint8 *data);
 void ndr_pull_uint16(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint16 *data);
 void ndr_pull_uint32(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint32 *data);
@@ -82,6 +92,7 @@ void ndr_pull_NTTIME(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gNTTIME *
 void ndr_pull_HYPER_T(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gHYPER_T *data);
 void ndr_pull_int64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gint64 *data);
 void ndr_pull_uint64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint64 *data);
+void ndr_pull_DATA_BLOB(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gDATA_BLOB *blob);
 void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags);
 void ndr_pull_dom_sid2(struct e_ndr_pull *ndr, proto_tree *tree, int flags);
 
@@ -102,6 +113,7 @@ int lsa_dissect_POLICY_DNS_DOMAIN_INFO(tvbuff_t tvb, int offset,
 				       guint8 *drep);
 
 void ndr_pull_array_uint8(struct e_ndr_pull *ndr, proto_tree *tree, int hf, int ndr_flags, guint32 n);
+void ndr_pull_array_uint16(struct e_ndr_pull *ndr, proto_tree *tree, int hf, int ndr_flags, guint32 n);
 void ndr_pull_array_uint32(struct e_ndr_pull *ndr, proto_tree *tree, int hf, int ndr_flags, guint32 n);
 
 void ndr_pull_array(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags, 
