@@ -710,8 +710,8 @@ Version information in Microsoft files is held in a VS_VERSION_INFO structure.
 There are two case to be covered here: PE (Portable Executable) and NE (New
 Executable) files. Both files support the same INFO structure, but PE files
 store the signature in unicode, and NE files store it as !unicode.
-****************************************************************************/
 //static BOOL get_file_version(connection_struct *conn, int fd, char *fname,
+****************************************************************************/
 static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 							 uint32 *minor)
 {
