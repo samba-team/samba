@@ -3425,14 +3425,16 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPADMINDN">ldap admin dn (G)</term>
-		<listitem><para> The <parameter>ldap admin dn</parameter> defines the Distinguished 
+		<listitem><para>The <parameter>ldap admin dn</parameter> defines the Distinguished 
 		Name (DN) name used by Samba to contact the ldap server when retreiving 
 		user account information. The <parameter>ldap
 		admin dn</parameter> is used in conjunction with the admin dn password
 		stored in the <filename>private/secrets.tdb</filename> file.  See the
 		<ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> man
-		page for more information on how to accmplish this.
+		page for more information on how to accomplish this.
 		</para>
+		</listitem>
+		</varlistentry>
 	
 		<varlistentry>
 		<term><anchor id="LDAPDELETEDN"/>ldap del only sam attr (G)</term>
@@ -3448,8 +3450,8 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
-		<listitem><para> Inverted synonym for <link linked="LDAPDELETEDN"><parameter>
-		ldap delete dn</parameter></link>.</para>
+		<listitem><para> Inverted synonym for <link linkend="LDAPDELETEDN"><parameter>
+		ldap delete dn</parameter></link>.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -5478,7 +5480,7 @@
                         for its own processing</para>
                         </listitem>
 		
-			<listitem><para><command>unixsam</command> - Allows samba to map all (other) available unix users</para>
+			<listitem><para><command>unixsam</command> - (EXPERIMENTAL) Allows samba to map all (other) available unix users</para>
 
 			<para>This backend uses the standard unix database for retrieving users. Users included 
                         in this pdb are NOT listed in samba user listings and users included in this pdb won't be 
@@ -5494,9 +5496,9 @@
 		</itemizedlist>
 		</para>
 
-		<para>Default: <command>passdb backend = smbpasswd unixsam</command></para>
-		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd unixsam</command></para>
-		<para>Example: <command>passdb backend = ldapsam_nua:ldaps://ldap.example.com unixsam</command></para>
+		<para>Default: <command>passdb backend = smbpasswd guest</command></para>
+		<para>Example: <command>passdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd </command></para>
+		<para>Example: <command>passdb backend = ldapsam_nua:ldaps://ldap.example.com </command></para>
 		<para>Example: <command>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args tdbsam:/etc/samba/private/passdb.tdb</command></para>
 		</listitem>
 		</varlistentry>

@@ -271,6 +271,7 @@
 		<listitem><para>If you specify <parameter>-g</parameter>,
 		then <parameter>-i in-backend -e out-backend</parameter>
 		applies to the group mapping instead of the user database.
+		</para>
 
 		<para>This option will ease migration from one passdb backend to
 		another and will ease backing up.</para>

@@ -34,12 +34,12 @@ NAME="AEN8"><H2
 ><B
 CLASS="COMMAND"
 >pdbedit</B
-> [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
+> [-l] [-v] [-w] [-u username] [-f fullname] [-h homedir] [-D drive] [-S script] [-p profile] [-a] [-m] [-x] [-i passdb-backend] [-e passdb-backend] [-g] [-b passdb-backend] [-d debuglevel] [-s configfile] [-P account-policy] [-V value]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN30"
+NAME="AEN31"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -65,7 +65,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN37"
+NAME="AEN38"
 ></A
 ><H2
 >OPTIONS</H2
@@ -369,6 +369,28 @@ CLASS="COMMAND"
 ></P
 ></DD
 ><DT
+>-g</DT
+><DD
+><P
+>If you specify <TT
+CLASS="PARAMETER"
+><I
+>-g</I
+></TT
+>,
+		then <TT
+CLASS="PARAMETER"
+><I
+>-i in-backend -e out-backend</I
+></TT
+>
+		applies to the group mapping instead of the user database.
+		</P
+><P
+>This option will ease migration from one passdb backend to
+		another and will ease backing up.</P
+></DD
+><DT
 >-b passdb-backend</DT
 ><DD
 ><P
@@ -517,7 +539,7 @@ compile time.</P
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN182"
+NAME="AEN190"
 ></A
 ><H2
 >NOTES</H2
@@ -527,7 +549,7 @@ NAME="AEN182"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN185"
+NAME="AEN193"
 ></A
 ><H2
 >VERSION</H2
@@ -538,7 +560,7 @@ NAME="AEN185"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN188"
+NAME="AEN196"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -558,7 +580,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN193"
+NAME="AEN201"
 ></A
 ><H2
 >AUTHOR</H2
