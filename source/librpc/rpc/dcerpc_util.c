@@ -184,6 +184,80 @@ static const struct {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN}
 };
 
+const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *fl)
+{
+	struct GUID uuid;
+	uint16_t if_version;
+	NTSTATUS status;
+
+	switch(fl->lhs.protocol) {
+		case EPM_PROTOCOL_UUID:
+			status = dcerpc_floor_get_lhs_data(fl, &uuid, &if_version);
+			if (NT_STATUS_IS_OK(status)) {
+				/* lhs is used: UUID */
+				char *uuidstr;
+
+				uuidstr = GUID_string(mem_ctx, &uuid);
+
+				if (strcasecmp(uuidstr, NDR_GUID) == 0) {
+					return "NDR";
+				} 
+
+				return talloc_asprintf(mem_ctx, " uuid %s/0x%02x", uuidstr, if_version);
+			} else { /* IPX */
+				return talloc_asprintf(mem_ctx, "IPX:%s", 
+						data_blob_hex_string(mem_ctx, &fl->rhs.uuid.unknown));
+			}
+
+		case EPM_PROTOCOL_NCACN:
+			return "RPC-C";
+
+		case EPM_PROTOCOL_NCADG:
+			return "RPC";
+
+		case EPM_PROTOCOL_NCALRPC:
+			return "NCALRPC";
+
+		case EPM_PROTOCOL_DNET_NSP:
+			return "DNET/NSP";
+
+		case EPM_PROTOCOL_IP:
+			return talloc_asprintf(mem_ctx, "IP:%s", fl->rhs.ip.ipaddr);
+
+		case EPM_PROTOCOL_PIPE:
+			return talloc_asprintf(mem_ctx, "PIPE:%s", fl->rhs.pipe.path);
+
+		case EPM_PROTOCOL_SMB:
+			return talloc_asprintf(mem_ctx, "SMB:%s", fl->rhs.smb.unc);
+
+		case EPM_PROTOCOL_UNIX_DS:
+			return talloc_asprintf(mem_ctx, "Unix:%s", fl->rhs.unix_ds.path);
+
+		case EPM_PROTOCOL_NETBIOS:
+			return talloc_asprintf(mem_ctx, "NetBIOS:%s", fl->rhs.netbios.name);
+
+		case EPM_PROTOCOL_NETBEUI:
+			return "NETBeui";
+
+		case EPM_PROTOCOL_SPX:
+			return "SPX";
+
+		case EPM_PROTOCOL_NB_IPX:
+			return "NB_IPX";
+
+		case EPM_PROTOCOL_HTTP:
+			return talloc_asprintf(mem_ctx, "HTTP:%d", fl->rhs.http.port);
+
+		case EPM_PROTOCOL_TCP:
+			return talloc_asprintf(mem_ctx, "TCP:%d", fl->rhs.tcp.port);
+
+		case EPM_PROTOCOL_UDP:
+			return talloc_asprintf(mem_ctx, "UDP:%d", fl->rhs.udp.port);
+
+		default:
+			return talloc_asprintf(mem_ctx, "UNK(%02x):", fl->lhs.protocol);
+	}
+}
 
 
 /*
@@ -370,6 +444,39 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *floor, struct GUID *uuid, uint16_t *if_version)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
+	struct ndr_pull *ndr = ndr_pull_init_blob(&floor->lhs.lhs_data, mem_ctx);
+	NTSTATUS status;
+	
+	ndr->flags |= LIBNDR_FLAG_NOALIGN;
+
+	status = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, uuid);
+	if (NT_STATUS_IS_ERR(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	status = ndr_pull_uint16(ndr, if_version);
+
+	talloc_free(mem_ctx);
+
+	return status;
+}
+
+DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, struct GUID *uuid, uint32 if_version)
+{
+	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+
+	ndr->flags |= LIBNDR_FLAG_NOALIGN;
+
+	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, uuid);
+	ndr_push_uint16(ndr, if_version);
+
+	return ndr_push_blob(ndr);
+}
+
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *floor)
 {
 	switch (floor->lhs.protocol) {
@@ -552,6 +659,8 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
 
 NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower, struct dcerpc_binding *binding)
 {
+	NTSTATUS status;
+
 	ZERO_STRUCT(binding->object);
 	binding->options = NULL;
 	binding->host = NULL;
@@ -568,8 +677,12 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 	}
 
 	/* Set object uuid */
-	binding->object = tower->floors[0].lhs.info.uuid.uuid;
-	binding->object_version = tower->floors[0].lhs.info.uuid.version;
+	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object, &binding->object_version);
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));	
+		return status;
+	}
 
 	/* Ignore floor 1, it contains the NDR version info */
 	
@@ -593,6 +706,7 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 {
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
+	struct GUID ndr_guid;
 	NTSTATUS status;
 	
 	/* Find transport */
@@ -614,23 +728,28 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 
 	/* Floor 0 */
 	tower->floors[0].lhs.protocol = EPM_PROTOCOL_UUID;
-	tower->floors[0].lhs.info.uuid.uuid = binding->object;
-	tower->floors[0].lhs.info.uuid.version = binding->object_version;
-	tower->floors[0].rhs.uuid.unknown = 0;
+
+	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object, binding->object_version);
+
+	tower->floors[0].rhs.uuid.unknown = data_blob_talloc(mem_ctx, NULL, 0);
+
 	
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
-	tower->floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
-	tower->floors[1].rhs.uuid.unknown = 0;
-	status = GUID_from_string(NDR_GUID, &tower->floors[1].lhs.info.uuid.uuid);
+
+	status = GUID_from_string(NDR_GUID, &ndr_guid);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
 
+	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &ndr_guid, NDR_GUID_VERSION);
+	
+	tower->floors[1].rhs.uuid.unknown = data_blob_talloc(mem_ctx, NULL, 0);
+	
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
 		tower->floors[2 + i].lhs.protocol = protseq[i];
-		tower->floors[2 + i].lhs.info.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
+		tower->floors[2 + i].lhs.lhs_data = data_blob_talloc(mem_ctx, NULL, 0);
 		ZERO_STRUCT(tower->floors[2 + i].rhs);
 		dcerpc_floor_set_rhs_data(mem_ctx, &tower->floors[2 + i], "");
 	}

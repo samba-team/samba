@@ -36,11 +36,6 @@ interface epmapper
 	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
 	const string NDR_GUID_VERSION = 2;
 
-	typedef struct {
-		GUID uuid;
-		uint16 version;
-	} epm_prot_uuid;
-
 	typedef [enum8bit] enum {
 		
 		/* Level 4 and higher */
@@ -72,11 +67,6 @@ interface epmapper
 		EPM_PROTOCOL_UNIX_DS  		= 0x20, /* Unix domain socket */
 		EPM_PROTOCOL_NULL			= 0x21
 	} epm_protocol;
-
-	typedef [nodiscriminant] union {
-		[case(EPM_PROTOCOL_UUID)] epm_prot_uuid uuid;
-		[default]  [flag(NDR_REMAINING)] DATA_BLOB lhs_data;
-	} epm_protocol_info;
 
 	typedef struct {
 		/*FIXME	*/
@@ -111,7 +101,7 @@ interface epmapper
 	} epm_rhs_ncacn;
 
 	typedef struct {
-		uint16 unknown;
+		[flag(NDR_REMAINING)] DATA_BLOB unknown;
 	} epm_rhs_uuid;
 
 	typedef struct {
@@ -206,8 +196,8 @@ interface epmapper
 	} epm_rhs;
 
 	typedef struct {
-		epm_protocol  protocol;
-		[switch_is(protocol)] epm_protocol_info info;
+		epm_protocol protocol;
+		[flag(NDR_REMAINING)] DATA_BLOB lhs_data;
 	} epm_lhs;
 
 	typedef struct {

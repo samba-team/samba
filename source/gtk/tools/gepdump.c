@@ -96,11 +96,14 @@ static void add_epm_entry(TALLOC_CTX *mem_ctx, const char *annotation, struct ep
 
 	for (i = 0; i < t->num_floors; i++) {
 		const char *data;
+		struct GUID if_uuid;
+		uint16_t if_version;
 		GtkTreeIter iter;
 		gtk_tree_store_append(store_eps, &iter, &toweriter);
 
+		dcerpc_floor_get_lhs_data(&t->floors[i], &if_uuid, &if_version);
 		if (t->floors[i].lhs.protocol == EPM_PROTOCOL_UUID) {
-			data = GUID_string(mem_ctx, &t->floors[i].lhs.info.uuid.uuid);
+			data = GUID_string(mem_ctx, &if_uuid);
 		} else {
 			data = dcerpc_floor_get_rhs_data(mem_ctx, &t->floors[i]);
 		}

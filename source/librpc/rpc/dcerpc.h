@@ -172,7 +172,7 @@ struct dcerpc_interface_list {
 struct dcerpc_binding {
 	enum dcerpc_transport_t transport;
 	struct GUID object;
-	int object_version;
+	uint16_t object_version;
 	const char *host;
 	const char *endpoint;
 	const char **options;
