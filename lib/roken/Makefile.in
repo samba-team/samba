@@ -62,6 +62,7 @@ SOURCES = \
 	mkstemp.c \
 	parse_time.c \
 	parse_units.c \
+	print_version.c \
 	putenv.c \
 	rcmd.c \
 	roken_gethostby.c \
@@ -104,6 +105,7 @@ OBJECTS = \
 	mini_inetd.o \
 	parse_time.o \
 	parse_units.o \
+	print_version.o \
 	roken_gethostby.o \
 	signal.o \
 	simple_exec.o \

@@ -21,6 +21,7 @@ libroken_a_SOURCES =				\
 	mini_inetd.c				\
 	parse_time.c				\
 	parse_units.c				\
+	print_version.c				\
 	resolve.c				\
 	roken_gethostby.c			\
 	signal.c				\
