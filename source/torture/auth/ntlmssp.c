@@ -50,8 +50,17 @@ BOOL torture_ntlmssp_self_check(int dummy)
 
 	expected_sig = strhex_to_data_blob("01000000e37f97f2544f4d7e00000000");
 
-	dump_data_pw("NTLMSSP sig: ", sig.data, sig.length);
-	dump_data_pw("NTLMSSP sig: ", expected_sig.data, expected_sig.length);
+	dump_data_pw("NTLMSSP calc sig:     ", sig.data, sig.length);
+	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
+
+	if (sig.length != expected_sig.length) {
+		printf("Wrong sig length: %d != %d\n", sig.length, expected_sig.length);
+		return False;
+	}
+
+	if (memcmp(sig.data, expected_sig.data, sig.length)) {
+		return False;
+	}
 
 	ntlmssp_end(&ntlmssp_state);
 
@@ -78,8 +87,17 @@ BOOL torture_ntlmssp_self_check(int dummy)
 
 	expected_sig = strhex_to_data_blob("0100000078010900397420fe0e5a0f89");
 
-	dump_data_pw("NTLMSSP sig: ", sig.data, sig.length);
-	dump_data_pw("NTLMSSP sig: ", expected_sig.data, expected_sig.length);
+	dump_data_pw("NTLMSSP calc sig:     ", sig.data, sig.length);
+	dump_data_pw("NTLMSSP expected sig: ", expected_sig.data, expected_sig.length);
+
+	if (sig.length != expected_sig.length) {
+		printf("Wrong sig length: %d != %d\n", sig.length, expected_sig.length);
+		return False;
+	}
+
+	if (memcmp(sig.data, expected_sig.data, sig.length)) {
+		return False;
+	}
 
 	return True;
 }
