@@ -2638,6 +2638,11 @@ int reply_lanman1(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
+  /* We need to save and restore this as it can be destroyed
+     if we call another server if security=server
+     Thanks to Paul Nelson @ Thursby for pointing this out.
+   */
+  uint16 mid = SVAL(outbuf, smb_mid);
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -2660,6 +2665,7 @@ int reply_lanman1(char *outbuf)
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
+  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); /* maxmux */
   SSVAL(outbuf,smb_vwv4,1);
@@ -2683,6 +2689,11 @@ int reply_lanman2(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
+  /* We need to save and restore this as it can be destroyed
+     if we call another server if security=server
+     Thanks to Paul Nelson @ Thursby for pointing this out.
+   */
+  uint16 mid = SVAL(outbuf, smb_mid);
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -2707,6 +2718,7 @@ int reply_lanman2(char *outbuf)
   }
 
   CVAL(outbuf,smb_flg) = 0x81; /* Reply, SMBlockread, SMBwritelock supported */
+  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv2,max_recv);
   SSVAL(outbuf,smb_vwv3,lp_maxmux()); 
   SSVAL(outbuf,smb_vwv4,1);
@@ -2738,6 +2750,11 @@ int reply_nt1(char *outbuf)
   int data_len;
   int encrypt_len;
   char challenge_len = 8;
+  /* We need to save and restore this as it can be destroyed
+     if we call another server if security=server
+     Thanks to Paul Nelson @ Thursby for pointing this out.
+   */
+  uint16 mid = SVAL(outbuf, smb_mid);
 
   if (lp_readraw() && lp_writeraw())
   {
@@ -2787,6 +2804,7 @@ int reply_nt1(char *outbuf)
 #endif
   }
 
+  SSVAL(outbuf,smb_mid,mid); /* Restore possibly corrupted mid */
   SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
   SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
   SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
