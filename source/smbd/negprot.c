@@ -173,11 +173,10 @@ static int reply_nt1(char *outbuf)
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
   time_t t = time(NULL);
-  int data_len;
   struct cli_state *cli = NULL;
   char cryptkey[8];
   char crypt_len = 0;
-  char *p;
+  char *p, *q;
 
   if (lp_security() == SEC_SERVER) {
 	  cli = server_cryptkey();
@@ -231,13 +230,14 @@ static int reply_nt1(char *outbuf)
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
   put_long_date(outbuf+smb_vwv11+1,t);
   SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
-  SSVAL(outbuf,smb_vwv17,data_len); /* length of challenge+domain strings */
 
-  p = smb_buf(outbuf);
+  p = q = smb_buf(outbuf);
   if (doencrypt) memcpy(p, cryptkey, 8);
   p += 8;
   p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 		   STR_UNICODE|STR_CONVERT|STR_TERMINATE|STR_NOALIGN);
+
+  SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
   set_message_end(outbuf, p);
 
   return (smb_len(outbuf)+4);
