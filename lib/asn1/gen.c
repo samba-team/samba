@@ -102,20 +102,29 @@ init_generate (const char *filename, const char *base)
 	     "  void *data;\n"
 	     "} octet_string;\n\n");
     fprintf (headerfile,
-#if 0
-	     "typedef struct general_string {\n"
-	     "  size_t length;\n"
-	     "  char *data;\n"
-	     "} general_string;\n\n"
-#else
 	     "typedef char *general_string;\n\n"
-#endif
 	     );
     fprintf (headerfile,
 	     "typedef struct oid {\n"
 	     "  size_t length;\n"
 	     "  unsigned *components;\n"
 	     "} oid;\n\n");
+    fputs("#define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \\\n"
+	  "  do {                                                         \\\n"
+	  "    (BL) = length_##T((S));                                    \\\n"
+	  "    (B) = malloc((BL));                                        \\\n"
+	  "    if((B) == NULL) {                                          \\\n"
+	  "      (R) = ENOMEM;                                            \\\n"
+	  "    } else {                                                   \\\n"
+	  "      (R) = encode_##T(((unsigned char*)(B)) + (BL) - 1, (BL), \\\n"
+	  "                       (S), (L));                              \\\n"
+	  "      if((R) != 0) {                                           \\\n"
+	  "        free((B));                                             \\\n"
+	  "        (B) = NULL;                                            \\\n"
+	  "      }                                                        \\\n"
+	  "    }                                                          \\\n"
+	  "  } while (0)\n\n",
+	  headerfile);
     fprintf (headerfile, "#endif\n\n");
     logfile = fopen(STEM "_files", "w");
     if (logfile == NULL)
