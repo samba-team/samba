@@ -18,7 +18,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-   $Id: msdfs.c,v 1.10.4.24 2002/04/11 18:27:27 kalele Exp $
 */
 
 #include "includes.h"
@@ -603,7 +602,8 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 	/* Trim pathname sent by client so it begins with only one backslash.
 	   Two backslashes confuse some dfs clients
 	 */
-	while (strlen(pathnamep) > 1 && pathnamep[1] == '\\')
+	while (strlen(pathnamep) > 1 && pathnamep[0] == '\\'
+	       && pathnamep[1] == '\\')
 		pathnamep++;
 
 	safe_strcpy(buf, pathnamep, sizeof(buf));
@@ -620,6 +620,8 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 				dbgtext(" %s",junction.referral_list[i].alternate_path);
 			dbgtext(".\n");
 		}
+		
+		/* pathnamep[consumedcnt] = '\0'; */
 	}
 	
 	/* create the referral depeding on version */
