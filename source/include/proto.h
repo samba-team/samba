@@ -852,6 +852,8 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
+BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+		      int new_pwrd_size, uint32 *new_pw_len);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1612,11 +1614,16 @@ struct sam_disp_info *getsamdisprid(uint32 rid);
 struct sam_passwd *getsam21pwent(void *vp);
 struct sam_passwd *getsam21pwnam(char *name);
 struct sam_passwd *getsam21pwrid(uint32 rid);
+BOOL add_sam21pwd_entry(struct sam_passwd *pwd);
+BOOL mod_sam21pwd_entry(struct sam_passwd *pwd, BOOL override);
 void pdb_init_smb(struct smb_passwd *user);
 void pdb_init_sam(struct sam_passwd *user);
 struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user);
 struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user);
 struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user);
+void copy_id23_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_23 *from);
+void copy_id21_to_sam_passwd(struct sam_passwd *to, SAM_USER_INFO_21 *from);
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
 char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pdb_decode_acct_ctrl(const char *p);
 time_t pdb_get_last_set_time(const char *p);
@@ -2514,8 +2521,13 @@ BOOL samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 void init_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
+BOOL init_unk_info1(SAM_UNK_INFO_1 *u_1);
 void init_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
 BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
+BOOL init_unk_info3(SAM_UNK_INFO_3 * u_3);
+BOOL init_unk_info6(SAM_UNK_INFO_6 * u_6);
+BOOL init_unk_info7(SAM_UNK_INFO_7 *u_7);
+BOOL init_unk_info12(SAM_UNK_INFO_12 * u_12);
 void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
 				uint16 switch_value, SAM_UNK_CTR *ctr,
 				uint32 status);
@@ -2576,11 +2588,11 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 			uint32 num_rids, uint32 *rid, enum SID_NAME_USE *type, uint32 status);
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
-BOOL samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth);
-void init_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
+BOOL samr_io_q_lookup_rids(char *desc, SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth);
+void init_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
 		uint32 status);
-BOOL samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth);
+BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth);
 void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				POLICY_HND *pol,
 				uint32 unk_0, uint32 rid);
@@ -2647,9 +2659,9 @@ BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *p
 BOOL samr_io_r_connect_anon(char *desc,  SAMR_R_CONNECT_ANON *r_u, prs_struct *ps, int depth);
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				uint32 unknown_0, uint32 rid);
-BOOL samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
+BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
-void init_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+void init_samr_q_lookup_rids(SAMR_Q_LOOKUP_RIDS *q_u,
 		POLICY_HND *pol, uint32 rid,
 		uint32 num_gids, uint32 *gid);
 void init_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
@@ -2682,6 +2694,14 @@ BOOL init_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
                               uint32 next_idx, fstring* domains, uint32 num_sam_entries);
 BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
                             prs_struct *ps, int depth);
+void free_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr);
+BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps, int depth);
+void free_samr_q_set_userinfo(SAMR_Q_SET_USERINFO * q_u);
+BOOL samr_io_r_set_userinfo(char *desc, SAMR_R_SET_USERINFO *r_u, prs_struct *ps, int depth);
+BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 *q_u, prs_struct *ps, int depth);
+void free_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 *q_u);
+BOOL make_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 *r_u, uint32 status);
+BOOL samr_io_r_set_userinfo2(char *desc, SAMR_R_SET_USERINFO2 *r_u, prs_struct *ps, int depth);
 #endif
 
 /*The following definitions come from  rpc_parse/parse_sec.c  */
@@ -3042,7 +3062,6 @@ BOOL api_ntlsa_rpc(pipes_struct *p);
 void init_lsa_policy_hnd(void);
 BOOL open_lsa_policy_hnd(POLICY_HND *hnd);
 int find_lsa_policy_by_hnd(POLICY_HND *hnd);
-BOOL set_lsa_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
 BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
 BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 BOOL get_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
@@ -3657,6 +3676,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 int reply_unknown(char *inbuf,char *outbuf);
 int reply_ioctl(connection_struct *conn,
 		char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
+int smb_create_user(char *unix_user);
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
@@ -3940,13 +3960,13 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
-int tdb_writelock(TDB_CONTEXT *tdb);
-int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  tdb/tdbutil.c  */
 
+int tdb_lock_bystring(TDB_CONTEXT *tdb, char *keyval);
+int tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval);
 int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len);
 int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr);
 int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v);

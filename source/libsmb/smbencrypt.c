@@ -228,3 +228,47 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	return True;
 }
 
+/***********************************************************
+ decode a password buffer
+************************************************************/
+BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
+		      int new_pwrd_size, uint32 *new_pw_len)
+{
+	int uni_pw_len=0;
+	char *pw;
+	/*
+	  Warning !!! : This function is called from some rpc call.
+	  The password IN the buffer is a UNICODE string.
+	  The password IN new_pwrd is an ASCII string
+	  If you reuse that code somewhere else check first.
+	*/
+
+
+	/*
+	 * The length of the new password is in the last 4 bytes of
+	 * the data buffer.
+	 */
+
+	*new_pw_len = IVAL(buffer, 512);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buffer, 516);
+#endif
+
+	if ((*new_pw_len) < 0 || (*new_pw_len) > new_pwrd_size - 1) {
+		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", (*new_pw_len)));
+		return False;
+	}
+
+	uni_pw_len = *new_pw_len;
+	*new_pw_len /= 2;
+	pw = dos_unistrn2((uint16 *)(&buffer[512 - uni_pw_len]), uni_pw_len);
+	memcpy(new_pwrd, pw, *new_pw_len + 1);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, new_pwrd, (*new_pw_len));
+#endif
+
+	return True;
+}
+

@@ -35,13 +35,11 @@ enum flush_reason_enum { SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
 
 #define PROF_SHMEM_KEY ((key_t)0x07021999)
 #define PROF_SHM_MAGIC 0x6349985
-#define PROF_SHM_VERSION 2
+#define PROF_SHM_VERSION 3
 
 /* time values in the following structure are in milliseconds */
 
-struct profile_struct {
-	int prof_shm_magic;
-	int prof_shm_version;
+struct profile_stats {
 /* general counters */
 	unsigned smb_count; /* how many SMB packets we have processed */
 	unsigned uid_changes; /* how many times we change our effective uid */
@@ -314,8 +312,14 @@ struct profile_struct {
 	unsigned NT_transact_query_security_desc_time;
 };
 
+struct profile_header {
+	int prof_shm_magic;
+	int prof_shm_version;
+	struct profile_stats stats;
+};
 
-extern struct profile_struct *profile_p;
+extern struct profile_header *profile_h;
+extern struct profile_stats *profile_p;
 extern struct timeval profile_starttime;
 extern struct timeval profile_endtime;
 extern BOOL do_profile_flag;
