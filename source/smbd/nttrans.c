@@ -1554,7 +1554,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	restore_case_semantics(conn, file_attributes);
-	talloc_destroy(ctx);
 
 	file_len = sbuf.st_size;
 	fmode = dos_mode(conn,fname,&sbuf);
