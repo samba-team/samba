@@ -106,12 +106,12 @@ static BOOL cli_set_smb_signing_real_common(struct cli_state *cli)
 	return True;
 }
 
-static void cli_mark_packet_signed(struct cli_state *cli) 
+static void mark_packet_signed(char *outbuf)
 {
 	uint16 flags2;
-	flags2 = SVAL(cli->outbuf,smb_flg2);
+	flags2 = SVAL(outbuf,smb_flg2);
 	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
-	SSVAL(cli->outbuf,smb_flg2, flags2);
+	SSVAL(outbuf,smb_flg2, flags2);
 }
 
 static BOOL cli_signing_good(struct cli_state *cli, BOOL good) 
@@ -194,7 +194,7 @@ static void cli_simple_sign_outgoing_message(struct cli_state *cli)
 	struct smb_basic_signing_context *data = cli->sign_info.signing_context;
 
 	/* mark the packet as signed - BEFORE we sign it...*/
-	cli_mark_packet_signed(cli);
+	mark_packet_signed(cli->outbuf);
 
 	simple_packet_signature(data, cli->outbuf, data->send_seq_num, 
 				calc_md5_mac);
@@ -365,7 +365,7 @@ BOOL cli_null_set_signing(struct cli_state *cli)
 static void cli_temp_sign_outgoing_message(struct cli_state *cli)
 {
 	/* mark the packet as signed - BEFORE we sign it...*/
-	cli_mark_packet_signed(cli);
+	mark_packet_signed(cli->outbuf);
 
 	/* I wonder what BSRSPYL stands for - but this is what MS 
 	   actually sends! */
