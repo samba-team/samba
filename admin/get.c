@@ -170,6 +170,10 @@ kt_get(int argc, char **argv)
 	krb5_keytab_entry entry;
 
 	ret = krb5_parse_name(context, argv[i], &princ_ent);
+	if (ret) {
+	    krb5_warn(context, ret, "can't parse principal %s", argv[i]);
+	    continue;
+	}
 	memset(&princ, 0, sizeof(princ));
 	princ.principal = princ_ent;
 	mask |= KADM5_PRINCIPAL;
