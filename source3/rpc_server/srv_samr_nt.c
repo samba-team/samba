@@ -2130,6 +2130,12 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		return nt_status;
 	}
 
+	if (!acb_info) { 
+		/* Match Win2k, and return NT_STATUS_INVALID_PARAMETER if 
+		   this parameter is zero (ie, no user type specified) */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* find the account: tell the caller if it exists.
 	  lkclXXXX i have *no* idea if this is a problem or not
  	  or even if you are supposed to construct a different
