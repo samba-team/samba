@@ -2156,6 +2156,8 @@ static void run_oplock3(int dummy)
 
 	if (fork() == 0) {
 		/* Child code */
+		use_oplocks = True;
+		use_level_II_oplocks = True;
 		if (!open_connection(&cli)) return;
 		sleep(2);
 		/* try to trigger a oplock break in parent */
