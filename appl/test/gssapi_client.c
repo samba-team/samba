@@ -65,6 +65,17 @@ do_trans (int sock, gss_ctx_id_t context_hdl)
     input_token->length = 7;
     input_token->value  = "hemligt";
 
+    maj_stat = gss_wrap (&min_stat,
+			 context_hdl,
+			 0,
+			 GSS_C_QOP_DEFAULT,
+			 input_token,
+			 NULL,
+			 output_token);
+    if (GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_wrap");
+
+    write_token (sock, output_token);
 
     maj_stat = gss_wrap (&min_stat,
 			 context_hdl,
