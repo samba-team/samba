@@ -118,13 +118,13 @@ static struct request_context *receive_smb_request(struct smbsrv_context *smb_ct
 */
 static void setup_user_context(struct request_context *req)
 {
-	struct user_context *ctx;
+	struct smbsrv_user *user_ctx;
 
-	ctx = talloc(req->mem_ctx, sizeof(*ctx));
-	ctx->vuid = SVAL(req->in.hdr, HDR_UID);
-	ctx->vuser = get_valid_user_struct(req->smb_ctx, ctx->vuid);
+	user_ctx = talloc(req->mem_ctx, sizeof(*user_ctx));
+	user_ctx->vuid = SVAL(req->in.hdr, HDR_UID);
+	user_ctx->vuser = get_valid_user_struct(req->smb_ctx, user_ctx->vuid);
 
-	req->user_ctx = ctx;
+	req->user_ctx = user_ctx;
 }
 
 
