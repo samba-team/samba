@@ -1043,11 +1043,7 @@ static char *name_ptr(char *buf,int ofs)
 
   if ((c & 0xC0) == 0xC0)
     {
-      uint16 l;
-      char p[2];
-      memcpy(p,buf+ofs,2);
-      p[0] &= ~0xC0;
-      l = RSVAL(p,0);
+      uint16 l = RSVAL(buf, ofs) & 0x3FFF;
       DEBUG(5,("name ptr to pos %d from %d is %s\n",l,ofs,buf+l));
       return(buf + l);
     }
