@@ -1,11 +1,21 @@
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
+	* kdc/kstash.c: include file name in error messages
+	* kdc/hprop.c: fix a typo and check some more return values
+	* lib/hdb/hdb-ldap.c (LDAP__lookup_princ): call ldap_search_s
+	correctly.  From Jacques Vidrine <n@nectar.com>
+	* kdc/misc.c (db_fetch): HDB_ERR_NOENTRY makes more sense than
+	ENOENT
+
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
 	15:0:0
 	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): bump version to 7:0:0
 	* lib/asn1/Makefile.am (libasn1_la_LDFLAGS): bump version to 4:0:2
 	* kdc/misc.c (db_fetch): return an error code.  change callers to
 	look at this and try to print it in log messages
+
+	* lib/krb5/crypto.c (decrypt_internal_derived): check that there's
+	enough data
 
 2001-01-29  Assar Westerlund  <assar@sics.se>
 
