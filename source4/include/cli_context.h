@@ -63,7 +63,7 @@ struct cli_negotiate {
 	/* capabilities that the server reported */
 	uint32_t capabilities;
 	
-	int16_t server_zone;
+	int server_zone;
 	time_t server_time;
 	uint_t readbraw_supported:1;
 	uint_t writebraw_supported:1;
