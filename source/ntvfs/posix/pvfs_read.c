@@ -46,7 +46,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->handle->fd == -1) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
