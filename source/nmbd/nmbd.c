@@ -661,6 +661,7 @@ static void usage(char *pname)
   int opt;
   extern char *optarg;
   extern BOOL  append_log;
+  BOOL opt_interactive = False;
 
   append_log = True;  /* Default, override with '-o' option. */
 
@@ -672,7 +673,6 @@ static void usage(char *pname)
   sys_srandom(time(NULL) ^ sys_getpid());
 
   slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", dyn_LOGFILEBASE);
-  setup_logging( argv[0], False );
 
   /* this is for people who can't start the program correctly */
   while (argc > 1 && (*argv[1] != '-'))
@@ -703,7 +703,7 @@ static void usage(char *pname)
 #endif
 
   while( EOF != 
-         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:" )) )
+         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:i" )) )
     {
       switch (opt)
         {
@@ -717,6 +717,9 @@ static void usage(char *pname)
         case 'G':
           DEBUG(0,("Obsolete option '%c' used\n",opt));
           break;
+	case 'i':
+		opt_interactive = True;
+		break;
         case 'H':
           pstrcpy(dyn_LMHOSTSFILE, optarg);
           break;
@@ -761,6 +764,8 @@ static void usage(char *pname)
         }
     }
 
+  setup_logging( argv[0], opt_interactive );
+
   reopen_logs();
 
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
@@ -790,7 +795,7 @@ static void usage(char *pname)
     is_daemon = True;
   }
   
-  if (is_daemon)
+  if (is_daemon && !opt_interactive)
   {
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
