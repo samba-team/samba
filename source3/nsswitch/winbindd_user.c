@@ -131,7 +131,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* should we deal with users for our domain? */
 	
 	if ( lp_winbind_trusted_domains_only() && strequal(name_domain, lp_workgroup())) {
-		DEBUG(7,("winbindd_getpenam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
+		DEBUG(7,("winbindd_getpwnam: My domain -- rejecting getpwnam() for %s\\%s.\n", 
 			name_domain, name_user));
 		return WINBINDD_ERROR;
 	}	
