@@ -294,10 +294,10 @@ static BOOL pam_account(pam_handle_t *pamh, char * user, char * password, BOOL p
 		case PAM_CRED_EXPIRED:
 			DEBUG(0, ("PAM: Credentials for user: \"%s\" EXPIRED!", user ));
 			break;
-		case PAM_CRED_UNKNOWN:
+		case PAM_USER_UNKNOWN:
 			DEBUG(0, ("PAM: User: \"%s\" is NOT known so can not set credentials!", user ));
 			break;
-		case PAM_CRED_UNKNOWN:
+		case PAM_CRED_ERR:
 			DEBUG(0, ("PAM: Unknown setcredentials error - unable to set credentials for %s", user ));
 			break;
 	        case PAM_SUCCESS:
