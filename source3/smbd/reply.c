@@ -771,7 +771,7 @@ int reply_search(char *inbuf,char *outbuf)
       memcpy(mask,status+1,11);
       mask[11] = 0;
       dirtype = CVAL(status,0) & 0x1F;
-      Connections[cnum].dirptr = dptr_fetch(SNUM(cnum), status+12,&dptr_num);      
+      Connections[cnum].dirptr = dptr_fetch(status+12,&dptr_num);      
       if (!Connections[cnum].dirptr)
 	goto SearchEmpty;
       string_set(&Connections[cnum].dirpath,dptr_path(dptr_num));
@@ -836,7 +836,7 @@ int reply_search(char *inbuf,char *outbuf)
 	    {	  
 	      memcpy(p,status,21);
 	      make_dir_struct(p,"???????????",volume_label(SNUM(cnum)),0,aVOLID,0);
-	      dptr_fill(SNUM(cnum), p+12,dptr_num);
+	      dptr_fill(p+12,dptr_num);
 	      if (dptr_zero(p+12) && (status_len==0))
 		numentries = 1;
 	      else
@@ -858,7 +858,7 @@ int reply_search(char *inbuf,char *outbuf)
 		    {
 		      memcpy(p,status,21);
 		      make_dir_struct(p,mask,fname,size,mode,date);
-		      dptr_fill(SNUM(cnum), p+12,dptr_num);
+		      dptr_fill(p+12,dptr_num);
 		      numentries++;
 		    }
 		  p += DIR_STRUCT_SIZE;
@@ -941,7 +941,7 @@ int reply_fclose(char *inbuf,char *outbuf)
 
   memcpy(status,smb_buf(inbuf) + 1 + strlen(path) + 4,21);
 
-  if(dptr_fetch(SNUM(cnum), status+12,&dptr_num)) {
+  if(dptr_fetch(status+12,&dptr_num)) {
     /*  Close the dptr - we know it's gone */
     dptr_close(dptr_num);
   }
@@ -1323,7 +1323,7 @@ int reply_unlink(char *inbuf,char *outbuf)
     char *dname;
 
     if (check_name(directory,cnum))
-      dirptr = OpenDir(SNUM(cnum), directory, True);
+      dirptr = OpenDir(cnum, directory, True);
 
     /* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
        the pattern matches against the long name, otherwise the short name 
@@ -2457,7 +2457,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
              do a recursive delete) then fail the rmdir. */
           BOOL all_veto_files = True;
           char *dname;
-          void *dirptr = OpenDir(SNUM(cnum), directory, False);
+          void *dirptr = OpenDir(cnum, directory, False);
 
           if(dirptr != NULL)
             {
@@ -2466,7 +2466,7 @@ int reply_rmdir(char *inbuf,char *outbuf)
 	            {
                   if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
                     continue;
-                  if(!is_vetoed_name(SNUM(cnum), dname))
+                  if(!IS_VETO_PATH(cnum, dname))
                     {
                       all_veto_files = False;
                       break;
@@ -2733,7 +2733,7 @@ int reply_mv(char *inbuf,char *outbuf)
     pstring destname;
 
     if (check_name(directory,cnum))
-      dirptr = OpenDir(SNUM(cnum), directory, True);
+      dirptr = OpenDir(cnum, directory, True);
 
     if (dirptr)
       {
@@ -2924,7 +2924,7 @@ int reply_copy(char *inbuf,char *outbuf)
     pstring destname;
 
     if (check_name(directory,cnum))
-      dirptr = OpenDir(SNUM(cnum), directory, True);
+      dirptr = OpenDir(cnum, directory, True);
 
     if (dirptr)
       {
@@ -3105,7 +3105,7 @@ int reply_readbmpx(char *inbuf,char *outbuf,int length,int bufsize)
   mincount = SVAL(inbuf,smb_vwv4);
 
   data = smb_buf(outbuf);
-  pad = ((int)data)%4;
+  pad = ((long)data)%4;
   if (pad) pad = 4 - pad;
   data += pad;
 

@@ -666,38 +666,35 @@ char *mktemp(char *); /* No standard include */
 #include <locale.h>
 #ifdef EVEREST
 #include <unistd.h> 
-#endif
+#endif /* EVEREST */
 #ifdef NETGROUP
 #include <rpcsvc/ypclnt.h>
-#endif
+#endif /* NETGROUP */
 #ifdef SecureWare
 #include <sys/security.h>
 #include <sys/audit.h>
 #include <prot.h>
 #define crypt bigcrypt
-#endif
-#ifndef EVEREST
- #define ftruncate(f,l) syscall(0x0a28,f,l)
-#endif 
+#endif /* SecureWare */
 #define SIGNAL_CAST (void (*)(int))
 #define USE_WAITPID
 #define USE_GETCWD
 #define USE_SETSID
 #ifdef SCO3_2_2
-#define NO_EID
-#else
+#define setuid(u) setreuid(u,-1)
+#define seteuid(u) setreuid(-1,u)
+#else /* SCO3_2_2 */
 #ifndef EVEREST
+#define ftruncate(f,l) syscall(0x0a28,f,l)
 #define USE_IFREQ
-#endif
-#endif
+#define NO_INITGROUPS
+#endif /* EVEREST */
+#endif /* SCO3_2_2 */
 #define STATFS4
 #define NO_FSYNC
-#ifndef EVEREST
-#define NO_INITGROUPS
-#endif
 #define HAVE_PATHCONF
 #define NO_GETRLIMIT
-#endif
+#endif /* SCO */
 
 
 

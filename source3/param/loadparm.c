@@ -270,7 +270,7 @@ static service sDefault =
   NULL,    /* szService */
   NULL,    /* szPath */
   NULL,    /* szUsername */
-  NULL,    /* szGuestAccount */
+  NULL,    /* szGuestAccount  - this is set in init_globals() */
   NULL,    /* szInvalidUsers */
   NULL,    /* szValidUsers */
   NULL,    /* szAdminUsers */
@@ -286,7 +286,7 @@ static service sDefault =
   NULL,    /* szLppausecommand */
   NULL,    /* szLpresumecommand */
   NULL,    /* szPrintername */
-  NULL,    /* szPrinterDriver */
+  NULL,    /* szPrinterDriver - this is set in init_globals() */
   NULL,    /* szDontdescend */
   NULL,    /* szHostsallow */
   NULL,    /* szHostsdeny */
@@ -294,7 +294,7 @@ static service sDefault =
   NULL,    /* szMagicOutput */
   NULL,    /* szMangledMap */
   NULL,    /* szVetoFiles */
-  DEFAULT_FILES_TO_HIDE,    /* szHideFiles */
+  NULL,    /* szHideFiles */
   NULL,    /* comment */
   NULL,    /* force user */
   NULL,    /* force group */

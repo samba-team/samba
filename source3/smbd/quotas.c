@@ -331,8 +331,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-  setuid(user_id);  /* Restore the original UID status */
-  seteuid(euser_id);
+  seteuid(euser_id); /* Restore the original uid status. */
+  setuid(user_id);  
 
   if (ret < 0) {
     DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));

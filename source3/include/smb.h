@@ -339,6 +339,12 @@ struct uid_cache {
 
 typedef struct
 {
+  char *name;
+  BOOL is_wild;
+} name_compare_entry;
+
+typedef struct
+{
   int service;
   BOOL force_user;
   struct uid_cache uid_cache;
@@ -363,6 +369,8 @@ typedef struct
   time_t lastused;
   BOOL used;
   int num_files_open;
+  name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
+  name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
 } connection_struct;
 
 
@@ -483,6 +491,7 @@ struct connect_record
 #define VALID_CNUM(cnum)   (((cnum) >= 0) && ((cnum) < MAX_CONNECTIONS))
 #define OPEN_CNUM(cnum)    (VALID_CNUM(cnum) && Connections[cnum].open)
 #define IS_IPC(cnum)       (VALID_CNUM(cnum) && Connections[cnum].ipc)
+#define IS_PRINT(cnum)       (VALID_CNUM(cnum) && Connections[cnum].printer)
 #define FNUM_OK(fnum,c) (OPEN_FNUM(fnum) && (c)==Files[fnum].cnum)
 
 #define CHECK_FNUM(fnum,c) if (!FNUM_OK(fnum,c)) \
@@ -512,6 +521,9 @@ struct connect_record
 #define MAP_HIDDEN(cnum)   (OPEN_CNUM(cnum) && lp_map_hidden(SNUM(cnum)))
 #define MAP_SYSTEM(cnum)   (OPEN_CNUM(cnum) && lp_map_system(SNUM(cnum)))
 #define MAP_ARCHIVE(cnum)   (OPEN_CNUM(cnum) && lp_map_archive(SNUM(cnum)))
+#define IS_HIDDEN_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].hide_list))
+#define IS_VETO_PATH(cnum,path)  (is_in_path((path),Connections[(cnum)].veto_list))
+
 #ifdef SMB_PASSWD
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 #else
@@ -915,8 +927,5 @@ enum case_handling {CASE_LOWER,CASE_UPPER};
 
 /* Size of buffer to use when moving files across filesystems. */
 #define COPYBUF_SIZE (8*1024)
-
-/* service-based parameter - files are not visible, but are accessible */
-#define DEFAULT_FILES_TO_HIDE ".*"
 
 /* _SMB_H */

@@ -529,7 +529,10 @@ static void usage(char *pname)
       char    buf[20];
 
       if ((fd = open(pidFile,
-        O_NONBLOCK | O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
+#ifdef O_NONBLOCK
+        O_NONBLOCK | 
+#endif
+        O_CREAT | O_WRONLY | O_TRUNC, 0644)) < 0)
         {
           DEBUG(0,("ERROR: can't open %s: %s\n", pidFile, strerror(errno)));
           exit(1);
