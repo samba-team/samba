@@ -92,8 +92,8 @@ set_krb5ccname(uid_t uid)
     snprintf (krb5ccname, sizeof(krb5ccname), "FILE:/tmp/krb5cc_%d", uid);
 #ifdef KRB4
     snprintf (krbtkfile, sizeof(krbtkfile), "%s%d", TKT_ROOT, (unsigned)uid);
-    correct_tkfilename = 1;
 #endif
+    correct_tkfilename = 1;
 }
 #endif
 
