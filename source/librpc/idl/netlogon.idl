@@ -268,9 +268,9 @@ interface netlogon
 	/* Function 0x04 */
 
 	NTSTATUS netr_ServerReqChallenge(
-		[in]        unistr *server_name,
-		[in]        unistr computer_name,
-		[in][out]   netr_Credential credentials
+		[in]         unistr *server_name,
+		[in]         unistr computer_name,
+		[in,out,ref] netr_Credential *credentials
 		);
 
 
@@ -283,11 +283,11 @@ interface netlogon
 	const int SEC_CHAN_BDC     = 6;
 
 	NTSTATUS netr_ServerAuthenticate(
-		[in]        unistr *server_name,
-		[in]        unistr username,
-		[in]        uint16 secure_channel_type,
-		[in]        unistr computer_name,
-		[in,out]    netr_Credential credentials
+		[in]         unistr *server_name,
+		[in]         unistr username,
+		[in]         uint16 secure_channel_type,
+		[in]         unistr computer_name,
+		[in,out,ref] netr_Credential *credentials
 		);
 
 
@@ -808,7 +808,7 @@ interface netlogon
 		[in]         unistr username,
 		[in]         uint16 secure_channel_type,
 		[in]         unistr computer_name,
-		[in,out]     netr_Credential credentials,
+		[in,out,ref] netr_Credential *credentials,
 		[in,out,ref] uint32 *negotiate_flags
 		);
 
@@ -886,7 +886,15 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1a */
-	WERROR netr_NETRSERVERAUTHENTICATE3();
+	NTSTATUS netr_ServerAuthenticate3(
+		[in]         unistr *server_name,
+		[in]         unistr username,
+		[in]         uint16 secure_channel_type,
+		[in]         unistr computer_name,
+		[in,out,ref] netr_Credential *credentials,
+		[in,out,ref] uint32 *negotiate_flags,
+		[out,ref]    uint32 *rid
+		);
 
 	/****************/
 	/* Function 0x1b */

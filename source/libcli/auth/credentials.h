@@ -34,5 +34,8 @@ struct creds_CredentialState {
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
 
+/* these are the flags that ADS clients use */
+#define NETLOGON_NEG_AUTH2_ADS_FLAGS 0x600fffff
+
 #define NETLOGON_NEG_SCHANNEL    0x40000000
 
