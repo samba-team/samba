@@ -350,11 +350,18 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (*lp_vfsobj(SNUM(conn))) {
 
+#ifdef HAVE_LIBDL
+
 	    /* Loadable object file */
 
 	    if (vfs_init_custom(conn) < 0) {
 		return NULL;
 	    }
+#else
+	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
+	    conn_free(conn);
+	    return NULL;
+#endif
 
 	} else {
 
