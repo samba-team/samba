@@ -67,7 +67,7 @@ proto (int sock, const char *service)
     status = krb5_sname_to_principal (context,
 				      hostname,
 				      service,
-				      KRB5_NT_SRV_INST,
+				      KRB5_NT_SRV_HST,
 				      &server);
     if (status)
 	errx (1, "krb5_sname_to_principal: %s",
