@@ -334,7 +334,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 	struct lsa_DATA_BUF_PTR bufp1;
 	DATA_BLOB enc_key;
 	BOOL ret = True;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 	NTTIME old_mtime, new_mtime;
 	DATA_BLOB blob1, blob2;
 	const char *secret1 = "abcdef12345699qwerty";
@@ -370,13 +370,13 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 		ret = False;
 	}
 
-	status = dcerpc_fetch_session_key(p, session_key);
+	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
 		ret = False;
 	}
 
-	enc_key = sess_encrypt_string(secret1, session_key);
+	enc_key = sess_encrypt_string(secret1, &session_key);
 
 	r3.in.handle = &sec_handle;
 	r3.in.new_val = &buf1;
@@ -418,7 +418,7 @@ static BOOL test_CreateSecret(struct dcerpc_pipe *p,
 
 	blob2 = data_blob(NULL, blob1.length);
 
-	secret2 = sess_decrypt_string(&blob1, session_key);
+	secret2 = sess_decrypt_string(&blob1, &session_key);
 
 	printf("returned secret '%s'\n", secret2);
 

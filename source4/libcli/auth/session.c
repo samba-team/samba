@@ -29,7 +29,7 @@
   before calling, the out blob must be initialised to be the same size
   as the in blob
 */
-void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const uint8 session_key[16],
+void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
 		     BOOL forward)
 {
 	int i, k;
@@ -42,10 +42,10 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const uint8 session_ke
 		memset(bin, 0, 8);
 		memcpy(bin,  &in->data[i], MIN(8, in->length-i));
 
-		if (k + 7 > 16) {
-			k = (16 - k);
+		if (k + 7 > session_key->length) {
+			k = (session_key->length - k);
 		}
-		memcpy(key, &session_key[k], 7);
+		memcpy(key, &session_key->data[k], 7);
 
 		smbhash(bout, bin, key, forward?1:0);
 
@@ -62,7 +62,7 @@ void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const uint8 session_ke
 
   caller should free using data_blob_free()
 */
-DATA_BLOB sess_encrypt_string(const char *str, const uint8 session_key[16])
+DATA_BLOB sess_encrypt_string(const char *str, const DATA_BLOB *session_key)
 {
 	DATA_BLOB ret, src;
 	int slen = strlen(str);
@@ -96,7 +96,7 @@ DATA_BLOB sess_encrypt_string(const char *str, const uint8 session_key[16])
 
   caller should free the returned string
 */
-char *sess_decrypt_string(DATA_BLOB *blob, const uint8 session_key[16])
+char *sess_decrypt_string(DATA_BLOB *blob, const DATA_BLOB *session_key)
 {
 	DATA_BLOB out;
 	int slen;
