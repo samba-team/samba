@@ -59,6 +59,8 @@ libdes_la_SOURCES =	\
 EXTRA_libdes_la_SOURCES = dllmain.c passwd_dialog.aps passwd_dialog.clw \
 	passwd_dialog.rc passwd_dialog.res passwd_dlg.c passwd_dlg.h resource.h
 
+man_MANS = des.1 des_crypt.3
+
 ## this is an awful lot of junk, but it's just as well to include everything
 EXTRA_DIST =		\
 	COPYRIGHT	\
