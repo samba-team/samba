@@ -1,3 +1,8 @@
+1999-07-03  Assar Westerlund  <assar@sics.se>
+
+	* server.c (v5_loop): handle data allocation with krb5_data_alloc
+ 	and check return value
+
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
 	* version4.c (kadm_ser_cpw): read the key in the strange order

@@ -1,3 +1,15 @@
+1999-07-03  Assar Westerlund  <assar@sics.se>
+
+	* writev.c (writev): error check malloc properly
+
+	* sendmsg.c (sendmsg): error check malloc properly
+
+	* resolve.c (parse_reply): error check malloc properly
+
+	* recvmsg.c (recvmsg): error check malloc properly
+
+	* readv.c (readv): error check malloc properly
+
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
 	* parse_units.c (acc_units): move the special case of 0 -> 1 to

@@ -1,3 +1,7 @@
+1999-07-03  Assar Westerlund  <assar@sics.se>
+
+	* parse.y (statement): use asprintf
+
 1999-06-13  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: make it solaris make vpath-safe

@@ -1,3 +1,30 @@
+1999-07-03  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (unparse_name): error check malloc properly
+
+	* lib/krb5/get_in_tkt.c (krb5_init_etype): error check malloc
+ 	properly
+
+	* lib/krb5/crypto.c (*): do some malloc return-value checks
+ 	properly
+
+	* lib/hdb/hdb.c (hdb_process_master_key): simplify by using
+ 	krb5_data_alloc
+
+	* lib/hdb/hdb.c (hdb_process_master_key): check return value from
+ 	malloc
+
+	* lib/asn1/gen_decode.c (decode_type): fix generation of decoding
+ 	information for TSequenceOf.
+
+	* kdc/kerberos5.c (get_pa_etype_info): check return value from
+ 	malloc
+
+1999-07-02  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/der_copy.c (copy_octet_string): don't fail if length ==
+ 	0 and malloc returns NULL
+
 1999-06-24  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/rd_cred.c (krb5_rd_cred): compare the sender's address
