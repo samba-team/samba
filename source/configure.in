@@ -2545,6 +2545,18 @@ if test x"$with_ads_support" != x"no"; then
               [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
   fi
 
+  AC_CACHE_CHECK([for AP_OPTS_USE_SUBKEY],
+                 samba_cv_HAVE_AP_OPTS_USE_SUBKEY,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_flags ap_options; ap_options = AP_OPTS_USE_SUBKEY;],
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=yes,
+      samba_cv_HAVE_AP_OPTS_USE_SUBKEY=no)])
+
+  if test x"$samba_cv_HAVE_AP_OPTS_USE_SUBKEY" = x"yes"; then
+    AC_DEFINE(HAVE_AP_OPTS_USE_SUBKEY,1,
+              [Whether the AP_OPTS_USE_SUBKEY ap option is available])
+  fi
+
   AC_CACHE_CHECK([for the krb5_princ_component macro],
                 samba_cv_HAVE_KRB5_PRINC_COMPONENT,[
     AC_TRY_LINK([#include <krb5.h>],
