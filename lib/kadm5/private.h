@@ -144,7 +144,7 @@ _kadm5_c_init_context __P((
 kadm5_ret_t
 _kadm5_client_recv __P((
 	kadm5_client_context *context,
-	krb5_storage *sp));
+	krb5_data *reply));
 
 kadm5_ret_t
 _kadm5_client_send __P((
