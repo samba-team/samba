@@ -26,34 +26,38 @@
   wrappers for the schannel_*() functions
 */
 static NTSTATUS schan_unseal_packet(struct dcerpc_security *dcerpc_security, 
-				  uchar *data, size_t length, DATA_BLOB *sig)
+				    TALLOC_CTX *mem_ctx, 
+				    uchar *data, size_t length, DATA_BLOB *sig)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
-	return schannel_unseal_packet(schannel_state, data, length, sig);
+	return schannel_unseal_packet(schannel_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS schan_check_packet(struct dcerpc_security *dcerpc_security, 
-				  const uchar *data, size_t length, 
-				  const DATA_BLOB *sig)
+				   TALLOC_CTX *mem_ctx, 
+				   const uchar *data, size_t length, 
+				   const DATA_BLOB *sig)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
 	return schannel_check_packet(schannel_state, data, length, sig);
 }
 
 static NTSTATUS schan_seal_packet(struct dcerpc_security *dcerpc_security, 
-				 uchar *data, size_t length, 
-				 DATA_BLOB *sig)
+				  TALLOC_CTX *mem_ctx, 
+				  uchar *data, size_t length, 
+				  DATA_BLOB *sig)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
-	return schannel_seal_packet(schannel_state, data, length, sig);
+	return schannel_seal_packet(schannel_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS schan_sign_packet(struct dcerpc_security *dcerpc_security, 
+				 TALLOC_CTX *mem_ctx, 
 				 const uchar *data, size_t length, 
 				 DATA_BLOB *sig)
 {
 	struct schannel_state *schannel_state = dcerpc_security->private;
-	return schannel_sign_packet(schannel_state, data, length, sig);
+	return schannel_sign_packet(schannel_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS schan_session_key(struct dcerpc_security *dcerpc_security, 

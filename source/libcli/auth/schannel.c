@@ -93,6 +93,7 @@ static void schannel_digest(const uchar sess_key[16],
   unseal a packet
 */
 NTSTATUS schannel_unseal_packet(struct schannel_state *state,
+				TALLOC_CTX *mem_ctx, 
 				uchar *data, size_t length, 
 				DATA_BLOB *sig)
 {
@@ -183,6 +184,7 @@ NTSTATUS schannel_check_packet(struct schannel_state *state,
   seal a packet
 */
 NTSTATUS schannel_seal_packet(struct schannel_state *state, 
+			      TALLOC_CTX *mem_ctx, 
 			      uchar *data, size_t length, 
 			      DATA_BLOB *sig)
 {
@@ -208,7 +210,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
 	if (!state->signature.data) {
-		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
+		state->signature = data_blob_talloc(mem_ctx, NULL, 32);
 		if (!state->signature.data) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -233,6 +235,7 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
   sign a packet
 */
 NTSTATUS schannel_sign_packet(struct schannel_state *state, 
+			      TALLOC_CTX *mem_ctx, 
 			      const uchar *data, size_t length, 
 			      DATA_BLOB *sig)
 {
@@ -250,7 +253,7 @@ NTSTATUS schannel_sign_packet(struct schannel_state *state,
 	netsec_deal_with_seq_num(state, digest_final, seq_num);
 
 	if (!state->signature.data) {
-		state->signature = data_blob_talloc(state->mem_ctx, NULL, 32);
+		state->signature = data_blob_talloc(mem_ctx, NULL, 32);
 		if (!state->signature.data) {
 			return NT_STATUS_NO_MEMORY;
 		}

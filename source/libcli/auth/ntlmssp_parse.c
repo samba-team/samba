@@ -40,7 +40,7 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-BOOL msrpc_gen(DATA_BLOB *blob,
+BOOL msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	       const char *format, ...)
 {
 	int i, n;
@@ -91,7 +91,7 @@ BOOL msrpc_gen(DATA_BLOB *blob,
 	va_end(ap);
 
 	/* allocate the space, then scan the format again to fill in the values */
-	*blob = data_blob(NULL, head_size + data_size);
+	*blob = data_blob_talloc(mem_ctx, NULL, head_size + data_size);
 
 	head_ofs = 0;
 	data_ofs = head_size;
@@ -182,12 +182,12 @@ if ((head_ofs + amount) > blob->length) { \
   C = constant ascii string
  */
 
-BOOL msrpc_parse(const DATA_BLOB *blob,
+BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 		 const char *format, ...)
 {
 	int i;
 	va_list ap;
-	char **ps, *s;
+	const char **ps, *s;
 	DATA_BLOB *b;
 	size_t head_ofs = 0;
 	uint16 len1, len2;
@@ -206,7 +206,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 			ps = va_arg(ap, char **);
 			if (len1 == 0 && len2 == 0) {
-				*ps = smb_xstrdup("");
+				*ps = "";
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
@@ -223,9 +223,12 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 						    len1, 
 						    STR_UNICODE|STR_NOALIGN);
-					(*ps) = smb_xstrdup(p);
+					(*ps) = talloc_strdup(mem_ctx, p);
+					if (!(*ps)) {
+						return False;
+					}
 				} else {
-					(*ps) = smb_xstrdup("");
+					(*ps) = "";
 				}
 			}
 			break;
@@ -238,7 +241,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			ps = va_arg(ap, char **);
 			/* make sure its in the right format - be strict */
 			if (len1 == 0 && len2 == 0) {
-				*ps = smb_xstrdup("");
+				*ps = "";
 			} else {
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
 					return False;
@@ -251,9 +254,12 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 					pull_string(NULL, p, blob->data + ptr, sizeof(p), 
 						    len1, 
 						    STR_ASCII|STR_NOALIGN);
-					(*ps) = smb_xstrdup(p);
+					(*ps) = talloc_strdup(mem_ctx, p);
+					if (!(*ps)) {
+						return False;
+					}
 				} else {
-					(*ps) = smb_xstrdup("");
+					(*ps) = "";
 				}
 			}
 			break;
@@ -265,7 +271,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 
 			b = (DATA_BLOB *)va_arg(ap, void *);
 			if (len1 == 0 && len2 == 0) {
-				*b = data_blob(NULL, 0);
+				*b = data_blob_talloc(mem_ctx, NULL, 0);
 			} else {
 				/* make sure its in the right format - be strict */
 				if ((len1 != len2) || (ptr + len1 < ptr) || (ptr + len1 < len1) || (ptr + len1 > blob->length)) {
@@ -275,7 +281,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 				if (blob->data + ptr < (uint8 *)ptr || blob->data + ptr < blob->data)
 					return False;	
 			
-				*b = data_blob(blob->data + ptr, len1);
+				*b = data_blob_talloc(mem_ctx, blob->data + ptr, len1);
 			}
 			break;
 		case 'b':
@@ -286,7 +292,7 @@ BOOL msrpc_parse(const DATA_BLOB *blob,
 			if (blob->data + head_ofs < (uint8 *)head_ofs || blob->data + head_ofs < blob->data)
 				return False;	
 			
-			*b = data_blob(blob->data + head_ofs, len1);
+			*b = data_blob_talloc(mem_ctx, blob->data + head_ofs, len1);
 			head_ofs += len1;
 			break;
 		case 'd':

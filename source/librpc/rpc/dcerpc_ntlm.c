@@ -26,34 +26,38 @@
   wrappers for the ntlmssp_*() functions
 */
 static NTSTATUS ntlm_unseal_packet(struct dcerpc_security *dcerpc_security, 
-				  uchar *data, size_t length, DATA_BLOB *sig)
+				   TALLOC_CTX *mem_ctx, 
+				   uchar *data, size_t length, DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	return ntlmssp_unseal_packet(ntlmssp_state, data, length, sig);
+	return ntlmssp_unseal_packet(ntlmssp_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS ntlm_check_packet(struct dcerpc_security *dcerpc_security, 
+				  TALLOC_CTX *mem_ctx, 
 				  const uchar *data, size_t length, 
 				  const DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	return ntlmssp_check_packet(ntlmssp_state, data, length, sig);
+	return ntlmssp_check_packet(ntlmssp_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS ntlm_seal_packet(struct dcerpc_security *dcerpc_security, 
+				 TALLOC_CTX *mem_ctx, 
 				 uchar *data, size_t length, 
 				 DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	return ntlmssp_seal_packet(ntlmssp_state, data, length, sig);
+	return ntlmssp_seal_packet(ntlmssp_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS ntlm_sign_packet(struct dcerpc_security *dcerpc_security, 
+				 TALLOC_CTX *mem_ctx, 
 				 const uchar *data, size_t length, 
 				 DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
-	return ntlmssp_sign_packet(ntlmssp_state, data, length, sig);
+	return ntlmssp_sign_packet(ntlmssp_state, mem_ctx, data, length, sig);
 }
 
 static NTSTATUS ntlm_session_key(struct dcerpc_security *dcerpc_security, 
@@ -137,35 +141,30 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	p->auth_info->credentials = data_blob(NULL, 0);
 	p->security_state = NULL;
 
-	status = ntlmssp_update(state, 
+	status = ntlmssp_update(state, mem_ctx,
 				p->auth_info->credentials,
 				&credentials);
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
 
-	p->auth_info->credentials = data_blob_talloc(mem_ctx, 
-						     credentials.data, 
-						     credentials.length);
-	data_blob_free(&credentials);
+	p->auth_info->credentials = credentials;
 
 	status = dcerpc_bind_byuuid(p, mem_ctx, uuid, version);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-
-	status = ntlmssp_update(state, 
+	status = ntlmssp_update(state, mem_ctx,
 				p->auth_info->credentials, 
 				&credentials);
+
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
 	}
 
-	p->auth_info->credentials = data_blob_talloc(mem_ctx, 
-						     credentials.data, 
-						     credentials.length);
-	data_blob_free(&credentials);
+	p->auth_info->credentials = credentials;
 
 	status = dcerpc_auth3(p, mem_ctx);
 
@@ -186,14 +185,6 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	p->security_state->sign_packet = ntlm_sign_packet;
 	p->security_state->session_key = ntlm_session_key;
 	p->security_state->security_end = ntlm_security_end;
-
-	switch (p->auth_info->auth_level) {
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		/* setup for signing */
-		status = ntlmssp_sign_init(state);
-		break;
-	}
 
 done:
 	talloc_destroy(mem_ctx);
