@@ -172,7 +172,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	  char *t;
 	  
 	  maxlen *= 2;
-	  t = (char *)Realloc(s,maxlen);
+	  t = realloc_p(s, char, maxlen);
 	  if (!t) {
 	    DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
 	    SAFE_FREE(s);

@@ -770,7 +770,9 @@ NTSTATUS gensec_register(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	generic_security_ops = Realloc(generic_security_ops, sizeof(generic_security_ops[0]) * (gensec_num_backends+1));
+	generic_security_ops = realloc_p(generic_security_ops, 
+					 const struct gensec_security_ops *, 
+					 gensec_num_backends+1);
 	if (!generic_security_ops) {
 		smb_panic("out of memory in gensec_register");
 	}

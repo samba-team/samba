@@ -488,7 +488,7 @@ static void add_to_do_list_queue(const char* entry)
 		do_list_queue_size *= 2;
 		DEBUG(4,("enlarging do_list_queue to %d\n",
 			 (int)do_list_queue_size));
-		dlq = Realloc(do_list_queue, do_list_queue_size);
+		dlq = realloc_p(do_list_queue, char, do_list_queue_size);
 		if (! dlq) {
 			d_printf("failure enlarging do_list_queue to %d bytes\n",
 				 (int)do_list_queue_size);

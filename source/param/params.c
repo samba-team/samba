@@ -239,7 +239,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(const char *) )
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize +BUFR_INC );
+      tb = realloc_p(bufr, char, bSize + BUFR_INC);
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
@@ -336,7 +336,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize + BUFR_INC );
+      tb = realloc_p( bufr, char, bSize + BUFR_INC );
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );
@@ -404,7 +404,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(const char *, const char *)
       {
       char *tb;
       
-      tb = Realloc( bufr, bSize + BUFR_INC );
+      tb = realloc_p( bufr, char, bSize + BUFR_INC );
       if( NULL == tb )
         {
         DEBUG(0, ("%s Memory re-allocation failure.", func) );

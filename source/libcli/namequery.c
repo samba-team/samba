@@ -400,11 +400,12 @@ struct ipv4_addr *name_query(int fd,const char *name,int name_type,
 				continue;
 			}
 			
-			tmp_ip_list = (struct ipv4_addr *)Realloc( ip_list, sizeof( ip_list[0] )
-								 * ( (*count) + nmb2->answers->rdlength/6 ) );
+			tmp_ip_list = realloc_p(ip_list, 
+						struct ipv4_addr,
+						(*count) + nmb2->answers->rdlength/6);
 			
 			if (!tmp_ip_list) {
-				DEBUG(0,("name_query: Realloc failed.\n"));
+				DEBUG(0,("name_query: realloc_p failed.\n"));
 				SAFE_FREE(ip_list);
 			}
 			

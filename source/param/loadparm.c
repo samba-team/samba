@@ -1568,9 +1568,7 @@ static int add_a_service(const service *pservice, const char *name)
 	if (i == iNumServices) {
 		service **tsp;
 		
-		tsp = (service **) Realloc(ServicePtrs,
-					   sizeof(service *) *
-					   num_to_alloc);
+		tsp = realloc_p(ServicePtrs, service *,	num_to_alloc);
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
