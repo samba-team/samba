@@ -71,24 +71,12 @@ gen_files =					\
 	asn1_TransitedEncoding.x		\
 	asn1_UNSIGNED.x
 
-gen_example = 			\
-	asn1_EXAMPLE1.x		\
-	asn1_EXAMPLE_INT.x	\
-	asn1_EXAMPLE_STR.x	\
-	asn1_TestOcspCertstatus.x \
-	asn1_TestRevInfo.x
-
-BUILT_CHECK_SOURCES =		\
-	$(gen_example:.x=.c)	\
-	asn1_err.h		\
-	asn1_err.c
-
 noinst_PROGRAMS = asn1_compile asn1_print
 check_PROGRAMS = check-der check-gen
 TESTS = check-der check-gen
 
 check_der_SOURCES = check-der.c check-common.c
-check_gen_SOURCES = check-gen.c check-common.c $(BUILT_CHECK_SOURCES)
+check_gen_SOURCES = check-gen.c check-common.c
 
 
 asn1_compile_SOURCES = 				\
@@ -124,9 +112,9 @@ check_der_LDADD = \
 check_gen_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
 
-CLEANFILES = lex.c parse.c parse.h krb5_asn1.h example_asn1.h \
-	$(BUILT_SOURCES) $(BUILT_CHECK_SOURCES) \
-	$(gen_files) $(gen_example) asn1_files asn1_files2
+CLEANFILES = lex.c parse.c parse.h krb5_asn1.h \
+	$(BUILT_SOURCES) \
+	$(gen_files) asn1_files asn1_files2
 
 include_HEADERS = krb5_asn1.h asn1_err.h der.h
 
@@ -134,18 +122,11 @@ $(asn1_compile_OBJECTS): parse.h parse.c
 
 $(gen_files) krb5_asn1.h: asn1_files
 
-$(gen_example) example_asn1.h: asn1_files2
-
 asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
 	./asn1_compile$(EXEEXT) $(srcdir)/k5.asn1 krb5_asn1
-
-asn1_files2: asn1_compile$(EXEEXT) $(srcdir)/example.asn1
-	./asn1_compile$(EXEEXT) $(srcdir)/example.asn1 example_asn1
 
 $(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h
 
 $(asn1_print_OBJECTS): krb5_asn1.h
-
-$(check_gen_OBJECTS): example_asn1.h
 
 EXTRA_DIST = asn1_err.et
