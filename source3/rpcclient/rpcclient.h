@@ -25,7 +25,7 @@
 typedef enum {
         RPC_RTYPE_NTSTATUS = 0,
         RPC_RTYPE_WERROR,
-        MAX_RPC_RETURN_TYPE,
+        MAX_RPC_RETURN_TYPE
 } RPC_RETURN_TYPE;
 
 struct cmd_set {
