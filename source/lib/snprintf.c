@@ -826,7 +826,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
  * that doesn't work properly according to the autoconf test.
  */
 #if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
- int smb_snprintf(char *str,size_t count,const char *fmt,...)
+int smb_snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
 	va_list ap;
