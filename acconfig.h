@@ -121,6 +121,18 @@
 /* define if the system is missing a prototype for vsnprintf() */
 #undef NEED_VSNPRINTF_PROTO
 
+/* define if the system is missing a prototype for asnprintf() */
+#undef NEED_ASNPRINTF_PROTO
+
+/* define if the system is missing a prototype for asprintf() */
+#undef NEED_ASPRINTF_PROTO
+
+/* define if the system is missing a prototype for vasnprintf() */
+#undef NEED_VASNPRINTF_PROTO
+
+/* define if the system is missing a prototype for vasprintf() */
+#undef NEED_VASPRINTF_PROTO
+
 /* Define this if your `struct tm' has a field `tm_gmtoff' */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
 
