@@ -1667,7 +1667,6 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	unsigned char trust_passwd[16];
-	fstring remote_machine;
 	NET_ID_INFO_CTR ctr;
 	NET_USER_INFO_3 info3;
 	struct cli_state *pcli = NULL;
@@ -1778,7 +1777,7 @@ static BOOL domain_client_validate_direct( char *user, char *domain,
 	if (!NT_STATUS_IS_OK(status)) {
 
 		DEBUG(0,("domain_client_validate_direct: unable to validate password for user %s in domain \
-%s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, get_nt_error_msg(status) ));
+%s. Error was %s.\n", user, domain, get_nt_error_msg(status) ));
 		cli_nt_session_close(pcli);
 		cli_ulogoff(pcli);
 		cli_shutdown(pcli);
