@@ -3222,7 +3222,7 @@ static NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb
 
 	/* We know these gids can't turn up as allogorithmic RIDs */
 	if (!lp_winbind_gid(&low_winbind_gid, &high_winbind_gid)) {
-		DEBUG(0, ("cannot use ldapsam_nua without 'wibnind gid' range in smb.conf!\n"));
+		DEBUG(0, ("cannot use ldapsam_nua without 'winbind gid' range in smb.conf!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
