@@ -549,7 +549,7 @@ static NTSTATUS nbench_fsinfo(struct request_context *req, union smb_fsinfo *fs)
 
 	PASS_THRU_REQ(req, fsinfo, (req, fs));
 
-	nbench_log(private, "Fsinfo %d %s", 
+	nbench_log(private, "Fsinfo %d %s\n", 
 		   fs->generic.level, 
 		   get_nt_error_c_code(status));
 
