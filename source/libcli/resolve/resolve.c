@@ -138,7 +138,12 @@ struct smbcli_composite *resolve_name_send(struct nbt_name *name, struct event_c
 
 	c->state = SMBCLI_REQUEST_SEND;
 	c->private = state;
-	c->event_ctx = talloc_reference(c, event_ctx);
+	if (event_ctx == NULL) {
+		c->event_ctx = event_context_init(c);
+		if (c->event_ctx == NULL) goto failed;
+	} else {
+		c->event_ctx = talloc_reference(c, event_ctx);
+	}
 
 	state->req = setup_next_method(c);
 	if (state->req == NULL) goto failed;
