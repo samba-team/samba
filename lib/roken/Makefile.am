@@ -18,7 +18,7 @@ libroken_a_SOURCES = \
 
 libroken_a_LIBADD = @LIBOBJS@
 
-$(libroken_a_OBJECTS): roken.h
+$(LIBOBJS) $(libroken_a_OBJECTS): roken.h
 
 incdir = $(includedir)
 inc_DATA = roken.h
