@@ -3,7 +3,7 @@ mailto(samba@samba.org)
 manpage(make_smbcodepage htmlcommand((1)))(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
-manpagename(make_codepage)(Construct a codepage file for Samba)
+manpagename(make_smbcodepage)(Construct a codepage file for Samba)
 
 label(SYNOPSIS)
 manpagesynopsis() 
