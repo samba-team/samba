@@ -550,6 +550,34 @@ In Samba4 you can choose the smbd process model on the smbd command
 line. 
 
 
+DCERPC binding strings
+----------------------
+
+When connecting to a dcerpc service you need to specify a binding
+string. Because I'm too lazy to write proper docs, here are some
+examples that should give you the idea:
+
+These all connect to the samr pipe:
+
+   ncacn_np:myserver
+   ncacn_np:myserver:samr
+   ncacn_np:myserver:samr,seal
+   ncacn_np:myserver:\pipe\samr
+   ncacn_np:myserver:/pipe/samr
+   ncacn_np:myserver[samr]
+   ncacn_np:myserver[\pipe\samr]
+   ncacn_np:myserver[/pipe/samr]
+   ncacn_np:myserver:[samr,sign]
+   ncacn_np:myserver:[\pipe\samr,sign,seal]
+   ncacn_np:myserver:[/pipe/samr,seal]
+
+   ncacn_ip_tcp:myserver
+   ncacn_ip_tcp:myserver:1024
+   ncacn_ip_tcp:myserver[1024]
+   ncacn_ip_tcp:myserver:[1024,sign,seal]
+
+
+
 
 MSRPC
 -----
@@ -567,6 +595,9 @@ MSRPC
  - msrpc
 
 
+- use _p talloc varients
+
+don't zero structures! avoid ZERO_STRUCT() and talloc_zero()
 
 
 GMT vs TZ in printout of QFILEINFO timezones
