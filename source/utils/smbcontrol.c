@@ -71,7 +71,8 @@ static BOOL pool_usage_registered = False;
 
 /**
  * Wait for replies for up to @p *max_secs seconds, or until @p
- * max_replies are received.
+ * max_replies are received.  max_replies may be NULL in which case it
+ * is ignored.
  *
  * @note This is a pretty lame timeout; all it means is that after
  * max_secs we won't look for any more messages.
@@ -80,7 +81,8 @@ static void wait_for_replies(int max_secs, int *max_replies)
 {
 	time_t timeout_end = time(NULL) + max_secs;
 
-	while (((*max_replies)-- > 0)  &&  (time(NULL) < timeout_end)) {
+	while ((!max_replies || (*max_replies)-- > 0)
+	       &&  (time(NULL) < timeout_end)) {
 		message_dispatch();
 	}
 }
@@ -218,7 +220,6 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 {
 	int i, n, v;
 	int mtype;
-	int n_sent = 0;
 	BOOL retval=False;
 
 	mtype = parse_type(msg_name);
@@ -400,15 +401,17 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		break;
 
 	case MSG_REQ_POOL_USAGE:
+	{
 		if (!pool_usage_registered) {
 			message_register(MSG_POOL_USAGE, pool_usage_cb);
 			pool_usage_registered = True;
 		}
 		if (!send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True))
 			return False;
-		wait_for_replies(MAX_WAIT, &n_sent);
+		wait_for_replies(MAX_WAIT, NULL);
 		
 		break;
+	}
 	}
 
 	return (True);
