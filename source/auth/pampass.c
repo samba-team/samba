@@ -664,9 +664,9 @@ uint32 smb_pam_passcheck(char * user, char * password)
 	 */
 
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, password, NULL)) == NULL)
-		return False;
+		return NT_STATUS_LOGON_FAILURE;
 
-	if (!smb_pam_start(&pamh, user, NULL, NULL))
+	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_LOGON_FAILURE;
 
 	if ((nt_status = smb_pam_auth(pamh, user)) != NT_STATUS_NOPROBLEMO) {
