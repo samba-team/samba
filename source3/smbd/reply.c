@@ -4357,7 +4357,14 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 		status = do_lock_spin(fsp,conn,lock_pid, count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK), &my_lock_ctx);
 		if (NT_STATUS_V(status)) {
-			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && !my_lock_ctx && ERROR_WAS_LOCK_DENIED(status)) {
+			/*
+			 * Interesting fact found by IFSTEST /t LockOverlappedTest...
+			 * Even if it's our own lock context, we need to wait here as
+			 * there may be an unlock on the way.
+			 * So I removed a "&& !my_lock_ctx" from the following
+			 * if statement. JRA.
+			 */
+			if ((lock_timeout != 0) && lp_blocking_locks(SNUM(conn)) && ERROR_WAS_LOCK_DENIED(status)) {
 				/*
 				 * A blocking lock was requested. Package up
 				 * this smb into a queued request and push it
