@@ -85,5 +85,6 @@
 #include <sys/ioccom.h>
 #endif
 #include <kafs.h>
+#include "crypto-headers.h" /* for des_read_pw_string */
 
 #endif /* __KUSER_LOCL_H__ */
