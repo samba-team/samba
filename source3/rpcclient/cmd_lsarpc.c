@@ -573,7 +573,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, sid, &count, &rights);
+	result = cli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, &sid, &count, &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
