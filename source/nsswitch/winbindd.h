@@ -98,8 +98,11 @@ struct winbindd_domain {
 	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
-
 	struct winbindd_methods *methods;
+
+	/* the backend methods are used by the cache layer to find the right
+	   backend */
+	struct winbindd_methods *backend;
 
         /* Private data for the backends (used for connection cache) */
 
