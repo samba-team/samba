@@ -45,8 +45,12 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 	struct ldb_message_element el;
 	struct ldb_val val;
 	int ret;
+	/* the initial sequence number must be different from the one
+	   set in ltdb_cache_free(). Thanks to Jon for pointing this
+	   out. */
+	const char *initial_sequence_number = "1";
 
-	ltdb->sequence_number = 0;
+	ltdb->sequence_number = atof(initial_sequence_number);
 
 	msg.num_elements = 1;
 	msg.elements = &el;
@@ -64,7 +68,7 @@ static int ltdb_baseinfo_init(struct ldb_context *ldb)
 	el.values = &val;
 	el.num_values = 1;
 	el.flags = 0;
-	val.data = ldb_strdup(ldb, "0");
+	val.data = ldb_strdup(ldb, initial_sequence_number);
 	if (!val.data) {
 		ldb_free(ldb, el.name);
 		ldb_free(ldb, msg.dn);
