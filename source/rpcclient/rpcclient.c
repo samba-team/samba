@@ -112,6 +112,7 @@ struct
   {"regdeleteval",cmd_reg_delete_val,  "<valname> Registry Value Delete"},
   {"regcreateval",cmd_reg_create_val,  "<valname> <valtype> <value> Registry Key Create"},
   {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> Registry Key Security"},
+  {"regtestsec", cmd_reg_test_key_sec, "<keyname> Test Registry Key Security"},
   {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test"},
   {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info"},
   {"srvinfo",    cmd_srv_query_info,   "Server Query Info"},

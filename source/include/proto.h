@@ -1480,7 +1480,7 @@ void smb_io_unihdr(char *desc,  UNIHDR *hdr, prs_struct *ps, int depth);
 void make_buf_hdr(BUFHDR *hdr, int max_len, int len);
 void smb_io_hdrbuf_pre(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
 void smb_io_hdrbuf_post(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 start_offset);
+				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
 void smb_io_hdrbuf(char *desc,  BUFHDR *hdr, prs_struct *ps, int depth);
 void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 void smb_io_unihdr2(char *desc,  UNIHDR2 *hdr2, prs_struct *ps, int depth);
@@ -1631,7 +1631,7 @@ BOOL prs_uint16_post(char *name, prs_struct *ps, int depth, uint16 *data16,
 				uint32 ptr_uint16, uint32 start_offset);
 BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint32 *offset);
 BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 start_offset);
+				uint32 ptr_uint32, uint32 data_size);
 
 /*The following definitions come from  rpc_parse/parse_reg.c  */
 
@@ -2124,6 +2124,7 @@ void cmd_reg_create_val(struct client_info *info);
 void cmd_reg_delete_val(struct client_info *info);
 void cmd_reg_delete_key(struct client_info *info);
 void cmd_reg_create_key(struct client_info *info);
+void cmd_reg_test_key_sec(struct client_info *info);
 void cmd_reg_get_key_sec(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */

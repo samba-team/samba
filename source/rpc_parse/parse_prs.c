@@ -366,21 +366,15 @@ BOOL prs_uint32_pre(char *name, prs_struct *ps, int depth, uint32 *data32, uint3
  does nothing on reading, as that is already handled by ...._pre()
  ********************************************************************/
 BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
-				uint32 ptr_uint32, uint32 start_offset)
+				uint32 ptr_uint32, uint32 data_size)
 {
 	if (!ps->io)
 	{
 		/* storing: go back and do a retrospective job.  i hate this */
-		uint32 data_size = ps->offset - start_offset;
 		uint32 old_offset = ps->offset;
-
 		ps->offset = ptr_uint32;
 		prs_uint32(name, ps, depth, &data_size);
 		ps->offset = old_offset;
-	}
-	else
-	{
-		ps->offset = start_offset + (*data32);
 	}
 	return True;
 }
