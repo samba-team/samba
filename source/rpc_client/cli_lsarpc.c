@@ -108,7 +108,7 @@ BOOL lsa_open_secret(struct cli_state *cli, uint16 fnum,
 	prs_struct rbuf;
 	prs_struct buf; 
 	LSA_Q_OPEN_SECRET q_o;
-	BOOL valid_pol;
+	BOOL valid_pol = False;
 
 	if (hnd_pol == NULL) return False;
 
