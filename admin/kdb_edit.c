@@ -149,6 +149,8 @@ main(int argc, char **argv)
 
     set_progname(argv[0]);
 
+    krb5_init_context(&context);
+
     while((e = getarg(args, num_args, argc, argv, &optind)))
 	warnx("error at argument `%s'", argv[optind]);
 
@@ -163,8 +165,6 @@ main(int argc, char **argv)
 
     if (argc != 0)
 	usage (1);
-
-    krb5_init_context(&context);
 
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
