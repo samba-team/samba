@@ -182,6 +182,22 @@ static void decode_printerdriverdir_info_1(NEW_BUFFER *buffer, DRIVER_DIRECTORY_
 }
 
 
+static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
+			       PORT_INFO_2 **info)
+{
+        uint32 i;
+        PORT_INFO_2 *inf;
+
+        inf=(PORT_INFO_2*)malloc(returned*sizeof(PORT_INFO_2));
+
+        prs_set_offset(&buffer->prs, 0);
+
+        for (i=0; i<returned; i++) {
+                new_smb_io_port_info_2("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
 
 /****************************************************************************
 nt spoolss query
@@ -229,6 +245,54 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags,
 		display_printer_info_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
 		display_printer_info_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
 		display_printer_info_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
+	}
+
+	return True;
+}
+
+/****************************************************************************
+nt spoolss query
+****************************************************************************/
+BOOL msrpc_spoolss_enum_ports(char* srv_name, 
+				 uint32 level, PORT_INFO_CTR *ctr)
+{
+	uint32 status;
+	NEW_BUFFER buffer;
+	uint32 needed;
+	uint32 returned;
+	
+	init_buffer(&buffer, 0);
+	
+	/* send a NULL buffer first */
+	status=spoolss_enum_ports(srv_name, level, &buffer, 0, 
+				     &needed, &returned);
+	
+	if (status==ERROR_INSUFFICIENT_BUFFER) {
+		init_buffer(&buffer, needed);
+		status=spoolss_enum_ports(srv_name, level, &buffer, 
+					  needed, &needed, &returned);
+	}
+	
+	report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
+	
+	if (status!=NT_STATUS_NO_PROBLEMO)
+		return False;
+		
+	/* is there anything to process? */
+	if (returned != 0)
+	{
+		switch (level) {
+		case 2:
+			decode_port_info_2(&buffer, returned, &ctr->port.info_2);
+			break;
+		default:
+			DEBUG(0,("Unable to decode unknown PORT_INFO_%d\n", level));
+			break;
+		}		
+
+		display_port_info_ctr(out_hnd, ACTION_HEADER   , level, returned, ctr);
+		display_port_info_ctr(out_hnd, ACTION_ENUMERATE, level, returned, ctr);
+		display_port_info_ctr(out_hnd, ACTION_FOOTER   , level, returned, ctr);
 	}
 
 	return True;
@@ -585,17 +649,21 @@ BOOL msrpc_spoolss_getprinterdriverdir(char* srv_name, char* env_name, uint32 le
 {
         uint32 status;
         NEW_BUFFER buffer;
-        uint32 needed;
+        uint32 needed = 502;
 
         init_buffer(&buffer, 0);
 
+#if 0 /* JERRY */
         /* send a NULL buffer first */
         status=spoolss_getprinterdriverdir(srv_name, env_name, level, &buffer, 0, &needed);
 
         if (status==ERROR_INSUFFICIENT_BUFFER) {
+#endif
                 init_buffer(&buffer, needed);
                 status=spoolss_getprinterdriverdir(srv_name, env_name, level, &buffer, needed, &needed);
+#if 0
         }
+#endif
 
         report(out_hnd, "\tstatus:[%d (%x)]\n", status, status);
 

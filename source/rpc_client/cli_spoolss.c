@@ -162,6 +162,70 @@ uint32 spoolss_enum_printers(uint32 flags, fstring srv_name, uint32 level,
 }
 
 /****************************************************************************
+do a SPOOLSS Enum Ports
+****************************************************************************/
+uint32 spoolss_enum_ports(fstring srv_name, uint32 level,
+                             NEW_BUFFER *buffer, uint32 offered,
+                             uint32 *needed, uint32 *returned)
+{
+        prs_struct rbuf;
+        prs_struct buf;
+        SPOOL_Q_ENUMPORTS q_o;
+        SPOOL_R_ENUMPORTS r_o;
+
+        struct cli_connection *con = NULL;
+
+        if (!cli_connection_init(srv_name, PIPE_SPOOLSS, &con))
+                return False;
+
+        prs_init(&buf , MAX_PDU_FRAG_LEN, 4, MARSHALL);
+        prs_init(&rbuf, 0, 4, UNMARSHALL);
+
+        /* create and send a MSRPC command with api SPOOLSS_ENUMPORTS */
+
+        DEBUG(5,("SPOOLSS Enum Ports (Server: %s level: %d)\n", srv_name, level));
+
+        make_spoolss_q_enumports(&q_o, "", level, buffer, offered);
+
+        /* turn parameters into data stream */
+        if (!spoolss_io_q_enumports("", &q_o, &buf, 0) ) {
+                prs_mem_free(&rbuf);
+                prs_mem_free(&buf );
+
+                cli_connection_unlink(con);
+        }
+
+        if(!rpc_con_pipe_req(con, SPOOLSS_ENUMPORTS, &buf, &rbuf)) {
+                prs_mem_free(&rbuf);
+                prs_mem_free(&buf );
+
+                cli_connection_unlink(con);
+        }
+
+        prs_mem_free(&buf );
+        ZERO_STRUCT(r_o);
+
+        prs_switch_type(&buffer->prs, UNMARSHALL);
+        prs_set_offset(&buffer->prs, 0);
+        r_o.buffer=buffer;
+
+        if(!new_spoolss_io_r_enumports("", &r_o, &rbuf, 0)) {
+                prs_mem_free(&rbuf);
+                cli_connection_unlink(con);
+        }
+
+        *needed=r_o.needed;
+        *returned=r_o.returned;
+
+        prs_mem_free(&rbuf);
+        prs_mem_free(&buf );
+
+        cli_connection_unlink(con);
+
+        return r_o.status;
+}
+
+/****************************************************************************
 do a SPOOLSS Enum Jobs
 ****************************************************************************/
 uint32 spoolss_enum_jobs(const POLICY_HND *hnd, uint32 firstjob, uint32 numofjobs,
@@ -585,9 +649,11 @@ uint32 spoolss_getprinterdriverdir(fstring srv_name, fstring env_name, uint32 le
 
         /* create and send a MSRPC command with api SPOOLSS_ENUM_PRINTERS */
 
-        DEBUG(5,("SPOOLSS GetPrinterDriverDir (Server: %s Env: %s level: %d)\n", srv_name, env_name, level));
+        DEBUG(5,("SPOOLSS GetPrinterDriverDir (Server: %s Env: %s level: %d)\n", 
+		  srv_name, env_name, level));
 
-        make_spoolss_q_getprinterdriverdir(&q_o, srv_name, env_name, level, buffer, offered);
+        make_spoolss_q_getprinterdriverdir(&q_o, srv_name, env_name, level, 
+					   buffer, offered);
 
         /* turn parameters into data stream */
         if (!spoolss_io_q_getprinterdriverdir("", &q_o, &buf, 0) ) {
