@@ -238,9 +238,6 @@ static int truncate_unless_locked(struct connection_struct *conn, files_struct *
 {
 	SMB_BIG_UINT mask = (SMB_BIG_UINT)-1;
 
-	if (!fsp->can_write)
-		return -1;
-
 	if (is_locked(fsp,fsp->conn,mask,0,WRITE_LOCK)){
 		errno = EACCES;
 		unix_ERR_class = ERRDOS;
