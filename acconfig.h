@@ -204,6 +204,9 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 /* define this if you want to use the KDC as a kaserver */
 #undef KASERVER
 
+/* define this if you want support for reading kaserver databases in hprop */
+#undef KASERVER_DB
+
 /* define this if you have kerberos 5 */
 #undef KRB5
 
