@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# $Id: swat.postinst,v 1.1.2.2 2002/05/02 20:02:04 jerry Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
