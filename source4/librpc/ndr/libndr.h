@@ -137,7 +137,6 @@ struct ndr_print {
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
-#define NDR_PRINT_UNION_DEBUG(type, level, p) ndr_print_union_debug((ndr_print_union_fn_t)ndr_print_ ##type, #p, level, p)
 #define NDR_PRINT_FUNCTION_DEBUG(type, flags, p) ndr_print_function_debug((ndr_print_function_t)ndr_print_ ##type, #type, flags, p)
 #define NDR_PRINT_BOTH_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_BOTH, p)
 #define NDR_PRINT_OUT_DEBUG(type, p) NDR_PRINT_FUNCTION_DEBUG(type, NDR_OUT, p)
@@ -242,8 +241,6 @@ enum ndr_err_code {
 typedef NTSTATUS (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, void *);
 typedef NTSTATUS (*ndr_push_const_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef NTSTATUS (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
-typedef NTSTATUS (*ndr_push_union_fn_t)(struct ndr_push *, int ndr_flags, uint32_t, void *);
-typedef NTSTATUS (*ndr_pull_union_fn_t)(struct ndr_pull *, int ndr_flags, uint32_t, void *);
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, void *);
 typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32_t, void *);

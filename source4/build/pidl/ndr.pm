@@ -549,7 +549,7 @@ sub ParseArrayPull($$$$)
 	my $size = $length;
 
 	if (is_conformant_array($e)) {
-		$size = "ndr_get_array_size($ndr, &$var_prefix$e->{NAME})";
+		$length = $size = "ndr_get_array_size($ndr, &$var_prefix$e->{NAME})";
 	}
 
 	# if this is a conformant array then we use that size to allocate, and make sure
