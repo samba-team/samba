@@ -56,6 +56,11 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
 #include <linux/quota.h>
 #ifdef HAVE_LINUX_XQM_H
 #include <linux/xqm.h>
+#else
+#ifdef HAVE_XFS_XQM_H
+#include <xfs/xqm.h>
+#define HAVE_LINUX_XQM_H
+#endif
 #endif
 
 #include <mntent.h>
