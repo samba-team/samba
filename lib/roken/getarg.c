@@ -41,14 +41,71 @@
 RCSID("$Id$");
 #endif
 
+#include <stdio.h>
+#include <roken.h>
 #include "getarg.h"
+
+static void
+print_arg (struct getargs *arg)
+{
+    switch (arg->type) {
+    case arg_integer:
+	fprintf (stderr, " n]");
+	break;
+    case arg_string:
+	fprintf (stderr, " s]");
+	break;
+    case arg_flag:
+    case arg_negative_flag:
+	fprintf (stderr, "]");
+	break;
+    default:
+	abort ();
+    }
+}
+
+void
+arg_printusage (struct getargs *args,
+		size_t num_args,
+		const char *extra_string)
+{
+    int i;
+
+    fprintf (stderr, "Usage: %s", __progname);
+    for (i = 0; i < num_args; ++i) {
+	if (args[i].long_name) {
+	    fprintf (stderr, " [--%s", args[i].long_name);
+	    print_arg (&args[i]);
+	}
+	if (args[i].short_name) {
+	    fprintf (stderr, " [-%c", args[i].short_name);
+	    print_arg (&args[i]);
+	}
+    }
+    if (extra_string)
+	fprintf (stderr, " %s\n", extra_string);
+    else
+	fprintf (stderr, "\n");
+    for (i = 0; i < num_args; ++i) {
+	if (args[i].help) {
+	    if (args[i].short_name) {
+		fprintf (stderr, "-%c", args[i].short_name);
+		if (args[i].long_name)
+		    fprintf (stderr, " or ");
+	    }
+	    if (args[i].long_name)
+		fprintf (stderr, "--%s", args[i].long_name);
+	    fprintf (stderr, "\t%s\n", args[i].help);
+	}
+    }
+}
 
 static int
 arg_match(struct getargs *arg, char *argv)
 {
     char *optarg;
     int negate = 0;
-    if(arg->long_name){
+    if(arg->long_name) {
 	int len = strlen(arg->long_name);
 	if(strncmp(arg->long_name, argv, len))
 	    if(arg->type == arg_flag && strlen(argv) > 3 && 
@@ -102,7 +159,7 @@ getarg(struct getargs *args, size_t num_args,
     int i, j, k;
     int ret = 0;
     (*optind)++;
-    for(i = *optind; i < argc; i++){
+    for(i = *optind; i < argc; i++) {
 	if(argv[i][0] != '-')
 	    break;
 	if(argv[i][1] == '-'){
@@ -112,15 +169,14 @@ getarg(struct getargs *args, size_t num_args,
 	    }
 	    for(j = 0; j < num_args; j++){
 		ret = arg_match(&args[j], argv[i] + 2);
-		if(ret == ARG_ERR_NO_MATCH)
-		    continue;
-		break;
+		if(ret != ARG_ERR_NO_MATCH)
+		    break;
 	    }
 	    if(ret)
-		break;
+		return ret;
 	}else{
-	    for(j = 1; argv[i][j]; j++){
-		for(k = 0; k < num_args; k++){
+	    for(j = 1; argv[i][j]; j++) {
+		for(k = 0; k < num_args; k++) {
 		    char *optarg;
 		    if(args[k].short_name == 0)
 			continue;
@@ -155,6 +211,8 @@ getarg(struct getargs *args, size_t num_args,
 		    }
 			
 		}
+		if (k == num_args)
+		    return ARG_ERR_NO_MATCH;
 	    }
 	}
     }
