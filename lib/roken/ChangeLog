@@ -1,3 +1,9 @@
+2001-05-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* base64.c: clean up the decode mess somewhat
+
+	* base64-test.c: base64 tests
+
 2001-05-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.h.in: just use standard C types with bswap*
