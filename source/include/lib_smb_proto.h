@@ -534,7 +534,8 @@ BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct *ps,
 			int depth);
 BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		      const DOM_CRED * srv_creds,
-		      uint16 switch_value, void *id, uint32 status);
+		      uint16 switch_value, void *id, 
+		      uint32 auth_resp, uint32 status);
 BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 			  prs_struct *ps, int depth);
 void free_net_user_info_ctr(NET_USER_INFO_CTR * ctr);

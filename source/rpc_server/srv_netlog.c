@@ -227,6 +227,7 @@ static BOOL api_net_sam_logon( prs_struct *data, prs_struct *rdata)
 	DOM_CRED srv_creds;
 	NET_USER_INFO_CTR uctr;
 	uint32 status;
+	uint32 auth_resp;
 	BOOL ret;
 
 	ZERO_STRUCT(uctr);
@@ -246,10 +247,10 @@ static BOOL api_net_sam_logon( prs_struct *data, prs_struct *rdata)
 				q_l.sam_id.ctr,
 				q_l.validation_level,
 				&srv_creds, &uctr,
-				&r_s.auth_resp);
+				&auth_resp);
 	make_r_sam_logon(&r_s, &srv_creds, q_l.validation_level,
 			 status == NT_STATUS_NOPROBLEMO ? uctr.usr.id : NULL,
-			 status);
+			 auth_resp, status);
 
 	/* store the response in the SMB stream */
 	ret = net_io_r_sam_logon("", &r_s, rdata, 0);

@@ -63,7 +63,8 @@ static uint32 direct_samr_userinfo(const UNISTR2 *uni_user,
 		ZERO_STRUCTP(ctr);
 	}
 
-	status_sam = _samr_connect(NULL, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status_sam =
+		_samr_connect(NULL, SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
 	if (status_sam == NT_STATUS_NOPROBLEMO)
 	{
 		status_dom = _samr_open_domain(&sam_pol,
@@ -207,6 +208,60 @@ static BOOL get_md4pw(char *md4pw, char *trust_name, char *trust_acct)
 /*************************************************************************
  net_login_interactive:
  *************************************************************************/
+static uint32 remote_interactive(const NET_ID_INFO_1 * id1,
+				 struct dcinfo *dc, NET_USER_INFO_3 * usr)
+{
+	const UNISTR2 *uni_samusr = &id1->uni_user_name;
+	const UNISTR2 *uni_samnam = &id1->uni_domain_name;
+	fstring user;
+	fstring domain;
+	uint32 status;
+	char nt_pwd[16];
+	char lm_pwd[16];
+	unsigned char key[16];
+
+	memset(key, 0, 16);
+	memcpy(key, dc->sess_key, 8);
+
+	memcpy(lm_pwd, id1->lm_owf.data, 16);
+	memcpy(nt_pwd, id1->nt_owf.data, 16);
+
+	dump_data_pw("key:", key, 16);
+
+	dump_data_pw("lm owf password:", lm_pwd, 16);
+	dump_data_pw("nt owf password:", nt_pwd, 16);
+
+	SamOEMhash((uchar *) lm_pwd, key, 0);
+	SamOEMhash((uchar *) nt_pwd, key, 0);
+
+	dump_data_pw("decrypt of lm owf password:", lm_pwd, 16);
+	dump_data_pw("decrypt of nt owf password:", nt_pwd, 16);
+
+	unistr2_to_ascii(user, uni_samusr, sizeof(user) - 1);
+	unistr2_to_ascii(domain, uni_samnam, sizeof(domain) - 1);
+
+	DEBUG(5, ("remote_interactive: user:%s domain:%s\n", user, domain));
+
+	status = check_domain_security(user, domain,
+				       NULL, lm_pwd, 16, nt_pwd, 16, usr);
+	if (status != 0x0)
+	{
+		return status;
+	}
+
+	memset(key, 0, 16);
+	memcpy(key, dc->sess_key, 8);
+	dump_data_pw("key:", key, 16);
+	dump_data_pw("user sess key:", usr->user_sess_key, 16);
+	SamOEMhash((uchar *) usr->user_sess_key, key, 0);
+	dump_data_pw("encrypt of user session key:", usr->user_sess_key, 16);
+
+	return status;
+}
+
+/*************************************************************************
+ net_login_interactive:
+ *************************************************************************/
 static uint32 net_login_interactive(const NET_ID_INFO_1 * id1,
 				    struct dcinfo *dc)
 {
@@ -304,9 +359,8 @@ static uint32 net_login_general(const NET_ID_INFO_4 * id4,
 /*************************************************************************
  net_login_network:
  *************************************************************************/
-static uint32 remote_net_login_network(const NET_ID_INFO_2 * id2,
-				       struct dcinfo *dc,
-				       NET_USER_INFO_3 * usr)
+static uint32 remote_network(const NET_ID_INFO_2 * id2,
+			     struct dcinfo *dc, NET_USER_INFO_3 * usr)
 {
 	const UNISTR2 *uni_samusr = &id2->uni_user_name;
 	const UNISTR2 *uni_samnam = &id2->uni_domain_name;
@@ -316,17 +370,20 @@ static uint32 remote_net_login_network(const NET_ID_INFO_2 * id2,
 	uint32 status;
 	int nt_pw_len = id2->hdr_nt_chal_resp.str_str_len;
 	int lm_pw_len = id2->hdr_lm_chal_resp.str_str_len;
+
 	unistr2_to_ascii(user, uni_samusr, sizeof(user) - 1);
 	unistr2_to_ascii(domain, uni_samnam, sizeof(domain) - 1);
+
 	DEBUG(5,
-	      ("remote_net_login_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
+	      ("remote_network: lm_len:%d nt_len:%d user:%s domain:%s\n",
 	       lm_pw_len, nt_pw_len, user, domain));
+
 	status = check_domain_security(user, domain,
 				       id2->lm_chal,
-				       (const uchar *)id2->
-				       lm_chal_resp.buffer, lm_pw_len,
-				       (const uchar *)id2->
-				       nt_chal_resp.buffer, nt_pw_len, usr);
+				       (const uchar *)id2->lm_chal_resp.
+				       buffer, lm_pw_len,
+				       (const uchar *)id2->nt_chal_resp.
+				       buffer, nt_pw_len, usr);
 	if (status != 0x0)
 	{
 		return status;
@@ -678,6 +735,7 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 
 	/* mask out unsupported bits */
 	srv_flgs->neg_flags = clnt_flgs->neg_flags & 0x400001ff;
+
 	/* minimum bits required */
 	if (!IS_BITS_SET_ALL(srv_flgs->neg_flags, 0x000000ff))
 	{
@@ -689,7 +747,7 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 	{
 		srv_flgs->neg_flags &= ~0x40000000;
 	}
-	else
+	else if (lp_server_schannel() == True)
 	{
 		/* secure channel MUST be used */
 		if (IS_BITS_CLR_ALL(srv_flgs->neg_flags, 0x40000000))
@@ -900,17 +958,20 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		(*auth_resp) = 0;
+		(*auth_resp) = 1;
 		switch (logon_level)
 		{
 			case NETWORK_LOGON_TYPE:
 			{
-				return remote_net_login_network(&id_ctr->auth.
-								id2, &dc,
-								uctr->usr.
-								id3);}
-			case GENERAL_LOGON_TYPE:
+				return remote_network(&id_ctr->auth.id2, &dc,
+						      uctr->usr.id3);
+			}
 			case INTERACTIVE_LOGON_TYPE:
+			{
+				return remote_interactive(&id_ctr->auth.id1,
+							  &dc, uctr->usr.id3);
+			}
+			case GENERAL_LOGON_TYPE:
 			default:
 			{
 				return NT_STATUS_ACCESS_DENIED;
@@ -1002,8 +1063,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 			{
 				/* interactive login. */
 				status =
-					net_login_interactive(&id_ctr->auth.
-							      id1, &dc);
+					net_login_interactive(&id_ctr->
+							      auth.id1, &dc);
 				(*auth_resp) = 1;
 				break;
 			}

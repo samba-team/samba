@@ -176,7 +176,7 @@ void add_char_string(char *s);
 /*The following definitions come from  lib/cmd_interp.c  */
 
 void free_cmd_set_array(uint32 num_entries, struct command_set **entries);
-struct command_set *add_cmd_set_to_array(uint32 * len,
+struct command_set *add_cmd_set_to_array(uint32 *len,
 					 struct command_set ***array,
 					 const struct command_set *cmd);
 void add_command_set(const struct command_set *cmds);
@@ -1391,8 +1391,7 @@ msrpc_service_fns *get_service_fns(void);
 
 uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 		     const UNISTR2 *uni_logon_client,
-		     const DOM_CHAL * clnt_chal,
-		     DOM_CHAL * srv_chal);
+		     const DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal);
 uint32 _net_logon_ctrl2(const UNISTR2 *uni_server_name,
 			uint32 function_code,
 			uint32 query_level,
@@ -1405,23 +1404,20 @@ uint32 _net_auth(const UNISTR2 *uni_logon_srv,
 		 const UNISTR2 *uni_acct_name,
 		 uint16 sec_chan,
 		 const UNISTR2 *uni_comp_name,
-		 const DOM_CHAL * clnt_chal,
-		 DOM_CHAL * srv_chal);
+		 const DOM_CHAL * clnt_chal, DOM_CHAL * srv_chal);
 uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 		   const UNISTR2 *uni_acct_name,
 		   uint16 sec_chan,
 		   const UNISTR2 *uni_comp_name,
 		   const DOM_CHAL * clnt_chal,
 		   const NEG_FLAGS * clnt_flgs,
-		   DOM_CHAL * srv_chal,
-		   NEG_FLAGS * srv_flgs);
+		   DOM_CHAL * srv_chal, NEG_FLAGS * srv_flgs);
 uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 		      const UNISTR2 *uni_acct_name,
 		      uint16 sec_chan,
 		      const UNISTR2 *uni_comp_name,
 		      const DOM_CRED * clnt_cred,
-		      const uint8 pwd[16],
-		      DOM_CRED * srv_cred);
+		      const uint8 pwd[16], DOM_CRED * srv_cred);
 uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		      const UNISTR2 *uni_comp_name,
 		      const DOM_CRED * clnt_cred,
@@ -1429,10 +1425,8 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		      const NET_ID_INFO_CTR * id_ctr,
 		      uint16 validation_level,
 		      DOM_CRED * srv_creds,
-		      NET_USER_INFO_CTR * uctr,
-		      uint32 *auth_resp);
-uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id,
-		       DOM_CRED * srv_creds);
+		      NET_USER_INFO_CTR * uctr, uint32 *auth_resp);
+uint32 _net_sam_logoff(const DOM_SAM_INFO * sam_id, DOM_CRED * srv_creds);
 uint32 _net_sam_sync(const UNISTR2 *uni_srv_name,
 		     const UNISTR2 *uni_cli_name,
 		     DOM_CRED * cli_creds,
@@ -2623,7 +2617,8 @@ BOOL net_io_q_sam_logon(char *desc, NET_Q_SAM_LOGON * q_l, prs_struct *ps,
 			int depth);
 BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		      const DOM_CRED * srv_creds,
-		      uint16 switch_value, void *id, uint32 status);
+		      uint16 switch_value, void *id, 
+		      uint32 auth_resp, uint32 status);
 BOOL net_io_user_info_ctr(char *desc, NET_USER_INFO_CTR * ctr,
 			  prs_struct *ps, int depth);
 void free_net_user_info_ctr(NET_USER_INFO_CTR * ctr);
@@ -2971,7 +2966,8 @@ void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[]);
 void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[]);
-void cmd_lsa_query_secret_secobj(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_query_secret_secobj(struct client_info *info, int argc,
+				 char *argv[]);
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */

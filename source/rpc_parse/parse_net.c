@@ -1967,21 +1967,17 @@ makes a NET_R_SAM_LOGON structure.
 ********************************************************************/
 BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 		      const DOM_CRED * srv_creds,
-		      uint16 switch_value, void *id, uint32 status)
+		      uint16 switch_value, void *id, 
+		      uint32 auth_resp, uint32 status)
 {
 	if (r_s == NULL)
 		return False;
 
-	/* XXXX we may want this behaviour:
-	   if (status == NT_STATUS_NOPROBLEMO)
-	   {
-	 */
-
 	r_s->buffer_creds = 1;
+	memcpy(&(r_s->srv_creds), srv_creds, sizeof(r_s->srv_creds));
 
 	if (status == NT_STATUS_NOPROBLEMO)
 	{
-		memcpy(&(r_s->srv_creds), srv_creds, sizeof(r_s->srv_creds));
 		/* store the user information, if there is any. */
 		r_s->ctr.usr.id = id;
 		if (id != NULL)
@@ -1997,15 +1993,12 @@ BOOL make_r_sam_logon(NET_R_SAM_LOGON * r_s,
 	}
 	else
 	{
-		/* XXXX we may want this behaviour:
-		   r_s->buffer_creds = 0;
-		 */
 		r_s->ctr.ptr_user_info = 0;
 		r_s->ctr.switch_value = 0;
 		r_s->ctr.usr.id = NULL;
 	}
 
-	r_s->auth_resp = 1;
+	r_s->auth_resp = auth_resp;
 
 	r_s->status = status;
 
