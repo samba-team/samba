@@ -14,7 +14,6 @@ ADD_OBJ_FILES = \
 		lib/replace.o \
 		lib/signal.o \
 		lib/system.o \
-		lib/sendfile.o \
 		lib/time.o \
 		lib/genrand.o \
 		lib/username.o \
