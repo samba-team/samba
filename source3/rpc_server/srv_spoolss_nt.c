@@ -7917,57 +7917,66 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
  * spoolss_enumprinterkey
  ********************************************************************/
 
-/* constants for EnumPrinterKey() */
-#define ENUMERATED_KEY_SIZE	19
 
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
 {
 	fstring key;
-	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
+	uint16  *enumkeys = NULL;
 	char*   ptr = NULL;
 	int     i;
-	char 	*PrinterKey = SPOOL_PRINTERDATA_KEY;
+	int	printerkey_len = strlen(SPOOL_PRINTERDATA_KEY)+1;	
 
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_ascii( key, &q_u->key, sizeof(key)-1 );
 
 	/* 
 	 * we only support enumating all keys (key == "")
 	 * Of course, the only key we support is the "PrinterDriverData" 
 	 * key
-	 */	
-	if (strlen(key) == 0)
+	 */
+
+	if ( !strlen( key ) )
 	{
-		r_u->needed = ENUMERATED_KEY_SIZE *2;
-		if (q_u->size < r_u->needed)
+		r_u->needed = printerkey_len*2;
+		
+		if ( q_u->size < r_u->needed )
 			return WERR_MORE_DATA;
 	
-		ptr = PrinterKey;
-		for (i=0; i<ENUMERATED_KEY_SIZE-2; i++)
+		if ( !(enumkeys = talloc( p->mem_ctx, printerkey_len*2 )) ) {
+			DEBUG(0,("_spoolss_enumprinterkey: talloc() failed for [%d] bytes!\n",
+				printerkey_len));
+			return WERR_NOMEM;
+		}
+		
+		ptr = SPOOL_PRINTERDATA_KEY;
+		for ( i=0; i<(printerkey_len-1); i++ )
 		{
 			enumkeys[i] = (uint16)(*ptr);
 			ptr++;
 		}
 
-		/* tag of with 2 '\0's */
-		enumkeys[i++] = '\0';
-		enumkeys[i] = '\0';
+		/* tag of '\0's */
+		
+		enumkeys[i] = 0x0;
 	
-		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, ENUMERATED_KEY_SIZE, enumkeys))
+		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, printerkey_len, enumkeys))
 			return WERR_BADFILE;
 			
 		return WERR_OK;
 	}
 	
 	/* The "PrinterDriverData" key should have no subkeys */
-	if (strcmp(key, PrinterKey) == 0)
+	if ( strcmp(key, SPOOL_PRINTERDATA_KEY) == 0 )
 	{
-		r_u-> needed = 2;
+		uint16	dummy_key = 0;
+		
+		r_u->needed = 2;
+		
 		if (q_u->size < r_u->needed)
 			return WERR_MORE_DATA;
-		enumkeys[0] = 0x0;
-		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, enumkeys))
+			
+		if ( !make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, &dummy_key ) )
 			return WERR_BADFILE;
 			
 		return WERR_OK;
@@ -7976,6 +7985,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 
 	/* The return value for an unknown key is documented in MSDN
 	   EnumPrinterKey description */
+	   
         return WERR_BADFILE;
 }
 
