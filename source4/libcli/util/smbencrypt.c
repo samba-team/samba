@@ -486,8 +486,6 @@ BOOL decode_pw_buffer(uint8_t in_buffer[516], char *new_pwrd,
 
 	/* Password cannot be longer than the size of the password buffer */
 	if ( (byte_len < 0) || (byte_len > 512)) {
-		DEBUG(0, ("decode_pw_buffer: incorrect password length (%d).\n", byte_len));
-		DEBUG(0, ("decode_pw_buffer: check that 'encrypt passwords = yes'\n"));
 		return False;
 	}
 
