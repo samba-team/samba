@@ -87,6 +87,8 @@ _krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
 	ret = EAGAIN;
 
     switch (ret) {
+    case 0:
+	break;
     case EINVAL: /* filesystem doesn't support locking, let the user have it */
 	ret = 0; 
 	break;
