@@ -288,14 +288,14 @@ sub ParseArrayPull($$$)
 	if ((util::need_alloc($e) && !util::is_fixed_array($e)) ||
 	    ($var_prefix eq "r->in." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
-			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size), sizeof($var_prefix$e->{NAME}\[0]));\n";
 		}
 	}
 
 	if (($var_prefix eq "r->out." && util::has_property($e, "ref"))) {
 		if (!util::is_inline_array($e) || $ndr_flags eq "NDR_SCALARS") {
 			pidl "\tif (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {";
-			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+			pidl "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, MAX(1, $alloc_size), sizeof($var_prefix$e->{NAME}\[0]));\n";
 			pidl "\t}\n";
 		}
 	}

@@ -153,6 +153,9 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 		       pipe_name, nt_errstr(status));
                 return status;
         }
+
+	/* always do NDR validation in smbtorture */
+	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
  
         return status;
 }
