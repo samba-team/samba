@@ -3,9 +3,11 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen			    1999.
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Paul Ashton                       1997,
+ *  Copyright (C) Marc Jacobsen			    1999,
+ *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Anthony Liguori                   2002,
+ *  Copyright (C) Jim McDonough                     2002.
  *	
  * 	Split into interface and implementation modules by, 
  *
@@ -646,6 +648,37 @@ static BOOL api_samr_connect(pipes_struct *p)
 	/* store the response in the SMB stream */
 	if(!samr_io_r_connect("", &r_u, rdata, 0)) {
 		DEBUG(0,("api_samr_connect: unable to marshall SAMR_R_CONNECT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ api_samr_connect4
+ ********************************************************************/
+
+static BOOL api_samr_connect4(pipes_struct *p)
+{
+	SAMR_Q_CONNECT4 q_u;
+	SAMR_R_CONNECT4 r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the samr open policy */
+	if(!samr_io_q_connect4("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_connect4: unable to unmarshall SAMR_Q_CONNECT4.\n"));
+		return False;
+	}
+
+	r_u.status = _samr_connect4(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!samr_io_r_connect4("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_connect4: unable to marshall SAMR_R_CONNECT4.\n"));
 		return False;
 	}
 
@@ -1465,6 +1498,7 @@ static struct api_struct api_samr_cmds [] =
 	{"SAMR_GET_USRDOM_PWINFO" , SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},
 	{"SAMR_UNKNOWN_2E"        , SAMR_UNKNOWN_2E       , api_samr_unknown_2e       },
 	{"SAMR_SET_DOMAIN_INFO"   , SAMR_SET_DOMAIN_INFO  , api_samr_set_dom_info     },
+	{"SAMR_CONNECT4"          , SAMR_CONNECT4         , api_samr_connect4         },
 	{NULL                     , 0                     , NULL                      }
 };
 

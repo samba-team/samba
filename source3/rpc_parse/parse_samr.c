@@ -5,8 +5,10 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Paul Ashton                  1997-2000,
  *  Copyright (C) Elrond                            2000,
- *  Copyright (C) Jeremy Allison                    2001
- *  Copyright (C) Jean François Micouleau      1998-2001.
+ *  Copyright (C) Jeremy Allison                    2001,
+ *  Copyright (C) Jean François Micouleau      1998-2001,
+ *  Copyright (C) Anthony Liguori                   2002,
+ *  Copyright (C) Jim McDonough                     2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -6702,6 +6704,62 @@ BOOL samr_io_r_connect(char *desc, SAMR_R_CONNECT * r_u,
 		return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_connect");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_connect4(char *desc, SAMR_Q_CONNECT4 * q_u,
+			prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_connect4");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("ptr_srv_name", ps, depth, &q_u->ptr_srv_name))
+		return False;
+	if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->ptr_srv_name, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("unk_0", ps, depth, &q_u->unk_0))
+		return False;
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_r_connect4(char *desc, SAMR_R_CONNECT4 * r_u,
+			prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_connect4");
 	depth++;
 
 	if(!prs_align(ps))
