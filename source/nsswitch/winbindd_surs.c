@@ -252,7 +252,7 @@ int winbindd_surs_init(DOM_SID *domain_sid, char *domain_name)
 
         /* Add BUILTIN users */
 
-        sid_to_string(sid_str, &global_sid_S_1_5_20);
+        sid_to_string(sid_str, &global_sid_S_1_5_32);
 
         for(i = 0; local_users[i].name != NULL; i++) {
 
@@ -323,7 +323,7 @@ int winbindd_surs_init(DOM_SID *domain_sid, char *domain_name)
 
         /* Add BUILTIN groups */
 
-        sid_to_string(sid_str, &global_sid_S_1_5_20);
+        sid_to_string(sid_str, &global_sid_S_1_5_32);
 
         for (i = 0; local_groups[i].name != NULL; i++) {
 
