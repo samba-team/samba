@@ -1,0 +1,30 @@
+#
+# @(#) Test initgroups function
+#
+
+load_lib util-defs.exp
+load_lib compile.exp
+
+# Compile test program
+
+simple_compile "initgroups"
+
+# Test domain users
+
+set user_list [split [util_start "bin/wbinfo" "-u"] "\n"]
+
+verbose $user_list
+
+foreach { user } $user_list {
+    set output [util_start "$srcdir/$subdir/initgroups" "\"$user\"" ""]
+
+    verbose $output
+
+    set test_desc "initgroups $user"
+
+    if { [regexp "PASS" $output] } {
+        pass $test_desc
+    } else {
+        fail $test_desc
+    }
+}
