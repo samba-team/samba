@@ -4292,10 +4292,21 @@
 		a better algorithm (generates less collisions) in the names.
 		However, many Win32 applications store the mangled names and so
 		changing to the new algorithm must not be done
-		lightly as these applications may break unless reinstalled.
-		New installations of Samba may set the default to hash2.</para>
-		<para>Default: <command>mangling method = hash</command></para>
-		<para>Example: <command>mangling method = hash2</command></para>
+		lightly as these applications may break unless reinstalled.</para>
+		<para>Default: <command>mangling method = hash2</command></para>
+		<para>Example: <command>mangling method = hash</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><anchor id="MANGLEPREFIX">mangle prefix (G)</term>
+		<listitem><para> controls the number of prefix
+		characters from the original name used when generating
+		the mangled names. A larger value will give a weaker
+		hash and therefore more name collisions. The minimum
+		value is 1 and the maximum value is 6.</para>
+		<para>Default: <command>mangle prefix = 1</command></para>
+		<para>Example: <command>mangle prefix = 4</command></para>
 		</listitem>
 		</varlistentry>
 
