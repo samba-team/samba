@@ -743,9 +743,8 @@ sys_telnet_init(void)
 
 
 #if	defined(SO_OOBINLINE)
-    if (SetSockOpt(net, SOL_SOCKET, SO_OOBINLINE, 1) == -1) {
-	perror("SetSockOpt");
-    }
+    if (SetSockOpt(net, SOL_SOCKET, SO_OOBINLINE, 1) == -1)
+	perror("setsockopt (SO_OOBINLINE) (ignored)");
 #endif	/* defined(SO_OOBINLINE) */
 }
 
