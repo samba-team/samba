@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+void exit(int);
+
 main()
 {
 #if !(defined(HAVE_FCNTL_LOCK) || defined(HAVE_STRUCT_FLOCK64))
