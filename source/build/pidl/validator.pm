@@ -76,6 +76,10 @@ sub ValidElement($)
 		fatal(el_name($e) . " : subcontext_size() on non-subcontext element");
 	}
 
+	if (defined (util::has_property($e, "compression")) and not defined(util::has_property($e, "subcontext"))) {
+		fatal(el_name($e) . " : compression() on non-subcontext element");
+	}
+
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or
 		util::has_property($e, "unique") or
@@ -177,12 +181,12 @@ sub ValidInterface($)
 	}
 
 	if (util::has_property($interface, "object")) {
-     	if(util::has_property($interface, "version") && 
+     		if (util::has_property($interface, "version") && 
 			$interface->{PROPERTIES}->{version} != 0) {
 			fatal "Object interfaces must have version 0.0 ($interface->{NAME})\n";
 		}
 
-		if(!defined($interface->{BASE}) && 
+		if (!defined($interface->{BASE}) && 
 			not ($interface->{NAME} eq "IUnknown")) {
 			fatal "Object interfaces must all derive from IUnknown ($interface->{NAME})\n";
 		}
