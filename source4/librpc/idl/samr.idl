@@ -382,7 +382,11 @@
 
 	/************************/
 	/* Function    0x16     */
-	NTSTATUS samr_ADD_GROUPMEM();
+	NTSTATUS samr_AddGroupMember(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint32 rid,
+		[in]                      uint32 flags
+		);
 
 	/************************/
 	/* Function    0x17     */

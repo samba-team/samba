@@ -433,29 +433,45 @@ static BOOL test_alias_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
-				   struct policy_handle *handle, const char *name)
+
+static NTSTATUS test_LookupName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+				struct policy_handle *domain_handle, const char *name,
+				uint32 *rid)
 {
 	NTSTATUS status;
 	struct samr_LookupNames n;
-	struct samr_OpenUser r;
-	struct samr_DeleteUser d;
-	struct policy_handle acct_handle;
 	struct samr_Name sname;
 
 	init_samr_Name(&sname, name);
 
-	n.in.handle = handle;
+	n.in.handle = domain_handle;
 	n.in.num_names = 1;
 	n.in.names = &sname;
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	if (NT_STATUS_IS_OK(status)) {
+		*rid = n.out.rids.ids[0];
+	}
+
+	return status;
+}
+
+static BOOL test_DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				   struct policy_handle *handle, const char *name)
+{
+	NTSTATUS status;
+	struct samr_OpenUser r;
+	struct samr_DeleteUser d;
+	struct policy_handle acct_handle;
+	uint32 rid;
+
+	status = test_LookupName(p, mem_ctx, handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
 	r.in.handle = handle;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.in.rid = n.out.rids.ids[0];
+	r.in.rid = rid;
 	r.out.acct_handle = &acct_handle;
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -481,25 +497,19 @@ static BOOL test_DeleteGroup_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				    struct policy_handle *handle, const char *name)
 {
 	NTSTATUS status;
-	struct samr_LookupNames n;
 	struct samr_OpenGroup r;
 	struct samr_DeleteDomainGroup d;
 	struct policy_handle group_handle;
-	struct samr_Name sname;
+	uint32 rid;
 
-	init_samr_Name(&sname, name);
-
-	n.in.handle = handle;
-	n.in.num_names = 1;
-	n.in.names = &sname;
-	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	status = test_LookupName(p, mem_ctx, handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
 	r.in.handle = handle;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.in.rid = n.out.rids.ids[0];
+	r.in.rid = rid;
 	r.out.acct_handle = &group_handle;
 	status = dcerpc_samr_OpenGroup(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -525,26 +535,21 @@ static BOOL test_DeleteAlias_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				   struct policy_handle *domain_handle, const char *name)
 {
 	NTSTATUS status;
-	struct samr_LookupNames n;
 	struct samr_OpenAlias r;
 	struct samr_DeleteDomAlias d;
 	struct policy_handle alias_handle;
-	struct samr_Name sname;
+	uint32 rid;
 
 	printf("testing DeleteAlias_byname\n");
-	init_samr_Name(&sname, name);
 
-	n.in.handle = domain_handle;
-	n.in.num_names = 1;
-	n.in.names = &sname;
-	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
+	status = test_LookupName(p, mem_ctx, domain_handle, name, &rid);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}
 
 	r.in.handle = domain_handle;
 	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.in.rid = n.out.rids.ids[0];
+	r.in.rid = rid;
 	r.out.acct_handle = &alias_handle;
 	status = dcerpc_samr_OpenAlias(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1421,6 +1426,42 @@ static BOOL test_DeleteDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				struct policy_handle *domain_handle,
+				struct policy_handle *group_handle)
+{
+	NTSTATUS status;
+	struct samr_AddGroupMember r;
+	BOOL ret = True;
+	uint32 rid;
+
+	status = test_LookupName(p, mem_ctx, domain_handle, TEST_USERNAME, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	r.in.handle = group_handle;
+	r.in.rid = rid;
+	r.in.flags = 0; /* ??? */
+
+	printf("Testing AddGroupMember\n");
+
+	status = dcerpc_samr_AddGroupMember(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddGroupMember failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	status = dcerpc_samr_AddGroupMember(p, mem_ctx, &r);
+	if (!NT_STATUS_EQUAL(NT_STATUS_MEMBER_IN_GROUP, status)) {
+		printf("AddGroupMember gave %s - should be NT_STATUS_MEMBER_IN_GROUP\n", 
+		       nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
 
 static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				   struct policy_handle *domain_handle, struct policy_handle *group_handle)
@@ -1458,6 +1499,10 @@ static BOOL test_CreateDomainGroup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateDomainGroup failed - %s\n", nt_errstr(status));
 		return False;
+	}
+
+	if (!test_AddGroupMember(p, mem_ctx, domain_handle, group_handle)) {
+		ret = False;
 	}
 
 	return ret;
