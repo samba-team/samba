@@ -149,7 +149,7 @@ process-all.sh
 Current state of converted parameters
 -------------------------------------
 
-Only 'ads server' parameter converted so far to serve as example of
+Only 'base' parameters converted so far to serve as example of
 formatting.
 
 All undocumented parameters are listed in doc-status file in of Samba's
