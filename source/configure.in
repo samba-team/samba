@@ -206,8 +206,11 @@ AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 
-# For experimental utmp support
-AC_CHECK_HEADERS(utmp.h utmpx.h)
+# For experimental utmp support (lastlog on some BSD-like systems)
+AC_CHECK_HEADERS(utmp.h utmpx.h lastlog.h)
+ 
+# For quotas on Veritas VxFS filesystems
+AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
@@ -703,8 +706,117 @@ if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF)
 fi
 
+dnl  utmp and utmpx come in many flavours
+dnl  We need to check for many of them
+dnl  But we don't need to do each and every one, because our code uses
+dnl  mostly just the utmp (not utmpx) fields.
+
+AC_CHECK_FUNCS(pututline pututxline updwtmp updwtmpx getutmpx)
+
+AC_CACHE_CHECK([for ut_name in utmp],samba_cv_HAVE_UT_UT_NAME,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_name[0] = 'a';],
+samba_cv_HAVE_UT_UT_NAME=yes,samba_cv_HAVE_UT_UT_NAME=no,samba_cv_HAVE_UT_UT_NAME=cross)])
+if test x"$samba_cv_HAVE_UT_UT_NAME" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_NAME)
+fi 
+
+AC_CACHE_CHECK([for ut_user in utmp],samba_cv_HAVE_UT_UT_USER,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_user[0] = 'a';],
+samba_cv_HAVE_UT_UT_USER=yes,samba_cv_HAVE_UT_UT_USER=no,samba_cv_HAVE_UT_UT_USER=cross)])
+if test x"$samba_cv_HAVE_UT_UT_USER" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_USER)
+fi 
+
+AC_CACHE_CHECK([for ut_id in utmp],samba_cv_HAVE_UT_UT_ID,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_id[0] = 'a';],
+samba_cv_HAVE_UT_UT_ID=yes,samba_cv_HAVE_UT_UT_ID=no,samba_cv_HAVE_UT_UT_ID=cross)])
+if test x"$samba_cv_HAVE_UT_UT_ID" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_ID)
+fi 
+
+AC_CACHE_CHECK([for ut_host in utmp],samba_cv_HAVE_UT_UT_HOST,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_host[0] = 'a';],
+samba_cv_HAVE_UT_UT_HOST=yes,samba_cv_HAVE_UT_UT_HOST=no,samba_cv_HAVE_UT_UT_HOST=cross)])
+if test x"$samba_cv_HAVE_UT_UT_HOST" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_HOST)
+fi 
+
+AC_CACHE_CHECK([for ut_time in utmp],samba_cv_HAVE_UT_UT_TIME,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  time_t t; ut.ut_time = t;],
+samba_cv_HAVE_UT_UT_TIME=yes,samba_cv_HAVE_UT_UT_TIME=no,samba_cv_HAVE_UT_UT_TIME=cross)])
+if test x"$samba_cv_HAVE_UT_UT_TIME" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_TIME)
+fi 
+
+AC_CACHE_CHECK([for ut_tv in utmp],samba_cv_HAVE_UT_UT_TV,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  struct timeval tv; ut.ut_tv = tv;],
+samba_cv_HAVE_UT_UT_TV=yes,samba_cv_HAVE_UT_UT_TV=no,samba_cv_HAVE_UT_UT_TV=cross)])
+if test x"$samba_cv_HAVE_UT_UT_TV" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_TV)
+fi 
+
+AC_CACHE_CHECK([for ut_type in utmp],samba_cv_HAVE_UT_UT_TYPE,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_type = 0;],
+samba_cv_HAVE_UT_UT_TYPE=yes,samba_cv_HAVE_UT_UT_TYPE=no,samba_cv_HAVE_UT_UT_TYPE=cross)])
+if test x"$samba_cv_HAVE_UT_UT_TYPE" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_TYPE)
+fi 
+
+AC_CACHE_CHECK([for ut_pid in utmp],samba_cv_HAVE_UT_UT_PID,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_pid = 0;],
+samba_cv_HAVE_UT_UT_PID=yes,samba_cv_HAVE_UT_UT_PID=no,samba_cv_HAVE_UT_UT_PID=cross)])
+if test x"$samba_cv_HAVE_UT_UT_PID" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_PID)
+fi 
+
+AC_CACHE_CHECK([for ut_exit in utmp],samba_cv_HAVE_UT_UT_EXIT,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_exit.e_exit = 0;],
+samba_cv_HAVE_UT_UT_EXIT=yes,samba_cv_HAVE_UT_UT_EXIT=no,samba_cv_HAVE_UT_UT_EXIT=cross)])
+if test x"$samba_cv_HAVE_UT_UT_EXIT" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_EXIT)
+fi 
+
+AC_CACHE_CHECK([for ut_addr in utmp],samba_cv_HAVE_UT_UT_ADDR,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+[struct utmp ut;  ut.ut_addr = 0;],
+samba_cv_HAVE_UT_UT_ADDR=yes,samba_cv_HAVE_UT_UT_ADDR=no,samba_cv_HAVE_UT_UT_ADDR=cross)])
+if test x"$samba_cv_HAVE_UT_UT_ADDR" = x"yes"; then
+    AC_DEFINE(HAVE_UT_UT_ADDR)
+fi 
+
+if test x$ac_cv_func_pututline = xyes ; then
+  AC_CACHE_CHECK([whether pututline returns pointer],samba_cv_PUTUTLINE_RETURNS_UTMP,[
+  AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmp.h>],
+  [struct utmp utarg; struct utmp *utreturn; utreturn = pututline(&utarg);],
+  samba_cv_PUTUTLINE_RETURNS_UTMP=yes,samba_cv_PUTUTLINE_RETURNS_UTMP=no)])
+  if test x"$samba_cv_PUTUTLINE_RETURNS_UTMP" = x"yes"; then
+      AC_DEFINE(PUTUTLINE_RETURNS_UTMP)
+  fi
+fi
+
 AC_CACHE_CHECK([for ut_syslen in utmpx],samba_cv_HAVE_UX_UT_SYSLEN,[
-AC_TRY_COMPILE([#include <utmpx.h>],
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <utmpx.h>],
 [struct utmpx ux;  ux.ut_syslen = 0;],
 samba_cv_HAVE_UX_UT_SYSLEN=yes,samba_cv_HAVE_UX_UT_SYSLEN=no,samba_cv_HAVE_UX_UT_SYSLEN=cross)])
 if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
