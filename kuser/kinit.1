@@ -10,38 +10,38 @@
 acquire initial tickets
 .Sh SYNOPSIS
 .Nm kinit
-.Op Fl 4
-.Op Fl -524init
+.Op Fl 4 | Fl -524init
 .Op Fl -afslog
-.Op Fl c Ar cachename
-.Op Fl -cache= Ns Ar cachename
-.Op Fl c Ar cachename
-.Op Fl -cache= Ns Ar cachename
-.Op Fl f
-.Op Fl -forwardable
-.Op Fl t Ar keytabname
-.Op Fl -keytab= Ns Ar keytabname
-.Op Fl l Ar seconds
-.Op Fl -lifetime= Ns Ar seconds
-.Op Fl p
-.Op Fl -proxiable
-.Op Fl R
-.Op Fl -renew
+.Oo Fl c Ar cachename \*(Ba Xo
+.Fl -cache= Ns Ar cachename Oc
+.Xc
+.Op Fl f | Fl -forwardable
+.Oo Fl t Ar keytabname \*(Ba Xo
+.Fl -keytab= Ns Ar keytabname Oc
+.Xc
+.Oo Fl l Ar seconds \*(Ba Xo
+.Fl -lifetime= Ns Ar seconds Oc
+.Xc
+.Op Fl p | Fl -proxiable
+.Op Fl R | Fl -renew
 .Op Fl -renewable
-.Op Fl r Ar seconds
-.Op Fl -renewable-life= Ns Ar seconds
-.Op Fl S Ar principal
-.Op Fl -server= Ns Ar principal
-.Op Fl s Ar seconds
-.Op Fl -start-time= Ns Ar seconds
-.Op Fl k
-.Op Fl -use-keytab
-.Op Fl v
-.Op Fl -validate
-.Op Fl e
-.Op Fl -enctypes= Ns Ar enctypes
-.Op Fl -fcache-version= Ns Ar version
+.Oo Fl r Ar seconds \*(Ba Xo
+.Fl -renewable-life= Ns Ar seconds Oc
+.Xc
+.Oo Fl S Ar principal \*(Ba Xo
+.Fl -server= Ns Ar principal Oc
+.Xc
+.Oo Fl s Ar seconds \*(Ba Xo
+.Fl -start-time= Ns Ar seconds Oc
+.Xc
+.Op Fl k | Fl -use-keytab
+.Op Fl v | Fl -validate
+.Oo Fl e Ar enctype \*(Ba Xo
+.Fl -enctypes= Ns Ar enctype Oc
+.Xc
+.Op Fl -fcache-version= Ns Ar integer
 .Op Fl -no-addresses
+.Op Fl -anonymous
 .Op Fl -version
 .Op Fl -help
 .Op Ar principal
@@ -134,6 +134,10 @@ Create a credentials cache of version
 .Fl -no-addresses
 .Xc
 Request a ticket with no addresses.
+.It Xo
+.Fl -anonymous
+Request an anonymous ticket.
+.Xc
 .El
 
 The following options are only available if
