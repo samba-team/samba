@@ -834,10 +834,10 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 	}
 }
 
-
 /**********************************************************************
 Delete entry from LDAP for username 
 *********************************************************************/
+
 BOOL pdb_delete_sam_account(char *sname)
 {
 	int rc;
@@ -845,6 +845,12 @@ BOOL pdb_delete_sam_account(char *sname)
 	LDAP *ldap_struct;
 	LDAPMessage *entry;
 	LDAPMessage *result;
+
+	/* Ensure we have euid as root - else deny this. */
+	if (geteuid() != 0) {
+		DEBUG(0, ("pdb_delete_sam_account: non-root user cannot delete user %s from LDAP.\n", sname));
+		return False;
+	}
 
 	if (!ldap_open_connection (&ldap_struct))
 		return False;
@@ -889,6 +895,7 @@ BOOL pdb_delete_sam_account(char *sname)
 /**********************************************************************
 Update SAM_ACCOUNT 
 *********************************************************************/
+
 BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 {
 	int rc;
@@ -898,11 +905,16 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 	LDAPMessage *entry;
 	LDAPMod **mods;
 
+	/* Ensure we have euid as root - else deny this. */
+	if (geteuid() != 0) {
+		DEBUG(0, ("pdb_update_sam_account: non-root user cannot update LDAP account.\n"));
+		return False;
+	}
+
 	if (!ldap_open_connection(&ldap_struct)) /* open a connection to the server */
 		return False;
 
-	if (!ldap_connect_system(ldap_struct))	/* connect as system account */
-	{
+	if (!ldap_connect_system(ldap_struct))	/* connect as system account */ {
 		ldap_unbind(ldap_struct);
 		return False;
 	}
@@ -910,8 +922,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 	rc = ldap_search_one_user_by_name(ldap_struct,
 					  pdb_get_username(newpwd), &result);
 
-	if (ldap_count_entries(ldap_struct, result) == 0)
-	{
+	if (ldap_count_entries(ldap_struct, result) == 0) {
 		DEBUG(0, ("No user to modify!\n"));
 		ldap_msgfree(result);
 		ldap_unbind(ldap_struct);
@@ -925,8 +936,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 
 	rc = ldap_modify_s(ldap_struct, dn, mods);
 
-	if (rc != LDAP_SUCCESS)
-	{
+	if (rc != LDAP_SUCCESS) {
 		char *ld_error;
 		ldap_get_option(ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
@@ -939,8 +949,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 		return False;
 	}
 
-	DEBUG(2,
-	      ("successfully modified uid = %s in the LDAP database\n",
+	DEBUG(2, ("successfully modified uid = %s in the LDAP database\n",
 	       pdb_get_username(newpwd)));
 	ldap_mods_free(mods, 1);
 	ldap_unbind(ldap_struct);
@@ -950,6 +959,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override)
 /**********************************************************************
 Add SAM_ACCOUNT to LDAP 
 *********************************************************************/
+
 BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 {
 	int 		rc;
@@ -961,21 +971,23 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 	int 		ldap_op;
 	uint32		num_result;
 
-	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
-	{
+	/* Ensure we have euid as root - else deny this. */
+	if (geteuid() != 0) {
+		DEBUG(0, ("pdb_add_sam_account: non-root user cannot add LDAP account.\n"));
 		return False;
 	}
 
-	if (!ldap_connect_system(ldap_struct))	/* connect as system account */
-	{
+	if (!ldap_open_connection(&ldap_struct))	/* open a connection to the server */
+		return False;
+
+	if (!ldap_connect_system(ldap_struct))	/* connect as system account */ {
 		ldap_unbind(ldap_struct);
 		return False;
 	}
 
 	rc = ldap_search_one_user_by_name (ldap_struct, pdb_get_username(newpwd), &result);
 
-	if (ldap_count_entries(ldap_struct, result) != 0)
-	{
+	if (ldap_count_entries(ldap_struct, result) != 0) {
 		DEBUG(0,("User already in the base, with samba properties\n"));
 		ldap_msgfree(result);
 		ldap_unbind(ldap_struct);
@@ -1003,8 +1015,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		tmp = ldap_get_dn (ldap_struct, entry);
 		slprintf (dn, sizeof (dn) - 1, "%s", tmp);
 		ldap_memfree (tmp);
-	}
-	else {
+	} else {
 		/* Check if we need to add an entry */
 		DEBUG(3,("Adding new user\n"));
 		ldap_op = LDAP_MOD_ADD;
@@ -1018,13 +1029,11 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 
 	if (ldap_op == LDAP_MOD_REPLACE) {
 		rc = ldap_modify_s(ldap_struct, dn, mods);
-	}
-	else {
+	} else {
 		rc = ldap_add_s(ldap_struct, dn, mods);
 	}
 
-	if (rc != LDAP_SUCCESS)
-	{
+	if (rc != LDAP_SUCCESS) {
 		char *ld_error;
 
 		ldap_get_option (ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
