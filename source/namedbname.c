@@ -36,6 +36,7 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern struct in_addr ipzero;
 extern struct in_addr wins_ip;
+extern BOOL updatedlists;
 
 extern struct subnet_record *subnetlist;
 
@@ -111,6 +112,9 @@ static void add_name(struct subnet_record *d, struct name_record *n)
   n2->next = n;
   n->next = NULL;
   n->prev = n2;
+
+  if(d == wins_subnet)
+    updatedlists = True;
 }
 
 
@@ -133,6 +137,9 @@ void remove_name(struct subnet_record *d, struct name_record *n)
     if (nlist->prev) nlist->prev->next = nlist->next;
     free(nlist);
   }
+
+  if(d == wins_subnet)
+    updatedlists = True;
 }
 
 
@@ -459,12 +466,6 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
       return NULL;
     }
   }
-
-  if(type == 0x1e)      
-  {  
-    /* Add all 1e names as address 255.255.255.255 */  
-    ip = *interpret_addr2("255.255.255.255");  
-  }  
 
   n = (struct name_record *)malloc(sizeof(*n));
   if (!n) return(NULL);

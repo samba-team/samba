@@ -194,7 +194,6 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   struct nmb_packet *nmb = &p.packet.nmb;
   struct res_rec answers;
   char *packet_type = "unknown";
-  BOOL recursion_desired = False;
   
   p = *p1;
 
@@ -203,31 +202,26 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
     case NMB_STATUS:
 	{
       packet_type = "nmb_status";
-      recursion_desired = True;
       break;
     }
     case NMB_QUERY:
 	{
       packet_type = "nmb_query";
-      recursion_desired = True;
       break;
     }
     case NMB_REG:
 	{
       packet_type = "nmb_reg";
-      recursion_desired = True;
       break;
     }
     case NMB_REL:
 	{
       packet_type = "nmb_rel";
-      recursion_desired = False;
       break;
     }
     case NMB_WAIT_ACK:
 	{
       packet_type = "nmb_wack";
-      recursion_desired = False;
       break;
     }
     default:
@@ -246,8 +240,8 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   nmb->header.opcode = opcode;
   nmb->header.response = True;
   nmb->header.nm_flags.bcast = False;
-  nmb->header.nm_flags.recursion_available = recurse;
-  nmb->header.nm_flags.recursion_desired = recursion_desired;
+  nmb->header.nm_flags.recursion_available = (lp_wins_support() ? True : False );
+  nmb->header.nm_flags.recursion_desired = (lp_wins_support() ? recurse : False );
   nmb->header.nm_flags.trunc = False;
   nmb->header.nm_flags.authoritative = True;
   

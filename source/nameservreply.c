@@ -38,30 +38,10 @@ extern int DEBUGLEVEL;
 
 extern struct in_addr wins_ip;
 
-
-/****************************************************************************
-  add a netbios entry. respond to the (possibly new) owner.
-  **************************************************************************/
-void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
-				uint16 response_id,
-				struct nmb_name *name,
-				int nb_flags, int ttl, struct in_addr register_ip,
-				BOOL new_owner, struct in_addr reply_to_ip)
-{
-	/* register the old or the new owners' ip */
-	add_netbios_entry(d,name->name,name->name_type,
-						nb_flags,ttl,REGISTER,register_ip,False,True);
-
-	/* reply yes or no to the host that requested the name */
-	send_name_response(fd,from_ip, response_id, NMB_REG,
-				new_owner, True,
-				name, nb_flags, ttl, reply_to_ip);
-}
-
 /****************************************************************************
 send a registration / release response: pos/neg
 **************************************************************************/
-void send_name_response(int fd, struct in_addr from_ip,
+static void send_name_response(int fd, struct in_addr from_ip,
 				int name_trn_id, int opcode, BOOL success, BOOL recurse,
 				struct nmb_name *reply_name, int nb_flags, int ttl,
 				struct in_addr ip)
@@ -97,6 +77,25 @@ void send_name_response(int fd, struct in_addr from_ip,
 		       reply_name, 0x20, 0x1,
 		       ttl, 
 		       rdata, 6);
+}
+
+/****************************************************************************
+  add a netbios entry. respond to the (possibly new) owner.
+  **************************************************************************/
+void add_name_respond(struct subnet_record *d, int fd, struct in_addr from_ip,
+				uint16 response_id,
+				struct nmb_name *name,
+				int nb_flags, int ttl, struct in_addr register_ip,
+				BOOL new_owner, struct in_addr reply_to_ip)
+{
+  /* register the old or the new owners' ip */
+  add_netbios_entry(d,name->name,name->name_type,
+                    nb_flags,ttl,REGISTER,register_ip,False,True);
+
+  /* reply yes or no to the host that requested the name */
+  send_name_response(fd,from_ip, response_id, NMB_REG,
+                     new_owner, False,
+                     name, nb_flags, ttl, reply_to_ip);
 }
 
 
@@ -150,7 +149,7 @@ void reply_name_release(struct packet_struct *p)
   
   /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
   send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REL,
-		     success, False,
+		     success, nmb->header.nm_flags.recursion_desired,
 		     &nmb->question.question_name, nb_flags, 0, ip);
 }
 
@@ -193,7 +192,7 @@ void reply_name_reg(struct packet_struct *p)
     {
       /* apparently we should return 255.255.255.255 for group queries
 	 (email from MS) */
-      ip = wins_ip;
+      ip = *interpret_addr2("255.255.255.255");
     }
   
   if (!(d = find_req_subnet(p->ip, bcast)))
@@ -298,10 +297,10 @@ void reply_name_reg(struct packet_struct *p)
 
     /* initiate some enquiries to the current owner. */
 	queue_netbios_packet(d,ClientNMB,NMB_QUERY,
-						 NAME_REGISTER_CHALLENGE,
-						 reply_name->name,reply_name->name_type,
-	                     nb_flags,0,0,NULL,NULL,
-						 False, False, n->ip_flgs[0].ip, p->ip);
+			 NAME_REGISTER_CHALLENGE,
+			 reply_name->name,reply_name->name_type,
+	                 nb_flags,0,0,NULL,NULL,
+			 False, False, n->ip_flgs[0].ip, p->ip);
   }
   else
   {
@@ -310,8 +309,8 @@ void reply_name_reg(struct packet_struct *p)
      */
 
   	send_name_response(p->fd,p->ip, nmb->header.name_trn_id, NMB_REG,
-						success, True,
-						reply_name, nb_flags, ttl, ip);
+			success, nmb->header.nm_flags.recursion_desired,
+			reply_name, nb_flags, ttl, ip);
   }
 }
 
@@ -540,7 +539,7 @@ void reply_name_query(struct packet_struct *p)
     success = False;
   }
 
-  if (!bcast && name_type == 0x1d)
+  if (!bcast && (name_type == 0x1d) && lp_wins_support())
   {
     /* see WINS manager HELP - 'How WINS Handles Special Names' */
     /* a WINS query (unicasted) for a 0x1d name must always return False */
@@ -585,8 +584,8 @@ void reply_name_query(struct packet_struct *p)
         {
 	      /* never reply with a negative response to broadcast queries */
 	      return;
-	    }
-	  }
+        }
+      }
       
       /* name is directed query, or it's self, or it's a Domain Master type
          name, or we're replying on behalf of a caller because they are on a
@@ -607,6 +606,13 @@ void reply_name_query(struct packet_struct *p)
 
   /* if the IP is 0 then substitute my IP */
   if (zero_ip(retip)) retip = *iface_ip(p->ip);
+
+  /* SPECIAL CASE... If we are a WINS server and the request is explicitly
+     *to* the WINS server and the name type is WORKGROUP<0x1e> we should 
+     respond with the local broadcast address 255.255.255.255.
+   */
+  if(!bcast && (name_type == 0x1e) && lp_wins_support())
+    retip = *interpret_addr2("255.255.255.255");
 
   if (success)
   {
