@@ -534,7 +534,8 @@ static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.session_key	= dcerpc_schannel_session_key,
 	.session_info	= dcerpc_schannel_session_info,
 	.sig_size	= dcerpc_schannel_sig_size,
-	.have_feature  = dcerpc_schannel_have_feature
+	.have_feature   = dcerpc_schannel_have_feature,
+	.enabled        = True
 };
 
 NTSTATUS gensec_dcerpc_schannel_init(void)

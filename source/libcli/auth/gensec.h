@@ -94,7 +94,7 @@ struct gensec_security_ops {
 				 struct auth_session_info **session_info); 
 	BOOL (*have_feature)(struct gensec_security *gensec_security,
 				    uint32 feature); 
-	BOOL disabled_by_default;
+	BOOL enabled;
 };
 	
 #define GENSEC_INTERFACE_VERSION 0

@@ -335,7 +335,7 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.disabled_by_default = True
+	.enabled        = False
 
 };
 
@@ -349,8 +349,7 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
-	.disabled_by_default = True
-
+	.enabled        = False
 };
 
 NTSTATUS gensec_gssapi_init(void)
