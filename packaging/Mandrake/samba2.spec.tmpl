@@ -1,5 +1,5 @@
 %define ver 2.2.5
-%define rel 15mdk
+%define rel 16mdk
 %define vscanver 0.2.5c
 
 # 2.2.4 and 1 replace by samba-team at release
@@ -14,12 +14,10 @@
 %define have_prelease %(if [ "%prelease" = `echo "prelease" |tr '[:lower:]' '[:upper:]'` ];then echo 0; else echo 1; fi)
 
 # Check to see if we are running a build from a tarball release from samba.org
-# (--with tarball) If so, disable vscan, unless explicitly requested
-# (--with vscan). This could probably be neater, but not now.
-%define build_fromtarball 0
+# (%have_pversion) If so, disable vscan, unless explicitly requested
+# (--with vscan).
 %define build_vscan 1
-%{?_with_tarball: %{expand: %%define build_fromtarball 1}}
-%if %build_fromtarball
+%if %have_pversion
 %define build_vscan 0
 %{?_with_vscan: %define build_vscan 1}
 %endif
@@ -142,7 +140,6 @@ Source7: README.samba-%{version}-%{release}
 %if %build_vscan
 Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
-Source9: samba-slapd-include.conf.bz2
 Source10: samba-print-pdf.sh.bz2
 Patch1: smbw.patch.bz2
 Patch5: samba-2.2.0-gawk.patch.bz2
@@ -161,6 +158,7 @@ Patch31: samba-2.2.5-random_smbd-read.patch.bz2
 Patch32: samba-2.2.5-winbind-init.patch.bz2
 Patch33: samba-2.2.5-pam-password.patch.bz2
 Patch34: samba-2.2.5-win2k_copy_bug.patch.bz2
+Patch35: samba-2.2.5-samba-ldap-include-conf.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
@@ -517,6 +515,7 @@ echo "Applying patches for current version: %{ver}"
 %patch32 -p1
 %patch33 -p1
 %patch34 -p1
+%patch35 -p1
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -761,6 +760,7 @@ done
 	install -m644 packaging/Mandrake/system-auth-winbind.pamd $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind
 #
         install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
+	install -m644 packaging/Mandrake/samba-slapd-include.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/samba-slapd.include
 
 # Install smbldap-tools scripts:
 for i in examples/LDAP/smbldap-tools/*.pl; do
@@ -824,7 +824,6 @@ bzcat %{SOURCE4} > $RPM_BUILD_ROOT%{_liconsdir}/swat.xpm
 bzcat %{SOURCE5} > $RPM_BUILD_ROOT%{_iconsdir}/swat.xpm
 bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat.xpm
 
-bzcat %{SOURCE9} > $RPM_BUILD_ROOT%{_sysconfdir}/samba/samba-slapd.include
 bzcat %{SOURCE10}> $RPM_BUILD_ROOT%{_datadir}/samba/scripts/print-pdf
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -1026,16 +1025,10 @@ fi
 %else
 %postun -n samba-swat
 %endif
-
-
 # Remove swat entry from xinetd
-if [ $1 = 0 -a -f /etc/xinetd.conf ] ; then
-rm -f /etc/xinetd.d/swat
+if [ -f /var/lock/subsys/xinetd ]; then
 	service xinetd reload &>/dev/null || :
 fi
-
-if [ "$1" = "0" -a -x /usr/bin/update-menus ]; then /usr/bin/update-menus || true ; fi
-
 %clean_menus
 
 %triggerpostun -- samba < 1.9.18p7
@@ -1100,7 +1093,7 @@ fi
 %attr(0755,root,root) %{_datadir}/%{name}/scripts/print-pdf
 %attr(0750,root,root) %{_datadir}/%{name}/scripts/smbldap*.pl
 %attr(0640,root,root) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
-%attr(0644,root,root) %config(noreplace) %{_datadir}/%{name}/scripts/smbldap_tools.pm
+%attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
 %{perl_vendorlib}/*.pm
 %attr(0700,root,root) %{_datadir}/%{name}/scripts/*port_smbpasswd.pl
 
@@ -1270,6 +1263,12 @@ fi
 %endif
 
 %changelog
+* Thu Aug 15 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-16mdk
+- Don't remove swat xinetd config (that's what RPM is for!)
+- Don't clean menus twice
+- This should also be 2.2.6-1.1mdk (build from official samba tarball)
+- Use samba-slapd-include.conf from packaging dir (patch it in for 2.2.5)
+
 * Wed Aug 07 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-15mdk
 - put /var/log/samba and /var/run/samba in common (for winbind - sbenedict)
 - Integrate smbldap-tools, now in /usr/share/scripts/samba, with examples

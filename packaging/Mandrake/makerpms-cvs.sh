@@ -1,4 +1,4 @@
-#!/bin/bashh
+#!/bin/bash
 # makerpms-cvs.sh
 # A quick script to build RPMs from cvs to test packaging
 # Buchan Milne <bgmilne@cae.co.za>
