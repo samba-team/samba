@@ -39,53 +39,40 @@
 #include "kdc_locl.h"
 RCSID("$Id$");
 
-extern char *logfile;
 extern int loglevel;
+static krb5_log_facility *logf;
 
 char*
-kdc_log_msg_va(int level, const char *fmt, va_list ap)
+kdc_log_msg_va(krb5_context context, int level, const char *fmt, va_list ap)
 {
-    FILE *f;
-    char *s;
-    
+    char *msg;
     if(level > loglevel)
 	return NULL;
-
-    if(logfile == NULL)
-	return NULL;
-    f = fopen(logfile, "a");
-    if(f == NULL)
-	return NULL;
+    if(logf == NULL)
+	krb5_openlog(context, "kdc", &logf);
     
-    vasprintf(&s, fmt, ap);
-    
-    if(s){
-	char buf[128];
-	strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&kdc_time));
-	fprintf(f, "%s %s\n", buf, s);
-    }
-    fclose(f);
-    return s;
+    krb5_vlog_msg(context, logf, &msg, fmt, ap);
+    return msg;
 }
 
 char*
-kdc_log_msg(int level, const char *fmt, ...)
+kdc_log_msg(krb5_context context, int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(level, fmt, ap);
+    s = kdc_log_msg_va(context, level, fmt, ap);
     va_end(ap);
     return s;
 }
 
 void
-kdc_log(int level, const char *fmt, ...)
+kdc_log(krb5_context context, int level, const char *fmt, ...)
 {
     va_list ap;
     char *s;
     va_start(ap, fmt);
-    s = kdc_log_msg_va(level, fmt, ap);
+    s = kdc_log_msg_va(context, level, fmt, ap);
     if(s) free(s);
     va_end(ap);
 }
