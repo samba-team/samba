@@ -126,17 +126,6 @@ from...)
 information about client-side issues, includes a list of all clients
 that are known to work with Samba.
 
-<item> <url url="samba-man-index.html" name="manual pages"> contains
-descriptions of and links to all the Samba manual pages, in Unix man and
-postscript format.
-
-<item> <url url="samba-txt-index.html"> has descriptions of and links to
-a large number of text files have been contributed to samba covering
-many topics. These are gradually being absorbed into the FAQs and HOWTOs
-but in the meantime you might find helpful answers here.
-
-<item> 
-
 </itemize>
 
 <sect> General Information<p><label id="general_info">
@@ -183,96 +172,8 @@ must be made freely available. A copy of the GPL must always be included
 in any copy of the package.
 
 The primary creator of the Samba suite is Andrew Tridgell. Later
-versions incorporate much effort by many net.helpers. The man pages
+versions incorporate much effort by many helpers. The man pages
 and this FAQ were originally written by Karl Auer.
-
-<sect1> What is the current version of Samba?<p><label id="current_version">
-
-At time of writing, the current version was 1.9.17. If you want to be
-sure check the bottom of the change-log file. <url url="ftp://samba.org/pub/samba/alpha/change-log">
-
-For more information see <ref id="version_nums" name="What do the version numbers mean?">
-
-<sect1> Where can I get it? <p><label id="WhereFrom">
-
-The Samba suite is available via anonymous ftp from samba.org and
-many <url url="../MIRRORS" name="mirror"> sites. You will get much
-faster performance if you use a mirror site. The latest and greatest
-versions of the suite are in the directory:
-
-/pub/samba/
-
-Development (read "alpha") versions, which are NOT necessarily stable
-and which do NOT necessarily have accurate documentation, are available
-in the directory:
-
-/pub/samba/alpha
-
-Note that binaries are NOT included in any of the above. Samba is
-distributed ONLY in source form, though binaries may be available from
-other sites. Most Linux distributions, for example, do contain Samba
-binaries for that platform. The VMS, OS/2, Netware and Amiga and other
-ports typically have binaries made available.
-
-A special case is vendor-provided binary packages. Samba binaries and
-default configuration files are put into packages for a specific
-operating system. RedHat Linux and Sun Solaris (Sparc and x86) is
-already included, and others such as OS/2 may follow. All packages are
-in the directory:
-
-/pub/samba/Binary_Packages/"OS_Vendor"
-
-<sect1>What do the version numbers mean?<p><label id="version_nums">
-
-It is not recommended that you run a version of Samba with the word
-"alpha" in its name unless you know what you are doing and are willing
-to do some debugging. Many, many people just get the latest
-recommended stable release version and are happy. If you are brave, by
-all means take the plunge and help with the testing and development -
-but don't install it on your departmental server. Samba is typically
-very stable and safe, and this is mostly due to the policy of many
-public releases.
-
-How the scheme works:
-
-<enum>
-
-<item>When major changes are made the version number is increased. For
-example, the transition from 1.9.16 to 1.9.17. However, this version
-number will not appear immediately and people should continue to use
-1.9.15 for production systems (see next point.)
-
-<item>Just after major changes are made the software is considered
-unstable, and a series of alpha releases are distributed, for example
-1.9.16alpha1. These are for testing by those who know what they are
-doing.  The "alpha" in the filename will hopefully scare off those who
-are just looking for the latest version to install.
-
-<item>When Andrew thinks that the alphas have stabilised to the point
-where he would recommend new users install it, he renames it to the
-same version number without the alpha, for example 1.9.17.
-
-<item>Inevitably bugs are found in the "stable" releases and minor patch
-levels are released which give us the pXX series, for example 1.9.17p2.
-
-</enum>
-
-So the progression goes:
-
-<verb>
-		1.9.16p10	(production)
-		1.9.16p11	(production)
-		1.9.17alpha1	(test sites only)
-		  :
-		1.9.17alpha20	(test sites only)
-		1.9.17		(production)
-		1.9.17p1	(production)
-</verb>
-
-The above system means that whenever someone looks at the samba ftp
-site they will be able to grab the highest numbered release without an
-alpha in the name and be sure of getting the current recommended
-version.
 
 <sect1> Where can I go for further information?<p><label id="more">
 
@@ -281,7 +182,7 @@ including:
 
 <itemize>
 
-<item>Two mailing lists devoted to discussion of Samba-related matters.
+<item>The mailing lists devoted to discussion of Samba-related matters.
 See below for subscription information.
 
 <item>The newsgroup comp.protocols.smb, which has a great deal of
@@ -302,35 +203,7 @@ url="http://samba.org/samba/"> includes:
 
 <sect1>How do I subscribe to the Samba Mailing Lists?<p><label id="mailinglist">
 
-Send email to <htmlurl url="mailto:listproc@samba.org"
-name="listproc@samba.org">. Make sure the subject line is blank,
-and include the following two lines in the body of the message:
-
-<tscreen><verb>
-subscribe samba Firstname Lastname
-subscribe samba-announce Firstname Lastname
-</verb></tscreen>
-
-Obviously you should substitute YOUR first name for "Firstname" and
-YOUR last name for "Lastname"! Try not to send any signature, it
-sometimes confuses the list processor.
-
-The samba list is a digest list - every eight hours or so it sends a
-single message containing all the messages that have been received by
-the list since the last time and sends a copy of this message to all
-subscribers. There are thousands of people on this list.
-
-If you stop being interested in Samba, please send another email to
-<htmlurl url="mailto:listproc@samba.org" name="listproc@samba.org">. Make sure the subject line is blank, and
-include the following two lines in the body of the message:
-
-<tscreen><verb>
-unsubscribe samba
-unsubscribe samba-announce
-</verb></tscreen>
-
-The <bf>From:</bf> line in your message <em>MUST</em> be the same
-address you used when you subscribed.
+Surf to <url url="http://lists.samba.org/"> for an overview of all the mailing lists.
 
 <sect1> Something's gone wrong - what should I do?<p><label id="wrong">
 
