@@ -428,7 +428,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
  **/
 static void init_mount(void)
 {
-	char mount_point[MAXPATHLEN+1];
+	char mount_point[PATH_MAX+1];
 	pstring tmp;
 	pstring svc2;
 	struct cli_state *c;
