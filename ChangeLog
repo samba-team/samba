@@ -1,3 +1,11 @@
+2003-07-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/install.texi: update pointer to luke ldap documentation
+	
+	* lib/hdb/hdb.c (hdb_create): check for dynamic backend after
+	static to avoid warning from dynamic backend when using a known
+	static backend
+
 2003-07-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/cache.c: don't return value in void function
