@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -134,16 +134,15 @@ krb524_convert_creds_kdc(krb5_context context,
     krb5_creds *v5_creds = in_cred;
     krb5_keytype keytype;
 
-    ret = krb5_enctype_to_keytype (context, v5_creds->session.keytype,
-				   &keytype);
-    if (ret)
-	return ret;
+    keytype = v5_creds->session.keytype;
 
-    if (keytype != KEYTYPE_DES) {
+    if (keytype != ENCTYPE_DES_CBC_CRC) {
+	/* MIT krb524d doesn't like nothing but des-cbc-crc tickets,
+           so go get one */
 	krb5_creds template;
 
 	memset (&template, 0, sizeof(template));
-	template.session.keytype = KEYTYPE_DES;
+	template.session.keytype = ENCTYPE_DES_CBC_CRC;
 	ret = krb5_copy_principal (context, in_cred->client, &template.client);
 	if (ret) {
 	    krb5_free_creds_contents (context, &template);
