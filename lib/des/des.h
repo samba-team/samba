@@ -73,6 +73,7 @@ extern "C" {
 #else
 #define DES_LIB_FUNCTION
 #endif
+#endif
 
 /* If this is set to 'unsigned int' on a DEC Alpha, this gives about a
  * %20 speed up (longs are 8 bytes, int's are 4). */

@@ -112,6 +112,16 @@
 extern "C" {
 #endif
 
+#ifndef ROKEN_LIB_FUNCTION
+#if defined(__BORLANDC__)
+#define ROKEN_LIB_FUNCTION /* not-ready-definition-yet */
+#elif defined(_MSC_VER)
+#define ROKEN_LIB_FUNCTION /* not-ready-definition-yet2 */
+#else
+#define ROKEN_LIB_FUNCTION
+#endif
+#endif
+
 #include <roken-common.h>
 
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
