@@ -26,6 +26,10 @@ AC_ARG_PROGRAM
 
 CFLAGS="-g"
 
+dnl test
+
+AM_C_PROTOTYPES
+
 dnl Checks for libraries.
 
 AC_FIND_FUNC(socket, socket)
