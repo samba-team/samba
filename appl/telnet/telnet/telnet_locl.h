@@ -77,6 +77,10 @@
 #include <sys/termio.h>
 #endif
 
+#ifdef HAVE_TERM_H
+#include <term.h>
+#endif
+
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
