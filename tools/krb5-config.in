@@ -104,7 +104,7 @@ if test "$do_libs" = "yes"; then
     echo $lib_flags
 fi
 if test "$do_cflags" = "yes"; then
-    echo "-I${includedir}"
+    echo "-I${includedir} @INCLUDE_des@"
 fi
 
 exit 0
