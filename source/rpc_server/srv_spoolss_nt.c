@@ -1798,51 +1798,56 @@ static BOOL getprinterdata_printer(pipes_struct *p, TALLOC_CTX *ctx, POLICY_HND 
                         	uint8 **data, uint32 *needed, uint32 in_size )
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	int snum=0;
-	uint8 *idata=NULL;
-	uint32 len;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
+	int 		snum=0;	
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	REGISTRY_VALUE	*val;
+	int		size = 0;
 	
 	DEBUG(5,("getprinterdata_printer\n"));
 
-	if (!Printer) {
+	if ( !Printer ) {
 		DEBUG(2,("getprinterdata_printer: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return False;
 	}
 
-	if(!get_printer_snum(p, handle, &snum))
+	if ( !get_printer_snum(p, handle, &snum) )
 		return False;
 
-	if (!W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))))
+	if ( !W_ERROR_IS_OK(get_a_printer(&printer, 2, lp_servicename(snum))) )
 		return False;
 
-	if (!get_specific_param(*printer, 2, value, &idata, type, &len)) {
+	if ( !(val = get_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, value)) )
+	{
 		free_a_printer(&printer, 2);
 		return False;
 	}
+	
+	*type = regval_type( val );
 
-	free_a_printer(&printer, 2);
 
 	DEBUG(5,("getprinterdata_printer:allocating %d\n", in_size));
 
-	if (in_size) {
-		if((*data  = (uint8 *)talloc(ctx, in_size *sizeof(uint8) )) == NULL) {
+	if (in_size) 
+	{
+		if ( (*data  = (uint8 *)talloc(ctx, in_size * sizeof(uint8))) == NULL )
 			return False;
-		}
 
-		memset(*data, 0, in_size *sizeof(uint8));
+		memset( *data, 0, in_size *sizeof(uint8) );
+		
 		/* copy the min(in_size, len) */
-		memcpy(*data, idata, (len>in_size)?in_size:len *sizeof(uint8));
-	} else {
-		*data = NULL;
+		
+		size = regval_size( val );
+		memcpy( *data, regval_data_p(val), (size > in_size) ? in_size : size*sizeof(uint8) );
 	}
+	else
+		*data = NULL;
 
-	*needed = len;
+	*needed = size;
 	
 	DEBUG(5,("getprinterdata_printer:copy done\n"));
 			
-	SAFE_FREE(idata);
 	
+	free_a_printer(&printer, 2);
 	return True;
 }	
 
@@ -1871,11 +1876,12 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	 * JFM, 4/19/1999
 	 */
 
-	*out_size=in_size;
+	*out_size = in_size;
 
 	/* in case of problem, return some default values */
-	*needed=0;
-	*type=0;
+	
+	*needed = 0;
+	*type   = 0;
 	
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
@@ -1889,13 +1895,16 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
 	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
-		found=getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
+		found = getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
 	else
-		found= getprinterdata_printer(p, p->mem_ctx, handle, value, type, data, needed, *out_size);
+		found = getprinterdata_printer(p, p->mem_ctx, handle, value, type, data, needed, *out_size);
 
-	if (found==False) {
+	if ( !found ) 
+	{
 		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		
 		/* reply this param doesn't exist */
+		
 		if (*out_size) {
 			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
 				return WERR_NOMEM;
@@ -5219,254 +5228,6 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	return True;
 }
 
-#if 0	/* JERRY */
-
-/* Return true if two devicemodes are equal */
-
-#define DEVMODE_CHECK_INT(field) \
-    if (d1->field != d2->field) { \
-        DEBUG(10, ("nt_devicemode_equal(): " #field " not equal (%d != %d)\n", \
-            d1->field, d2->field)); \
-        return False; \
-    }
-
-/************************************************************************
- Handy, but currently unused functions
- ***********************************************************************/
-
-static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
-{
-	if (!d1 && !d2) goto equal;  /* if both are NULL they are equal */
-
-	if (!d1 ^ !d2) {
-		DEBUG(10, ("nt_devicemode_equal(): pointers not equal\n"));
-		return False; /* if either is exclusively NULL are not equal */
-	}
-
-	if (!strequal(d1->devicename, d2->devicename)) {
-		DEBUG(10, ("nt_devicemode_equal(): device not equal (%s != %s)\n", d1->devicename, d2->devicename));
-		return False;
-	}
-
-	if (!strequal(d1->formname, d2->formname)) {
-		DEBUG(10, ("nt_devicemode_equal(): formname not equal (%s != %s)\n", d1->formname, d2->formname));
-		return False;
-	}
-
-	DEVMODE_CHECK_INT(specversion);
-	DEVMODE_CHECK_INT(driverversion);
-	DEVMODE_CHECK_INT(driverextra);
-	DEVMODE_CHECK_INT(orientation);
-	DEVMODE_CHECK_INT(papersize);
-	DEVMODE_CHECK_INT(paperlength);
-	DEVMODE_CHECK_INT(paperwidth);
-	DEVMODE_CHECK_INT(scale);
-	DEVMODE_CHECK_INT(copies);
-	DEVMODE_CHECK_INT(defaultsource);
-	DEVMODE_CHECK_INT(printquality);
-	DEVMODE_CHECK_INT(color);
-	DEVMODE_CHECK_INT(duplex);
-	DEVMODE_CHECK_INT(yresolution);
-	DEVMODE_CHECK_INT(ttoption);
-	DEVMODE_CHECK_INT(collate);
-	DEVMODE_CHECK_INT(logpixels);
-
-	DEVMODE_CHECK_INT(fields);
-	DEVMODE_CHECK_INT(bitsperpel);
-	DEVMODE_CHECK_INT(pelswidth);
-	DEVMODE_CHECK_INT(pelsheight);
-	DEVMODE_CHECK_INT(displayflags);
-	DEVMODE_CHECK_INT(displayfrequency);
-	DEVMODE_CHECK_INT(icmmethod);
-	DEVMODE_CHECK_INT(icmintent);
-	DEVMODE_CHECK_INT(mediatype);
-	DEVMODE_CHECK_INT(dithertype);
-	DEVMODE_CHECK_INT(reserved1);
-	DEVMODE_CHECK_INT(reserved2);
-	DEVMODE_CHECK_INT(panningwidth);
-	DEVMODE_CHECK_INT(panningheight);
-
-	/* compare the private data if it exists */
-	if (!d1->driverextra && !d2->driverextra) goto equal;
-
-
-	DEVMODE_CHECK_INT(driverextra);
-
-	if (memcmp(d1->private, d2->private, d1->driverextra)) {
-		DEBUG(10, ("nt_devicemode_equal(): private data not equal\n"));
-		return False;
-	}
-
- equal:
-	DEBUG(10, ("nt_devicemode_equal(): devicemodes identical\n"));
-	return True;
-}
-
-/* Return true if two NT_PRINTER_PARAM structures are equal */
-
-static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
-				   NT_PRINTER_PARAM *p2)
-{
-	if (!p1 && !p2) goto equal;
-
-	if ((!p1 && p2) || (p1 && !p2)) {
-		DEBUG(10, ("nt_printer_param_equal(): pointers differ\n"));
-		return False;
-	}
-
-	/* Compare lists of printer parameters */
-
-	while (p1) {
-		BOOL found = False;
-		NT_PRINTER_PARAM *q = p1;
-
-		/* Find the parameter in the second structure */
-
-		while(q) {
-
-			if (strequal(p1->value, q->value)) {
-
-				if (p1->type != q->type) {
-					DEBUG(10, ("nt_printer_param_equal():"
-						   "types for %s differ (%d != %d)\n",
-						   p1->value, p1->type,
-						   q->type));
-					break;
-				}
-
-				if (p1->data_len != q->data_len) {
-					DEBUG(10, ("nt_printer_param_equal():"
-						   "len for %s differs (%d != %d)\n",
-						   p1->value, p1->data_len,
-						   q->data_len));
-					break;
-				}
-
-				if (memcmp(p1->data, q->data, p1->data_len) == 0) {
-					found = True;
-				} else {
-					DEBUG(10, ("nt_printer_param_equal():"
-						   "data for %s differs\n", p1->value));
-				}
-
-				break;
-			}
-
-			q = q->next;
-		}
-
-		if (!found) {
-			DEBUG(10, ("nt_printer_param_equal(): param %s "
-				   "does not exist\n", p1->value));
-			return False;
-		}
-
-		p1 = p1->next;
-	}
-
-	equal:
-
-	DEBUG(10, ("nt_printer_param_equal(): printer params identical\n"));
-	return True;
-}
-
-/********************************************************************
- * Called by update_printer when trying to work out whether to
- * actually update printer info.
- ********************************************************************/
-
-#define PI_CHECK_INT(field) \
-    if (pi1->field != pi2->field) { \
-        DEBUG(10, ("nt_printer_info_level_equal(): " #field " not equal (%d != %d)\n", \
-            pi1->field, pi2->field)); \
-        return False; \
-    }
-
-#define PI_CHECK_STR(field) \
-    if (!strequal(pi1->field, pi2->field)) { \
-        DEBUG(10, ("nt_printer_info_level_equal(): " #field " not equal (%s != %s)\n", \
-            pi1->field, pi2->field)); \
-        return False; \
-    }
-
-static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
-					NT_PRINTER_INFO_LEVEL *p2)
-{
-	NT_PRINTER_INFO_LEVEL_2 *pi1, *pi2;
-
-	/* Trivial conditions */
-
-	if ((!p1 && !p2) || (!p1->info_2 && !p2->info_2)) {
-		goto equal;
-	}
-
-	if ((!p1 && p2) || (p1 && !p2) ||
-	    (!p1->info_2 && p2->info_2) ||
-	    (p1->info_2 && !p2->info_2)) {
-		DEBUG(10, ("nt_printer_info_level_equal(): info levels "
-			   "differ\n"));
-		return False;
-	}
-
-	/* Compare two nt_printer_info_level structures.  Don't compare
-	   status or cjobs as they seem to have something to do with the
-	   printer queue. */
-
-	pi1 = p1->info_2;
-	pi2 = p2->info_2;
-
-	/* Don't check the attributes as we stomp on the value in
-	   check_printer_ok() anyway. */
-
-#if 0
-	PI_CHECK_INT(attributes);
-#endif
-
-	PI_CHECK_INT(priority);
-	PI_CHECK_INT(default_priority);
-	PI_CHECK_INT(starttime);
-	PI_CHECK_INT(untiltime);
-	PI_CHECK_INT(averageppm);
-
-	/* Yuck - don't check the printername or servername as the
-	   mod_a_printer() code plays games with them.  You can't
-	   change the printername or the sharename through this interface
-	   in Samba. */
-
-	PI_CHECK_STR(sharename);
-	PI_CHECK_STR(portname);
-	PI_CHECK_STR(drivername);
-	PI_CHECK_STR(comment);
-	PI_CHECK_STR(location);
-
-	if (!nt_devicemode_equal(pi1->devmode, pi2->devmode)) {
-		return False;
-	}
-
-	PI_CHECK_STR(sepfile);
-	PI_CHECK_STR(printprocessor);
-	PI_CHECK_STR(datatype);
-	PI_CHECK_STR(parameters);
-
-	if (!nt_printer_param_equal(pi1->specific, pi2->specific)) {
-		return False;
-	}
-
-	if (!sec_desc_equal(pi1->secdesc_buf->sec, pi2->secdesc_buf->sec)) {
-		return False;
-	}
-
-	PI_CHECK_INT(changeid);
-	PI_CHECK_INT(c_setprinter);
-	PI_CHECK_INT(setuptime);
-
- equal:
-	DEBUG(10, ("nt_printer_info_level_equal(): infos are identical\n"));
-	return True;
-}
-
-#endif
-
 /********************************************************************
  * Called by spoolss_api_setprinter
  * when updating a printer description.
@@ -7121,38 +6882,38 @@ WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, SPOOL_R_ENUMPRINTERDATA *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-	uint32 idx = q_u->index;
-	uint32 in_value_len = q_u->valuesize;
-	uint32 in_data_len = q_u->datasize;
-	uint32 *out_max_value_len = &r_u->valuesize;
-	uint16 **out_value = &r_u->value;
-	uint32 *out_value_len = &r_u->realvaluesize;
-	uint32 *out_type = &r_u->type;
+	uint32 idx 		 = q_u->index;
+	uint32 in_value_len 	 = q_u->valuesize;
+	uint32 in_data_len 	 = q_u->datasize;
+	uint32 *out_max_value_len= &r_u->valuesize;
+	uint16 **out_value 	 = &r_u->value;
+	uint32 *out_value_len 	 = &r_u->realvaluesize;
+	uint32 *out_type 	 = &r_u->type;
 	uint32 *out_max_data_len = &r_u->datasize;
-	uint8  **data_out = &r_u->data;
-	uint32 *out_data_len = &r_u->realdatasize;
+	uint8  **data_out 	 = &r_u->data;
+	uint32 *out_data_len 	 = &r_u->realdatasize;
 
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	
-	fstring value;
+	uint32 		param_index;
+	uint32 		biggest_valuesize;
+	uint32 		biggest_datasize;
+	uint32 		data_len;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	int 		snum;
+	WERROR 		result;
+	REGISTRY_VALUE	*val;
+	NT_PRINTER_DATA *p_data;
+	int		i, key_index, num_values;
+	int		name_length;
 	
-	uint32 param_index;
-	uint32 biggest_valuesize;
-	uint32 biggest_datasize;
-	uint32 data_len;
-	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
-	int snum;
-	uint8 *data=NULL;
-	uint32 type;
-	WERROR result;
-
-	ZERO_STRUCT(printer);
+	ZERO_STRUCT( printer );
 	
-	*out_type=0;
+	*out_type = 0;
 
-	*out_max_data_len=0;
-	*data_out=NULL;
-	*out_data_len=0;
+	*out_max_data_len = 0;
+	*data_out         = NULL;
+	*out_data_len     = 0;
 
 	DEBUG(5,("spoolss_enumprinterdata\n"));
 
@@ -7167,103 +6928,133 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	result = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(result))
 		return result;
+		
+	p_data = &printer->info_2->data;	
+	key_index = lookup_printerkey( p_data, SPOOL_PRINTERDATA_KEY );
+
+	result = WERR_OK;
 
 	/*
 	 * The NT machine wants to know the biggest size of value and data
 	 *
 	 * cf: MSDN EnumPrinterData remark section
 	 */
-	if ( (in_value_len==0) && (in_data_len==0) ) {
+	 
+	if ( !in_value_len && !in_data_len ) 
+	{
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
-		SAFE_FREE(data);
-
-		param_index=0;
-		biggest_valuesize=0;
-		biggest_datasize=0;
+		param_index       = 0;
+		biggest_valuesize = 0;
+		biggest_datasize  = 0;
+				
+		num_values = regval_ctr_numvals( &p_data->keys[key_index].values );
 		
-		while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) {
-			if (strlen(value) > biggest_valuesize) biggest_valuesize=strlen(value);
-			if (data_len > biggest_datasize) biggest_datasize=data_len;
-
-			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, biggest_datasize));
-
-			SAFE_FREE(data);
-			param_index++;
+		for ( i=0; i<num_values; i++ )
+		{
+			val = regval_ctr_specific_value( &p_data->keys[key_index].values, i );
+			
+			name_length = strlen(val->valuename);
+			if ( strlen(val->valuename) > biggest_valuesize ) 
+				biggest_valuesize = name_length;
+				
+			if ( val->size > biggest_datasize )
+				biggest_datasize = val->size;
+				
+			DEBUG(6,("current values: [%d], [%d]\n", biggest_valuesize, 
+				biggest_datasize));
 		}
 
-		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
-		*out_value_len=2*(1+biggest_valuesize);
-		*out_data_len=biggest_datasize;
+		/* the value is an UNICODE string but real_value_size is the length 
+		   in bytes including the trailing 0 */
+		   
+		*out_value_len = 2 * (1+biggest_valuesize);
+		*out_data_len  = biggest_datasize;
 
 		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
 
-		free_a_printer(&printer, 2);
-		return WERR_OK;
+		goto done;
 	}
 	
 	/*
 	 * the value len is wrong in NT sp3
 	 * that's the number of bytes not the number of unicode chars
 	 */
+	 
+	val = regval_ctr_specific_value( &p_data->keys[key_index].values, idx );
 
-	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
-
-		SAFE_FREE(data);
-		free_a_printer(&printer, 2);
+	if ( !val ) 
+	{
 
 		/* out_value should default to "" or else NT4 has
 		   problems unmarshalling the response */
 
-		*out_max_value_len=(in_value_len/sizeof(uint16));
-		if((*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
+		*out_max_value_len = (in_value_len/sizeof(uint16));
+		
+		if ( (*out_value=(uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
+		{
+			result = WERR_NOMEM;
+			goto done;
+		}
 
 		*out_value_len = (uint32)rpcstr_push((char *)*out_value, "", in_value_len, 0);
 
 		/* the data is counted in bytes */
+		
 		*out_max_data_len = in_data_len;
-		*out_data_len = in_data_len;
-		if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL)
-			return WERR_NOMEM;
+		*out_data_len     = in_data_len;
+		
+		/* only allocate when given a non-zero data_len */
+		
+		if ( in_data_len && ((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) )
+		{
+			result = WERR_NOMEM;
+			goto done;
+		}
 
-		return WERR_NO_MORE_ITEMS;
+		result = WERR_NO_MORE_ITEMS;
+	}
+	else 
+	{
+		/*
+		 * the value is:
+		 * - counted in bytes in the request
+		 * - counted in UNICODE chars in the max reply
+		 * - counted in bytes in the real size
+		 *
+		 * take a pause *before* coding not *during* coding
+		 */
+	
+		/* name */
+		*out_max_value_len = ( in_value_len / sizeof(uint16) );
+		if ( (*out_value = (uint16 *)talloc_zero(p->mem_ctx, in_value_len*sizeof(uint8))) == NULL ) 
+		{
+			result = WERR_NOMEM;
+			goto done;
+		}
+	
+		*out_value_len = (uint32)rpcstr_push((char *)*out_value, regval_name(val), in_value_len, 0);
+
+		/* type */
+		
+		*out_type = regval_type( val );
+
+		/* data - counted in bytes */
+
+		*out_max_data_len = in_data_len;
+		if ( (*data_out = (uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) 
+		{
+			result = WERR_NOMEM;
+			goto done;
+		}
+		data_len = (size_t)regval_size(val);
+		memcpy( *data_out, regval_data_p(val), data_len );
+		*out_data_len = data_len;
 	}
 
+done:
 	free_a_printer(&printer, 2);
-
-	/*
-	 * the value is:
-	 * - counted in bytes in the request
-	 * - counted in UNICODE chars in the max reply
-	 * - counted in bytes in the real size
-	 *
-	 * take a pause *before* coding not *during* coding
-	 */
-	
-	*out_max_value_len=(in_value_len/sizeof(uint16));
-	if((*out_value=(uint16 *)talloc_zero(p->mem_ctx,in_value_len*sizeof(uint8))) == NULL) {
-		SAFE_FREE(data);
-		return WERR_NOMEM;
-	}
-	
-	*out_value_len = (uint32)rpcstr_push((char *)*out_value,value, in_value_len, 0);
-
-	*out_type=type;
-
-	/* the data is counted in bytes */
-	*out_max_data_len=in_data_len;
-	if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) {
-		SAFE_FREE(data);
-		return WERR_NOMEM;
-	}
-	
-	memcpy(*data_out, data, (size_t)data_len);
-	*out_data_len=data_len;
-
-	SAFE_FREE(data);
-	
-	return WERR_OK;
+	return result;
 }
 
 /****************************************************************************
@@ -7271,17 +7062,17 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *value = &q_u->value;
-	uint32 type = q_u->type;
-	uint8 *data = q_u->data;
-	uint32 real_len = q_u->real_len;
+	POLICY_HND 		*handle = &q_u->handle;
+	UNISTR2 		*value = &q_u->value;
+	uint32 			type = q_u->type;
+	uint8 			*data = q_u->data;
+	uint32 			real_len = q_u->real_len;
 
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_PRINTER_PARAM *param = NULL, old_param;
-	int snum=0;
-	WERROR status = WERR_OK;
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum=0;
+	WERROR 			status = WERR_OK;
+	Printer_entry 		*Printer=find_printer_index_by_hnd(p, handle);
+	fstring			valuename;
 	
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
@@ -7292,8 +7083,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	if (!get_printer_snum(p,handle, &snum))
 		return WERR_BADFID;
-
-	ZERO_STRUCT(old_param);
 
 	/* 
 	 * Access check : NT returns "access denied" if you make a 
@@ -7309,40 +7098,22 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		goto done;
 	}
 
-	/* Check if we are making any changes or not.  Return true if
-	   nothing is actually changing.  This is not needed anymore but
-	   has been left in as an optimization to keep from from
-	   writing to disk as often  --jerry  */
-
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	convert_specific_param(&param, value , type, data, real_len);
-
-	unlink_specific_param_if_exist(printer->info_2, param);
+	/* save the registry data */
 	
-	/*
-	 * When client side code sets a magic printer data key, detect it and save
-	 * the current printer data and the magic key's data (its the DEVMODE) for
-	 * future printer/driver initializations.
-	 */
-	if (param->type==3 && !strcmp( param->value, PHANTOM_DEVMODE_KEY)) {
-		/*
-		 * Set devmode and printer initialization info
-		 */
-		status = save_driver_init(printer, 2, param);
-	}
-	else {
-		add_a_specific_param(printer->info_2, &param);
-		status = mod_a_printer(*printer, 2);
-	}
+	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
+	add_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename, type, data, real_len );
 
- done:
+	/* write the **entire** printer out to disk.... :-( */	
+	
+	status = mod_a_printer(*printer, 2);
+
+done:
 	free_a_printer(&printer, 2);
-	if (param)
-		free_nt_printer_param(&param);
-	SAFE_FREE(old_param.data);
 
 	return status;
 }
@@ -7352,9 +7123,9 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
-	int snum;
+	POLICY_HND 	*handle = &q_u->handle;
+	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
+	int 		snum;
 	
 	DEBUG(5,("_spoolss_resetprinter\n"));
 
@@ -7378,16 +7149,19 @@ WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R
 }
 
 
+/****************************************************************************
+****************************************************************************/
+
 WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *value = &q_u->valuename;
+	POLICY_HND 	*handle = &q_u->handle;
+	UNISTR2 	*value = &q_u->valuename;
 
-	NT_PRINTER_INFO_LEVEL *printer = NULL;
-	NT_PRINTER_PARAM param;
-	int snum=0;
-	WERROR status = WERR_OK;
-	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 		snum=0;
+	WERROR 		status = WERR_OK;
+	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
+	pstring		valuename;
 	
 	DEBUG(5,("spoolss_deleteprinterdata\n"));
 	
@@ -7408,15 +7182,14 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	ZERO_STRUCTP(&param);
-	unistr2_to_ascii(param.value, value, sizeof(param.value)-1);
+	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 
-	if(!unlink_specific_param_if_exist(printer->info_2, &param))
-		status = WERR_INVALID_PARAM;
-	else
+	status = delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
+	if ( NT_STATUS_IS_OK(status) )
 		status = mod_a_printer(*printer, 2);
 
 	free_a_printer(&printer, 2);
+
 	return status;
 }
 
@@ -7426,7 +7199,6 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u)
 {
 	POLICY_HND *handle = &q_u->handle;
-/*	uint32 level = q_u->level; - notused. */
 	FORM *form = &q_u->form;
 	nt_forms_struct tmpForm;
 	int snum;
@@ -8045,9 +7817,10 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 		 * (a) DsDriver
 		 * (b) DsSpooler
 		 * (c) PnPData
+		 * (d) DsUser
 		 */
 	   
-		if (strcmp(key, "PrinterDriverData") != 0)
+		if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
 			return WERR_BADFILE;
 
 		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
@@ -8093,7 +7866,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
         unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
 
-        if (strcmp(key, "PrinterDriverData") != 0)
+        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
 	        return WERR_INVALID_PARAM;
 		
 	ZERO_STRUCT(q_u_local);	
@@ -8128,7 +7901,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
 
-        if (strcmp(key, "PrinterDriverData") != 0)
+        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
 	        return WERR_INVALID_PARAM;
 	
 	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
@@ -8153,7 +7926,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
 	char*   ptr = NULL;
 	int     i;
-	char 	*PrinterKey = "PrinterDriverData";
+	char 	*PrinterKey = SPOOL_PRINTERDATA_KEY;
 
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
@@ -8222,7 +7995,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 	
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
 
-        if (strcmp(key, "PrinterDriverData") != 0)
+        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
 	        return WERR_INVALID_PARAM;
 		
 	/* 
@@ -8246,14 +8019,16 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 			needed;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	PRINTER_ENUM_VALUES	*enum_values = NULL;
-	fstring 	key, value;
+	NT_PRINTER_DATA		*p_data;
+	fstring 	key;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int 		snum;
-	uint32 		param_index, 
-			data_len,
-			type;
 	WERROR 		result;
-	uint8 		*data=NULL;
+	int		key_index;
+	int		i;
+	REGISTRY_VALUE	*val;
+	char		*value_name;
+	int		data_len;
 	
 
 	DEBUG(4,("_spoolss_enumprinterdataex\n"));
@@ -8264,20 +8039,8 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	}
 
 		
-        /* 
-	 * The only key we support is "PrinterDriverData". This should return 
-	 > an array of all the key/value pairs returned by EnumPrinterDataSee 
-	 * _spoolss_getprinterdataex() for details    --jerry
-	 */
-   
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
-	if (strcmp(key, "PrinterDriverData") != 0)
-	{
-		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
-		return WERR_INVALID_PARAM;
-	}
-
-
+	/* first get the printer off of disk */
+	
 	if (!get_printer_snum(p,handle, &snum))
 		return WERR_BADFID;
 	
@@ -8285,61 +8048,76 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	result = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (!W_ERROR_IS_OK(result))
 		return result;
-
 	
+	/* now look for a match on the key name */
+	
+	p_data = &printer->info_2->data;
+	
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	if ( (key_index = lookup_printerkey( p_data, key)) == -1  )
+	{
+		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
+	
+	result = WERR_OK;
+	needed = 0;
+	
+	/* allocate the memory for the array of pointers -- if necessary */
+	
+	num_entries = regval_ctr_numvals( &p_data->keys[key_index].values );
+	if ( num_entries )
+	{
+		if ( (enum_values=talloc(p->mem_ctx, num_entries*sizeof(PRINTER_ENUM_VALUES))) == NULL )
+		{
+			DEBUG(0,("_spoolss_enumprinterdataex: talloc() failed to allocate memory for [%d] bytes!\n",
+				num_entries*sizeof(PRINTER_ENUM_VALUES)));
+			result = WERR_NOMEM;
+			goto done;
+		}
+
+		memset( enum_values, 0x0, num_entries*sizeof(PRINTER_ENUM_VALUES) );
+	}
+		
 	/* 
 	 * loop through all params and build the array to pass 
 	 * back to the  client 
 	 */
-	result = WERR_OK;
-	param_index		= 0;
-	needed 			= 0;
-	num_entries		= 0;
-	
-	while (get_specific_param_by_index(*printer, 2, param_index, value, &data, &type, &data_len)) 
+	 
+	for ( i=0; i<num_entries; i++ )
 	{
-		PRINTER_ENUM_VALUES	*ptr;
-
-		DEBUG(10,("retrieved value number [%d] [%s]\n", num_entries, value));
-
-		if ((ptr=talloc_realloc(p->mem_ctx, enum_values, (num_entries+1) * sizeof(PRINTER_ENUM_VALUES))) == NULL)
-		{
-			DEBUG(0,("talloc_realloc failed to allocate more memory!\n"));
-			result = WERR_NOMEM;
-			goto done;
-		}
-		enum_values = ptr;
+		/* lookup the registry value */
 		
-		ZERO_STRUCTP( &enum_values[num_entries] );
+		val = regval_ctr_specific_value( &p_data->keys[key_index].values, i );
+		DEBUG(10,("retrieved value number [%d] [%s]\n", i, regval_name(val) ));
 
 		/* copy the data */
 		
-		init_unistr(&enum_values[num_entries].valuename, value);
-		enum_values[num_entries].value_len = (strlen(value)+1) * 2;
-		enum_values[num_entries].type      = type;
+		value_name = regval_name( val );
+		init_unistr( &enum_values[i].valuename, value_name );
+		enum_values[i].value_len = (strlen(value_name)+1) * 2;
+		enum_values[i].type      = regval_type( val );
 		
-		if ( data_len )
-		{
-			if ( !(enum_values[num_entries].data = talloc_zero(p->mem_ctx, data_len)) ) {
-				DEBUG(0,("talloc_realloc failed to allocate more memory [data_len=%d] for data!\n", data_len ));
+		data_len = regval_size( val );
+		if ( data_len ) {
+			if ( !(enum_values[i].data = talloc_memdup(p->mem_ctx, regval_data_p(val), data_len)) ) 
+			{
+				DEBUG(0,("talloc_memdup failed to allocate memory [data_len=%d] for data!\n", 
+					data_len ));
 				result = WERR_NOMEM;
 				goto done;
 			}
-			memcpy(enum_values[num_entries].data, data, data_len);
 		}
-
-		enum_values[num_entries].data_len = data_len;
+		enum_values[i].data_len = data_len;
 
 		/* keep track of the size of the array in bytes */
 		
 		needed += spoolss_size_printer_enum_values(&enum_values[num_entries]);
-		
-		num_entries++;
-		param_index++;
 	}
 	
-	r_u->needed 		= needed;
-	r_u->returned 		= num_entries;
+	r_u->needed 	= needed;
+	r_u->returned 	= num_entries;
 
 	if (needed > in_size) {
 		result = WERR_MORE_DATA;
