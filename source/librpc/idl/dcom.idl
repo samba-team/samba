@@ -486,3 +486,21 @@ object,
 	WERROR MarshalInterface();
 	WERROR UnMarshalInterface();
 }
+
+
+[
+uuid(DB7C21F8-FE33-4C11-AEA5-CEB56F076FBB),
+	helpstring("CoffeeMachine Class")
+] coclass CoffeeMachine
+{
+	[
+	uuid(DA23F6DB-6F45-466C-9EED-0B65286F2D78),
+	helpstring("ICoffeeMachine Interface"),
+	pointer_default(unique)
+	]
+
+	interface ICoffeeMachine : IUnknown
+	{
+		[helpstring("method MakeCoffee")] HRESULT MakeCoffee(BSTR *flavor);
+	}
+}
