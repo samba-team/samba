@@ -120,7 +120,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ads = ads_init(NULL, NULL, NULL, NULL);
+	ads = ads_init_simple();
 
 	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
 	if (!NT_STATUS_IS_OK(ret)) {

@@ -119,6 +119,8 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 	if (resolve_name(domain->name, &server_ip, 0x1b)) {
 		sname = inet_ntoa(server_ip);
+	} else if (resolve_name(domain->name, &server_ip, 0x1c)) {
+		sname = inet_ntoa(server_ip);
 	} else {
 		if (strcasecmp(domain->name, lp_workgroup()) != 0) {
 			DEBUG(1,("can't find domain controller for %s\n", domain->name));
@@ -127,7 +129,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		sname = NULL;
 	}
 
-	ads = ads_init(primary_realm, sname, NULL, NULL);
+	ads = ads_init(primary_realm, domain->name, NULL, NULL, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
