@@ -469,11 +469,10 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message *msg;
-	uint32_t rid;
+	struct dom_sid *sid;
 	const char *groupname, *sidstr;
 	struct dcesrv_handle *g_handle;
 	int ret;
-	NTSTATUS status;
 
 	ZERO_STRUCTP(r->out.group_handle);
 	*r->out.rid = 0;
@@ -502,38 +501,14 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* pull in all the template attributes */
-	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-				  "(&(name=TemplateGroup)(objectclass=groupTemplate))");
-	if (ret != 0) {
-		DEBUG(0,("Failed to load TemplateGroup from samdb\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* allocate a rid */
-	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
-					d_state->domain_dn, "nextRid", &rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* and the group SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, rid);
-	if (!sidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* add core elements to the ldb_message for the user */
 	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", groupname,
 				  d_state->domain_dn);
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", groupname);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", groupname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", groupname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
 			     
 	/* create the group */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
@@ -550,7 +525,16 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+
+	/* retrieve the sidstring for the group just created */
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
+				   "objectSid",
+				   "dn=%s",
+				   msg->dn);
+	if (sidstr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	a_state->account_name = talloc_strdup(a_state, groupname);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -565,7 +549,12 @@ static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLO
 	g_handle->data = talloc_steal(g_handle, a_state);
 
 	*r->out.group_handle = g_handle->wire_handle;
-	*r->out.rid = rid;	
+
+	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	if (!sid)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
 	return NT_STATUS_OK;
 }
@@ -692,12 +681,11 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	struct dcesrv_handle *h;
 	const char *name;
 	struct ldb_message *msg;
-	uint32_t rid;
+	struct dom_sid *sid;
 	const char *account_name, *sidstr;
 	struct dcesrv_handle *u_handle;
 	int ret;
-	NTSTATUS status;
-	const char *container, *additional_class=NULL;
+	const char *container, *class=NULL;
 
 	ZERO_STRUCTP(r->out.user_handle);
 	*r->out.access_granted = 0;
@@ -728,67 +716,23 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* This must be one of these values *only* */
 	if (r->in.acct_flags == ACB_NORMAL) {
-		/* pull in all the template attributes */
-		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-					  "(&(name=TemplateUser)(objectclass=userTemplate))");
-		if (ret != 0) {
-			DEBUG(0,("Failed to load TemplateUser from samdb\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		container = "Users";
+		class = "user";
 
 	} else if (r->in.acct_flags == ACB_WSTRUST) {
-		/* pull in all the template attributes */
-		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-					  "(&(name=TemplateMemberServer)(objectclass=userTemplate))");
-		if (ret != 0) {
-			DEBUG(0,("Failed to load TemplateMemberServer from samdb\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		container = "Computers";
-		additional_class = "computer";
+		class = "computer";
 
 	} else if (r->in.acct_flags == ACB_SVRTRUST) {
-		/* pull in all the template attributes */
-		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-					  "(&(name=TemplateDomainController)(objectclass=userTemplate))");
-		if (ret != 0) {
-			DEBUG(0,("Failed to load TemplateDomainController from samdb\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		container = "Domain Controllers";
-		additional_class = "computer";
+		class = "computer";
 
 	} else if (r->in.acct_flags == ACB_DOMTRUST) {
-		/* pull in all the template attributes */
-		ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-					  "(&(name=TemplateTrustingDomain)(objectclass=userTemplate))");
-		if (ret != 0) {
-			DEBUG(0,("Failed to load TemplateTrustingDomain from samdb\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-
 		container = "Users";
-		additional_class = "computer";
+		class = "computer";
 
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* allocate a rid */
-	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
-					d_state->domain_dn, "nextRid", &rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* and the users SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, rid);
-	if (!sidstr) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* add core elements to the ldb_message for the user */
@@ -796,15 +740,8 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	if (!msg->dn) {
 		return NT_STATUS_NO_MEMORY;		
 	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", account_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", account_name);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", account_name);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "user");
-	if (additional_class) {
-		samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", additional_class);
-	}
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
-
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", class);
 	/* create the user */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
 	if (ret != 0) {
@@ -820,7 +757,16 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+
+	/* retrieve the sidstring for the group just created */
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
+				   "objectSid",
+				   "dn=%s",
+				   msg->dn);
+	if (sidstr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	a_state->account_name = talloc_strdup(a_state, account_name);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -836,7 +782,12 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	*r->out.user_handle = u_handle->wire_handle;
 	*r->out.access_granted = 0xf07ff; /* TODO: fix access mask calculations */
-	*r->out.rid = rid;	
+
+	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	if (!sid)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
 	return NT_STATUS_OK;
 }
@@ -953,10 +904,9 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct dcesrv_handle *h;
 	const char *aliasname, *name, *sidstr;
 	struct ldb_message *msg;
-	uint32_t rid;
+	struct dom_sid *sid;
 	struct dcesrv_handle *a_handle;
 	int ret;
-	NTSTATUS status;
 
 	ZERO_STRUCTP(r->out.alias_handle);
 	*r->out.rid = 0;
@@ -974,7 +924,7 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	/* Check if alias already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
 				   "sAMAccountName",
-				   "(&(sAMAccountName=%s)(objectclass=group))",
+				   "(&pAMAccountName=%s)(objectclass=group))",
 				   aliasname);
 
 	if (name != NULL) {
@@ -986,28 +936,6 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* pull in all the template attributes */
-	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, msg, 
-				  "(&(name=TemplateAlias)"
-				  "(objectclass=aliasTemplate))");
-	if (ret != 0) {
-		DEBUG(0,("Failed to load TemplateAlias from samdb\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	/* allocate a rid */
-	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
-					d_state->domain_dn, "nextRid", &rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* and the group SID */
-	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, rid);
-	if (!sidstr) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* add core elements to the ldb_message for the alias */
 	msg->dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", aliasname,
 				 d_state->domain_dn);
@@ -1015,11 +943,9 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "name", aliasname);
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "cn", aliasname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "sAMAccountName", aliasname);
 	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectClass", "group");
-	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "objectSid", sidstr);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, msg, "groupType", "0x80000004");
 
 	/* create the alias */
 	ret = samdb_add(d_state->sam_ctx, mem_ctx, msg);
@@ -1037,7 +963,16 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_state->access_mask = r->in.access_mask;
 	a_state->domain_state = talloc_reference(a_state, d_state);
 	a_state->account_dn = talloc_steal(a_state, msg->dn);
-	a_state->account_sid = talloc_steal(a_state, sidstr);
+
+	/* retrieve the sidstring for the group just created */
+	sidstr = samdb_search_string(d_state->sam_ctx, a_state, NULL, 
+				   "objectSid",
+				   "dn=%s",
+				   msg->dn);
+	if (sidstr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	a_state->account_name = talloc_strdup(a_state, aliasname);
 	if (!a_state->account_name) {
 		return NT_STATUS_NO_MEMORY;
@@ -1051,7 +986,12 @@ static NTSTATUS samr_CreateDomAlias(struct dcesrv_call_state *dce_call, TALLOC_C
 	a_handle->data = talloc_steal(a_handle, a_state);
 
 	*r->out.alias_handle = a_handle->wire_handle;
-	*r->out.rid = rid;
+
+	sid = dom_sid_parse_talloc(mem_ctx, sidstr);
+	if (!sid)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	*r->out.rid = sid->sub_auths[sid->num_auths-1];
 
 	return NT_STATUS_OK;
 }
@@ -1337,7 +1277,7 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	int i;
+	int i, total;
 	NTSTATUS status = NT_STATUS_OK;
 	struct samr_String *names;
 	uint32_t *ids;
@@ -1358,6 +1298,8 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	if ((names == NULL) || (ids == NULL))
 		return NT_STATUS_NO_MEMORY;
 
+	total = 0;
+
 	for (i=0; i<r->in.num_rids; i++) {
 		struct ldb_message **res;
 		int count;
@@ -1372,13 +1314,14 @@ static NTSTATUS samr_LookupRids(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 				     "(objectSid=%s-%u)", d_state->domain_sid,
 				     r->in.rids[i]);
 		if (count != 1) {
+			names[i].string = NULL;
 			status = STATUS_SOME_UNMAPPED;
 			continue;
 		}
 
 		names[i].string = samdb_result_string(res[0], "sAMAccountName",
 						      NULL);
-		
+
 		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
 		if (atype == 0) {
 			status = STATUS_SOME_UNMAPPED;
@@ -2063,7 +2006,24 @@ static NTSTATUS samr_SetAliasInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 static NTSTATUS samr_DeleteDomAlias(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_DeleteDomAlias *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *a_state;
+	int ret;
+
+        *r->out.alias_handle = *r->in.alias_handle;
+
+	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
+
+	a_state = h->data;
+
+	ret = samdb_delete(a_state->sam_ctx, mem_ctx, a_state->account_dn);
+	if (ret != 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ZERO_STRUCTP(r->out.alias_handle);
+
+	return NT_STATUS_OK;
 }
 
 

@@ -12,6 +12,7 @@ dn: @ATTRIBUTES
 realm: CASE_INSENSITIVE
 userPrincipalName: CASE_INSENSITIVE
 servicePrincipalName: CASE_INSENSITIVE
+cn: CASE_INSENSITIVE
 name: CASE_INSENSITIVE WILDCARD
 dn: CASE_INSENSITIVE WILDCARD
 sAMAccountName: CASE_INSENSITIVE WILDCARD
@@ -39,7 +40,7 @@ template: groupTemplate
 #Add modules to the list to activate them by default
 #beware often order is important
 dn: @MODULES
-@LIST: timestamps
+@LIST: samldb,timestamps
 
 ###############################
 # Domain Naming Context
