@@ -461,7 +461,6 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
     struct sam_passwd *sam_pass = NULL;
     UNISTR2 *uni_samlogon_user = NULL;
     fstring nt_username;
-    struct passwd *pw;
    
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -517,17 +516,18 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	map_username(nt_username);
 
 	/*
-	 * Do any case conversions.
+	 * We previously called Get_Pwnam(ntusername, True) here which could
+	 * have modified the case of the username.  Beaware of this
+	 * is the username case in smbpasswd does not match that in /etc/passwd
+	 * and domain logons begin to fail.  -- jerry
 	 */
 
-	pw=Get_Pwnam(nt_username, True);
-        
 	become_root();
 	sam_pass = getsam21pwnam(nt_username);
-	smb_pass = getsmbpwnam(nt_username);
 	unbecome_root();
+	smb_pass = pdb_sam_to_smb(sam_pass);
         
-	if ((smb_pass == NULL) || (sam_pass == NULL) || (pw == NULL))
+	if ((smb_pass=pdb_sam_to_smb(sam_pass)) == NULL)
 		return NT_STATUS_NO_SUCH_USER;
 	else if (smb_pass->acct_ctrl & ACB_DISABLED)
 		return NT_STATUS_ACCOUNT_DISABLED;
@@ -584,18 +584,18 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		pstrcpy(samlogon_user, nt_username);
 
 		pstrcpy(logon_script, sam_pass->logon_script);
-		standard_sub_advanced(-1, nt_username, "", pw->pw_gid, logon_script);
+		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, logon_script);
 	
 		pstrcpy(profile_path, sam_pass->profile_path);
-		standard_sub_advanced(-1, nt_username, "", pw->pw_gid, profile_path);
+		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, profile_path);
         
 		pstrcpy(my_workgroup, lp_workgroup());
         
 		pstrcpy(home_drive, sam_pass->dir_drive);
-		standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_drive);
+		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, home_drive);
 
 		pstrcpy(home_dir, sam_pass->home_dir);
-		standard_sub_advanced(-1, nt_username, "", pw->pw_gid, home_dir);
+		standard_sub_advanced(-1, nt_username, "", sam_pass->smb_grpid, home_dir);
         
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
@@ -603,8 +603,6 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		pstrcpy(full_name, sam_pass->full_name );
 		if( !*full_name ) {
 			fstrcpy(full_name, "<Full Name>");
-			if (lp_unix_realname())
-				fstrcpy(full_name, strtok(pw->pw_gecos, ","));
 		}
         
 		/*
