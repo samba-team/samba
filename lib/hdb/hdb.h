@@ -47,20 +47,27 @@
 
 enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
+/* flags for various functions */
+#define HDB_F_DECRYPT	1 /* decrypt keys */
+#define HDB_F_REPLACE	2 /* replace entry */
+
 typedef struct HDB{
     void *db;
     char *name;
     int master_key_set;
     krb5_data master_key;
+    int master_key_version;
     int openp;
 
     krb5_error_code (*open)(krb5_context, struct HDB*, int, mode_t);
     krb5_error_code (*close)(krb5_context, struct HDB*);
-    krb5_error_code (*fetch)(krb5_context, struct HDB*, hdb_entry*);
-    krb5_error_code (*store)(krb5_context, struct HDB*, int, hdb_entry*);
+    krb5_error_code (*fetch)(krb5_context, struct HDB*, unsigned, hdb_entry*);
+    krb5_error_code (*store)(krb5_context, struct HDB*, unsigned, hdb_entry*);
     krb5_error_code (*remove)(krb5_context, struct HDB*, hdb_entry*);
-    krb5_error_code (*firstkey)(krb5_context, struct HDB*, hdb_entry*);
-    krb5_error_code (*nextkey)(krb5_context, struct HDB*, hdb_entry*);
+    krb5_error_code (*firstkey)(krb5_context, struct HDB*, 
+				unsigned, hdb_entry*);
+    krb5_error_code (*nextkey)(krb5_context, struct HDB*, 
+			       unsigned, hdb_entry*);
     krb5_error_code (*lock)(krb5_context, struct HDB*, int operation);
     krb5_error_code (*unlock)(krb5_context, struct HDB*);
     krb5_error_code (*rename)(krb5_context, struct HDB*, const char*);
@@ -71,61 +78,12 @@ typedef struct HDB{
     krb5_error_code (*destroy)(krb5_context, struct HDB*);
 }HDB;
 
-void hdb_free_entry(krb5_context, hdb_entry*);
-
-krb5_error_code hdb_create(krb5_context, HDB**, const char*);
-krb5_error_code hdb_db_create(krb5_context, HDB**, const char*);
-krb5_error_code hdb_ndbm_create(krb5_context, HDB**, const char*);
-
-krb5_error_code hdb_next_enctype2key(krb5_context context,
-				     hdb_entry *e,
-				     krb5_enctype enctype,
-				     Key **key);
-
-krb5_error_code hdb_enctype2key(krb5_context context, 
-				hdb_entry *e, 
-				krb5_enctype enctype, 
-				Key **key);
-
-typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
-					      hdb_entry*, void*);
-krb5_error_code hdb_foreach(krb5_context context, HDB *db,
-			    hdb_foreach_func_t func, void *data);
-
-krb5_error_code hdb_check_db_format(krb5_context, HDB*);
-krb5_error_code hdb_init_db(krb5_context, HDB*);
-
-krb5_error_code hdb_set_master_key (krb5_context context,
-				    HDB *db,
-				    EncryptionKey key);
-
-krb5_error_code hdb_set_master_keyfile (krb5_context context,
-					HDB *db,
-					const char *keyfile);
-
-krb5_error_code hdb_clear_master_key (krb5_context context,
-				      HDB *db);
-
-krb5_error_code
-hdb_process_master_key(krb5_context context, EncryptionKey key, 
-		       krb5_data *schedule);
-
-krb5_error_code
-hdb_read_master_key(krb5_context context, const char *filename, 
-		    EncryptionKey *key);
-
-Key *hdb_unseal_key(Key*, krb5_data);
-void hdb_seal_key(Key*, krb5_data);
-void hdb_unseal_keys(hdb_entry*, krb5_data);
-void hdb_seal_keys(hdb_entry*, krb5_data);
-void hdb_free_key(Key*);
-
-int hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value);
-int hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent);
-
-
 #define HDB_DB_DIR "/var/heimdal"
 #define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
 #define HDB_DB_FORMAT_ENTRY "hdb/db-format"
+
+typedef krb5_error_code (*hdb_foreach_func_t)(krb5_context, HDB*,
+					      hdb_entry*, void*);
+#include <hdb-protos.h>
 
 #endif /* __HDB_H__ */
