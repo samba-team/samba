@@ -169,7 +169,7 @@ static struct smbcli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	status = smbcli_full_connection(&c, "masktest",
+	status = smbcli_full_connection(NULL, &c, "masktest",
 				     server, NULL, 
 				     share, "?????", 
 				     username, lp_workgroup(), 

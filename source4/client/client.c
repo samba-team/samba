@@ -2727,7 +2727,7 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 
  again:
 	/* have to open a new connection */
-	if (!(c=smbcli_state_init()) || !smbcli_socket_connect(c, server_n)) {
+	if (!(c=smbcli_state_init(NULL)) || !smbcli_socket_connect(c, server_n)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
@@ -2858,7 +2858,7 @@ static int do_message_op(void)
 
 	server_name = dest_ip ? dest_ip : desthost;
 
-	if (!(cli=smbcli_state_init()) || !smbcli_socket_connect(cli, server_name)) {
+	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}

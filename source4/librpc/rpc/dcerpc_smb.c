@@ -334,6 +334,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_pipe *p)
 	c.close.in.fnum = smb->fnum;
 	c.close.in.write_time = 0;
 	smb_raw_close(smb->tree, &c);
+
 	talloc_free(smb);
 
 	return NT_STATUS_OK;
@@ -433,7 +434,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	}
 
 	smb->fnum = io.ntcreatex.out.fnum;
-	smb->tree = talloc_reference(smb, tree);
+	smb->tree = tree;
 
 	(*p)->transport.private = smb;
 
