@@ -404,7 +404,8 @@ static int event_loop_epoll(struct event_context *ev, struct timeval *tvalp)
 			epoll_fallback_to_select(ev, "epoll_wait() gave bad data");
 			return -1;
 		}
-		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
+		if (events[i].events & (EPOLLIN|EPOLLHUP|EPOLLERR)) 
+			flags |= EVENT_FD_READ;
 		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(ev, fde, flags, fde->private);
