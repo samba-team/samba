@@ -931,7 +931,6 @@ static char **completion_fn(char *text, int start, int end)
           	}
         }
       }
-	}
     }
 
     /* Eeek! */
