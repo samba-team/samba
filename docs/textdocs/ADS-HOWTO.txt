@@ -4,7 +4,7 @@ Samba 3.0 prealpha guide to Kerberos authentication
 Andrew Tridgell
 tridge@samba.org
 
-This is a VERY ROUGH guide to setting up the current (October 2001)
+This is a VERY ROUGH guide to setting up the current (November 2001)
 pre-alpha version of Samba 3.0 with kerberos authentication against a
 Windows2000 KDC. The procedures listed here are likely to change as
 the code develops.
