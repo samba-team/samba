@@ -32,7 +32,7 @@ static char this_salt[100] = "";
 static char this_crypted[100] = "";
 
 
-#ifdef HAVE_PAM
+#ifdef WITH_PAM
 /*******************************************************************
 check on PAM authentication
 ********************************************************************/
@@ -729,7 +729,7 @@ core of password checking routine
 static BOOL password_check(char *password)
 {
 
-#ifdef HAVE_PAM
+#ifdef WITH_PAM
 	/* This falls through if the password check fails
 	   - if HAVE_CRYPT is not defined this causes an error msg
 	   saying Warning - no crypt available
