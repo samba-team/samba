@@ -45,7 +45,7 @@ while(cur < length) {
 char *curpacket = NULL;
 long curpacket_len = 0;
 
-long read_log_msg(FILE *in, char **_buffer, long *buffersize)
+void read_log_msg(FILE *in, char **_buffer, long *buffersize, long *data_offset, long *data_length)
 {
 	char *buffer;
 	int tmp; long i;
@@ -77,17 +77,24 @@ long read_log_msg(FILE *in, char **_buffer, long *buffersize)
 		memcpy(buffer+smb_vwv+i*2, &tmp, 2);
 	}
 
-	assert(fscanf(in, "  smb_bcc=%d\n", &tmp)); memcpy(buffer+smb_vwv+(1+buffer[smb_wct])*2, &tmp, 2);
+	*data_offset = smb_vwv+buffer[smb_wct]*2;
+	assert(fscanf(in, "  smb_bcc=%d\n", data_length)); buffer[(*data_offset)] = *data_length;
+	(*data_offset)+=2;
 	*_buffer = buffer;
-	return tmp;
 }
 
-void read_log_data(FILE *in, char *buffer, long *buffersize, long data_offset)
+void read_log_data(FILE *in, char *buffer, long data_length)
 {
-	int addr, b[16]; long i,j;
-	for(i = *buffersize-data_offset; i < *buffersize; i++) {
-		fscanf(in, "  [%x] %2x %2x %2x %2x %2x %2x %2x %2x  %2x %2x %2x %2x %2x %2x %2x %2x\n", &addr, 	&b[0], &b[1], &b[2], &b[3], &b[4], &b[5], &b[6], &b[7], &b[8], &b[9], &b[10], &b[11], &b[12], &b[13], &b[14], &b[15]);
-		for(j = i; j < 16 && j < *buffersize; j++) buffer[j] = b[j-i];
+	long i, addr; char real[2][16];
+	for(i = 0; i < data_length; i++) {
+		if(i % 16 == 0){
+			if(i != 0) { /* Read data after each line */
+				assert(fscanf(in, "%8s %8s", real[0], real[1]) == 2);
+			}
+			assert(fscanf(in, "  [%X]", &addr));
+			assert(addr == i);
+		}
+		assert(fscanf(in, "%2X", &buffer[i]));
 	}
 }
 
@@ -99,7 +106,7 @@ int main (int argc, char **argv)
 	int c;
 	poptContext pc;
 	char buffer[4096];
-	long data_offset;
+	long data_offset, data_length;
 	int in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -141,15 +148,14 @@ int main (int argc, char **argv)
 	if(!outfile) out = stdout;
 
 	while(!feof(in)) {
-		
 		fgets(buffer, sizeof(buffer), in);
 		if(buffer[0] == '[') { /* Header */
 			if(strstr(buffer, "show_msg")) {
 				in_packet++;
 				if(in_packet == 1)continue;
-				data_offset = read_log_msg(in, &curpacket, &curpacket_len);
+				read_log_msg(in, &curpacket, &curpacket_len, &data_offset, &data_length);
 			} else if(in_packet && strstr(buffer, "dump_data")) {
-				read_log_data(in, curpacket, &curpacket_len, data_offset);
+				read_log_data(in, curpacket+data_offset, data_length);
 			}  else { 
 				if(in_packet){ 
 					print_packet(out, curpacket, curpacket_len); 
