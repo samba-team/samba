@@ -5,9 +5,8 @@ if test $# -ne 1; then
   exit 1
 fi
 host=$1
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-set `@bindir@/kx $host`
+bindir=%bindir%
+set `$bindir/kx $host`
 disp=:$1
 auth=$2
-@bindir@/rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host &"
+$bindir/rsh -n $host "env DISPLAY=$disp XAUTHORITY=$auth xterm -T $host -n $host &"
