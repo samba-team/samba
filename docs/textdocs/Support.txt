@@ -27,7 +27,7 @@ Region                             Number of entries
 ----------------------------------------------------
     AFRICA                                        2
     AMERICA - CENTRAL & SOUTH                     3
-    AMERICA - USA                                26
+    AMERICA - USA                                27
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
@@ -363,6 +363,25 @@ Dacula(Atlanta), Georgia 30019
 Supporting the Atlanta, Georgia USA area for two and a half years.  
 In the computer field for 22 years.
 
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+GEORGIA - USA
+
+Region: ATLANTA, GA - USA
+Company: Advanced Application Development, Inc.
+Address: 4383 Burnleigh Chase
+         Roswell, GA 30075
+Telephone: (770) 552-4248
+email: support@aad.com
+Contact Name: Rich Vaughn
+              rvaughn@aad.com
+
+Provides consulting, development and system integration
+services for businesses throughout the Southeastern US.
+We have been using Samba on various UNIX platforms for
+several years and are familiar with porting and configuration
+issues. Visit our web site at http://www.aad.com.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
