@@ -770,8 +770,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	pidfile_create("winbindd");
-
 	codepage_initialise(lp_client_code_page());
 
 	/* Setup names. */
@@ -787,8 +785,11 @@ int main(int argc, char **argv)
 
         fstrcpy(global_myworkgroup, lp_workgroup());
 
-	if (!interactive)
+	if (!interactive) {
 		become_daemon();
+		pidfile_create("winbindd");
+	}
+
 
 #if HAVE_SETPGID
 	/*
