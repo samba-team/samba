@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -234,6 +234,12 @@ encode_524_response(const char *spn, const EncTicketPart et, const Ticket *t,
 	unsigned char buf[MAX_KTXT_LEN + 4 * 4];
 	Key *skey;
 	
+	if (!enable_v4_cross_realm && strcmp (et.crealm, t->realm) != 0) {
+	    kdc_log(0, "524 cross-realm %s -> %s disabled", et.crealm,
+		    t->realm);
+	    return KRB5KDC_ERR_POLICY;
+	}
+
 	ret = encode_v4_ticket(buf + sizeof(buf) - 1, sizeof(buf),
 			       &et, &t->sname, &len);
 	if(ret){
