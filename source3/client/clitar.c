@@ -2715,6 +2715,9 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
     case 'a':
       tar_reset=True;
       break;
+    case 'q':
+      tar_noisy=False;
+      break;
     case 'I':
       if (tar_clipfl) {
 	DEBUG(0,("Only one of I,X,F must be specified\n"));

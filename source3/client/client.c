@@ -3304,7 +3304,7 @@ struct
   {"exit",cli_send_logout,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
-  {"tar",cmd_tar,"tar <c|x>[IXbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
+  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,
      "<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
@@ -3740,7 +3740,7 @@ static void usage(char *pname)
   DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
   DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
   DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-T<c|x>IXgbNan        command line tar\n"));
+  DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
   DEBUG(0,("\t-D directory          start from directory\n"));
   DEBUG(0,("\n"));
 }
