@@ -346,7 +346,7 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	</para>
 
 	<para>
-	An overview of the permissions field can be found in <link linkend="access1"/>.
+		An overview of the permissions field can be found in <link linkend="access1">the image below</link>.
 	</para>
 
 	<image id="access1" scale="40"><imagedescription>Overview of UNIX permissions field.</imagedescription><imagefile>access1</imagefile></image>
@@ -429,7 +429,7 @@ Before using any of the following options, please refer to the man page for &smb
 	</para>
 
 	<para>
-	<link linkend="ugbc"/> enumerates these controls.
+		<link linkend="ugbc">The table below</link> enumerates these controls.
 	</para>
 
 	<table frame='all' pgwide='0' id="ugbc"><title>User and Group Based Controls</title>
@@ -527,7 +527,7 @@ Before using any of the following options, please refer to the man page for &smb
 	</para>
 
 	<para>
-	Refer to <link linkend="fdpbc"/> for information regarding the parameters that may be used to affect file and
+		Refer to <link linkend="fdpbc">the table below</link> for information regarding the parameters that may be used to affect file and
 	directory permission-based access controls.
 	</para>
 
@@ -619,7 +619,7 @@ Before using any of the following options, please refer to the man page for &smb
 
 	<para>
 	The following are documented because of the prevalence of administrators creating inadvertent barriers to file
-	access by not understanding the full implications of &smb.conf; file settings. See <link linkend="mcoc"/>.
+	access by not understanding the full implications of &smb.conf; file settings. See <link linkend="mcoc">the table below</link>.
 	</para>
 
 	<table frame='all' id="mcoc"><title>Other Controls</title>

@@ -3,6 +3,40 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
+	<xsl:template match="ulink">
+	<xsl:element name="ulink">
+		<xsl:attribute name="url">
+			<xsl:value-of select="@url"/>
+		</xsl:attribute>
+		<xsl:choose>
+			<xsl:when test=". != ''">
+				<xsl:value-of select="."/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="@url"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:element>
+</xsl:template>
+
+
+
+<xsl:template match="link">
+	<xsl:element name="link">
+		<xsl:attribute name="linkend">
+			<xsl:value-of select="@linkend"/>
+		</xsl:attribute>
+		<xsl:choose>
+			<xsl:when test=". != ''">
+				<xsl:value-of select="."/>
+			</xsl:when>
+			<xsl:otherwise>
+				<xsl:value-of select="@linkend"/>
+			</xsl:otherwise>
+		</xsl:choose>
+	</xsl:element>
+</xsl:template>
+
 <xsl:param name="base.dir" select="'../htmldocs/'"/>
 <xsl:param name="bridgehead.in.toc" select="1"/>
 <xsl:param name="citerefentry.link" select="'1'"/>

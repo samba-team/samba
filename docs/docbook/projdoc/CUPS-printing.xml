@@ -151,7 +151,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 		<title>Simple &smb.conf; Settings for CUPS</title>
 
 		<para>
-		To summarize, <link linkend="cups-exam-simple"/> shows simplest printing-related setup for &smb.conf; to enable basic CUPS support:
+			To summarize, <link linkend="cups-exam-simple">the example below</link> shows simplest printing-related setup for &smb.conf; to enable basic CUPS support:
 		</para>
 
 		<para><smbconfexample id="cups-exam-simple">
@@ -195,7 +195,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<title>More Complex CUPS &smb.conf; Settings</title>
 
 	<para>
-	<link linkend="overridesettings"/> is a slightly more complex printing-related setup
+		<link linkend="overridesettings">The example below</link> is a slightly more complex printing-related setup
 	for &smb.conf;. It enables general CUPS printing
 	support for all printers, but defines one printer share, which is set
 	up differently. 
@@ -1232,7 +1232,7 @@ that generates PostScript from image formats. The <parameter>imagetoraster</para
 filter is used to convert directly from image to raster, without the
 intermediate PostScript stage. It is used more often than the above
 mentioned pre-filters. A summarizing flowchart of image file
-filtering is shown in <link linkend="small8"/>.
+filtering is shown in <link linkend="small8">the figure below</link>.
 </para>
 
 <para>
@@ -1656,7 +1656,7 @@ output device.
 CUPS by default ships only a few generic PPDs, but they are good for
 several hundred printer models. You may not be able to control
 different paper trays, or you may get larger margins than your
-specific model supports. See <link linkend="cups-ppds"/> for summary information.
+specific model supports. See <link linkend="cups-ppds">the figure below</link> for summary information.
 </para>
 
 <table frame="all" id="cups-ppds">
@@ -1773,7 +1773,7 @@ installation. Therefore the printfile bypasses the <parameter>pstoraster</parame
 (and also bypasses the CUPS-raster-drivers
 <parameter>rastertosomething</parameter>). After Ghostscript finished its rasterization,
 <parameter>cupsomatic</parameter> hands the rendered file directly to the CUPS backend. The
-flowchart in <link linkend="cupsomatic-dia"/> illustrates the difference between native CUPS
+flowchart in <link linkend="cupsomatic-dia">the image below</link> illustrates the difference between native CUPS
 rendering and the <parameter>Foomatic/cupsomatic</parameter> method.
 </para>
 </sect2>
@@ -1817,7 +1817,7 @@ backend, which transfers the job to the printers.</para></listitem>
 </itemizedlist>
 
 <para>
-	The resulting filter chain, therefore, is as drawn in <link linkend="pdftosocket"/>.
+	The resulting filter chain, therefore, is as drawn in <link linkend="pdftosocket">the figure below</link>.
 </para>
 
 <image id="pdftosocket"><imagefile>pdftosocket</imagefile><imagedescription>PDF to socket chain.</imagedescription></image>
@@ -1866,7 +1866,7 @@ which transfers the job to the printers.</para></listitem>
 </itemizedlist>
 
 <para>
-The resulting filter chain therefore is as drawn in <link linkend="pdftoepsonusb"/>.
+	The resulting filter chain therefore is as drawn in <link linkend="pdftoepsonusb">the figure below</link>.
 </para>
 
 <image id="pdftoepsonusb"><imagefile>pdftoepsonusb</imagefile><imagedescription>PDF to USB chain.</imagedescription></image>
@@ -1994,7 +1994,7 @@ output.</para></listitem>
 </itemizedlist>
 
 <para>
-Both print paths are shown in the flowcharts in <link linkend="small11"/> and <link linkend="small12"/>.
+	Both print paths are shown in the flowcharts in the figures below.
 </para>
 </sect2>
 
