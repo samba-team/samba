@@ -33,7 +33,9 @@ case "$host_os" in
 	*linux*)   AC_DEFINE(LINUX);;
         *solaris*) AC_DEFINE(SUNOS5)
                    LDSHFLAGS="-G";;
-        *sunos*) AC_DEFINE(SUNOS4);;
+        *sunos*) AC_DEFINE(SUNOS4)
+                LDSHFLAGS=""
+		;;
         *irix*) AC_DEFINE(IRIX)
 		WRAP32=smbwrapper/smbwrapper.32.so
 		PICFLAG="-KPIC"
