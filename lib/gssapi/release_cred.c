@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,6 +40,8 @@ OM_uint32 gss_release_cred
             gss_cred_id_t * cred_handle
            )
 {
+    *minor_status = 0;
+
     if (*cred_handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_COMPLETE;
     }
