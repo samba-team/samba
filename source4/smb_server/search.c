@@ -78,7 +78,7 @@ static void find_fill_info(struct smbsrv_request *req,
 
 	p += req_append_bytes(req, file->search.search_id.data, 21);
 	p += req_append_bytes(req, (char*)&file->search.attrib, 1);
-	srv_push_dos_date3(req->smb_conn, (uint8_t *)&dos_date, 0, file->search.write_time);
+	srv_push_dos_date(req->smb_conn, (uint8_t *)&dos_date, 0, file->search.write_time);
 	p += req_append_bytes(req, (char*)&dos_date, 4);
 	p += req_append_bytes(req, (char*)&file->search.size, 4);
 	memset(&search_name[0], ' ', 13);
