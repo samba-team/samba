@@ -281,12 +281,12 @@ static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_C
 		
 	/* the option type struct */
 	for(i=0;i<ctr->count;i++)
-		if(!smb_io_notify_option_type("", &(ctr->type[i]) , ps, depth))
+		if(!smb_io_notify_option_type("", &ctr->type[i] , ps, depth))
 			return False;
 
 	/* the type associated with the option type struct */
 	for(i=0;i<ctr->count;i++)
-		if(!smb_io_notify_option_type_data("", &(ctr->type[i]) , ps, depth))
+		if(!smb_io_notify_option_type_data("", &ctr->type[i] , ps, depth))
 			return False;
 	
 	return True;
@@ -346,15 +346,15 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint16("type",           ps, depth, &(data->type)))
+	if(!prs_uint16("type",           ps, depth, &data->type))
 		return False;
-	if(!prs_uint16("field",          ps, depth, &(data->field)))
+	if(!prs_uint16("field",          ps, depth, &data->field))
 		return False;
 	/*prs_align(ps);*/
 
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
-	if(!prs_uint32("id",             ps, depth, &(data->id)))
+	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
@@ -362,9 +362,9 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 
 	if (isvalue==True)
 	{
-		if(!prs_uint32("value[0]", ps, depth, &(data->notify_data.value[0])))
+		if(!prs_uint32("value[0]", ps, depth, &data->notify_data.value[0]))
 			return False;
-		if(!prs_uint32("value[1]", ps, depth, &(data->notify_data.value[1])))
+		if(!prs_uint32("value[1]", ps, depth, &data->notify_data.value[1]))
 			return False;
 		/*prs_align(ps);*/
 	}
@@ -428,25 +428,25 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &(info->count)))
+	if(!prs_uint32("count", ps, depth, &info->count))
 		return False;
-	if(!prs_uint32("version", ps, depth, &(info->version)))
+	if(!prs_uint32("version", ps, depth, &info->version))
 		return False;
-	if(!prs_uint32("flags", ps, depth, &(info->flags)))
+	if(!prs_uint32("flags", ps, depth, &info->flags))
 		return False;
-	if(!prs_uint32("count", ps, depth, &(info->count)))
+	if(!prs_uint32("count", ps, depth, &info->count))
 		return False;
 
 	for (i=0;i<info->count;i++)
 	{
-		if(!smb_io_notify_info_data(desc, &(info->data[i]), ps, depth))
+		if(!smb_io_notify_info_data(desc, &info->data[i], ps, depth))
 			return False;
 	}
 
 	/* now do the strings at the end of the stream */	
 	for (i=0;i<info->count;i++)
 	{
-		if(!smb_io_notify_info_data_strings(desc, &(info->data[i]), ps, depth))
+		if(!smb_io_notify_info_data_strings(desc, &info->data[i], ps, depth))
 			return False;
 	}
 
@@ -532,71 +532,71 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 
 	if (!prs_uint16s(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
 		return False;
-	if (!prs_uint16("specversion",      ps, depth, &(devmode->specversion)))
+	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
 		return False;
-	if (!prs_uint16("driverversion",    ps, depth, &(devmode->driverversion)))
+	if (!prs_uint16("driverversion",    ps, depth, &devmode->driverversion))
 		return False;
-	if (!prs_uint16("size",             ps, depth, &(devmode->size)))
+	if (!prs_uint16("size",             ps, depth, &devmode->size))
 		return False;
-	if (!prs_uint16("driverextra",      ps, depth, &(devmode->driverextra)))
+	if (!prs_uint16("driverextra",      ps, depth, &devmode->driverextra))
 		return False;
-	if (!prs_uint32("fields",           ps, depth, &(devmode->fields)))
+	if (!prs_uint32("fields",           ps, depth, &devmode->fields))
 		return False;
-	if (!prs_uint16("orientation",      ps, depth, &(devmode->orientation)))
+	if (!prs_uint16("orientation",      ps, depth, &devmode->orientation))
 		return False;
-	if (!prs_uint16("papersize",        ps, depth, &(devmode->papersize)))
+	if (!prs_uint16("papersize",        ps, depth, &devmode->papersize))
 		return False;
-	if (!prs_uint16("paperlength",      ps, depth, &(devmode->paperlength)))
+	if (!prs_uint16("paperlength",      ps, depth, &devmode->paperlength))
 		return False;
-	if (!prs_uint16("paperwidth",       ps, depth, &(devmode->paperwidth)))
+	if (!prs_uint16("paperwidth",       ps, depth, &devmode->paperwidth))
 		return False;
-	if (!prs_uint16("scale",            ps, depth, &(devmode->scale)))
+	if (!prs_uint16("scale",            ps, depth, &devmode->scale))
 		return False;
-	if (!prs_uint16("copies",           ps, depth, &(devmode->copies)))
+	if (!prs_uint16("copies",           ps, depth, &devmode->copies))
 		return False;
-	if (!prs_uint16("defaultsource",    ps, depth, &(devmode->defaultsource)))
+	if (!prs_uint16("defaultsource",    ps, depth, &devmode->defaultsource))
 		return False;
-	if (!prs_uint16("printquality",     ps, depth, &(devmode->printquality)))
+	if (!prs_uint16("printquality",     ps, depth, &devmode->printquality))
 		return False;
-	if (!prs_uint16("color",            ps, depth, &(devmode->color)))
+	if (!prs_uint16("color",            ps, depth, &devmode->color))
 		return False;
-	if (!prs_uint16("duplex",           ps, depth, &(devmode->duplex)))
+	if (!prs_uint16("duplex",           ps, depth, &devmode->duplex))
 		return False;
-	if (!prs_uint16("yresolution",      ps, depth, &(devmode->yresolution)))
+	if (!prs_uint16("yresolution",      ps, depth, &devmode->yresolution))
 		return False;
-	if (!prs_uint16("ttoption",         ps, depth, &(devmode->ttoption)))
+	if (!prs_uint16("ttoption",         ps, depth, &devmode->ttoption))
 		return False;
-	if (!prs_uint16("collate",          ps, depth, &(devmode->collate)))
+	if (!prs_uint16("collate",          ps, depth, &devmode->collate))
 		return False;
 	if (!prs_uint16s(True, "formname",  ps, depth, devmode->formname.buffer, 32))
 		return False;
-	if (!prs_uint16("logpixels",        ps, depth, &(devmode->logpixels)))
+	if (!prs_uint16("logpixels",        ps, depth, &devmode->logpixels))
 		return False;
-	if (!prs_uint32("bitsperpel",       ps, depth, &(devmode->bitsperpel)))
+	if (!prs_uint32("bitsperpel",       ps, depth, &devmode->bitsperpel))
 		return False;
-	if (!prs_uint32("pelswidth",        ps, depth, &(devmode->pelswidth)))
+	if (!prs_uint32("pelswidth",        ps, depth, &devmode->pelswidth))
 		return False;
-	if (!prs_uint32("pelsheight",       ps, depth, &(devmode->pelsheight)))
+	if (!prs_uint32("pelsheight",       ps, depth, &devmode->pelsheight))
 		return False;
-	if (!prs_uint32("displayflags",     ps, depth, &(devmode->displayflags)))
+	if (!prs_uint32("displayflags",     ps, depth, &devmode->displayflags))
 		return False;
-	if (!prs_uint32("displayfrequency", ps, depth, &(devmode->displayfrequency)))
+	if (!prs_uint32("displayfrequency", ps, depth, &devmode->displayfrequency))
 		return False;
-	if (!prs_uint32("icmmethod",        ps, depth, &(devmode->icmmethod)))
+	if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
 		return False;
-	if (!prs_uint32("icmintent",        ps, depth, &(devmode->icmintent)))
+	if (!prs_uint32("icmintent",        ps, depth, &devmode->icmintent))
 		return False;
-	if (!prs_uint32("mediatype",        ps, depth, &(devmode->mediatype)))
+	if (!prs_uint32("mediatype",        ps, depth, &devmode->mediatype))
 		return False;
-	if (!prs_uint32("dithertype",       ps, depth, &(devmode->dithertype)))
+	if (!prs_uint32("dithertype",       ps, depth, &devmode->dithertype))
 		return False;
-	if (!prs_uint32("reserved1",        ps, depth, &(devmode->reserved1)))
+	if (!prs_uint32("reserved1",        ps, depth, &devmode->reserved1))
 		return False;
-	if (!prs_uint32("reserved2",        ps, depth, &(devmode->reserved2)))
+	if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
 		return False;
-	if (!prs_uint32("panningwidth",     ps, depth, &(devmode->panningwidth)))
+	if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
 		return False;
-	if (!prs_uint32("panningheight",    ps, depth, &(devmode->panningheight)))
+	if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
 		return False;
 
 	if (devmode->driverextra!=0)
@@ -846,9 +846,9 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("type", ps, depth, &(r_u->type)))
+	if (!prs_uint32("type", ps, depth, &r_u->type))
 		return False;
-	if (!prs_uint32("size", ps, depth, &(r_u->size)))
+	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
@@ -857,9 +857,9 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	if (!prs_align(ps))
 		return False;
 	
-	if (!prs_uint32("needed", ps, depth, &(r_u->needed)))
+	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
-	if (!prs_uint32("status", ps, depth, &(r_u->status)))
+	if (!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 		
 	return True;
@@ -995,9 +995,9 @@ BOOL spoolss_io_r_startdocprinter(char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_startdocprinter");
 	depth++;
-	if(!prs_uint32("jobid", ps, depth, &(r_u->jobid)))
+	if(!prs_uint32("jobid", ps, depth, &r_u->jobid))
 		return False;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1017,7 +1017,7 @@ BOOL spoolss_io_q_enddocprinter(char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_stru
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
 
 	return True;
@@ -1031,7 +1031,7 @@ BOOL spoolss_io_r_enddocprinter(char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_stru
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enddocprinter");
 	depth++;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1051,7 +1051,7 @@ BOOL spoolss_io_q_startpageprinter(char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, pr
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
 
 	return True;
@@ -1065,7 +1065,7 @@ BOOL spoolss_io_r_startpageprinter(char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, pr
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_startpageprinter");
 	depth++;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1085,7 +1085,7 @@ BOOL spoolss_io_q_endpageprinter(char *desc, SPOOL_Q_ENDPAGEPRINTER *q_u, prs_st
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
 
 	return True;
@@ -1099,7 +1099,7 @@ BOOL spoolss_io_r_endpageprinter(char *desc, SPOOL_R_ENDPAGEPRINTER *r_u, prs_st
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_endpageprinter");
 	depth++;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1119,9 +1119,9 @@ BOOL spoolss_io_q_writeprinter(char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
-	if(!prs_uint32("buffer_size", ps, depth, &(q_u->buffer_size)))
+	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
 		return False;
 	
 	if (q_u->buffer_size!=0)
@@ -1134,7 +1134,7 @@ BOOL spoolss_io_q_writeprinter(char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct
 	}
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("buffer_size2", ps, depth, &(q_u->buffer_size2)))
+	if(!prs_uint32("buffer_size2", ps, depth, &q_u->buffer_size2))
 		return False;
 
 	return True;
@@ -1148,9 +1148,9 @@ BOOL spoolss_io_r_writeprinter(char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_writeprinter");
 	depth++;
-	if(!prs_uint32("buffer_written", ps, depth, &(r_u->buffer_written)))
+	if(!prs_uint32("buffer_written", ps, depth, &r_u->buffer_written))
 		return False;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -1425,7 +1425,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 {
 	UNISTR chaine;
 	
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 	
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
@@ -1478,7 +1478,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		*string=NULL;
 				
 		/* read the offset */
-		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
 
 		old_offset = prs_offset(ps);
@@ -1510,7 +1510,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		SEC_DESC **secdesc)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps= &buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
 	depth++;
@@ -1543,7 +1543,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		uint32 old_offset;
 		
 		/* read the offset */
-		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
 
 		old_offset = prs_offset(ps);
@@ -1566,7 +1566,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 ********************************************************************/
 static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_reldevmode");
 	depth++;
@@ -1594,7 +1594,7 @@ static BOOL new_smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEV
 		uint32 old_offset;
 		
 		/* read the offset */
-		if (!prs_uint32("offset", ps, depth, &(buffer->string_at_end)))
+		if (!prs_uint32("offset", ps, depth, &buffer->string_at_end))
 			return False;
 
 		old_offset = prs_offset(ps);
@@ -1717,7 +1717,7 @@ BOOL new_smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_1");
 	depth++;	
@@ -1741,7 +1741,7 @@ BOOL new_smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *i
 ********************************************************************/  
 BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
 	depth++;	
@@ -2026,23 +2026,23 @@ BOOL new_smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
 		
 	buffer->struct_start=prs_offset(ps);
 	
-	if (!prs_uint32("flag", ps, depth, &(info->flag)))
+	if (!prs_uint32("flag", ps, depth, &info->flag))
 		return False;
 		
-	if (!new_smb_io_relstr("name", buffer, depth, &(info->name)))
+	if (!new_smb_io_relstr("name", buffer, depth, &info->name))
 		return False;
 
-	if (!prs_uint32("width", ps, depth, &(info->width)))
+	if (!prs_uint32("width", ps, depth, &info->width))
 		return False;
-	if (!prs_uint32("length", ps, depth, &(info->length)))
+	if (!prs_uint32("length", ps, depth, &info->length))
 		return False;
-	if (!prs_uint32("left", ps, depth, &(info->left)))
+	if (!prs_uint32("left", ps, depth, &info->left))
 		return False;
-	if (!prs_uint32("top", ps, depth, &(info->top)))
+	if (!prs_uint32("top", ps, depth, &info->top))
 		return False;
-	if (!prs_uint32("right", ps, depth, &(info->right)))
+	if (!prs_uint32("right", ps, depth, &info->right))
 		return False;
-	if (!prs_uint32("bottom", ps, depth, &(info->bottom)))
+	if (!prs_uint32("bottom", ps, depth, &info->bottom))
 		return False;
 
 	return True;
@@ -2059,7 +2059,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 	prs_debug(ps, depth, desc, "new_spoolss_io_buffer");
 	depth++;
 	
-	if (!prs_uint32("ptr", ps, depth, &(buffer->ptr)))
+	if (!prs_uint32("ptr", ps, depth, &buffer->ptr))
 		return False;
 	
 	/* reading */
@@ -2068,7 +2068,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		buffer->string_at_end=0;
 		
 		if (buffer->ptr==0) {
-			if (!prs_init(&(buffer->prs), 0, 4, UNMARSHALL))
+			if (!prs_init(&buffer->prs, 0, 4, UNMARSHALL))
 				return False;
 			return True;
 		}
@@ -2076,7 +2076,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
 					
-		if (!prs_init(&(buffer->prs), buffer->size, 4, UNMARSHALL))
+		if (!prs_init(&buffer->prs, buffer->size, 4, UNMARSHALL))
 			return False;
 
 		if (!prs_append_some_prs_data(&(buffer->prs), ps, prs_offset(ps), buffer->size))
@@ -2097,9 +2097,9 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (buffer->ptr==0)
 			return True;
 		
-		if (!prs_uint32("size", ps, depth, &(buffer->size)))
+		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
-		if (!prs_append_some_prs_data(ps, &(buffer->prs), 0, buffer->size))
+		if (!prs_append_some_prs_data(ps, &buffer->prs, 0, buffer->size))
 			return False;
 
 		return True;
@@ -2111,7 +2111,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 ********************************************************************/  
 void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 {
-	prs_switch_type(&(src->prs), MARSHALL);
+	prs_switch_type(&src->prs, MARSHALL);
 	prs_set_offset(&(src->prs), 0);
 	prs_force_dynamic(&(src->prs));
 
@@ -2146,7 +2146,7 @@ void new_spoolss_free_buffer(NEW_BUFFER *buffer)
 	if (buffer==NULL)
 		return;
 		
-	prs_mem_free(&(buffer->prs));
+	prs_mem_free(&buffer->prs);
 	buffer->ptr=0x0;
 	buffer->size=0;
 	buffer->string_at_end=0;
@@ -2264,7 +2264,7 @@ BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDA
 ********************************************************************/  
 BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *info, int depth)
 {
-	prs_struct *ps=&(buffer->prs);
+	prs_struct *ps=&buffer->prs;
 
 	prs_debug(ps, depth, desc, "smb_io_printmonitor_info_1");
 	depth++;	
@@ -2362,10 +2362,10 @@ uint32 spoolss_size_printer_info_1(PRINTER_INFO_1 *info)
 {
 	int size=0;
 		
-	size+=size_of_uint32( &(info->flags) );	
-	size+=size_of_relative_string( &(info->description) );
-	size+=size_of_relative_string( &(info->name) );
-	size+=size_of_relative_string( &(info->comment) );
+	size+=size_of_uint32( &info->flags );	
+	size+=size_of_relative_string( &info->description );
+	size+=size_of_relative_string( &info->name );
+	size+=size_of_relative_string( &info->comment );
 
 	return size;
 }
@@ -2544,7 +2544,7 @@ uint32 spoolss_size_form_1(FORM_1 *info)
 	int size=0;
 
 	size+=size_of_uint32( &(info->flag) );
-	size+=size_of_relative_string( &(info->name) );
+	size+=size_of_relative_string( &info->name );
 	size+=size_of_uint32( &(info->width) );
 	size+=size_of_uint32( &(info->length) );
 	size+=size_of_uint32( &(info->left) );
@@ -2911,7 +2911,7 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2975,7 +2975,7 @@ BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -2992,7 +2992,7 @@ BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth)
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
 
 	return True;
@@ -3132,7 +3132,7 @@ BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3148,9 +3148,9 @@ BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
-	if(!prs_uint32("jobid", ps, depth, &(q_u->jobid)))
+	if(!prs_uint32("jobid", ps, depth, &q_u->jobid))
 		return False;
 
 	return True;
@@ -3166,7 +3166,7 @@ BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3182,17 +3182,17 @@ BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
-	if(!prs_uint32("jobid", ps, depth, &(q_u->jobid)))
+	if(!prs_uint32("jobid", ps, depth, &q_u->jobid))
 		return False;
 	/* 
 	 * level is usually 0. If (level!=0) then I'm in trouble !
 	 * I will try to generate setjob command with level!=0, one day.
 	 */
-	if(!prs_uint32("level", ps, depth, &(q_u->level)))
+	if(!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
-	if(!prs_uint32("command", ps, depth, &(q_u->command)))
+	if(!prs_uint32("command", ps, depth, &q_u->command))
 		return False;
 
 	return True;
@@ -3279,9 +3279,9 @@ BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, 
 
 	if (!prs_align(ps))
 		return False;			
-	if (!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;		
-	if (!prs_uint32("level", ps, depth, &(q_u->level)))
+	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;	
 	
 	if (!new_spoolss_io_buffer("", ps, depth, q_u->buffer))
@@ -3289,7 +3289,7 @@ BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, 
 
 	if (!prs_align(ps))
 		return False;
-	if (!prs_uint32("offered", ps, depth, &(q_u->offered)))
+	if (!prs_uint32("offered", ps, depth, &q_u->offered))
 		return False;
 
 	return True;
@@ -3311,13 +3311,13 @@ BOOL new_spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *
 	if (!prs_align(ps))
 		return False;
 		
-	if (!prs_uint32("size of buffer needed", ps, depth, &(r_u->needed)))
+	if (!prs_uint32("size of buffer needed", ps, depth, &r_u->needed))
 		return False;
 		
-	if (!prs_uint32("numofforms", ps, depth, &(r_u->numofforms)))
+	if (!prs_uint32("numofforms", ps, depth, &r_u->numofforms))
 		return False;
 		
-	if (!prs_uint32("status", ps, depth, &(r_u->status)))
+	if (!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3609,7 +3609,7 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 	if(!prs_uint32("info_level", ps, depth, &q_u->level))
 		return False;
 	
-	if(!spool_io_printer_info_level("", &(q_u->info), ps, depth))
+	if(!spool_io_printer_info_level("", &q_u->info, ps, depth))
 		return False;
 	
 	/* the 4 unknown are all 0 */
@@ -3646,10 +3646,10 @@ BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, prs_struct
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterex");
 	depth++;
 	
-	if(!smb_io_pol_hnd("printer handle",&(r_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
 		return False;
 
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -3727,7 +3727,7 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 		return False;
 		
 	if (il->dependentfiles_ptr)
-		smb_io_buffer5("", &(il->dependentfiles), ps, depth);
+		smb_io_buffer5("", &il->dependentfiles, ps, depth);
 
 	return True;
 }
@@ -3916,7 +3916,7 @@ BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth)
 	buffer->undoc=0;
 	buffer->uni_str_len=buffer->uni_max_len;
 	
-	if(!prs_uint32("buffer_size", ps, depth, &(buffer->uni_max_len)))
+	if(!prs_uint32("buffer_size", ps, depth, &buffer->uni_max_len))
 		return False;
 
 	if(!prs_unistr2(True, "buffer     ", ps, depth, buffer))
@@ -3944,11 +3944,11 @@ BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LE
 		
 	switch (il->level) {
 		case 3:
-			if(!spool_io_printer_driver_info_level_3("", &(il->info_3), ps, depth))
+			if(!spool_io_printer_driver_info_level_3("", &il->info_3, ps, depth))
 				return False;
 			break;		
 		case 6:
-			if(!spool_io_printer_driver_info_level_6("", &(il->info_6), ps, depth))
+			if(!spool_io_printer_driver_info_level_6("", &il->info_6, ps, depth))
 				return False;
 			break;		
 	default:
@@ -4020,7 +4020,7 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	d->cversion=uni->cversion;
 
 	unistr2_to_ascii(d->name,            &(uni->name),            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &(uni->environment),     sizeof(d->environment)-1);
+	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
 	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
 	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
@@ -4064,7 +4064,7 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 
 	d->version=uni->version;
 
-	unistr2_to_ascii(d->name,            &(uni->name),            sizeof(d->name)-1);
+	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
 	unistr2_to_ascii(d->environment,     &(uni->environment),     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
 	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
@@ -4083,7 +4083,7 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_dosarray(&(uni->dependentfiles), &(d->dependentfiles) );
+	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
 	uniarray_2_dosarray(&(uni->previousnames), &(d->previousnames) );
 
 	return True;
@@ -4489,7 +4489,7 @@ BOOL make_spoolss_q_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u,
 		const POLICY_HND *hnd,
 		uint32 idx, uint32 valuelen, uint32 datalen)
 {
-	memcpy(&(q_u->handle), hnd, sizeof(q_u->handle));
+	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 	q_u->index=idx;
 	q_u->valuesize=valuelen;
 	q_u->datasize=datalen;
@@ -4506,18 +4506,18 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_pol_hnd("printer handle", &(q_u->handle), ps, depth))
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(q_u->value), True, ps, depth))
+	if(!smb_io_unistr2("", &q_u->value, True, ps, depth))
 		return False;
 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("type", ps, depth, &(q_u->type)))
+	if(!prs_uint32("type", ps, depth, &q_u->type))
 		return False;
 
-	if(!prs_uint32("max_len", ps, depth, &(q_u->max_len)))
+	if(!prs_uint32("max_len", ps, depth, &q_u->max_len))
 		return False;
 
 	switch (q_u->type)
@@ -4536,7 +4536,7 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 			break;
 	}	
 	
-	if(!prs_uint32("real_len", ps, depth, &(q_u->real_len)))
+	if(!prs_uint32("real_len", ps, depth, &q_u->real_len))
 		return False;
 
 	return True;
@@ -4551,7 +4551,7 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status",     ps, depth, &(r_u->status)))
+	if(!prs_uint32("status",     ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4602,24 +4602,24 @@ static BOOL spoolss_io_addform(char *desc, FORM *f, uint32 ptr, prs_struct *ps, 
 
 	if (ptr!=0)
 	{
-		if(!prs_uint32("flags",    ps, depth, &(f->flags)))
+		if(!prs_uint32("flags",    ps, depth, &f->flags))
 			return False;
-		if(!prs_uint32("name_ptr", ps, depth, &(f->name_ptr)))
+		if(!prs_uint32("name_ptr", ps, depth, &f->name_ptr))
 			return False;
-		if(!prs_uint32("size_x",   ps, depth, &(f->size_x)))
+		if(!prs_uint32("size_x",   ps, depth, &f->size_x))
 			return False;
-		if(!prs_uint32("size_y",   ps, depth, &(f->size_y)))
+		if(!prs_uint32("size_y",   ps, depth, &f->size_y))
 			return False;
-		if(!prs_uint32("left",     ps, depth, &(f->left)))
+		if(!prs_uint32("left",     ps, depth, &f->left))
 			return False;
-		if(!prs_uint32("top",      ps, depth, &(f->top)))
+		if(!prs_uint32("top",      ps, depth, &f->top))
 			return False;
-		if(!prs_uint32("right",    ps, depth, &(f->right)))
+		if(!prs_uint32("right",    ps, depth, &f->right))
 			return False;
-		if(!prs_uint32("bottom",   ps, depth, &(f->bottom)))
+		if(!prs_uint32("bottom",   ps, depth, &f->bottom))
 			return False;
 
-		if(!smb_io_unistr2("", &(f->name), f->name_ptr, ps, depth))
+		if(!smb_io_unistr2("", &f->name, f->name_ptr, ps, depth))
 			return False;
 	}
 
@@ -4636,18 +4636,18 @@ BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int 
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_pol_hnd("printer handle", &(q_u->handle), ps, depth))
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
-	if(!prs_uint32("level",  ps, depth, &(q_u->level)))
+	if(!prs_uint32("level",  ps, depth, &q_u->level))
 		return False;
-	if(!prs_uint32("level2", ps, depth, &(q_u->level2)))
+	if(!prs_uint32("level2", ps, depth, &q_u->level2))
 		return False;
 
 	if (q_u->level==1)
 	{
-		if(!prs_uint32("useless_ptr", ps, depth, &(useless_ptr)))
+		if(!prs_uint32("useless_ptr", ps, depth, &useless_ptr))
 			return False;
-		if(!spoolss_io_addform("", &(q_u->form), useless_ptr, ps, depth))
+		if(!spoolss_io_addform("", &q_u->form, useless_ptr, ps, depth))
 			return False;
 	}
 
@@ -4663,7 +4663,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status",	ps, depth, &(r_u->status)))
+	if(!prs_uint32("status",	ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4679,24 +4679,24 @@ BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int 
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_pol_hnd("printer handle", &(q_u->handle), ps, depth))
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
 		return False;
-	if(!smb_io_unistr2("", &(q_u->name), True, ps, depth))
+	if(!smb_io_unistr2("", &q_u->name, True, ps, depth))
 		return False;
 	      
 	if(!prs_align(ps))
 		return False;
 	
-	if(!prs_uint32("level",  ps, depth, &(q_u->level)))
+	if(!prs_uint32("level",  ps, depth, &q_u->level))
 		return False;
-	if(!prs_uint32("level2", ps, depth, &(q_u->level2)))
+	if(!prs_uint32("level2", ps, depth, &q_u->level2))
 		return False;
 
 	if (q_u->level==1)
 	{
-		if(!prs_uint32("useless_ptr", ps, depth, &(useless_ptr)))
+		if(!prs_uint32("useless_ptr", ps, depth, &useless_ptr))
 			return False;
-		if(!spoolss_io_addform("", &(q_u->form), useless_ptr, ps, depth))
+		if(!spoolss_io_addform("", &q_u->form, useless_ptr, ps, depth))
 			return False;
 	}
 
@@ -4712,7 +4712,7 @@ BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int 
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("status",	ps, depth, &(r_u->status)))
+	if(!prs_uint32("status",	ps, depth, &r_u->status))
 		return False;
 
 	return True;
@@ -4755,7 +4755,7 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("printer handle",&(q_u->handle),ps,depth))
+	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
 		return False;
 	if(!prs_uint32("jobid", ps, depth, &q_u->jobid))
 		return False;
