@@ -947,7 +947,6 @@ static BOOL net_io_id_info_ctr(char *desc, NET_ID_INFO_CTR **pp_ctr, prs_struct 
 		ctr = *pp_ctr = (NET_ID_INFO_CTR *)prs_alloc_mem(ps, sizeof(NET_ID_INFO_CTR));
 		if (ctr == NULL)
 			return False;
-		ZERO_STRUCTP(ctr);
 	}
 	
 	if (ctr == NULL)

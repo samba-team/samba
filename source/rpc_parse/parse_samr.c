@@ -5752,8 +5752,6 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR **ppctr,
 		ctr = (SAM_USERINFO_CTR *)prs_alloc_mem(ps,sizeof(SAM_USERINFO_CTR));
 		if (ctr == NULL)
 			return False;
-
-		ZERO_STRUCTP(ctr);
 		*ppctr = ctr;
 	} else {
 		ctr = *ppctr;
