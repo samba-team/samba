@@ -65,10 +65,14 @@ struct search_state {
 /*
   fill a single entry in a search find reply 
 */
-static void find_fill_info(struct smbsrv_request *req,
+static BOOL find_fill_info(struct smbsrv_request *req,
 			   union smb_search_data *file)
 {
 	char *p;
+
+	if (req->out.data_size + 43 > req_max_data(req)) {
+		return False;
+	}
 	
 	req_grow_data(req, req->out.data_size + 43);
 	p = req->out.data + req->out.data_size - 43;
@@ -84,6 +88,8 @@ static void find_fill_info(struct smbsrv_request *req,
 	memset(p+30, ' ', 12);
 	memcpy(p+30, file->search.name, MIN(strlen(file->search.name)+1, 12));
 	SCVAL(p,42,0);
+
+	return True;
 }
 
 /* callback function for search first/next */
@@ -91,9 +97,7 @@ static BOOL find_callback(void *private, union smb_search_data *file)
 {
 	struct search_state *state = (struct search_state *)private;
 
-	find_fill_info(state->req, file);
-
-	return True;
+	return find_fill_info(state->req, file);
 }
 
 /****************************************************************************
