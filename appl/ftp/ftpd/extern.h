@@ -79,6 +79,8 @@ void	yyerror(char *);
 
 void	kauth(char *, char*);
 
+int klogin(char *name, char *password);
+
 extern struct sockaddr_in ctrl_addr, his_addr;
 extern char hostname[];
 
