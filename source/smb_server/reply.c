@@ -2319,7 +2319,9 @@ void reply_ntcreate_and_X(struct smbsrv_request *req)
 ****************************************************************************/
 void reply_ntcancel(struct smbsrv_request *req)
 {
-	req_reply_error(req, NT_STATUS_FOOBAR);
+	/* NOTE: this request does not generate a reply */
+	ntvfs_cancel(req);
+	req_destroy(req);
 }
 
 /****************************************************************************

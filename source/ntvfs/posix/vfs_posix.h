@@ -46,6 +46,10 @@ struct pvfs_state {
 
 	/* an id tree mapping open file handle -> struct pvfs_file */
 	struct idr_context *idtree_fnum;
+
+	/* a list of pending async requests. Needed to support
+	   ntcancel */
+	struct pvfs_wait *wait_list;
 };
 
 

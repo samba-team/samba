@@ -306,6 +306,20 @@ NTSTATUS ntvfs_async_setup(struct smbsrv_request *req, void *private)
 	return ntvfs->ops->async_setup(ntvfs, req, private);
 }
 
+
+/*
+  cancel an outstanding async request
+*/
+NTSTATUS ntvfs_cancel(struct smbsrv_request *req)
+{
+	struct ntvfs_module_context *ntvfs = req->tcon->ntvfs_ctx->modules;
+	if (!ntvfs->ops->cancel) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->ops->cancel(ntvfs, req);
+}
+
+
 /* initial setup */
 NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs, 
 			    struct smbsrv_request *req, const char *sharename)
@@ -587,4 +601,14 @@ NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	return ntvfs->next->ops->async_setup(ntvfs->next, req, private);
+}
+
+/* cancel - called to cancel an outstanding async request */
+NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs, 
+			   struct smbsrv_request *req)
+{
+	if (!ntvfs->next || !ntvfs->next->ops->cancel) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return ntvfs->next->ops->cancel(ntvfs->next, req);
 }

@@ -117,6 +117,10 @@ struct ntvfs_ops {
 	/* async_setup - called when a backend is processing a async request */
 	NTSTATUS (*async_setup)(struct ntvfs_module_context *ntvfs, 
 				struct smbsrv_request *req, void *private);
+
+	/* cancel - cancels any pending async request */
+	NTSTATUS (*cancel)(struct ntvfs_module_context *ntvfs, 
+			   struct smbsrv_request *req);
 };
 
 struct ntvfs_module_context {

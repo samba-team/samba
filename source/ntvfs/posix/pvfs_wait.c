@@ -22,10 +22,13 @@
 
 #include "include/includes.h"
 #include "events.h"
+#include "dlinklist.h"
 #include "vfs_posix.h"
 
 /* the context for a single wait instance */
 struct pvfs_wait {
+	struct pvfs_wait *next, *prev;
+	struct pvfs_state *pvfs;
 	void (*handler)(void *, BOOL);
 	void *private;
 	struct timed_event *te;
@@ -103,6 +106,7 @@ static int pvfs_wait_destructor(void *ptr)
 	struct pvfs_wait *pwait = ptr;
 	messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
 	event_remove_timed(pwait->ev, pwait->te);
+	DLIST_REMOVE(pwait->pvfs->wait_list, pwait);
 	return 0;
 }
 
@@ -134,6 +138,7 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 	pwait->ev = req->tcon->smb_conn->connection->event.ctx;
 	pwait->msg_type = msg_type;
 	pwait->req = req;
+	pwait->pvfs = pvfs;
 
 	/* setup a timer */
 	te.next_event = end_time;
@@ -152,8 +157,34 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 	   asynchronously */
 	req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
 
+	DLIST_ADD(pvfs->wait_list, pwait);
+
 	/* make sure we cleanup the timer and message handler */
 	talloc_set_destructor(pwait, pvfs_wait_destructor);
 
+	/* make sure that on a disconnect the request is not destroyed
+	   before pvfs */
+	talloc_steal(pvfs, req);
+
 	return pwait;
+}
+
+
+/*
+  cancel an outstanding async request
+*/
+NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct smbsrv_request *req)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_wait *pwait;
+	for (pwait=pvfs->wait_list;pwait;pwait=pwait->next) {
+		if (SVAL(req->in.hdr, HDR_MID) == SVAL(pwait->req->in.hdr, HDR_MID) &&
+		    req->smbpid == pwait->req->smbpid) {
+			/* trigger an early timeout */
+			pvfs_wait_timeout(pwait->ev, pwait->te, timeval_current());
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
 }

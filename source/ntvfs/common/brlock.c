@@ -63,7 +63,7 @@ struct brl_context {
 	servid_t server;
 	uint16_t tid;
 	struct messaging_context *messaging_ctx;
-	struct lock_struct last_lock_failure;
+	struct lock_struct last_lock;
 };
 
 
@@ -95,7 +95,7 @@ struct brl_context *brl_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 	brl->server = server;
 	brl->tid = tid;
 	brl->messaging_ctx = messaging_ctx;
-	ZERO_STRUCT(brl->last_lock_failure);
+	ZERO_STRUCT(brl->last_lock);
 
 	return brl;
 }
@@ -194,13 +194,14 @@ static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck
 */
 static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *lock)
 {
-	if (brl_same_context(&lock->context, &brl->last_lock_failure.context) &&
-	    lock->fnum == brl->last_lock_failure.fnum &&
-	    lock->start == brl->last_lock_failure.start &&
-	    lock->size == brl->last_lock_failure.size) {
+	if (lock->context.server == brl->last_lock.context.server &&
+	    lock->context.tid == brl->last_lock.context.tid &&
+	    lock->fnum == brl->last_lock.fnum &&
+	    lock->start == brl->last_lock.start &&
+	    lock->size == brl->last_lock.size) {
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
-	brl->last_lock_failure = *lock;
+	brl->last_lock = *lock;
 	if (lock->start >= 0xEF000000 && 
 	    (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test

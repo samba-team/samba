@@ -252,6 +252,10 @@ static BOOL test_mux_lock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* cancel the blocking lock */
 	smb_raw_ntcancel(req);
 
+	/* the 2nd cancel is totally harmless, but tests the server trying to 
+	   cancel an already cancelled request */
+	smb_raw_ntcancel(req);
+
 	lock[0].pid = 1;
 	io.lockx.in.ulock_cnt = 1;
 	io.lockx.in.lock_cnt = 0;
