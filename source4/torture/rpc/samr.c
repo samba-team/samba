@@ -1990,6 +1990,45 @@ static BOOL test_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;	
 }
 
+/*
+  try blasting the server with a bunch of sync requests
+*/
+static BOOL test_EnumDomainUsers_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+				       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_EnumDomainUsers r;
+	uint32_t resume_handle=0;
+	int i;
+#define ASYNC_COUNT 100
+	struct rpc_request *req[ASYNC_COUNT];
+
+	printf("Testing EnumDomainUsers_async\n");
+
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.acct_flags = 0;
+	r.in.max_size = (uint32_t)-1;
+	r.out.resume_handle = &resume_handle;
+
+	for (i=0;i<ASYNC_COUNT;i++) {
+		req[i] = dcerpc_samr_EnumDomainUsers_send(p, mem_ctx, &r);
+	}
+
+	for (i=0;i<ASYNC_COUNT;i++) {
+		status = dcerpc_ndr_request_recv(req[i]);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("EnumDomainUsers[%d] failed - %s\n", 
+			       i, nt_errstr(status));
+			return False;
+		}
+	}
+	
+	printf("%d async requests OK\n", i);
+
+	return True;
+}
+
 static BOOL test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				  struct policy_handle *handle)
 {
@@ -2729,6 +2768,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumDomainUsers(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_EnumDomainUsers_async(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
