@@ -44,7 +44,7 @@ krb5_rd_rep(krb5_context context,
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
       (*repl)->cusec != auth_context->authenticator->cusec) {
     printf("KRB5KRB_AP_ERR_MUT_FAIL\n");
-    printf ("(%u, %u) != (%u, %u)\n",
+    printf ("(%u, %lu) != (%u, %lu)\n",
 	    (*repl)->ctime, (*repl)->cusec,
 	    auth_context->authenticator->ctime,
 	    auth_context->authenticator->cusec);
