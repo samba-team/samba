@@ -309,7 +309,7 @@ int reply_tcon_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 		*password = 0;
 	}
 
-	p = strchr(path+2, '\\');
+	p = strchr(path + 2, '\\');
 	if (!p)
 		return (ERROR(ERRSRV, ERRinvnetname));
 	fstrcpy(service, p + 1);
@@ -690,9 +690,10 @@ user %s attempted down-level SMB connection\n",
 	if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24)
 	    && (smb_ntpasslen == 24))
 	{
-		return session_trust_account(conn, inbuf, outbuf, user, domain,
-					     smb_apasswd, smb_apasslen,
-					     smb_ntpasswd, smb_ntpasslen);
+		return session_trust_account(conn, inbuf, outbuf, user,
+					     domain, smb_apasswd,
+					     smb_apasslen, smb_ntpasswd,
+					     smb_ntpasslen);
 	}
 
 	if (done_sesssetup && lp_restrict_anonymous())
@@ -1470,8 +1471,8 @@ int reply_open(connection_struct * conn, char *inbuf, char *outbuf,
 
 	fsp =
 		open_file_shared(conn, fname, share_mode,
-			 (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
-			 unixmode, oplock_request, &rmode, NULL);
+				 (FILE_FAIL_IF_NOT_EXIST | FILE_EXISTS_OPEN),
+				 unixmode, oplock_request, &rmode, NULL);
 
 	if (!fsp)
 	{
@@ -1565,7 +1566,7 @@ int reply_open_and_X(connection_struct * conn, char *inbuf, char *outbuf,
 	unixmode = unix_mode(conn, smb_attr | aARCH, fname);
 
 	fsp = open_file_shared(conn, fname, smb_mode, smb_ofun, unixmode,
-			 oplock_request, &rmode, &smb_action);
+			       oplock_request, &rmode, &smb_action);
 
 	if (!fsp)
 	{
@@ -1721,9 +1722,9 @@ int reply_mknew(connection_struct * conn, char *inbuf, char *outbuf,
 	/* Open file in dos compatibility share mode. */
 	fsp =
 		open_file_shared(conn, fname,
-			 SET_DENY_MODE(DENY_FCB) |
-			 SET_OPEN_MODE(DOS_OPEN_FCB), ofun, unixmode,
-			 oplock_request, NULL, NULL);
+				 SET_DENY_MODE(DENY_FCB) |
+				 SET_OPEN_MODE(DOS_OPEN_FCB), ofun, unixmode,
+				 oplock_request, NULL, NULL);
 
 	if (!fsp)
 	{
@@ -1785,8 +1786,8 @@ int reply_ctemp(connection_struct * conn, char *inbuf, char *outbuf,
 	/* We should fail if file exists. */
 	fsp =
 		open_file_shared(conn, fname2,
-			 SET_DENY_MODE(DENY_FCB) |
-			 SET_OPEN_MODE(DOS_OPEN_FCB),
+				 SET_DENY_MODE(DENY_FCB) |
+				 SET_OPEN_MODE(DOS_OPEN_FCB),
 				 (FILE_CREATE_IF_NOT_EXIST |
 				  FILE_EXISTS_FAIL), unixmode, oplock_request,
 				 NULL, NULL);
@@ -1952,8 +1953,8 @@ int reply_unlink(connection_struct * conn, char *inbuf, char *outbuf,
 					 directory, dname);
 				if (!can_delete(fname, conn, dirtype))
 					continue;
-				if (!conn->vfs_ops.
-				    unlink(dos_to_unix(fname, False)))
+				if (!conn->
+				    vfs_ops.unlink(dos_to_unix(fname, False)))
 					count++;
 				DEBUG(3,
 				      ("reply_unlink : doing unlink on %s\n",
@@ -3338,8 +3339,8 @@ static BOOL recursive_rmdir(connection_struct * conn, char *directory)
 				ret = True;
 				break;
 			}
-			if (conn->vfs_ops.
-			    rmdir(dos_to_unix(fullname, False)) != 0)
+			if (conn->
+			    vfs_ops.rmdir(dos_to_unix(fullname, False)) != 0)
 			{
 				ret = True;
 				break;
@@ -3416,9 +3417,9 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 					pstrcat(fullname, "/");
 					pstrcat(fullname, dname);
 
-					if (conn->vfs_ops.
-					    lstat(dos_to_unix
-						  (fullname, False),
+					if (conn->vfs_ops.lstat(dos_to_unix
+								(fullname,
+								 False),
 								&st) != 0)
 						break;
 					if (st.st_mode & S_IFDIR)
@@ -3431,14 +3432,15 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 							     fullname) != 0)
 								break;
 						}
-						if (conn->vfs_ops.
-						    rmdir(dos_to_unix
+						if (conn->
+						    vfs_ops.rmdir(dos_to_unix
 								  (fullname,
-							   False)) != 0)
+								   False)) !=
+						    0)
 							break;
 					}
-					else if (conn->vfs_ops.
-						 unlink(dos_to_unix
+					else if (conn->
+						 vfs_ops.unlink(dos_to_unix
 								(fullname,
 								 False)) != 0)
 						break;
@@ -3446,9 +3448,9 @@ BOOL rmdir_internals(connection_struct * conn, char *directory)
 				CloseDir(dirptr);
 				/* Retry the rmdir */
 				ok =
-					(conn->vfs_ops.
-				      rmdir(dos_to_unix(directory, False)) ==
-					 0);
+					(conn->
+				      vfs_ops.rmdir(dos_to_unix
+						    (directory, False)) == 0);
 			}
 			else
 				CloseDir(dirptr);
@@ -3828,9 +3830,10 @@ int rename_internals(connection_struct * conn,
 					continue;
 				}
 
-				if (!conn->vfs_ops.
-				    rename(dos_to_unix(fname, False),
-					   dos_to_unix(destname, False)))
+				if (!conn->
+				    vfs_ops.rename(dos_to_unix(fname, False),
+						   dos_to_unix(destname,
+							       False)))
 					count++;
 				DEBUG(3,
 				      ("rename_internals: doing rename on %s -> %s\n",

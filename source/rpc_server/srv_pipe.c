@@ -32,14 +32,14 @@ extern int DEBUGLEVEL;
  pdu; hands pdu off to msrpc, which gets a pdu back (except in the
  case of the RPC_BINDCONT pdu).
  ********************************************************************/
-BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
+BOOL read_then_write_pipe(pipes_struct * p, char *data, int len,
 		    char **rdata, int *rlen, BOOL *pipe_outstanding)
 {
 	int selrtn;
 
 	DEBUG(10, ("rpc_to_smb_readwrite: len %d\n", len));
 
-	if (write_pipe(p, data, len) != len)
+	if (write_to_pipe(p, data, len) != len)
 	{
 		return False;
 	}
@@ -56,9 +56,9 @@ BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 	}
 
 	/*
-	 * timeout waiting for the rest for 10 seconds
+	 * timeout waiting for the rest for 30 seconds
 	 */
-	(*rlen) = read_pipe(p, (*rdata), 1, (*rlen));
+	(*rlen) = read_from_pipe(p, (*rdata), (*rlen));
 	if ((*rlen) < 0)
 	{
 		return False;
@@ -93,9 +93,9 @@ BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 /****************************************************************************
 writes data to a pipe.
 ****************************************************************************/
-ssize_t write_pipe(pipes_struct * p, char *data, size_t n)
+ssize_t write_to_pipe(pipes_struct * p, char *data, size_t n)
 {
-	DEBUG(6, ("write_pipe: %x", p->pnum));
+	DEBUG(6, ("write_to_pipe: %x", p->pnum));
 	DEBUG(6, ("name: %s len: %d", p->name, n));
 
 	dump_data(50, data, n);
@@ -112,9 +112,10 @@ ssize_t write_pipe(pipes_struct * p, char *data, size_t n)
  read by an SMBtrans (file_offset != 0).
 
  ****************************************************************************/
-int read_pipe(pipes_struct * p, char *data, int min_len, int max_len)
+int read_from_pipe(pipes_struct * p, char *data, int max_len)
 {
-	DEBUG(6, ("read_pipe: %x name: %s len: %d", p->pnum, p->name, max_len));
+	DEBUG(6, ("read_from_pipe: %x name: %s len: %d",
+				p->pnum, p->name, max_len));
 
 	if (!p)
 	{
@@ -122,5 +123,6 @@ int read_pipe(pipes_struct * p, char *data, int min_len, int max_len)
 		return -1;
 	}
 
-	return read_with_timeout(p->m->fd, data, min_len, max_len, 30000);
+	/* read a minimum of 1 byte */
+	return read_with_timeout(p->m->fd, data, 1, max_len, 30000);
 }

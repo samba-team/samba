@@ -315,11 +315,22 @@ static int api_fd_reply(connection_struct * conn, uint16 vuid, char *outbuf,
 				BOOL pipe_outstanding = False;
 				char *rdata = NULL;
 				int rlen = mdrcnt;
-				reply = readwrite_pipe(p, data, tdscnt,
+				/* writes data, reads at least 1 byte
+				 * and checks if there is more data left
+				 * to read.  it really doesn't matter how
+				 * much data we get back, but we *do*
+				 * need to know if there is more of it.
+				 */
+				reply = write_then_read_pipe(p, data, tdscnt,
 						       &rdata, &rlen,
 						       &pipe_outstanding);
 				if (reply)
 				{
+					/* pipe_outstanding sets a warning
+					 * status code.  nt clients rely on
+					 * this code to continue reading
+					 * data with further SMBs.
+					 */
 					api_rpc_trans_reply(outbuf, rdata,
 							    rlen,
 							    pipe_outstanding);
