@@ -38,6 +38,12 @@
 
 #include "headers.h"
 
+struct prop_data{
+    krb5_context context;
+    krb5_auth_context auth_context;
+    int sock;
+};
+
 #define HPROP_VERSION "hprop-0.0"
 #define HPROP_NAME "hprop"
 #define HPROP_KEYTAB "FILE:/etc/hprop.keytab"
