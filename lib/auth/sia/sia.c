@@ -133,7 +133,7 @@ doauth(SIAENTITY *entity, int pkgind, char *name)
 	if(krb5_kuserok(s->context, principal, entity->name))
 	    break;
     }
-    krb5_free_host_realm (context, realms);
+    krb5_free_host_realm (s->context, realms);
     if (*r == NULL)
 	return SIADFAIL;
 
