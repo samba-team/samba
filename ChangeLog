@@ -1,3 +1,26 @@
+2003-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: document tgs_require_subkey
+	
+	* lib/asn1/Makefile.am: remove trance of generate tests files, its
+	not really for consumption yet
+
+	* lib/hdb/Makefile.am: split generated source from non generated
+	source we make-proto.pl can generate prototypes for non
+	generate-source only (make-proto.pl dies on asn1compile's .c
+	files)
+
+	* lib/krb5/get_cred.c (init_tgs_req): make generation of subkey
+	optional on configuration parameter
+	[realms]realm={tgs_require_subkey=bool}
+	defaults to off. The RFC1510 weakly defines the correct behavior,
+	so old DCE secd apparently required the subkey to be there, and MS
+	will use it when its there. But the request isn't encrypted in the
+	subkey, so you get to choose if you want to talk to a MS mdc or a
+	old DCE secd.
+
+	* kdc/kerberos5.c (*): handle krb5_unparse_name returning non-zero
+	
 2003-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/principal.c (unparse_name): len can't be zero, so,
