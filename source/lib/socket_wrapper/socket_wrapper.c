@@ -129,12 +129,12 @@ static int sockaddr_convert_to_un(const struct socket_info *si, const struct soc
 	if (!out_addr)
 		return 0;
 
-	out_addr->sun_family = AF_LOCAL;
+	out_addr->sun_family = AF_UNIX;
 
 	switch (in_addr->sa_family) {
 	case AF_INET:
 		return convert_in_un(si->type, (const struct sockaddr_in *)in_addr, out_addr);
-	case AF_LOCAL:
+	case AF_UNIX:
 		memcpy(out_addr, in_addr, sizeof(*out_addr));
 		return 0;
 	default:
@@ -157,7 +157,7 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 	switch (family) {
 	case AF_INET:
 		return convert_un_in(in_addr, (struct sockaddr_in *)out_addr, out_len);
-	case AF_LOCAL:
+	case AF_UNIX:
 		memcpy(out_addr, in_addr, sizeof(*in_addr));
 		*out_len = sizeof(*in_addr);
 		return 0;
@@ -178,7 +178,7 @@ int swrap_socket(int domain, int type, int protocol)
 		return real_socket(domain, type, protocol);
 	}
 	
-	fd = real_socket(PF_LOCAL, type, 0);
+	fd = real_socket(AF_UNIX, type, 0);
 
 	if (fd < 0) 
 		return fd;
@@ -330,7 +330,7 @@ int swrap_getsockopt(int s, int level, int optname, void *optval, socklen_t *opt
 	} 
 
 	switch (si->domain) {
-	case AF_LOCAL:
+	case AF_UNIX:
 		return real_getsockopt(s, level, optname, optval, optlen);
 	default:
 		errno = ENOPROTOOPT;
@@ -351,7 +351,7 @@ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *optval, so
 	}
 
 	switch (si->domain) {
-	case AF_LOCAL:
+	case AF_UNIX:
 		return real_setsockopt(s, level, optname, optval, optlen);
 	case AF_INET:
 		/* Silence some warnings */
