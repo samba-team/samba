@@ -608,6 +608,102 @@ static int net_groupmap_cleanup(int argc, const char **argv)
 	return 0;
 }
 
+static int net_groupmap_addmem(int argc, const char **argv)
+{
+	DOM_SID alias, member;
+
+	if ( (argc != 2) || 
+	     !string_to_sid(&alias, argv[0]) ||
+	     !string_to_sid(&member, argv[1]) ) {
+		d_printf("Usage: net groupmap addmem alias-sid member-sid\n");
+		return -1;
+	}
+
+	if (!pdb_add_aliasmem(&alias, &member)) {
+		d_printf("Could not add sid %s to alias %s\n",
+			 argv[1], argv[0]);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int net_groupmap_delmem(int argc, const char **argv)
+{
+	DOM_SID alias, member;
+
+	if ( (argc != 2) || 
+	     !string_to_sid(&alias, argv[0]) ||
+	     !string_to_sid(&member, argv[1]) ) {
+		d_printf("Usage: net groupmap delmem alias-sid member-sid\n");
+		return -1;
+	}
+
+	if (!pdb_del_aliasmem(&alias, &member)) {
+		d_printf("Could not delete sid %s from alias %s\n",
+			 argv[1], argv[0]);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int net_groupmap_listmem(int argc, const char **argv)
+{
+	DOM_SID alias;
+	DOM_SID *members;
+	int i, num;
+	NTSTATUS result;
+
+	if ( (argc != 1) || 
+	     !string_to_sid(&alias, argv[0]) ) {
+		d_printf("Usage: net groupmap listmem alias-sid\n");
+		return -1;
+	}
+
+	if (!pdb_enum_aliasmem(&alias, &members, &num)) {
+		d_printf("Could not list members for sid %s: %s\n",
+			 argv[0], nt_errstr(result));
+		return -1;
+	}
+
+	for (i = 0; i < num; i++) {
+		printf("%s\n", sid_string_static(&(members[i])));
+	}
+
+	SAFE_FREE(members);
+
+	return 0;
+}
+
+static int net_groupmap_memberships(int argc, const char **argv)
+{
+	DOM_SID member;
+	DOM_SID *aliases;
+	int i, num;
+	NTSTATUS result;
+
+	if ( (argc != 1) || 
+	     !string_to_sid(&member, argv[0]) ) {
+		d_printf("Usage: net groupmap memberof sid\n");
+		return -1;
+	}
+
+	if (!pdb_enum_alias_memberships(&member, &aliases, &num)) {
+		d_printf("Could not list memberships for sid %s: %s\n",
+			 argv[0], nt_errstr(result));
+		return -1;
+	}
+
+	for (i = 0; i < num; i++) {
+		printf("%s\n", sid_string_static(&(aliases[i])));
+	}
+
+	SAFE_FREE(aliases);
+
+	return 0;
+}
+
 int net_help_groupmap(int argc, const char **argv)
 {
 	d_printf("net groupmap add"\
@@ -616,6 +712,14 @@ int net_help_groupmap(int argc, const char **argv)
 		"\n  Update a group mapping\n");
 	d_printf("net groupmap delete"\
 		"\n  Remove a group mapping\n");
+	d_printf("net groupmap addmember"\
+		 "\n  Add a foreign alias member\n");
+	d_printf("net groupmap delmember"\
+		 "\n  Delete a foreign alias member\n");
+	d_printf("net groupmap listmembers"\
+		 "\n  List foreign group members\n");
+	d_printf("net groupmap memberships"\
+		 "\n  List foreign group memberships\n");
 	d_printf("net groupmap list"\
 		"\n  List current group map\n");
 	d_printf("net groupmap set"\
@@ -638,6 +742,10 @@ int net_groupmap(int argc, const char **argv)
 		{"delete", net_groupmap_delete},
 		{"set", net_groupmap_set},
 		{"cleanup", net_groupmap_cleanup},
+ 		{"addmem", net_groupmap_addmem},
+ 		{"delmem", net_groupmap_delmem},
+ 		{"listmem", net_groupmap_listmem},
+ 		{"memberships", net_groupmap_memberships},
 		{"list", net_groupmap_list},
 		{"help", net_help_groupmap},
 		{NULL, NULL}
