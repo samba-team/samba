@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-static int nprocs=4;
+int torture_nprocs=4;
 int torture_numops=100;
 int torture_entries=1000;
 int torture_failures=1;
@@ -28,12 +28,9 @@ static int procnum; /* records process count number when forking */
 static struct cli_state *current_cli;
 static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
-static const char *client_txt = "client_oplocks.txt";
 static BOOL use_kerberos;
 
 BOOL torture_showall = False;
-
-static double create_procs(BOOL (*fn)(int), BOOL *result);
 
 #define CHECK_MAX_FAILURES(label) do { if (++failures >= torture_failures) goto label; } while (0)
 
@@ -298,12 +295,9 @@ static BOOL rw_torture(struct cli_state *c)
 	return correct;
 }
 
-static BOOL run_torture(int dummy)
+static BOOL run_torture(struct cli_state *cli, int dummy)
 {
-	struct cli_state *cli;
         BOOL ret;
-
-	cli = current_cli;
 
 	ret = rw_torture(cli);
 	
@@ -525,12 +519,9 @@ static BOOL run_readwritetest(int dummy)
 	return (test1 && test2);
 }
 
-static BOOL run_readwritemulti(int dummy)
+static BOOL run_readwritemulti(struct cli_state *cli, int dummy)
 {
-	struct cli_state *cli;
 	BOOL test;
-
-	cli = current_cli;
 
 	test = rw_torture3(cli, "\\multitest.txt");
 
@@ -539,128 +530,6 @@ static BOOL run_readwritemulti(int dummy)
 	}
 	
 	return test;
-}
-
-
-int line_count = 0;
-int nbio_id;
-
-#define ival(s) strtol(s, NULL, 0)
-
-/* run a test that simulates an approximate netbench client load */
-static BOOL run_netbench(int client)
-{
-	struct cli_state *cli;
-	int i;
-	pstring line;
-	char *cname;
-	FILE *f;
-	const char *params[20];
-	BOOL correct = True;
-
-	cli = current_cli;
-
-	nbio_id = client;
-
-	nb_setup(cli);
-
-	asprintf(&cname, "client%d", client);
-
-	f = fopen(client_txt, "r");
-
-	if (!f) {
-		perror(client_txt);
-		return False;
-	}
-
-	while (fgets(line, sizeof(line)-1, f)) {
-		line_count++;
-
-		line[strlen(line)-1] = 0;
-
-		/* printf("[%d] %s\n", line_count, line); */
-
-		all_string_sub(line,"client1", cname, sizeof(line));
-		
-		/* parse the command parameters */
-		params[0] = strtok(line," ");
-		i = 0;
-		while (params[i]) params[++i] = strtok(NULL," ");
-
-		params[i] = "";
-
-		if (i < 2) continue;
-
-		if (!strncmp(params[0],"SMB", 3)) {
-			printf("ERROR: You are using a dbench 1 load file\n");
-			exit(1);
-		}
-		DEBUG(9,("run_netbench(%d): %s %s\n", client, params[0], params[1]));
-
-		if (!strcmp(params[0],"NTCreateX")) {
-			nb_createx(params[1], ival(params[2]), ival(params[3]), 
-				   ival(params[4]));
-		} else if (!strcmp(params[0],"Close")) {
-			nb_close(ival(params[1]));
-		} else if (!strcmp(params[0],"Rename")) {
-			nb_rename(params[1], params[2]);
-		} else if (!strcmp(params[0],"Unlink")) {
-			nb_unlink(params[1]);
-		} else if (!strcmp(params[0],"Deltree")) {
-			nb_deltree(params[1]);
-		} else if (!strcmp(params[0],"Rmdir")) {
-			nb_rmdir(params[1]);
-		} else if (!strcmp(params[0],"QUERY_PATH_INFORMATION")) {
-			nb_qpathinfo(params[1]);
-		} else if (!strcmp(params[0],"QUERY_FILE_INFORMATION")) {
-			nb_qfileinfo(ival(params[1]));
-		} else if (!strcmp(params[0],"QUERY_FS_INFORMATION")) {
-			nb_qfsinfo(ival(params[1]));
-		} else if (!strcmp(params[0],"FIND_FIRST")) {
-			nb_findfirst(params[1]);
-		} else if (!strcmp(params[0],"WriteX")) {
-			nb_writex(ival(params[1]), 
-				ival(params[2]), ival(params[3]), ival(params[4]));
-		} else if (!strcmp(params[0],"ReadX")) {
-			nb_readx(ival(params[1]), 
-		      ival(params[2]), ival(params[3]), ival(params[4]));
-		} else if (!strcmp(params[0],"Flush")) {
-			nb_flush(ival(params[1]));
-		} else {
-			printf("Unknown operation %s\n", params[0]);
-			exit(1);
-		}
-	}
-	fclose(f);
-
-	nb_cleanup();
-
-	if (!torture_close_connection(cli)) {
-		correct = False;
-	}
-	
-	return correct;
-}
-
-
-/* run a test that simulates an approximate netbench client load */
-static BOOL run_nbench(int dummy)
-{
-	double t;
-	BOOL correct = True;
-
-	nbio_shmem(nprocs);
-
-	nbio_id = -1;
-
-	signal(SIGALRM, SIGNAL_CAST nb_alarm);
-	alarm(1);
-	t = create_procs(run_netbench, &correct);
-	alarm(0);
-
-	printf("\nThroughput %g MB/sec\n", 
-	       1.0e-6 * nbio_total() / t);
-	return correct;
 }
 
 
@@ -1852,16 +1721,13 @@ static BOOL run_unlinktest(int dummy)
 /*
 test how many open files this server supports on the one socket
 */
-static BOOL run_maxfidtest(int dummy)
+static BOOL run_maxfidtest(struct cli_state *cli, int dummy)
 {
-	struct cli_state *cli;
 	const char *template = "\\maxfid.%d.%d";
 	char *fname;
 	int fnums[0x11000], i;
 	int retries=4;
 	BOOL correct = True;
-
-	cli = current_cli;
 
 	if (retries <= 0) {
 		printf("failed to connect\n");
@@ -3837,39 +3703,39 @@ static void sigcont(void)
 {
 }
 
-static double create_procs(BOOL (*fn)(int), BOOL *result)
+double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 {
 	int i, status;
 	volatile pid_t *child_status;
 	volatile BOOL *child_status_out;
 	int synccount;
 	int tries = 8;
-	double start_time_limit = 10 + (nprocs * 1.5);
+	double start_time_limit = 10 + (torture_nprocs * 1.5);
 
 	synccount = 0;
 
 	signal(SIGCONT, sigcont);
 
-	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*nprocs);
+	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*torture_nprocs);
 	if (!child_status) {
 		printf("Failed to setup shared memory\n");
 		return -1;
 	}
 
-	child_status_out = (volatile BOOL *)shm_setup(sizeof(BOOL)*nprocs);
+	child_status_out = (volatile BOOL *)shm_setup(sizeof(BOOL)*torture_nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
 	}
 
-	for (i = 0; i < nprocs; i++) {
+	for (i = 0; i < torture_nprocs; i++) {
 		child_status[i] = 0;
 		child_status_out[i] = True;
 	}
 
 	start_timer();
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
@@ -3899,38 +3765,38 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 				_exit(1);
 			}
 
-			child_status_out[i] = fn(i);
+			child_status_out[i] = fn(current_cli, i);
 			_exit(0);
 		}
 	}
 
 	do {
 		synccount = 0;
-		for (i=0;i<nprocs;i++) {
+		for (i=0;i<torture_nprocs;i++) {
 			if (child_status[i]) synccount++;
 		}
-		if (synccount == nprocs) break;
+		if (synccount == torture_nprocs) break;
 		msleep(100);
 	} while (end_timer() < start_time_limit);
 
-	if (synccount != nprocs) {
-		printf("FAILED TO START %d CLIENTS (started %d)\n", nprocs, synccount);
+	if (synccount != torture_nprocs) {
+		printf("FAILED TO START %d CLIENTS (started %d)\n", torture_nprocs, synccount);
 		*result = False;
 		return end_timer();
 	}
 
-	printf("Starting %d clients\n", nprocs);
+	printf("Starting %d clients\n", torture_nprocs);
 
 	/* start the client load */
 	start_timer();
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		child_status[i] = 0;
 	}
 	kill(0, SIGCONT);
 
-	printf("%d clients started\n", nprocs);
+	printf("%d clients started\n", torture_nprocs);
 
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		int ret;
 		while ((ret=waitpid(0, &status, 0)) == -1 && errno == EINTR) /* noop */ ;
 		if (ret == -1 || WEXITSTATUS(status) != 0) {
@@ -3940,7 +3806,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 	printf("\n");
 	
-	for (i=0;i<nprocs;i++) {
+	for (i=0;i<torture_nprocs;i++) {
 		if (!child_status_out[i]) {
 			*result = False;
 		}
@@ -3969,7 +3835,7 @@ static struct {
 	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
 	{"TORTURE",run_torture,    FLAG_MULTIPROC},
 	{"NEGNOWAIT", run_negprot_nowait, 0},
-	{"NBENCH",  run_nbench, 0},
+	{"NBENCH",  torture_nbench, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DIR1",  run_dirtest1, 0},
 	{"DENY1",  torture_denytest1, 0},
@@ -4067,7 +3933,7 @@ static BOOL run_test(const char *name)
 			printf("Running %s\n", torture_ops[i].name);
 			if (torture_ops[i].flags & FLAG_MULTIPROC) {
 				BOOL result;
-				t = create_procs(torture_ops[i].fn, &result);
+				t = torture_create_procs(torture_ops[i].fn, &result);
 				if (!result) { 
 					ret = False;
 					printf("TEST %s FAILED!\n", torture_ops[i].name);
@@ -4130,6 +3996,7 @@ static void usage(void)
 	printf("\t-m maximum protocol\n");
 	printf("\t-L use oplocks\n");
 	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
+	printf("\t-t timelimit    specify NBENCH time limit (seconds)\n");
 	printf("\t-A showall\n");
 	printf("\t-p port\n");
 	printf("\t-s seed\n");
@@ -4211,7 +4078,7 @@ static void usage(void)
 
 	srandom(time(NULL));
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			lp_set_cmdline("smb ports", optarg);
@@ -4236,7 +4103,7 @@ static void usage(void)
 			srandom(atoi(optarg));
 			break;
 		case 'N':
-			nprocs = atoi(optarg);
+			torture_nprocs = atoi(optarg);
 			break;
 		case 'o':
 			torture_numops = atoi(optarg);
@@ -4251,7 +4118,10 @@ static void usage(void)
 			torture_showall = True;
 			break;
 		case 'c':
-			client_txt = optarg;
+			lp_set_cmdline("torture:loadfile", optarg);
+			break;
+		case 't':
+			lp_set_cmdline("torture:timelimit", optarg);
 			break;
 		case 'k':
 #ifdef HAVE_KRB5
