@@ -24,7 +24,7 @@
 		<arg choice="opt">-F</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-i</arg>
-		<arg choice="opt">-B</arg>
+		<arg choice="opt">-Y</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-n</arg>
@@ -159,12 +159,11 @@ group:          files winbind
 		</varlistentry>
 
 		<varlistentry>
-		<term>-B</term>
-		<listitem><para>Dual daemon mode. This means winbindd will run 
-		as 2 threads. The first will answer all requests from the cache, 
-		thus making responses to clients faster. The other will 
-		update the cache for the query that the first has just responded. 
-		Advantage of this is that responses stay accurate and are faster.
+		<term>-Y</term>
+		<listitem><para>Single daemon mode. This means winbindd will run 
+		as a single process (the mode of operation in Samba 2.2).  Winbindd's 
+		default behavior is to launch a child process that is responsible for 
+		updating expired cache entries.
 		</para></listitem>
 		</varlistentry>
 
