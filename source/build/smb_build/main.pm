@@ -50,7 +50,10 @@ sub smb_build_main($)
 		"ntvfs/unixuid/config.mk",
 		"torture/config.mk",
 		"librpc/config.mk",
-		"client/config.mk");
+		"client/config.mk",
+		"libcli/libsmb.mk");
+
+	$| = 1;
 
 	for my $mkfile (@mkfiles) {
 		config_mk::import_file($SMB_BUILD_CTX{INPUT}, $mkfile);
