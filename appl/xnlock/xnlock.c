@@ -56,6 +56,10 @@ static char STRING[] = "****************";
 #define XNLOCK_CTRL 1
 #define XNLOCK_NOCTRL 0
 
+#ifndef min
+#define min(x,y) (((x)<(y))?(x):(y))
+#endif
+
 static XtAppContext	app;
 static Display        *dpy;
 static unsigned short	Width, Height;
@@ -66,7 +70,8 @@ static char	       *ProgName, *words;
 static int		x, y;
 static Pixel		Black, White;
 static XFontStruct    *font;
-static struct passwd  *pw;
+static char		root_cpass[16];
+static char		user_cpass[16];
 static char		root_pw[16];
 static int		time_left, prompt_x, prompt_y, time_x, time_y;
 static unsigned long	interval;
@@ -166,7 +171,9 @@ get_words(void)
     return appres.text;
 }
 
-void usage(void)
+static
+void
+usage(void)
 {
     fprintf(stderr, "usage: %s [options] [message]\n", ProgName);
     fprintf(stderr, "-fg color     foreground color\n");
@@ -523,9 +530,10 @@ verify(char *password)
     /*
      * First try with root password, if allowed.
      */
-    
-    if(appres.accept_root && unix_verify_user("root", password) == 0)
-	return 0;
+    if (   appres.accept_root
+	&& strcmp(crypt(password, root_cpass), root_cpass) == 0)
+      return 0;
+
     /*
      * Password that log out user
      */
@@ -559,7 +567,13 @@ verify(char *password)
     }
     
     /*
-     * Try to verify as user.
+     * Try copy of users password.
+     */
+    if (strcmp(crypt(password, user_cpass), user_cpass) == 0)
+      return 0;
+
+    /*
+     * Try to verify as user in case password change.
      */
     if(unix_verify_user(name, password) == 0)
 	return 0;
@@ -587,7 +601,7 @@ GetPasswd(Widget w, XEvent *_event, String *_s, Cardinal *_n)
 	/* guy is running around--change to post prompt box. */
 	XtRemoveTimeOut(timeout_id);
 	state = GET_PASSWD;
-	if (appres.ignore_passwd || !strlen(pw->pw_passwd))
+	if (appres.ignore_passwd || !strlen(user_cpass))
 	    leave();
 	post_prompt_box(XtWindow(w));
 	cnt = 0;
@@ -837,6 +851,29 @@ main (int argc, char **argv)
     Widget override;
     XGCValues gcvalues;
 
+    /*
+     * Must be setuid root to read /etc/shadow, copy encrypted
+     * passwords here and then switch to sane uid.
+     */
+    {
+      struct passwd *pw;
+      if (!(pw = k_getpwuid(0)))
+	{
+	  fprintf(stderr, "%s: can't get root's passwd!\n", ProgName);
+	  exit(1);
+	}
+      strcpy(root_cpass, pw->pw_passwd);
+
+      if (!(pw = k_getpwuid(getuid())))
+	{
+	  fprintf(stderr, "%s: Can't get your password entry!\n", ProgName);
+	  exit(1);
+	} 
+      strcpy(user_cpass, pw->pw_passwd);
+      setuid(getuid());
+      /* Now we're no longer running setuid root. */
+    }
+
     srand(getpid());
     for (i = 0; i < STRING_LENGTH; i++)
 	STRING[i] = ((unsigned long)rand() % ('~' - ' ')) + ' ';
@@ -847,17 +884,6 @@ main (int argc, char **argv)
 	ProgName++;
     else
 	ProgName = *argv;
-
-    /* getpwuid() returns static pointer, so get root's passwd first */
-    if (!(pw = getpwuid(0))){
-	fprintf(stderr, "%s: can't get root's passwd!\n", ProgName);
-	exit(1);
-    }
-    strcpy(root_pw, pw->pw_passwd);
-    if (!(pw = getpwuid(getuid()))){
-      fprintf(stderr, "%s: Can't get your password entry!\n", ProgName);
-      exit(1);
-    } 
 
     krb_get_default_principal(name, inst, realm);
     
