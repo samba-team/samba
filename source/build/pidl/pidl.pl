@@ -8,8 +8,8 @@
 
 use strict;
 
-use lib "$ENV{HOME}/pidl";
-
+use FindBin qw($RealBin);
+use lib "$RealBin";
 use Getopt::Long;
 use idl;
 use dump;
