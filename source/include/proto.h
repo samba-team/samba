@@ -842,7 +842,7 @@ void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
-void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
+void pwd_get_lm_nt_16(const struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
 void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 		const char *user, const char *server, const char *domain);
@@ -1792,7 +1792,7 @@ void cli_connection_free(struct cli_connection *con);
 void cli_connection_unlink(struct cli_connection *con);
 BOOL cli_connection_init_list(char* servers, const char* pipe_name,
 				struct cli_connection **con);
-BOOL cli_connection_init(const char* server_name, const char* pipe_name,
+BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
 BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con);
@@ -2160,6 +2160,19 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 				char* dependencies, char* service_start_name,
 				char* password,
 				char* disp_name);
+
+/*The following definitions come from  rpc_client/cli_use.c  */
+
+void init_client_use(void);
+void free_cli_use(void);
+struct cli_state *cli_net_use_addlist(char* servers,
+				const struct user_credentials *usr_creds);
+struct cli_state *cli_net_use_add(const char* srv_name,
+				const struct user_credentials *usr_creds);
+BOOL cli_net_use_del(const char* srv_name,
+				const struct user_credentials *usr_creds,
+				BOOL force_close,
+				BOOL *connection_closed);
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 

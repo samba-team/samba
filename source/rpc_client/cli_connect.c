@@ -48,6 +48,8 @@ void init_connections(void)
 {
 	con_list = NULL;
 	num_cons = 0;
+
+	init_cli_use();
 }
 
 static void free_con_array(uint32 num_entries, struct cli_connection **entries)
@@ -67,6 +69,43 @@ static struct cli_connection* add_con_to_array(uint32 *len,
 void free_connections(void)
 {
 	free_con_array(num_cons, con_list);
+	free_cli_use();
+
+	init_connections();
+}
+
+static struct cli_connection *cli_con_getlist(char* servers,
+				const char* pipe_name)
+{
+	struct cli_connection *con = NULL;
+
+	con = (struct cli_connection*)malloc(sizeof(*con));
+
+	if (con == NULL)
+	{
+		return NULL;
+	}
+
+	memset(con, 0, sizeof(*con));
+
+	if (servers != NULL)
+	{
+		con->srv_name = strdup(servers);
+	}
+	if (pipe_name != NULL)
+	{
+		con->pipe_name = strdup(pipe_name);
+	}
+
+	con->cli = cli_net_use_addlist(servers, usr_creds);
+
+	if (con->cli == NULL)
+	{
+		cli_connection_free(con);
+		return NULL;
+	}
+	add_con_to_array(&num_cons, &con_list, con);
+	return con;
 }
 
 static struct cli_connection *cli_con_get(const char* srv_name,
@@ -92,28 +131,14 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 		con->pipe_name = strdup(pipe_name);
 	}
 
-	con->cli = cli_initialise(NULL);
-	con->fnum = 0xffff;
-
-	memcpy(&con->usr_creds, usr_creds, sizeof(*usr_creds));
+	con->cli = cli_net_use_add(srv_name, usr_creds);
 
 	if (con->cli == NULL)
 	{
 		cli_connection_free(con);
 		return NULL;
 	}
-
-	/*
-	 * initialise
-	 */
-
-	con->cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
-	cli_init_creds(con->cli, usr_creds);
-
-	con->cli->use_ntlmv2 = lp_client_ntlmv2();
-
 	add_con_to_array(&num_cons, &con_list, con);
-
 	return con;
 }
 
@@ -122,9 +147,12 @@ terminate client connection
 ****************************************************************************/
 void cli_connection_free(struct cli_connection *con)
 {
+	BOOL closed;
+
 	cli_nt_session_close(con->cli, con->fnum);
-	cli_shutdown(con->cli);
-	free(con->cli);
+	cli_net_use_del(con->srv_name, con->usr_creds, False, NULL, &closed);
+
+	con->cli = NULL;
 
 	if (con->srv_name != NULL)
 	{
@@ -164,21 +192,12 @@ BOOL cli_connection_init_list(char* servers, const char* pipe_name,
 	 * allocate
 	 */
 
-	*con = cli_con_get(servers, pipe_name);
+	*con = cli_con_getlist(servers, pipe_name);
 
 	if ((*con) == NULL)
 	{
 		return False;
 	}
-
-	if (!cli_connect_serverlist((*con)->cli, servers))
-	{
-		DEBUG(0,("cli_state_init: connection failed\n"));
-		cli_connection_free((*con));
-		return False;
-	}
-
-	(*con)->cli->ntlmssp_cli_flgs = 0x0;
 
 	res = res ? cli_nt_session_open((*con)->cli, pipe_name,
 	                               &(*con)->fnum) : False;
@@ -189,56 +208,21 @@ BOOL cli_connection_init_list(char* servers, const char* pipe_name,
 /****************************************************************************
 init client state
 ****************************************************************************/
-BOOL cli_connection_init(const char* server_name, const char* pipe_name,
+BOOL cli_connection_init(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con)
 {
-	struct nmb_name calling;
-	struct nmb_name called;
-	struct in_addr *dest_ip = NULL;
-	fstring dest_host;
-	struct in_addr ip;
-
 	BOOL res = True;
 
 	/*
 	 * allocate
 	 */
 
-	*con = cli_con_get(server_name, pipe_name);
+	*con = cli_con_get(srv_name, pipe_name);
 
 	if ((*con) == NULL)
 	{
 		return False;
 	}
-
-	if (resolve_srv_name(server_name, dest_host, &ip))
-	{
-		dest_ip = &ip;
-	}
-	else
-	{
-		return False;
-	}
-
-	make_nmb_name(&called , dns_to_netbios_name(dest_host    ), 32, scope);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname),  0, scope);
-
-	/*
-	 * connect
-	 */
-
-	if (!cli_establish_connection((*con)->cli, 
-	                          dest_host, dest_ip,
-	                          &calling, &called,
-	                          "IPC$", "IPC",
-	                          False, True))
-	{
-		DEBUG(0,("cli_state_init: connection failed\n"));
-		cli_connection_free((*con));
-		return False;
-	}
-
-	(*con)->cli->ntlmssp_cli_flgs = 0x0;
 
 	res = res ? cli_nt_session_open((*con)->cli, pipe_name,
 	                               &(*con)->fnum) : False;
