@@ -42,7 +42,8 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent)
     for (; fgets(buf, sizeof(buf), f) != NULL; ++*lineno) {
 	char *p;
 
-	buf[strlen(buf) - 1] = '\0';
+	if (buf[strlen(buf) - 1] == '\n')
+	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
 	while(isspace(*p))
 	    ++p;
@@ -118,7 +119,8 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     for (lineno = 1; fgets(buf, sizeof(buf), f) != NULL; ++lineno) {
 	char *p;
 
-	buf[strlen(buf) - 1] = '\0';
+	if(buf[strlen(buf) - 1] == '\n')
+	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
 	while(isspace(*p))
 	    ++p;
