@@ -45,7 +45,7 @@ krb5_init_context(krb5_context *context)
 {
     krb5_context p;
     const char *tmp;
-    p = ALLOC(1, krb5_context_data);
+    ALLOC(p, 1);
     if(!p)
 	return ENOMEM;
     memset(p, 0, sizeof(krb5_context_data));
@@ -103,7 +103,7 @@ static krb5_error_code
 default_etypes(krb5_enctype **etype)
 {
   krb5_enctype *p;
-  p = ALLOC(4, krb5_enctype);
+  ALLOC(p, 4);
   if(!p)
     return ENOMEM;
   p[0] = ETYPE_DES_CBC_MD5;
@@ -127,7 +127,7 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
       if(!valid_etype(etypes[i++]))
 	return KRB5_PROG_ETYPE_NOSUPP;
     ++i;
-    p = ALLOC(i, krb5_enctype);
+    ALLOC(p, i);
     if(!p)
       return ENOMEM;
     memmove(p, etypes, i * sizeof(krb5_enctype));
@@ -150,7 +150,7 @@ krb5_get_default_in_tkt_etypes(krb5_context context,
   if(context->etypes) {
     for(i = 0; context->etypes[i]; i++);
     ++i;
-    p = ALLOC(i, krb5_enctype);
+    ALLOC(p, i);
     if(!p)
       return ENOMEM;
     memmove(p, context->etypes, i * sizeof(krb5_enctype));

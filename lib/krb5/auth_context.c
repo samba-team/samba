@@ -46,11 +46,11 @@ krb5_auth_con_init(krb5_context context,
 {
     krb5_auth_context p;
 
-    p = ALLOC(1, krb5_auth_context_data);;
+    ALLOC(p, 1);
     if(!p)
 	return ENOMEM;
     memset(p, 0, sizeof(*p));
-    p->authenticator = ALLOC(1, krb5_authenticator_data);
+    ALLOC(p->authenticator, 1);
     if (!p->authenticator)
 	return ENOMEM;
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;

@@ -50,7 +50,7 @@ krb5_kt_resolve(krb5_context context,
   if (strncmp (name, "FILE:", 5) != 0)
     return -1;
 
-  k = ALLOC(1, krb5_keytab_data);
+  ALLOC(k, 1);
   if (k == NULL)
     return ENOMEM;
   k->filename = strdup(name + 5);
@@ -236,7 +236,7 @@ krb5_kt_ret_principal(krb5_storage *sp,
     krb5_principal p;
     int16_t tmp;
     
-    p = ALLOC(1, krb5_principal_data);
+    ALLOC(p, 1);
     if(p == NULL)
 	return ENOMEM;
 

@@ -411,7 +411,7 @@ krb5_ret_addrs(krb5_storage *sp, krb5_addresses *adr)
     ret = krb5_ret_int32(sp, &tmp);
     if(ret) return ret;
     adr->len = tmp;
-    adr->val = ALLOC(adr->len, krb5_address);
+    ALLOC(adr->val, adr->len);
     for(i = 0; i < adr->len; i++){
 	ret = krb5_ret_address(sp, &adr->val[i]);
 	if(ret) break;
