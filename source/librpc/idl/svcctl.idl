@@ -26,8 +26,8 @@
 	} SERVICE_STATUS;
 
 	typedef struct {
-		unistr *service_name;
-		unistr *display_name;
+		[relative] astring *service_name;
+		[relative] astring *display_name;
 		SERVICE_STATUS status;
 	} ENUM_SERVICE_STATUS;
 
