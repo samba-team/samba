@@ -372,6 +372,8 @@ Samba-3 introduces a number of new password backend capabilities.
 	</para>
 
 	<para>
+	<indexterm><primary>idmap uid</primary></indexterm>
+	<indexterm><primary>idmap gid</primary></indexterm>
 	The second way to effect Windows SID to UNIX UID mapping is via the
 	<emphasis>idmap uid</emphasis> and <emphasis>idmap gid</emphasis> parameters in &smb.conf;.
 	Please refer to the man page for information about these parameters.
@@ -392,6 +394,7 @@ Samba-3 introduces a number of new password backend capabilities.
 	</para>
 
 	<para>
+	<indexterm><primary>idmap backend</primary></indexterm>
 	The special facility is enabled using a parameter called <parameter>idmap backend</parameter>.
 	The default setting for this parameter is an empty string. Technically it is possible to use
 	an LDAP based idmap backend for UIDs and GIDs, but it makes most sense when this is done for

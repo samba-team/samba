@@ -54,6 +54,7 @@
 	<para>
 <indexterm><primary>UID</primary></indexterm>
 <indexterm><primary>GID</primary></indexterm>
+<indexterm><primary>idmap uid</primary></indexterm>
 	Group accounts can be managed using the MS Windows NT4 or MS Windows 200x/XP Professional MMC tools.
 	Appropriate interface scripts should be provided in &smb.conf; if it is desired that UNIX/Linux system
 	accounts should be automatically created when these tools are used. In the absence of these scripts, and
@@ -73,6 +74,7 @@
 	</image>
 
 	<para>
+	<indexterm><primary>IDMAP</primary></indexterm>
 	In both cases, when winbindd is not running, only locally resolvable groups can be recognized. Please refer to
 	<link linkend="idmap-sid2gid">IDMAP: group SID to GID resolution</link> and <link linkend="idmap-gid2sid">IDMAP: GID resolution to matching SID</link>. 
 	The <command>net groupmap</command> is
