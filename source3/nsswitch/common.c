@@ -242,7 +242,7 @@ static int read_sock(void *buffer, int count)
 
 int read_reply(struct winbindd_response *response)
 {
-    int result1, result2;
+    int result1, result2 = 0;
 
     if (!response) {
         return -1;
@@ -270,7 +270,6 @@ int read_reply(struct winbindd_response *response)
 
         if ((result2 = read_sock(response->extra_data, extra_data_len))
             == -1) {
-
             return -1;
         }
     }
@@ -280,3 +279,56 @@ int read_reply(struct winbindd_response *response)
     return result1 + result2;
 }
 
+/* Free a response structure */
+
+void free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response && response->extra_data) {
+		free(response->extra_data);
+	}
+}
+
+/* Handle simple types of requests */
+
+enum nss_status generic_request(int req_type, 
+				struct winbindd_request *request,
+				struct winbindd_response *response)
+{
+	struct winbindd_request lrequest;
+	struct winbindd_response lresponse;
+
+	/* Check for our tricky environment variable */
+
+	if (getenv(WINBINDD_DONT_ENV)) {
+		return NSS_STATUS_NOTFOUND;
+	}
+
+	if (!response) response = &lresponse;
+	if (!request) request = &lrequest;
+	
+	/* Fill in request and send down pipe */
+	init_request(request, req_type);
+	
+	if (write_sock(request, sizeof(*request)) == -1) {
+		return NSS_STATUS_UNAVAIL;
+	}
+	
+	/* Wait for reply */
+	if (read_reply(response) == -1) {
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	/* Throw away extra data if client didn't request it */
+	if (response == &lresponse) {
+		free_response(response);
+	}
+
+	/* Copy reply data from socket */
+	if (response->result != WINBINDD_OK) {
+		return NSS_STATUS_NOTFOUND;
+	}
+	
+	return NSS_STATUS_SUCCESS;
+}
