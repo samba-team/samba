@@ -454,3 +454,27 @@ interface ISystemActivator
 
 
 }
+
+[
+	uuid(00000132-0000-0000-C000-000000000046),
+	version(0.0)
+] interface IObjServer
+{
+	WERROR IObjServer_Unknown();
+}
+
+[
+	uuid(00000134-0000-0000-C000-000000000046),
+	version(0.0)
+] interface IRunDown
+{
+	WERROR IRunDown_Dummy();
+}
+
+[
+	uuid(00000136-0000-0000-C000-000000000046),
+	version(0.0)
+] interface ISCMLocalActivator
+{
+	WERROR ISCMLocalActivator();
+}
