@@ -77,8 +77,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 		DEBUG(1,("Failed to start browse sync with %s\n", name));
 	}
 
-	if (!cli_session_request(&cli, name, nm_type, local_machine, 0x0))
-	{
+	if (!cli_session_request(&cli, name, nm_type, local_machine)) {
 		DEBUG(1,("%s rejected the browse sync session\n",name));
 		cli_shutdown(&cli);
 		return;
