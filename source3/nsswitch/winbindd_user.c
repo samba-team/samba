@@ -137,7 +137,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	   from the winbind_lookup_by_name() call and use it in a
 	   winbind_lookup_userinfo() */
     
-	if (!(mem_ctx = talloc_init_named("winbindd_getpwnam([%s]\\[%s])", 
+	if (!(mem_ctx = talloc_init("winbindd_getpwnam([%s]\\[%s])", 
 					  name_domain, name_user))) {
 		DEBUG(1, ("out of memory\n"));
 		return WINBINDD_ERROR;
@@ -217,7 +217,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get some user info */
 	
-	if (!(mem_ctx = talloc_init_named("winbind_getpwuid(%d)",
+	if (!(mem_ctx = talloc_init("winbind_getpwuid(%d)",
 					  state->request.data.uid))) {
 
 		DEBUG(1, ("out of memory\n"));
@@ -336,7 +336,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	if (ent->num_sam_entries)
 		return False;
 
-	if (!(mem_ctx = talloc_init_named("get_sam_user_entries(%s)",
+	if (!(mem_ctx = talloc_init("get_sam_user_entries(%s)",
 					  ent->domain_name)))
 		return False;
 
@@ -531,7 +531,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
-	if (!(mem_ctx = talloc_init_named("winbindd_list_users")))
+	if (!(mem_ctx = talloc_init("winbindd_list_users")))
 		return WINBINDD_ERROR;
 
 	/* Enumerate over trusted domains */

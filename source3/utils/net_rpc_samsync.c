@@ -128,7 +128,7 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
         SAM_DELTA_CTR *deltas;
         uint32 num_deltas;
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("dump_database"))) {
 		return;
 	}
 
@@ -452,7 +452,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 
 	d_printf("Group members of %s: ", grp->gr_name);
 
-	if (!(t = talloc_init())) {
+	if (!(t = talloc_init("fetch_group_mem_info"))) {
 		DEBUG(0, ("could not talloc_init\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -656,7 +656,7 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
         SAM_DELTA_CTR *deltas;
         uint32 num_deltas;
 
-	if (!(mem_ctx = talloc_init())) {
+	if (!(mem_ctx = talloc_init("fetch_database"))) {
 		return;
 	}
 

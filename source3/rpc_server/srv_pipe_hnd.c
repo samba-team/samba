@@ -293,7 +293,7 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 
 	ZERO_STRUCTP(p);
 
-	if ((p->mem_ctx = talloc_init()) == NULL) {
+	if ((p->mem_ctx = talloc_init("pipe %s %p", pipe_name, p)) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
 		SAFE_FREE(p);
 		return NULL;
@@ -544,7 +544,7 @@ void free_pipe_context(pipes_struct *p)
 		DEBUG(3,("free_pipe_context: destroying talloc pool of size %u\n", talloc_pool_size(p->mem_ctx) ));
 		talloc_destroy_pool(p->mem_ctx);
 	} else {
-		p->mem_ctx = talloc_init();
+		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);
 		if (p->mem_ctx == NULL)
 			p->fault_state = True;
 	}

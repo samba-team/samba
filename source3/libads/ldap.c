@@ -420,7 +420,7 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 
 	*res = NULL;
 
-	if (!(ctx = talloc_init()))
+	if (!(ctx = talloc_init("ads_do_paged_search")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	/* 0 means the conversion worked but the result was empty 
@@ -642,7 +642,7 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	char *utf8_exp, *utf8_path, **search_attrs = NULL;
 	TALLOC_CTX *ctx;
 
-	if (!(ctx = talloc_init())) {
+	if (!(ctx = talloc_init("ads_do_search"))) {
 		DEBUG(1,("ads_do_search: talloc_init() failed!"));
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -1031,7 +1031,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	char *psp;
 	unsigned acct_control;
 
-	if (!(ctx = talloc_init_named("machine_account")))
+	if (!(ctx = talloc_init("machine_account")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	ret = ADS_ERROR(LDAP_NO_MEMORY);
@@ -1144,7 +1144,7 @@ static void dump_sd(const char *filed, struct berval **values)
 	SEC_DESC   *psd = 0;
 	TALLOC_CTX *ctx = 0;
 
-	if (!(ctx = talloc_init_named("sec_io_desc")))
+	if (!(ctx = talloc_init("sec_io_desc")))
 		return;
 
 	/* prepare data */
@@ -1246,7 +1246,7 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 	void *msg;
 	TALLOC_CTX *ctx;
 
-	if (!(ctx = talloc_init()))
+	if (!(ctx = talloc_init("ads_process_results")))
 		return;
 
 	for (msg = ads_first_entry(ads, res); msg; 
@@ -1429,7 +1429,7 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 
 	msg   = ads_first_entry(ads, res);
 	ads_pull_sid(ads, msg, attrs[1], &sid);	
-	if (!(ctx = talloc_init_named("sec_io_desc"))) {
+	if (!(ctx = talloc_init("sec_io_desc"))) {
 		ret =  ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
 	}
@@ -1785,7 +1785,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	char *timestr;
 	TALLOC_CTX *ctx;
 
-	if (!(ctx = talloc_init())) {
+	if (!(ctx = talloc_init("ads_server_info"))) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
