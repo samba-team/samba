@@ -3,3 +3,4 @@ config.h
 stamp-h
 proto.h
 wrepld_proto.h
+tdbsam2_parse_info.h
