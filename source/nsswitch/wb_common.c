@@ -168,7 +168,7 @@ int winbind_open_pipe_sock(void)
 	return winbindd_fd;
 }
 
-/* Write data to winbindd socket with timeout */
+/* Write data to winbindd socket */
 
 int write_sock(void *buffer, int count)
 {
@@ -234,7 +234,7 @@ int write_sock(void *buffer, int count)
 	return nwritten;
 }
 
-/* Read data from winbindd socket with timeout */
+/* Read data from winbindd socket */
 
 static int read_sock(void *buffer, int count)
 {
