@@ -134,7 +134,10 @@ BOOL idmap_init(const char **remote_backend)
 		if((remote_map = get_methods(rem_backend, False)) ||
 		    (NT_STATUS_IS_OK(smb_probe_module("idmap", rem_backend)) && 
 		    (remote_map = get_methods(rem_backend, False)))) {
-			remote_map->init(params);
+			if (!NT_STATUS_IS_OK(remote_map->init(params))) {
+				DEBUG(0, ("idmap_init: failed to initialize remote backend!\n"));
+				return False;
+			}
 		} else {
 			DEBUG(0, ("idmap_init: could not load remote backend '%s'\n", rem_backend));
 			SAFE_FREE(rem_backend);
