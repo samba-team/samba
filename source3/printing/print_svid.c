@@ -81,7 +81,7 @@ static void populate_printers(void)
 		 * On HPUX there is an extra line that can be ignored.
 		 * d.thibadeau 2001/08/09
 		 */
-		if(!strncmp("remote to",name,9))
+		if(!strncmp("remote to",tmp,9))
 			continue;
 
 		name = tmp;
