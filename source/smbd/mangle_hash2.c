@@ -362,10 +362,8 @@ static void mangle_reset(void)
 /*
   try to find a 8.3 name in the cache, and if found then
   replace the string with the original long name. 
-
-  The filename must be able to hold at least sizeof(fstring) 
 */
-static BOOL check_cache(char *name)
+static BOOL check_cache(char *name, size_t maxlen)
 {
 	u32 hash, multiplier;
 	unsigned int i;
@@ -403,10 +401,10 @@ static BOOL check_cache(char *name)
 
 	if (extension[0]) {
 		M_DEBUG(10,("check_cache: %s -> %s.%s\n", name, prefix, extension));
-		slprintf(name, sizeof(fstring), "%s.%s", prefix, extension);
+		slprintf(name, maxlen, "%s.%s", prefix, extension);
 	} else {
 		M_DEBUG(10,("check_cache: %s -> %s\n", name, prefix));
-		fstrcpy(name, prefix);
+		safe_strcpy(name, prefix, maxlen);
 	}
 
 	return True;
