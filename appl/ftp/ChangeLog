@@ -1,3 +1,8 @@
+1999-10-03  Assar Westerlund  <assar@sics.se>
+
+	* ftpd/ls.c: fall-back definitions for constans and casts for
+ 	printfs
+
 1999-10-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c (main): make this use getarg; add `list_file'
