@@ -5481,7 +5481,6 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 			    DEVICEMODE *devmode)
 {
 	pstring temp_name;
-	pstring chaine;
 	struct tm *t;
 
 	t=gmtime(&queue->time);
@@ -5489,9 +5488,7 @@ static BOOL fill_job_info_2(JOB_INFO_2 *job_info, print_queue_struct *queue,
 
 	job_info->jobid=queue->job;
 	
-	slprintf(chaine, sizeof(chaine)-1, "\\\\%s\\%s", get_called_name(), ntprinter->info_2->printername);
-
-	init_unistr(&job_info->printername, chaine);
+	init_unistr(&job_info->printername, ntprinter->info_2->printername);
 	
 	init_unistr(&job_info->machinename, temp_name);
 	init_unistr(&job_info->username, queue->fs_user);
@@ -7879,11 +7876,21 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
 	char*   ptr = NULL;
 	int     i;
-	char 	*PrinterKey = "PrinterDriverData";
+	fstring	PrinterKey;
+	UNISTR2	uni_keys;
+	int	enum_key_len;
 
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
 	unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
+
+	ZERO_STRUCTP(PrinterKey);
+	fstrcpy( PrinterKey, "PrinterDriverData" );
+
+	/* add space for 2 terminating NULLs */
+
+	enum_key_len = strlen( PrinterKey ) + 2;
+
 
 	/* 
 	 * we only support enumating all keys (key == "")
@@ -7892,22 +7899,13 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 	 */	
 	if (strlen(key) == 0)
 	{
-		r_u->needed = ENUMERATED_KEY_SIZE *2;
+		r_u->needed = enum_key_len*2;
 		if (q_u->size < r_u->needed)
 			return WERR_MORE_DATA;
 	
-		ptr = PrinterKey;
-		for (i=0; i<ENUMERATED_KEY_SIZE-2; i++)
-		{
-			enumkeys[i] = (uint16)(*ptr);
-			ptr++;
-		}
+		init_unistr2( &uni_keys, PrinterKey, enum_key_len );
 
-		/* tag of with 2 '\0's */
-		enumkeys[i++] = '\0';
-		enumkeys[i] = '\0';
-	
-		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, ENUMERATED_KEY_SIZE, enumkeys))
+		if ( !make_spoolss_buffer5(p->mem_ctx, &r_u->keys, enum_key_len, uni_keys.buffer) )
 			return WERR_BADFILE;
 			
 		return WERR_OK;

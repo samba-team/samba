@@ -1446,7 +1446,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 
 		dir->dir_end->next = malloc(sizeof(struct smbc_dir_list));
 		
-		if (!dir->dir_end) {
+		if (!dir->dir_end->next) {
 			
 			SAFE_FREE(dirent);
 			dir->dir_error = ENOMEM;

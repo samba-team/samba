@@ -172,6 +172,7 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 	hash_element	*hash_elem;
 	ubi_dlNodePtr lru_item;
 	ubi_dlList *bucket; 
+	size_t string_length;
 
 	/* 
 	 * If the hash table size has not reached the MAX_HASH_TABLE_SIZE,
@@ -205,12 +206,13 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 	 * string.
 	 */
 
-	if(!(hash_elem = (hash_element *) malloc(sizeof(hash_element) + strlen(key)))) {
+	string_length = strlen(key);
+	if(!(hash_elem = (hash_element *) malloc(sizeof(hash_element) + string_length))) {
 		DEBUG(0,("hash_insert: malloc fail !\n"));
 		return (hash_element *)NULL;
 	}
 
-	safe_strcpy((char *) hash_elem->key, key, strlen(key)+1);
+	safe_strcpy((char *) hash_elem->key, key, string_length);
 
 	hash_elem->value = (char *)value;
 	hash_elem->bucket = bucket;

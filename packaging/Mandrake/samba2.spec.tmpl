@@ -1,6 +1,6 @@
-%define ver 2.2.5
-%define rel 21mdk
-%define vscanver 0.2.5c
+%define ver 2.2.7a
+%define rel 4mdk
+%define vscanver 0.3.1
 
 # 2.2.4 and 1 replace by samba-team at release
 %define pversion PVERSION
@@ -33,6 +33,7 @@
 # We now do detection of the Mandrake release we are building on:
 #%define build_cooker %(if [ `awk '{print $3}' /etc/mandrake-release` = "Cooker" ];then echo 1; else echo 0; fi)
 #%define build_cooker %(if [[ `cat /etc/mandrake-release|grep Cooker` ]];then echo 1; else echo 0; fi)
+%define build_mdk91 %(if [ `awk '{print $4}' /etc/mandrake-release` = 9.1 ];then echo 1; else echo 0; fi)
 %define build_mdk90 %(if [ `awk '{print $4}' /etc/mandrake-release` = 9.0 ];then echo 1; else echo 0; fi)
 %define build_mdk83 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.3 ];then echo 1; else echo 0; fi)
 %define build_mdk82 %(if [ `awk '{print $4}' /etc/mandrake-release` = 8.2 ];then echo 1; else echo 0; fi)
@@ -41,12 +42,18 @@
 %define build_mdk72 %(if [ `awk '{print $4}' /etc/mandrake-release` = 7.2 ];then echo 1; else echo 0; fi)
 %define build_non_default 0
 
-%define build_acl 1
-%define build_winbind 1
-%define build_wins 1
-%define build_ldap 0 
+# Default options
+%define build_acl 	1
+%define build_winbind 	1
+%define build_wins 	1
+%define build_ldap 	0
+%define build_scanners	0
 
 # Set defaults for each version
+%if %build_mdk91
+%define build_ldap 0
+%endif
+
 %if %build_mdk90
 %define build_ldap 0 
 %endif
@@ -98,6 +105,8 @@
 %{?_with_ldap: %{expand: %%define build_non_default 1}}
 %{?_without_ldap: %{expand: %%global build_ldap 0}}
 %{?_without_ldap: %{expand: %%define build_non_default 1}}
+%{?_with_scanners: %{expand: %%define build_scanners 1}}
+%{?_with_scanners: %{expand: %%define build_non_default 1}}
 
 # As if that weren't enough, we're going to try building with antivirus
 # support as an option also
@@ -108,17 +117,26 @@
 %define build_sophos 0
 %define build_symantec 0
 %define build_trend 0
+%if %build_vscan && %build_scanners
+#These can be enabled here by default
+# (kaspersky requires their library present)
+%define build_fprot     1
+%define build_mks       1
+%define build_openantivirus    1
+%define build_sophos    1
+%define build_trend     1
+%endif
 %if %build_vscan
 %{?_with_fprot: %{expand: %%global build_fprot 1}}
 %{?_with_kaspersky: %{expand: %%global build_kaspersky 1}}
 %{?_with_mks: %{expand: %%global build_mks 1}}
 %{?_with_openav: %{expand: %%global build_openantivirus 1}}
 %{?_with_sophos: %{expand: %%global build_sophos 1}}
-%{?_with_symantec: %{expand: %%global build_symantec 1}}
+#%{?_with_symantec: %{expand: %%global build_symantec 1}}
 %{?_with_trend: %{expand: %%global build_trend 1}}
-%define vscandir "samba-vscan-%{vscanver}"
+%global vscandir samba-vscan-%{vscanver}
 %endif
-%define vfsdir "examples.bin/VFS"
+%global vfsdir examples.bin/VFS
 
 #Workaround missing macros in 8.x:
 %{!?perl_vendorlib: %{expand: %%global perl_vendorlib %{perl_sitearch}/../}}
@@ -147,6 +165,7 @@ Release: 1.0.%{pre_pre}.%{prelease}mdk
 Release: %{rel}
 %endif
 License: GPL
+URL: http://www.samba.org
 Group: System/Servers
 Source: ftp://samba.org/pub/samba/samba-%{source_ver}.tar.bz2
 Source1: samba.log
@@ -161,35 +180,27 @@ Source8: samba-vscan-%{vscanver}.tar.bz2
 %endif
 Source10: samba-print-pdf.sh.bz2
 Patch1: smbw.patch.bz2
-Patch5: samba-2.2.0-gawk.patch.bz2
-#Patch11: samba-2.0.7-smbspool-guest.patch.bz2
-Patch12: samba-2.2.0-buildroot.patch.bz2
-#Patch16: samba-mkdir.patch.bz2
-Patch17: smbmount-sbin.patch.bz2
-Patch18: samba-2.2.5-gp-reloc-fix.patch.bz2
+Patch2: samba-2.2.0-gawk.patch.bz2
+Patch3: samba-2.2.0-buildroot.patch.bz2
+Patch4: smbmount-sbin.patch.bz2
+Patch5: samba-2.2.5-gp-reloc-fix.patch.bz2
+Patch6: samba-2.2.7a-smbldaptools-paths.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
-Patch26: samba-2.2.5-smb.conf.patch.bz2
-Patch28: samba-2.2.5-ldap_start_tls.patch.bz2
-Patch29: samba-2.2.5-parse_sec.patch.bz2
-Patch30: samba-2.2.5-nt-dirlisting.patch.bz2
-Patch31: samba-2.2.5-random_smbd-read.patch.bz2
-Patch32: samba-2.2.5-winbind-init.patch.bz2
-Patch33: samba-2.2.5-pam-password.patch.bz2
-Patch34: samba-2.2.5-win2k_copy_bug.patch.bz2
-Patch35: samba-2.2.5-samba-ldap-include-conf.patch.bz2
-Patch36: samba-2.2.6-smb.conf.patch.bz2
-Patch37: samba-2.2.6-smbumount_lazy.patch.bz2
+Patch101: samba-2.2.7a-smbtar-large-file-fix.patch.bz2
+Patch102: samba-2.2.7a-smbclient-large-file-fix.patch.bz2
+Patch103: samba-2.2.7a-ldap-rebind.patch.bz2
+Patch104: samba-2.2.7a-mandrake-packaging.patch.bz2
+Patch105: samba-2.2.6-smbumount_lazy.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
 # Limbo patches (applied to prereleases, but not preleases, ie destined for 
 # samba CVS)
 %if %have_pversion && %have_pre
-Patch36: samba-2.2.6-smb.conf.patch.bz2
 %endif
 Requires: pam >= 0.64, samba-common = %{version}
-BuildRequires: pam-devel autoconf readline-devel
+BuildRequires: pam-devel autoconf readline-devel libldap2-devel popt-devel
 %if %build_acl
 BuildRequires: libacl-devel
 %endif
@@ -198,9 +209,9 @@ BuildRequires: cups-devel
 %else
 BuildRequires: libcups-devel
 %endif
-%if %build_ldap
-BuildRequires: libldap-devel
-%endif
+#%if %build_ldap
+#BuildRequires: libldap-devel
+#%endif
 BuildRoot: %{_tmppath}/%{name}-root
 Prefix: /usr
 Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
@@ -411,6 +422,7 @@ IP addresses.
 Summary: On-access virus scanning for samba using FPROT
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-fprot
 A vfs-module for samba to implement on-access scanning using the
@@ -422,6 +434,7 @@ FPROT antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using Kaspersky
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-kaspersky
 A vfs-module for samba to implement on-access scanning using the
@@ -433,6 +446,7 @@ Kaspersky antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using MKS
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-mks
 A vfs-module for samba to implement on-access scanning using the
@@ -444,6 +458,7 @@ MKS antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using OpenAntivirus
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-openantivirus
 A vfs-module for samba to implement on-access scanning using the
@@ -455,6 +470,7 @@ OpenAntivirus antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using Sophos
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-sophos
 A vfs-module for samba to implement on-access scanning using the
@@ -466,6 +482,7 @@ Sophos antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using Symantec
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-symantec
 A vfs-module for samba to implement on-access scanning using the
@@ -477,6 +494,7 @@ Symantec antivirus software (which must be installed to use this).
 Summary: On-access virus scanning for samba using Trend
 Group: System/Servers
 Requires: samba = %{version}
+Provides: samba-vscan
 Autoreq: 0
 %description vscan-trend
 A vfs-module for samba to implement on-access scanning using the
@@ -523,28 +541,26 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 %else
 %setup -q -n %{name}-%{source_ver}
 %endif
-#%patch111 -p1
+# Current patches
+echo "Applying patches for  version: %{ver}"
 %patch1 -p1 -b .smbw
-%patch5 -p1 -b .gawk
-#%patch7 -p1
-#%patch11 -p0 -b .smbspool
-%patch12 -p1 -b .buildroot
-%patch17 -p1
-%patch18 -p1 -b .gp-reloc-fix
+%patch2 -p1 -b .gawk
+%patch3 -p1 -b .buildroot
+%patch4 -p1
+%patch5 -p1 -b .gp-reloc-fix
+%patch6 -p1
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
-%patch26 -p1 -b .mdk
-%patch28 -p1
-%patch29 -p1
-%patch30 -p1
-%patch31 -p1
-%patch32 -p1
-%patch33 -p1
-%patch34 -p1
-%patch35 -p1
-%patch36 -p1
-%patch37 -p1
+(cd source/client
+%patch101 -p0 -b .lfs
+)
+( cd source
+%patch102 -p0  -b .lfs
+)
+%patch103 -p1 -b .ldap
+%patch104 -p1 -b .mdk
+%patch105 -p1
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -553,7 +569,6 @@ echo "Applying patches for new versions: %{pversion}"
 # Limbo patches
 %if %have_pversion && %have_pre
 echo "Appling patches which should only be applied to prereleases"
-%patch36 -p1
 %endif
 
 cp %{SOURCE7} .
@@ -563,9 +578,12 @@ cp -a examples examples.bin
 
 %if %build_vscan
 # put antivirus files in examples.bin/VFS/
-for av in fprot kaspersky mks openantivirus sophos symantec trend; do
-	cp -a %{vscandir}/$av %{vfsdir}
-done
+#for av in fprot kaspersky mks openantivirus sophos trend; do
+#	[ -e %{vscandir}/$av ] && cp -a %{vscandir}/$av %{vfsdir}
+#done
+cp -a %{vscandir} %{vfsdir}
+#fix stupid directory names:
+mv %{vfsdir}/%{vscandir}/openantivirus %{vfsdir}/%{vscandir}/oav
 %endif
 
 %build
@@ -575,31 +593,34 @@ autoconf
 CPPFLAGS="-I/usr/include/openssl"; export CPPFLAGS
 CFLAGS="$RPM_OPT_FLAGS"
 %configure      --prefix=%{prefix} \
-                --with-fhs \
-                --libdir=/etc/samba \
-                --sysconfdir=/etc/samba \
-                --localstatedir=/var \
-                --with-configdir=/etc/samba \
-                --with-codepagedir=/var/lib/samba/codepages \
-                --with-privatedir=/etc/samba \
-                --with-swatdir=%{prefix}/share/swat \
-                --with-smbmount \
-                --with-syslog \
-                --with-automount \
-                --with-pam \
-                --with-pam_smbpass \
-                --with-vfs \
-                --with-utmp \
-                --with-msdfs \
-                --with-smbwrapper \
-		--with-libsmbclient \
+	--with-fhs \
+	--libdir=/etc/samba \
+	--sysconfdir=/etc/samba \
+	--localstatedir=/var \
+	--with-configdir=/etc/samba \
+	--with-codepagedir=/var/lib/samba/codepages \
+	--with-privatedir=/etc/samba \
+	--with-swatdir=%{prefix}/share/swat \
+	--with-smbmount \
+	--with-syslog \
+	--with-automount \
+	--with-pam \
+	--with-sendfile-support \
+	--with-pam_smbpass \
+	--with-vfs \
+	--with-utmp \
+	--with-msdfs \
+	--with-smbwrapper \
+	--with-libsmbclient \
 %if %build_acl
-		--with-acl-support	\
+	--with-acl-support	\
 %endif
 %if %build_ldap
-		--with-ldapsam		\
+	--with-ldapsam		\
+	--with-winbind-ldap-hack \
 %endif
-                --with-quotas
+	--with-winbind-auth-challenge \
+	--with-quotas
 
 #make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" all
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" \
@@ -609,8 +630,6 @@ cd ../%vfsdir
 %configure	--prefix=%{prefix} \
 		--mandir=%{prefix}/share/man
 make
-#make CFLAGS="$RPM_OPT_FLAGS -I../../source -I../../source/include -I../../source/ubiqx \
-#	-I../../source/smbwrapper -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE"
 )
 
 # Build mkntpasswd in examples/LDAP/ for smbldaptools
@@ -621,31 +640,33 @@ make
 
 # Build antivirus vfs objects:
 %if %build_fprot
+echo -e "\n\nBuild antivirus VFS modules\n\n"
 echo "Building fprot"
+(cd %{vfsdir}/%{vscandir}/fprot;make)
 %endif
 %if %build_kaspersky
 echo "Building Kaspersky"
-(cd %{vfsdir}/kaspersky;make)
+(cd %{vfsdir}/%{vscandir}/kaspersky;make)
 %endif
 %if %build_mks
 echo "Building mks"
-(cd %{vfsdir}/mks;make)
+(cd %{vfsdir}/%{vscandir}/mks;make)
 %endif
 %if %build_openantivirus
 echo "Building OpenAntivirus"
-(cd %{vfsdir}/openantivirus;make)
+(cd %{vfsdir}/%{vscandir}/oav;make)
 %endif
 %if %build_sophos
 echo "building sophos"
-(cd %{vfsdir}/sophos;make)
+(cd %{vfsdir}/%{vscandir}/sophos;make)
 %endif
 %if %build_symantec
 echo "Building symantec"
-(cd %{vfsdir}/symantec;make)
+(cd %{vfsdir}/%{vscandir}/symantec;make)
 %endif
 %if %build_trend
 echo "Building Trend"
-(cd %{vfsdir}/trend;make)
+(cd %{vfsdir}/%{vscandir}/trend;make)
 %endif
 
 %install
@@ -694,10 +715,12 @@ done
 
 # Antivirus support:
 #	mkdir -p $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan
-	for av in fprotd kavp mksd oav sophos symantec trend; do
-		if [ -d %{vfsdir}/$av -a -e %{vfsdir}/$av/vscan-$av.so ];then
-			cp %{vfsdir}/$av/vscan-$av.so \
+	for av in fprot kavp mks oav sophos symantec trend; do
+		if [ -d %{vfsdir}/%{vscandir}/$av -a -e %{vfsdir}/%{vscandir}/$av/vscan-$av*.so ];then
+			cp %{vfsdir}/%{vscandir}/$av/vscan-$av*.so \
 				$RPM_BUILD_ROOT%{_libdir}/samba/vfs/
+			cp %{vfsdir}/%{vscandir}/$av/vscan-$av*.conf \
+				$RPM_BUILD_ROOT%{_sysconfdir}/%{name}
 		fi
 	done
 
@@ -729,7 +752,7 @@ do
   install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 done
 
-for i in 437 737 775 850 852 857 861 862 866 932 936 949 950 1125 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R KOI8-U
+for i in 437 737 775 850 852 857 861 862 866 932 936 949 950 1125 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-8 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R KOI8-U
 do
   install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/var/lib/samba/codepages/src
 done
@@ -740,7 +763,7 @@ for i in 437 737 775 850 852 857 861 862 866 932 936 949 950 1125 1251; do
 done
 
 # Build unicode load files
-for i in 437 737 775 850 852 857 861 862 866 932 936 949 950 1125 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R KOI8-U; do
+for i in 437 737 775 850 852 857 861 862 866 932 936 949 950 1125 1251 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 ISO8859-8 ISO8859-9 ISO8859-13 ISO8859-15 KOI8-R KOI8-U; do
          $RPM_BUILD_ROOT/%{prefix}/bin/make_unicodemap $i $RPM_BUILD_ROOT/var/lib/samba/codepages/src/CP$i.TXT $RPM_BUILD_ROOT/var/lib/samba/codepages/unicode_map.$i
 done
 rm -rf $RPM_BUILD_ROOT/var/lib/samba/codepages/src
@@ -785,7 +808,6 @@ done
         install -m644 packaging/Mandrake/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
         install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
         install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT/usr/bin
-        #install -m755 packaging/RedHat/smbadduser $RPM_BUILD_ROOT/usr/bin
         install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT/usr/bin
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
         install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/usr/sbin/samba
@@ -800,6 +822,7 @@ done
 # Install smbldap-tools scripts:
 for i in examples/LDAP/smbldap-tools/*.pl; do
 	install -m 750 $i $RPM_BUILD_ROOT/%{_datadir}/samba/scripts/
+	ln -s %{_datadir}/%{name}/scripts/`basename $i` $RPM_BUILD_ROOT/%{_bindir}/`basename $i|sed -e 's/\.pl//g'`
 done
 
 install -m 750 examples/LDAP/smbldap-tools/smbldap_tools.pm $RPM_BUILD_ROOT/%{_datadir}/samba/scripts/
@@ -860,6 +883,71 @@ bzcat %{SOURCE5} > $RPM_BUILD_ROOT%{_iconsdir}/swat.xpm
 bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat.xpm
 
 bzcat %{SOURCE10}> $RPM_BUILD_ROOT%{_datadir}/samba/scripts/print-pdf
+
+# Delete files which will not be included, so that /usr/lib/rpm/check-files
+# doesn't error out when Checking for unpackaged file(s)
+%if ! %build_ldap
+%endif
+
+%if ! %build_acl
+%endif
+
+%if ! %build_winbind
+rm -f $RPM_BUILD_ROOT%{_sbindir}/winbind
+rm -f $RPM_BUILD_ROOT%{_sbindir}/winbindd
+rm -f $RPM_BUILD_ROOT%{_bindir}/wbinfo
+rm -f $RPM_BUILD_ROOT/lib/security/pam_winbind*
+rm -f $RPM_BUILD_ROOT/lib/libnss_winbind*
+rm -f $RPM_BUILD_ROOT/etc/rc.d/init.d/winbind
+rm -f $RPM_BUILD_ROOT/etc/pam.d/system-auth-winbind
+rm -f $RPM_BUILD_ROOT%{_mandir}/man8/winbindd.8*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/wbinfo.1*
+%endif
+
+%if ! %build_wins
+rm -f $RPM_BUILD_ROOT/lib/libnss_wins.so*
+%endif
+
+%ifarch alpha
+rm -f $RPM_BUILD_ROOT/sbin/mount.smb
+rm -f $RPM_BUILD_ROOT/sbin/mount.smbfs
+rm -f $RPM_BUILD_ROOT%{_bindir}/smbmount
+rm -f $RPM_BUILD_ROOT%{_bindir}/smbumount
+rm -f $RPM_BUILD_ROOT%{_sbindir}/smbmnt
+rm -f $RPM_BUILD_ROOT%{_mandir}/man8/smbmnt.8*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man8/smbmount.8*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man8/smbumount.8*
+%endif
+
+#Files for antivirus support:
+%if ! %build_fprot
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-fprotd.so
+%endif
+
+%if ! %build_kaspersky
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-kavp.so
+%endif
+
+%if ! %build_mks
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-mksd.so
+%endif
+
+%if ! %build_openantivirus
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-oav.so
+%endif
+
+%if ! %build_sophos
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-sophos.so
+%endif
+
+%if ! %build_symantec
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-symantec.so
+%endif
+
+%if ! %build_trend
+rm -f $RPM_BUILD_ROOT%{_libdir}/samba/vfs/vscan-trend.so
+%endif
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -1013,15 +1101,6 @@ fi
 
 if [ $1 = 0 ] ; then
 %_preun_service smb
-#    /sbin/chkconfig --level 35 smb reset
-# Let's not loose /var/cache/samba
-
-#    for i in browse.dat wins.dat brlock.tdb unexpected.tdb connections.tdb \
-#locking.tdb messages.tdb;do
-#        if [ -e /var/cache/samba/$i ]; then
-#                mv -f /var/cache/samba/$i /var/cache/samba/$i.BAK
-#        fi;
-#    done
     if [ -d /var/log/samba ]; then
       rm -rf /var/log/samba/*
     fi
@@ -1050,6 +1129,11 @@ fi
 %else
 %post -n samba-swat
 %endif
+# Change only_from entry in /etc/xinetd.d/swat (localhost bug)
+[[ `/bin/grep "localhost" /etc/xinetd.d/swat` ]] && {
+echo "-- Setting swat xinetd only_from entry to 127.0.0.1"
+perl -pi -e 's/localhost/127.0.0.1/' /etc/xinetd.d/swat
+}
 if [ -f /var/lock/subsys/xinetd ]; then
         service xinetd reload >/dev/null 2>&1 || :
 fi
@@ -1100,7 +1184,6 @@ fi
 %{_bindir}/smbstatus
 %{_bindir}/convert_smbpasswd
 %attr(755,root,root) /lib/security/pam_smbpass*
-#/usr/share/swat
 %attr(-,root,root) %config(noreplace) /etc/samba/smbusers
 %attr(-,root,root) %config /etc/rc.d/init.d/smb
 %attr(-,root,root) %config(noreplace) /etc/logrotate.d/samba
@@ -1113,10 +1196,9 @@ fi
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man1/smbcontrol.1*
 #%{_mandir}/man1/lmhosts.1*
-%{_mandir}/man5/smb.conf.5*
 %attr(755,root,root) %dir /var/lib/samba/netlogon
 %attr(775,root,users) %dir /var/lib/samba/profiles
-%attr(755,root,root) %dir /var/lib/samba/printers/*
+%attr(775,root,adm) %dir /var/lib/samba/printers/*
 %attr(755,root,root) %dir %{_libdir}/samba/vfs
 %attr(755,root,root) %{_libdir}/samba/vfs/audit.so
 %attr(755,root,root) %{_libdir}/samba/vfs/block.so
@@ -1126,15 +1208,16 @@ fi
 %attr(1777,root,root) %dir /var/spool/samba
 %dir %{_datadir}/%{name}/scripts
 %attr(0755,root,root) %{_datadir}/%{name}/scripts/print-pdf
-%attr(0750,root,root) %{_datadir}/%{name}/scripts/smbldap*.pl
-%attr(0640,root,root) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
+%attr(0750,root,adm) %{_datadir}/%{name}/scripts/smbldap*.pl
+%attr(0750,root,adm) %{_bindir}/smbldap*
+%attr(0640,root,adm) %config(noreplace) %{_sysconfdir}/%{name}/smbldap_conf.pm
 %attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
 %{perl_vendorlib}/*.pm
 %attr(0700,root,root) %{_datadir}/%{name}/scripts/*port_smbpasswd.pl
 
 
 %files doc
-%defattr(-,root,root)
+%defattr(644,root,root,755)
 %doc README COPYING Manifest Read-Manifest-Now
 %doc WHATSNEW.txt Roadmap
 %doc README.%{name}-mandrake-rpm
@@ -1180,11 +1263,12 @@ fi
 %{_bindir}/smbtar
 %{_bindir}/smbspool
 # Link of smbspool to CUPS
-/%{_libdir}/cups/backend/smb
-/%{_mandir}/man1/nmblookup.1*
-/%{_mandir}/man1/findsmb.1*
-/%{_mandir}/man1/smbclient.1*
-/%{_mandir}/man1/smbtar.1*
+%{_libdir}/cups/backend/smb
+%{_mandir}/man1/nmblookup.1*
+%{_mandir}/man1/findsmb.1*
+%{_mandir}/man1/smbclient.1*
+%{_mandir}/man1/smbtar.1*
+%{_mandir}/man8/smbspool.8*
 
 %if %build_ldap
 %files common-ldap
@@ -1204,6 +1288,8 @@ fi
 %{_bindir}/smbsh
 %{_bindir}/smbpasswd
 %{_bindir}/smbcacls
+%{_sbindir}/debug2html
+%{_sbindir}/smbfilter
 %{_libdir}/smbwrapper.so
 %{_libdir}/libsmbclient.so
 %attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
@@ -1218,7 +1304,9 @@ fi
 %{_mandir}/man5/smb.conf.5*
 %{_mandir}/man5/lmhosts.5*
 %{_mandir}/man8/smbpasswd.8*
-/%{_mandir}/man1/smbcacls.1*
+%{_mandir}/man1/smbcacls.1*
+%{_mandir}/man1/rpcclient.1*
+%{_mandir}/man8/pdbedit.8*
 
 #%if %build_winbind
 #%if %build_ldap
@@ -1232,6 +1320,7 @@ fi
 %if %build_winbind
 %defattr(-,root,root)
 %{_sbindir}/winbindd
+%{_sbindir}/winbind
 %{_bindir}/wbinfo
 %attr(755,root,root) /lib/security/pam_winbind*
 %attr(755,root,root) /lib/libnss_winbind*
@@ -1252,52 +1341,155 @@ fi
 %files vscan-fprot
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-fprotd.so
-%doc examples.bin/VFS/fprot/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-fprotd.conf
+%doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %if %build_kaspersky
 %files vscan-kaspersky
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-kavp.so
-%doc examples.bin/VFS/kaspersky/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-kavp.conf
+%doc %{vfsdir}/%{vscandir}/examples.bin/VFS/kaspersky/INSTALL
 %endif
 
 %if %build_mks
 %files vscan-mks
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-mksd.so
-%doc examples.bin/VFS/mks/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-mks*.conf
+%doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %if %build_openantivirus
 %files vscan-openantivirus
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-oav.so
-%doc examples.bin/VFS/openantivirus/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-oav.conf
+%doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %if %build_sophos
 %files vscan-sophos
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-sophos.so
-%doc examples.bin/VFS/sophos/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-sophos.conf
+%doc  %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %if %build_symantec
 %files vscan-symantec
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-symantec.so
-%doc examples.bin/VFS/symantec/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-symantec.conf
+%doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %if %build_trend
 %files vscan-trend
 %defattr(-,root,root)
 %{_libdir}/samba/vfs/vscan-trend.so
-%doc examples.bin/VFS/trend/INSTALL
+%config(noreplace) %{_sysconfdir}/%{name}/vscan-trend.conf
+%doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
 %changelog
+* Fri Feb 14 2003 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.7a-4mdk
+- Fix build openantivirus with default scanners
+- buildrequire popt-devel
+- From Jim Collings <jcllings@tsunamicomm.net>
+   - Patched smbldap-tools and created links to same in /usr/bin
+
+* Thu Jan 23 2003 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.7a-3mdk
+- Two patches to fix large file support (smbtar:p101 and smbclient:p102)
+- Patch to enable ldap referral (103)
+- Build all vscan except kav (requires kaspersky lib) with --with-scanners
+- Allow adm group to install printer drivers and use smbldaptools by default
+- Remove smb.conf man page conflict
+
+* Thu Jan 02 2003 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7a-2mdk
+- Rebuilt because of new rpm macros and new glibc.
+- Happy new year 2003 to all samba developers, contributors and users!
+
+* Wed Dec 11 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7a-1mdk
+- Upgraded to 2.2.7a.
+
+* Sun Dec 08 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.7-5mdk
+- samba-vscan 0.3.1 (and make it build again)
+- Make all vscan packages provide samba-vscan
+- All scanner packages (besides kaspersky) can be built without the 
+  scanner installed, but we don't quite to this yet ...
+- Add vscan-(scanner).conf files
+- Add winbind-auth-challenge to configure, for squid support
+- Use winbind-ldap-hack only when building with ldapsam support
+  since no-one has been able to test this thoroughly, and my only
+  tests indicated performance problems with it (and I need this RPM to
+  work for squid)
+
+* Tue Nov 26 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7-4mdk
+- Fix perms on doc.
+- Cleaned up specfile a bit.
+- Added support for upcoming Mandrake Linux 9.1 in auto build process.
+
+* Tue Nov 26 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7-3mdk
+- Put (noreplace) back in %files swat.
+- Changed only_from entry in sample swat to "127.0.0.1".
+- Change only_from entry in /etc/xinetd.d/swat to "127.0.0.1" on %post swat.
+
+* Fri Nov 22 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7-2mdk
+- Removed noreplace of /etc/xinetd.d/swat on update.
+- Updated samba-vscan (0.3.0).
+
+* Wed Nov 20 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.7-1mdk
+- Update to 2.2.7.
+- Removed patch 38.
+
+* Sat Nov 16 2002 Alexander Skwar <ASkwar@DigitalProjects.com> 2.2.6-6mdk
+- Remove installed files which will not be included due to build options,
+  so that /usr/lib/rpm/check-files doesn't error out when
+  Checking for unpackaged file(s)
+- Add debug2html, smbfilter to common package
+- Add /usr/sbin/winbind to winbind package
+- Add rpcclient manpage to common package
+- Add smbspool, pdbedit manpage to client package
+
+* Wed Nov 06 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-5mdk
+- add winbind ldap hack again, with proper build-require (libldap2-devel)
+- enable --with-sendfile-support (default in 3.0. Increases performance).
+
+* Wed Oct 30 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-4mdk
+- Patch to fix fd leak with kernel change notify. (38) (--Jeremy Allison)
+
+* Fri Oct 25 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-3mdk
+- Add URL to http://www.samba.org
+- Add --with-winbind-ldap-hack to remove the need to enable 
+  pre-windows2000-compatible access for winbind.
+
+* Tue Oct 22 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-2mdk
+- Really switch back to std versioning.
+- samba-vscan v-0.2.5e
+
+* Fri Oct 18 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-1.3mdk
+- Clean-up patches.
+- Switch back to normal versioning.
+- added ISO8859-8 (Hebrew).
+
+* Fri Oct 18 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-1.2mdk
+- Birthday release ;o)
+- Added smbumount patch back (37).
+
+* Thu Oct 17 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.6-1.1mdk
+- New version: 2.2.6
+
+* Wed Oct 16 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-23mdk
+- Upgrade to 2.2.6rc4
+- 2.2.6-1.0.rc4.1mdk
+- remove patch 36.
+
+* Mon Oct 14 2002 Sylvestre Taburet <staburet@mandrakesoft.com> 2.2.5-22mdk
+- Upgrade to 2.2.6rc3
+- 2.2.6-1.0.rc3.1mdk
+
 * Thu Oct 10 2002 Buchan Milne <bgmilne@linux-mandrake.com> 2.2.5-21mdk
 - Put docs back (aka rpm sucks, builds cleanly when doc fails)
 - 2.2.6-1.0.rc2.3mdk

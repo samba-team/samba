@@ -343,7 +343,9 @@ static void new_connection(int accept_sock)
 	
 	ZERO_STRUCTP(state);
 	state->sock = sock;
-	
+
+	state->last_access = time(NULL);	
+
 	/* Add to connection list */
 	
 	DLIST_ADD(client_list, state);
@@ -378,6 +380,35 @@ static void remove_client(struct winbindd_cli_state *state)
 		SAFE_FREE(state);
 		num_clients--;
 	}
+}
+
+/* Shutdown client connection which has been idle for the longest time */
+
+static BOOL remove_idle_client(void)
+{
+	struct winbindd_cli_state *state, *remove_state = NULL;
+	time_t last_access = 0;
+	int nidle = 0;
+
+	for (state = client_list; state; state = state->next) {
+		if (state->read_buf_len == 0 && state->write_buf_len == 0 &&
+				!state->getpwent_state && !state->getgrent_state) {
+			nidle++;
+			if (!last_access || state->last_access < last_access) {
+				last_access = state->last_access;
+				remove_state = state;
+			}
+		}
+	}
+
+	if (remove_state) {
+		DEBUG(5,("Found %d idle client connections, shutting down sock %d, pid %u\n",
+			nidle, remove_state->sock, (unsigned int)remove_state->pid));
+		remove_client(remove_state);
+		return True;
+	}
+
+	return False;
 }
 
 /* Process a complete received packet from a client */
@@ -427,6 +458,7 @@ static void client_read(struct winbindd_cli_state *state)
 	/* Update client state */
 	
 	state->read_buf_len += n;
+	state->last_access = time(NULL);
 }
 
 /* Write some data to a client connection */
@@ -479,7 +511,8 @@ static void client_write(struct winbindd_cli_state *state)
 	/* Update client state */
 	
 	state->write_buf_len -= num_written;
-	
+	state->last_access = time(NULL);
+
 	/* Have we written all data? */
 	
 	if (state->write_buf_len == 0) {
@@ -597,9 +630,19 @@ static void process_loop(int accept_sock)
 
 		if (selret > 0) {
 
-			if (FD_ISSET(accept_sock, &r_fds))
+			if (FD_ISSET(accept_sock, &r_fds)) {
+				while (num_clients > WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+					DEBUG(5,("winbindd: Exceeding %d client connections, removing idle connection.\n",
+						WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+					if (!remove_idle_client()) {
+						DEBUG(0,("winbindd: Exceeding %d client connections, no idle connection found\n",
+							 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+						break;
+					}
+				}
 				new_connection(accept_sock);
-            
+           		} 
+
 			/* Process activity on client connections */
             
 			for (state = client_list; state; state = state->next) {

@@ -1037,7 +1037,7 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	if (file_level == 0)
 		r_n->status = WERR_UNKNOWN_LEVEL;
 	else
-		r_n->status = init_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
+		r_n->status = init_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
 	if (!W_ERROR_IS_OK(r_n->status))
 		resume_hnd = 0;

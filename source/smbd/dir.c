@@ -928,9 +928,9 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
     return;             /* so just return as if nothing happened. */
 
   /* Set pointers correctly and load values. */
-  entry->path  = pstrcpy( (char *)&entry[1],       path);
-  entry->name  = pstrcpy( &(entry->path[pathlen]), name);
-  entry->dname = pstrcpy( &(entry->name[namelen]), dname);
+	entry->path  = memcpy( (char *)&entry[1], path, strlen(path)+1 );
+	entry->name  = memcpy( &(entry->path[pathlen]), name, strlen(name)+1 );
+	entry->dname = memcpy( &(entry->name[namelen]), dname, strlen(dname)+1 );
   entry->snum  = snum;
 
   /* Add the new entry to the linked list. */
@@ -965,8 +965,8 @@ char *DirCacheCheck( char *path, char *name, int snum )
        entry = (dir_cache_entry *)ubi_dlNext( entry ) )
     {
     if( entry->snum == snum
-        && 0 == strcmp( name, entry->name )
-        && 0 == strcmp( path, entry->path ) )
+        && entry->name && 0 == strcmp( name, entry->name )
+        && entry->path && 0 == strcmp( path, entry->path ) )
       {
       DEBUG(4, ("Got dir cache hit on %s %s -> %s\n",path,name,entry->dname));
       return( entry->dname );

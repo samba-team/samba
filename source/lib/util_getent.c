@@ -246,18 +246,16 @@ static struct sys_userlist *add_members_to_userlist(struct sys_userlist *list_he
 
 	for (i = 0; i < num_users; i++) {
 		struct sys_userlist *entry = (struct sys_userlist *)malloc(sizeof(*entry));
-		size_t len = strlen(grp->gr_mem[i])+1;
 		if (entry == NULL) {
 			free_userlist(list_head);
 			return NULL;
 		}
-		entry->unix_name = (char *)malloc(len);
+		entry->unix_name = strdup(grp->gr_mem[i]);
 		if (entry->unix_name == NULL) {
 			SAFE_FREE(entry);
 			free_userlist(list_head);
 			return NULL;
 		}
-		safe_strcpy(entry->unix_name, grp->gr_mem[i],len);
 		DLIST_ADD(list_head, entry);
 	}
 	return list_head;
@@ -286,6 +284,11 @@ struct sys_userlist *get_users_in_group(const char *gname)
 		return add_members_to_userlist(list_head, gptr);
 	}
 
+#if !defined(BROKEN_GETGRNAM)
+	if ((gptr = (struct group *)getgrnam(gname)) == NULL)
+		return NULL;
+	return add_members_to_userlist(list_head, gptr);
+#else
 	setgrent();
 	while((gptr = getgrent()) != NULL) {
 		if (strequal(gname, gptr->gr_name)) {
@@ -296,6 +299,7 @@ struct sys_userlist *get_users_in_group(const char *gname)
 	}
 	endgrent();
 	return list_head;
+#endif
 }
 
 /****************************************************************

@@ -231,7 +231,6 @@
 #undef MMAP_BLACKLIST
 #undef HAVE_CUPS
 #undef WITH_LDAP_SAM
-#undef LDAP_SET_REBIND_PROC_ARGS
 #undef WITH_NISPLUS_SAM
 #undef WITH_SMBPASSWD_SAM
 #undef WITH_TDB_SAM
@@ -289,6 +288,7 @@
 #undef HAVE_SENDFILEV
 #undef HAVE_SENDFILEV64
 #undef SOLARIS_SENDFILE_API
+#undef LDAP_SET_REBIND_PROC_ARGS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -1150,3 +1150,10 @@
 
 /* Define if you have the socket library (-lsocket).  */
 #undef HAVE_LIBSOCKET
+
+/* Whether to enable POSIX support */
+#undef _POSIX_C_SOURCE
+
+/* Whether to enable System V compatibility */
+#undef _SYSV
+

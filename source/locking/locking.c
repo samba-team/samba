@@ -134,7 +134,7 @@ static NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_p
 				 */
 				(void)brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
 								lock_pid, sys_getpid(), conn->cnum, 
-								offset, count);
+								offset, count, False);
 			}
 		}
 	}
@@ -203,7 +203,7 @@ NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 	 */
 
 	ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-			lock_pid, sys_getpid(), conn->cnum, offset, count);
+			lock_pid, sys_getpid(), conn->cnum, offset, count, False);
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
@@ -674,6 +674,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	/* read in the existing share modes if any */
 	dbuf = tdb_fetch(tdb, locking_key_fsp(fsp));
 	if (!dbuf.dptr) {
+		size_t offset;
 		/* we'll need to create a new record */
 		pstring fname;
 
@@ -691,7 +692,8 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		DEBUG(10,("set_share_mode: creating entry for file %s. num_share_modes = 1\n",
 			fsp->fsp_name ));
 
-		pstrcpy(p + sizeof(*data) + sizeof(share_mode_entry), fname);
+		offset = sizeof(*data) + sizeof(share_mode_entry);
+		safe_strcpy(p + offset, fname, size - offset - 1);
 		fill_share_mode(p + sizeof(*data), fsp, port, op_type);
 		dbuf.dptr = p;
 		dbuf.dsize = size;

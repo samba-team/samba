@@ -345,7 +345,7 @@ void split_domain_name(const char *fullname, char *domain, char *name)
  Convert a SID to an ascii string.
 *****************************************************************/
 
-char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
+char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 {
   char subauth[16];
   int i;
@@ -368,7 +368,7 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
 /*
   useful function for debug lines
 */
-const char *sid_string_static(DOM_SID *sid)
+const char *sid_string_static(const DOM_SID *sid)
 {
 	static fstring sid_str;
 	sid_to_string(sid_str, sid);

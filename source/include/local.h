@@ -194,4 +194,6 @@
 /* Max number of open RPC pipes. */
 #define MAX_OPEN_PIPES 2048
 
+/* Max number of simultaneous winbindd socket connections. */
+#define WINBINDD_MAX_SIMULTANEOUS_CLIENTS 200
 #endif

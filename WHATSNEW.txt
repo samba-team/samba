@@ -62,6 +62,48 @@ See the cvs log for SAMBA_2_2 for more details
 27) Include support for CUPS printer classes and logging the remote 
     client name
 
+Changes since 2.2.8pre1
+-----------------------
+28) smbumount lazy patch from Mandrake
+29) Check for too many processes *before* the fork.
+30) make sure we don't run over the end of 'name' in unix_convert()
+31) set umask to 0 before creating socket directory.
+32) Fix the LARGE_SMB_OFF_T problems and allow smbd to do the right thing in 
+    interactive mode when a log file dir is also specified.
+33) Fix delete on close semantics to match W2K.
+34) Correctly return access denied on share mode deny when we can't open the
+    file.
+35) Always use safe_strcpy not pstrcpy for malloced strings
+36) Fixes for HPUX only having limited POSIX lock range from Michael Steffens 
+    <michael.steffens@hp.com>
+37) Added code based on Michael Steffens <michael.steffens@hp.com> uid/gid
+    caching code. Reduces load on winbindd.
+38) Removed extra copy of server name in the printername field (it was
+    mangling the the name to be \\server\\\server\printer
+39) Fix dumb perror used without errno beeing set.
+    thanks to RedHat developers for the report
+40) Do retries correctly if the connection to the DC has failed. Based on
+    work by Michael Steffens. 
+41) Correctly check for inet_addr fail. Patch from gregor.7@osu.edu.
+42) Ensure we use getgrnam() unless BROKEN_GETGRNAM is defined.
+43) Fix from Corny.Bondad@hp.com for missing if (setting_acls) on default
+    perms.
+44) Fix inspired by Stefan (metze) Metzmacher - cache the sidtype also.
+45) fix printer settings on Solaris print servers.
+    ASCII -> UNICODE conversion bug.
+46) Small fix from Tom Jansen <tom@ninja.nl> to check correct error return.
+47) Ensure space_avail is unsigned. Patch from R.Nieuwenhuizen@cpb.nl.
+48) patch from Hal Roberts check for a valid [f]chmod_acl function pointer 
+    before calling it.  Fixes seg fault in audit VFS module
+49) When checking is_locked() new WRITE locks conflict with existing READ locks even
+    if the context is the same.
+50) Merge off-by-one crash fixes found and fixed in HEAD by Andrew Bartlett.
+51) Move off-by-one buggy malloc()/safe_strcpy() combination to strdup() instead.
+52) Merge from HEAD. Use pstrcpy not safe_strcpy.
+53) Fix to allow blocking lock notification to be done rapidly (no wait
+    for smb -> smb lock release). Adds new PENDING_LOCK type to lockdb
+    (does not interfere with existing locks).
+
 
 Changes since 2.2.7
 --------------------

@@ -669,8 +669,11 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.world = -1;
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
-		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
-		apply_default_perms(fsp, pace, S_IROTH);
+		if (setting_acl) {
+			pace->perms = 0;
+			apply_default_perms(fsp, pace, S_IROTH);
+		} else
+			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -913,8 +916,16 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 						return False;
 					}
 
+					/*
+					 * We must not free current_ace here as its
+					 * pointer is now owned by the dir_ace list.
+					 */
 					current_ace = dup_ace;
 				} else {
+					/*
+					 * We must not free current_ace here as its
+					 * pointer is now owned by the dir_ace list.
+					 */
 					current_ace = NULL;
 				}
 			}
@@ -949,6 +960,10 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 				print_canon_ace( current_ace, 0);
 			}
 			all_aces_are_inherit_only = False;
+			/*
+			 * We must not free current_ace here as its
+			 * pointer is now owned by the file_ace list.
+			 */
 			current_ace = NULL;
 		}
 

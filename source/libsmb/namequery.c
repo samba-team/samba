@@ -855,8 +855,11 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	}
 	if(is_address) { 
 		/* if it's in the form of an IP address then get the lib to interpret it */
-		(*return_iplist)->s_addr = inet_addr(name);
-    } else {
+		if (((*return_iplist)->s_addr = inet_addr(name)) == 0xFFFFFFFF ){
+			DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
+			return False;
+		}
+	} else {
 		(*return_iplist)->s_addr = allones ? 0xFFFFFFFF : 0;
 		*return_count = 1;
 	}

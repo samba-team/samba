@@ -33,6 +33,9 @@ typedef struct {
   files_struct *fsp;
   time_t expire_time;
   int lock_num;
+  SMB_BIG_UINT offset;
+  SMB_BIG_UINT count;
+  uint16 lock_pid;
   char *inbuf;
   int length;
 } blocking_lock_record;
@@ -77,13 +80,18 @@ static BOOL in_chained_smb(void)
   return (chain_size != 0);
 }
 
+static void received_unlock_msg(int msg_type, pid_t src, void *buf, size_t len);
+
 /****************************************************************************
  Function to push a blocking lock request onto the lock queue.
 ****************************************************************************/
 
-BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num)
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
+		int lock_num, uint16 lock_pid, SMB_BIG_UINT offset, SMB_BIG_UINT count)
 {
+  static BOOL set_lock_msg;
   blocking_lock_record *blr;
+  NTSTATUS status;
 
   if(in_chained_smb() ) {
     DEBUG(0,("push_blocking_lock_request: cannot queue a chained request (currently).\n"));
@@ -110,11 +118,31 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
   blr->fsp = get_fsp_from_pkt(inbuf);
   blr->expire_time = (lock_timeout == -1) ? (time_t)-1 : time(NULL) + (time_t)lock_timeout;
   blr->lock_num = lock_num;
+  blr->lock_pid = lock_pid;
+  blr->offset = offset;
+  blr->count = count;
   memcpy(blr->inbuf, inbuf, length);
   blr->length = length;
 
+  /* Add a pending lock record for this. */
+  status = brl_lock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
+		lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+		offset, count,
+		PENDING_LOCK);
+
+  if (!NT_STATUS_IS_OK(status)) {
+	DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
+	free_blocking_lock_record(blr);
+	return False;
+  }
+
   ubi_slAddTail(&blocking_lock_queue, blr);
 
+  /* Ensure we'll receive messages when this is unlocked. */
+  if (!set_lock_msg) {
+	  message_register(MSG_SMB_UNLOCK, received_unlock_msg);
+	  set_lock_msg = True;
+  }
 
   DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with expiry time %d (+%d) \
 for fnum = %d, name = %s\n", length, (int)blr->expire_time, lock_timeout,
@@ -493,6 +521,10 @@ void remove_pending_lock_requests_by_fid(files_struct *fsp)
       DEBUG(10,("remove_pending_lock_requests_by_fid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
+      brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
+		blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+		blr->offset, blr->count, True);
+
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -520,6 +552,9 @@ void remove_pending_lock_requests_by_mid(int mid)
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
       blocking_lock_reply_error(blr,NT_STATUS_CANCELLED);
+      brl_unlock(blr->fsp->dev, blr->fsp->inode, blr->fsp->fnum,
+		blr->lock_pid, sys_getpid(), blr->fsp->conn->cnum,
+		blr->offset, blr->count, True);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -531,32 +566,41 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 }
 
 /****************************************************************************
+ Set a flag as an unlock request affects one of our pending locks.
+*****************************************************************************/
+
+static void received_unlock_msg(int msg_type, pid_t src, void *buf, size_t len)
+{
+	DEBUG(10,("received_unlock_msg\n"));
+	process_blocking_lock_queue(time(NULL));
+}
+
+/****************************************************************************
  Return the number of seconds to the next blocking locks timeout, or default_timeout.
 *****************************************************************************/
 
-BOOL blocking_locks_timeout(unsigned default_timeout)
+unsigned blocking_locks_timeout(unsigned default_timeout)
 {
 	unsigned timeout = default_timeout;
 	time_t t;
 	blocking_lock_record *blr = (blocking_lock_record *)ubi_slFirst(&blocking_lock_queue);
 
 	/* note that we avoid the time() syscall if there are no blocking locks */
-	if (!blr) {
+	if (!blr)
 		return timeout;
-	}
 
 	t = time(NULL);
 
 	while (blr) {
-		if (timeout > (blr->expire_time - t)) {
+		if ((blr->expire_time != (time_t)-1) && 
+				(timeout > (blr->expire_time - t))) {
 			timeout = blr->expire_time - t;
 		}
 		blr = (blocking_lock_record *)ubi_slNext(blr);
 	}
 
-	if (timeout < 1) {
+	if (timeout < 1)
 		timeout = 1;
-	}
 
 	return timeout;
 }
@@ -605,6 +649,10 @@ void process_blocking_lock_queue(time_t t)
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
           fsp->fnum, fsp->fsp_name ));
 
+      brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+		blr->lock_pid, sys_getpid(), conn->cnum,
+		blr->offset, blr->count, True);
+
       blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
@@ -618,6 +666,11 @@ void process_blocking_lock_queue(time_t t)
        * Remove the entry and return an error to the client.
        */
       blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
+
+      brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+		blr->lock_pid, sys_getpid(), conn->cnum,
+		blr->offset, blr->count, True);
+
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -629,6 +682,11 @@ void process_blocking_lock_queue(time_t t)
        * Remove the entry and return an error to the client.
        */
       blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
+
+      brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+		blr->lock_pid, sys_getpid(), conn->cnum,
+		blr->offset, blr->count, True);
+
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       change_to_root_user();
@@ -642,6 +700,11 @@ void process_blocking_lock_queue(time_t t)
      */
 
     if(blocking_lock_record_process(blr)) {
+
+      brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+		blr->lock_pid, sys_getpid(), conn->cnum,
+		blr->offset, blr->count, True);
+
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       change_to_root_user();

@@ -10,9 +10,10 @@
 # Arguments:
 # $1 = file (usually passed with %s from samba)
 # $2 = unix prefix to where to place the file (~%u should work)
-# $3 = windows prefix to the same location (\\%L\%u should work)
+# $3 = windows prefix to the same location (//%L/%u should work)
 # $4 = user/computer to send a notification to (%u or %m)
 # $5 = IP address of client (%I)
+# $6 = Name of destination file without extension (%J)
 
 
 PS2PDF=ps2pdf13 
@@ -22,6 +23,9 @@ KEEP_PS=1
 PERMS=640
 INFILE=$(basename $INPUT)
 BASEFILE=pdf-service
+PREFIX="$2"
+NAME="$6"
+WINBASE=$(echo "$3"|sed -e 's,/,\\\\,g')
 
 #make a temp file to use for the output of the PDF
 OUTPUT=`mktemp -q $2/$BASEFILE-XXXXXX`
@@ -29,30 +33,34 @@ if [ $? -ne 0 ]; then
 	echo "$0: Can't create temp file $2/$BASEFILE-XXXXXX, exiting..."
 	exit 1
 fi
+if [ "$NAME" != "" ]; then
+	FINALOUTPUT="$PREFIX/$NAME"
+else
+	FINALOUTPUT="$OUTPUT"
+fi
 									
-WIN_OUTPUT="$3\\`basename $OUTPUT`"
+WIN_OUTPUT="$WINBASE\\"`basename "$FINALOUTPUT"`
 
 # create the PDF:
-$PS2PDF $OPTIONS $INPUT $OUTPUT.pdf >/dev/null 2>&1
+$PS2PDF $OPTIONS $INPUT "$OUTPUT".pdf >/dev/null 2>&1
+mv -f "$OUTPUT".pdf "$FINALOUTPUT".pdf
 
 # Generate a message to send to the user, and deal with the original file:
 MESSAGE=$(echo "Your PDF file has been created as $WIN_OUTPUT.pdf\n")
 
 if [ $KEEP_PS ];then
-	mv $INPUT $OUTPUT.ps
+	mv -f $INPUT "${FINALOUTPUT}".ps
 	MESSAGE=$(echo "$MESSAGE and your postscript file as $WIN_OUTPUT.ps")
 	# Fix permissions on the generated files
-	chmod $PERMS $OUTPUT.ps
+	chmod $PERMS "${FINALOUTPUT}".ps
 else
 	rm -f $INPUT
-	chmod $PERMS $OUTPUT.ps $OUTPUT.pdf
+	chmod $PERMS "${FINALOUTPUT}".ps "${FINALOUTPUT}".pdf
 	# Fix permissions on the generated files
 fi
 					                        
-chmod $PERMS $OUTPUT.ps $OUTPUT.pdf
-
 #Remove empty file from mktemp:
-rm -f $OUTPUT
+[ "x$NAME" -eq "x" ] && rm -f  $OUTPUT
 
 # Send notification to user
 echo -e $MESSAGE|smbclient -M $4 -I $5 -U "PDF Generator" >/dev/null 2>&1

@@ -433,8 +433,8 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	pstring fname,fpath, bin;
 	char *base, *ext;
 	int i=1, len, addlen;
-	SMB_BIG_UINT dfree,dsize,bsize;
-	SMB_OFF_T fsize,space_avail;
+	SMB_BIG_UINT dfree,dsize,bsize,space_avail;
+	SMB_OFF_T fsize;
 	BOOL exist;
 	int rc;
 
@@ -470,7 +470,7 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	
 	space_avail = default_vfs_ops.disk_free(conn,".",True,&bsize,&dfree,&dsize)*1024L;
 	DEBUG(10,("space_avail = %Lu, fsize = %Lu\n",space_avail,fsize));
-	if(space_avail < fsize) {
+	if(space_avail < (SMB_BIG_UINT)fsize) {
 		DEBUG(3, ("Not enough diskspace, purging file %s\n",fname));
 		return default_vfs_ops.unlink(conn,fname);
 	}

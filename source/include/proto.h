@@ -1272,8 +1272,8 @@ BOOL map_domain_sid_to_name(DOM_SID *sid, char *nt_domain);
 BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *psid_name_use);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
 void split_domain_name(const char *fullname, char *domain, char *name);
-char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
-const char *sid_string_static(DOM_SID *sid);
+char *sid_to_string(fstring sidstr_out, const DOM_SID *sid);
+const char *sid_string_static(const DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
@@ -1318,8 +1318,8 @@ char *client_addr(void);
 char *get_socket_name(int fd);
 char *get_socket_addr(int fd);
 int create_pipe_sock(const char *socket_dir,
-					const char *socket_name,
-					mode_t dir_perms);
+		     const char *socket_name,
+		     mode_t dir_perms);
 int sock_exec(const char *prog);
 
 /* The following definitions come from lib/util_str.c  */
@@ -1470,7 +1470,8 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  enum brl_type lock_type);
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
-		br_off start, br_off size);
+		br_off start, br_off size,
+		BOOL remove_pending_locks_only);
 BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		  uint16 smbpid, pid_t pid, uint16 tid,
 		  br_off start, br_off size, 
@@ -4318,10 +4319,11 @@ NTSTATUS _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INF
 
 /* The following definitions come from smbd/blocking.c  */
 
-BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int lock_num);
+BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
+		int lock_num, uint16 lock_pid, SMB_BIG_UINT offset, SMB_BIG_UINT count);
 void remove_pending_lock_requests_by_fid(files_struct *fsp);
 void remove_pending_lock_requests_by_mid(int mid);
-BOOL blocking_locks_timeout(unsigned default_timeout);
+unsigned blocking_locks_timeout(unsigned default_timeout);
 void process_blocking_lock_queue(time_t t);
 
 /* The following definitions come from smbd/chgpasswd.c  */
@@ -4731,6 +4733,7 @@ void init_sec_ctx(void);
 
 int smbd_server_fd(void);
 void smbd_set_server_fd(int fd);
+BOOL allowable_number_of_smbd_processes(void);
 BOOL reload_services(BOOL test);
 int32 increment_smbd_process_count(void);
 void exit_server(char *reason);
@@ -4770,6 +4773,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 time_t interpret_long_unix_date(char *p);
 NTSTATUS set_bad_path_error(int err, BOOL bad_path);
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
+NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_transs2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);

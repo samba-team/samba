@@ -1272,6 +1272,13 @@ void smbd_process(void)
 		lp_talloc_free();
 		main_loop_talloc_free();
 
+		/* Did someone ask for immediate checks on things like blocking locks ? */
+		if (select_timeout == 0) {
+			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
+				return;
+			num_smbs = 0; /* Reset smb counter. */
+		}
+
 		while (!receive_message_or_smb(InBuffer,BUFFER_SIZE+LARGE_WRITEX_HDR_SIZE,select_timeout)) {
 			if(!timeout_processing( deadtime, &select_timeout, &last_timeout_processing_time))
 				return;
