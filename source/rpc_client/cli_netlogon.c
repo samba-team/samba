@@ -529,17 +529,13 @@ to ourselves.\n", remote_machine));
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
-    
-  make_nmb_name(&calling, global_myname , 0x0 , scope);
-  make_nmb_name(&called , remote_machine, 0x20, scope);
-
-  if (!cli_session_request(&cli, &calling, &called)) {
-    DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
-Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
-    cli_shutdown(&cli);
+  
+  if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
+    DEBUG(0,("modify_trust_password: machine %s rejected the NetBIOS \
+session request. Error was %s\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
-
+  
   cli.protocol = PROTOCOL_NT1;
     
   if (!cli_negprot(&cli)) {
@@ -650,8 +646,40 @@ account password for domain %s.\n", domain));
 	next_token(&remote_machine_list, remote_machine, 
 		   LIST_SEP, sizeof(remote_machine))) {
     strupper(remote_machine);
-    if(modify_trust_password( domain, remote_machine, 
-                              old_trust_passwd_hash, new_trust_passwd_hash)) {
+    if(strequal(remote_machine, "*")) {
+
+      /*
+       * We have been asked to dynamcially determine the IP addresses of the PDC.
+       */
+
+      struct in_addr *ip_list = NULL;
+      fstring ip_str;
+      int count = 0;
+      int i;
+
+      if(!get_dc_list(domain, &ip_list, &count))
+        continue;
+
+      /*
+       * Try and connect to the PDC/BDC list in turn as an IP
+       * address used as a string.
+       */
+
+      for(i = 0; i < count; i++) {
+        if((res = modify_trust_password( domain, inet_ntoa(ip_list[i]),
+                                         old_trust_passwd_hash, new_trust_passwd_hash)))
+          break;
+      }
+
+      if(ip_list != NULL)
+        free((char *)ip_list);
+
+    } else {
+      res = modify_trust_password( domain, remote_machine,
+                                   old_trust_passwd_hash, new_trust_passwd_hash);
+    }
+
+    if(res) {
       DEBUG(0,("%s : change_trust_account_password: Changed password for \
 domain %s.\n", timestring(False), domain));
       /*

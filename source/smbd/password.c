@@ -950,53 +950,6 @@ struct cli_state *server_client(void)
 }
 
 /****************************************************************************
- Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
-****************************************************************************/
-
-static BOOL attempt_netbios_session_request(struct cli_state *pcli, char *desthost,
-                                            struct in_addr *pdest_ip)
-{
-  struct nmb_name calling, called;
-
-  make_nmb_name(&calling, global_myname, 0x0, scope);
-
-  /*
-   * If the called name is an IP address
-   * then use *SMBSERVER immediately.
-   */
-
-  if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20, scope);
-  else
-    make_nmb_name(&called, desthost, 0x20, scope);
-
-  if (!cli_session_request(pcli, &calling, &called)) {
-    struct nmb_name smbservername;
-
-    /* 
-     * If the name wasn't *SMBSERVER then
-     * try with *SMBSERVER if the first name fails.
-     */
-
-    cli_shutdown(pcli);
-      
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20, scope);
-
-    if (!nmb_name_equal(&called, &smbservername) ||
-        !cli_initialise(pcli) ||
-        !cli_connect(pcli, desthost, pdest_ip) ||
-        !cli_session_request(pcli, &calling, &called)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session. \
-Error was : %s.\n", desthost, cli_errstr(pcli)));
-          cli_shutdown(pcli);
-          return False;
-    }
-  }
-
-  return True;
-}
-
-/****************************************************************************
  Support for server level security.
 ****************************************************************************/
 
@@ -1042,7 +995,7 @@ struct cli_state *server_cryptkey(void)
 		return NULL;
 	}
 
-	if (!attempt_netbios_session_request(cli, desthost, &dest_ip))
+	if (!attempt_netbios_session_request(cli, global_myname, desthost, &dest_ip))
 		return NULL;
 
 	DEBUG(3,("got session\n"));
@@ -1202,9 +1155,9 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     return False;
   }
   
-  if (!attempt_netbios_session_request(pcli, remote_machine, &dest_ip)) {
-    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS session request.\n",
-      remote_machine));
+  if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
+    DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS \
+session request. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     return False;
   }
   
@@ -1374,7 +1327,11 @@ BOOL domain_client_validate( char *user, char *domain,
       for(i = 0; i < count; i++) {
         if((connected_ok = connect_to_domain_password_server(&cli, inet_ntoa(ip_list[i]))))
           break;
-      } 
+      }
+
+      if(ip_list != NULL)
+        free((char *)ip_list);
+
     } else {
       connected_ok = connect_to_domain_password_server(&cli, remote_machine);
     }

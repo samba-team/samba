@@ -27,6 +27,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring user_socket_options;
+extern pstring scope;
 
 static void cli_process_oplock(struct cli_state *cli);
 
@@ -3193,4 +3194,51 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	*avail = SVAL(cli->inbuf,smb_vwv3);
 	
 	return True;
+}
+
+/****************************************************************************
+ Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
+****************************************************************************/
+
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                            struct in_addr *pdest_ip)
+{
+  struct nmb_name calling, called;
+
+  make_nmb_name(&calling, srchost, 0x0, scope);
+
+  /*
+   * If the called name is an IP address
+   * then use *SMBSERVER immediately.
+   */
+
+  if(is_ipaddress(desthost))
+    make_nmb_name(&called, "*SMBSERVER", 0x20, scope);
+  else
+    make_nmb_name(&called, desthost, 0x20, scope);
+
+  if (!cli_session_request(cli, &calling, &called)) {
+    struct nmb_name smbservername;
+
+    /*
+     * If the name wasn't *SMBSERVER then
+     * try with *SMBSERVER if the first name fails.
+     */
+
+    cli_shutdown(cli);
+
+    make_nmb_name(&smbservername , "*SMBSERVER", 0x20, scope);
+
+    if (!nmb_name_equal(&called, &smbservername) ||
+        !cli_initialise(cli) ||
+        !cli_connect(cli, desthost, pdest_ip) ||
+        !cli_session_request(cli, &calling, &called)) {
+          DEBUG(0,("attempt_netbios_session_request: %s rejected the session. \
+Error was : %s.\n", desthost, cli_errstr(cli)));
+          cli_shutdown(cli);
+          return False;
+    }
+  }
+
+  return True;
 }

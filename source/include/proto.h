@@ -506,6 +506,8 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
+                                            struct in_addr *pdest_ip);
 
 /*The following definitions come from  libsmb/credentials.c  */
 

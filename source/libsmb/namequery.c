@@ -454,7 +454,7 @@ static BOOL resolve_bcast(const char *name, int name_type,
 	 * "bcast" means do a broadcast lookup on all the local interfaces.
 	 */
 
-	DEBUG(3,("resolve_name: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
+	DEBUG(3,("resolve_bcast: Attempting broadcast lookup for name %s<0x%x>\n", name, name_type));
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3,
 			       interpret_addr(lp_socket_address()), True );
@@ -504,10 +504,10 @@ static BOOL resolve_wins(const char *name, int name_type,
 	 * would then block).
 	 */
 
-	DEBUG(3,("resolve_name: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
+	DEBUG(3,("resolve_wins: Attempting wins lookup for name %s<0x%x>\n", name, name_type));
 
 	if(!*lp_wins_server()) {
-		DEBUG(3,("resolve_name: WINS server resolution selected and no WINS server present.\n"));
+		DEBUG(3,("resolve_wins: WINS server resolution selected and no WINS server present.\n"));
 		return False;
 	}
 
@@ -552,7 +552,7 @@ static BOOL resolve_lmhosts(const char *name, int name_type,
 	*return_iplist = NULL;
 	*return_count = 0;
 
-	DEBUG(3,("resolve_name: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
+	DEBUG(3,("resolve_lmhosts: Attempting lmhosts lookup for name %s<0x%x>\n", name, name_type));
 
 	fp = startlmhosts( LMHOSTSFILE );
 	if(fp) {
@@ -592,7 +592,7 @@ static BOOL resolve_hosts(const char *name,
 	*return_iplist = NULL;
 	*return_count = 0;
 
-	DEBUG(3,("resolve_name: Attempting host lookup for name %s<0x20>\n", name));
+	DEBUG(3,("resolve_hosts: Attempting host lookup for name %s<0x20>\n", name));
 	
 	if (((hp = Get_Hostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
 		struct in_addr return_ip;
@@ -693,7 +693,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 
-	if(!internal_resolve_name(name, name_type, &ip_list, &count)) {
+	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
 		*return_ip = ip_list[0];
 		free((char *)ip_list);
 		return True;
