@@ -240,6 +240,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term><citerefentry><refentrytitle>log2pcap</refentrytitle>
+				<manvolnum>1</manvolnum></citerefentry></term>
+		<listitem><para><command>log2pcap</command> is a utility 
+				for generating pcap trace files from Samba log 
+				files.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term><citerefentry><refentrytitle>vfstest</refentrytitle>
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>vfstest</command> is a utility
