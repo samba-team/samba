@@ -1,3 +1,7 @@
+2003-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* cfx.c: Wrap token id was in wrong order, found by Sam Hartman
+	
 2003-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: add AcceptorSubkey (but no code understand it yet) ignore
