@@ -440,123 +440,28 @@ static void api_samr_query_aliasinfo( rpcsrv_struct *p, prs_struct *data, prs_st
 
 
 /*******************************************************************
- samr_reply_query_useraliases
- ********************************************************************/
-static void samr_reply_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
-				prs_struct *rdata)
-{
-	uint32 status = 0;
-
-	LOCAL_GRP *mem_grp = NULL;
-	uint32 *rid = NULL;
-	int num_rids = 0;
-	struct sam_passwd *sam_pass;
-	DOM_SID usr_sid;
-	DOM_SID dom_sid;
-	uint32 user_rid;
-	fstring sam_sid_str;
-	fstring dom_sid_str;
-	fstring usr_sid_str;
-
-	SAMR_R_QUERY_USERALIASES r_u;
-	ZERO_STRUCT(r_u);
-
-	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->pol, &dom_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(dom_sid_str, &dom_sid       );
-		sid_to_string(sam_sid_str, &global_sam_sid);
-	}
-
-	if (status == 0x0)
-	{
-		usr_sid = q_u->sid[0].sid;
-		sid_split_rid(&usr_sid, &user_rid);
-		sid_to_string(usr_sid_str, &usr_sid);
-
-	}
-
-	if (status == 0x0)
-	{
-		/* find the user account */
-		become_root(True);
-		sam_pass = getsam21pwrid(user_rid);
-		unbecome_root(True);
-
-		if (sam_pass == NULL)
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-			num_rids = 0;
-		}
-	}
-
-	if (status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", dom_sid_str));
-
-		if (sid_equal(&dom_sid, &global_sid_S_1_5_20))
-		{
-			DEBUG(10,("lookup on S-1-5-20\n"));
-
-			become_root(True);
-			getuserbuiltinntnam(sam_pass->nt_name, &mem_grp, &num_rids);
-			unbecome_root(True);
-		}
-		else if (sid_equal(&dom_sid, &usr_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			getuseraliasntnam(sam_pass->nt_name, &mem_grp, &num_rids);
-			unbecome_root(True);
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-		}
-	}
-
-	if (status == 0x0 && num_rids > 0)
-	{
-		rid = malloc(num_rids * sizeof(uint32));
-		if (mem_grp != NULL && rid != NULL)
-		{
-			int i;
-			for (i = 0; i < num_rids; i++)
-			{
-				rid[i] = mem_grp[i].rid;
-			}
-			free(mem_grp);
-		}
-	}
-
-	make_samr_r_query_useraliases(&r_u, num_rids, rid, status);
-
-	/* store the response in the SMB stream */
-	samr_io_r_query_useraliases("", &r_u, rdata, 0);
-
-	samr_free_r_query_useraliases(&r_u);
-
-	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
  api_samr_query_useraliases
  ********************************************************************/
 static void api_samr_query_useraliases( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_QUERY_USERALIASES q_u;
+	SAMR_R_QUERY_USERALIASES r_u;
+
+	uint32 status = 0;
+	uint32 *rid = NULL;
+	int num_rids = 0;
+
+	ZERO_STRUCT(r_u);
 	ZERO_STRUCT(q_u);
+
 	samr_io_q_query_useraliases("", &q_u, data, 0);
-	samr_reply_query_useraliases(&q_u, rdata);
+	status = _samr_query_useraliases(&q_u.pol, q_u.ptr_sid, q_u.sid,
+	                                 &num_rids, &rid);
 	samr_free_q_query_useraliases(&q_u);
+	make_samr_r_query_useraliases(&r_u, num_rids, rid, status);
+	samr_io_r_query_useraliases("", &r_u, rdata, 0);
+	samr_free_r_query_useraliases(&r_u);
+
 }
 
 /*******************************************************************

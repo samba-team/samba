@@ -52,9 +52,6 @@
 					uint32 **type);
 	BOOL samr_query_aliasmem(  const POLICY_HND *alias_pol, 
 					uint32 *num_mem, DOM_SID2 *sid);
-	BOOL samr_query_useraliases(  const POLICY_HND *pol,
-					uint32 *ptr_sid, DOM_SID2 *sid,
-					uint32 *num_aliases, uint32 **rid);
 	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 					DOM_GID **gid);
 	BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
@@ -1187,19 +1184,17 @@ uint32 _samr_query_aliasinfo(POLICY_HND *alias_pol, uint16 switch_level,
 	return status;
 }
 
-#if 0
-
 
 /*******************************************************************
  samr_reply_query_useraliases
  ********************************************************************/
-uint32 _samr_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_useraliases(const POLICY_HND *pol,
+				const uint32 *ptr_sid, const DOM_SID2 *sid,
+				uint32 *num_aliases, uint32 **rid)
 {
 	uint32 status = 0;
 
 	LOCAL_GRP *mem_grp = NULL;
-	uint32 *rid = NULL;
 	int num_rids = 0;
 	struct sam_passwd *sam_pass;
 	DOM_SID usr_sid;
@@ -1209,13 +1204,13 @@ uint32 _samr_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 	fstring dom_sid_str;
 	fstring usr_sid_str;
 
-	SAMR_R_QUERY_USERALIASES r_u;
-	ZERO_STRUCT(r_u);
-
 	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
 
+	(*rid) = NULL;
+	(*num_aliases) = 0;
+
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &pol, &dom_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), pol, &dom_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1275,28 +1270,28 @@ uint32 _samr_query_useraliases(SAMR_Q_QUERY_USERALIASES *q_u,
 
 	if (status == 0x0 && num_rids > 0)
 	{
-		rid = malloc(num_rids * sizeof(uint32));
-		if (mem_grp != NULL && rid != NULL)
+		(*rid) = malloc(num_rids * sizeof(uint32));
+		if (mem_grp != NULL && (*rid) != NULL)
 		{
 			int i;
 			for (i = 0; i < num_rids; i++)
 			{
-				rid[i] = mem_grp[i].rid;
+				(*rid)[i] = mem_grp[i].rid;
 			}
-			free(mem_grp);
 		}
 	}
 
-	make_samr_r_query_useraliases(&r_u, num_rids, rid, status);
+	(*num_aliases) = num_rids;
 
-	/* store the response in the SMB stream */
-	samr_io_r_query_useraliases("", &r_u, rdata, 0);
+	if (mem_grp != NULL)
+	{
+		free(mem_grp);
+	}
 
-	samr_free_r_query_useraliases(&r_u);
-
-	DEBUG(5,("samr_query_useraliases: %d\n", __LINE__));
-
+	return status;
 }
+
+#if 0
 
 /*******************************************************************
  samr_reply_delete_dom_alias
