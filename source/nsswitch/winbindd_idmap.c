@@ -363,7 +363,6 @@ fail:
 
 static BOOL idmap_convert(const char *idmap_name)
 {
-	BOOL bytereversed = False;
 	int32 vers = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
 
 	if (vers == IDMAP_VERSION)
@@ -375,16 +374,21 @@ static BOOL idmap_convert(const char *idmap_name)
 		return False;
 #endif
 
-	bytereversed = (IREV(vers) == IDMAP_VERSION) ? True : False;
-
-	if ((vers == -1) || bytereversed) {
+	if ((vers == -1) || (IREV(vers) == IDMAP_VERSION)) {
 		/* Arrggghh ! Bytereversed or missing - make order independent ! */
+		/*
+		 * If the header needed to be converted then the
+		 * high and low records may have been created on a
+		 * foreign endian machine and will need byte-reversing.
+		 */
+
+		BOOL bytereverse_needed = (idmap_tdb->flags & TDB_CONVERT);
 		int32 wm;
 
 		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
 
-		if (wm != -1 && bytereversed) {
-			/* A record existed and it was from a big endian machine. */
+		if (wm != -1 && bytereverse_needed) {
+			/* A record existed and it was from a foreign endian machine. */
 			wm = IREV(wm);
 		} else if (wm == -1)
 			wm = server_state.uid_low;
@@ -395,8 +399,8 @@ static BOOL idmap_convert(const char *idmap_name)
 		}
 
 		wm = tdb_fetch_int32(idmap_tdb, HWM_GROUP);
-		if (wm != -1 && bytereversed) {
-			/* A record existed and it was from a big endian machine. */
+		if (wm != -1 && bytereverse_needed) {
+			/* A record existed and it was from a foreign endian machine. */
 			wm = IREV(wm);
 		} else if (wm == -1)
 			wm = server_state.gid_low;
