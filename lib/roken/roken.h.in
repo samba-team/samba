@@ -234,8 +234,7 @@ char *hstrerror(int herr);
 extern int h_errno;
 #endif
 
-#ifndef HAVE_INET_ATON
-/* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
+#if !defined(HAVE_INET_ATON) || defined(NEED_INET_ATON_PROTO)
 int inet_aton(const char *cp, struct in_addr *adr);
 #endif
 
