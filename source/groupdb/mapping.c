@@ -531,7 +531,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 	DEBUG(10, ("get_domain_group_from_sid: SID is mapped to gid:%lu\n",(unsigned long)map->gid));
 	
-	grp = getgrgid(map->gid)
+	grp = getgrgid(map->gid);
 	if ( !grp ) {
 		DEBUG(10, ("get_domain_group_from_sid: gid DOESN'T exist in UNIX security\n"));
 		return False;
