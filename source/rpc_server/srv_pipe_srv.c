@@ -159,6 +159,9 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 	l->rdata_i.offset = data_len;
 	l->rdata_offset += data_len;
 
+	prs_debug_out(&l->rdata_i, "rdata_i", 200);
+	prs_debug_out(&l->rdata, "rdata", 200);
+
 	if (auth_len > 0)
 	{
 		uint32 crc32 = 0;
@@ -205,6 +208,8 @@ BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start)
 		prs_link(NULL    , &l->rhdr   , &l->rdata_i);
 		prs_link(&l->rhdr, &l->rdata_i, NULL       );
 	}
+
+	prs_debug_out(&l->rdata, "rdata - after", 200);
 
 	return l->rhdr.data != NULL && l->rhdr.offset == 0x18;
 }
@@ -812,11 +817,23 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 
 	if (req->data == NULL || req->data_size == 0)
 	{
+		if (l->rdata.data == NULL)
+		{
+			return False;
+		}
 		/* hmm, must need some more data.
 		 * create, flatten and return data in a single pdu
 		 */
 		if (!create_rpc_reply(l, l->rdata_offset)) return False;
-		return prs_copy(resp, &l->rhdr);
+		if (!prs_copy(resp, &l->rhdr)) return False;
+
+		if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
+		    l->hdr.pkt_type == RPC_BINDACK)
+		{
+			DEBUG(10,("rpc_redir_local: finished sending\n"));
+			prs_free_data(&l->rdata);
+		}
+		return True;
 	}
 
 	if (req->data == NULL) return False;
@@ -906,6 +923,14 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 		prs_debug_out(resp    , "redir_local resp", 200);
 		prs_debug_out(&l->rhdr, "send_rcv rhdr", 200);
 		reply = prs_copy(resp, &l->rhdr);
+
+		if (IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST) ||
+		    l->hdr.pkt_type == RPC_BINDACK)
+		{
+			DEBUG(10,("rpc_redir_local: finished sending\n"));
+			prs_free_data(&l->rdata);
+		}
+		return True;
 	}
 
 	/* delete intermediate data used to set up the pdu.  leave
@@ -1013,6 +1038,11 @@ BOOL rpc_local(rpcsrv_struct *l, char *data, int len, char *name)
 	}
 	else
 	{
+		if (l->rdata.data == NULL || l->rdata.data_size == 0)
+		{
+			DEBUG(10,("rpc_local: no data to send\n"));
+			return False;
+		}
 		prs_free_data(&l->smb_pdu);
 		prs_init(&l->smb_pdu, 0, 4, True);
 		reply = rpc_redir_local(l, &l->smb_pdu, &l->rsmb_pdu, name);

@@ -263,7 +263,6 @@ void rpcsrv_free_temp(rpcsrv_struct *l)
 
 	prs_free_data(&l->rhdr );
 	prs_free_data(&l->rfault );
-	prs_free_data(&l->rdata_i);		
 	prs_free_data(&l->rauth  );
 	prs_free_data(&l->rverf  );
 	prs_free_data(&l->rntlm  );		
