@@ -84,7 +84,7 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 	}
 	status = ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, query->out.sd);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 
@@ -130,12 +130,12 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 	ndr = ndr_push_init();
 	if (!ndr) return NULL;
 
-//	status = ndr_push_security_descriptor(ndr, set->in.sd);
+	status = ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, set->in.sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		ndr_push_free(ndr);
 		return NULL;
 	}
-	
+
 	nt.in.data = ndr_push_blob(ndr);
 
 	req = smb_raw_nttrans_send(tree, &nt);
