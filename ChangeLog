@@ -1,3 +1,15 @@
+2004-10-07  Love  <lha@stacken.kth.se>
+
+	* kuser/kinit.c: adapt to new signature of
+	krb5_get_init_creds_opt_set_pkinit
+	
+	* lib/krb5/pkinit.c: free openssl engine deal with
+	RecipientIdentifier -> CMSIdentifier and heim_any -> name change
+	improve error messages
+	
+	* kdc/pkinit.c: free openssl engine deal with RecipientIdentifier
+	-> CMSIdentifier and heim_any -> name change
+	
 2004-10-04  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kuser/klist.c: use rtbl_set_separator
