@@ -526,7 +526,7 @@ interface drsuapi
 	} drsuapi_DsReplicaAttrValMetaData2Ctr;
 
 	typedef struct {
-		uint64 u1; /* session number? */
+		HYPER_T u1; /* session number? */
 		uint32 u2;
 		uint32 u3;
 		GUID bind_guid;
@@ -556,7 +556,7 @@ interface drsuapi
 		uint32 u3;
 		uint32 u4;
 		uint32 u5;
-		uint64 u6;
+		HYPER_T u6;
 		uint32 u7;
 	} drsuapi_DsReplica06;
 
