@@ -65,6 +65,7 @@ sub HeaderVTable($)
 	}
 	$res .= "\n";
 	$res .= "struct $interface->{NAME}_vtable {\n";
+	$res .= "\tstruct GUID iid;\n";
 	$res .= "\t" . uc($interface->{NAME}) . "_METHODS\n";
 	$res .= "};\n\n";
 

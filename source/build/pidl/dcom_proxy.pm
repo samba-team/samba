@@ -43,8 +43,8 @@ sub ParseRegFunc($)
 	$res .= "static NTSTATUS dcom_proxy_$interface->{NAME}_init(void)
 {
 	struct GUID base_iid;
-	struct GUID iid;
-	struct $interface->{NAME}_vtable proxy_vtable;";
+	struct $interface->{NAME}_vtable *proxy_vtable = talloc(talloc_autofree_context(), struct $interface->{NAME}_vtable);
+";
 
 	if (defined($interface->{BASE})) {
 		$res.= "
@@ -54,7 +54,7 @@ sub ParseRegFunc($)
 
 	base_vtable = dcom_proxy_vtable_by_iid(&base_iid);
 	if (base_vtable == NULL) {
-		DEBUG(0, (\"No proxy registered for base interface\n\"));
+		DEBUG(0, (\"No proxy registered for base interface '$interface->{BASE}'\\n\"));
 		return NT_STATUS_FOOBAR;
 	}
 	
@@ -69,9 +69,9 @@ sub ParseRegFunc($)
 	}
 
 	$res.= "
-	GUID_from_string(DCERPC_" . (uc $interface->{NAME}) . "_UUID, &iid);
+	GUID_from_string(DCERPC_" . (uc $interface->{NAME}) . "_UUID, &proxy_vtable.iid);
 
-	return dcom_register_proxy(&iid, &proxy_vtable);
+	return dcom_register_proxy(&proxy_vtable);
 }\n\n";
 }
 
@@ -102,10 +102,13 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 ";
 	
 	# Put arguments into r
-	foreach my $a (@{$fn->{DATA}}) {
-		next if ($a->{NAME} eq "ORPCthis");
+	foreach my $a (@{$fn->{ELEMENTS}}) {
 		next unless (util::has_property($a, "in"));
-		$res .= "\tr.in.$a->{NAME} = $a->{NAME};\n";
+		if (typelist::typeIs($a->{TYPE}, "INTERFACE")) {
+			$res .="\tNDR_CHECK(dcom_OBJREF_from_IUnknown(&r.in.$a->{NAME}.obj, $a->{NAME}));\n";
+		} else {
+			$res .= "\tr.in.$a->{NAME} = $a->{NAME};\n";
+		}
 	}
 
 	$res .="
@@ -122,10 +125,15 @@ static $fn->{RETURN_TYPE} dcom_proxy_$interface->{NAME}_$name(struct $interface-
 ";
 
 	# Put r info back into arguments
-	foreach my $a (@{$fn->{DATA}}) {
-		next if ($a->{NAME} eq "ORPCthat");
+	foreach my $a (@{$fn->{ELEMENTS}}) {
 		next unless (util::has_property($a, "out"));
-		$res .= "\t*$a->{NAME} = r.out.$a->{NAME};\n";
+
+		if (typelist::typeIs($a->{TYPE}, "INTERFACE")) {
+			$res .="\tNDR_CHECK(dcom_IUnknown_from_OBJREF(d->ctx, &$a->{NAME}, r.out.$a->{NAME}.obj));\n";
+		} else {
+			$res .= "\t*$a->{NAME} = r.out.$a->{NAME};\n";
+		}
+
 	}
 	
 	if ($fn->{RETURN_TYPE} eq "NTSTATUS") {
