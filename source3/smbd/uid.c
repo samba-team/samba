@@ -437,6 +437,16 @@ void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER
 }
 
 /*****************************************************************
+ Check if a user or group name is local (this is a *local* name for
+ *local* people, there's nothing for you here...).
+*****************************************************************/  
+
+BOOL name_is_local(const char *name)
+{
+	return !strchr_m(name, *lp_winbind_separator());
+}
+
+/*****************************************************************
  *THE CANONICAL* convert name to SID function.
  Tries winbind first - then uses local lookup.
 *****************************************************************/  
