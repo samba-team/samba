@@ -17,7 +17,7 @@ interface drsuapi
 		[size_is(length)] uint8 data[];
 	} drsuapi_DsBindInfo;
 
-	NTSTATUS drsuapi_DsBind(
+	WERROR drsuapi_DsBind(
 		[in]	    GUID *server_guid,
 		[in,out]    drsuapi_DsBindInfo *bind_info,
 		[out,ref]   policy_handle *bind_handle
@@ -25,49 +25,49 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x01 */
-	NTSTATUS drsuapi_DsUnbind(
+	WERROR drsuapi_DsUnbind(
 		[in,out,ref] policy_handle *bind_handle
 		);
 
 	/*****************/
         /* Function 0x02 */
-	NTSTATUS DRSUAPI_REPLICA_SYNC();
+	WERROR DRSUAPI_REPLICA_SYNC();
 
 	/*****************/
         /* Function 0x03 */
-	NTSTATUS DRSUAPI_GET_NC_CHANGES();
+	WERROR DRSUAPI_GET_NC_CHANGES();
 
 	/*****************/
         /* Function 0x04 */
-	NTSTATUS DRSUAPI_UPDATE_REFS();
+	WERROR DRSUAPI_UPDATE_REFS();
 
 	/*****************/
         /* Function 0x05 */
-	NTSTATUS DRSUAPI_REPLICA_ADD();
+	WERROR DRSUAPI_REPLICA_ADD();
 
 	/*****************/
         /* Function 0x06 */
-	NTSTATUS DRSUAPI_REPLICA_DEL();
+	WERROR DRSUAPI_REPLICA_DEL();
 
 	/*****************/
         /* Function 0x07 */
-	NTSTATUS DRSUAPI_REPLICA_MODIFY();
+	WERROR DRSUAPI_REPLICA_MODIFY();
 
 	/*****************/
         /* Function 0x08 */
-	NTSTATUS DRSUAPI_VERIFY_NAMES();
+	WERROR DRSUAPI_VERIFY_NAMES();
 
 	/*****************/
         /* Function 0x09 */
-	NTSTATUS DRSUAPI_GET_MEMBERSHIPS();
+	WERROR DRSUAPI_GET_MEMBERSHIPS();
 
 	/*****************/
         /* Function 0x0a */
-	NTSTATUS DRSUAPI_INTER_DOMAIN_MOVE();
+	WERROR DRSUAPI_INTER_DOMAIN_MOVE();
 
 	/*****************/
         /* Function 0x0b */
-	NTSTATUS DRSUAPI_GET_NT4_CHANGELOG();
+	WERROR DRSUAPI_GET_NT4_CHANGELOG();
 
 	/*****************/
 	/* Function 0x0c */
@@ -137,7 +137,7 @@ interface drsuapi
 		[case(1)] drsuapi_DsNameCtr1 *ctr1;
 	} drsuapi_DsNameCtr;
 
-	NTSTATUS drsuapi_DsCrackNames(
+	WERROR drsuapi_DsCrackNames(
 		[in,ref] policy_handle *bind_handle,
 		[in, out] uint32 level,
 		[in,switch_is(level)] drsuapi_DsNameRequest req,
@@ -146,15 +146,15 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x0d */
-	NTSTATUS DRSUAPI_WRITE_SPN();
+	WERROR DRSUAPI_WRITE_SPN();
 
 	/*****************/
         /* Function 0x0e */
-	NTSTATUS DRSUAPI_REMOVE_DS_SERVER();
+	WERROR DRSUAPI_REMOVE_DS_SERVER();
 
 	/*****************/
         /* Function 0x0f */
-	NTSTATUS DRSUAPI_REMOVE_DS_DOMAIN();
+	WERROR DRSUAPI_REMOVE_DS_DOMAIN();
 
 	/*****************/
         /* Function 0x10 */
@@ -226,7 +226,7 @@ interface drsuapi
 	} drsuapi_DsGetDCInfoCtr;
 
 	/* maybe WERROR function */
-	NTSTATUS drsuapi_DsGetDomainControllerInfo(
+	WERROR drsuapi_DsGetDomainControllerInfo(
 		[in,ref] policy_handle *bind_handle,
 		[in, out] int32 level,
 		[in,switch_is(level)] drsuapi_DsGetDCInfoRequest req,
@@ -235,33 +235,33 @@ interface drsuapi
 
 	/*****************/
         /* Function 0x11 */
-	NTSTATUS DRSUAPI_ADD_ENTRY();
+	WERROR DRSUAPI_ADD_ENTRY();
 
 	/*****************/
         /* Function 0x12 */
-	NTSTATUS DRSUAPI_EXECUTE_KCC();
+	WERROR DRSUAPI_EXECUTE_KCC();
 
 	/*****************/
         /* Function 0x13 */
-	NTSTATUS DRSUAPI_GET_REPL_INFO();
+	WERROR DRSUAPI_GET_REPL_INFO();
 
 	/*****************/
         /* Function 0x14 */
-	NTSTATUS DRSUAPI_ADD_SID_HISTORY();
+	WERROR DRSUAPI_ADD_SID_HISTORY();
 
 	/*****************/
         /* Function 0x15 */
-	NTSTATUS DRSUAPI_GET_MEMBERSHIPS2();
+	WERROR DRSUAPI_GET_MEMBERSHIPS2();
 
 	/*****************/
         /* Function 0x16 */
-	NTSTATUS DRSUAPI_REPLICA_VERIFY_OBJECTS();
+	WERROR DRSUAPI_REPLICA_VERIFY_OBJECTS();
 
 	/*****************/
         /* Function 0x17 */
-	NTSTATUS DRSUAPI_GET_OBJECT_EXISTENCE();
+	WERROR DRSUAPI_GET_OBJECT_EXISTENCE();
 
 	/*****************/
         /* Function 0x18 */
-	NTSTATUS DRSUAPI_QUERY_SITES_BY_COST();
+	WERROR DRSUAPI_QUERY_SITES_BY_COST();
 }

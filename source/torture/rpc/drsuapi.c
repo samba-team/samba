@@ -34,13 +34,18 @@ static BOOL test_DsBind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.bind_info = NULL;
 	r.out.bind_handle = bind_handle;
 
+	printf("testing DsBind\n");
+
 	status = dcerpc_drsuapi_DsBind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsBind failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsBind failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsBind failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -72,13 +77,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT;
 	names[0].str = talloc_asprintf(mem_ctx, "%s/", lp_realm());
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -93,13 +104,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = nt4_domain;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -113,13 +130,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779;
 	names[0].str = talloc_asprintf(mem_ctx, "%s%s$", nt4_domain, dcerpc_server_name(p));
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -133,13 +156,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_CANONICAL;
 	names[0].str = FQDN_1779_name;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -149,13 +178,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_DISPLAY;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -165,13 +200,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_GUID;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -181,13 +222,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_USER_PRINCIPAL;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -197,13 +244,19 @@ static BOOL test_DsCrackNames(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.req.req1.format_desired	= DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL;
 
+	printf("testing DsCrackNames with name '%s' desired format:%d\n",
+			names[0].str, r.in.req.req1.format_desired);
+
 	status = dcerpc_drsuapi_DsCrackNames(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsCrackNames failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsCrackNames failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsCrackNames failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
@@ -223,8 +276,12 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.bind_handle = bind_handle;
 	r.in.level = 1;
+
 	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_realm());
 	r.in.req.req1.level = 1;
+
+	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req.req1.level, r.in.req.req1.domain_name);
 
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -232,63 +289,105 @@ static BOOL test_DsGetDCInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, win_errstr(r.out.result));
 		ret = False;
 	}
 
 	r.in.req.req1.level = 2;
 
+	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req.req1.level, r.in.req.req1.domain_name);
+
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, win_errstr(r.out.result));
 		ret = False;
 	}
 
 	r.in.req.req1.level = -1;
 
+	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req.req1.level, r.in.req.req1.domain_name);
+
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsGetDomainControllerInfo level %d\n"
+			"    with dns domain failed - %s\n",
+			r.in.req.req1.level, win_errstr(r.out.result));
 		ret = False;
 	}
 
 	r.in.req.req1.domain_name = talloc_strdup(mem_ctx, lp_workgroup());
 	r.in.req.req1.level = 2;
 
+	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req.req1.level, r.in.req.req1.domain_name);
+
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsGetDomainControllerInfo failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+			"    with netbios domain failed - %s\n",
+			r.in.req.req1.level, errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsGetDomainControllerInfo level %d\n"
+			"    with netbios domain failed - %s\n",
+			r.in.req.req1.level, win_errstr(r.out.result));
 		ret = False;
 	}
 
 	r.in.req.req1.domain_name = "__UNKNOWN_DOMAIN__";
 	r.in.req.req1.level = 2;
 
+	printf("testing DsGetDomainControllerInfo level %d on domainname '%s'\n",
+			r.in.req.req1.level, r.in.req.req1.domain_name);
+
 	status = dcerpc_drsuapi_DsGetDomainControllerInfo(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-
-		if (!NT_STATUS_EQUAL(status, NT_STATUS(0x0000208d))) {
-			printf("drsuapi_DsGetDomainControllerInfo level %d with invalid domain name\n"
-				" - %s != NTSTATUS[0x0000208d]\n",
-					r.in.req.req1.level, errstr);
-			ret = False;
-		}
+		printf("dcerpc_drsuapi_DsGetDomainControllerInfo level %d\n"
+			"    with invalid domain failed - %s\n",
+			r.in.req.req1.level, errstr);
+		ret = False;
+	} else if (!W_ERROR_EQUAL(r.out.result, WERR_DS_OBJ_NOT_FOUND)) {
+		printf("DsGetDomainControllerInfo level %d\n"
+			"    with invalid domain not expected error (WERR_DS_OBJ_NOT_FOUND) - %s\n",
+			r.in.req.req1.level, win_errstr(r.out.result));
+		ret = False;
 	}
 
 	return ret;
@@ -304,13 +403,18 @@ static BOOL test_DsUnbind(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.bind_handle = bind_handle;
 	r.out.bind_handle = bind_handle;
 
+	printf("testing DsUnbind\n");
+
 	status = dcerpc_drsuapi_DsUnbind(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mem_ctx, p->last_fault_code);
 		}
-		printf("drsuapi_DsUnbind failed - %s\n", errstr);
+		printf("dcerpc_drsuapi_DsUnbind failed - %s\n", errstr);
+		ret = False;
+	} else if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("DsBind failed - %s\n", win_errstr(r.out.result));
 		ret = False;
 	}
 
