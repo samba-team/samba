@@ -119,7 +119,7 @@ krb5_string_to_key (char *str,
      for (i = 0; i < len; i += 8) {
 	  unsigned char tmp[8];
 
-	  init (tmp, &s[i]);
+	  init (tmp, (unsigned char*)&s[i]);
 
 	  if (odd == 0) {
 	       odd = 1;
@@ -135,7 +135,7 @@ krb5_string_to_key (char *str,
      free (s);
      des_set_odd_parity (&tempkey);
      if (des_is_weak_key (&tempkey))
-	  xor ((char *)&tempkey, "0x000x000x000x000x000x000x000xF0");
+	 xor ((unsigned char *)&tempkey, (unsigned char*)"0x000x000x000x000x000x000x000xF0");
      memcpy (key->contents.data, &tempkey, sizeof(tempkey));
      return 0;
 }

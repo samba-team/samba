@@ -67,7 +67,7 @@ krb5_sendto_kdc (krb5_context context,
      }
 
      for (i = 0; i < 3; ++i)
-	  for (hp = hostlist; p = *hp; ++hp) {
+	 for (hp = hostlist; (p = *hp); ++hp) {
 	       char *addr;
 	       char *colon;
 
@@ -77,7 +77,7 @@ krb5_sendto_kdc (krb5_context context,
 	       hostent = gethostbyname (p);
 	       if (colon)
 		    *colon++ = ':';
-	       while (addr = *hostent->h_addr_list++) {
+	       while ((addr = *hostent->h_addr_list++)) {
 		    struct sockaddr_in a;
 		    
 		    memset (&a, 0, sizeof(a));

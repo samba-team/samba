@@ -9,7 +9,7 @@ krb5_get_krbhst (krb5_context context,
      char buf[BUFSIZ];
      char *val;
      
-     sprintf (buf, "realms %.*s kdc", realm->length, realm->data);
+     sprintf (buf, "realms %.*s kdc", (int)realm->length, (char*)realm->data);
      err = krb5_get_config_tag (context->cf, buf, &val);
      if (err)
 	  return err;
@@ -23,5 +23,6 @@ krb5_error_code
 krb5_free_krbhst (krb5_context context,
 		  char *const *hostlist)
 {
-     free (hostlist);
+     free ((void*)hostlist);
+     return 0; /* XXX */
 }
