@@ -1358,7 +1358,7 @@ Of course, you also need to ensure that the directory named by the
 </sect2>
 
 <sect2>
-<title>Parameters in the <parameter>[print$]</parameter> Section</title>
+<title>Parameters in the [print$] Section</title>
 
 <para>
 <parameter>[print$]</parameter> is a special section in
@@ -1433,7 +1433,7 @@ configuring file shares.  </para></listitem></varlistentry>
 </sect2>
 
 <sect2>
-<title>Subdirectory Structure in <parameter>[print$]</parameter></title>
+<title>Subdirectory Structure in [print$]</title>
 
 <para>
 In order for a Windows NT print server to support the downloading of
@@ -1757,7 +1757,7 @@ this. These type of drivers install into the "3" subdirectory.
 
 <sect3>
 <title>Collecting the Driver Files from a Windows Host's
-<parameter>[print$]</parameter> Share</title>
+[print$] Share</title>
 
 <para>
 Now we need to collect all the driver files we identified. in our
@@ -1804,7 +1804,7 @@ the collected files on the Samba server's
 </sect3>
 
 <sect3>
-<title>Depositing the Driver Files into <parameter>[print$]</parameter></title>
+<title>Depositing the Driver Files into [print$]</title>
 
 <para>
 So, now we are going to put the driver files into the
