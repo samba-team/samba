@@ -166,44 +166,44 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
 		/* No return, we want to check the LM hash below in this case */
 		ntlmssp_flags &= (~(NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_NTLM2));
 	}
-
+	
 	if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		/* We have the NT MD4 hash challenge available - see if we can
+		   use it (ie. does it exist in the smbpasswd file).
+		*/
+		DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
+		if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
+					  nt_pw, 
+					  user_info->sec_blob, user_info->smb_name.str, 
+					  user_info->client_domain.str,
+					  user_sess_key))
+		{
+			return NT_STATUS_OK;
+		} else {
+			DEBUG(3,("smb_password_ok: NTLMv2 password check failed\n"));
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+	} else if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM) {
+		if (lp_ntlm_auth()) {				
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
-			DEBUG(4,("smb_password_ok: Checking NTLMv2 password\n"));
-			if (smb_pwd_check_ntlmv2( user_info->nt_resp, 
-						  nt_pw, 
-						  user_info->sec_blob, user_info->smb_name.str, 
-						  user_info->client_domain.str,
-						  user_sess_key))
+			DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
+			if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
+						 nt_pw, user_info->sec_blob,
+						 user_sess_key)) 
 			{
 				return NT_STATUS_OK;
 			} else {
-				DEBUG(3,("smb_password_ok: NTLMv2 password check failed\n"));
+				DEBUG(3,("smb_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
 				return NT_STATUS_WRONG_PASSWORD;
 			}
-	} else if (ntlmssp_flags & NTLMSSP_NEGOTIATE_NTLM) {
-			if (lp_ntlm_auth()) {				
-				/* We have the NT MD4 hash challenge available - see if we can
-				   use it (ie. does it exist in the smbpasswd file).
-				*/
-				DEBUG(4,("smb_password_ok: Checking NT MD4 password\n"));
-				if (smb_pwd_check_ntlmv1(user_info->nt_resp, 
-							 nt_pw, user_info->sec_blob,
-							 user_sess_key)) 
-				{
-					return NT_STATUS_OK;
-				} else {
-					DEBUG(3,("smb_password_ok: NT MD4 password check failed for user %s\n",pdb_get_username(sampass)));
-					return NT_STATUS_WRONG_PASSWORD;
-				}
-			} else {
-				DEBUG(2,("smb_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
+		} else {
+			DEBUG(2,("smb_password_ok: NTLMv1 passwords NOT PERMITTED for user %s\n",pdb_get_username(sampass)));			
 				/* No return, we want to check the LM hash below in this case */
-			}
-	} 
-
+		}
+	}
+	
 	if (lm_pw == NULL) {
 		DEBUG(3,("smb_password_ok: NO LanMan password set for user %s (and no NT password supplied)\n",pdb_get_username(sampass)));
 		ntlmssp_flags &= (~NTLMSSP_NEGOTIATE_OEM);		
@@ -242,15 +242,12 @@ NTSTATUS sam_password_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *use
  Do a specific test for a SAM_ACCOUNT being vaild for this connection 
  (ie not disabled, expired and the like).
 ****************************************************************************/
-NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info)
+static NTSTATUS sam_account_ok(SAM_ACCOUNT *sampass, const auth_usersupplied_info *user_info)
 {
 	uint16	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
 	time_t kickoff_time;
 	
-	if (!user_info || !sampass) 
-		return NT_STATUS_LOGON_FAILURE;
-
 	DEBUG(4,("smb_password_ok: Checking SMB password for user %s\n",pdb_get_username(sampass)));
 
 	/* Quit if the account was disabled. */
