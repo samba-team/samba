@@ -111,7 +111,6 @@ typedef unsigned short uint16;
 /**@ingroup structure
  * Structure that represents a print job.
  *
- * @todo    Make sure the discriptions of structure members are correct.
  */
 struct print_job_info 
 {
@@ -119,7 +118,7 @@ struct print_job_info
      */
     uint16 id;
     
-    /** represents print job priority (lower numbers mean higher priority?)
+    /** represents print job priority (lower numbers mean higher priority)
      */
     uint16 priority;
     
@@ -131,11 +130,12 @@ struct print_job_info
      */
     char user[128];
   
-    /** Name of the print job
+    /** Name of the print job. This will have no name if an anonymous print
+     *  file was opened. Ie smb://server/printer
      */
     char name[128];
 
-    /** Time the print job was spooled?
+    /** Time the print job was spooled
     */
     time_t t;
 };
@@ -153,14 +153,14 @@ struct print_job_info
  * @param shr       Share being authenticated to
  *
  * @param wg        Pointer to buffer containing a "hint" for the
- *                  workgroup to be authenticated.  Should be filled
+ *                  workgroup to be authenticated.  Should be filled in
  *                  with the correct workgroup if the hint is wrong.
  * 
  * @param wglen     The size of the workgroup buffer in bytes
  *
  * @param un        Pointer to buffer containing a "hint" for the
  *                  user name to be use for authentication. Should be
- *                  filled with the correct workgroup if the hint is
+ *                  filled in with the correct workgroup if the hint is
  *                  wrong.
  * 
  * @param unlen     The size of the username buffer in bytes
@@ -196,12 +196,13 @@ typedef void (*smbc_get_print_job_info)(struct print_job_info *i);
  *                  authentication credentials.
  *
  * @param debug     Allows caller to set the debug level. Can be
- *                  changed in smb.conf file.
+ *                  changed in smb.conf file. Allows caller to set
+ *                  debugging if no smb.conf.
  *   
  * @return          0 on success, < 0 on error with errno set:
  *                  - ENOMEM Out of memory
+ *                  - ENOENT The smb.conf file would not load
  *
- * @todo Why do we need to pass in debug information?
  */
 int smbc_init(smbc_get_auth_data_fn fn, int debug);
 
@@ -229,11 +230,14 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  process's umask in the usual way: the permissions
  *                  of the created file are (mode & ~umask) 
  *
- *                  Not currently use, but there for future use
- *                  when we figure this out.
+ *                  Not currently use, but there for future use.
+ *                  We will map this to SYSTEM, HIDDEN, etc bits
+ *                  that reverses the mapping that smbc_fstat does.
  *
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
+ *                  - EINVAL if an invalid parameter passed, like no 
+ *                  file.
  *                  - EEXIST  pathname already exists and O_CREAT and 
  *                  O_EXCL were used.
  *                  - EISDIR  pathname  refers  to  a  directory  and  
@@ -245,11 +249,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_creat()
- *
- * @todo Mode needs to be better explained if there is any differences
- *       from standard open().
- *
- * @todo Are errno values complete and correct? They look OK.
  *
 */
 int smbc_open(const char *furl, int flags, mode_t mode);
@@ -266,9 +265,14 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  *                  file is created.  It  is  modified  by  the 
  *                  process's umask in the usual way: the permissions
  *                  of the created file are (mode & ~umask)
+ *
+ *                  NOTE, the above is not true. We are dealing with 
+ *                  an SMB server, which has no concept of a umask!
  *      
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
+ *                  - EINVAL if an invalid parameter passed, like no 
+ *                  file.
  *                  - EEXIST  pathname already exists and O_CREAT and
  *                  O_EXCL were used.
  *                  - EISDIR  pathname  refers  to  a  directory  and
@@ -280,7 +284,6 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  *                  - EUCLEAN smbc_init() failed or has not been called
  * @see             smbc_open()
  *
- * @todo Are errno values complete and correct?
 */
 int smbc_creat(const char *furl, mode_t mode);
 
@@ -299,13 +302,12 @@ int smbc_creat(const char *furl, mode_t mode);
  *                  - EBADF  fd  is  not  a valid file descriptor or 
  *                  is not open for reading.
  *                  - EINVAL fd is attached to an object which is 
- *                  unsuitable for reading.
+ *                  unsuitable for reading, or no buffer passed.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_open(), smbc_write()
  *
- * @todo Are errno values complete and correct?
-*/
+ */
 ssize_t smbc_read(int fd, void *buf, size_t bufsize);
 
 
@@ -323,12 +325,11 @@ ssize_t smbc_read(int fd, void *buf, size_t bufsize);
  *                  - EBADF  fd  is  not  a valid file descriptor or 
  *                  is not open for reading.
  *                  - EINVAL fd is attached to an object which is 
- *                  unsuitable for reading.
+ *                  unsuitable for reading, or no buffer passed.
  *                  - EUCLEAN smbc_init() failed or has not been called
  * @see             smbc_open(), smbc_read()
  *
- * @todo Are errno values complete and correct?
-*/
+ */
 ssize_t smbc_write(int fd, void *buf, size_t bufsize);
 
 
@@ -389,7 +390,9 @@ int smbc_close(int fd);
  *                  search (execute) permission
  *                  - ENOENT A directory component in pathname does
  *                  not exist
- *                  - ENOMEM Insufficient kernel memory was availabl
+ *                  - EINVAL NULL was passed in the file param
+ *                  - EACCES You do not have access to the file
+ *                  - ENOMEM Insufficient kernel memory was available
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_rmdir()s
@@ -429,13 +432,14 @@ int smbc_unlink(const char *furl);
  *                  and did not allow write permission.
  *                  - ENOENT A  directory component in ourl or nurl 
  *                  does not exist.
+ *                  - EXDEV Rename across shares not supported.
  *                  - ENOMEM Insufficient kernel memory was available.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @todo Are errno values complete and correct?
  *
  * @todo Are we going to support copying when urls are not on the same
- *       share?  I say no...
+ *       share?  I say no... NOTE. I agree for the moment.
  *
 */
 int smbc_rename(const char *ourl, const char *nurl);
@@ -448,15 +452,18 @@ int smbc_rename(const char *ourl, const char *nurl);
  *
  * @return          Valid directory handle. < 0 on error with errno set:
  *                  - EACCES Permission denied.
+ *                  - EINVAL A NULL file/URL was passed, or the URL would
+ *                  not parse, or was of incorrect form.
  *                  - ENOENT durl does not exist, or name is an 
  *                  - ENOMEM Insufficient memory to complete the 
  *                  operation.                              
  *                  - ENOTDIR name is not a directory.
+ *                  - EPERM the workgroup could not be found.
+ *                  - ENODEV the workgroup or server could not be found.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_getdents(), smbc_readdir(), smbc_closedir()
  *
- * @todo Are errno values complete and correct?
 */
 int smbc_opendir(const char *durl);
 
@@ -477,8 +484,8 @@ int smbc_closedir(int dh);
 /**@ingroup directory
  * Get multiple directory entries.
  *
- * smbc_getdents() reads several dirent structures from the an open 
- * directory handle into a specified memory area.
+ * smbc_getdents() reads as many dirent structures from the an open 
+ * directory handle into a specified memory area as will fit.
  *
  * @param dh        Valid directory as returned by smbc_opendir()
  *
@@ -487,7 +494,10 @@ int smbc_closedir(int dh);
  * 
  * @param count     The size of the dirp buffer in bytes
  *
- * @returns         - EBADF  Invalid directory handle
+ * @returns         If any dirents returned, return will indicate the
+ *                  total size. If there were no more dirents available,
+ *                  0 is returned. < 0 indicates an error.
+ *                  - EBADF  Invalid directory handle
  *                  - EINVAL Result buffer is too small
  *                  - ENOENT No such directory.
  *                  - EUCLEAN smbc_init() failed or has not been called
@@ -524,13 +534,16 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  * @param dh        Valid directory as returned by smbc_opendir()
  *
  * @return          The current location in the directory stream or -1
- *                  if an error occur.
+ *                  if an error occur.  The current location is not
+ *                  an offset. Becuase of the implementation, it is a 
+ *                  handle that allows the library to find the entry
+ *                  later.
  *                  - EBADF dh is not a valid directory handle
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - ENOTDIR if dh is not a directory
  *
  * @see             smbc_readdir()
  *
- * @todo What in the is the offset related to bytes or directory entry
- *       number?
 */
 off_t smbc_telldir(int dh);
 
@@ -539,31 +552,25 @@ off_t smbc_telldir(int dh);
  * lseek on directories.
  *
  * smbc_lseekdir() may be used in conjunction with smbc_readdir() and
- * smbc_telldir(). (rewind by smbc_lseekdir(fd, 0, SEEK_SET))
+ * smbc_telldir(). (rewind by smbc_lseekdir(fd, NULL))
  *
- * @param dh        Valid directory as returned by smbc_opendir()
+ * @param fd        Valid directory as returned by smbc_opendir()
  * 
- * @param offset    The offset (as returned by smbc_telldir) from
- *                  whence
+ * @param offset    The offset (as returned by smbc_telldir). Can be
+ *                  NULL, in which case we will rewind
  *
- * @param whence    A location in the directory stream:
- *                  - SEEK_SET this is the only one that makes sense...
- *                  - SEEK_CUR ???
- *                  - SEEK_END ???
- *
- * @return          I have no idea?
+ * @return          0 on success, -1 on failure
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EBADF dh is not a valid directory handle
+ *                  - ENOTDIR if dh is not a directory
+ *                  - EINVAL offset did not refer to a valid dirent
  *
  * @see             smbc_telldir()
  *
- * @todo What in the is the offset related to?  Bytes or directory 
- *       entry number?
- *
- * @todo In what do SEEK_SET and friends really mean?
  *
  * @todo In what does the reture and errno values mean?
  */
-int smbc_lseekdir(int dh, off_t offset, int whence);
-
+int smbc_lseekdir(int fd, off_t offset);
 
 /**@ingroup directory
  * Create a directory.
@@ -580,12 +587,12 @@ int smbc_lseekdir(int dh, off_t offset, int whence);
  *                  permission to the process, or one of the directories
  *                  - ENOENT A directory component in pathname does not
  *                  exist.
+ *                  - EINVAL NULL durl passed.
  *                  - ENOMEM Insufficient memory was available.
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_rmdir()
  *
- * @todo Are errno values complete and correct?
 */
 int smbc_mkdir(const char *durl, mode_t mode);
 
@@ -598,6 +605,7 @@ int smbc_mkdir(const char *durl, mode_t mode);
  * @return          0 on success, < 0 on error with errno set:
  *                  - EACCES or EPERM Write access to the directory
  *                  containing pathname was not allowed.
+ *                  - EINVAL durl is NULL.
  *                  - ENOENT A directory component in pathname does not
  *                  exist.
  *                  - ENOTEMPTY directory contains entries.
@@ -622,13 +630,13 @@ int smbc_rmdir(const char *durl);
  * @return          0 on success, < 0 on error with errno set:
  *                  - ENOENT A component of the path file_name does not
  *                  exist.
+ *                  - EINVAL a NULL url was passed.
  *                  - EACCES Permission denied.
  *                  - ENOMEM Out of memory
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             Unix stat()
  *
- * @todo Are errno values complete and correct?
  */
 int smbc_stat(const char *url, struct stat *st);
 
@@ -642,11 +650,15 @@ int smbc_stat(const char *url, struct stat *st);
  *                  standard Unix struct stat information.
  * 
  * @return          EBADF  filedes is bad.
- *                  -EACCES Permission denied.
- *                  -ENOMEM Out of memory
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL ??? What is this for??? It is the wrong return
+ *                  - ENOMEM Out of memory
  *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_stat(), Unix stat()
+ *
+ * @todo            Fix the EINVAL return ... It is wrong
  */
 int smbc_fstat(int fd, struct stat *st);
 
@@ -703,19 +715,18 @@ int smbc_chmod(const char *url, mode_t mode);
 /**@ingroup print
  * Print a file given the name in fname. It would be a URL ...
  * 
- * @param fname     I do not know what this is it the url of the file 
- *                  to print?
+ * @param fname     The URL of a file on a remote SMB server that the
+ *                  caller wants printed
  *
- * @param printq    I do not know what this is, is it the url of the
- *                  printer to print to?
+ * @param printq    The URL of the print share to print the file to.
  *
-  * @return          0 on success, < 0 on error with errno set:         
+ * @return          0 on success, < 0 on error with errno set:         
  *
- * @todo I have no idea what this does.  What is fname?  What is 
- *       printq?
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL fname or printq was NULL
+ *                  and errors returned by smbc_open
  *
- * @todo What errno values are possible here
- */                                     
+*/                                     
 int smbc_print_file(const char *fname, const char *printq);
 
 /**@ingroup print
@@ -723,13 +734,14 @@ int smbc_print_file(const char *fname, const char *printq);
  * does an smbc_open call after checking if there is a file name on the
  * URI. If not, a temporary name is added ...
  *
- * @param fname     Is this the url of a print share?
+ * @param fname     The URL of the print share to print to?
  *
- * @returns         A file handle right?
+ * @returns         A file handle for the print file if successful.
+ *                  Returns -1 if an error ocurred and errno has the values
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL fname was NULL
+ *                  - all errors returned by smbc_open
  *
- * @todo    What errno values are possible here
- *
- * @todo    What is fname is it the url of a print share?
  */
 int smbc_open_print_job(const char *fname);
 
@@ -741,10 +753,10 @@ int smbc_open_print_job(const char *fname);
  * @param fn        Callback function the receives printjob info
  * 
  * @return          0 on success, < 0 on error with errno set: 
- *
- * @todo    what errno values are possible here?
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL fname was NULL
+ *                  - EACCES ???
  */
-
 int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn);
 
 /**@ingroup print
@@ -755,6 +767,8 @@ int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn);
  * @param id        The id of the job to delete
  *
  * @return          0 on success, < 0 on error with errno set: 
+ *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL fname was NULL
  *
  * @todo    what errno values are possible here?
  */

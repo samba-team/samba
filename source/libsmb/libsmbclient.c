@@ -1000,7 +1000,8 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
 
   if (!fe->file) {
 
-    return smbc_lseekdir(fd, offset, whence);
+    errno = EINVAL;
+    return -1;      /* Can't lseek a dir ... */
 
   }
 
@@ -2131,10 +2132,10 @@ struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list,
  * Routine to seek on a directory
  */
 
-int smbc_lseekdir(int fd, off_t offset, int whence)
+int smbc_lseekdir(int fd, off_t offset)
 {
   struct smbc_file *fe;
-  struct smbc_dirent *dirent = (struct smbc_dirent *)whence;
+  struct smbc_dirent *dirent = (struct smbc_dirent *)offset;
   struct smbc_dir_list *list_ent = NULL;
 
   if (!smbc_initialized) {
@@ -2169,10 +2170,10 @@ int smbc_lseekdir(int fd, off_t offset, int whence)
 
   /* Now, check what we were passed and see if it is OK ... */
 
-  if (!whence) {
+  if (dirent == NULL) {  /* Seek to the begining of the list */
 
-    errno = EINVAL;
-    return -1;
+    fe->dir_next = fe->dir_list;
+    return 0;
 
   }
 
