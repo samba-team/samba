@@ -300,11 +300,11 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	}
 	
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_seal))) {
-		options = talloc_asprintf_append(d->mem_ctx, options, ",seal");
+		options = talloc_asprintf_append(options, ",seal");
 	}
 
 	if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->chk_sign))) {
-		options = talloc_asprintf_append(d->mem_ctx, options, ",sign");
+		options = talloc_asprintf_append(options, ",sign");
 	}
 
 	if(options) {
