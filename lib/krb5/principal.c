@@ -294,6 +294,7 @@ krb5_copy_principal(krb5_context context,
     }
     p->ncomp = i+1;
   }
+  *outprinc = p;
   return 0;
 }
 
