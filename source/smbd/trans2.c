@@ -214,7 +214,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 
   /* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
   if (!fsp)
@@ -659,7 +659,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,conn,0,&bad_path);
+  unix_convert(directory,conn,0,&bad_path,NULL);
   if(!check_name(directory,conn)) {
     if((errno == ENOENT) && bad_path)
     {
@@ -1225,8 +1225,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     info_level = SVAL(params,0);
     fname = &fname1[0];
     pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path);
-    if (!check_name(fname,conn) || sys_stat(fname,&sbuf)) {
+    unix_convert(fname,conn,0,&bad_path,&sbuf);
+    if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && sys_stat(fname,&sbuf))) {
       DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1459,7 +1459,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
     info_level = SVAL(params,0);    
     fname = fname1;
     pstrcpy(fname,&params[6]);
-    unix_convert(fname,conn,0,&bad_path);
+    unix_convert(fname,conn,0,&bad_path,&st);
     if(!check_name(fname, conn))
     {
       if((errno == ENOENT) && bad_path)
@@ -1470,7 +1470,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }
  
-    if(sys_stat(fname,&st)!=0) {
+    if(!VALID_STAT(st) && sys_stat(fname,&st)!=0) {
       DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
       if((errno == ENOENT) && bad_path)
       {
@@ -1648,7 +1648,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
 
-  unix_convert(directory,conn,0,&bad_path);
+  unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
     ret = sys_mkdir(directory,unix_mode(conn,aDIR));
   

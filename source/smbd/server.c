@@ -287,7 +287,7 @@ max can be %d\n",
 		} /* end for num */
 	} /* end while 1 */
 
-	return True;
+/* NOTREACHED	return True; */
 }
 
 /****************************************************************************

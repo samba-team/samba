@@ -751,14 +751,19 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   pstring name;
   BOOL ok = False;
   BOOL bad_path = False;
+  struct stat st;
  
   pstrcpy(name,smb_buf(inbuf) + 1);
-  unix_convert(name,conn,0,&bad_path);
+  unix_convert(name,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
 
-  if (check_name(name,conn))
-    ok = directory_exist(name,NULL);
+  if (check_name(name,conn)) {
+    if(VALID_STAT(st))
+      ok = S_ISDIR(st.st_mode);
+    else
+      ok = directory_exist(name,NULL);
+  }
 
   if (!ok)
   {
@@ -809,7 +814,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,&sbuf);
 
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
@@ -824,7 +829,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   else
     if (check_name(fname,conn))
     {
-      if (sys_stat(fname,&sbuf) == 0)
+      if (VALID_STAT(sbuf) || sys_stat(fname,&sbuf) == 0)
       {
         mode = dos_mode(conn,fname,&sbuf);
         size = sbuf.st_size;
@@ -881,15 +886,16 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL ok=False;
   int mode;
   time_t mtime;
+  struct stat st;
   BOOL bad_path = False;
  
   pstrcpy(fname,smb_buf(inbuf) + 1);
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,&st);
 
   mode = SVAL(inbuf,smb_vwv0);
   mtime = make_unix_date3(inbuf+smb_vwv1);
   
-  if (directory_exist(fname,NULL))
+  if (VALID_STAT_OF_DIR(st) || directory_exist(fname,NULL))
     mode |= aDIR;
   if (check_name(fname,conn))
     ok =  (dos_chmod(conn,fname,mode,NULL) == 0);
@@ -990,7 +996,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
       pstrcpy(directory,smb_buf(inbuf)+1);
       pstrcpy(dir2,smb_buf(inbuf)+1);
-      unix_convert(directory,conn,0,&bad_path);
+      unix_convert(directory,conn,0,&bad_path,NULL);
       unix_format(dir2);
 
       if (!check_name(directory,conn))
@@ -1250,7 +1256,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   share_mode = SVAL(inbuf,smb_vwv0);
 
   pstrcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
   if (!fsp)
@@ -1351,7 +1357,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   /* XXXX we need to handle passed times, sattr and flags */
 
   pstrcpy(fname,smb_buf(inbuf));
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,NULL);
     
   fsp = file_new();
   if (!fsp)
@@ -1485,7 +1491,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,NULL);
 
   if (createmode & aVOLID)
     {
@@ -1570,7 +1576,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   createmode = SVAL(inbuf,smb_vwv0);
   pstrcpy(fname,smb_buf(inbuf)+1);
   pstrcat(fname,"/TMXXXXXX");
-  unix_convert(fname,conn,0,&bad_path);
+  unix_convert(fname,conn,0,&bad_path,NULL);
   
   unixmode = unix_mode(conn,createmode);
   
@@ -1674,7 +1680,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
    
   DEBUG(3,("reply_unlink : %s\n",name));
    
-  unix_convert(name,conn,0,&bad_path);
+  unix_convert(name,conn,0,&bad_path,NULL);
 
   p = strrchr(name,'/');
   if (!p) {
@@ -2778,7 +2784,7 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
  
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,conn,0,&bad_path);
+  unix_convert(directory,conn,0,&bad_path,NULL);
   
   if (check_name(directory, conn))
     ret = sys_mkdir(directory,unix_mode(conn,aDIR));
@@ -2872,7 +2878,7 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   BOOL bad_path = False;
 
   pstrcpy(directory,smb_buf(inbuf) + 1);
-  unix_convert(directory,conn, NULL,&bad_path);
+  unix_convert(directory,conn, NULL,&bad_path,NULL);
   
   if (check_name(directory,conn))
     {
@@ -3072,8 +3078,8 @@ int rename_internals(connection_struct *conn,
 
 	*directory = *mask = 0;
 
-	unix_convert(name,conn,0,&bad_path1);
-	unix_convert(newname,conn,newname_last_component,&bad_path2);
+	unix_convert(name,conn,0,&bad_path1,NULL);
+	unix_convert(newname,conn,newname_last_component,&bad_path2,NULL);
 
 	/*
 	 * Split the old name into directory and last component
@@ -3373,8 +3379,8 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     return(ERROR(ERRSRV,ERRinvdevice));
   }
 
-  unix_convert(name,conn,0,&bad_path1);
-  unix_convert(newname,conn,0,&bad_path2);
+  unix_convert(name,conn,0,&bad_path1,NULL);
+  unix_convert(newname,conn,0,&bad_path2,NULL);
 
   target_is_directory = directory_exist(newname,NULL);
 

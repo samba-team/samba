@@ -908,6 +908,14 @@ struct bitmap {
 #define IS_VETO_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_list))
 #define IS_VETO_OPLOCK_PATH(conn,path)  ((conn) && is_in_path((path),(conn)->veto_oplock_list))
 
+/* 
+ * Used by the stat cache code to check if a returned
+ * stat structure is valid.
+ */
+
+#define VALID_STAT(st) (st.st_nlink != 0)  
+#define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR(st.st_mode))
+
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 
 /* the basic packet size, assuming no words or bytes */
