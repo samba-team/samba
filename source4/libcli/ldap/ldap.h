@@ -254,4 +254,33 @@ struct ldap_connection {
 	struct gensec_security *gensec;
 };
 
+/* Hmm. A blob might be more appropriate here :-) */
+
+struct ldap_val {
+	unsigned int length;
+	void *data;
+};
+
+enum ldap_parse_op {LDAP_OP_SIMPLE, LDAP_OP_AND, LDAP_OP_OR, LDAP_OP_NOT};
+
+struct ldap_parse_tree {
+	enum ldap_parse_op operation;
+	union {
+		struct {
+			char *attr;
+			struct ldap_val value;
+		} simple;
+		struct {
+			unsigned int num_elements;
+			struct ldap_parse_tree **elements;
+		} list;
+		struct {
+			struct ldap_parse_tree *child;
+		} not;
+	} u;
+};
+
+#define LDAP_ALL_SEP "()&|=!"
+#define LDAP_CONNECTION_TIMEOUT 10000
+
 #endif
