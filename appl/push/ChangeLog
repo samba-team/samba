@@ -1,3 +1,7 @@
+Wed Mar 24 04:37:04 1999  Assar Westerlund  <assar@sics.se>
+
+	* push.c (get_pobox): try to handle old and new hesiod APIs
+
 Mon Mar 22 22:19:40 1999  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: hesoid -> hesiod
