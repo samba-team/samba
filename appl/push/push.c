@@ -40,11 +40,11 @@
 RCSID("$Id$");
 
 #ifdef KRB4
-static int use_v4 = 0;
+static int use_v4 = -1;
 #endif
 
 #ifdef KRB5
-static int use_v5 = 1;
+static int use_v5 = -1;
 static krb5_context context;
 #endif
 
@@ -547,6 +547,17 @@ main(int argc, char **argv)
 
     argc -= optind;
     argv += optind;
+
+#if defined(KRB4) && defined(KRB5)
+    if(use_v4 == -1 && use_v5 == -1)
+	use_v4 = use_v5 = 1;
+#elif defined(KRB4)
+    if (use_v4 == -1)
+	use_v4 = 1;
+#elif defined(KRB5)
+    if (use_v5 == -1)
+	use_v5 = 1;
+#endif
 
     if (do_help)
 	usage (0);
