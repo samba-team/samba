@@ -1,3 +1,9 @@
+2000-06-10  Assar Westerlund  <assar@sics.se>
+
+	* pop_init.c (krb4_authenticate): do not exit on failure, just
+	return
+	(krb5_authenticate): log errors from krb5_recvauth
+
 2000-04-12  Assar Westerlund  <assar@sics.se>
 
 	* *.c: replace all erroneous calls to pop_log with POP_FAILURE
