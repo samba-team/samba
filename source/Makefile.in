@@ -756,7 +756,7 @@ python_install: $(PYTHON_OBJS)
 		$(PYTHON) python/setup.py install
 
 python_clean:
-	@if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
+	@if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean -a; fi
 
 # revert to the previously installed version
 revert:
