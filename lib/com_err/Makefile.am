@@ -6,8 +6,8 @@ INCLUDES = -I$(top_builddir)/include -I$(srcdir)
 
 lib_LIBRARIES = liberror.a
 
-CLEAN_FILES = asn1_err.c asn1_err.h hdb_err.c hdb_err.h \
-	krb5_err.c krb5_err.h compile_et
+CLEANFILES = asn1_err.c asn1_err.h hdb_err.c hdb_err.h \
+	krb5_err.c krb5_err.h
 
 liberror_a_SOURCES = krb5_err.c asn1_err.c hdb_err.c error.c 
 
