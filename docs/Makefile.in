@@ -28,7 +28,7 @@ endif
 
 # Paths
 OUTPUTDIR = output
-ARCHIVEDIR = $(OUTPUTDIR)/archive
+ARCHIVEDIR = archive
 SRCDIR = @SAMBASOURCEDIR@
 MANDIR = $(OUTPUTDIR)/manpages
 EPSTOPDF = @EPSTOPDF@
@@ -264,10 +264,10 @@ samples: $(DOCBOOKDIR)/Samba-HOWTO-Collection.xml xslt/extract-examples.xsl scri
 	for I in examples/*.conf; do { ./scripts/indent-smb.conf.pl < $$I > $$I.tmp; mv $$I.tmp $$I; } done
 
 # Archiving
-archive: guide howto
+archive: pdf
 	mkdir -p $(ARCHIVEDIR)
-	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d`.pdf
-	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d`.pdf
+	cp $(PDFDIR)/Samba-HOWTO-Collection.pdf $(ARCHIVEDIR)/TOSHARG-`date +%Y%m%d%H%M%S`.pdf
+	cp $(PDFDIR)/Samba-Guide.pdf $(ARCHIVEDIR)/S3bE-`date +%Y%m%d%H%M%S`.pdf
 
 # XSL scripts
 xslt/html.xsl: xslt/html-common.xsl settings.xsl
