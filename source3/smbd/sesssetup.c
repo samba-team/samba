@@ -24,6 +24,19 @@
 
 uint32 global_client_caps = 0;
 
+/****************************************************************************
+ Add the standard 'Samba' signiture to the end of the session setup.
+****************************************************************************/
+static void add_signiture(char *outbuf) 
+{
+	char *p;
+	p = smb_buf(outbuf);
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+}
+
 #if HAVE_KRB5
 /****************************************************************************
 reply to a session setup spnego negotiate packet for kerberos
@@ -117,11 +130,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	p = smb_buf(outbuf);
-	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-	set_message_end(outbuf,p);
+	add_signiture(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -273,7 +282,6 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	uint32 ntlmssp_command, neg_flags;
 	NTSTATUS nt_status;
 	int sess_vuid;
-	char *p;
 	char chal[8];
 
 	auth_usersupplied_info *user_info = NULL;
@@ -351,11 +359,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	p = smb_buf(outbuf);
-	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-	set_message_end(outbuf,p);
+	add_signiture(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -371,7 +375,6 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 				  int length, int bufsize)
 {
 	int sess_vuid;
-	char *p;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
@@ -392,11 +395,7 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
-	p = smb_buf(outbuf);
-	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-	set_message_end(outbuf,p);
+	add_signiture(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
@@ -680,13 +679,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	if (Protocol < PROTOCOL_NT1) {
 		set_message(outbuf,3,0,True);
 	} else {
-		char *p;
 		set_message(outbuf,3,0,True);
-		p = smb_buf(outbuf);
-		p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-		p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-		p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-		set_message_end(outbuf,p);
+		add_signiture(outbuf);
 		/* perhaps grab OS version here?? */
 	}
 	
