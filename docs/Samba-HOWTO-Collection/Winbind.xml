@@ -64,11 +64,13 @@
 
 	<itemizedlist>
 		<listitem><para>
-		Authentication of user credentials (via PAM).
+		Authentication of user credentials (via PAM). This makes it possible to
+		log onto a UNIX/Linux system using user and group accounts from a Windows
+		NT4 (including a Samba domain) or an Active Directory domain.
 		</para></listitem>
 
 		<listitem><para>
-		Identity resolution (via NSS).
+		Identity resolution (via NSS). This is the default when winbind is not used.
 		</para></listitem>
 
 		<listitem><para>
@@ -76,7 +78,7 @@
 		mappings between UNIX UIDs / GIDs and NT SIDs. This mapping is used only
 		for users and groups that do not have a local UID/GID. It stored the UID/GID
 		allocated from the idmap uid/gid range that it has mapped to the NT SID.
-		If <parameter>idmap backend</parameter> has been specified as ldapsam:url
+		If <parameter>idmap backend</parameter> has been specified as <constant>ldap:ldap://hostname[:389]</constant>
 		then instead of using a local mapping Winbind will obtain this information
 		from the LDAP database.
 		</para></listitem>
@@ -87,7 +89,8 @@
 	<indexterm><primary>starting samba</primary><secondary>winbindd</secondary></indexterm>
 	If <command>winbindd</command> is not running, smbd (which calls <command>winbindd</command>) will fall back to
 	using purely local information from <filename>/etc/passwd</filename> and <filename>/etc/group</filename> and no dynamic
-	mapping will be used.
+	mapping will be used. On an operating system that has beeb enabled with the name service switcher (NSS)
+	the resoltion of user and group information will be accomplished via NSS.
 	</para></note>
 
 
@@ -152,7 +155,7 @@
 	to be used in much the same manner that NIS+ is used within 
 	UNIX-only environments.</para>
 	
-	<para>The end result is that whenever any 
+	<para>The end result is that whenever a
 	program on the UNIX machine asks the operating system to lookup 
 	a user or group name, the query will be resolved by asking the 
 	NT Domain Controller for the specified domain to do the lookup.
@@ -196,6 +199,47 @@
 		will be able to use Winbind to provide seamless integration of 
 		the appliance into the domain.</para>
 	</sect2>
+
+	<sect2>
+	<title>Handling of Foreign SIDs</title>
+
+	<para>
+	The term <emphasis>foreign SID</emphasis> is often met with the reaction that it
+	is not relevant to a particular environment. The following documents an interchange
+	that took place on the Samba mailing list. It is a good example of the confusion
+	often expressed regarding the use of winbind.
+	</para>
+
+	<para>
+	Fact: Winbind is needed to handle users who use workstations that are NOT part 
+	of the local domain.
+	</para>
+
+	<para>
+	Response: <quote>Why? I've used samba with workstations that are not part of my domains
+	lots of times without using winbind. I though winbind was for using samba as a memberserver
+	in a domain controlled by another samba/windows PDC.</quote>
+	</para>
+
+	<para>
+	If the Samba server will be accessed from a domain other than the local Samba domain, or
+	if there will be access from machines that are not local domain members, winbind will
+	permit the allocation of UIDs and GIDs from the assigned pool that will keep the identity
+	of the foreign user separate from users that are members of the Samba domain.
+	</para>
+
+	<para>
+	Which means that that winbind is eminently useful in cases where one just has a single
+	Samba PDC on a local network combined of both domain member and non-domain member workstations.
+	If winbind is not used, the user george on an windows workstation that is not a domain
+	member will be able to access the files of a user called george in the account database
+	of the Samba server that is acting as a PDC. When winbind is used, the default condition
+	is that the local user george will be treated as the account DOMAIN\george and the
+	foreign (non-member of the domain) account will be treated as MACHINE\george because
+	each has a different SID.
+	</para>
+
+	</sect3>
 </sect1>
 
 
@@ -489,7 +533,7 @@ The libraries needed to run the &winbindd; daemon through nsswitch need to be co
 
 <para>
 I also found it necessary to make the following symbolic link:
-</para>
+ZZ</para>
 
 <para>
 &rootprompt; <userinput>ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</userinput>
