@@ -92,6 +92,8 @@ static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned,
         buffer->prs.data_offset=0;
 
         for (i=0; i<returned; i++) {
+		/* a little initialization as we go */
+		inf[i].secdesc = NULL;
                 new_smb_io_printer_info_2("", buffer, &(inf[i]), 0);
         }
 
@@ -356,6 +358,9 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 	if(!spoolss_open_printer_ex( printer_name, 0, 0, station, user_name, &hnd))
 		return False;
 
+	/* FIXME!!!!  --jerry
+	   something is severly buggy about the use of 
+	   data, datalen, value, & valuelen */
 	status = spoolss_enum_printerdata(&hnd, 0, &valuelen, value, 
 					  &rvaluelen, &type, &datalen, 
 					  data, &rdatalen);
