@@ -655,9 +655,8 @@ static void usage(void)
 		return 0;
 	}
 	
-        if (strncmp("//", argv[0], 2) == 0 || 
-            strncmp("\\\\", argv[0], 2) == 0)
-                argv[0] += 2;
+	if (strncmp("//", argv[0], 2) == 0 || strncmp("\\\\", argv[0], 2) == 0)
+		argv[0] += 2;
 
 	pstrcpy(server, argv[0]);
 
@@ -696,7 +695,7 @@ static void usage(void)
 	else {
 		init_rpcclient_creds (&creds, username, domain, password);
 	}
-	memset(password,'X',strlen(password));
+	memset(password,'X',sizeof(password));
 
 	/* open a connection to the specified server */
 	ZERO_STRUCTP (&cli);
