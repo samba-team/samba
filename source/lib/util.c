@@ -3,6 +3,7 @@
    Version 1.9.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1761,19 +1762,130 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 	return ms_fnmatch(p2, s2) == 0;
 }
 
+/*********************************************************
+ Recursive routine that is called by unix_wild_match.
+*********************************************************/
+
+static BOOL unix_do_match(char *regexp, char *str)
+{
+	char *p;
+
+	for( p = regexp; *p && *str; ) {
+
+		switch(*p) {
+			case '?':
+				str++;
+				p++;
+				break;
+
+			case '*':
+
+				/*
+				 * Look for a character matching 
+				 * the one after the '*'.
+				 */
+				p++;
+				if(!*p)
+					return True; /* Automatic match */
+				while(*str) {
+
+					while(*str && (*p != *str))
+						str++;
+
+					/*
+					 * Patch from weidel@multichart.de. In the case of the regexp
+					 * '*XX*' we want to ensure there are at least 2 'X' characters
+					 * in the string after the '*' for a match to be made.
+					 */
+
+					{
+						int matchcount=0;
+
+						/*
+						 * Eat all the characters that match, but count how many there were.
+						 */
+
+						while(*str && (*p == *str)) {
+							str++;
+							matchcount++;
+						}
+
+						/*
+						 * Now check that if the regexp had n identical characters that
+						 * matchcount had at least that many matches.
+						 */
+
+						while ( *(p+1) && (*(p+1) == *p)) {
+							p++;
+							matchcount--;
+						}
+
+						if ( matchcount <= 0 )
+							return False;
+					}
+
+					str--; /* We've eaten the match char after the '*' */
+
+					if(unix_do_match(p, str))
+						return True;
+
+					if(!*str)
+						return False;
+					else
+						str++;
+				}
+				return False;
+
+			default:
+				if(*str != *p)
+					return False;
+				str++;
+				p++;
+				break;
+		}
+	}
+
+	if(!*p && !*str)
+		return True;
+
+	if (!*p && str[0] == '.' && str[1] == 0)
+		return(True);
+  
+	if (!*str && *p == '?') {
+		while (*p == '?')
+			p++;
+		return(!*p);
+	}
+
+	if(!*str && (*p == '*' && p[1] == '\0'))
+		return True;
+
+	return False;
+}
+
 /*******************************************************************
- Simple case insensitive interface to ms_fnmatch.
+ Simple case insensitive interface to a UNIX wildcard matcher.
 *******************************************************************/
 
-BOOL wild_match(char *string, char *pattern)
+BOOL unix_wild_match(char *pattern, char *string)
 {
 	pstring p2, s2;
+	char *p;
 
 	pstrcpy(p2, pattern);
 	pstrcpy(s2, string);
 	strlower(p2);
 	strlower(s2);
-	return ms_fnmatch(p2, s2) == 0;	
+
+	/* Remove any *? and ** from the pattern as they are meaningless */
+	for(p = p2; *p; p++)
+		while( *p == '*' && (p[1] == '?' ||p[1] == '*'))
+			pstrcpy( &p[1], &p[2]);
+ 
+	if (strequal(p2,"*"))
+		return True;
+
+	return unix_do_match(p2, s2) == 0;	
 }
 
 #ifdef __INSURE__

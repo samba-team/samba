@@ -307,7 +307,7 @@ static int smb_pam_passchange_conv(int num_msg,
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: trying to match |%s| to |%s|\n",
 						t->prompt, current_prompt ));
 
-				if (wild_match(t->prompt, current_prompt) == 0) {
+				if (unix_wild_match(t->prompt, current_prompt) == 0) {
 					fstrcpy(current_reply, t->reply);
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
@@ -339,7 +339,7 @@ static int smb_pam_passchange_conv(int num_msg,
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: trying to match |%s| to |%s|\n",
 						t->prompt, current_prompt ));
 
-				if (wild_match(t->prompt, current_prompt) == 0) {
+				if (unix_wild_match(t->prompt, current_prompt) == 0) {
 					fstrcpy(current_reply, t->reply);
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);

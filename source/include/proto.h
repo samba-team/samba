@@ -482,7 +482,7 @@ char *lock_path(char *name);
 char *parent_dirname(const char *path);
 BOOL ms_has_wild(char *s);
 BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive);
-BOOL wild_match(char *string, char *pattern);
+BOOL unix_wild_match(char *pattern, char *string);
 int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
