@@ -193,6 +193,77 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	return True;
 }
 
+/*
+  parse any auth information from a dcerpc alter request
+  return False if we can't handle the auth request for some 
+  reason (in which case we send a bind_nak (is this true for here?))
+*/
+BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
+{
+	struct dcerpc_packet *pkt = &call->pkt;
+	struct dcesrv_connection *dce_conn = call->conn;
+	NTSTATUS status;
+
+	/* We can't work without an existing gensec state, and an new blob to feed it */
+	if (!dce_conn->auth_state.gensec_security ||
+	    pkt->u.alter.auth_info.length == 0) {
+		return False;
+	}
+
+	dce_conn->auth_state.auth_info = talloc_p(dce_conn, struct dcerpc_auth);
+	if (!dce_conn->auth_state.auth_info) {
+		return False;
+	}
+
+	status = ndr_pull_struct_blob(&pkt->u.alter.auth_info,
+				      call,
+				      dce_conn->auth_state.auth_info,
+				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	return True;
+}
+
+/*
+  add any auth information needed in a alter ack, and process the authentication
+  information found in the alter.
+*/
+BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct dcerpc_packet *pkt)
+{
+	struct dcesrv_connection *dce_conn = call->conn;
+	NTSTATUS status;
+
+	if (!call->conn->auth_state.gensec_security) {
+		return False;
+	}
+
+	status = gensec_update(dce_conn->auth_state.gensec_security,
+			       call,
+			       dce_conn->auth_state.auth_info->credentials, 
+			       &dce_conn->auth_state.auth_info->credentials);
+	
+	if (NT_STATUS_IS_OK(status)) {
+		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     &dce_conn->auth_state.session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
+			return False;
+		}
+
+		/* Now that we are authenticated, got back to the generic session key... */
+		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
+		return True;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		dce_conn->auth_state.auth_info->auth_pad_length = 0;
+		dce_conn->auth_state.auth_info->auth_reserved = 0;
+		return True;
+	} else {
+		DEBUG(2, ("Failed to finish dcesrv auth alter_ack: %s\n", nt_errstr(status)));
+		return True;
+	}
+}
 
 /*
   generate a CONNECT level verifier
