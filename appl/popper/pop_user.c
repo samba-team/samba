@@ -18,19 +18,19 @@ pop_user (POP *p)
 
     strlcpy(p->user, p->pop_parm[1], sizeof(p->user));
 
-#ifdef OTP
-    if (otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0) {
-	return pop_msg(p, POP_SUCCESS, "Password %s required for %s.",
-		       ss, p->user);
-    } else
-#endif
-    if (p->auth_level != AUTH_NONE) {
+    if (p->auth_level == AUTH_OTP) {
 	char *s = NULL;
 #ifdef OTP
+	if(otp_challenge (&p->otp_ctx, p->user, ss, sizeof(ss)) == 0)
+	    return pop_msg(p, POP_SUCCESS, "Password %s required for %s.",
+			   ss, p->user);
 	s = otp_error(&p->otp_ctx);
-#endif
 	return pop_msg(p, POP_FAILURE, "Permission denied%s%s",
 		       s ? ":" : "", s ? s : "");
-    } else
-	return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
+#endif
+    }
+    if (p->auth_level == AUTH_SASL) {
+	return pop_msg(p, POP_FAILURE, "Permission denied");
+    }
+    return pop_msg(p, POP_SUCCESS, "Password required for %s.", p->user);
 }
