@@ -705,7 +705,7 @@ static BOOL srv_spoolss_sendnotify(pipes_struct *p, POLICY_HND *handle)
 uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
 #if 0
-	uint32 result = NT_STATUS_NO_PROBLEMO;
+	uint32 result = NT_STATUS_NOPROBLEMO;
 #endif
 
 	UNISTR2 *printername = NULL;
@@ -775,7 +775,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	if (handle_is_printserver(p, handle)) {
 		if (printer_default->access_required == 0) {
-			return NT_STATUS_NO_PROBLEMO;
+			return NT_STATUS_NOPROBLEMO;
 		}
 		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
@@ -787,7 +787,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 				return ERROR_ACCESS_DENIED;
 			}
 			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
-				return NT_STATUS_NO_PROBLEMO;
+				return NT_STATUS_NOPROBLEMO;
 			} 
 			else {
 				close_printer_handle(p, handle);
@@ -889,7 +889,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 #endif
 	}
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -1035,7 +1035,7 @@ uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	if (!close_printer_handle(p, handle))
 		return ERROR_INVALID_HANDLE;	
 		
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -1336,7 +1336,7 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	if (*needed > *out_size)
 		return ERROR_MORE_DATA;
 	else {
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
     }
 }
 
@@ -1417,7 +1417,7 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 					&Printer->notify.client_hnd))
 		Printer->notify.client_connected=True;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2361,7 +2361,7 @@ static uint32 printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	}
 	*/
 	
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /*******************************************************************
@@ -2444,7 +2444,7 @@ static uint32 printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
 	}
 	*/
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -2913,7 +2913,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -2995,7 +2995,7 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3064,7 +3064,7 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3088,7 +3088,7 @@ static uint32 enumprinters_level1( uint32 flags, fstring name,
 	if (flags & PRINTER_ENUM_NETWORK)
 		return enum_all_printers_info_1_network(buffer, offered, needed, returned);
 
-	return NT_STATUS_NO_PROBLEMO; /* NT4sp5 does that */
+	return NT_STATUS_NOPROBLEMO; /* NT4sp5 does that */
 }
 
 /********************************************************************
@@ -3120,7 +3120,7 @@ static uint32 enumprinters_level2( uint32 flags, fstring servername,
 	if (flags & PRINTER_ENUM_REMOTE)
 		return ERROR_INVALID_LEVEL;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3131,7 +3131,7 @@ static uint32 enumprinters_level5( uint32 flags, fstring servername,
 			         uint32 *needed, uint32 *returned)
 {
 /*	return enum_all_printers_info_5(buffer, offered, needed, returned);*/
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3220,7 +3220,7 @@ static uint32 getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return NT_STATUS_NOPROBLEMO;	
 }
 
 /****************************************************************************
@@ -3252,7 +3252,7 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return NT_STATUS_NOPROBLEMO;	
 }
 
 /****************************************************************************
@@ -3287,7 +3287,7 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return NT_STATUS_NOPROBLEMO;	
 }
 
 /****************************************************************************
@@ -3317,7 +3317,7 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return NT_STATUS_NOPROBLEMO;	
 }
 
 /****************************************************************************
@@ -3384,7 +3384,7 @@ static uint32 construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3442,7 +3442,7 @@ static uint32 construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3558,7 +3558,7 @@ static uint32 construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -3667,7 +3667,7 @@ static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3698,7 +3698,7 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	status=construct_printer_driver_info_1(info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != NT_STATUS_NOPROBLEMO) {
 		safe_free(info);
 		return status;
 	}
@@ -3720,7 +3720,7 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3734,7 +3734,7 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	status=construct_printer_driver_info_2(info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != NT_STATUS_NOPROBLEMO) {
 		safe_free(info);
 		return status;
 	}
@@ -3756,7 +3756,7 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3769,7 +3769,7 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	ZERO_STRUCT(info);
 
 	status=construct_printer_driver_info_3(&info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != NT_STATUS_NOPROBLEMO) {
 		return status;
 	}
 
@@ -3789,7 +3789,7 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3802,7 +3802,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	ZERO_STRUCT(info);
 
 	status=construct_printer_driver_info_6(&info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != NT_STATUS_NOPROBLEMO) {
 		return status;
 	}
 
@@ -3822,7 +3822,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -3909,7 +3909,7 @@ uint32 _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPO
 	
 	Printer->page_started=False;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /********************************************************************
@@ -4146,7 +4146,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	new_secdesc_ctr = sec_desc_merge(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
-		result = NT_STATUS_NO_PROBLEMO;
+		result = NT_STATUS_NOPROBLEMO;
 		goto done;
 	}
 
@@ -4504,7 +4504,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	DEBUG(8,("update_printer\n"));
 	
-	result = NT_STATUS_NO_PROBLEMO;
+	result = NT_STATUS_NOPROBLEMO;
 
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
@@ -4564,7 +4564,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (nt_printer_info_level_equal(printer, old_printer)) {
 		DEBUG(3, ("printer info has not changed\n"));
-		result = NT_STATUS_NO_PROBLEMO;
+		result = NT_STATUS_NOPROBLEMO;
 		goto done;
 	}
 
@@ -4660,7 +4660,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -4798,7 +4798,7 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -4853,7 +4853,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -4894,7 +4894,7 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 
 	if (*returned == 0) {
 		safe_free(queue);
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 
 	switch (level) {
@@ -5041,7 +5041,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5117,7 +5117,7 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5196,7 +5196,7 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5348,7 +5348,7 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 			return ERROR_INSUFFICIENT_BUFFER;
 		}
 		else
-			return NT_STATUS_NO_PROBLEMO;
+			return NT_STATUS_NOPROBLEMO;
 			
 	default:
 		safe_free(list);
@@ -5436,7 +5436,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
 		smb_io_form_1("", buffer, &form_1, 0);
 
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 			
 	default:
 		safe_free(list);
@@ -5548,7 +5548,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5647,7 +5647,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5750,7 +5750,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	srv_spoolss_sendnotify(p, handle);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -5792,7 +5792,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
 
-	uint32 err = NT_STATUS_NO_PROBLEMO;
+	uint32 err = NT_STATUS_NOPROBLEMO;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
 	
@@ -5803,7 +5803,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	convert_printer_driver_info(info, &driver, level);
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	if ((err = clean_up_driver_struct(driver, level, &user)) != NT_STATUS_NO_PROBLEMO )
+	if ((err = clean_up_driver_struct(driver, level, &user)) != NT_STATUS_NOPROBLEMO )
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
@@ -5867,7 +5867,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6015,7 +6015,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
 
 		free_a_printer(&printer, 2);
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	
 	/*
@@ -6062,7 +6062,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 	safe_free(data);
 	
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6114,7 +6114,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 			   old_param.data_len) == 0) {
 
 			DEBUG(3, ("setprinterdata hasn't changed\n"));
-			status = NT_STATUS_NO_PROBLEMO;
+			status = NT_STATUS_NOPROBLEMO;
 			goto done;
 		}
 	}
@@ -6321,7 +6321,7 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6389,7 +6389,7 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6451,7 +6451,7 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6484,7 +6484,7 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -6549,7 +6549,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		safe_free(queue);
 		safe_free(info_1);
 		/* I shoud reply something else ... I can't find the good one */
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
@@ -6570,7 +6570,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 
@@ -6601,7 +6601,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		safe_free(queue);
 		safe_free(info_2);
 		/* I shoud reply something else ... I can't find the good one */
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 	
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0) {
@@ -6629,7 +6629,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************

@@ -84,7 +84,7 @@ static uint32 cmd_spoolss_not_implemented (struct cli_state *cli,
 					   int argc, char **argv)
 {
 	printf ("(*) This command is not currently implemented.\n");
-	return NT_STATUS_NO_PROBLEMO;
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
@@ -742,7 +742,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 
 	/* Open a printer handle */
 	if ((result=cli_spoolss_open_printer_ex (cli, mem_ctx, printername, "", 
-		    MAXIMUM_ALLOWED_ACCESS, servername, user, &pol)) != NT_STATUS_NO_PROBLEMO) 
+		    MAXIMUM_ALLOWED_ACCESS, servername, user, &pol)) != NT_STATUS_NOPROBLEMO) 
 	{
 		printf ("Error opening printer handle for %s!\n", printername);
 		return result;
@@ -758,7 +758,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 				
 		switch (result)
 		{
-		case NT_STATUS_NO_PROBLEMO:
+		case NT_STATUS_NOPROBLEMO:
 			break;
 			
 		case ERROR_UNKNOWN_PRINTER_DRIVER:
@@ -800,7 +800,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	talloc_destroy(mem_ctx);
 	
 	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	else 
 		return result;
 		
@@ -856,7 +856,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 			continue;
 			
 
-		if (result != NT_STATUS_NO_PROBLEMO)
+		if (result != NT_STATUS_NOPROBLEMO)
 		{
 			printf ("Error getting driver for environment [%s] - %s\n",
 				archi_table[i].long_archi, get_nt_error_msg(result));
@@ -894,7 +894,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	talloc_destroy(mem_ctx);
 	
 	if (result==ERROR_UNKNOWN_PRINTER_DRIVER)
-		return NT_STATUS_NO_PROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	else 
 		return result;
 		
@@ -952,7 +952,7 @@ static uint32 cmd_spoolss_getdriverdir(struct cli_state *cli, int argc, char **a
 
 	/* Get the directory.  Only use Info level 1 */
 	if ((result = cli_spoolss_getprinterdriverdir (cli, mem_ctx, 1, env, &ctr)) 
-	     != NT_STATUS_NO_PROBLEMO)
+	     != NT_STATUS_NOPROBLEMO)
 	{
 		return result;
 	}
@@ -1130,7 +1130,7 @@ static uint32 cmd_spoolss_addprinterdriver (struct cli_state *cli, int argc, cha
 
 	ctr.info3 = &info3;
 	if ((result = cli_spoolss_addprinterdriver (cli, mem_ctx, level, &ctr)) 
-	     != NT_STATUS_NO_PROBLEMO)
+	     != NT_STATUS_NOPROBLEMO)
 	{
 		return result;
 	}
@@ -1211,7 +1211,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 
 	ctr.printers_2 = &info2;
 	if ((result = cli_spoolss_addprinterex (cli, mem_ctx, level, &ctr)) 
-	     != NT_STATUS_NO_PROBLEMO)
+	     != NT_STATUS_NOPROBLEMO)
 	{
 		cli_nt_session_close (cli);
 		return result;
@@ -1287,7 +1287,7 @@ static uint32 cmd_spoolss_setdriver (struct cli_state *cli, int argc, char **arg
 
 	/* set the printer driver */
 	init_unistr(&ctr.printers_2->drivername, argv[2]);
-	if ((result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0)) != NT_STATUS_NO_PROBLEMO)
+	if ((result = cli_spoolss_setprinter(cli, mem_ctx, &pol, level, &ctr, 0)) != NT_STATUS_NOPROBLEMO)
 	{
 		printf ("SetPrinter call failed!\n");
 		goto done;;
@@ -1341,7 +1341,7 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 	{
 		/* make the call to remove the driver */
 		if ((result = cli_spoolss_deleteprinterdriver(cli, mem_ctx, 
-			archi_table[i].long_archi, argv[1])) != NT_STATUS_NO_PROBLEMO)
+			archi_table[i].long_archi, argv[1])) != NT_STATUS_NOPROBLEMO)
 		{
 			printf ("Failed to remove driver %s for arch [%s] - error %s!\n", 
 				argv[1], archi_table[i].long_archi, get_nt_error_msg(result));
@@ -1355,7 +1355,7 @@ static uint32 cmd_spoolss_deletedriver (struct cli_state *cli, int argc, char **
 	cli_nt_session_close (cli);
 	talloc_destroy(mem_ctx);
 	
-	return NT_STATUS_NO_PROBLEMO;		
+	return NT_STATUS_NOPROBLEMO;		
 }
 
 
