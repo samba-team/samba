@@ -975,6 +975,11 @@ uint32 domain_sequence_number(char *domain_name)
 	domain = find_domain_from_name(domain_name);
 	if (!domain) return DOM_SEQUENCE_NONE;
 
+	/* Ensure we have open sam handles */
+
+	if (!domain_handles_open(domain))
+		return DOM_SEQUENCE_NONE;
+
 	if (!samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
 
 		/* If this fails, something bad has gone wrong */
