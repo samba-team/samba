@@ -164,12 +164,6 @@ static OM_uint32 acquire_acceptor_cred
 
     kret = 0;
     ret = GSS_S_FAILURE;
-    if (handle->principal == NULL) {
-	kret = krb5_sname_to_principal(gssapi_krb5_context, NULL, NULL,
-	    KRB5_NT_SRV_HST, &handle->principal);
-	if (kret)
-	    goto end;
-    }
     kret = get_keytab(&handle->keytab);
     if (kret)
 	goto end;
@@ -210,7 +204,7 @@ OM_uint32 gss_acquire_cred
 
     memset(handle, 0, sizeof (*handle));
 
-    if (desired_name != NULL) {
+    if (desired_name != GSS_C_NO_NAME) {
 	ret = gss_duplicate_name(minor_status, desired_name,
 	    &handle->principal);
 	if (ret != GSS_S_COMPLETE) {

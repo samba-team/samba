@@ -46,7 +46,8 @@ OM_uint32 gss_release_cred
 
     gssapi_krb5_init ();
 
-    krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
+    if ((*cred_handle)->principal != NULL)
+        krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
     if ((*cred_handle)->keytab != NULL)
 	krb5_kt_close(gssapi_krb5_context, (*cred_handle)->keytab);
     if ((*cred_handle)->ccache != NULL)
