@@ -68,6 +68,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	TALLOC_CTX *mem_ctx = NULL;
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
+	DOM_CRED ret_creds;
+	int attempts = 0;
 
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
@@ -119,23 +121,35 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	ZERO_STRUCT(info3);
+	do {
+		ZERO_STRUCT(info3);
+		ZERO_STRUCT(ret_creds);
 	
-	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, 
-				     sec_channel_type, 
-				     &cli);
+		/* Don't shut this down - it belongs to the connection cache code */
+		result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, 
+					     sec_channel_type, False, &cli);
 
-        if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
-                goto done;
-        }
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+			goto done;
+		}
 
-	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						name_user, name_domain, 
-						global_myname(), chal, 
-						lm_resp, nt_resp, 
-						&info3);
+		result = cli_netlogon_sam_network_logon(cli, mem_ctx,
+							&ret_creds,
+							name_user, name_domain, 
+							global_myname(), chal, 
+							lm_resp, nt_resp,
+							&info3);
+		attempts += 1;
+
+		/* We have to try a second time as cm_get_netlogon_cli
+		   might not yet have noticed that the DC has killed
+		   our connection. */
+
+	} while ( (attempts < 2) && (cli->fd == -1) );
+
+        
+	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
 	uni_group_cache_store_netlogon(mem_ctx, &info3);
 done:
@@ -176,6 +190,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	const char *domain = NULL;
 	const char *contact_domain;
 	const char *workstation;
+	DOM_CRED ret_creds;
+	int attempts = 0;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -264,21 +280,37 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		goto done;
 	}
 
-	ZERO_STRUCT(info3);
+	do {
+		ZERO_STRUCT(info3);
+		ZERO_STRUCT(ret_creds);
 
-	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, &cli);
+		/* Don't shut this down - it belongs to the connection cache code */
+		result = cm_get_netlogon_cli(contact_domain, trust_passwd,
+					     sec_channel_type, False, &cli);
 
-        if (!NT_STATUS_IS_OK(result)) {
-                DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n", nt_errstr(result)));
-                goto done;
-        }
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
+				  nt_errstr(result)));
+			goto done;
+		}
 
-	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						user, domain,
-						workstation, state->request.data.auth_crap.chal, 
-						lm_resp, nt_resp, 
-						&info3);
+		result = cli_netlogon_sam_network_logon(cli, mem_ctx,
+							&ret_creds,
+							user, domain,
+							workstation,
+							state->request.data.auth_crap.chal, 
+							lm_resp, nt_resp, 
+							&info3);
+
+		attempts += 1;
+
+		/* We have to try a second time as cm_get_netlogon_cli
+		   might not yet have noticed that the DC has killed
+		   our connection. */
+
+	} while ( (attempts < 2) && (cli->fd == -1) );
+
+	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
 	if (NT_STATUS_IS_OK(result)) {
 		uni_group_cache_store_netlogon(mem_ctx, &info3);

@@ -209,6 +209,11 @@ int rpc_samdump(int argc, const char **argv)
 
 	fstrcpy(cli->domain, lp_workgroup());
 
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		DEBUG(0,("Could not open connection to NETLOGON pipe\n"));
+		goto fail;
+	}
+
 	if (!secrets_fetch_trust_account_password(lp_workgroup(),
 						  trust_password,
 						  NULL, &sec_channel)) {
@@ -216,7 +221,8 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!cli_nt_open_netlogon(cli, trust_password, sec_channel)) {
+	if (!NT_STATUS_IS_OK(cli_nt_establish_netlogon(cli, sec_channel,
+						       trust_password))) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}

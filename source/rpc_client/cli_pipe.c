@@ -1563,8 +1563,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
  Open a session to the NETLOGON pipe using schannel.
  ****************************************************************************/
 
-BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
-			  int sec_chan)
+NTSTATUS cli_nt_establish_netlogon(struct cli_state *cli, int sec_chan,
+			       const char *trust_password)
 {
 	NTSTATUS result;
 	uint32 neg_flags = 0x000001ff;
@@ -1573,22 +1573,12 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 	if (lp_client_schannel() != False)
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
 
-
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
-		return False;
-	}
-
-	if (!secrets_init()) {
-		DEBUG(3,("Failed to init secrets.tdb\n"));
-		return False;
-	}
-
 	result = cli_nt_setup_creds(cli, sec_chan, trust_password,
 				    &neg_flags, 2);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		cli_nt_session_close(cli);
-		return False;
+		return result;
 	}
 
 	if ((lp_client_schannel() == True) &&
@@ -1596,12 +1586,12 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 
 		DEBUG(3, ("Server did not offer schannel\n"));
 		cli_nt_session_close(cli);
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if ((lp_client_schannel() == False) ||
 	    ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	/* Server offered schannel, so try it. */
@@ -1624,7 +1614,7 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 				 "Error was %s\n",
 				 PIPE_NETLOGON, cli->desthost,
 				 cli_errstr(cli)));
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
 		cli->nt_pipe_fnum = (uint16)fnum;
@@ -1635,7 +1625,7 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 				 "Error was %s\n",
 				 PIPE_NETLOGON, cli->desthost,
 				 cli_errstr(cli)));
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		cli->nt_pipe_fnum = (uint16)fnum;
@@ -1645,17 +1635,17 @@ BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
 			DEBUG(0,("Pipe hnd state failed.  Error was %s\n",
 				  cli_errstr(cli)));
 			cli_close(cli, cli->nt_pipe_fnum);
-			return False;
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname(), True)) {
 		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
 		cli_close(cli, cli->nt_pipe_fnum);
-		return False;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 
