@@ -659,6 +659,8 @@ extern int errno;
 
 #include "msdfs.h"
 
+#include "secrets.h"
+
 #ifdef WITH_PROFILE
 #include "profile.h"
 #endif

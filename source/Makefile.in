@@ -254,7 +254,8 @@ GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		passdb/passgrp.o passdb/smbpassgroup.o \
 		passdb/smbpassgroupunix.o passdb/passgrpldap.o passdb/passgrpnt5ldap.o
 
-SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o passdb/sampassnt5ldap.o
+SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o \
+		passdb/sampassnt5ldap.o passdb/secrets.o
 
 UNIXPASSDB_OBJ = passdb/pass_check.o 
 
@@ -738,7 +739,8 @@ WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) \
 		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(STUB_UID_OBJ) \
 		$(LIBNMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
-		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ)
+		$(NSSWINS_OBJ) $(SIDDB_OBJ) $(LIBSMB_OBJ) \
+		passdb/secrets.o
 
 NTDOM_OBJ = nsswitch/ntdom.o nsswitch/common.o
 

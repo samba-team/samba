@@ -609,6 +609,8 @@ int main(int argc, char **argv)
     }
     load_interfaces();
 
+    secrets_init();
+
     ZERO_STRUCT(server_state);
 
     /* Winbind daemon initialisation */

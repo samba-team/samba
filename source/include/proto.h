@@ -2244,6 +2244,13 @@ struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
 /*The following definitions come from  passdb/sampassnt5ldap.c  */
 
 
+/*The following definitions come from  passdb/secrets.c  */
+
+BOOL secrets_init(void);
+void *secrets_fetch(char *key, size_t *size);
+BOOL secrets_store(char *key, void *data, size_t size);
+BOOL secrets_delete(char *key);
+
 /*The following definitions come from  passdb/smbpass.c  */
 
 struct smb_passwd *getsmbfilepwent(void *vp);
