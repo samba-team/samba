@@ -60,7 +60,9 @@ main(int argc, char **argv)
     fprintf(f, "#ifndef __%s__\n", argv[1]);
     fprintf(f, "#define __%s__\n", argv[1]);
 #ifdef HAVE_OPENSSL
+    fputs("#ifndef OPENSSL_DES_LIBDES_COMPATIBILITY\n", f);
     fputs("#define OPENSSL_DES_LIBDES_COMPATIBILITY\n", f);
+    fputs("#endif\n", f);
     fputs("#include <openssl/des.h>\n", f);
     fputs("#include <openssl/rc4.h>\n", f);
     fputs("#include <openssl/md4.h>\n", f);
