@@ -85,8 +85,7 @@ void cli_samr_shutdown(struct cli_state *cli)
 /* Connect to SAMR database */
 
 uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			char *srv_name, uint32 access_mask, 
-			POLICY_HND *connect_pol)
+			uint32 access_mask, POLICY_HND *connect_pol)
 {
 	prs_struct qbuf, rbuf;
 	SAMR_Q_CONNECT q;
@@ -103,7 +102,7 @@ uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-	init_samr_q_connect(&q, srv_name, access_mask);
+	init_samr_q_connect(&q, cli->desthost, access_mask);
 
 	if (!samr_io_q_connect("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_CONNECT, &qbuf, &rbuf)) {
@@ -861,6 +860,70 @@ uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Lookup names */
+
+uint32 cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *domain_pol, uint32 flags,
+			     uint32 num_names, char **names,
+			     uint32 *num_rids, uint32 **rids,
+			     uint32 **rid_types)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_LOOKUP_NAMES q;
+	SAMR_R_LOOKUP_NAMES r;
+	uint32 result = NT_STATUS_UNSUCCESSFUL, i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_lookup_names(mem_ctx, &q, domain_pol, flags,
+				 num_names, names);
+
+	if (!samr_io_q_lookup_names("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SAMR_LOOKUP_NAMES, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_lookup_names("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
+		goto done;
+	}
+
+	if (r.num_rids1 == 0) {
+		*num_rids = 0;
+		goto done;
+	}
+
+	*num_rids = r.num_rids1;
+	*rids = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
+	*rid_types = talloc(mem_ctx, sizeof(uint32) * r.num_rids1);
+
+	for (i = 0; i < r.num_rids1; i++) {
+		(*rids)[i] = r.rids[i];
+		(*rid_types)[i] = r.types[i];
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Create a domain user */
 
 uint32 cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
@@ -938,7 +1001,8 @@ uint32 cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	q.ctr = ctr;
 
-	init_samr_q_set_userinfo(&q, user_pol, sess_key, switch_value, ctr);
+	init_samr_q_set_userinfo(&q, user_pol, sess_key, switch_value, 
+				 ctr->info.id);
 
 	if (!samr_io_q_set_userinfo("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SAMR_SET_USERINFO, &qbuf, &rbuf)) {
