@@ -237,12 +237,13 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 	if (!hive->location) return WERR_INVALID_PARAM;
 	wrap = ldb_wrap_connect(hive, hive->location, 0, NULL);
 
-	c = wrap->ldb;
-
-	if(!c) {
-		DEBUG(1, ("ldb_open_hive: %s\n", ldb_errstring(hive->backend_data)));
+	if(!wrap) {
+		DEBUG(1, ("ldb_open_hive: unable to connect\n"));
 		return WERR_FOOBAR;
 	}
+
+	c = wrap->ldb;
+
 	ldb_set_debug_stderr(c);
 	hive->backend_data = c;
 
