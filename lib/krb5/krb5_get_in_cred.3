@@ -121,6 +121,11 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "krb5_keyblock **key"
 .Fc
 .Sh DESCRIPTION
+.Bf Em
+All the functions in this manual page are deprecated in the MIT
+implementation, and will soon deprecated in Heimdal too, do't use them.
+.Ef
+.Pp
 Getting initial credential ticket for a principal. 
 .Nm krb5_get_in_cred
 is the function all other krb5_get_in function uses to fetch tickets.
