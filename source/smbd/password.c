@@ -157,6 +157,10 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
 
+  /* Ensure no vuid gets registered in share level security. */
+  if(lp_security() == SEC_SHARE)
+    return UID_FIELD_INVALID;
+
 #if 0
   /*
    * After observing MS-Exchange services writing to a Samba share
