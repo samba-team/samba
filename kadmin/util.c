@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,12 +62,12 @@ struct units kdb_attrs[] = {
 void
 timeval2str(time_t t, char *str, size_t len, int include_time)
 {
-    if(t)
+    if(t) {
 	if(include_time)
 	    strftime(str, len, "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
 	else
 	    strftime(str, len, "%Y-%m-%d", gmtime(&t));
-    else
+    } else
 	snprintf(str, len, "never");
 }
 
