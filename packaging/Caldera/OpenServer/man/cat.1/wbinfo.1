@@ -1,0 +1,198 @@
+
+
+
+     WWWWBBBBIIIINNNNFFFFOOOO((((1111))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       WWWWBBBBIIIINNNNFFFFOOOO((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          wbinfo - Query information from winbind daemon
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          wwwwbbbbiiiinnnnffffoooo [ ----uuuu ]  [ ----gggg ]  [ ----hhhh nnnnaaaammmmeeee ]  [ ----iiii iiiipppp ]  [ ----nnnn nnnnaaaammmmeeee ]
+          [ ----ssss ssssiiiidddd ]  [ ----UUUU uuuuiiiidddd ]  [ ----GGGG ggggiiiidddd ]  [ ----SSSS ssssiiiidddd ]  [ ----YYYY ssssiiiidddd ]
+          [ ----tttt ]  [ ----mmmm ]  [ ----rrrr uuuusssseeeerrrr ]  [ ----aaaa uuuusssseeeerrrr%%%%ppppaaaasssssssswwwwoooorrrrdddd ]  [ ----AAAA
+          uuuusssseeeerrrr%%%%ppppaaaasssssssswwwwoooorrrrdddd ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          The wwwwbbbbiiiinnnnffffoooo program queries and returns information created
+          and used by the  wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon.
+
+          The wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon must be configured and running for
+          the wwwwbbbbiiiinnnnffffoooo program to be able to return information.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----uuuu   This option will list all users available in the
+               Windows NT domain for which the wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon is
+               operating in. Users in all trusted domains will also be
+               listed. Note that this operation does not assign user
+               ids to any users that have not already been seen by
+               wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))).
+
+          ----gggg   This option will list all groups available in the
+               Windows NT domain for which the wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon is
+               operating in. Groups in all trusted domains will also
+               be listed. Note that this operation does not assign
+               group ids to any groups that have not already been seen
+               by wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))).
+
+          ----hhhh nnnnaaaammmmeeee
+               The -_h option queries wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) to query the WINS
+               server for the IP address associated with the NetBIOS
+               name specified by the _n_a_m_e parameter.
+
+          ----iiii iiiipppp
+               The -_i option queries wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) to send a node status
+               request to get the NetBIOS name associated with the IP
+               address specified by the _i_p parameter.
+
+          ----nnnn nnnnaaaammmmeeee
+               The -_n option queries wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) for the SID
+               associated with the name specified. Domain names can be
+               specified before the user name by using the winbind
+               separator character. For example CWDOM1/Administrator
+               refers to the Administrator user in the domain CWDOM1.
+               If no domain is specified then the domain used is the
+               one specified in the _s_m_b._c_o_n_f _w_o_r_k_g_r_o_u_p parameter.
+
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     WWWWBBBBIIIINNNNFFFFOOOO((((1111))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       WWWWBBBBIIIINNNNFFFFOOOO((((1111))))
+
+
+
+          ----ssss ssssiiiidddd
+               Use -_s to resolve a SID to a name. This is the inverse
+               of the -_n option above. SIDs must be specified as ASCII
+               strings in the traditional Microsoft format. For
+               example, S-1-5-21-1455342024-3071081365-2475485837-500.
+
+          ----UUUU uuuuiiiidddd
+               Try to convert a UNIX user id to a Windows NT SID. If
+               the uid specified does not refer to one within the
+               winbind uid range then the operation will fail.
+
+          ----GGGG ggggiiiidddd
+               Try to convert a UNIX group id to a Windows NT SID. If
+               the gid specified does not refer to one within the
+               winbind gid range then the operation will fail.
+
+          ----SSSS ssssiiiidddd
+               Convert a SID to a UNIX user id. If the SID does not
+               correspond to a UNIX user mapped by  wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) then
+               the operation will fail.
+
+          ----YYYY ssssiiiidddd
+               Convert a SID to a UNIX group id. If the SID does not
+               correspond to a UNIX group mapped by  wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) then
+               the operation will fail.
+
+          ----tttt   Verify that the workstation trust account created when
+               the Samba server is added to the Windows NT domain is
+               working.
+
+          ----mmmm   Produce a list of domains trusted by the Windows NT
+               server wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) contacts when resolving names. This
+               list does not include the Windows NT domain the server
+               is a Primary Domain Controller for.
+
+          ----rrrr uuuusssseeeerrrrnnnnaaaammmmeeee
+               Try to obtain the list of UNIX group ids to which the
+               user belongs. This only works for users defined on a
+               Domain Controller.
+
+          ----aaaa uuuusssseeeerrrrnnnnaaaammmmeeee%%%%ppppaaaasssssssswwwwoooorrrrdddd
+               Attempt to authenticate a user via winbindd. This
+               checks both authenticaion methods and reports its
+               results.
+
+          ----AAAA uuuusssseeeerrrrnnnnaaaammmmeeee%%%%ppppaaaasssssssswwwwoooorrrrdddd
+               Store username and password used by winbindd during
+               session setup to a domain controller. This enables
+               winbindd to operate in a Windows 2000 domain with
+               Restrict Anonymous turned on (a.k.a. Permissions
+               compatiable with Windows 2000 servers only).
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     WWWWBBBBIIIINNNNFFFFOOOO((((1111))))       UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))       WWWWBBBBIIIINNNNFFFFOOOO((((1111))))
+
+
+
+     EEEEXXXXIIIITTTT SSSSTTTTAAAATTTTUUUUSSSS
+          The wbinfo program returns 0 if the operation succeeded, or
+          1 if the operation failed. If the wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon is not
+          working wwwwbbbbiiiinnnnffffoooo will always return failure.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888))))
+
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          wwwwbbbbiiiinnnnffffoooo and wwwwiiiinnnnbbbbiiiinnnndddddddd were written by Tim Potter.
+
+          The conversion to DocBook for Samba 2.2 was done by Gerald
+          Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+

@@ -1,0 +1,132 @@
+
+
+
+     LLLLMMMMHHHHOOOOSSSSTTTTSSSS((((5555))))      UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))      LLLLMMMMHHHHOOOOSSSSTTTTSSSS((((5555))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          lmhosts - The Samba NetBIOS hosts file
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          _l_m_h_o_s_t_s is the  Samba NetBIOS name to IP address mapping
+          file.
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This file is part of the  Samba suite.
+
+          _l_m_h_o_s_t_s is the SSSSaaaammmmbbbbaaaa NetBIOS name to IP address mapping
+          file. It is very similar to the /_e_t_c/_h_o_s_t_s file format,
+          except that the hostname component must correspond to the
+          NetBIOS naming format.
+
+     FFFFIIIILLLLEEEE FFFFOOOORRRRMMMMAAAATTTT
+          It is an ASCII file containing one line for NetBIOS name.
+          The two fields on each line are separated from each other by
+          white space. Any entry beginning with '#' is ignored. Each
+          line in the lmhosts file contains the following information
+          :
+
+          o+ IP Address - in dotted decimal format.
+
+          o+ NetBIOS Name - This name format is a maximum fifteen
+            character host name, with an optional trailing '#'
+            character followed by the NetBIOS name type as two
+            hexadecimal digits.
+
+            If the trailing '#' is omitted then the given IP address
+            will be returned for all names that match the given name,
+            whatever the NetBIOS name type in the lookup.
+
+          An example follows :
+
+          #
+          # Sample Samba lmhosts file.
+          #
+          192.9.200.1    TESTPC
+          192.9.200.20   NTSERVER#20
+          192.9.200.21   SAMBASERVER
+
+
+
+          Contains three IP to NetBIOS name mappings. The first and
+          third will be returned for any queries for the names
+          "TESTPC" and "SAMBASERVER" respectively, whatever the type
+          component of the NetBIOS name requested.
+
+          The second mapping will be returned only when the "0x20"
+          name type for a name "NTSERVER" is queried. Any other name
+          type will not be resolved.
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     LLLLMMMMHHHHOOOOSSSSTTTTSSSS((((5555))))      UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))      LLLLMMMMHHHHOOOOSSSSTTTTSSSS((((5555))))
+
+
+
+          The default location of the _l_m_h_o_s_t_s file is in the same
+          directory as the smb.conf(5)> file.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+           and  ssssmmmmbbbbppppaaaasssssssswwwwdddd((((8888))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

@@ -1,0 +1,198 @@
+
+
+
+     MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          make_smbcodepage - construct a codepage file for Samba
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          mmmmaaaakkkkeeee____ssssmmmmbbbbccccooooddddeeeeppppaaaaggggeeee cccc||||dddd ccccooooddddeeeeppppaaaaggggeeee iiiinnnnppppuuuuttttffffiiiilllleeee oooouuuuttttppppuuuuttttffffiiiilllleeee
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          mmmmaaaakkkkeeee____ssssmmmmbbbbccccooooddddeeeeppppaaaaggggeeee compiles or de-compiles codepage files for
+          use with the internationalization features of Samba 2.2
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          cccc||||dddd  This tells mmmmaaaakkkkeeee____ssssmmmmbbbbccccooooddddeeeeppppaaaaggggeeee if it is compiling (_c) a
+               text format code page file to binary, or (_d) de-
+               compiling a binary codepage file to text.
+
+          ccccooooddddeeeeppppaaaaggggeeee
+               This is the codepage we are processing (a number, e.g.
+               850).
+
+          iiiinnnnppppuuuuttttffffiiiilllleeee
+               This is the input file to process. In the _c case this
+               will be a text codepage definition file such as the
+               ones found in the Samba _s_o_u_r_c_e/_c_o_d_e_p_a_g_e_s directory. In
+               the _d case this will be the binary format codepage
+               definition file normally found in the _l_i_b/_c_o_d_e_p_a_g_e_s
+               directory in the Samba install directory path.
+
+          oooouuuuttttppppuuuuttttffffiiiilllleeee
+               This is the output file to produce.
+
+     SSSSAAAAMMMMBBBBAAAA CCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE FFFFIIIILLLLEEEESSSS
+          A text Samba codepage definition file is a description that
+          tells Samba how to map from upper to lower case for
+          characters greater than ascii 127 in the specified DOS code
+          page. Note that for certain DOS codepages (437 for example)
+          mapping from lower to upper case may be non-symmetrical. For
+          example, in code page 437 lower case a acute maps to a plain
+          upper case A when going from lower to upper case, but plain
+          upper case A maps to plain lower case a when lower casing a
+          character.
+
+          A binary Samba codepage definition file is a binary
+          representation of the same information, including a value
+          that specifies what codepage this file is describing.
+
+          As Samba does not yet use UNICODE (current for Samba version
+          2.2) you must specify the client code page that your DOS and
+          Windows clients are using if you wish to have case
+          insensitivity done correctly for your particular language.
+          The default codepage Samba uses is 850 (Western European).
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))
+
+
+
+          Text codepage definition sample files are provided in the
+          Samba distribution for codepages 437 (USA), 737 (Greek), 850
+          (Western European) 852 (MS-DOS Latin 2), 861 (Icelandic),
+          866 (Cyrillic), 932 (Kanji SJIS), 936 (Simplified Chinese),
+          949 (Hangul) and 950 (Traditional Chinese). Users are
+          encouraged to write text codepage definition files for their
+          own code pages and donate them to samba@samba.org. All
+          codepage files in the Samba _s_o_u_r_c_e/_c_o_d_e_p_a_g_e_s directory are
+          compiled and installed when a ''''mmmmaaaakkkkeeee iiiinnnnssssttttaaaallllllll'''' command is
+          issued there.
+
+          The client codepage used by the ssssmmmmbbbbdddd server is configured
+          using the cccclllliiiieeeennnntttt ccccooooddddeeee ppppaaaaggggeeee parameter in the ssssmmmmbbbb....ccccoooonnnnffff file.
+
+     FFFFIIIILLLLEEEESSSS
+          ccccooooddddeeeeppppaaaaggggeeee____ddddeeeeffff....<<<<ccccooooddddeeeeppppaaaaggggeeee>>>>
+
+          These are the input (text) codepage files provided in the
+          Samba _s_o_u_r_c_e/_c_o_d_e_p_a_g_e_s directory.
+
+          A text codepage definition file consists of multiple lines
+          containing four fields. These fields are:
+
+          o+ lllloooowwwweeeerrrr: which is the (hex) lower case character mapped on
+            this line.
+
+          o+ uuuuppppppppeeeerrrr: which is the (hex) upper case character that the
+            lower case character will map to.
+
+          o+ mmmmaaaapppp uuuuppppppppeeeerrrr ttttoooo lllloooowwwweeeerrrr which is a boolean value (put either
+            True or False here) which tells Samba if it is to map the
+            given upper case character to the given lower case
+            character when lower casing a filename.
+
+          o+ mmmmaaaapppp lllloooowwwweeeerrrr ttttoooo uuuuppppppppeeeerrrr which is a boolean value (put either
+            True or False here) which tells Samba if it is to map the
+            given lower case character to the given upper case
+            character when upper casing a filename.
+
+          ccccooooddddeeeeppppaaaaggggeeee....<<<<ccccooooddddeeeeppppaaaaggggeeee>>>> - These are the output (binary) codepage
+          files produced and placed in the Samba destination
+          _l_i_b/_c_o_d_e_p_a_g_e directory.
+
+     IIIINNNNSSSSTTTTAAAALLLLLLLLAAAATTTTIIIIOOOONNNN
+          The location of the server and its support files is a matter
+          for individual system administrators. The following are thus
+          suggestions only.
+
+          It is recommended that the mmmmaaaakkkkeeee____ssssmmmmbbbbccccooooddddeeeeppppaaaaggggeeee program be
+          installed under the /_u_s_r/_l_o_c_a_l/_s_a_m_b_a hierarchy, in a
+          directory readable by all, writeable only by root. The
+          program itself should be executable by all. The program
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))MMMMAAAAKKKKEEEE____SSSSMMMMBBBBCCCCOOOODDDDEEEEPPPPAAAAGGGGEEEE((((1111))))
+
+
+
+          should NOT be setuid or setgid!
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          ssssmmmmbbbbdddd((((8888)))) smb.conf(5)
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+

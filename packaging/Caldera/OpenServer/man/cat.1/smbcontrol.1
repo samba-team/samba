@@ -1,0 +1,198 @@
+
+
+
+     SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))   UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))   SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbcontrol - send messages to smbd, nmbd or winbindd
+          processes
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbccccoooonnnnttttrrrroooollll [ ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>> ]  [ ----ssss <<<<ssssmmmmbbbb ccccoooonnnnffffiiiigggg ffffiiiilllleeee>>>> ]
+          ----iiii
+
+          ssssmmmmbbbbccccoooonnnnttttrrrroooollll [ ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>> ]  [ ----ssss <<<<ssssmmmmbbbb ccccoooonnnnffffiiiigggg ffffiiiilllleeee>>>> ]
+          ddddeeeessssttttiiiinnnnaaaattttiiiioooonnnn mmmmeeeessssssssaaaaggggeeee----ttttyyyyppppeeee [ ppppaaaarrrraaaammmmeeeetttteeeerrrr ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          ssssmmmmbbbbccccoooonnnnttttrrrroooollll is a very small program, which sends messages to
+          an smbd(8) an nmbd(8) or a winbindd(8) daemon running on the
+          system.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----dddd <<<<ddddeeeebbbbuuuugggglllleeeevvvveeeellll>>>>
+               debuglevel is an integer from 0 to 10.
+
+          ----ssss <<<<ssssmmmmbbbb....ccccoooonnnnffff>>>>
+               This parameter specifies the pathname to the Samba
+               configuration file,  smb.conf(5) This file controls all
+               aspects of the Samba setup on the machine.
+
+          ----iiii   Run interactively. Individual commands of the form
+               destination message-type parameters can be entered on
+               STDIN. An empty command line or a "q" will quit the
+               program.
+
+          ddddeeeessssttttiiiinnnnaaaattttiiiioooonnnn
+               One of _n_m_b_d _s_m_b_d or a process ID.
+
+               The _s_m_b_d destination causes the message to "broadcast"
+               to all smbd daemons.
+
+               The _n_m_b_d destination causes the message to be sent to
+               the nmbd daemon specified in the _n_m_b_d._p_i_d file.
+
+               If a single process ID is given, the message is sent to
+               only that process.
+
+          mmmmeeeessssssssaaaaggggeeee----ttttyyyyppppeeee
+               One of: close-share, debug, force-election, ping ,
+               profile,  debuglevel, profilelevel, or printer-notify.
+
+               The close-share message-type sends a message to smbd
+               which will then close the client connections to the
+               named share. Note that this doesn't affect client
+               connections to any other shares. This message-type
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))   UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))   SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))
+
+
+
+               takes an argument of the share name for which client
+               connections will be closed, or the "*" character which
+               will close all currently open shares.  This may be
+               useful if you made changes to the access controls on
+               the share.  This message can only be sent to smbd.
+
+               The debug message-type allows the debug level to be set
+               to the value specified by the parameter. This can be
+               sent to any of the destinations.
+
+               The force-election message-type can only be sent to the
+               nmbd destination. This message causes the nnnnmmmmbbbbdddd daemon
+               to force a new browse master election.
+
+               The ping message-type sends the number of "ping"
+               messages specified by the parameter and waits for the
+               same number of reply "pong" messages. This can be sent
+               to any of the destinations.
+
+               The profile message-type sends a message to an smbd to
+               change the profile settings based on the parameter. The
+               parameter can be "on" to turn on profile stats
+               collection, "off" to turn off profile stats collection,
+               "count" to enable only collection of count stats (time
+               stats are disabled), and "flush" to zero the current
+               profile stats. This can be sent to any smbd or nmbd
+               destinations.
+
+               The debuglevel message-type sends a "request debug
+               level" message. The current debug level setting is
+               returned by a "debuglevel" message. This can be sent to
+               any of the destinations.
+
+               The profilelevel message-type sends a "request profile
+               level" message. The current profile level setting is
+               returned by a "profilelevel" message. This can be sent
+               to any smbd or nmbd destinations.
+
+               The printer-notify message-type sends a message to smbd
+               which in turn sends a printer notify message to any
+               Windows NT clients connected to a printer. This
+               message-type takes an argument of the printer name to
+               send notify messages to. This message can only be sent
+               to smbd.
+
+          ppppaaaarrrraaaammmmeeeetttteeeerrrrssss
+               any parameters required for the message-type
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+
+
+
+     PPPPaaaaggggeeee 2222                                          ((((pppprrrriiiinnnntttteeeedddd 1111////7777////111100003333))))
+
+
+
+
+
+
+     SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))   UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))   SSSSMMMMBBBBCCCCOOOONNNNTTTTRRRROOOOLLLL((((1111))))
+
+
+
+          nnnnmmmmbbbbdddd((((8888)))) and ssssmmmmbbbbdddd((((8888))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+

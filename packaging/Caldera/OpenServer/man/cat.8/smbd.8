@@ -1,0 +1,396 @@
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbd - server to provide SMB/CIFS services to clients
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbdddd [ ----DDDD ]  [ ----aaaa ]  [ ----iiii ]  [ ----oooo ]  [ ----PPPP ]  [ ----hhhh ]  [ ----VVVV ]
+          [ ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>> ]  [ ----llll <<<<lllloooogggg ddddiiiirrrreeeeccccttttoooorrrryyyy>>>> ]  [ ----pppp <<<<ppppoooorrrrtttt
+          nnnnuuuummmmbbbbeeeerrrr>>>> ]  [ ----OOOO <<<<ssssoooocccckkkkeeeetttt ooooppppttttiiiioooonnnn>>>> ]  [ ----ssss <<<<ccccoooonnnnffffiiiigggguuuurrrraaaattttiiiioooonnnn ffffiiiilllleeee>>>>
+          ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This program is part of the Samba suite.
+
+          ssssmmmmbbbbdddd is the server daemon that provides filesharing and
+          printing services to Windows clients. The server provides
+          filespace and printer services to clients using the SMB (or
+          CIFS) protocol. This is compatible with the LanManager
+          protocol, and can service LanManager clients. These include
+          MSCLIENT 3.0 for DOS, Windows for Workgroups, Windows
+          95/98/ME, Windows NT, Windows 2000, OS/2, DAVE for
+          Macintosh, and smbfs for Linux.
+
+          An extensive description of the services that the server can
+          provide is given in the man page for the configuration file
+          controlling the attributes of those services (see
+          _s_m_b._c_o_n_f(_5)
+           This man page will not describe the services, but will
+          concentrate on the administrative aspects of running the
+          server.
+
+          Please note that there are significant security implications
+          to running this server, and the _s_m_b._c_o_n_f(_5) manpage should
+          be regarded as mandatory reading before proceeding with
+          installation.
+
+          A session is created whenever a client requests one. Each
+          client gets a copy of the server for each session. This copy
+          then services all connections made by the client during that
+          session. When all connections from its client are closed,
+          the copy of the server for that client terminates.
+
+          The configuration file, and any files that it includes, are
+          automatically reloaded every minute, if they change. You can
+          force a reload by sending a SIGHUP to the server. Reloading
+          the configuration file will not affect connections to any
+          service that is already established. Either the user will
+          have to disconnect from the service, or ssssmmmmbbbbdddd killed and
+          restarted.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----DDDD   If specified, this parameter causes the server to
+               operate as a daemon. That is, it detaches itself and
+               runs in the background, fielding requests on the
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+               appropriate port. Operating the server as a daemon is
+               the recommended way of running ssssmmmmbbbbdddd for servers that
+               provide more than casual use file and print services.
+               This switch is assumed if ssssmmmmbbbbdddd is executed on the
+               command line of a shell.
+
+          ----aaaa   If this parameter is specified, each new connection
+               will append log messages to the log file. This is the
+               default.
+
+          ----iiii   If this parameter is specified it causes the server to
+               run "interactively", not as a daemon, even if the
+               server is executed on the command line of a shell.
+               Setting this parameter negates the implicit deamon mode
+               when run from the command line.
+
+          ----oooo   If this parameter is specified, the log files will be
+               overwritten when opened. By default, ssssmmmmbbbbdddd will append
+               entries to the log files.
+
+          ----PPPP   Passive option. Causes ssssmmmmbbbbdddd not to send any network
+               traffic out. Used for debugging by the developers only.
+
+          ----hhhh   Prints the help information (usage) for ssssmmmmbbbbdddd.
+
+          ----vvvv   Prints the version number for ssssmmmmbbbbdddd.
+
+          ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>>
+               _d_e_b_u_g_l_e_v_e_l is an integer from 0 to 10. The default
+               value if this parameter is not specified is zero.
+
+               The higher this value, the more detail will be logged
+               to the log files about the activities of the server. At
+               level 0, only critical errors and serious warnings will
+               be logged. Level 1 is a reasonable level for day to day
+               running - it generates a small amount of information
+               about operations carried out.
+
+               Levels above 1 will generate considerable amounts of
+               log data, and should only be used when investigating a
+               problem. Levels above 3 are designed for use only by
+               developers and generate HUGE amounts of log data, most
+               of which is extremely cryptic.
+
+               Note that specifying this parameter here will override
+               the log level file.
+
+          ----llll <<<<lllloooogggg ddddiiiirrrreeeeccccttttoooorrrryyyy>>>>
+               If specified, _l_o_g _d_i_r_e_c_t_o_r_y specifies a log directory
+               into which the "log.smbd" log file will be created for
+               informational and debug messages from the running
+               server. The log file generated is never removed by the
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+               server although its size may be controlled by the max
+               log size option in the  _s_m_b._c_o_n_f(_5) file. BBBBeeeewwwwaaaarrrreeee:::: If
+               the directory specified does not exist, ssssmmmmbbbbdddd will log
+               to the default debug log location defined at compile
+               time.
+
+               The default log directory is specified at compile time.
+
+          ----OOOO <<<<ssssoooocccckkkkeeeetttt ooooppppttttiiiioooonnnnssss>>>>
+               See the socket options parameter in the _s_m_b._c_o_n_f(_5)
+                file for details.
+
+          ----pppp <<<<ppppoooorrrrtttt nnnnuuuummmmbbbbeeeerrrr>>>>
+               _p_o_r_t _n_u_m_b_e_r is a positive integer value. The default
+               value if this parameter is not specified is 139.
+
+               This number is the port number that will be used when
+               making connections to the server from client software.
+               The standard (well-known) port number for the SMB over
+               TCP is 139, hence the default. If you wish to run the
+               server as an ordinary user rather than as root, most
+               systems will require you to use a port number greater
+               than 1024 - ask your system administrator for help if
+               you are in this situation.
+
+               In order for the server to be useful by most clients,
+               should you configure it on a port other than 139, you
+               will require port redirection services on port 139,
+               details of which are outlined in rfc1002.txt section
+               4.3.5.
+
+               This parameter is not normally specified except in the
+               above situation.
+
+          ----ssss <<<<ccccoooonnnnffffiiiigggguuuurrrraaaattttiiiioooonnnn ffffiiiilllleeee>>>>
+               The file specified contains the configuration details
+               required by the server. The information in this file
+               includes server-specific information such as what
+               printcap file to use, as well as descriptions of all
+               the services that the server is to provide. See
+               _s_m_b._c_o_n_f(_5) for more information.  The default
+               configuration file name is determined at compile time.
+
+     FFFFIIIILLLLEEEESSSS
+          /_e_t_c/_i_n_e_t_d._c_o_n_f
+               If the server is to be run by the iiiinnnneeeettttdddd meta-daemon,
+               this file must contain suitable startup information for
+               the meta-daemon. See the UNIX_INSTALL.html document for
+               details.
+
+          /_e_t_c/_r_c
+               or whatever initialization script your system uses).
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+               If running the server as a daemon at startup, this file
+               will need to contain an appropriate startup sequence
+               for the server. See the UNIX_INSTALL.html document for
+               details.
+
+          /_e_t_c/_s_e_r_v_i_c_e_s
+               If running the server via the meta-daemon iiiinnnneeeettttdddd, this
+               file must contain a mapping of service name (e.g.,
+               netbios-ssn) to service port (e.g., 139) and protocol
+               type (e.g., tcp).  See the UNIX_INSTALL.html document
+               for details.
+
+          /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f
+               This is the default location of the _s_m_b._c_o_n_f server
+               configuration file. Other common places that systems
+               install this file are /_u_s_r/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f and
+               /_e_t_c/_s_m_b._c_o_n_f.
+
+               This file describes all the services the server is to
+               make available to clients. See  _s_m_b._c_o_n_f(_5) for more
+               information.
+
+     LLLLIIIIMMMMIIIITTTTAAAATTTTIIIIOOOONNNNSSSS
+          On some systems ssssmmmmbbbbdddd cannot change uid back to root after a
+          setuid() call. Such systems are called trapdoor uid systems.
+          If you have such a system, you will be unable to connect
+          from a client (such as a PC) as two different users at once.
+          Attempts to connect the second user will result in access
+          denied or similar.
+
+     EEEENNNNVVVVIIIIRRRROOOONNNNMMMMEEEENNNNTTTT VVVVAAAARRRRIIIIAAAABBBBLLLLEEEESSSS
+          PPPPRRRRIIIINNNNTTTTEEEERRRR
+               If no printer name is specified to printable services,
+               most systems will use the value of this variable (or lp
+               if this variable is not defined) as the name of the
+               printer to use. This is not specific to the server,
+               however.
+
+     PPPPAAAAMMMM IIIINNNNTTTTEEEERRRRAAAACCCCTTTTIIIIOOOONNNN
+          Samba uses PAM for authentication (when presented with a
+          plaintext password), for account checking (is this account
+          disabled?) and for session management. The degree too which
+          samba supports PAM is restricted by the limitations of the
+          SMB protocol and the obey pam restricions smb.conf
+          paramater. When this is set, the following restrictions
+          apply:
+
+          o+ AAAAccccccccoooouuuunnnntttt VVVVaaaalllliiiiddddaaaattttiiiioooonnnn: All acccesses to a samba server are
+            checked against PAM to see if the account is vaild, not
+            disabled and is permitted to login at this time. This also
+            applies to encrypted logins.
+
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+          o+ SSSSeeeessssssssiiiioooonnnn MMMMaaaannnnaaaaggggeeeemmmmeeeennnntttt: When not using share level secuirty,
+            users must pass PAM's session checks before access is
+            granted. Note however, that this is bypassed in share
+            level secuirty. Note also that some older pam
+            configuration files may need a line added for session
+            support.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     TTTTRRRROOOOUUUUBBBBLLLLEEEESSSSHHHHOOOOOOOOTTTTIIIINNNNGGGG
+          One of the common causes of difficulty when installing Samba
+          and SWAT is the existsnece of some type of firewall or port
+          filtering software on the Samba server. Make sure that the
+          appropriate ports outlined in this man page are available on
+          the server and are not currently being blocked by some type
+          of security software such as iptables or "port sentry". For
+          more troubleshooting information, refer to the additional
+          documentation included in the Samba distribution.
+
+          Most diagnostics issued by the server are logged in a
+          specified log file. The log file name is specified at
+          compile time, but may be overridden on the command line.
+
+          The number and nature of diagnostics available depends on
+          the debug level used by the server. If you have problems,
+          set the debug level to 3 and peruse the log files.
+
+          Most messages are reasonably self-explanatory.
+          Unfortunately, at the time this man page was created, there
+          are too many diagnostics available in the source code to
+          warrant describing each and every diagnostic. At this stage
+          your best bet is still to grep the source code and inspect
+          the conditions that gave rise to the diagnostics you are
+          seeing.
+
+     SSSSIIIIGGGGNNNNAAAALLLLSSSS
+          Sending the ssssmmmmbbbbdddd a SIGHUP will cause it to reload its
+          _s_m_b._c_o_n_f configuration file within a short period of time.
+
+          To shut down a user's ssssmmmmbbbbdddd process it is recommended that
+          SSSSIIIIGGGGKKKKIIIILLLLLLLL ((((----9999)))) NNNNOOOOTTTT be used, except as a last resort, as this
+          may leave the shared memory area in an inconsistent state.
+          The safe way to terminate an ssssmmmmbbbbdddd is to send it a SIGTERM
+          (-15) signal and wait for it to die on its own.
+
+          The debug log level of ssssmmmmbbbbdddd may be raised or lowered using
+          ssssmmmmbbbbccccoooonnnnttttrrrroooollll((((1111))))
+           program (SIGUSR[1|2] signals are no longer used in Samba
+          2.2). This is to allow transient problems to be diagnosed,
+          whilst still running at a normally low log level.
+
+
+
+
+     Page 5                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSMMMMBBBBDDDD((((8888))))
+
+
+
+          Note that as the signal handlers send a debug write, they
+          are not re-entrant in ssssmmmmbbbbdddd. This you should wait until ssssmmmmbbbbdddd
+          is in a state of waiting for an incoming SMB before issuing
+          them. It is possible to make the signal handlers safe by
+          un-blocking the signals before the select call and re-
+          blocking them after, however this would affect performance.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          hosts_access(5), iiiinnnneeeettttdddd((((8888)))), nnnnmmmmbbbbdddd((((8888)))) _s_m_b._c_o_n_f(_5)
+           ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+           and the Internet RFC's _r_f_c_1_0_0_1._t_x_t, _r_f_c_1_0_0_2._t_x_t. In
+          addition the CIFS (formerly SMB) specification is available
+          as a link from the Web page http://samba.org/cifs/
+          <URL:http://samba.org/cifs/>.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 6                                          (printed 1/7/103)
+
+
+

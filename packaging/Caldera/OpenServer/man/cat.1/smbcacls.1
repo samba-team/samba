@@ -1,0 +1,264 @@
+
+
+
+     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbcacls - Set or get ACLs on an NT file or directory names
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ssssmmmmbbbbccccaaaaccccllllssss ////////sssseeeerrrrvvvveeeerrrr////sssshhhhaaaarrrreeee ffffiiiilllleeeennnnaaaammmmeeee [ ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee ]  [ ----AAAA aaaaccccllllssss
+          ]  [ ----MMMM aaaaccccllllssss ]  [ ----DDDD aaaaccccllllssss ]  [ ----SSSS aaaaccccllllssss ]  [ ----CCCC nnnnaaaammmmeeee ]  [ ----GGGG
+          nnnnaaaammmmeeee ]  [ ----nnnn ]  [ ----hhhh ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          The ssssmmmmbbbbccccaaaaccccllllssss program manipulates NT Access Control Lists
+          (ACLs) on SMB file shares.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          The following options are available to the ssssmmmmbbbbccccaaaaccccllllssss program.
+          The format of ACLs is described in the section ACL FORMAT
+
+          ----AAAA aaaaccccllllssss
+               Add the ACLs specified to the ACL list. Existing access
+               control entries are unchanged.
+
+          ----MMMM aaaaccccllllssss
+               Modify the mask value (permissions) for the ACLs
+               specified on the command line. An error will be printed
+               for each ACL specified that was not already present in
+               the ACL list
+
+          ----DDDD aaaaccccllllssss
+               Delete any ACLs specified on the command line. An error
+               will be printed for each ACL specified that was not
+               already present in the ACL list.
+
+          ----SSSS aaaaccccllllssss
+               This command sets the ACLs on the file with only the
+               ones specified on the command line. All other ACLs are
+               erased. Note that the ACL specified must contain at
+               least a revision, type, owner and group for the call to
+               succeed.
+
+          ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee
+               Specifies a username used to connect to the specified
+               service. The username may be of the form "username" in
+               which case the user is prompted to enter in a password
+               and the workgroup specified in the _s_m_b._c_o_n_f file is
+               used, or "username%password" or
+               "DOMAIN\username%password" and the password and
+               workgroup names are used as provided.
+
+          ----CCCC nnnnaaaammmmeeee
+               The owner of a file or directory can be changed to the
+               name given using the -_C option. The name can be a sid
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))
+
+
+
+               in the form S-1-x-y-z or a name resolved against the
+               server specified in the first argument.
+
+               This command is a shortcut for -M OWNER:name.
+
+          ----GGGG nnnnaaaammmmeeee
+               The group owner of a file or directory can be changed
+               to the name given using the -_G option. The name can be
+               a sid in the form S-1-x-y-z or a name resolved against
+               the server specified n the first argument.
+
+               This command is a shortcut for -M GROUP:name.
+
+          ----nnnn   This option displays all ACL information in numeric
+               format. The default is to convert SIDs to names and ACE
+               types and masks to a readable string format.
+
+          ----hhhh   Print usage information on the ssssmmmmbbbbccccaaaaccccllllssss program.
+
+     AAAACCCCLLLL FFFFOOOORRRRMMMMAAAATTTT
+          The format of an ACL is one or more ACL entries separated by
+          either commas or newlines. An ACL entry is one of the
+          following:
+
+
+          REVISION:<revision number>
+          OWNER:<sid or name>
+          GROUP:<sid or name>
+          ACL:<sid or name>:<type>/<flags>/<mask>
+
+
+
+          The revision of the ACL specifies the internal Windows NT
+          ACL revision for the security descriptor. If not specified
+          it defaults to 1. Using values other than 1 may cause
+          strange behaviour.
+
+          The owner and group specify the owner and group sids for the
+          object. If a SID in the format CWS-1-x-y-z is specified this
+          is used, otherwise the name specified is resolved using the
+          server on which the file or directory resides.
+
+          ACLs specify permissions granted to the SID. This SID again
+          can be specified in CWS-1-x-y-z format or as a name in which
+          case it is resolved against the server on which the file or
+          directory resides. The type, flags and mask values determine
+          the type of access granted to the SID.
+
+          The type can be either 0 or 1 corresponding to ALLOWED or
+          DENIED access to the SID. The flags values are generally
+          zero for file ACLs and either 9 or 2 for directory ACLs.
+          Some common flags are:
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))
+
+
+
+          o+ #define SEC_ACE_FLAG_OBJECT_INHERIT 0x1
+
+          o+ #define SEC_ACE_FLAG_CONTAINER_INHERIT 0x2
+
+          o+ #define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT 0x4
+
+          o+ #define SEC_ACE_FLAG_INHERIT_ONLY 0x8
+
+          At present flags can only be specified as decimal or
+          hexadecimal values.
+
+          The mask is a value which expresses the access right granted
+          to the SID. It can be given as a decimal or hexadecimal
+          value, or by using one of the following text strings which
+          map to the NT file permissions of the same name.
+
+          o+ RRRR - Allow read access
+
+          o+ WWWW - Allow write access
+
+          o+ XXXX - Execute permission on the object
+
+          o+ DDDD - Delete the object
+
+          o+ PPPP - Change permissions
+
+          o+ OOOO - Take ownership
+
+          The following combined permissions can be specified:
+
+          o+ RRRREEEEAAAADDDD - Equivalent to 'RX' permissions
+
+          o+ CCCCHHHHAAAANNNNGGGGEEEE - Equivalent to 'RXWD' permissions
+
+          o+ FFFFUUUULLLLLLLL - Equivalent to 'RWXDPO' permissions
+
+     EEEEXXXXIIIITTTT SSSSTTTTAAAATTTTUUUUSSSS
+          The ssssmmmmbbbbccccaaaaccccllllssss program sets the exit status depending on the
+          success or otherwise of the operations performed. The exit
+          status may be one of the following values.
+
+          If the operation succeeded, smbcacls returns and exit status
+          of 0. If ssssmmmmbbbbccccaaaaccccllllssss couldn't connect to the specified server,
+          or there was an error getting or setting the ACLs, an exit
+          status of 1 is returned. If there was an error parsing any
+          command line arguments, an exit status of 2 is returned.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     SSSSMMMMBBBBCCCCAAAACCCCLLLLSSSS((((1111))))
+
+
+
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          ssssmmmmbbbbccccaaaaccccllllssss was written by Andrew Tridgell and Tim Potter.
+
+          The conversion to DocBook for Samba 2.2 was done by Gerald
+          Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+

@@ -1,0 +1,264 @@
+
+
+
+     SSSSWWWWAAAATTTT((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSWWWWAAAATTTT((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          swat - Samba Web Administration Tool
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          sssswwwwaaaatttt [ ----ssss <<<<ssssmmmmbbbb ccccoooonnnnffffiiiigggg ffffiiiilllleeee>>>> ]  [ ----aaaa ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          sssswwwwaaaatttt allows a Samba administrator to configure the complex
+          _s_m_b._c_o_n_f(_5) file via a Web browser. In addition, a sssswwwwaaaatttt
+          configuration page has help links to all the configurable
+          options in the _s_m_b._c_o_n_f file allowing an administrator to
+          easily look up the effects of any change.
+
+          sssswwwwaaaatttt is run from iiiinnnneeeettttdddd
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----ssss ssssmmmmbbbb ccccoooonnnnffffiiiigggguuuurrrraaaattttiiiioooonnnn ffffiiiilllleeee
+               The default configuration file path is determined at
+               compile time. The file specified contains the
+               configuration details required by the ssssmmmmbbbbdddd server. This
+               is the file that sssswwwwaaaatttt will modify. The information in
+               this file includes server-specific information such as
+               what printcap file to use, as well as descriptions of
+               all the services that the server is to provide.  See
+               _s_m_b._c_o_n_f for more information.
+
+          ----aaaa   This option disables authentication and puts sssswwwwaaaatttt in
+               demo mode. In that mode anyone will be able to modify
+               the _s_m_b._c_o_n_f file.
+
+               DDDDoooo NNNNOOOOTTTT eeeennnnaaaabbbblllleeee tttthhhhiiiissss ooooppppttttiiiioooonnnn oooonnnn aaaa pppprrrroooodddduuuuccccttttiiiioooonnnn sssseeeerrrrvvvveeeerrrr....
+
+     IIIINNNNSSSSTTTTAAAALLLLLLLLAAAATTTTIIIIOOOONNNN
+          After you compile SWAT you need to run mmmmaaaakkkkeeee iiiinnnnssssttttaaaallllllll to
+          install the sssswwwwaaaatttt binary and the various help files and
+          images. A default install would put these in:
+
+          o+ /usr/local/samba/bin/swat
+
+          o+ /usr/local/samba/swat/images/*
+
+          o+ /usr/local/samba/swat/help/*
+
+        IIIINNNNEEEETTTTDDDD IIIINNNNSSSSTTTTAAAALLLLLLLLAAAATTTTIIIIOOOONNNN
+          You need to edit your /_e_t_c/_i_n_e_t_d._c_o_n_f and /_e_t_c/_s_e_r_v_i_c_e_s to
+          enable SWAT to be launched via iiiinnnneeeettttdddd.
+
+          In /_e_t_c/_s_e_r_v_i_c_e_s you need to add a line like this:
+
+          sssswwwwaaaatttt 999900001111////ttttccccpppp
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSWWWWAAAATTTT((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSWWWWAAAATTTT((((8888))))
+
+
+
+          Note for NIS/YP users - you may need to rebuild the NIS
+          service maps rather than alter your local  /_e_t_c/_s_e_r_v_i_c_e_s
+          file.
+
+          the choice of port number isn't really important except that
+          it should be less than 1024 and not currently used (using a
+          number above 1024 presents an obscure security hole
+          depending on the implementation details of your iiiinnnneeeettttdddd
+          daemon).
+
+          In /_e_t_c/_i_n_e_t_d._c_o_n_f you should add a line like this:
+
+          sssswwwwaaaatttt ssssttttrrrreeeeaaaammmm ttttccccpppp nnnnoooowwwwaaaaiiiitttt....444400000000 rrrrooooooootttt ////uuuussssrrrr////llllooooccccaaaallll////ssssaaaammmmbbbbaaaa////bbbbiiiinnnn////sssswwwwaaaatttt
+          sssswwwwaaaatttt
+
+          One you have edited /_e_t_c/_s_e_r_v_i_c_e_s and /_e_t_c/_i_n_e_t_d._c_o_n_f you
+          need to send a HUP signal to inetd. To do this use kkkkiiiillllllll ----1111
+          PPPPIIIIDDDD where PID is the process ID of the inetd daemon.
+
+        XXXXIIIINNNNEEEETTTTDDDD IIIINNNNSSSSTTTTAAAALLLLLLLLAAAATTTTIIIIOOOONNNN
+          Newer Linux systems ship with a more secure implementation
+          of the inetd meta-daemon. The xxxxiiiinnnneeeettttdddd daemon can read
+          configuration inf9ormation from a single file (i.e.
+          /_e_t_c/_x_i_n_e_t_d._c_o_n_f) or from a collection of service control
+          files in the _x_i_n_e_t_d._d/ directory.  These directions assume
+          the latter configuration.
+
+          The following file should be created as /_e_t_c/_x_i_e_n_t_d._d/_s_w_a_t.
+          It is then be neccessary cause the meta-daemon to reload its
+          configuration files.  Refer to the xinetd man page for
+          details on how to accomplish this.
+
+          ## /etc/xinetd.d/swat
+          service swat
+          {
+                  port    = 901
+                  socket_type     = stream
+                  wait    = no
+                  only_from = localhost
+                  user    = root
+                  server  = /usr/local/samba/bin/swat
+                  log_on_failure  += USERID
+                  disable =  No
+          }
+
+
+        LLLLAAAAUUUUNNNNCCCCHHHHIIIINNNNGGGG
+          To launch SWAT just run your favorite web browser and point
+          it at "http://localhost:901/".
+
+          Note that you can attach to SWAT from any IP connected
+          machine but connecting from a remote machine leaves your
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSWWWWAAAATTTT((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSWWWWAAAATTTT((((8888))))
+
+
+
+          connection open to password sniffing as passwords will be
+          sent in the clear over the wire.
+
+     TTTTRRRROOOOUUUUBBBBLLLLEEEESSSSHHHHOOOOOOOOTTTTIIIINNNNGGGG
+          One of the common causes of difficulty when installing Samba
+          and SWAT is the existsnece of some type of firewall or port
+          filtering software on the Samba server. Make sure that the
+          appropriate ports outlined in this man page are available on
+          the server and are not currently being blocked by some type
+          of security software such as iptables or "port sentry". For
+          more troubleshooting information, refer to the additional
+          documentation included in the Samba distribution.
+
+     FFFFIIIILLLLEEEESSSS
+          /_e_t_c/_i_n_e_t_d._c_o_n_f
+               This file must contain suitable startup information for
+               the meta-daemon.
+
+          /_e_t_c/_x_i_n_e_t_d._d/_s_w_a_t
+               This file must contain suitable startup information for
+               the xxxxiiiinnnneeeettttdddd meta-daemon.
+
+          /_e_t_c/_s_e_r_v_i_c_e_s
+               This file must contain a mapping of service name (e.g.,
+               swat) to service port (e.g., 901) and protocol type
+               (e.g., tcp).
+
+          /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f
+               This is the default location of the _s_m_b._c_o_n_f(_5) server
+               configuration file that swat edits. Other common places
+               that systems install this file are
+               /_u_s_r/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f and /_e_t_c/_s_m_b._c_o_n_f . This file
+               describes all the services the server is to make
+               available to clients.
+
+     WWWWAAAARRRRNNNNIIIINNNNGGGGSSSS
+          sssswwwwaaaatttt will rewrite your _s_m_b._c_o_n_f file. It will rearrange the
+          entries and delete all comments, _i_n_c_l_u_d_e= and _c_o_p_y="
+          options. If you have a carefully crafted  _s_m_b._c_o_n_f then back
+          it up or don't use swat!
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          iiiinnnneeeettttdddd((((5555)))), ssssmmmmbbbbdddd((((8888)))) smb.conf(5) xxxxiiiinnnneeeettttdddd((((8888))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSWWWWAAAATTTT((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         SSSSWWWWAAAATTTT((((8888))))
+
+
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+

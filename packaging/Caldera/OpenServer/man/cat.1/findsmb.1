@@ -1,0 +1,132 @@
+
+
+
+     FFFFIIIINNNNDDDDSSSSMMMMBBBB((((1111))))      UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))      FFFFIIIINNNNDDDDSSSSMMMMBBBB((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          findsmb - list info about machines that respond to SMB  name
+          queries on a subnet
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          ffffiiiinnnnddddssssmmmmbbbb [ ssssuuuubbbbnnnneeeetttt bbbbrrrrooooaaaaddddccccaaaasssstttt aaaaddddddddrrrreeeessssssss ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This perl script is part of the  Samba suite.
+
+          ffffiiiinnnnddddssssmmmmbbbb is a perl script that prints out several pieces of
+          information about machines on a subnet that respond to SMB
+          name query requests.  It uses  nnnnmmmmbbbbllllooooooookkkkuuuupppp((((1111)))) to obtain this
+          information.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ssssuuuubbbbnnnneeeetttt bbbbrrrrooooaaaaddddccccaaaasssstttt aaaaddddddddrrrreeeessssssss
+               Without this option, ffffiiiinnnnddddssssmmmmbbbb will probe the subnet of
+               the machine where ffffiiiinnnnddddssssmmmmbbbb is run. This value is passed
+               to nnnnmmmmbbbbllllooooooookkkkuuuupppp as part of the -B option
+
+     EEEEXXXXAAAAMMMMPPPPLLLLEEEESSSS
+          The output of ffffiiiinnnnddddssssmmmmbbbb lists the following information for
+          all machines that respond to the initial nnnnmmmmbbbbllllooooooookkkkuuuupppp for any
+          name: IP address, NetBIOS name, Workgroup name, operating
+          system, and SMB server version.
+
+          There will be a '+' in front of the workgroup name for
+          machines that are local master browsers for that workgroup.
+          There will be an '*' in front of the workgroup name for
+          machines that are the domain master browser for that
+          workgroup. Machines that are running Windows, Windows 95 or
+          Windows 98 will not show any information about the operating
+          system or server version.
+
+          The command must be run on a system without nnnnmmmmbbbbdddd running. If
+          nnnnmmmmbbbbdddd is running on the system, you will only get the IP
+          address and the DNS name of the machine. To get proper
+          responses from Windows 95 and Windows 98 machines, the
+          command must be run as root.
+
+          For example running ffffiiiinnnnddddssssmmmmbbbb on a machine without nnnnmmmmbbbbdddd
+          running would yield output similar to the following
+
+          IP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION
+          ---------------------------------------------------------------------
+          192.168.35.10   MINESET-TEST1  [DMVENGR]
+          192.168.35.55   LINUXBOX      *[MYGROUP] [Unix] [Samba 2.0.6]
+          192.168.35.56   HERBNT2        [HERB-NT]
+          192.168.35.63   GANDALF        [MVENGR] [Unix] [Samba 2.0.5a for IRIX]
+          192.168.35.65   SAUNA          [WORKGROUP] [Unix] [Samba 1.9.18p10]
+          192.168.35.71   FROGSTAR       [ENGR] [Unix] [Samba 2.0.0 for IRIX]
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     FFFFIIIINNNNDDDDSSSSMMMMBBBB((((1111))))      UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))      FFFFIIIINNNNDDDDSSSSMMMMBBBB((((1111))))
+
+
+
+          192.168.35.78   HERBDHCP1     +[HERB]
+          192.168.35.88   SCNT2         +[MVENGR] [Windows NT 4.0] [NT LAN Manager 4.0]
+          192.168.35.93   FROGSTAR-PC    [MVENGR] [Windows 5.0] [Windows 2000 LAN Manager]
+          192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
+
+
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          nnnnmmmmbbbbdddd((((8888)))) ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+           and  nnnnmmmmbbbbllllooooooookkkkuuuupppp((((1111))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

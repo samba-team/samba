@@ -1,0 +1,132 @@
+
+
+
+     TTTTEEEESSSSTTTTPPPPRRRRNNNNSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     TTTTEEEESSSSTTTTPPPPRRRRNNNNSSSS((((1111))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          testprns - check printer name for validity with smbd
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          tttteeeessssttttpppprrrrnnnnssss pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee [ pppprrrriiiinnnnttttccccaaaappppnnnnaaaammmmeeee ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          tttteeeessssttttpppprrrrnnnnssss is a very simple test program to determine whether
+          a given printer name is valid for use in a service to be
+          provided by  ssssmmmmbbbbdddd((((8888))))
+
+          "Valid" in this context means "can be found in the printcap
+          specified". This program is very stupid - so stupid in fact
+          that it would be wisest to always specify the printcap file
+          to use.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          pppprrrriiiinnnntttteeeerrrrnnnnaaaammmmeeee
+               The printer name to validate.
+
+               Printer names are taken from the first field in each
+               record in the printcap file, single printer names and
+               sets of aliases separated by vertical bars ("|") are
+               recognized. Note that no validation or checking of the
+               printcap syntax is done beyond that required to extract
+               the printer name. It may be that the print spooling
+               system is more forgiving or less forgiving than
+               tttteeeessssttttpppprrrrnnnnssss. However, if tttteeeessssttttpppprrrrnnnnssss finds the printer then
+               ssssmmmmbbbbdddd should do so as well.
+
+          pppprrrriiiinnnnttttccccaaaappppnnnnaaaammmmeeee
+               This is the name of the printcap file within which to
+               search for the given printer name.
+
+               If no printcap name is specified tttteeeessssttttpppprrrrnnnnssss will attempt
+               to scan the printcap file name specified at compile
+               time.
+
+     FFFFIIIILLLLEEEESSSS
+          /_e_t_c/_p_r_i_n_t_c_a_p
+               This is usually the default printcap file to scan. See
+               _p_r_i_n_t_c_a_p (_5).
+
+     DDDDIIIIAAAAGGGGNNNNOOOOSSSSTTTTIIIICCCCSSSS
+          If a printer is found to be valid, the message "Printer name
+          <printername> is valid" will be displayed.
+
+          If a printer is found to be invalid, the message "Printer
+          name <printername> is not valid" will be displayed.
+
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     TTTTEEEESSSSTTTTPPPPRRRRNNNNSSSS((((1111))))     UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))     TTTTEEEESSSSTTTTPPPPRRRRNNNNSSSS((((1111))))
+
+
+
+          All messages that would normally be logged during operation
+          of the Samba daemons are logged by this program to the file
+          _t_e_s_t._l_o_g in the current directory. The program runs at
+          debuglevel 3, so quite extensive logging information is
+          written. The log should be checked carefully for errors and
+          warnings.
+
+          Other messages are self-explanatory.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          _p_r_i_n_t_c_a_p(_5), ssssmmmmbbbbdddd((((8888)))) ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+

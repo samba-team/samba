@@ -1,0 +1,330 @@
+
+
+
+     NNNNMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         NNNNMMMMBBBBDDDD((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          nmbd - NetBIOS name server to provide NetBIOS  over IP
+          naming services to clients
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          nnnnmmmmbbbbdddd [ ----DDDD ]  [ ----aaaa ]  [ ----iiii ]  [ ----oooo ]  [ ----PPPP ]  [ ----hhhh ]  [ ----VVVV ]
+          [ ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>> ]  [ ----HHHH <<<<llllmmmmhhhhoooossssttttssss ffffiiiilllleeee>>>> ]  [ ----llll <<<<lllloooogggg
+          ddddiiiirrrreeeeccccttttoooorrrryyyy>>>> ]  [ ----nnnn <<<<pppprrrriiiimmmmaaaarrrryyyy nnnneeeettttbbbbiiiioooossss nnnnaaaammmmeeee>>>> ]  [ ----pppp <<<<ppppoooorrrrtttt
+          nnnnuuuummmmbbbbeeeerrrr>>>> ]  [ ----ssss <<<<ccccoooonnnnffffiiiigggguuuurrrraaaattttiiiioooonnnn ffffiiiilllleeee>>>> ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This program is part of the Samba suite.
+
+          nnnnmmmmbbbbdddd is a server that understands and can reply to NetBIOS
+          over IP name service requests, like those produced by
+          SMB/CIFS clients such as Windows 95/98/ME, Windows NT,
+          Windows 2000, and LanManager clients. It also participates
+          in the browsing protocols which make up the Windows "Network
+          Neighborhood" view.
+
+          SMB/CIFS clients, when they start up, may wish to locate an
+          SMB/CIFS server. That is, they wish to know what IP number a
+          specified host is using.
+
+          Amongst other services, nnnnmmmmbbbbdddd will listen for such requests,
+          and if its own NetBIOS name is specified it will respond
+          with the IP number of the host it is running on. Its "own
+          NetBIOS name" is by default the primary DNS name of the host
+          it is running on, but this can be overridden with the ----nnnn
+          option (see OPTIONS below). Thus nnnnmmmmbbbbdddd will reply to
+          broadcast queries for its own name(s). Additional names for
+          nnnnmmmmbbbbdddd to respond on can be set via parameters in the
+          _s_m_b._c_o_n_f(_5) configuration file.
+
+          nnnnmmmmbbbbdddd can also be used as a WINS (Windows Internet Name
+          Server) server. What this basically means is that it will
+          act as a WINS database server, creating a database from name
+          registration requests that it receives and replying to
+          queries from clients for these names.
+
+          In addition, nnnnmmmmbbbbdddd can act as a WINS proxy, relaying
+          broadcast queries from clients that do not understand how to
+          talk the WINS protocol to a WIN server.
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----DDDD   If specified, this parameter causes nnnnmmmmbbbbdddd to operate as
+               a daemon. That is, it detaches itself and runs in the
+               background, fielding requests on the appropriate port.
+               By default, nnnnmmmmbbbbdddd will operate as a daemon if launched
+               from a command shell. nmbd can also be operated from
+               the iiiinnnneeeettttdddd meta-daemon, although this is not
+               recommended.
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     NNNNMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         NNNNMMMMBBBBDDDD((((8888))))
+
+
+
+          ----aaaa   If this parameter is specified, each new connection
+               will append log messages to the log file. This is the
+               default.
+
+          ----iiii   If this parameter is specified it causes the server to
+               run "interactively", not as a daemon, even if the
+               server is executed on the command line of a shell.
+               Setting this parameter negates the implicit deamon mode
+               when run from the command line.
+
+          ----oooo   If this parameter is specified, the log files will be
+               overwritten when opened. By default, ssssmmmmbbbbdddd will append
+               entries to the log files.
+
+          ----hhhh   Prints the help information (usage) for nnnnmmmmbbbbdddd.
+
+          ----HHHH <<<<ffffiiiilllleeeennnnaaaammmmeeee>>>>
+               NetBIOS lmhosts file. The lmhosts file is a list of
+               NetBIOS names to IP addresses that is loaded by the
+               nmbd server and used via the name resolution mechanism
+               name resolve order described in  _s_m_b._c_o_n_f(_5) to resolve
+               any NetBIOS name queries needed by the server. Note
+               that the contents of this file are NNNNOOOOTTTT used by nnnnmmmmbbbbdddd to
+               answer any name queries. Adding a line to this file
+               affects name NetBIOS resolution from this host OOOONNNNLLLLYYYY.
+
+               The default path to this file is compiled into Samba as
+               part of the build process. Common defaults are
+               /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_l_i_b/_l_m_h_o_s_t_s, /_u_s_r/_s_a_m_b_a/_l_i_b/_l_m_h_o_s_t_s or
+               /_e_t_c/_l_m_h_o_s_t_s. See the  _l_m_h_o_s_t_s(_5) man page for details
+               on the contents of this file.
+
+          ----VVVV   Prints the version number for nnnnmmmmbbbbdddd.
+
+          ----dddd <<<<ddddeeeebbbbuuuugggg lllleeeevvvveeeellll>>>>
+               debuglevel is an integer from 0 to 10. The default
+               value if this parameter is not specified is zero.
+
+               The higher this value, the more detail will be logged
+               to the log files about the activities of the server. At
+               level 0, only critical errors and serious warnings will
+               be logged. Level 1 is a reasonable level for day to day
+               running - it generates a small amount of information
+               about operations carried out.
+
+               Levels above 1 will generate considerable amounts of
+               log data, and should only be used when investigating a
+               problem. Levels above 3 are designed for use only by
+               developers and generate HUGE amounts of log data, most
+               of which is extremely cryptic.
+
+               Note that specifying this parameter here will override
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     NNNNMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         NNNNMMMMBBBBDDDD((((8888))))
+
+
+
+               the log level parameter in the  _s_m_b._c_o_n_f file.
+
+          ----llll <<<<lllloooogggg ddddiiiirrrreeeeccccttttoooorrrryyyy>>>>
+               The -l parameter specifies a directory into which the
+               "log.nmbd" log file will be created for operational
+               data from the running nnnnmmmmbbbbdddd server. The default log
+               directory is compiled into Samba as part of the build
+               process. Common defaults are
+               /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_v_a_r/_l_o_g._n_m_b,  /_u_s_r/_s_a_m_b_a/_v_a_r/_l_o_g._n_m_b
+               or /_v_a_r/_l_o_g/_l_o_g._n_m_b. BBBBeeeewwwwaaaarrrreeee:::: If the directory specified
+               does not exist, nnnnmmmmbbbbdddd will log to the default debug log
+               location defined at compile time.
+
+          ----nnnn <<<<pppprrrriiiimmmmaaaarrrryyyy NNNNeeeettttBBBBIIIIOOOOSSSS nnnnaaaammmmeeee>>>>
+               This option allows you to override the NetBIOS name
+               that Samba uses for itself. This is identical to
+               setting the  NetBIOS name parameter in the _s_m_b._c_o_n_f
+               file. However, a command line setting will take
+               precedence over settings in _s_m_b._c_o_n_f.
+
+          ----pppp <<<<UUUUDDDDPPPP ppppoooorrrrtttt nnnnuuuummmmbbbbeeeerrrr>>>>
+               UDP port number is a positive integer value.  This
+               option changes the default UDP port number (normally
+               137) that nnnnmmmmbbbbdddd responds to name queries on. Don't use
+               this option unless you are an expert, in which case you
+               won't need help!
+
+          ----ssss <<<<ccccoooonnnnffffiiiigggguuuurrrraaaattttiiiioooonnnn ffffiiiilllleeee>>>>
+               The default configuration file name is set at build
+               time, typically as  /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f, but
+               this may be changed when Samba is autoconfigured.
+
+               The file specified contains the configuration details
+               required by the server. See  _s_m_b._c_o_n_f(_5) for more
+               information.
+
+     FFFFIIIILLLLEEEESSSS
+          /_e_t_c/_i_n_e_t_d._c_o_n_f
+               If the server is to be run by the iiiinnnneeeettttdddd meta-daemon,
+               this file must contain suitable startup information for
+               the meta-daemon. See the UNIX_INSTALL.html document for
+               details.
+
+          /_e_t_c/_r_c
+               or whatever initialization script your system uses).
+
+               If running the server as a daemon at startup, this file
+               will need to contain an appropriate startup sequence
+               for the server. See the UNIX_INSTALL.html document for
+               details.
+
+          /_e_t_c/_s_e_r_v_i_c_e_s
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     NNNNMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         NNNNMMMMBBBBDDDD((((8888))))
+
+
+
+               If running the server via the meta-daemon iiiinnnneeeettttdddd, this
+               file must contain a mapping of service name (e.g.,
+               netbios-ssn) to service port (e.g., 139) and protocol
+               type (e.g., tcp).  See the UNIX_INSTALL.html document
+               for details.
+
+          /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f
+               This is the default location of the _s_m_b._c_o_n_f server
+               configuration file. Other common places that systems
+               install this file are /_u_s_r/_s_a_m_b_a/_l_i_b/_s_m_b._c_o_n_f and
+               /_e_t_c/_s_m_b._c_o_n_f.
+
+               When run as a WINS server (see the wins support
+               parameter in the _s_m_b._c_o_n_f(_5) man page), nnnnmmmmbbbbdddd will store
+               the WINS database in the file _w_i_n_s._d_a_t in the _v_a_r/_l_o_c_k_s
+               directory configured under wherever Samba was
+               configured to install itself.
+
+               If nnnnmmmmbbbbdddd is acting as a  bbbbrrrroooowwwwsssseeee mmmmaaaasssstttteeeerrrr (see the local
+               master parameter in the _s_m_b._c_o_n_f(_5) man page, nnnnmmmmbbbbdddd will
+               store the browsing database in the file _b_r_o_w_s_e._d_a_t in
+               the _v_a_r/_l_o_c_k_s directory configured under wherever Samba
+               was configured to install itself.
+
+     SSSSIIIIGGGGNNNNAAAALLLLSSSS
+          To shut down an nnnnmmmmbbbbdddd process it is recommended that SIGKILL
+          (-9) NNNNOOOOTTTT be used, except as a last resort, as this may leave
+          the name database in an inconsistent state.  The correct way
+          to terminate nnnnmmmmbbbbdddd is to send it a SIGTERM (-15) signal and
+          wait for it to die on its own.
+
+          nnnnmmmmbbbbdddd will accept SIGHUP, which will cause it to dump out its
+          namelists into the file _n_a_m_e_l_i_s_t._d_e_b_u_g in the
+          /_u_s_r/_l_o_c_a_l/_s_a_m_b_a/_v_a_r/_l_o_c_k_s directory (or the _v_a_r/_l_o_c_k_s
+          directory configured under wherever Samba was configured to
+          install itself). This will also cause nnnnmmmmbbbbdddd to dump out its
+          server database in the _l_o_g._n_m_b file.
+
+          The debug log level of nmbd may be raised or lowered using
+          ssssmmmmbbbbccccoooonnnnttttrrrroooollll((((1111))))
+           (SIGUSR[1|2] signals are no longer used in Samba 2.2). This
+          is to allow transient problems to be diagnosed, whilst still
+          running at a normally low log level.
+
+     TTTTRRRROOOOUUUUBBBBLLLLEEEESSSSHHHHOOOOOOOOTTTTIIIINNNNGGGG
+          One of the common causes of difficulty when installing Samba
+          and SWAT is the existsnece of some type of firewall or port
+          filtering software on the Samba server. Make sure that the
+          appropriate ports outlined in this man page are available on
+          the server and are not currently being blocked by some type
+          of security software such as iptables or "port sentry". For
+          more troubleshooting information, refer to the additional
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+
+
+
+
+     NNNNMMMMBBBBDDDD((((8888))))         UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))         NNNNMMMMBBBBDDDD((((8888))))
+
+
+
+          documentation included in the Samba distribution.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          iiiinnnneeeettttdddd((((8888)))), ssssmmmmbbbbdddd((((8888)))) _s_m_b._c_o_n_f(_5)
+           ssssmmmmbbbbcccclllliiiieeeennnntttt((((1111))))
+           and the Internet RFC's _r_f_c_1_0_0_1._t_x_t, _r_f_c_1_0_0_2._t_x_t. In
+          addition the CIFS (formerly SMB) specification is available
+          as a link from the Web page http://samba.org/cifs/
+          <URL:http://samba.org/cifs/>.
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 5                                          (printed 1/7/103)
+
+
+

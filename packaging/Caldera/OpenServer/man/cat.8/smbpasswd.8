@@ -1,0 +1,462 @@
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+     NNNNAAAAMMMMEEEE
+          smbpasswd - change a user's SMB password
+
+     SSSSYYYYNNNNOOOOPPPPSSSSIIIISSSS
+          When run by root:
+
+          ssssmmmmbbbbppppaaaasssssssswwwwdddd [ ooooppppttttiiiioooonnnnssss ]  [ uuuusssseeeerrrrnnnnaaaammmmeeee ]  [ ppppaaaasssssssswwwwoooorrrrdddd ]
+
+          otherwise:
+
+          ssssmmmmbbbbppppaaaasssssssswwwwdddd [ ooooppppttttiiiioooonnnnssss ]  [ ppppaaaasssssssswwwwoooorrrrdddd ]
+
+     DDDDEEEESSSSCCCCRRRRIIIIPPPPTTTTIIIIOOOONNNN
+          This tool is part of the  Samba suite.
+
+          The smbpasswd program has several different functions,
+          depending on whether it is run by the rrrrooooooootttt user or not. When
+          run as a normal user it allows the user to change the
+          password used for their SMB sessions on any machines that
+          store SMB passwords.
+
+          By default (when run with no arguments) it will attempt to
+          change the current user's SMB password on the local machine.
+          This is similar to the way the ppppaaaasssssssswwwwdddd((((1111)))) program works.
+          ssssmmmmbbbbppppaaaasssssssswwwwdddd differs from how the passwd program works however
+          in that it is not sssseeeettttuuuuiiiidddd rrrrooooooootttt but works in a client-server
+          mode and communicates with a locally running ssssmmmmbbbbdddd((((8888)))). As a
+          consequence in order for this to succeed the smbd daemon
+          must be running on the local machine. On a UNIX machine the
+          encrypted SMB passwords are usually stored in the
+          _s_m_b_p_a_s_s_w_d(_5) file.
+
+          When run by an ordinary user with no options. smbpasswd will
+          prompt them for their old SMB password and then ask them for
+          their new password twice, to ensure that the new password
+          was typed correctly. No passwords will be echoed on the
+          screen whilst being typed. If you have a blank SMB password
+          (specified by the string "NO PASSWORD" in the smbpasswd
+          file) then just press the <Enter> key when asked for your
+          old password.
+
+          smbpasswd can also be used by a normal user to change their
+          SMB password on remote machines, such as Windows NT Primary
+          Domain Controllers. See the (-r) and -U options below.
+
+          When run by root, smbpasswd allows new users to be added and
+          deleted in the smbpasswd file, as well as allows changes to
+          the attributes of the user in this file to be made. When run
+          by root, ssssmmmmbbbbppppaaaasssssssswwwwdddd accesses the local smbpasswd file
+          directly, thus enabling changes to be made even if smbd is
+          not running.
+
+
+
+
+     Page 1                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+     OOOOPPPPTTTTIIIIOOOONNNNSSSS
+          ----LLLL   Run the smbpasswd command in local mode. This allows a
+               non-root user to specify the root-only options. This is
+               used mostly in test environments where a non-root user
+               needs to make changes to the local _s_m_b_p_a_s_s_w_d file.  The
+               _s_m_b_p_a_s_s_w_d file must have read/write permissions for the
+               user running the command.
+
+          ----hhhh   This option prints the help string for ssssmmmmbbbbppppaaaasssssssswwwwdddd.
+
+          ----cccc ssssmmmmbbbb....ccccoooonnnnffff ffffiiiilllleeee
+               This option specifies that the configuration file
+               specified should be used instead of the default value
+               specified at compile time.
+
+          ----DDDD ddddeeeebbbbuuuugggglllleeeevvvveeeellll
+               _d_e_b_u_g_l_e_v_e_l is an integer from 0 to 10. The default
+               value if this parameter is not specified is zero.
+
+               The higher this value, the more detail will be logged
+               to the log files about the activities of smbpasswd. At
+               level 0, only critical errors and serious warnings will
+               be logged.
+
+               Levels above 1 will generate considerable amounts of
+               log data, and should only be used when investigating a
+               problem. Levels above 3 are designed for use only by
+               developers and generate HUGE amounts of log data, most
+               of which is extremely cryptic.
+
+          ----rrrr rrrreeeemmmmooootttteeee mmmmaaaacccchhhhiiiinnnneeee nnnnaaaammmmeeee
+               This option allows a user to specify what machine they
+               wish to change their password on. Without this
+               parameter smbpasswd defaults to the local host. The
+               _r_e_m_o_t_e _m_a_c_h_i_n_e _n_a_m_e is the NetBIOS name of the SMB/CIFS
+               server to contact to attempt the password change. This
+               name is resolved into an IP address using the standard
+               name resolution mechanism in all programs of the Samba
+               suite. See the -_R _n_a_m_e _r_e_s_o_l_v_e _o_r_d_e_r parameter for
+               details on changing this resolving mechanism.
+
+               The username whose password is changed is that of the
+               current UNIX logged on user. See the -_U _u_s_e_r_n_a_m_e
+               parameter for details on changing the password for a
+               different username.
+
+               Note that if changing a Windows NT Domain password the
+               remote machine specified must be the Primary Domain
+               Controller for the domain (Backup Domain Controllers
+               only have a read-only copy of the user account database
+               and will not allow the password change).
+
+
+
+
+     Page 2                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+               NNNNooootttteeee that Windows 95/98 do not have a real password
+               database so it is not possible to change passwords
+               specifying a Win95/98 machine as remote machine target.
+
+          ----ssss   This option causes smbpasswd to be silent (i.e. not
+               issue prompts) and to read its old and new passwords
+               from standard input, rather than from /_d_e_v/_t_t_y (like
+               the ppppaaaasssssssswwwwdddd((((1111)))) program does). This option is to aid
+               people writing scripts to drive smbpasswd
+
+          ----SSSS   This option causes ssssmmmmbbbbppppaaaasssssssswwwwdddd to query a domain
+               controller of the domain specified by the workgroup
+               parameter in _s_m_b._c_o_n_f and store the domain SID in the
+               _s_e_c_r_e_t_s._t_d_b file as its own machine SID. This is only
+               useful when configuring a Samba PDC and Samba BDC, or
+               when migrating from a Windows PDC to a Samba PDC.
+
+               The -_r options can be used as well to indicate a
+               specific domain controller which should be contacted.
+               In this case, the domain SID obtained is the one for
+               the domain to which the remote machine belongs.
+
+          ----tttt   This option is used to force smbpasswd to change the
+               current password assigned to the machine trust account
+               when operating in domain security mode. This is really
+               meant to be used on systems that only run wwwwiiiinnnnbbbbiiiinnnndddddddd
+               Under server installations, ssssmmmmbbbbdddd handle the password
+               updates automatically.
+
+          ----UUUU uuuusssseeeerrrrnnnnaaaammmmeeee[[[[%%%%ppppaaaassssssss]]]]
+               This option may only be used in conjunction with the -_r
+               option. When changing a password on a remote machine it
+               allows the user to specify the user name on that
+               machine whose password will be changed. It is present
+               to allow users who have different user names on
+               different systems to change these passwords. The
+               optional %pass may be used to specify to old password.
+
+               In particular, this parameter specifies the username
+               used to create the machine account when invoked with -j
+
+          NNNNOOOOTTTTEEEE::::
+               TTTThhhheeee ffffoooolllllllloooowwwwiiiinnnngggg ooooppppttttiiiioooonnnnssss aaaarrrreeee aaaavvvvaaaaiiiillllaaaabbbblllleeee oooonnnnllllyyyy wwwwhhhheeeennnn tttthhhheeee
+               ssssmmmmbbbbppppaaaasssssssswwwwdddd ccccoooommmmmmmmaaaannnndddd iiiissss rrrruuuunnnn aaaassss rrrrooooooootttt oooorrrr iiiinnnn llllooooccccaaaallll mmmmooooddddeeee....
+
+          ----aaaa   This option specifies that the username following
+               should be added to the local smbpasswd file, with the
+               new password typed. This option is ignored if the
+               username specified already exists in the smbpasswd file
+               and it is treated like a regular change password
+               command. Note that the user to be added must already
+               exist in the system password file (usually /_e_t_c/_p_a_s_s_w_d)
+
+
+
+     Page 3                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+               else the request to add the user will fail.
+
+          ----dddd   This option specifies that the username following
+               should be disabled in the local smbpasswd file. This is
+               done by writing a 'D' flag into the account control
+               space in the smbpasswd file. Once this is done all
+               attempts to authenticate via SMB using this username
+               will fail.
+
+               If the smbpasswd file is in the 'old' format (pre-Samba
+               2.0 format) there is no space in the user's password
+               entry to write this information and so the user is
+               disabled by writing 'X' characters into the password
+               space in the smbpasswd file. See ssssmmmmbbbbppppaaaasssssssswwwwdddd((((5555)))) for
+               details on the 'old' and new password file formats.
+
+          ----eeee   This option specifies that the username following
+               should be enabled in the local smbpasswd file, if the
+               account was previously disabled. If the account was not
+               disabled this option has no effect. Once the account is
+               enabled then the user will be able to authenticate via
+               SMB once again.
+
+               If the smbpasswd file is in the 'old' format, then
+               ssssmmmmbbbbppppaaaasssssssswwwwdddd will prompt for a new password for this user,
+               otherwise the account will be enabled by removing the
+               'D' flag from account control space in the  _s_m_b_p_a_s_s_w_d
+               file. See ssssmmmmbbbbppppaaaasssssssswwwwdddd ((((5555)))) for details on the 'old' and
+               new password file formats.
+
+          ----mmmm   This option tells smbpasswd that the account being
+               changed is a MACHINE account. Currently this is used
+               when Samba is being used as an NT Primary Domain
+               Controller.
+
+          ----nnnn   This option specifies that the username following
+               should have their password set to null (i.e. a blank
+               password) in the local smbpasswd file. This is done by
+               writing the string "NO PASSWORD" as the first part of
+               the first password stored in the smbpasswd file.
+
+               Note that to allow users to logon to a Samba server
+               once the password has been set to "NO PASSWORD" in the
+               smbpasswd file the administrator must set the following
+               parameter in the [global] section of the _s_m_b._c_o_n_f file
+               :
+
+               nnnnuuuullllllll ppppaaaasssssssswwwwoooorrrrddddssss ==== yyyyeeeessss
+
+          ----wwww ppppaaaasssssssswwwwoooorrrrdddd
+               This parameter is only available is Samba has been
+               configured to use the experimental --------wwwwiiiitttthhhh----llllddddaaaappppssssaaaammmm
+
+
+
+     Page 4                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+               option. The -_w switch is used to specify the password
+               to be used with the _l_d_a_p _a_d_m_i_n _d_n Note that the
+               password is stored in the _p_r_i_v_a_t_e/_s_e_c_r_e_t_s._t_d_b and is
+               keyed off of the admin's DN. This means that if the
+               value of _l_d_a_p _a_d_m_i_n _d_n ever changes, the password will
+               need to be manually updated as well.
+
+          ----xxxx   This option specifies that the username following
+               should be deleted from the local smbpasswd file.
+
+          ----jjjj DDDDOOOOMMMMAAAAIIIINNNN
+               This option is used to add a Samba server into a
+               Windows NT Domain, as a Domain member capable of
+               authenticating user accounts to any Domain Controller
+               in the same way as a Windows NT Server. See the
+               sssseeeeccccuuuurrrriiiittttyyyy ==== ddddoooommmmaaaaiiiinnnn option in the _s_m_b._c_o_n_f(_5) man page.
+
+               This command can work both with and without the -U
+               parameter.
+
+               When invoked with -U, that username (and optional
+               password) are used to contact the PDC (which must be
+               specified with -r) to both create a machine account,
+               and to set a password on it.
+
+               Alternately, if -U is omitted, Samba will contact its
+               PDC and attempt to change the password on a pre-
+               existing account.
+
+               In order to be used in this way, the Administrator for
+               the Windows NT Domain must have used the program
+               "Server Manager for Domains" to add the primary NetBIOS
+               name of the Samba server as a member of the Domain.
+
+               After this has been done, to join the Domain invoke
+               ssssmmmmbbbbppppaaaasssssssswwwwdddd with this parameter. smbpasswd will then look
+               up the Primary Domain Controller for the Domain (found
+               in the _s_m_b._c_o_n_f file in the parameter _p_a_s_s_w_o_r_d _s_e_r_v_e_r
+               and change the machine account password used to create
+               the secure Domain communication.
+
+               Either way, this password is then stored by smbpasswd
+               in a TDB, writeable only by root, called _s_e_c_r_e_t_s._t_d_b
+
+               Once this operation has been performed the  _s_m_b._c_o_n_f
+               file may be updated to set the  sssseeeeccccuuuurrrriiiittttyyyy ==== ddddoooommmmaaaaiiiinnnn
+               option and all future logins to the Samba server will
+               be authenticated to the Windows NT PDC.
+
+               Note that even though the authentication is being done
+               to the PDC all users accessing the Samba server must
+               still have a valid UNIX account on that machine. The
+
+
+
+     Page 5                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+               wwwwiiiinnnnbbbbiiiinnnndddddddd((((8888)))) daemon can be used to create UNIX accounts
+               for NT users.
+
+          ----RRRR nnnnaaaammmmeeee rrrreeeessssoooollllvvvveeee oooorrrrddddeeeerrrr
+               This option allows the user of smbpasswd to determine
+               what name resolution services to use when looking up
+               the NetBIOS name of the host being connected to.
+
+               The options are :"lmhosts", "host", "wins" and "bcast".
+               They cause names to be resolved as follows :
+
+               o+ lmhosts : Lookup an IP address in the Samba lmhosts
+                 file. If the line in lmhosts has no name type
+                 attached to the NetBIOS name (see the lmhosts(5) for
+                 details) then any name type matches for lookup.
+
+               o+ host : Do a standard host name to IP address
+                 resolution, using the system /_e_t_c/_h_o_s_t_s , NIS, or DNS
+                 lookups. This method of name resolution is operating
+                 system dependent. For instance, on IRIX or Solaris
+                 this may be controlled by the /_e_t_c/_n_s_s_w_i_t_c_h._c_o_n_f
+                 file). Note that this method is only used if the
+                 NetBIOS name type being queried is the 0x20 (server)
+                 name type, otherwise it is ignored.
+
+               o+ wins : Query a name with the IP address listed in the
+                 _w_i_n_s _s_e_r_v_e_r parameter. If no WINS server has been
+                 specified this method will be ignored.
+
+               o+ bcast : Do a broadcast on each of the known local
+                 interfaces listed in the _i_n_t_e_r_f_a_c_e_s parameter. This
+                 is the least reliable of the name resolution methods
+                 as it depends on the target host being on a locally
+                 connected subnet.
+
+          The default order is llllmmmmhhhhoooossssttttssss,,,, hhhhoooosssstttt,,,, wwwwiiiinnnnssss,,,, bbbbccccaaaasssstttt and without
+          this parameter or any entry in the _s_m_b._c_o_n_f file the name
+          resolution methods will be attempted in this order.
+
+          uuuusssseeeerrrrnnnnaaaammmmeeee
+               This specifies the username for all of the rrrrooooooootttt oooonnnnllllyyyy
+               options to operate on. Only root can specify this
+               parameter as only root has the permission needed to
+               modify attributes directly in the local smbpasswd file.
+
+          ppppaaaasssssssswwwwoooorrrrdddd
+               This specifies the new password. If this parameter is
+               specified you will not be prompted for the new
+               password.
+
+     NNNNOOOOTTTTEEEESSSS
+          Since ssssmmmmbbbbppppaaaasssssssswwwwdddd works in client-server mode communicating
+
+
+
+     Page 6                                          (printed 1/7/103)
+
+
+
+
+
+
+     SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))    UUUUNNNNIIIIXXXX SSSSyyyysssstttteeeemmmm VVVV ((((00003333 SSSSeeeepppptttteeeemmmmbbbbeeeerrrr 2222000000002222))))    SSSSMMMMBBBBPPPPAAAASSSSSSSSWWWWDDDD((((8888))))
+
+
+
+          with a local smbd for a non-root user then the smbd daemon
+          must be running for this to work. A common problem is to add
+          a restriction to the hosts that may access the  ssssmmmmbbbbdddd running
+          on the local machine by specifying a _a_l_l_o_w _h_o_s_t_s or _d_e_n_y
+          _h_o_s_t_s entry in the _s_m_b._c_o_n_f file and neglecting to allow
+          "localhost" access to the smbd.
+
+          In addition, the smbpasswd command is only useful if Samba
+          has been set up to use encrypted passwords. See the file
+          _E_N_C_R_Y_P_T_I_O_N._t_x_t in the docs directory for details on how to
+          do this.
+
+     VVVVEEEERRRRSSSSIIIIOOOONNNN
+          This man page is correct for version 2.2 of the Samba suite.
+
+     SSSSEEEEEEEE AAAALLLLSSSSOOOO
+          _s_m_b_p_a_s_s_w_d(_5) samba(7)
+
+     AAAAUUUUTTTTHHHHOOOORRRR
+          The original Samba software and related utilities were
+          created by Andrew Tridgell. Samba is now developed by the
+          Samba Team as an Open Source project similar to the way the
+          Linux kernel is developed.
+
+          The original Samba man pages were written by Karl Auer. The
+          man page sources were converted to YODL format (another
+          excellent piece of Open Source software, available at
+          ftp://ftp.icce.rug.nl/pub/unix/
+          <URL:ftp://ftp.icce.rug.nl/pub/unix/>) and updated for the
+          Samba 2.0 release by Jeremy Allison. The conversion to
+          DocBook for Samba 2.2 was done by Gerald Carter
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     Page 7                                          (printed 1/7/103)
+
+
+
