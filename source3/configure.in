@@ -3222,7 +3222,11 @@ AC_MSG_CHECKING(whether to build winbind)
 
 HAVE_WINBIND=yes
 
+# Define the winbind shared library name and any specific linker flags
+# it needs to be built with.
+
 WINBIND_NSS=libnss_winbind
+WINBIND_NSS_LDSHFLAGS=$LDSHFLAGS
 
 case "$host_os" in
 	*linux*)
@@ -3244,6 +3248,7 @@ case "$host_os" in
 		;;
 	*aix*)
 		WINBIND_NSS_EXTRA_OBJS="nsswitch/winbind_nss_aix.o"
+		WINBIND_NSS_LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-ewb_aix_init"
 		;;
 	*)
 		HAVE_WINBIND=no
@@ -3252,6 +3257,7 @@ case "$host_os" in
 esac
 
 AC_SUBST(WINBIND_NSS)
+AC_SUBST(WINBIND_NSS_LDSHFLAGS)
 AC_SUBST(WINBIND_NSS_EXTRA_OBJS)
 AC_SUBST(WINBIND_NSS_EXTRA_LIBS)
 
