@@ -1,3 +1,11 @@
+1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* config.sub: fix for crays
+
+	* config.guess: new version from automake 1.4
+	
+	* config.sub: new version from automake 1.4
+
 Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1e
@@ -8,6 +16,10 @@ Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
 	* acconfig.h: correct definition of KRB_PUT_INT for old krb4 code.
   	From Ake Sandgren <ake@cs.umu.se>
 
+1999-04-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: fix arguments to decrypt_ticket
+	
 1999-04-25  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): try to handle old
@@ -38,6 +50,12 @@ Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
 	(krb5_auth_setkeytype, krb5_auth_getkeytype): implement
 	(krb5_auth_setenctype): comment out, it's rather bogus anyway
 
+Sun Apr 25 16:55:50 1999  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_locl.h: fix for stupid aix warnings
+
+	* lib/krb5/fcache.c (erase_file): don't malloc
+	
 Sat Apr 24 18:35:21 1999  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/config.c: pass context to krb5_config_file_free
