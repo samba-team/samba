@@ -58,8 +58,8 @@ krb5_auth_con_init(krb5_context context,
     memset (p->authenticator, 0, sizeof(*p->authenticator));
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
 
-    p->cksumtype = 0; /* CKSUMTYPE_RSA_MD5_DES */
-    p->enctype   = 0; /* ETYPE_DES_CBC_MD5 */
+    p->cksumtype = CKSUMTYPE_NONE; /* CKSUMTYPE_RSA_MD5_DES */
+    p->enctype   = ETYPE_NULL; /* ETYPE_DES_CBC_MD5 */
     p->local_address = NULL;
     p->remote_address = NULL;
     *auth_context = p;
