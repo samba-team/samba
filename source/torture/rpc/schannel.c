@@ -24,6 +24,9 @@
 
 #define TEST_MACHINE_NAME "schanneltest"
 
+/*
+  do some samr ops using the schannel connection
+ */
 static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
@@ -48,7 +51,9 @@ static BOOL test_samr_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-
+/*
+  test a schannel connection with the given flags
+ */
 static BOOL test_schannel(TALLOC_CTX *mem_ctx, 
 			  uint16 acct_flags, uint32 dcerpc_flags,
 			  uint32 schannel_type)
@@ -97,7 +102,9 @@ failed:
 	return False;	
 }
 
-
+/*
+  a schannel test suite
+ */
 BOOL torture_rpc_schannel(int dummy)
 {
 	TALLOC_CTX *mem_ctx;
@@ -107,10 +114,14 @@ BOOL torture_rpc_schannel(int dummy)
 		uint32 dcerpc_flags;
 		uint32 schannel_type;
 	} tests[] = {
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN, 3 },
-		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL, 3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SIGN,         3 },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SEAL,         3 }
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN,                       3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL,                       3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128, 3 },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL_WORKSTATION | DCERPC_SEAL | DCERPC_SCHANNEL_128, 3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SIGN,                               3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SEAL,                               3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SIGN | DCERPC_SCHANNEL_128,         3 },
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL_BDC | DCERPC_SEAL | DCERPC_SCHANNEL_128,         3 }
 	};
 	int i;
 
