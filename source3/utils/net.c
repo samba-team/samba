@@ -77,6 +77,8 @@ static int opt_machine_pass = 0;
 BOOL opt_have_ip = False;
 struct in_addr opt_dest_ip;
 
+extern BOOL AllowDebugChange;
+
 /*****************************************************************************
  stubb functions
 ****************************************************************************/
@@ -580,6 +582,8 @@ static struct functable net_func[] = {
 
 	zero_ip(&opt_dest_ip);
 
+	/* set default debug level to 0 regardless of what smb.conf sets */
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 	dbf = x_stderr;
 	
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
@@ -615,9 +619,14 @@ static struct functable net_func[] = {
 		}
 	}
 	
-	lp_load(dyn_CONFIGFILE,True,False,False);       
-
-	argv_new = (const char **)poptGetArgs(pc);
+	/*
+	 * Don't load debug level from smb.conf. It should be
+	 * set by cmdline arg or remain default (0)
+	 */
+	AllowDebugChange = False;
+	lp_load(dyn_CONFIGFILE,True,False,False);
+	
+ 	argv_new = (const char **)poptGetArgs(pc);
 
 	argc_new = argc;
 	for (i=0; i<argc; i++) {
