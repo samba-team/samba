@@ -48,7 +48,7 @@ void wcache_flush_cache(void)
 	}
 	if (opt_nocache) return;
 
-	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 0, 
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
 				   TDB_NOLOCK, O_RDWR | O_CREAT | O_TRUNC, 0600);
 
 	if (!wcache->tdb) {
@@ -111,6 +111,22 @@ static uint32 centry_uint32(struct cache_entry *centry)
 	return ret;
 }
 
+/*
+  pull a uint8 from a cache entry 
+*/
+static uint8 centry_uint8(struct cache_entry *centry)
+{
+	uint8 ret;
+	if (centry->len - centry->ofs < 1) {
+		DEBUG(0,("centry corruption? needed 1 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_uint32");
+	}
+	ret = CVAL(centry->data, centry->ofs);
+	centry->ofs += 1;
+	return ret;
+}
+
 /* pull a string from a cache entry, using the supplied
    talloc context 
 */
@@ -119,9 +135,9 @@ static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
 	uint32 len;
 	char *ret;
 
-	len = centry_uint32(centry);
+	len = centry_uint8(centry);
 
-	if (len == 0xFFFF) {
+	if (len == 0xFF) {
 		/* a deliberate NULL string */
 		return NULL;
 	}
@@ -207,6 +223,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	char *kstr;
 	TDB_DATA data;
 	struct cache_entry *centry;
+	TDB_DATA key;
 
 	refresh_sequence_number(domain, False);
 
@@ -214,7 +231,9 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
 	
-	data = tdb_fetch_by_string(wcache->tdb, kstr);
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data = tdb_fetch(wcache->tdb, key);
 	free(kstr);
 	if (!data.dptr) {
 		/* a cache miss */
@@ -269,6 +288,16 @@ static void centry_put_uint32(struct cache_entry *centry, uint32 v)
 	centry->ofs += 4;
 }
 
+/*
+  push a uint8 into a centry 
+*/
+static void centry_put_uint8(struct cache_entry *centry, uint8 v)
+{
+	centry_expand(centry, 1);
+	SCVAL(centry->data, centry->ofs, v);
+	centry->ofs += 1;
+}
+
 /* 
    push a string into a centry 
  */
@@ -278,12 +307,14 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 
 	if (!s) {
 		/* null strings are marked as len 0xFFFF */
-		centry_put_uint32(centry, 0xFFFF);
+		centry_put_uint8(centry, 0xFF);
 		return;
 	}
 
 	len = strlen(s);
-	centry_put_uint32(centry, len);
+	/* can't handle more than 254 char strings. Truncating is probably best */
+	if (len > 254) len = 254;
+	centry_put_uint8(centry, len);
 	centry_expand(centry, len);
 	memcpy(centry->data + centry->ofs, s, len);
 	centry->ofs += len;
@@ -318,12 +349,18 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 {
 	va_list ap;
 	char *kstr;
+	TDB_DATA key, data;
 
 	va_start(ap, format);
 	smb_xvasprintf(&kstr, format, ap);
 	va_end(ap);
 
-	tdb_store_by_string(wcache->tdb, kstr, centry->data, centry->ofs);
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data.dptr = centry->data;
+	data.dsize = centry->ofs;
+
+	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
 	free(kstr);
 }
 
@@ -340,7 +377,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "USERLIST/%s/%d", domain->name, *start_ndx);
+	centry = wcache_fetch(cache, domain, "UL/%s/%d", domain->name, *start_ndx);
 	if (!centry) goto do_query;
 
 	*num_entries = centry_uint32(centry);
@@ -379,7 +416,7 @@ do_query:
 		centry_put_uint32(centry, (*info)[i].user_rid);
 		centry_put_uint32(centry, (*info)[i].group_rid);
 	}	
-	centry_end(centry, "USERLIST/%s/%d", domain->name, *start_ndx);
+	centry_end(centry, "UL/%s/%d", domain->name, *start_ndx);
 	centry_free(centry);
 
 skip_save:
@@ -399,7 +436,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "GROUPLIST/%s/%d", domain->name, *start_ndx);
+	centry = wcache_fetch(cache, domain, "GL/%s/%d", domain->name, *start_ndx);
 	if (!centry) goto do_query;
 
 	*num_entries = centry_uint32(centry);
@@ -436,7 +473,7 @@ do_query:
 		centry_put_string(centry, (*info)[i].acct_desc);
 		centry_put_uint32(centry, (*info)[i].rid);
 	}	
-	centry_end(centry, "GROUPLIST/%s/%d", domain->name, *start_ndx);
+	centry_end(centry, "GL/%s/%d", domain->name, *start_ndx);
 	centry_free(centry);
 
 skip_save:
@@ -457,7 +494,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "NAMETOSID/%s/%s", domain->name, name);
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, name);
 	if (!centry) goto do_query;
 	*type = centry_uint32(centry);
 	sid_parse(centry->data + centry->ofs, centry->len - centry->ofs, sid);
@@ -480,14 +517,15 @@ do_query:
 	centry_put_uint32(centry, *type);
 	sid_linearize(centry->data + centry->ofs, len, sid);
 	centry->ofs += len;
-	centry_end(centry, "NAMETOSID/%s/%s", domain->name, name);
+	centry_end(centry, "NS/%s/%s", domain->name, name);
 	centry_free(centry);
 
 skip_save:
 	return status;
 }
 
-/* convert a sid to a user or group name */
+/* convert a sid to a user or group name. The sid is guaranteed to be in the domain
+   given */
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    DOM_SID *sid,
@@ -497,13 +535,13 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
-	char *sidstr = NULL;
+	uint32 rid = 0;
+
+	sid_peek_rid(sid, &rid);
 
 	if (!cache->tdb) goto do_query;
 
-	sidstr = sid_binstring(sid);
-
-	centry = wcache_fetch(cache, domain, "SIDTONAME/%s/%s", domain->name, sidstr);
+	centry = wcache_fetch(cache, domain, "SN/%s/%d", domain->name, rid);
 	if (!centry) goto do_query;
 	if (NT_STATUS_IS_OK(centry->status)) {
 		*type = centry_uint32(centry);
@@ -511,7 +549,6 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	}
 	status = centry->status;
 	centry_free(centry);
-	SAFE_FREE(sidstr);
 	return status;
 
 do_query:
@@ -527,11 +564,10 @@ do_query:
 		centry_put_uint32(centry, *type);
 		centry_put_string(centry, *name);
 	}
-	centry_end(centry, "SIDTONAME/%s/%s", domain->name, sidstr);
+	centry_end(centry, "SN/%s/%d", domain->name, rid);
 	centry_free(centry);
 
 skip_save:
-	SAFE_FREE(sidstr);
 	return status;
 }
 
@@ -548,7 +584,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "USER/%s/%x", domain->name, user_rid);
+	centry = wcache_fetch(cache, domain, "U/%s/%x", domain->name, user_rid);
 	if (!centry) goto do_query;
 
 	info->acct_name = centry_string(centry, mem_ctx);
@@ -572,7 +608,7 @@ do_query:
 	centry_put_string(centry, info->full_name);
 	centry_put_uint32(centry, info->user_rid);
 	centry_put_uint32(centry, info->group_rid);
-	centry_end(centry, "USER/%s/%x", domain->name, user_rid);
+	centry_end(centry, "U/%s/%x", domain->name, user_rid);
 	centry_free(centry);
 
 skip_save:
@@ -593,7 +629,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "USERGROUPS/%s/%x", domain->name, user_rid);
+	centry = wcache_fetch(cache, domain, "UG/%s/%x", domain->name, user_rid);
 	if (!centry) goto do_query;
 
 	*num_groups = centry_uint32(centry);
@@ -625,7 +661,7 @@ do_query:
 	for (i=0; i<(*num_groups); i++) {
 		centry_put_uint32(centry, (*user_gids)[i]);
 	}	
-	centry_end(centry, "USERGROUPS/%s/%x", domain->name, user_rid);
+	centry_end(centry, "UG/%s/%x", domain->name, user_rid);
 	centry_free(centry);
 
 skip_save:
@@ -646,7 +682,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "GROUPMEM/%s/%x", domain->name, group_rid);
+	centry = wcache_fetch(cache, domain, "GM/%s/%x", domain->name, group_rid);
 	if (!centry) goto do_query;
 
 	*num_names = centry_uint32(centry);
@@ -689,7 +725,7 @@ do_query:
 		centry_put_string(centry, (*names)[i]);
 		centry_put_uint32(centry, (*name_types)[i]);
 	}	
-	centry_end(centry, "GROUPMEM/%s/%x", domain->name, group_rid);
+	centry_end(centry, "GM/%s/%x", domain->name, group_rid);
 	centry_free(centry);
 
 skip_save:
