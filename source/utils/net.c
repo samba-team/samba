@@ -393,9 +393,9 @@ static struct functable net_func[] = {
 		}
 	}
 
-	DEBUGLEVEL = debuglevel;
-
 	lp_load(servicesf,True,False,False);       
+
+	DEBUGLEVEL = debuglevel;
 
 	argv_new = (const char **)poptGetArgs(pc);
 
