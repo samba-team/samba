@@ -144,10 +144,17 @@ static void fd_attempt_reopen(char *fname, mode_t mode, file_fd_struct *fd_ptr)
 fd support routines - attempt to close the file referenced by this fd.
 Decrements the ref_count and returns it.
 ****************************************************************************/
-uint16 fd_attempt_close(file_fd_struct *fd_ptr)
+uint16 fd_attempt_close(files_struct *fsp)
 {
   extern struct current_user current_user;
-  uint16 ret_ref = fd_ptr->ref_count;
+  file_fd_struct *fd_ptr = fsp->fd_ptr;
+  uint16 ret_ref;
+
+  if (fd_ptr != NULL) {
+      ret_ref = fd_ptr->ref_count;
+  } else {
+      return 0;
+  }
 
   DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
           fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
@@ -161,11 +168,11 @@ uint16 fd_attempt_close(file_fd_struct *fd_ptr)
 
   if(fd_ptr->ref_count == 0) {
     if(fd_ptr->fd != -1)
-      close(fd_ptr->fd);
+      fsp->conn->vfs_ops.close(fd_ptr->fd);
     if(fd_ptr->fd_readonly != -1)
-      close(fd_ptr->fd_readonly);
+      fsp->conn->vfs_ops.close(fd_ptr->fd_readonly);
     if(fd_ptr->fd_writeonly != -1)
-      close(fd_ptr->fd_writeonly);
+      fsp->conn->vfs_ops.close(fd_ptr->fd_writeonly);
     /*
      * Delete this fd_ptr.
      */
@@ -325,7 +332,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
    * open fd table.
    */
   if(sbuf == 0) {
-    if(dos_stat(fname, &statbuf) < 0) {
+    if(conn->vfs_ops.stat(dos_to_unix(fname,False), &statbuf) < 0) {
       if(errno != ENOENT) {
         DEBUG(3,("Error doing stat on file %s (%s)\n",
                  fname,strerror(errno)));
@@ -423,7 +430,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fd_ptr->real_open_flags = O_RDWR;
     /* Set the flags as needed without the read/write modes. */
     open_flags = flags & ~(O_RDWR|O_WRONLY|O_RDONLY);
-    fd_ptr->fd = fd_attempt_open(fname, open_flags|O_RDWR, mode);
+    fd_ptr->fd = conn->vfs_ops.open(fname, open_flags|O_RDWR, mode);
     /*
      * On some systems opening a file for R/W access on a read only
      * filesystems sets errno to EROFS.
@@ -434,7 +441,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     if((fd_ptr->fd == -1) && (errno == EACCES)) {
 #endif /* EROFS */
       if(accmode != O_RDWR) {
-        fd_ptr->fd = fd_attempt_open(fname, open_flags|accmode, mode);
+        fd_ptr->fd = conn->vfs_ops.open(fname, open_flags|accmode, mode);
         fd_ptr->real_open_flags = accmode;
       }
     }
@@ -448,9 +455,10 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
-    if (sys_disk_free(dname,&dum1,&dum2,&dum3) < (SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
-      if(fd_attempt_close(fd_ptr) == 0)
-        dos_unlink(fname);
+    if (conn->vfs_ops.disk_free(dname,&dum1,&dum2,&dum3) < 
+	(SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
+      if(fd_attempt_close(fsp) == 0)
+        conn->vfs_ops.unlink(fname);
       fsp->fd_ptr = 0;
       errno = ENOSPC;
       return;
@@ -462,7 +470,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
       fname,strerror(errno),flags));
     /* Ensure the ref_count is decremented. */
-    fd_attempt_close(fd_ptr);
+    fd_attempt_close(fsp);
     check_for_pipe(fname);
     return;
   }
@@ -471,12 +479,12 @@ static void open_file(files_struct *fsp,connection_struct *conn,
   {
     if(sbuf == 0) {
       /* Do the fstat */
-      if(sys_fstat(fd_ptr->fd, &statbuf) == -1) {
+      if(conn->vfs_ops.fstat(fd_ptr->fd, &statbuf) == -1) {
         /* Error - backout !! */
         DEBUG(3,("Error doing fstat on fd %d, file %s (%s)\n",
                  fd_ptr->fd, fname,strerror(errno)));
         /* Ensure the ref_count is decremented. */
-        fd_attempt_close(fd_ptr);
+        fd_attempt_close(fsp);
         return;
       }
       sbuf = &statbuf;
@@ -525,7 +533,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
      */
     if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
 	    DEBUG(3,("Writing postscript line\n"));
-	    write_file(fsp,"%!\n",3);
+	    conn->vfs_ops.write(fsp->fd_ptr->fd,"%!\n",3);
     }
       
     DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
@@ -719,16 +727,17 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 /****************************************************************************
 open a file with a share mode
 ****************************************************************************/
-
-void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action)
+void open_file_shared(files_struct *fsp, connection_struct *conn,
+			   char *fname, int share_mode, int ofun, 
+			   mode_t mode, int oplock_request, int *Access,
+			   int *action)
 {
   int flags=0;
   int flags2=0;
   int deny_mode = GET_DENY_MODE(share_mode);
   BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
   SMB_STRUCT_STAT sbuf;
-  BOOL file_existed = dos_file_exist(fname,&sbuf);
+  BOOL file_existed = vfs_file_exist(conn, dos_to_unix(fname,False), &sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
   int token;
@@ -1015,7 +1024,8 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 		 * Create the directory.
 		 */
 
-		if(dos_mkdir(fname, unix_mode(conn,aDIR)) < 0) {
+		if(conn->vfs_ops.mkdir(dos_to_unix(fname,False), 
+				       unix_mode(conn,aDIR)) < 0) {
 			DEBUG(0,("open_directory: unable to create %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;
@@ -1027,7 +1037,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 		 * Check that it *was* a directory.
 		 */
 
-		if(dos_stat(fname, &st) < 0) {
+		if(conn->vfs_ops.stat(dos_to_unix(fname,False), &st) < 0) {
 			DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			return -1;
@@ -1101,7 +1111,7 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   if(!lp_share_modes(SNUM(conn)))
     return True;
 
-  if (dos_stat(fname,&sbuf) == -1) return(True);
+  if (conn->vfs_ops.stat(dos_to_unix(fname,False),&sbuf) == -1) return(True);
 
   dev = sbuf.st_dev;
   inode = sbuf.st_ino;
