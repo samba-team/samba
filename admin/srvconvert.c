@@ -146,6 +146,7 @@ srvconv(int argc, char **argv)
 	}
 	
 	entry.vno = kvno;
+	entry.timestamp = time (NULL);
 	entry.keyblock.keyvalue.data = key;
 	entry.keyblock.keyvalue.length = 8;
 	
