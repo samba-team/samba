@@ -2005,7 +2005,7 @@ BOOL sam_query_groupmem(struct client_info *info, uint16 fnum,
 
 		if (rid_copy != NULL)
 		{
-			int i;
+			uint32 i;
 			for (i = 0; i < num_mem; i++)
 			{
 				rid_copy[i] = (*rid_mem)[i];
@@ -2076,7 +2076,9 @@ static void req_groupmem_info(struct client_info *info, uint16 fnum,
 /****************************************************************************
 SAM groups query.
 ****************************************************************************/
-void cmd_sam_enum_groups(struct client_info *info)
+BOOL msrpc_sam_enum_groups(struct client_info *info,
+				BOOL request_member_info,
+				BOOL request_group_info)
 {
 	uint16 fnum;
 	fstring srv_name;
@@ -2084,19 +2086,15 @@ void cmd_sam_enum_groups(struct client_info *info)
 	fstring sid;
 	DOM_SID sid1;
 	BOOL res = True;
-	BOOL request_member_info = False;
-	BOOL request_group_info = False;
 	uint32 ace_perms = 0x02000000; /* access control permissions. */
-	fstring tmp;
 	uint32 group_idx;
-	int i;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 
 	if (sid1.num_auths == 0)
 	{
 		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
-		return;
+		return 0;
 	}
 
 	sid_to_string(sid, &sid1);
@@ -2105,21 +2103,6 @@ void cmd_sam_enum_groups(struct client_info *info)
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
-
-	/* a bad way to do token parsing... */
-	for (i = 0; i < 2; i++)
-	{
-		/* a bad way to do token parsing... */
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-		{
-			request_member_info |= strequal(tmp, "-m");
-			request_group_info  |= strequal(tmp, "-g");
-		}
-		else
-		{
-			break;
-		}
-	}
 
 	report(out_hnd, "SAM Enumerate Groups\n");
 	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
@@ -2181,17 +2164,47 @@ void cmd_sam_enum_groups(struct client_info *info)
 	/* close the session */
 	cli_nt_session_close(smb_cli, fnum);
 
-	if (info->dom.sam != NULL)
-	{
-		free(info->dom.sam);
-	}
-
 	if (res)
 	{
-		DEBUG(5,("cmd_sam_enum_groups: succeeded\n"));
+		DEBUG(5,("msrpc_sam_enum_groups: succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_enum_groups: failed\n"));
+		DEBUG(5,("msrpc_sam_enum_groups: failed\n"));
+	}
+	return info->dom.num_sam_entries;
+}
+
+/****************************************************************************
+experimental SAM groups enum.
+****************************************************************************/
+void cmd_sam_enum_groups(struct client_info *info)
+{
+	BOOL request_member_info = False;
+	BOOL request_group_info = False;
+	fstring tmp;
+	int i;
+
+	for (i = 0; i < 3; i++)
+	{
+		/* a bad way to do token parsing... */
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
+		{
+			request_member_info |= strequal(tmp, "-m");
+			request_group_info  |= strequal(tmp, "-g");
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	msrpc_sam_enum_groups(info,
+	                     request_member_info,
+	                     request_group_info);
+
+	if (info->dom.sam != NULL)
+	{
+		free(info->dom.sam);
 	}
 }
