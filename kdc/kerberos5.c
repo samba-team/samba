@@ -85,6 +85,7 @@ as_rep(krb5_context context,
 	krb5_decrypt (context,
 		      enc_data.cipher.data,
 		      enc_data.cipher.length,
+		      enc_data.etype,
 		      &client->keyblock,
 		      &ts_data);
 	e = decode_PA_ENC_TS_ENC(ts_data.data,
@@ -219,7 +220,9 @@ as_rep(krb5_context context,
 
 	rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep.ticket.enc_part.kvno = NULL;
-	krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
+	krb5_encrypt(context, buf + sizeof(buf) - len, len,
+		     rep.ticket.enc_part.etype,
+		     &server->keyblock, 
 		     &rep.ticket.enc_part.cipher);
 	
 	e = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
@@ -230,7 +233,9 @@ as_rep(krb5_context context,
 	rep.enc_part.etype = ETYPE_DES_CBC_CRC;
 	rep.enc_part.kvno = NULL;
 
-	krb5_encrypt(context, buf + sizeof(buf) - len, len, &client->keyblock, 
+	krb5_encrypt(context, buf + sizeof(buf) - len, len,
+		     rep.enc_part.etype,
+		     &client->keyblock, 
 		     &rep.enc_part.cipher);
 	
 	e = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
@@ -466,7 +471,9 @@ tgs_rep(krb5_context context,
 		return e;
 	    rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
 	    rep.ticket.enc_part.kvno = NULL;
-	    krb5_encrypt(context, buf + sizeof(buf) - len, len, &server->keyblock, 
+	    krb5_encrypt(context, buf + sizeof(buf) - len, len,
+			 rep.ticket.enc_part.etype,
+			 &server->keyblock, 
 			 &rep.ticket.enc_part.cipher);
 	    
 	    e = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
@@ -479,7 +486,9 @@ tgs_rep(krb5_context context,
 		krb5_keyblock kb;
 		kb.keytype = tgt->key.keytype;
 		kb.keyvalue = tgt->key.keyvalue;
-		krb5_encrypt(context, buf + sizeof(buf) - len, len, &kb, 
+		krb5_encrypt(context, buf + sizeof(buf) - len, len,
+			     rep.enc_part.etype,
+			     &kb, 
 			     &rep.enc_part.cipher);
 	    }
 	    
