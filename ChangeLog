@@ -1,3 +1,8 @@
+2000-02-07  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab.c (krb5_kt_default_name): use strlcpy
+	(krb5_kt_add_entry): set timestamp
+
 2000-02-06  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h: add macros for accessing krb5_realm
