@@ -1,10 +1,15 @@
-Changes in release 0.4f
+Changes in release 0.5
 
- * update autoconf to 2.53
+ * fixed an inverted logic in the krb5_verify_init_creds function,
+   effectively inverting its meaning; this affects you if you have
+   third-party applications using the krb5_verify_init_creds function;
+   applications using the krb5_verify_user_* set of functions should
+   be ok (and this includes all programs included in our
+   distribution), because of another logic swap
 
  * accept addresses with or without ports in krb5_rd_cred
 
- * make it work with recent CVS openssl
+ * make it work with modern openssl
 
  * use our own string2key function even with openssl (that handles weak
    keys incorrectly)
@@ -15,11 +20,11 @@ Changes in release 0.4f
 
  * telnet: abort if telnetd does not support encryption
 
- * handle non-existant strtok_r and strlcpy better in libkafs
+ * update autoconf to 2.53
 
  * update config.guess, config.sub
 
- * bug fixes
+ * other bug fixes
 
 Changes in release 0.4e
 
