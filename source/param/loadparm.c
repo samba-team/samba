@@ -1961,12 +1961,6 @@ from service ifrom. homename must be in DOS codepage.
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
 {
 	int i;
-	SMB_STRUCT_STAT buf;
-	
-	/* if the user's home directory doesn't exist, then don't 
-	   add it to the list of available shares */
-	if (sys_stat(pszHomedir, &buf))
-		return False;
 	
 	i = add_a_service(ServicePtrs[iDefaultService], pszHomename);
 
