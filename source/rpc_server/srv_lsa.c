@@ -38,8 +38,10 @@ static void lsa_reply_open_policy(prs_struct *rdata)
 	int i;
 	LSA_R_OPEN_POL r_o;
 
+	ZERO_STRUCT(r_o);
+
 	/* set up the LSA QUERY INFO response */
-	bzero(r_o.pol.data, POL_HND_SIZE);
+
 	for (i = 4; i < POL_HND_SIZE; i++)
 	{
 		r_o.pol.data[i] = i;
@@ -78,6 +80,8 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 {
 	LSA_R_ENUM_TRUST_DOM r_e;
 
+	ZERO_STRUCT(r_e);
+
 	/* set up the LSA QUERY INFO response */
 	make_r_enum_trust_dom(&r_e, enum_context, dom_name, dom_sid,
 	      dom_name != NULL ? 0x0 : 0x80000000 | NT_STATUS_UNABLE_TO_FREE_VM);
@@ -93,6 +97,8 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 				char *dom_name, DOM_SID *dom_sid)
 {
 	LSA_R_QUERY_INFO r_q;
+
+	ZERO_STRUCT(r_q);
 
 	/* set up the LSA QUERY INFO response */
 
@@ -237,6 +243,10 @@ static void lsa_reply_lookup_sids(prs_struct *rdata,
 	LSA_TRANS_NAME_ENUM names;
 	uint32 mapped_count = 0;
 
+	ZERO_STRUCT(r_l);
+	ZERO_STRUCT(ref);
+	ZERO_STRUCT(names);
+
 	/* set up the LSA Lookup SIDs response */
 	make_dom_ref(&ref, dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
 	make_lsa_trans_names(&names, num_entries, sid, &mapped_count);
@@ -256,6 +266,8 @@ static void lsa_reply_lookup_rids(prs_struct *rdata,
 {
 	LSA_R_LOOKUP_RIDS r_l;
 
+	ZERO_STRUCT(r_l);
+
 	/* set up the LSA Lookup RIDs response */
 	make_reply_lookup_rids(&r_l, num_entries, dom_rids,
 				dom_name, dom_sid, other_sid1, other_sid2, other_sid3);
@@ -272,6 +284,8 @@ static void api_lsa_open_policy( int uid, prs_struct *data,
                              prs_struct *rdata )
 {
 	LSA_Q_OPEN_POL q_o;
+
+	ZERO_STRUCT(q_o);
 
 	/* grab the server, object attributes and desired access flag...*/
 	lsa_io_q_open_pol("", &q_o, data, 0);
@@ -290,6 +304,8 @@ static void api_lsa_enum_trust_dom( int uid, prs_struct *data,
 {
 	LSA_Q_ENUM_TRUST_DOM q_e;
 
+	ZERO_STRUCT(q_e);
+
 	/* grab the enum trust domain context etc. */
 	lsa_io_q_enum_trust_dom("", &q_e, data, 0);
 
@@ -306,6 +322,8 @@ static void api_lsa_query_info( int uid, prs_struct *data,
 {
 	LSA_Q_QUERY_INFO q_i;
 	pstring dom_name;
+
+	ZERO_STRUCT(q_i);
 
 	/* grab the info class and policy handle */
 	lsa_io_q_query("", &q_i, data, 0);
@@ -327,6 +345,11 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 	DOM_SID sid_S_1_1;
 	DOM_SID sid_S_1_3;
 	DOM_SID sid_S_1_5;
+
+	ZERO_STRUCT(q_l);
+	ZERO_STRUCT(sid_S_1_1);
+	ZERO_STRUCT(sid_S_1_3);
+	ZERO_STRUCT(sid_S_1_5);
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_sids("", &q_l, data, 0);
@@ -358,6 +381,12 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	DOM_SID sid_S_1_5;
 	uint32 dom_rids[MAX_LOOKUP_SIDS];
 	uint32 dummy_g_rid;
+
+	ZERO_STRUCT(q_l);
+	ZERO_STRUCT(sid_S_1_1);
+	ZERO_STRUCT(sid_S_1_3);
+	ZERO_STRUCT(sid_S_1_5);
+	ZERO_STRUCT(dom_rids);	
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_rids("", &q_l, data, 0);
