@@ -1532,12 +1532,13 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
   if (strstr(fname,".+,;=[].")) 
   {
     unix_ERR_class = ERRDOS;
-    /* OS/2 Workplace shell fix - may be main code stream in a later release. */
+    /* OS/2 Workplace shell fix may be main code stream in a later release. */ 
 #ifdef OS2_WPS_FIX
     unix_ERR_code = ERRcannotopen;
 #else /* OS2_WPS_FIX */
     unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
 #endif /* OS2_WPS_FIX */
+
     return;
   }
 
