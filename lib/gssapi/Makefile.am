@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 INCLUDES += -I$(srcdir)/../krb5 $(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
-libgssapi_la_LDFLAGS = -version-info 3:1:2
+libgssapi_la_LDFLAGS = -version-info 3:2:2
 
 include_HEADERS = gssapi.h
 
