@@ -77,8 +77,12 @@ void init_rpc_pipe_hnd(void)
  Initialise an outgoing packet.
 ****************************************************************************/
 
-BOOL pipe_init_outgoing_data(output_data *o_data)
+static BOOL pipe_init_outgoing_data(output_data *o_data, uint32 len)
 {
+	/* Reset the offset counters. */
+	o_data->data_sent_length = 0;
+	o_data->current_pdu_len = 0;
+	o_data->current_pdu_sent = 0;
 
 	memset(o_data->current_pdu, '\0', sizeof(o_data->current_pdu));
 
@@ -89,21 +93,16 @@ BOOL pipe_init_outgoing_data(output_data *o_data)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, MAX_PDU_FRAG_LEN, 4, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, len, 4, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
-
-	/* Reset the offset counters. */
-	o_data->data_sent_length = 0;
-	o_data->current_pdu_len = 0;
-	o_data->current_pdu_sent = 0;
 
 	return True;
 }
 
 /****************************************************************************
- HACK !!! Attempt to find a remote process to communicate RPC's with.
+ Attempt to find a remote process to communicate RPC's with.
 ****************************************************************************/
 
 static void attempt_remote_rpc_connect(pipes_struct *p)
@@ -254,7 +253,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	fstrcpy(p->name, pipe_name);
 	
 	/*
-	 * HACK !!! For Luke - attempt to connect to RPC redirect process.
+	 * For Luke - attempt to connect to RPC redirect process.
 	 */
 
 	attempt_remote_rpc_connect(p);
@@ -464,7 +463,7 @@ authentication failed. Denying the request.\n", p->name));
 	}
 
 	if(p->hdr.flags & RPC_FLG_LAST) {
-		BOOL ret;
+		BOOL ret = False;
 		/*
 		 * Ok - we finally have a complete RPC stream.
 		 * Call the rpc command to process it.
@@ -482,7 +481,8 @@ authentication failed. Denying the request.\n", p->name));
 		 * Process the complete data stream here.
 		 */
 
-		ret = api_pipe_request(p);
+		if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+			ret = api_pipe_request(p);
 
 		/*
 		 * We have consumed the whole data stream. Set back to
@@ -532,13 +532,15 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 			/*
 			 * We assume that a pipe bind is only in one pdu.
 			 */
-			reply = api_pipe_bind_req(p, &rpc_in);
+			if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+				reply = api_pipe_bind_req(p, &rpc_in);
 			break;
 		case RPC_BINDRESP:
 			/*
 			 * We assume that a pipe bind_resp is only in one pdu.
 			 */
-			reply = api_pipe_bind_auth_resp(p, &rpc_in);
+			if(pipe_init_outgoing_data(&p->out_data, MAX_PDU_FRAG_LEN))
+				reply = api_pipe_bind_auth_resp(p, &rpc_in);
 			break;
 		case RPC_REQUEST:
 			reply = process_request_pdu(p, &rpc_in);
@@ -661,7 +663,14 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 
 		DEBUG(10,("write_to_pipe: data_left = %u\n", (unsigned int)data_left ));
 
-		data_used = process_incoming_data(p, data, data_left);
+		/*
+		 * Deal with the redirect to the remote RPC daemon.
+		 */
+
+		if(p->m)
+			data_used = write(p->m->fd, data, data_left);
+		else
+			data_used = process_incoming_data(p, data, data_left);
 
 		DEBUG(10,("write_to_pipe: data_used = %d\n", (int)data_used ));
 
@@ -675,9 +684,72 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 	return n;
 }
 
+/****************************************************************************
+ Gets data from a remote TNG daemon. Gets data from the remote daemon into
+ the outgoing prs_struct.
+
+ NB. Note to Luke : This code will be broken until Luke implements a length
+ field before reply data...
+
+****************************************************************************/
+
+static BOOL read_from_remote(pipes_struct *p)
+{
+	uint32 data_len;
+	uint32 data_len_left;
+
+	if(prs_offset(&p->out_data.rdata) == 0) {
+
+		ssize_t len = 0;
+
+		/*
+		 * Read all the reply data as a stream of pre-created
+		 * PDU's from the remote deamon into the rdata struct.
+		 */
+
+	    /*
+		 * Create the response data buffer.
+		 */
+
+		if(!pipe_init_outgoing_data(&p->out_data, 65536)) {
+			DEBUG(0,("read_from_remote: failed to create outgoing buffer.\n"));
+			return False;
+		}
+
+		/* Read from remote here. */
+		if((len = read_with_timeout(p->m->fd, prs_data_p(&p->out_data.rdata), 1, 65536, 10000)) < 0) {
+			DEBUG(0,("read_from_remote: failed to read from external daemon.\n"));
+			prs_mem_free(&p->out_data.rdata);
+			return False;
+		}
+
+		/* Set the length we got. */
+		prs_set_offset(&p->out_data.rdata, (uint32)len);
+	}
+
+	/*
+	 * The amount we send is the minimum of the available
+	 * space and the amount left to send.
+	 */
+
+	data_len_left = prs_offset(&p->out_data.rdata) - p->out_data.data_sent_length;
+
+	/*
+	 * Ensure there really is data left to send.
+	 */
+
+	if(!data_len_left) {
+		DEBUG(0,("read_from_remote: no data left to send !\n"));
+		return False;
+	}
+
+	data_len = MIN(data_len_left, MAX_PDU_FRAG_LEN);
+
+	return False; /* Notfinished... */
+}
 
 /****************************************************************************
- Replyies to a request to read data from a pipe.
+ Replies to a request to read data from a pipe.
 
  Headers are interspersed with the data at PDU intervals. By the time
  this function is called, the start of the data could possibly have been
@@ -685,13 +757,12 @@ ssize_t write_to_pipe(pipes_struct *p, char *data, size_t n)
 
  Calling create_rpc_reply() here is a hack. The data should already
  have been prepared into arrays of headers + data stream sections.
+****************************************************************************/
 
- ****************************************************************************/
-
-int read_from_pipe(pipes_struct *p, char *data, int n)
+ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n)
 {
 	uint32 pdu_remaining = 0;
-	int data_returned = 0;
+	ssize_t data_returned = 0;
 
 	if (!p || !p->open) {
 		DEBUG(0,("read_from_pipe: pipe not open\n"));
@@ -700,7 +771,7 @@ int read_from_pipe(pipes_struct *p, char *data, int n)
 
 	DEBUG(6,("read_from_pipe: %x", p->pnum));
 
-	DEBUG(6,(" name: %s len: %d\n", p->name, n));
+	DEBUG(6,(" name: %s len: %u\n", p->name, (unsigned int)n));
 
 	/*
 	 * We cannot return more than one PDU length per
@@ -708,8 +779,8 @@ int read_from_pipe(pipes_struct *p, char *data, int n)
 	 */
 
 	if(n > MAX_PDU_FRAG_LEN) {
-		DEBUG(0,("read_from_pipe: loo large read (%d) requested on pipe %s. We can \
-only service %d sized reads.\n", n, p->name, MAX_PDU_FRAG_LEN ));
+		DEBUG(0,("read_from_pipe: loo large read (%u) requested on pipe %s. We can \
+only service %d sized reads.\n", (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
 		return -1;
 	}
 
@@ -722,7 +793,7 @@ only service %d sized reads.\n", n, p->name, MAX_PDU_FRAG_LEN ));
 	 */
 
 	if((pdu_remaining = p->out_data.current_pdu_len - p->out_data.current_pdu_sent) > 0) {
-		data_returned = MIN(n, pdu_remaining);
+		data_returned = (ssize_t)MIN(n, pdu_remaining);
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, current_pdu_sent = %u \
 returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len, 
@@ -749,17 +820,28 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 		return 0;
 	}
 
-	/*
-	 * We need to create a new PDU from the data left in p->rdata.
-	 * Create the header/data/footers. This also sets up the fields
-	 * p->current_pdu_len, p->current_pdu_sent, p->data_sent_length
-	 * and stores the outgoing PDU in p->current_pdu.
-	 */
+	if(p->m) {
+		/*
+		 * Remote to the RPC daemon.
+		 */
+		if(!read_from_remote(p)) {
+			DEBUG(0,("read_from_pipe: %s: read_from_remote failed.\n", p->name ));
+			return -1;
+		}
 
-	if(!create_next_pdu(p)) {
-		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n",
-			 p->name));
-		return -1;
+	} else {
+
+		/*
+		 * We need to create a new PDU from the data left in p->rdata.
+		 * Create the header/data/footers. This also sets up the fields
+		 * p->current_pdu_len, p->current_pdu_sent, p->data_sent_length
+		 * and stores the outgoing PDU in p->current_pdu.
+		 */
+
+		if(!create_next_pdu(p)) {
+			DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n", p->name));
+			return -1;
+		}
 	}
 
 	data_returned = MIN(n, p->out_data.current_pdu_len);

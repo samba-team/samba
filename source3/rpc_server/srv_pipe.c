@@ -492,15 +492,6 @@ BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *rpc_in_p)
 
 	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
 
-	/*
-	 * Create the response data buffer.
-	 */
-
-	if(!pipe_init_outgoing_data(&p->out_data)) {
-		DEBUG(0,("api_pipe_bind_auth_resp: failed to create outgoing buffer.\n"));
-		return False;
-	}
-
 	if (p->hdr.auth_len == 0) {
 		DEBUG(0,("api_pipe_bind_auth_resp: No auth field sent !\n"));
 		return False;
@@ -694,15 +685,6 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	p->ntlmssp_auth_requested = False;
 
 	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
-
-	/*
-	 * Create the response data buffer.
-	 */
-
-	if(!pipe_init_outgoing_data(&p->out_data)) {
-		DEBUG(0,("api_pipe_bind_req: failed to create outgoing buffer.\n"));
-		return False;
-	}
 
 	/*
 	 * Try and find the correct pipe name to ensure
@@ -1061,15 +1043,6 @@ BOOL api_pipe_request(pipes_struct *p)
 	int i = 0;
 	BOOL ret = False;
 	BOOL changed_user_id = False;
-
-	/*
-	 * Create the response data buffer.
-	 */
-
-	if(!pipe_init_outgoing_data(&p->out_data)) {
-		DEBUG(0,("api_pipe_request: failed to create outgoing buffer.\n"));
-		return False;
-	}
 
 	if (p->ntlmssp_auth_validated) {
 

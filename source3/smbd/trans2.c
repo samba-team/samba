@@ -2132,6 +2132,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 				     char* outbuf, int length, int bufsize,
 				     char** pparams, char** ppdata)
 {
+#ifdef MS_DFS
   char *params = *pparams;
   enum remote_arch_types ra_type = get_remote_arch();
   BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
@@ -2139,6 +2140,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   int reply_size = 0;
   char* dfs_referral = NULL;
   int max_referral_level = SVAL(params,0);
+#endif
 
   DEBUG(10,("call_trans2getdfsreferral\n"));
 #ifdef MS_DFS

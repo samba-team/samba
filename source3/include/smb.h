@@ -171,8 +171,6 @@ implemented */
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERRunknownipc 2142
 
-#define ERROR_ACCESS_DENIED		  (5)
-#define ERROR_INVALID_HANDLE		  (6)
 #define ERROR_INVALID_PARAMETER		 (87)
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define ERROR_INVALID_NAME		(123)
@@ -618,9 +616,6 @@ struct dcinfo
   uchar  md4pw[16];   /* md4(machine password) */
 };
 
-#include "nt_printing.h"
-
-#include "ntdomain.h"
 
 typedef struct
 {
@@ -640,17 +635,7 @@ typedef struct
 	/* per-user authentication information on NT RPCs */
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */
 	struct dcinfo dc;
-
-	NET_USER_INFO_3 usr;
-
 } user_struct;
-
-typedef struct
-{
-	uint32 pid;
-	uint16 vuid;
-
-} vuser_key;
 
 enum {LPQ_QUEUED,LPQ_PAUSED,LPQ_SPOOLING,LPQ_PRINTING};
 
@@ -1679,8 +1664,6 @@ struct pwd_info
 	uchar sess_key[16];
 };
 
-#include "rpc_creds.h"
-
 struct ntdom_info
 {
 	unsigned char sess_key[16];        /* Current session key. */
@@ -1694,20 +1677,10 @@ struct ntdom_info
 	int max_xmit_frag;
 };
 
-struct msrpc_state
-{
-	fstring pipe_name;
-	struct user_creds usr;
-	struct ntdom_info nt;
+#include "nt_printing.h"
+#include "rpc_creds.h"
+#include "ntdomain.h"
 
-	int fd;
-	BOOL redirect;
-	BOOL initialised;
-	char *inbuf;
-	char *outbuf;
-
-	uint32 pid;
-};
 #include "client.h"
 #include "rpcclient.h"
 

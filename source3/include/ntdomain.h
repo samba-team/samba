@@ -31,6 +31,8 @@
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"
 
+#include "rpc_creds.h"
+
 /*
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
@@ -113,6 +115,21 @@ typedef struct _input_data {
      */
     prs_struct data;
 } input_data;
+
+struct msrpc_state
+{
+	fstring pipe_name;
+	struct user_creds usr;
+	struct ntdom_info nt;
+
+	int fd;
+	BOOL redirect;
+	BOOL initialised;
+	char *inbuf;
+	char *outbuf;
+
+	uint32 pid;
+};
 
 typedef struct pipes_struct
 {

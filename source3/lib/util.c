@@ -1028,10 +1028,6 @@ BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
 
-
-        while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
-          str++;
-
   for( p = regexp; *p && *str; ) {
     switch(*p) {
     case '?':
@@ -1047,6 +1043,10 @@ BOOL unix_do_match(char *str, char *regexp, BOOL case_sig)
       if(!*p)
         return True; /* Automatic match */
       while(*str) {
+
+        while(*str && (case_sig ? (*p != *str) : (toupper(*p)!=toupper(*str))))
+          str++;
+
         /*
          * Patch from weidel@multichart.de. In the case of the regexp
          * '*XX*' we want to ensure there are at least 2 'X' characters
@@ -1130,7 +1130,7 @@ static BOOL unix_mask_match(char *str, char *regexp, BOOL case_sig)
 {
   char *p;
   pstring p1, p2;
-  fstring ebase,eext,sbase,sext;
+  fstring ebase,sbase;
   BOOL matched;
 
   /* Make local copies of str and regexp */

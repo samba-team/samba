@@ -23,7 +23,7 @@
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
-extern global_client_caps;
+extern uint32 global_client_caps;
 
 #ifdef MS_DFS
 
@@ -442,7 +442,7 @@ int setup_dfs_referral(char* pathname, int max_referral_level,
 #endif
 
 /* Trivial fn that chops off upper bytes to convert unicode to dos */
-int unistr_to_dos(char* dst,uint16* src)	       
+void unistr_to_dos(char* dst,uint16* src)	       
 {
   pstring s;
   int i=0;
