@@ -1,0 +1,286 @@
+dnl -*- mode: m4-mode -*-
+dnl Process this file with autoconf to produce a configure script.
+
+dnl disabled 2.53 requirement - we do work with 2.52 on suse 7.3 for example
+dnl AC_PREREQ(2.53)
+
+
+AC_INIT(include/includes.h)
+AC_CONFIG_HEADER(include/config.h)
+
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
+
+#################################################
+# Directory handling stuff to support both the
+# legacy SAMBA directories and FHS compliant
+# ones...
+AC_PREFIX_DEFAULT(/usr/local/samba)
+
+AC_ARG_WITH(fhs, 
+[  --with-fhs              Use FHS-compliant paths (default=no)],
+    configdir="${sysconfdir}/samba"
+    lockdir="\${VARDIR}/cache/samba"
+    piddir="\${VARDIR}/run/samba"
+    logfilebase="\${VARDIR}/log/samba"
+    privatedir="\${CONFIGDIR}/private"
+    libdir="\${prefix}/lib/samba"
+    swatdir="\${DATADIR}/samba/swat",
+    configdir="\${LIBDIR}"
+    logfilebase="\${VARDIR}"
+    lockdir="\${VARDIR}/locks"
+    piddir="\${VARDIR}/locks"
+    privatedir="\${prefix}/private"
+    swatdir="\${prefix}/swat")
+
+#################################################
+# set private directory location
+AC_ARG_WITH(privatedir,
+[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-privatedir called without argument - will use default])
+  ;;
+  * )
+    privatedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set lock directory location
+AC_ARG_WITH(lockdir,
+[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-lockdir called without argument - will use default])
+  ;;
+  * )
+    lockdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set pid directory location
+AC_ARG_WITH(piddir,
+[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-piddir called without argument - will use default])
+  ;;
+  * )
+    piddir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set configuration directory location
+AC_ARG_WITH(configdir,
+[  --with-configdir=DIR    Where to put configuration files (\$libdir)],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-configdir called without argument - will use default])
+  ;;
+  * )
+    configdir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set log directory location
+AC_ARG_WITH(logfilebase,
+[  --with-logfilebase=DIR  Where to put log files (\$(VARDIR))],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody does it
+  #
+    AC_MSG_WARN([--with-logfilebase called without argument - will use default])
+  ;;
+  * )
+    logfilebase="$withval"
+    ;;
+  esac])
+
+AC_SUBST(configdir)
+AC_SUBST(lockdir)
+AC_SUBST(piddir)
+AC_SUBST(logfilebase)
+AC_SUBST(privatedir)
+AC_SUBST(bindir)
+AC_SUBST(sbindir)
+
+dnl Unique-to-Samba variables we'll be playing with.
+AC_SUBST(SHELL)
+AC_SUBST(LDSHFLAGS)
+AC_SUBST(SONAMEFLAG)
+AC_SUBST(SHLD)
+AC_SUBST(HOST_OS)
+AC_SUBST(PICFLAG)
+AC_SUBST(PICSUFFIX)
+AC_SUBST(POBAD_CC)
+AC_SUBST(SHLIBEXT)
+AC_SUBST(INSTALLCLIENTCMD_SH)
+AC_SUBST(INSTALLCLIENTCMD_A)
+AC_SUBST(LIBSMBCLIENT_SHARED)
+AC_SUBST(LIBSMBCLIENT)
+AC_SUBST(PRINTLIBS)
+AC_SUBST(AUTHLIBS)
+AC_SUBST(ACLLIBS)
+AC_SUBST(SHLIB_PROGS)
+AC_SUBST(SMBWRAPPER)
+AC_SUBST(EXTRA_BIN_PROGS)
+AC_SUBST(EXTRA_SBIN_PROGS)
+AC_SUBST(EXTRA_ALL_TARGETS)
+
+AC_ARG_ENABLE(debug, 
+[  --enable-debug          Turn on compiler debugging information (default=no)],
+    [if eval "test x$enable_debug = xyes"; then
+	CFLAGS="${CFLAGS} -gstabs"
+    fi])
+
+AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
+    [if eval "test x$enable_developer = xyes"; then
+        developer=yes
+    	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
+
+AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
+    [if eval "test x$enable_krb5developer = xyes"; then
+        developer=yes
+	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    fi])
+
+sinclude(build/m4/rewrite.m4)
+
+dnl exclude these modules 
+AC_ARG_WITH(exclude-modules,
+[  --with-exclude-modules=MODULES Comma-seperated list of names of modules to exclude from build],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=NOT
+	done
+fi ])
+
+dnl Always built these modules shared
+AC_ARG_WITH(shared-modules,
+[  --with-shared-modules=MODULES  Comma-seperated list of names of modules to build shared],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=SHARED
+	done
+fi ])
+
+dnl Always built these modules static
+AC_ARG_WITH(static-modules,
+[  --with-static-modules=MODULES  Comma-seperated list of names of modules to statically link in],
+[ if test $withval; then
+	for i in `echo $withval | sed -e's/,/ /g'`
+	do
+		eval MODULE_$i=STATIC
+	done
+fi ])
+
+sinclude(nsswitch/config.m4)
+sinclude(lib/popt/config.m4)
+sinclude(lib/iconv.m4)
+sinclude(lib/basic.m4)
+sinclude(lib/ldb/config.m4)
+sinclude(lib/cmdline/config.m4)
+sinclude(param/config.m4)
+sinclude(libcli/config.m4)
+sinclude(librpc/config.m4)
+sinclude(libcli/libsmb.m4)
+sinclude(smbd/process_model.m4)
+sinclude(smb_server/config.m4)
+sinclude(auth/config.m4)
+sinclude(passdb/config.m4)
+sinclude(ntvfs/config.m4)
+sinclude(rpc_server/config.m4)
+sinclude(lib/registry/config.m4)
+sinclude(torture/config.m4)
+
+SMB_BINARY(smbd, [ALL], [SBIN],
+	[smbd/server.o
+	smbd/process.o
+	lib/server_mutex.o
+	smbd/build_options.o
+	smbd/rewrite.o],
+	[],
+	[PROCESS_MODEL SMB AUTH PASSDB NTVFS DCERPC LIBBASIC CONFIG LIBCMDLINE LIBPOPT LIBSMB REGISTRY])
+
+SMB_BINARY(smbclient, [ALL], [BIN], 
+	[client/client.o
+	client/clitar.o
+	libcli/raw/clirewrite.o],
+	[],
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+
+SMB_BINARY(ndrdump, [ALL], [BIN],
+	[utils/ndrdump.o
+	utils/rewrite.o],
+	[],
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+
+SMB_BINARY(gentest, [ALL], [BIN],
+	[torture/gentest.o
+	torture/torture_util.o
+	libcli/raw/clirewrite.o],
+	[],
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+
+SMB_BINARY(masktest, [ALL], [BIN], 
+	[torture/masktest.o
+	libcli/raw/clirewrite.o],
+	[],
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+
+SMB_BINARY(locktest, [ALL], [BIN],
+	[torture/locktest.o
+	libcli/raw/clirewrite.o],
+	[],
+	[LIBSMB CONFIG LIBBASIC LIBCMDLINE LIBPOPT])
+
+AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
+
+#################################################
+# do extra things if we are running insure
+
+if test "${ac_cv_prog_CC}" = "insure"; then
+	CPPFLAGS="$CPPFLAGS -D__INSURE__"
+fi
+
+#################################################
+# final configure stuff
+
+AC_MSG_CHECKING([configure summary])
+AC_TRY_RUN([#include "${srcdir-.}/build/tests/summary.c"],
+           AC_MSG_RESULT(yes),
+	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
+	   AC_MSG_WARN([cannot run when cross-compiling]))
+
+builddir=`pwd`
+AC_SUBST(builddir)
+
+dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
+LIB_REMOVE_USR_LIB(LDFLAGS)
+LIB_REMOVE_USR_LIB(LIBS)
+
+dnl Remove -I/usr/include/? from CFLAGS and CPPFLAGS
+CFLAGS_REMOVE_USR_INCLUDE(CFLAGS)
+CFLAGS_REMOVE_USR_INCLUDE(CPPFLAGS)
+
+SMB_AC_OUTPUT(Makefile)
