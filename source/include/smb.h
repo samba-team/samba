@@ -575,6 +575,7 @@ typedef struct connection_struct
 
 	uid_t uid; /* uid of user who *opened* this connection */
 	gid_t gid; /* gid of user who *opened* this connection */
+	char client_address[18]; /* string version of client ip address */
 
 	/* This groups info is valid for the user that *opened* the connection */
 	int ngroups;
@@ -933,6 +934,40 @@ struct connection_options {
   uint32 maxraw;
   uint32 capabilities;
   uint16 serverzone;
+};
+
+/* key and data in the connections database - used in smbstatus and smbd */
+struct connections_key {
+	pid_t pid;
+	int cnum;
+	fstring name;
+};
+
+struct connections_data {
+	int magic;
+	pid_t pid;
+	int cnum;
+	uid_t uid;
+	gid_t gid;
+	char name[24];
+	char addr[24];
+	char machine[128];
+	time_t start;
+};
+
+
+/* key and data records in the tdb locking database */
+struct locking_key {
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+};
+
+struct locking_data {
+	int num_share_mode_entries;
+	/* the following two entries are implicit 
+	   share_mode_entry modes[num_share_mode_entries];
+           char file_name[];
+	*/
 };
 
 /* the following are used by loadparm for option lists */
@@ -1593,8 +1628,15 @@ extern int unix_ERR_code;
 /*
  * Bits we test with.
  */
+
+#define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
+#define LEVEL_II_OPLOCK 4
+
+#define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+#define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)

@@ -3705,7 +3705,6 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
    */
   if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
-    int token;
     SMB_DEV_T dev = fsp->fd_ptr->dev;
     SMB_INO_T inode = fsp->fd_ptr->inode;
 
@@ -3722,15 +3721,15 @@ no oplock granted on this file.\n", fsp->fnum));
     }
 
     /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock(token, fsp)==False) {
+    lock_share_entry(fsp->conn, dev, inode);
+    if(remove_share_oplock(fsp)==False) {
 
 	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
 dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
 
-	    unlock_share_entry(fsp->conn, dev, inode, token);
+	    unlock_share_entry(fsp->conn, dev, inode);
     } else {
-	    unlock_share_entry(fsp->conn, dev, inode, token);
+	    unlock_share_entry(fsp->conn, dev, inode);
 
 	    /* Clear the granted flag and return. */
 	    fsp->granted_oplock = False;

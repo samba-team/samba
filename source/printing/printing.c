@@ -416,8 +416,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 
   /* handle the case of "(standard input)" as a filename */
   string_sub(line,"standard input","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  all_string_sub(line,"(","\"", 0);
+  all_string_sub(line,")","\"", 0);
 
   for (count=0; 
        count<10 && 
@@ -533,8 +533,8 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     if (!header_line_ok) return (False); /* incorrect header line */
     /* handle the case of "(standard input)" as a filename */
     string_sub(line,"standard input","STDIN");
-    all_string_sub(line,"(","\"");
-    all_string_sub(line,")","\"");
+    all_string_sub(line,"(","\"", 0);
+    all_string_sub(line,")","\"", 0);
     
     for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
@@ -676,8 +676,8 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   /* handle the case of "-- standard input --" as a filename */
   string_sub(line,"standard input","STDIN");
   DEBUG(4,("despues [%s]\n", line));
-  all_string_sub(line,"-- ","\"");
-  all_string_sub(line," --","\"");
+  all_string_sub(line,"-- ","\"", 0);
+  all_string_sub(line," --","\"", 0);
   DEBUG(4,("despues 1 [%s]\n", line));
 
   string_sub(line,"[job #","");
@@ -738,8 +738,8 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 
   /* handle the case of "(standard input)" as a filename */
   string_sub(line,"stdin","STDIN");
-  all_string_sub(line,"(","\"");
-  all_string_sub(line,")","\"");
+  all_string_sub(line,"(","\"", 0);
+  all_string_sub(line,")","\"", 0);
   
   for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
 

@@ -23,206 +23,84 @@
 
 
 extern fstring remote_machine;
+static TDB_CONTEXT *tdb;
 
 extern int DEBUGLEVEL;
 
 /****************************************************************************
-simple routines to do connection counting
+delete a connection record
 ****************************************************************************/
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 {
-	struct connect_record crec;
-	pstring fname;
-	int fd;
-	int mypid = getpid();
-	int i;
+	struct connections_key key;
+	TDB_DATA kbuf;
+
+	if (!tdb) return False;
 
 	DEBUG(3,("Yielding connection to %s\n",name));
 
-	if (max_connections <= 0)
-		return(True);
+	ZERO_STRUCT(key);
+	key.pid = getpid();
+	if (conn) key.cnum = conn->cnum;
+	fstrcpy(key.name, name);
 
-	bzero(&crec,sizeof(crec));
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
 
-	pstrcpy(fname,lp_lockdir());
-	trim_string(fname,"","/");
-
-	pstrcat(fname,"/");
-	pstrcat(fname,name);
-	pstrcat(fname,".LCK");
-
-	fd = sys_open(fname,O_RDWR,0);
-	if (fd == -1) {
-		DEBUG(2,("Couldn't open lock file %s (%s)\n",fname,strerror(errno)));
-		return(False);
-	}
-
-	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
-		DEBUG(0,("ERROR: can't get lock on %s\n", fname));
-		return False;
-	}
-
-	/* find the right spot */
-	for (i=0;i<max_connections;i++) {
-		if (read(fd, &crec,sizeof(crec)) != sizeof(crec)) {
-			DEBUG(2,("Entry not found in lock file %s\n",fname));
-			if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-				DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-			}
-			close(fd);
-			return(False);
-		}
-		if (crec.pid == mypid && crec.cnum == conn->cnum)
-			break;
-	}
-
-	if (crec.pid != mypid || crec.cnum != conn->cnum) {
-		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-		}
-		close(fd);
-		DEBUG(2,("Entry not found in lock file %s\n",fname));
-		return(False);
-	}
-
-	bzero((void *)&crec,sizeof(crec));
-  
-	/* remove our mark */
-	if (sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
-	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
-		DEBUG(2,("Couldn't update lock file %s (%s)\n",fname,strerror(errno)));
-		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-		}
-		close(fd);
-		return(False);
-	}
-
-	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-		DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-	}
-
-	DEBUG(3,("Yield successful\n"));
-
-	close(fd);
+	tdb_delete(tdb, kbuf);
 	return(True);
 }
 
 
 /****************************************************************************
-simple routines to do connection counting
+claim an entry in the connections database
 ****************************************************************************/
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear)
 {
+	struct connections_key key;
+	struct connections_data crec;
+	TDB_DATA kbuf, dbuf;
 	extern int Client;
-	struct connect_record crec;
-	pstring fname;
-	int fd=-1;
-	int i,foundi= -1;
-	int total_recs;
-	
+
 	if (max_connections <= 0)
 		return(True);
-	
-	DEBUG(5,("trying claim %s %s %d\n",lp_lockdir(),name,max_connections));
-	
-	pstrcpy(fname,lp_lockdir());
-	trim_string(fname,"","/");
-	
-	if (!directory_exist(fname,NULL))
-		mkdir(fname,0755);
-	
-	pstrcat(fname,"/");
-	pstrcat(fname,name);
-	pstrcat(fname,".LCK");
-	
-	if (!file_exist(fname,NULL)) {
-		fd = sys_open(fname,O_RDWR|O_CREAT|O_EXCL, 0644);
-	}
 
-	if (fd == -1) {
-		fd = sys_open(fname,O_RDWR,0);
+	if (!tdb) {
+		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
+			       O_RDWR | O_CREAT, 0644);
 	}
-	
-	if (fd == -1) {
-		DEBUG(1,("couldn't open lock file %s\n",fname));
-		return(False);
-	}
+	if (!tdb) return False;
 
-	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_WRLCK)==False) {
-		DEBUG(0,("ERROR: can't get lock on %s\n", fname));
-		return False;
-	}
+	DEBUG(5,("claiming %s %d\n",name,max_connections));
 
-	total_recs = file_size(fname) / sizeof(crec);
-			
-	/* find a free spot */
-	for (i=0;i<max_connections;i++) {
-		if (i>=total_recs || 
-		    sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec) ||
-		    read(fd,&crec,sizeof(crec)) != sizeof(crec)) {
-			if (foundi < 0) foundi = i;
-			break;
-		}
-		
-		if (Clear && crec.pid && !process_exists(crec.pid)) {
-			if(sys_lseek(fd,i*sizeof(crec),SEEK_SET) != i*sizeof(crec)) {
-              DEBUG(0,("claim_connection: ERROR: sys_lseek failed to seek \
-to %d\n", i*sizeof(crec) ));
-              continue;
-            }
-			bzero((void *)&crec,sizeof(crec));
-			write(fd, &crec,sizeof(crec));
-			if (foundi < 0) foundi = i;
-			continue;
-		}
-		if (foundi < 0 && (!crec.pid || !process_exists(crec.pid))) {
-			foundi=i;
-			if (!Clear) break;
-		}
-	}  
-	
-	if (foundi < 0) {
-		DEBUG(3,("no free locks in %s\n",fname));
-		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-		}
-		close(fd);
-		return(False);
-	}      
-	
+	ZERO_STRUCT(key);
+	key.pid = getpid();
+	key.cnum = conn?conn->cnum:-1;
+	fstrcpy(key.name, name);
+
+	kbuf.dptr = (char *)&key;
+	kbuf.dsize = sizeof(key);
+
 	/* fill in the crec */
-	bzero((void *)&crec,sizeof(crec));
+	ZERO_STRUCT(crec);
 	crec.magic = 0x280267;
 	crec.pid = getpid();
+	crec.cnum = conn?conn->cnum:-1;
 	if (conn) {
-		crec.cnum = conn->cnum;
 		crec.uid = conn->uid;
 		crec.gid = conn->gid;
 		StrnCpy(crec.name,
 			lp_servicename(SNUM(conn)),sizeof(crec.name)-1);
-	} else {
-		crec.cnum = -1;
 	}
 	crec.start = time(NULL);
 	
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,client_addr(Client),sizeof(crec.addr)-1);
-	
-	/* make our mark */
-	if (sys_lseek(fd,foundi*sizeof(crec),SEEK_SET) != foundi*sizeof(crec) ||
-	    write(fd, &crec,sizeof(crec)) != sizeof(crec)) {
-		if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-			DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-		}
-		close(fd);
-		return(False);
-	}
+	StrnCpy(crec.addr,conn?conn->client_address:client_addr(Client),sizeof(crec.addr)-1);
 
-	if (fcntl_lock(fd,SMB_F_SETLKW,0,1,F_UNLCK)==False) {
-		DEBUG(0,("ERROR: can't release lock on %s\n", fname));
-	}
-	
-	close(fd);
-	return(True);
+	dbuf.dptr = (char *)&crec;
+	dbuf.dsize = sizeof(crec);
+
+	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) return False;
+
+	return True;
 }

@@ -111,21 +111,20 @@ QUOTAOBJS=@QUOTAOBJS@
 
 LIBSTATUS_OBJ = lib/util_status.o 
 
-LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
-          lib/getsmbpass.o lib/interface.o lib/kanji.o \
-          lib/md5.o lib/hmacmd5.o lib/md4.o \
-          lib/netmask.o lib/pidfile.o lib/replace.o \
-          lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o lib/time.o \
-		  lib/ufc.o lib/util.o lib/genrand.o lib/username.o \
-		lib/vuser.o \
+LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
+		lib/getsmbpass.o lib/interface.o lib/kanji.o \
+		lib/md5.o lib/hmacmd5.o lib/md4.o \
+		lib/netmask.o lib/pidfile.o lib/replace.o \
+		lib/signal.o lib/slprintf.o lib/system.o lib/doscalls.o \
+		lib/time.o lib/ufc.o lib/util.o lib/genrand.o \
+		lib/username.o lib/vuser.o \
 		lib/access.o lib/smbrun.o \
-	  lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
+		lib/bitmap.o lib/crc32.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o \
 		lib/util_file.o mem_man/mem_man.o \
-		lib/util_sock.o \
-		lib/util_array.o \
-		lib/vagent.o \
-		lib/util_hnd.o
+		lib/util_sock.o lib/util_array.o \
+		lib/vagent.o lib/util_hnd.o \
+		tdb/tdb.o
 
 STUB_UID_OBJ = lib/stub_uid.c
 
@@ -189,8 +188,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_eventlog.o \
 		libsmb/clienttrust.o
 
-LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
-              locking/shmem.o locking/shmem_sysv.o
+LOCKING_OBJ = locking/locking.o 
 
 GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 		groupdb/groupfile.o groupdb/aliasfile.o \
@@ -473,14 +471,15 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
            $(SIDDB_OBJ) \
 		$(PASSDB_OBJ) 
 
-PROTO_OBJ = $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) $(SAMRD_OBJ1) \
+PROTO_OBJ = $(LIB_OBJ) $(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
+		$(SAMRD_OBJ1) \
 		$(SRVSVCD_OBJ1) $(WKSSVCD_OBJ1) $(BROWSERD_OBJ1) \
 		$(SPOOLSSD_OBJ1) $(NETLOGOND_OBJ1) \
 		$(LSARPCD_OBJ1) $(SMBD_OBJ) $(NMBD_OBJ) \
 		$(SWAT_OBJ) $(CLIENT_OBJ) \
 		$(SAMPASSDB_OBJ) $(GROUPDB_OBJ) $(PASSDB_OBJ)\
-	    $(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ) $(SMBPASSWD_OBJ) \
-	    $(RPC_SRVUTIL_OBJ)
+		$(RPCCLIENT_OBJ) $(SMBWRAPPER_OBJ) $(SMBPASSWD_OBJ) \
+		$(RPC_SRVUTIL_OBJ)
 
 PICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)

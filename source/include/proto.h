@@ -536,6 +536,8 @@ void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
+void *memdup(void *p, size_t size);
+char *lock_path(char *name);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -695,7 +697,7 @@ BOOL string_init(char **dest,const char *src);
 void string_free(char **s);
 BOOL string_set(char **dest,const char *src);
 void string_sub(char *s,const char *pattern,const char *insert);
-void all_string_sub(char *s,const char *pattern,const char *insert);
+void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_first_component(char *path, char *front, char sep, char *back);
 void split_at_last_component(char *path, char *front, char sep, char *back);
 char *bit_field_to_str(uint32 type, struct field_info *bs);
@@ -1006,34 +1008,18 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
-		      SMB_DEV_T dev, SMB_INO_T inode, int *ptok);
+		      SMB_DEV_T dev, SMB_INO_T inode);
 BOOL unlock_share_entry(connection_struct *conn,
-			SMB_DEV_T dev, SMB_INO_T inode, int token);
+			SMB_DEV_T dev, SMB_INO_T inode);
 int get_share_modes(connection_struct *conn, 
-		    int token, SMB_DEV_T dev, SMB_INO_T inode, 
+		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
-void del_share_mode(int token, files_struct *fsp);
-BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
-BOOL remove_share_oplock(int token, files_struct *fsp);
-BOOL modify_share_mode(int token, files_struct *fsp, int new_mode);
+void del_share_mode(files_struct *fsp);
+BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type);
+BOOL remove_share_oplock(files_struct *fsp);
+BOOL downgrade_share_oplock(files_struct *fsp);
+BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
-void share_status(FILE *f);
-
-/*The following definitions come from  locking/locking_shm.c  */
-
-struct share_ops *locking_shm_init(int ronly);
-
-/*The following definitions come from  locking/locking_slow.c  */
-
-struct share_ops *locking_slow_init(int ronly);
-
-/*The following definitions come from  locking/shmem.c  */
-
-struct shmem_ops *smb_shm_open(int ronly);
-
-/*The following definitions come from  locking/shmem_sysv.c  */
-
-struct shmem_ops *sysv_shm_open(int ronly);
 
 /*The following definitions come from  lsarpcd/lsarpcd.c  */
 
@@ -4636,6 +4622,24 @@ BOOL reload_services(BOOL test);
 
 void msrpc_service_init(char* service_name);
 BOOL reload_services(BOOL test);
+
+/*The following definitions come from  tdb/tdb.c  */
+
+int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf);
+TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf));
+TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
+TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+		      int open_flags, mode_t mode);
+int tdb_close(TDB_CONTEXT *tdb);
+int tdb_writelock(TDB_CONTEXT *tdb);
+int tdb_writeunlock(TDB_CONTEXT *tdb);
+int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /*The following definitions come from  utils/smbpasswd.c  */
 

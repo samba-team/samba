@@ -1041,22 +1041,31 @@ void string_sub(char *s,const char *pattern,const char *insert)
 /****************************************************************************
 similar to string_sub() but allows for any character to be substituted. 
 Use with caution!
+if len==0 then no length check is performed
 ****************************************************************************/
-void all_string_sub(char *s,const char *pattern,const char *insert)
+void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
-	size_t ls,lp,li;
+	ssize_t ls,lp,li;
 
 	if (!insert || !pattern || !s) return;
 
-	ls = strlen(s);
-	lp = strlen(pattern);
-	li = strlen(insert);
+	ls = (ssize_t)strlen(s);
+	lp = (ssize_t)strlen(pattern);
+	li = (ssize_t)strlen(insert);
 
 	if (!*pattern) return;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		if (len && (ls + (li-lp) >= len)) {
+			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
+				 (int)(ls + (li-lp) - len),
+				 pattern, (int)len));
+			break;
+		}
+		if (li != lp) {
+			memmove(p+li,p+lp,strlen(p+lp)+1);
+		}
 		memcpy(p, insert, li);
 		s = p + li;
 		ls += (li-lp);

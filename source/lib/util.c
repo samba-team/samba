@@ -3559,3 +3559,34 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
 	}
 }
 
+/*****************************************************************
+like strdup but for memory
+ *****************************************************************/  
+void *memdup(void *p, size_t size)
+{
+	void *p2;
+	p2 = malloc(size);
+	if (!p2) return NULL;
+	memcpy(p2, p, size);
+	return p2;
+}
+
+/*****************************************************************
+a useful function for returning a path in the Samba lock directory
+ *****************************************************************/  
+char *lock_path(char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_lockdir());
+	trim_string(fname,"","/");
+	
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+	
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}

@@ -101,7 +101,6 @@ void close_file(files_struct *fsp, BOOL normal_close)
 {
 	SMB_DEV_T dev = fsp->fd_ptr->dev;
 	SMB_INO_T inode = fsp->fd_ptr->inode;
-	int token;
     BOOL last_reference = False;
     BOOL delete_on_close = fsp->fd_ptr->delete_on_close;
 	connection_struct *conn = fsp->conn;
@@ -115,8 +114,8 @@ void close_file(files_struct *fsp, BOOL normal_close)
 #endif
 
 	if (lp_share_modes(SNUM(conn))) {
-		lock_share_entry(conn, dev, inode, &token);
-		del_share_mode(token, fsp);
+		lock_share_entry(conn, dev, inode);
+		del_share_mode(fsp);
 	}
 
 	if(fd_attempt_close(fsp) == 0)
@@ -125,7 +124,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
     fsp->fd_ptr = NULL;
 
 	if (lp_share_modes(SNUM(conn)))
-		unlock_share_entry(conn, dev, inode, token);
+		unlock_share_entry(conn, dev, inode);
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)

@@ -337,6 +337,7 @@ connection_struct *make_connection(char *service,char *user,
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
+	safe_strcpy(conn->client_address, client_addr(Client), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;

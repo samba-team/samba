@@ -555,6 +555,7 @@ extern int errno;
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
+#include "../tdb/tdb.h"
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"

@@ -581,7 +581,7 @@ static void mmap_open_file(files_struct *fsp)
   Helper for open_file_shared. 
   Truncate a file after checking locking; close file if locked.
   **************************************************************************/
-static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, int token, 
+static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, 
 				   BOOL *share_locked)
 {
 	if (fsp->can_write){
@@ -593,7 +593,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 			   have the share entry locked. Unlock it before closing. */
 			if (*share_locked && lp_share_modes(SNUM(conn)))
 				unlock_share_entry( conn, fsp->fd_ptr->dev, 
-						    fsp->fd_ptr->inode, token);
+						    fsp->fd_ptr->inode);
 			close_file(fsp,False);   
 			/* Share mode no longer locked. */
 			*share_locked = False;
@@ -743,7 +743,6 @@ void open_file_shared(files_struct *fsp, connection_struct *conn,
   BOOL file_existed = vfs_file_exist(conn, dos_to_unix(fname,False), &sbuf);
   BOOL share_locked = False;
   BOOL fcbopen = False;
-  int token;
   SMB_DEV_T dev = 0;
   SMB_INO_T inode = 0;
   int num_share_modes = 0;
@@ -844,9 +843,9 @@ void open_file_shared(files_struct *fsp, connection_struct *conn,
     {
       dev = sbuf.st_dev;
       inode = sbuf.st_ino;
-      lock_share_entry(conn, dev, inode, &token);
+      lock_share_entry(conn, dev, inode);
       share_locked = True;
-      num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
+      num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
     }
 
     /*
@@ -879,7 +878,7 @@ void open_file_shared(files_struct *fsp, connection_struct *conn,
 dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
             /* Oplock break.... */
-            unlock_share_entry(conn, dev, inode, token);
+            unlock_share_entry(conn, dev, inode);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
@@ -892,7 +891,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
               unix_ERR_code = ERRbadshare;
               return;
             }
-            lock_share_entry(conn, dev, inode, &token);
+            lock_share_entry(conn, dev, inode);
             broke_oplock = True;
             break;
           }
@@ -902,7 +901,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
           if(check_share_mode(share_entry, deny_mode, fname, fcbopen, &flags) == False)
           {
             free((char *)old_shares);
-            unlock_share_entry(conn, dev, inode, token);
+            unlock_share_entry(conn, dev, inode);
             errno = EACCES;
             return;
           }
@@ -912,7 +911,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
         if(broke_oplock)
         {
           free((char *)old_shares);
-          num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
+          num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
         }
       } while(broke_oplock);
     }
@@ -940,7 +939,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
       /* We created the file - thus we must now lock the share entry before creating it. */
       dev = fsp->fd_ptr->dev;
       inode = fsp->fd_ptr->inode;
-      lock_share_entry(conn, dev, inode, &token);
+      lock_share_entry(conn, dev, inode);
       share_locked = True;
     }
 
@@ -994,11 +993,11 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
         oplock_request = 0;
       }
 
-      set_share_mode(token, fsp, port, oplock_request);
+      set_share_mode(fsp, port, oplock_request);
     }
 
     if ((flags2&O_TRUNC) && file_existed)
-      truncate_unless_locked(fsp,conn,token,&share_locked);
+      truncate_unless_locked(fsp,conn,&share_locked);
 
     /*
      * Attempt to mmap a read only file.
@@ -1009,7 +1008,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
   }
 
   if (share_locked && lp_share_modes(SNUM(conn)))
-    unlock_share_entry( conn, dev, inode, token);
+    unlock_share_entry( conn, dev, inode);
 }
 
 /****************************************************************************
@@ -1106,7 +1105,6 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   share_mode_entry *old_shares = 0;
   int num_share_modes;
   SMB_STRUCT_STAT sbuf;
-  int token;
   int pid = getpid();
   SMB_DEV_T dev;
   SMB_INO_T inode;
@@ -1119,8 +1117,8 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   dev = sbuf.st_dev;
   inode = sbuf.st_ino;
 
-  lock_share_entry(conn, dev, inode, &token);
-  num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
+  lock_share_entry(conn, dev, inode);
+  num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 
   /*
    * Check if the share modes will give us access.
@@ -1182,7 +1180,7 @@ batch oplocked file %s, dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (do
 dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
             /* Oplock break.... */
-            unlock_share_entry(conn, dev, inode, token);
+            unlock_share_entry(conn, dev, inode);
             if(request_oplock_break(share_entry, dev, inode) == False)
             {
               free((char *)old_shares);
@@ -1192,7 +1190,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
               return False;
             }
-            lock_share_entry(conn, dev, inode, &token);
+            lock_share_entry(conn, dev, inode);
             broke_oplock = True;
             break;
           }
@@ -1219,7 +1217,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
       if(broke_oplock)
       {
         free((char *)old_shares);
-        num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
+        num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
       }
     } while(broke_oplock);
   }
@@ -1238,7 +1236,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
 free_and_exit:
 
-  unlock_share_entry(conn, dev, inode, token);
+  unlock_share_entry(conn, dev, inode);
   if(old_shares != NULL)
     free((char *)old_shares);
   return(ret);

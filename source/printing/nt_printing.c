@@ -231,7 +231,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 			DEBUGADD(7,("Found: [%s]\n", dpname));
 			
 			StrCpy(driver_name, dpname+match_len);
-			all_string_sub(driver_name, "#", "/");			
+			all_string_sub(driver_name, "#", "/", 0);
 			*list = Realloc(*list, sizeof(fstring)*(total+1));
 			StrnCpy((*list)[total], driver_name, strlen(driver_name));
 			DEBUGADD(6,("Added: [%s]\n", driver_name));		
@@ -303,7 +303,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 
 	StrnCpy(driver_name, driver->name, sizeof(driver_name)-1);
 
-	all_string_sub(driver_name, "/", "#");
+	all_string_sub(driver_name, "/", "#", 0);
 
 	get_short_archi(architecture, driver->environment);
 		
@@ -371,7 +371,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	 * construct the driver file name
 	 */
 	StrnCpy(driver_name, in_prt, sizeof(driver_name)-1);
-	all_string_sub(driver_name, "/", "#");
+	all_string_sub(driver_name, "/", "#", 0);
 
 	get_short_archi(architecture, in_arch);
 		
