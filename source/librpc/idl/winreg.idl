@@ -262,17 +262,17 @@
 	/******************/
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
-		[in]	winreg_String hostname,
-		[in]	winreg_String message,
+		[in]	uint16 *hostname,
+		[in]	winreg_String *message,
 		[in]	uint32 timeout,
-		[in]	uint16 flags,
-		[out]	uint16 status
+		[in]	uint8 force_apps,
+		[in]	uint8 reboot
 	);
 
 	/******************/
 	/* Function: 0x19 */
 	WERROR winreg_AbortSystemShutdown(
-		[in,ref]	uint16 *server
+		[in]	uint16 *server
 	);
 
 	/******************/
