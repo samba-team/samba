@@ -2279,8 +2279,8 @@ static BOOL browse_host(const char *query_host)
 	r.out.resume_handle = &resume_handle;
 	r.out.ctr.ctr1 = &ctr1;
 
-	d_printf("\n\tSharename       Type      Comment\n");
-	d_printf("\t---------       ----      -------\n");
+	d_printf("\n\tSharename       Type       Comment\n");
+	d_printf("\t---------       ----       -------\n");
 
 	do {
 		ZERO_STRUCT(ctr1);
@@ -2893,15 +2893,8 @@ handle a -L query
 ****************************************************************************/
 static int do_host_query(char *query_host)
 {
-	cli = do_connect(query_host, "IPC$");
-	if (!cli)
-		return 1;
-
 	browse_host(query_host);
 	list_servers(lp_workgroup());
-
-	cli_shutdown(cli);
-	
 	return(0);
 }
 
