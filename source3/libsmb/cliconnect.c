@@ -453,7 +453,7 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
-static void use_in_memory_ccache() {
+static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
 
