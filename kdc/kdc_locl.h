@@ -72,6 +72,9 @@ extern int enable_524;
 extern krb5_boolean enable_kaserver;
 #endif
 
+#define _PATH_KDC_CONF		HDB_DB_DIR "/kdc.conf"
+#define DEFAULT_LOG_DEST	"0-1/FILE:" HDB_DB_DIR "/kdc.log"
+
 extern struct timeval now;
 #define kdc_time (now.tv_sec)
 
