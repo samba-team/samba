@@ -493,6 +493,7 @@ parse_pobox (char *a0, char *a1,
     char *h, *u, *f;
     int po = 0;
 
+    f = a1;
     if(strncmp(a0, "po:", 3) == 0) {
 	a0 += 3;
 	po++;
