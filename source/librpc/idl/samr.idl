@@ -159,8 +159,8 @@
 	typedef struct {
 		HYPER_T sequence_num;
 		NTTIME last_xxx_time;
-		uint32 foo7;
-		uint32 foo8;
+		uint32 unknown1;
+		uint32 unknown2;
 	} samr_DomInfo13;
 
 	typedef union {
@@ -328,8 +328,8 @@
 
 	typedef struct {
 		samr_Name comment;
-		uint32 foo1;
-		uint32 foo2;
+		uint32 unknown1;
+		uint32 unknown2;
 		uint16 country_code;
 		uint16 code_page;
 	} samr_UserInfo2;
@@ -356,10 +356,100 @@
 		uint32 acct_flags;
 	} samr_UserInfo3;
 
+	typedef struct {
+		uint32 units_per_week;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+	} samr_UserInfo4;
+
+	typedef struct {
+		samr_Name username;
+		samr_Name full_name;
+		uint32 rid;
+		uint32 primary_group_rid;
+		samr_Name home_directory;
+		samr_Name home_drive;
+		samr_Name logon_script;
+		samr_Name profile;
+		samr_Name descriptiom;
+		samr_Name workstations;
+		NTTIME last_logon;
+		NTTIME last_logoff;
+		uint32 units_per_week;
+		[size_is(1260), length_is(units_per_week/8)] uint8 *logon_hours;
+		uint32 unknown;
+		NTTIME last_pwd_change;
+		NTTIME acct_expiry;
+		uint32 acct_flags;
+	} samr_UserInfo5;
+
+	typedef struct {
+		samr_Name username;
+		samr_Name full_name;
+	} samr_UserInfo6;
+
+	typedef struct {
+		samr_Name username;
+	} samr_UserInfo7;
+
+	typedef struct {
+		samr_Name full_name;
+	} samr_UserInfo8;
+
+	typedef struct {
+		uint32 PrimaryGroupRid;
+	} samr_UserInfo9;
+
+	typedef struct {
+		samr_Name home_dir;
+		samr_Name home_drive;
+	} samr_UserInfo10;
+
+	typedef struct {
+		samr_Name logon_script;
+	} samr_UserInfo11;
+
+	typedef struct {
+		samr_Name profile;
+	} samr_UserInfo12;
+
+	typedef struct {
+		samr_Name descriptiom;
+	} samr_UserInfo13;
+
+	typedef struct {
+		samr_Name workstations;
+	} samr_UserInfo14;
+
+	typedef struct {
+		uint32 acct_flags;
+	} samr_UserInfo16;
+	
+	typedef struct {
+		NTTIME acct_expiry;
+	} samr_UserInfo17;
+
+	typedef struct {
+		samr_Name callback;
+	} samr_UserInfo20;
+
 	typedef union {
 		case(1) samr_UserInfo1 info1;
 		case(2) samr_UserInfo2 info2;
 		case(3) samr_UserInfo3 info3;
+		case(4) samr_UserInfo4 info4;
+		case(5) samr_UserInfo5 info5;
+		case(6) samr_UserInfo6 info6;
+		case(7) samr_UserInfo7 info7;
+		case(8) samr_UserInfo8 info8;
+		case(9) samr_UserInfo9 info9;
+		case(10) samr_UserInfo10 info10;
+		case(11) samr_UserInfo11 info11;
+		case(12) samr_UserInfo12 info12;
+		case(13) samr_UserInfo13 info13;
+		case(14) samr_UserInfo14 info14;
+		case(16) samr_UserInfo16 info16;
+		case(17) samr_UserInfo17 info17;
+		case(20) samr_UserInfo20 info20;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(

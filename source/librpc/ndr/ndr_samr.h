@@ -544,7 +544,7 @@ struct samr_UserInfo3 {
 	NTTIME last_logoff;
 	NTTIME last_pwd_change;
 	NTTIME allow_pwd_change;
-	NTTIME max_storage;
+	NTTIME force_pwd_change;
 	uint32 units_per_week;
 	uint8 *logon_hours;
 	uint16 bad_pwd_count;
@@ -552,10 +552,100 @@ struct samr_UserInfo3 {
 	uint32 acct_flags;
 };
 
+struct samr_UserInfo4 {
+	uint32 units_per_week;
+	uint8 *logon_hours;
+};
+
+struct samr_UserInfo5 {
+	struct samr_Name username;
+	struct samr_Name full_name;
+	uint32 rid;
+	uint32 primary_group_rid;
+	struct samr_Name home_directory;
+	struct samr_Name home_drive;
+	struct samr_Name logon_script;
+	struct samr_Name profile;
+	struct samr_Name descriptiom;
+	struct samr_Name workstations;
+	NTTIME last_logon;
+	NTTIME last_logoff;
+	uint32 units_per_week;
+	uint8 *logon_hours;
+	uint32 foo;
+	NTTIME last_pwd_change;
+	NTTIME acct_expiry;
+	uint32 acct_flags;
+};
+
+struct samr_UserInfo6 {
+	struct samr_Name userid;
+	struct samr_Name full_name;
+};
+
+struct samr_UserInfo7 {
+	struct samr_Name userid;
+};
+
+struct samr_UserInfo8 {
+	struct samr_Name full_name;
+};
+
+struct samr_UserInfo9 {
+	uint32 PrimaryGroupRid;
+};
+
+struct samr_UserInfo10 {
+	struct samr_Name home_dir;
+	struct samr_Name home_drive;
+};
+
+struct samr_UserInfo11 {
+	struct samr_Name logon_script;
+};
+
+struct samr_UserInfo12 {
+	struct samr_Name profile;
+};
+
+struct samr_UserInfo13 {
+	struct samr_Name descriptiom;
+};
+
+struct samr_UserInfo14 {
+	struct samr_Name workstations;
+};
+
+struct samr_UserInfo16 {
+	uint32 acct_flags;
+};
+
+struct samr_UserInfo17 {
+	NTTIME acct_expiry;
+};
+
+struct samr_UserInfo20 {
+	struct samr_Name callback;
+};
+
 union samr_UserInfo {
 /* [case(1)] */ struct samr_UserInfo1 info1;
 /* [case(2)] */ struct samr_UserInfo2 info2;
 /* [case(3)] */ struct samr_UserInfo3 info3;
+/* [case(4)] */ struct samr_UserInfo4 info4;
+/* [case(5)] */ struct samr_UserInfo5 info5;
+/* [case(6)] */ struct samr_UserInfo6 info6;
+/* [case(7)] */ struct samr_UserInfo7 info7;
+/* [case(8)] */ struct samr_UserInfo8 info8;
+/* [case(9)] */ struct samr_UserInfo9 info9;
+/* [case(10)] */ struct samr_UserInfo10 info10;
+/* [case(11)] */ struct samr_UserInfo11 info11;
+/* [case(12)] */ struct samr_UserInfo12 info12;
+/* [case(13)] */ struct samr_UserInfo13 info13;
+/* [case(14)] */ struct samr_UserInfo14 info14;
+/* [case(16)] */ struct samr_UserInfo16 info16;
+/* [case(17)] */ struct samr_UserInfo17 info17;
+/* [case(20)] */ struct samr_UserInfo20 info20;
 };
 
 struct samr_QueryUserInfo {
