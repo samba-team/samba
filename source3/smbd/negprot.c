@@ -159,7 +159,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 /* 
    generate the spnego negprot reply blob. Return the number of bytes used
 */
-static int negprot_spnego(char *p, uint8 cryptkey[8])
+static int negprot_spnego(char *p)
 {
 	DATA_BLOB blob;
 	extern pstring global_myname;
@@ -217,7 +217,8 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		/* do spnego in user level security if the client
 		   supports it and we can do encrypted passwords */
 		if (global_encrypted_passwords_negotiated && 
-		    lp_security() == SEC_USER &&
+		    (lp_security() == SEC_USER ||
+		     lp_security() == SEC_DOMAIN) &&
 		    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 			negotiate_spnego = True;
 			capabilities |= CAP_EXTENDED_SECURITY;
@@ -285,10 +286,13 @@ static int reply_nt1(char *inbuf, char *outbuf)
 		if (global_encrypted_passwords_negotiated) memcpy(p, cryptkey, 8);
 		SSVALS(outbuf,smb_vwv16+1,8);
 		p += 8;
+		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-		int len = negprot_spnego(p, cryptkey);
+		int len = negprot_spnego(p);
+		
 		SSVALS(outbuf,smb_vwv16+1,len);
 		p += len;
+		DEBUG(3,("using SPNEGO\n"));
 	}
 	p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 			 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
