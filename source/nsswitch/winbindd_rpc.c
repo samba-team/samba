@@ -5,6 +5,7 @@
 
    Copyright (C) Tim Potter 2000-2001,2003
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Volker Lendecke 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -561,6 +562,66 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	return result;
 }
 
+NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32 num_sids, DOM_SID **sids,
+				  uint32 *num_aliases, uint32 **alias_rids)
+{
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	CLI_POLICY_HND *hnd;
+	BOOL got_dom_pol = False;
+	POLICY_HND dom_pol;
+	DOM_SID2 *sid2;
+	int i, retry;
+
+	*num_aliases = 0;
+	*alias_rids = NULL;
+
+	retry = 0;
+	do {
+		/* Get sam handle; if we fail here there is no hope */
+		
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain,
+								&hnd)))
+			goto done;
+
+		/* Get domain handle */
+		
+		result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					      SEC_RIGHTS_MAXIMUM_ALLOWED,
+					      &domain->sid, &dom_pol);
+	} while (!NT_STATUS_IS_OK(result) && (retry++ < 1) && 
+			hnd && hnd->cli && hnd->cli->fd == -1);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_dom_pol = True;
+
+	sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
+
+	if (sid2 == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i<num_sids; i++) {
+		sid_copy(&sid2[i].sid, sids[i]);
+		sid2[i].num_auths = sid2[i].sid.num_auths;
+	}
+
+	result = cli_samr_query_useraliases(hnd->cli, mem_ctx, &dom_pol,
+					    num_sids, sid2,
+					    num_aliases, alias_rids);
+
+ done:
+
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+	
+	return result;
+}
+
 
 /* Lookup group membership given a rid.   */
 static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
@@ -980,6 +1041,7 @@ struct winbindd_methods msrpc_methods = {
 	msrpc_sid_to_name,
 	query_user,
 	lookup_usergroups,
+	msrpc_lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,

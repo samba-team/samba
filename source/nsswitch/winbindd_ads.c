@@ -966,6 +966,7 @@ struct winbindd_methods ads_methods = {
 	msrpc_sid_to_name,
 	query_user,
 	lookup_usergroups,
+	msrpc_lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
 	trusted_domains,
