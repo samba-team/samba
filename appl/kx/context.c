@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+/*
+ * Set the common part of the context `kc'
+ */
+
 void
 context_set (kx_context *kc, char *host, char *user, int port,
 	     int debug_flag, int keepalive_flag, int tcp_flag)
@@ -51,6 +55,10 @@ context_set (kx_context *kc, char *host, char *user, int port,
     kc->keepalive_flag	= keepalive_flag;
     kc->tcp_flag	= tcp_flag;
 }
+
+/*
+ * dispatch functions
+ */
 
 void
 context_destroy (kx_context *kc)
