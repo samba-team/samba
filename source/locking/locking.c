@@ -145,7 +145,7 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 ****************************************************************************/
 BOOL locking_init(int read_only)
 {
-	brl_init();
+	brl_init(read_only);
 
 	if (tdb) return True;
 

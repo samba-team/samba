@@ -55,6 +55,7 @@ static int verbose, brief;
 static int            shares_only = 0;            /* Added by RJS */
 static int            locks_only  = 0;            /* Added by RJS */
 static BOOL processes_only=False;
+static int show_brl;
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
@@ -113,6 +114,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	  case DENY_DOS:  printf("DENY_DOS   "); break;
 	  case DENY_READ: printf("DENY_READ  "); break;
 	  case DENY_WRITE:printf("DENY_WRITE "); break;
+	  case 0xFF:
+	  case DENY_FCB:  printf("DENY_FCB "); break;
 	  }
 	  switch (e->share_mode&0xF) {
 	  case 0: printf("RDONLY     "); break;
@@ -136,6 +139,24 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	  printf(" %s   %s",dos_to_unix(fname,False),
              asctime(LocalTime((time_t *)&e->time.tv_sec)));
 	}
+}
+
+static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid, 
+		      enum brl_type lock_type,
+		      br_off start, br_off size)
+{
+	static int count;
+	if (count==0) {
+		printf("Byte range locks:\n");
+		printf("   Pid     dev:inode  R/W      start        size\n");
+		printf("------------------------------------------------\n");
+	}
+	count++;
+
+	printf("%6d   %05x:%05x    %s  %9.0f   %9.0f\n", 
+	       (int)pid, (int)dev, (int)ino, 
+	       lock_type==READ_LOCK?"R":"W",
+	       (double)start, (double)size);
 }
 
 
@@ -238,10 +259,13 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 		return(1);
 	}
 	
-	while ((c = getopt(argc, argv, "pdLSs:u:bP")) != EOF) {
+	while ((c = getopt(argc, argv, "pdLSs:u:bPB")) != EOF) {
 		switch (c) {
 		case 'b':
 			brief = 1;
+			break;
+		case 'B':
+			show_brl = 1;
 			break;
 		case 'd':
 			verbose = 1;
@@ -340,6 +364,10 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 		}
 		
 		printf("\n");
+
+		if (show_brl) {
+			brl_forall(print_brl);
+		}
 		
 		locking_end();
 	}
