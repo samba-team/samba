@@ -144,7 +144,7 @@ static void copy_trans_params_and_data(char *outbuf, int align,
 				int param_offset, int data_offset,
 				int param_len, int data_len)
 {
-	char *copy_into = smb_buf(outbuf);
+	char *copy_into = smb_buf(outbuf)+1;
 
 	DEBUG(5,("copy_trans_params_and_data: params[%d..%d] data[%d..%d]\n",
 			param_offset, param_offset + param_len,
@@ -182,14 +182,9 @@ static void send_trans_reply(char *outbuf,
 	this_lparam = MIN(lparam,max_send - (500+lsetup*SIZEOFWORD)); /* hack */
 	this_ldata  = MIN(ldata,max_send - (500+lsetup*SIZEOFWORD+this_lparam));
 
-#ifdef CONFUSE_NETMONITOR_MSRPC_DECODING
-	/* if you don't want Net Monitor to decode your packets, do this!!! */
-	align = ((this_lparam+1)%4);
-#else
-	align = (this_lparam%4);
-#endif
+	align = ((this_lparam)%4);
 
-	set_message(outbuf,10+lsetup,align+this_ldata+this_lparam,True);
+	set_message(outbuf,10+lsetup,1+align+this_ldata+this_lparam,True);
 
 	if (buffer_too_large)
 	{
@@ -206,10 +201,10 @@ static void send_trans_reply(char *outbuf,
 	SSVAL(outbuf,smb_vwv0,lparam);
 	SSVAL(outbuf,smb_vwv1,ldata);
 	SSVAL(outbuf,smb_vwv3,this_lparam);
-	SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf),outbuf));
+	SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
 	SSVAL(outbuf,smb_vwv5,0);
 	SSVAL(outbuf,smb_vwv6,this_ldata);
-	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+this_lparam+align,outbuf));
+	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
 	SSVAL(outbuf,smb_vwv8,0);
 	SSVAL(outbuf,smb_vwv9,lsetup);
 
@@ -231,7 +226,7 @@ static void send_trans_reply(char *outbuf,
 
 		align = (this_lparam%4);
 
-		set_message(outbuf,10,this_ldata+this_lparam+align,False);
+		set_message(outbuf,10,1+this_ldata+this_lparam+align,False);
 
 		copy_trans_params_and_data(outbuf, align,
 		                           rparam     , rdata,
@@ -239,10 +234,10 @@ static void send_trans_reply(char *outbuf,
 		                           this_lparam, this_ldata);
 
 		SSVAL(outbuf,smb_vwv3,this_lparam);
-		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf),outbuf));
+		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
 		SSVAL(outbuf,smb_vwv5,tot_param);
 		SSVAL(outbuf,smb_vwv6,this_ldata);
-		SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+this_lparam+align,outbuf));
+		SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,outbuf));
 		SSVAL(outbuf,smb_vwv8,tot_data);
 		SSVAL(outbuf,smb_vwv9,0);
 
