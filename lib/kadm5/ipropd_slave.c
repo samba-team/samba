@@ -208,9 +208,11 @@ receive (krb5_context context,
 	krb5_err (context, 1, ret, "db->close");
 }
 
+char *realm;
 int version_flag;
 int help_flag;
 struct getargs args[] = {
+    { "realm", 'r', arg_string, &realm },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -241,6 +243,10 @@ main(int argc, char **argv)
     }
 
     memset(&conf, 0, sizeof(conf));
+    if(realm) {
+	conf.mask |= KADM5_CONFIG_REALM;
+	conf.realm = realm;
+    }
     ret = kadm5_init_with_password_ctx (context,
 					KADM5_ADMIN_SERVICE,
 					NULL,
