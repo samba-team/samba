@@ -18,8 +18,6 @@ EXPORTS
 	des_ofb_encrypt
 	des_pcbc_encrypt
 	des_quad_cksum
-	des_random_seed
-	des_random_key
 	des_read_password
 	des_read_2passwords
 	des_read_pw_string
