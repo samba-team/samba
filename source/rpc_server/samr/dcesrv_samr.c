@@ -301,7 +301,7 @@ static NTSTATUS samr_EnumDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	}
 
 	r->out.sam = array;
-	r->out.num_entries = i - start_i;
+	r->out.num_entries = i;
 	array->count = r->out.num_entries;
 
 	return NT_STATUS_OK;
