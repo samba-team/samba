@@ -23,6 +23,9 @@ bugfix release was required, hence 2.2.3a.
 Compilation on HPUX versions earlier than HPUX 11 has also been
 corrected.
 
+The cvs.log file is no longer included with this release, as it adds
+13Mb to the size of the release, and is easily available on the Web.
+
 LDAP update
 -----------
 
