@@ -3,3 +3,4 @@ makerpms.sh
 samba2.spec
 smbadduser
 smbw.patch
+samba2.rpm?.spec
