@@ -27,6 +27,7 @@ int pw_file_lock_depth = 0;
 /***************************************************************
  Signal function to tell us we timed out.
 ****************************************************************/
+
 static void gotalarm_sig(void)
 {
   gotalarm = 1;
@@ -36,6 +37,7 @@ static void gotalarm_sig(void)
  Lock or unlock a fd for a known lock type. Abandon after waitsecs 
  seconds.
 ****************************************************************/
+
 BOOL do_file_lock(int fd, int waitsecs, int type)
 {
   struct flock    lock;
@@ -68,6 +70,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
+
 BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
   if (fd < 0)
@@ -89,6 +92,7 @@ BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 /***************************************************************
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
+
 BOOL pw_file_unlock(int fd, int *plock_depth)
 {
   BOOL ret=True;
@@ -110,6 +114,7 @@ static FILE *mach_passwd_fp;
 /************************************************************************
  Routine to get the name for a trust account file.
 ************************************************************************/
+
 static void get_trust_account_file_name( char *domain, char *name, char *mac_file)
 {
   unsigned int mac_file_len;
@@ -138,6 +143,7 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 /************************************************************************
  Routine to lock the trust account password file for a domain.
 ************************************************************************/
+
 BOOL trust_password_lock( char *domain, char *name, BOOL update)
 {
   pstring mac_file;
@@ -176,6 +182,7 @@ BOOL trust_password_lock( char *domain, char *name, BOOL update)
 /************************************************************************
  Routine to unlock the trust account password file for a domain.
 ************************************************************************/
+
 BOOL trust_password_unlock(void)
 {
   BOOL ret = pw_file_unlock(fileno(mach_passwd_fp), &mach_passwd_lock_depth);
@@ -187,6 +194,7 @@ BOOL trust_password_unlock(void)
 /************************************************************************
  Routine to delete the trust account password file for a domain.
 ************************************************************************/
+
 BOOL trust_password_delete( char *domain, char *name )
 {
   pstring mac_file;
@@ -199,6 +207,7 @@ BOOL trust_password_delete( char *domain, char *name )
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file.
 ************************************************************************/
+
 BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_time)
 {
   char linebuf[256];
@@ -223,13 +232,17 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
     return False;
   }
 
+  if(linebuf[strlen(linebuf)-1] == '\n')
+    linebuf[strlen(linebuf)-1] = '\0';
+
   /*
    * The length of the line read
    * must be 45 bytes ( <---XXXX 32 bytes-->:TLC-12345678
    */
 
   if(strlen(linebuf) != 45) {
-    DEBUG(0,("get_trust_account_password: Malformed trust password file (wrong length).\n"));
+    DEBUG(0,("get_trust_account_password: Malformed trust password file (wrong length \
+- was %d, should be 45).\n", strlen(linebuf)));
 #ifdef DEBUG_PASSWORD
     DEBUG(100,("get_trust_account_password: line = |%s|\n", linebuf));
 #endif
@@ -279,6 +292,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
  Routine to get the trust account password for a domain.
  The user of this function must have locked the trust password file.
 ************************************************************************/
+
 BOOL set_trust_account_password( unsigned char *md4_new_pwd)
 {
   char linebuf[64];
@@ -295,7 +309,7 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
 
   slprintf(&linebuf[32], 32, ":TLC-%08X\n", (unsigned)time(NULL));
 
-  if(fwrite( linebuf, 1, 45, mach_passwd_fp)!= 45) {
+  if(fwrite( linebuf, 1, 46, mach_passwd_fp)!= 46) {
     DEBUG(0,("set_trust_account_password: Failed to write file. Warning - the trust \
 account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
     return False;
@@ -304,4 +318,3 @@ account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
   fflush(mach_passwd_fp);
   return True;
 }
-

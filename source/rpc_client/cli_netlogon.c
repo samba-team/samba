@@ -463,3 +463,168 @@ password ?).\n", cli->desthost ));
 
   return ok;
 }
+
+/*********************************************************
+ Change the domain password on the PDC.
+**********************************************************/
+
+static BOOL modify_trust_password( char *domain, char *remote_machine, 
+                          unsigned char orig_trust_passwd_hash[16],
+                          unsigned char new_trust_passwd_hash[16])
+{
+  struct in_addr dest_ip;
+  struct cli_state cli;
+
+  memset(&cli, '\0', sizeof(struct cli_state));
+  if(cli_initialise(&cli) == False) {
+    DEBUG(0,("modify_trust_password: unable to initialize client connection.\n"));
+    return False;
+  }
+
+  if(!resolve_name( remote_machine, &dest_ip)) {
+    DEBUG(0,("modify_trust_password: Can't resolve address for %s\n", remote_machine));
+    return False;
+  }
+
+  if (ismyip(dest_ip)) {
+    DEBUG(0,("modify_trust_password: Machine %s is one of our addresses. Cannot add \
+to ourselves.\n", remote_machine));
+    return False;
+  }
+
+  if (!cli_connect(&cli, remote_machine, &dest_ip)) {
+    DEBUG(0,("modify_trust_password: unable to connect to SMB server on \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    return False;
+  }
+    
+  if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
+    DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  cli.protocol = PROTOCOL_NT1;
+    
+  if (!cli_negprot(&cli)) {
+    DEBUG(0,("modify_trust_password: machine %s rejected the negotiate protocol. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
+    return False;
+  }
+  if (cli.protocol != PROTOCOL_NT1) {
+    DEBUG(0,("modify_trust_password: machine %s didn't negotiate NT protocol.\n", 
+            remote_machine));
+    cli_shutdown(&cli);
+    return False;
+  }
+    
+  /*
+   * Do an anonymous session setup.
+   */
+    
+  if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
+    DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
+    return False;
+  }
+    
+  if (!(cli.sec_mode & 1)) {
+    DEBUG(0,("modify_trust_password: machine %s isn't in user level security mode\n",
+          remote_machine));
+    cli_shutdown(&cli);
+    return False;
+  }
+    
+  if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
+    DEBUG(0,("modify_trust_password: machine %s rejected the tconX on the IPC$ share. \
+Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  /*
+   * Ok - we have an anonymous connection to the IPC$ share.
+   * Now start the NT Domain stuff :-).
+   */
+    
+  if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
+    DEBUG(0,("modify_trust_password: unable to open the domain client session to \
+machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+    cli_nt_session_close(&cli);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  } 
+  
+  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
+    DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
+%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+    cli_nt_session_close(&cli);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  } 
+
+  if( cli_nt_srv_pwset( &cli,new_trust_passwd_hash ) == False) {
+    DEBUG(0,("modify_trust_password: unable to change password for machine %s in domain \
+%s to Domain controller %s. Error was %s.\n", global_myname, domain, remote_machine, 
+                            cli_errstr(&cli)));
+    cli_close(&cli, cli.nt_pipe_fnum);
+    cli_ulogoff(&cli);
+    cli_shutdown(&cli);
+    return False;
+  }
+
+  cli_nt_session_close(&cli);
+  cli_ulogoff(&cli);
+  cli_shutdown(&cli);
+
+  return True;
+}
+
+/************************************************************************
+ Change the trust account password for a domain.
+ The user of this function must have locked the trust password file for
+ update.
+************************************************************************/
+
+BOOL change_trust_account_password( char *domain, char *remote_machine_list)
+{
+  fstring remote_machine;
+  unsigned char old_trust_passwd_hash[16];
+  unsigned char new_trust_passwd_hash[16];
+  time_t lct;
+
+  if(!get_trust_account_password( old_trust_passwd_hash, &lct)) {
+    DEBUG(0,("change_trust_account_password: unable to read the machine \
+account password for domain %s.\n", domain));
+    return False;
+  }
+
+  /*
+   * Create the new (random) password.
+   */
+  generate_random_buffer( new_trust_passwd_hash, 16, True);
+
+  while(remote_machine_list && next_token( &remote_machine_list, 
+                                           remote_machine, LIST_SEP)) {
+    strupper(remote_machine);
+    if(modify_trust_password( domain, remote_machine, 
+                              old_trust_passwd_hash, new_trust_passwd_hash)) {
+      DEBUG(0,("%s : change_trust_account_password: Changed password for \
+domain %s.\n", timestring(), domain));
+      /*
+       * Return the result of trying to write the new password
+       * back into the trust account file.
+       */
+      return set_trust_account_password(new_trust_passwd_hash);
+    }
+  }
+
+  DEBUG(0,("%s : change_trust_account_password: Failed to change password for \
+domain %s.\n", timestring(), domain));
+  return False;
+}

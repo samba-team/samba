@@ -43,157 +43,30 @@ static void usage(char *name, BOOL is_root)
 Join a domain.
 **********************************************************/
 
-static int setup_account( char *domain, char *remote_machine, 
-                          unsigned char orig_trust_passwd_hash[16],
-                          unsigned char new_trust_passwd_hash[16])
-{
-  struct in_addr dest_ip;
-  struct cli_state cli;
-
-  memset(&cli, '\0', sizeof(struct cli_state));
-  if(cli_initialise(&cli) == False) {
-    fprintf(stderr, "%s: unable to initialize client connection.\n", prog_name);
-    return 1;
-  }
-
-  if(!resolve_name( remote_machine, &dest_ip)) {
-    fprintf(stderr, "%s: Can't resolve address for %s\n", prog_name, remote_machine);
-    return 1;
-  }
-
-  if (ismyip(dest_ip)) {
-    fprintf(stderr,"%s: Machine %s is one of our addresses. Cannot add to ourselves.\n", prog_name,
-           remote_machine);
-    return 1;
-  }
-
-  if (!cli_connect(&cli, remote_machine, &dest_ip)) {
-    fprintf(stderr, "%s: unable to connect to SMB server on \
-machine %s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli) );
-    return 1;
-  }
-    
-  if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
-    fprintf(stderr, "%s: machine %s rejected the session setup. \
-Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli) );
-    cli_shutdown(&cli);
-    return 1;
-  }
-    
-  cli.protocol = PROTOCOL_NT1;
-    
-  if (!cli_negprot(&cli)) {
-    fprintf(stderr, "%s: machine %s rejected the negotiate protocol. \
-Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli) );
-    cli_shutdown(&cli);
-    return 1;
-  }
-  if (cli.protocol != PROTOCOL_NT1) {
-    fprintf(stderr, "%s: machine %s didn't negotiate NT protocol.\n", prog_name, remote_machine);
-    cli_shutdown(&cli);
-    return 1;
-  }
-    
-  /*
-   * Do an anonymous session setup.
-   */
-    
-  if (!cli_session_setup(&cli, "", "", 0, "", 0, "")) {
-    fprintf(stderr, "%s: machine %s rejected the session setup. \
-Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli) );
-    cli_shutdown(&cli);
-    return 1;
-  }
-    
-  if (!(cli.sec_mode & 1)) {
-    fprintf(stderr, "%s: machine %s isn't in user level security mode\n", prog_name, remote_machine);
-    cli_shutdown(&cli);
-    return 1;
-  }
-    
-  if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1)) {
-    fprintf(stderr, "%s: machine %s rejected the tconX on the IPC$ share. \
-Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli) );
-    cli_shutdown(&cli);
-    return 1;
-  }
-
-  /*
-   * Ok - we have an anonymous connection to the IPC$ share.
-   * Now start the NT Domain stuff :-).
-   */
-    
-  if(cli_nt_session_open(&cli, PIPE_NETLOGON, False) == False) {
-    fprintf(stderr, "%s: unable to open the domain client session to \
-machine %s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return 1;
-  } 
-  
-  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
-    fprintf(stderr, "%s: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", prog_name, remote_machine, cli_errstr(&cli));
-    cli_nt_session_close(&cli);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return 1;
-  } 
-
-  if( cli_nt_srv_pwset( &cli,new_trust_passwd_hash ) == False) {
-    fprintf(stderr, "%s: unable to change password for machine %s in domain \
-%s to Domain controller %s. Error was %s.\n", prog_name, global_myname, domain, remote_machine, 
-                            cli_errstr(&cli));
-    cli_close(&cli, cli.nt_pipe_fnum);
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return 1; 
-  }
-
-  cli_nt_session_close(&cli);
-  cli_ulogoff(&cli);
-  cli_shutdown(&cli);
-
-  return 0;
-}
-
-/*********************************************************
-Join a domain.
-**********************************************************/
-
 static int join_domain( char *domain, char *remote)
 {
-  fstring remote_machine;
-  char *p;
+  pstring remote_machine;
   fstring trust_passwd;
-  unsigned char trust_passwd_hash[16];
-  unsigned char new_trust_passwd_hash[16];
-  int ret = 1;
+  unsigned char orig_trust_passwd_hash[16];
+  BOOL ret;
 
-  fstrcpy(remote_machine, remote ? remote : "");
+  pstrcpy(remote_machine, remote ? remote : "");
   fstrcpy(trust_passwd, global_myname);
   strlower(trust_passwd);
-  E_md4hash( (uchar *)trust_passwd, trust_passwd_hash);
-
-  generate_random_buffer( new_trust_passwd_hash, 16, True);
+  E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
   /* Ensure that we are not trying to join a
      domain if we are locally set up as a domain
      controller. */
 
   if(lp_domain_controller() && strequal(lp_workgroup(), domain)) {
-    fprintf(stderr, "%s: Cannot join domain %s as we already configured as domain controller \
-for that domain.\n", prog_name, domain);
+    fprintf(stderr, "%s: Cannot join domain %s as we already configured as \
+domain controller for that domain.\n", prog_name, domain);
     return 1;
   }
 
   /*
-   * Write the new machine password.
-   */
-
-  /*
-   * Get the machine account password.
+   * Create the machine account password file.
    */
   if(!trust_password_lock( domain, global_myname, True)) {
     fprintf(stderr, "%s: unable to open the machine account password file for \
@@ -201,53 +74,42 @@ machine %s in domain %s.\n", prog_name, global_myname, domain);
     return 1;
   }
 
-  if(!set_trust_account_password( new_trust_passwd_hash)) {              
-    fprintf(stderr, "%s: unable to read the machine account password for \
+  /*
+   * Write the old machine account password.
+   */
+
+  if(!set_trust_account_password( orig_trust_passwd_hash)) {              
+    fprintf(stderr, "%s: unable to write the machine account password for \
 machine %s in domain %s.\n", prog_name, global_myname, domain);
     trust_password_unlock();
     return 1;
   }
 
-  trust_password_unlock();
-
   /*
    * If we are given a remote machine assume this is the PDC.
    */
 
-  if(remote != NULL) {
-    strupper(remote_machine);
-    ret = setup_account( domain, remote_machine, trust_passwd_hash, new_trust_passwd_hash);
-    if(ret == 0)
-      printf("%s: Joined domain %s.\n", prog_name, domain);
-  } else {
-    /*
-     * Treat each name in the 'password server =' line as a potential
-     * PDC/BDC. Contact each in turn and try and authenticate and
-     * change the machine account password.
-     */
+  if(remote == NULL)
+    pstrcpy(remote_machine, lp_passwordserver());
 
-    p = lp_passwordserver();
-
-    if(!*p)
-      fprintf(stderr, "%s: No password server list given in smb.conf - \
+  if(!*remote_machine) {
+    fprintf(stderr, "%s: No password server list given in smb.conf - \
 unable to join domain.\n", prog_name);
-
-    while(p && next_token( &p, remote_machine, LIST_SEP)) {
-
-      strupper(remote_machine);
-      if(setup_account( domain, remote_machine, trust_passwd_hash, new_trust_passwd_hash) == 0) {
-        printf("%s: Joined domain %s.\n", prog_name, domain);
-        return 0;
-      }
-    }
+    trust_password_unlock();
+    return 1;
   }
 
-  if(ret) {
+  ret = change_trust_account_password( domain, remote_machine);
+  trust_password_unlock();
+
+  if(!ret) {
     trust_password_delete( domain, global_myname);
     fprintf(stderr,"%s: Unable to join domain %s.\n", prog_name, domain);
+  } else {
+    printf("%s: Joined domain %s.\n", prog_name, domain);
   }
 
-  return ret;
+  return (int)ret;
 }
 
 /*********************************************************

@@ -50,6 +50,7 @@ extern BOOL use_mangled_map;
 extern BOOL short_case_preserve;
 extern BOOL case_mangle;
 time_t smb_last_time=(time_t)0;
+extern BOOL global_machine_pasword_needs_changing;
 
 extern int smb_read_error;
 
@@ -4949,6 +4950,52 @@ static void process(void)
       {
         DEBUG(2,("%s Closing idle connection 2\n",timestring()));
         return;
+      }
+
+      if(global_machine_pasword_needs_changing)
+      {
+        unsigned char trust_passwd_hash[16];
+        time_t lct;
+        pstring remote_machine_list;
+
+        /*
+         * We're in domain level security, and the code that
+         * read the machine password flagged that the machine
+         * password needs changing.
+         */
+
+        /*
+         * First, open the machine password file with an exclusive lock.
+         */
+
+        if(!trust_password_lock( global_myworkgroup, global_myname, True)) {
+          DEBUG(0,("process: unable to open the machine account password file for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+          continue;
+        }
+
+        if(!get_trust_account_password( trust_passwd_hash, &lct)) {
+          DEBUG(0,("process: unable to read the machine account password for \
+machine %s in domain %s.\n", global_myname, global_myworkgroup ));
+          trust_password_unlock();
+          continue;
+        }
+
+        /*
+         * Make sure someone else hasn't already done this.
+         */
+
+        if(t < lct + lp_machine_password_timeout()) {
+          trust_password_unlock();
+          global_machine_pasword_needs_changing = False;
+          continue;
+        }
+
+        pstrcpy(remote_machine_list, lp_passwordserver());
+
+        change_trust_account_password( global_myworkgroup, remote_machine_list);
+        trust_password_unlock();
+        global_machine_pasword_needs_changing = False;
       }
     }
 

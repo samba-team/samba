@@ -172,6 +172,7 @@ typedef struct
   int shmem_size;
   int client_code_page;
   int announce_as;   /* This is initialised in init_globals */
+  int machine_password_timeout;
 #ifdef USE_LDAP
   int ldap_port;
 #endif /* USE_LDAP */
@@ -591,6 +592,7 @@ static struct parm_struct parm_table[] =
   {"domain allow hosts",P_STRING, P_GLOBAL, &Globals.szDomainHostsallow, NULL,   NULL,  0},
   {"domain hosts deny", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
   {"domain deny hosts", P_STRING, P_GLOBAL, &Globals.szDomainHostsdeny,  NULL,   NULL,  0},
+  {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
@@ -758,6 +760,7 @@ static void init_globals(void)
   Globals.max_ttl = 60*60*24*3; /* 3 days default */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
+  Globals.machine_password_timeout = 60*60*24*7; /* 7 days default */
   Globals.ReadSize = 16*1024;
   Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */
   Globals.lm_interval = 60;
@@ -1050,6 +1053,7 @@ FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
 FN_GLOBAL_INTEGER(lp_announce_as,&Globals.announce_as)
 FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
+FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 
 #ifdef USE_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
