@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -47,7 +47,7 @@ RCSID("$Id$");
 #define X data
 
 void
-MD5Init (struct md5 *m)
+MD5_Init (struct md5 *m)
 {
   m->sz[0] = 0;
   m->sz[1] = 0;
@@ -199,7 +199,7 @@ struct x32{
 };
 
 void
-MD5Update (struct md5 *m, const void *v, size_t len)
+MD5_Update (struct md5 *m, const void *v, size_t len)
 {
   const unsigned char *p = v;
   size_t old_sz = m->sz[0];
@@ -234,7 +234,7 @@ MD5Update (struct md5 *m, const void *v, size_t len)
 }
 
 void
-MD5Final (void *res, struct md5 *m)
+MD5_Final (void *res, struct md5 *m)
 {
   static unsigned char zeros[72];
   unsigned offset = (m->sz[0] / 8) % 64;

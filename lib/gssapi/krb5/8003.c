@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,30 +59,30 @@ hash_input_chan_bindings (const gss_channel_bindings_t b,
   u_char num[4];
   MD5_CTX md5;
 
-  MD5Init(&md5);
+  MD5_Init(&md5);
   encode_om_uint32 (b->initiator_addrtype, num);
-  MD5Update (&md5, num, sizeof(num));
+  MD5_Update (&md5, num, sizeof(num));
   encode_om_uint32 (b->initiator_address.length, num);
-  MD5Update (&md5, num, sizeof(num));
+  MD5_Update (&md5, num, sizeof(num));
   if (b->initiator_address.length)
-    MD5Update (&md5,
+    MD5_Update (&md5,
 		b->initiator_address.value,
 		b->initiator_address.length);
   encode_om_uint32 (b->acceptor_addrtype, num);
-  MD5Update (&md5, num, sizeof(num));
+  MD5_Update (&md5, num, sizeof(num));
   encode_om_uint32 (b->acceptor_address.length, num);
-  MD5Update (&md5, num, sizeof(num));
+  MD5_Update (&md5, num, sizeof(num));
   if (b->acceptor_address.length)
-    MD5Update (&md5,
+    MD5_Update (&md5,
 		b->acceptor_address.value,
 		b->acceptor_address.length);
   encode_om_uint32 (b->application_data.length, num);
-  MD5Update (&md5, num, sizeof(num));
+  MD5_Update (&md5, num, sizeof(num));
   if (b->application_data.length)
-    MD5Update (&md5,
+    MD5_Update (&md5,
 		b->application_data.value,
 		b->application_data.length);
-  MD5Final (p, &md5);
+  MD5_Final (p, &md5);
   return 0;
 }
 

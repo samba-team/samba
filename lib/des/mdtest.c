@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -74,9 +74,9 @@ md4_tests (void)
     unsigned char res[16];
     int i;
 
-    MD4Init (&md4);
-    MD4Update (&md4, (unsigned char *)t->str, strlen(t->str));
-    MD4Final (res, &md4);
+    MD4_Init (&md4);
+    MD4_Update (&md4, (unsigned char *)t->str, strlen(t->str));
+    MD4_Final (res, &md4);
     if (memcmp (res, t->hash, 16) != 0) {
       printf ("MD4(\"%s\") failed\n", t->str);
       printf("should be: ");
@@ -116,9 +116,9 @@ md5_tests (void)
     MD5_CTX md5;
     unsigned char res[16];
 
-    MD5Init (&md5);
-    MD5Update (&md5, (unsigned char *)t->str, strlen(t->str));
-    MD5Final (res, &md5);
+    MD5_Init (&md5);
+    MD5_Update (&md5, (unsigned char *)t->str, strlen(t->str));
+    MD5_Final (res, &md5);
     if (memcmp (res, t->hash, 16) != 0) {
       int i;
 
@@ -157,12 +157,12 @@ sha1_tests (void)
 
   printf ("sha... ");
   for (t = tests; t->str; ++t) {
-    SHA1_CTX sha;
+    SHA_CTX sha;
     unsigned char res[20];
 
-    SHA1Init (&sha);
-    SHA1Update (&sha, (unsigned char *)t->str, strlen(t->str));
-    SHA1Final (res, &sha);
+    SHA1_Init (&sha);
+    SHA1_Update (&sha, (unsigned char *)t->str, strlen(t->str));
+    SHA1_Final (res, &sha);
     if (memcmp (res, t->hash, 20) != 0) {
       int i;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -48,7 +48,7 @@ RCSID("$Id$");
 #define X data
 
 void
-SHA1Init (struct sha1 *m)
+SHA1_Init (struct sha *m)
 {
   m->sz[0] = 0;
   m->sz[1] = 0;
@@ -83,7 +83,7 @@ do { \
 } while(0)
 
 static inline void
-calc (struct sha1 *m, u_int32_t *in)
+calc (struct sha *m, u_int32_t *in)
 {
   u_int32_t AA, BB, CC, DD, EE;
   u_int32_t data[80];
@@ -225,7 +225,7 @@ struct x32{
 };
 
 void
-SHA1Update (struct sha1 *m, const void *v, size_t len)
+SHA1_Update (struct sha *m, const void *v, size_t len)
 {
   const unsigned char *p = v;
   size_t old_sz = m->sz[0];
@@ -260,7 +260,7 @@ SHA1Update (struct sha1 *m, const void *v, size_t len)
 }
 
 void
-SHA1Final (void *res, struct sha1 *m)
+SHA1_Final (void *res, struct sha *m)
 {
   static unsigned char zeros[72];
   unsigned offset = (m->sz[0] / 8) % 64;

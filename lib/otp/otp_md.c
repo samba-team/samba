@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -131,9 +131,9 @@ otp_md4_init (OtpKey key, const char *pwd, const char *seed)
   MD4_CTX md4;
 
   return otp_md_init (key, pwd, seed,
-		      (void (*)(void *))MD4Init,
-		      (void (*)(void *, const void *, size_t))MD4Update, 
-		      (void (*)(void *, void *))MD4Final,
+		      (void (*)(void *))MD4_Init,
+		      (void (*)(void *, const void *, size_t))MD4_Update, 
+		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, sizeof(res));
 }
 
@@ -145,9 +145,9 @@ otp_md4_hash (const char *data,
   MD4_CTX md4;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))MD4Init,
-		      (void (*)(void *, const void *, size_t))MD4Update, 
-		      (void (*)(void *, void *))MD4Final,
+		      (void (*)(void *))MD4_Init,
+		      (void (*)(void *, const void *, size_t))MD4_Update, 
+		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, 16);
 }
 
@@ -158,9 +158,9 @@ otp_md4_next (OtpKey key)
   MD4_CTX md4;
 
   return otp_md_next (key, 
-		      (void (*)(void *))MD4Init, 
-		      (void (*)(void *, const void *, size_t))MD4Update, 
-		      (void (*)(void *, void *))MD4Final,
+		      (void (*)(void *))MD4_Init, 
+		      (void (*)(void *, const void *, size_t))MD4_Update, 
+		      (void (*)(void *, void *))MD4_Final,
 		      &md4, res, sizeof(res));
 }
 
@@ -172,9 +172,9 @@ otp_md5_init (OtpKey key, const char *pwd, const char *seed)
   MD5_CTX md5;
 
   return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))MD5Init, 
-		      (void (*)(void *, const void *, size_t))MD5Update, 
-		      (void (*)(void *, void *))MD5Final,
+		      (void (*)(void *))MD5_Init, 
+		      (void (*)(void *, const void *, size_t))MD5_Update, 
+		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, sizeof(res));
 }
 
@@ -186,9 +186,9 @@ otp_md5_hash (const char *data,
   MD5_CTX md5;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))MD5Init,
-		      (void (*)(void *, const void *, size_t))MD5Update, 
-		      (void (*)(void *, void *))MD5Final,
+		      (void (*)(void *))MD5_Init,
+		      (void (*)(void *, const void *, size_t))MD5_Update, 
+		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, 16);
 }
 
@@ -199,9 +199,9 @@ otp_md5_next (OtpKey key)
   MD5_CTX md5;
 
   return otp_md_next (key, 
-		      (void (*)(void *))MD5Init, 
-		      (void (*)(void *, const void *, size_t))MD5Update, 
-		      (void (*)(void *, void *))MD5Final,
+		      (void (*)(void *))MD5_Init, 
+		      (void (*)(void *, const void *, size_t))MD5_Update, 
+		      (void (*)(void *, void *))MD5_Final,
 		      &md5, res, sizeof(res));
 }
 
@@ -212,13 +212,13 @@ otp_md5_next (OtpKey key)
  */
 
 static void
-SHA1Final_little_endian (void *res, struct sha1 *m)
+SHA1_Final_little_endian (void *res, struct sha1 *m)
 {
   unsigned char tmp[20];
   unsigned char *p = res;
   int j;
 
-  SHA1Final (tmp, m);
+  SHA1_Final (tmp, m);
   for (j = 0; j < 20; j += 4) {
     p[j]   = tmp[j+3];
     p[j+1] = tmp[j+2];
@@ -231,12 +231,12 @@ int
 otp_sha_init (OtpKey key, const char *pwd, const char *seed)
 {
   unsigned char res[20];
-  struct sha1 sha1;
+  SHA_CTX sha1;
 
   return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))SHA1Init, 
-		      (void (*)(void *, const void *, size_t))SHA1Update, 
-		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      (void (*)(void *))SHA1_Init, 
+		      (void (*)(void *, const void *, size_t))SHA1_Update, 
+		      (void (*)(void *, void *))SHA1_Final_little_endian,
 		      &sha1, res, sizeof(res));
 }
 
@@ -245,12 +245,12 @@ otp_sha_hash (const char *data,
 	      size_t len,
 	      unsigned char *res)
 {
-  struct sha1 sha1;
+  SHA_CTX sha1;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))SHA1Init,
-		      (void (*)(void *, const void *, size_t))SHA1Update, 
-		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      (void (*)(void *))SHA1_Init,
+		      (void (*)(void *, const void *, size_t))SHA1_Update, 
+		      (void (*)(void *, void *))SHA1_Final_little_endian,
 		      &sha1, res, 20);
 }
 
@@ -258,11 +258,11 @@ int
 otp_sha_next (OtpKey key)
 {
   unsigned char res[20];
-  struct sha1 sha1;
+  SHA_CTX sha1;
 
   return otp_md_next (key, 
-		      (void (*)(void *))SHA1Init, 
-		      (void (*)(void *, const void *, size_t))SHA1Update, 
-		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      (void (*)(void *))SHA1_Init,
+		      (void (*)(void *, const void *, size_t))SHA1_Update,
+		      (void (*)(void *, void *))SHA1_Final_little_endian,
 		      &sha1, res, sizeof(res));
 }

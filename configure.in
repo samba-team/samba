@@ -555,18 +555,15 @@ AC_CHECK_HEADERS([				\
 	openssl/rc4.h				\
 ])
 
-AC_FIND_FUNC_NO_LIBS2(MD4Init, crypto des, [], [], [], [$LIB_krb4])
 AC_FIND_FUNC_NO_LIBS2(MD4_Init, crypto des, [], [], [], [$LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(MD5Init, crypto des, [], [], [], [$LIB_krb4])
 AC_FIND_FUNC_NO_LIBS2(MD5_Init, crypto des, [], [], [], [$LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(SHA1Init, crypto des, [], [], [], [$LIB_krb4])
 AC_FIND_FUNC_NO_LIBS2(SHA1_Init, crypto des, [], [], [], [$LIB_krb4])
 AC_FIND_FUNC_NO_LIBS2(des_cbc_encrypt, crypto des, [], [], [], [$LIB_krb4])
 AC_FIND_FUNC_NO_LIBS2(RC4, crypto des, [], [], [], [$LIB_krb4])
 if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
-\( "$ac_cv_func_MD4Init"  = "yes" -o "$ac_cv_func_MD4_Init"  = "yes" \) -a \
-\( "$ac_cv_func_MD5Init"  = "yes" -o "$ac_cv_func_MD5_Init"  = "yes" \) -a \
-\( "$ac_cv_func_SHA1Init" = "yes" -o "$ac_cv_func_SHA1_Init" = "yes" \) -a \
+"$ac_cv_func_MD4_Init"  = "yes" -a \
+"$ac_cv_func_MD5_Init"  = "yes" -a \
+"$ac_cv_func_SHA1_Init" = "yes" -a \
 "$ac_cv_func_RC4" = "yes"; then
   DIR_des=''
   LIB_des="-R $krb4_libdir -L$krb4_libdir $ac_cv_funclib_MD4Init"

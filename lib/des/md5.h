@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -54,6 +54,6 @@ struct md5 {
 
 typedef struct md5 MD5_CTX;
 
-void MD5Init (struct md5 *m);
-void MD5Update (struct md5 *m, const void *p, size_t len);
-void MD5Final (void *res, struct md5 *m); /* u_int32_t res[4] */
+void MD5_Init (struct md5 *m);
+void MD5_Update (struct md5 *m, const void *p, size_t len);
+void MD5_Final (void *res, struct md5 *m); /* u_int32_t res[4] */

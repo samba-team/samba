@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -149,14 +149,14 @@ checksum_authenticator(Authenticator *auth, void *data)
     MD5_CTX md5;
     int i;
 
-    MD5Init (&md5);
-    MD5Update (&md5, auth->crealm, strlen(auth->crealm));
+    MD5_Init (&md5);
+    MD5_Update (&md5, auth->crealm, strlen(auth->crealm));
     for(i = 0; i < auth->cname.name_string.len; i++)
-	MD5Update(&md5, auth->cname.name_string.val[i], 
-		  strlen(auth->cname.name_string.val[i]));
-    MD5Update (&md5, &auth->ctime, sizeof(auth->ctime));
-    MD5Update (&md5, &auth->cusec, sizeof(auth->cusec));
-    MD5Final (data, &md5);
+	MD5_Update(&md5, auth->cname.name_string.val[i], 
+		   strlen(auth->cname.name_string.val[i]));
+    MD5_Update (&md5, &auth->ctime, sizeof(auth->ctime));
+    MD5_Update (&md5, &auth->cusec, sizeof(auth->cusec));
+    MD5_Final (data, &md5);
 }
 
 krb5_error_code

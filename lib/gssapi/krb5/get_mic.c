@@ -78,10 +78,10 @@ mic_des
   p += 16;
 
   /* checksum */
-  MD5Init (&md5);
-  MD5Update (&md5, p - 24, 8);
-  MD5Update (&md5, message_buffer->value, message_buffer->length);
-  MD5Final (hash, &md5);
+  MD5_Init (&md5);
+  MD5_Update (&md5, p - 24, 8);
+  MD5_Update (&md5, message_buffer->value, message_buffer->length);
+  MD5_Final (hash, &md5);
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));

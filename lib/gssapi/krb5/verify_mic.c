@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -70,11 +70,11 @@ verify_mic_des
   p += 16;
 
   /* verify checksum */
-  MD5Init (&md5);
-  MD5Update (&md5, p - 24, 8);
-  MD5Update (&md5, message_buffer->value,
+  MD5_Init (&md5);
+  MD5_Update (&md5, p - 24, 8);
+  MD5_Update (&md5, message_buffer->value,
 	     message_buffer->length);
-  MD5Final (hash, &md5);
+  MD5_Final (hash, &md5);
 
   memset (&zero, 0, sizeof(zero));
   memcpy (&deskey, key->keyvalue.data, sizeof(deskey));
