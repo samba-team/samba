@@ -1,5 +1,12 @@
+2003-05-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi.h: if __cplusplus, wrap the extern variable (just to be
+	safe) and functions in extern "C" { }
+	
 2003-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* gssapi.3: more about the des3 mic mess
+	
 	* verify_mic.c (verify_mic_des3): always check if the mic is the
 	correct mic or the mic that old heimdal would have generated
 	
