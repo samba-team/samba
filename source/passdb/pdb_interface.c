@@ -25,8 +25,11 @@
 #define DBGC_CLASS DBGC_PASSDB
 
 /** List of various built-in passdb modules */
-
-const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
+const struct {
+    char *name;
+    /* Function to create a member of the pdb_methods list */
+    pdb_init_function init;
+} builtin_pdb_init_functions[] = {
 	{ "smbpasswd", pdb_init_smbpasswd },
 	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
 	{ "tdbsam", pdb_init_tdbsam },
@@ -38,6 +41,50 @@ const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
 	{ "plugin", pdb_init_plugin },
 	{ NULL, NULL}
 };
+
+static struct pdb_init_function_entry *backends;
+static void lazy_initialize_passdb(void);
+
+static void lazy_initialize_passdb()
+{
+	int i;
+	static BOOL initialised = False;
+	
+	if(!initialised) {
+		initialised = True;
+
+		for(i = 0; builtin_pdb_init_functions[i].name; i++) {
+			smb_register_passdb(builtin_pdb_init_functions[i].name, builtin_pdb_init_functions[i].init, PASSDB_INTERFACE_VERSION);
+		}
+	}
+}
+
+BOOL smb_register_passdb(char *name, pdb_init_function init, int version) 
+{
+	struct pdb_init_function_entry *entry = backends;
+
+	if(version != PASSDB_INTERFACE_VERSION)
+		return False;
+
+	DEBUG(5,("Attempting to register passdb backend %s\n", name));
+
+	/* Check for duplicates */
+	while(entry) { 
+		if(strcasecmp(name, entry->name) == 0) { 
+			DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
+			return False;
+		}
+		entry = entry->next;
+	}
+
+	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
+	entry->name = name;
+	entry->init = init;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5,("Successfully added passdb backend '%s'\n", name));
+	return True;
+}
 
 static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
 {
@@ -371,8 +418,12 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 {
 	char *module_name = smb_xstrdup(selected);
 	char *module_location = NULL, *p;
+	struct pdb_init_function_entry *entry;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	int i;
+
+	lazy_initialize_passdb();
+
+	entry = backends;
 
 	p = strchr(module_name, ':');
 
@@ -385,12 +436,11 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 	trim_string(module_name, " ", " ");
 
 	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
-	for (i = 0; builtin_pdb_init_functions[i].name; i++)
-	{
-		if (strequal(builtin_pdb_init_functions[i].name, module_name))
+	while(entry) {
+		if (strequal(entry->name, module_name))
 		{
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
-			nt_status = builtin_pdb_init_functions[i].init(context, methods, module_location);
+			DEBUG(5,("Found pdb backend %s\n", module_name));
+			nt_status = entry->init(context, methods, module_location);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(5,("pdb backend %s has a valid init\n", selected));
 			} else {
@@ -400,6 +450,7 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 			return nt_status;
 			break; /* unreached */
 		}
+		entry = entry->next;
 	}
 
 	/* No such backend found */
