@@ -1,5 +1,10 @@
 1999-05-04  Assar Westerlund  <assar@sics.se>
 
+	* version4.c (kadm_ser_cpw): always allow a user to change her
+ 	password
+	(kadm_ser_*): make logging work
+	clean-up and restructure
+	
 	* kadmin_locl.h (set_entry): add prototype
 
 	* kadmin.c (usage): update usage string
