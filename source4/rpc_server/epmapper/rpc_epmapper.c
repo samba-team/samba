@@ -187,6 +187,8 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 	enum dcerpc_transport_t transport;
+	struct GUID ndr_uuid;
+	uint16_t ndr_version;
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
@@ -208,9 +210,11 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 	floors = r->in.map_tower->tower.floors;
 
+	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_uuid, &ndr_version);
+
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-	    guid_cmp(mem_ctx, &floors[1].lhs.info.uuid.uuid, NDR_GUID) != 0 ||
-	    floors[1].lhs.info.uuid.version != NDR_GUID_VERSION) {
+	    guid_cmp(mem_ctx, &ndr_uuid, NDR_GUID) != 0 ||
+	    ndr_version != NDR_GUID_VERSION) {
 		goto failed;
 	}
 
@@ -226,11 +230,10 @@ static error_status_t epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	}
 
 	for (i=0;i<count;i++) {
-		if (!GUID_equal(&r->in.map_tower->tower.floors[0].lhs.info.uuid.uuid,
-					   &eps[i].ep.floors[0].lhs.info.uuid.uuid) ||
-			r->in.map_tower->tower.floors[0].lhs.info.uuid.version != 
-				eps[i].ep.floors[0].lhs.info.uuid.version ||
-				transport != dcerpc_transport_by_tower(&eps[i].ep)) {
+		if (
+			!data_blob_equal(&r->in.map_tower->tower.floors[0].lhs.lhs_data, 
+			&eps[i].ep.floors[0].lhs.lhs_data) 
+			|| transport != dcerpc_transport_by_tower(&eps[i].ep)) {
 			continue;
 		}
 		
