@@ -153,11 +153,11 @@ main(int argc, char **argv)
 	    krb5_storage *sp;
 
 	    sp = krb5_storage_from_mem(buf, sizeof(buf));
-	    ret = kadm5_server_recv(context, ac, sp, fd);
+	    ret = kadm5_server_recv_sp(context, ac, sp, fd);
 	    if(ret)
 		krb5_err(context, 1, ret, "kadm5_server_recv");
 	    kadmind_dispatch(kadm_handle, sp);
-	    ret = kadm5_server_send(context, ac, sp, fd);
+	    ret = kadm5_server_send_sp(context, ac, sp, fd);
 	    krb5_storage_free(sp);
 	}
     }
