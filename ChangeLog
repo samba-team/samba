@@ -1,3 +1,11 @@
+2002-08-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/rd_cred.c: if the remote address isn't an addrport,
+	don't try comparing to one; this should make old clients work with
+	new servers
+
+	* lib/asn1/gen_decode.c: remove unused variable
+
 2002-07-31  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/{kerberos5,524}.c: ENOENT -> HDB_ERR_NOENTRY (from Derrick
