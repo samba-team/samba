@@ -31,7 +31,7 @@ GtkWidget *entry_repeat_weekly;
 GtkWidget *entry_repeat_monthly;
 GtkWidget *delete;
 
-void update_joblist()
+void update_joblist(void)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("update_joblist");
 	NTSTATUS status;
