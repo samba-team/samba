@@ -169,30 +169,22 @@ char *talloc_strdup(TALLOC_CTX *t, char *p)
 /* allocate a bit of memory from the specified pool */
 char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 {
-	struct talloc_chunk *tc;
 	va_list ap;
-	char *str;
-	size_t ret;
+	int len;
+	char *ret;
 
-	tc = malloc(sizeof(*tc));
-	if (!tc)
-		return NULL;
+	/* work out how long it will be */
+	va_start(ap, fmt);
+	len = vsnprintf(NULL, 0, fmt, ap);
+	va_end(ap);
+	
+	ret = talloc(t, len);
+	if (!ret) return NULL;
 
 	va_start(ap, fmt);
-	ret = vasprintf(&str, fmt, ap);
+	vsnprintf(ret, len, fmt, ap);
 	va_end(ap);
-	if (ret <= 0)
-	{
-		SAFE_FREE(tc);
-		return NULL;
-	}
 
-	tc->ptr = str;
-	tc->size = ret + 1;
-	tc->next = t->list;
-	t->list = tc;
-	t->total_alloc_size += tc->size;
-
-	return str;
+	return ret;
 }
 
