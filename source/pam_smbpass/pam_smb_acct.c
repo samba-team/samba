@@ -47,7 +47,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 
     const char *name;
     SAM_ACCOUNT *sampass = NULL;
-
+    void (*oldsig_handler)(int);
     extern BOOL in_client;
 
     /* Samba initialization. */
@@ -69,8 +69,12 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
         _log_err( LOG_DEBUG, "acct: username [%s] obtained", name );
     }
 
+    /* Getting into places that might use LDAP -- protect the app
+       from a SIGPIPE it's not expecting */
+    oldsig_handler = CatchSignal(SIGPIPE, SIGNAL_CAST SIG_IGN);
     if (!initialize_password_db(True)) {
         _log_err( LOG_ALERT, "Cannot access samba password database" );
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_AUTHINFO_UNAVAIL;
     }
 
@@ -78,8 +82,10 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     pdb_init_sam(&sampass);
     pdb_getsampwnam(sampass, name );
 
-    if (!sampass)
+    if (!sampass) {
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_USER_UNKNOWN;
+    }
 
     if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
         if (on( SMB_DEBUG, ctrl )) {
@@ -90,11 +96,13 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
                      , "Your account has been disabled; "
                        "please see your system administrator." );
 
+        CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
         return PAM_ACCT_EXPIRED;
     }
 
     /* TODO: support for expired passwords. */
 
+    CatchSignal(SIGPIPE, SIGNAL_CAST oldsig_handler);
     return PAM_SUCCESS;
 }
 
