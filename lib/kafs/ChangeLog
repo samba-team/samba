@@ -1,3 +1,7 @@
+2003-11-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kafs.3: spelling, partly from jmc <jmc@prioris.mini.pw.edu.pl>
+	
 2003-09-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* afskrb5.c (krb5_afslog_uid_home): be even more friendly to the
