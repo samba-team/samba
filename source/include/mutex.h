@@ -57,7 +57,7 @@ enum rwlock_id { RWLOCK_SMBD, 		/* global smbd lock */
    pitfalls of void* */
 typedef struct {
 	void *mutex;
-} mutex_t;
+} smb_mutex_t;
 typedef struct {
 	void *rwlock;
 } rwlock_t;
@@ -65,10 +65,10 @@ typedef struct {
 /* the mutex model operations structure - contains function pointers to 
    the model-specific implementations of each operation */
 struct mutex_ops {
-	int (*mutex_init)(mutex_t *mutex, const char *name);
-	int (*mutex_lock)(mutex_t *mutex, const char *name);
-	int (*mutex_unlock)(mutex_t *mutex, const char *name);
-	int (*mutex_destroy)(mutex_t *mutex, const char *name);
+	int (*mutex_init)(smb_mutex_t *mutex, const char *name);
+	int (*mutex_lock)(smb_mutex_t *mutex, const char *name);
+	int (*mutex_unlock)(smb_mutex_t *mutex, const char *name);
+	int (*mutex_destroy)(smb_mutex_t *mutex, const char *name);
 	int (*rwlock_init)(rwlock_t *rwlock, const char *name);
 	int (*rwlock_lock_write)(rwlock_t *rwlock, const char *name);
 	int (*rwlock_lock_read)(rwlock_t *rwlock, const char *name);

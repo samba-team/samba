@@ -20,7 +20,7 @@
 */
 #include "includes.h"
 	 
-static mutex_t mutex_list[MUTEX_MAX];
+static smb_mutex_t mutex_list[MUTEX_MAX];
 
 /* the registered mutex handlers */
 static struct {
@@ -38,7 +38,7 @@ int mutex_unlock_by_id(enum mutex_id id, const char *name)
 	return mutex_unlock(&mutex_list[id], name);
 }
 
-int mutex_init(mutex_t *mutex, const char *name)
+int mutex_init(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_init) {
 		return mutex_handlers.ops.mutex_init(mutex, name);
@@ -46,7 +46,7 @@ int mutex_init(mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_destroy(mutex_t *mutex, const char *name)
+int mutex_destroy(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_destroy) {
 		return mutex_handlers.ops.mutex_destroy(mutex, name);
@@ -54,7 +54,7 @@ int mutex_destroy(mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_lock(mutex_t *mutex, const char *name)
+int mutex_lock(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_lock) {
 		return mutex_handlers.ops.mutex_lock(mutex, name);
@@ -62,7 +62,7 @@ int mutex_lock(mutex_t *mutex, const char *name)
 	return 0;
 }
 
-int mutex_unlock(mutex_t *mutex, const char *name)
+int mutex_unlock(smb_mutex_t *mutex, const char *name)
 {
 	if (mutex_handlers.ops.mutex_unlock) {
 		return mutex_handlers.ops.mutex_unlock(mutex, name);
