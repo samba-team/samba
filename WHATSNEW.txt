@@ -48,6 +48,8 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       this information to fail). 
     * BUG 977: Don't create a homes share for a user if a static 
       share already exists by the same name.
+    * Set the disable flag for template accounts created by mksmbpasswd.sh.
+
 
 o   LaMont Jones <lamont@debian.org>
     * BUG 225328 (Debian): Correct false failure LFS test that resulted 
