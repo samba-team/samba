@@ -78,8 +78,8 @@
 /* the size of the directory cache */
 #define DIRCACHESIZE 20
 
-/* what type of filesystem do we want this to show up as in a NT file
-   manager window? */
+/* what default type of filesystem do we want this to show up as in a
+   NT file manager window? */
 #define FSTYPE_STRING "Samba"
 
 /* the default guest account - normally set in the Makefile or smb.conf */

@@ -1134,6 +1134,9 @@ struct bitmap {
 #define smb_ntcreate_ImpersonationLevel (smb_vwv0 + 43)
 #define smb_ntcreate_SecurityFlags (smb_vwv0 + 47)
 
+/* this is used on a TConX. I'm not sure the name is very helpful though */
+#define SMB_SUPPORT_SEARCH_BITS        0x0001
+
 /* these are the constants used in the above call. */
 /* DesiredAccess */
 /* File Specific access rights. */
