@@ -167,6 +167,7 @@ static int ads_user_add(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	char *upn, *userdn;
 	void *res=NULL;
 	int rc = -1;
 
@@ -189,12 +190,38 @@ static int ads_user_add(int argc, const char **argv)
 
 	status = ads_add_user_acct(ads, argv[0], opt_comment);
 
+	if (!ADS_ERR_OK(status)) {
+		d_printf("Could not add user %s: %s\n", argv[0],
+			 ads_errstr(status));
+		goto done;
+	}
+
+	/* if no password is to be set, we're done */
+	if (argc == 1) { 
+		d_printf("User %s added\n", argv[0]);
+		rc = 0;
+		goto done;
+	}
+
+	/* try setting the password */
+	asprintf(&upn, "%s@%s", argv[0], ads->realm);
+	status = krb5_set_password(ads->kdc_server, upn, argv[1]);
+	safe_free(upn);
 	if (ADS_ERR_OK(status)) {
 		d_printf("User %s added\n", argv[0]);
 		rc = 0;
-	} else {
-		d_printf("Could not add user %s: %s\n", argv[0],
-			 ads_errstr(status));
+		goto done;
+	}
+
+	/* password didn't set, delete account */
+	d_printf("Could not add user %s.  Error setting password %s\n",
+		 argv[0], ads_errstr(status));
+	ads_msgfree(ads, res);
+	status=ads_find_user_acct(ads, &res, argv[0]);
+	if (ADS_ERR_OK(status)) {
+		userdn = ads_get_dn(ads, res);
+		ads_del_dn(ads, userdn);
+		ads_memfree(ads, userdn);
 	}
 
  done:
