@@ -170,8 +170,13 @@ BOOL cli_receive_trans(struct cli_state *cli,int trans,
 
 	if (cli_error(cli, &eclass, &ecode, NULL))
 	{
-        if(cli->nt_pipe_fnum == 0 || !(eclass == ERRDOS && ecode == ERRmoredata))
+        if(cli->nt_pipe_fnum == 0)
 			return(False);
+
+        if(!(eclass == ERRDOS && ecode == ERRmoredata)) {
+			if (eclass != 0 && (ecode != (0x80000000 | STATUS_BUFFER_OVERFLOW)))
+				return(False);
+		}
 	}
 
 	/* parse out the lengths */

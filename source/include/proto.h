@@ -157,7 +157,7 @@ void message_dispatch(void);
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 void message_deregister(int msg_type);
-BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -2312,8 +2312,7 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, in
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, char **names);
 BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc, 
-			   LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -3474,6 +3473,7 @@ void conn_free(connection_struct *conn);
 
 /*The following definitions come from  smbd/connection.c  */
 
+TDB_CONTEXT *conn_tdb_ctx(void);
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear);
 

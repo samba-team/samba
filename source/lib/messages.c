@@ -384,22 +384,13 @@ this is a useful function for sending messages to all smbd processes.
 It isn't very efficient, but should be OK for the sorts of applications that 
 use it. When we need efficient broadcast we can add it.
 ****************************************************************************/
-BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
-	TDB_CONTEXT *the_tdb;
-
-	the_tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
-	if (!the_tdb) {
-		DEBUG(2,("Failed to open connections database in message_send_all\n"));
-		return False;
-	}
-
 	msg_all.msg_type = msg_type;
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
 
-	tdb_traverse(the_tdb, traverse_fn, NULL);
-	tdb_close(the_tdb);
+	tdb_traverse(conn_tdb, traverse_fn, NULL);
 	return True;
 }

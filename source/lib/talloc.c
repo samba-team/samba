@@ -96,6 +96,9 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 {
 	struct talloc_chunk *c;
 	
+	if (!t)
+		return;
+
 	while (t->list) {
 		c = t->list->next;
 		free(t->list->ptr);
@@ -109,6 +112,8 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 /* destroy a whole pool including the context */
 void talloc_destroy(TALLOC_CTX *t)
 {
+	if (!t)
+		return;
 	talloc_destroy_pool(t);
 	free(t);
 }
