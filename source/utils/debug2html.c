@@ -28,12 +28,19 @@
  * does a decent job of converting Samba logs into HTML.
  * -------------------------------------------------------------------------- **
  *
- * $Revision: 1.6 $
+ * $Revision: 1.7 $
  *
  * ========================================================================== **
  */
 
 #include "includes.h"
+
+/* -------------------------------------------------------------------------- **
+ * Global values.
+ */
+
+FILE *infile  = stdin;
+FILE *outfile = stdout;
 
 /* -------------------------------------------------------------------------- **
  * The size of the read buffer.
@@ -74,7 +81,7 @@ static dbg_Token modechange( dbg_Token new, dbg_Token mode )
       if( dbg_message != mode )
         {
         /* Switching to message mode. */
-        (void)printf( "<PRE>\n" );
+        (void)fprintf( outfile, "<PRE>\n" );
         return( dbg_message );
         }
       break;
@@ -82,7 +89,7 @@ static dbg_Token modechange( dbg_Token new, dbg_Token mode )
       if( dbg_message == mode )
         {
         /* Switching out of message mode. */
-        (void)printf( "</PRE>\n\n" );
+        (void)fprintf( outfile, "</PRE>\n\n" );
         return( dbg_null );
         }
     }
@@ -110,29 +117,29 @@ static void newblock( dbg_Token old, dbg_Token new )
   switch( old )
     {
     case dbg_timestamp:
-      (void)printf( ",</B>" );
+      (void)fprintf( outfile, ",</B>" );
       break;
     case dbg_level:
-      (void)printf( "</FONT>]</B>\n   " );
+      (void)fprintf( outfile, "</FONT>]</B>\n   " );
       break;
     case dbg_sourcefile:
-      (void)printf( ":" );
+      (void)fprintf( outfile, ":" );
       break;
     case dbg_lineno:
-      (void)printf( ")" );
+      (void)fprintf( outfile, ")" );
       break;
     }
 
   switch( new )
     {
     case dbg_timestamp:
-      (void)printf( "<B>[" );
+      (void)fprintf( outfile, "<B>[" );
       break;
     case dbg_level:
-      (void)printf( " <B><FONT COLOR=MAROON>" );
+      (void)fprintf( outfile, " <B><FONT COLOR=MAROON>" );
       break;
     case dbg_lineno:
-      (void)printf( "(" );
+      (void)fprintf( outfile, "(" );
       break;
     }
   } /* newblock */
@@ -156,41 +163,38 @@ static void charprint( dbg_Token tok, int c )
       break;
     case dbg_null:
     case dbg_eof:
-      (void)putchar( '\n' );
+      (void)putc( '\n', outfile );
       break;
     default:
       switch( c )
         {
         case '<':
-          (void)printf( "&lt;" );
+          (void)fprintf( outfile, "&lt;" );
           break;
         case '>':
-          (void)printf( "&gt;" );
+          (void)fprintf( outfile, "&gt;" );
           break;
         case '&':
-          (void)printf( "&amp;" );
+          (void)fprintf( outfile, "&amp;" );
           break;
         case '\"':
-          (void)printf( "&#34;" );
+          (void)fprintf( outfile, "&#34;" );
           break;
         default:
-          (void)putchar( c );
+          (void)putc( c, outfile );
           break;
         }
     }
   } /* charprint */
 
-int main( int argc, char *argv[] )
+static void convert( void )
   /* ------------------------------------------------------------------------ **
-   * This simple program scans and parses Samba debug logs, and produces HTML
-   * output.
+   * Read the input logfile, converting the entries to HTML.
    *
-   *  Input:  argc  - Currently ignored.
-   *          argv  - Currently ignored.
-   *
-   *  Output: Always zero.
-   *
-   *  Notes:  The HTML output is sent to stdout.
+   *  Input:  none.
+   *  output: none.
+   *  Notes:  Reads from the global infile, writes to the global outfile.
+   *          These default to stdin and stdout, respectively.
    *
    * ------------------------------------------------------------------------ **
    */
@@ -203,12 +207,8 @@ int main( int argc, char *argv[] )
             state = dbg_null,
             mode  = dbg_null;
 
-  (void)printf( "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n" );
-  (void)printf( "<HTML>\n<HEAD>\n" );
-  (void)printf( "  <TITLE>Samba Debug Output</TITLE>\n</HEAD>\n\n<BODY>\n" );
-
-  while( (!feof( stdin ))
-      && ((len = fread( bufr, 1, DBG_BSIZE, stdin )) > 0) )
+  while( (!feof( infile ))
+      && ((len = fread( bufr, 1, DBG_BSIZE, infile )) > 0) )
     {
     for( i = 0; i < len; i++ )
       {
@@ -224,6 +224,91 @@ int main( int argc, char *argv[] )
     }
   (void)modechange( dbg_eof, mode );
 
-  (void)printf( "</BODY>\n</HTML>\n" );
+  } /* convert */
+
+static void usage( void )
+  /* ------------------------------------------------------------------------ **
+   * Prints a usage message on stderr, then gently exits.
+   *
+   *  Input:  none.
+   *  Output: none.  Exits with return code of 0.
+   *
+   * ------------------------------------------------------------------------ **
+   */
+  {
+  fprintf( stderr, "This utility converts Samba log files " );
+  fprintf( stderr, "into HTML documents.\n" );
+  fprintf( stderr, "Usage:\n" );
+  fprintf( stderr, "  debug2html <infile> <outfile>\n" );
+  exit( 0 );
+  } /* usage */
+
+static FILE *carefull_fopen( const char *path, const char *type )
+  /* ------------------------------------------------------------------------ **
+   * Checks for leading '-' characters, which are generically regarded as
+   * flags.  Also exits the program gracefully should the file fail to open.
+   *
+   *  Input:  path  - pathname of the file to open.
+   *          type  - open mode.  See fopen(3S).
+   *
+   *  Output: Pointer to open file.
+   *
+   * ------------------------------------------------------------------------ **
+   */
+  {
+  FILE *tmp;
+
+  if( '-' == path[0] || '\0' == path[0] )
+    usage();
+
+  tmp = sys_fopen( path, type );
+  if( NULL == tmp )
+    {
+    fprintf( stderr, "Error opening file %s: %s\n", path, strerror(errno) );
+    exit( 1 );
+    }
+  return( tmp );
+  } /* carefull_fopen */
+
+int main( int argc, char *argv[] )
+  /* ------------------------------------------------------------------------ **
+   * This simple program scans and parses Samba debug logs, and produces HTML
+   * output.
+   *
+   *  Input:  argc    - Argument count.
+   *          argv[1] - Input file name.
+   *          argv[2] - Output file name.
+   *                    A '-' character by itself means use defaults (i.e.,
+   *                    <stdin> or <stdout> depending upon the argument.
+   *                    A string beginning with '-' and containing more than
+   *                    that one character will generate a usage message.
+   *
+   *  Output: An exit value of 1 is returned if an error was encountered
+   *          while opening a file, else 0.
+   *
+   *  Notes:  The HTML output is sent to stdout.
+   *
+   * ------------------------------------------------------------------------ **
+   */
+  {
+  if( argc > 3 )
+    usage();
+
+  if( argc > 1 && 0 != strcmp( argv[1], "-" ) )
+    infile = carefull_fopen( argv[1], "r" );
+
+  if( argc > 2 && 0 != strcmp( argv[2], "-" ) )
+    infile = carefull_fopen( argv[2], "w" );
+
+  (void)fprintf( outfile,
+                 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n" );
+  (void)fprintf( outfile, "<HTML>\n<HEAD>\n" );
+  (void)fprintf( outfile,
+                 "  <TITLE>Samba Log</TITLE>\n</HEAD>\n\n<BODY>\n" );
+
+  convert();
+
+  (void)fprintf( outfile, "</BODY>\n</HTML>\n" );
+
   return( 0 );
   } /* main */
