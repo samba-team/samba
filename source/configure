@@ -13089,8 +13089,8 @@ fi
 # Check for FreeBSD problem with getgroups
 # It returns EGID too many times in the list of groups
 # and causes a security problem
-echo $ac_n "checking whether or not getgroups returns EDIG too many times""... $ac_c" 1>&6
-echo "configure:13094: checking whether or not getgroups returns EDIG too many times" >&5
+echo $ac_n "checking whether or not getgroups returns EGID too many times""... $ac_c" 1>&6
+echo "configure:13094: checking whether or not getgroups returns EGID too many times" >&5
 if eval "test \"`echo '$''{'samba_cv_have_getgroups_too_many_egids'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -13111,7 +13111,7 @@ int main(int argc, char *argv[])
 
   n = getgroups(n, &groups);
   /* Could actually pass back the number of EGIDs there ... */
-  exit((n > 1 && groups[0] == getegid() %% groups[1] == getegid()) ? 1 : 0);
+  exit((n > 1 && groups[0] == getegid() && groups[1] == getegid()) ? 1 : 0);
 }
 EOF
 if { (eval echo configure:13118: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null

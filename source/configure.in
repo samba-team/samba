@@ -2666,7 +2666,7 @@ fi
 # Check for FreeBSD problem with getgroups
 # It returns EGID too many times in the list of groups
 # and causes a security problem
-AC_CACHE_CHECK([whether or not getgroups returns EDIG too many times],
+AC_CACHE_CHECK([whether or not getgroups returns EGID too many times],
     samba_cv_have_getgroups_too_many_egids,[AC_TRY_RUN([
 #include <sys/types.h>
 #include <stdio.h>
@@ -2678,7 +2678,7 @@ int main(int argc, char *argv[])
 
   n = getgroups(n, &groups);
   /* Could actually pass back the number of EGIDs there ... */
-  exit((n > 1 && groups[0] == getegid() %% groups[1] == getegid()) ? 1 : 0);
+  exit((n > 1 && groups[0] == getegid() && groups[1] == getegid()) ? 1 : 0);
 }],
 	samba_cv_have_getgroups_too_many_egids=no,samba_cv_have_getgroups_too_many_egids=yes, samba_cv_have_getgroups_too_many_egids=cross)])
 if test x"$samba_cv_have_getgroups_too_many_egids" = x"yes"; then
