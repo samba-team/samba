@@ -27,6 +27,8 @@
 <!ENTITY unicode SYSTEM "unicode.sgml">
 <!ENTITY CUPS SYSTEM "CUPS-printing.sgml">
 <!ENTITY AdvancedNetworkAdmin SYSTEM "AdvancedNetworkAdmin.sgml">
+<!ENTITY PolicyMgmt SYSTEM "PolicyMgmt.sgml">
+<!ENTITY ProfileMgmt SYSTEM "ProfileMgmt.sgml">
 ]>
 
 <book id="Samba-HOWTO-Collection">
@@ -115,6 +117,8 @@ part each cover one specific feature.</para>
 &PRINTER-DRIVER2;
 &CUPS;
 &WINBIND;
+&PolicyMgmt;
+&ProfileMgmt;
 &IntegratingWithWindows;
 &BROWSING;
 &MS-Dfs-Setup;
