@@ -147,21 +147,24 @@ sub LoadStructure($)
 # see if a pidl property list contains a give property
 sub has_property($$)
 {
-    my($props) = shift;
-    my($p) = shift;
-
-    foreach my $d (@{$props}) {
-	if (ref($d) ne "HASH") {
-	    return 1, if ($d eq $p);
-	    return 1, if ($d eq "in,out" && ($p eq "in" || $p eq "out"));
-	} else {
-	    foreach my $k (keys %{$d}) {
-		return $d->{$k}, if ($k eq $p);
-	    }
+	my($props) = shift;
+	my($p) = shift;
+	
+	foreach my $d (@{$props}) {
+		if (ref($d) ne "HASH") {
+			if ($d eq $p) {
+				return 1;
+			}
+		} else {
+			foreach my $k (keys %{$d}) {
+				if ($k eq $p) {
+					return $d->{$k};
+				}
+			}
+		}
 	}
-    }
 
-    return 0;
+    return undef;
 }
 
 
@@ -177,6 +180,20 @@ sub is_scalar_type($)
     return 1, if ($type eq "uint16");
     return 1, if ($type eq "hyper");
     return 1, if ($type eq "wchar_t");
+
+    return 0;
+}
+
+sub is_builtin_type($)
+{
+    my($type) = shift;
+
+    return 1, if (is_scalar_type($type));
+    return 1, if ($type eq "unistr");
+    return 1, if ($type eq "security_descriptor");
+    return 1, if ($type eq "dom_sid");
+    return 1, if ($type eq "dom_sid2");
+    return 1, if ($type eq "policy_handle");
 
     return 0;
 }

@@ -93,7 +93,6 @@ property_list: '[' <commit> property(s /,/) ']'
              | <error?>
 
 property: 'unique' 
-	  | 'in,out'
 	  | 'in'
 	  | 'out'
 	  | 'ref'
