@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"[
-
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN" "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 <!ENTITY NetBIOS SYSTEM "NetBIOS.xml">
 <!ENTITY Architecture SYSTEM "architecture.xml">
 <!ENTITY debug SYSTEM "debug.xml">
@@ -17,6 +17,7 @@
 <!ENTITY rpc-plugin SYSTEM "rpc_plugin.xml">
 <!ENTITY modules SYSTEM "modules.xml">
 <!ENTITY packagers SYSTEM "packagers.xml">
+<!ENTITY contributing SYSTEM "contributing.xml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -77,5 +78,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &modules;
 &rpc-plugin;
 &packagers;
+&contributing;
 
 </book>
