@@ -2383,8 +2383,6 @@ sub parse_idl($$)
 	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
 
 	foreach my $x (@{$idl}) {
-		NdrParser::InterfaceORPC($x);
-
 		# Do the inheritance
 		if (defined($x->{BASE}) and $x->{BASE} ne "") {
 			my $parent = util::get_interface($idl, $x->{BASE});

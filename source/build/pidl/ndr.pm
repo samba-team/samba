@@ -2114,33 +2114,6 @@ sub LoadInterface($)
 	}
 }
 
-# Add ORPC specific bits to an interface.
-sub InterfaceORPC($)
-{
-	my $x = shift;	
-	# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
-	# for 'object' interfaces
-	if (util::has_property($x, "object")) {
-		foreach my $e (@{$x->{DATA}}) {
-			if($e->{TYPE} eq "FUNCTION") {
-				$e->{PROPERTIES}->{object} = 1;
-				unshift(@{$e->{ELEMENTS}}, 
-                       { 'NAME' => 'ORPCthis',
-                         'POINTERS' => 0,
-                         'PROPERTIES' => { 'in' => '1' },
-                         'TYPE' => 'ORPCTHIS'
-                       });
-				unshift(@{$e->{ELEMENTS}},
-                       { 'NAME' => 'ORPCthat',
-                         'POINTERS' => 0,
-                         'PROPERTIES' => { 'out' => '1' },
-					  'TYPE' => 'ORPCTHAT'
-                       });
-			}
-		}
-	}
-}
-
 sub Load($)
 {
 	my $idl = shift;
