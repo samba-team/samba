@@ -441,6 +441,14 @@
 #include <attr/xattr.h>
 #endif
 
+#if HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
