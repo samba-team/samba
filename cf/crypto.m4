@@ -129,15 +129,21 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 		LIB_des="-L${with_openssl_lib}"
 	fi
 	CFLAGS="-DHAVE_OPENSSL ${INCLUDE_des} ${CFLAGS}"
-	LIB_des="${LIB_des} -lcrypto"
-	LIB_des_a="$LIB_des"
-	LIB_des_so="$LIB_des"
-	LIB_des_appl="$LIB_des"
-	LIBS="${LIBS} ${LIB_des}"
-	AC_TRY_LINK(test_headers, test_body, [
-		crypto_lib=libcrypto openssl=yes
-		AC_MSG_RESULT([libcrypto])
-	])
+	saved_LIB_des="$LIB_des"
+	for lres in "" "-lnsl -lsocket"; do
+		LIB_des="${saved_LIB_des} -lcrypto $lres"
+		LIB_des_a="$LIB_des"
+		LIB_des_so="$LIB_des"
+		LIB_des_appl="$LIB_des"
+		LIBS="${LIBS} ${LIB_des}"
+		AC_TRY_LINK(test_headers, test_body, [
+			crypto_lib=libcrypto openssl=yes
+			AC_MSG_RESULT([libcrypto])
+		])
+		if test "$crypto_lib" = libcrypto ; then
+			break;
+		fi
+	done
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 fi
