@@ -56,26 +56,10 @@
  * [including the GNU Public Licence.]
  */
 
-#include <openssl/rc4.h>
-#include "rc4_locl.h"
-#include <openssl/opensslv.h>
+#include "des_locl.h"
+#include "rc4.h"
 
-const char *RC4_version="RC4" OPENSSL_VERSION_PTEXT;
-
-const char *RC4_options(void)
-	{
-#ifdef RC4_INDEX
-	if (sizeof(RC4_INT) == 1)
-		return("rc4(idx,char)");
-	else
-		return("rc4(idx,int)");
-#else
-	if (sizeof(RC4_INT) == 1)
-		return("rc4(ptr,char)");
-	else
-		return("rc4(ptr,int)");
-#endif
-	}
+RCSID("$Id$");
 
 /* RC4 as implemented from a posting from
  * Newsgroups: sci.crypt

@@ -56,8 +56,10 @@
  * [including the GNU Public Licence.]
  */
 
-#include <openssl/rc4.h>
-#include "rc4_locl.h"
+#include "des_locl.h"
+#include "rc4.h"
+
+RCSID("$Id$");
 
 /* RC4 as implemented from a posting from
  * Newsgroups: sci.crypt
