@@ -378,7 +378,7 @@ static BOOL check_auth_crap(void)
 
 /* Main program */
 
-static enum {
+enum {
 	OPT_USERNAME = 1000,
 	OPT_DOMAIN,
 	OPT_WORKSTATION,
