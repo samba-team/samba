@@ -1,5 +1,7 @@
 2003-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* resolve.h: remove HEADER (only used for crays)
+	
 	* resolve.c: number-of fields no longer stored in network order
 	
 2003-12-13  Love Hörnquist Åstrand  <lha@it.su.se>
