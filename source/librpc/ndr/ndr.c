@@ -375,7 +375,8 @@ static NTSTATUS ndr_map_error(enum ndr_err_code err)
 /*
   return and possibly log an NDR error
 */
-NTSTATUS ndr_pull_error(struct ndr_pull *ndr, enum ndr_err_code err, const char *format, ...)
+NTSTATUS ndr_pull_error(struct ndr_pull *ndr, 
+			enum ndr_err_code err, const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
 {
 	char *s=NULL;
 	va_list ap;
