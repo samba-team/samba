@@ -209,7 +209,7 @@ int smbc_errno(struct cli_state *c)
         } else {
                 uint32 status;
 
-                cli_nt_error(c, &status);
+                status = cli_nt_error(c);
                 ret = cli_errno_from_nt(status);
 
                 DEBUG(3,("smbc errno 0x%08x -> %d\n",
@@ -1579,7 +1579,7 @@ int smbc_opendir(const char *fname)
 	free(smbc_file_table[slot]);
       }
       smbc_file_table[slot] = NULL;
-      errno = cli_errno(dos_error(&srv->cli);
+      errno = cli_errno(&srv->cli);
       return -1;
 
     }
