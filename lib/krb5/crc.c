@@ -7,13 +7,15 @@ RCSID("$Id$");
 
 static u_long table[256];
 
+#define CRC_GEN 0xEDB88320L
+
 void
-crc_init_table( )
+crc_init_table(void)
 {
     unsigned long crc, poly;
     int     i, j;
     
-    poly = 0xEDB88320L;
+    poly = CRC_GEN;
     for (i = 0; i < 256; i++) {
 	crc = i;
 	for (j = 8; j > 0; j--) {
@@ -27,8 +29,8 @@ crc_init_table( )
     }
 }
 
-u_long
-crc_update (char *p, size_t len, u_long res)
+u_int32_t
+crc_update (char *p, size_t len, u_int32_t res)
 {
     while (len--)
 	res = table[(res ^ *p++) & 0xFF] ^ (res >> 8);
