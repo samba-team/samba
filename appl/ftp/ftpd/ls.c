@@ -124,6 +124,10 @@ free_fileinfo(struct fileinfo *f)
 #define S_ISTXT S_ISVTX
 #endif
 
+#if !defined(_S_IFMT) && defined(S_IFMT)
+#define _S_IFMT S_IFMT
+#endif
+
 #ifndef S_ISSOCK
 #define S_ISSOCK(mode)  (((mode) & _S_IFMT) == S_IFSOCK)
 #endif
