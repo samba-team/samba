@@ -276,6 +276,9 @@ personality".
 your NIS auto.map entry.  If you have not compiled Samba with -DAUTOMOUNT
 then this value will be the same as %L.
 
+%p = the path of the service's home directory, obtained from your NIS
+auto.map entry. The NIS auto.map entry is split up as "%N:%p".
+
 %R = the selected protocol level after protocol negotiation. As of 
 Samba 1.9.18 it can be one of CORE, COREPLUS, LANMAN1, LANMAN2 or NT1.
 

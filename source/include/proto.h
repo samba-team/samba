@@ -1485,6 +1485,7 @@ void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
 char *automount_server(char *user_name);
+char *automount_path(char *user_name);
 void standard_sub_basic(char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);

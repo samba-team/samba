@@ -3713,44 +3713,88 @@ char *client_addr(void)
   return addr_buf;
 }
 
+/*******************************************************************
+ Patch from jkf@soton.ac.uk
+ Split Luke's automount_server into YP lookup and string splitter
+ so can easily implement automount_path(). 
+ As we may end up doing both, cache the last YP result. 
+*******************************************************************/
+
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+static char *automount_lookup(char *user_name)
+{
+  static fstring last_key = "";
+  static pstring last_value = "";
+
+  int nis_error;        /* returned by yp all functions */
+  char *nis_result;     /* yp_match inits this */
+  int nis_result_len;  /* and set this */
+  char *nis_domain;     /* yp_get_default_domain inits this */
+  char *nis_map = (char *)lp_nis_home_map_name();
+
+  if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
+  {
+    DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
+    return last_value;
+  }
+
+  DEBUG(5, ("NIS Domain: %s\n", nis_domain));
+
+  if (!strcmp(user_name, last_key))
+  {
+    nis_result = last_value;
+    nis_result_len = strlen(last_value);
+    nis_error = 0;
+  }
+  else
+  {
+    if ((nis_error = yp_match(nis_domain, nis_map,
+                              user_name, strlen(user_name),
+                              &nis_result, &nis_result_len)) != 0)
+    {
+      DEBUG(3, ("YP Error: \"%s\" while looking up \"%s\" in map \"%s\"\n", 
+               yperr_string(nis_error), user_name, nis_map));
+    }
+    if (!nis_error && nis_result_len >= sizeof(pstring))
+    {
+      nis_result_len = sizeof(pstring)-1;
+    }
+    fstrcpy(last_key, user_name);
+    strncpy(last_value, nis_result, nis_result_len);
+    last_value[nis_result_len] = '\0';
+  }
+
+  DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
+  return last_value;
+}
+#endif
+
+/*******************************************************************
+ Patch from jkf@soton.ac.uk
+ This is Luke's original function with the NIS lookup code
+ moved out to a separate function.
+*******************************************************************/
+
 char *automount_server(char *user_name)
 {
 	static pstring server_name;
 
 #if (defined(NETGROUP) && defined (AUTOMOUNT))
-	int nis_error;        /* returned by yp all functions */
-	char *nis_result;     /* yp_match inits this */
-	int nis_result_len;  /* and set this */
-	char *nis_domain;     /* yp_get_default_domain inits this */
-	char *nis_map = (char *)lp_nis_home_map_name();
 	int home_server_len;
 
 	/* set to default of local machine */
 	pstrcpy(server_name, local_machine);
 
-	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0)
+	if (lp_nis_home_map())
 	{
-		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-	}
-
-	DEBUG(5, ("NIS Domain: %s\n", nis_domain));
-
-	if ((nis_error = yp_match(nis_domain, nis_map,
-			user_name, strlen(user_name),
-			&nis_result, &nis_result_len)) != 0)
-	{
-		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
-	}
-
-	if (!nis_error && lp_nis_home_map())
-	{
-		home_server_len = strcspn(nis_result,":");
+		char *automount_value = automount_lookup(user_name);
+		home_server_len = strcspn(automount_value,":");
 		DEBUG(5, ("NIS lookup succeeded.  Home server length: %d\n",home_server_len));
 		if (home_server_len > sizeof(pstring))
 		{
 			home_server_len = sizeof(pstring);
 		}
-		strncpy(server_name, nis_result, home_server_len);
+		strncpy(server_name, automount_value, home_server_len);
                 server_name[home_server_len] = '\0';
 	}
 #else
@@ -3762,6 +3806,44 @@ char *automount_server(char *user_name)
 
 	return server_name;
 }
+
+/*******************************************************************
+ Patch from jkf@soton.ac.uk
+ Added this to implement %p (NIS auto-map version of %H)
+*******************************************************************/
+
+char *automount_path(char *user_name)
+{
+	static pstring server_path;
+
+#if (defined(NETGROUP) && defined (AUTOMOUNT))
+	char *home_path_start;
+
+	/* set to default of no string */
+	server_path[0] = 0;
+
+	if (lp_nis_home_map())
+	{
+		char *automount_value = automount_lookup(user_name);
+		home_path_start = strchr(automount_value,':');
+		if (home_path_start != NULL)
+		{
+		  DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
+		        home_path_start?(home_path_start+1):""));
+		  strcpy(server_path, home_path_start+1);
+		}
+	}
+#else
+	/* use the passwd entry instead of the auto-map server entry */
+	/* pstrcpy() copes with get_home_dir() returning NULL */
+	pstrcpy(server_path, get_home_dir(user_name));
+#endif
+
+	DEBUG(4,("Home server path: %s\n", server_path));
+
+	return server_path;
+}
+
 
 /*******************************************************************
 sub strings with useful parameters
