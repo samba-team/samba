@@ -59,6 +59,17 @@ INIT_OBJ_FILES = \
 ################################################
 
 ################################################
+# Start SUBSYSTEM ntvfs_common
+[SUBSYSTEM::ntvfs_common]
+ADD_OBJ_FILES = \
+		ntvfs/common/brlock.o \
+		ntvfs/common/opendb.o \
+		ntvfs/common/sidmap.o
+# End SUBSYSTEM ntvfs_common
+################################################
+
+
+################################################
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::NTVFS]
 INIT_OBJ_FILES = \
