@@ -20,7 +20,7 @@ testit() {
    trap "rm -f test.$$" EXIT
 
    cmdline="$*"
-   if ! $cmdline > test.$$ 2>&1; then
+   if ! $cmdline > test.$$; then
        cat test.$$;
        rm -f test.$$;
        echo "TEST FAILED - $cmdline";
@@ -52,5 +52,5 @@ for t in $tests; do
     fi
     start=""
     echo Testing $t
-    testit bin/smbtorture $unc -U"$username"%"$password" $t
+    testit $VALGRIND bin/smbtorture $unc -U"$username"%"$password" $t
 done
