@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,5 +71,43 @@ read_token (int sock, gss_buffer_t buf)
     buf->value  = malloc(len);
     if (read (sock, buf->value, len) != len)
 	err (1, "read");
+}
+
+void
+gss_print_errors (int min_stat)
+{
+    int new_stat;
+    int msg_ctx = 0;
+    gss_buffer_desc status_string;
+    int ret;
+
+    do {
+	ret = gss_display_status (&new_stat,
+				  min_stat,
+				  GSS_C_MECH_CODE,
+				  GSS_C_NO_OID,
+				  &msg_ctx,
+				  &status_string);
+	fprintf (stderr, "%s\n", (char *)status_string.value);
+	gss_release_buffer (&new_stat, &status_string);
+    } while (!GSS_ERROR(ret) && msg_ctx != 0);
+}
+
+void
+gss_verr(int exitval, int status, const char *fmt, va_list ap)
+{
+    vwarnx (fmt, ap);
+    gss_print_errors (status);
+    exit (exitval);
+}
+
+void
+gss_err(int exitval, int status, const char *fmt, ...)
+{
+    va_list args;
+
+    va_start(args, fmt);
+    gss_verr (exitval, status, fmt, args);
+    va_end(args);
 }
 
