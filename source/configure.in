@@ -239,6 +239,22 @@ AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings a
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
     	CFLAGS="${CFLAGS} -gstabs -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+	# Add -Wdeclaration-after-statement if compiler supports it
+	AC_CACHE_CHECK(
+          [that the C compiler understands -Wdeclaration-after-statement],
+          samba_cv_HAVE_Wdeclaration_after_statement, [
+	  AC_TRY_RUN_STRICT([
+	    int main(void)
+	    {
+	    	return 0;
+	    }],[-Wdeclaration-after-statement],[$CPPFLAGS],[$LDFLAGS],
+	    samba_cv_HAVE_Wdeclaration_after_statement=yes,
+	    samba_cv_HAVE_Wdeclaration_after_statement=no,
+	    samba_cv_HAVE_Wdeclaration_after_statement=cross)
+       ])
+       if test x"$samba_cv_HAVE_Wdeclaration_after_statement" = x"yes"; then
+	    CFLAGS="${CFLAGS} -Wdeclaration-after-statement"
+       fi
     fi])
 
 AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
