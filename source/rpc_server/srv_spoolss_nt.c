@@ -3564,6 +3564,11 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
+	if (*returned == 0) {
+		safe_free(queue);
+		return NT_STATUS_NO_PROBLEMO;
+	}
+
 	switch (level) {
 	case 1:
 		return enumjobs_level1(queue, snum, buffer, offered, needed, returned);
