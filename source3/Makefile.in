@@ -398,7 +398,8 @@ WREPL_OBJ1 = wrepld/server.o wrepld/process.o wrepld/parser.o wrepld/socket.o \
              wrepld/partners.o
 
 WREPL_OBJ = $(WREPL_OBJ1)  $(PARAM_OBJ) $(UBIQX_OBJ) \
-	    $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ)
+	    $(PROFILE_OBJ) $(LIB_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) \
+	    $(LIBSAMBA_OBJ)
 
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o 
