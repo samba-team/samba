@@ -45,15 +45,15 @@ krb5_sock_to_principal (krb5_context context,
     krb5_error_code ret;
     struct sockaddr_storage __ss;
     struct sockaddr *sa = (struct sockaddr *)&__ss;
-    socklen_t sa_len = sizeof(__ss);
+    socklen_t salen = sizeof(__ss);
     char hostname[NI_MAXHOST];
 
-    if (getsockname (sock, sa, &sa_len) < 0) {
+    if (getsockname (sock, sa, &salen) < 0) {
 	ret = errno;
 	krb5_set_error_string (context, "getsockname: %s", strerror(ret));
 	return ret;
     }
-    ret = getnameinfo (sa, sa_len, hostname, sizeof(hostname), NULL, 0, 0);
+    ret = getnameinfo (sa, salen, hostname, sizeof(hostname), NULL, 0, 0);
     if (ret) {
 	int save_errno = errno;
 
