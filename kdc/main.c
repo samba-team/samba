@@ -71,7 +71,19 @@ main(int argc, char **argv)
     }else
 	kdc_log(5, "Database is not encrypted");
     
+#ifdef HAVE_SIGACTION
+    {
+	struct sigaction sa;
+
+	sa.sa_flags = 0;
+	sa.sa_handler = sigterm;
+	sigemptyset(&sa.sa_mask);
+
+	sigaction(SIGINT, &sa, NULL);
+    }
+#else
     signal(SIGINT, sigterm);
+#endif
     loop();
     krb5_free_context(context);
     return 0;
