@@ -132,3 +132,8 @@ Samba Design and Security
 Why Isn't nmbd Multiple Daemons?
 --------------------------------
 
+DCE/RPC
+-------
+
+NT administration is basically DCE/RPC function calls.  The entire
+NT architecture is based on DCE/RPC over SMB.

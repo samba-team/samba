@@ -215,7 +215,7 @@ static void make_srv_share_info_1(SRV_SHARE_INFO_1 *sh1, uint32 *snum,
 
 	DEBUG(5,("make_srv_share_1_sh1\n"));
 
-	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
+	for (; (*snum) < (*svcs); (*snum)++)
 	{
 		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
 		{
@@ -304,7 +304,7 @@ static void make_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, uint32 *snum,
 
 	DEBUG(5,("make_srv_share_2_sh1\n"));
 
-	for (; (*snum) < (*svcs) && num_entries < MAX_SHARE_ENTRIES; (*snum)++)
+	for (; (*snum) < (*svcs); (*snum)++)
 	{
 		if (lp_browseable((*snum)) && lp_snum_ok((*snum)))
 		{
@@ -977,11 +977,26 @@ static void make_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *fto
 
 	DEBUG(5,("make_srv_file_3_fl3\n"));
 
-	for (; (*fnum) < (*ftot) && num_entries < MAX_FILE_ENTRIES; (*fnum)++)
+	fl3->info_3     = g_new0(FILE_INFO_3 *, (*ftot));
+	fl3->info_3_str = g_new0(FILE_INFO_3_STR *, (*ftot));
+
+	if (fl3->info_3 == NULL || fl3->info_3_str == NULL)
 	{
-		make_srv_file_3_info(&(fl3->info_3    [num_entries]),
-			                 &(fl3->info_3_str[num_entries]),
-		                     (*fnum), 0x35, 0, "\\PIPE\\samr", "dummy user");
+		safe_free(fl3->info_3);
+		safe_free(fl3->info_3_str);
+		(*fnum) = 0;
+		return;
+	}
+
+	for (; (*fnum) < (*ftot); (*fnum)++)
+	{
+		fl3->info_3    [num_entries] = g_new(FILE_INFO_3, 1);
+		fl3->info_3_str[num_entries] = g_new(FILE_INFO_3_STR, 1);
+
+		make_srv_file_3_info(fl3->info_3    [num_entries],
+				     fl3->info_3_str[num_entries],
+				     (*fnum), 0x35, 0,
+				     "\\PIPE\\samr", "dummy user");
 
 		/* move on to creating next file */
 		num_entries++;

@@ -470,13 +470,13 @@ typedef struct str_file_info3_info
 /* SRV_FILE_INFO_3 */
 typedef struct srv_file_info_3
 {
-	uint32 num_entries_read;                     /* EntriesRead */
-	uint32 ptr_file_info;                        /* Buffer */
+	uint32 num_entries_read;       /* EntriesRead */
+	uint32 ptr_file_info;          /* Buffer */
 
-	uint32 num_entries_read2;                    /* EntriesRead */
+	uint32 num_entries_read2;      /* EntriesRead */
 
-	FILE_INFO_3     info_3    [MAX_FILE_ENTRIES]; /* file entry details */
-	FILE_INFO_3_STR info_3_str[MAX_FILE_ENTRIES]; /* file entry strings */
+	FILE_INFO_3     **info_3;      /* file entry details */
+	FILE_INFO_3_STR **info_3_str;  /* file entry strings */
 
 } SRV_FILE_INFO_3;
 

@@ -935,7 +935,7 @@ BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n,
 BOOL srv_io_q_net_tprt_enum(char *desc,  SRV_Q_NET_TPRT_ENUM *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *ps, int depth);
 BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3,
-			     const char *user_name, const char *path_name);
+			     const char *path_name, const char *user_name);
 BOOL make_srv_file_info3(FILE_INFO_3 *fl3,
 			 uint32 id, uint32 perms, uint32 num_locks,
 			 const char *path_name, const char *user_name);

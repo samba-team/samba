@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-
+#include "rpcclient.h"
 
 /****************************************************************************
 convert a share mode to a string
@@ -145,8 +145,8 @@ char *get_server_type_str(uint32 type)
 /****************************************************************************
 server info level 101 display function
 ****************************************************************************/
-void display_srv_info_101(FILE *out_hnd, enum action_type action, 
-		SRV_INFO_101 *const sv101)
+static void display_srv_info_101(FILE *out_hnd, enum action_type action, 
+				 const SRV_INFO_101 *sv101)
 {
 	if (sv101 == NULL)
 	{
@@ -187,7 +187,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 server info level 102 display function
 ****************************************************************************/
-void display_srv_info_102(FILE *out_hnd, enum action_type action, SRV_INFO_102 *const sv102)
+static void display_srv_info_102(FILE *out_hnd, enum action_type action,
+				 const SRV_INFO_102 *sv102)
 {
 	if (sv102 == NULL)
 	{
@@ -236,7 +237,8 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action, SRV_INFO_102 *
 /****************************************************************************
 server info container display function
 ****************************************************************************/
-void display_srv_info_ctr(FILE *out_hnd, enum action_type action, SRV_INFO_CTR *const ctr)
+void display_srv_info_ctr(FILE *out_hnd, enum action_type action,
+			  const SRV_INFO_CTR *ctr)
 {
 	if (ctr == NULL || ctr->ptr_srv_ctr == 0)
 	{
@@ -763,14 +765,10 @@ void display_srv_share_info_ctr(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 file info level 3 display function
 ****************************************************************************/
-void display_file_info_3(FILE *out_hnd, enum action_type action, 
-		FILE_INFO_3 *const info3, FILE_INFO_3_STR *const str3)
+static void display_file_info_3(FILE *out_hnd, enum action_type action, 
+				const FILE_INFO_3     *info3,
+				const FILE_INFO_3_STR *str3)
 {
-	if (info3 == NULL || str3 == NULL)
-	{
-		return;
-	}
-
 	switch (action)
 	{
 		case ACTION_HEADER:
@@ -783,6 +781,11 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 		{
 			fstring path_name;
 			fstring user_name;
+
+			if (info3 == NULL || str3 == NULL)
+			{
+				return;
+			}
 
 			unistr2_to_ascii(path_name, &str3->uni_path_name, 
 					 sizeof(path_name)-1);
@@ -810,8 +813,8 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 /****************************************************************************
 file info level 3 container display function
 ****************************************************************************/
-void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action, 
-				SRV_FILE_INFO_3 *const ctr)
+static void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
+					const SRV_FILE_INFO_3 *ctr)
 {
 	if (ctr == NULL)
 	{
@@ -823,6 +826,7 @@ void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
+			display_file_info_3(out_hnd, ACTION_HEADER, NULL, NULL);
 			break;
 		}
 		case ACTION_ENUMERATE:
@@ -831,14 +835,13 @@ void display_srv_file_info_3_ctr(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < ctr->num_entries_read; i++)
 			{
-				display_file_info_3(out_hnd, ACTION_HEADER   , &(ctr->info_3[i]), &(ctr->info_3_str[i]));
-				display_file_info_3(out_hnd, ACTION_ENUMERATE, &(ctr->info_3[i]), &(ctr->info_3_str[i]));
-				display_file_info_3(out_hnd, ACTION_FOOTER   , &(ctr->info_3[i]), &(ctr->info_3_str[i]));
+				display_file_info_3(out_hnd, ACTION_ENUMERATE, ctr->info_3[i], ctr->info_3_str[i]);
 			}
 			break;
 		}
 		case ACTION_FOOTER:
 		{
+			display_file_info_3(out_hnd, ACTION_FOOTER, NULL, NULL);
 			break;
 		}
 	}

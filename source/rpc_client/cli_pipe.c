@@ -524,7 +524,9 @@ static BOOL cli_send_trans_data(struct cli_state *cli, uint16 fnum,
 
 	if (rdata_len != 0)
 	{
-		return prs_append_data(rdata, rdata_t, rdata_len);
+		BOOL ret = prs_append_data(rdata, rdata_t, rdata_len);
+		safe_free(rdata_t);
+		return ret;
 	}
 
 	return True;

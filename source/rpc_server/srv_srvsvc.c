@@ -68,14 +68,14 @@ static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 	SRV_Q_NET_FILE_ENUM q_n;
 	SRV_R_NET_FILE_ENUM r_n;
 	SRV_FILE_INFO_CTR ctr;
+	BOOL ret;
 
 	ZERO_STRUCT(q_n);
 	ZERO_STRUCT(r_n);
+	ZERO_STRUCT(ctr);
 
 	q_n.ctr = &ctr;
 	r_n.ctr = &ctr;
-
-	r_n.file_level = q_n.file_level;
 
 	/* grab the net server get enum */
 	if (!srv_io_q_net_file_enum("", &q_n, data, 0))
@@ -83,17 +83,22 @@ static BOOL api_srv_net_file_enum( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
+	r_n.file_level = q_n.file_level;
 
-	r_n.status = _srv_net_file_enum( &q_n.uni_srv_name,
+	r_n.status = _srv_net_file_enum(&q_n.uni_srv_name,
 					ctr.switch_value, &ctr,
 					q_n.preferred_len, &q_n.enum_hnd,
 					&(r_n.total_entries),
-					q_n.file_level );
+					q_n.file_level);
 
 	memcpy(&r_n.enum_hnd, &q_n.enum_hnd, sizeof(r_n.enum_hnd));
 
 	/* store the response in the SMB stream */
-	return srv_io_r_net_file_enum("", &r_n, rdata, 0);
+	ret = srv_io_r_net_file_enum("", &r_n, rdata, 0);
+
+	srv_free_srv_file_ctr(&ctr);
+
+	return ret;
 }
 
 /*******************************************************************

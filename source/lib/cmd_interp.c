@@ -107,7 +107,7 @@ struct command_set *add_cmd_set_to_array(uint32 * len,
 }
 
 static struct command_set **commands = NULL;
-uint32 num_commands = 0;
+static uint32 num_commands = 0;
 
 /****************************************************************************
  add in individual command-sets.
@@ -407,6 +407,9 @@ static BOOL process(struct client_info *info, char *cmd_str)
 	else
 		while (!feof(stdin))
 		{
+#ifdef HAVE_LIBREADLINE
+			char *ret_line;
+#endif
 			pstring pline;
 			BOOL at_sym = False;
 			pline[0] = 0;
@@ -449,8 +452,9 @@ static BOOL process(struct client_info *info, char *cmd_str)
 
 #else /* HAVE_LIBREADLINE */
 
-			if (!readline(pline))
+			if (!(ret_line = readline(pline)))
 				break;
+			safe_free(ret_line);
 
 			/* Copy read line to samba buffer */
 
@@ -837,7 +841,8 @@ static char *complete_cmd(char *text, int state)
 
 	/* Return the next name which partially matches the list of commands */
 
-	while (strlen(name = commands[cmd_index++]->name) > 0)
+	while ((cmd_index < num_commands)
+	       && (strlen(name = commands[cmd_index++]->name) > 0))
 	{
 		if (strncmp(name, text, strlen(text)) == 0)
 		{
@@ -1599,6 +1604,10 @@ int command_main(int argc, char *argv[])
 	process(&cli_info, NULL);
 
 	free_connections();
+
+	free_cmd_set_array(num_commands, commands);
+	num_commands = 0;
+	commands = NULL; 
 
 	return (0);
 }

@@ -92,6 +92,10 @@ BOOL cred_store(uint32 pid, const char *domain, const char* wks, struct dcinfo *
 
 	dump_data(100, (char*)dc, sizeof(*dc));
 
+	if (!ret)
+	{
+		DEBUG(0,("cred_store: failed\n"));
+	}
 	return ret;
 }
 

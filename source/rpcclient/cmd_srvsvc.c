@@ -28,6 +28,7 @@
 
 #include "includes.h"
 #include "rpc_parse.h"
+#include "rpcclient.h"
 
 extern int DEBUGLEVEL;
 
@@ -68,7 +69,7 @@ void cmd_srv_query_info(struct client_info *info, int argc, char *argv[])
 	uint32 info_level = 101;
 	SRV_INFO_CTR ctr;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	if (argc > 1)
 	{
@@ -132,7 +133,7 @@ void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[])
 	SRV_TPRT_INFO_CTR ctr;
 	uint32 info_level = 0;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -165,7 +166,7 @@ void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(qual_srv, "\\\\");
 	fstrcat(qual_srv, info->myhostname);
@@ -219,7 +220,7 @@ void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -271,7 +272,7 @@ void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -321,7 +322,7 @@ void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_srv, "\\\\");
 	fstrcat(dest_srv, info->dest_host);
@@ -348,6 +349,8 @@ void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[])
 		display_srv_file_info_ctr(out_hnd, ACTION_ENUMERATE, &ctr);
 		display_srv_file_info_ctr(out_hnd, ACTION_FOOTER   , &ctr);
 	}
+
+	srv_free_srv_file_ctr(&ctr);
 
 	if (res)
 	{

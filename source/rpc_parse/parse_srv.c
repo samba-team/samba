@@ -141,12 +141,7 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 	prs_debug(ps, depth, desc, "srv_io_share_1_ctr");
 	depth++;
 
-	if(! ctr)
-	{
-		return False;
-	}
-
-	if(ps->io)
+	if (ps->io)
 	{
 		ZERO_STRUCTP(ctr);
 	}
@@ -180,7 +175,11 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 			{
 				ctr->info_1[i] = g_new(SH_INFO_1, 1);
 			}
-			srv_io_share_info1("", ctr->info_1[i], ps, depth); 
+			if (!srv_io_share_info1("", ctr->info_1[i], ps, depth))
+			{
+				srv_free_srv_share_info_1(ctr);
+				return False;
+			}
 		}
 
 		for (i = 0; i < num_entries; i++)
@@ -189,7 +188,12 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 			{
 				ctr->info_1_str[i] = g_new(SH_INFO_1_STR, 1);
 			}
-			srv_io_share_info1_str("", ctr->info_1_str[i], ps, depth); 
+			if (!srv_io_share_info1_str("", ctr->info_1_str[i],
+						    ps, depth))
+			{
+				srv_free_srv_share_info_1(ctr);
+				return False;
+			}
 		}
 
 		prs_align(ps);
@@ -326,11 +330,6 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 
 	prs_debug(ps, depth, desc, "srv_io_share_2_ctr");
 	depth++;
-
-	if (! ctr)
-	{
-		return False;
-	}
 
 	if(ps->io)
 	{
@@ -547,7 +546,8 @@ BOOL make_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name)
 reads or writes a structure.
 ********************************************************************/
 static BOOL srv_io_sess_info0_str(char *desc,  SESS_INFO_0_STR *ss0, 
-const SESS_INFO_0 *si0, prs_struct *ps, int depth)
+				  const SESS_INFO_0 *si0,
+				  prs_struct *ps, int depth)
 {
 	if (ss0 == NULL) return False;
 
@@ -557,6 +557,7 @@ const SESS_INFO_0 *si0, prs_struct *ps, int depth)
 	prs_align(ps);
 
 	smb_io_unistr2("", &(ss0->uni_name), si0->ptr_name, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -668,7 +669,9 @@ static BOOL srv_io_sess_info1_str(char *desc,  SESS_INFO_1_STR *ss1,
 	prs_align(ps);
 
 	smb_io_unistr2("", &(ss1->uni_name), si1->ptr_name, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("", &(ss1->uni_user), si1->ptr_user, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -848,7 +851,6 @@ BOOL srv_io_q_net_sess_enum(char *desc,  SRV_Q_NET_SESS_ENUM *q_n, prs_struct *p
 
 	prs_uint32("ptr_srv_name", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
@@ -996,7 +998,9 @@ static BOOL srv_io_conn_info1_str(char *desc, CONN_INFO_1_STR *ss1,
 	prs_align(ps);
 
 	smb_io_unistr2("", &(ss1->uni_usr_name), ci1->ptr_usr_name, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("", &(ss1->uni_net_name), ci1->ptr_net_name, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -1174,12 +1178,10 @@ BOOL srv_io_q_net_conn_enum(char *desc,  SRV_Q_NET_CONN_ENUM *q_n, prs_struct *p
 
 	prs_uint32("ptr_srv_name ", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), q_n->ptr_srv_name, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
 	smb_io_unistr2("", &(q_n->uni_qual_name), q_n->ptr_qual_name, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("conn_level", ps, depth, &(q_n->conn_level  ));
@@ -1256,8 +1258,11 @@ static BOOL srv_io_tprt_info0_str(char *desc,  TPRT_INFO_0_STR *tp0,
 	prs_align(ps);
 
 	smb_io_unistr2("", &(tp0->uni_trans_name), ti0->ptr_trans_name, ps, depth); 
+	prs_align(ps);
 	smb_io_buffer4("", &(tp0->buf_trans_addr), ti0->ptr_trans_addr, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("", &(tp0->uni_addr_name ), ti0->ptr_addr_name, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -1479,7 +1484,6 @@ BOOL srv_io_q_net_tprt_enum(char *desc,  SRV_Q_NET_TPRT_ENUM *q_n, prs_struct *p
 
 	prs_uint32("ptr_srv_name ", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), q_n->ptr_srv_name, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("tprt_level", ps, depth, &(q_n->tprt_level  ));
@@ -1526,7 +1530,7 @@ BOOL srv_io_r_net_tprt_enum(char *desc,  SRV_R_NET_TPRT_ENUM *r_n, prs_struct *p
  makes a FILE_INFO_3_STR structure
 ********************************************************************/
 BOOL make_srv_file_info3_str(FILE_INFO_3_STR *fi3,
-			     const char *user_name, const char *path_name)
+			     const char *path_name, const char *user_name)
 {
 	if (fi3 == NULL) return False;
 
@@ -1555,9 +1559,9 @@ static BOOL srv_io_file_info3_str(char *desc,  FILE_INFO_3_STR *sh1, prs_struct 
 
 	prs_align(ps);
 
-	smb_io_unistr2("", &(sh1->uni_path_name), True, ps, depth); 
+	smb_io_unistr2("path", &(sh1->uni_path_name), True, ps, depth); 
 	prs_align(ps);
-	smb_io_unistr2("", &(sh1->uni_user_name), True, ps, depth); 
+	smb_io_unistr2("user", &(sh1->uni_user_name), True, ps, depth); 
 	prs_align(ps);
 
 	return True;
@@ -1613,11 +1617,21 @@ static BOOL srv_io_file_info3(char *desc,  FILE_INFO_3 *fl3, prs_struct *ps, int
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void srv_free_srv_file_info_3(SRV_FILE_INFO_3 *fl3)
+static void srv_free_srv_file_info_3(SRV_FILE_INFO_3 *ctr)
 {
-	fl3->num_entries_read = 0;
-	fl3->ptr_file_info = 0;
-	fl3->num_entries_read2 = 0;
+	void(*fn)(void*)    = (void(*)(void*)) srv_free_file_info3;
+	void(*fnstr)(void*) = (void(*)(void*)) srv_free_file_info3_str;
+
+	if (!ctr) return;
+
+	free_void_array(ctr->num_entries_read,
+			(void **) ctr->info_3, fn);
+	free_void_array(ctr->num_entries_read,
+			(void **) ctr->info_3_str, fnstr);
+
+	ctr->num_entries_read = 0;
+	ctr->ptr_file_info = 0;
+	ctr->num_entries_read2 = 0;
 }
 
 static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct *ps, int depth)
@@ -1627,6 +1641,11 @@ static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct
 	prs_debug(ps, depth, desc, "srv_io_file_3_fl3");
 	depth++;
 
+	if (ps->io)
+	{
+		ZERO_STRUCTP(fl3);
+	}
+
 	prs_align(ps);
 
 	prs_uint32("num_entries_read", ps, depth, &(fl3->num_entries_read));
@@ -1634,23 +1653,47 @@ static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct
 	if (fl3->ptr_file_info != 0)
 	{
 		uint32 i;
-		uint32 num_entries = fl3->num_entries_read;
-
-		if (num_entries > MAX_FILE_ENTRIES)
-		{
-			num_entries = MAX_FILE_ENTRIES; /* report this! */
-		}
+		uint32 num_entries;
 
 		prs_uint32("num_entries_read2", ps, depth, &(fl3->num_entries_read2));
+		num_entries = fl3->num_entries_read2;
 
-		for (i = 0; i < num_entries; i++)
+		if (ps->io)
 		{
-			srv_io_file_info3("", &(fl3->info_3[i]), ps, depth); 
+			fl3->info_3     = g_new0(FILE_INFO_3 *, num_entries);
+			fl3->info_3_str = g_new0(FILE_INFO_3_STR *, num_entries);
+			if (! fl3->info_3 || ! fl3->info_3_str)
+			{
+				srv_free_srv_file_info_3(fl3);
+				return False;
+			}
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			srv_io_file_info3_str("", &(fl3->info_3_str[i]), ps, depth); 
+			if (ps->io)
+			{
+				fl3->info_3[i] = g_new(FILE_INFO_3, 1);
+			}
+			if (!srv_io_file_info3("", fl3->info_3[i], ps, depth))
+			{
+				srv_free_srv_file_info_3(fl3);
+				return False;
+			}
+		}
+
+		for (i = 0; i < num_entries; i++)
+		{
+			if (ps->io)
+			{
+				fl3->info_3_str[i] = g_new(FILE_INFO_3_STR, 1);
+			}
+			if (!srv_io_file_info3_str("", fl3->info_3_str[i],
+						   ps, depth))
+			{
+				srv_free_srv_file_info_3(fl3);
+				return False;
+			}
 		}
 
 		prs_align(ps);
@@ -1751,12 +1794,10 @@ BOOL srv_io_q_net_file_enum(char *desc,  SRV_Q_NET_FILE_ENUM *q_n, prs_struct *p
 
 	prs_uint32("ptr_srv_name", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("ptr_qual_name", ps, depth, &(q_n->ptr_qual_name));
 	smb_io_unistr2("", &(q_n->uni_qual_name), q_n->ptr_qual_name, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("file_id   ", ps, depth, &(q_n->file_id   ));
@@ -1822,7 +1863,9 @@ static BOOL srv_io_info_101(char *desc,  SRV_INFO_101 *sv101, prs_struct *ps, in
 	prs_align(ps);
 
 	smb_io_unistr2("uni_name    ", &(sv101->uni_name    ), True, ps, depth); 
+	prs_align(ps);
 	smb_io_unistr2("uni_comment ", &(sv101->uni_comment ), True, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -1861,6 +1904,7 @@ static BOOL srv_io_info_102(char *desc,  SRV_INFO_102 *sv102, prs_struct *ps, in
 	smb_io_unistr2("uni_comment ", &(sv102->uni_comment ), True, ps, depth); 
 	prs_align(ps);
 	smb_io_unistr2("uni_usr_path", &(sv102->uni_usr_path), True, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -1938,7 +1982,6 @@ BOOL srv_io_q_net_srv_get_info(char *desc,  SRV_Q_NET_SRV_GET_INFO *q_n, prs_str
 
 	prs_uint32("ptr_srv_name  ", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth); 
-
 	prs_align(ps);
 
 	prs_uint32("switch_value  ", ps, depth, &(q_n->switch_value));
@@ -2021,6 +2064,7 @@ BOOL srv_io_q_net_remote_tod(char *desc,  SRV_Q_NET_REMOTE_TOD *q_n, prs_struct 
 
 	prs_uint32("ptr_srv_name  ", ps, depth, &(q_n->ptr_srv_name));
 	smb_io_unistr2("", &(q_n->uni_srv_name), True, ps, depth); 
+	prs_align(ps);
 
 	return True;
 }
@@ -2049,7 +2093,6 @@ static BOOL srv_io_time_of_day_info(char *desc, TIME_OF_DAY_INFO  *tod, prs_stru
 	prs_uint32("month      ", ps, depth, &(tod->month     ));
 	prs_uint32("year       ", ps, depth, &(tod->year      ));
 	prs_uint32("weekday    ", ps, depth, &(tod->weekday   ));
-
 
 	return True;
 }

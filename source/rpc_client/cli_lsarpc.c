@@ -40,7 +40,6 @@ BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 {
 	POLICY_HND pol;
 	fstring srv_name;
-	struct cli_connection *con = NULL;
 	BOOL res = True;
 	BOOL res1 = True;
 	fstring dom3;
@@ -90,9 +89,6 @@ BOOL get_domain_sids(const char *domain, DOM_SID *sid3, DOM_SID *sid5)
 
 	/* close policy handle */
 	res = res ? lsa_close(&pol) : False;
-
-	/* close the session */
-	cli_connection_unlink(con);
 
 	if (res1)
 	{
@@ -161,9 +157,6 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 
 	/* close policy handle */
 	res = res ? lsa_close(&pol) : False;
-
-	/* close the session */
-	cli_connection_unlink(con);
 
 	if (res1)
 	{
