@@ -3590,35 +3590,44 @@ static BOOL list_servers(char *wk_grp)
   char *rparam = NULL;
   char *rdata = NULL;
   int rdrcnt,rprcnt;
-  char *p;
+  char *p,*svtype_p;
   pstring param;
   int uLevel = 1;
   int count = 0;
   BOOL ok = False;
+  BOOL generic_request = False;
+
+
+  if (strequal(wk_grp,"WORKGROUP")) {
+    /* we won't specify a workgroup */
+    generic_request = True;
+  } 
 
   /* now send a SMBtrans command with api ServerEnum? */
   p = param;
   SSVAL(p,0,0x68); /* api number */
   p += 2;
-  strcpy(p,"WrLehDz");
+
+  strcpy(p,generic_request?"WrLehDO":"WrLehDz");
   p = skip_string(p,1);
 
   strcpy(p,"B16BBDz");
-#if 0
-  strcpy(p,getenv("XX_STR2"));
-#endif
 
   p = skip_string(p,1);
   SSVAL(p,0,uLevel);
   SSVAL(p,2,0x2000); /* buf length */
   p += 4;
 
-  SIVAL(p,0,SV_TYPE_ALL);
-
+  svtype_p = p;
   p += 4;
 
-  strcpy(p, wk_grp);
-  p = skip_string(p,1);
+  if (!generic_request) {
+    strcpy(p, wk_grp);
+    p = skip_string(p,1);
+  }
+
+  /* first ask for a list of servers in this workgroup */
+  SIVAL(svtype_p,0,SV_TYPE_ALL);
 
   if (call_api(PTR_DIFF(p+4,param),0,
 	       8,10000,
@@ -3656,7 +3665,8 @@ static BOOL list_servers(char *wk_grp)
   if (rparam) {free(rparam); rparam = NULL;}
   if (rdata) {free(rdata); rdata = NULL;}
 
-  SIVAL(p,0,0x7fffffff);
+  /* now ask for a list of workgroups */
+  SIVAL(svtype_p,0,SV_TYPE_DOMAIN_ENUM);
 
   if (call_api(PTR_DIFF(p+4,param),0,
 	       8,10000,
