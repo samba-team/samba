@@ -146,7 +146,7 @@ for Workgroups. The early TCP/IP stacks had lots of bugs.</para>
 <para> 
 Microsoft has released an incremental upgrade to their TCP/IP 32-bit
 VxD drivers. The latest release can be found on their ftp site at
-ftp.microsoft.com, located in <filename>/peropsys/windows/public/tcpip/wfwt32.exe</filename>.
+ftp.microsoft.com, located in <filename>/Softlib/MSLFILES/TCP32B.EXE</filename>.
 There is an update.txt file there that describes the problems that were
 fixed. New files include <filename>WINSOCK.DLL</filename>, 
 <filename>TELNET.EXE</filename>, 
@@ -157,6 +157,8 @@ fixed. New files include <filename>WINSOCK.DLL</filename>,
 <filename>NETSTAT.EXE</filename>, and 
 <filename>NBTSTAT.EXE</filename>.
 </para>
+
+<para>More information about this patch is available in <ulink url="http://support.microsoft.com/kb/q99891/">Knowledge base article 99891</ulink>.</para>
 
 </sect2>
 
