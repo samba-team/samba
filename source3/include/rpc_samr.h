@@ -145,6 +145,170 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CONNECT           0x39
 #define SAMR_SET_USERINFO      0x3A
 
+//Access bits to the SAM-object
+#define SAMR_ACCESS_UNKNOWN_1        0x00000001
+#define SAMR_ACCESS_SHUTDOWN_SERVER  0x00000002
+#define SAMR_ACCESS_UNKNOWN_4        0x00000004
+#define SAMR_ACCESS_UNKNOWN_8        0x00000008
+#define SAMR_ACCESS_ENUM_DOMAINS     0x00000010
+#define SAMR_ACCESS_OPEN_DOMAIN      0x00000020
+
+#define SAMR_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                           SAMR_ACCESS_OPEN_DOMAIN         | \
+			   SAMR_ACCESS_ENUM_DOMAINS        | \
+			   SAMR_ACCESS_UNKNOWN_8           | \
+			   SAMR_ACCESS_UNKNOWN_4           | \
+			   SAMR_ACCESS_SHUTDOWN_SERVER     | \
+			   SAMR_ACCESS_UNKNOWN_1 )
+			   
+#define SAMR_READ        ( STANDARD_RIGHTS_READ_ACCESS     | \
+                           SAMR_ACCESS_ENUM_DOMAINS )
+
+#define SAMR_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                           SAMR_ACCESS_UNKNOWN_8           | \
+			   SAMR_ACCESS_UNKNOWN_4           | \
+			   SAMR_ACCESS_SHUTDOWN_SERVER )
+
+#define SAMR_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                           SAMR_ACCESS_OPEN_DOMAIN         | \
+			   SAMR_ACCESS_UNKNOWN_1 )            
+
+//Access bits to Domain-objects
+#define DOMAIN_ACCESS_LOOKUP_INFO_1  0x000000001
+#define DOMAIN_ACCESS_SET_INFO_1     0x000000002
+#define DOMAIN_ACCESS_LOOKUP_INFO_2  0x000000004
+#define DOMAIN_ACCESS_SET_INFO_2     0x000000008
+#define DOMAIN_ACCESS_CREATE_USER    0x000000010
+#define DOMAIN_ACCESS_CREATE_GROUP   0x000000020
+#define DOMAIN_ACCESS_CREATE_ALIAS   0x000000040
+#define DOMAIN_ACCESS_UNKNOWN_80     0x000000080
+#define DOMAIN_ACCESS_ENUM_ACCOUNTS  0x000000100
+#define DOMAIN_ACCESS_OPEN_ACCOUNT   0x000000200
+#define DOMAIN_ACCESS_SET_INFO_3     0x000000400
+
+#define DOMAIN_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             DOMAIN_ACCESS_SET_INFO_3        | \
+			     DOMAIN_ACCESS_OPEN_ACCOUNT      | \
+			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
+			     DOMAIN_ACCESS_UNKNOWN_80        | \
+			     DOMAIN_ACCESS_CREATE_ALIAS      | \
+			     DOMAIN_ACCESS_CREATE_GROUP      | \
+			     DOMAIN_ACCESS_CREATE_USER       | \
+			     DOMAIN_ACCESS_SET_INFO_2        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_2     | \
+			     DOMAIN_ACCESS_SET_INFO_1        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_1 )
+			   
+#define DOMAIN_READ        ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             DOMAIN_ACCESS_UNKNOWN_80        | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_2 )
+
+#define DOMAIN_WRITE       ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             DOMAIN_ACCESS_SET_INFO_3        | \
+			     DOMAIN_ACCESS_CREATE_ALIAS      | \
+			     DOMAIN_ACCESS_CREATE_GROUP      | \
+			     DOMAIN_ACCESS_CREATE_USER       | \
+			     DOMAIN_ACCESS_SET_INFO_2        | \
+			     DOMAIN_ACCESS_SET_INFO_1 )
+
+#define DOMAIN_EXECUTE     ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             DOMAIN_ACCESS_OPEN_ACCOUNT      | \
+			     DOMAIN_ACCESS_ENUM_ACCOUNTS     | \
+			     DOMAIN_ACCESS_LOOKUP_INFO_1 )            
+
+//Access bits to User-objects
+#define USER_ACCESS_GET_NAME_ETC     0x000000001
+#define USER_ACCESS_GET_LOCALE       0x000000002
+#define USER_ACCESS_SET_LOC_COM      0x000000004
+#define USER_ACCESS_GET_LOGONINFO    0x000000008
+#define USER_ACCESS_UNKNOWN_10       0x000000010
+#define USER_ACCESS_SET_ATTRIBUTES   0x000000020
+#define USER_ACCESS_CHANGE_PASSWORD  0x000000040
+#define USER_ACCESS_SET_PASSWORD     0x000000080
+#define USER_ACCESS_GET_GROUPS       0x000000100
+#define USER_ACCESS_UNKNOWN_200      0x000000200
+#define USER_ACCESS_UNKNOWN_400      0x000000400
+
+#define USER_ALL_ACCESS    ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             USER_ACCESS_UNKNOWN_400       | \
+			     USER_ACCESS_UNKNOWN_200       | \
+			     USER_ACCESS_GET_GROUPS        | \
+			     USER_ACCESS_SET_PASSWORD      | \
+			     USER_ACCESS_CHANGE_PASSWORD   | \
+			     USER_ACCESS_SET_ATTRIBUTES    | \
+			     USER_ACCESS_UNKNOWN_10        | \
+			     USER_ACCESS_GET_LOGONINFO     | \
+			     USER_ACCESS_SET_LOC_COM       | \
+			     USER_ACCESS_GET_LOCALE        | \
+			     USER_ACCESS_GET_NAME_ETC )
+			   
+#define USER_READ          ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             USER_ACCESS_UNKNOWN_200         | \
+			     USER_ACCESS_GET_GROUPS          | \
+			     USER_ACCESS_UNKNOWN_10          | \
+			     USER_ACCESS_GET_LOGONINFO       | \
+			     USER_ACCESS_GET_LOCALE )
+
+#define USER_WRITE         ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             USER_ACCESS_CHANGE_PASSWORD     | \
+			     USER_ACCESS_SET_LOC_COM )
+			     
+#define USER_EXECUTE       ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             USER_ACCESS_CHANGE_PASSWORD     | \
+			     USER_ACCESS_GET_NAME_ETC )
+
+//Access bits to Group-objects			     
+#define GROUP_ACCESS_LOOKUP_INFO     0x00000001
+#define GROUP_ACCESS_SET_INFO        0x00000002
+#define GROUP_ACCESS_ADD_MEMBER      0x00000004
+#define GROUP_ACCESS_REMOVE_MEMBER   0x00000008
+#define GROUP_ACCESS_GET_MEMBERS     0x00000010
+
+#define GROUP_ALL_ACCESS   ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             GROUP_ACCESS_GET_MEMBERS        | \
+			     GROUP_ACCESS_REMOVE_MEMBER      | \
+			     GROUP_ACCESS_ADD_MEMBER         | \
+			     GROUP_ACCESS_SET_INFO           | \
+			     GROUP_ACCESS_LOOKUP_INFO )
+			   
+#define GROUP_READ         ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             GROUP_ACCESS_GET_MEMBERS )
+
+#define GROUP_WRITE        ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             GROUP_ACCESS_REMOVE_MEMBER      | \
+			     GROUP_ACCESS_ADD_MEMBER         | \
+			     GROUP_ACCESS_SET_INFO )
+			     
+#define GROUP_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             GROUP_ACCESS_LOOKUP_INFO )
+			     
+//Access bits to Alias-objects
+#define ALIAS_ACCESS_ADD_MEMBER      0x00000001
+#define ALIAS_ACCESS_REMOVE_MEMBER   0x00000002
+#define ALIAS_ACCESS_GET_MEMBERS     0x00000004
+#define ALIAS_ACCESS_LOOKUP_INFO     0x00000008
+#define ALIAS_ACCESS_SET_INFO        0x00000010
+
+#define ALIAS_ALL_ACCESS   ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
+                             ALIAS_ACCESS_GET_MEMBERS        | \
+			     ALIAS_ACCESS_REMOVE_MEMBER      | \
+			     ALIAS_ACCESS_ADD_MEMBER         | \
+			     ALIAS_ACCESS_SET_INFO           | \
+			     ALIAS_ACCESS_LOOKUP_INFO )
+			   
+#define ALIAS_READ         ( STANDARD_RIGHTS_READ_ACCESS     | \
+                             ALIAS_ACCESS_GET_MEMBERS )
+
+#define ALIAS_WRITE        ( STANDARD_RIGHTS_WRITE_ACCESS    | \
+                             ALIAS_ACCESS_REMOVE_MEMBER      | \
+			     ALIAS_ACCESS_ADD_MEMBER         | \
+			     ALIAS_ACCESS_SET_INFO )
+			     
+#define ALIAS_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
+                             ALIAS_ACCESS_LOOKUP_INFO )
+
+
+
 
 typedef struct _DISP_USER_INFO {
 	SAM_ACCOUNT *sam;
