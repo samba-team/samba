@@ -1389,11 +1389,16 @@ should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces\&.
 .IP 
-In addition, to change a users SMB password, the
-\fBsmbpasswd\fP by default connects to the
-\fI"localhost" - 127\&.0\&.0\&.1\fP address as an SMB client to issue the
-password change request\&. If \fB"bind interfaces only"\fP is set then
-unless the network address \fI127\&.0\&.0\&.1\fP is added to the
+If \fB"bind interfaces only"\fP is set then unless the network address
+\fI127\&.0\&.0\&.1\fP is added to the \fB\'interfaces\'\fP parameter
+list \fBsmbpasswd\fP and
+\fBswat\fP may not work as expected due to the
+reasons covered below\&.
+.IP 
+To change a users SMB password, the \fBsmbpasswd\fP
+by default connects to the \fI"localhost" - 127\&.0\&.0\&.1\fP address as an SMB
+client to issue the password change request\&. If \fB"bind interfaces only"\fP
+is set then unless the network address \fI127\&.0\&.0\&.1\fP is added to the
 \fB\'interfaces\'\fP parameter list then
 \fBsmbpasswd\fP will fail to connect in it\'s
 default mode\&. \fBsmbpasswd\fP can be forced to
@@ -1401,6 +1406,14 @@ use the primary IP interface of the local host by using its
 \fB"-r remote machine"\fP parameter, with
 \fB"remote machine"\fP set to the IP name of the primary interface
 of the local host\&.
+.IP 
+The \fBswat\fP status page tries to connect with
+\fBsmbd\fP and \fBnmbd\fP at the address 
+\fI127\&.0\&.0\&.1\fP to determine if they are running\&.  Not adding \fI127\&.0\&.0\&.1\fP  will cause
+\fBsmbd\fP and \fBnmbd\fP to always show
+"not running" even if they really are\&.  This can prevent
+\fBswat\fP from starting/stopping/restarting
+\fBsmbd\fP and \fBnmbd\fP\&.
 .IP 
 \fBDefault:\fP
 \f(CW	bind interfaces only = False\fP

@@ -789,11 +789,15 @@ will serve to packets coming in those interfaces.  Note that you
 should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces.
-<p><br>In addition, to change a users SMB password, the
-<a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> by default connects to the
-<em>"localhost" - 127.0.0.1</em> address as an SMB client to issue the
-password change request. If <strong>"bind interfaces only"</strong> is set then
-unless the network address <em>127.0.0.1</em> is added to the
+<p><br>If <strong>"bind interfaces only"</strong> is set then unless the network address
+<em>127.0.0.1</em> is added to the <a href="smb.conf.5.html#interfaces"><strong>'interfaces'</strong></a> parameter
+list <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> and
+<a href="swat.8.html"><strong>swat</strong></a> may not work as expected due to the
+reasons covered below.
+<p><br>To change a users SMB password, the <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a>
+by default connects to the <em>"localhost" - 127.0.0.1</em> address as an SMB
+client to issue the password change request. If <strong>"bind interfaces only"</strong>
+is set then unless the network address <em>127.0.0.1</em> is added to the
 <a href="smb.conf.5.html#interfaces"><strong>'interfaces'</strong></a> parameter list then
 <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> will fail to connect in it's
 default mode. <a href="smbpasswd.8.html"><strong>smbpasswd</strong></a> can be forced to
@@ -801,6 +805,13 @@ use the primary IP interface of the local host by using its
 <a href="smbpasswd.8.html#minusr"><strong>"-r remote machine"</strong></a> parameter, with
 <strong>"remote machine"</strong> set to the IP name of the primary interface
 of the local host.
+<p><br>The <a href="swat.8.html"><strong>swat</strong></a> status page tries to connect with
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a> at the address 
+<em>127.0.0.1</em> to determine if they are running.  Not adding <em>127.0.0.1</em>  will cause
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a> to always show
+"not running" even if they really are.  This can prevent
+<a href="swat.8.html"><strong>swat</strong></a> from starting/stopping/restarting
+<a href="smbd.8.html"><strong>smbd</strong></a> and <a href="nmbd.8.html"><strong>nmbd</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	bind interfaces only = False</code>
 <p><br><strong>Example:</strong>

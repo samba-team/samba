@@ -1152,11 +1152,16 @@ should not use this parameter for machines that are serving PPP or
 other intermittent or non-broadcast network interfaces as it will not
 cope with non-permanent interfaces.
 
-In addition, to change a users SMB password, the
-url(bf(smbpasswd))(smbpasswd.8.html) by default connects to the
-em("localhost" - 127.0.0.1) address as an SMB client to issue the
-password change request. If bf("bind interfaces only") is set then
-unless the network address em(127.0.0.1) is added to the
+If bf("bind interfaces only") is set then unless the network address
+em(127.0.0.1) is added to the link(bf('interfaces'))(interfaces) parameter
+list url(bf(smbpasswd))(smbpasswd.8.html) and
+url(bf(swat))(swat.8.html) may not work as expected due to the
+reasons covered below.
+
+To change a users SMB password, the url(bf(smbpasswd))(smbpasswd.8.html)
+by default connects to the em("localhost" - 127.0.0.1) address as an SMB
+client to issue the password change request. If bf("bind interfaces only")
+is set then unless the network address em(127.0.0.1) is added to the
 link(bf('interfaces'))(interfaces) parameter list then
 url(bf(smbpasswd))(smbpasswd.8.html) will fail to connect in it's
 default mode. url(bf(smbpasswd))(smbpasswd.8.html) can be forced to
@@ -1164,6 +1169,14 @@ use the primary IP interface of the local host by using its
 url(bf("-r remote machine"))(smbpasswd.8.html#minusr) parameter, with
 bf("remote machine") set to the IP name of the primary interface
 of the local host.
+
+The url(bf(swat))(swat.8.html) status page tries to connect with
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html) at the address 
+em(127.0.0.1) to determine if they are running.  Not adding em(127.0.0.1)  will cause
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html) to always show
+"not running" even if they really are.  This can prevent
+url(bf(swat))(swat.8.html) from starting/stopping/restarting
+url(bf(smbd))(smbd.8.html) and url(bf(nmbd))(nmbd.8.html).
 
   bf(Default:)
 tt(	bind interfaces only = False)
