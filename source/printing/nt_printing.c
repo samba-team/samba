@@ -3264,7 +3264,7 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 			break;
 	}
 	
-	DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", sharename, (unsigned int)level, werror_str(result)));
+	DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", sharename, (unsigned int)level, dos_errstr(result)));
 
 	return result;
 }

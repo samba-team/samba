@@ -174,7 +174,7 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 	
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
-			werror_str(result)));
+			dos_errstr(result)));
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
@@ -700,7 +700,7 @@ static void send_spoolss_event_notification(PRINTER_MESSAGE_INFO *msg)
 			
 			if (!W_ERROR_IS_OK(result)) {
 				DEBUG(5,("send_spoolss_event_notification: Event notification failed [%s]\n",
-					werror_str(result)));
+					dos_errstr(result)));
 			}
 		}
 	}
@@ -1639,7 +1639,7 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 			
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
-			werror_str(result)));
+			dos_errstr(result)));
 
 	return (W_ERROR_IS_OK(result));	
 }
@@ -4051,12 +4051,12 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 	ZERO_STRUCT(driver);
 
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
+	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
+	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
 
 #if 0	/* JERRY */
 
@@ -4076,7 +4076,7 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 			/* Yes - try again with a WinNT driver. */
 			version = 2;
 			status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
-			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", werror_str(status)));
+			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
 		}
 #endif
 
@@ -4174,12 +4174,12 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 	ZERO_STRUCT(driver);
 
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", werror_str(status)));
+	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", werror_str(status)));
+	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
 	if (!W_ERROR_IS_OK(status)) {
 		/*
 		 * Is this a W2k client ?
@@ -4193,7 +4193,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
 		status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
-		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", werror_str(status)));
+		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
 		if (!W_ERROR_IS_OK(status)) {
 			free_a_printer(&printer,2);
 			return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -6148,7 +6148,7 @@ static WERROR enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		if(numlines) {
 			if((ports=(PORT_INFO_1 *)malloc( numlines * sizeof(PORT_INFO_1) )) == NULL) {
 				DEBUG(10,("Returning WERR_NOMEM [%s]\n", 
-					  werror_str(WERR_NOMEM)));
+					  dos_errstr(WERR_NOMEM)));
 				file_lines_free(qlines);
 				return WERR_NOMEM;
 			}

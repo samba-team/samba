@@ -122,11 +122,11 @@ static NTSTATUS cmd_spoolss_open_printer_ex(struct cli_state *cli,
 
 		if (!W_ERROR_IS_OK(werror)) {
 			printf("Error closing printer handle! (%s)\n", 
-				werror_str(werror));
+				dos_errstr(werror));
 		}
 	} else {
 		printf("Failed to open printer %s: %s\n", printername,
-				werror_str(werror));
+				dos_errstr(werror));
 	}
 
 	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;

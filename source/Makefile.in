@@ -137,7 +137,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 		libsmb/namequery.o libsmb/nmblib.o libsmb/clistr.o \
 		libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
 		libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
-		libsmb/clioplock.o libsmb/errormap.o \
+		libsmb/clioplock.o libsmb/errormap.o libsmb/doserr.o \
 		libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
