@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -81,7 +81,16 @@ _krb5_get_init_creds_opt_copy(krb5_context context,
 	return ENOMEM;
     }
     *opt = *in;
-    opt->private->refcount++;
+    if(opt->private == NULL) {
+	opt->private = calloc(1, sizeof(*opt->private));
+	if (opt->private == NULL) {
+	    krb5_set_error_string(context, "out of memory");
+	    free(opt);
+	    return ENOMEM;
+	}
+	opt->private->refcount = 1;
+    } else
+	opt->private->refcount++;
     *out = opt;
     return 0;
 }
