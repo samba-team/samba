@@ -170,6 +170,34 @@ void *talloc_reference(const void *context, const void *ptr)
 	return handle->ptr;
 }
 
+/*
+  remove a secondary reference to a pointer. This undo's what
+  talloc_reference() has done. The context and pointer arguments
+  must match those given to a talloc_reference()
+*/
+void *talloc_unreference(const void *context, const void *ptr)
+{
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_reference_handle *h;
+
+	if (context == NULL) {
+		context = null_context;
+	}
+
+	for (h=tc->refs;h;h=h->next) {
+		struct talloc_chunk *tc2 = talloc_chunk_from_ptr(h);
+		const void *parent = tc2->parent?tc2->parent+1:null_context;
+		if (parent == context) break;
+	}
+	if (h == NULL) {
+		return NULL;
+	}
+
+	talloc_set_destructor(h, NULL);
+	DLIST_REMOVE(tc->refs, h);
+	talloc_free(h);
+	return discard_const(ptr);
+}
 
 /*
   add a name to an existing pointer - va_list version
@@ -318,8 +346,21 @@ int talloc_free(void *ptr)
 	}
 
 	while (tc->child) {
-		talloc_free(talloc_steal(tc->parent?tc->parent+1:null_context, 
-					 tc->child+1));
+		/* we need to work out who will own an abandoned child
+		   if it cannot be freed. In priority order, the first
+		   choice is owner of any remaining reference to this
+		   pointer, the second choice is our parent, and the
+		   final choice is the null context. */
+		void *child = tc->child+1;
+		const void *new_parent = null_context;
+		if (tc->child->refs) {
+			struct talloc_chunk *ref = talloc_chunk_from_ptr(tc->child->refs);
+			if (ref->parent) new_parent = ref->parent+1;
+		}
+		if (new_parent == null_context && tc->parent) {
+			new_parent = tc->parent+1;
+		}
+		talloc_free(talloc_steal(new_parent, child));
 	}
 
 	if (tc->parent) {

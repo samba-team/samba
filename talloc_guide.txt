@@ -125,6 +125,17 @@ ways:
 
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void *talloc_unreference(const void *context, const void *ptr);
+
+The talloc_unreference() function removes a reference added by
+talloc_reference(). It must be called with exactly the same arguments
+as talloc_reference().
+
+Note that if the reference has already been removed using
+talloc_free() then this function will fail and will return NULL.
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 
 The function talloc_set_destructor() sets the "destructor" for the
