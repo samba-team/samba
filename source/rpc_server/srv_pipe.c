@@ -43,6 +43,13 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*************************************************************
+ HACK Alert!
+ We need to transfer the session key from one rpc bind to the
+ next. This is the way the netlogon schannel works.
+**************************************************************/
+struct dcinfo last_dcinfo;
+
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;
@@ -115,6 +122,9 @@ BOOL create_next_pdu(pipes_struct *p)
 	if(p->ntlmssp_auth_validated)
 		data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN);
 
+	if(p->netsec_auth_validated)
+		data_space_available -= (RPC_HDR_AUTH_LEN + RPC_AUTH_NETSEC_CHK_LEN);
+
 	/*
 	 * The amount we send is the minimum of the available
 	 * space and the amount left to send.
@@ -148,6 +158,10 @@ BOOL create_next_pdu(pipes_struct *p)
 		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len +
 					RPC_HDR_AUTH_LEN + RPC_AUTH_NTLMSSP_CHK_LEN;
 		p->hdr.auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
+	} else if (p->netsec_auth_validated) {
+		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len +
+			RPC_HDR_AUTH_LEN + RPC_AUTH_NETSEC_CHK_LEN;
+		p->hdr.auth_len = RPC_AUTH_NETSEC_CHK_LEN;
 	} else {
 		p->hdr.frag_len = RPC_HEADER_LEN + RPC_HDR_RESP_LEN + data_len;
 		p->hdr.auth_len = 0;
@@ -192,7 +206,7 @@ BOOL create_next_pdu(pipes_struct *p)
 		return False;
 	}
 
-	if (p->hdr.auth_len > 0) {
+	if (p->ntlmssp_auth_validated) {
 		uint32 crc32 = 0;
 		char *data;
 
@@ -237,6 +251,47 @@ BOOL create_next_pdu(pipes_struct *p)
 			}
 			NTLMSSPcalc_p(p, (uchar*)auth_data, RPC_AUTH_NTLMSSP_CHK_LEN - 4);
 		}
+	}
+
+	if (p->netsec_auth_validated) {
+		char *data;
+		RPC_HDR_AUTH auth_info;
+		static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
+		static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
+
+		RPC_AUTH_NETSEC_CHK verf;
+		prs_struct rverf;
+		prs_struct rauth;
+
+		uchar sign[8];
+
+		data = prs_data_p(&outgoing_pdu) + data_pos;
+
+		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL, 
+				  RPC_HDR_AUTH_LEN, 1);
+
+		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
+			DEBUG(0,("create_next_pdu: failed to marshall RPC_HDR_AUTH.\n"));
+			prs_mem_free(&outgoing_pdu);
+			return False;
+		}
+
+		prs_init(&rverf, 0, p->mem_ctx, MARSHALL);
+		prs_init(&rauth, 0, p->mem_ctx, MARSHALL);
+
+		memset(sign, 0, sizeof(sign));
+		sign[3] = 0x01;
+
+		init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes, sign, nullbytes);
+
+		if (!netsec_encode(&p->netsec_auth, &verf, data, data_len)) {
+			DEBUG(0,("create_next_pdu: failed encode data.\n"));
+			prs_mem_free(&outgoing_pdu);
+			return False;
+		}
+
+		smb_io_rpc_auth_netsec_chk("", &verf, &outgoing_pdu, 0);
+		p->netsec_auth.seq_num++;
 	}
 
 	/*
@@ -851,6 +906,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	enum RPC_PKT_TYPE reply_pkt_type;
 
 	p->ntlmssp_auth_requested = False;
+	p->netsec_auth_validated = False;
 
 	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
 
@@ -918,39 +974,62 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 			return False;
 		}
 
-		/*
-		 * We only support NTLMSSP_AUTH_TYPE requests.
-		 */
+		if(auth_info.auth_type == NTLMSSP_AUTH_TYPE) {
 
-		if(auth_info.auth_type != NTLMSSP_AUTH_TYPE) {
+			if(!smb_io_rpc_auth_verifier("", &auth_verifier, rpc_in_p, 0)) {
+				DEBUG(0,("api_pipe_bind_req: unable to "
+					 "unmarshall RPC_HDR_AUTH struct.\n"));
+				return False;
+			}
+
+			if(!strequal(auth_verifier.signature, "NTLMSSP")) {
+				DEBUG(0,("api_pipe_bind_req: "
+					 "auth_verifier.signature != NTLMSSP\n"));
+				return False;
+			}
+
+			if(auth_verifier.msg_type != NTLMSSP_NEGOTIATE) {
+				DEBUG(0,("api_pipe_bind_req: "
+					 "auth_verifier.msg_type (%d) != NTLMSSP_NEGOTIATE\n",
+					 auth_verifier.msg_type));
+				return False;
+			}
+
+			if(!smb_io_rpc_auth_ntlmssp_neg("", &ntlmssp_neg, rpc_in_p, 0)) {
+				DEBUG(0,("api_pipe_bind_req: "
+					 "Failed to unmarshall RPC_AUTH_NTLMSSP_NEG.\n"));
+				return False;
+			}
+
+			p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
+			p->ntlmssp_auth_requested = True;
+
+		} else if (auth_info.auth_type == NETSEC_AUTH_TYPE) {
+
+			RPC_AUTH_NETSEC_NEG neg;
+			struct netsec_auth_struct *a = &(p->netsec_auth);
+
+			if (!smb_io_rpc_auth_netsec_neg("", &neg, rpc_in_p, 0)) {
+				DEBUG(0,("api_pipe_bind_req: "
+					 "Could not unmarshal SCHANNEL auth neg\n"));
+				return False;
+			}
+
+			p->netsec_auth_validated = True;
+
+			memset(a->sess_key, 0, sizeof(a->sess_key));
+			memcpy(a->sess_key, last_dcinfo.sess_key, sizeof(last_dcinfo.sess_key));
+
+			a->seq_num = 0;
+
+			DEBUG(10,("schannel auth: domain [%s] myname [%s]\n",
+				  neg.domain, neg.myname));
+
+		} else {
 			DEBUG(0,("api_pipe_bind_req: unknown auth type %x requested.\n",
-				auth_info.auth_type ));
+				 auth_info.auth_type ));
 			return False;
 		}
-
-		if(!smb_io_rpc_auth_verifier("", &auth_verifier, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_bind_req: unable to unmarshall RPC_HDR_AUTH struct.\n"));
-			return False;
-		}
-
-		if(!strequal(auth_verifier.signature, "NTLMSSP")) {
-			DEBUG(0,("api_pipe_bind_req: auth_verifier.signature != NTLMSSP\n"));
-			return False;
-		}
-
-		if(auth_verifier.msg_type != NTLMSSP_NEGOTIATE) {
-			DEBUG(0,("api_pipe_bind_req: auth_verifier.msg_type (%d) != NTLMSSP_NEGOTIATE\n",
-				auth_verifier.msg_type));
-			return False;
-		}
-
-		if(!smb_io_rpc_auth_ntlmssp_neg("", &ntlmssp_neg, rpc_in_p, 0)) {
-			DEBUG(0,("api_pipe_bind_req: Failed to unmarshall RPC_AUTH_NTLMSSP_NEG.\n"));
-			return False;
-		}
-
-		p->ntlmssp_chal_flags = SMBD_NTLMSSP_NEG_FLAGS;
-		p->ntlmssp_auth_requested = True;
 	}
 
 	switch(p->hdr.pkt_type) {
@@ -1081,6 +1160,33 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
 	}
 
+	if (p->netsec_auth_validated) {
+		RPC_AUTH_VERIFIER auth_verifier;
+		uint32 flags;
+
+		init_rpc_hdr_auth(&auth_info, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL, RPC_HDR_AUTH_LEN, 1);
+		if(!smb_io_rpc_hdr_auth("", &auth_info, &out_auth, 0)) {
+			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR_AUTH failed.\n"));
+			goto err_exit;
+		}
+
+		/*** NETSEC verifier ***/
+
+		init_rpc_auth_verifier(&auth_verifier, "\001", 0x0);
+		if(!smb_io_rpc_netsec_verifier("", &auth_verifier, &out_auth, 0)) {
+			DEBUG(0,("api_pipe_bind_req: marshalling of RPC_AUTH_VERIFIER failed.\n"));
+			goto err_exit;
+		}
+
+		prs_align(&out_auth);
+
+		flags = 5;
+		if(!prs_uint32("flags ", &out_auth, 0, &flags))
+			goto err_exit;
+
+		auth_len = prs_offset(&out_auth) - RPC_HDR_AUTH_LEN;
+	}
+
 	/*
 	 * Create the header, now we know the length.
 	 */
@@ -1108,7 +1214,8 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		goto err_exit;
 	}
 
-	if(p->ntlmssp_auth_requested && !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
+	if((p->ntlmssp_auth_requested|p->netsec_auth_validated) &&
+	   !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
 		DEBUG(0,("api_pipe_bind_req: append of auth info failed.\n"));
 		goto err_exit;
 	}
@@ -1234,6 +1341,265 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	if(!prs_set_offset(rpc_in, old_offset)) {
 		DEBUG(0,("api_pipe_auth_process: failed to set offset back to %u\n",
 			(unsigned int)old_offset ));
+		return False;
+	}
+
+	return True;
+}
+
+static void netsechash(uchar * key, uchar * data, int data_len)
+{
+	uchar hash[256];
+	uchar index_i = 0;
+	uchar index_j = 0;
+	uchar j = 0;
+	int ind;
+
+	for (ind = 0; ind < 256; ind++)
+	{
+		hash[ind] = (uchar) ind;
+	}
+
+	for (ind = 0; ind < 256; ind++)
+	{
+		uchar tc;
+
+		j += (hash[ind] + key[ind % 16]);
+
+		tc = hash[ind];
+		hash[ind] = hash[j];
+		hash[j] = tc;
+	}
+
+	for (ind = 0; ind < data_len; ind++)
+	{
+		uchar tc;
+		uchar t;
+
+		index_i++;
+		index_j += hash[index_i];
+
+		tc = hash[index_i];
+		hash[index_i] = hash[index_j];
+		hash[index_j] = tc;
+
+		t = hash[index_i] + hash[index_j];
+		data[ind] ^= hash[t];
+	}
+}
+
+void dump_data_pw(const char *msg, const uchar * data, size_t len)
+{
+#ifdef DEBUG_PASSWORD
+	DEBUG(11, ("%s", msg));
+	if (data != NULL && len > 0)
+	{
+		dump_data(11, data, len);
+	}
+#endif
+}
+
+BOOL netsec_encode(struct netsec_auth_struct *a,
+		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
+{
+	uchar dataN[4];
+	uchar digest1[16];
+	struct MD5Context ctx3;
+	uchar sess_kf0[16];
+	int i;
+
+	/* store the sequence number */
+	SIVAL(dataN, 0, a->seq_num);
+
+	for (i = 0; i < sizeof(sess_kf0); i++)
+	{
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
+	}
+
+	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
+
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, dataN, 0x4);
+	MD5Update(&ctx3, verf->sig, 8);
+
+	MD5Update(&ctx3, verf->data8, 8);
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
+
+	hmac_md5(sess_kf0, dataN, 0x4, digest1);
+	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
+	hmac_md5(digest1, verf->data3, 8, digest1);
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+	netsechash(digest1, verf->data8, 8);
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+
+	dump_data_pw("data   :\n", data, data_len);
+	MD5Update(&ctx3, data, data_len);
+
+	{
+		char digest_tmp[16];
+		char digest2[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(a->sess_key, digest_tmp, 16, digest2);
+		dump_data_pw("digest_tmp:\n", digest_tmp, sizeof(digest_tmp));
+		dump_data_pw("digest:\n", digest2, sizeof(digest2));
+		memcpy(verf->data1, digest2, sizeof(verf->data1));
+	}
+
+	netsechash(digest1, data, data_len);
+	dump_data_pw("data:\n", data, data_len);
+
+	hmac_md5(a->sess_key, dataN, 0x4, digest1);
+	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
+
+	hmac_md5(digest1, verf->data1, 8, digest1);
+
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+	netsechash(digest1, verf->data3, 8);
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+
+	return True;
+}
+
+BOOL netsec_decode(struct netsec_auth_struct *a,
+		   RPC_AUTH_NETSEC_CHK * verf, char *data, size_t data_len)
+{
+	uchar dataN[4];
+	uchar digest1[16];
+	struct MD5Context ctx3;
+	uchar sess_kf0[16];
+	int i;
+
+	/* store the sequence number */
+	SIVAL(dataN, 0, a->seq_num);
+
+	for (i = 0; i < sizeof(sess_kf0); i++)
+	{
+		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
+	}
+
+	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
+	dump_data_pw("a->seq_num :\n", dataN, sizeof(dataN));
+	hmac_md5(a->sess_key, dataN, 0x4, digest1);
+	dump_data_pw("ctx:\n", digest1, sizeof(digest1));
+
+	hmac_md5(digest1, verf->data1, 8, digest1);
+
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+	dump_data_pw("verf->data3:\n", verf->data3, sizeof(verf->data3));
+	netsechash(digest1, verf->data3, 8);
+	dump_data_pw("verf->data3_dec:\n", verf->data3, sizeof(verf->data3));
+
+	MD5Init(&ctx3);
+	MD5Update(&ctx3, dataN, 0x4);
+	MD5Update(&ctx3, verf->sig, 8);
+
+	dump_data_pw("sess_kf0:\n", sess_kf0, sizeof(sess_kf0));
+
+	hmac_md5(sess_kf0, dataN, 0x4, digest1);
+	dump_data_pw("digest1 (ebp-8):\n", digest1, sizeof(digest1));
+	hmac_md5(digest1, verf->data3, 8, digest1);
+	dump_data_pw("netsechashkey:\n", digest1, sizeof(digest1));
+
+	dump_data_pw("verf->data8:\n", verf->data8, sizeof(verf->data8));
+	netsechash(digest1, verf->data8, 8);
+	dump_data_pw("verf->data8_dec:\n", verf->data8, sizeof(verf->data8));
+	MD5Update(&ctx3, verf->data8, 8);
+
+	dump_data_pw("data   :\n", data, data_len);
+	netsechash(digest1, data, data_len);
+	dump_data_pw("datadec:\n", data, data_len);
+
+	MD5Update(&ctx3, data, data_len);
+	{
+		uchar digest_tmp[16];
+		MD5Final(digest_tmp, &ctx3);
+		hmac_md5(a->sess_key, digest_tmp, 16, digest1);
+		dump_data_pw("digest_tmp:\n", digest_tmp, sizeof(digest_tmp));
+	}
+
+	dump_data_pw("digest:\n", digest1, sizeof(digest1));
+	dump_data_pw("verf->data1:\n", verf->data1, sizeof(verf->data1));
+
+	return memcmp(digest1, verf->data1, sizeof(verf->data1)) == 0;
+}
+
+/****************************************************************************
+ Deal with schannel processing on an RPC request.
+****************************************************************************/
+BOOL api_pipe_netsec_process(pipes_struct *p, prs_struct *rpc_in)
+{
+	/*
+	 * We always negotiate the following two bits....
+	 */
+	int data_len;
+	int auth_len;
+	uint32 old_offset;
+	RPC_HDR_AUTH auth_info;
+	RPC_AUTH_NETSEC_CHK netsec_chk;
+
+
+	auth_len = p->hdr.auth_len;
+
+	if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
+		DEBUG(0,("Incorrect auth_len %d.\n", auth_len ));
+		return False;
+	}
+
+	/*
+	 * The following is that length of the data we must verify or unseal.
+	 * This doesn't include the RPC headers or the auth_len or the RPC_HDR_AUTH_LEN
+	 * preceeding the auth_data.
+	 */
+
+	data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN - 
+		RPC_HDR_AUTH_LEN - auth_len;
+	
+	DEBUG(5,("data %d auth %d\n", data_len, auth_len));
+
+	old_offset = prs_offset(rpc_in);
+
+	if(!prs_set_offset(rpc_in, old_offset + data_len)) {
+		DEBUG(0,("cannot move offset to %u.\n",
+			 (unsigned int)old_offset + data_len ));
+		return False;
+	}
+
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, rpc_in, 0)) {
+		DEBUG(0,("failed to unmarshall RPC_HDR_AUTH.\n"));
+		return False;
+	}
+
+	if ((auth_info.auth_type != NETSEC_AUTH_TYPE) ||
+	    (auth_info.auth_level != NETSEC_AUTH_LEVEL)) {
+		DEBUG(0,("Invalid auth info %d or level %d on schannel\n",
+			 auth_info.auth_type, auth_info.auth_level));
+		return False;
+	}
+
+	if(!smb_io_rpc_auth_netsec_chk("", &netsec_chk, rpc_in, 0)) {
+		DEBUG(0,("failed to unmarshal RPC_AUTH_NETSEC_CHK.\n"));
+		return False;
+	}
+
+	if (!netsec_decode(&p->netsec_auth, &netsec_chk,
+			   prs_data_p(rpc_in)+old_offset, data_len)) {
+		DEBUG(0,("failed to decode PDU\n"));
+		return False;
+	}
+
+	/*
+	 * Return the current pointer to the data offset.
+	 */
+
+	if(!prs_set_offset(rpc_in, old_offset)) {
+		DEBUG(0,("failed to set offset back to %u\n",
+			 (unsigned int)old_offset ));
 		return False;
 	}
 

@@ -230,6 +230,7 @@ typedef struct
 	BOOL bDomainLogons;
 	BOOL bEncryptPasswords;
 	BOOL bUpdateEncrypt;
+	int  serverSchannel;
 	BOOL bStripDot;
 	BOOL bNullPasswords;
 	BOOL bObeyPamRestrictions;
@@ -735,6 +736,7 @@ static struct parm_struct parm_table[] = {
 	{"auth methods", P_LIST, P_GLOBAL, &Globals.AuthMethods, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"encrypt passwords", P_BOOL, P_GLOBAL, &Globals.bEncryptPasswords, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"update encrypted", P_BOOL, P_GLOBAL, &Globals.bUpdateEncrypt, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"server schannel", P_ENUM, P_GLOBAL, &Globals.serverSchannel, NULL, enum_bool_auto, FLAG_BASIC},
 	{"allow trusted domains", P_BOOL, P_GLOBAL, &Globals.bAllowTrustedDomains, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"hosts equiv", P_STRING, P_GLOBAL, &Globals.szHostsEquiv, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"min passwd length", P_INTEGER, P_GLOBAL, &Globals.min_passwd_length, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1331,6 +1333,7 @@ static void init_globals(void)
 	Globals.paranoid_server_security = True;
 	Globals.bEncryptPasswords = True;
 	Globals.bUpdateEncrypt = False;
+	Globals.serverSchannel = Auto;
 	Globals.bReadRaw = True;
 	Globals.bWriteRaw = True;
 	Globals.bReadPrediction = False;
@@ -1659,6 +1662,7 @@ FN_GLOBAL_BOOL(lp_obey_pam_restrictions, &Globals.bObeyPamRestrictions)
 FN_GLOBAL_BOOL(lp_strip_dot, &Globals.bStripDot)
 FN_GLOBAL_BOOL(lp_encrypted_passwords, &Globals.bEncryptPasswords)
 FN_GLOBAL_BOOL(lp_update_encrypted, &Globals.bUpdateEncrypt)
+FN_GLOBAL_INTEGER(lp_server_schannel, &Globals.serverSchannel)
 FN_GLOBAL_BOOL(lp_syslog_only, &Globals.bSyslogOnly)
 FN_GLOBAL_BOOL(lp_timestamp_logs, &Globals.bTimestampLogs)
 FN_GLOBAL_BOOL(lp_debug_hires_timestamp, &Globals.bDebugHiresTimestamp)
