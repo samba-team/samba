@@ -1885,7 +1885,7 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService, const char *pszHo
 /***************************************************************************
 add a new service, based on an old one.
 ***************************************************************************/
-int lp_add_service(char *pszService, int iDefaultService)
+int lp_add_service(const char *pszService, int iDefaultService)
 {
 	return (add_a_service(ServicePtrs[iDefaultService], pszService));
 }

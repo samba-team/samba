@@ -1,6 +1,5 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
    Safe string handling routines.
    Copyright (C) Andrew Tridgell 1994-1998
    
@@ -37,10 +36,10 @@
 #endif /* sprintf */
 #define sprintf __ERROR__XX__NEVER_USE_SPRINTF__;
 
-#define pstrcpy(d,s) safe_strcpy(PSTR_MUTABLE(d), (s),sizeof(pstring)-1)
-#define pstrcat(d,s) safe_strcat(PSTR_MUTABLE(d), (s),sizeof(pstring)-1)
-#define fstrcpy(d,s) safe_strcpy(FSTR_MUTABLE(d),(s),sizeof(fstring)-1)
-#define fstrcat(d,s) safe_strcat(FSTR_MUTABLE(d),(s),sizeof(fstring)-1)
+#define pstrcpy(d,s) safe_strcpy((d), (s),sizeof(pstring)-1)
+#define pstrcat(d,s) safe_strcat((d), (s),sizeof(pstring)-1)
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
+#define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
 
 #define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
 #define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
