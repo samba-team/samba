@@ -1,3 +1,7 @@
+Tue Sep 29 02:09:15 1998  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.in (LIB_DEPS): add LIB_tgetent
+
 Thu Jul  2 15:10:08 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* edit_compat.c: support for newer libedit
