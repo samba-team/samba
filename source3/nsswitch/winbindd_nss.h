@@ -117,7 +117,6 @@ enum winbindd_cmd {
 	WINBINDD_GETGRLST,
 
 	WINBINDD_NETBIOS_NAME,       /* The netbios name of the server */
-	/* Placeholder for end of cmd list */
 
 	/* find the location of our privileged pipe */
 	WINBINDD_PRIV_PIPE_DIR,
@@ -125,6 +124,7 @@ enum winbindd_cmd {
 	/* return a list of group sids for a user sid */
 	WINBINDD_GETUSERSIDS,	
 
+	/* Placeholder for end of cmd list */
 	WINBINDD_NUM_CMDS
 };
 
