@@ -434,7 +434,7 @@ void create_ntc_from_cli_state (CREDS_NT *to, const struct cli_state *cli_from)
          */
         if (cli_from == NULL)
         {
-		copy_nt_creds (to, cli_from);
+		copy_nt_creds (to, NULL);
                 return;
         }
 
@@ -607,7 +607,7 @@ BOOL create_user_creds( prs_struct *ps,
 				const char* name, 
 				uint16 version, uint16 command,
 				uint32 pid,
-				const struct user_creds *usr)
+				struct user_creds *usr)
 {
 	CREDS_CMD cmd;
 
