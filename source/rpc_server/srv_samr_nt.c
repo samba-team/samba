@@ -1804,6 +1804,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 
 	if (ret == False) {
 		samr_clear_sam_passwd(sam_pass);
+		pdb_free_sam(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1817,6 +1818,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
 	samr_clear_sam_passwd(sam_pass);
+	pdb_free_sam(sam_pass);
 
 	return r_u->status;
 }
