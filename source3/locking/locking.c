@@ -380,8 +380,8 @@ char *share_mode_str(int num, share_mode_entry *e)
 	static pstring share_str;
 
 	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
-pid = %u, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
-	num, e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
+pid = %lu, share_mode = 0x%x, desired_access = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
+	num, (unsigned long)e->pid, e->share_mode, (unsigned int)e->desired_access, e->op_port, e->op_type, e->share_file_id,
 	(unsigned int)e->dev, (double)e->inode );
 
 	return share_str;

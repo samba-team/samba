@@ -108,7 +108,7 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
 
-	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
+	DEBUG(3, ("[%5lu]: getpwnam %s\n", (unsigned long)state->pid,
 		  state->request.data.username));
 	
 	/* Parse domain and username */
@@ -209,7 +209,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	    (state->request.data.uid > server_state.uid_high))
 		return WINBINDD_ERROR;
 
-	DEBUG(3, ("[%5d]: getpwuid %d\n", state->pid, 
+	DEBUG(3, ("[%5lu]: getpwuid %d\n", (unsigned long)state->pid, 
 		  state->request.data.uid));
 
 	/* always try local tdb first */
@@ -222,8 +222,8 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	/* Get rid from uid */
 
 	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid))) {
-		DEBUG(1, ("could not convert uid %d to SID\n", 
-			  state->request.data.uid));
+		DEBUG(1, ("could not convert uid %lu to SID\n", 
+			  (unsigned long)state->request.data.uid));
 		return WINBINDD_ERROR;
 	}
 	
@@ -246,8 +246,8 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 
 	/* Get some user info */
 	
-	if (!(mem_ctx = talloc_init("winbind_getpwuid(%d)",
-					  state->request.data.uid))) {
+	if (!(mem_ctx = talloc_init("winbind_getpwuid(%lu)",
+				    (unsigned long)state->request.data.uid))) {
 
 		DEBUG(1, ("out of memory\n"));
 		return WINBINDD_ERROR;
@@ -295,7 +295,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
         
-	DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+	DEBUG(3, ("[%5lu]: setpwent\n", (unsigned long)state->pid));
         
 	/* Check user has enabled this */
         
@@ -359,7 +359,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
-	DEBUG(3, ("[%5d]: endpwent\n", state->pid));
+	DEBUG(3, ("[%5lu]: endpwent\n", (unsigned long)state->pid));
 
 	free_getent_state(state->getpwent_state);    
 	state->getpwent_state = NULL;
@@ -474,7 +474,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	struct winbindd_pw *user_list;
 	int num_users, user_list_ndx = 0, i;
 
-	DEBUG(3, ("[%5d]: getpwent\n", state->pid));
+	DEBUG(3, ("[%5lu]: getpwent\n", (unsigned long)state->pid));
 
 	/* Check user has enabled this */
 
@@ -581,7 +581,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	TALLOC_CTX *mem_ctx;
 	enum winbindd_result rv = WINBINDD_ERROR;
 
-	DEBUG(3, ("[%5d]: list users\n", state->pid));
+	DEBUG(3, ("[%5lu]: list users\n", (unsigned long)state->pid));
 
 	if (!(mem_ctx = talloc_init("winbindd_list_users")))
 		return WINBINDD_ERROR;

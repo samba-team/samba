@@ -157,7 +157,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	
         zero_ip(&ip);
 
-	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), count++);
+	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
 	make_nmb_name(&calling, myname, 0x0);
 	make_nmb_name(&called , server, 0x20);

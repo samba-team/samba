@@ -386,7 +386,7 @@ static BOOL user_in_winbind_group_list(const char *user, const char *gname, BOOL
  	if ( DEBUGLEVEL >= 10 ) {
 		DEBUG(10,("user_in_winbind_group_list: using groups -- "));
 	 	for ( i=0; i<num_groups; i++ )
-			DEBUGADD(10,("%d ", groups[i]));
+			DEBUGADD(10,("%lu ", (unsigned long)groups[i]));
 		DEBUGADD(10,("\n"));	
 	}
  

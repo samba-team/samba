@@ -1701,7 +1701,7 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 			get_attr_key2string( groupmap_attr_list, LDAP_ATTR_CN), temp)) 
 		{
 			DEBUG(0, ("Attributes cn not found either "
-				  "for gidNumber(%i)\n",map->gid));
+				  "for gidNumber(%lu)\n",(unsigned long)map->gid));
 			return False;
 		}
 	}
@@ -1824,10 +1824,10 @@ static NTSTATUS ldapsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%d))",
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%lu))",
 		LDAP_OBJ_GROUPMAP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		gid);
+		(unsigned long)gid);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
@@ -1864,10 +1864,10 @@ static int ldapsam_search_one_group_by_gid(struct ldapsam_privates *ldap_state,
 {
 	pstring filter;
 
-	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%i))", 
+	snprintf(filter, sizeof(filter)-1, "(&(objectClass=%s)(%s=%lu))", 
 		LDAP_OBJ_POSIXGROUP,
 		get_attr_key2string(groupmap_attr_list, LDAP_ATTR_GIDNUMBER),
-		gid);
+		(unsigned long)gid);
 
 	return ldapsam_search_one_group(ldap_state, filter, result);
 }
@@ -1894,7 +1894,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	if (NT_STATUS_IS_OK(ldapsam_getgrgid(methods, &dummy,
 					     map->gid))) {
-		DEBUG(0, ("Group %i already exists in LDAP\n", map->gid));
+		DEBUG(0, ("Group %ld already exists in LDAP\n", (unsigned long)map->gid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1912,8 +1912,8 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	}
 
 	if (count > 1) {
-		DEBUG(2, ("Group %i must exist exactly once in LDAP\n",
-			  map->gid));
+		DEBUG(2, ("Group %lu must exist exactly once in LDAP\n",
+			  (unsigned long)map->gid));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1947,13 +1947,13 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
-		DEBUG(0, ("failed to add group %i error: %s (%s)\n", map->gid, 
+		DEBUG(0, ("failed to add group %lu error: %s (%s)\n", (unsigned long)map->gid, 
 			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("successfully modified group %i in LDAP\n", map->gid));
+	DEBUG(2, ("successfully modified group %lu in LDAP\n", (unsigned long)map->gid));
 	return NT_STATUS_OK;
 }
 
@@ -2008,12 +2008,12 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
-		DEBUG(0, ("failed to modify group %i error: %s (%s)\n", map->gid, 
+		DEBUG(0, ("failed to modify group %lu error: %s (%s)\n", (unsigned long)map->gid, 
 			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 	}
 
-	DEBUG(2, ("successfully modified group %i in LDAP\n", map->gid));
+	DEBUG(2, ("successfully modified group %lu in LDAP\n", (unsigned long)map->gid));
 	return NT_STATUS_OK;
 }
 

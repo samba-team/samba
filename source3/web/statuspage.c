@@ -93,7 +93,7 @@ static char *mapPid2Machine (pid_t pid)
 	}
 
 	/* PID not in list or machine name NULL? return pid as string */
-	snprintf (pidbuf, sizeof (pidbuf) - 1, "%d", pid);
+	snprintf (pidbuf, sizeof (pidbuf) - 1, "%lu", (unsigned long)pid);
 	return pidbuf;
 }
 

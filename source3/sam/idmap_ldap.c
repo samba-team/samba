@@ -400,20 +400,23 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	if (id_type & ID_USERID) {
 		id->uid = strtoul(id_str, NULL, 10);
 		if (id->uid > huid ) {
-			DEBUG(0,("ldap_allocate_id: Cannot allocate uid above %d!\n", huid));
+			DEBUG(0,("ldap_allocate_id: Cannot allocate uid above %lu!\n", 
+				 (unsigned long)huid));
 			goto out;
 		}
 	}
 	else { 
 		id->gid = strtoul(id_str, NULL, 10);
 		if (id->gid > hgid ) {
-			DEBUG(0,("ldap_allocate_id: Cannot allocate gid above %d!\n", hgid));
+			DEBUG(0,("ldap_allocate_id: Cannot allocate gid above %lu!\n", 
+				 (unsigned long)hgid));
 			goto out;
 		}
 	}
 	
-	snprintf(new_id_str, sizeof(new_id_str), "%u", 
-		 ((id_type & ID_USERID) ? id->uid : id->gid) + 1);
+	snprintf(new_id_str, sizeof(new_id_str), "%lu", 
+		 ((id_type & ID_USERID) ? (unsigned long)id->uid : 
+		  (unsigned long)id->gid) + 1);
 		 
 	smbldap_set_mod( &mods, LDAP_MOD_DELETE, type, id_str );		 
 	smbldap_set_mod( &mods, LDAP_MOD_ADD, type, new_id_str );
@@ -458,13 +461,13 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	if ( id_type & ID_USERID ) {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
 		obj_class = LDAP_OBJ_SAMBASAMACCOUNT;
-		snprintf(id_str, sizeof(id_str), "%u", id.uid );	
+		snprintf(id_str, sizeof(id_str), "%lu", (unsigned long)id.uid );	
 		pstrcpy( suffix, lp_ldap_suffix());
 	}
 	else {
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_GIDNUMBER );
 		obj_class = LDAP_OBJ_GROUPMAP;
-		snprintf(id_str, sizeof(id_str), "%u", id.gid );	
+		snprintf(id_str, sizeof(id_str), "%lu", (unsigned long)id.gid );	
 		pstrcpy( suffix, lp_ldap_group_suffix() );
 	}
 		 
@@ -487,8 +490,10 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		ldap_msgfree(result);
 		result = NULL;
 		
-		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%u))",
-			LDAP_OBJ_IDMAP_ENTRY, type,  ((id_type & ID_USERID) ? id.uid : id.gid));
+		snprintf(filter, sizeof(filter), "(&(objectClass=%s)(%s=%lu))",
+			LDAP_OBJ_IDMAP_ENTRY, type,  
+			 ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			  (unsigned long)id.gid));
 
 		pstrcpy( suffix, lp_ldap_idmap_suffix() );
 
@@ -502,8 +507,9 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	}
 	
 	if (count != 1) {
-		DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %u\n", 
-			type, ((id_type & ID_USERID) ? id.uid : id.gid)));
+		DEBUG(0,("ldap_get_sid_from_id: mapping not found for %s: %lu\n", 
+			type, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			       (unsigned long)id.gid)));
 		goto out;
 	}
 	
@@ -702,7 +708,8 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 	else
 		fstrcpy( type, get_attr_key2string( sidmap_attr_list, LDAP_ATTR_GIDNUMBER ) );
 
-	snprintf(id_str, sizeof(id_str), "%u", ((id_type & ID_USERID) ? id.uid : id.gid));	
+	snprintf(id_str, sizeof(id_str), "%lu", ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+						 (unsigned long)id.gid));	
 	
 	if (entry) 
 		values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
@@ -754,15 +761,16 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 		char *ld_error = NULL;
 		ldap_get_option(ldap_state.smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
-		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %u [%s]\n",
+		DEBUG(0,("ldap_set_mapping_internals: Failed to %s mapping from %s to %lu [%s]\n",
 			 (ldap_op == LDAP_MOD_ADD) ? "add" : "replace",
-			 sid_string, (unsigned int)((id_type & ID_USERID) ? id.uid : id.gid), type));
+			 sid_string, (unsigned long)((id_type & ID_USERID) ? id.uid : id.gid), type));
 		DEBUG(0, ("ldap_set_mapping_internals: Error was: %s (%s)\n", ld_error ? ld_error : "(NULL)", ldap_err2string (rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to %d [%s]\n",
-		sid_string, ((id_type & ID_USERID) ? id.uid : id.gid), type));
+	DEBUG(10,("ldap_set_mapping: Successfully created mapping from %s to %lu [%s]\n",
+		sid_string, ((id_type & ID_USERID) ? (unsigned long)id.uid : 
+			     (unsigned long)id.gid), type));
 
 	return NT_STATUS_OK;
 }

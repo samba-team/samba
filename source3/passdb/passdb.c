@@ -1056,7 +1056,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	unix_pw = sys_getpwuid( uid );
 
 	if ( !unix_pw ) {
-		DEBUG(4,("local_uid_to_sid: host has know idea of uid %d\n", uid));
+		DEBUG(4,("local_uid_to_sid: host has know idea of uid %lu\n", (unsigned long)uid));
 		return NULL;
 	}
 	
@@ -1072,8 +1072,8 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	if ( ret )
 		sid_copy( psid, pdb_get_user_sid(sampw) );
 	else {
-		DEBUG(4,("local_uid_to_sid: User %s [uid == %d] has no samba account\n",
-			unix_pw->pw_name, uid));
+		DEBUG(4,("local_uid_to_sid: User %s [uid == %lu] has no samba account\n",
+			unix_pw->pw_name, (unsigned long)uid));
 			
 		if ( !lp_enable_rid_algorithm() ) 
 			return NULL;

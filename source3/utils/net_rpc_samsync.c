@@ -487,8 +487,8 @@ fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	} else {
 		if (map.gid != passwd->pw_gid) {
 			if (!(grp = getgrgid(map.gid))) {
-				DEBUG(0, ("Could not find unix group %d for user %s (group SID=%s)\n", 
-					  map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
+				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n", 
+					  (unsigned long)map.gid, pdb_get_username(sam_account), sid_string_static(&group_sid)));
 			} else {
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
 			}
@@ -585,7 +585,7 @@ fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	}
 
 	if (!(grp = getgrgid(map.gid))) {
-		DEBUG(0, ("Could not find unix group %d\n", map.gid));
+		DEBUG(0, ("Could not find unix group %lu\n", (unsigned long)map.gid));
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
 
