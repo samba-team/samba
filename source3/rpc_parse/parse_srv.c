@@ -114,6 +114,8 @@ void srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_struct *ps,
 
 		prs_uint32("num_entries_read2", ps, depth, &(ctr->num_entries_read2));
 
+		ASSERT_ARRAY(ctr->info_1, num_entries);
+
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
@@ -235,6 +237,8 @@ void srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_struct *ps,
 		}
 
 		prs_uint32("num_entries_read2", ps, depth, &(ctr->num_entries_read2));
+
+		ASSERT_ARRAY(ctr->info_2, num_entries);
 
 		for (i = 0; i < num_entries; i++)
 		{
@@ -447,6 +451,8 @@ void srv_io_srv_sess_info_0(char *desc,  SRV_SESS_INFO_0 *ss0, prs_struct *ps, i
 
 		prs_uint32("num_entries_read2", ps, depth, &(ss0->num_entries_read2));
 
+		ASSERT_ARRAY(ss0->info_0, num_entries);
+
 		for (i = 0; i < num_entries; i++)
 		{
 			prs_grow(ps);
@@ -559,6 +565,8 @@ void srv_io_srv_sess_info_1(char *desc,  SRV_SESS_INFO_1 *ss1, prs_struct *ps, i
 		}
 
 		prs_uint32("num_entries_read2", ps, depth, &(ss1->num_entries_read2));
+
+		ASSERT_ARRAY(ss1->info_1, num_entries);
 
 		for (i = 0; i < num_entries; i++)
 		{

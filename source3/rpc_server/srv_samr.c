@@ -235,6 +235,9 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
         DOM_SID other_sid;
 
         user_sid = global_machine_sid;
+
+	ASSERT_ARRAY(user_sid.sub_auths, user_sid.num_auths+1);
+
         /*
          * Add the user RID.
          */
@@ -610,10 +613,13 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 
 #if 0
 	int i;
+	ASSERT_ARRAY(q_u->uni_user_name, num_rids);
+
 	for (i = 0; i < num_rids && status == 0; i++)
 	{
 		struct smb_passwd *smb_pass;
 		fstring user_name;
+
 
 		fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
 									q_u->uni_user_name[i].uni_str_len));
@@ -682,6 +688,8 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		num_rids = MAX_SAM_ENTRIES;
 		DEBUG(5,("samr_lookup_names: truncating entries to %d\n", num_rids));
 	}
+
+	ASSERT_ARRAY(q_u->uni_user_name, num_rids);
 
 	for (i = 0; i < num_rids && status == 0; i++)
 	{
@@ -890,6 +898,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 
 	/* create a LOGON_HRS structure */
 	hrs.len = sam_pass->hours_len;
+	ASSERT_ARRAY(hrs.hours, hrs.len);
 	for (i = 0; i < hrs.len; i++)
 	{
 		hrs.hours[i] = sam_pass->hours[i];
