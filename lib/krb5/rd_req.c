@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -123,7 +123,8 @@ krb5_error_code
 krb5_decrypt_ticket(krb5_context context,
 		    Ticket *ticket,
 		    krb5_keyblock *key,
-		    EncTicketPart *out)
+		    EncTicketPart *out,
+		    krb5_flags flags)
 {
     EncTicketPart t;
     krb5_error_code ret;
@@ -138,7 +139,9 @@ krb5_decrypt_ticket(krb5_context context,
 	krb5_timeofday (context, &now);
 	if(t.starttime)
 	    start = *t.starttime;
-	if(start - now > context->max_skew || t.flags.invalid)
+	if(start - now > context->max_skew
+	   || (t.flags.invalid
+	       && !(flags & KRB5_VERIFY_AP_REQ_IGNORE_INVALID)))
 	    return KRB5KRB_AP_ERR_TKT_NYV;
 	if(now - t.endtime > context->max_skew)
 	    return KRB5KRB_AP_ERR_TKT_EXPIRED;
@@ -196,6 +199,7 @@ krb5_verify_ap_req(krb5_context context,
 		   krb5_ap_req *ap_req,
 		   krb5_const_principal server,
 		   krb5_keyblock *keyblock,
+		   krb5_flags flags,
 		   krb5_flags *ap_req_options,
 		   krb5_ticket **ticket)
 {
@@ -215,15 +219,15 @@ krb5_verify_ap_req(krb5_context context,
     if (ap_req->ap_options.use_session_key && ac->keyblock){
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  ac->keyblock, 
-				  &t.ticket);
+				  &t.ticket,
+				  flags);
 	krb5_free_keyblock(context, ac->keyblock);
 	ac->keyblock = NULL;
     }else
 	ret = krb5_decrypt_ticket(context, &ap_req->ticket, 
 				  keyblock, 
-				  &t.ticket);
-
-
+				  &t.ticket,
+				  flags);
     
     if(ret)
 	return ret;
@@ -330,6 +334,7 @@ krb5_rd_req_with_keyblock(krb5_context context,
 			     &ap_req,
 			     server,
 			     keyblock,
+			     0,
 			     ap_req_options,
 			     ticket);
 
@@ -426,6 +431,7 @@ krb5_rd_req(krb5_context context,
 			     &ap_req,
 			     server,
 			     keyblock,
+			     0,
 			     ap_req_options,
 			     ticket);
 
