@@ -498,6 +498,9 @@ static int do_cd(char *newdir)
 	pstring dname;
 	pstring targetpath;
 	struct cli_state *targetcli;
+	SMB_STRUCT_STAT sbuf;
+	uint32 attributes;
+	pstring fullpath;
       
 	dos_format(newdir);
 
@@ -513,7 +516,7 @@ static int do_cd(char *newdir)
 	if (*(cur_dir+strlen(cur_dir)-1) != '\\') {
 		pstrcat(cur_dir, "\\");
 	}
-
+	
 	dos_clean_name(cur_dir);
 	pstrcpy( dname, cur_dir );
 	pstrcat(cur_dir,"\\");
@@ -522,18 +525,39 @@ static int do_cd(char *newdir)
 	if ( !cli_resolve_path( cli, dname, &targetcli, targetpath ) ) {
 		d_printf("cd %s: %s\n", dname, cli_errstr(cli));
 		pstrcpy(cur_dir,saved_dir);
+		goto out;
 	}
 
-	pstrcat( targetpath, "\\" );
-	dos_clean_name( targetpath );
-
-	if ( !strequal(targetpath,"\\") ) {	
+	
+	if ( strequal(targetpath,"\\" ) )
+		return 0;   
+		
+	/* use a trans2_qpathinfo to test directories for modern servers */
+	
+	if ( targetcli->protocol >= PROTOCOL_LANMAN2 ) {
+		if ( !cli_qpathinfo_basic( targetcli, targetpath, &sbuf, &attributes ) ) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
+			pstrcpy(cur_dir,saved_dir);
+			goto out;
+		}
+		
+		if ( !(attributes&FILE_ATTRIBUTE_DIRECTORY) ) {
+			d_printf("cd %s: not a directory\n", dname);
+			pstrcpy(cur_dir,saved_dir);
+			goto out;
+		}		
+	}
+	else {
+		pstrcat( targetpath, "\\" );
+		dos_clean_name( targetpath );
+		
 		if ( !cli_chkpath(targetcli, targetpath) ) {
 			d_printf("cd %s: %s\n", dname, cli_errstr(targetcli));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
 
+out:
 	pstrcpy(cd_path,cur_dir);
 
 	return 0;
