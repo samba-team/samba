@@ -573,7 +573,11 @@ static struct enum_list enum_case[] = {
 
 static struct enum_list enum_bool_auto[] = {
 	{False, "False"},
+	{False, "No"},
+	{False, "0"},
 	{True, "True"},
+	{True, "Yes"},
+	{True, "1"},
 	{Auto, "Auto"},
 	{-1, NULL}
 };

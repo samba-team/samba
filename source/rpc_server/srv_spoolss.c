@@ -591,10 +591,11 @@ static BOOL api_spoolss_addjob(pipes_struct *p)
 		return False;
 	}
 
-	/* that's only an [in] buffer ! */
+	/* that's an [in out] buffer (despite appearences to the contrary) */
+	new_spoolss_move_buffer(q_u.buffer, &r_u.buffer);
 
 	r_u.status = _spoolss_addjob(&q_u.handle, q_u.level,
-	                             q_u.buffer, q_u.offered);
+	                             r_u.buffer, q_u.offered, &r_u.needed);
 		
 	if(!spoolss_io_r_addjob("",&r_u,rdata,0)) {
 		DEBUG(0,("spoolss_io_r_addjob: unable to marshall SPOOL_R_ADDJOB.\n"));

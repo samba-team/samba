@@ -3342,9 +3342,14 @@ uint32 _spoolss_fcpn(POLICY_HND *handle)
 /****************************************************************************
 ****************************************************************************/
 uint32 _spoolss_addjob(POLICY_HND *handle, uint32 level,
-			NEW_BUFFER *buffer, uint32 offered)
+		       NEW_BUFFER *buffer, uint32 offered,
+		       uint32 *needed)
 {
-	return NT_STATUS_NO_PROBLEMO;
+	*needed = 0;
+	return ERROR_INVALID_PARAMETER; /* this is what a NT server
+                                           returns for AddJob. AddJob
+                                           must fail on non-local
+                                           printers */
 }
 
 /****************************************************************************
