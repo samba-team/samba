@@ -2166,14 +2166,18 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
+#if 0 /* Mr Bartlett FIX THE  BUILD ! */
 			opt_challenge = strhex_to_data_blob(hex_challenge);
+#endif
 			if (opt_challenge.length != 8) {
 				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_challenge);
 				exit(1);
 			}
 			break;
 		case OPT_LM: 
+#if 0 /* Mr Bartlett FIX THE  BUILD ! */
 			opt_lm_response = strhex_to_data_blob(hex_lm_response);
+#endif
 			if (opt_lm_response.length != 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_lm_response);
 				exit(1);
@@ -2181,7 +2185,9 @@ enum {
 			break;
 
 		case OPT_NT: 
+#if 0 /* Mr Bartlett FIX THE  BUILD ! */
 			opt_nt_response = strhex_to_data_blob(hex_nt_response);
+#endif
 			if (opt_nt_response.length < 24) {
 				x_fprintf(x_stderr, "hex decode of %s failed!\n", hex_nt_response);
 				exit(1);
