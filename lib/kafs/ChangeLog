@@ -1,3 +1,9 @@
+2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* common.c: add _PATH_ARLA_OPENBSD & c/o
+	
+	* kafs.h: add _PATH_ARLA_OPENBSD & c/o
+	
 2003-11-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* common.c: typo, Bruno Rohee <bruno@rohee.com>
