@@ -1,7 +1,9 @@
 /*
    Unix SMB/CIFS implementation.
+
    client connect/disconnect routines
-   Copyright (C) Andrew Tridgell 2003
+
+   Copyright (C) Andrew Tridgell 2003-2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,8 +51,8 @@ BOOL smbcli_socket_connect(struct smbcli_state *cli, const char *server)
 
 /* wrapper around smbcli_transport_connect() */
 BOOL smbcli_transport_establish(struct smbcli_state *cli, 
-			     struct nmb_name *calling,
-			     struct nmb_name *called)
+				struct nbt_name *calling,
+				struct nbt_name *called)
 {
 	return smbcli_transport_connect(cli->transport, calling, called);
 }

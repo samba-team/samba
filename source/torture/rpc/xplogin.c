@@ -62,12 +62,15 @@ static NTSTATUS after_negprot(struct smbcli_transport **dst_transport,
 	talloc_set_destructor(transport, destroy_transport);
 
 	{
-		struct nmb_name calling;
-		struct nmb_name called;
+		struct nbt_name calling;
+		struct nbt_name called;
 
 		/* send a NBT session request, if applicable */
-		make_nmb_name(&calling, my_name, 0x0);
-		choose_called_name(&called, dest_host, 0x20);
+		calling.name = my_name;
+		calling.type = NBT_NAME_CLIENT;
+		calling.scope = NULL;
+
+		nbt_choose_called_name(transport, &called, dest_host, NBT_NAME_SERVER);
 
 		if (!smbcli_transport_connect(transport, &calling, &called)) {
 			talloc_free(transport);
