@@ -1,5 +1,9 @@
 2000-07-05  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kdc/mit_dump.c: set initial master key version number to 0
+	instead of 1; if we lated bump the mkvno we don't risk using the
+	wrong key to decrypt
+
 	* kdc/hprop.c: only get master key if we're actually going to use
 	it; enable reading of MIT krb5 dump files
 	
