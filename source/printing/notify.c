@@ -28,6 +28,7 @@ static TALLOC_CTX *send_ctx;
 static struct notify_queue {
 	struct notify_queue *next, *prev;
 	struct spoolss_notify_msg *msg;
+	struct timeval tv;
 	char *buf;
 	size_t buflen;
 } *notify_queue_head = NULL;
@@ -82,7 +83,8 @@ again:
 
 	len += tdb_pack(buf + len, buflen - len, NULL, "f", msg->printer);
 
-	len += tdb_pack(buf + len, buflen - len, NULL, "ddddd",
+	len += tdb_pack(buf + len, buflen - len, NULL, "ddddddd",
+			(uint32)q->tv.tv_sec, (uint32)q->tv.tv_usec,
 			msg->type, msg->field, msg->id, msg->len, msg->flags);
 
 	/* Pack data */
@@ -260,6 +262,7 @@ in notify_queue\n", msg->type, msg->field, msg->printer));
 		return;
 	}
 	copy_notify2_msg(pnqueue->msg, msg);
+	gettimeofday(&pnqueue->tv, NULL);
 	pnqueue->buf = NULL;
 	pnqueue->buflen = 0;
 

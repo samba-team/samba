@@ -24,6 +24,7 @@
 
 /* Current printer interface */
 static struct printif *current_printif = &generic_printif;
+static BOOL remove_from_jobs_changed(int snum, uint32 jobid);
 
 /* 
    the printing backend revolves around a tdb database that stores the
@@ -665,9 +666,11 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 			if (jobid == u_jobid)
 				break;
 		}
-		if (i == ts->qcount)
+		if (i == ts->qcount) {
+			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
+						(unsigned int)jobid ));
 			pjob_delete(ts->snum, jobid);
-		else
+		} else
 			ts->total_jobs++;
 		return 0;
 	}
@@ -677,9 +680,11 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* if a job is not spooled and the process doesn't
                    exist then kill it. This cleans up after smbd
                    deaths */
-		if (!process_exists(pjob.pid))
+		if (!process_exists(pjob.pid)) {
+			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
+						(unsigned int)jobid, (unsigned int)pjob.pid ));
 			pjob_delete(ts->snum, jobid);
-		else
+		} else
 			ts->total_jobs++;
 		return 0;
 	}
@@ -702,9 +707,13 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		   is currently traversing the printing tdb and deleting jobs.
 		   Don't delete the job if it was submitted after the lpq_time. */
 
-		if (pjob.starttime < ts->lpq_time)
+		if (pjob.starttime < ts->lpq_time) {
+			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to pjob.starttime (%u) < ts->lpq_time (%u)\n",
+						(unsigned int)jobid,
+						(unsigned int)pjob.starttime,
+						(unsigned int)ts->lpq_time ));
 			pjob_delete(ts->snum, jobid);
-		else
+		} else
 			ts->total_jobs++;
 	}
 	else
@@ -874,6 +883,37 @@ static void store_queue_struct(struct tdb_print_db *pdb, struct traverse_struct 
 	return;
 }
 
+static TDB_DATA get_jobs_changed_data(struct tdb_print_db *pdb)
+{
+	TDB_DATA data, key;
+
+	key.dptr = "INFO/jobs_changed";
+	key.dsize = strlen(key.dptr);
+	ZERO_STRUCT(data);
+
+	data = tdb_fetch(pdb->tdb, key);
+	if (data.dptr == NULL || data.dsize == 0 || (data.dsize % 4 != 0)) {
+		SAFE_FREE(data.dptr);
+		ZERO_STRUCT(data);
+	}
+
+	return data;
+}
+
+static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
+{
+	unsigned int i;
+	unsigned int job_count = data.dsize / 4;
+
+	for (i = 0; i < job_count; i++) {
+		uint32 ch_jobid;
+
+		memcpy(&ch_jobid, data.dptr + (i*4), 4);
+		if (ch_jobid == jobid)
+			remove_from_jobs_changed(snum, jobid);
+	}
+}
+
 /****************************************************************************
  Update the internal database from the system print queue for a queue.
 ****************************************************************************/
@@ -888,6 +928,7 @@ static void print_queue_update(int snum)
 	struct traverse_struct tstruct;
 	fstring keystr, unix_printer_name, cachestr;
 	TDB_DATA data, key;
+	TDB_DATA jcdata;
 	struct tdb_print_db *pdb;
 
 	fstrcpy(unix_printer_name, lp_const_servicename_unix(snum));
@@ -979,6 +1020,9 @@ static void print_queue_update(int snum)
 
 	  fill in any system job numbers as we go
 	*/
+
+	jcdata = get_jobs_changed_data(pdb);
+
 	for (i=0; i<qcount; i++) {
 		uint32 jobid = print_parse_jobid(queue[i].fs_file);
 
@@ -1000,9 +1044,11 @@ static void print_queue_update(int snum)
 
 		pjob->sysjob = queue[i].job;
 		pjob->status = queue[i].status;
-
 		pjob_store(snum, jobid, pjob);
+		check_job_changed(snum, jcdata, jobid);
 	}
+
+	SAFE_FREE(jcdata.dptr);
 
 	/* now delete any queued entries that don't appear in the
            system queue */
@@ -1369,6 +1415,10 @@ static BOOL remove_from_jobs_changed(int snum, uint32 jobid)
 		tdb_chainunlock(pdb->tdb, key);
 	SAFE_FREE(data.dptr);
 	release_print_db(pdb);
+	if (ret)
+		DEBUG(10,("remove_from_jobs_changed: removed jobid %u\n", (unsigned int)jobid ));
+	else
+		DEBUG(10,("remove_from_jobs_changed: Failed to remove jobid %u\n", (unsigned int)jobid ));
 	return ret;
 }
 
@@ -1411,8 +1461,18 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 	/* Delete the tdb entry if the delete suceeded or the job hasn't
 	   been spooled. */
 
-	if (result == 0)
+	if (result == 0) {
+		const char *unix_printername = lp_const_servicename_unix(snum);
+		struct tdb_print_db *pdb = get_print_db_byname(unix_printername);
+		int njobs = 1;
+
+		if (!pdb)
+			return False;
 		pjob_delete(snum, jobid);
+		/* Ensure we keep a rough count of the number of total jobs... */
+		tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, -1);
+		release_print_db(pdb);
+	}
 
 	return (result == 0);
 }
@@ -1797,6 +1857,8 @@ static BOOL add_to_jobs_changed(struct tdb_print_db *pdb, uint32 jobid)
 	data.dptr = (char *)&jobid;
 	data.dsize = 4;
 
+	DEBUG(10,("add_to_jobs_changed: Added jobid %u\n", (unsigned int)jobid ));
+
 	return (tdb_append(pdb->tdb, key, data) == 0);
 }
 
@@ -2015,7 +2077,6 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 	pjob->spooled = True;
 	pjob->status = LPQ_QUEUED;
 	pjob_store(snum, jobid, pjob);
-	remove_from_jobs_changed(snum, jobid);
 	
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum))
@@ -2048,6 +2109,10 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	int max_reported_jobs = lp_max_reported_jobs(snum);
 	BOOL ret = False;
 
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
+ 
 	*pcount = 0;
 	*ppqueue = NULL;
 
@@ -2071,6 +2136,8 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 	cgdata = tdb_fetch(pdb->tdb, key);
 	if (cgdata.dptr != NULL && (cgdata.dsize % 4 == 0))
 		extra_count = cgdata.dsize/4;
+
+	DEBUG(5,("get_stored_queue_info: qcount = %u, extra_count = %u\n", (unsigned int)qcount, (unsigned int)extra_count));
 
 	/* Allocate the queue size. */
 	if (qcount == 0 && extra_count == 0)
@@ -2108,9 +2175,13 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		struct printjob *pjob;
 
 		memcpy(&jobid, &cgdata.dptr[i*4], 4);
+		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
 		pjob = print_job_find(snum, jobid);
-		if (!pjob)
+		if (!pjob) {
+			DEBUG(5,("get_stored_queue_info: failed to find changed job = %u\n", (unsigned int)jobid));
+			remove_from_jobs_changed(snum, jobid);
 			continue;
+		}
 
 		queue[total_count].job = jobid;
 		queue[total_count].size = pjob->size;
@@ -2119,12 +2190,15 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		queue[total_count].priority = 1;
 		fstrcpy(queue[total_count].fs_user, pjob->user);
 		fstrcpy(queue[total_count].fs_file, pjob->jobname);
+		total_count++;
 	}
 
 	/* Sort the queue by submission time otherwise they are displayed
 	   in hash order. */
 
 	qsort(queue, total_count, sizeof(print_queue_struct), QSORT_CAST(printjob_comp));
+
+	DEBUG(5,("get_stored_queue_info: total_count = %u\n", (unsigned int)total_count));
 
 	if (max_reported_jobs && total_count > max_reported_jobs)
 		total_count = max_reported_jobs;
