@@ -621,6 +621,17 @@ static BOOL get_lsa_policy_samr_sid(pipes_struct *p, POLICY_HND *pol, DOM_SID *s
 }
 
 /*******************************************************************
+ _samr_set_sec_obj
+ ********************************************************************/
+
+NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
+{
+	DEBUG(0,("_samr_set_sec_obj: Not yet implemented!\n"));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+
+/*******************************************************************
  _samr_query_sec_obj
  ********************************************************************/
 

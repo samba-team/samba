@@ -390,6 +390,36 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc, SAMR_R_GET_USRDOM_PWINFO * r_u,
 	return True;
 }
 
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_q_set_sec_obj(char *desc, SAMR_Q_SET_SEC_OBJ * q_u,
+			     prs_struct *ps, int depth)
+{
+	if (q_u == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_set_sec_obj");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
+		return False;
+
+	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))
+		return False;
+		
+	if(!sec_io_desc_buf("sec_desc", &q_u->buf, ps, depth))
+		return False;
+	
+	return True;
+}
+
+
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -861,6 +891,28 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_u,
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 	
+	return True;
+}
+
+/*******************************************************************
+reads or writes a SAMR_R_SET_SEC_OBJ structure.
+********************************************************************/
+
+BOOL samr_io_r_set_sec_obj(char *desc, SAMR_R_SET_SEC_OBJ * r_u,
+			     prs_struct *ps, int depth)
+{
+	if (r_u == NULL)
+		return False;
+  
+	prs_debug(ps, depth, desc, "samr_io_r_set_sec_obj");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_ntstatus("status", ps, depth, &r_u->status))
+		return False;
+
 	return True;
 }
 
