@@ -1948,3 +1948,4 @@ find(char *pattern)
     ftpd_pclose(f);
     return 0;
 }
+
