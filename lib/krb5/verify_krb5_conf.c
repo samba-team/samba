@@ -482,8 +482,6 @@ check_section(krb5_context context, const char *path, krb5_config_section *cf,
 	}
 	if(e->name == NULL) {
 	    krb5_warnx(context, "%s: unknown entry", local);
-	    for(e = entries; e->name != NULL; e++)
-		krb5_warnx(context, "  %s", e->name);
 	    error |= 1;
 	}
 	free(local);
