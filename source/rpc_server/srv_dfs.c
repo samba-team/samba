@@ -37,7 +37,6 @@ extern pstring global_myname;
 static BOOL api_dfs_exist(pipes_struct *p)
 {
 	DFS_R_DFS_EXIST r_d;
-	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	if(lp_host_msdfs()) 
@@ -109,7 +108,7 @@ static uint32 init_reply_dfs_add(DFS_Q_DFS_ADD* q_a)
 /*****************************************************************
  api_dfs_add
  *****************************************************************/
-static BOOL api_dfs_add(pipes-struct *p)
+static BOOL api_dfs_add(pipes_struct *p)
 {
 	DFS_Q_DFS_ADD q_a;
 	DFS_R_DFS_ADD r_a;
@@ -204,6 +203,8 @@ static BOOL api_dfs_remove(pipes_struct *p)
 {
 	DFS_Q_DFS_REMOVE q_r;
 	DFS_R_DFS_REMOVE r_r;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 	
 	if(!dfs_io_q_dfs_remove("", &q_r, data, 0))
 		return False;
