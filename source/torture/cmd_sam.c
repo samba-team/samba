@@ -218,7 +218,7 @@ static NTSTATUS cmd_show_domain(struct samtest_state *st, TALLOC_CTX *mem_ctx, i
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = sam_get_domain_by_sid(st->context, st->token, DOMAIN_ALL_ACCESS, &sid, &domain))) {
+	if (!NT_STATUS_IS_OK(status = sam_get_domain_by_sid(st->context, st->token, GENERIC_RIGHTS_DOMAIN_ALL_ACCESS, &sid, &domain))) {
 		printf("sam_get_domain_by_sid failed\n");
 		return status;
 	}
@@ -379,7 +379,7 @@ static NTSTATUS cmd_lookup_account_sid(struct samtest_state *st, TALLOC_CTX *mem
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!NT_STATUS_IS_OK(status = sam_get_account_by_sid(st->context, st->token, USER_ALL_ACCESS, &sid, &account))) {
+	if (!NT_STATUS_IS_OK(status = sam_get_account_by_sid(st->context, st->token, GENERIC_RIGHTS_USER_ALL_ACCESS, &sid, &account))) {
 		printf("context_sam_get_account_by_sid failed: %s\n", nt_errstr(status));
 		return status;
 	}
@@ -400,7 +400,7 @@ static NTSTATUS cmd_lookup_account_name(struct samtest_state *st, TALLOC_CTX *me
 	}
 
 
-	if (!NT_STATUS_IS_OK(status = sam_get_account_by_name(st->context, st->token, USER_ALL_ACCESS, argv[1], argv[2], &account))) {
+	if (!NT_STATUS_IS_OK(status = sam_get_account_by_name(st->context, st->token, GENERIC_RIGHTS_USER_ALL_ACCESS, argv[1], argv[2], &account))) {
 		printf("context_sam_get_account_by_sid failed: %s\n", nt_errstr(status));
 		return status;
 	}
