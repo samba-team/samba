@@ -393,7 +393,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 				 &neg_flags,
 				 &cliname,
 				 &domname)) {
-			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP:\n"));
+			DEBUG(1, ("ntlmssp_server_negotiate: failed to parse NTLMSSP Negotiate:\n"));
 			dump_data(2, (const char *)request.data, request.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -442,13 +442,6 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This creates the 'blob' of names that appears at the end of the packet */
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
 	{
-		const char *target_name_dns = "";
-		if (chal_flags |= NTLMSSP_TARGET_TYPE_DOMAIN) {
-			target_name_dns = dnsdomname;
-		} else if (chal_flags |= NTLMSSP_TARGET_TYPE_SERVER) {
-			target_name_dns = dnsname;
-		}
-
 		msrpc_gen(&struct_blob, "aaaaa",
 			  NTLMSSP_NAME_TYPE_DOMAIN, target_name,
 			  NTLMSSP_NAME_TYPE_SERVER, ntlmssp_state->get_global_myname(),
@@ -546,8 +539,6 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 			 &workstation,
 			 &encrypted_session_key,
 			 &auth_flags)) {
-		DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
-		dump_data(2, (const char *)request.data, request.length);
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
 		SAFE_FREE(workstation);
@@ -570,7 +561,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 &domain, 
 				 &user, 
 				 &workstation)) {
-			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP:\n"));
+			DEBUG(1, ("ntlmssp_server_auth: failed to parse NTLMSSP (tried both formats):\n"));
 			dump_data(2, (const char *)request.data, request.length);
 			SAFE_FREE(domain);
 			SAFE_FREE(user);

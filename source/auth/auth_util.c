@@ -50,7 +50,7 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 	if (homedir)
 		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
 	ret = smbrun(add_script,NULL);
-	DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+	DEBUG(ret ? 0 : 3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
 	return ret;
 }
 
@@ -61,7 +61,6 @@ static int smb_create_user(const char *domain, const char *unix_username, const 
 
 void auth_add_user_script(const char *domain, const char *username)
 {
-	uint32 rid;
 	/*
 	 * User validated ok against Domain controller.
 	 * If the admin wants us to try and create a UNIX
@@ -79,7 +78,6 @@ void auth_add_user_script(const char *domain, const char *username)
 		   
 		if ( !winbind_create_user(username, NULL) ) {
 			DEBUG(5,("auth_add_user_script: winbindd_create_user() failed\n"));
-			rid = 0;
 		}
 	}
 }
@@ -592,6 +590,39 @@ static NTSTATUS create_nt_user_token(const DOM_SID *user_sid, const DOM_SID *gro
 	
 	debug_nt_user_token(DBGC_AUTH, 10, ptoken);
 	
+	if ((lp_log_nt_token_command() != NULL) &&
+	    (strlen(lp_log_nt_token_command()) > 0)) {
+		TALLOC_CTX *mem_ctx;
+		char *command;
+		fstring sidstr;
+		char *user_sidstr, *group_sidstr;
+
+		mem_ctx = talloc_init("setnttoken");
+		if (mem_ctx == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		sid_to_string(sidstr, &ptoken->user_sids[0]);
+		user_sidstr = talloc_strdup(mem_ctx, sidstr);
+
+		group_sidstr = talloc_strdup(mem_ctx, "");
+		for (i=1; i<ptoken->num_sids; i++) {
+			sid_to_string(sidstr, &ptoken->user_sids[i]);
+			group_sidstr = talloc_asprintf(mem_ctx, "%s %s",
+						       group_sidstr, sidstr);
+		}
+
+		command = strdup(lp_log_nt_token_command());
+		command = realloc_string_sub(command, "%s", user_sidstr);
+		command = realloc_string_sub(command, "%t", group_sidstr);
+		DEBUG(8, ("running command: [%s]\n", command));
+		if (smbrun(command, NULL) != 0) {
+			DEBUG(0, ("Could not log NT token\n"));
+			nt_status = NT_STATUS_ACCESS_DENIED;
+		}
+		talloc_destroy(mem_ctx);
+		SAFE_FREE(command);
+	}
+
 	*token = ptoken;
 
 	return nt_status;
@@ -1482,7 +1513,19 @@ BOOL nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 {
 	DOM_SID domain_sid;
 
-	sid_copy( &domain_sid, get_global_sam_sid() );
+	/* if we are a domain member, the get the domain SID, else for 
+	   a DC or standalone server, use our own SID */
+
+	if ( lp_server_role() == ROLE_DOMAIN_MEMBER ) {
+		if ( !secrets_fetch_domain_sid( lp_workgroup(), &domain_sid ) ) {
+			DEBUG(1,("nt_token_check_domain_rid: Cannot lookup SID for domain [%s]\n",
+				lp_workgroup()));
+			return False;
+		}
+	} 
+	else
+		sid_copy( &domain_sid, get_global_sam_sid() );
+
 	sid_append_rid( &domain_sid, rid );
 	
 	return nt_token_check_sid( &domain_sid, token );\

@@ -372,9 +372,21 @@ done:
 		afsname = realloc_string_sub(afsname, "%u", name_user);
 		afsname = realloc_string_sub(afsname, "%U", name_user);
 
+		{
+			DOM_SID user_sid;
+			fstring sidstr;
+
+			sid_copy(&user_sid, &info3.dom_sid.sid);
+			sid_append_rid(&user_sid, info3.user_rid);
+			sid_to_string(sidstr, &user_sid);
+			afsname = realloc_string_sub(afsname, "%s", sidstr);
+		}
+
 		if (afsname == NULL) goto no_token;
 
 		strlower_m(afsname);
+
+		DEBUG(10, ("Generating token for user %s\n", afsname));
 
 		cell = strchr(afsname, '@');
 

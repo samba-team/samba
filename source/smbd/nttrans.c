@@ -780,6 +780,27 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		}
 	}
 
+#if 0
+	/* This is the correct thing to do (check every time) but can_delete is
+	   expensive (it may have to read the parent directory permissions). So
+	   for now we're not doing it unless we have a strong hint the client
+	   is really going to delete this file. */
+	if (desired_access & DELETE_ACCESS) {
+#else
+	/* Setting FILE_SHARE_DELETE is the hint. */
+	if ((share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+#endif
+		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		/* We're only going to fail here if it's access denied, as that's the
+		   only error we care about for "can we delete this ?" questions. */
+		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
+						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
+	}
+
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -908,7 +929,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
-		fsp->initial_allocation_size = smb_roundup(allocation_size);
+		fsp->initial_allocation_size = allocation_size;
 		if (fsp->is_directory) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -921,7 +942,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 	} else {
-		fsp->initial_allocation_size = smb_roundup((SMB_BIG_UINT)file_len);
+		fsp->initial_allocation_size = (SMB_BIG_UINT)file_len;
 	}
 
 	/* 
@@ -1319,6 +1340,27 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRbadpath);
 	}
     
+#if 0
+	/* This is the correct thing to do (check every time) but can_delete is
+	   expensive (it may have to read the parent directory permissions). So
+	   for now we're not doing it unless we have a strong hint the client
+	   is really going to delete this file. */
+	if (desired_access & DELETE_ACCESS) {
+#else
+	/* Setting FILE_SHARE_DELETE is the hint. */
+	if ((share_access & FILE_SHARE_DELETE) && (desired_access & DELETE_ACCESS)) {
+#endif
+		status = can_delete(conn, fname, file_attributes, bad_path, True);
+		/* We're only going to fail here if it's access denied, as that's the
+		   only error we care about for "can we delete this ?" questions. */
+		if (!NT_STATUS_IS_OK(status) && (NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED) ||
+						 NT_STATUS_EQUAL(status,NT_STATUS_CANNOT_DELETE))) {
+			restore_case_semantics(conn, file_attributes);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(status);
+		}
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -1430,7 +1472,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
 #endif
 	if (allocation_size && (allocation_size > file_len)) {
-		fsp->initial_allocation_size = smb_roundup(allocation_size);
+		fsp->initial_allocation_size = allocation_size;
 		if (fsp->is_directory) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -1442,7 +1484,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 	} else {
-		fsp->initial_allocation_size = smb_roundup((SMB_BIG_UINT)file_len);
+		fsp->initial_allocation_size = (SMB_BIG_UINT)file_len;
 	}
 
 	/* Realloc the size of parameters and data we will return */
@@ -2143,6 +2185,7 @@ static int call_nt_transact_ioctl(connection_struct *conn, char *inbuf, char *ou
 		shadow_data = TALLOC_ZERO_P(shadow_mem_ctx,SHADOW_COPY_DATA);
 		if (shadow_data == NULL) {
 			DEBUG(0,("talloc_zero() failed!\n"));
+			talloc_destroy(shadow_mem_ctx);
 			return ERROR_NT(NT_STATUS_NO_MEMORY);
 		}
 		
@@ -2310,7 +2353,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 
 	/* access check */
 	if (current_user.uid != 0) {
-		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
+		DEBUG(1,("get_user_quota: access_denied service [%s] user [%s]\n",
 			lp_servicename(SNUM(conn)),conn->user));
 		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}

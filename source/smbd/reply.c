@@ -899,8 +899,10 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 				END_PROFILE(SMBsearch);
 				return ERROR_DOS(ERRDOS,ERRnofids);
 			}
-			dptr_set_wcard(dptr_num, SMB_STRDUP(mask));
-			dptr_set_attr(dptr_num, dirtype);
+			if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
+				END_PROFILE(SMBsearch);
+				return ERROR_DOS(ERRDOS,ERRnomem);
+			}
 		} else {
 			dirtype = dptr_attr(dptr_num);
 		}
@@ -910,7 +912,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		if (ok) {
 			if ((dirtype&0x1F) == aVOLID) {	  
 				memcpy(p,status,21);
-				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0,conn->case_sensitive);
+				make_dir_struct(p,"???????????",volume_label(SNUM(conn)),0,aVOLID,0);
 				dptr_fill(p+12,dptr_num);
 				if (dptr_zero(p+12) && (status_len==0))
 					numentries = 1;
@@ -930,7 +932,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 					finished = !get_dir_entry(conn,mask,dirtype,fname,&size,&mode,&date,check_descend);
 					if (!finished) {
 						memcpy(p,status,21);
-						make_dir_struct(p,mask,fname,size,mode,date,conn->case_sensitive);
+						make_dir_struct(p,mask,fname,size,mode,date);
 						dptr_fill(p+12,dptr_num);
 						numentries++;
 						p += DIR_STRUCT_SIZE;
@@ -947,18 +949,21 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		and no entries were found then return error and close dirptr 
 		(X/Open spec) */
 
-	if(ok && expect_close && numentries == 0 && status_len == 0) {
+	if (numentries == 0 || !ok) {
+		dptr_close(&dptr_num);
+	} else if(ok && expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
 		dptr_close(&dptr_num);
-		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
-	} else if (numentries == 0 || !ok) {
-		dptr_close(&dptr_num);
-		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
-	if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique)
+	if(dptr_num >= 0 && CVAL(inbuf,smb_com) == SMBfunique) {
 		dptr_close(&dptr_num);
+	}
+
+	if ((numentries == 0) && !ms_has_wild(mask)) {
+		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
+	}
 
 	SSVAL(outbuf,smb_vwv0,numentries);
 	SSVAL(outbuf,smb_vwv1,3 + numentries * DIR_STRUCT_SIZE);
@@ -1433,7 +1438,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  Check if a user is allowed to rename a file.
 ********************************************************************/
 
-static NTSTATUS can_rename(char *fname,connection_struct *conn, uint16 dirtype, SMB_STRUCT_STAT *pst)
+static NTSTATUS can_rename(connection_struct *conn, char *fname, uint16 dirtype, SMB_STRUCT_STAT *pst)
 {
 	int smb_action;
 	int access_mode;
@@ -1474,7 +1479,7 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, uint16 dirtype, 
  Check if a user is allowed to delete a file.
 ********************************************************************/
 
-static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOOL bad_path)
+NTSTATUS can_delete(connection_struct *conn, char *fname, int dirtype, BOOL bad_path, BOOL check_is_at_open)
 {
 	SMB_STRUCT_STAT sbuf;
 	int fmode;
@@ -1515,25 +1520,34 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype, BOO
 	if ((fmode & ~dirtype) & (aHIDDEN | aSYSTEM))
 		return NT_STATUS_NO_SUCH_FILE;
 
-	/* We need a better way to return NT status codes from open... */
-	unix_ERR_class = 0;
-	unix_ERR_code = 0;
+	if (check_is_at_open) {
+		if (!can_delete_file_in_directory(conn, fname)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	} else {
+		/* On open checks the open itself will check the share mode, so
+		   don't do it here as we'll get it wrong. */
 
-	fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
-		(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
-
-	if (!fsp) {
-		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
-		if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
-			ret = unix_ERR_ntstatus;
-		else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
-			ret = NT_STATUS_SHARING_VIOLATION;
+		/* We need a better way to return NT status codes from open... */
 		unix_ERR_class = 0;
 		unix_ERR_code = 0;
-		unix_ERR_ntstatus = NT_STATUS_OK;
-		return ret;
+
+		fsp = open_file_shared1(conn, fname, &sbuf, DELETE_ACCESS, SET_DENY_MODE(DENY_ALL),
+			(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), FILE_ATTRIBUTE_NORMAL, 0, &access_mode, &smb_action);
+
+		if (!fsp) {
+			NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
+			if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
+				ret = unix_ERR_ntstatus;
+			else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+				ret = NT_STATUS_SHARING_VIOLATION;
+			unix_ERR_class = 0;
+			unix_ERR_code = 0;
+			unix_ERR_ntstatus = NT_STATUS_OK;
+			return ret;
+		}
+		close_file(fsp,False);
 	}
-	close_file(fsp,False);
 	return NT_STATUS_OK;
 }
 
@@ -1593,7 +1607,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	if (!has_wild) {
 		pstrcat(directory,"/");
 		pstrcat(directory,mask);
-		error = can_delete(directory,conn,dirtype,bad_path);
+		error = can_delete(conn,directory,dirtype,bad_path,False);
 		if (!NT_STATUS_IS_OK(error))
 			return error;
 
@@ -1601,27 +1615,33 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 			count++;
 		}
 	} else {
-		void *dirptr = NULL;
+		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		
 		if (check_name(directory,conn))
-			dirptr = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 		
 		/* XXXX the CIFS spec says that if bit0 of the flags2 field is set then
 		   the pattern matches against the long name, otherwise the short name 
 		   We don't implement this yet XXXX
 		*/
 		
-		if (dirptr) {
+		if (dir_hnd) {
+			long offset = 0;
 			error = NT_STATUS_NO_SUCH_FILE;
-			
+
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dir_hnd, &offset))) {
+				SMB_STRUCT_STAT st;
 				pstring fname;
 				BOOL sys_direntry = False;
 				pstrcpy(fname,dname);
+
+				if (!is_visible_file(conn, directory, dname, &st, True)) {
+					continue;
+				}
 
 				/* Quick check for "." and ".." */
 				if (fname[0] == '.') {
@@ -1645,7 +1665,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 				}
 
 				slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
-				error = can_delete(fname,conn,dirtype,bad_path);
+				error = can_delete(conn,fname,dirtype,bad_path,False);
 				if (!NT_STATUS_IS_OK(error)) {
 					continue;
 				}
@@ -1653,7 +1673,7 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 					count++;
 				DEBUG(3,("unlink_internals: succesful unlink [%s]\n",fname));
 			}
-			CloseDir(dirptr);
+			CloseDir(dir_hnd);
 		}
 	}
 	
@@ -3361,16 +3381,20 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 {
 	const char *dname = NULL;
 	BOOL ret = False;
-	void *dirptr = OpenDir(conn, directory, False);
+	long offset = 0;
+	struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
-	if(dirptr == NULL)
+	if(dir_hnd == NULL)
 		return True;
 
-	while((dname = ReadDirName(dirptr))) {
+	while((dname = ReadDirName(dir_hnd, &offset))) {
 		pstring fullname;
 		SMB_STRUCT_STAT st;
 
 		if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+			continue;
+
+		if (!is_visible_file(conn, directory, dname, &st, False))
 			continue;
 
 		/* Construct the full name. */
@@ -3403,7 +3427,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 			break;
 		}
 	}
-	CloseDir(dirptr);
+	CloseDir(dir_hnd);
 	return ret;
 }
 
@@ -3414,6 +3438,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 BOOL rmdir_internals(connection_struct *conn, char *directory)
 {
 	BOOL ok;
+	SMB_STRUCT_STAT st;
 
 	ok = (SMB_VFS_RMDIR(conn,directory) == 0);
 	if(!ok && ((errno == ENOTEMPTY)||(errno == EEXIST)) && lp_veto_files(SNUM(conn))) {
@@ -3425,12 +3450,14 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 		 */
 		BOOL all_veto_files = True;
 		const char *dname;
-		void *dirptr = OpenDir(conn, directory, False);
+		struct smb_Dir *dir_hnd = OpenDir(conn, directory);
 
-		if(dirptr != NULL) {
-			int dirpos = TellDir(dirptr);
-			while ((dname = ReadDirName(dirptr))) {
+		if(dir_hnd != NULL) {
+			long dirpos = TellDir(dir_hnd);
+			while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 				if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+					continue;
+				if (!is_visible_file(conn, directory, dname, &st, False))
 					continue;
 				if(!IS_VETO_PATH(conn, dname)) {
 					all_veto_files = False;
@@ -3439,12 +3466,13 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 			}
 
 			if(all_veto_files) {
-				SeekDir(dirptr,dirpos);
-				while ((dname = ReadDirName(dirptr))) {
+				SeekDir(dir_hnd,dirpos);
+				while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 					pstring fullname;
-					SMB_STRUCT_STAT st;
 
 					if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
+						continue;
+					if (!is_visible_file(conn, directory, dname, &st, False))
 						continue;
 
 					/* Construct the full name. */
@@ -3469,11 +3497,11 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 					} else if(SMB_VFS_UNLINK(conn,fullname) != 0)
 						break;
 				}
-				CloseDir(dirptr);
+				CloseDir(dir_hnd);
 				/* Retry the rmdir */
 				ok = (SMB_VFS_RMDIR(conn,directory) == 0);
 			} else {
-				CloseDir(dirptr);
+				CloseDir(dir_hnd);
 			}
 		} else {
 			errno = ENOTEMPTY;
@@ -3725,7 +3753,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	error = can_rename(newname,conn,attrs,&sbuf);
+	error = can_rename(conn,newname,attrs,&sbuf);
 
 	if (dest_exists && !NT_STATUS_IS_OK(error)) {
 		DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3931,7 +3959,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		}
 
-		error = can_rename(directory,conn,attrs,&sbuf1);
+		error = can_rename(conn,directory,attrs,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(error)) {
 			DEBUG(3,("rename_internals: Error %s rename %s -> %s\n",
@@ -3976,21 +4004,22 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 		/*
 		 * Wildcards - process each file that matches.
 		 */
-		void *dirptr = NULL;
+		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		pstring destname;
 		
 		if (check_name(directory,conn))
-			dirptr = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 		
-		if (dirptr) {
+		if (dir_hnd) {
+			long offset = 0;
 			error = NT_STATUS_NO_SUCH_FILE;
 /*			Was error = NT_STATUS_OBJECT_NAME_NOT_FOUND; - gentest fix. JRA */
 			
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 			
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				pstring fname;
 				BOOL sysdir_entry = False;
 
@@ -4007,6 +4036,9 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					}
 				}
 
+				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
+					continue;
+
 				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 				
@@ -4022,7 +4054,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 					DEBUG(6,("rename %s failed. Error %s\n", fname, nt_errstr(error)));
 					continue;
 				}
-				error = can_rename(fname,conn,attrs,&sbuf1);
+				error = can_rename(conn,fname,attrs,&sbuf1);
 				if (!NT_STATUS_IS_OK(error)) {
 					DEBUG(6,("rename %s refused\n", fname));
 					continue;
@@ -4057,7 +4089,7 @@ directory = %s, newname = %s, last_component_dest = %s, is_8_3 = %d\n",
 				}
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
-			CloseDir(dirptr);
+			CloseDir(dir_hnd);
 		}
 
 		if (!NT_STATUS_EQUAL(error,NT_STATUS_NO_SUCH_FILE)) {
@@ -4329,23 +4361,27 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 			exists = vfs_file_exist(conn,directory,NULL);
 		}
 	} else {
-		void *dirptr = NULL;
+		struct smb_Dir *dir_hnd = NULL;
 		const char *dname;
 		pstring destname;
 
 		if (check_name(directory,conn))
-			dirptr = OpenDir(conn, directory, True);
+			dir_hnd = OpenDir(conn, directory);
 
-		if (dirptr) {
+		if (dir_hnd) {
+			long offset = 0;
 			error = ERRbadfile;
 
 			if (strequal(mask,"????????.???"))
 				pstrcpy(mask,"*");
 
-			while ((dname = ReadDirName(dirptr))) {
+			while ((dname = ReadDirName(dir_hnd, &offset))) {
 				pstring fname;
 				pstrcpy(fname,dname);
     
+				if (!is_visible_file(conn, directory, dname, &sbuf1, False))
+					continue;
+
 				if(!mask_match(fname, mask, conn->case_sensitive))
 					continue;
 
@@ -4358,7 +4394,7 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 					count++;
 				DEBUG(3,("reply_copy : doing copy on %s -> %s\n",fname,destname));
 			}
-			CloseDir(dirptr);
+			CloseDir(dir_hnd);
 		}
 	}
   

@@ -617,7 +617,7 @@ void unix_clean_name(char *s)
  Make a dir struct.
 ****************************************************************************/
 
-void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date, BOOL case_sensitive)
+void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T size,int mode,time_t date)
 {  
 	char *p;
 	pstring mask2;
@@ -641,7 +641,7 @@ void make_dir_struct(char *buf, const char *mask, const char *fname,SMB_OFF_T si
 	put_dos_date(buf,22,date);
 	SSVAL(buf,26,size & 0xFFFF);
 	SSVAL(buf,28,(size >> 16)&0xFFFF);
-	push_ascii(buf+30,fname,12, case_sensitive ? 0 : STR_UPPER);
+	push_ascii(buf+30,fname,12,0);
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
@@ -1533,6 +1533,11 @@ void smb_panic2(const char *why, BOOL decrement_pid_count )
 		ZERO_ARRAY(addrs);
 		ZERO_ARRAY(names);
 		ZERO_ARRAY(namebuf);
+
+		/* We need to be root so we can open our /proc entry to walk
+		 * our stack. It also helps when we want to dump core.
+		 */
+		become_root();
 
 		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
 			names[i] = namebuf + (i * NAMESIZE);

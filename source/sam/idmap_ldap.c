@@ -124,9 +124,8 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 	fstring filter;
 	fstring sid_string;
 	LDAPMessage *result = NULL;
-	int count;
 	int rc;
-	char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
+	const char *sid_attr[] = {LDAP_ATTRIBUTE_SID, NULL};
 
 	slprintf(filter, sizeof(filter)-1, "(%s=%s)", LDAP_ATTRIBUTE_SID, sid_to_string(sid_string, sid));
 
@@ -144,7 +143,7 @@ static BOOL sid_in_use(struct ldap_idmap_state *state,
 		return True;
 	}
 	
-	if ((count = ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
+	if ((ldap_count_entries(state->smbldap_state->ldap_struct, result)) > 0) {
 		DEBUG(3, ("Sid %s already in use - trying next RID\n",
 			  sid_string));
 		ldap_msgfree(result);
@@ -168,7 +167,6 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
                               int rid_type)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	int rc;
 	LDAPMessage *domain_result = NULL;
 	LDAPMessage *entry  = NULL;
 	char *dn;
@@ -291,7 +289,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			}
 		}
 
-		if ((rc = smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
+		if ((smbldap_modify(state->smbldap_state, dn, mods)) == LDAP_SUCCESS) {
 			DOM_SID dom_sid;
 			DOM_SID sid;
 			pstring domain_sid_string;
@@ -384,7 +382,7 @@ static NTSTATUS ldap_allocate_id(unid_t *id, int id_type)
 	LDAPMod **mods = NULL;
 	const char *type;
 	char *dn = NULL;
-	char **attr_list;
+	const char **attr_list;
 	pstring filter;
 	uid_t	luid, huid;
 	gid_t	lgid, hgid;
@@ -495,7 +493,7 @@ static NTSTATUS ldap_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	int rc;
 	int count;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	char **attr_list;
+	const char **attr_list;
 
 	if ( id_type & ID_USERID ) 
 		type = get_attr_key2string( idpool_attr_list, LDAP_ATTR_UIDNUMBER );
@@ -559,7 +557,7 @@ static NTSTATUS ldap_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *si
 	const char *type;
 	int rc;
 	int count;
-	char **attr_list;
+	const char **attr_list;
 	char *dn = NULL;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
@@ -669,7 +667,7 @@ static NTSTATUS verify_idpool( void )
 {
 	fstring filter;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 	LDAPMessage *result = NULL;
 	LDAPMod **mods = NULL;
 	int count;

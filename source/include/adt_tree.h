@@ -21,6 +21,14 @@
 #ifndef ADT_TREE_H
 #define ADT_TREE_H
 
+#ifndef _BOOL
+typedef int BOOL;
+#define _BOOL  
+#endif
+
+
+/* data structure used to build the tree */
+
 typedef struct _tree_node {
 	struct _tree_node	*parent;
 	struct _tree_node	**children;
@@ -34,5 +42,26 @@ typedef struct _tree_root {
 	int 		(*compare)(void* x, void *y);
 	void		(*free_func)(void *p);
 } SORTED_TREE;
+
+/* 
+ * API
+ */
+
+/* initializer and desctrutor */
+SORTED_TREE*  pathtree_init( void *data_p, int (cmp_fn)(void*, void*), void (free_fn)(void*) );
+void          pathtree_destroy( SORTED_TREE *tree );
+
+/* add a new path component */
+
+BOOL          pathtree_add( SORTED_TREE *tree, const char *path, void *data_p );
+
+/* search path */
+
+void*         pathtree_find( SORTED_TREE *tree, char *key );
+
+/* debug (print) functions */
+
+void          pathtree_print_keys( SORTED_TREE *tree, int debug );
+
 
 #endif

@@ -269,7 +269,7 @@ int net_help(int argc, const char **argv)
 		{"LOOKUP", net_lookup_usage},
 		{"USERSIDLIST", net_usersidlist_usage},
 #ifdef WITH_FAKE_KASERVER
-		{"AFSKEY", net_afskey_usage},
+		{"AFS", net_help_afs},
 #endif
 
 		{"HELP", help_usage},

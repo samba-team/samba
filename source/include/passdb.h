@@ -241,7 +241,7 @@ struct acct_info
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 6
+#define PASSDB_INTERFACE_VERSION 7
 
 typedef struct pdb_context 
 {
@@ -286,6 +286,12 @@ typedef struct pdb_context
 					   enum SID_NAME_USE sid_name_use,
 					   GROUP_MAP **rmap, int *num_entries,
 					   BOOL unix_only);
+
+	NTSTATUS (*pdb_enum_group_members)(struct pdb_context *context,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *group,
+					   uint32 **member_rids,
+					   int *num_members);
 
 	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
 					       const char *username,
@@ -384,6 +390,12 @@ typedef struct pdb_methods
 				       enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **rmap, int *num_entries,
 				       BOOL unix_only);
+
+	NTSTATUS (*enum_group_members)(struct pdb_methods *methods,
+				       TALLOC_CTX *mem_ctx,
+				       const DOM_SID *group,
+				       uint32 **member_rids,
+				       int *num_members);
 
 	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
 					   const char *username,

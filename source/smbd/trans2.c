@@ -33,21 +33,6 @@ extern struct current_user current_user;
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
 /********************************************************************
- Roundup a value to the nearest SMB_ROUNDUP_ALLOCATION_SIZE boundary.
- Only do this for Windows clients.
-********************************************************************/
-
-SMB_BIG_UINT smb_roundup(SMB_BIG_UINT val)
-{
-	/* Only roundup for Windows clients. */
-	enum remote_arch_types ra_type = get_remote_arch();
-	if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
-		val = SMB_ROUNDUP(val,SMB_ROUNDUP_ALLOCATION_SIZE);
-	}
-	return val;
-}
-
-/********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
 ********************************************************************/
@@ -64,8 +49,6 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
-
-	ret = smb_roundup(ret);
 
 	return ret;
 }
@@ -801,21 +784,6 @@ static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *ps
 }
 
 /****************************************************************************
- Checks for SMB_TIME_NO_CHANGE and if not found calls interpret_long_date.
-****************************************************************************/
-
-time_t interpret_long_unix_date(char *p)
-{
-	DEBUG(10,("interpret_long_unix_date\n"));
-	if(IVAL(p,0) == SMB_TIME_NO_CHANGE_LO &&
-	   IVAL(p,4) == SMB_TIME_NO_CHANGE_HI) {
-		return -1;
-	} else {
-		return interpret_long_date(p);
-	}
-}
-
-/****************************************************************************
  Get a level dependent lanman2 dir entry.
 ****************************************************************************/
 
@@ -836,7 +804,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	pstring fname;
 	char *p, *q, *pdata = *ppdata;
 	uint32 reskey=0;
-	int prev_dirpos=0;
+	long prev_dirpos=0;
 	int mode=0;
 	SMB_OFF_T file_size = 0;
 	SMB_BIG_UINT allocation_size = 0;
@@ -863,12 +831,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	} else
 		pstrcpy(mask, path_mask);
 
+
 	while (!found) {
 		BOOL got_match;
-
 		/* Needed if we run out of space */
-		prev_dirpos = TellDir(conn->dirptr);
-		dname = ReadDirName(conn->dirptr);
+		long curr_dirpos = prev_dirpos = dptr_TellDir(conn->dirptr);
+		dname = dptr_ReadDirName(conn->dirptr,&curr_dirpos,&sbuf);
 
 		/*
 		 * Due to bugs in NT client redirectors we are not using
@@ -879,8 +847,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 		reskey = 0;
 
-		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %d\n",
-			(long)conn->dirptr,TellDir(conn->dirptr)));
+		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %ld\n",
+			(long)conn->dirptr,curr_dirpos));
       
 		if (!dname) 
 			return(False);
@@ -922,7 +890,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 						pathreal,strerror(errno)));
 					continue;
 				}
-			} else if (SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
+			} else if (!VALID_STAT(sbuf) && SMB_VFS_STAT(conn,pathreal,&sbuf) != 0) {
 
 				/* Needed to show the msdfs symlinks as 
 				 * directories */
@@ -945,7 +913,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			mode = dos_mode(conn,pathreal,&sbuf);
 
-			if (!dir_check_ftype(conn,mode,&sbuf,dirtype)) {
+			if (!dir_check_ftype(conn,mode,dirtype)) {
 				DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
 				continue;
 			}
@@ -1303,7 +1271,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 	if (PTR_DIFF(p,pdata) > space_remaining) {
 		/* Move the dirptr back to prev_dirpos */
-		SeekDir(conn->dirptr, prev_dirpos);
+		dptr_SeekDir(conn->dirptr, prev_dirpos);
 		*out_of_space = True;
 		DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
 		return False; /* Not finished - just out of space */
@@ -1341,7 +1309,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	int info_level = SVAL(params,6);
 	pstring directory;
 	pstring mask;
-	char *p, *wcard;
+	char *p;
 	int last_name_off=0;
 	int dptr_num = -1;
 	int numentries = 0;
@@ -1437,15 +1405,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	/* Save the wildcard match and attribs we are using on this directory - 
 		needed as lanman2 assumes these are being saved between calls */
 
-	if(!(wcard = SMB_STRDUP(mask))) {
+	if (!dptr_set_wcard_and_attributes(dptr_num, mask, dirtype)) {
 		dptr_close(&dptr_num);
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
 
-	dptr_set_wcard(dptr_num, wcard);
-	dptr_set_attr(dptr_num, dirtype);
-
-	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
+	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, mask, dirtype));
 
 	/* We don't need to check for VOL here as this is returned by 
 		a different TRANS2 call. */
@@ -1648,10 +1613,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(dptr_num);
 
-	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%d)\n",
+	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld)\n",
 		dptr_num, mask, dirtype, 
 		(long)conn->dirptr,
-		TellDir(conn->dirptr)));
+		dptr_TellDir(conn->dirptr)));
 
 	/* We don't need to check for VOL here as this is returned by 
 		a different TRANS2 call. */
@@ -1670,6 +1635,18 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	 */
 
 	if(*resume_name && !continue_bit) {
+		SMB_STRUCT_STAT st;
+
+		long current_pos = 0;
+		/*
+		 * Remember, mangle_map is called by
+		 * get_lanman2_dir_entry(), so the resume name
+		 * could be mangled. Ensure we check the unmangled name.
+		 */
+
+		if (mangle_is_mangled(resume_name)) {
+			mangle_check_cache(resume_name, sizeof(resume_name)-1);
+		}
 
 		/*
 		 * Fix for NT redirector problem triggered by resume key indexes
@@ -1677,77 +1654,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		 * and instead look for the filename to continue from (also given
 		 * to us by NT/95/smbfs/smbclient). If no other scans have been done between the
 		 * findfirst/findnext (as is usual) then the directory pointer
-		 * should already be at the correct place. Check this by scanning
-		 * backwards looking for an exact (ie. case sensitive) filename match. 
-		 * If we get to the beginning of the directory and haven't found it then scan
-		 * forwards again looking for a match. JRA.
+		 * should already be at the correct place.
 		 */
 
-		int current_pos, start_pos;
-		const char *dname = NULL;
-		pstring dname_pstring;
-		void *dirptr = conn->dirptr;
-		start_pos = TellDir(dirptr);
-		for(current_pos = start_pos; current_pos >= 0; current_pos--) {
-			DEBUG(7,("call_trans2findnext: seeking to pos %d\n", current_pos));
-
-			SeekDir(dirptr, current_pos);
-			dname = ReadDirName(dirptr);
-			if (dname) {
-				/*
-				 * Remember, mangle_map is called by
-				 * get_lanman2_dir_entry(), so the resume name
-				 * could be mangled. Ensure we do the same
-				 * here.
-				 */
-				
-				/* make sure we get a copy that mangle_map can modify */
-
-				pstrcpy(dname_pstring, dname);
-				mangle_map( dname_pstring, False, True, SNUM(conn));
-				
-				if(strcsequal( resume_name, dname_pstring)) {
-					SeekDir(dirptr, current_pos+1);
-					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-					break;
-				}
-			}
-		}
-
-		/*
-		 * Scan forward from start if not found going backwards.
-		 */
-
-		if(current_pos < 0) {
-			DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
-			SeekDir(dirptr, start_pos);
-			for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; ++current_pos) {
-
-				/*
-				 * Remember, mangle_map is called by
-				 * get_lanman2_dir_entry(), so the resume name
-				 * could be mangled. Ensure we do the same
-				 * here.
-				 */
-
-				if(dname) {
-					/* make sure we get a copy that mangle_map can modify */
-					
-					pstrcpy(dname_pstring, dname);
-					mangle_map(dname_pstring, False, True, SNUM(conn));
-
-					if(strcsequal( resume_name, dname_pstring)) {
-						SeekDir(dirptr, current_pos+1);
-						DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-						break;
-					}
-				}
-			} /* end for */
-		} /* end if current_pos */
-		/* Can't find the name. Just resume from where we were... */
-		if (dname == 0) {
-			SeekDir(dirptr, start_pos);
-		}
+		finished = !dptr_SearchDir(conn->dirptr, resume_name, &current_pos, &st);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
@@ -2249,6 +2159,7 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
 	return UNIXERROR(def_class,def_code);
 }
 
+#if defined(HAVE_POSIX_ACLS)
 /****************************************************************************
  Utility function to count the number of entries in a POSIX acl.
 ****************************************************************************/
@@ -2363,6 +2274,7 @@ static BOOL marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 
 	return True;
 }
+#endif
 
 /****************************************************************************
  Reply to a TRANS2_QFILEPATHINFO or TRANSACT2_QFILEINFO (query file info by
@@ -2928,6 +2840,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				break;
 			}
 
+#if defined(HAVE_POSIX_ACLS)
 		case SMB_QUERY_POSIX_ACL:
 			{
 				SMB_ACL_T file_acl = NULL;
@@ -3004,6 +2917,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				data_size = (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
 				break;
 			}
+#endif
 
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
@@ -3027,10 +2941,12 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, u
 		 * Only allow delete on close for writable files.
 		 */
 
-		if (dosmode & aRONLY) {
-			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
-				fsp->fsp_name ));
-			return NT_STATUS_CANNOT_DELETE;
+		if (!lp_delete_readonly(SNUM(fsp->conn))) {
+			if (dosmode & aRONLY) {
+				DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
+					fsp->fsp_name ));
+				return NT_STATUS_CANNOT_DELETE;
+			}
 		}
 
 		/*
@@ -3385,7 +3301,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			tvs.modtime = MIN(write_time, changed_time);
 
-			if (write_time > tvs.modtime && write_time != 0xffffffff) {
+			if (write_time > tvs.modtime && write_time != (time_t)-1) {
 				tvs.modtime = write_time;
 			}
 			/* Prefer a defined time to an undefined one. */
@@ -3416,9 +3332,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
-
-			if (allocation_size)
-				allocation_size = smb_roundup(allocation_size);
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
@@ -3564,8 +3477,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			}
 			pdata+=24;          /* ctime & st_blocks are not changed */
-			tvs.actime = interpret_long_unix_date(pdata); /* access_time */
-			tvs.modtime = interpret_long_unix_date(pdata+8); /* modification_time */
+			tvs.actime = interpret_long_date(pdata); /* access_time */
+			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
 			pdata+=16;
 			set_owner = (uid_t)IVAL(pdata,0);
 			pdata += 8;
@@ -3813,6 +3726,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			return(-1);
 		}
 
+#if defined(HAVE_POSIX_ACLS)
 		case SMB_SET_POSIX_ACL:
 		{
 			uint16 posix_acl_version;
@@ -3862,6 +3776,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
 			return(-1);
 		}
+#endif
 
 		default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);

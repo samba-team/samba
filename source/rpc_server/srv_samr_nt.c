@@ -34,6 +34,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+#define SAMR_USR_RIGHTS_WRITE_PW \
+		( READ_CONTROL_ACCESS		| \
+		  SA_RIGHT_USER_CHANGE_PASSWORD	| \
+		  SA_RIGHT_USER_SET_LOC_COM )
+
 extern DOM_SID global_sid_Builtin;
 
 extern rid_name domain_group_rids[];
@@ -69,37 +74,39 @@ struct generic_mapping grp_generic_mapping = {GENERIC_RIGHTS_GROUP_READ, GENERIC
 struct generic_mapping ali_generic_mapping = {GENERIC_RIGHTS_ALIAS_READ, GENERIC_RIGHTS_ALIAS_WRITE, GENERIC_RIGHTS_ALIAS_EXECUTE, GENERIC_RIGHTS_ALIAS_ALL_ACCESS};
 
 /*******************************************************************
- samr_make_dom_obj_sd
- ********************************************************************/
+*******************************************************************/
 
-static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
+static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size,
+                                     struct generic_mapping *map,
+				     DOM_SID *sid, uint32 sid_access )
 {
 	extern DOM_SID global_sid_World;
 	DOM_SID adm_sid, act_sid, domadmin_sid;
-	SEC_ACE ace[4];
+	SEC_ACE ace[5];		/* at most 5 entries */
 	SEC_ACCESS mask;
 	size_t i = 0;
 
 	SEC_ACL *psa = NULL;
 
+	/* basic access for Everyone */
+	
+	init_sec_access(&mask, map->generic_execute | map->generic_read );
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	
+	/* add Full Access 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
+	
 	sid_copy(&adm_sid, &global_sid_Builtin);
 	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
 
 	sid_copy(&act_sid, &global_sid_Builtin);
 	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
-	/*basic access for every one*/
-	init_sec_access(&mask, GENERIC_RIGHTS_DOMAIN_EXECUTE | GENERIC_RIGHTS_DOMAIN_READ);
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/*full access for builtin aliases Administrators and Account Operators*/
 	
-	init_sec_access(&mask, GENERIC_RIGHTS_DOMAIN_ALL_ACCESS);
+	init_sec_access(&mask, map->generic_all);
 	
 	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	
-	/* add domain admins if we are a DC */
+	/* Add Full Access for Domain Admins if we are a DC */
 	
 	if ( IS_DC ) {
 		sid_copy( &domadmin_sid, get_global_sam_sid() );
@@ -107,139 +114,16 @@ static NTSTATUS samr_make_dom_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd
 		init_sec_ace(&ace[i++], &domadmin_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 	}
 
+	/* if we have a sid, give it some special access */
+	
+	if ( sid ) {
+		init_sec_access( &mask, sid_access );
+		init_sec_ace(&ace[i++], sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	}
+	
+	/* create the security descriptor */
+	
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- samr_make_usr_obj_sd
- ********************************************************************/
-
-static NTSTATUS samr_make_usr_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size, DOM_SID *usr_sid)
-{
-	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid, act_sid, domadmin_sid;
-	size_t i = 0;
-
-	SEC_ACE ace[5];
-	SEC_ACCESS mask;
-
-	SEC_ACL *psa = NULL;
-
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
-	/*basic access for every one*/
-	
-	init_sec_access(&mask, GENERIC_RIGHTS_USER_EXECUTE | GENERIC_RIGHTS_USER_READ);
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/*full access for builtin aliases Administrators and Account Operators*/
-	
-	init_sec_access(&mask, GENERIC_RIGHTS_USER_ALL_ACCESS);
-	init_sec_ace(&ace[i++], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[i++], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/* add domain admins if we are a DC */
-	
-	if ( IS_DC ) {
-		sid_copy( &domadmin_sid, get_global_sam_sid() );
-		sid_append_rid( &domadmin_sid, DOMAIN_GROUP_RID_ADMINS );
-		init_sec_ace(&ace[i++], &domadmin_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	}
-
-	/*extended access for the user*/
-	
-	init_sec_access(&mask,READ_CONTROL_ACCESS | SA_RIGHT_USER_CHANGE_PASSWORD | SA_RIGHT_USER_SET_LOC_COM);
-	init_sec_ace(&ace[i++], usr_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 4, ace)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- samr_make_grp_obj_sd
- ********************************************************************/
-
-static NTSTATUS samr_make_grp_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
-{
-	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
-
-	SEC_ACE ace[3];
-	SEC_ACCESS mask;
-
-	SEC_ACL *psa = NULL;
-
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
-	/*basic access for every one*/
-	init_sec_access(&mask, GENERIC_RIGHTS_GROUP_EXECUTE | GENERIC_RIGHTS_GROUP_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, GENERIC_RIGHTS_GROUP_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- samr_make_ali_obj_sd
- ********************************************************************/
-
-static NTSTATUS samr_make_ali_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
-{
-	extern DOM_SID global_sid_World;
-	DOM_SID adm_sid;
-	DOM_SID act_sid;
-
-	SEC_ACE ace[3];
-	SEC_ACCESS mask;
-
-	SEC_ACL *psa = NULL;
-
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-
-	sid_copy(&act_sid, &global_sid_Builtin);
-	sid_append_rid(&act_sid, BUILTIN_ALIAS_RID_ACCOUNT_OPS);
-
-	/*basic access for every one*/
-	init_sec_access(&mask, GENERIC_RIGHTS_ALIAS_EXECUTE | GENERIC_RIGHTS_ALIAS_READ);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/*full access for builtin aliases Administrators and Account Operators*/
-	init_sec_access(&mask, GENERIC_RIGHTS_ALIAS_ALL_ACCESS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	init_sec_ace(&ace[2], &act_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
@@ -603,8 +487,8 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = q_u->flags;
-	size_t    sd_size;
 	NTSTATUS  status;
+	size_t sd_size;
 	SE_PRIV se_rights;
 
 	r_u->status = NT_STATUS_OK;
@@ -622,7 +506,7 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 
 	/*check if access can be granted as requested by client. */
 	
-	samr_make_dom_obj_sd( p->mem_ctx, &psd, &sd_size );
+	make_samr_object_sd( p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0 );
 	se_map_generic( &des_access, &dom_generic_mapping );
 	
 	se_priv_copy( &se_rights, &se_machine_account );
@@ -719,8 +603,8 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 	DOM_SID pol_sid;
 	fstring str_sid;
 	SEC_DESC * psd = NULL;
-	size_t sd_size;
 	uint32 acc_granted;
+	size_t sd_size;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -738,19 +622,19 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 	if (pol_sid.sid_rev_num == 0)
 	{
 		DEBUG(5,("_samr_query_sec_obj: querying security on SAM\n"));
-		r_u->status = samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
+		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	}
 	else if (sid_equal(&pol_sid,get_global_sam_sid()))  /* check if it is our domain SID */
 
 	{
 		DEBUG(5,("_samr_query_sec_obj: querying security on Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = samr_make_dom_obj_sd(p->mem_ctx, &psd, &sd_size);
+		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
 	}
 	else if (sid_equal(&pol_sid,&global_sid_Builtin)) /* check if it is the Builtin  Domain */
 	{
 		/* TODO: Builtin probably needs a different SD with restricted write access*/
 		DEBUG(5,("_samr_query_sec_obj: querying security on Builtin Domain with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = samr_make_dom_obj_sd(p->mem_ctx, &psd, &sd_size);
+		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
 	}
 	else if (sid_check_is_in_our_domain(&pol_sid) ||
 	    	 sid_check_is_in_builtin(&pol_sid))
@@ -758,7 +642,7 @@ NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
 		DEBUG(10,("_samr_query_sec_obj: querying security on Object with SID: %s\n", sid_to_string(str_sid, &pol_sid)));
-		r_u->status = samr_make_usr_obj_sd(p->mem_ctx, &psd,&sd_size, &pol_sid);
+		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
 	}
 	else return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
@@ -1626,7 +1510,9 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	int num_rids = q_u->num_rids1;
 	int i;
 	uint32 acc_granted;
-
+	BOOL have_mapped = False;
+	BOOL have_unmapped = False;
+	
 	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
@@ -1635,9 +1521,10 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (num_rids > MAX_SAM_ENTRIES) {
-		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("_samr_lookup_rids: truncating entries to %d\n", num_rids));
+	if (num_rids > 1000) {
+		DEBUG(0, ("Got asked for %d rids (more than 1000) -- according "
+			  "to samba4 idl this is not possible\n", num_rids));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (num_rids) {
@@ -1645,7 +1532,11 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 			return NT_STATUS_NO_MEMORY;
  	}
  
-	r_u->status = NT_STATUS_NONE_MAPPED;
+	if (!sid_equal(&pol_sid, get_global_sam_sid())) {
+		/* TODO: Sooner or later we need to look up BUILTIN rids as
+		 * well. -- vl */
+		goto done;
+	}
 
 	become_root();  /* lookup_sid can require root privs */
 
@@ -1658,20 +1549,29 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		group_attrs[i] = SID_NAME_UNKNOWN;
 		*group_names[i] = '\0';
 
-		if (sid_equal(&pol_sid, get_global_sam_sid())) {
-			sid_copy(&sid, &pol_sid);
-			sid_append_rid(&sid, q_u->rid[i]);
+		sid_copy(&sid, &pol_sid);
+		sid_append_rid(&sid, q_u->rid[i]);
 
-			if (lookup_sid(&sid, domname, tmpname, &type)) {
-				r_u->status = NT_STATUS_OK;
-				group_attrs[i] = (uint32)type;
-				fstrcpy(group_names[i],tmpname);
-				DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i], group_attrs[i]));
-			}
+		if (lookup_sid(&sid, domname, tmpname, &type)) {
+			group_attrs[i] = (uint32)type;
+			fstrcpy(group_names[i],tmpname);
+			DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i],
+				 group_attrs[i]));
+			have_mapped = True;
+		} else {
+			have_unmapped = True;
 		}
 	}
 
 	unbecome_root();
+
+ done:
+
+	r_u->status = NT_STATUS_NONE_MAPPED;
+
+	if (have_mapped)
+		r_u->status =
+			have_unmapped ? STATUS_SOME_UNMAPPED : NT_STATUS_OK;
 
 	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
@@ -1727,7 +1627,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	
 	/* check if access can be granted as requested by client. */
 	
-	samr_make_usr_obj_sd(p->mem_ctx, &psd, &sd_size, &sid);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
 	
 	se_priv_copy( &se_rights, &se_machine_account );
@@ -1763,6 +1663,40 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	return r_u->status;
 }
 
+/*************************************************************************
+ get_user_info_7. Safe. Only gives out account_name.
+ *************************************************************************/
+
+static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx, SAM_USER_INFO_7 *id7, DOM_SID *user_sid)
+{
+	SAM_ACCOUNT *smbpass=NULL;
+	BOOL ret;
+	NTSTATUS nt_status;
+
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(smbpass, user_sid);
+	unbecome_root();
+
+	if (ret==False) {
+		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
+
+	ZERO_STRUCTP(id7);
+	init_sam_user_info7(id7, pdb_get_username(smbpass) );
+
+	pdb_free_sam(&smbpass);
+
+	return NT_STATUS_OK;
+}
 /*************************************************************************
  get_user_info_10. Safe. Only gives out acb bits.
  *************************************************************************/
@@ -1954,6 +1888,14 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	ctr->switch_value = q_u->switch_value;
 
 	switch (q_u->switch_value) {
+	case 0x07:
+		ctr->info.id7 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_7);
+		if (ctr->info.id7 == NULL)
+			return NT_STATUS_NO_MEMORY;
+
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_7(p->mem_ctx, ctr->info.id7, &info->sid)))
+			return r_u->status;
+		break;
 	case 0x10:
 		ctr->info.id10 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_10);
 		if (ctr->info.id10 == NULL)
@@ -2146,6 +2088,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	NTTIME nt_logout;
 
 	uint32 account_policy_temp;
+	uint32 server_role;
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
@@ -2210,9 +2153,13 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases, nt_logout);
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), time(NULL), 
+				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, (unsigned int *)&u_logout);
@@ -2227,7 +2174,11 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			init_unk_info6(&ctr->info.inf6);
 			break;
 		case 0x07:
-			init_unk_info7(&ctr->info.inf7);
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
+			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
 			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
@@ -2286,7 +2237,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL can_add_account;
+	BOOL can_add_account = False;
 	SE_PRIV se_rights;
 
 	/* Get the domain SID stored in the domain policy */
@@ -2370,7 +2321,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 			
   			all_string_sub(add_script, "%u", account, sizeof(add_script));
   			add_ret = smbrun(add_script,NULL);
- 			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
+ 			DEBUG(add_ret ? 0 : 3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
 		else	/* no add user script -- ask winbindd to do it */
 		{
@@ -2414,7 +2365,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	sid_copy(&sid, pdb_get_user_sid(sam_pass));
 	
-	samr_make_usr_obj_sd(p->mem_ctx, &psd, &sd_size, &sid);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, &sid, SAMR_USR_RIGHTS_WRITE_PW);
 	se_map_generic(&des_access, &usr_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
@@ -2501,8 +2452,8 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = q_u->access_mask;
-	size_t    sd_size;
 	NTSTATUS  nt_status;
+	size_t sd_size;
 
 
 	DEBUG(5,("_samr_connect: %d\n", __LINE__));
@@ -2515,7 +2466,7 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 		return r_u->status;
 	}
 
-	samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
@@ -2552,8 +2503,8 @@ NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
 	uint32    des_access = q_u->access_mask;
-	size_t    sd_size;
 	NTSTATUS  nt_status;
+	size_t sd_size;
 
 
 	DEBUG(5,("_samr_connect4: %d\n", __LINE__));
@@ -2566,7 +2517,7 @@ NTSTATUS _samr_connect4(pipes_struct *p, SAMR_Q_CONNECT4 *q_u, SAMR_R_CONNECT4 *
 		return r_u->status;
 	}
 
-	samr_make_sam_obj_sd(p->mem_ctx, &psd, &sd_size);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
@@ -2740,7 +2691,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 		
 	/*check if access can be granted as requested by client. */
 	
-	samr_make_ali_obj_sd(p->mem_ctx, &psd, &sd_size);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
 	
 	se_priv_add( &se_rights, &se_add_users );
@@ -3071,7 +3022,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	uint32 acc_granted;
 	uint32 acc_required;
 	BOOL ret;
-	BOOL has_enough_rights;
+	BOOL has_enough_rights = False;
 	uint32 acb_info;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
@@ -3212,7 +3163,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint32 acc_granted;
 	uint32 acc_required;
 	BOOL ret;
-	BOOL has_enough_rights;
+	BOOL has_enough_rights = False;
 	uint32 acb_info;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
@@ -3499,17 +3450,16 @@ static BOOL get_memberuids(gid_t gid, uid_t **uids, int *num)
 
 NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_QUERY_GROUPMEM *r_u)
 {
-	int final_num_rids, i;
 	DOM_SID group_sid;
 	fstring group_sid_str;
-	uid_t *uids;
-	int num;
-	gid_t gid;
+	int i, num_members;
 
 	uint32 *rid=NULL;
 	uint32 *attr=NULL;
 
 	uint32 acc_granted;
+
+	NTSTATUS result;
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted)) 
@@ -3529,46 +3479,23 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 
 	DEBUG(10, ("lookup on Domain SID\n"));
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
-		return NT_STATUS_NO_SUCH_GROUP;
+	become_root();
+	result = pdb_enum_group_members(p->mem_ctx, &group_sid,
+					&rid, &num_members);
+	unbecome_root();
 
-	if(!get_memberuids(gid, &uids, &num))
-		return NT_STATUS_NO_SUCH_GROUP;
+	if (!NT_STATUS_IS_OK(result))
+		return result;
 
-	rid=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
-	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
+	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
 	
-	if (num!=0 && (rid==NULL || attr==NULL))
+	if ((num_members!=0) && (rid==NULL))
 		return NT_STATUS_NO_MEMORY;
 	
-	final_num_rids = 0;
-		
-	for (i=0; i<num; i++) {
-		DOM_SID sid;
+	for (i=0; i<num_members; i++)
+		attr[i] = SID_NAME_USER;
 
-		if (!NT_STATUS_IS_OK(uid_to_sid(&sid, uids[i]))) {
-			DEBUG(1, ("Could not map member uid to SID\n"));
-			continue;
-		}
-
-		if (!sid_check_is_in_our_domain(&sid)) {
-			DEBUG(1, ("Inconsistent SAM -- group member uid not "
-				  "in our domain\n"));
-			continue;
-		}
-
-		sid_peek_rid(&sid, &rid[final_num_rids]);
-
-		/* Hmm. In a trace I got the constant 7 here from NT. */
-		attr[final_num_rids] = SID_NAME_USER;
-
-		final_num_rids += 1;
-	}
-
-	SAFE_FREE(uids);
-
-	init_samr_r_query_groupmem(r_u, final_num_rids, rid, attr,
-				   NT_STATUS_OK);
+	init_samr_r_query_groupmem(r_u, num_members, rid, attr, NT_STATUS_OK);
 
 	return NT_STATUS_OK;
 }
@@ -3878,7 +3805,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
 	ret = smbrun(del_script,NULL);
-	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
+	DEBUG(ret ? 0 : 3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
 
 	return ret;
 }
@@ -4445,7 +4372,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 		return status;
 		
 	/*check if access can be granted as requested by client. */
-	samr_make_grp_obj_sd(p->mem_ctx, &psd, &sd_size);
+	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&grp_generic_mapping);
 
 	se_priv_copy( &se_rights, &se_add_users );
@@ -4620,6 +4547,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	uint32 account_policy_temp;
+	uint32 server_role;
 
 	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -4681,9 +4609,13 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+
 			/* The time call below is to get a sequence number for the sam. FIXME !!! JRA. */
-			init_unk_info2(&ctr->info.inf2, "", lp_workgroup(), global_myname(), (uint32) time(NULL), 
-				       num_users, num_groups, num_aliases, nt_logout);
+			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), time(NULL), 
+				       num_users, num_groups, num_aliases, nt_logout, server_role);
 			break;
 		case 0x03:
 			account_policy_get(AP_TIME_TO_LOGOUT, &account_policy_temp);
@@ -4700,7 +4632,10 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			init_unk_info6(&ctr->info.inf6);
 			break;
 		case 0x07:
-			init_unk_info7(&ctr->info.inf7);
+			server_role = ROLE_DOMAIN_PDC;
+			if (lp_server_role() == ROLE_DOMAIN_BDC)
+				server_role = ROLE_DOMAIN_BDC;
+			init_unk_info7(&ctr->info.inf7, server_role);
 			break;
 		case 0x08:
 			init_unk_info8(&ctr->info.inf8, (uint32) time(NULL));
@@ -4780,6 +4715,7 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration);
 			if (u_lock_duration != -1)
 				u_lock_duration /= 60;
+
 			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
 			
 			account_policy_set(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);

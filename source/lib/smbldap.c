@@ -230,16 +230,16 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  Return the list of attribute names from a mapping table
  **********************************************************************/
 
- char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
+ const char** get_attr_list( ATTRIB_MAP_ENTRY table[] )
 {
-	char **names;
+	const char **names;
 	int i = 0;
 	
 	while ( table[i].attrib != LDAP_ATTR_LIST_END )
 		i++;
 	i++;
 
-	names = SMB_MALLOC_ARRAY( char*, i );
+	names = SMB_MALLOC_ARRAY( const char*, i );
 	if ( !names ) {
 		DEBUG(0,("get_attr_list: out of memory\n"));
 		return NULL;
@@ -259,7 +259,7 @@ ATTRIB_MAP_ENTRY sidmap_attr_list[] = {
  Cleanup 
  ********************************************************************/
 
- void free_attr_list( char **list )
+ void free_attr_list( const char **list )
 {
 	int i = 0;
 
@@ -888,7 +888,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		socklen_t len = sizeof(addr);
 		int sd;
 		if (ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_DESC, &sd) == 0 &&
-		    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {
+		    ((getpeername(sd, (struct sockaddr *) &addr, &len) < 0) || addr.sun_family == AF_LOCAL)) {
 		    	/* the other end has died. reopen. */
 		    	ldap_unbind_ext(ldap_state->ldap_struct, NULL, NULL);
 		    	ldap_state->ldap_struct = NULL;
@@ -962,8 +962,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 	if (*rc != LDAP_SERVER_DOWN)
 		goto no_next;
 
-	now = time(NULL);
-
 	if (now >= endtime) {
 		smbldap_close(ldap_state);
 		*rc = LDAP_TIMEOUT;
@@ -986,7 +984,6 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 		*attempts += 1;
 
-		smbldap_close(ldap_state);
 		open_rc = smbldap_open(ldap_state);
 
 		if (open_rc == LDAP_SUCCESS) {
@@ -1017,7 +1014,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 int smbldap_search(struct smbldap_state *ldap_state, 
 		   const char *base, int scope, const char *filter, 
-		   char *attrs[], int attrsonly, 
+		   const char *attrs[], int attrsonly, 
 		   LDAPMessage **res)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -1154,7 +1151,7 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
  run the search by name.
 ******************************************************************/
 int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter, 
-			   char **search_attr, LDAPMessage ** result)
+			   const char **search_attr, LDAPMessage ** result)
 {
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
@@ -1261,7 +1258,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 	int ldap_op;
 	LDAPMessage *result = NULL;
 	int num_result;
-	char **attr_list;
+	const char **attr_list;
 	uid_t u_low, u_high;
 	gid_t g_low, g_high;
 	uint32 rid_low, rid_high;
@@ -1376,7 +1373,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	pstring filter;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 	int count;
 
 	pstr_sprintf(filter, "(&(objectClass=%s)(%s=%s))",

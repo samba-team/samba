@@ -151,7 +151,7 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
 	if (cli->use_level_II_oplocks)
 		capabilities |= CAP_LEVEL_II_OPLOCKS;
 
-	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX));
+	capabilities |= (cli->capabilities & (CAP_UNICODE|CAP_LARGE_FILES|CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_DFS));
 	return capabilities;
 }
 
@@ -972,6 +972,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
+	
+	if ( cli->protocol >= PROTOCOL_LANMAN2 )
+		cli->dfsroot = (SVAL( cli->inbuf, smb_vwv2 ) & SMB_SHARE_IN_DFS);
 
 	cli->cnum = SVAL(cli->inbuf,smb_tid);
 	return True;
@@ -993,7 +996,12 @@ BOOL cli_tdis(struct cli_state *cli)
 	if (!cli_receive_smb(cli))
 		return False;
 	
-	return !cli_is_error(cli);
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->cnum = -1;
+	return True;
 }
 
 /****************************************************************************

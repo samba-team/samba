@@ -1174,27 +1174,13 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 		   const uchar * lm_chal_resp, size_t lm_chal_resp_len,
 		   const uchar * nt_chal_resp, size_t nt_chal_resp_len)
 {
-	unsigned char lm_owf[24];
-	unsigned char nt_owf[128];
 
 	DEBUG(5,("init_id_info2: %d\n", __LINE__));
 
 	id->ptr_id_info2 = 1;
 
-
 	id->param_ctrl = param_ctrl;
 	init_logon_id(&id->logon_id, log_id_low, log_id_high);
-
-	if (nt_chal_resp) {
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(nt_owf, nt_chal_resp, MIN(sizeof(nt_owf), nt_chal_resp_len));
-		nt_chal_resp = nt_owf;
-	}
-	if (lm_chal_resp) {
-		/* oops.  can only send what-ever-it-is direct */
-		memcpy(lm_owf, lm_chal_resp, MIN(sizeof(lm_owf), lm_chal_resp_len));
-		lm_chal_resp = lm_owf;
-	}
 
 	memcpy(id->lm_chal, lm_challenge, sizeof(id->lm_chal));
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);

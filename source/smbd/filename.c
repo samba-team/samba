@@ -150,11 +150,7 @@ BOOL unix_convert(pstring name,connection_struct *conn,char *saved_last_componen
 			pstrcpy(saved_last_component, name);
 	}
 
-#if 1
 	if (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve))
-#else
-	if (!conn->case_sensitive && (!conn->case_preserve || (mangle_is_8_3(name, False) && !conn->short_case_preserve)))
-#endif
 		strnorm(name, lp_defaultcase(SNUM(conn)));
 
 	start = name;
@@ -432,9 +428,10 @@ BOOL check_name(pstring name,connection_struct *conn)
 
 static BOOL scan_directory(connection_struct *conn, const char *path, char *name, size_t maxlength)
 {
-	void *cur_dir;
+	struct smb_Dir *cur_dir;
 	const char *dname;
 	BOOL mangled;
+	long curpos;
 
 	mangled = mangle_is_mangled(name);
 
@@ -453,13 +450,14 @@ static BOOL scan_directory(connection_struct *conn, const char *path, char *name
 		mangled = !mangle_check_cache( name, maxlength );
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(conn, path, True))) {
+	if (!(cur_dir = OpenDir(conn, path))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
 		return(False);
 	}
 
 	/* now scan for matching names */
-	while ((dname = ReadDirName(cur_dir))) {
+	curpos = 0;
+	while ((dname = ReadDirName(cur_dir, &curpos))) {
 
 		/* Is it dot or dot dot. */
 		if ((dname[0] == '.') && (!dname[1] || (dname[1] == '.' && !dname[2]))) {

@@ -96,6 +96,8 @@ struct ldapsam_privates {
 	
 	/* configuration items */
 	int schema_ver;
+
+	char *domain_dn;
 };
 
 /**********************************************************************
@@ -132,7 +134,7 @@ static const char* get_userattr_key2string( int schema_ver, int key )
  Return the list of attribute names given a user schema version.
 **********************************************************************/
 
-static char** get_userattr_list( int schema_ver )
+static const char** get_userattr_list( int schema_ver )
 {
 	switch ( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
@@ -152,7 +154,7 @@ static char** get_userattr_list( int schema_ver )
  Return the list of attribute names to delete given a user schema version.
 **************************************************************************/
 
-static char** get_userattr_delete_list( int schema_ver )
+static const char** get_userattr_delete_list( int schema_ver )
 {
 	switch ( schema_ver ) {
 		case SCHEMAVER_SAMBAACCOUNT:
@@ -199,7 +201,8 @@ static const char* get_objclass_filter( int schema_ver )
 
 static int ldapsam_search_suffix_by_name (struct ldapsam_privates *ldap_state, 
 					  const char *user,
-					  LDAPMessage ** result, char **attr)
+					  LDAPMessage ** result,
+					  const char **attr)
 {
 	pstring filter;
 	char *escape_user = escape_ldap_string_alloc(user);
@@ -233,7 +236,7 @@ static int ldapsam_search_suffix_by_name (struct ldapsam_privates *ldap_state,
 
 static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state, 
 					 uint32 rid, LDAPMessage ** result, 
-					 char **attr)
+					 const char **attr)
 {
 	pstring filter;
 	int rc;
@@ -252,7 +255,7 @@ static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state,
 
 static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state, 
 					 const DOM_SID *sid, LDAPMessage ** result, 
-					 char **attr)
+					 const char **attr)
 {
 	pstring filter;
 	int rc;
@@ -276,7 +279,7 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
 static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 				     LDAPMessage *result,
 				     const char *objectclass,
-				     char **attrs)
+				     const char **attrs)
 {
 	int rc;
 	LDAPMessage *entry = NULL;
@@ -314,7 +317,7 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 	for (name = ldap_first_attribute(ldap_state->smbldap_state->ldap_struct, entry, &ptr);
 	     name != NULL;
 	     name = ldap_next_attribute(ldap_state->smbldap_state->ldap_struct, entry, ptr)) {
-		char **attrib;
+		const char **attrib;
 
 		/* We are only allowed to delete the attributes that
 		   really exist. */
@@ -1190,7 +1193,7 @@ static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, BOOL update,
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	pstring filter, suffix;
-	char **attr_list;
+	const char **attr_list;
 	BOOL machine_mask = False, user_mask = False;
 
 	pstr_sprintf( filter, "(&%s%s)", lp_ldap_filter(), 
@@ -1272,7 +1275,7 @@ static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }
 
-static void append_attr(char ***attr_list, const char *new_attr)
+static void append_attr(const char ***attr_list, const char *new_attr)
 {
 	int i;
 
@@ -1284,7 +1287,7 @@ static void append_attr(char ***attr_list, const char *new_attr)
 		;
 	}
 
-	(*attr_list) = SMB_REALLOC_ARRAY((*attr_list), char *,  i+2);
+	(*attr_list) = SMB_REALLOC_ARRAY((*attr_list), const char *,  i+2);
 	SMB_ASSERT((*attr_list) != NULL);
 	(*attr_list)[i] = SMB_STRDUP(new_attr);
 	(*attr_list)[i+1] = NULL;
@@ -1301,7 +1304,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
 	int count;
-	char ** attr_list;
+	const char ** attr_list;
 	int rc;
 	
 	attr_list = get_userattr_list( ldap_state->schema_ver );
@@ -1345,7 +1348,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 				   const DOM_SID *sid, LDAPMessage **result) 
 {
 	int rc = -1;
-	char ** attr_list;
+	const char ** attr_list;
 	uint32 rid;
 
 	switch ( ldap_state->schema_ver ) {
@@ -1575,7 +1578,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods, SAM_A
 	int rc;
 	LDAPMessage *result = NULL;
 	NTSTATUS ret;
-	char **attr_list;
+	const char **attr_list;
 	fstring objclass;
 
 	if (!sam_acct) {
@@ -1640,7 +1643,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
 	LDAPMod **mods = NULL;
-	char **attr_list;
+	const char **attr_list;
 
 	result = pdb_get_backend_private_data(newpwd, my_methods);
 	if (!result) {
@@ -1728,7 +1731,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 	LDAPMod 	**mods = NULL;
 	int		ldap_op = LDAP_MOD_REPLACE;
 	uint32		num_result;
-	char 		**attr_list;
+	const char	**attr_list;
 	char 		*escape_user;
 	const char 	*username = pdb_get_username(newpwd);
 	const DOM_SID 	*sid = pdb_get_user_sid(newpwd);
@@ -1928,7 +1931,7 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 {
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 
 	attr_list = get_attr_list(groupmap_attr_list);
 	rc = smbldap_search(ldap_state->smbldap_state, 
@@ -2162,6 +2165,213 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	return ldapsam_getgroup(methods, filter, map);
 }
 
+static void add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
+				    uint32 rid, uint32 **rids, int *num)
+{
+	int i;
+
+	for (i=0; i<*num; i++) {
+		if ((*rids)[i] == rid)
+			return;
+	}
+	
+	*rids = TALLOC_REALLOC_ARRAY(mem_ctx, *rids, uint32, *num+1);
+
+	if (*rids == NULL)
+		return;
+
+	(*rids)[*num] = rid;
+	*num += 1;
+}
+
+static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *group,
+					   uint32 **member_rids,
+					   int *num_members)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	struct smbldap_state *conn = ldap_state->smbldap_state;
+	pstring filter;
+	int rc, count;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry;
+	char **values = NULL;
+	char **memberuid;
+	char *sid_filter = NULL;
+	char *tmp;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
+		return pdb_default_enum_group_members(methods, mem_ctx, group,
+						      member_rids,
+						      num_members);
+
+	*member_rids = NULL;
+	*num_members = 0;
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=sambaSamAccount)"
+		     "(sambaPrimaryGroupSid=%s))",
+		     sid_string_static(group));
+
+	{
+		const char *attrs[] = { "sambaSID", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(conn->ldap_struct, entry))
+	{
+		fstring str;
+		DOM_SID sid;
+		uint32 rid;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "sambaSID",
+						  str, sizeof(str)-1))
+			continue;
+
+		if (!string_to_sid(&sid, str))
+			goto done;
+
+		if (!sid_check_is_in_our_domain(&sid)) {
+			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+				  "in our domain\n"));
+			continue;
+		}
+
+		sid_peek_rid(&sid, &rid);
+
+		add_rid_to_array_unique(mem_ctx, rid, member_rids,
+					num_members);
+	}
+
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	pstr_sprintf(filter,
+		     "(&(objectClass=sambaGroupMapping)"
+		     "(objectClass=posixGroup)"
+		     "(sambaSID=%s))",
+		     sid_string_static(group));
+
+	{
+		const char *attrs[] = { "memberUid", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	count = ldap_count_entries(conn->ldap_struct, msg);
+
+	if (count > 1) {
+		DEBUG(1, ("Found more than one groupmap entry for %s\n",
+			  sid_string_static(group)));
+		goto done;
+	}
+
+	if (count == 0) {
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	entry = ldap_first_entry(conn->ldap_struct, msg);
+	if (entry == NULL)
+		goto done;
+
+	values = ldap_get_values(conn->ldap_struct, msg, "memberUid");
+	if (values == NULL) {
+		result = NT_STATUS_OK;
+		goto done;
+	}
+
+	sid_filter = strdup("(&(objectClass=sambaSamAccount)(|");
+	if (sid_filter == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (memberuid = values; *memberuid != NULL; memberuid += 1) {
+		tmp = sid_filter;
+		asprintf(&sid_filter, "%s(uid=%s)", tmp, *memberuid);
+		free(tmp);
+		if (sid_filter == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+	}
+
+	tmp = sid_filter;
+	asprintf(&sid_filter, "%s))", sid_filter);
+	free(tmp);
+	if (sid_filter == NULL) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	{
+		const char *attrs[] = { "sambaSID", NULL };
+		rc = smbldap_search(conn, lp_ldap_user_suffix(),
+				    LDAP_SCOPE_SUBTREE, sid_filter, attrs, 0,
+				    &msg);
+	}
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(conn->ldap_struct, entry))
+	{
+		fstring str;
+		DOM_SID sid;
+		uint32 rid;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "sambaSID",
+						  str, sizeof(str)-1))
+			continue;
+
+		if (!string_to_sid(&sid, str))
+			goto done;
+
+		if (!sid_check_is_in_our_domain(&sid)) {
+			DEBUG(1, ("Inconsistent SAM -- group member uid not "
+				  "in our domain\n"));
+			continue;
+		}
+
+		sid_peek_rid(&sid, &rid);
+
+		add_rid_to_array_unique(mem_ctx, rid, member_rids,
+					num_members);
+	}
+
+	result = NT_STATUS_OK;
+	
+ done:
+	SAFE_FREE(sid_filter);
+
+	if (values != NULL)
+		ldap_value_free(values);
+
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
 static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       const char *username,
 					       gid_t primary_gid,
@@ -2172,7 +2382,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		(struct ldapsam_privates *)methods->private_data;
 	struct smbldap_state *conn = ldap_state->smbldap_state;
 	pstring filter;
-	char *attrs[] = { "gidNumber", "sambaSID", NULL };
+	const char *attrs[] = { "gidNumber", "sambaSID", NULL };
 	char *escape_name;
 	int rc;
 	LDAPMessage *msg = NULL;
@@ -2328,7 +2538,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 		pstring suffix;
 		pstring filter;
-		char **attr_list;
+		const char **attr_list;
 
 		ldap_msgfree(result);
 
@@ -2487,7 +2697,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	LDAPMessage *result = NULL;
 	int rc;
 	NTSTATUS ret;
-	char **attr_list;
+	const char **attr_list;
 
 	sid_to_string(sidstring, &sid);
 	
@@ -2517,7 +2727,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	fstring filter;
 	int rc;
-	char **attr_list;
+	const char **attr_list;
 
 	pstr_sprintf( filter, "(objectclass=%s)", LDAP_OBJ_GROUPMAP);
 	attr_list = get_attr_list( groupmap_attr_list );
@@ -2813,7 +3023,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		(struct ldapsam_privates *)methods->private_data;
 	LDAP *ldap_struct;
 
-	char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
+	const char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
 
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
@@ -2892,6 +3102,9 @@ static void free_private_data(void **vp)
 		ldap_msgfree((*ldap_state)->result);
 		(*ldap_state)->result = NULL;
 	}
+	if ((*ldap_state)->domain_dn != NULL) {
+		SAFE_FREE((*ldap_state)->domain_dn);
+	}
 
 	*ldap_state = NULL;
 
@@ -2930,6 +3143,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->update_group_mapping_entry = ldapsam_update_group_mapping_entry;
 	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
+	(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
 	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 
 	/* TODO: Setup private data and free */
@@ -3010,6 +3224,7 @@ static NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_met
 	DOM_SID ldap_domain_sid;
 	DOM_SID secrets_domain_sid;
 	pstring domain_sid_string;
+	char *dn;
 
 	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam_common(pdb_context, pdb_method, location))) {
 		return nt_status;
@@ -3046,6 +3261,14 @@ and will risk BDCs having inconsistant SIDs\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	dn = smbldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+	if (!dn) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_state->domain_dn = smb_xstrdup(dn);
+	ldap_memfree(dn);
 
 	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
 				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
