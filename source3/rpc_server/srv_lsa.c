@@ -39,7 +39,7 @@ static void lsa_reply_open_policy(prs_struct *rdata)
 	LSA_R_OPEN_POL r_o;
 
 	/* set up the LSA QUERY INFO response */
-	bzero(&(r_o.pol.data), POL_HND_SIZE);
+	bzero(r_o.pol.data, POL_HND_SIZE);
 	for (i = 4; i < POL_HND_SIZE; i++)
 	{
 		r_o.pol.data[i] = i;
