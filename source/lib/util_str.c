@@ -590,8 +590,9 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 	len = strnlen(src, maxlength+1);
 
 	if (len > maxlength) {
-		DEBUG(0,("ERROR: string overflow by %u (%u - %u) in safe_strcpy [%.50s]\n",
-			 (unsigned int)(len-maxlength), len, maxlength, src));
+		DEBUG(0,("ERROR: string overflow by %lu (%lu - %lu) in safe_strcpy [%.50s]\n",
+			 (unsigned long)(len-maxlength), (unsigned long)len, 
+			 (unsigned long)maxlength, src));
 		len = maxlength;
 	}
       

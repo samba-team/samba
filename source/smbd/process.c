@@ -637,7 +637,7 @@ static void smb_dump(const char *name, int type, char *data, ssize_t len)
 		if (ret != len)
 			DEBUG(0,("smb_dump: problem: write returned %d\n", (int)ret ));
 		close(fd);
-		DEBUG(0,("created %s len %d\n", fname, len));
+		DEBUG(0,("created %s len %ul\n", fname, (unsigned long)len));
 	}
 }
 

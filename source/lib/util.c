@@ -1404,7 +1404,8 @@ void smb_panic(const char *why)
 	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
 	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
 
-	DEBUG(0, ("BACKTRACE: %d stack frames:\n", backtrace_size));
+	DEBUG(0, ("BACKTRACE: %lu stack frames:\n", 
+		  (unsigned long)backtrace_size));
 	
 	if (backtrace_strings) {
 		int i;

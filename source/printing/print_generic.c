@@ -164,7 +164,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
 	slprintf(job_page_count, sizeof(job_page_count)-1, "%d", pjob->page_count);
-	slprintf(job_size, sizeof(job_size)-1, "%d", pjob->size);
+	slprintf(job_size, sizeof(job_size)-1, "%lu", (unsigned long)pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
