@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/iconv.h"
 
 
 /**
