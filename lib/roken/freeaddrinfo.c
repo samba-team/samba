@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -45,8 +45,13 @@ RCSID("$Id$");
 void
 freeaddrinfo(struct addrinfo *ai)
 {
-    for (; ai != NULL; ai = ai->ai_next) {
+    struct addrinfo *tofree;
+
+    while(ai != NULL) {
 	free (ai->ai_canonname);
 	free (ai->ai_addr);
+	tofree = ai;
+	ai = ai->ai-next;
+	free (tofree);
     }
 }
