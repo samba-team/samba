@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    minimal iconv implementation
    Copyright (C) Andrew Tridgell 2001
+   Copyright (C) Jelmer Vernooij 2002,2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,35 +21,97 @@
 
 #include "includes.h"
 
+
+/**
+ * @file
+ *
+ * @brief Samba wrapper/stub for iconv character set conversion.
+ *
+ * iconv is the XPG2 interface for converting between character
+ * encodings.  This file provides a Samba wrapper around it, and also
+ * a simple reimplementation that is used if the system does not
+ * implement iconv.
+ *
+ * Samba only works with encodings that are supersets of ASCII: ascii
+ * characters like whitespace can be tested for directly, multibyte
+ * sequences start with a byte with the high bit set, and strings are
+ * terminated by a nul byte.
+ *
+ * Note that the only function provided by iconv is conversion between
+ * characters.  It doesn't directly support operations like
+ * uppercasing or comparison.  We have to convert to UCS-2 and compare
+ * there.
+ *
+ * @sa Samba Developers Guide
+ **/
+
 static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t  utf8_pull(void *,char **, size_t *, char **, size_t *);
 static size_t  utf8_push(void *,char **, size_t *, char **, size_t *);
-static size_t weird_pull(void *,char **, size_t *, char **, size_t *);
-static size_t weird_push(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
-/*
-  for each charset we have a function that pulls from that charset to 
-  a ucs2 buffer, and a function that pushes to a ucs2 buffer 
-*/
-static struct {
-	const char *name;
-	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
-		       char **outbuf, size_t *outbytesleft);
-} charsets[] = {
+static struct charset_functions builtin_functions[] = {
 	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UTF8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
-	{"WEIRD", weird_pull, weird_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
 	{NULL, NULL, NULL}
 };
 
+static struct charset_functions *charsets = NULL;
+
+static struct charset_functions *find_charset_functions(const char *name) 
+{
+	struct charset_functions *c = charsets;
+	pstring stripped;
+
+	module_path_get_name(name, stripped);
+	
+	while(c) {
+		if (strcasecmp(stripped, c->name) == 0) {
+			return c;
+		}
+		c = c->next;
+	}
+
+	return NULL;
+}
+
+BOOL smb_register_charset(struct charset_functions *funcs) 
+{
+	struct charset_functions *c = charsets;
+
+	DEBUG(5, ("Attempting to register new charset %s\n", funcs->name));
+	/* Check whether we already have this charset... */
+	while(c) {
+		if(!strcasecmp(c->name, funcs->name)){ 
+			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
+			return False;
+		}
+		c = c->next;
+	}
+
+	funcs->next = funcs->prev = NULL;
+	DEBUG(5, ("Registered charset %s\n", funcs->name));
+	DLIST_ADD(charsets, funcs);
+	return True;
+}
+
+void lazy_initialize_iconv(void)
+{
+	static BOOL initialized;
+	int i;
+
+	if (!initialized) {
+		initialized = True;
+		for(i = 0; builtin_functions[i].name; i++) 
+			smb_register_charset(&builtin_functions[i]);
+		static_init_charset;
+	}
+}
 
 /* if there was an error then reset the internal state,
    this ensures that we don't have a shift state remaining for
@@ -116,7 +179,11 @@ size_t smb_iconv(smb_iconv_t cd,
 smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	smb_iconv_t ret;
-	int from, to;
+	struct charset_functions *from, *to;
+	
+	lazy_initialize_iconv();
+	from = charsets;
+	to = charsets;
 
 	ret = (smb_iconv_t)malloc(sizeof(*ret));
 	if (!ret) {
@@ -129,53 +196,78 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	ret->to_name = strdup(tocode);
 
 	/* check for the simplest null conversion */
-	if (strcmp(fromcode, tocode) == 0) {
+	if (strcasecmp(fromcode, tocode) == 0) {
 		ret->direct = iconv_copy;
 		return ret;
 	}
 
-	for (from=0; charsets[from].name; from++) {
-		if (strcasecmp(charsets[from].name, fromcode) == 0) break;
-	}
-	for (to=0; charsets[to].name; to++) {
-		if (strcasecmp(charsets[to].name, tocode) == 0) break;
+	/* check if we have a builtin function for this conversion */
+	from = find_charset_functions(fromcode);
+	if(from)ret->pull = from->pull;
+	
+	to = find_charset_functions(tocode);
+	if(to)ret->push = to->push;
+
+	/* check if we can use iconv for this conversion */
+#ifdef HAVE_NATIVE_ICONV
+	if (!ret->pull) {
+		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
+		if (ret->cd_pull != (iconv_t)-1)
+			ret->pull = sys_iconv;
 	}
 
-#ifdef HAVE_NATIVE_ICONV
-	if (!charsets[from].name) {
-		ret->pull = sys_iconv;
-		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
-		if (ret->cd_pull == (iconv_t)-1) goto failed;
-	}
-	if (!charsets[to].name) {
-		ret->push = sys_iconv;
+	if (!ret->push) {
 		ret->cd_push = iconv_open(tocode, "UCS-2LE");
-		if (ret->cd_push == (iconv_t)-1) goto failed;
-	}
-#else
-	if (!charsets[from].name || !charsets[to].name) {
-		goto failed;
+		if (ret->cd_push != (iconv_t)-1)
+			ret->push = sys_iconv;
 	}
 #endif
+	
+	/* check if there is a module available that can do this conversion */
+	if (!ret->pull && smb_probe_module("charset", fromcode)) {
+		if(!(from = find_charset_functions(fromcode)))
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", fromcode, fromcode));
+		else 
+			ret->pull = from->pull;
+	}
+
+	if (!ret->push && smb_probe_module("charset", tocode)) {
+		if(!(to = find_charset_functions(tocode)))
+			DEBUG(0, ("Module %s doesn't provide charset %s!\n", tocode, tocode));
+		else 
+			ret->push = to->push;
+	}
+
+	if (!ret->push || !ret->pull) {
+		SAFE_FREE(ret->from_name);
+		SAFE_FREE(ret->to_name);
+		SAFE_FREE(ret);
+		errno = EINVAL;
+		return (smb_iconv_t)-1;
+	}
 
 	/* check for conversion to/from ucs2 */
-	if (from == 0 && charsets[to].name) {
-		ret->direct = charsets[to].push;
-		return ret;
-	}
-	if (to == 0 && charsets[from].name) {
-		ret->direct = charsets[from].pull;
+	if (strcasecmp(fromcode, "UCS-2LE") == 0 && to) {
+		ret->direct = to->push;
+		ret->push = ret->pull = NULL;
 		return ret;
 	}
 
+	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
+		ret->direct = from->pull;
+		ret->push = ret->pull = NULL;
+		return ret;
+	}
+
+	/* Check if we can do the conversion direct */
 #ifdef HAVE_NATIVE_ICONV
-	if (from == 0) {
+	if (strcasecmp(fromcode, "UCS-2LE") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_push;
 		ret->cd_push = NULL;
 		return ret;
 	}
-	if (to == 0) {
+	if (strcasecmp(tocode, "UCS-2LE") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
@@ -183,15 +275,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 #endif
 
-	/* the general case has to go via a buffer */
-	if (!ret->pull) ret->pull = charsets[from].pull;
-	if (!ret->push) ret->push = charsets[to].push;
 	return ret;
-
-failed:
-	SAFE_FREE(ret);
-	errno = EINVAL;
-	return (smb_iconv_t)-1;
 }
 
 /*
@@ -352,111 +436,6 @@ static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-
-/* the "weird" character set is very useful for testing multi-byte
-   support and finding bugs. Don't use on a production system! 
-*/
-static struct {
-	const char from;
-	const char *to;
-	int len;
-} weird_table[] = {
-	{'q', "^q^", 3},
-	{'Q', "^Q^", 3},
-	{0, NULL}
-};
-
-static size_t weird_pull(void *cd, char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
-{
-	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		int i;
-		int done = 0;
-		for (i=0;weird_table[i].from;i++) {
-			if (strncmp((*inbuf), 
-				    weird_table[i].to, 
-				    weird_table[i].len) == 0) {
-				if (*inbytesleft < weird_table[i].len) {
-					DEBUG(0,("ERROR: truncated weird string\n"));
-					/* smb_panic("weird_pull"); */
-
-				} else {
-					(*outbuf)[0] = weird_table[i].from;
-					(*outbuf)[1] = 0;
-					(*inbytesleft)  -= weird_table[i].len;
-					(*outbytesleft) -= 2;
-					(*inbuf)  += weird_table[i].len;
-					(*outbuf) += 2;
-					done = 1;
-					break;
-				}
-			}
-		}
-		if (done) continue;
-		(*outbuf)[0] = (*inbuf)[0];
-		(*outbuf)[1] = 0;
-		(*inbytesleft)  -= 1;
-		(*outbytesleft) -= 2;
-		(*inbuf)  += 1;
-		(*outbuf) += 2;
-	}
-
-	if (*inbytesleft > 0) {
-		errno = E2BIG;
-		return -1;
-	}
-	
-	return 0;
-}
-
-static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
-{
-	int ir_count=0;
-
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		int i;
-		int done=0;
-		for (i=0;weird_table[i].from;i++) {
-			if ((*inbuf)[0] == weird_table[i].from &&
-			    (*inbuf)[1] == 0) {
-				if (*outbytesleft < weird_table[i].len) {
-					DEBUG(0,("No room for weird character\n"));
-					/* smb_panic("weird_push"); */
-				} else {
-					memcpy(*outbuf, weird_table[i].to, 
-					       weird_table[i].len);
-					(*inbytesleft)  -= 2;
-					(*outbytesleft) -= weird_table[i].len;
-					(*inbuf)  += 2;
-					(*outbuf) += weird_table[i].len;
-					done = 1;
-					break;
-				}
-			}
-		}
-		if (done) continue;
-
-		(*outbuf)[0] = (*inbuf)[0];
-		if ((*inbuf)[1]) ir_count++;
-		(*inbytesleft)  -= 2;
-		(*outbytesleft) -= 1;
-		(*inbuf)  += 2;
-		(*outbuf) += 1;
-	}
-
-	if (*inbytesleft == 1) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (*inbytesleft > 1) {
-		errno = E2BIG;
-		return -1;
-	}
-	
-	return ir_count;
-}
 
 static size_t iconv_copy(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
