@@ -2641,7 +2641,7 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
 
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
     END_PROFILE(SMBwriteunlock);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+    return(UNIXERROR(ERRHRD,ERRdiskfull));
   }
 
 	status = do_unlock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtowrite, 
@@ -2722,7 +2722,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwrite);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+    		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
 	outsize = set_message(outbuf,1,0,True);
@@ -2816,7 +2816,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
   
   if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
     END_PROFILE(SMBwriteX);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+    return(UNIXERROR(ERRHRD,ERRdiskfull));
   }
 
   set_message(outbuf,6,0,True);
@@ -3082,9 +3082,9 @@ int reply_writeclose(connection_struct *conn,
 		 fsp->fnum, (int)numtowrite, (int)nwritten,
 		 conn->num_files_open));
   
-	if (nwritten <= 0) {
+	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
 		END_PROFILE(SMBwriteclose);
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
+    		return(UNIXERROR(ERRHRD,ERRdiskfull));
 	}
  
 	if(close_err != 0) {
@@ -3406,7 +3406,7 @@ int reply_printwrite(connection_struct *conn, char *inbuf,char *outbuf, int dum_
   
   if (write_file(fsp,data,-1,numtowrite) != numtowrite) {
     END_PROFILE(SMBsplwr);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
+    return(UNIXERROR(ERRHRD,ERRdiskfull));
   }
 
   DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
