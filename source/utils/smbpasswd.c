@@ -675,7 +675,7 @@ static int set_domain_sid_from_dc( char *domain, char *remote )
 	}
 
 	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) 
-		|| !secrets_store_domain_sid(domain, &domain_sid))
+		|| !secrets_store_domain_sid(global_myname, &domain_sid))
 	{
 		fprintf(stderr,"Failed to get domain SID for %s.\n",domain);
 		return 1;
