@@ -86,11 +86,8 @@ void build_options(BOOL screen)
        snprintf(outstring,sizeof(outstring),"   KRB4_DIR: %s\n",KRB4_DIR);
        output(screen,outstring);
 #endif
-#if defined(KRB5_AUTH) && defined(KRB5_DIR)
-       snprintf(outstring,sizeof(outstring),"   KRB5_AUTH");
-       output(screen,outstring);
-       snprintf(outstring,sizeof(outstring),"   KRB5_DIR: %s\n",KRB5_DIR);
-       output(screen,outstring);
+#if HAVE_KRB5
+       output(screen,"   HAVE_KRB5");
 #endif
 #ifdef WITH_AUTOMOUNT
        snprintf(outstring,sizeof(outstring),"   WITH_AUTOMOUNT\n");
