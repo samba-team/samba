@@ -533,15 +533,15 @@ static void usage(void)
 {
 	printf("Usage: rpcclient server [options]\n");
 
-	printf("\t-A authfile           file containing user credentials\n");
-	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
-	printf("\t-d debuglevel         set the debuglevel\n");
-	printf("\t-l logfile            name of logfile to use as opposed to stdout\n");
-	printf("\t-h                    Print this help message.\n");
-	printf("\t-N                    don't ask for a password\n");
-	printf("\t-s configfile         specify an alternative config file\n");
-	printf("\t-U username           set the network username\n");
-	printf("\t-W domain             set the domain name for user account\n");
+	printf("\t-A or --authfile authfile          file containing user credentials\n");
+	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
+	printf("\t-d or --debug debuglevel           set the debuglevel\n");
+	printf("\t-l or --logfile logfile            logfile to use instead of stdout\n");
+	printf("\t-h or --help                       Print this help message.\n");
+	printf("\t-N or --nopass                     don't ask for a password\n");
+	printf("\t-s or --conf configfile            specify an alternative config file\n");
+	printf("\t-U or --user username              set the network username\n");
+	printf("\t-W or --workgroup domain           set the domain name for user account\n");
 	printf("\n");
 }
 
@@ -552,21 +552,42 @@ static void usage(void)
 	extern char 		*optarg;
 	extern int 		optind;
 	extern pstring 		global_myname;
-	BOOL 			got_pass = False;
+	int 			got_pass = 0;
 	BOOL 			interactive = True;
 	int 			opt;
 	int 			olddebug;
-	pstring 		cmdstr = "";
+	char			*cmdstr = "";
 	struct cli_state	*cli;
 	fstring 		password="",
 				username="",
 				domain="",
 				server="";
+	char *opt_authfile=NULL,
+	     *opt_username=NULL,
+	     *opt_domain=NULL,
+	     *opt_configfile=NULL,
+	     *opt_logfile=NULL;
 	pstring logfile;
 	struct cmd_set **cmd_set;
 	struct in_addr server_ip;
 	NTSTATUS nt_status;
 	extern BOOL AllowDebugChange;
+
+	poptContext pc;
+	struct poptOption long_options[] = {
+		{"authfile",	'A', POPT_ARG_STRING,	&opt_authfile, 'A'},
+		{"conf",        's', POPT_ARG_STRING, 	&opt_configfile, 's'},
+		{"nopass",	'N', POPT_ARG_NONE,	&got_pass},
+		{"debug",       'd', POPT_ARG_INT,	&DEBUGLEVEL},
+		{"debuglevel",  'd', POPT_ARG_INT,	&DEBUGLEVEL},
+		{"user",        'U', POPT_ARG_STRING,	&opt_username, 'U'},
+		{"workgroup",   'W', POPT_ARG_STRING, 	&opt_domain, 'W'},
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
+		{"help",        'h', POPT_ARG_NONE,	0, 'h'},
+		{ 0, 0, 0, 0}
+	};
+
 
 	setlinebuf(stdout);
 
@@ -588,51 +609,44 @@ static void usage(void)
 	argv++;
 	argc--;
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
+	pc = poptGetContext(NULL, argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+	
+	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
-			read_authfile (optarg, username, password, domain);
+			read_authfile (opt_authfile, username,
+				       password, domain);
 			if (strlen (password))
-				got_pass = True;
-			break;
-
-		case 'c':
-			pstrcpy(cmdstr, optarg);
-			break;
-
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
+				got_pass = 1;
 			break;
 
 		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
+			slprintf(logfile, sizeof(logfile) - 1, "%s.client", 
+				 opt_logfile);
 			lp_set_logfile(logfile);
 			interactive = False;
  			break;
 
-		case 'N':
-			got_pass = True;
-			break;
-			
 		case 's':
-			pstrcpy(dyn_CONFIGFILE, optarg);
+			pstrcpy(dyn_CONFIGFILE, opt_configfile);
 			break;
 
 		case 'U': {
 			char *lp;
-			pstrcpy(username,optarg);
+			pstrcpy(username,opt_username);
 			if ((lp=strchr_m(username,'%'))) {
 				*lp = 0;
 				pstrcpy(password,lp+1);
-				got_pass = True;
-				memset(strchr_m(optarg,'%')+1,'X',strlen(password));
+				got_pass = 1;
+				memset(strchr_m(opt_username,'%')+1,'X',strlen(password));
 			}
 			break;
 		}
 		
 		case 'W':
-			pstrcpy(domain, optarg);
+			pstrcpy(domain, opt_domain);
 			break;
 			
 		case 'h':
