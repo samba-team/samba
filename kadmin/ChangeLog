@@ -1,3 +1,8 @@
+2002-10-23  Assar Westerlund  <assar@kth.se>
+
+	* version4.c (decode_packet): check the length of the version
+	string and that rlen has a reasonable value
+
 2002-10-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* version4.c: check size of rlen
