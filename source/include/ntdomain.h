@@ -67,6 +67,7 @@ typedef struct pipes_struct
 	prs_struct rhdr; /* output header */
 	prs_struct rdata; /* output data */
 	prs_struct rauth; /* output authentication verifier */
+	prs_struct rverf; /* output verifier */
 	prs_struct rntlm; /* output ntlmssp */
 
 	RPC_HDR     hdr;
@@ -74,11 +75,16 @@ typedef struct pipes_struct
 	RPC_HDR_RB  hdr_rb;
 	RPC_HDR_REQ  hdr_req;
 	RPC_HDR_RESP hdr_resp;
+	RPC_HDR_AUTH  auth_info;
+	RPC_HDR_AUTHA autha_info;
 
 	RPC_AUTH_VERIFIER     auth_verifier;
 	RPC_AUTH_NTLMSSP_NEG  ntlmssp_neg;
 	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
 	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
+
+	BOOL ntlmssp_auth;
+	unsigned char ntlmssp_hash[256];
 
 	uint32 file_offset;
 	uint32 hdr_offsets;

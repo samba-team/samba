@@ -289,12 +289,15 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd,
 
 static BOOL create_rpc_bind_req(prs_struct *rhdr,
                                 prs_struct *rhdr_rb,
+                                prs_struct *rhdr_auth,
                                 prs_struct *auth_req,
+                                prs_struct *auth_ntlm,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
                                 char *my_name, char *domain)
 {
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
+	RPC_HDR_AUTH         hdr_auth;
 	RPC_AUTH_VERIFIER    auth_verifier;
 	RPC_AUTH_NTLMSSP_NEG ntlmssp_neg;
 
@@ -306,10 +309,13 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	smb_io_rpc_hdr_rb("", &hdr_rb,  rhdr_rb, 0);
 	mem_realloc_data(rhdr_rb->data, rhdr_rb->offset);
 
-	if (auth_req != NULL)
+	if (auth_req != NULL && rhdr_auth != NULL && auth_ntlm != NULL)
 	{
+		make_rpc_hdr_auth(&hdr_auth, 0x0a, 0x06, 0x00);
+		smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, rhdr_auth, 0);
+		mem_realloc_data(rhdr_auth->data, rhdr_auth->offset);
+
 		make_rpc_auth_verifier(&auth_verifier,
-		                       0x0a, 0x06, 0x00,
 		                       "NTLMSSP", NTLMSSP_NEGOTIATE);
 
 		smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_req, 0);
@@ -325,7 +331,8 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	/* create the request RPC_HDR */
 	make_rpc_hdr(&hdr, RPC_BIND, 0x0, get_rpc_call_id(),
 	             rhdr_rb->offset + 0x10,
-	             auth_req != NULL ? auth_req->offset : 0);
+	             auth_req  != NULL ? auth_req ->offset : 0 +
+	             auth_ntlm != NULL ? auth_ntlm->offset : 0);
 
 	smb_io_rpc_hdr("hdr"   , &hdr   , rhdr, 0);
 	mem_realloc_data(rhdr->data, rhdr->offset);
@@ -336,25 +343,18 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 	/*** link rpc header, bind acknowledgment and authentication responses ***/
 	/***/
 
-	rhdr->data->offset.start = 0;
-	rhdr->data->offset.end   = rhdr->offset;
-	rhdr->data->next         = rhdr_rb->data;
-
 	if (auth_req != NULL)
 	{
-		rhdr_rb->data->offset.start = rhdr->offset;
-		rhdr_rb->data->offset.end   = rhdr->offset + rhdr_rb->offset;
-		rhdr_rb->data->next         = auth_req->data;
-
-		auth_req->data->offset.start = rhdr->offset + rhdr_rb->offset;
-		auth_req->data->offset.end   = rhdr->offset + auth_req->offset + rhdr_rb->offset;
-		auth_req->data->next         = NULL;
+		prs_link(NULL     , rhdr      , rhdr_rb  );
+		prs_link(rhdr     , rhdr_rb   , rhdr_auth);
+		prs_link(rhdr_rb  , rhdr_auth , auth_req );
+		prs_link(rhdr_auth, auth_req  , auth_ntlm);
+		prs_link(auth_req , auth_ntlm , NULL     );
 	}
 	else
 	{
-		rhdr_rb->data->offset.start = rhdr->offset;
-		rhdr_rb->data->offset.end   = rhdr->offset + rhdr_rb->offset;
-		rhdr_rb->data->next         = NULL;
+		prs_link(NULL, rhdr   , rhdr_rb);
+		prs_link(rhdr, rhdr_rb, NULL   );
 	}
 
 	return True;
@@ -578,7 +578,9 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 {
 	prs_struct hdr;
 	prs_struct hdr_rb;
+	prs_struct hdr_auth;
 	prs_struct auth_req;
+	prs_struct auth_ntlm;
 	prs_struct data;
 	prs_struct rdata;
 	prs_struct rparam;
@@ -592,15 +594,20 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 
 	if (!valid_pipe_name(pipe_name, abstract, transfer)) return False;
 
-	prs_init(&hdr     , 0x10                   , 4, 0x0          , False);
-	prs_init(&hdr_rb  , 1024                   , 4, SAFETY_MARGIN, False);
-	prs_init(&auth_req, ntlmssp_auth ? 1024 : 0, 4, SAFETY_MARGIN, False);
+	prs_init(&hdr      , 0x10                   , 4, 0x0          , False);
+	prs_init(&hdr_rb   , 1024                   , 4, SAFETY_MARGIN, False);
+	prs_init(&hdr_auth , ntlmssp_auth ?    8 : 0, 4, SAFETY_MARGIN, False);
+	prs_init(&auth_req , ntlmssp_auth ? 1024 : 0, 4, SAFETY_MARGIN, False);
+	prs_init(&auth_ntlm, ntlmssp_auth ? 1024 : 0, 4, SAFETY_MARGIN, False);
 
 	prs_init(&rdata , 0   , 4, SAFETY_MARGIN, True );
 	prs_init(&rparam, 0   , 4, SAFETY_MARGIN, True );
 
-	create_rpc_bind_req(&hdr, &hdr_rb, ntlmssp_auth ? &auth_req : NULL,
-	abstract, transfer, global_myname, global_myworkgroup);
+	create_rpc_bind_req(&hdr, &hdr_rb,
+	                    ntlmssp_auth ? &hdr_auth : NULL,
+	                    ntlmssp_auth ? &auth_req : NULL,
+	                    ntlmssp_auth ? &auth_ntlm : NULL,
+	                    abstract, transfer, global_myname, global_myworkgroup);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
 	prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
@@ -609,7 +616,10 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	/* send data on \PIPE\.  receive a response */
 	if (rpc_api_pipe(cli, 0x0026, NULL, &data, &rparam, &rdata))
 	{
-		RPC_HDR_BA hdr_ba;
+		RPC_HDR_BA   hdr_ba;
+		RPC_HDR_AUTH rhdr_auth;
+		RPC_AUTH_VERIFIER rhdr_verf;
+		RPC_AUTH_NTLMSSP_CHAL rhdr_chal;
 
 		DEBUG(5, ("rpc_api_pipe: return OK\n"));
 
@@ -619,14 +629,33 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 		{
 			valid_ack = check_bind_response(&hdr_ba, pipe_name, transfer);
 		}
+
+		if (valid_ack && ntlmssp_auth)
+		{
+			smb_io_rpc_hdr_auth("", &rhdr_auth, &rdata, 0);
+			if (rdata.offset == 0) valid_ack = False;
+		}
+
+		if (valid_ack && ntlmssp_auth)
+		{
+			smb_io_rpc_auth_verifier("", &rhdr_verf, &rdata, 0);
+			if (rdata.offset == 0) valid_ack = False;
+		}
+		if (valid_ack && ntlmssp_auth)
+		{
+			smb_io_rpc_auth_ntlmssp_chal("", &rhdr_chal, &rdata, 0);
+			if (rdata.offset == 0) valid_ack = False;
+		}
 	}
 
-	prs_mem_free(&data    );
-	prs_mem_free(&hdr     );
-	prs_mem_free(&hdr_rb  );
-	prs_mem_free(&auth_req);
-	prs_mem_free(&rdata   );
-	prs_mem_free(&rparam  );
+	prs_mem_free(&data     );
+	prs_mem_free(&hdr      );
+	prs_mem_free(&hdr_rb   );
+	prs_mem_free(&hdr_auth );
+	prs_mem_free(&auth_req );
+	prs_mem_free(&auth_ntlm);
+	prs_mem_free(&rdata    );
+	prs_mem_free(&rparam   );
 
 	return valid_ack;
 }

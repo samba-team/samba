@@ -155,15 +155,33 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 /****************************************************************************
  writes data to a pipe.
+
+ SERIOUSLY ALPHA CODE!
  ****************************************************************************/
 int write_pipe(pipes_struct *p, char *data, int n)
 {
+	prs_struct pd;
+	struct mem_buf data_buf;
+
 	DEBUG(6,("write_pipe: %x", p->pnum));
 
 	DEBUG(6,("name: %s open: %s len: %d",
 		 p->name, BOOLSTR(p->open), n));
 
-	return -1;
+	dump_data(50, data, n);
+
+	/* fake up a data buffer from the write_pipe data parameters */
+	mem_create(&data_buf, data, n, 0, False);
+	data_buf.offset.start = 0;
+	data_buf.offset.end   = n;
+
+	/* fake up a parsing structure */
+	pd.data = &data_buf;
+	pd.align = 4;
+	pd.io = True;
+	pd.offset = 0;
+
+	return rpc_command(p, &pd) ? n : -1;
 }
 
 

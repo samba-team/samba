@@ -152,6 +152,18 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
 	E_P24(p21, c8, p24);
 }
 
+/* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
+void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
+{
+	uchar p21[21];
+ 
+	memset(p21,'\0',21);
+	memcpy(p21, passwd, 8);    
+	memset(p21 + 8, 0xbd, 8);    
+
+	E_P24(p21, ntlmchalresp, p24);
+}
+
 
 /* Does the NT MD4 hash then des encryption. */
  

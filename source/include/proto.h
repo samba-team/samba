@@ -496,6 +496,8 @@ void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw);
+void NTLMSSPhash( unsigned char hash[256], unsigned char const key[5]);
+void NTLMSSPcalc( unsigned char hash[256], unsigned char *data, int len);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
@@ -504,6 +506,7 @@ void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
 void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
+void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 /*The following definitions come from  libsmb/smberr.c  */
@@ -1489,7 +1492,7 @@ void prs_init(prs_struct *ps, uint32 size,
 				uint8 align, uint32 margin,
 				BOOL io);
 void prs_mem_free(prs_struct *ps);
-void prs_link(prs_struct *ps, prs_struct const *const to);
+void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
 void prs_align(prs_struct *ps);
 BOOL prs_grow(prs_struct *ps);
 BOOL prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
@@ -1539,13 +1542,20 @@ void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
 void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum);
 void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 void smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
+void make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,
+				uint16 max_tsize, uint16 max_rsize,
+				uint8 auth_type, uint8 auth_level,
+				uint8 stub_type_len);
+void smb_io_rpc_hdr_autha(char *desc, RPC_HDR_AUTHA *rai, prs_struct *ps, int depth);
+void make_rpc_hdr_auth(RPC_HDR_AUTH *rai,
+				uint8 auth_type, uint8 auth_level,
+				uint8 stub_type_len);
+void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 				uint32 neg_flgs,
 				fstring myname, fstring domain);
 void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
 void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
-				uint8 auth_type, uint8 auth_level,
-				uint8 stub_type_len,
 				char *signature, uint32 msg_type);
 void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth);
 void make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
@@ -1852,6 +1862,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
 int make_dom_gids(char *gids_str, DOM_GID **ppgids);
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end);
+BOOL rpc_command(pipes_struct *p, prs_struct *pd);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *data);
 void get_domain_user_groups(char *domain_groups, char *user);

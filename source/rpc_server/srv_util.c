@@ -209,6 +209,284 @@ BOOL create_rpc_reply(pipes_struct *p,
 }
 
 
+static BOOL api_pipe_ntlmssp(pipes_struct *p, prs_struct *pd)
+{
+	/* receive a negotiate; send a challenge; receive a response */
+	switch (p->auth_verifier.msg_type)
+	{
+		case NTLMSSP_NEGOTIATE:
+		{
+			smb_io_rpc_auth_ntlmssp_neg("", &p->ntlmssp_neg, pd, 0);
+			break;
+		}
+		case NTLMSSP_AUTH:
+		{
+			smb_io_rpc_auth_ntlmssp_resp("", &p->ntlmssp_resp, pd, 0);
+			break;
+		}
+		default:
+		{
+			/* NTLMSSP expected: unexpected message type */
+			DEBUG(3,("unexpected message type in NTLMSSP %d\n",
+			          p->auth_verifier.msg_type));
+			return False;
+		}
+	}
+
+	return (pd->offset != 0);
+}
+
+struct api_cmd
+{
+  char * pipe_clnt_name;
+  char * pipe_srv_name;
+  BOOL (*fn) (pipes_struct *, prs_struct *);
+};
+
+static struct api_cmd api_fd_commands[] =
+{
+    { "lsarpc",   "lsass",   api_ntlsa_rpc },
+    { "samr",     "lsass",   api_samr_rpc },
+    { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
+    { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
+    { "NETLOGON", "lsass",   api_netlog_rpc },
+    { "winreg",   "winreg",  api_reg_rpc },
+    { NULL,       NULL,      NULL }
+};
+
+static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
+{
+	p->ntlmssp_auth = False;
+
+	DEBUG(5,("api_pipe_bind_auth_resp: decode request. %d\n", __LINE__));
+
+	if (p->hdr.auth_len != 0)
+	{
+		/* decode the authentication verifier response */
+		smb_io_rpc_hdr_autha("", &p->autha_info, pd, 0);
+		if (pd->offset == 0) return False;
+
+		p->ntlmssp_auth = p->auth_info.auth_type = 0x0a;
+
+		if (p->ntlmssp_auth)
+		{
+			smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
+			if (pd->offset == 0) return False;
+
+			p->ntlmssp_auth = strequal(p->auth_verifier.signature, "NTLMSSP");
+		}
+
+		if (p->ntlmssp_auth)
+		{
+			if (!api_pipe_ntlmssp(p, pd)) return False;
+		}
+	}
+
+	return p->ntlmssp_auth;
+}
+
+static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
+{
+	uint16 assoc_gid;
+	fstring ack_pipe_name;
+	int i = 0;
+
+	p->ntlmssp_auth = False;
+
+	DEBUG(5,("api_pipe_bind_req: decode request. %d\n", __LINE__));
+
+	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
+	{
+		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
+		    api_fd_commands[i].fn != NULL)
+		{
+			DEBUG(3,("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
+			           api_fd_commands[i].pipe_clnt_name,
+			           api_fd_commands[i].pipe_srv_name));
+			fstrcpy(p->pipe_srv_name, api_fd_commands[i].pipe_srv_name);
+			break;
+		}
+	}
+
+	if (api_fd_commands[i].fn == NULL) return False;
+
+	/* decode the bind request */
+	smb_io_rpc_hdr_rb("", &p->hdr_rb, pd, 0);
+
+	if (pd->offset == 0) return False;
+
+	if (p->hdr.auth_len != 0)
+	{
+		/* decode the authentication verifier */
+		smb_io_rpc_hdr_auth    ("", &p->auth_info    , pd, 0);
+		if (pd->offset == 0) return False;
+
+		p->ntlmssp_auth = p->auth_info.auth_type = 0x0a;
+
+		if (p->ntlmssp_auth)
+		{
+			smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
+			if (pd->offset == 0) return False;
+
+			p->ntlmssp_auth = strequal(p->auth_verifier.signature, "NTLMSSP");
+		}
+
+		if (p->ntlmssp_auth)
+		{
+			if (!api_pipe_ntlmssp(p, pd)) return False;
+		}
+	}
+
+	/* name has to be \PIPE\xxxxx */
+	fstrcpy(ack_pipe_name, "\\PIPE\\");
+	fstrcat(ack_pipe_name, p->pipe_srv_name);
+
+	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
+
+	prs_init(&(p->rdata), 1024, 4, 0, False);
+	prs_init(&(p->rhdr ), 0x10, 4, 0, False);
+	prs_init(&(p->rauth), 1024, 4, 0, False);
+	prs_init(&(p->rverf), 0x08, 4, 0, False);
+	prs_init(&(p->rntlm), 1024, 4, 0, False);
+
+	/***/
+	/*** do the bind ack first ***/
+	/***/
+
+	if (p->ntlmssp_auth)
+	{
+		assoc_gid = 0x7a77;
+	}
+	else
+	{
+		assoc_gid = p->hdr_rb.bba.assoc_gid;
+	}
+
+	make_rpc_hdr_ba(&p->hdr_ba,
+	                p->hdr_rb.bba.max_tsize,
+	                p->hdr_rb.bba.max_rsize,
+	                assoc_gid,
+	                ack_pipe_name,
+	                0x1, 0x0, 0x0,
+	                &(p->hdr_rb.transfer));
+
+	smb_io_rpc_hdr_ba("", &p->hdr_ba, &p->rdata, 0);
+	mem_realloc_data(p->rdata.data, p->rdata.offset);
+
+	/***/
+	/*** now the authentication ***/
+	/***/
+
+	if (p->ntlmssp_auth)
+	{
+		uint8 challenge[8];
+		generate_random_buffer(challenge, 8, False);
+
+		/*** authentication info ***/
+
+		make_rpc_hdr_auth(&p->auth_info,
+		                       0x0a, 0x06, 0);
+		smb_io_rpc_hdr_auth("", &p->auth_info, &p->rverf, 0);
+		mem_realloc_data(p->rverf.data, p->rverf.offset);
+
+		/*** NTLMSSP verifier ***/
+
+		make_rpc_auth_verifier(&p->auth_verifier,
+		                       "NTLMSSP", NTLMSSP_CHALLENGE);
+		smb_io_rpc_auth_verifier("", &p->auth_verifier, &p->rauth, 0);
+		mem_realloc_data(p->rauth.data, p->rauth.offset);
+
+		/* NTLMSSP challenge ***/
+
+		make_rpc_auth_ntlmssp_chal(&p->ntlmssp_chal,
+		                           0x000082b1, challenge);
+		smb_io_rpc_auth_ntlmssp_chal("", &p->ntlmssp_chal, &p->rntlm, 0);
+		mem_realloc_data(p->rntlm.data, p->rntlm.offset);
+	}
+
+	/***/
+	/*** then do the header, now we know the length ***/
+	/***/
+
+	make_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+	             p->hdr.call_id,
+	             p->rdata.offset + p->rverf.offset + p->rauth.offset + p->rntlm.offset + 0x10,
+	             p->rauth.offset + p->rntlm.offset);
+
+	smb_io_rpc_hdr("", &p->hdr, &p->rhdr, 0);
+	mem_realloc_data(p->rhdr.data, p->rdata.offset);
+
+	/***/
+	/*** link rpc header, bind acknowledgment and authentication responses ***/
+	/***/
+
+	if (p->ntlmssp_auth)
+	{
+		prs_link(NULL     , &p->rhdr , &p->rdata);
+		prs_link(&p->rhdr , &p->rdata, &p->rverf);
+		prs_link(&p->rdata, &p->rverf, &p->rauth);
+		prs_link(&p->rverf, &p->rauth, &p->rntlm);
+		prs_link(&p->rauth, &p->rntlm, NULL     );
+	}
+	else
+	{
+		prs_link(NULL    , &p->rhdr , &p->rdata);
+		prs_link(&p->rhdr, &p->rdata, NULL     );
+	}
+
+	return True;
+}
+
+static BOOL api_pipe_request(pipes_struct *p, prs_struct *pd)
+{
+	int i = 0;
+
+	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++)
+	{
+		if (strequal(api_fd_commands[i].pipe_clnt_name, p->name) &&
+		    api_fd_commands[i].fn != NULL)
+		{
+			DEBUG(3,("Doing \\PIPE\\%s\n", api_fd_commands[i].pipe_clnt_name));
+			return api_fd_commands[i].fn(p, pd);
+		}
+	}
+	return False;
+}
+
+BOOL rpc_command(pipes_struct *p, prs_struct *pd)
+{
+	BOOL reply = False;
+	if (pd->data == NULL) return False;
+
+	/* process the rpc header */
+	smb_io_rpc_hdr("", &p->hdr, pd, 0);
+
+	if (pd->offset == 0) return False;
+
+	switch (p->hdr.pkt_type)
+	{
+		case RPC_BIND   :
+		{
+			reply = api_pipe_bind_req(p, pd);
+			break;
+		}
+		case RPC_REQUEST:
+		{
+			reply = api_pipe_request (p, pd);
+			break;
+		}
+		case RPC_BINDRESP: /* not the real name! */
+		{
+			reply = api_pipe_bind_auth_resp(p, pd);
+			break;
+		}
+	}
+
+
+	return reply;
+}
+
+
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
@@ -256,7 +534,7 @@ static BOOL api_rpc_command(pipes_struct *p,
 
 	mem_realloc_data(p->rdata.data, p->rdata.offset);
 
-    DEBUG(10,("called %s\n", rpc_name));
+	DEBUG(10,("called %s\n", rpc_name));
 
 	return True;
 }

@@ -34,7 +34,8 @@ enum RPC_PKT_TYPE
 	RPC_REQUEST = 0x00,
 	RPC_RESPONSE = 0x02,
 	RPC_BIND     = 0x0B,
-	RPC_BINDACK  = 0x0C
+	RPC_BINDACK  = 0x0C,
+	RPC_BINDRESP = 0x10 /* not the real name!  this is undocumented! */
 };
 
 /* DCE/RPC flags */
@@ -140,6 +141,33 @@ typedef struct rpc_hdr_bba_info
 
 } RPC_HDR_BBA;
 
+/* RPC_HDR_AUTHA */
+typedef struct rpc_hdr_autha_info
+{
+	uint16 max_tsize;       /* maximum transmission fragment size (0x1630) */
+	uint16 max_rsize;       /* max receive fragment size (0x1630) */
+
+	uint8 auth_type; /* 0x0a */
+	uint8 auth_level; /* 0x06 */
+	uint8 stub_type_len; /* don't know */
+	uint8 padding; /* padding */
+
+	uint32 unknown; /* 0x0014a0c0 */
+
+} RPC_HDR_AUTHA;
+
+/* RPC_HDR_AUTH */
+typedef struct rpc_hdr_auth_info
+{
+	uint8 auth_type; /* 0x0a */
+	uint8 auth_level; /* 0x06 */
+	uint8 stub_type_len; /* don't know */
+	uint8 padding; /* padding */
+
+	uint32 unknown; /* 0x0014a0c0 */
+
+} RPC_HDR_AUTH;
+
 /* RPC_BIND_REQ - ms req bind */
 typedef struct rpc_bind_req_info
 {
@@ -179,17 +207,9 @@ typedef struct rpc_hdr_ba_info
 
 } RPC_HDR_BA;
 
-/* this is TEMPORARY */
 /* RPC_AUTH_VERIFIER */
 typedef struct rpc_auth_verif_info
 {
-	uint8 auth_type; /* 0x0a */
-	uint8 auth_level; /* 0x06 */
-	uint8 stub_type_len; /* don't know */
-	uint8 padding; /* padding */
-
-	uint32 ptr_0; /* non-zero pointer to something */
-
 	fstring signature; /* "NTLMSSP" */
 	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) */
 
@@ -220,9 +240,7 @@ typedef struct rpc_auth_ntlmssp_chal_info
 	uint32 neg_flags; /* 0x0000 82b1 */
 
 	uint8 challenge[8]; /* ntlm challenge */
-#if 0
 	uint8 reserved [8]; /* zeros */
-#endif
 
 } RPC_AUTH_NTLMSSP_CHAL;
 

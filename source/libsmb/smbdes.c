@@ -357,6 +357,58 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
+void NTLMSSPhash( unsigned char hash[256], unsigned char const key[5])
+{
+  unsigned char j = 0;
+  int ind;
+
+	unsigned char k2[8];
+
+	memcpy(k2, key, sizeof(key));
+	k2[5] = 0xe5;
+	k2[6] = 0xb8;
+	k2[6] = 0xb0;
+
+	for (ind = 0; ind < 256; ind++)
+	{
+		hash[ind] = (unsigned char)ind;
+	}
+
+	for( ind = 0; ind < 256; ind++)
+	{
+		unsigned char tc;
+
+		j += (hash[ind] + k2[ind%8]);
+
+		tc = hash[ind];
+		hash[ind] = hash[j];
+		hash[j] = tc;
+	}
+}
+
+void NTLMSSPcalc( unsigned char hash[256], unsigned char *data, int len)
+{
+	unsigned char index_i = 0;
+	unsigned char index_j = 0;
+	int ind;
+
+	for( ind = 0; ind < len; ind++)
+	{
+		unsigned char tc;
+		unsigned char t;
+
+		index_i++;
+		index_j += hash[index_i];
+
+		tc = hash[index_i];
+		hash[index_i] = hash[index_j];
+		hash[index_j] = tc;
+
+		t = hash[index_i] + hash[index_j];
+		data[ind] ^= hash[t];
+	}
+}
+
 void SamOEMhash( unsigned char *data, unsigned char *key, int val)
 {
   unsigned char s_box[256];
@@ -380,8 +432,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
      s_box[ind] = s_box[j];
      s_box[j] = tc;
   }
-
-  for( ind = 0; ind < (val ? 516 : 16); ind++)
+  for( ind = 0; ind < val ? 516 : 8; ind++)
   {
     unsigned char tc;
     unsigned char t;
