@@ -327,7 +327,8 @@ static krb5_error_code parse_setpw_reply(krb5_context context,
 				return KRB5KDC_ERR_BADOPTION;
 				break;
 			case KRB5_KPASSWD_INITIAL_FLAG_NEEDED:
-				return KV5M_ALT_METHOD;
+				return KRB5KDC_ERR_BADOPTION;
+				/* return KV5M_ALT_METHOD; MIT-only define */
 				break;
 			case KRB5_KPASSWD_ETYPE_NOSUPP:
 				return KRB5KDC_ERR_ETYPE_NOSUPP;
