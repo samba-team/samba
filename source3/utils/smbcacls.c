@@ -29,7 +29,7 @@ static pstring owner_username;
 static fstring server;
 static int got_pass;
 static int test_args;
-TALLOC_CTX *ctx;
+static TALLOC_CTX *ctx;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
 #define CREATE_ACCESS_WRITE (WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS)

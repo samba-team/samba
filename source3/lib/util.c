@@ -100,7 +100,7 @@ char *tmpdir(void)
  Determine whether we are in the specified group.
 ****************************************************************************/
 
-BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, const gid_t *groups)
 {
 	int i;
 
