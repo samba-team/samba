@@ -56,8 +56,6 @@
 /*                       end of internationalization section                        */
 /************************************************************************************/
 
-extern int optind, opterr, optopt;
-
 /* Yes, these buggers are globals.... */
 char *opt_requester_name = NULL;
 char *opt_host = NULL; 
