@@ -30,10 +30,12 @@ char *ascii_to_unibuf(char *dest, const char *src, int maxlen)
 	char *destend = dest + maxlen - 1;
 	register char c;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		*(dest++) = c = *(src++);
 		*(dest++) = 0;
-		if (c == 0) {
+		if (c == 0)
+		{
 			break;
 		}
 	}
@@ -51,9 +53,11 @@ void unibuf_to_ascii(char *dest, const char *src, int maxlen)
 	char *destend = dest + maxlen;
 	register char c;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		*(dest++) = c = *(src++);
-		if ((c == 0) && (*src == 0)) {
+		if ((c == 0) && (*src == 0))
+		{
 			break;
 		}
 		src++;
@@ -70,11 +74,13 @@ void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 	uint16 *destend = dest + maxlen;
 	register char c;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		c = *(src++);
 		*(dest++) = (uint16)c;
 
-		if (c == 0) {
+		if (c == 0)
+		{
 			break;
 		}
 	}
@@ -90,11 +96,13 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 	char *destend = dest + len;
 	register uint16 c;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		c = *(src++);
 		*(dest++) = (char)c;
 
-		if (c == 0) {
+		if (c == 0)
+		{
 			break;
 		}
 	}
@@ -116,11 +124,13 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, int destlen)
 	len = MIN(str->uni_str_len, destlen);
 	destend = dest + len;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		c = *(src++);
 		*(dest++) = (char)c;
 
-		if (c == 0) {
+		if (c == 0)
+		{
 			break;
 		}
 	}
@@ -137,7 +147,8 @@ char *skip_unibuf(char *srcbuf, int len)
 	uint16 *srcend = src + len/2;
 
 	while ((src < srcend) && (*(src++) != 0))
-	       ;
+	{
+	}
 
 	return (char *)src;
 }
@@ -149,14 +160,16 @@ char *skip_unibuf(char *srcbuf, int len)
 
 char *uni_strncpy(char *destbuf, const char *srcbuf, int len)
 {
-	const uint16 *src = (uint16 *)srcbuf;
+	const uint16 *src = (const uint16 *)srcbuf;
 	uint16 *dest = (uint16 *)destbuf;
 	uint16 *destend = dest + len/2;
 	register uint16 c;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		*(dest++) = c = *(src++);
-		if (c == 0) {
+		if (c == 0)
+		{
 			break;
 		}
 	}
@@ -173,7 +186,8 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
 {
 	if (str->buf_len == 4)
 	{
-		return IVAL(str->buffer, 0);
+		const char *src = (const char*)str->buffer;
+		return IVAL(src, 0);
 	}
 	else
 	{
@@ -197,7 +211,8 @@ void buffer2_to_multistr(char *dest, const BUFFER2 *str, int destlen)
 	len = MIN(str->buf_len/2, destlen);
 	destend = dest + len - 1;
 
-	while (dest < destend) {
+	while (dest < destend)
+	{
 		c = *(src++);
 		*(dest++) = (c == 0) ? ' ' : (char)c;
 	}
