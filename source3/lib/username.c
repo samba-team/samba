@@ -427,12 +427,26 @@ Get_Pwnam wrapper
 ****************************************************************************/
 static struct passwd *_Get_Pwnam(char *s)
 {
+  static struct passwd mypasswd;
+  static char *mypwdp = NULL;
+  static char *myname = NULL;
   struct passwd *ret;
 
+  if (mypwdp)
+    {
+	free(mypwdp);
+	mypwdp = NULL;
+    }
+  if (myname)
+    {
+	free(myname);
+	myname = NULL;
+    }
   ret = hashed_getpwnam(s);
   if (ret)
     {
-
+	memcpy(&mypasswd, ret, sizeof(mypasswd));
+	ret = &mypasswd;
   /* Deal with password information stored in shadows.  Due to the
      dynamic allocation of password cache stuff, the original password
      needs to be freed and the new password mallocated to avoid
@@ -449,8 +463,7 @@ static struct passwd *_Get_Pwnam(char *s)
 
 		spass = getspnam(ret->pw_name);
 		if (spass && spass->sp_pwdp) {
-		    free(ret->pw_passwd);
-		    ret->pw_passwd = strdup(spass->sp_pwdp);
+		    ret->pw_passwd = mypwdp = strdup(spass->sp_pwdp);
 		}
 	}
 #elif defined(IA_UINFO)
@@ -465,8 +478,7 @@ static struct passwd *_Get_Pwnam(char *s)
 		   optimise this.  (tpot@samba.org) */
 		uinfo_t uinfo;
 		if (ia_openinfo(ret->pw_name, &uinfo) != -1) {
-		    free(ret->pw_passwd);
-		    ret->pw_passwd = malloc(FSTRING_LEN);
+		    ret->pw_passwd = mypwdp = malloc(FSTRING_LEN);
 		    ia_get_logpwd(uinfo, &(ret->pw_passwd));
 		}
 	}
@@ -476,8 +488,7 @@ static struct passwd *_Get_Pwnam(char *s)
 	{
 		struct pr_passwd *pr_pw = getprpwnam(ret->pw_name);
 		if (pr_pw && pr_pw->ufld.fd_encrypt) {
-		    free(ret->pw_passwd);
-		    ret->pw_passwd = strdup(pr_pw->ufld.fd_encrypt);
+		    ret->pw_passwd = mypwdp = strdup(pr_pw->ufld.fd_encrypt);
 		}
 	}
 #endif
@@ -489,10 +500,8 @@ static struct passwd *_Get_Pwnam(char *s)
 			 user));
 		mypasswd = getprpwnam (user);
 		if (mypasswd) { 
-		    free(ret->pw_name);
-		    free(ret->pw_passwd);
-		    ret->pw_name = strdup(mypasswd->ufld.fd_name);
-		    ret->pw_passwd = strdup(mypasswd->ufld.fd_encrypt);
+		    ret->pw_name = myname = strdup(mypasswd->ufld.fd_name);
+		    ret->pw_passwd = mypwdp = strdup(mypasswd->ufld.fd_encrypt);
 		} else {
 		    DEBUG(5,("No entry for user %s in protected database !\n",
 			     user));
@@ -505,8 +514,7 @@ static struct passwd *_Get_Pwnam(char *s)
 	{
 		AUTHORIZATION *ap = getauthuid(ret->pw_uid);
 		if (ap) {
-		    free(ret->pw_passwd);
-		    ret->pw_passwd = strdup(ap->a_password);
+		    ret->pw_passwd = mypwdp = strdup(ap->a_password);
 		    endauthent();
 		}
 	}
@@ -517,14 +525,16 @@ static struct passwd *_Get_Pwnam(char *s)
       pwret = getpwanam(s);
       if (pwret)
 	{
-	  free(ret->pw_passwd);
+/* ????????? I don't know what kind of ptr pwret->pwa_passwd is   ????????? */
+/* ????????? mayby the code should look like the next line        ????????? */
+/* ????????? ret->pw_passwd = mypwdp = strdup(pwret->pwa_passwd); ????????? */
 	  ret->pw_passwd = pwret->pwa_passwd;
 	}
 #endif
 
     }
 
-  return(ret);
+  return ret;
 }
 
 
