@@ -219,6 +219,11 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
+		data->has_error = True;
+		return False;
+	}
+
 	if (data->ofs + len > data->length) {
 		data->has_error = True;
 		return False;
