@@ -107,10 +107,12 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!tp) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
-		if (dbuf.dptr) free(dbuf.dptr);
+		if (dbuf.dptr)
+			free(dbuf.dptr);
 		return False;
-	}
-	else dbuf.dptr = tp;
+	} else
+		dbuf.dptr = tp;
+
 	memcpy(dbuf.dptr + dbuf.dsize, &fsp->fd, sizeof(int));
 	dbuf.dsize += sizeof(int);
 
@@ -378,8 +380,8 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 	if (!tp) {
 		DEBUG(0,("add_posix_lock_entry: Realloc fail !\n"));
 		goto fail;
-	}
-	else dbuf.dptr = tp;
+	} else
+		dbuf.dptr = tp;
 
 	memcpy(dbuf.dptr + dbuf.dsize, &pl, sizeof(pl));
 	dbuf.dsize += sizeof(pl);
@@ -578,6 +580,17 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
     SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
 
 #endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
+
+	/*
+	 * POSIX locks of length zero mean lock to end-of-file.
+	 * Win32 locks of length zero are point probes. Ignore
+	 * any Win32 locks of length zero. JRA.
+	 */
+
+	if (count == (SMB_OFF_T)0) {
+		DEBUG(10,("posix_lock_in_range: count = 0, ignoring.\n"));
+		return False;
+	}
 
 	/*
 	 * If the given offset was > max_positive_lock_offset then we cannot map this at all
