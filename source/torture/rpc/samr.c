@@ -134,7 +134,7 @@ static BOOL test_QuerySecurity(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return False;
 	}
 
-	if (s.in.sdbuf == NULL) {
+	if (r.out.sdbuf == NULL) {
 		return False;
 	}
 
