@@ -897,7 +897,8 @@ void construct_reply_common(char *inbuf,char *outbuf)
   CVAL(outbuf,smb_reh) = 0;
   SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
-  SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS);
+  SSVAL(outbuf,smb_flg2,
+	(SVAL(inbuf,smb_flg2)&FLAGS2_UNICODE_STRINGS) | FLAGS2_LONG_PATH_COMPONENTS);
 	/* say we support long filenames */
 
   SSVAL(outbuf,smb_err,SMB_SUCCESS);
@@ -1187,9 +1188,6 @@ void smbd_process(void)
 	OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 	if ((InBuffer == NULL) || (OutBuffer == NULL)) 
 		return;
-
-	InBuffer += SMB_ALIGNMENT;
-	OutBuffer += SMB_ALIGNMENT;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 

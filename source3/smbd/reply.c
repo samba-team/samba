@@ -336,16 +336,21 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	}
 
 	if (Protocol < PROTOCOL_NT1) {
-		set_message(outbuf,2,strlen(devicename)+1,True);
-		pstrcpy(smb_buf(outbuf),devicename);
+		set_message(outbuf,2,0,True);
+		p = smb_buf(outbuf);
+		p += srvstr_push(inbuf, outbuf, p, devicename, -1, 
+				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
+		set_message_end(outbuf,p);
 	} else {
 		char *fsname = lp_fstype(SNUM(conn));
 
 		set_message(outbuf,3,0,True);
 
 		p = smb_buf(outbuf);
-		p += srvstr_push(inbuf, outbuf, p, devicename, -1, STR_CONVERT|STR_TERMINATE);
-		p += srvstr_push(inbuf, outbuf, p, fsname, -1, STR_CONVERT|STR_TERMINATE);
+		p += srvstr_push(inbuf, outbuf, p, devicename, -1, 
+				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
+		p += srvstr_push(inbuf, outbuf, p, fsname, -1, 
+				 STR_CONVERT|STR_TERMINATE);
 		
 		set_message_end(outbuf,p);
 		
@@ -444,50 +449,50 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
     sam_trust_acct = pdb_getsampwnam(user);
   } else {
     DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0, NT_STATUS_LOGON_FAILURE));
   }
 
   if (sam_trust_acct == NULL) {
     /* lkclXXXX: workstation entry doesn't exist */
     DEBUG(0,("session_trust_account: Trust account %s user doesn't exist\n",user));
-    SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+    SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0, NT_STATUS_NO_SUCH_USER));
   } else {
     if ((smb_passlen != 24) || (smb_nt_passlen != 24)) {
       DEBUG(0,("session_trust_account: Trust account %s - password length wrong.\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+      SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
     if (!smb_password_ok(sam_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd)) {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+      SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
     acct_ctrl = pdb_get_acct_ctrl(sam_trust_acct);
     if (acct_ctrl & ACB_DOMTRUST) {
       DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+      SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT));
     }
 
     if (acct_ctrl & ACB_SVRTRUST) {
       DEBUG(0,("session_trust_account: Server trust account %s denied by server\n",user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+      SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT));
     }
 
     if (acct_ctrl & ACB_WSTRUST) {
       DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", user));
-      SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+      SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT));
     }
   }
 
   /* don't know what to do: indicate logon failure */
-  SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+  SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
   return(ERROR(0, NT_STATUS_LOGON_FAILURE));
 }
 
@@ -670,7 +675,7 @@ static int bad_password_error(char *inbuf,char *outbuf)
 
   if(((ra_type == RA_WINNT) || (ra_type == RA_WIN2K)) &&
       (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32 ))) {
-    SSVAL(outbuf,smb_flg2,FLAGS2_32_BIT_ERROR_CODES);
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0,NT_STATUS_LOGON_FAILURE));
   }
 
@@ -1203,11 +1208,7 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SIVAL(outbuf,smb_vwv3,(uint32)size);
 
   if (Protocol >= PROTOCOL_NT1) {
-    char *p = strrchr(fname,'/');
-    uint16 flg2 = SVAL(outbuf,smb_flg2);
-    if (!p) p = fname;
-    if (!is_8_3(fname, True))
-      SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
+	  SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | 0x40); /* IS_LONG_NAME */
   }
   
   DEBUG( 3, ( "getatr name=%s mode=%d size=%d\n", fname, mode, (uint32)size ) );
@@ -1480,8 +1481,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   SSVAL(smb_buf(outbuf),1,numentries*DIR_STRUCT_SIZE);
 
   if (Protocol >= PROTOCOL_NT1) {
-    uint16 flg2 = SVAL(outbuf,smb_flg2);
-    SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf, smb_flg2) | 0x40); /* IS_LONG_NAME */
   }
   
   outsize += DIR_STRUCT_SIZE*numentries;

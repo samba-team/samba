@@ -243,7 +243,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
  strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
 ****************************************************************************/
 
-static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
+static void get_filename(char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
   /*
    * We need various heuristics here to detect a unicode string... JRA.
@@ -613,7 +613,7 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 			       ((uint32)sizeof(fname)-1));
 
 	get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
-                  smb_buflen(inbuf),fname_len);
+		     smb_buflen(inbuf),fname_len);
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
 
@@ -725,7 +725,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
                    smb_buflen(inbuf),fname_len);
 
         if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           END_PROFILE(SMBntcreateX);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
         }
@@ -866,7 +866,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
 					restore_case_semantics(file_attributes);
-					SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+					SSVAL(outbuf, smb_flg2, 
+					      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
 					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 				}
@@ -1239,7 +1240,7 @@ static int call_nt_transact_create(connection_struct *conn,
                             total_parameter_count - 53 - fname_len, fname_len);
 
       if( strchr(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+          SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
       }
 
@@ -1346,7 +1347,8 @@ static int call_nt_transact_create(connection_struct *conn,
 
 			if (create_options & FILE_NON_DIRECTORY_FILE) {
 				restore_case_semantics(file_attributes);
-				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+				SSVAL(outbuf, smb_flg2, 
+				      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
 			}
 	
@@ -1894,8 +1896,7 @@ due to being in oplock break state.\n" ));
   }
 
   if (Protocol >= PROTOCOL_NT1) {
-    uint16 flg2 = SVAL(outbuf,smb_flg2);
-    SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
   }
 
   /* Now we must call the relevant NT_TRANS function */

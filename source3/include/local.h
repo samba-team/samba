@@ -134,9 +134,6 @@
    accessible to root */
 #define DUMP_CORE 1
 
-#define SMB_ALIGNMENT 1
-
-
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
