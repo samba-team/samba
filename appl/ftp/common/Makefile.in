@@ -22,7 +22,7 @@ OBJECTS = $(libcommon_OBJS)
 libcommon_OBJS = base64.o glob.o
 
 LIBNAME = $(LIBPREFIX)common
-LIBEXT = @LIBEXT@
+LIBEXT = a
 LIBPREFIX = @LIBPREFIX@
 LIB = $(LIBNAME).$(LIBEXT)
 
