@@ -424,6 +424,34 @@ krb5_free_ap_rep_enc_part (krb5_context context,
 			   krb5_ap_rep_enc_part *val);
 
 krb5_error_code
+krb5_mk_safe(krb5_context context,
+	     krb5_auth_context auth_context,
+	     const krb5_data *userdata,
+	     krb5_data *outbuf,
+	     /*krb5_replay_data*/ void *outdata);
+
+krb5_error_code
+krb5_rd_safe(krb5_context context,
+	     krb5_auth_context auth_context,
+	     const krb5_data *inbuf,
+	     krb5_data *outbuf,
+	     /*krb5_replay_data*/ void *outdata);
+
+krb5_error_code
+krb5_mk_priv(krb5_context context,
+	     krb5_auth_context auth_context,
+	     const krb5_data *userdata,
+	     krb5_data *outbuf,
+	     /*krb5_replay_data*/ void *outdata);
+
+krb5_error_code
+krb5_rd_priv(krb5_context context,
+	     krb5_auth_context auth_context,
+	     const krb5_data *inbuf,
+	     krb5_data *outbuf,
+	     /*krb5_replay_data*/ void *outdata);
+
+krb5_error_code
 krb5_parse_name(krb5_context context,
 		const char *name,
 		krb5_principal *principal);
