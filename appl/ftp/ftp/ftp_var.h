@@ -42,8 +42,6 @@
 #include <sys/param.h>
 #include <setjmp.h>
 
-#include "extern.h"
-
 /*
  * Options and other state info.
  */
