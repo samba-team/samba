@@ -1,3 +1,8 @@
+2000-12-12  Assar Westerlund  <assar@sics.se>
+
+	* admin/srvconvert.c (srvconvert): do not use data after free:ing
+	it
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.3d
