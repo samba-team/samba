@@ -94,12 +94,12 @@ BOOL gencache_shutdown(void)
  * Set an entry in the cache file. If there's no such
  * one, then add it.
  *
- * @param key string that represents a key of this entry
+ * @param keystr string that represents a key of this entry
  * @param value text representation value being cached
  * @param timeout time when the value is expired
  *
- * @return true when entry is successfuly stored or
- *         false on the attempt's failure
+ * @retval true when entry is successfuly stored
+ * @retval false on failure
  **/
  
 BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
@@ -134,12 +134,12 @@ BOOL gencache_set(const char *keystr, const char *value, time_t timeout)
 /**
  * Set existing entry to the cache file.
  *
- * @param key string that represents a key of this entry
- * @param value text representation value being cached
+ * @param keystr string that represents a key of this entry
+ * @param valstr text representation value being cached
  * @param timeout time when the value is expired
  *
- * @return true when entry is successfuly set or
- *         false on the attempt's failure
+ * @retval true when entry is successfuly set
+ * @retval false on failure
  **/
 
 BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
@@ -189,10 +189,10 @@ BOOL gencache_set_only(const char *keystr, const char *valstr, time_t timeout)
 /**
  * Delete one entry from the cache file.
  *
- * @param key string that represents a key of this entry
+ * @param keystr string that represents a key of this entry
  *
- * @return true upon successful deletion or
- *         false in case of failure
+ * @retval true upon successful deletion
+ * @retval false in case of failure
  **/
 
 BOOL gencache_del(const char *keystr)
@@ -218,14 +218,14 @@ BOOL gencache_del(const char *keystr)
 /**
  * Get existing entry from the cache file.
  *
- * @param key string that represents a key of this entry
- * @param value buffer that is allocated and filled with the entry value
+ * @param keystr string that represents a key of this entry
+ * @param valstr buffer that is allocated and filled with the entry value
  *        buffer's disposing must be done outside
  * @param timeout pointer to a time_t that is filled with entry's
  *        timeout
  *
- * @return true when entry is successfuly fetched or
- *         false on the failure
+ * @retval true when entry is successfuly fetched
+ * @retval False for failure
  **/
 
 BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
