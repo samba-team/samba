@@ -1,5 +1,5 @@
 !==
-!== SCO.txt for Samba release 1.9.17p4 22 Oct 1997
+!== SCO.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 Contributor:	Geza Makay <makayg@math.u-szeged.hu>
 Date:		Unknown

@@ -1,5 +1,5 @@
 !==
-!== Application_Serving.txt for Samba release 1.9.17p4 22 Oct 1997
+!== Application_Serving.txt for Samba release 1.9.17p5 20 Dec 1997
 !==
 January 7, 1997
 Updated:	June 27, 1997
