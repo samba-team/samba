@@ -96,15 +96,15 @@
 	} dfs_Info300;
 
 	typedef union {
-		case(1)   dfs_Info1 *info1;
-		case(2)   dfs_Info2 *info2;
-		case(3)   dfs_Info3 *info3;
-		case(4)   dfs_Info4 *info4;
-		case(100) dfs_Info100 *info100;
-		case(101) dfs_Info101 *info101;
-		case(102) dfs_Info102 *info102;
-		case(200) dfs_Info200 *info200;
-		case(300) dfs_Info300 *info300;
+		[case(1)]   dfs_Info1 *info1;
+		[case(2)]   dfs_Info2 *info2;
+		[case(3)]   dfs_Info3 *info3;
+		[case(4)]   dfs_Info4 *info4;
+		[case(100)] dfs_Info100 *info100;
+		[case(101)] dfs_Info101 *info101;
+		[case(102)] dfs_Info102 *info102;
+		[case(200)] dfs_Info200 *info200;
+		[case(300)] dfs_Info300 *info300;
 	} dfs_Info;
 
 	NTSTATUS dfs_GetInfo (
@@ -150,12 +150,12 @@
 
 
 	typedef union {
-		case(1) dfs_EnumArray1 *info1;
-		case(2) dfs_EnumArray2 *info2;
-		case(3) dfs_EnumArray3 *info3;
-		case(4) dfs_EnumArray4 *info4;
-		case(200) dfs_EnumArray200 *info200;
-		case(300) dfs_EnumArray300 *info300;
+		[case(1)] dfs_EnumArray1 *info1;
+		[case(2)] dfs_EnumArray2 *info2;
+		[case(3)] dfs_EnumArray3 *info3;
+		[case(4)] dfs_EnumArray4 *info4;
+		[case(200)] dfs_EnumArray200 *info200;
+		[case(300)] dfs_EnumArray300 *info300;
 	} dfs_EnumInfo;
 
 	typedef struct {

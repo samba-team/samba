@@ -124,18 +124,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetConnCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetConnCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetConnCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -150,7 +138,6 @@ NTSTATUS ndr_push_srvsvc_NetConnCtr(struct ndr_push *ndr, int ndr_flags, uint16 
 	break;
 
 	default:
-	NDR_CHECK(ndr_push_srvsvc_NetConnCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break;
 
 	}
@@ -171,7 +158,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_push_srvsvc_NetConnCtrDefault(ndr, ndr_flags, &r->ctrDefault));
 	break;
 
 	}
@@ -273,18 +259,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetFileCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetFileCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetFileCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -299,7 +273,6 @@ NTSTATUS ndr_push_srvsvc_NetFileCtr(struct ndr_push *ndr, int ndr_flags, uint16 
 	break;
 
 	default:
-	NDR_CHECK(ndr_push_srvsvc_NetFileCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break;
 
 	}
@@ -320,7 +293,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_push_srvsvc_NetFileCtrDefault(ndr, ndr_flags, &r->ctrDefault));
 	break;
 
 	}
@@ -578,18 +550,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetSessCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetSessCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetSessCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -616,7 +576,6 @@ NTSTATUS ndr_push_srvsvc_NetSessCtr(struct ndr_push *ndr, int ndr_flags, uint16 
 	break;
 
 	default:
-	NDR_CHECK(ndr_push_srvsvc_NetSessCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break;
 
 	}
@@ -655,7 +614,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_push_srvsvc_NetSessCtrDefault(ndr, ndr_flags, &r->ctrDefault));
 	break;
 
 	}
@@ -919,18 +877,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetShareCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetShareCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -957,7 +903,6 @@ NTSTATUS ndr_push_srvsvc_NetShareCtr(struct ndr_push *ndr, int ndr_flags, uint16
 	break;
 
 	default:
-	NDR_CHECK(ndr_push_srvsvc_NetShareCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break;
 
 	}
@@ -996,7 +941,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_push_srvsvc_NetShareCtrDefault(ndr, ndr_flags, &r->ctrDefault));
 	break;
 
 	}
@@ -1235,18 +1179,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_srvsvc_NetTransportCtrDefault(struct ndr_push *ndr, int ndr_flags, struct srvsvc_NetTransportCtrDefault *r)
-{
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_push_struct_start(ndr));
-	NDR_CHECK(ndr_push_align(ndr, 1));
-	ndr_push_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, uint16 level, union srvsvc_NetTransportCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1265,9 +1197,7 @@ NTSTATUS ndr_push_srvsvc_NetTransportCtr(struct ndr_push *ndr, int ndr_flags, ui
 	break;
 
 	default:
-	NDR_CHECK(ndr_push_srvsvc_NetTransportCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
-	break;
-
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_push_struct_end(ndr);
 buffers:
@@ -1292,9 +1222,7 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_push_srvsvc_NetTransportCtrDefault(ndr, ndr_flags, &r->ctrDefault));
-	break;
-
+		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -1582,18 +1510,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetConnCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetConnCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetConnCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1620,7 +1536,6 @@ NTSTATUS ndr_pull_srvsvc_NetConnCtr(struct ndr_pull *ndr, int ndr_flags, uint16 
 	break; }
 
 	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetConnCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break; }
 
 	}
@@ -1641,7 +1556,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetConnCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
 	break;
 
 	}
@@ -1784,18 +1698,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetFileCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetFileCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetFileCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -1822,7 +1724,6 @@ NTSTATUS ndr_pull_srvsvc_NetFileCtr(struct ndr_pull *ndr, int ndr_flags, uint16 
 	break; }
 
 	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetFileCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break; }
 
 	}
@@ -1843,7 +1744,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetFileCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
 	break;
 
 	}
@@ -2239,18 +2139,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetSessCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSessCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetSessCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -2307,7 +2195,6 @@ NTSTATUS ndr_pull_srvsvc_NetSessCtr(struct ndr_pull *ndr, int ndr_flags, uint16 
 	break; }
 
 	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetSessCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break; }
 
 	}
@@ -2346,7 +2233,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetSessCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
 	break;
 
 	}
@@ -2760,18 +2646,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetShareCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetShareCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -2828,7 +2702,6 @@ NTSTATUS ndr_pull_srvsvc_NetShareCtr(struct ndr_pull *ndr, int ndr_flags, uint16
 	break; }
 
 	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetShareCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
 	break; }
 
 	}
@@ -2867,7 +2740,6 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetShareCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
 	break;
 
 	}
@@ -3305,18 +3177,6 @@ done:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_srvsvc_NetTransportCtrDefault(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetTransportCtrDefault *r)
-{
-	NDR_CHECK(ndr_pull_struct_start(ndr));
-	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
-	NDR_CHECK(ndr_pull_align(ndr, 1));
-	ndr_pull_struct_end(ndr);
-buffers:
-	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-done:
-	return NT_STATUS_OK;
-}
-
 NTSTATUS ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, int ndr_flags, uint16 level, union srvsvc_NetTransportCtr *r)
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
@@ -3352,10 +3212,8 @@ NTSTATUS ndr_pull_srvsvc_NetTransportCtr(struct ndr_pull *ndr, int ndr_flags, ui
 	}
 	break; }
 
-	default: {
-	NDR_CHECK(ndr_pull_srvsvc_NetTransportCtrDefault(ndr, NDR_SCALARS, &r->ctrDefault));
-	break; }
-
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
@@ -3380,9 +3238,7 @@ buffers:
 	break;
 
 	default:
-		NDR_CHECK(ndr_pull_srvsvc_NetTransportCtrDefault(ndr, NDR_BUFFERS, &r->ctrDefault));
-	break;
-
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 	}
 done:
 	return NT_STATUS_OK;
@@ -3733,13 +3589,6 @@ void ndr_print_srvsvc_NetConnCtr1(struct ndr_print *ndr, const char *name, struc
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetConnCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetConnCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetConnCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetConnCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetConnCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetConnCtr");
@@ -3763,7 +3612,6 @@ void ndr_print_srvsvc_NetConnCtr(struct ndr_print *ndr, const char *name, uint16
 	break;
 
 	default:
-	ndr_print_srvsvc_NetConnCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
 	break;
 
 	}
@@ -3875,13 +3723,6 @@ void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *name, struc
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetFileCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetFileCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetFileCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetFileCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetFileCtr");
@@ -3905,7 +3746,6 @@ void ndr_print_srvsvc_NetFileCtr(struct ndr_print *ndr, const char *name, uint16
 	break;
 
 	default:
-	ndr_print_srvsvc_NetFileCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
 	break;
 
 	}
@@ -4192,13 +4032,6 @@ void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *name, str
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetSessCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetSessCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetSessCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetSessCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetSessCtr");
@@ -4249,7 +4082,6 @@ void ndr_print_srvsvc_NetSessCtr(struct ndr_print *ndr, const char *name, uint16
 	break;
 
 	default:
-	ndr_print_srvsvc_NetSessCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
 	break;
 
 	}
@@ -4546,13 +4378,6 @@ void ndr_print_srvsvc_NetShareCtr502(struct ndr_print *ndr, const char *name, st
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetShareCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetShareCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetShareCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetShareCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetShareCtr");
@@ -4603,7 +4428,6 @@ void ndr_print_srvsvc_NetShareCtr(struct ndr_print *ndr, const char *name, uint1
 	break;
 
 	default:
-	ndr_print_srvsvc_NetShareCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
 	break;
 
 	}
@@ -4874,13 +4698,6 @@ void ndr_print_srvsvc_NetDiskCtr3(struct ndr_print *ndr, const char *name, struc
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetDiskCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetDiskCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetDiskCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetDiskSubCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetDiskSubCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetDiskSubCtr");
@@ -4902,7 +4719,6 @@ void ndr_print_srvsvc_NetDiskSubCtr(struct ndr_print *ndr, const char *name, uin
 	break;
 
 	default:
-	ndr_print_srvsvc_NetDiskCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
 	break;
 
 	}
@@ -5124,13 +4940,6 @@ void ndr_print_srvsvc_NetTransportCtr2(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-void ndr_print_srvsvc_NetTransportCtrDefault(struct ndr_print *ndr, const char *name, struct srvsvc_NetTransportCtrDefault *r)
-{
-	ndr_print_struct(ndr, name, "srvsvc_NetTransportCtrDefault");
-	ndr->depth++;
-	ndr->depth--;
-}
-
 void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, uint16 level, union srvsvc_NetTransportCtr *r)
 {
 	ndr_print_union(ndr, name, level, "srvsvc_NetTransportCtr");
@@ -5163,9 +4972,7 @@ void ndr_print_srvsvc_NetTransportCtr(struct ndr_print *ndr, const char *name, u
 	break;
 
 	default:
-	ndr_print_srvsvc_NetTransportCtrDefault(ndr, "ctrDefault", &r->ctrDefault);
-	break;
-
+		ndr_print_bad_level(ndr, name, level);
 	}
 }
 

@@ -74,13 +74,10 @@
 		[size_is(count)] srvsvc_NetConn1 *array;
 	} srvsvc_NetConnCtr1;
 
-	typedef struct {
-	} srvsvc_NetConnCtrDefault;
-
 	typedef union {
-		case(0) srvsvc_NetConnCtr0 *ctr0;
-		case(1) srvsvc_NetConnCtr1 *ctr1;
-		default srvsvc_NetConnCtrDefault ctrDefault;
+		[case(0)] srvsvc_NetConnCtr0 *ctr0;
+		[case(1)] srvsvc_NetConnCtr1 *ctr1;
+		[default] ;
 	} srvsvc_NetConnCtr;
 
 	WERROR srvsvc_NetConnEnum(
@@ -118,13 +115,10 @@
 		[size_is(count)] srvsvc_NetFile3 *array;
 	} srvsvc_NetFileCtr3;
 
-	typedef struct {
-	} srvsvc_NetFileCtrDefault;
-
 	typedef union {
-		case(2) srvsvc_NetFileCtr2 *ctr2;
-		case(3) srvsvc_NetFileCtr3 *ctr3;
-		default srvsvc_NetFileCtrDefault ctrDefault;
+		[case(2)] srvsvc_NetFileCtr2 *ctr2;
+		[case(3)] srvsvc_NetFileCtr3 *ctr3;
+		[default] ;
 	} srvsvc_NetFileCtr;
 
 	WERROR srvsvc_NetFileEnum(
@@ -217,16 +211,13 @@
 		[size_is(count)] srvsvc_NetSess502 *array;
 	} srvsvc_NetSessCtr502;
 
-	typedef struct {
-	} srvsvc_NetSessCtrDefault;
-
 	typedef union {
-		case(0) srvsvc_NetSessCtr0 *ctr0;
-		case(1) srvsvc_NetSessCtr1 *ctr1;
-		case(2) srvsvc_NetSessCtr2 *ctr2;
-		case(10) srvsvc_NetSessCtr10 *ctr10;
-		case(502) srvsvc_NetSessCtr502 *ctr502;
-		default srvsvc_NetSessCtrDefault ctrDefault;
+		[case(0)] srvsvc_NetSessCtr0 *ctr0;
+		[case(1)] srvsvc_NetSessCtr1 *ctr1;
+		[case(2)] srvsvc_NetSessCtr2 *ctr2;
+		[case(10)] srvsvc_NetSessCtr10 *ctr10;
+		[case(502)] srvsvc_NetSessCtr502 *ctr502;
+		[default] ;
 	} srvsvc_NetSessCtr;
 
 	WERROR srvsvc_NetSessEnum(
@@ -319,16 +310,13 @@
 		[size_is(count)] srvsvc_NetShare502 *array;
 	} srvsvc_NetShareCtr502;
 
-	typedef struct {
-	} srvsvc_NetShareCtrDefault;
-
 	typedef union {
-		case(0) srvsvc_NetShareCtr0 *ctr0;
-		case(1) srvsvc_NetShareCtr1 *ctr1;
-		case(2) srvsvc_NetShareCtr2 *ctr2;
-		case(501) srvsvc_NetShareCtr501 *ctr501;
-		case(502) srvsvc_NetShareCtr502 *ctr502;
-		default srvsvc_NetShareCtrDefault ctrDefault;
+		[case(0)] srvsvc_NetShareCtr0 *ctr0;
+		[case(1)] srvsvc_NetShareCtr1 *ctr1;
+		[case(2)] srvsvc_NetShareCtr2 *ctr2;
+		[case(501)] srvsvc_NetShareCtr501 *ctr501;
+		[case(502)] srvsvc_NetShareCtr502 *ctr502;
+		[default] ;
 	} srvsvc_NetShareCtr;
 
 	WERROR srvsvc_NetShareEnumAll(
@@ -418,15 +406,12 @@
 		[size_is(count)] srvsvc_NetDisk3 *array;
 	} srvsvc_NetDiskCtr3;
 
-	typedef struct {
-	} srvsvc_NetDiskCtrDefault;
-
 	typedef union {
-		case(0) srvsvc_NetDiskCtr0 ctr0;
-		case(1) srvsvc_NetDiskCtr1 ctr1;
-		case(2) srvsvc_NetDiskCtr2 ctr2;
-		case(3) srvsvc_NetDiskCtr3 ctr3;
-		default srvsvc_NetDiskCtrDefault ctrDefault;
+		[case(0)] srvsvc_NetDiskCtr0 ctr0;
+		[case(1)] srvsvc_NetDiskCtr1 ctr1;
+		[case(2)] srvsvc_NetDiskCtr2 ctr2;
+		[case(3)] srvsvc_NetDiskCtr3 ctr3;
+		[default] ;
 	} srvsvc_NetDiskSubCtr;
 
 	typedef struct {
@@ -499,14 +484,10 @@
 		[size_is(count)] srvsvc_NetTransport2 *array;
 	} srvsvc_NetTransportCtr2;
 
-	typedef struct {
-	} srvsvc_NetTransportCtrDefault;
-
 	typedef union {
-		case(0) srvsvc_NetTransportCtr0 *ctr0;
-		case(1) srvsvc_NetTransportCtr1 *ctr1;
-		case(2) srvsvc_NetTransportCtr2 *ctr2;
-		default srvsvc_NetTransportCtrDefault ctrDefault;
+		[case(0)] srvsvc_NetTransportCtr0 *ctr0;
+		[case(1)] srvsvc_NetTransportCtr1 *ctr1;
+		[case(2)] srvsvc_NetTransportCtr2 *ctr2;
 	} srvsvc_NetTransportCtr;
 
 	WERROR srvsvc_NetTransportEnum(

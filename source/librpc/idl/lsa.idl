@@ -174,18 +174,18 @@
 	} lsa_DnsDomainInfo;
 
 	typedef union {
-		case(1)  lsa_AuditLogInfo audit_log;
-		case(2)  lsa_AuditEventsInfo audit_events;
-		case(3)  lsa_DomainInfo domain;
-		case(4)  lsa_PDAccountInfo pd;
-		case(5)  lsa_DomainInfo account_domain;
-		case(6)  lsa_ServerRole role;
-		case(7)  lsa_ReplicaSourceInfo replica;
-		case(8)  lsa_DefaultQuotaInfo quota;
-		case(9)  lsa_ModificationInfo db;
-		case(10) lsa_AuditFullSetInfo auditfullset;
-		case(11) lsa_AuditFullQueryInfo auditfullquery;
-		case(12) lsa_DnsDomainInfo dns;
+		[case(1)]  lsa_AuditLogInfo audit_log;
+		[case(2)]  lsa_AuditEventsInfo audit_events;
+		[case(3)]  lsa_DomainInfo domain;
+		[case(4)]  lsa_PDAccountInfo pd;
+		[case(5)]  lsa_DomainInfo account_domain;
+		[case(6)]  lsa_ServerRole role;
+		[case(7)]  lsa_ReplicaSourceInfo replica;
+		[case(8)]  lsa_DefaultQuotaInfo quota;
+		[case(9)]  lsa_ModificationInfo db;
+		[case(10)] lsa_AuditFullSetInfo auditfullset;
+		[case(11)] lsa_AuditFullQueryInfo auditfullquery;
+		[case(12)] lsa_DnsDomainInfo dns;
 	} lsa_PolicyInformation;
 
 	NTSTATUS lsa_QueryInfoPolicy (

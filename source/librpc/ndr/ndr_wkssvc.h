@@ -177,7 +177,7 @@ struct wkssvc_TransportInfoArray {
 
 union wkssvc_TransportInfo {
 /* [case(0)] */ struct wkssvc_TransportInfoArray *array;
-};
+/* [case(default)] */ };
 
 struct wkssvc_TransportEnum {
 	struct {

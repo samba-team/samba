@@ -88,7 +88,8 @@ NTSTATUS ndr_push_wkssvc_TransportInfo(struct ndr_push *ndr, int ndr_flags, uint
 	break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	break;
+
 	}
 	ndr_push_struct_end(ndr);
 buffers:
@@ -101,7 +102,8 @@ buffers:
 	break;
 
 	default:
-		return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	break;
+
 	}
 done:
 	return NT_STATUS_OK;
@@ -653,8 +655,9 @@ NTSTATUS ndr_pull_wkssvc_TransportInfo(struct ndr_pull *ndr, int ndr_flags, uint
 	}
 	break; }
 
-	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	default: {
+	break; }
+
 	}
 	ndr_pull_struct_end(ndr);
 buffers:
@@ -667,7 +670,8 @@ buffers:
 	break;
 
 	default:
-		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+	break;
+
 	}
 done:
 	return NT_STATUS_OK;
@@ -1187,7 +1191,8 @@ void ndr_print_wkssvc_TransportInfo(struct ndr_print *ndr, const char *name, uin
 	break;
 
 	default:
-		ndr_print_bad_level(ndr, name, level);
+	break;
+
 	}
 }
 

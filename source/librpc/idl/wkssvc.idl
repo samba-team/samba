@@ -79,10 +79,10 @@
 	} wkssvc_Info502;
 
 	typedef union {
-		case (100) wkssvc_Info100 *info100;
-		case (101) wkssvc_Info101 *info101;
-		case (102) wkssvc_Info102 *info102;
-		case (502) wkssvc_Info502 *info502;
+		[case(100)] wkssvc_Info100 *info100;
+		[case(101)] wkssvc_Info101 *info101;
+		[case(102)] wkssvc_Info102 *info102;
+		[case(502)] wkssvc_Info502 *info502;
 	} wkssvc_Info;
 
 	WERROR wkssvc_QueryInfo(
@@ -126,7 +126,8 @@
 	} wkssvc_TransportInfoArray;
 
 	typedef union {
-		case(0) wkssvc_TransportInfoArray *array;
+		[case(0)] wkssvc_TransportInfoArray *array;
+		[default] ;
 	} wkssvc_TransportInfo;
 
 	WERROR wkssvc_TransportEnum (
