@@ -227,6 +227,8 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type_in)
 	unid_t id_tmp = id;
 	int id_type_tmp = id_type;
 
+	DEBUG(10,("db_get_sid_from_id: id_type_in = 0x%x\n", id_type_in));
+
 	ret = internal_get_sid_from_id(sid, id, id_type);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
@@ -329,7 +331,7 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	fstring ksidstr;
 	fstring kidstr;
 
-	DEBUG(10,("db_set_mapping\n"));
+	DEBUG(10,("db_set_mapping: id_type = 0x%x\n", id_type));
 
 	if (!sid)
 		return NT_STATUS_INVALID_PARAMETER;
@@ -353,6 +355,8 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 	/* *DELETE* prevoius mappings if any.
 	 * This is done both SID and [U|G]ID passed in */
 	
+	DEBUG(10,("db_set_mapping: fetching %s\n", ksid.dptr));
+
 	data = tdb_fetch(idmap_tdb, ksid);
 	if (data.dptr) {
 		DEBUG(10,("db_set_mapping: deleting %s and %s\n", data.dptr, ksid.dptr ));
