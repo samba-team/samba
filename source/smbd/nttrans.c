@@ -239,73 +239,6 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
 }
 
 /****************************************************************************
- (Hopefully) temporary call to fix bugs in NT5.0beta2. This OS sends unicode
- strings in NT calls AND DOESN'T SET THE UNICODE BIT !!!!!!!
-****************************************************************************/
-
-static void get_filename(char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
-{
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
-
-  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
-
-  if(data_len - fname_len > 1) {
-    /*
-     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
-     * without bothering to set the unicode bit. How kind.
-     *
-     * Firstly - ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
-}
-
-/****************************************************************************
- Fix bugs in Win2000 final release. In trans calls this OS sends unicode
- strings AND DOESN'T SET THE UNICODE BIT !!!!!!!
-****************************************************************************/
-
-static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
-{
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
-
-  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
-
-  /*
-   * Win2K sends a unicode filename plus one extra alingment byte.
-   * WinNT4.x send an ascii string with multiple garbage bytes on
-   * the end here.
-   */
-
-  if((data_len == 1) || (inbuf[data_offset] == '\0')) {
-    /*
-     * Ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
-}
-
-/****************************************************************************
  Save case statics.
 ****************************************************************************/
 
@@ -609,11 +542,9 @@ static int do_ntcreate_pipe_open(connection_struct *conn,
 	int ret;
 	int pnum = -1;
 	char *p = NULL;
-	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
-			       ((uint32)sizeof(fname)-1));
 
-	get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
-		     smb_buflen(inbuf),fname_len);
+	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
+
 	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
 		return ret;
 
@@ -657,8 +588,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	uint32 share_access = IVAL(inbuf,smb_ntcreate_ShareAccess);
 	uint32 create_disposition = IVAL(inbuf,smb_ntcreate_CreateDisposition);
 	uint32 create_options = IVAL(inbuf,smb_ntcreate_CreateOptions);
-	uint32 fname_len = MIN(((uint32)SVAL(inbuf,smb_ntcreate_NameLength)),
-			       ((uint32)sizeof(fname)-1));
 	uint16 root_dir_fid = (uint16)IVAL(inbuf,smb_ntcreate_RootDirectoryFid);
 	int smb_ofun;
 	int smb_open_mode;
@@ -721,8 +650,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
          * Check to see if this is a mac fork of some kind.
          */
 
-        get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
-                   smb_buflen(inbuf),fname_len);
+	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
 
         if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
@@ -749,23 +677,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
         dir_name_len++;
       }
 
-      /*
-       * This next calculation can refuse a correct filename if we're dealing
-       * with the Win2k unicode bug, but that would be rare. JRA.
-       */
-
-      if(fname_len + dir_name_len >= sizeof(pstring)) {
-	END_PROFILE(SMBntcreateX);
-        return(ERROR(ERRSRV,ERRfilespecs));
-      }
-
-      get_filename(&fname[dir_name_len], inbuf, smb_buf(inbuf)-inbuf, 
-                   smb_buflen(inbuf),fname_len);
-
+      srvstr_pull(inbuf, &fname[dir_name_len], smb_buf(inbuf), sizeof(fname)-dir_name_len, 
+		  -1, STR_TERMINATE|STR_CONVERT);
     } else {
-      
-      get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
-                   smb_buflen(inbuf),fname_len);
+      srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), 
+		  -1, STR_TERMINATE|STR_CONVERT);
     }
 	
 	/*
@@ -999,7 +915,6 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 					char **ppdata)
 {
 	pstring fname;
-	uint32 fname_len;
 	int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
 	char *params = *ppparams;
 	int ret;
@@ -1015,10 +930,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 		return(ERROR(ERRDOS,ERRbadaccess));
 	}
 
-	fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
-
-	get_filename_transact(&fname[0], params, 53,
-			total_parameter_count - 53 - fname_len, fname_len);
+	srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
 
     if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
       return ret;
@@ -1165,7 +1077,6 @@ static int call_nt_transact_create(connection_struct *conn,
   uint32 share_access;
   uint32 create_disposition;
   uint32 create_options;
-  uint32 fname_len;
   uint32 sd_len;
   uint16 root_dir_fid;
   int smb_ofun;
@@ -1204,7 +1115,6 @@ static int call_nt_transact_create(connection_struct *conn,
   create_disposition = IVAL(params,28);
   create_options = IVAL(params,32);
   sd_len = IVAL(params,36);
-  fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
   root_dir_fid = (uint16)IVAL(params,4);
   smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
@@ -1236,8 +1146,7 @@ static int call_nt_transact_create(connection_struct *conn,
        * Check to see if this is a mac fork of some kind.
        */
 
-      get_filename_transact(&fname[0], params, 53,
-                            total_parameter_count - 53 - fname_len, fname_len);
+      srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
 
       if( strchr(fname, ':')) {
           SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
@@ -1263,20 +1172,10 @@ static int call_nt_transact_create(connection_struct *conn,
       dir_name_len++;
     }
 
-    /*
-     * This next calculation can refuse a correct filename if we're dealing
-     * with the Win2k unicode bug, but that would be rare. JRA.
-     */
-
-    if(fname_len + dir_name_len >= sizeof(pstring))
-      return(ERROR(ERRSRV,ERRfilespecs));
-
-    get_filename_transact(&fname[dir_name_len], params, 53,
-                 total_parameter_count - 53 - fname_len, fname_len);
-
+    srvstr_pull(inbuf, &fname[dir_name_len], params+53, sizeof(fname)-dir_name_len, 
+		-1, STR_TERMINATE|STR_CONVERT);
   } else {
-    get_filename_transact(&fname[0], params, 53,
-                 total_parameter_count - 53 - fname_len, fname_len);
+    srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE|STR_CONVERT);
   }
 
   /*
@@ -1558,13 +1457,10 @@ static int call_nt_transact_rename(connection_struct *conn,
   pstring new_name;
   files_struct *fsp = file_fsp(params, 0);
   BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
-  uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
-                         ((uint32)sizeof(new_name)-1));
   int outsize = 0;
 
   CHECK_FSP(fsp, conn);
-  StrnCpy(new_name,params+4,fname_len);
-  new_name[fname_len] = '\0';
+  srvstr_pull(inbuf, new_name, params+4, sizeof(new_name), -1, STR_TERMINATE|STR_CONVERT);
 
   outsize = rename_internals(conn, inbuf, outbuf, fsp->fsp_name,
                              new_name, replace_if_exists);
