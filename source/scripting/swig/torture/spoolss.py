@@ -22,9 +22,13 @@ def test_OpenPrinterEx(pipe, printer):
 
     print 'testing spoolss_OpenPrinterEx(%s)' % printer
 
+    printername = '\\\\%s' % dcerpc.dcerpc_server_name(pipe)
+    
+    if printer is not None:
+        printername = printername + '\\%s' % printer
+
     r = {}
-    r['printername'] = '\\\\%s\\%s' % \
-                       (dcerpc.dcerpc_server_name(pipe), printer)
+    r['printername'] = printername
     r['datatype'] = None
     r['devmode_ctr'] = {}
     r['devmode_ctr']['size'] = 0
@@ -190,6 +194,38 @@ def test_AddForm(pipe, handle):
     test_DeleteForm(pipe, handle, formname)
 
 
+def test_EnumJobs(pipe, handle):
+
+    print 'testing spoolss_EnumJobs'
+
+    r = {}
+    r['handle'] = handle
+    r['firstjob'] = 0
+    r['numjobs'] = 0xffffffff
+    r['level'] = 1
+
+    result = ResizeBufferCall(dcerpc.spoolss_EnumJobs, pipe, r)
+
+    if result['buffer'] is None:
+        return
+    
+    jobs = dcerpc.unmarshall_spoolss_JobInfo_array(
+        result['buffer'], r['level'], result['count'])
+
+    for job in jobs:
+
+        s = {}
+        s['handle'] = handle
+        s['job_id'] = job['info1']['job_id']
+        s['level'] = 1
+
+        result = ResizeBufferCall(dcerpc.spoolss_GetJob, pipe, s)
+
+        if result['info'] != job:
+            print 'EnumJobs: mismatch: %s != %s' % (result['info'], job)
+            sys.exit(1)
+    
+
 def test_EnumPrinters(pipe):
 
     print 'testing spoolss_EnumPrinters'
@@ -200,35 +236,55 @@ def test_EnumPrinters(pipe):
     r['flags'] = 0x02
     r['server'] = None
 
-    for level in [0, 1, 4, 5]:
+    for level in [0, 1, 2, 4, 5]:
 
         print 'test_EnumPrinters(level = %d)' % level
 
         r['level'] = level
-        r['buf_size'] = 0
-        r['buffer'] = None
 
-        result = ResizeBufferCall(dcerpc.spoolss_EnumPrinters,pipe, r)
+        result = ResizeBufferCall(dcerpc.spoolss_EnumPrinters, pipe, r)
 
         printers = dcerpc.unmarshall_spoolss_PrinterInfo_array(
             result['buffer'], r['level'], result['count'])
 
-        if level == 1:
-            printer_names = map(
-                lambda x: string.split(x['info1']['name'], ',')[0], printers)
+        if level == 2:
+            for p in printers:
 
-    for printer in printer_names:
+                # A nice check is for the specversion in the
+                # devicemode.  This has always been observed to be
+                # 1025.
 
-        handle = test_OpenPrinterEx(pipe, printer)
+                if p['info2']['devmode']['specversion'] != 1025:
+                    print 'test_EnumPrinters: specversion != 1025'
+                    sys.exit(1)
+
+    r['level'] = 1
+    result = ResizeBufferCall(dcerpc.spoolss_EnumPrinters, pipe, r)
+    
+    for printer in dcerpc.unmarshall_spoolss_PrinterInfo_array(
+        result['buffer'], r['level'], result['count']):
+
+        if string.find(printer['info1']['name'], '\\\\') == 0:
+            print 'Skipping remote printer %s' % printer['info1']['name']
+            continue
+
+        printername = string.split(printer['info1']['name'], ',')[0]
+
+        handle = test_OpenPrinterEx(pipe, printername)
 
         test_GetPrinter(pipe, handle)
-
         test_EnumForms(pipe, handle)
-
         test_AddForm(pipe, handle)
-
+        test_EnumJobs(pipe, handle)
         test_ClosePrinter(pipe, handle)
-        
+
+
+def test_PrintServer(pipe):
+    
+    handle = test_OpenPrinterEx(pipe, None)
+
+    test_ClosePrinter(pipe, handle)
+    
 
 def runtests(binding, domain, username, password):
     
@@ -239,3 +295,4 @@ def runtests(binding, domain, username, password):
             domain, username, password)
 
     test_EnumPrinters(pipe)
+    test_PrintServer(pipe)
