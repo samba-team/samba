@@ -1105,6 +1105,10 @@ extern char *sys_errlist[];
 #define S_ISDIR(x) ((S_IFDIR & x)!=0)
 #endif
 
+#if !defined(S_ISLNK) && defined(S_IFLNK)
+#define S_ISLNK(x) ((S_IFLNK & x)!=0)
+#endif
+
 #ifdef UFC_CRYPT
 #define crypt ufc_crypt
 #endif
