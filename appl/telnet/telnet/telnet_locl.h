@@ -77,8 +77,8 @@
 #include <sys/termio.h>
 #endif
 
-#if defined(HAVE_TERM_H) && !defined(HAVE_TERMIOS_H)
-#include <term.h>
+#if defined(HAVE_TERMCAP_H)
+#include <termcap.h>
 #endif
 
 #ifdef HAVE_FCNTL_H
