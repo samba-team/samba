@@ -1,5 +1,5 @@
 !==
-!== Application_Serving.txt for Samba release TNG-prealpha 11 Feb 2000
+!== Application_Serving.txt for Samba release TNG-prealpha 13 Feb 2000
 !==
 Contributed:	January 7, 1997
 Updated:	March 24, 1998

@@ -1,5 +1,5 @@
 !==
-!== SCO.txt for Samba release TNG-prealpha 11 Feb 2000
+!== SCO.txt for Samba release TNG-prealpha 13 Feb 2000
 !==
 Contributor:	Geza Makay <makayg@math.u-szeged.hu>
 Date:		Unknown

@@ -1,5 +1,5 @@
 !==
-!== SSLeay.txt for Samba release TNG-prealpha 11 Feb 2000
+!== SSLeay.txt for Samba release TNG-prealpha 13 Feb 2000
 !==
 Contributor: Christian Starkjohann <cs@obdev.at>
 Date:        May 29, 1998
