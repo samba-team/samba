@@ -50,7 +50,12 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
   int ret;
 
   ctx->challengep = 0;
+  ctx->err = NULL;
   ctx->user = strdup(user);
+  if (ctx->user == NULL) {
+    ctx->err = "Out of memory";
+    return -1;
+  }
   dbm = otp_db_open ();
   if (dbm == NULL) {
     ctx->err = "Cannot open database";
@@ -61,7 +66,6 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
   if (ret)
     return ret;
   sprintf (str, "[ otp-%s %u %s ]", ctx->alg->name, ctx->n-1, ctx->seed);
-  ctx->err = NULL;
   ctx->challengep = 1;
   return 0;
 }
