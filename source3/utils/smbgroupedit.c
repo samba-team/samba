@@ -52,6 +52,7 @@ static void usage(void)
 	printf("  -c SID               change group\n");
 	printf("     -u unix group\n");
 	printf("     -d description    group description\n");
+	printf("  -r rid               RID of new group\n")
 	printf("  -x group             delete this group\n");
 	printf("\n");
 	printf("    -t[b|d|l]          type: builtin, domain, local \n");
