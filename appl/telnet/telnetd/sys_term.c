@@ -937,10 +937,8 @@ void getptyslave(void)
 # ifdef	LINEMODE
 	int waslm;
 # endif
-# ifdef	TIOCGWINSZ
 	struct winsize ws;
 	extern int def_row, def_col;
-# endif
 	extern int def_tspeed, def_rspeed;
 	/*
 	 * Opening the slave side may cause initilization of the
@@ -1018,7 +1016,7 @@ void getptyslave(void)
 	 * set up the tty modes as we like them to be.
 	 */
 	init_termbuf();
-# ifdef	TIOCGWINSZ
+# ifdef	TIOCSWINSZ
 	if (def_row || def_col) {
 		memset(&ws, 0, sizeof(ws));
 		ws.ws_col = def_col;
