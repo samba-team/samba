@@ -15,7 +15,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>nmblookup</command>
+		<command>winbindd</command>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-i</arg>
 		<arg choice="opt">-S</arg>
