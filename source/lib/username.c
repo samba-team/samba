@@ -257,8 +257,8 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 		goto done;
 
 	/* Try as given, if username wasn't originally lowercase */
-	if(strcmp(user,user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",user));
+	if(strcmp(user, user2) != 0) {
+		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n", user));
 		ret = sys_getpwnam(user);
 		if(ret)
 			goto done;
@@ -266,8 +266,8 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 
 	/* Try as uppercase, if username wasn't originally uppercase */
 	strupper(user2);
-	if(strcmp(user,user2) != 0) {
-		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",user2));
+	if(strcmp(user, user2) != 0) {
+		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n", user2));
 		ret = sys_getpwnam(user2);
 		if(ret)
 			goto done;
@@ -275,11 +275,11 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 
 	/* Try all combinations up to usernamelevel */
 	strlower(user2);
-	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",lp_usernamelevel(),user2));
+	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n", lp_usernamelevel(), user2));
 	ret = uname_string_combinations(user2, sys_getpwnam, lp_usernamelevel());
 
 done:
-	DEBUG(5,("Get_Pwnam %s find a valid username!\n",ret ? "did":"didn't"));
+	DEBUG(5,("Get_Pwnam_internals %s find user [%s]!\n",ret ? "did":"didn't", user));
 	return ret;
 }
 
@@ -316,10 +316,13 @@ struct passwd *Get_Pwnam(const char *user)
 
 	fstrcpy(user2, user);
 
+	DEBUG(5,("Finding user %s\n", user));
+
 	ret = Get_Pwnam_internals(user, user2);
 	
-	/* We can safely assume ret is NULL if none of the above succeed */
-	return(ret);  
+	DEBUG(5,("Get_Pwnam %s find user [%s]!\n",ret ? "did":"didn't", user));
+
+	return ret;  
 }
 
 /****************************************************************************
