@@ -1,3 +1,12 @@
+Sun Mar  9 21:01:12 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb/{mk_priv.c, rd_priv.c, sendauth.c, decrypt.c,
+	address.c}: new files
+
+	* lib/krb5/auth_context.c: more code
+
+	* configure.in: try to figure out timezone
+
 Sat Mar  8 11:41:07 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/error/error.c: Try strerror if error code wasn't found.
