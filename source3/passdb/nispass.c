@@ -223,25 +223,25 @@ static struct sam_passwd *getnisp21pwent(void *vp)
 }
 
 /*************************************************************************
- Return the current position in the nisplus passwd list as an unsigned long.
+ Return the current position in the nisplus passwd list as an SMB_BIG_INTEGER.
  This must be treated as an opaque token.
 
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-static unsigned long getnisppwpos(void *vp)
+static SMB_BIG_INTEGER getnisppwpos(void *vp)
 {
 	return 0;
 }
 
 /*************************************************************************
- Set the current position in the nisplus passwd list from unsigned long.
+ Set the current position in the nisplus passwd list from SMB_BIG_INTEGER.
  This must be treated as an opaque token.
 
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
-static BOOL setnisppwpos(void *vp, unsigned long tok)
+static BOOL setnisppwpos(void *vp, SMB_BIG_INTEGER tok)
 {
 	return False;
 }

@@ -199,7 +199,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   int16 namelen = strlen(pname)+1;
 
   pstring fname;
-  int unixmode;
+  mode_t unixmode;
   SMB_OFF_T size=0;
   int fmode=0,mtime=0,rmode;
   SMB_INO_T inode = 0;
@@ -307,14 +307,13 @@ static int get_lanman2_dir_entry(connection_struct *conn,
   pstring mask;
   pstring pathreal;
   pstring fname;
-  BOOL matched;
   char *p, *pdata = *ppdata;
   uint32 reskey=0;
   int prev_dirpos=0;
   int mode=0;
   SMB_OFF_T size = 0;
   uint32 len;
-  uint32 mdate=0, adate=0, cdate=0;
+  time_t mdate=0, adate=0, cdate=0;
   char *nameptr;
   BOOL isrootdir = (strequal(conn->dirpath,"./") ||
 		    strequal(conn->dirpath,".") ||
@@ -360,8 +359,6 @@ static int get_lanman2_dir_entry(connection_struct *conn,
       
     if (!dname) 
       return(False);
-
-    matched = False;
 
     pstrcpy(fname,dname);      
 

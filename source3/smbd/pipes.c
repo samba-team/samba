@@ -119,7 +119,6 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	int smb_mincnt = SVAL(inbuf,smb_vwv6);
 	int nread = -1;
 	char *data;
-	BOOL ok = False;
 
 	if (!p) return(ERROR(ERRDOS,ERRbadfid));
 
@@ -128,8 +127,6 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
 	nread = read_pipe(p, data, smb_offs, smb_maxcnt);
 
-	ok = True;
-  
 	if (nread < 0)
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
   

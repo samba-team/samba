@@ -160,18 +160,20 @@ int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_ftruncate(int fd, SMB_OFF_T offset);
 SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence);
+int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence);
+SMB_OFF_T sys_ftell(FILE *fp);
 int dos_unlink(char *fname);
-int dos_open(char *fname,int flags,int mode);
+int dos_open(char *fname,int flags,mode_t mode);
 DIR *dos_opendir(char *dname);
 int dos_stat(char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_waitpid(pid_t pid,int *status,int options);
 int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf);
-int dos_mkdir(char *dname,int mode);
+int dos_mkdir(char *dname,mode_t mode);
 int dos_rmdir(char *dname);
 int dos_chdir(char *dname);
 int dos_utime(char *fname,struct utimbuf *times);
 int dos_rename(char *from, char *to);
-int dos_chmod(char *fname,int mode);
+int dos_chmod(char *fname,mode_t mode);
 char *dos_getwd(char *s);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
@@ -1792,7 +1794,7 @@ int reply_nttrans(connection_struct *conn,
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
 uint16 fd_attempt_close(file_fd_struct *fd_ptr);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      int mode,int oplock_request, int *Access,int *action);
+		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, int unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);

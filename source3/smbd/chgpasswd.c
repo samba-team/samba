@@ -302,12 +302,12 @@ static BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequenc
 
   /* allocate a pseudo-terminal device */
   if ((master = findpty (&slavedev)) < 0) {
-    DEBUG(3,("Cannot Allocate pty for password change: %s",name));
+    DEBUG(3,("Cannot Allocate pty for password change: %s\n",name));
     return(False);
   }
 
   if ((pid = fork()) < 0) {
-    DEBUG(3,("Cannot fork() child for password change: %s",name));
+    DEBUG(3,("Cannot fork() child for password change: %s\n",name));
     close(master);
     return(False);
   }

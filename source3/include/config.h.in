@@ -154,6 +154,9 @@
 /* Define if you have the execl function.  */
 #undef HAVE_EXECL
 
+/* Define if you have the fseek64 function.  */
+#undef HAVE_FSEEK64
+
 /* Define if you have the fstat function.  */
 #undef HAVE_FSTAT
 
@@ -162,6 +165,9 @@
 
 /* Define if you have the fsync function.  */
 #undef HAVE_FSYNC
+
+/* Define if you have the ftell64 function.  */
+#undef HAVE_FTELL64
 
 /* Define if you have the ftruncate function.  */
 #undef HAVE_FTRUNCATE

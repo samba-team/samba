@@ -417,8 +417,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	/* Breakout the oplock request bits so we can set the
 	   reply bits separately. */
 	int oplock_request = 0;
-	int unixmode, pnum = -1;
-	int fmode=0,mtime=0,rmode=0;
+    mode_t unixmode;
+	int pnum = -1;
+	int fmode=0,rmode=0;
 	SMB_OFF_T file_len = 0;
 	SMB_STRUCT_STAT sbuf;
 	int smb_action = 0;
@@ -619,7 +620,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	fmode = dos_mode(conn,fname,&sbuf);
 	if(fmode == 0)
 		fmode = FILE_ATTRIBUTE_NORMAL;
-	mtime = sbuf.st_mtime;
 	if (!fsp->is_directory && (fmode & aDIR)) {
 		close_file(fsp,False);
 		return(ERROR(ERRDOS,ERRnoaccess));
@@ -710,7 +710,8 @@ static int call_nt_transact_create(connection_struct *conn,
   /* Breakout the oplock request bits so we can set the
      reply bits separately. */
   int oplock_request = 0;
-  int unixmode, pnum = -1;
+  mode_t unixmode;
+  int pnum = -1;
   int fmode=0,mtime=0,rmode=0;
   off_t file_len = 0;
   SMB_STRUCT_STAT sbuf;

@@ -36,7 +36,7 @@ AC_CHECK_HEADERS(sys/filio.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h)
 AC_CHECK_HEADERS(sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
 AC_CHECK_HEADERS(shadow.h netinet/tcp.h sys/security.h security/pam_appl.h)
-AC_CHECK_HEADERS(stropts.h poll.h)
+AC_CHECK_HEADERS(stropts.h poll.h )
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
@@ -163,7 +163,7 @@ AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64)
 AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
-AC_CHECK_FUNCS(bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
+AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
 
 echo $ac_n "checking for long long ... $ac_c"
 AC_TRY_RUN([#include <stdio.h>

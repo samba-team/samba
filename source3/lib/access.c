@@ -31,7 +31,7 @@ static int masked_match(char *tok, char *slash, char *s)
 	*slash = '/';
 	if (net == INADDR_NONE || 
 	    (mask = interpret_addr(slash + 1)) == INADDR_NONE) {
-		DEBUG(0,("access: bad net/mask access control: %s", tok));
+		DEBUG(0,("access: bad net/mask access control: %s\n", tok));
 		return (False);
 	}
 	return ((addr & mask) == net);

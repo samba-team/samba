@@ -453,9 +453,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   int gid;
   int uid;
   int   smb_bufsize;    
-  int   smb_mpxmax;     
-  int   smb_vc_num;     
-  uint32   smb_sesskey;    
   int   smb_apasslen = 0;   
   pstring smb_apasswd;
   int   smb_ntpasslen = 0;   
@@ -472,9 +469,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   *smb_ntpasswd = 0;
   
   smb_bufsize = SVAL(inbuf,smb_vwv2);
-  smb_mpxmax = SVAL(inbuf,smb_vwv3);
-  smb_vc_num = SVAL(inbuf,smb_vwv4);
-  smb_sesskey = IVAL(inbuf,smb_vwv5);
 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
@@ -1247,7 +1241,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
   int share_mode;
   SMB_OFF_T size = 0;
   time_t mtime=0;
-  int unixmode;
+  mode_t unixmode;
   int rmode=0;
   SMB_STRUCT_STAT sbuf;
   BOOL bad_path = False;
@@ -1344,7 +1338,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   uint32 smb_time = make_unix_date3(inbuf+smb_vwv6);
 #endif
   int smb_ofun = SVAL(inbuf,smb_vwv8);
-  int unixmode;
+  mode_t unixmode;
   SMB_OFF_T size=0;
   int fmode=0,mtime=0,rmode=0;
   SMB_STRUCT_STAT sbuf;
@@ -1770,8 +1764,6 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
   SMB_OFF_T startpos;
   char *header = outbuf;
   ssize_t ret=0;
-  int fd;
-  char *fname;
   files_struct *fsp;
 
   /*
@@ -1818,11 +1810,7 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	  _smb_setlen(header,0);
 	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
 	  return(-1);
-  } else {
-	  fd = fsp->fd_ptr->fd;
-	  fname = fsp->fsp_name;
   }
-
 
   if (!is_locked(fsp,conn,maxcount,startpos, F_RDLCK))
   {
@@ -1855,19 +1843,19 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 
 #if USE_READ_PREDICTION
     if (!fsp->can_write)
-      predict = read_predict(fd,startpos,header+4,NULL,nread);
+      predict = read_predict(fsp->fd_ptr->fd,startpos,header+4,NULL,nread);
 #endif /* USE_READ_PREDICTION */
 
     if ((nread-predict) > 0)
       seek_file(fsp,startpos + predict);
     
-    ret = (ssize_t)transfer_file(fd,Client,(SMB_OFF_T)(nread-predict),header,4+predict,
+    ret = (ssize_t)transfer_file(fsp->fd_ptr->fd,Client,(SMB_OFF_T)(nread-predict),header,4+predict,
 			startpos+predict);
   }
 
   if (ret != nread+4)
     DEBUG(0,("ERROR: file read failure on %s at %d for %d bytes (%d)\n",
-	     fname,startpos,nread,ret));
+	     fsp->fsp_name,startpos,nread,ret));
 
 #else /* UNSAFE_READRAW */
   ret = read_file(fsp,header+4,startpos,nread);
@@ -1993,7 +1981,6 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   size_t smb_mincnt = SVAL(inbuf,smb_vwv6);
   ssize_t nread = -1;
   char *data;
-  BOOL ok = False;
 
   /* If it's an IPC, pass off the pipe handler. */
   if (IS_IPC(conn))
@@ -2018,7 +2005,6 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   if (is_locked(fsp,conn,smb_maxcnt,startpos, F_RDLCK))
     return(ERROR(ERRDOS,ERRlock));
   nread = read_file(fsp,data,startpos,smb_maxcnt);
-  ok = True;
   
   if (nread < 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2718,9 +2704,6 @@ int reply_printqueue(connection_struct *conn,
 	int outsize = set_message(outbuf,2,3,True);
 	int max_count = SVAL(inbuf,smb_vwv0);
 	int start_index = SVAL(inbuf,smb_vwv1);
-	uint16 vuid;
-
-	vuid = SVAL(inbuf,smb_uid);
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
@@ -3722,7 +3705,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
   char *data;
   SMB_OFF_T startpos;
   int outsize;
-  size_t mincount, maxcount;
+  size_t maxcount;
   int max_per_packet;
   size_t tcount;
   int pad;
@@ -3740,7 +3723,6 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
   startpos = IVAL(inbuf,smb_vwv1);
   maxcount = SVAL(inbuf,smb_vwv3);
-  mincount = SVAL(inbuf,smb_vwv4);
 
   data = smb_buf(outbuf);
   pad = ((long)data)%4;

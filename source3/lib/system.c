@@ -205,6 +205,32 @@ SMB_OFF_T sys_lseek(int fd, SMB_OFF_T offset, int whence)
 }
 
 /*******************************************************************
+ An fseek() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+int sys_fseek(FILE *fp, SMB_OFF_T offset, int whence)
+{
+#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FSEEK64)
+  return fseek64(fp, offset, whence);
+#else
+  return fseek(fp, offset, whence);
+#endif
+}
+
+/*******************************************************************
+ An ftell() wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+SMB_OFF_T sys_ftell(FILE *fp)
+{
+#if defined(LARGE_SMB_OFF_T) && defined(HAVE_FTELL64)
+  return (SMB_OFF_T)ftell64(fp);
+#else
+  return (SMB_OFF_T)ftell(fp);
+#endif
+}
+
+/*******************************************************************
 just a unlink wrapper that calls dos_to_unix.
 ********************************************************************/
 int dos_unlink(char *fname)
@@ -216,7 +242,7 @@ int dos_unlink(char *fname)
 /*******************************************************************
 a simple open() wrapper that calls dos_to_unix.
 ********************************************************************/
-int dos_open(char *fname,int flags,int mode)
+int dos_open(char *fname,int flags,mode_t mode)
 {
   return(open(dos_to_unix(fname,False),flags,mode));
 }
@@ -261,7 +287,7 @@ int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 /*******************************************************************
 mkdir() gets a wrapper that calls dos_to_unix.
 ********************************************************************/
-int dos_mkdir(char *dname,int mode)
+int dos_mkdir(char *dname,mode_t mode)
 {
   return(mkdir(dos_to_unix(dname,False),mode));
 }
@@ -413,7 +439,7 @@ int dos_rename(char *from, char *to)
 /*******************************************************************
 for chmod - call dos_to_unix.
 ********************************************************************/
-int dos_chmod(char *fname,int mode)
+int dos_chmod(char *fname,mode_t mode)
 {
   return(chmod(dos_to_unix(fname,False),mode));
 }

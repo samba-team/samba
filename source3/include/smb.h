@@ -708,8 +708,8 @@ struct passdb_ops {
    */
   void *(*startsmbpwent)(BOOL);
   void (*endsmbpwent)(void *);
-  unsigned long (*getsmbpwpos)(void *);
-  BOOL (*setsmbpwpos)(void *, unsigned long);
+  SMB_BIG_INTEGER (*getsmbpwpos)(void *);
+  BOOL (*setsmbpwpos)(void *, SMB_BIG_INTEGER);
 
   /*
    * smb password database query functions.
