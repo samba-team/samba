@@ -382,7 +382,7 @@ static NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
  
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 			DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
-			status = NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			free_server_info(server_info);
 			goto done;
 		}
