@@ -180,6 +180,7 @@ int smbw_stat(const char *fname, struct stat *st)
 	size_t size=0;
 	uint16 mode=0;
 	SMB_INO_T ino = 0;
+	int result = 0;
 
 	ZERO_STRUCTP(st);
 
@@ -200,8 +201,19 @@ int smbw_stat(const char *fname, struct stat *st)
 	/* get a connection to the server */
 	srv = smbw_server(server, share);
 	if (!srv) {
+
+		/* For shares we aren't allowed to connect to, return
+		   an empty directory */
+
+		if (server[0] && share[0] && !path[0] && errno == EACCES) {
+			mode = aDIR | aRONLY;
+			smbw_setup_stat(st, path, size, mode);
+			goto done;
+		}
+
 		/* smbw_server sets errno */
-		goto failed;
+		result = -1;
+		goto done;
 	}
 
 	DEBUG(4,("smbw_stat\n"));
@@ -221,7 +233,8 @@ int smbw_stat(const char *fname, struct stat *st)
 				 &mode, &size, &c_time, &a_time, &m_time,
 				 &ino)) {
 			errno = smbw_errno(&srv->cli);
-			goto failed;
+			result = -1;
+			goto done;
 		}
 	}
 
@@ -234,10 +247,7 @@ int smbw_stat(const char *fname, struct stat *st)
 	st->st_mtime = m_time;
 	st->st_dev = srv->dev;
 
+ done:
 	smbw_busy--;
-	return 0;
-
- failed:
-	smbw_busy--;
-	return -1;
+	return result;
 }
