@@ -29,6 +29,7 @@
 
 struct cli_state *cli;
 extern BOOL in_client;
+extern BOOL AllowDebugChange;
 static int port = SMB_PORT;
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -2280,7 +2281,6 @@ static int do_message_op(void)
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
-	int old_debug;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
@@ -2326,6 +2326,26 @@ static int do_message_op(void)
 				exit(1);
 			}
 		}
+		else if(strncmp(argv[opt], "-d", 2) == 0) {
+			AllowDebugChange = False;
+			if(argv[opt][2] != '\0') {
+				if (argv[opt][2] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(&argv[opt][2]);
+			} else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				if (argv[opt+1][0] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
 	}
 
 	TimeInit();
@@ -2333,11 +2353,9 @@ static int do_message_op(void)
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
-	old_debug = DEBUGLEVEL;
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
 	}
-	DEBUGLEVEL = old_debug;
 	
 	codepage_initialise(lp_client_code_page());
 
@@ -2449,6 +2467,7 @@ static int do_message_op(void)
 				DEBUGLEVEL = 10000;
 			else
 				DEBUGLEVEL = atoi(optarg);
+			AllowDebugChange = False;
 			break;
 		case 'P':
 			/* not needed anymore */
