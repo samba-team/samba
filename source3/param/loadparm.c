@@ -413,6 +413,7 @@ typedef struct
 	BOOL bMSDfsRoot;
 	BOOL bUseClientDriver;
 	BOOL bDefaultDevmode;
+	BOOL bForcePrintername;
 	BOOL bNTAclSupport;
 	BOOL bForceUnknownAclUser;
 	BOOL bUseSendfile;
@@ -537,6 +538,7 @@ static service sDefault = {
 	False,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
 	False,			/* bDefaultDevmode */
+	False,			/* bForcePrintername */
 	True,			/* bNTAclSupport */
 	False,                  /* bForceUnknownAclUser */
 	True,			/* bUseSendfile */
@@ -983,6 +985,7 @@ static struct parm_struct parm_table[] = {
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_HIDE}, 
 	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
+	{"force printername", P_BOOL, P_LOCAL, &sDefault.bForcePrintername, NULL, NULL, FLAG_ADVANCED | FLAG_PRINT}, 
 
 	{N_("Filename Handling"), P_SEP, P_SEPARATOR}, 
 	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, FLAG_ADVANCED}, 
@@ -1885,6 +1888,7 @@ FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
 FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
+FN_LOCAL_BOOL(lp_force_printername, bForcePrintername)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_BOOL(lp_force_unknown_acl_user, bForceUnknownAclUser)
 FN_LOCAL_BOOL(lp_ea_support, bEASupport)
