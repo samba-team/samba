@@ -180,3 +180,4 @@ struct mutex_ops;
 
 struct ads_struct;
 
+struct wrepl_packet;
