@@ -7,23 +7,28 @@ RCSID("$Id$");
 krb5_error_code
 as_rep(krb5_context context, 
        KDC_REQ *req, 
-       krb5_data *data)
+       krb5_data *reply)
 {
     KDC_REQ_BODY *b = &req->req_body;
     AS_REP rep;
     KDCOptions f = b->kdc_options;
     hdb_entry *client, *server;
-    int use_etype;
+    int etype;
     EncTicketPart *et = calloc(1, sizeof(*et));
     EncKDCRepPart *ek = calloc(1, sizeof(*ek));
     krb5_principal client_princ;
+    krb5_error_code ret;
     int e;
+    int i;
+
+    krb5_keyblock *ckey, *skey;
 
     client = db_fetch(context, b->cname, b->realm);
-    server = db_fetch(context, b->sname, b->realm);
-
     if(client == NULL)
 	return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+
+    server = db_fetch(context, b->sname, b->realm);
+
     if(server == NULL){
 	hdb_free_entry(context, client);
 	free(client);
@@ -56,8 +61,8 @@ as_rep(krb5_context context,
 		       KRB5KDC_ERR_PREAUTH_REQUIRED,
 		       "Need to use PA-ENC-TIMESTAMP",
 		       &foo_data,
-		       data);
-
+		       reply);
+	
 	return 0;
     } else {
 	krb5_data ts_data;
@@ -74,7 +79,7 @@ as_rep(krb5_context context,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
 			   NULL,
-			   data);
+			   reply);
 	    return 0;
 	}
 
@@ -93,24 +98,36 @@ as_rep(krb5_context context,
 			   KRB5KRB_AP_ERR_BAD_INTEGRITY,
 			   "Couldn't decode",
 			   NULL,
-			   data);
+			   reply);
 	    return 0;
 	}
-	if (kdc_time - p.patimestamp > 300) {
+	if (abs(kdc_time - p.patimestamp) > 300) {
 	    krb5_mk_error (client_princ,
 			   KRB5KDC_ERR_PREAUTH_FAILED,
 			   "Too large time skew",
 			   NULL,
-			   data);
+			   reply);
 	    return 0;
 	}
 
     }
 
-    if(b->etype.len == 0)
-	return KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
-    use_etype = b->etype.val[0];
+    /* Find appropriate key */
+    for(i = 0; i < b->etype.len; i++){
+	ret = hdb_etype2key(context, client, b->etype.val[i], &ckey);
+	if(ret)
+	    continue;
+	ret = hdb_etype2key(context, client, b->etype.val[i], &skey);
+	if(ret)
+	    continue;
+	break;
+    }
 
+    if(ret)
+	return KRB5KDC_ERR_ETYPE_NOSUPP;
+    
+    etype = b->etype.val[i];
+    
     memset(&rep, 0, sizeof(rep));
     rep.pvno = 5;
     rep.msg_type = krb_as_rep;
@@ -128,7 +145,7 @@ as_rep(krb5_context context,
     et->flags.proxiable = f.proxiable;
     et->flags.may_postdate = f.allow_postdate;
 
-    mk_des_keyblock(&et->key);
+    krb5_generate_random_keyblock(context, ckey->keytype, &et->key);
     copy_PrincipalName(b->cname, &et->cname);
     copy_Realm(&b->realm, &et->crealm);
     
@@ -214,33 +231,39 @@ as_rep(krb5_context context,
 	if(e)
 	    return e;
 
-	rep.ticket.enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep.ticket.enc_part.kvno = NULL;
-	krb5_encrypt(context, buf + sizeof(buf) - len, len,
-		     rep.ticket.enc_part.etype,
-		     &server->keyblock, 
-		     &rep.ticket.enc_part.cipher);
+	krb5_encrypt_EncryptedData(context, 
+				   buf + sizeof(buf) - len,
+				   len,
+				   etype,
+				   skey,
+				   &rep.ticket.enc_part);
+#if 0
+	rep.ticket.enc_part.kvno = malloc(sizeof(*rep.ticket.enc_part.kvno));
+	*rep.ticket.enc_part.kvno = server.kvno;
+#endif
 	
 	e = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
 	free_EncKDCRepPart(ek);
 	free(ek);
 	if(e)
 	    return e;
-	rep.enc_part.etype = ETYPE_DES_CBC_CRC;
-	rep.enc_part.kvno = NULL;
-
-	krb5_encrypt(context, buf + sizeof(buf) - len, len,
-		     rep.enc_part.etype,
-		     &client->keyblock, 
-		     &rep.enc_part.cipher);
+	krb5_encrypt_EncryptedData(context,
+				   buf + sizeof(buf) - len,
+				   len,
+				   etype,
+				   ckey,
+				   &rep.enc_part);
+#if 0
+	rep.enc_part.kvno = malloc(sizeof(*rep.enc_part.kvno));
+	*rep.enc_part.kvno = client.kvno;
+#endif
 	
 	e = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
+	free_AS_REP(&rep);
 	if(e)
 	    return e;
-	free_AS_REP(&rep);
 	
-	krb5_data_copy(data, buf + sizeof(buf) - len, len);
-	
+	krb5_data_copy(reply, buf + sizeof(buf) - len, len);
     }
     
     return 0;
@@ -434,7 +457,9 @@ tgs_rep(krb5_context context,
 	/* XXX Check enc-authorization-data */
 
 	
-	mk_des_keyblock(&et->key);
+	krb5_generate_random_keyblock(context,
+				      KEYTYPE_DES, /* XXX */
+				      &et->key);
 	et->crealm = tgt->crealm;
 	et->cname = tgt->cname;
 	et->transited = tgt->transited;
