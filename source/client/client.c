@@ -1006,7 +1006,7 @@ static int cmd_mkdir(void)
 		*ddir2 = 0;
 		
 		pstrcpy(ddir,mask);
-		trim_string(ddir,".",NULL);
+		trim_char(ddir,'.','\0');
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);

@@ -41,9 +41,11 @@ NTSTATUS pdb_init_plugin(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	if (p) {
 		*p = 0;
 		plugin_location = p+1;
-		trim_string(plugin_location, " ", " ");
-	} else plugin_location = NULL;
-	trim_string(plugin_name, " ", " ");
+		trim_char(plugin_location, ' ', ' ');
+	} else {
+		plugin_location = NULL;
+	}
+	trim_char(plugin_name, ' ', ' ');
 
 	DEBUG(5, ("Trying to load sam plugin %s\n", plugin_name));
 	dl_handle = sys_dlopen(plugin_name, RTLD_NOW );

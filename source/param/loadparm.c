@@ -1427,7 +1427,8 @@ static void init_globals(void)
 	Globals.bClientPlaintextAuth = True;	/* Do use a plaintext password if is requested by the server */
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
-	Globals.bClientNTLMv2Auth = True; /* Client should use NTLMv2 if available. */
+	Globals.bClientNTLMv2Auth = False; /* Client should not use NTLMv2, as we can't tell that the server supports it. */
+	/* Note, that we will use NTLM2 session security (which is different), if it is available */
 
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
@@ -1558,8 +1559,8 @@ static char *lp_string(const char *s)
 		lp_talloc = talloc_init("lp_talloc");
 
 	tmpstr = alloc_sub_basic(current_user_info.smb_name, s);
-	if (trim_string(tmpstr, "\"", "\"")) {
-		if (strchr(tmpstr,'"') != NULL) {
+	if (trim_char(tmpstr, '\"', '\"')) {
+		if (strchr(tmpstr,'\"') != NULL) {
 			SAFE_FREE(tmpstr);
 			tmpstr = alloc_sub_basic(current_user_info.smb_name,s);
 		}
@@ -2296,13 +2297,8 @@ BOOL lp_add_home(const char *pszHomename, int iDefaultService,
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
 	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
 		pstrcpy(newHomedir, pszHomedir);
-	} else {
-		pstrcpy(newHomedir, lp_pathname(iDefaultService));
-		string_sub(newHomedir,"%H", pszHomedir, sizeof(newHomedir)); 
-		string_sub(newHomedir,"%S", pszHomename, sizeof(newHomedir)); 
-	}
-
-	string_set(&ServicePtrs[i]->szPath, newHomedir);
+		string_set(&ServicePtrs[i]->szPath, newHomedir);
+	} 
 
 	if (!(*(ServicePtrs[i]->comment))) {
 		pstring comment;
@@ -2717,8 +2713,10 @@ static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 
 static BOOL handle_charset(const char *pszParmValue, char **ptr)
 {
-	string_set(ptr, pszParmValue);
-	init_iconv();
+	if (strcmp(*ptr, pszParmValue) != 0) {
+		string_set(ptr, pszParmValue);
+		init_iconv();
+	}
 	return True;
 }
 
@@ -3115,7 +3113,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			pstr_sprintf(param_key, "%s:", pszParmName);
 			slen = strlen(param_key);
 			pstrcat(param_key, sep+1);
-			trim_string(param_key+slen, " ", " ");
+			trim_char(param_key+slen, ' ', ' ');
 			not_added = True;
 			data = (snum < 0) ? Globals.param_opt : 
 				ServicePtrs[snum]->param_opt;

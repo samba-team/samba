@@ -40,7 +40,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 	ZERO_STRUCTP(pdp);
 
-	trim_string(temp,"\\","\\");
+	trim_char(temp,'\\','\\');
 	DEBUG(10,("temp in parse_dfs_path: .%s. after trimming \\'s\n",temp));
 
 	/* now tokenize */
@@ -275,7 +275,7 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 				char *q;
 				pstring buf;
 				pstrcpy(buf, dfspath);
-				trim_string(buf, NULL, "\\");
+				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
 					q = strrchr(buf, '\\');
 					if (q) *q = 0;
@@ -780,7 +780,7 @@ BOOL create_msdfs_link(struct junction_map* jn, BOOL exists)
 	for(i=0; i<jn->referral_count; i++) {
 		char* refpath = jn->referral_list[i].alternate_path;
       
-		trim_string(refpath, "\\", "\\");
+		trim_char(refpath, '\\', '\\');
 		if(*refpath == '\0') {
 			if (i == 0)
 				insert_comma = False;
@@ -917,9 +917,9 @@ int enum_msdfs_links(struct junction_map* jn)
 	int jn_count = 0;
 
 	if(!lp_host_msdfs())
-		return -1;
+		return 0;
 
-	for(i=0;*lp_servicename(i);i++) {
+	for(i=0;i < lp_numservices();i++) {
 		if(lp_msdfs_root(i)) 
 			form_junctions(i,jn,&jn_count);
 	}

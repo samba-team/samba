@@ -1777,7 +1777,7 @@ ADS_STATUS ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	ADS_STATUS status;
 	void *res;
 
-	status = ads_do_search(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
+	status = ads_do_search_retry(ads, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, &res);
 	if (!ADS_ERR_OK(status)) return status;
 
 	if (ads_count_replies(ads, res) != 1) {
@@ -1900,7 +1900,7 @@ ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
 	void *res;
 	ADS_STATUS rc;
 
-	rc = ads_do_search(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+	rc = ads_do_search_retry(ads, ads->config.bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
 			   attrs, &res);
 	if (!ADS_ERR_OK(rc)) return rc;
 	if (!ads_pull_sid(ads, res, "objectSid", sid)) {

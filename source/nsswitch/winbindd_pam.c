@@ -65,7 +65,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	time_t last_change_time;
 	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli = NULL;
+        struct cli_state *cli;
 	uchar chal[8];
 	TALLOC_CTX *mem_ctx = NULL;
 	DATA_BLOB lm_resp;
@@ -75,6 +75,7 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	const char *contact_domain;
+	BOOL retry;
 
 	/* Ensure null termination */
 	state->request.data.auth.user[sizeof(state->request.data.auth.user)-1]='\0';
@@ -127,6 +128,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
+		cli = NULL;
+		retry = False;
 	
 		/* Don't shut this down - it belongs to the connection cache code */
 		result = cm_get_netlogon_cli(contact_domain, trust_passwd, 
@@ -154,15 +157,14 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 				"password was changed and we didn't know it.  Killing connections to domain %s\n",
 				name_domain));
 			winbindd_cm_flush();
-			cli->fd = -1;
+			retry = True;
 		} 
 		
 		/* We have to try a second time as cm_get_netlogon_cli
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-	} while ( (attempts < 2) && (cli->fd == -1) );
-
+	} while ( (attempts < 2) && retry );
         
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
 	
@@ -170,10 +172,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		netsamlogon_cache_store( cli->mem_ctx, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 	}
-	
-        
+   
 done:
-	
 	/* give us a more useful (more correct?) error code */
 	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
 		result = NT_STATUS_NO_LOGON_SERVERS;
@@ -206,7 +206,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	time_t last_change_time;
 	uint32 sec_channel_type;
         NET_USER_INFO_3 info3;
-        struct cli_state *cli = NULL;
+        struct cli_state *cli;
 	TALLOC_CTX *mem_ctx = NULL;
 	char *user = NULL;
 	const char *domain = NULL;
@@ -214,6 +214,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	const char *contact_domain;
 	DOM_CRED ret_creds;
 	int attempts = 0;
+	BOOL retry;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -300,6 +301,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	do {
 		ZERO_STRUCT(info3);
 		ZERO_STRUCT(ret_creds);
+		cli = NULL;
+		retry = False;
 
 		/* Don't shut this down - it belongs to the connection cache code */
 		result = cm_get_netlogon_cli(contact_domain, trust_passwd, sec_channel_type, False, &cli);
@@ -329,14 +332,14 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 				"password was changed and we didn't know it.  Killing connections to domain %s\n",
 				domain));
 			winbindd_cm_flush();
-			cli->fd = -1;
+			retry = True;
 		} 
 		
 		/* We have to try a second time as cm_get_netlogon_cli
 		   might not yet have noticed that the DC has killed
 		   our connection. */
 
-	} while ( (attempts < 2) && (cli->fd == -1) );
+	} while ( (attempts < 2) && retry );
 
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
         
@@ -357,7 +360,6 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	}
 
 done:
-
 	/* give us a more useful (more correct?) error code */
 	if ((NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) || (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))) {
 		result = NT_STATUS_NO_LOGON_SERVERS;

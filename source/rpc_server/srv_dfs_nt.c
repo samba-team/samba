@@ -159,7 +159,7 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
 	{
 	  pstring refpath;
 	  pstrcpy(refpath,jn.referral_list[i].alternate_path);
-	  trim_string(refpath, "\\", "\\");
+	  trim_char(refpath, '\\', '\\');
 	  DEBUG(10,("_dfs_remove:  refpath: .%s.\n", refpath));
 	  if(strequal(refpath, altpath))
 	    {
@@ -257,7 +257,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 	  struct referral* ref = &(j[i].referral_list[ii]);
 	  
 	  pstrcpy(path, ref->alternate_path);
-	  trim_string(path,"\\","");
+	  trim_char(path,'\\','\0');
 	  p = strrchr_m(path,'\\');
 	  if(p==NULL)
 	    {

@@ -28,6 +28,9 @@ static user_struct *validated_users;
 static int next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
 
+extern userdom_struct current_user_info;
+
+
 /****************************************************************************
  Check if a uid has been validated, and return an pointer to the user_struct
  if it has. NULL if not. vuid is biased by an offset. This allows us to
@@ -296,7 +299,7 @@ BOOL user_ok(const char *user,int snum, gid_t *groups, size_t n_groups)
 
 	if (ret && lp_valid_users(snum)) {
 		str_list_copy(&valid, lp_valid_users(snum));
-		if (valid && str_list_substitute(valid, "%S", lp_servicename(snum))) {
+		if ( valid && str_list_sub_basic(valid, current_user_info.smb_name) ) {
 			ret = user_in_list(user, (const char **)valid, groups, n_groups);
 		}
 	}

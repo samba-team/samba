@@ -217,13 +217,13 @@ static void uw_pathname(pstring fname, const char *uw_name, const char *uw_defau
 	/* For w-files, first look for explicit "wtmp dir" */
 	if (uw_name[0] == 'w') {
 		pstrcpy(dirname,lp_wtmpdir());
-		trim_string(dirname,"","/");
+		trim_char(dirname,'\0','/');
 	}
 
 	/* For u-files and non-explicit w-dir, look for "utmp dir" */
 	if (dirname == 0 || strlen(dirname) == 0) {
 		pstrcpy(dirname,lp_utmpdir());
-		trim_string(dirname,"","/");
+		trim_char(dirname,'\0','/');
 	}
 
 	/* If explicit directory above, use it */

@@ -57,7 +57,7 @@ void set_local_machine_name(const char* local_name, BOOL perm)
 	already_perm = perm;
 
 	fstrcpy(tmp_local_machine,local_name);
-	trim_string(tmp_local_machine," "," ");
+	trim_char(tmp_local_machine,' ',' ');
 	alpha_strcpy(local_machine,tmp_local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
 	strlower_m(local_machine);
 }
@@ -79,7 +79,7 @@ void set_remote_machine_name(const char* remote_name, BOOL perm)
 	already_perm = perm;
 
 	fstrcpy(tmp_remote_machine,remote_name);
-	trim_string(tmp_remote_machine," "," ");
+	trim_char(tmp_remote_machine,' ',' ');
 	alpha_strcpy(remote_machine,tmp_remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
 	strlower_m(remote_machine);
 }
@@ -111,7 +111,7 @@ void sub_set_smb_name(const char *name)
 		return;
 
 	fstrcpy(tmp,name);
-	trim_string(tmp," "," ");
+	trim_char(tmp,' ',' ');
 	strlower_m(tmp);
 	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
 }

@@ -1,54 +1,112 @@
 #
-# LDAP Schema file for SAMBA attribute storage 
-# This file is suitable for usage with Netscape Directory Server 4.1x
-# Adapted by Scott Lawson with help from Ron Creamer
-#
+# LDAP Schema file for SAMBA 3.0 attribute storage
+# For Netscape Directory Server 4.1x
+# Prepared by Osman Demirhan
 
-attribute       lmPassword              1.3.6.1.4.1.7165.2.1.1  cis single
-attribute       ntPassword              1.3.6.1.4.1.7165.2.1.2  cis single
-attribute       acctFlags               1.3.6.1.4.1.7165.2.1.4  cis single
-attribute       pwdLastSet              1.3.6.1.4.1.7165.2.1.3  int single
-attribute       logonTime               1.3.6.1.4.1.7165.2.1.5  int single
-attribute       logoffTime              1.3.6.1.4.1.7165.2.1.6  int single
-attribute       kickoffTime             1.3.6.1.4.1.7165.2.1.7  int single
-attribute       pwdCanChange            1.3.6.1.4.1.7165.2.1.8  int single
-attribute       pwdMustChange           1.3.6.1.4.1.7165.2.1.9  int single
-attribute       homedrive               1.3.6.1.4.1.7165.2.1.10 cis single
-attribute       scriptPath              1.3.6.1.4.1.7165.2.1.11 cis single
-attribute       profilePath             1.3.6.1.4.1.7165.2.1.12 cis single
-attribute       userWorkstations        1.3.6.1.4.1.7165.2.1.13 cis single
-attribute       rid                     1.3.6.1.4.1.7165.2.1.14 int single
-attribute       primaryGroupID          1.3.6.1.4.1.7165.2.1.15 int single
-attribute       smbHome                 1.3.6.1.4.1.7165.2.1.17 cis single
-attribute       domain                  1.3.6.1.4.1.7165.2.1.18 cis single
+attribute	sambaLMPassword			1.3.6.1.4.1.7165.2.1.24		cis single
+attribute	sambaNTPassword			1.3.6.1.4.1.7165.2.1.25		cis single
+attribute	sambaAcctFlags			1.3.6.1.4.1.7165.2.1.26		cis single
+attribute	sambaPwdLastSet			1.3.6.1.4.1.7165.2.1.27		int single
+attribute	sambaPwdCanChange		1.3.6.1.4.1.7165.2.1.28		int single
+attribute	sambaPwdMustChange		1.3.6.1.4.1.7165.2.1.29		int single
+attribute	sambaLogonTime			1.3.6.1.4.1.7165.2.1.30		int single
+attribute	sambaLogoffTime			1.3.6.1.4.1.7165.2.1.31		int single
+attribute	sambaKickoffTime		1.3.6.1.4.1.7165.2.1.32		int single
+attribute	sambaHomeDrive			1.3.6.1.4.1.7165.2.1.33		cis single
+attribute	sambaLogonScript		1.3.6.1.4.1.7165.2.1.34		cis single
+attribute	sambaProfilePath		1.3.6.1.4.1.7165.2.1.35		cis single
+attribute	sambaUserWorkstations	1.3.6.1.4.1.7165.2.1.36		cis single
+attribute	sambaHomePath			1.3.6.1.4.1.7165.2.1.37		cis single
+attribute	sambaDomainName			1.3.6.1.4.1.7165.2.1.38		cis single
+attribute	sambaSID				1.3.6.1.4.1.7165.2.1.20		cis single
+attribute	sambaPrimaryGroupSID	1.3.6.1.4.1.7165.2.1.23		cis single
+attribute	sambaGroupType			1.3.6.1.4.1.7165.2.1.19		int single
+attribute	sambaNextUserRid		1.3.6.1.4.1.7165.2.1.21		int single
+attribute	sambaNextGroupRid		1.3.6.1.4.1.7165.2.1.22		int single
+attribute	sambaNextRid			1.3.6.1.4.1.7165.2.1.39		int single
+attribute	sambaAlgorithmicRidBase	1.3.6.1.4.1.7165.2.1.40		int single
 
-objectclass sambaAccount
-       oid
-               1.3.1.5.1.4.1.7165.2.2.2
-       superior
-               top
-       requires
-               objectClass,
-               uid,
-               rid
-       allows
-               cn,
-               lmPassword,
-               ntPassword,
-               pwdLastSet,
-               logonTime,
-               logoffTime,
-               KickoffTime,
-               pwdCanChange,
-               pwdMustChange,
-               acctFlags,
-               displayName,
-               smbHome,
-               homeDrive,
-               scriptPath,
-               profilePath,
-               description,
-               userWorkstations,
-               primaryGroupID,
-               domain
+objectclass sambaSamAccount
+		oid
+				1.3.6.1.4.1.7165.2.2.6
+		superior
+				top
+		requires
+				objectClass,
+				uid,
+				sambaSID
+		allows
+				cn,
+				sambaLMPassword,
+				sambaNTPassword,
+				sambaPwdLastSet,
+				sambaLogonTime,
+				sambaLogoffTime,
+				sambaKickoffTime,
+				sambaPwdCanChange,
+				sambaPwdMustChange,
+				sambaAcctFlags,
+				displayName,
+				sambaHomePath,
+				sambaHomeDrive,
+				sambaLogonScript,
+				sambaProfilePath,
+				description,
+				sambaUserWorkstations,
+				sambaPrimaryGroupSID,
+				sambaDomainName
 
+objectclass sambaGroupMapping
+		oid
+				1.3.6.1.4.1.7165.2.2.4
+		superior
+				top
+		requires
+				gidNumber,
+				sambaSID,
+				sambaGroupType
+		allows
+				displayName,
+				description
+
+objectclass sambaDomain
+		oid
+				1.3.6.1.4.1.7165.2.2.5
+		superior
+				top
+		requires
+				sambaDomainName,
+				sambaSID
+		allows
+				sambaNextRid,
+				sambaNextGroupRid,
+				sambaNextUserRid,
+				sambaAlgorithmicRidBase
+
+objectclass sambaUnixIdPool
+		oid
+				1.3.6.1.4.1.7165.1.2.2.7
+		superior
+				top
+		requires
+				uidNumber,
+				gidNumber
+
+objectclass sambaIdmapEntry
+		oid
+				1.3.6.1.4.1.7165.1.2.2.8
+		superior
+				top
+		requires
+				sambaSID
+		allows
+				uidNumber,
+				gidNumber
+
+objectclass sambaSidEntry
+		oid
+				1.3.6.1.4.1.7165.1.2.2.9
+		superior
+				top
+		requires
+				sambaSID

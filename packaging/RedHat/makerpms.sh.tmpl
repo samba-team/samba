@@ -12,16 +12,9 @@
 # Note: Under this directory rpm expects to find the same directories that are under the
 #   /usr/src/redhat directory
 #
-if [ -r ~/.rpmmacros ]; then
-	TOPDIR=`awk '/topdir/ {print $2}' < ~/.rpmmacros`
-	if [ z$TOPDIR != "z" ]; then
-		SPECDIR=${TOPDIR}/SPECS
-		SRCDIR=${TOPDIR}/SOURCES
-	fi
-fi
 
-SPECDIR=${SPECDIR:-/usr/src/redhat/SPECS}
-SRCDIR=${SRCDIR:-/usr/src/redhat/SOURCES}
+SPECDIR=`rpm --eval %_specdir`
+SRCDIR=`rpm --eval %_sourcedir`
 
 # At this point the SPECDIR and SRCDIR vaiables must have a value!
 
@@ -29,28 +22,18 @@ USERID=`id -u`
 GRPID=`id -g`
 VERSION='PVERSION'
 SPECFILE="samba3.spec"
-
 RPMVER=`rpm --version | awk '{print $3}'`
 RPM="rpm"
 echo The RPM Version on this machine is: $RPMVER
 
+##
+## fix the mandir macro
+##
 case $RPMVER in
-    2*)
-       echo Building for RPM v2.x
+    [23]*)
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
-    3*)
-       echo Building for RPM v3.x
-       sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
-       ;;
-    4.0*)
-       ## catch rpm v4.0.x first
-       echo Building for RPM v4.0
-       sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
-       ;;
-    4.*)
-       echo Building for RPM v4.1 or later
-       RPM="rpmbuild"
+    4*)
        sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     *)
@@ -59,16 +42,30 @@ case $RPMVER in
        ;;
 esac
 
+##
+## now catch the right command to build an RPM (defaults ro 'rpm'
+##
+case $RPMVER in
+    4.[12]*)
+       RPM="rpmbuild"
+       ;;
+esac
+
+echo "RPM build command is \"$RPM\""
+
 ( cd ../../source; if [ -f Makefile ]; then make distclean; fi )
 ( cd ../../.. ; chown -R ${USERID}.${GRPID} samba-${VERSION} )
 
 ( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
 
-cp -av $SPECFILE ${SPECDIR}
+/bin/cp -p filter-requires-samba_rh8.sh ${SRCDIR}
+/bin/cp -p filter-requires-samba_rh9.sh ${SRCDIR}
+chmod 755 ${SRCDIR}/filter-requires-samba_rh?.sh
+/bin/cp -av $SPECFILE ${SPECDIR}
 
 echo Getting Ready to build release package
 cd ${SPECDIR}
-${RPM} -ba -v --clean --rmsource $SPECFILE
+${RPM} -ba --clean --rmsource $SPECFILE
 
 echo Done.
 

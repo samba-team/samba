@@ -31,9 +31,7 @@ echo " */"
 echo '#include "includes.h"'
 echo
 echo "static const uint16 to_ucs2[256] = {"
-sed -ne '/^[^[:space:]]*[[:space:]]*.x00/d' \
-    -e 's/^<U\(....\)>[[:space:]]*.x\(..\).*/  [0x\2] = 0x\1,/p' \
-    "$CHARMAP" | sort -u
+cat "$CHARMAP" | @AWK@ -f @srcdir@/script/gen-8bit-gap.awk
 echo "};"
 echo
 echo "static const struct charset_gap_table from_idx[] = {"

@@ -150,10 +150,10 @@ AC_SUBST(INSTALLCLIENTCMD_SH)
 AC_SUBST(INSTALLCLIENTCMD_A)
 AC_SUBST(LIBSMBCLIENT_SHARED)
 AC_SUBST(LIBSMBCLIENT)
-AC_SUBST(PRINTLIBS)
-AC_SUBST(AUTHLIBS)
-AC_SUBST(ACLLIBS)
-AC_SUBST(PASSDBLIBS)
+AC_SUBST(PRINT_LIBS)
+AC_SUBST(AUTH_LIBS)
+AC_SUBST(ACL_LIBS)
+AC_SUBST(PASSDB_LIBS)
 AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(LDAP_LIBS)
@@ -399,6 +399,10 @@ case "$host_os" in
 	*irix*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
+	*freebsd*)
+		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
+		;;
+
 #
 # VOS may need to have POSIX support and System V compatibility enabled.
 #
@@ -417,7 +421,7 @@ case "$host_os" in
 	  *)
 		CPPFLAGS="$CPPFLAGS -D_SYSV"
 		AC_DEFINE(_SYSV, 1, [Whether to enable System V compatibility])
-    esac
+   esac
     ;;
 #
 # Tests needed for SINIX large file support.
@@ -601,7 +605,7 @@ if test x$enable_cups != xno; then
                         AC_DEFINE(HAVE_CUPS,1,[Whether we have CUPS])
 		CFLAGS="$CFLAGS `$CUPS_CONFIG --cflags`"
 		LDFLAGS="$LDFLAGS `$CUPS_CONFIG --ldflags`"
-		PRINTLIBS="$PRINTLIBS `$CUPS_CONFIG --libs`"
+		PRINT_LIBS="$PRINT_LIBS `$CUPS_CONFIG --libs`"
         fi
 fi
 
@@ -1100,6 +1104,8 @@ if test "$enable_shared" = "yes"; then
 				LDSHFLAGS="-B symbolic -b -z"
 				SONAMEFLAG="+h "
 				PICFLAG="+z"
+			elif test "${GCC}" = "yes"; then
+				PICFLAG="-fPIC"
 			fi
 			DYNEXP="-Wl,-E"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,8192,[The size of a block])
@@ -2177,6 +2183,22 @@ AC_ARG_WITH(afs,
   AC_MSG_RESULT(no)
 )
 
+####################################################
+# check for Linux-specific AFS fake-kaserver support
+AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_ARG_WITH(fake-kaserver,
+[  --with-fake-kaserver    Include AFS fake-kaserver support (default=no) ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for the DFS clear-text auth system
@@ -2539,8 +2561,16 @@ if test x"$with_ads_support" != x"no"; then
       [krb5_enctype enctype; enctype = ENCTYPE_ARCFOUR_HMAC_MD5;],
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=yes,
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=no)])
-
-  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes"; then
+  AC_CACHE_CHECK([for KEYTYPE_ARCFOUR_56],
+                 samba_cv_HAVE_KEYTYPE_ARCFOUR_56,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytype keytype; keytype = KEYTYPE_ARCFOUR_56;],
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=yes,
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=no)])
+# Heimdals with KEYTYPE_ARCFOUR but not KEYTYPE_ARCFOUR_56 are broken
+# w.r.t. arcfour and windows, so we must not enable it here
+  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes" -a\
+          x"$samba_cv_HAVE_KEYTYPE_ARCFOUR_56" = x"yes"; then
     AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,1,
               [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
   fi
@@ -2567,6 +2597,28 @@ if test x"$with_ads_support" != x"no"; then
   if test x"$samba_cv_HAVE_KRB5_PRINC_COMPONENT" = x"yes"; then
     AC_DEFINE(HAVE_KRB5_PRINC_COMPONENT,1,
                [Whether krb5_princ_component is available])
+  fi
+
+  AC_CACHE_CHECK([for memory keytab support],
+		 samba_cv_HAVE_MEMORY_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+    
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "MEMORY:", &keytab))
+      exit(0);
+    exit(1);
+  }], 
+  samba_cv_HAVE_MEMORY_KEYTAB=no,
+  samba_cv_HAVE_MEMORY_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
+               [Whether in-memory keytabs are supported])
   fi
 
 
@@ -2676,8 +2728,15 @@ AC_ARG_WITH(pam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
+    if test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+       if test x"$ac_cv_header_security_pam_modules_h" = x"no"; then
+	  if test x"$ac_cv_header_security__pam_macros_h" = x"no"; then
+	     AC_MSG_ERROR(--with-pam specified but no PAM headers found)
+	  fi
+       fi
+    fi
     AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTHLIBS="$AUTHLIBS -lpam"
+    AUTH_LIBS="$AUTH_LIBS -lpam"
     with_pam_for_crypt=yes
     ;;
   *)
@@ -2699,13 +2758,16 @@ AC_ARG_WITH(pam_smbpass,
   yes)
     AC_MSG_RESULT(yes)
 
-# Conditions under which pam_smbpass should not be built.
+       # Conditions under which pam_smbpass should not be built.
 
        if test x$PICFLAG = x; then
-          AC_MSG_RESULT([No support for PIC code - disabling pam_smbpass])
+          AC_MSG_ERROR([No support for PIC code])
+       elif test x"$ac_cv_header_security_pam_appl_h" = x"no"; then
+	  AC_MSG_ERROR([No security/pam_appl.h found])
        elif test x$ac_cv_lib_pam_pam_get_data = xno; then
-          AC_MSG_RESULT([No libpam found -- disabling pam_smbpass])
+          AC_MSG_ERROR([No libpam found])
        else
+	  AUTH_LIBS="$AUTH_LIBS -lpam"
           SHLIB_PROGS="$SHLIB_PROGS bin/pam_smbpass.$SHLIBEXT"
        fi
     ;;
@@ -2720,7 +2782,7 @@ AC_ARG_WITH(pam_smbpass,
 ###############################################
 # test for where we get crypt() from
 AC_SEARCH_LIBS(crypt, [crypt],
-  [test "$ac_cv_search_crypt" = "none required" || AUTHLIBS="-lcrypt $AUTHLIBS"
+  [test "$ac_cv_search_crypt" = "none required" || AUTH_LIBS="-lcrypt $AUTH_LIBS"
   AC_DEFINE(HAVE_CRYPT,1,[Whether the system has the crypt() function])])
 
 ##
@@ -2732,7 +2794,7 @@ AC_SEARCH_LIBS(crypt, [crypt],
 if test $with_pam_for_crypt = no; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
-LIBS="$AUTHLIBS $LIBS"
+LIBS="$AUTH_LIBS $LIBS"
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
 	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
 LIBS="$crypt_LIBS"])
@@ -3477,7 +3539,7 @@ AC_ARG_WITH(acl-support,
 	*osf*)
 		AC_MSG_RESULT(Using Tru64 ACLs)
 		AC_DEFINE(HAVE_TRU64_ACLS,1,[Whether Tru64 ACLs are available])
-		ACLLIBS="$ACLLIBS -lpacl"
+		ACL_LIBS="$ACL_LIBS -lpacl"
 		;;
 	*freebsd5*)
 		AC_MSG_RESULT(Using FreeBSD posix ACLs)
@@ -3485,8 +3547,8 @@ AC_ARG_WITH(acl-support,
 		AC_DEFINE(HAVE_ACL_GET_PERM_NP,1,[Whether acl_get_perm_np() is available])
 		;;
 	*linux*)
-		AC_CHECK_LIB(attr,getxattr,[ACLLIBS="$ACLLIBS -lattr"])
-       		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(attr,getxattr,[ACL_LIBS="$ACL_LIBS -lattr"])
+       		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -3512,7 +3574,7 @@ samba_cv_HAVE_ACL_GET_PERM_NP=yes,samba_cv_HAVE_ACL_GET_PERM_NP=no)
 			fi
             ;;
          *)
-		AC_CHECK_LIB(acl,acl_get_file,[ACLLIBS="$ACLLIBS -lacl"])
+		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
 		AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
 		acl_LIBS=$LIBS
 		LIBS="$LIBS -lacl"
@@ -3995,15 +4057,15 @@ fi ])
 ## contributed pdb_modules
 
 SMB_MODULE(pdb_xml, passdb/pdb_xml.o, "bin/xml.$SHLIBEXT", PDB,
-		  [ PASSDBLIBS="$PASSDBLIBS $XML_LIBS" ] )
+		  [ PASSDB_LIBS="$PASSDB_LIBS $XML_LIBS" ] )
 SMB_MODULE(pdb_mysql, passdb/pdb_mysql.o, "bin/mysql.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $MYSQL_LIBS" ]	)
+		   [ PASSDB_LIBS="$PASSDB_LIBS $MYSQL_LIBS" ]	)
 
 ## end of contributed pdb_modules
 ###########################################################################
 
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o, "bin/ldapsam.$SHLIBEXT", PDB, 
-		   [ PASSDBLIBS="$PASSDBLIBS $LDAP_LIBS" ] )
+		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_guest, passdb/pdb_guest.o, "bin/guest.$SHLIBEXT", PDB)
@@ -4069,6 +4131,7 @@ fi
 if test x"$with_ldap_support" != x"no"; then
    AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
 fi
+AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 
 #################################################
 # final configure stuff

@@ -108,7 +108,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	START_PROFILE(host_announce);
 
 	pull_ascii_fstring(comment, buf+31);
-	comment[12] = 0;
+	comment[42] = 0;
   
 	pull_ascii_nstring(announce_name, buf+5);
 	pull_ascii_nstring(source_name, dgram->source_name.name);
@@ -209,7 +209,6 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 
 	pull_ascii_nstring(workgroup_announce_name,buf+5);
 	pull_ascii_nstring(master_name,buf+31);
-	master_name[12] = 0;
 	pull_ascii_nstring(source_name,dgram->source_name.name);
 	pull_ascii_nstring(dest_name,dgram->dest_name.name);
 
@@ -268,7 +267,7 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 
 	pull_ascii_nstring(server_name,buf+5);
 	pull_ascii_fstring(comment, buf+31);
-	comment[12] = 0;
+	comment[42] = 0;
 	pull_ascii_nstring(source_name, dgram->source_name.name);
 	pull_ascii_nstring(work_name, dgram->dest_name.name);
 

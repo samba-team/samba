@@ -204,7 +204,7 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
 			pull_ascii_nstring(qname, p);
 			name_type = CVAL(p,15);
 			nb_flags = get_nb_flags(&p[16]);
-			trim_string(qname,NULL," ");
+			trim_char(qname,'\0',' ');
 
 			p += 18;
 
@@ -427,7 +427,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 			pull_ascii_nstring(qname, p);
 			name_type = CVAL(p,15);
 			nb_flags = get_nb_flags(&p[16]);
-			trim_string(qname,NULL," ");
+			trim_char(qname,'\0',' ');
 
 			p += 18;
 

@@ -1,3 +1,6 @@
+## grab the major and minor version of rpm 
+%define rpm_version `rpm --version | awk '{print $3}' | awk -F. '{print $1$2}'`
+
 Summary: Samba SMB client and server
 Name: samba
 Version: PVERSION
@@ -5,6 +8,12 @@ Release: PRELEASE
 License: GNU GPL version 2
 Group: Networking
 Source: http://download.samba.org/samba/ftp/samba-%{version}.tar.bz2
+
+# Don't depend on Net::LDAP
+# one filter for RH 8 and one for 9
+Source998: filter-requires-samba_rh8.sh
+Source999: filter-requires-samba_rh9.sh
+
 Packager: Gerald Carter [Samba-Team] <jerry@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils /sbin/ldconfig
@@ -37,6 +46,19 @@ docs directory for implementation details.
 %setup
 
 %build
+
+# Working around perl dependency problem from docs
+# Only > RH 8.0 seems to care here
+
+echo "rpm_version == %{rpm_version}"
+if [ "%{rpm_version}" == "42" ]; then
+   %define __perl_requires %{SOURCE999}
+   echo "%{__perl_requires}"
+elif [ "%{rpm_version}" == "41" ]; then
+   %define __find_requires %{SOURCE998}
+   echo "%{__find_requires}"
+fi
+
 ## Build main Samba source
 cd source
 
@@ -94,7 +116,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/{lib,include}
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 	rpcclient smbspool smbcacls smbcontrol wbinfo smbmnt net \
-	smbcacls pdbedit tdbbackup smbtree ntlm_auth
+	smbcacls pdbedit tdbbackup smbtree ntlm_auth smbcquotas
 do
 	install -m755 source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -384,12 +406,14 @@ fi
 %{prefix}/bin/wbinfo
 %{prefix}/bin/net
 %{prefix}/bin/ntlm_auth
+%{prefix}/bin/smbcquotas
 %{prefix}/bin/smbcacls
 %{prefix}/bin/pdbedit
 %{prefix}/bin/tdbbackup
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
+%attr(755,root,root) %{prefix}/lib/samba/charset/*.so
 #%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h

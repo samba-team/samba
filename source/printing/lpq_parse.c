@@ -766,14 +766,14 @@ static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
 
   /* Make sure the status is valid */
   parse_line.space2 = '\0';
-  trim_string(parse_line.status, NULL, " ");
+  trim_char(parse_line.status, '\0', ' ');
   if (!strequal(parse_line.status, LPRNT_PRINTING) &&
       !strequal(parse_line.status, LPRNT_PAUSED) &&
       !strequal(parse_line.status, LPRNT_WAITING))
     return(False);
   
   parse_line.space3 = '\0';
-  trim_string(parse_line.jobname, NULL, " ");
+  trim_char(parse_line.jobname, '\0', ' ');
 
   buf->job = atoi(parse_line.jobid);
   buf->priority = 0;
@@ -837,7 +837,7 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
 
   /* Get the job name */
   parse_line.space2[0] = '\0';
-  trim_string(parse_line.jobname, NULL, " ");
+  trim_char(parse_line.jobname, '\0', ' ');
   fstrcpy(buf->fs_file, parse_line.jobname);
 
   buf->priority = 0;
@@ -850,7 +850,7 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
 
   /* Make sure we have a valid status */
   parse_line.space4[0] = '\0';
-  trim_string(parse_line.status, NULL, " ");
+  trim_char(parse_line.status, '\0', ' ');
   if (!strequal(parse_line.status, LPROS2_PRINTING) &&
       !strequal(parse_line.status, LPROS2_PAUSED) &&
       !strequal(parse_line.status, LPROS2_WAITING))

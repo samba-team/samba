@@ -573,6 +573,7 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	struct winbindd_cm_conn *conn;
 	fstring lock_name;
 	BOOL got_mutex;
+	struct winbindd_domain *wb_domain = NULL;
 
 	if (!cli)
 		return NT_STATUS_INVALID_PARAMETER;
@@ -614,6 +615,17 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	if ( sec_channel_type == SEC_CHAN_DOMAIN )
 		fstr_sprintf(conn->cli->mach_acct, "%s$", lp_workgroup());
 			
+	/* we need the short form of the domain name for the schanel
+	   rpc bind.  What if we fail?  I don't think we should ever get 
+	   a request for a domain name not in our list but I'm not bailing 
+	   out if we do since I'm not 10% certain about this   --jerry */
+	   
+	if ( (wb_domain = find_domain_from_name( domain )) != NULL ) {
+		DEBUG(5,("cm_get_netlogon_cli: Using short for of domain name [%s] for netlogon rpc bind\n",
+			wb_domain->name));
+		fstrcpy( conn->cli->domain, wb_domain->name);
+	}
+	
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	
 	if (got_mutex)

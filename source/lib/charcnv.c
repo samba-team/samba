@@ -150,6 +150,7 @@ void init_iconv(void)
 
 /**
  * Convert string from one encoding to another, making error checking etc
+ * Slow path version - uses (slow) iconv.
  *
  * @param src pointer to source string (multibyte or singlebyte)
  * @param srclen length of the source string in bytes
@@ -160,7 +161,8 @@ void init_iconv(void)
  * Ensure the srclen contains the terminating zero.
  *
  **/
-size_t convert_string(charset_t from, charset_t to,
+
+static size_t convert_string_internal(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
 {
@@ -170,18 +172,13 @@ size_t convert_string(charset_t from, charset_t to,
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
-	if (srclen == (size_t)-1)
-		srclen = strlen(src)+1;
-	if (srclen == 0)
-		return 0;
-
 	lazy_initialize_conv();
 
 	descriptor = conv_handles[from][to];
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		if (!conv_silent)
-			DEBUG(0,("convert_string: Conversion not supported.\n"));
+			DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
 		goto use_as_is;
 	}
 
@@ -194,12 +191,12 @@ size_t convert_string(charset_t from, charset_t to,
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
 				if (!conv_silent)
-					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			case E2BIG:
 				reason="No more room"; 
 				if (!conv_silent)
-					DEBUG(3, ("convert_string: Required %lu, available %lu\n",
+					DEBUG(3, ("convert_string_internal: Required %lu, available %lu\n",
 						(unsigned long)srclen, (unsigned long)destlen));
 				/* we are not sure we need srclen bytes,
 			          may be more, may be less.
@@ -209,11 +206,11 @@ size_t convert_string(charset_t from, charset_t to,
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
 				if (!conv_silent)
-					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			default:
 				if (!conv_silent)
-					DEBUG(0,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
 		}
 		/* smb_panic(reason); */
@@ -229,6 +226,110 @@ size_t convert_string(charset_t from, charset_t to,
 			memcpy(dest,src,len);
 		return len;
 	}
+}
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ * Fast path version - handles ASCII first.
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ *
+ * Ensure the srclen contains the terminating zero.
+ *
+ * This function has been hand-tuned to provide a fast path.
+ * Don't change unless you really know what you are doing. JRA.
+ **/
+
+size_t convert_string(charset_t from, charset_t to,
+		      void const *src, size_t srclen, 
+		      void *dest, size_t destlen)
+{
+	if (srclen == 0)
+		return 0;
+
+	if (from != CH_UCS2 && to != CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		unsigned char lastp;
+		size_t retval = 0;
+
+		/* If all characters are ascii, fast path here. */
+		while (srclen && destlen) {
+			if ((lastp = *p) <= 0x7f) {
+				*q++ = *p++;
+				if (srclen != (size_t)-1) {
+					srclen--;
+				}
+				destlen--;
+				retval++;
+				if (!lastp)
+					break;
+			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen(src)+1;
+				}
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	} else if (from == CH_UCS2 && to != CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		size_t retval = 0;
+		unsigned char lastp;
+
+		/* If all characters are ascii, fast path here. */
+		while ((srclen >= 2) && destlen) {
+			if ((lastp = *p) <= 0x7f && p[1] == 0) {
+				*q++ = *p;
+				if (srclen != (size_t)-1) {
+					srclen -= 2;
+				}
+				p += 2;
+				destlen--;
+				retval++;
+				if (!lastp)
+					break;
+			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen_w(src)+2;
+				}
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	} else if (from != CH_UCS2 && to == CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		size_t retval = 0;
+		unsigned char lastp;
+
+		/* If all characters are ascii, fast path here. */
+		while (srclen && (destlen >= 2)) {
+			if ((lastp = *p) <= 0x7F) {
+				*q++ = *p++;
+				*q++ = '\0';
+				if (srclen != (size_t)-1) {
+					srclen--;
+				}
+				destlen -= 2;
+				retval += 2;
+				if (!lastp)
+					break;
+			} else {
+				if (srclen == (size_t)-1) {
+					srclen = strlen(src)+1;
+				}
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	}
+	return convert_string_internal(from, to, src, srclen, dest, destlen);
 }
 
 /**
@@ -405,29 +506,49 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 
 /**
  strdup() a unix string to upper case.
+ Max size is pstring.
 **/
 
 char *strdup_upper(const char *s)
 {
-	size_t size;
-	smb_ucs2_t *buffer;
-	char *out_buffer;
-	
-	size = push_ucs2_allocate(&buffer, s);
-	if (size == -1) {
-		return NULL;
+	pstring out_buffer;
+	const unsigned char *p = (const unsigned char *)s;
+	unsigned char *q = (unsigned char *)out_buffer;
+
+	/* this is quite a common operation, so we want it to be
+	   fast. We optimise for the ascii case, knowing that all our
+	   supported multi-byte character sets are ascii-compatible
+	   (ie. they match for the first 128 chars) */
+
+	while (1) {
+		if (*p & 0x80)
+			break;
+		*q++ = toupper(*p);
+		if (!*p)
+			break;
+		p++;
+		if (p - ( const unsigned char *)s >= sizeof(pstring))
+			break;
 	}
 
-	strupper_w(buffer);
-	
-	size = pull_ucs2_allocate(&out_buffer, buffer);
-	SAFE_FREE(buffer);
+	if (*p) {
+		/* MB case. */
+		size_t size;
+		wpstring buffer;
+		size = convert_string(CH_UNIX, CH_UCS2, s, -1, buffer, sizeof(buffer));
+		if (size == -1) {
+			return NULL;
+		}
 
-	if (size == -1) {
-		return NULL;
-	}
+		strupper_w(buffer);
 	
-	return out_buffer;
+		size = convert_string(CH_UCS2, CH_UNIX, buffer, sizeof(buffer), out_buffer, sizeof(out_buffer));
+		if (size == -1) {
+			return NULL;
+		}
+	}
+
+	return strdup(out_buffer);
 }
 
 size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -608,22 +729,26 @@ size_t pull_ascii_nstring(char *dest, const void *src)
  * @param dest_len is the maximum length allowed in the
  * destination. If dest_len is -1 then no maxiumum is used.
  **/
+
 size_t push_ucs2(const void *base_ptr, void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t len=0;
-	size_t src_len = strlen(src);
+	size_t src_len;
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
 
 	if (flags & STR_TERMINATE)
-		src_len++;
+		src_len = (size_t)-1;
+	else
+		src_len = strlen(src);
 
 	if (ucs2_align(base_ptr, dest, flags)) {
 		*(char *)dest = 0;
 		dest = (void *)((char *)dest + 1);
-		if (dest_len) dest_len--;
+		if (dest_len)
+			dest_len--;
 		len++;
 	}
 
@@ -775,9 +900,8 @@ size_t pull_ucs2(const void *base_ptr, char *dest, const void *src, size_t dest_
 	}
 
 	if (flags & STR_TERMINATE) {
-		if (src_len == (size_t)-1) {
-			src_len = strlen_w(src)*2 + 2;
-		} else {
+		/* src_len -1 is the default for null terminated strings. */
+		if (src_len != (size_t)-1) {
 			size_t len = strnlen_w(src, src_len/2);
 			if (len < src_len/2)
 				len++;
@@ -925,8 +1049,10 @@ size_t push_string_fn(const char *function, unsigned int line, const void *base_
 
 size_t pull_string_fn(const char *function, unsigned int line, const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
+#ifdef DEVELOPER
 	if (dest_len != (size_t)-1)
 		clobber_region(function, line, dest, dest_len);
+#endif
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \
@@ -945,4 +1071,3 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	}
 	return 0;
 }
-

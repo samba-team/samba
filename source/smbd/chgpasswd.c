@@ -259,7 +259,7 @@ static int expect(int master, char *issue, char *expected)
 				/* Eat leading/trailing whitespace before match. */
 				pstring str;
 				pstrcpy( str, buffer);
-				trim_string( str, " ", " ");
+				trim_char( str, ' ', ' ');
 
 				if ((match = (unix_wild_match(expected, str) == 0)))
 					timeout = 200;
@@ -333,19 +333,14 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 	int wstat;
 	BOOL chstat = False;
 
-	if (pass == NULL)
-	{
-		DEBUG(0,
-		      ("chat_with_program: user doesn't exist in the UNIX password database.\n"));
+	if (pass == NULL) {
+		DEBUG(0, ("chat_with_program: user doesn't exist in the UNIX password database.\n"));
 		return False;
 	}
 
 	/* allocate a pseudo-terminal device */
-	if ((master = findpty(&slavedev)) < 0)
-	{
-		DEBUG(3,
-		      ("Cannot Allocate pty for password change: %s\n",
-		       pass->pw_name));
+	if ((master = findpty(&slavedev)) < 0) {
+		DEBUG(3, ("Cannot Allocate pty for password change: %s\n", pass->pw_name));
 		return (False);
 	}
 
@@ -356,39 +351,29 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 
 	CatchChildLeaveStatus();
 
-	if ((pid = sys_fork()) < 0)
-	{
-		DEBUG(3,
-		      ("Cannot fork() child for password change: %s\n",
-		       pass->pw_name));
+	if ((pid = sys_fork()) < 0) {
+		DEBUG(3, ("Cannot fork() child for password change: %s\n", pass->pw_name));
 		close(master);
 		CatchChild();
 		return (False);
 	}
 
 	/* we now have a pty */
-	if (pid > 0)
-	{			/* This is the parent process */
-		if ((chstat = talktochild(master, chatsequence)) == False)
-		{
-			DEBUG(3,
-			      ("Child failed to change password: %s\n",
-			       pass->pw_name));
+	if (pid > 0) {			/* This is the parent process */
+		if ((chstat = talktochild(master, chatsequence)) == False) {
+			DEBUG(3, ("Child failed to change password: %s\n", pass->pw_name));
 			kill(pid, SIGKILL);	/* be sure to end this process */
 		}
 
-		while ((wpid = sys_waitpid(pid, &wstat, 0)) < 0)
-		{
-			if (errno == EINTR)
-			{
+		while ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+			if (errno == EINTR) {
 				errno = 0;
 				continue;
 			}
 			break;
 		}
 
-		if (wpid < 0)
-		{
+		if (wpid < 0) {
 			DEBUG(3, ("The process is no longer waiting!\n\n"));
 			close(master);
 			CatchChild();
@@ -402,29 +387,21 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 
 		close(master);
 
-		if (pid != wpid)
-		{
-			DEBUG(3,
-			      ("We were waiting for the wrong process ID\n"));
+		if (pid != wpid) {
+			DEBUG(3, ("We were waiting for the wrong process ID\n"));
 			return (False);
 		}
-		if (WIFEXITED(wstat) == 0)
-		{
-			DEBUG(3,
-			      ("The process exited while we were waiting\n"));
+		if (WIFEXITED(wstat) == 0) {
+			DEBUG(3, ("The process exited while we were waiting\n"));
 			return (False);
 		}
-		if (WEXITSTATUS(wstat) != 0)
-		{
-			DEBUG(3,
-			      ("The status of the process exiting was %d\n",
+		if (WEXITSTATUS(wstat) != 0) {
+			DEBUG(3, ("The status of the process exiting was %d\n",
 			       wstat));
 			return (False);
 		}
 
-	}
-	else
-	{
+	} else {
 		/* CHILD */
 
 		/*
@@ -438,12 +415,9 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 		if (as_root)
 			become_root();
 
-		DEBUG(3,
-		      ("Dochild for user %s (uid=%d,gid=%d)\n", pass->pw_name,
-		       (int)getuid(), (int)getgid()));
-		chstat =
-			dochild(master, slavedev, pass, passwordprogram,
-				as_root);
+		DEBUG(3, ("Dochild for user %s (uid=%d,gid=%d) (as_root = %s)\n", pass->pw_name,
+		       (int)getuid(), (int)getgid(), BOOLSTR(as_root) ));
+		chstat = dochild(master, slavedev, pass, passwordprogram, as_root);
 
 		if (as_root)
 			unbecome_root();
@@ -452,19 +426,15 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 		 * The child should never return from dochild() ....
 		 */
 
-		DEBUG(0,
-		      ("chat_with_program: Error: dochild() returned %d\n",
-		       chstat));
+		DEBUG(0, ("chat_with_program: Error: dochild() returned %d\n", chstat));
 		exit(1);
 	}
 
 	if (chstat)
-		DEBUG(3,
-		      ("Password change %ssuccessful for user %s\n",
+		DEBUG(3, ("Password change %ssuccessful for user %s\n",
 		       (chstat ? "" : "un"), pass->pw_name));
 	return (chstat);
 }
-
 
 BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
@@ -489,7 +459,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 		oldpass = "";
 	}
 
-	DEBUG(3, ("Password change for user: %s\n", name));
+	DEBUG(3, ("Password change (as_root=%s) for user: %s\n", BOOLSTR(as_root), name));
 
 #if DEBUG_PASSWORD
 	DEBUG(100, ("Passwords: old=%s new=%s\n", oldpass, newpass));
@@ -519,8 +489,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	len = strlen(oldpass);
 	for (i = 0; i < len; i++) {
 		if (iscntrl((int)oldpass[i])) {
-			DEBUG(0,
-			      ("chat_with_program: oldpass contains control characters (disallowed).\n"));
+			DEBUG(0, ("chat_with_program: oldpass contains control characters (disallowed).\n"));
 			return False;
 		}
 	}
@@ -528,8 +497,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	len = strlen(newpass);
 	for (i = 0; i < len; i++) {
 		if (iscntrl((int)newpass[i])) {
-			DEBUG(0,
-			      ("chat_with_program: newpass contains control characters (disallowed).\n"));
+			DEBUG(0, ("chat_with_program: newpass contains control characters (disallowed).\n"));
 			return False;
 		}
 	}
@@ -556,11 +524,8 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 
 	/* A non-PAM password change just doen't make sense without a valid local user */
 
-	if (pass == NULL)
-	{
-		DEBUG(0,
-		      ("chgpasswd: user %s doesn't exist in the UNIX password database.\n",
-		       name));
+	if (pass == NULL) {
+		DEBUG(0, ("chgpasswd: user %s doesn't exist in the UNIX password database.\n", name));
 		return False;
 	}
 
@@ -755,7 +720,7 @@ NTSTATUS pass_oem_change(char *user,
 
 	/* We've already checked the old password here.... */
 	become_root();
-	nt_status = change_oem_password(sampass, NULL, new_passwd);
+	nt_status = change_oem_password(sampass, NULL, new_passwd, True);
 	unbecome_root();
 
 	memset(new_passwd, 0, sizeof(new_passwd));
@@ -937,7 +902,7 @@ static NTSTATUS check_oem_password(const char *user,
  is correct before calling. JRA.
 ************************************************************/
 
-NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd)
+NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passwd, BOOL as_root)
 {
 	BOOL ret;
 	uint32 min_len;
@@ -981,7 +946,7 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	 */
 	
 	if(lp_unix_password_sync() &&
-		!chgpasswd(pdb_get_username(hnd), old_passwd, new_passwd, False)) {
+		!chgpasswd(pdb_get_username(hnd), old_passwd, new_passwd, as_root)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

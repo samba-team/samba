@@ -373,10 +373,10 @@ BOOL load_auth_module(struct auth_context *auth_context,
 	if (p) {
 		*p = 0;
 		module_params = p+1;
-		trim_string(module_params, " ", " ");
+		trim_char(module_params, ' ', ' ');
 	}
 	
-	trim_string(module_name, " ", " ");
+	trim_char(module_name, ' ', ' ');
 	
 	entry = auth_find_backend_entry(module_name);
 	
