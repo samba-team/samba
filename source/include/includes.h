@@ -986,6 +986,10 @@ struct smb_ldap_privates;
 char *strdup(const char *s);
 #endif
 
+#ifndef HAVE_STRNDUP
+char *strndup(const char *s, size_t size);
+#endif
+
 #ifndef HAVE_MEMMOVE
 void *memmove(void *dest,const void *src,int size);
 #endif

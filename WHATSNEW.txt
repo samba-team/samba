@@ -30,36 +30,42 @@ Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
 
 o   Jeremy Allison <jra@samba.org>
+    * Fix SMB signing bug when copying large files.
 
-
+      
 o   Andrew Bartlet <abartlet@samba.org>
+    * Include additional NT_STATUS to PAM error mappings.
 
+    
+o   Luca Bolcioni <Luca.Bolcioni@yacme.com>
+    * Fix crash when using 'security = server' and 'encrypt 
+      passwords = no' by always initializing the session key.
 
-o   Alexander Bokovoy <ab@samba.org>
-
-
+      
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix bug that caused rpcclient to incorrectly retrieve 
+      the SID for a server (this casuing all calls that required 
+      this information to fail). 
+    * BUG 977: Don't create a homes share for a user if a static 
+      share already exists by the same name.
 
+o   LaMont Jones <lamont@debian.org>
+    * BUG 225328 (Debian): Correct false failure LFS test that resulted 
+      in  _GNU_SOURCE not being defined (thus resulting in strndup() 
+      not being defined).
+      
 
 o   Volker Lendecke <vl@samba.org>
+    * Display more descriptive error messages for login via 'net'.
+    * Fix compiler warning in the net tool.
+    * Fix length bug when decoding base64 strings.
+    * Ensure we don't call getpwnam() inside a loop that is iterating 
+      over users with getpwent().  This broke on glibc 2.3.2.
 
-
-o   Herb Lewis <herb@samba.org>
-
-
-o   Jianliang Lu <j.lu@tiesse.com>
-
-
-o   Jim McDonough <jmcd@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
-
-
-o   Tim Potter <tpot@samba.org>
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-
+    * Add SIGABRT to fault handling in order to catch got a 
+      backtrace if an error occurs the OpenLDAP client libs.
 
 
 Changes since 3.0.2pre1

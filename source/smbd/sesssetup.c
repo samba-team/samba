@@ -876,6 +876,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		session_key = data_blob(NULL, 16);
 		SMBsesskeygen_lmv1(server_info->lm_session_key.data, lm_resp.data, 
 				   session_key.data);
+	} else {
+		session_key = data_blob(NULL, 0);
 	}
 
 	data_blob_free(&lm_resp);
