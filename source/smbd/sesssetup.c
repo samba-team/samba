@@ -420,7 +420,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 		global_client_caps = IVAL(inbuf,smb_vwv10);
 	}
 		
-	p = smb_buf(inbuf);
+	p = (uint8 *)smb_buf(inbuf);
 
 	if (SVAL(inbuf, smb_vwv7) == 0) {
 		/* an anonymous request */

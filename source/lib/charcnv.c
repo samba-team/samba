@@ -61,15 +61,15 @@ void init_iconv(void)
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
-			char *n1 = charset_name(c1);
-			char *n2 = charset_name(c2);
+			char *n1 = charset_name((charset_t)c1);
+			char *n2 = charset_name((charset_t)c2);
 			if (conv_handles[c1][c2]) {
 				smb_iconv_close(conv_handles[c1][c2]);
 			}
 			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
 			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
 				DEBUG(0,("Conversion from %s to %s not supported\n",
-					 charset_name(c1), charset_name(c2)));
+					 charset_name((charset_t)c1), charset_name((charset_t)c2)));
 				conv_handles[c1][c2] = NULL;
 			}
 		}
@@ -135,20 +135,18 @@ size_t convert_string(charset_t from, charset_t to,
 
 int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
-	int size,len;
+	int size;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	len=size/2;
 	if (!strupper_w(buffer) && (dest == src)) return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
 int unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
-	int size,len;
+	int size;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
-	len=size/2;
 	if (!strlower_w(buffer) && (dest == src)) return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }

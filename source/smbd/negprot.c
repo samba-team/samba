@@ -129,7 +129,7 @@ static int reply_lanman2(char *inbuf, char *outbuf)
 		  generate_next_challenge(cryptkey);
 	  } else {
 		  memcpy(cryptkey, cli->secblob.data, 8);
-		  set_challenge(cryptkey);
+		  set_challenge((unsigned char *)cryptkey);
 	  }
   }
 
@@ -171,8 +171,8 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 	int len;
 
 	memset(guid, 0, 16);
-	safe_strcpy(guid, global_myname, 16);
-	strlower(guid);
+	safe_strcpy((char *)guid, global_myname, 16);
+	strlower((char *)guid);
 
 	/* win2000 uses host$@REALM, which we will probably use eventually,
 	   but for now this works */
@@ -230,7 +230,7 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	
 	if (global_encrypted_passwords_negotiated) {
 		if (!cli) {
-			generate_next_challenge(cryptkey);
+			generate_next_challenge((char *)cryptkey);
 		} else {
 			memcpy(cryptkey, cli->secblob.data, 8);
 			set_challenge(cryptkey);

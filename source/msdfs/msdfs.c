@@ -370,7 +370,7 @@ static int setup_ver2_dfs_referral(char* pathname, char** ppdata,
         requestedpathlen = rpcstr_push(uni_requestedpath, pathname, -1,
                                        STR_TERMINATE);
 
-	dump_data(10,uni_requestedpath,requestedpathlen);
+	dump_data(10,(const char *)uni_requestedpath,requestedpathlen);
 
 	DEBUG(10,("ref count = %u\n",junction->referral_count));
 
@@ -464,7 +464,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 
         reqpathlen = rpcstr_push(uni_reqpath, pathname, -1, STR_TERMINATE);
 
-	dump_data(10,uni_reqpath,reqpathlen);
+	dump_data(10,(const char *)uni_reqpath,reqpathlen);
 
 	uni_reqpathoffset1 = REFERRAL_HEADER_SIZE + VERSION3_REFERRAL_SIZE * junction->referral_count;
 	uni_reqpathoffset2 = uni_reqpathoffset1 + reqpathlen;
