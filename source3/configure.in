@@ -2573,6 +2573,28 @@ if test x"$with_ads_support" != x"no"; then
                [Whether krb5_princ_component is available])
   fi
 
+  AC_CACHE_CHECK([for memory keytab support],
+		 samba_cv_HAVE_MEMORY_KEYTAB,[
+    AC_TRY_RUN([
+#include<krb5.h>
+  main()
+  {
+    krb5_context context;
+    krb5_keytab keytab;
+    
+    krb5_init_context(&context);
+    if (krb5_kt_resolve(context, "MEMORY:", &keytab))
+      exit(0);
+    exit(1);
+  }], 
+  samba_cv_HAVE_MEMORY_KEYTAB=no,
+  samba_cv_HAVE_MEMORY_KEYTAB=yes)])
+
+  if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
+      AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
+               [Whether in-memory keytabs are supported])
+  fi
+
 
   if test x"$ac_cv_lib_ext_krb5_krb5_mk_req_extended" = x"yes"; then
     AC_DEFINE(HAVE_KRB5,1,[Whether to have KRB5 support])
