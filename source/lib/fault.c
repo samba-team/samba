@@ -29,6 +29,105 @@ static struct {
 } fault_handlers;
 
 
+#ifdef HAVE_BACKTRACE
+#include <execinfo.h>
+#define BACKTRACE_STACK_SIZE 64
+#elif HAVE_LIBEXC_H
+#include <libexc.h>
+#endif
+
+static void call_backtrace(void)
+{
+#ifdef HAVE_BACKTRACE
+#define BACKTRACE_STACK_SIZE 64
+	void *backtrace_stack[BACKTRACE_STACK_SIZE];
+	size_t backtrace_size;
+	char **backtrace_strings;
+
+	/* get the backtrace (stack frames) */
+	backtrace_size = backtrace(backtrace_stack,BACKTRACE_STACK_SIZE);
+	backtrace_strings = backtrace_symbols(backtrace_stack, backtrace_size);
+
+	DEBUG(0, ("BACKTRACE: %lu stack frames:\n", 
+		  (unsigned long)backtrace_size));
+	
+	if (backtrace_strings) {
+		int i;
+
+		for (i = 0; i < backtrace_size; i++)
+			DEBUGADD(0, (" #%u %s\n", i, backtrace_strings[i]));
+
+		/* Leak the backtrace_strings, rather than risk what free() might do */
+	}
+
+#elif HAVE_LIBEXC
+
+#define NAMESIZE 32 /* Arbitrary */
+
+	/* The IRIX libexc library provides an API for unwinding the stack. See
+	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
+	 * since we are about to abort anyway, it hardly matters.
+	 *
+	 * Note that if we paniced due to a SIGSEGV or SIGBUS (or similar) this
+	 * will fail with a nasty message upon failing to open the /proc entry.
+	 */
+	{
+		uint64_t	addrs[BACKTRACE_STACK_SIZE];
+		char *      	names[BACKTRACE_STACK_SIZE];
+		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
+
+		int		i;
+		int		levels;
+
+		ZERO_ARRAY(addrs);
+		ZERO_ARRAY(names);
+		ZERO_ARRAY(namebuf);
+
+		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
+			names[i] = namebuf + (i * NAMESIZE);
+		}
+
+		levels = trace_back_stack(0, addrs, names,
+				BACKTRACE_STACK_SIZE, NAMESIZE);
+
+		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
+		for (i = 0; i < levels; i++) {
+			DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
+		}
+     }
+#undef NAMESIZE
+#endif
+}
+
+/*******************************************************************
+ Something really nasty happened - panic !
+********************************************************************/
+void smb_panic(const char *why)
+{
+	const char *cmd = lp_panic_action();
+	int result;
+
+	if (cmd && *cmd) {
+		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
+		result = system(cmd);
+
+		if (result == -1)
+			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
+				  strerror(errno)));
+		else
+			DEBUG(0, ("smb_panic(): action returned status %d\n",
+				  WEXITSTATUS(result)));
+	}
+	DEBUG(0,("PANIC: %s\n", why));
+
+	call_backtrace();
+
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
+#endif
+	abort();
+}
+
 /*******************************************************************
 report a fault
 ********************************************************************/
@@ -52,6 +151,9 @@ static void fault_report(int sig)
 #endif
 #ifdef SIGBUS
 		CatchSignal(SIGBUS,SIGNAL_CAST SIG_DFL);
+#endif
+#ifdef SIGABRT
+		CatchSignal(SIGABRT,SIGNAL_CAST SIG_DFL);
 #endif
 		return; /* this should cause a core dump */
 	}
@@ -83,6 +185,9 @@ void fault_setup(void (*fn)(void *))
 #endif
 #ifdef SIGBUS
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
+#endif
+#ifdef SIGABRT
+	CatchSignal(SIGABRT,SIGNAL_CAST sig_fault);
 #endif
 }
 
