@@ -179,7 +179,7 @@ login(char *host)
     if(do_klogin(host))
 	printf("\n*** Using plaintext user and password ***\n\n");
     else{
-	printf("Kerberos login successful.\n\n");
+	printf("Kerberos authentication successful.\n\n");
     }
 
     if (ruserpass(host, &user, &pass, &acct) < 0) {
