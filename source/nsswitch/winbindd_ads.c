@@ -38,7 +38,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		return (ADS_STRUCT *)domain->private;
 	}
 
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(NULL, NULL, NULL, secrets_fetch_machine_password());
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;

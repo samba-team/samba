@@ -23,6 +23,27 @@
 
 #ifdef HAVE_KRB5
 
+
+/* VERY nasty hack until we have proper kerberos code for this */
+void kerberos_kinit_password(ADS_STRUCT *ads)
+{
+	char *s;
+	FILE *f;
+	extern pstring global_myname;
+	fstring myname;
+	fstrcpy(myname, global_myname);
+	strlower(myname);
+	asprintf(&s, "kinit 'HOST/%s@%s'", global_myname, ads->realm);
+	DEBUG(0,("HACK!! Running %s\n", s));
+	f = popen(s, "w");
+	if (f) {
+		fprintf(f,"%s\n", ads->password);
+		fflush(f);
+		fclose(f);
+	}
+	free(s);
+}
+
 /*
   verify an incoming ticket and parse out the principal name and 
   authorization_data if available 
