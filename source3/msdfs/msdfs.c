@@ -158,13 +158,134 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 }
 
 
+/**********************************************************
+  Under mapfile we expect a table of the following format:
+
+  IP-Prefix whitespace expansion
+
+  For example:
+  192.168.234 local.samba.org
+  192.168     remote.samba.org
+              default.samba.org
+
+  This is to redirect a DFS client to a host close to it.
+***********************************************************/
+
+static BOOL read_target_host(const char *mapfile, pstring targethost)
+{
+	XFILE *f;
+	pstring buf;
+	char *s, *space = buf;
+	BOOL found = False;
+	
+	f = x_fopen(mapfile, O_RDONLY, 0);
+
+	if (f == NULL) {
+		DEBUG(0,("can't open IP map %s. Error %s\n",
+			 mapfile, strerror(errno) ));
+		return False;
+	}
+
+	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
+
+	while ((s=fgets_slash(buf, sizeof(buf), f)) != NULL) {
+		space = strchr(buf, ' ');
+
+		if (space == NULL) {
+			DEBUG(0, ("Ignoring invalid line %s\n", buf));
+			continue;
+		}
+
+		*space = '\0';
+
+		if (strncmp(client_addr(), buf, strlen(buf)) == 0) {
+			found = True;
+			break;
+		}
+	}
+
+	x_fclose(f);
+
+	if (!found)
+		return False;
+
+	space += 1;
+
+	while (isspace(*space))
+		space += 1;
+
+	pstrcpy(targethost, space);
+	return True;
+}
+
+/**********************************************************
+
+  Expand the msdfs target host using read_target_host
+  explained above. The syntax used in the msdfs link is
+
+  msdfs:@table-filename@/share
+
+  Everything between and including the two @-signs is
+  replaced by the substitution string found in the table
+  described above.
+
+***********************************************************/
+
+static BOOL expand_msdfs_target(connection_struct* conn, pstring target)
+{
+	pstring mapfilename;
+	char *filename_start = strchr(target, '@');
+	char *filename_end;
+	int filename_len;
+	pstring targethost;
+	pstring new_target;
+
+	if (filename_start == NULL) {
+		DEBUG(10, ("No filename start in %s\n", target));
+		return False;
+	}
+
+	filename_end = strchr(filename_start+1, '@');
+
+	if (filename_end == NULL) {
+		DEBUG(10, ("No filename end in %s\n", target));
+		return False;
+	}
+
+	filename_len = PTR_DIFF(filename_end, filename_start+1);
+	pstrcpy(mapfilename, filename_start+1);
+	mapfilename[filename_len] = '\0';
+
+	DEBUG(10, ("Expanding from table [%s]\n", mapfilename));
+
+	if (!read_target_host(mapfilename, targethost)) {
+		DEBUG(1, ("Could not expand target host from file %s\n",
+			  mapfilename));
+		return False;
+	}
+
+	standard_sub_conn(conn, mapfilename, sizeof(mapfilename));
+
+	DEBUG(10, ("Expanded targethost to %s\n", targethost));
+
+	*filename_start = '\0';
+	pstrcpy(new_target, target);
+	pstrcat(new_target, targethost);
+	pstrcat(new_target, filename_end+1);
+
+	DEBUG(10, ("New DFS target: %s\n", new_target));
+	pstrcpy(target, new_target);
+	return True;
+}
+
+
 /**********************************************************************
  Parse the contents of a symlink to verify if it is an msdfs referral
  A valid referral is of the form: msdfs:server1\share1,server2\share2
  **********************************************************************/
 
-static BOOL parse_symlink(char* buf,struct referral** preflist, 
-				 int* refcount)
+static BOOL parse_symlink(connection_struct* conn, char* buf,
+			  struct referral** preflist, int* refcount)
 {
 	pstring temp;
 	char* prot;
@@ -197,14 +318,22 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 	
 	for(i=0;i<count;i++) {
 		char *p;
+		pstring target;
+
+		pstrcpy(target, alt_path[i]);
+
+		if (strchr(target, '@') != NULL) {
+			if (!expand_msdfs_target(conn, target))
+				return False;
+		}
 
 		/* replace all /'s in the alternate path by a \ */
-		for(p = alt_path[i]; *p && ((p = strchr_m(p,'/'))!=NULL); p++) {
+		for(p = target; *p && ((p = strchr_m(p,'/'))!=NULL); p++) {
 			*p = '\\'; 
 		}
 
 		/* Remove leading '\\'s */
-		p = alt_path[i];
+		p = target;
 		while (*p && (*p == '\\')) {
 			p++;
 		}
@@ -256,7 +385,7 @@ BOOL is_msdfs_link(connection_struct* conn, char * path,
 
 		referral[referral_len] = '\0';
 		DEBUG(5,("is_msdfs_link: %s -> %s\n",path,referral));
-		if (parse_symlink(referral, reflistp, refcnt))
+		if (parse_symlink(conn, referral, reflistp, refcnt))
 			return True;
 	}
 	return False;
