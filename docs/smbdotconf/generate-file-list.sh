@@ -5,10 +5,15 @@ then
 	DIR="$1"
 fi
 
-echo "<variablelist>"
-for I in `find $DIR -type f -name '*.xml' -mindepth 2 | sort -t/ -k3 | xargs`
+OLD=`pwd`
+cd $DIR
+
+echo "<variablelist xmlns:xi=\"http://www.w3.org/2003/XInclude\">"
+for I in `find . -type f -name '*.xml' -mindepth 2 | sort -t/ -k3 | xargs`
 do 
 	echo "<xi:include href='$I' parse='xml'/>"
 done
                 
 echo "</variablelist>"
+
+cd $OLD
