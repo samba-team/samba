@@ -348,7 +348,7 @@
 #if HAVE___FXSTAT
  int __fxstat(int vers, int fd, void *st)
 {
-	long xx[32];
+	double xx[32];
 	int ret;
 
 	if (smbw_fd(fd)) {
@@ -364,7 +364,7 @@
 #if HAVE___XSTAT
  int __xstat(int vers, char *name, void *st)
 {
-	long xx[32];
+	double xx[32];
 	int ret;
 
 	if (smbw_path(name)) {
@@ -381,7 +381,7 @@
 #if HAVE___LXSTAT
  int __lxstat(int vers, char *name, void *st)
 {
-	long xx[32];
+	double xx[32];
 	int ret;
 
 	if (smbw_path(name)) {
@@ -635,7 +635,7 @@
   int stat64(char *name, void *st64)
 {
 	if (smbw_path(name)) {
-		long xx[32];
+		double xx[32];
 		int ret = stat(name, xx);
 		stat64_convert(xx, st64);
 		return ret;
@@ -646,7 +646,7 @@
   int fstat64(int fd, void *st64)
 {
 	if (smbw_fd(fd)) {
-		long xx[32];
+		double xx[32];
 		int ret = fstat(fd, xx);
 		stat64_convert(xx, st64);
 		return ret;
@@ -657,7 +657,7 @@
   int lstat64(char *name, void *st64)
 {
 	if (smbw_path(name)) {
-		long xx[32];
+		double xx[32];
 		int ret = lstat(name, xx);
 		stat64_convert(xx, st64);
 		return ret;
@@ -680,7 +680,7 @@
  void *readdir64(void *dir)
 {
 	if (smbw_dirp(dir)) {
-		static long xx[70];
+		static double xx[70];
 		void *d;
 		d = (void *)readdir(dir);
 		if (!d) return NULL;
