@@ -291,7 +291,6 @@ BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
 struct passwd *smb_getpwnam(char *user, BOOL allow_change);
-int smb_initgroups(char *user, char *domain, gid_t group);
 
 /*The following definitions come from  lib/util.c  */
 
@@ -1287,6 +1286,7 @@ char *lp_winbind_uid(void);
 char *lp_winbind_gid(void);
 char *lp_template_homedir(void);
 char *lp_template_shell(void);
+char *lp_winbind_separator(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
