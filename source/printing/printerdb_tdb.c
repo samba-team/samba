@@ -526,6 +526,10 @@ time_t tdb_get_last_update(int tdb)
 		return tdb_printerdb.lastmod_forms;
 	case TDB_PRINTERS:
 		return tdb_printerdb.lastmod_printers;
+	case TDB_SECDESC:
+		return tdb_printerdb.lastmod_printers;
+	case TDB_DRIVERSINIT:
+		return tdb_printerdb.lastmod_printers;
 	default:
 		DEBUG(0,("unknown query: %d\n", tdb));
 		return time(NULL);
@@ -1104,6 +1108,86 @@ done:
 	return ret;
 }
 
+static uint32 tdb_update_driver_init(NT_PRINTER_INFO_LEVEL_2 *info)
+{
+	pstring key;
+	char *buf;
+	int buflen, len, ret;
+	TDB_DATA kbuf, dbuf;
+
+	buf = NULL;
+	buflen = 0;
+
+ again:	
+	len = 0;
+	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+
+	len += pack_values( &info->data, buf+len, buflen-len );
+
+	if (buflen < len) {
+		char *tb;
+
+		tb = (char *)SMB_REALLOC(buf, len);
+		if (!tb) {
+			DEBUG(0, ("tdb_update_driver_init: failed to enlarge buffer!\n"));
+			ret = -1;
+			goto done;
+		}
+		else
+			buf = tb;
+		buflen = len;
+		goto again;
+	}
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	dbuf.dptr = buf;
+	dbuf.dsize = len;
+
+	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
+
+done:
+	SAFE_FREE(buf);
+
+	return ret;
+}
+
+static WERROR tdb_get_driver_init(const char *drivername, NT_PRINTER_INFO_LEVEL_2 **info_ptr )
+{
+	int                     len = 0;
+	pstring                 key;
+	TDB_DATA                kbuf, dbuf;
+	NT_PRINTER_INFO_LEVEL_2 info;
+
+	ZERO_STRUCT(info);
+
+	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, drivername);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb_drivers, kbuf);
+	if (!dbuf.dptr)
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+
+	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+
+	len += unpack_values(&info.data, dbuf.dptr+len, dbuf.dsize-len);
+	
+	SAFE_FREE(dbuf.dptr);
+
+	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
+
+	return WERR_OK;
+}
+
+static BOOL tdb_printerdb_close(void)
+{
+	return True;
+}
+
 static struct printerdb_methods tdb_methods = {
 
 	tdb_get_last_update,
@@ -1124,10 +1208,10 @@ static struct printerdb_methods tdb_methods = {
 	tdb_update_printer,
 	tdb_del_printer,
 	tdb_get_secdesc,
-	tdb_set_secdesc /*
-+       tdb_printerdb_close,
-+       tdb_set_driver_init_2,
-+       tdb_update_driver_init_2 */
+	tdb_set_secdesc,
+	tdb_get_driver_init,
+	tdb_update_driver_init,
+	tdb_printerdb_close
 };
 
 

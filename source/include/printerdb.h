@@ -69,9 +69,9 @@ struct printerdb_methods {
 	WERROR (*get_secdesc)( TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr );
 	WERROR (*set_secdesc)( TALLOC_CTX *mem_ctx, const char *printername, SEC_DESC_BUF *secdesc_ctr );
 
-	BOOL (*set_driver_init)( NT_PRINTER_INFO_LEVEL_2 *driver );
-	BOOL (*get_driver_init)( NT_PRINTER_INFO_LEVEL_2 **driver );
+	WERROR (*get_driver_init)(const char *drivername, NT_PRINTER_INFO_LEVEL_2 **info);
 	uint32 (*update_driver_init)(NT_PRINTER_INFO_LEVEL_2 *info);
+
 	/* Called when backend is unloaded */
 	BOOL (*close)(void);
 

@@ -24,10 +24,6 @@
 
 extern DOM_SID global_sid_World;
 
-static TDB_CONTEXT *tdb_drivers; /* used for driver files */
-
-#define DRIVER_INIT_PREFIX "DRIVER_INIT/"
- 
 /* Map generic permissions to printer object specific permissions */
 
 GENERIC_MAPPING printer_generic_mapping = {
@@ -1591,12 +1587,8 @@ uint32 del_a_printer(const char *sharename)
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-//	pstring key;
-//	char *buf;
-//	int buflen, len;
-//	WERROR ret;
-//	TDB_DATA kbuf, dbuf;
-	
+	WERROR ret;
+
 	/*
 	 * in addprinter: no servername and the printer is the name
 	 * in setprinter: servername is \\server
@@ -1624,76 +1616,14 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * So I've made a limitation in SAMBA: you can only have 1 printer model
 	 * behind a SAMBA share.
 	 */
-	return printerdb_update_printer(info);
-#if 0
-	buf = NULL;
-	buflen = 0;
-
- again:	
-	len = 0;
-	len += tdb_pack(buf+len, buflen-len, "dddddddddddfffffPfffff",
-			info->attributes,
-			info->priority,
-			info->default_priority,
-			info->starttime,
-			info->untiltime,
-			info->status,
-			info->cjobs,
-			info->averageppm,
-			info->changeid,
-			info->c_setprinter,
-			info->setuptime,
-			info->servername,
-			info->printername,
-			info->sharename,
-			info->portname,
-			info->drivername,
-			info->comment,
-			info->location,
-			info->sepfile,
-			info->printprocessor,
-			info->datatype,
-			info->parameters);
-
-	len += pack_devicemode(info->devmode, buf+len, buflen-len);
-	
-	len += pack_values( &info->data, buf+len, buflen-len );
-
-	if (buflen != len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
-			DEBUG(0,("update_a_printer_2: failed to enlarge buffer!\n"));
-			ret = WERR_NOMEM;
-			goto done;
-		}
-		else buf = tb;
-		buflen = len;
-		goto again;
-	}
-	
-
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-	dbuf.dptr = buf;
-	dbuf.dsize = len;
-
-	ret = (tdb_store(tdb_printers, kbuf, dbuf, TDB_REPLACE) == 0? WERR_OK : WERR_NOMEM);
-
-done:
+	ret = printerdb_update_printer(info);
 	if (!W_ERROR_IS_OK(ret))
-		DEBUG(8, ("error updating printer to tdb on disk\n"));
+		DEBUG(8, ("error updating printer to backend\n"));
 
-	SAFE_FREE(buf);
-
-	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n",
-		 info->sharename, info->drivername, info->portname, len));
+	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s]\n",
+		 info->sharename, info->drivername, info->portname));
 
 	return ret;
-#endif
 }
 
 
@@ -2666,73 +2596,33 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 ****************************************************************************/
 static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char *sharename)
 {
-//	pstring key;
-//	NT_PRINTER_INFO_LEVEL_2 info;
-
-//	int len = 0;
 	int snum = lp_servicenumber(sharename);
-//	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
 	WERROR err;
-		
-//	ZERO_STRUCT(info);
 
-	err = printerdb_get_printer(info_ptr, sharename);
+	NT_PRINTER_INFO_LEVEL_2 *info = NULL;
+
+	ZERO_STRUCT(info);
+
+	err = printerdb_get_printer(&info, sharename);
+
 	if (!W_ERROR_IS_OK(err))
 		return get_a_printer_2_default(info_ptr, servername, sharename);
 
-
-#if 0
-	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	dbuf = tdb_fetch(tdb_printers, kbuf);
-	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, servername, sharename);
-
-	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
-			&info.attributes,
-			&info.priority,
-			&info.default_priority,
-			&info.starttime,
-			&info.untiltime,
-			&info.status,
-			&info.cjobs,
-			&info.averageppm,
-			&info.changeid,
-			&info.c_setprinter,
-			&info.setuptime,
-			info.servername,
-			info.printername,
-			info.sharename,
-			info.portname,
-			info.drivername,
-			info.comment,
-			info.location,
-			info.sepfile,
-			info.printprocessor,
-			info.datatype,
-			info.parameters);
-#endif
-
 	/* Samba has to have shared raw drivers. */
-	(**info_ptr).attributes |= PRINTER_ATTRIBUTE_SAMBA;
-	(**info_ptr).attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
+	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	/* Restore the stripped strings. */
-	slprintf((**info_ptr).servername, sizeof((**info_ptr).servername)-1, "\\\\%s", servername);
+	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
 	else 
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, (**info_ptr).printername);
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info->printername);
 
-	fstrcpy((**info_ptr).printername, printername);
-
-//	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+	fstrcpy(info->printername, printername);
 
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
@@ -2742,34 +2632,31 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(snum) && !(**info_ptr).devmode) {
+	if (lp_default_devmode(snum) && !info->devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
-		(**info_ptr).devmode = construct_nt_devicemode(printername);
+		info->devmode = construct_nt_devicemode(printername);
 	}
 
-	slprintf( adevice, sizeof(adevice), "%s", (**info_ptr).printername );
-	if ((**info_ptr).devmode) {
-		fstrcpy((**info_ptr).devmode->devicename, adevice);	
+	slprintf( adevice, sizeof(adevice), "%s", info->printername );
+	if (info->devmode) {
+		fstrcpy(info->devmode->devicename, adevice);	
 	}
-//	len += unpack_values( &info.data, dbuf.dptr+len, dbuf.dsize-len );
 
 	/* This will get the current RPC talloc context, but we should be
 	   passing this as a parameter... fixme... JRA ! */
 
-	nt_printing_getsec(get_talloc_ctx(), sharename, &(**info_ptr).secdesc_buf);
+	nt_printing_getsec(get_talloc_ctx(), sharename, &info->secdesc_buf);
 
 	/* Fix for OS/2 drivers. */
 
 	if (get_remote_arch() == RA_OS2)
-		map_to_os2_driver((**info_ptr).drivername);
-
-//	SAFE_FREE(dbuf.dptr);
-//	*info_ptr=memdup(info, sizeof(info));
-
+		map_to_os2_driver(info->drivername);
 
 	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
-		 sharename, (**info_ptr).printername, (**info_ptr).drivername));
+		 sharename, info->printername, info->drivername));
+
+	*info_ptr = memdup(info, sizeof(*info));
 
 	return WERR_OK;	
 }
@@ -2954,11 +2841,8 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 
 static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 {
-	int                     len = 0;
-//	pstring                 key;
-//	TDB_DATA                kbuf, dbuf;
-	TDB_DATA                dbuf;
-	NT_PRINTER_INFO_LEVEL_2 info;
+	NT_PRINTER_INFO_LEVEL_2 *info = NULL;
+	WERROR err;
 
 	ZERO_STRUCT(info);
 
@@ -2970,21 +2854,9 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 
 	delete_all_printer_data( info_ptr, "" );
 
-#if 0 /* gd */
-	if (!printerdb_get_driver_init(info_ptr->drivername)) {
-		free_nt_devicemode(&info_ptr->devmode);
-		return False;
-	}
-#endif
+	err = printerdb_get_driver_init(info_ptr->drivername, &info);
+	if (!W_ERROR_IS_OK(err)) {
 
-#if 0			
-	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	dbuf = tdb_fetch(tdb_drivers, kbuf);
-	if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
 		 * the previous drivers init info and leave the new on blank.
@@ -2992,21 +2864,15 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 		free_nt_devicemode(&info_ptr->devmode);
 		return False;
 	}
-#endif	
-	/*
-	 * Get the saved DEVMODE..
-	 */
-	 
-	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
 	 * The saved DEVMODE contains the devicename from the printer used during
 	 * the initialization save. Change it to reflect the new printer.
 	 */
 	 
-	if ( info.devmode ) {
-		ZERO_STRUCT(info.devmode->devicename);
-		fstrcpy(info.devmode->devicename, info_ptr->printername);
+	if ( info->devmode ) {
+		ZERO_STRUCT(info->devmode->devicename);
+		fstrcpy(info->devmode->devicename, info_ptr->printername);
 	}
 
 	/*
@@ -3024,17 +2890,12 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	/* Bind the saved DEVMODE to the new the printer */
 	 
 	free_nt_devicemode(&info_ptr->devmode);
-	info_ptr->devmode = info.devmode;
+	info_ptr->devmode = info->devmode;
+
+	info_ptr->data = info->data;
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init %s DEVMODE for driver [%s]\n",
 		info_ptr->printername, info_ptr->devmode?"VALID":"NULL", info_ptr->drivername));
-
-	/* Add the printer data 'values' to the new printer */
-	 
-	len += unpack_values( &info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
-	
-
-	SAFE_FREE(dbuf.dptr);
 
 	return True;	
 }
@@ -3071,24 +2932,6 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 BOOL del_driver_init(char *drivername)
 {
 	return printerdb_del_driver_init(drivername);
-#if 0
-	pstring key;
-	TDB_DATA kbuf;
-
-	if (!drivername || !*drivername) {
-		DEBUG(3,("del_driver_init: No drivername specified!\n"));
-		return False;
-	}
-
-	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, drivername);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-
-	DEBUG(6,("del_driver_init: Removing driver init data for [%s]\n", drivername));
-
-	return (tdb_delete(tdb_drivers, kbuf) == 0);
-#endif
 }
 
 /****************************************************************************
@@ -3101,49 +2944,11 @@ BOOL del_driver_init(char *drivername)
 
 static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-	pstring key;
-	char *buf;
-	int buflen, len, ret;
-	TDB_DATA kbuf, dbuf;
+	int ret;
 
-	buf = NULL;
-	buflen = 0;
-
- again:	
-	len = 0;
-	len += pack_devicemode(info->devmode, buf+len, buflen-len);
-
-	len += pack_values( &info->data, buf+len, buflen-len );
-
-	if (buflen < len) {
-		char *tb;
-
-		tb = (char *)SMB_REALLOC(buf, len);
-		if (!tb) {
-			DEBUG(0, ("update_driver_init_2: failed to enlarge buffer!\n"));
-			ret = -1;
-			goto done;
-		}
-		else
-			buf = tb;
-		buflen = len;
-		goto again;
-	}
-
-	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
-
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-	dbuf.dptr = buf;
-	dbuf.dsize = len;
-
-	ret = tdb_store(tdb_drivers, kbuf, dbuf, TDB_REPLACE);
-
-done:
+	ret = printerdb_update_driver_init(info);
 	if (ret == -1)
 		DEBUG(8, ("update_driver_init_2: error updating printer init to tdb on disk\n"));
-
-	SAFE_FREE(buf);
 
 	DEBUG(10,("update_driver_init_2: Saved printer [%s] init DEVMODE & values for driver [%s]\n",
 		 info->sharename, info->drivername));
@@ -4060,9 +3865,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
-//	prs_struct ps;
 	TALLOC_CTX *mem_ctx = NULL;
-//	fstring key;
 	WERROR status;
 
 	mem_ctx = talloc_init("nt_printing_setsec");
@@ -4117,31 +3920,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Store the security descriptor in a tdb */
 	status = printerdb_set_secdesc(mem_ctx, printername, new_secdesc_ctr);
-#if 0
-	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) +
-		 sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
 
-	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
-			     &ps, 1)) {
-		status = WERR_BADFUNC;
-		goto out;
-	}
-
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
-
-	if (tdb_prs_store(tdb_printers, key, &ps)==0) {
-		status = WERR_OK;
-	} else {
-		DEBUG(1,("Failed to store secdesc for %s\n", printername));
-		status = WERR_BADFUNC;
-	}
-
-	/* Free malloc'ed memory */
-
- out:
-
-	prs_mem_free(&ps);
-#endif
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 	return status;
@@ -4240,8 +4019,6 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 
 BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF **secdesc_ctr)
 {
-//	prs_struct ps;
-//	fstring key;
 	char *temp;
 	WERROR err;
 
@@ -4249,16 +4026,11 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 		printername = temp + 1;
 	}
 
-	/* Fetch security descriptor from tdb */
+	/* Fetch security descriptor from printerdb */
 
 	err = printerdb_get_secdesc(ctx, printername, secdesc_ctr);
 	if (!W_ERROR_IS_OK(err)) {
-#if 0
-	slprintf(key, sizeof(key)-1, "SECDESC/%s", printername);
 
-	if (tdb_prs_fetch(tdb_printers, key, &ps, ctx)!=0 ||
-	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
-#endif
 		DEBUG(4,("using default secdesc for %s\n", printername));
 
 		if (!(*secdesc_ctr = construct_default_printer_sdb(ctx))) {
@@ -4267,15 +4039,6 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 
 		/* Save default security descriptor for later */
 		printerdb_set_secdesc(ctx, printername, *secdesc_ctr);
-#if 0
-		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sec) +
-				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
-
-		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1))
-			tdb_prs_store(tdb_printers, key, &ps);
-
-		prs_mem_free(&ps);
-#endif
 		return True;
 	}
 
@@ -4334,7 +4097,6 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, const char *printername, SEC_DESC_BUF *
 		}
 	}
 
-//	prs_mem_free(&ps);
 	return True;
 }
 

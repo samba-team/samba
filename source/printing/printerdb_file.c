@@ -737,7 +737,7 @@ WERROR file_get_driver(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr,
 	return result;
 }
 
-BOOL file_printerdb_close(void)
+static BOOL file_printerdb_close(void)
 {
 	return True;
 }
@@ -955,9 +955,15 @@ WERROR file_get_printer(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharenam
 			info.datatype,
 			info.parameters);
 
-	len += unpack_devicemode(&info.devmode, buf+len, buflen);
+	len += unpack_devicemode(&info.devmode, buf+len, buflen-len);
 
-	len += unpack_values( &info.data, buf+len, buflen );
+	len += unpack_values( &info.data, buf+len, buflen-len );
+
+	if (len != buflen) {
+		DEBUG(0,("len: %d != buflen %d\n", len, buflen));
+		result = WERR_INVALID_PARAM;
+		goto done;
+	}
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 
@@ -1054,6 +1060,104 @@ done:
 	return result;
 }
 
+static uint32 file_update_driver_init(NT_PRINTER_INFO_LEVEL_2 *info)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("file_update_driver_init");
+	char *filename;
+	int len, ret;
+	uint8_t *buf;
+	int buflen;
+
+	if (mem_ctx == NULL)
+		goto done;
+
+	filename = talloc_asprintf(mem_ctx, "%s/%s/%s", file_root,
+				   DRIVERSINIT_PREFIX, info->drivername);
+
+	if (filename == NULL)
+		goto done;
+
+	buf = NULL;
+	buflen = 0;
+
+ again:	
+	len = 0;
+	len += pack_devicemode(info->devmode, buf+len, buflen-len);
+
+	len += pack_values( &info->data, buf+len, buflen-len );
+
+	if (buflen < len) {
+		char *tb;
+
+		tb = (char *)SMB_REALLOC(buf, len);
+		if (!tb) {
+			DEBUG(0, ("file_update_driver_init: failed to enlarge buffer!\n"));
+			ret = -1;
+			goto done;
+		} else {
+			buf = tb;
+		}
+
+		buflen = len;
+
+		goto again;
+	}
+
+	if (!write_complete_file(filename, O_WRONLY|O_CREAT|O_TRUNC, 0644,
+				 buf, len)) {
+		ret = -1;
+		goto done;
+	}
+
+	ret = 0;
+
+done:
+	if (mem_ctx != NULL)
+		talloc_destroy(mem_ctx);
+
+	return ret;
+}
+
+static WERROR file_get_driver_init(const char *drivername, NT_PRINTER_INFO_LEVEL_2 **info_ptr)
+{
+
+	TALLOC_CTX *mem_ctx = talloc_init("file_get_driver_init");
+	NT_PRINTER_INFO_LEVEL_2 info;
+	char *filename;
+	uint8_t *buf;
+	int len = 0, buflen = 0;
+	WERROR result = WERR_OK;
+
+	ZERO_STRUCT(info);
+
+	if (mem_ctx == NULL)
+		return WERR_NOMEM;
+
+	filename = talloc_asprintf(mem_ctx, "%s/%s/%s", file_root, DRIVERSINIT_PREFIX,
+				   drivername);
+	if (filename == NULL)
+		return WERR_NOMEM;
+
+	if (!read_complete_file(mem_ctx, filename, &buf, &buflen)) {
+		result = WERR_UNKNOWN_PRINTER_DRIVER;
+		goto done;
+	}
+
+	len += unpack_devicemode(&info.devmode, buf+len, buflen-len);
+
+	len += unpack_values( &info.data, buf+len, buflen-len );
+
+	result = WERR_OK;
+
+	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
+
+ done:
+	if (mem_ctx != NULL)
+		talloc_destroy(mem_ctx);
+
+	return result;
+}
+
 static struct printerdb_methods file_methods = {
 
 	file_get_last_update,
@@ -1074,10 +1178,10 @@ static struct printerdb_methods file_methods = {
 	file_update_printer,
 	file_del_printer,
 	file_get_secdesc,
-	file_set_secdesc /*
-	file_printerdb_close,
-+       db_set_driver_init_2,
-+       db_update_driver_init_2, */
+	file_set_secdesc,
+	file_get_driver_init,
+	file_update_driver_init,
+	file_printerdb_close
 };
 
 
