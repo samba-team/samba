@@ -75,15 +75,12 @@ find_all_addresses (krb5_addresses *res)
      for (p = ifconf.ifc_buf; p < ifconf.ifc_buf + ifconf.ifc_len;) {
           struct ifreq *ifr = (struct ifreq *)p;
 
-	  /*
-	   * This is not the real test and fails on Cray, but I've not
-	   * found any more reliable test.
-	   */
+	  /* This is somewhat kludgy, but it seems to work. */
 
-#ifdef SOCKADDR_HAS_SA_LEN
-	  size_t sz = sizeof(ifr->ifr_name) + ifr->ifr_addr.sa_len;
-#else
 	  size_t sz = sizeof(*ifr);
+#ifdef SOCKADDR_HAS_SA_LEN
+	  if(ifr->ifr_addr.sa_len)
+	      sz = sizeof(ifr->ifr_name) + ifr->ifr_addr.sa_len;
 #endif
 	  if(strncmp(ifreq.ifr_name, ifr->ifr_name, sizeof(ifr->ifr_name))) {
 	       if(ioctl(fd, SIOCGIFFLAGS, ifr) < 0) {
