@@ -275,7 +275,7 @@ install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
 install -m755 examples/VFS/recycle/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+install -m644 examples/VFS/recycle/recycle.conf $RPM_BUILD_ROOT/etc/samba/
 install -m755 examples/VFS/block/block.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 install -m644 examples/VFS/block/samba-block.conf $RPM_BUILD_ROOT/etc/samba/
 install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
