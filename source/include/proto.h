@@ -1900,17 +1900,17 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol,
 				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_groups);
+				uint32 *num_sam_groups);
 BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
 				uint32 start_idx, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_aliases);
+				uint32 *num_sam_aliases);
 uint32 samr_enum_dom_users(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				struct acct_info **sam,
-				int *num_sam_users);
+				uint32 *num_sam_users);
 BOOL samr_connect(struct cli_state *cli, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				POLICY_HND *connect_pol);

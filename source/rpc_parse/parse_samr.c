@@ -726,7 +726,7 @@ reads or writes a SAM_SID_STUFF structure.
 ********************************************************************/
 static BOOL sam_io_sid_stuff(char *desc,  SAM_SID_STUFF *stf, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (stf == NULL) return False;
 
@@ -1217,7 +1217,7 @@ BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 next_idx,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -1234,8 +1234,8 @@ BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
 
-		r_u->sam = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-		r_u->uni_acct_name = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
+		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+		r_u->uni_acct_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
 
 		if (r_u->sam == NULL || r_u->uni_acct_name == NULL)
 		{
@@ -1271,7 +1271,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -1294,8 +1294,8 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct
 
 		if (ps->io)
 		{
-			r_u->sam = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-			r_u->uni_acct_name = Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
+			r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
+			r_u->uni_acct_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_acct_name == NULL) && r_u->num_entries2 != 0)
@@ -1386,7 +1386,7 @@ BOOL make_sam_dispinfo_1(SAM_DISPINFO_1 *sam, uint32 *num_entries,
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
 	uint32 max_entries, max_data_size;
 	uint32 dsize = 0;
-	int i;
+	uint32 i;
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
@@ -1424,7 +1424,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sam == NULL) return False;
 
@@ -1465,7 +1465,7 @@ BOOL make_sam_dispinfo_2(SAM_DISPINFO_2 *sam, uint32 *num_entries,
 	uint32 len_sam_name, len_sam_desc;
 	uint32 max_entries, max_data_size;
 	uint32 dsize = 0;
-	int i;
+	uint32 i;
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
@@ -1501,7 +1501,7 @@ reads or writes a structure.
 ********************************************************************/
 static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sam == NULL) return False;
 
@@ -1541,7 +1541,7 @@ BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
 	uint32 len_sam_name, len_sam_desc;
 	uint32 max_entries, max_data_size;
 	uint32 dsize = 0;
-	int i;
+	uint32 i;
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
@@ -1575,9 +1575,9 @@ BOOL make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 *sam, int num_entries, prs_struct *ps, int depth)
+static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sam == NULL) return False;
 
@@ -1618,7 +1618,7 @@ BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 *sam, uint32 *num_entries,
 	uint32 len_sam_name;
 	uint32 max_entries, max_data_size;
 	uint32 dsize = 0;
-	int i;
+	uint32 i;
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
@@ -1650,9 +1650,9 @@ BOOL make_sam_dispinfo_4(SAM_DISPINFO_4 *sam, uint32 *num_entries,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 *sam, int num_entries, prs_struct *ps, int depth)
+static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sam == NULL) return False;
 
@@ -1690,7 +1690,7 @@ BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 *sam, uint32 *num_entries,
 	uint32 len_sam_name;
 	uint32 max_entries, max_data_size;
 	uint32 dsize = 0;
-	int i;
+	uint32 i;
 
 	if (sam == NULL || num_entries == NULL || data_size == NULL) return False;
 
@@ -1722,9 +1722,9 @@ BOOL make_sam_dispinfo_5(SAM_DISPINFO_5 *sam, uint32 *num_entries,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 *sam, int num_entries, prs_struct *ps, int depth)
+static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (sam == NULL) return False;
 
@@ -2556,7 +2556,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -2578,7 +2578,7 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 			prs_uint32("num_rids", ps, depth, &(r_u->num_rids));
 			if (r_u->num_rids != 0)
 			{
-				r_u->rid = Realloc(r_u->rid,
+				r_u->rid = (uint32*)Realloc(r_u->rid,
 						       sizeof(r_u->rid[0]) *
 						       r_u->num_rids);
 				if (r_u->rid == NULL)
@@ -2600,7 +2600,7 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 
 			if (r_u->num_attrs != 0)
 			{
-				r_u->attr = Realloc(r_u->attr,
+				r_u->attr = (uint32*)Realloc(r_u->attr,
 						       sizeof(r_u->attr[0]) *
 						       r_u->num_attrs);
 				if (r_u->attr == NULL)
@@ -2716,7 +2716,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_usergroups");
@@ -2735,7 +2735,7 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 		{
 			prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 
-			r_u->gid = malloc(r_u->num_entries2 * sizeof(r_u->gid[0]));
+			r_u->gid = (DOM_GID*)malloc(r_u->num_entries2 * sizeof(r_u->gid[0]));
 			if (r_u->gid == NULL)
 			{
 				return False;
@@ -2805,7 +2805,7 @@ BOOL make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
 		uint32 num_sam_entries, DOMAIN_GRP *grps,
 		uint32 status)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -2857,7 +2857,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -2948,7 +2948,7 @@ BOOL make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
 		uint32 num_sam_entries, LOCAL_GRP *alss,
 		uint32 status)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -3000,7 +3000,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_enum_dom_aliases(char *desc,  SAMR_R_ENUM_DOM_ALIASES *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (r_u == NULL) return False;
 
@@ -3273,7 +3273,7 @@ reads or writes a SAMR_Q_QUERY_USERALIASES structure.
 BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs_struct *ps, int depth)
 {
 	fstring tmp;
-	int i;
+	uint32 i;
 
 	if (q_u == NULL) return False;
 
@@ -3291,15 +3291,15 @@ BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 
 	if (q_u->num_sids2 != 0)
 	{
-		q_u->ptr_sid = Realloc(q_u->ptr_sid, sizeof(q_u->ptr_sid[0]) *
-		                       q_u->num_sids2);
+		q_u->ptr_sid = (uint32*)Realloc(q_u->ptr_sid,
+		                    sizeof(q_u->ptr_sid[0]) * q_u->num_sids2);
 		if (q_u->ptr_sid == NULL)
 		{
 			samr_free_q_query_useraliases(q_u);
 			return False;
 		}
 
-		q_u->sid = Realloc(q_u->sid,
+		q_u->sid = (DOM_SID2*)Realloc(q_u->sid,
 				       sizeof(q_u->sid[0]) * q_u->num_sids2);
 		if (q_u->sid == NULL)
 		{
@@ -3388,7 +3388,7 @@ reads or writes a structure.
 BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs_struct *ps, int depth)
 {
 	fstring tmp;
-	int i;
+	uint32 i;
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_useraliases");
@@ -3402,7 +3402,7 @@ BOOL samr_io_r_query_useraliases(char *desc,  SAMR_R_QUERY_USERALIASES *r_u, prs
 
 	if (r_u->num_entries != 0)
 	{
-		r_u->rid = Realloc(r_u->rid,
+		r_u->rid = (uint32*)Realloc(r_u->rid,
 				       sizeof(r_u->rid[0]) * r_u->num_entries);
 		if (r_u->rid == NULL)
 		{
@@ -3526,7 +3526,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	fstring tmp;
 
 	if (q_u == NULL) return False;
@@ -3546,7 +3546,7 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 
 	if (q_u->num_rids2 != 0)
 	{
-		q_u->rid = Realloc(q_u->rid, sizeof(q_u->rid[0]) *
+		q_u->rid = (uint32*)Realloc(q_u->rid, sizeof(q_u->rid[0]) *
 		                   q_u->num_rids2);
 		if (q_u->rid == NULL)
 		{
@@ -3593,7 +3593,7 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_names, fstring *name, uint8 *type,
 		uint32 status)
 {
-	int i;
+	uint32 i;
 	if (r_u == NULL || name == NULL || type == NULL) return False;
 
 	DEBUG(5,("make_samr_r_lookup_rids\n"));
@@ -3610,19 +3610,19 @@ BOOL make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 
 		if (num_names != 0)
 		{
-			r_u->hdr_name = malloc(num_names * sizeof(r_u->hdr_name[0]));
+			r_u->hdr_name = (UNIHDR*)malloc(num_names * sizeof(r_u->hdr_name[0]));
 			if (r_u->hdr_name == NULL)
 			{
 				samr_free_r_lookup_rids(r_u);
 				return False;
 			}
-			r_u->uni_name = malloc(num_names * sizeof(r_u->uni_name[0]));
+			r_u->uni_name = (UNISTR2*)malloc(num_names * sizeof(r_u->uni_name[0]));
 			if (r_u->uni_name == NULL)
 			{
 				samr_free_r_lookup_rids(r_u);
 				return False;
 			}
-			r_u->type = malloc(r_u->num_types2 * sizeof(r_u->type[0]));
+			r_u->type = (uint32*)malloc(r_u->num_types2 * sizeof(r_u->type[0]));
 			if (r_u->type == NULL)
 			{
 				samr_free_r_lookup_rids(r_u);
@@ -3659,7 +3659,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	fstring tmp;
 	if (r_u == NULL) return False;
 
@@ -3674,15 +3674,15 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 
 	if (r_u->ptr_names != 0 && r_u->num_names1 != 0)
 	{
-		r_u->hdr_name = Realloc(r_u->hdr_name, r_u->num_names2 *
-		                        sizeof(r_u->hdr_name[0]));
+		r_u->hdr_name = (UNIHDR*)Realloc(r_u->hdr_name,
+		                   r_u->num_names2 * sizeof(r_u->hdr_name[0]));
 		if (r_u->hdr_name == NULL)
 		{
 			return False;
 		}
 
-		r_u->uni_name = Realloc(r_u->uni_name, r_u->num_names2 *
-		                       sizeof(r_u->uni_name[0]));
+		r_u->uni_name = (UNISTR2*)Realloc(r_u->uni_name,
+		                    r_u->num_names2 * sizeof(r_u->uni_name[0]));
 		if (r_u->uni_name == NULL)
 		{
 			free(r_u->hdr_name);
@@ -3710,7 +3710,7 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 
 	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
 	{
-		r_u->type = Realloc(r_u->type, r_u->num_types2 *
+		r_u->type = (uint32*)Realloc(r_u->type, r_u->num_types2 *
 		                    sizeof(r_u->type[0]));
 		if (r_u->type == NULL)
 		{
@@ -4137,7 +4137,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	uint32 ptr_sid[MAX_LOOKUP_SIDS];
 
 	if (r_u == NULL) return False;
@@ -4186,7 +4186,7 @@ BOOL make_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 		POLICY_HND *pol, uint32 flags,
 		uint32 num_names, char **name)
 {
-	int i;
+	uint32 i;
 	if (q_u == NULL) return False;
 
 	DEBUG(5,("make_samr_q_lookup_names\n"));
@@ -4214,7 +4214,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 
 	if (q_u == NULL) return False;
 
@@ -4256,7 +4256,7 @@ makes a SAMR_R_LOOKUP_NAMES structure.
 BOOL make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 		uint32 num_rids, uint32 *rid, uint8 *type, uint32 status)
 {
-	int i;
+	uint32 i;
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_lookup_names\n"));
@@ -4300,7 +4300,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 i;
 	fstring tmp;
 
 	if (r_u == NULL) return False;
@@ -5355,7 +5355,8 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 		}
 		case 24:
 		{
-			q_u->info.id = Realloc(NULL, sizeof(*q_u->info.id24));
+			q_u->info.id = (SAM_USER_INFO_24*)Realloc(NULL,
+			                 sizeof(*q_u->info.id24));
 			if (q_u->info.id == NULL)
 			{
 				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
@@ -5366,7 +5367,8 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO *q_u, prs_struct *ps
 		}
 		case 23:
 		{
-			q_u->info.id = Realloc(NULL, sizeof(*q_u->info.id23));
+			q_u->info.id = (SAM_USER_INFO_23*)Realloc(NULL,
+				         sizeof(*q_u->info.id23));
 			if (q_u->info.id == NULL)
 			{
 				DEBUG(2,("samr_io_q_query_userinfo: info pointer not initialised\n"));
