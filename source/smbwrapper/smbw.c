@@ -47,7 +47,7 @@ void smbw_init(void)
 	extern BOOL in_client;
 	static int initialised;
 	static pstring servicesf = CONFIGFILE;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	char *p;
 	int eno;
 	pstring line;
@@ -62,7 +62,7 @@ void smbw_init(void)
 	DEBUGLEVEL = 0;
 	setup_logging("smbsh",True);
 
-	dbf = stderr;
+	dbf = x_stderr;
 
 	if ((p=smbw_getshared("LOGFILE"))) {
 		dbf = sys_fopen(p, "a");

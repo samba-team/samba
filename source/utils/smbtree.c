@@ -325,7 +325,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 {
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	int opt;
 	char *p;
 	pstring servicesf = CONFIGFILE;
@@ -336,7 +336,7 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
 	setlinebuf(stdout);
 
-	dbf = stderr;
+	dbf = x_stderr;
 
 	setup_logging(argv[0],True);
 

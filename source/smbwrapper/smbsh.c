@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
 	int opt;
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 
-	dbf = stdout;
+	dbf = x_stdout;
 	smbw_setup_shared();
 
 	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:hL:")) != EOF) {

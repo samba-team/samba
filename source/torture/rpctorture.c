@@ -229,7 +229,7 @@ enum client_action
 {
 	char *pname = argv[0];
 	int opt;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	extern char *optarg;
 	extern int optind;
 	static pstring servicesf = CONFIGFILE;
@@ -412,7 +412,7 @@ enum client_action
 
 			case 'E':
 			{
-				dbf = stderr;
+				dbf = x_stderr;
 				break;
 			}
 

@@ -79,7 +79,7 @@
  *                  levels higher than DEBUGLEVEL will not be processed.
  */
 
-FILE   *dbf        = NULL;
+XFILE   *dbf        = NULL;
 pstring debugf     = "";
 BOOL    append_log = False;
 
@@ -308,7 +308,7 @@ void setup_logging(char *pname, BOOL interactive)
 
 	if (interactive) {
 		stdout_logging = True;
-		dbf = stdout;
+		dbf = x_stdout;
 	}
 #ifdef WITH_SYSLOG
 	else {
@@ -337,7 +337,7 @@ BOOL reopen_logs( void )
 {
 	pstring fname;
 	mode_t oldumask;
-	FILE *new_dbf = NULL;
+	XFILE *new_dbf = NULL;
 	BOOL ret = True;
 
 	if (stdout_logging)
@@ -351,20 +351,20 @@ BOOL reopen_logs( void )
 
 	pstrcpy( debugf, fname );
 	if (append_log)
-		new_dbf = sys_fopen( debugf, "a" );
+		new_dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
 	else
-		new_dbf = sys_fopen( debugf, "w" );
+		new_dbf = x_fopen( debugf, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
 
 	if (!new_dbf) {
 		log_overflow = True;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
 		log_overflow = False;
-		fflush(dbf);
+		x_fflush(dbf);
 		ret = False;
 	} else {
-		setbuf(new_dbf, NULL);
+		x_setbuf(new_dbf, NULL);
 		if (dbf)
-			(void) fclose(dbf);
+			(void) x_fclose(dbf);
 		dbf = new_dbf;
 	}
 
@@ -429,7 +429,7 @@ void check_log_size( void )
 
 	maxlog = lp_max_log_size() * 1024;
 
-	if( sys_fstat( fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
+	if( sys_fstat( x_fileno( dbf ), &st ) == 0 && st.st_size > maxlog ) {
 		(void)reopen_logs();
 		if( dbf && get_file_size( debugf ) > maxlog ) {
 			pstring name;
@@ -456,7 +456,7 @@ void check_log_size( void )
 			startup or when the log level is increased from zero.
 			-dwg 6 June 2000
 		*/
-		dbf = sys_fopen( "/dev/console", "w" );
+		dbf = x_fopen( "/dev/console", O_WRONLY, 0);
 		if(dbf) {
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					debugf ));
@@ -484,7 +484,7 @@ void check_log_size( void )
     {
     va_start( ap, format_str );
     if(dbf)
-      (void)vfprintf( dbf, format_str, ap );
+      (void)x_vfprintf( dbf, format_str, ap );
     va_end( ap );
     errno = old_errno;
     return( 0 );
@@ -499,13 +499,13 @@ void check_log_size( void )
       mode_t oldumask = umask( 022 );
 
       if( append_log )
-        dbf = sys_fopen( debugf, "a" );
+        dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
       else
-        dbf = sys_fopen( debugf, "w" );
+        dbf = x_fopen( debugf, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
       (void)umask( oldumask );
       if( dbf )
         {
-        setbuf( dbf, NULL );
+        x_setbuf( dbf, NULL );
         }
       else
         {
@@ -554,10 +554,10 @@ void check_log_size( void )
     {
     va_start( ap, format_str );
     if(dbf)
-      (void)vfprintf( dbf, format_str, ap );
+      (void)x_vfprintf( dbf, format_str, ap );
     va_end( ap );
     if(dbf)
-      (void)fflush( dbf );
+      (void)x_fflush( dbf );
     }
 
   errno = old_errno;
@@ -647,7 +647,7 @@ void dbgflush( void )
   {
   bufr_print();
   if(dbf)
-    (void)fflush( dbf );
+    (void)x_fflush( dbf );
   } /* dbgflush */
 
 /* ************************************************************************** **

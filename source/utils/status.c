@@ -45,7 +45,7 @@ struct session_record{
 } *srecs;
 
 extern int DEBUGLEVEL;
-extern FILE *dbf;
+extern XFILE *dbf;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
@@ -556,7 +556,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	setup_logging(argv[0],True);
 	
 	DEBUGLEVEL = 0;
-	dbf = stderr;
+	dbf = x_stderr;
 	
 	if (getuid() != geteuid()) {
 		d_printf("smbstatus should not be run setuid\n");

@@ -36,7 +36,7 @@
 #include "smb.h"
 
 /* these live in util.c */
-extern FILE *dbf;
+extern XFILE *dbf;
 extern int DEBUGLEVEL;
 
 /***********************************************
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
   else if ((argc == 2) || (argc == 4))
     pstrcpy(configfile,argv[optind]);
 
-  dbf = stdout;
+  dbf = x_stdout;
   DEBUGLEVEL = 2;
 
   printf("Load smb config files from %s\n",configfile);

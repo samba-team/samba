@@ -41,7 +41,7 @@
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
 /* zero a structure given a pointer to the structure */
-#define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
+#define ZERO_STRUCTP(x) do { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); } while(0)
 
 /* zero a structure given a pointer to the structure - no zero check */
 #define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))

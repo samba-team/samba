@@ -545,7 +545,7 @@ static void usage(void)
 	char *share[NSERVERS];
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	int opt;
 	char *p;
 	int seed, server;
@@ -553,7 +553,7 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
-	dbf = stderr;
+	dbf = x_stderr;
 
 	if (argc < 3 || argv[1][0] == '-') {
 		usage();

@@ -135,17 +135,17 @@ static int writefile(int f, char *b, int n)
   read from a file with LF->CR/LF translation if appropriate. return the 
   number read. read approx n bytes.
 ****************************************************************************/
-static int readfile(char *b, int n, FILE *f)
+static int readfile(char *b, int n, XFILE *f)
 {
 	int i;
 	int c;
 
 	if (!translation)
-		return fread(b,1,n,f);
+		return x_fread(b,1,n,f);
   
 	i = 0;
 	while (i < (n - 1) && (i < BUFFER_SIZE)) {
-		if ((c = getc(f)) == EOF) {
+		if ((c = x_getc(f)) == EOF) {
 			break;
 		}
       
@@ -981,7 +981,7 @@ static void cmd_mkdir(void)
 static void do_put(char *rname,char *lname)
 {
 	int fnum;
-	FILE *f;
+	XFILE *f;
 	int nread=0;
 	char *buf=NULL;
 	int maxwrite=io_bufsize;
@@ -999,10 +999,10 @@ static void do_put(char *rname,char *lname)
 	/* allow files to be piped into smbclient
 	   jdblair 24.jun.98 */
 	if (!strcmp(lname, "-")) {
-		f = stdin;
+		f = x_stdin;
 		/* size of file is not known */
 	} else {
-		f = sys_fopen(lname,"r");
+		f = x_fopen(lname,O_RDONLY, 0);
 	}
 
 	if (!f) {
@@ -1019,12 +1019,12 @@ static void do_put(char *rname,char *lname)
 		d_printf("ERROR: Not enough memory!\n");
 		return;
 	}
-	while (!feof(f)) {
+	while (!x_feof(f)) {
 		int n = maxwrite;
 		int ret;
 
 		if ((n = readfile(buf,n,f)) < 1) {
-			if((n == 0) && feof(f))
+			if((n == 0) && x_feof(f))
 				break; /* Empty local file. */
 
 			d_printf("Error reading local file: %s\n", strerror(errno));
@@ -1043,13 +1043,13 @@ static void do_put(char *rname,char *lname)
 
 	if (!cli_close(cli, fnum)) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
-		fclose(f);
+		x_fclose(f);
 		if (buf) free(buf);
 		return;
 	}
 
 	
-	fclose(f);
+	x_fclose(f);
 	if (buf) free(buf);
 
 	{
@@ -1068,7 +1068,7 @@ static void do_put(char *rname,char *lname)
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
 
-	if (f == stdin) {
+	if (f == x_stdin) {
 		cli_shutdown(cli);
 		exit(0);
 	}
@@ -2280,7 +2280,7 @@ static int do_message_op(void)
 	fstring base_directory;
 	char *pname = argv[0];
 	int opt;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	extern char *optarg;
 	extern int optind;
 	int old_debug;
@@ -2315,7 +2315,7 @@ static int do_message_op(void)
 
 	for (opt = 1; opt < argc; opt++) {
 		if (strcmp(argv[opt], "-E") == 0)
-			dbf = stderr;
+			dbf = x_stderr;
 		else if(strncmp(argv[opt], "-s", 2) == 0) {
 			if(argv[opt][2] != '\0')
 				pstrcpy(servicesf, &argv[opt][2]);
@@ -2473,7 +2473,7 @@ static int do_message_op(void)
 			break;
 		case 'E':
 			display_set_stderr();
-			dbf = stderr;
+			dbf = x_stderr;
 			break;
 		case 'U':
 			{
@@ -2490,22 +2490,22 @@ static int do_message_op(void)
 
 		case 'A':
 			{
- 	 			FILE *auth;
+ 	 			XFILE *auth;
         	                fstring buf;
                         	uint16 len = 0;
 				char *ptr, *val, *param;
                                
-	                        if ((auth=sys_fopen(optarg, "r")) == NULL)
+	                        if ((auth=x_fopen(optarg, O_RDONLY, 0)) == NULL)
 				{
 					/* fail if we can't open the credentials file */
 					d_printf("ERROR: Unable to open credentials file!\n");
 					exit (-1);
 				}
                                 
-				while (!feof(auth))
+				while (!x_feof(auth))
 				{  
 					/* get a line from the file */
-					if (!fgets (buf, sizeof(buf), auth))
+					if (!x_fgets(buf, sizeof(buf), auth))
 						continue;
 					len = strlen(buf);
 					
@@ -2539,7 +2539,7 @@ static int do_message_op(void)
 						
 					memset(buf, 0, sizeof(buf));
 				}
-				fclose(auth);
+				x_fclose(auth);
 			}
 			break;
 

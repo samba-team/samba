@@ -198,16 +198,6 @@ do a (presumably graceful) quit...
 ****************************************************************************/
 static uint32 cmd_quit(struct client_info *info, int argc, char *argv[])
 {
-#ifdef MEM_MAN
-	{
-		extern FILE *dbf;
-		smb_mem_write_status(dbf);
-		smb_mem_write_errors(dbf);
-		smb_mem_write_verbose(dbf);
-		dbgflush();
-	}
-#endif
-
 	free_connections();
 	exit(0);
 	
@@ -927,7 +917,7 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 	BOOL interactive = True;
 	char *cmd_str = NULL;
 	int opt;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
@@ -1048,7 +1038,7 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 			case 'E':
 			{
 				cmd_set_options |= CMD_DBG;
-				dbf = stderr;
+				dbf = x_stderr;
 				break;
 			}
 

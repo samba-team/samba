@@ -533,7 +533,7 @@ static void usage(void)
 	char *share1, *share2, *nfspath1, *nfspath2;
 	extern char *optarg;
 	extern int optind;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	int opt;
 	char *p;
 	int seed;
@@ -541,7 +541,7 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
-	dbf = stderr;
+	dbf = x_stderr;
 
 	if (argc < 5 || argv[1][0] == '-') {
 		usage();

@@ -49,14 +49,14 @@ static char *smb_readline_replacement(char *prompt, void (*callback)(void),
                                                              int end))
 {
 	fd_set fds;
-	extern FILE *dbf;
+	extern XFILE *dbf;
 	static pstring line;
 	struct timeval timeout;
 	int fd = fileno(stdin);
         char *ret;
 
-	fprintf(dbf, "%s", prompt);
-	fflush(dbf);
+	x_fprintf(dbf, "%s", prompt);
+	x_fflush(dbf);
 
 	while (1) {
 		timeout.tv_sec = 5;
