@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-extern pstring global_myname;
+extern fstring local_machine;
 extern uint32 global_client_caps;
 
 #ifdef WITH_MSDFS
@@ -346,10 +346,15 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	parse_dfs_path(pathname, &dp);
 
 	/* Verify hostname in path */
-	if (global_myname && (strcasecmp(global_myname, dp.hostname) != 0)) {
+	if (local_machine && (strcasecmp(local_machine, dp.hostname) != 0)) {
+
+	   /* Hostname mismatch, check if one of our IP addresses */
+	   if (!ismyip(*interpret_addr2(dp.hostname))) {
+		
 		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
-			  dp.hostname, pathname));
+		  	  dp.hostname, pathname));
 		return False;
+	   }
 	}
 
 	pstrcpy(jn->service_name, dp.servicename);
@@ -662,11 +667,15 @@ BOOL create_junction(char* pathname, struct junction_map* jn)
  
         parse_dfs_path(pathname,&dp);
 
-        /* check if path is dfs : check hostname is the first token */
-        if(global_myname && (strcasecmp(global_myname,dp.hostname)!=0)) {
+        /* check if path is dfs : validate first token */
+        if (local_machine && (strcasecmp(local_machine,dp.hostname)!=0)) {
+	    
+	   /* Hostname mismatch, check if one of our IP addresses */
+	   if (!ismyip(*interpret_addr2(dp.hostname))) {
                 DEBUG(4,("create_junction: Invalid hostname %s in dfs path %s\n",
 			 dp.hostname, pathname));
                 return False;
+	   }
         }
 
         /* Check for a non-DFS share */
@@ -802,7 +811,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		jn[cnt].referral_count = 1;
 	
 		slprintf(alt_path,sizeof(alt_path)-1,"\\\\%s\\%s", 
-			 global_myname, service_name);
+			 local_machine, service_name);
 		ref = jn[cnt].referral_list = (struct referral*) malloc(sizeof(struct referral));
 		if (jn[cnt].referral_list == NULL) {
 			DEBUG(0, ("Malloc failed!\n"));
