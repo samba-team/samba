@@ -260,7 +260,10 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 	smb_io_rpc_hdr_rb("", &l->hdr_rb, &l->data_i, 0);
 
 	if (l->data_i.offset == 0)
+	{
+		DEBUG(5,("srv_pipe_bind_and_alt_req: decode hdr_rb failed\n"));
 		return False;
+	}
 
 	assoc_gid = l->hdr_rb.bba.assoc_gid;
 
@@ -318,11 +321,9 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		SMB_ASSERT(l->auth->api_auth_chk != NULL);
 		if (!l->auth->api_auth_chk(l, pkt_type))
 		{
-			if (l->auth_info != NULL)
-			{
-				free(l->auth_info);
-			}
+			safe_free(l->auth_info);
 			l->auth_info = NULL;
+			DEBUG(5,("srv_pipe_bind_and_alt_req: auth failed\n"));
 			return False;
 		}
 	}
@@ -419,6 +420,7 @@ static BOOL api_pipe_bind_and_alt_req(rpcsrv_struct * l,
 		}
 		default:
 		{
+			DEBUG(10,("api_pipe_bind_and_alt_req: unknown pkt_type %d\n", pkt_type));
 			return False;
 		}
 	}
@@ -531,7 +533,8 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 	last = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_LAST);
 	first = IS_BITS_SET_ALL(l->hdr.flags, RPC_FLG_FIRST);
 
-	if (l->hdr.pkt_type == RPC_BIND || l->hdr.pkt_type == RPC_BINDRESP)
+	if (l->hdr.pkt_type == RPC_BIND ||
+	    l->hdr.pkt_type == RPC_ALTCONT || l->hdr.pkt_type == RPC_BINDRESP)
 	{
 		last = True;
 		first = True;
@@ -602,8 +605,8 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 				if (reply)
 				{
 					key.vuid =
-						ctx_id_table[l->hdr_req.
-							     context_id];
+						ctx_id_table[l->
+							     hdr_req.context_id];
 					reply = become_vuser(&key)
 						|| become_guest();
 
@@ -629,8 +632,8 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct *req,
 				SMB_ASSERT(l->auth->api_auth_chk != NULL);
 
 				reply = l->auth->api_auth_chk(l,
-							      l->
-							      hdr.pkt_type);
+							      l->hdr.
+							      pkt_type);
 			}
 			if (!reply)
 			{
