@@ -66,12 +66,14 @@ gssapi_krb5_verify_8003_checksum (
 
 OM_uint32
 gssapi_krb5_encapsulate(
+			OM_uint32 *minor_status,
 			const krb5_data *in_data,
 			gss_buffer_t output_token,
 			u_char *type);
 
 OM_uint32
 gssapi_krb5_decapsulate(
+			OM_uint32 *minor_status,
 			gss_buffer_t input_token_buffer,
 			krb5_data *out_data,
 			char *type);
