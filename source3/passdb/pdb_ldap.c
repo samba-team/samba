@@ -406,14 +406,14 @@ static int ldapsam_connect_system(struct ldapsam_privates *ldap_state, LDAP * ld
 	rc = ldap_simple_bind_s(ldap_struct, ldap_dn, ldap_secret);
 
 	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0,
 		      ("failed to bind to server with dn= %s Error: %s\n\t%s\n",
-			       ldap_dn, ldap_err2string(rc),
+			       ldap_dn ? ld_error : "(unknown)", ldap_err2string(rc),
 			       ld_error));
-		free(ld_error);
+		SAFE_FREE(ld_error);
 		return rc;
 	}
 	
@@ -649,11 +649,11 @@ static int ldapsam_search_one_user (struct ldapsam_privates *ldap_state, const c
 	rc = ldapsam_search(ldap_state, lp_ldap_suffix (), scope, filter, attr, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0,("ldapsam_search_one_user: Problem during the LDAP search: %s (%s)\n", 
-			ld_error, ldap_err2string (rc)));
+			ld_error?ld_error:"(unknown)", ldap_err2string (rc)));
 		DEBUG(3,("ldapsam_search_one_user: Query was: %s, %s\n", lp_ldap_suffix(), 
 			filter));
 		SAFE_FREE(ld_error);
@@ -918,12 +918,12 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 	ldap_mods_free(mods, 1);
 
 	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		
 		DEBUG(0, ("could not delete attributes for %s, error: %s (%s)\n",
-			  dn, ldap_err2string(rc), ld_error));
+			  dn, ldap_err2string(rc), ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
 		ldap_memfree(dn);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1876,15 +1876,15 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 		
 		if (rc!=LDAP_SUCCESS) {
-			char *ld_error;
+			char *ld_error = NULL;
 			ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 					&ld_error);
 			DEBUG(1,
 			      ("failed to %s user dn= %s with: %s\n\t%s\n",
 			       ldap_op == LDAP_MOD_ADD ? "add" : "modify",
 			       dn, ldap_err2string(rc),
-			       ld_error));
-			free(ld_error);
+			       ld_error?ld_error:"unknown"));
+			SAFE_FREE(ld_error);
 			return NT_STATUS_UNSUCCESSFUL;
 		}  
 	}
@@ -2026,11 +2026,11 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 	ldap_mods_free(mods,1);
 
 	if (!NT_STATUS_IS_OK(ret)) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0,("failed to modify user with uid = %s, error: %s (%s)\n",
-			 pdb_get_username(newpwd), ld_error, ldap_err2string(rc)));
+			 pdb_get_username(newpwd), ld_error?ld_error:"(unknwon)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 		return ret;
 	}
@@ -2189,12 +2189,12 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 			    filter, group_attr, 0, result);
 
 	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0, ("ldapsam_search_one_group: "
 			  "Problem during the LDAP search: LDAP error: %s (%s)",
-			  ld_error, ldap_err2string(rc)));
+			  ld_error?ld_error:"(unknown)", ldap_err2string(rc)));
 		DEBUG(3, ("ldapsam_search_one_group: Query was: %s, %s\n",
 			  lp_ldap_suffix(), filter));
 		SAFE_FREE(ld_error);
@@ -2451,11 +2451,11 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 	ldap_mods_free(mods, 1);
 
 	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0, ("failed to add group %i error: %s (%s)\n", map->gid, 
-			  ld_error, ldap_err2string(rc)));
+			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2509,11 +2509,11 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	ldap_mods_free(mods, 1);
 
 	if (rc != LDAP_SUCCESS) {
-		char *ld_error;
+		char *ld_error = NULL;
 		ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 				&ld_error);
 		DEBUG(0, ("failed to modify group %i error: %s (%s)\n", map->gid, 
-			  ld_error, ldap_err2string(rc)));
+			  ld_error ? ld_error : "(unknown)", ldap_err2string(rc)));
 		SAFE_FREE(ld_error);
 	}
 
