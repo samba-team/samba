@@ -507,7 +507,9 @@ BOOL msrpc_spoolss_enum_printerdata( const char* printer_name,
 	type=0;
 	datalen=0;
 	rdatalen=0;
-	
+	value = NULL;
+	data = NULL;
+
 	status = spoolss_enum_printerdata(&hnd, idx, &valuelen, value, 
 					  &rvaluelen, &type, &datalen, 
 					  data, &rdatalen);

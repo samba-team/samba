@@ -50,8 +50,8 @@ static int iNumNonAutoPrintServices = 0;
 #define RHOST "remote_host"
 
 /* we need these because we link to locking*.o */
- void become_root() {}
- void unbecome_root() {}
+ void become_root(void) {}
+ void unbecome_root(void) {}
 
 /****************************************************************************
 ****************************************************************************/

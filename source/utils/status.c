@@ -58,8 +58,8 @@ static BOOL processes_only=False;
 static int show_brl;
 
 /* we need these because we link to locking*.o */
- void become_root() {}
- void unbecome_root() {}
+ void become_root(void) {}
+ void unbecome_root(void) {}
 
 
 /* added by OH */

@@ -88,8 +88,9 @@ uint32 cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[
 	
 	uint32 flags;
 	uint32 level = 1;
-
 	fstring srv_name;
+
+	ZERO_STRUCT(ctr);
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
@@ -223,6 +224,8 @@ uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
         fstring station;
         char *printer_name;
         uint32 level;
+
+	ZERO_STRUCT(ctr);
 
         if (argc < 2) {
                 report(out_hnd, "spoolgetprinter <printer name>\n");
@@ -441,6 +444,8 @@ uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *ar
         fstring environment;
         uint32 level;
 
+	ZERO_STRUCT(ctr);
+
         if (argc < 2) {
                 report(out_hnd, "spoolgetprinterdriver <printer name>\n");
                 return NT_STATUS_INVALID_PARAMETER;
@@ -492,6 +497,7 @@ uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *
         fstring environment;
         uint32 level;
 
+	ZERO_STRUCT(ctr);
         fstrcpy(srv_name, "\\\\");
         fstrcat(srv_name, info->dest_host);
         strupper(srv_name);
@@ -520,6 +526,7 @@ uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char 
         fstring srv_name;
 	fstring env;
 
+	ZERO_STRUCT(ctr);
         fstrcpy(srv_name, "\\\\");
         fstrcat(srv_name, info->dest_host);
         strupper(srv_name);

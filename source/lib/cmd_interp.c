@@ -1277,8 +1277,7 @@ static void readline_init(void)
 	using_history();
 
 #else
-	int x;
-	x = 0;			/* stop compiler warnings */
+	;			/* stop compiler warnings */
 #endif /* HAVE_LIBREADLINE */
 }
 

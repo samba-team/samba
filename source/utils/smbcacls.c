@@ -815,7 +815,6 @@ You can string acls together with spaces, commas or newlines\n\
 	extern FILE *dbf;
 	int opt;
 	char *p;
-	int seed;
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli;
 	enum acl_mode mode;
@@ -862,8 +861,6 @@ You can string acls together with spaces, commas or newlines\n\
 			       strlen(password));
 		}
 	}
-
-	seed = time(NULL);
 
 	while ((opt = getopt(argc, argv, "U:nhS:D:A:M:C:G:t")) != EOF) {
 		switch (opt) {
