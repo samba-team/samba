@@ -317,7 +317,15 @@ BOOL sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2)
 
 	/* Check top level stuff */
 
-	if (s1->revision != s2->revision || s1->num_aces != s2->num_aces) {
+	if (s1->revision != s2->revision) {
+		DEBUG(10, ("sec_acl_equal(): revision differs (%d != %d)\n",
+			   s1->revision, s2->revision));
+		return False;
+	}
+
+	if (s1->num_aces != s2->num_aces) {
+		DEBUG(10, ("sec_acl_equal(): num_aces differs (%d != %d)\n",
+			   s1->revision, s2->revision));
 		return False;
 	}
 
@@ -354,16 +362,39 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	/* Check top level stuff */
 
-	if (s1->revision != s2->revision || s1->type != s2->type) {
-		DEBUG(10, ("sec_desc_equal(): revision/type not equal\n"));
+	if (s1->revision != s2->revision) {
+		DEBUG(10, ("sec_desc_equal(): revision differs (%d != %d)\n",
+			   s1->revision, s2->revision));
+		return False;
+	}
+
+	if (s1->type!= s2->type) {
+		DEBUG(10, ("sec_desc_equal(): type differs (%d != %d)\n",
+			   s1->type, s2->type));
 		return False;
 	}
 
 	/* Check owner and group */
 
-	if (!sid_equal(s1->owner_sid, s2->owner_sid) ||
-	    !sid_equal(s1->grp_sid, s2->grp_sid)) {
-		DEBUG(10, ("sec_desc_equal(): owner/group not equal\n"));
+	if (!sid_equal(s1->owner_sid, s2->owner_sid)) {
+		fstring str1, str2;
+
+		sid_to_string(str1, s1->owner_sid);
+		sid_to_string(str2, s2->owner_sid);
+
+		DEBUG(10, ("sec_desc_equal(): owner differs (%s != %s)\n",
+			   str1, str2));
+		return False;
+	}
+
+	if (!sid_equal(s1->grp_sid, s2->grp_sid)) {
+		fstring str1, str2;
+
+		sid_to_string(str1, s1->grp_sid);
+		sid_to_string(str2, s2->grp_sid);
+
+		DEBUG(10, ("sec_desc_equal(): group differs (%s != %s)\n",
+			   str1, str2));
 		return False;
 	}
 
@@ -371,7 +402,7 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if ((s1->dacl && !s2->dacl) || (!s1->dacl && s2->dacl) ||
 	    (s1->sacl && !s2->sacl) || (!s1->sacl && s2->sacl)) {
-		DEBUG(10, ("sec_desc_equal(): dacl/sacl not equal\n"));
+		DEBUG(10, ("sec_desc_equal(): dacl or sacl not present\n"));
 		return False;
 	}
 
@@ -380,7 +411,7 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if (!sec_acl_equal(s1->dacl, s2->dacl) ||
 	    !sec_acl_equal(s1->sacl, s2->sacl)) {
-		DEBUG(10, ("sec_desc_equal(): dacl/dacl list not equal\n"));
+		DEBUG(10, ("sec_desc_equal(): dacl/sacl list not equal\n"));
 		return False;
 	}
 

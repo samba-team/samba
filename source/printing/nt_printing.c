@@ -2748,7 +2748,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 
 static SEC_DESC_BUF *construct_default_printer_sdb(void)
 {
-	SEC_ACE ace[2];
+	SEC_ACE ace[3];
 	SEC_ACCESS sa;
 	SEC_ACL *psa = NULL;
 	SEC_DESC_BUF *sdb = NULL;
@@ -2762,7 +2762,6 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
-
 
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
@@ -2783,8 +2782,13 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 		}
 	}
 
-	init_sec_access(&sa, PRINTER_ACE_MANAGE_DOCUMENTS | PRINTER_ACE_PRINT);
+	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
 	init_sec_ace(&ace[1], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     sa, SEC_ACE_FLAG_OBJECT_INHERIT |
+		     SEC_ACE_FLAG_INHERIT_ONLY);
+
+	init_sec_access(&sa, PRINTER_ACE_FULL_CONTROL);
+	init_sec_ace(&ace[2], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     sa, SEC_ACE_FLAG_CONTAINER_INHERIT);
 
 	/* The ACL revision number in rpc_secdesc.h differs from the one
@@ -2794,7 +2798,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 
 #define NT4_ACL_REVISION 0x2
 
-	if ((psa = make_sec_acl(NT4_ACL_REVISION, 2, ace)) != NULL) {
+	if ((psa = make_sec_acl(NT4_ACL_REVISION, 3, ace)) != NULL) {
 		psd = make_sec_desc(SEC_DESC_REVISION,
 				    &owner_sid, NULL,
 				    NULL, psa, &sd_size);
