@@ -14,3 +14,5 @@
 #endif
 
 #define WTMP_PATH "/var/adm/wtmp"
+
+#define KERBEROS
