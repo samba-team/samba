@@ -268,7 +268,24 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
-#endif
+
+/*
+ * The following is needed if compiling
+ * with gcc on SGI IRIX 6.5.x systems as
+ * the structure packing for system calls is
+ * different between IRIX cc and gcc.
+ */
+
+#ifdef NEED_SGI_SEMUN_HACK
+union semun_hack {
+        int val;
+        struct semid_ds *buf;
+        unsigned short *array;
+       char __dummy[5];
+};
+#define semun semun_hack
+#endif /* SGI_SEMUN_HACK */
+endif /* HAVE_SYSV_IPC */
 
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>

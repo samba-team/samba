@@ -1021,6 +1021,13 @@ if test x"$samba_cv_HAVE_SYSV_IPC" = x"yes"; then
     AC_DEFINE(HAVE_SYSV_IPC)
 fi
 
+AC_CACHE_CHECK([for IRIX sysv ipc semun problem using gcc],samba_cv_NEED_SGI_SEMUN_HACK,[
+AC_TRY_RUN([#include "${srcdir-.}/tests/sgi_sysv_hack.c"],
+           samba_cv_NEED_SGI_SEMUN_HACK=yes,samba_cv_NEED_SGI_SEMUN_HACK=no,samba_cv_NEED_SGI_SEMUN_HACK=cross)])
+if test x"$samba_cv_NEED_SGI_SEMUN_HACK" = x"yes"; then
+    AC_DEFINE(NEED_SGI_SEMUN_HACK)
+fi
+
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
            samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)])
