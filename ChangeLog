@@ -1,3 +1,34 @@
+Mon Jul 14 12:24:40 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c (krb5_verify_ap_req): record authenticator
+ 	subkey
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): always
+ 	generate a subkey.
+
+	* lib/krb5/address.c: implement `krb5_address_order'
+
+	* lib/gssapi/import_name.c: Implement `gss_import_name'
+
+	* lib/gssapi/external.c: Use new OID
+
+	* lib/gssapi/encapsulate.c: New functions
+ 	`gssapi_krb5_encap_length' and `gssapi_krb5_make_header'.  Changed
+	callers.
+
+	* lib/gssapi/decapsulate.c: New function
+ 	`gssaspi_krb5_verify_header'.  Changed callers.
+
+	* lib/asn1/gen*.c: Give tags to generated structs.
+	Use `err' and `asprintf'
+
+	* appl/test/gss_common.c: new file
+
+	* appl/test/gssapi_server.c: removed all krb5 calls
+
+	* appl/telnet/libtelnet/kerberos5.c: Add support for genering and
+ 	verifying checksums.  Also start using session subkeys.
+
 Mon Jul 14 12:08:25 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/rd_req.c (krb5_rd_req_with_keyblock): Split up.
