@@ -1420,7 +1420,7 @@ BOOL pdb_set_domain (SAM_ACCOUNT *sampass, char *domain)
 {
 	if (sampass)
 	{
-		sampass->username = strdup(domain);
+		sampass->domain = strdup(domain);
 		return True;
 	}
 	
@@ -1431,7 +1431,7 @@ BOOL pdb_set_nt_username (SAM_ACCOUNT *sampass, char *nt_username)
 {
 	if (sampass)
 	{
-		sampass->username = strdup(nt_username);
+		sampass->nt_username = strdup(nt_username);
 		return True;
 	}
 	
