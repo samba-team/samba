@@ -27,7 +27,6 @@ static struct smbw_file *smbw_files;
 static struct smbw_server *smbw_srvs;
 
 struct bitmap *smbw_file_bmap;
-extern pstring global_myname;
 
 fstring smbw_prefix = SMBW_PREFIX;
 
@@ -79,7 +78,8 @@ void smbw_init(void)
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 
-	get_myname(global_myname);
+	if (!init_names())
+		exit(1);
 
 	if ((p=smbw_getshared("DEBUG"))) {
 		DEBUGLEVEL = atoi(p);
@@ -461,7 +461,7 @@ struct smbw_server *smbw_server(char *server, char *share)
 		return NULL;
 	}
 
-	make_nmb_name(&calling, global_myname, 0x0);
+	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("server_n=[%s] server=[%s]\n", server_n, server));
