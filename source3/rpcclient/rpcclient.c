@@ -459,7 +459,7 @@ enum client_action
 
 	TimeInit();
 	charset_initialise();
-	crc32_build_table();
+/*	crc32_build_table(); */
 
 	myumask = umask(0);
 	umask(myumask);
