@@ -189,8 +189,10 @@ man_MANS =					\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_principal.3			\
+	krb5_rcache.3				\
 	krb5_set_default_realm.3		\
 	krb5_storage.3				\
+	krb5_string_to_key.3			\
 	krb5_ticket.3				\
 	krb5_timeofday.3			\
 	krb5_unparse_name.3			\
