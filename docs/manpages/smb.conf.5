@@ -832,22 +832,8 @@ does what you expect.
 
 .SS alternate permissions (S)
 
-This option affects the way the "read only" DOS attribute is produced
-for UNIX files. If this is false then the read only bit is set for
-files on writeable shares which the user cannot write to.
-
-If this is true then it is set for files whos user write bit is not set.
-
-The latter behaviour is useful for when users copy files from each
-others directories, and use a file manager that preserves
-permissions. Without this option they may get annoyed as all copied
-files will have the "read only" bit set.
-
-.B Default:
-	alternate permissions = no
-
-.B Example:
-	alternate permissions = yes
+This option is deprecated and is only included for backward
+compatibility. 
 
 .SS available (S)
 This parameter lets you 'turn off' a service. If 'available = no', then
