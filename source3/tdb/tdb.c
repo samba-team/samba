@@ -611,24 +611,31 @@ static int expand_file(TDB_CONTEXT *tdb, tdb_off size, tdb_off addition)
 #else
 	char b = 0;
 
+#ifdef HAVE_PWRITE
+	if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {
+#else
 	if (lseek(tdb->fd, (size+addition) - 1, SEEK_SET) != (size+addition) - 1 || 
 	    write(tdb->fd, &b, 1) != 1) {
+#endif
 		TDB_LOG((tdb, 0, "expand_file to %d failed (%s)\n", 
 			   size+addition, strerror(errno)));
 		return -1;
 	}
 #endif
 
-	/* now fill the file with something. This ensures that the
-	   file isn't sparse, which would be very bad if we ran out of
-	   disk. This must be done with write, not via mmap */
+	/* now fill the file with something. This ensures that the file isn't sparse, which would be
+	   very bad if we ran out of disk. This must be done with write, not via mmap */
 	memset(buf, 0x42, sizeof(buf));
 	while (addition) {
 		int n = addition>sizeof(buf)?sizeof(buf):addition;
+#ifdef HAVE_PWRITE
+		int ret = pwrite(tdb->fd, buf, n, size);
+#else
 		int ret;
 		if (lseek(tdb->fd, size, SEEK_SET) != size)
 			return -1;
 		ret = write(tdb->fd, buf, n);
+#endif
 		if (ret != n) {
 			TDB_LOG((tdb, 0, "expand_file write of %d failed (%s)\n", 
 				   n, strerror(errno)));
