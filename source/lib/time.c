@@ -74,6 +74,7 @@ static int tm_diff(struct tm *a, struct tm *b)
   int hours = 24*days + (a->tm_hour - b->tm_hour);
   int minutes = 60*hours + (a->tm_min - b->tm_min);
   int seconds = 60*minutes + (a->tm_sec - b->tm_sec);
+
   return seconds;
 }
 
@@ -279,7 +280,7 @@ void put_long_date(char *p,time_t t)
   }
 
   /* this converts GMT to kludge-GMT */
-  t -= TimeDiff(t) - serverzone; 
+  t -= LocTimeDiff(t) - serverzone; 
 
   d = (double) (t);
 
