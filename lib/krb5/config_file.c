@@ -202,7 +202,7 @@ print_config (FILE *f, krb5_config_section *c)
     return 0;
 }
 
-const char *
+const void *
 krb5_config_get_next (krb5_config_section *c,
 		      krb5_config_binding **pointer,
 		      int type,
@@ -217,7 +217,7 @@ krb5_config_get_next (krb5_config_section *c,
     return ret;
 }
 
-const char *
+const void *
 krb5_config_vget_next (krb5_config_section *c,
 		       krb5_config_binding **pointer,
 		       int type,
@@ -228,55 +228,56 @@ krb5_config_vget_next (krb5_config_section *c,
 
     if (*pointer == NULL) {
 	b = c;
+	p = va_arg(args, const char *);
+	if (p == NULL)
+	    return NULL;
     } else {
 	b = *pointer;
+	p = b->name;
+	b = b->next;
     }
-
-    p = va_arg(args, const char *);
-    if (p == NULL)
-	return NULL;
 
     while (b) {
 	if (strcmp (b->name, p) == 0) {
-	    p = va_arg(args, const char *);
-	    if (b->type == STRING) {
-		if (type == STRING) {
-		    if (p == NULL) {
-			*pointer = b;
-			return b->u.string;
-		    } else {
-			return NULL;
-		    }
-		} else if (type == LIST) {
-		    return NULL;
-		} else {
-		    abort ();
-		}
-	    } else if(b->type == LIST) {
-		if (type == STRING) {
-		    if (p == NULL) {
-			return NULL;
-		    } else {
-			b = b->u.list;
-		    }
-		} else if (type == LIST) {
-		    if (p == NULL) {
-			*pointer = b;
-			return b->u.string; /* XXX */
-		    } else {
-			b = b->u.list;
-		    }
-		} else {
-		    abort ();
-		}
+	    if (*pointer == NULL)
+		p = va_arg(args, const char *);
+	    else
+		p = NULL;
+	    if (type == b->type && p == NULL) {
+		*pointer = b;
+		return b->u.generic;
+	    } else if(b->type == LIST && p != NULL) {
+		b = b->u.list;
 	    } else {
-		abort ();
+		return NULL;
 	    }
 	} else {
 	    b = b->next;
 	}
     }
     return NULL;
+}
+
+const krb5_config_binding *
+krb5_config_get_list (krb5_config_section *c,
+		      ...)
+{
+    const krb5_config_binding *ret;
+    va_list args;
+
+    va_start(args, c);
+    ret = krb5_config_vget_list (c, args);
+    va_end(args);
+    return ret;
+}
+
+const krb5_config_binding *
+krb5_config_vget_list (krb5_config_section *c,
+			 va_list args)
+{
+    krb5_config_binding *foo = NULL;
+    return (const krb5_config_binding *)
+	    krb5_config_vget_next(c, &foo, LIST, args);
 }
 
 const char *
