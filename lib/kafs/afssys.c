@@ -472,6 +472,18 @@ k_pioctl(char *a_path,
 }
 
 int
+k_afs_cell_of_file(const char *path, char *cell, int len)
+{
+    struct ViceIoctl parms;
+    memset(&parms, 0, sizeof(parms));
+    parms.in = NULL;
+    parms.in_size = 0;
+    parms.out = cell;
+    parms.out_len = len;
+    return k_pioctl((char*)path, VIOC_FILE_CELL_NAME, &parms, 1);
+}
+
+int
 k_unlog(void)
 {
   struct ViceIoctl parms;

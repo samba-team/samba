@@ -16,10 +16,9 @@
 #define _VICEIOCTL(id)  ((unsigned int ) _IOW('V', id, struct ViceIoctl))
 #endif /* _VICEIOCTL */
 
-#define VIOCSETTOK _VICEIOCTL(3)
-#define VIOCUNLOG  _VICEIOCTL(9)
-
-#define VIOC_FILE_CELL_NAME _VICEIOCTL(30)
+#define VIOCSETTOK		_VICEIOCTL(3)
+#define VIOCUNLOG		_VICEIOCTL(9)
+#define VIOC_FILE_CELL_NAME	_VICEIOCTL(30)
 
 struct ViceIoctl {
   caddr_t in, out;
@@ -47,6 +46,7 @@ int k_pioctl __P((char *a_path,
 		  int a_followSymlinks));
 int k_unlog __P((void));
 int k_setpag __P((void));
+int k_afs_cell_of_file __P((const char *path, char *cell, int len));
 
 #define _PATH_VICE		"/usr/vice/etc/"
 #define _PATH_THISCELL 		_PATH_VICE "ThisCell"
