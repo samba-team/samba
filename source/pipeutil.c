@@ -106,10 +106,10 @@ char *dom_sid_to_string(DOM_SID *sid)
   static pstring sidstr;
   char subauth[16];
   int i;
-  uint32 ia = (sid->id_auth[0]) +
-              (sid->id_auth[1] << 8 ) +
-              (sid->id_auth[2] << 16) +
-              (sid->id_auth[3] << 24);
+  uint32 ia = (sid->id_auth[5]) +
+              (sid->id_auth[4] << 8 ) +
+              (sid->id_auth[3] << 16) +
+              (sid->id_auth[2] << 24);
 
   sprintf(sidstr, "S-%d-%d", sid->sid_rev_num, ia);
 
