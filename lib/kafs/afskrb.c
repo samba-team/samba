@@ -108,6 +108,7 @@ krb_afslog_uid_home(const char *cell, const char *realm_hint, uid_t uid,
 {
     kafs_data kd;
 
+    kd.name = "krb4";
     kd.afslog_uid = afslog_uid_int;
     kd.get_cred = get_cred;
     kd.get_realm = get_realm;
@@ -142,6 +143,7 @@ krb_realm_of_cell(const char *cell, char **realm)
 {
     kafs_data kd;
 
+    kd.name = "krb4";
     kd.get_realm = get_realm;
     return _kafs_realm_of_cell(&kd, cell, realm);
 }
