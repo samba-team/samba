@@ -56,7 +56,7 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state);
-enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state);
 
 /*The following definitions come from  nsswitch/winbindd_idmap.c  */
 

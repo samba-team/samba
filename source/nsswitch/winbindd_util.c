@@ -712,7 +712,7 @@ static struct cmdstr_table cmdstr_table[] = {
 	{ WINBINDD_SETPWENT, "setpwent" },
 	{ WINBINDD_ENDPWENT, "endpwent" },
 	{ WINBINDD_GETPWENT, "getpwent" },
-	{ WINBINDD_INITGROUPS, "initgroups" },
+	{ WINBINDD_GETGROUPS, "getgroups" },
 
 	/* Group functions */
 

@@ -32,6 +32,31 @@ enum nss_status winbindd_request(int req_type,
 				 struct winbindd_request *request,
 				 struct winbindd_response *response);
 
+static BOOL wbinfo_get_usergroups(char *user)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	int result, i;
+	
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.username, user);
+
+	result = winbindd_request(WINBINDD_GETGROUPS, &request, &response);
+
+	if (result != NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	for (i = 0; i < response.data.num_entries; i++) {
+		printf("%d\n", ((gid_t *)response.extra_data)[i]);
+	}
+
+	return True;
+}
+
 /* List trusted domains */
 
 static BOOL wbinfo_list_domains(void)
@@ -43,8 +68,8 @@ static BOOL wbinfo_list_domains(void)
 
 	/* Send request */
 
-	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -64,25 +89,6 @@ static BOOL wbinfo_list_domains(void)
 
 static BOOL wbinfo_check_secret(void)
 {
-	struct winbindd_response response;
-	BOOL result;
-
-	ZERO_STRUCT(response);
-
-	result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
-		NSS_STATUS_SUCCESS;
-
-	if (result) {
-
-		if (response.data.num_entries) {
-			printf("Secret is good\n");
-		} else {
-			printf("Secret is bad\n");
-		}
-
-		return True;
-	}
-
 	return False;
 }
 
@@ -99,8 +105,8 @@ static BOOL wbinfo_uid_to_sid(uid_t uid)
 	/* Send request */
 
 	request.data.uid = uid;
-	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_UID_TO_SID, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -124,8 +130,8 @@ static BOOL wbinfo_gid_to_sid(gid_t gid)
 	/* Send request */
 
 	request.data.gid = gid;
-	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_GID_TO_SID, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -149,8 +155,8 @@ static BOOL wbinfo_sid_to_uid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_SID_TO_UID, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -172,8 +178,8 @@ static BOOL wbinfo_sid_to_gid(char *sid)
 	/* Send request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_SID_TO_GID, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -197,8 +203,8 @@ static BOOL wbinfo_lookupsid(char *sid)
 	/* Send off request */
 
 	fstrcpy(request.data.sid, sid);
-	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_LOOKUPSID, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -222,8 +228,8 @@ static BOOL wbinfo_lookupname(char *name)
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
-	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_LOOKUPNAME, &request, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
@@ -236,7 +242,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 /* Print domain users */
 
-static BOOL wbinfo_list_users(void)
+static BOOL print_domain_users(void)
 {
 	struct winbindd_response response;
 	fstring name;
@@ -245,15 +251,15 @@ static BOOL wbinfo_list_users(void)
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_LIST_USERS, NULL, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
 	/* Look through extra data */
 
 	if (!response.extra_data) {
-		return True;
+		return False;
 	}
 
 	while(next_token((char **)&response.extra_data, name, ",", 
@@ -266,22 +272,22 @@ static BOOL wbinfo_list_users(void)
 
 /* Print domain groups */
 
-static BOOL wbinfo_list_groups(void)
+static BOOL print_domain_groups(void)
 {
 	struct winbindd_response response;
 	fstring name;
 
 	ZERO_STRUCT(response);
 
-	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (winbindd_request(WINBINDD_LIST_GROUPS, NULL, &response) ==
+	    WINBINDD_ERROR) {
 		return False;
 	}
 
 	/* Look through extra data */
 
 	if (!response.extra_data) {
-		return True;
+		return False;
 	}
 
 	while(next_token((char **)&response.extra_data, name, ",", 
@@ -307,6 +313,7 @@ static void usage(void)
 	printf("\t-Y sid\tconverts sid to gid\n");
 	printf("\t-t\tcheck shared secret\n");
 	printf("\t-m\tlist trusted domains\n");
+	printf("\t-r user\tget user groups\n");
 }
 
 /* Main program */
@@ -346,16 +353,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tm")) != EOF) {
+	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:")) != EOF) {
 		switch (opt) {
 		case 'u':
-			if (!wbinfo_list_users()) {
+			if (!print_domain_users()) {
 				printf("Error looking up domain users\n");
 				return 1;
 			}
 			break;
 		case 'g':
-			if (!wbinfo_list_groups()) {
+			if (!print_domain_groups()) {
 				printf("Error looking up domain groups\n");
 				return 1;
 			}
@@ -409,6 +416,13 @@ int main(int argc, char **argv)
 		case 'm':
 			if (!wbinfo_list_domains()) {
 				printf("Could not list trusted domains\n");
+				return 1;
+			}
+			break;
+		case 'r':
+			if (!wbinfo_get_usergroups(optarg)) {
+				printf("Could not get groups for user %s\n", 
+				       optarg);
 				return 1;
 			}
 			break;

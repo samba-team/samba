@@ -219,7 +219,7 @@ static struct dispatch_table dispatch_table[] = {
 	{ WINBINDD_SETPWENT, winbindd_setpwent },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent },
 	{ WINBINDD_GETPWENT, winbindd_getpwent },
-	{ WINBINDD_INITGROUPS, winbindd_initgroups },
+	{ WINBINDD_GETGROUPS, winbindd_getgroups },
 
 	/* Group functions */
 
