@@ -215,9 +215,11 @@ void load_interfaces(void)
 		return;
 	}
 
-	while (*ptr) {
-		interpret_interface(*ptr);
-		ptr++;
+	if (ptr) {
+		while (*ptr) {
+			interpret_interface(*ptr);
+			ptr++;
+		}
 	}
 
 	if (!local_interfaces) {
