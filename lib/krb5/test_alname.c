@@ -38,7 +38,7 @@ RCSID("$Id$");
 static void
 test_alname(krb5_context context, krb5_realm realm,
 	    const char *user, const char *inst, 
-	    const char *localuser)
+	    const char *localuser, int ok)
 {
     krb5_principal p;
     char localname[1024];
@@ -54,14 +54,25 @@ test_alname(krb5_context context, krb5_realm realm,
 	krb5_err(context, 1, ret, "krb5_unparse_name");
 
     ret = krb5_aname_to_localname(context, p, sizeof(localname), localname);
-    if (ret)
-	krb5_err(context, 1, ret, "krb5_aname_to_localname: %s -> %s", princ, localuser);
-
     krb5_free_principal(context, p);
     free(princ);
+    if (ret) {
+	if (!ok)
+	    return;
+	krb5_err(context, 1, ret, "krb5_aname_to_localname: %s -> %s", 
+		 princ, localuser);
+    }
 
-    if (strcmp(localname, localuser) != 0)
-	errx(1, "compared failed foo != %s", localname);
+    if (strcmp(localname, localuser) != 0) {
+	if (ok)
+	    errx(1, "compared failed %s != %s (should have succeded)", 
+		 localname, localuser);
+    } else {
+	if (!ok)
+	    errx(1, "compared failed %s == %s (should have failed)", 
+		 localname, localuser);
+    }
+    
 }
 
 int
@@ -87,8 +98,21 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_get_default_realm");
 
-    test_alname(context, realm, user, NULL, user);
-    test_alname(context, realm, user, "root", "root");
+    test_alname(context, realm, user, NULL, user, 1);
+    test_alname(context, realm, user, "root", "root", 1);
+
+    test_alname(context, "FOO.BAR.BAZ.KAKA", user, NULL, user, 0);
+    test_alname(context, "FOO.BAR.BAZ.KAKA", user, "root", "root", 0);
+
+    test_alname(context, realm, user, NULL, 
+		"not-same-as-user", 0);
+    test_alname(context, realm, user, "root",
+		"not-same-as-user", 0);
+
+    test_alname(context, "FOO.BAR.BAZ.KAKA", user, NULL, 
+		"not-same-as-user", 0);
+    test_alname(context, "FOO.BAR.BAZ.KAKA", user, "root",
+		"not-same-as-user", 0);
 
     krb5_free_context(context);
 
