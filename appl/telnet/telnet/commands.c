@@ -452,7 +452,7 @@ togdebug()
     return 1;
 }
 
-#ifdef KRB4
+#if defined(KRB4) && defined(HAVE_KRB_DISABLE_DEBUG)
 #include <krb.h>
 
 static int
@@ -675,7 +675,7 @@ static struct togglelist Togglelist[] = {
 	    togdebug,
 		&debug,
 		    "turn on socket level debugging" },
-#ifdef KRB4
+#if defined(KRB4) && defined(HAVE_KRB_DISABLE_DEBUG)
     { "krb_debug",
       "kerberos 4 debugging",
       togkrbdebug,
