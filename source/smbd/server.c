@@ -5239,6 +5239,8 @@ static void usage(char *pname)
 
   strcpy(debugf,SMBLOGFILE);  
 
+  strcpy(remote_machine, "smb");
+
   setup_logging(argv[0],False);
 
   charset_initialise();
