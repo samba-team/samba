@@ -70,11 +70,6 @@ extract_ticket(krb5_context context,
     err = (*decrypt_proc)(context, key, decryptarg, rep);
     if (err)
 	return err;
-#if 0 /* moved to krb5_get_in_tkt */
-    memset (key->keyvalue.data, 0, key->keyvalue.length);
-    krb5_data_free (&key->keyvalue);
-    free (key);
-#endif
 
     principalname2krb5_principal(&creds->server, 
 				 rep->part1.ticket.sname, 
@@ -101,26 +96,7 @@ extract_ticket(krb5_context context,
 	creds->addresses.val = NULL;
     }
     creds->flags.b = rep->part2.flags;
-#if 0 /* What? */
-    if (rep->part2.req.values)
-	free (rep->part2.req.values);
-#endif
-#if 0
-    if (rep->part2.caddr.addrs) {
-	int i;
-
-	for (i = 0; i < rep->part2.caddr.number; ++i) {
-	    krb5_data_free (&rep->part2.caddr.addrs[i].address);
-	}
-	free (rep->part2.caddr.addrs);
-    }
-    krb5_principal_free (rep->part2.sname);
-    krb5_data_free (&rep->part2.srealm);
-#endif
 	  
-    if (err)
-	return err;
-
     creds->session.keyvalue.length = 0;
     creds->session.keyvalue.data   = NULL;
     creds->session.keytype = rep->part2.key.keytype;
@@ -129,7 +105,6 @@ extract_ticket(krb5_context context,
 			  rep->part2.key.keyvalue.length);
     memset (rep->part2.key.keyvalue.data, 0,
 	    rep->part2.key.keyvalue.length);
-    krb5_data_free (&rep->part2.key.keyvalue);
     creds->authdata.length = 0;
     creds->authdata.data = NULL;
 
@@ -323,7 +298,10 @@ krb5_get_in_tkt(krb5_context context,
     free (key);
 
     free_KDC_REP(&rep.part1);
+    free_EncTGSRepPart(&rep.part2);
     if(ret) 
 	return ret;
-    return krb5_cc_store_cred (context, ccache, creds);
+    ret = krb5_cc_store_cred (context, ccache, creds);
+    krb5_free_creds (context, creds);
+    return ret;
 }
