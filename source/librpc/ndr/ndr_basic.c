@@ -119,6 +119,18 @@ NTSTATUS ndr_pull_unique_ptr(struct ndr_pull *ndr, uint32_t *v)
 }
 
 /*
+  parse a ref pointer referent identifier
+*/
+NTSTATUS ndr_pull_ref_ptr(struct ndr_pull *ndr, uint32_t *v)
+{
+	NTSTATUS status;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, v));
+	/* ref pointers always point to data */
+	*v = 1;
+	return status;
+}
+
+/*
   parse a udlong
 */
 NTSTATUS ndr_pull_udlong(struct ndr_pull *ndr, int ndr_flags, uint64_t *v)
@@ -506,7 +518,7 @@ void ndr_push_restore(struct ndr_push *ndr, struct ndr_push_save *save)
 }
 
 /*
-  push a 1 if a pointer is non-NULL, otherwise 0
+  push a unique non-zero value if a pointer is non-NULL, otherwise 0
 */
 NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 {
@@ -518,6 +530,17 @@ NTSTATUS ndr_push_unique_ptr(struct ndr_push *ndr, const void *p)
 	return ndr_push_uint32(ndr, NDR_SCALARS, ptr);
 }
 
+/*
+  push always a 0, if a pointer is NULL it's a fatal error
+*/
+NTSTATUS ndr_push_ref_ptr(struct ndr_push *ndr, const void *p)
+{
+	uint32_t ptr = 0;
+	if (p == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+	return ndr_push_uint32(ndr, NDR_SCALARS, 0);
+}
 
 /*
   pull a general string from the wire
