@@ -252,10 +252,10 @@ edit_timet (const char *prompt, krb5_timestamp *value, int *mask, int bit)
 void
 deltat2str(unsigned t, char *str, size_t len)
 {
-    if(t)
-	unparse_time(t, str, len);
-    else
+    if(t == 0 || t == INT_MAX)
 	snprintf(str, len, "unlimited");
+    else
+	unparse_time(t, str, len);
 }
 
 /*
@@ -529,7 +529,7 @@ hex2n (char c)
     static char hexdigits[] = "0123456789abcdef";
     const char *p;
 
-    p = strchr (hexdigits, tolower(c));
+    p = strchr (hexdigits, tolower((int)c));
     if (p == NULL)
 	return -1;
     else
