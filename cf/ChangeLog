@@ -1,3 +1,9 @@
+2002-08-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* crypto.m4: newer openssl seems to take the address of the
+	schedule parameter to des_cbc_encrypt, so we need to feed it a
+	variable, not just NULL (from Magnus Holmberg)
+
 2002-05-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* misc.m4: change \100 back to @; some m4's (probably some regex)
@@ -44,6 +50,12 @@
 	* crypto.m4: am-conditionalise HAVE_OPENSSL
 
 	* db.m4: make it possible to run this twice
+
+	* Makefile.am.common: also install nodist_include_HEADERS
+
+2002-05-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* make-proto.pl: make it possible to redefine the "private" regexp
 
 2002-05-02  Johan Danielsson  <joda@pdc.kth.se>
 
