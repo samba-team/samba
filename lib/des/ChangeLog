@@ -1,3 +1,8 @@
+2003-08-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* sha.c: make the function threadsafe by removing static on the
+	local variable zeros
+
 2003-07-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rijndael-alg-fst.h,rijndael-alg-fst.c,aes.c,aes.h:
