@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -69,6 +69,7 @@ krb5_storage_from_fd(int fd)
 {
     krb5_storage *sp = malloc(sizeof(krb5_storage));
     sp->data = malloc(sizeof(fd_storage));
+    sp->host_byteorder = 0;
     FD(sp) = fd;
     sp->fetch = fd_fetch;
     sp->store = fd_store;
