@@ -899,6 +899,8 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	msg_count = IVAL(buf, 0);
 	msg_ptr = buf + 4;
 
+	DEBUG(5, ("receive_notify2_message_list: got %d messages in list\n", msg_count));
+
 	if (msg_count == 0)
 		goto bad_msg;
 
