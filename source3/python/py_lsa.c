@@ -54,11 +54,11 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 {
 	static char *kwlist[] = { "servername", "creds", "access", NULL };
 	char *server, *errstr;
-	PyObject *creds = NULL, *result;
+	PyObject *creds = NULL, *result = NULL;
 	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	NTSTATUS ntstatus;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	POLICY_HND hnd;
 
 	if (!PyArg_ParseTupleAndKeywords(
@@ -66,30 +66,35 @@ static PyObject *lsa_open_policy(PyObject *self, PyObject *args,
 		    &creds, &desired_access))
 		return NULL;
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_lsa_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_LSARPC, &errstr))) {
 		PyErr_SetString(lsa_error, errstr);
 		free(errstr);
 		return NULL;
 	}
 
 	if (!(mem_ctx = talloc_init())) {
-		PyErr_SetString(
-			lsa_error, "unable to init talloc context\n");
-		return NULL;
+		PyErr_SetString(lsa_error, "unable to init talloc context\n");
+		goto done;
 	}
 
 	ntstatus = cli_lsa_open_policy(cli, mem_ctx, True,
 				       SEC_RIGHTS_MAXIMUM_ALLOWED, &hnd);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		cli_shutdown(cli);
-		SAFE_FREE(cli);
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
-		return NULL;
+		goto done;
 	}
 
 	result = new_lsa_policy_hnd_object(cli, mem_ctx, &hnd);
+
+done:
+	if (!result) {
+		if (cli)
+			cli_shutdown(cli);
+
+		if (mem_ctx)
+			talloc_destroy(mem_ctx);
+	}
 
 	return result;
 }
@@ -259,7 +264,7 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 {
 	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
 	NTSTATUS ntstatus;
-	uint32 enum_ctx = 0, num_domains, i;
+	uint32 enum_ctx = 0, num_domains, i, pref_num_domains = 0;
 	char **domain_names;
 	DOM_SID *domain_sids;
 	PyObject *result;
@@ -267,10 +272,9 @@ static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, ""))
 		return NULL;
 	
-	ntstatus = cli_lsa_enum_trust_dom(hnd->cli, hnd->mem_ctx,
-					  &hnd->pol, &enum_ctx,
-					  &num_domains, &domain_names,
-					  &domain_names, &domain_sids);
+	ntstatus = cli_lsa_enum_trust_dom(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, &enum_ctx,
+		&pref_num_domains, &num_domains, &domain_names, &domain_sids);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
