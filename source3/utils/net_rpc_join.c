@@ -212,7 +212,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
-		d_printf("Create of workstation account failed\n");
+		d_printf("Creation of workstation account failed\n");
 
 		/* If NT_STATUS_ACCESS_DENIED then we have a valid
 		   username/password combo but the user does not have

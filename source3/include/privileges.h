@@ -1,3 +1,4 @@
+
 /* 
    Unix SMB/CIFS implementation.
    SMB parameters and setup
@@ -59,6 +60,7 @@ typedef struct {
 
 /* defined in lib/privilegs.c */
 
+extern const SE_PRIV se_priv_none;
 extern const SE_PRIV se_machine_account;
 extern const SE_PRIV se_print_operator;
 extern const SE_PRIV se_add_users;
