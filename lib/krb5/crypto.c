@@ -217,6 +217,8 @@ DES_string_to_key_int(unsigned char *data, size_t length, DES_cblock *key)
     DES_cbc_cksum((void*)data, key, length, &schedule, key);
     memset(&schedule, 0, sizeof(schedule));
     DES_set_odd_parity(key);
+    if(DES_is_weak_key(key))
+	(*key)[7] ^= 0xF0;
 }
 
 static krb5_error_code
