@@ -284,8 +284,8 @@ typedef union {
 #define KRB5_GC_USER_USER	2
 
 /* constants for compare_creds (and cc_retrieve_cred) */
-#define KRB5_TC_DONT_MATCH_REALM	(1 << 31)
-#define KRB5_TC_MATCH_KEYTYPE		(1 << 30)
+#define KRB5_TC_DONT_MATCH_REALM	(1U << 31)
+#define KRB5_TC_MATCH_KEYTYPE		(1U << 30)
 
 typedef AuthorizationData krb5_authdata;
 
