@@ -34,6 +34,8 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	fstring sidstr;
 	int i;
 
+	printf("REVISION:%x TYPE:%x\n", sd->revision, sd->type);
+
 	/* Print owner and group sid */
 
 	if (sd->owner_sid) {
@@ -42,7 +44,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		fstrcpy(sidstr, "");
 	}
 
-	printf("%s\n", sidstr);
+	printf("OWNER:%s\n", sidstr);
 
 	if (sd->grp_sid) {
 		sid_to_string(sidstr, sd->grp_sid);
@@ -50,23 +52,127 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		fstrcpy(sidstr, "");
 	}
 
-	fprintf(f, "%s\n", sidstr);
+	fprintf(f, "GROUP:%s\n", sidstr);
 
 	/* Print aces */
-
-	if (!sd->dacl) {
-		return;
-	}
-
-	for (i = 0; i < sd->dacl->num_aces; i++) {
+	for (i = 0; sd->dacl && i < sd->dacl->num_aces; i++) {
 		SEC_ACE *ace = &sd->dacl->ace[i];
 		fstring sidstr;
 
 		sid_to_string(sidstr, &ace->sid);
 
-		fprintf(f, "%d %d 0x%08x %s\n", ace->type, ace->flags,
+		fprintf(f, "DACL:%x:%x:%08x:%s\n", ace->type, ace->flags,
 			ace->info.mask, sidstr);
 	}
+
+	for (i = 0; sd->sacl && i < sd->sacl->num_aces; i++) {
+		SEC_ACE *ace = &sd->sacl->ace[i];
+		fstring sidstr;
+
+		sid_to_string(sidstr, &ace->sid);
+
+		fprintf(f, "SACL:%x:%x:%08x:%s\n", ace->type, ace->flags,
+			ace->info.mask, sidstr);
+	}
+}
+
+
+/* add an ACE to a list of ACEs in a SEC_ACL */
+static BOOL add_acl(SEC_ACL **acl, SEC_ACE *ace)
+{
+	if (! *acl) {
+		*acl = (SEC_ACL *)calloc(1, sizeof(*acl));
+		if (! *acl) return False;
+		(*acl)->revision = 3;
+	}
+
+	(*acl)->ace = Realloc((*acl)->ace,(1+((*acl)->num_aces))*sizeof(SEC_ACE));
+	if (!(*acl)->ace) return False;
+	memcpy(&((*acl)->ace[(*acl)->num_aces]), ace, sizeof(SEC_ACE));
+	(*acl)->num_aces++;
+	return True;
+}
+
+/* parse a ascii version of a security descriptor */
+static SEC_DESC *sec_desc_parse(char *str)
+{
+	char *p = str;
+	fstring tok;
+	SEC_DESC *sd, *ret;
+	int sd_size;
+
+	sd = (SEC_DESC *)calloc(1, sizeof(SEC_DESC));
+	if (!sd) return NULL;
+
+	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
+
+		if (strncmp(tok,"REVISION:", 9) == 0) {
+			sd->revision = strtol(tok+9, NULL, 16);
+		}
+
+		if (strncmp(tok,"TYPE:", 5) == 0) {
+			sd->type = strtol(tok+5, NULL, 16);
+		}
+
+		if (strncmp(tok,"OWNER:", 6) == 0) {
+			sd->owner_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
+			if (!sd->owner_sid ||
+			    !string_to_sid(sd->owner_sid, tok+6)) {
+				printf("Failed to parse owner sid\n");
+				return NULL;
+			}
+		}
+
+		if (strncmp(tok,"GROUP:", 6) == 0) {
+			sd->grp_sid = (DOM_SID *)calloc(1, sizeof(DOM_SID));
+			if (!sd->grp_sid ||
+			    !string_to_sid(sd->grp_sid, tok+6)) {
+				printf("Failed to parse group sid\n");
+				return NULL;
+			}
+		}
+
+		if (strncmp(tok,"DACL:", 5) == 0) {
+			fstring s;
+			unsigned atype, aflags, amask;
+			SEC_ACE ace;
+			ZERO_STRUCT(ace);
+			if (sscanf(tok+5, "%x:%x:%08x:%s", 
+				   &atype, &aflags, &amask,s) != 4 ||
+			    !string_to_sid(&ace.sid, s)) {
+				printf("Failed to parse DACL\n");
+				return NULL;
+			}
+			ace.type = atype;
+			ace.flags = aflags;
+			ace.info.mask = amask;
+			add_acl(&sd->dacl, &ace);
+		}
+
+		if (strncmp(tok,"SACL:", 5) == 0) {
+			fstring s;
+			unsigned atype, aflags, amask;
+			SEC_ACE ace;
+			ZERO_STRUCT(ace);
+			if (sscanf(tok+5, "%x:%x:%08x:%s", 
+				   &atype, &aflags, &amask,s) != 4 ||
+			    !string_to_sid(&ace.sid, s)) {
+				printf("Failed to parse SACL\n");
+				return NULL;
+			}
+			ace.type = atype;
+			ace.flags = aflags;
+			ace.info.mask = amask;
+			add_acl(&sd->sacl, &ace);
+		}
+	}
+
+	ret = make_sec_desc(sd->revision, sd->type, sd->owner_sid, sd->grp_sid, 
+			    sd->sacl, sd->dacl, &sd_size);
+
+	free_sec_desc(&sd);
+
+	return ret;
 }
 
 
@@ -94,6 +200,38 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	}
 
 	sec_desc_print(stdout, sd);
+
+	free_sec_desc(&sd);
+
+	cli_close(cli, fnum);
+}
+
+/***************************************************** 
+set the ACLs on a file given an ascii description
+*******************************************************/
+static void cacl_set(struct cli_state *cli, char *filename, char *set_acl)
+{
+	int fnum;
+	SEC_DESC *sd;
+
+	sd = sec_desc_parse(set_acl);
+	if (!sd) {
+		printf("Failed to parse security descriptor\n");
+		return;
+	}
+
+	fnum = cli_open(cli, filename, O_RDONLY, 0);
+	if (fnum == -1) {
+		printf("Failed to open %s\n", filename);
+		return;
+	}
+
+	/* sec_desc_print(stdout, sd); */
+
+	if (!cli_set_secdesc(cli, fnum, sd)) {
+		printf("ERROR: secdesc set failed\n");
+		return;
+	}
 
 	free_sec_desc(&sd);
 
@@ -215,6 +353,7 @@ static void usage(void)
 	int seed;
 	static pstring servicesf = CONFIGFILE;
 	struct cli_state *cli;
+	char *set_acl = NULL;
 
 	setlinebuf(stdout);
 
@@ -247,7 +386,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:h")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:hs:")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -257,6 +396,9 @@ static void usage(void)
 				pstrcpy(password, p+1);
 				got_pass = 1;
 			}
+			break;
+		case 's':
+			set_acl = optarg;
 			break;
 		case 'h':
 			usage();
@@ -273,7 +415,11 @@ static void usage(void)
 	cli = connect_one(share);
 	if (!cli) exit(1);
 
-	cacl_dump(cli, filename);
+	if (set_acl) {
+		cacl_set(cli, filename, set_acl);
+	} else {
+		cacl_dump(cli, filename);
+	}
 
 	return(0);
 }
