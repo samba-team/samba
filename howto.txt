@@ -135,3 +135,30 @@ simulate it by using the option:
 that will place all extra file attributes (NT ACLs, DOS EAs, streams
 etc), in that tdb. It is not efficient, and doesn't scale well, but at
 least it gives you a choice when you don't have a modern filesystem.
+
+Testing your filesystem
+-----------------------
+
+To test your filesystem support, install the 'attr' package and run
+the following 4 commands as root:
+
+  touch test.txt
+  setfattr -n user.test -v test test.txt
+  setfattr -n security.test -v test2 test.txt
+  getfattr -d test.txt
+  getfattr -d system.txt
+
+You should see output like this:
+
+  # file: test.txt
+  user.test="test"
+
+  # file: test.txt
+  security.test="test2"
+
+If you get any "Operation not supported" errors then it means your
+kernel is not configured correctly, or your filesystem is not mounted
+with the right options.
+
+If you get any "Operation not permitted" errors then it probably means
+you didn't try the test as root.
