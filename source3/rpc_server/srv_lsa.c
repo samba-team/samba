@@ -668,9 +668,21 @@ static const struct api_struct api_lsa_cmds[] =
 	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
 	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
 	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
+	/* be careful of the adding of new RPC's.  See commentrs below about
+	   ADS DC capabilities                                               */
 	{ "LSA_QUERYINFO2"      , LSA_QUERYINFO2      , api_lsa_query_info2      }
 };
+/*
+ * NOTE: Certain calls can not be enabled if we aren't an ADS DC.  Make sure
+ * these calls are always last and that you decrement by the amount of calls
+ * to disable.
+ */
+  int funcs = sizeof(api_lsa_cmds) / sizeof(struct api_struct);
+
+  if (!(SEC_ADS == lp_security() && ROLE_DOMAIN_PDC == lp_server_role())) {
+	  funcs -= 1;
+  }
 
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsass", api_lsa_cmds, 
-				    sizeof(api_lsa_cmds) / sizeof(struct api_struct));
+				    funcs);
 }
