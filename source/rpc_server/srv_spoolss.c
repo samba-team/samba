@@ -759,6 +759,17 @@ static BOOL api_spoolss_addprinterex(uint16 vuid, prs_struct *data, prs_struct *
 		return False;
 	}
 	
+	if (q_u.info.info_ptr!=0) {
+		switch (q_u.info.level) {
+			case 1:
+				safe_free(q_u.info.info_1);
+				break;
+			case 2:
+				safe_free(q_u.info.info_2);
+				break;
+		}
+	}
+		
 	return True;
 }
 

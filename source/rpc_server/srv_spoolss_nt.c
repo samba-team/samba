@@ -2855,9 +2855,10 @@ uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
 			break;
+		default:
+			return ERROR_INVALID_LEVEL;
+			break;
 	}
-
-	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
 /****************************************************************************

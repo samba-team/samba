@@ -3046,6 +3046,36 @@ BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, 
 }
 
 /*******************************************************************
+ Parse a SPOOL_PRINTER_INFO_LEVEL_1 structure.
+********************************************************************/  
+BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth)
+{	
+	prs_debug(ps, depth, desc, "spool_io_printer_info_level_1");
+	depth++;
+		
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("flags", ps, depth, &il->flags))
+		return False;
+	if(!prs_uint32("description_ptr", ps, depth, &il->description_ptr))
+		return False;
+	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
+		return False;
+	if(!prs_uint32("comment_ptr", ps, depth, &il->comment_ptr))
+		return False;
+		
+	if(!smb_io_unistr2("description", &il->description, il->description_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("name", &il->name, il->name_ptr, ps, depth))
+		return False;
+	if(!smb_io_unistr2("comment", &il->comment, il->comment_ptr, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a SPOOL_PRINTER_INFO_LEVEL_2 structure.
 ********************************************************************/  
 BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
@@ -3142,8 +3172,10 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 	
 	/* if no struct inside just return */
 	if (il->info_ptr==0) {
-		if (UNMARSHALLING(ps))
+		if (UNMARSHALLING(ps)) {
+			il->info_1=NULL;
 			il->info_2=NULL;
+		}
 		return True;
 	}
 			
@@ -3158,6 +3190,12 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 		 * level 2 is used by addprinter
 		 * and by setprinter when updating printer's info
 		 */	
+		case 1:
+			if (UNMARSHALLING(ps))
+				il->info_1=(SPOOL_PRINTER_INFO_LEVEL_1 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_1));
+			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
+				return False;
+			break;		
 		case 2:
 			if (UNMARSHALLING(ps))
 				il->info_2=(SPOOL_PRINTER_INFO_LEVEL_2 *)malloc(sizeof(SPOOL_PRINTER_INFO_LEVEL_2));
