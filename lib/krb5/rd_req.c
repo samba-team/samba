@@ -68,7 +68,8 @@ static krb5_error_code
 decrypt_authenticator (krb5_context context,
 		       EncryptionKey *key,
 		       EncryptedData *enc_part,
-		       Authenticator *authenticator)
+		       Authenticator *authenticator,
+		       krb5_key_usage usage)
 {
     krb5_error_code ret;
     krb5_data plain;
@@ -80,9 +81,16 @@ decrypt_authenticator (krb5_context context,
 	return ret;
     ret = krb5_decrypt_EncryptedData (context,
 				      crypto,
-				      KRB5_KU_AP_REQ_AUTH,
+				      usage /* KRB5_KU_AP_REQ_AUTH */,
 				      enc_part,
 				      &plain);
+    /* for backwards compatibility, also try the old usage */
+    if (ret && usage == KRB5_KU_TGS_REQ_AUTH)
+	ret = krb5_decrypt_EncryptedData (context,
+					  crypto,
+					  KRB5_KU_AP_REQ_AUTH,
+					  enc_part,
+					  &plain);
     krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
@@ -230,6 +238,28 @@ krb5_verify_ap_req(krb5_context context,
 		   krb5_flags *ap_req_options,
 		   krb5_ticket **ticket)
 {
+    return krb5_verify_ap_req2 (context,
+				auth_context,
+				ap_req,
+				server,
+				keyblock,
+				flags,
+				ap_req_options,
+				ticket,
+				KRB5_KU_AP_REQ_AUTH);
+}
+
+krb5_error_code
+krb5_verify_ap_req2(krb5_context context,
+		    krb5_auth_context *auth_context,
+		    krb5_ap_req *ap_req,
+		    krb5_const_principal server,
+		    krb5_keyblock *keyblock,
+		    krb5_flags flags,
+		    krb5_flags *ap_req_options,
+		    krb5_ticket **ticket,
+		    krb5_key_usage usage)
+{
     krb5_ticket t;
     krb5_auth_context ac;
     krb5_error_code ret;
@@ -270,7 +300,8 @@ krb5_verify_ap_req(krb5_context context,
     ret = decrypt_authenticator (context,
 				 &t.ticket.key,
 				 &ap_req->authenticator,
-				 ac->authenticator);
+				 ac->authenticator,
+				 usage);
     if (ret)
 	goto out2;
 
