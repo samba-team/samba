@@ -45,11 +45,9 @@ ADD_OBJ_FILES = \
 		lib/smbpasswd.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
-		lib/account_pol.o \
 		lib/gencache.o \
 		lib/module.o \
 		lib/mutex.o \
-		lib/ldap_escape.o \
 		lib/events.o \
 		lib/crypto/crc32.o \
 		lib/crypto/md5.o \
