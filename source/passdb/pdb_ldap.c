@@ -443,7 +443,7 @@ static int ldapsam_open(struct ldapsam_privates *ldap_state)
 
 	if ((ldap_state->ldap_struct != NULL) && ((ldap_state->last_ping + LDAPSAM_DONT_PING_TIME) < time(NULL))) {
 		struct sockaddr_un addr;
-		socklen_t len;
+		socklen_t len = sizeof(addr);
 		int sd;
 		if (ldap_get_option(ldap_state->ldap_struct, LDAP_OPT_DESC, &sd) == 0 &&
 		    getpeername(sd, (struct sockaddr *) &addr, &len) < 0) {
