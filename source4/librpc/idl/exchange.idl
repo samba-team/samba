@@ -6,7 +6,7 @@
  */
 
 [
-	uuid(99e64010-b032-11d0-97a4-00c04fd6551d),
+	uuid("99e64010-b032-11d0-97a4-00c04fd6551d"),
 	version(3.0)
 ] interface exchange_store_admin3
 {
@@ -15,7 +15,7 @@
 
 
 [
-	uuid(89742ace-a9ed-11cf-9c0c-08002be7ae86),
+	uuid("89742ace-a9ed-11cf-9c0c-08002be7ae86"),
 	version(2.0)
 ] interface exchange_store_admin2
 {
@@ -23,7 +23,7 @@
 }
 
 [
-	uuid(a4f1db00-ca47-1067-b31e-00dd010662da),
+	uuid("a4f1db00-ca47-1067-b31e-00dd010662da"),
 	version(1.0)
 ] interface exchange_store_admin1
 {
@@ -32,7 +32,7 @@
 
 
 [
-	uuid(1544f5e0-613c-11d1-93df-00c04fd7bd09),
+	uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
 	version(1.0),
 	helpstring("Exchange 2003 Directory Request For Response")
 ] interface exchange_ds_rfr
@@ -47,7 +47,7 @@
 }
 
 [
-	uuid(f930c514-1215-11d3-99a5-00a0c9b61b04),
+	uuid("f930c514-1215-11d3-99a5-00a0c9b61b04"),
 	helpstring("System Attendant Cluster Interface"),
 	version(1.0)
 ] interface exchange_sysatt_cluster
@@ -61,7 +61,7 @@ System Attendant Private Interface
 */
 
 [
-	uuid(469d6ec0-0d87-11ce-b13f-00aa003bac6c),
+	uuid("469d6ec0-0d87-11ce-b13f-00aa003bac6c"),
 	helpstring("Exchange 5.5 System Attendant Request for Response")
 ] interface exchange_system_attendant
 {
@@ -69,7 +69,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(9e8ee830-4559-11ce-979b-00aa005ffebe),
+	uuid("9e8ee830-4559-11ce-979b-00aa005ffebe"),
 	version(2.0),
 	helpstring("Exchange 5.5 MTA")
 ] interface exchange_mta
@@ -84,7 +84,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(f5cc59b4-4264-101a-8c59-08002b2f8426),
+	uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
 	version(21.0),
 	helpstring("Exchange 5.5 DRS")
 ] interface exchange_drs
@@ -121,7 +121,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(f5cc5a7c-4264-101a-8c59-08002b2f8426),
+	uuid("f5cc5a7c-4264-101a-8c59-08002b2f8426"),
 	version(21.0),
 	helpstring("Exchange 5.5 XDS")
 ] interface exchange_xds
@@ -130,7 +130,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(38a94e72-a9bc-11d2-8faf-00c04fa378ff),
+	uuid("38a94e72-a9bc-11d2-8faf-00c04fa378ff"),
 	version(1.0)
 ] interface exchange_mta_qadmin
 {
@@ -139,7 +139,7 @@ System Attendant Private Interface
 
 
 [
-	uuid(0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde),
+	uuid("0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde"),
 	version(1.0)
 ] interface exchange_store_information
 {
@@ -147,7 +147,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(f5cc5a18-4264-101a-8c59-08002b2f8426),
+	uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
 	version(56.0),
 	helpstring("Exchange 5.5 Name Service Provider")
 ] interface exchange_nsp
@@ -176,7 +176,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(a4f1db00-ca47-1067-b31f-00dd010662da),
+	uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
 	version(0.81),
 	helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
@@ -223,7 +223,7 @@ System Attendant Private Interface
 }
 
 [
-	uuid(c840a7dc-42c0-1a10-b4b9-08002b2fe182),
+	uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
 	helpstring("Unknwon")
 ] interface exchange_unknown
 {

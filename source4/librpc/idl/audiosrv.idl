@@ -1,5 +1,5 @@
 [
-	uuid(0a74ef1c-41a4-4e06-83ae-dc74fb1cdd53),
+	uuid("0a74ef1c-41a4-4e06-83ae-dc74fb1cdd53"),
 	version(1.0),
 	helpstring("Audio Server")
 ] interface audiosrv
