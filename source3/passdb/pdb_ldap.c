@@ -907,7 +907,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			group_rid;
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
-	uint16 		acct_ctrl, 
+	uint16 		acct_ctrl = 0, 
 			logon_divs;
 	uint32 hours_len;
 	uint8 		hours[MAX_HOURS_LEN];
@@ -1787,7 +1787,6 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	if (!init_ldap_from_sam(ldap_state, &mods, LDAP_MOD_REPLACE, False, newpwd)) {
 		DEBUG(0, ("ldapsam_update_sam_account: init_ldap_from_sam failed!\n"));
-		ldap_msgfree(result);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
