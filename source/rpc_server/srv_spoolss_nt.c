@@ -3189,8 +3189,10 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 		*needed += spoolss_size_printer_driver_info_1(&(driver_info_1[i]));
 	}
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(driver_info_1);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++)
@@ -3199,10 +3201,12 @@ static uint32 enumprinterdrivers_level1(fstring *list, fstring servername, fstri
 		new_smb_io_printer_driver_info_1("", buffer, &(driver_info_1[i]), 0);
 	}
 
-	safe_free(list);
+	safe_free(driver_info_1);
 
-	if (*needed > offered)
+	if (*needed > offered) {
+		*returned=0;
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
@@ -3230,8 +3234,10 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 		*needed += spoolss_size_printer_driver_info_2(&(driver_info_2[i]));
 	}
 
-	if (!alloc_buffer_size(buffer, *needed))
+	if (!alloc_buffer_size(buffer, *needed)) {
+		safe_free(driver_info_2);
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 
 	/* fill the buffer with the form structures */
 	for (i=0; i<*returned; i++)
@@ -3240,10 +3246,12 @@ static uint32 enumprinterdrivers_level2(fstring *list, fstring servername, fstri
 		new_smb_io_printer_driver_info_2("", buffer, &(driver_info_2[i]), 0);
 	}
 
-	safe_free(list);
+	safe_free(driver_info_2);
 
-	if (*needed > offered)
+	if (*needed > offered) {
+		*returned=0;
 		return ERROR_INSUFFICIENT_BUFFER;
+	}
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
