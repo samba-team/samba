@@ -133,7 +133,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 BOOL get_domain_info(void);
-void free_domain_info(void);
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
 				 const char *name, DOM_SID *sid, enum SID_NAME_USE *type);

@@ -47,61 +47,6 @@ void winbindd_cache_init(void)
 		DEBUG(0, ("Unable to open tdb cache - user and group caching disabled\n"));
 }
 
-/* find the sequence number for a domain */
-
-static uint32 domain_sequence_number(struct winbindd_domain *domain)
-{
-	TALLOC_CTX *mem_ctx;
-	CLI_POLICY_HND *hnd;
-	SAM_UNK_CTR ctr;
-	uint16 switch_value = 2;
-	NTSTATUS result;
-	uint32 seqnum = DOM_SEQUENCE_NONE;
-	POLICY_HND dom_pol;
-	BOOL got_dom_pol = False;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-
-	if (!(mem_ctx = talloc_init()))
-		return DOM_SEQUENCE_NONE;
-
-	/* Get sam handle */
-
-	if (!(hnd = cm_get_sam_handle(domain->name)))
-		goto done;
-
-	/* Get domain handle */
-
-	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
-							des_access, &domain->sid, &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_dom_pol = True;
-
-	/* Query domain info */
-
-	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
-							switch_value, &ctr);
-
-	if (NT_STATUS_IS_OK(result)) {
-		seqnum = ctr.info.inf2.seq_num;
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
-	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
-			(unsigned)seqnum, domain->name ));
-	}
-
-  done:
-
-	if (got_dom_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-	talloc_destroy(mem_ctx);
-
-	return seqnum;
-}
-
 /* get the domain sequence number, possibly re-fetching */
 
 static uint32 cached_sequence_number(struct winbindd_domain *domain)
@@ -127,7 +72,7 @@ static uint32 cached_sequence_number(struct winbindd_domain *domain)
 	}
 
  refetch:	
-	rec.seq_num = domain_sequence_number(domain);
+	rec.seq_num = domain->methods->sequence_number(domain);
 	rec.mod_time = t;
 
 	tdb_store_by_string(cache_tdb, keystr, &rec, sizeof(rec));

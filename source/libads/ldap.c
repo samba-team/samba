@@ -536,7 +536,7 @@ BOOL ads_USN(ADS_STRUCT *ads, uint32 *usn)
 	int rc;
 	void *res;
 
-	rc = ldap_search_s(ads->ld, ads->bind_path, 
+	rc = ldap_search_s(ads->ld, "", 
 			   LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, (LDAPMessage **)&res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
 	return ads_pull_uint32(ads, res, "highestCommittedUSN", usn);
