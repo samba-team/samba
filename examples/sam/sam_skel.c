@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static int sam_skel_debug_level = DBGC_ALL;
+static int sam_skel_debug_level = DBGC_SAM;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS sam_skel_debug_level
@@ -189,7 +189,7 @@ NTSTATUS sam_skel_get_groups_of_sid(const SAM_METHODS *sam_method, const NT_USER
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_init(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const char *location)
+NTSTATUS sam_init(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, const DOM_SID *domain, const char *module_params)
 {
 	NTSTATUS nt_status;
 
@@ -245,13 +245,14 @@ NTSTATUS sam_init(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, cons
 
 	sam_skel_debug_level = debug_add_class("sam_skel");
 	if (sam_skel_debug_level == -1) {
-		sam_skel_debug_level = DBGC_ALL;
+		sam_skel_debug_level = DBGC_SAM;
 		DEBUG(0, ("sam_skel: Couldn't register custom debugging class!\n"));
-	} else DEBUG(0, ("sam_skel: Debug class number of 'sam_skel': %d\n", sam_skel_debug_level));
+	} else DEBUG(2, ("sam_skel: Debug class number of 'sam_skel': %d\n", sam_skel_debug_level));
     
-	DEBUG(0, ("Initializing sam_skel\n"));
-	if (location)
-		DEBUG(10, ("Location: %s\n", location));
+	if(module_params)
+		DEBUG(0, ("Starting 'sam_skel' with parameters '%s' for domain %s\n", module_params, sid_string_static(domain)));
+	else
+		DEBUG(0, ("Starting 'sam_skel' for domain %s without paramters\n", sid_string_static(domain)));
 
 	return NT_STATUS_OK;
 }
