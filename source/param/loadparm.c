@@ -1256,7 +1256,7 @@ static void init_globals(void)
 	Globals.bRestrictAnonymous = False;
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
 	Globals.min_passwd_length = MINPASSWDLENGTH;	/* By Default, 5. */
-	Globals.oplock_break_wait_time = 10;	/* By Default, 10 msecs. */
+	Globals.oplock_break_wait_time = 0;	/* By Default, 0 msecs. */
 
 #ifdef WITH_LDAP
 	/* default values for ldap */
