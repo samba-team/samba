@@ -54,13 +54,13 @@ void SMBencrypt(const uchar *passwd, const uchar *c8, uchar *p24)
  * Creates the MD4 Hash of the users password in NT UNICODE.
  */
  
-void E_md4hash(uchar *passwd, uchar *p16)
+void E_md4hash(const uchar *passwd, uchar *p16)
 {
 	int len;
 	smb_ucs2_t wpwd[129];
 	
 	/* Password cannot be longer than 128 characters */
-	len = strlen((char *)passwd);
+	len = strlen((const char *)passwd);
 	if(len > 128)
 		len = 128;
 	/* Password must be converted to NT unicode - null terminated. */
