@@ -73,7 +73,7 @@ int Ambiguous(void *s);
 int telnet_net_write (unsigned char *, int);
 void net_encrypt (void);
 int telnet_spin (void);
-char *telnet_getenv (char *);
+char *telnet_getenv (const char *);
 char *telnet_gets (char *, char *, int, int);
 void printsub(int direction, unsigned char *pointer, int length);
 #endif
