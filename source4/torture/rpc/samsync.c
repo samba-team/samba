@@ -238,6 +238,14 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 	} \
 } while (0)
 
+#define TEST_SID_EQUAL(s1, s2) do {\
+	if (!dom_sid_equal(s1, s2)) {\
+	      printf("dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
+		     dom_sid_string(mem_ctx, s1), dom_sid_string(mem_ctx, s2));\
+	      ret = False;\
+	} \
+} while (0)
+
 /* The ~SEC_DESC_SACL_PRESENT is because we don't, as administrator,
  * get back the SACL part of the SD when we ask over SAMR */
 
@@ -782,8 +790,8 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct lsa_OpenTrustedDomain t;
 	struct policy_handle trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
-	union lsa_TrustedDomainInfo *info[4];
-	int levels [] = {1, 3};
+	union lsa_TrustedDomainInfo *info[9];
+	int levels [] = {1, 3, 8};
 	int i;
 
 	new->name = talloc_reference(new, trusted_domain->domain_name.string);
@@ -812,8 +820,10 @@ static BOOL samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 		info[levels[i]]  = q.out.info;
 	}
 
-	TEST_STRING_EQUAL(info[1]->info1.domain_name, trusted_domain->domain_name);
-	TEST_INT_EQUAL(info[3]->info3.flags, trusted_domain->flags);
+	TEST_SID_EQUAL(info[8]->full_info.info_ex.sid, dom_sid);
+	TEST_STRING_EQUAL(info[8]->full_info.info_ex.name, trusted_domain->domain_name);
+	TEST_STRING_EQUAL(info[1]->name.domain_name, trusted_domain->domain_name);
+	TEST_INT_EQUAL(info[3]->flags.flags, trusted_domain->flags);
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
 
 	DLIST_ADD(samsync_state->trusted_domains, new);
