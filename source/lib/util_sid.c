@@ -391,6 +391,9 @@ BOOL sid_peek_check_rid(const DOM_SID *exp_dom_sid, const DOM_SID *sid, uint32 *
 	if (!exp_dom_sid || !sid || !rid)
 		return False;
 			
+	if (sid->num_auths != (exp_dom_sid->num_auths+1)) {
+		return False;
+	}
 
 	if (sid_compare_domain(exp_dom_sid, sid)!=0){
 		*rid=(-1);
