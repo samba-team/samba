@@ -435,7 +435,7 @@ void
 mput(int argc, char **argv)
 {
     int i;
-    RETSIGTYPE (*oldintr)();
+    RETSIGTYPE (*oldintr)(int);
     int ointer;
     char *tp;
 
