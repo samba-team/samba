@@ -81,7 +81,6 @@ const char* unibuf_to_ascii(char *dest, const char *src, int maxlen)
 /*******************************************************************
  Put an ASCII string into a UNICODE array (uint16's).
  ********************************************************************/
-
 void ascii_to_unistr(uint16 *dest, const char *src, int maxlen)
 {
 	uint16 *destend = dest + maxlen;
@@ -130,7 +129,7 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
  Convert a UNISTR2 structure to an ASCII string
  ********************************************************************/
 
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
+char *unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 {
 	char *destend;
 	const uint16 *src;
@@ -138,6 +137,22 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	register uint16 c;
 
 	src = str->buffer;
+
+	if (dest == NULL)
+	{
+		if (maxlen == 0)
+		{
+			maxlen = str->uni_str_len;
+		}
+		dest = g_new(char, maxlen + 1);
+		if (dest == NULL)
+		{
+			DEBUG(2, ("malloc(%d) problem in unistr2_to_ascii\n",
+				  maxlen + 1));
+			return NULL;
+		}
+	}
+
 	len = MIN(str->uni_str_len, maxlen);
 	destend = dest + len;
 
@@ -153,6 +168,8 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	}
 
 	*dest = 0;
+
+	return dest;
 }
 
 
@@ -264,6 +281,89 @@ void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen)
 
 	*dest = 0;
 }
+
+
+/*******************************************************************
+creates a new UNISTR2.
+********************************************************************/
+UNISTR2 *unistr2_new(const char *init)
+{
+	UNISTR2 *str;
+	str = g_new(UNISTR2, 1);
+	if (str == NULL)
+	{
+		DEBUG(1, ("malloc problem in unistr2_new\n"));
+		return NULL;
+	}
+
+	str->uni_max_len = 0;
+	str->undoc       = 0;
+	str->uni_str_len = 0;
+
+	if (init != NULL)
+	{
+		unistr2_assign_ascii_str(str, init);
+	}
+
+	return str;
+}
+
+UNISTR2 *unistr2_assign_ascii(UNISTR2 *str, const char *buf, int len)
+{
+	if (str == NULL)
+	{
+		DEBUG(1, ("NULL unistr2\n"));
+		return NULL;
+	}
+
+	if (buf == NULL)
+	{
+		len = 0;
+	}
+
+	if (len >= MAX_UNISTRLEN)
+	{
+		len = MAX_UNISTRLEN - 1;
+	}
+
+	unistr2_grow(str, len + 1);
+
+	/* set up string lengths. */
+	str->uni_max_len = len;
+	str->undoc       = 0;
+	str->uni_str_len = len;
+
+	/* store the string (wide chars) */
+	ascii_to_unistr(str->buffer, buf, len);
+
+	return str;
+}
+
+UNISTR2 *unistr2_assign_ascii_str(UNISTR2 *str, const char *buf)
+{
+	return unistr2_assign_ascii(str, buf, (buf ? strlen(buf) : 0));
+}
+
+/*******************************************************************
+grows the buffer of a UNISTR2.
+  doesn't shrink
+  doesn't modify lengh
+********************************************************************/
+UNISTR2 *unistr2_grow(UNISTR2 *str, size_t new_size)
+{
+	if (str == NULL)
+	{
+		DEBUG(1, ("NULL unistr2\n"));
+		return NULL;
+	}
+	/* It's currently a fake, yes */
+	if (new_size > MAX_UNISTRLEN)
+	{
+		DEBUG(3, ("Growing buffer beyond its current static size\n"));
+	}
+	return str;
+}
+
 
 /*******************************************************************
 copies a UNISTR2 structure.

@@ -297,22 +297,25 @@ static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 }
 
 /***************************************************************************
-resolve_names
+_lsa_lookup_sids
  ***************************************************************************/
-static void make_lsa_trans_names(DOM_R_REF *ref,
-				LSA_TRANS_NAME_ENUM *trn,
-				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS],
-				uint32 *mapped_count)
+uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
+			uint32 num_entries, DOM_SID2 *sid, uint16 level,
+			DOM_R_REF *ref,
+			LSA_TRANS_NAME_ENUM *trn,
+			uint32 *mapped_count)
 {
 	int i;
 	int total = 0;
+	uint32 status = 0x0;
+
 	(*mapped_count) = 0;
 
 	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
 
 	for (i = 0; i < num_entries; i++)
 	{
-		uint32 status = NT_STATUS_NOPROBLEMO;
+		uint32 status1 = NT_STATUS_NOPROBLEMO;
 		DOM_SID find_sid = sid[i].sid;
 		DOM_SID tmp_sid  = sid[i].sid;
 		uint32 rid = 0xffffffff;
@@ -336,25 +339,25 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 			if (sid_equal(&find_sid, &global_sam_sid) ||
 			    sid_equal(&find_sid, &global_sid_S_1_5_20))
 			{
-				status = lookup_sam_rid(dom_name,
+				status1 = lookup_sam_rid(dom_name,
 				             &find_sid, rid,
 				             name, &sid_name_use);
 			}
 			else
 			{
-				status = lookup_lsa_sid(dom_name,
+				status1 = lookup_lsa_sid(dom_name,
 				             &tmp_sid,
 				             name, &sid_name_use);
 			}
 		}
 		else
 		{
-			status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+			status1 = 0xC0000000 | NT_STATUS_NONE_MAPPED;
 		}
 
 		dom_idx = make_dom_ref(ref, dom_name, &find_sid);
 
-		if (status == NT_STATUS_NOPROBLEMO)
+		if (status1 == NT_STATUS_NOPROBLEMO)
 		{
 			(*mapped_count)++;
 		}
@@ -373,51 +376,13 @@ static void make_lsa_trans_names(DOM_R_REF *ref,
 	trn->num_entries = total;
 	trn->ptr_trans_names = 1;
 	trn->num_entries2 = total;
-}
 
-/***************************************************************************
-make_reply_lookup_sids
- ***************************************************************************/
-static void make_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
-				DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *names,
-				uint32 mapped_count)
-{
-	r_l->ptr_dom_ref  = 1;
-	r_l->dom_ref      = ref;
-	r_l->names        = names;
-	r_l->mapped_count = mapped_count;
-
-	if (mapped_count == 0)
+	if ((status == 0x0) && ((*mapped_count) == 0))
 	{
-		r_l->status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
+		status = NT_STATUS_NONE_MAPPED | 0xC0000000;
 	}
-	else
-	{
-		r_l->status = NT_STATUS_NOPROBLEMO;
-	}
-}
 
-/***************************************************************************
-lsa_reply_lookup_sids
- ***************************************************************************/
-static void lsa_reply_lookup_sids(prs_struct *rdata,
-				DOM_SID2 *sid, int num_entries)
-{
-	LSA_R_LOOKUP_SIDS r_l;
-	DOM_R_REF ref;
-	LSA_TRANS_NAME_ENUM names;
-	uint32 mapped_count = 0;
-
-	ZERO_STRUCT(r_l);
-	ZERO_STRUCT(ref);
-	ZERO_STRUCT(names);
-
-	/* set up the LSA Lookup SIDs response */
-	make_lsa_trans_names(&ref, &names, num_entries, sid, &mapped_count);
-	make_reply_lookup_sids(&r_l, &ref, &names, mapped_count);
-
-	/* store the response in the SMB stream */
-	lsa_io_r_lookup_sids("", &r_l, rdata, 0);
+	return status;
 }
 
 /***************************************************************************
@@ -485,22 +450,6 @@ static void _lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 
 	/* construct reply.  */
 	lsa_reply_query_info(&q_i, rdata, name, sid, status);
-}
-
-/***************************************************************************
-_lsa_lookup_sids
- ***************************************************************************/
-static void _lsa_lookup_sids( rpcsrv_struct *p, prs_struct *data,
-                                 prs_struct *rdata )
-{
-	LSA_Q_LOOKUP_SIDS q_l;
-	ZERO_STRUCT(q_l);
-
-	/* grab the info class and policy handle */
-	lsa_io_q_lookup_sids("", &q_l, data, 0);
-
-	/* construct reply.  return status is always NT_STATUS_NOPROBLEMO */
-	lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries);
 }
 
 /***************************************************************************

@@ -890,15 +890,7 @@ creates a UNISTR2 structure.
 ********************************************************************/
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len)
 {
-	ZERO_STRUCTP(str);
-
-	/* set up string lengths. */
-	str->uni_max_len = len;
-	str->undoc       = 0;
-	str->uni_str_len = len;
-
-	/* store the string (wide chars) */
-	ascii_to_unistr(str->buffer, buf, len);
+	unistr2_assign_ascii(str, buf, len);
 
 	return True;
 }

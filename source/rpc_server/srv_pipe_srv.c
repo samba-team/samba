@@ -546,8 +546,8 @@ static BOOL rpc_redir_local(rpcsrv_struct *l, prs_struct *req, prs_struct *resp,
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
-static BOOL api_rpc_command(rpcsrv_struct *l, char *rpc_name,
-				struct api_struct *api_rpc_cmds)
+static BOOL api_rpc_command(rpcsrv_struct *l, const char *rpc_name,
+			    const struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
 	DEBUG(4,("api_rpc_command: %s op 0x%x - ", rpc_name, l->hdr_req.opnum));
@@ -589,9 +589,14 @@ static BOOL api_rpc_command(rpcsrv_struct *l, char *rpc_name,
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
-BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name,
-				struct api_struct *api_rpc_cmds)
+BOOL api_rpcTNP(rpcsrv_struct *l, const char *rpc_name,
+		const struct api_struct *api_rpc_cmds)
 {
+	if (l == NULL)
+	{
+		DEBUG(1, ("NULL rpcsrv_struct\n"));
+		return False;
+	}
 	if (l->data_i.data == NULL)
 	{
 		DEBUG(2,("%s: NULL data received\n", rpc_name));
