@@ -141,20 +141,14 @@ ihave (krb5_context context, krb5_auth_context auth_context,
 }
 
 static void
-receive (krb5_context context,
-	 krb5_storage *sp,
-	 kadm5_server_context *server_context)
+receive_loop (krb5_context context,
+	      krb5_storage *sp,
+	      kadm5_server_context *server_context)
 {
     int ret;
     off_t left, right;
     void *buf;
     int32_t vers;
-
-    ret = server_context->db->open(context,
-				   server_context->db,
-				   O_RDWR | O_CREAT, 0);
-    if (ret)
-	krb5_err (context, 1, ret, "db->open");
 
     do {
 	int32_t len, timestamp, tmp;
@@ -204,6 +198,22 @@ receive (krb5_context context,
 	    server_context->log_context.version = vers;
 	sp->seek (sp, 8, SEEK_CUR);
     }
+}
+
+static void
+receive (krb5_context context,
+	 krb5_storage *sp,
+	 kadm5_server_context *server_context)
+{
+    int ret;
+
+    ret = server_context->db->open(context,
+				   server_context->db,
+				   O_RDWR | O_CREAT, 0);
+    if (ret)
+	krb5_err (context, 1, ret, "db->open");
+
+    receive_loop (context, sp, server_context);
 
     ret = server_context->db->close (context, server_context->db);
     if (ret)
