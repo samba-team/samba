@@ -1,3 +1,10 @@
+2004-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/fcache.c (_krb5_xlock): catch EINVAL and assume that it
+	means that the filesystem doesn't support locking
+	
+	* lib/krb5/keytab.c: remove #if 0 out file locking code
+	
 2004-01-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/asn1/gen_length.c (length_type): TSequenceOf: add up the
