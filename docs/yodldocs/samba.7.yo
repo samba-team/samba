@@ -55,8 +55,8 @@ dit(url(bf(testprns))(testprns.1.html)) nl() nl() the url(bf(testprns
 in your printcap file.
 
 dit(url(bf(smbstatus))(smbstatus.1.html)) nl() nl() The url(bf(smbstatus)
-(1))(smbstatus.1.html) utility allows you to tell who is currently
-using the url(bf(smbd (8)))(smbd.8.html) server.
+(1))(smbstatus.1.html) utility allows you list current connections to the 
+url(bf(smbd (8)))(smbd.8.html) server.
 
 dit(url(bf(nmblookup))(nmblookup.1.html)) nl() nl() the
 url(bf(nmblookup (1)))(nmblookup.1.html) utility allows NetBIOS name

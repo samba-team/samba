@@ -50,7 +50,7 @@ A text Samba codepage definition file is a description that tells
 Samba how to map from upper to lower case for characters greater than
 ascii 127 in the specified DOS code page.  Note that for certain DOS
 codepages (437 for example) mapping from lower to upper case may be
-asynchronous. For example, in code page 437 lower case a acute maps to
+non-symmetrical. For example, in code page 437 lower case a acute maps to
 a plain upper case A when going from lower to upper case, but maps
 from plain upper case A to plain lower case a when lower casing a
 character.

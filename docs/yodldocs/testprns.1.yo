@@ -1,9 +1,9 @@
 mailto(samba-bugs@samba.anu.edu.au) 
 
-manpage(testparm)(1)(23 Oct 1998)(Samba)(SAMBA)
+manpage(testprns)(1)(23 Oct 1998)(Samba)(SAMBA)
 
 label(NAME)
-manpagename(testparm)(check printer name for validity with smbd )
+manpagename(testprns)(check printer name for validity with smbd )
 
 label(SYNOPSIS)
 manpagesynopsis() 

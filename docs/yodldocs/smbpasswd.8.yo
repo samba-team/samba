@@ -152,6 +152,10 @@ specified must be the Primary Domain Controller for the domain (Backup
 Domain Controllers only have a read-only copy of the user account
 database and will not allow the password change).
 
+em(Note) that Windows 95/98 do not have a real password database
+so it is not possible to change passwords specifying a Win95/98 
+machine as remote machine target.
+
 label(minusR)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
