@@ -42,6 +42,82 @@
 
 #define LDBLOCK	"INT_LDBLOCK"
 
+
+/*
+  casefold a dn. We need to uppercase the attribute names, and the 
+  attribute values of case insensitive attributes. We also need to remove
+  extraneous spaces between elements
+*/
+static char *ltdb_dn_fold(struct ldb_module *module, const char *dn)
+{
+	const char *dn_orig = dn;
+	struct ldb_context *ldb = module->ldb;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	char *ret;
+	size_t len;
+
+	ret = talloc_strdup(tmp_ctx, "");
+	if (ret == NULL) goto failed;
+
+	while ((len = strcspn(dn, ",")) > 0) {
+		char *p = strchr(dn, '=');
+		char *attr, *value;
+		int flags;
+
+		if (p == NULL || (p-dn) > len) goto failed;
+
+		attr = talloc_strndup(tmp_ctx, dn, p-dn);
+		if (attr == NULL) goto failed;
+
+		/* trim spaces from the attribute name */
+		while (' ' == *attr) attr++;
+		while (' ' == attr[strlen(attr)-1]) {
+			attr[strlen(attr)-1] = 0;
+		}
+		if (*attr == 0) goto failed;
+
+		value = talloc_strndup(tmp_ctx, p+1, len-(p+1-dn));
+		if (value == NULL) goto failed;
+
+		/* trim spaces from the value */
+		while (' ' == *value) value++;
+		while (' ' == value[strlen(value)-1]) {
+			value[strlen(value)-1] = 0;
+		}
+		if (*value == 0) goto failed;
+
+		flags = ltdb_attribute_flags(module, attr);
+
+		attr = ldb_casefold(ldb, attr);
+		if (attr == NULL) goto failed;
+		talloc_steal(tmp_ctx, attr);
+
+		if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
+			value = ldb_casefold(ldb, value);
+			if (value == NULL) goto failed;
+			talloc_steal(tmp_ctx, value);
+		}		
+
+		if (dn[len] == ',') {
+			ret = talloc_asprintf_append(ret, "%s=%s,", attr, value);
+		} else {
+			ret = talloc_asprintf_append(ret, "%s=%s", attr, value);
+		}
+		if (ret == NULL) goto failed;
+
+		dn += len;
+		if (*dn == ',') dn++;
+	}
+
+	talloc_steal(ldb, ret);
+	talloc_free(tmp_ctx);
+	return ret;
+
+failed:
+	talloc_free(tmp_ctx);
+	return ldb_casefold(ldb, dn_orig);
+}
+
 /*
   form a TDB_DATA for a record key
   caller frees
@@ -65,7 +141,8 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 
 	  there are 3 cases dealt with in this code:
 
-	  1) if the dn doesn't start with @INDEX: then uppercase whole dn
+	  1) if the dn doesn't start with @INDEX: then uppercase the attribute
+             names and the attributes values of case insensitive attributes
 	  2) if the dn starts with @INDEX:attr and 'attr' is a case insensitive
 	     attribute then uppercase whole dn
 	  3) if the dn starts with @INDEX:attr and 'attr' is a case sensitive
@@ -95,7 +172,7 @@ struct TDB_DATA ltdb_key(struct ldb_module *module, const char *dn)
 		}
 		talloc_free(attr_name);
 	} else {
-		dn_folded = ldb_casefold(ldb, dn);
+		dn_folded = ltdb_dn_fold(module, dn);
 	}
 
 	if (!dn_folded) {

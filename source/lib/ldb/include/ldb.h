@@ -140,6 +140,11 @@ struct ldb_debug_ops {
 
 #define LDB_FLG_RDONLY 1
 
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(a,b)
+#endif
+
+
 /* 
  connect to a database. The URL can either be one of the following forms
    ldb://path
@@ -301,10 +306,6 @@ struct ldb_message *ldb_msg_canonicalize(struct ldb_context *ldb,
 
 
 struct ldb_val ldb_val_dup(void *mem_ctx, const struct ldb_val *v);
-
-#ifndef PRINTF_ATTRIBUTE
-#define PRINTF_ATTRIBUTE(a,b)
-#endif
 
 /*
   this allows the user to set a debug function for error reporting
