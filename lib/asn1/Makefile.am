@@ -22,6 +22,7 @@ gen_files =					\
 	asn1_AS_REQ.x				\
 	asn1_Authenticator.x			\
 	asn1_AuthorizationData.x		\
+	asn1_CBCParameter.x			\
 	asn1_CKSUMTYPE.x			\
 	asn1_ChangePasswdDataMS.x		\
 	asn1_Checksum.x				\
@@ -70,6 +71,7 @@ gen_files =					\
 	asn1_PA_SAM_TYPE.x			\
 	asn1_Principal.x			\
 	asn1_PrincipalName.x			\
+	asn1_RC2CBCParameter.x			\
 	asn1_Realm.x				\
 	asn1_SAMFlags.x				\
 	asn1_TGS_REP.x				\
