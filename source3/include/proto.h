@@ -51,6 +51,7 @@ BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
 void *dptr_fetch_lanman2(char *params,int dptr_num);
+BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype);
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
 void *OpenDir(char *name);
 void CloseDir(void *p);
@@ -99,21 +100,26 @@ int reply_sendstrt(char *inbuf,char *outbuf);
 int reply_sendtxt(char *inbuf,char *outbuf);
 int reply_sendend(char *inbuf,char *outbuf);
 void announce_request(struct work_record *work, struct in_addr ip);
-void do_announce_request(char *info, char *to_name, int announce_type, int from,
+void do_announce_request(char *info, char *to_name, int announce_type, 
+			 int from,
 			 int to, struct in_addr dest_ip);
 void announce_backup(void);
 void announce_host(void);
 void announce_master(void);
-struct work_record *remove_workgroup(struct domain_record *d, struct work_record *work);
+struct work_record *remove_workgroup(struct domain_record *d, 
+				     struct work_record *work);
 void expire_browse_cache(time_t t);
 struct work_record *find_workgroupstruct(struct domain_record *d, fstring name, BOOL add);
 struct domain_record *find_domain(struct in_addr source_ip);
-struct domain_record *add_domain_entry(struct in_addr source_ip, struct in_addr source_mask,
+struct domain_record *add_domain_entry(struct in_addr source_ip, 
+				       struct in_addr source_mask,
 				       char *name, BOOL add);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip);
-struct server_record *add_server_entry(struct domain_record *d, struct work_record *work,
-				       char *name,int servertype, int ttl,char *comment,
+struct server_record *add_server_entry(struct domain_record *d, 
+				       struct work_record *work,
+				       char *name,int servertype, 
+				       int ttl,char *comment,
 				       BOOL replace);
 void write_browse_list(void);
 void expire_servers(time_t t);
@@ -137,7 +143,6 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opco
 			  char *data,int len);
 uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
 			       int nb_flags,BOOL bcast,BOOL recurse,struct in_addr to_ip);
-void send_name_reg(void);
 void queue_netbios_pkt_wins(int fd,int quest_type,enum cmd_type cmd,
 			    char *name,int name_type,int nb_flags,
 			    BOOL bcast,BOOL recurse,struct in_addr to_ip);
@@ -162,6 +167,7 @@ struct name_record *add_netbios_entry(char *name, int type, int nb_flags, int tt
 void remove_name_entry(char *name,int type);
 void add_name_entry(char *name,int type,int nb_flags);
 void add_my_names(void);
+void refresh_my_names(time_t t);
 void expire_names(time_t t);
 void response_name_release(struct packet_struct *p);
 void reply_name_release(struct packet_struct *p);
@@ -174,7 +180,8 @@ void process_nmb(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);
 void do_browser_lists(void);
-void sync_server(enum cmd_type cmd, char *serv_name, char *work_name, int name_type,
+void sync_server(enum cmd_type cmd, char *serv_name, char *work_name, 
+		 int name_type,
 		 struct in_addr ip);
 void update_from_reg(char *name, int type, struct in_addr ip);
 void add_my_domains(void);
@@ -464,7 +471,6 @@ BOOL yesno(char *p);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 int set_filelen(int fd, long len);
 int byte_checksum(char *buf,int len);
-void setbuffer(FILE *f,char *buf,int bufsize);
 char *dirname_dos(char *path,char *buf);
 void *Realloc(void *p,int size);
 void Abort(void );

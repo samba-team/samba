@@ -22,7 +22,7 @@
 
 /* NTAS uses 2, NT uses 1, WfWg uses 0 */
 #define MAINTAIN_LIST    2
-#define ELECTION_VERSION 2
+#define ELECTION_VERSION 1
 
 #define MAX_DGRAM_SIZE (80*18+64)
 #define MIN_DGRAM_SIZE 12
@@ -254,4 +254,20 @@ struct packet_struct
   } packet;
 };
 
+
+#define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
+#define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
+#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
+
+
+#define ANN_HostAnnouncement  1
+#define ANN_AnnouncementRequest 2
+#define ANN_Election 8
+#define ANN_GetBackupListReq 9
+#define ANN_GetBackupListResp 10
+#define ANN_BecomeBackup 11
+#define ANN_DomainAnnouncement 12
+#define ANN_MasterAnnouncement 13
+#define ANN_ResetBrowserState 14
+#define ANN_LocalMasterAnnouncement 15
 

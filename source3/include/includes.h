@@ -223,7 +223,9 @@ Here come some platform specific sections
 #define USE_SETSID
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
+#if _LINUX_C_LIB_VERSION_MAJOR >= 5
 #define USE_SETFS
+#endif
 #ifdef SHADOW_PWD
 #ifndef crypt
 #define crypt pw_encrypt

@@ -216,7 +216,7 @@ BOOL cli_send_session_request(char *inbuf, char *outbuf)
       if (Client == -1)
         return False;
 
-      DEBUG(3,("Retargeted\n"));
+      DEBUG(5,("Retargeted\n"));
 
       set_socket_options(Client,user_socket_options);
 
@@ -381,10 +381,10 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
     }
     crypt_len = smb_buflen(inbuf);
     memcpy(cryptkey,smb_buf(inbuf),8);
-    DEBUG(3,("max mux %d\n",SVAL(inbuf,smb_vwv3)));
+    DEBUG(5,("max mux %d\n",SVAL(inbuf,smb_vwv3)));
     max_vcs = SVAL(inbuf,smb_vwv4); 
-    DEBUG(3,("max vcs %d\n",max_vcs)); 
-    DEBUG(3,("max blk %d\n",SVAL(inbuf,smb_vwv5)));
+    DEBUG(5,("max vcs %d\n",max_vcs)); 
+    DEBUG(5,("max blk %d\n",SVAL(inbuf,smb_vwv5)));
   } else {
     /* NT protocol */
     sec_mode = CVAL(inbuf,smb_vwv1);
@@ -397,17 +397,17 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
     memcpy(cryptkey,smb_buf(inbuf),8);
     if (IVAL(inbuf,smb_vwv9+1) & 1)
       readbraw_supported = writebraw_supported = True;      
-    DEBUG(3,("max mux %d\n",SVAL(inbuf,smb_vwv1+1)));
+    DEBUG(5,("max mux %d\n",SVAL(inbuf,smb_vwv1+1)));
     max_vcs = SVAL(inbuf,smb_vwv2+1); 
-    DEBUG(3,("max vcs %d\n",max_vcs));
-    DEBUG(3,("max raw %d\n",IVAL(inbuf,smb_vwv5+1)));
-    DEBUG(3,("capabilities 0x%x\n",IVAL(inbuf,smb_vwv9+1)));
+    DEBUG(5,("max vcs %d\n",max_vcs));
+    DEBUG(5,("max raw %d\n",IVAL(inbuf,smb_vwv5+1)));
+    DEBUG(5,("capabilities 0x%x\n",IVAL(inbuf,smb_vwv9+1)));
   }
 
-  DEBUG(3,("Sec mode %d\n",SVAL(inbuf,smb_vwv1)));
-  DEBUG(3,("max xmt %d\n",max_xmit));
-  DEBUG(3,("Got %d byte crypt key\n",crypt_len));
-  DEBUG(3,("Chose protocol [%s]\n",prots[SVAL(inbuf,smb_vwv0)].name));
+  DEBUG(5,("Sec mode %d\n",SVAL(inbuf,smb_vwv1)));
+  DEBUG(5,("max xmt %d\n",max_xmit));
+  DEBUG(5,("Got %d byte crypt key\n",crypt_len));
+  DEBUG(5,("Chose protocol [%s]\n",prots[SVAL(inbuf,smb_vwv0)].name));
 
   doencrypt = ((sec_mode & 2) != 0);
 
@@ -436,7 +436,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 
 #ifdef SMB_PASSWD
       if (doencrypt && *pass) {
-	DEBUG(3,("Using encrypted passwords\n"));
+	DEBUG(5,("Using encrypted passwords\n"));
 	passlen = 24;
 	SMBencrypt(pass,cryptkey,pword);
       }
@@ -502,7 +502,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 		SVAL(inbuf,smb_err) == ERRbadpw)))
 	    {
 	      got_pass = False;
-	      DEBUG(3,("resending login\n"));
+	      DEBUG(5,("resending login\n"));
 	      goto get_pass;
 	    }
 	      
@@ -531,7 +531,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 
       /* use the returned uid from now on */
       if (SVAL(inbuf,smb_uid) != uid)
-	DEBUG(3,("Server gave us a UID of %d. We gave %d\n",
+	DEBUG(5,("Server gave us a UID of %d. We gave %d\n",
 	      SVAL(inbuf,smb_uid),uid));
       uid = SVAL(inbuf,smb_uid);
     }
@@ -614,7 +614,7 @@ BOOL cli_send_login(char *inbuf, char *outbuf, BOOL start_session, BOOL use_setu
 
   cnum = SVAL(inbuf,smb_tid);
 
-  DEBUG(3,("Connected with cnum=%d max_xmit=%d\n",cnum,max_xmit));
+  DEBUG(5,("Connected with cnum=%d max_xmit=%d\n",cnum,max_xmit));
 
   if (was_null)
     {
@@ -816,7 +816,7 @@ BOOL cli_open_sockets(int port)
       strcpy(desthost,host);
     }
 
-  DEBUG(3,("Opening sockets\n"));
+  DEBUG(5,("Opening sockets\n"));
 
   if (*myname == 0)
     {
@@ -841,7 +841,7 @@ BOOL cli_open_sockets(int port)
   if (Client == -1)
     return False;
 
-  DEBUG(3,("Connected\n"));
+  DEBUG(5,("Connected\n"));
 
   set_socket_options(Client,user_socket_options);  
 

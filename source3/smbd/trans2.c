@@ -325,11 +325,11 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
 	  mode = dos_mode(cnum,pathreal,&sbuf);
 
-	  if (((mode & ~dirtype) & (aHIDDEN | aSYSTEM | aDIR)) != 0)
-	    {	      
-	      DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
-	      continue;
-	    }
+	  if (!dir_check_ftype(cnum,mode,&sbuf,dirtype)) {
+	    DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
+	    continue;
+	  }
+
 	  size = sbuf.st_size;
 	  mdate = sbuf.st_mtime;
 	  adate = sbuf.st_atime;

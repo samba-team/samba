@@ -142,42 +142,42 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 void sync_browse_lists(struct work_record *work, char *name, int nm_type,
 		       struct in_addr ip)
 {
-	struct domain_record *d;
-	pid = getpid();
-	uid = getuid();
-	gid = getgid();
-	mid = pid + 100;
-	name_type = nm_type;
-
-	got_pass = True;
-
-	DEBUG(4, ("sync browse lists with %s for %s %s\n",
-			work->work_group, name, inet_ntoa(ip)));
-
-	strcpy(workgroup,work->work_group);
-	strcpy(desthost,name);
-	dest_ip = ip;
-
-	if (zero_ip(dest_ip)) return;
-	have_ip = True;
-
-	if (!(d = find_domain(ip))) return;
-
-	connect_as_ipc = True;
-
-	/* connect as server and get domains, then servers */
-
-	sprintf(service,"\\\\%s\\IPC$", name);
-	strupper(service);
-
-	if (cli_open_sockets(SMB_PORT))
+  struct domain_record *d;
+  pid = getpid();
+  uid = getuid();
+  gid = getgid();
+  mid = pid + 100;
+  name_type = nm_type;
+  
+  got_pass = True;
+  
+  DEBUG(4,("sync browse lists with %s for %s %s\n",
+	    work->work_group, name, inet_ntoa(ip)));
+  
+  strcpy(workgroup,work->work_group);
+  strcpy(desthost,name);
+  dest_ip = ip;
+  
+  if (zero_ip(dest_ip)) return;
+  have_ip = True;
+  
+  if (!(d = find_domain(ip))) return;
+  
+  connect_as_ipc = True;
+  
+  /* connect as server and get domains, then servers */
+  
+  sprintf(service,"\\\\%s\\IPC$", name);
+  strupper(service);
+  
+  if (cli_open_sockets(SMB_PORT))
+    {
+      if (cli_send_login(NULL,NULL,True,True))
 	{
-		if (cli_send_login(NULL,NULL,True,True))
-		{
-			add_info(d, work, SV_TYPE_DOMAIN_ENUM);
-			add_info(d, work, SV_TYPE_ALL&~SV_TYPE_DOMAIN_ENUM);
-		}
-
-		close_sockets();
+	  add_info(d, work, SV_TYPE_DOMAIN_ENUM);
+	  add_info(d, work, SV_TYPE_ALL&~SV_TYPE_DOMAIN_ENUM);
 	}
+      
+      close_sockets();
+    }
 }

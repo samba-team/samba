@@ -3161,7 +3161,7 @@ int byte_checksum(char *buf,int len)
 /****************************************************************************
 this is a version of setbuffer() for those machines that only have setvbuf
 ****************************************************************************/
-void setbuffer(FILE *f,char *buf,int bufsize)
+ void setbuffer(FILE *f,char *buf,int bufsize)
 {
   setvbuf(f,buf,_IOFBF,bufsize);
 }

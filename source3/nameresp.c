@@ -174,7 +174,8 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,int rcode,int opco
   initiate a netbios packet
   ****************************************************************************/
 uint16 initiate_netbios_packet(int fd,int quest_type,char *name,int name_type,
-			       int nb_flags,BOOL bcast,BOOL recurse,struct in_addr to_ip)
+			       int nb_flags,BOOL bcast,BOOL recurse,
+			       struct in_addr to_ip)
 {
   struct packet_struct p;
   struct nmb_packet *nmb = &p.packet.nmb;
@@ -432,13 +433,11 @@ void listen_for_packets(BOOL run_election)
     {
       struct packet_struct *packet = read_packet(ClientNMB, NMB_PACKET);
       if (packet) {
-#if 0
+#if 1
 	if (ip_equal(packet->ip,myip) &&
 	    (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(3,("discarding packet from %s:%d\n",
+	  DEBUG(5,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
-	  DEBUG(3,("myip=%s eq=%d\n",
-		   inet_ntoa(myip),ip_equal(packet->ip,myip)));
 	  free_packet(packet);
 	} else 
 #endif
@@ -452,13 +451,11 @@ void listen_for_packets(BOOL run_election)
     {
       struct packet_struct *packet = read_packet(ClientDGRAM, DGRAM_PACKET);
       if (packet) {
-#if 0
+#if 1
 	if (ip_equal(packet->ip,myip) &&
 	      (packet->port == NMB_PORT || packet->port == DGRAM_PORT)) {
-	  DEBUG(3,("discarding packet from %s:%d\n",
+	  DEBUG(5,("discarding own packet from %s:%d\n",
 		   inet_ntoa(packet->ip),packet->port));	  
-	  DEBUG(3,("myip=%s eq=%d\n",
-		   inet_ntoa(myip),ip_equal(packet->ip,myip)));
 	  free_packet(packet);
 	} else
 #endif 
