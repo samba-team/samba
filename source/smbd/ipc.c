@@ -190,12 +190,6 @@ static void send_trans_reply(char *outbuf,char *data,char *param,uint16 *setup,
     }
 }
 
-
-
-/****************************************************************************
-  get a print queue
-  ****************************************************************************/
-
 struct pack_desc {
   char* format;	    /* formatstring for structure */
   char* subformat;  /* subformat for structure */
@@ -419,6 +413,11 @@ static void PACKS(struct pack_desc* desc,char *t,char *v)
   PACK(desc,t,v);
 }
 
+
+/****************************************************************************
+  get a print queue
+  ****************************************************************************/
+
 static void PackDriverData(struct pack_desc* desc)
 {
   char drivdata[4+4+32];
@@ -546,7 +545,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     PACKI(desc,"W",0);		/* uUntiltime */
     PACKI(desc,"W",5);		/* pad1 */
     PACKS(desc,"z","");		/* pszSepFile */
-    PACKS(desc,"z","lpd");	/* pszPrProc */
+    PACKS(desc,"z","WinPrint");	/* pszPrProc */
     PACKS(desc,"z","");		/* pszParms */
     if (!status || !status->message[0]) {
       PACKS(desc,"z",Expand(cnum,snum,lp_comment(snum))); /* pszComment */
@@ -557,7 +556,7 @@ static void fill_printq_info(int cnum, int snum, int uLevel,
     }
     PACKI(desc,(uLevel == 3 ? "W" : "N"),count);	/* cJobs */
     PACKS(desc,"z",SERVICE(snum)); /* pszPrinters */
-    PACKS(desc,"z","NULL");	/* pszDriverName */
+    PACKS(desc,"z",lp_printerdriver(snum));		/* pszDriverName */
     PackDriverData(desc);	/* pDriverData */
   }
   if (uLevel == 2 || uLevel == 4) {
@@ -594,6 +593,7 @@ static BOOL api_DosPrintQGetInfo(int cnum,int uid, char *param,char *data,
   cbBuf = SVAL(p,2);
   str3 = p + 4;
  
+  /* remove any trailing username */
   if ((p = strchr(QueueName,'%'))) *p = 0;
  
   DEBUG(3,("PrintQueue uLevel=%d name=%s\n",uLevel,QueueName));

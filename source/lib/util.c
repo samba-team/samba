@@ -3127,7 +3127,7 @@ void BlockSignals(BOOL block)
   if (block) 
     sigblock(block_mask);
   else
-    sigunblock(block_mask);
+    sigsetmask(0);
 #endif
 }
 

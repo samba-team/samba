@@ -194,6 +194,7 @@ char *lp_lprmcommand(int );
 char *lp_lppausecommand(int );
 char *lp_lpresumecommand(int );
 char *lp_printername(int );
+char *lp_printerdriver(int );
 char *lp_hostsallow(int );
 char *lp_hostsdeny(int );
 char *lp_magicscript(int );
@@ -312,9 +313,6 @@ void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 					      time_t ttl, struct in_addr ip, BOOL local);
 void do_browser_lists(void);
-
-/*The following definitions come from  namedb.c  */
-
 
 /*The following definitions come from  namedbname.c  */
 
@@ -720,6 +718,7 @@ int sys_rmdir(char *dname);
 int sys_chdir(char *dname);
 int sys_utime(char *fname,struct utimbuf *times);
 int sys_rename(char *from, char *to);
+int sys_chmod(char *fname,int mode);
 int sys_chown(char *fname,int uid,int gid);
 int sys_chroot(char *dname);
 

@@ -53,17 +53,6 @@
 /* this is where browse lists are kept in the lock dir */
 #define SERVER_LIST "browse.dat"
 
-/* the print command on the server, %s is replaced with the filename  */
-/* note that the -r removes the file after printing - you'll run out  */
-/* of disk pretty quickly if you don't. This command is only used as  */
-/* the default - it can be overridden in the configuration file.      */
-#define PRINT_COMMAND "lpr -r %s"
-
-/* the lpq command on the server. the printername is passed as an argument */
-#ifndef LPQ_COMMAND
-#define LPQ_COMMAND "lpq -P"
-#endif
-
 /* shall guest entries in printer queues get changed to user entries,
    so they can be deleted using the windows print manager? */
 #define LPQ_GUEST_TO_USER

@@ -609,7 +609,8 @@ static int build_nmb(char *buf,struct packet_struct *p)
   if (nmb->header.nm_flags.authoritative) ubuf[offset+2] |= 0x4;
   if (nmb->header.nm_flags.trunc) ubuf[offset+2] |= 0x2;
   if (nmb->header.nm_flags.recursion_desired) ubuf[offset+2] |= 0x1;
-  if (nmb->header.nm_flags.recursion_available) ubuf[offset+3] |= 0x80;
+  if (nmb->header.nm_flags.recursion_available &&
+      nmb->header.response) ubuf[offset+3] |= 0x80;
   if (nmb->header.nm_flags.bcast) ubuf[offset+3] |= 0x10;
   ubuf[offset+3] |= (nmb->header.rcode & 0xF);
 

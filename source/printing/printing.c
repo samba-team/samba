@@ -73,7 +73,7 @@ static char *build_print_command(int cnum, char *command, char *syscmd, char *fi
   }
   
   if (strstr(syscmd,"%s")) {
-    int iOffset = strstr(syscmd, "%s") - syscmd;
+    int iOffset = PTR_DIFF(strstr(syscmd, "%s"),syscmd);
     
     /* construct the full path for the filename, shouldn't be necessary unless
        the subshell causes a "cd" to be executed.
@@ -712,6 +712,9 @@ static BOOL parse_lpq_entry(int snum,char *line,
       strcpy(buf->user,sesssetup_user);
   }
 #endif
+
+  /* We don't want the newline in the status message. */
+  line[strcspn(line,"\n")] = (char)NULL;
 
   if (status && !ret)
     {
