@@ -1503,7 +1503,7 @@ BOOL domain_client_validate( char *user, char *domain,
    */
   if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
   {
-	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
+	  DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", domain));
 	  return False;
   }
 
