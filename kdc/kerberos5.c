@@ -53,15 +53,15 @@ as_rep(krb5_context context,
     KDCOptions f = b->kdc_options;
     hdb_entry *client = NULL, *server = NULL;
     int etype;
-    EncTicketPart *et = calloc(1, sizeof(*et));
-    EncKDCRepPart *ek = calloc(1, sizeof(*ek));
+    EncTicketPart et;
+    EncKDCRepPart ek;
     krb5_principal client_princ, server_princ;
     char *client_name, *server_name;
     krb5_error_code ret = 0;
     const char *e_text = NULL;
     int i;
 
-    krb5_keyblock *ckey, *skey;
+    Key *ckey, *skey;
 
     if(b->sname == NULL){
 	server_name = "<unknown server>";
@@ -101,10 +101,45 @@ as_rep(krb5_context context,
     }
 
 
+    if(!client->flags.client){
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Principal may not act as client -- %s", client_name);
+	goto out;
+    }
+    if(!server->flags.server){
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Principal (%s) may not act as server -- %s", 
+		server_name, client_name);
+	goto out;
+    }
+
+    /* Find appropriate key */
+    for(i = 0; i < b->etype.len; i++){
+	ret = hdb_etype2key(context, client, b->etype.val[i], &ckey);
+	if(ret)
+	    continue;
+	ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
+	if(ret)
+	    continue;
+	break;
+    }
+
+    if(ret){
+	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+	kdc_log(0, "No support for etypes -- %s", client_name);
+	goto out;
+    }
+    
+    etype = b->etype.val[i];
+
+    memset(&et, 0, sizeof(et));
+    memset(&ek, 0, sizeof(ek));
+
     if(req->padata){
 	int i;
 	PA_DATA *pa;
 	int found_pa = 0;
+	kdc_log(5, "Looking for pa-data -- %s", client_name);
 	for(i = 0; i < req->padata->len; i++){
 	    PA_DATA *pa = &req->padata->val[i];
 	    if(pa->padata_type == pa_enc_timestamp){
@@ -114,6 +149,7 @@ as_rep(krb5_context context,
 		size_t len;
 		EncryptedData enc_data;
 		
+		kdc_log(5, "Found pa-enc-timestamp -- %s", client_name);
 		found_pa = 1;
 		
 		ret = decode_EncryptedData(pa->padata_value.data,
@@ -130,7 +166,7 @@ as_rep(krb5_context context,
 				    enc_data.cipher.data,
 				    enc_data.cipher.length,
 				    enc_data.etype,
-				    &client->keyblock,
+				    &ckey->key,
 				    &ts_data);
 		free_EncryptedData(&enc_data);
 		if(ret){
@@ -163,15 +199,20 @@ as_rep(krb5_context context,
 		    kdc_log(0, "Too large time skew -- %s", client_name);
 		    goto out2;
 		}
-		et->flags.pre_authent = 1;
+		et.flags.pre_authent = 1;
 		kdc_log(2, "Pre-authentication succeded -- %s", client_name);
 		break;
+	    } else {
+		kdc_log(5, "Found pa-data of type %d -- %s", 
+			pa->padata_type, client_name);
 	    }
 	}
 	/* XXX */
 	if(found_pa == 0 && require_enc_timestamp)
 	    goto use_pa;
-	if(et->flags.pre_authent == 0){
+	/* We come here if we found a pa-enc-timestamp, but if there
+           was some problem with it, other than too large skew */
+	if(et.flags.pre_authent == 0){
 	    kdc_log(0, "%s -- %s", e_text, client_name);
 	    e_text = NULL;
 	    goto out;
@@ -208,25 +249,6 @@ as_rep(krb5_context context,
 	goto out2;
     }
 
-    /* Find appropriate key */
-    for(i = 0; i < b->etype.len; i++){
-	ret = hdb_etype2key(context, client, b->etype.val[i], &ckey);
-	if(ret)
-	    continue;
-	ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
-	if(ret)
-	    continue;
-	break;
-    }
-
-    if(ret){
-	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
-	kdc_log(0, "No support for etypes -- %s", client_name);
-	goto out;
-    }
-    
-    etype = b->etype.val[i];
-
     kdc_log(2, "Using etype %d -- %s", etype, client_name);
     
     memset(&rep, 0, sizeof(rep));
@@ -244,43 +266,61 @@ as_rep(krb5_context context,
 	goto out;
     }
     
-    et->flags.initial = 1;
-    et->flags.forwardable = f.forwardable;
-    et->flags.proxiable = f.proxiable;
-    et->flags.may_postdate = f.allow_postdate;
+    et.flags.initial = 1;
+    if(client->flags.forwardable && server->flags.forwardable)
+	et.flags.forwardable = f.forwardable;
+    else{
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Ticket may not be forwardable -- %s", client_name);
+	goto out;
+    }
+    if(client->flags.proxiable && server->flags.proxiable)
+	et.flags.proxiable = f.proxiable;
+    else{
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Ticket may not be proxiable -- %s", client_name);
+	goto out;
+    }
+    if(client->flags.postdate && server->flags.postdate)
+	et.flags.may_postdate = f.allow_postdate;
+    else{
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Ticket may not be postdatable -- %s", client_name);
+	goto out;
+    }
 
-    krb5_generate_random_keyblock(context, ckey->keytype, &et->key);
-    copy_PrincipalName(b->cname, &et->cname);
-    copy_Realm(&b->realm, &et->crealm);
+    krb5_generate_random_keyblock(context, ckey->key.keytype, &et.key);
+    copy_PrincipalName(b->cname, &et.cname);
+    copy_Realm(&b->realm, &et.crealm);
     
     {
 	time_t start;
 	time_t t;
 	
-	start = et->authtime = kdc_time;
+	start = et.authtime = kdc_time;
     
 	if(f.postdated && req->req_body.from){
-	    et->starttime = malloc(sizeof(*et->starttime));
-	    start = *et->starttime = *req->req_body.from;
-	    et->flags.invalid = 1;
-	    et->flags.postdated = 1; /* XXX ??? */
+	    ALLOC(et.starttime);
+	    start = *et.starttime = *req->req_body.from;
+	    et.flags.invalid = 1;
+	    et.flags.postdated = 1; /* XXX ??? */
 	    kdc_log(2, "Postdated ticket requested -- %s", client_name);
 	}
 	if(b->till == 0)
 	    b->till = MAX_TIME;
 	t = b->till;
 	if(client->max_life)
-	    t = min(t, start + client->max_life);
+	    t = min(t, start + *client->max_life);
 	if(server->max_life)
-	    t = min(t, start + server->max_life);
+	    t = min(t, start + *server->max_life);
 #if 0
 	t = min(t, start + realm->max_life);
 #endif
-	et->endtime = t;
-	if(f.renewable_ok && et->endtime < b->till){
+	et.endtime = t;
+	if(f.renewable_ok && et.endtime < b->till){
 	    f.renewable = 1;
 	    if(b->rtime == NULL){
-		b->rtime = malloc(sizeof(*b->rtime));
+		ALLOC(b->rtime);
 		*b->rtime = 0;
 	    }
 	    if(*b->rtime < b->till)
@@ -291,58 +331,57 @@ as_rep(krb5_context context,
 	    if(t == 0)
 		t = MAX_TIME;
 	    if(client->max_renew)
-		t = min(t, start + client->max_renew);
+		t = min(t, start + *client->max_renew);
 	    if(server->max_renew)
-		t = min(t, start + server->max_renew);
+		t = min(t, start + *server->max_renew);
 #if 0
 	    t = min(t, start + realm->max_renew);
 #endif
-	    et->renew_till = malloc(sizeof(*et->renew_till));
-	    *et->renew_till = t;
-	    et->flags.renewable = 1;
+	    ALLOC(et.renew_till);
+	    *et.renew_till = t;
+	    et.flags.renewable = 1;
 	}
     }
     
     if(b->addresses){
-	et->caddr = malloc(sizeof(*et->caddr));
-	copy_HostAddresses(b->addresses, et->caddr);
+	ALLOC(et.caddr);
+	copy_HostAddresses(b->addresses, et.caddr);
     }
 
-    memset(ek, 0, sizeof(*ek));
-    copy_EncryptionKey(&et->key, &ek->key);
+    copy_EncryptionKey(&et.key, &ek.key);
     /* MIT must have at least one last_req */
-    ek->last_req.len = 1;
-    ek->last_req.val = malloc(sizeof(*ek->last_req.val));
-    ek->last_req.val->lr_type = 0;
-    ek->last_req.val->lr_value = 0;
-    ek->nonce = b->nonce;
-    ek->flags = et->flags;
-    ek->authtime = et->authtime;
-    if (et->starttime) {
-	ek->starttime = malloc(sizeof(*ek->starttime));
-	*(ek->starttime) = *(et->starttime);
+    ek.last_req.len = 1;
+    ALLOC(ek.last_req.val);
+    ek.last_req.val->lr_type = 0;
+    ek.last_req.val->lr_value = 0;
+    ek.nonce = b->nonce;
+    ek.flags = et.flags;
+    ek.authtime = et.authtime;
+    if (et.starttime) {
+	ALLOC(ek.starttime);
+	*ek.starttime = *et.starttime;
     } else
-	ek->starttime = et->starttime;
-    ek->endtime = et->endtime;
-    if (et->renew_till) {
-	ek->renew_till = malloc(sizeof(*ek->renew_till));
-	*(ek->renew_till) = *(et->renew_till);
+	ek.starttime = et.starttime;
+    ek.endtime = et.endtime;
+    if (et.renew_till) {
+	ALLOC(ek.renew_till);
+	*ek.renew_till = *et.renew_till;
     } else
-	ek->renew_till = et->renew_till;
-    copy_Realm(&rep.ticket.realm, &ek->srealm);
-    copy_PrincipalName(&rep.ticket.sname, &ek->sname);
-    if(et->caddr){
-	ek->caddr = malloc(sizeof(*ek->caddr));
-	copy_HostAddresses(et->caddr, ek->caddr);
+	ek.renew_till = et.renew_till;
+    copy_Realm(&rep.ticket.realm, &ek.srealm);
+    copy_PrincipalName(&rep.ticket.sname, &ek.sname);
+    if(et.caddr){
+	ALLOC(ek.caddr);
+	copy_HostAddresses(et.caddr, ek.caddr);
     }
 
     {
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
 	size_t len;
 
-	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf),et, &len);
-	free_EncTicketPart(et);
-	free(et);
+	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), 
+				   &et, &len);
+	free_EncTicketPart(&et);
 	if(ret) {
 	    kdc_log(0, "Failed to encode ticket -- %s", client);
 	    goto out;
@@ -352,16 +391,12 @@ as_rep(krb5_context context,
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
-				   skey,
+				   &skey->key,
 				   &rep.ticket.enc_part);
-#if 0
-	rep.ticket.enc_part.kvno = malloc(sizeof(*rep.ticket.enc_part.kvno));
-	*rep.ticket.enc_part.kvno = server.kvno;
-#endif
 	
-	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), ek, &len);
-	free_EncKDCRepPart(ek);
-	free(ek);
+	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
+				  &ek, &len);
+	free_EncKDCRepPart(&ek);
 	if(ret) {
 	    kdc_log(0, "Failed to encode KDC-REP -- %s", client_name);
 	    goto out;
@@ -370,17 +405,14 @@ as_rep(krb5_context context,
 				   buf + sizeof(buf) - len,
 				   len,
 				   etype,
-				   ckey,
+				   &ckey->key,
 				   &rep.enc_part);
-#if 0
-	rep.enc_part.kvno = malloc(sizeof(*rep.enc_part.kvno));
-	*rep.enc_part.kvno = client.kvno;
-#endif
-	if(client->flags.b.v4){
-	    rep.padata = malloc(sizeof(*rep.padata));
+	if(ckey->salt){
+	    ALLOC(rep.padata);
 	    rep.padata->len = 1;
 	    rep.padata->val = calloc(1, sizeof(*rep.padata->val));
 	    rep.padata->val->padata_type = pa_pw_salt;
+	    copy_octet_string(ckey->salt, &rep.padata->val->padata_value);
 	}
 	
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
@@ -506,7 +538,7 @@ check_tgs_flags(krb5_context context, KDC_REQ_BODY *b,
 	    return KRB5KDC_ERR_BADOPTION;
 	}
 	et->flags.renewable = 1;
-	et->renew_till = malloc(sizeof(*et->renew_till));
+	ALLOC(et->renew_till);
 	*et->renew_till = *b->rtime;
     }
     if(f.renew){
@@ -538,7 +570,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     krb5_error_code ret;
     int i;
     krb5_enctype etype;
-    krb5_keyblock *skey;
+    Key *skey;
     
     /* Find appropriate key */
     for(i = 0; i < b->etype.len; i++){
@@ -563,7 +595,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 
     et.authtime = tgt->authtime;
     et.endtime = tgt->endtime;
-    et.starttime = malloc(sizeof(*et.starttime));
+    ALLOC(et.starttime);
     *et.starttime = kdc_time;
     
     ret = check_tgs_flags(context, b, tgt, &et);
@@ -585,24 +617,24 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	time_t life;
 	life = et.endtime - *et.starttime;
 	if(client->max_life)
-	    life = min(life, client->max_life);
+	    life = min(life, *client->max_life);
 	if(server->max_life)
-	    life = min(life, server->max_life);
+	    life = min(life, *server->max_life);
 	et.endtime = *et.starttime + life;
     }
     if(f.renewable_ok && tgt->flags.renewable && 
        et.renew_till == NULL && et.endtime < b->till){
 	et.flags.renewable = 1;
-	et.renew_till = malloc(sizeof(*et.renew_till));
+	ALLOC(et.renew_till);
 	*et.renew_till = b->till;
     }
     if(et.renew_till){
 	time_t renew;
 	renew = *et.renew_till - et.authtime;
 	if(client->max_renew)
-	    renew = min(renew, client->max_renew);
+	    renew = min(renew, *client->max_renew);
 	if(server->max_renew)
-	    renew = min(renew, server->max_renew);
+	    renew = min(renew, *server->max_renew);
 	*et.renew_till = et.authtime + renew;
     }
 	    
@@ -630,7 +662,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     /* XXX Check enc-authorization-data */
 
     krb5_generate_random_keyblock(context,
-				  skey->keytype,
+				  skey->key.keytype,
 				  &et.key);
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
@@ -650,7 +682,6 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
     ek.renew_till = et.renew_till;
     ek.srealm = rep.ticket.realm;
     ek.sname = rep.ticket.sname;
-    ek.caddr = et.caddr;
 	    
     {
 	unsigned char buf[1024]; /* XXX The data could be indefinite */
@@ -664,7 +695,7 @@ tgs_make_reply(krb5_context context, KDC_REQ_BODY *b, EncTicketPart *tgt,
 	}
 	krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
 				   etype,
-				   skey,
+				   &skey->key,
 				   &rep.ticket.enc_part);
 		
 	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
@@ -814,7 +845,7 @@ tgs_rep2(krb5_context context,
 			     &ac,
 			     &ap_req,
 			     princ,
-			     &krbtgt->keyblock,
+			     &krbtgt->keys.val[0].key, /* XXX */
 			     &ap_req_options,
 			     &ticket);
 			     
