@@ -83,6 +83,7 @@ str2time(char *s)
 static void
 doit(char *filename, int merge)
 {
+#if 0
     FILE *f;
     HDB *db;
     char s[1024];
@@ -148,14 +149,19 @@ doit(char *filename, int merge)
 	e.flags = p;
 	p = skip_next(p);
 
-	err = krb5_parse_name(context, e.principal, &ent.principal);
-	if(err){
-	    fprintf(stderr, "%s:%s:%s (%s)\n", 
-		    filename, 
-		    line,
-		    krb5_get_err_text(context, err),
-		    e.principal);
-	    continue;
+	{
+	    krb5_principal p;
+	    err = krb5_parse_name(context, e.principal, &p);
+		if(err){
+		    fprintf(stderr, "%s:%s:%s (%s)\n", 
+			    filename, 
+			    line,
+			    krb5_get_err_text(context, err),
+			    e.principal);
+		    continue;
+		}
+		ent.principal = *p;
+		free(p);
 	}
 	
 	ent.keyblock.keytype = KEYTYPE_DES;
@@ -178,6 +184,7 @@ doit(char *filename, int merge)
     }
     db->close(context, db);
     fclose(f);
+#endif
 }
 
 int
