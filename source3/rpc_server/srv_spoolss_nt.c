@@ -25,7 +25,9 @@
 
 #include "includes.h"
 
-#define RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#ifndef MANGLE_DRIVER_PATH
+#define MANGLE_DRIVER_PATH 0
+#endif
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;
@@ -3892,7 +3894,7 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
  Modify internal driver heirarchy.
 ****************************************************************************/
 
-#ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#if MANGLE_DRIVER_PATH
 static uint32 modify_driver_heirarchy(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level)
 {
 	pstring path_old;
@@ -3947,8 +3949,8 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 				uint32 level,
 				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
 {
+	uint32 err = NT_STATUS_NO_PROBLEMO;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	uint32 err;
 	ZERO_STRUCT(driver);
 	
 	convert_printer_driver_info(info, &driver, level);
@@ -3956,16 +3958,13 @@ uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
 	if (add_a_printer_driver(driver, level)!=0)
 		return ERROR_ACCESS_DENIED;
 
-#ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
-	if ((err = modify_driver_heirarchy(&driver, level)) != 0) {
-		free_a_printer_driver(driver, level);
-		return err;
-	}
+#if MANGLE_DRIVER_PATH
+	err = modify_driver_heirarchy(&driver, level);
 #endif
 
 	free_a_printer_driver(driver, level);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return err;
 }
 
 /****************************************************************************
@@ -3990,7 +3989,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 	get_short_archi(short_archi, long_archi);
 		
-#ifdef RELIES_ON_SMBD_FUNCTIONS_LINKED_INTO_SPOOLSSD
+#if MANGLE_DRIVER_PATH
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s\\TMP_%s", global_myname, short_archi,
 		client_addr());
 #else
