@@ -77,12 +77,14 @@ BOOL session_claim(user_struct *vuser)
 		return False;
 	}
 
-        /* Don't resolve the hostname in smbd as we can pause for a long
-           time while waiting for DNS timeouts to occur.  The correct
-           place to do this is in the code that displays the session
-           information. */
+	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
+           needed becouse utmp and PAM both expect DNS names */
 
-        hostname = client_addr();
+	if (lp_hostname_lookups()) {
+		hostname = client_name();
+	} else {
+		hostname = client_addr();
+	}
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
 	fstrcpy(sessionid.hostname, hostname);
