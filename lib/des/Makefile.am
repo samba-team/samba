@@ -3,7 +3,7 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libdes.la
-libdes_la_LDFLAGS = -version-info 0:2:0
+libdes_la_LDFLAGS = -version-info 1:0:1
 
 include_HEADERS = des.h md4.h md5.h sha.h rc4.h
 
