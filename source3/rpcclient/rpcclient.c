@@ -659,10 +659,10 @@ static void usage(void)
 	get_myname((*global_myname)?NULL:global_myname);
 	strupper(global_myname);
 
-	
-	/* resolve the IP address */
+	/* Resolve the IP address */
+
 	if (!resolve_name(server, &server_ip, 0x20))  {
-		DEBUG(1,("Unable to resolve server name\n"));
+		DEBUG(1,("Unable to resolve %s\n", server));
 		return 1;
 	}
 	
