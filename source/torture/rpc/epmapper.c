@@ -263,6 +263,23 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+static BOOL test_InqObject(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct epm_InqObject r;
+
+	r.in.epm_object = talloc_p(mem_ctx, struct GUID);
+	GUID_from_string(DCERPC_EPMAPPER_UUID, r.in.epm_object);
+
+	status = dcerpc_epm_InqObject(p, mem_ctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("InqObject failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return True;
+}
+
 BOOL torture_rpc_epmapper(void)
 {
         NTSTATUS status;
@@ -284,9 +301,13 @@ BOOL torture_rpc_epmapper(void)
 		ret = False;
 	}
 
+	if (!test_InqObject(p, mem_ctx)) {
+		ret = False;
+	}
+
 	talloc_destroy(mem_ctx);
 
-        torture_rpc_close(p);
+    torture_rpc_close(p);
 
 	return ret;
 }
