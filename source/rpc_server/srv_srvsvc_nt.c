@@ -1,5 +1,5 @@
 /* 
- *  Unix SMB/Netbios implementation.
+ *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Jeremy Allison					2001.
