@@ -353,38 +353,34 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	conn->read_only = lp_readonly(snum);
+	DEBUG(10,("make_connection: share is set %s.\n", conn->read_only ? "read only" : "writable" ));
 
 	{
 		pstring list;
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 
-		if (user_in_list(user,list))
+		if (user_in_list(user,list)) {
+			DEBUG(10,("make_connection: user in read list makes share read only\n"));
 			conn->read_only = True;
-		
+		}
+
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 		
-		if (user_in_list(user,list))
+		if (user_in_list(user,list)) {
+			DEBUG(10,("make_connection: user in read list makes share writable.\n"));
 			conn->read_only = False;    
+		}
 	}
 
-	/* admin user check */
+	/* Admin user check */
 	
-	/* JRA - original code denied admin user if the share was
-	   marked read_only. Changed as I don't think this is needed,
-	   but old code left in case there is a problem here.
-	*/
-	if (user_in_list(user,lp_admin_users(snum)) 
-#if 0
-	    && !conn->read_only
-#endif
-	    ) {
+	if (user_in_list(user,lp_admin_users(snum)) ) {
 		conn->admin_user = True;
-		DEBUG(0,("%s logged in as admin user (root privileges)\n",user));
-	} else {
+		DEBUG(0,("make_connection: %s logged in as admin user (root privileges)\n",user));
+	} else
 		conn->admin_user = False;
-	}
     
 	conn->force_user = force;
 	conn->vuid = vuid;

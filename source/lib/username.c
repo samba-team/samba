@@ -360,7 +360,9 @@ failed with error %s\n", strerror(errno) ));
  
  	for (i = 0; i < num_groups; i++) {
  		if (gid == groups[i]) {
- 			ret = True;
+			ret = True;
+			DEBUG(0,("user_in_winbind_group_list: user |%s| is in group |%s|\n",
+				user, gname ));
  			break;
  		}
  	}
@@ -378,6 +380,7 @@ failed with error %s\n", strerror(errno) ));
  
 /****************************************************************************
  Check if a user is in a UNIX group.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
 static BOOL user_in_unix_group_list(char *user,const char *gname)
@@ -394,7 +397,7 @@ static BOOL user_in_unix_group_list(char *user,const char *gname)
  	 */
  
  	if (pass) {
- 		if (strequal(gname, gidtoname(pass->pw_gid))) {
+ 		if (strequal_unix(gname, gidtoname(pass->pw_gid))) {
  			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
  			return True;
  		}
@@ -409,8 +412,9 @@ static BOOL user_in_unix_group_list(char *user,const char *gname)
 	for (member = user_list; member; member = member->next) {
  		DEBUG(10,("user_in_unix_group_list: checking user %s against member %s\n",
 			user, member->unix_name ));
-  		if (strequal(member->unix_name,user)) {
+  		if (strequal_unix(member->unix_name,user)) {
 			free_userlist(user_list);
+			DEBUG(10,("user_in_unix_group_list: user |%s| is in group |%s|\n", user, gname));
   			return(True);
   		}
 	}
@@ -421,6 +425,7 @@ static BOOL user_in_unix_group_list(char *user,const char *gname)
 
 /****************************************************************************
  Check if a user is in a group list. Ask winbind first, then use UNIX.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
 BOOL user_in_group_list(char *user,char *gname)
@@ -440,6 +445,7 @@ BOOL user_in_group_list(char *user,char *gname)
 /****************************************************************************
  Check if a user is in a user list - can check combinations of UNIX
  and netgroup lists.
+ Names are in UNIX character set format.
 ****************************************************************************/
 
 BOOL user_in_list(char *user,char *list)
@@ -456,8 +462,10 @@ BOOL user_in_list(char *user,char *list)
 		/*
 		 * Check raw username.
 		 */
-		if (strequal(user,tok))
+		if (strequal_unix(user,tok)) {
+			DEBUG(10,("user_in_list: user |%s| matches |%s|\n", user, tok));
 			return(True);
+		}
 
 		/*
 		 * Now check to see if any combination
