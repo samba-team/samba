@@ -141,8 +141,8 @@ http://www.samba.org).  Optionally, you could just search mailing.unix.samba at 
 <title>Related Projects</title>
 
 <para>
-Currently, there are two projects that are directly related to Samba: SMBFS and CIFS network
-client file systems for Linux, both available in the Linux kernel itself.
+There are currently two network filesystem client projects for Linux that are directly
+related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux kernel itself.
 </para>
 
 <itemizedlist>
@@ -156,7 +156,7 @@ client file systems for Linux, both available in the Linux kernel itself.
 
 	<listitem><para>
 	CIFS VFS (Common Internet File System Virtual File System) is the successor to SMBFS, and
-        is actively being worked on in the upcoming version of the Linux kernel. The intent of this module
+        is being actively developed for the upcoming version of the Linux kernel. The intent of this module
         is to provide advanced network file system functionality including support for dfs (heirarchical
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
