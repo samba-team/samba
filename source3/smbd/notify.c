@@ -144,9 +144,9 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 /****************************************************************************
  Return true if there are pending change notifies.
 ****************************************************************************/
-BOOL change_notifies_pending(void)
+int change_notify_timeout(void)
 {
-	return (change_notify_list != NULL);
+	return cnotify->select_time;
 }
 
 /****************************************************************************

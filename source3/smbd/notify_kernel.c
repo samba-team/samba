@@ -167,7 +167,7 @@ static BOOL kernel_notify_available(void)
 	if (fd == -1) return False; /* uggh! */
 	ret = fcntl(fd, F_NOTIFY, 0);
 	close(fd);
-	return ret == 0 || errno != EINVAL;
+	return ret == 0;
 }
 
 
@@ -179,8 +179,6 @@ struct cnotify_fns *kernel_notify_init(void)
 	static struct cnotify_fns cnotify;
         struct sigaction act;
 
-	if (!kernel_notify_available()) return NULL;
-
         act.sa_handler = NULL;
         act.sa_sigaction = signal_handler;
         act.sa_flags = SA_SIGINFO;
@@ -189,9 +187,12 @@ struct cnotify_fns *kernel_notify_init(void)
 		return NULL;
         }
 
+	if (!kernel_notify_available()) return NULL;
+
 	cnotify.register_notify = kernel_register_notify;
 	cnotify.check_notify = kernel_check_notify;
 	cnotify.remove_notify = kernel_remove_notify;
+	cnotify.select_time = -1;
 
 	return &cnotify;
 }
