@@ -83,7 +83,7 @@ interface xattr
 	   we put this xattr in the security namespace to ensure that
 	   only trusted users can write to the ACL
 	*/
-	const string XATTR_NTACL_NAME = "security.NTAcl";
+	const string XATTR_NTACL_NAME = "security.NTACL";
 
 	typedef union {
 		[case(1)] security_descriptor *sd;
