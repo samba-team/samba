@@ -426,8 +426,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_p
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	SamOEMhash((uchar *)lm_pwd, key, False);
-	SamOEMhash((uchar *)nt_pwd, key, False);
+	SamOEMhash((uchar *)lm_pwd, key, 16);
+	SamOEMhash((uchar *)nt_pwd, key, 16);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));

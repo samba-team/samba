@@ -779,7 +779,7 @@ BOOL check_oem_password(char *user,
 	/* 
 	 * Call the hash function to get the new password.
 	 */
-	SamOEMhash((uchar *) lmdata, (uchar *) smbpw->smb_passwd, True);
+	SamOEMhash((uchar *) lmdata, (uchar *) smbpw->smb_passwd, 516);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of

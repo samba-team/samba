@@ -5339,6 +5339,126 @@ static BOOL sam_io_user_info23(char *desc, SAM_USER_INFO_23 * usr,
 	return True;
 }
 
+/*******************************************************************
+ reads or writes a structure.
+ NB. This structure is *definately* incorrect. It's my best guess
+ currently for W2K SP2. The password field is encrypted in a different
+ way than normal... And there are definately other problems. JRA.
+********************************************************************/
+
+static BOOL sam_io_user_info25(char *desc, SAM_USER_INFO_25 * usr, prs_struct *ps, int depth)
+{
+	if (usr == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "sam_io_user_info23");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_time("logon_time           ", &usr->logon_time, ps, depth))
+		return False;
+	if(!smb_io_time("logoff_time          ", &usr->logoff_time, ps, depth))
+		return False;
+	if(!smb_io_time("kickoff_time         ", &usr->kickoff_time, ps, depth))
+		return False;
+	if(!smb_io_time("pass_last_set_time   ", &usr->pass_last_set_time, ps, depth))
+		return False;
+	if(!smb_io_time("pass_can_change_time ", &usr->pass_can_change_time, ps, depth))
+		return False;
+	if(!smb_io_time("pass_must_change_time", &usr->pass_must_change_time, ps, depth))
+		return False;
+
+	if(!smb_io_unihdr("hdr_user_name   ", &usr->hdr_user_name, ps, depth))	/* username unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_full_name   ", &usr->hdr_full_name, ps, depth))	/* user's full name unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_home_dir    ", &usr->hdr_home_dir, ps, depth))	/* home directory unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_dir_drive   ", &usr->hdr_dir_drive, ps, depth))	/* home directory drive */
+		return False;
+	if(!smb_io_unihdr("hdr_logon_script", &usr->hdr_logon_script, ps, depth))	/* logon script unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_profile_path", &usr->hdr_profile_path, ps, depth))	/* profile path unicode string header */
+		return False;
+	if(!smb_io_unihdr("hdr_acct_desc   ", &usr->hdr_acct_desc, ps, depth))	/* account desc */
+		return False;
+	if(!smb_io_unihdr("hdr_workstations", &usr->hdr_workstations, ps, depth))	/* wkstas user can log on from */
+		return False;
+	if(!smb_io_unihdr("hdr_unknown_str ", &usr->hdr_unknown_str, ps, depth))	/* unknown string */
+		return False;
+	if(!smb_io_unihdr("hdr_munged_dial ", &usr->hdr_munged_dial, ps, depth))	/* wkstas user can log on from */
+		return False;
+
+	if(!prs_uint8s(False, "lm_pwd        ", ps, depth, usr->lm_pwd, sizeof(usr->lm_pwd)))
+		return False;
+	if(!prs_uint8s(False, "nt_pwd        ", ps, depth, usr->nt_pwd, sizeof(usr->nt_pwd)))
+		return False;
+
+	if(!prs_uint32("user_rid      ", ps, depth, &usr->user_rid))	/* User ID */
+		return False;
+	if(!prs_uint32("group_rid     ", ps, depth, &usr->group_rid))	/* Group ID */
+		return False;
+	if(!prs_uint32("acb_info      ", ps, depth, &usr->acb_info))
+		return False;
+
+	if(!prs_uint32s(False, "unknown_6      ", ps, depth, usr->unknown_6, 6))
+		return False;
+
+	if(!prs_uint8s(False, "password      ", ps, depth, usr->pass, sizeof(usr->pass)))
+		return False;
+
+	/* here begins pointed-to data */
+
+	if(!smb_io_unistr2("uni_user_name   ", &usr->uni_user_name, usr->hdr_user_name.buffer, ps, depth))	/* username unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_full_name   ", &usr->uni_full_name, usr->hdr_full_name.buffer, ps, depth))	/* user's full name unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_home_dir    ", &usr->uni_home_dir, usr->hdr_home_dir.buffer, ps, depth))	/* home directory unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_dir_drive   ", &usr->uni_dir_drive, usr->hdr_dir_drive.buffer, ps, depth))	/* home directory drive unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_logon_script", &usr->uni_logon_script, usr->hdr_logon_script.buffer, ps, depth))	/* logon script unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_profile_path", &usr->uni_profile_path, usr->hdr_profile_path.buffer, ps, depth))	/* profile path unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_acct_desc   ", &usr->uni_acct_desc, usr->hdr_acct_desc.buffer, ps, depth))	/* user desc unicode string */
+		return False;
+
+	if(!smb_io_unistr2("uni_workstations", &usr->uni_workstations, usr->hdr_workstations.buffer, ps, depth))	/* worksations user can log on from */
+		return False;
+
+	if(!smb_io_unistr2("uni_unknown_str ", &usr->uni_unknown_str, usr->hdr_unknown_str.buffer, ps, depth))	/* unknown string */
+		return False;
+
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth))
+		return False;
+
+#if 0 /* JRA - unknown... */
+	/* ok, this is only guess-work (as usual) */
+	if (usr->ptr_logon_hrs) {
+		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
+			return False;
+		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
+			return False;
+		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
+			return False;
+	} else if (UNMARSHALLING(ps)) {
+		usr->unknown_6 = 0;
+		usr->padding4 = 0;
+	}
+#endif
+
+	return True;
+}
+
 
 /*************************************************************************
  init_sam_user_info21W
@@ -5729,12 +5849,12 @@ void init_samr_userinfo_ctr(SAM_USERINFO_CTR * ctr, uchar * sess_key,
 
 	switch (switch_value) {
 	case 0x18:
-		SamOEMhash(ctr->info.id24->pass, sess_key, 1);
+		SamOEMhash(ctr->info.id24->pass, sess_key, 516);
 		dump_data(100, (char *)sess_key, 16);
 		dump_data(100, (char *)ctr->info.id24->pass, 516);
 		break;
 	case 0x17:
-		SamOEMhash(ctr->info.id23->pass, sess_key, 1);
+		SamOEMhash(ctr->info.id23->pass, sess_key, 516);
 		dump_data(100, (char *)sess_key, 16);
 		dump_data(100, (char *)ctr->info.id23->pass, 516);
 		break;
@@ -5833,6 +5953,16 @@ static BOOL samr_io_userinfo_ctr(char *desc, SAM_USERINFO_CTR **ppctr,
 			return False;
 		}
 		ret = sam_io_user_info24("", ctr->info.id24, ps,  depth);
+		break;
+	case 25:
+		if (UNMARSHALLING(ps))
+			ctr->info.id25 = (SAM_USER_INFO_25 *)prs_alloc_mem(ps,sizeof(SAM_USER_INFO_25));
+
+		if (ctr->info.id25 == NULL) {
+			DEBUG(2,("samr_io_userinfo_ctr: info pointer not initialised\n"));
+			return False;
+		}
+		ret = sam_io_user_info25("", ctr->info.id25, ps, depth);
 		break;
 	default:
 		DEBUG(2, ("samr_io_userinfo_ctr: unknown switch level 0x%x\n", ctr->switch_value));
@@ -5988,8 +6118,8 @@ void init_samr_q_set_userinfo2(SAMR_Q_SET_USERINFO2 * q_u,
 
 	switch (switch_value) {
 	case 0x12:
-		SamOEMhash(ctr->info.id12->lm_pwd, sess_key, 0);
-		SamOEMhash(ctr->info.id12->nt_pwd, sess_key, 0);
+		SamOEMhash(ctr->info.id12->lm_pwd, sess_key, 16);
+		SamOEMhash(ctr->info.id12->nt_pwd, sess_key, 16);
 		dump_data(100, (char *)sess_key, 16);
 		dump_data(100, (char *)ctr->info.id12->lm_pwd, 16);
 		dump_data(100, (char *)ctr->info.id12->nt_pwd, 16);

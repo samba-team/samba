@@ -886,9 +886,9 @@ void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 		memcpy(key, sess_key, 8);
 
 		memcpy(lm_owf, lm_cypher, 16);
-		SamOEMhash(lm_owf, key, False);
+		SamOEMhash(lm_owf, key, 16);
 		memcpy(nt_owf, nt_cypher, 16);
-		SamOEMhash(nt_owf, key, False);
+		SamOEMhash(nt_owf, key, 16);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("encrypt of lm owf password:"));
