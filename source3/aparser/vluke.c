@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	prs_struct ps;
 
 	if (argc < 2) {
-		printf("usage: harness <file>\n");
+		printf("usage: vluke <file>\n");
 		exit(1);
 	}
 

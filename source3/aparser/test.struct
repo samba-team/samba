@@ -1,5 +1,5 @@
 module spool
-test PRINTER_DRIVER_INFO
+test PRINTER_DRIVER_INFO_LEVEL_6
 
 struct PRINTER_DRIVER_INFO_LEVEL_3 {
 	uint32 cversion;
