@@ -240,6 +240,7 @@ BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 		DEBUG(4,("Using ADS machine password\n"));
 		E_md4hash(plaintext, ret_pwd);
 		SAFE_FREE(plaintext);
+		pass_last_set_time = 0;
 		return True;
 	}
 
