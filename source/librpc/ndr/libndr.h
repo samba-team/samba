@@ -113,6 +113,9 @@ struct ndr_print {
 #define LIBNDR_PRINT_ARRAY_HEX   (1<<15)
 #define LIBNDR_PRINT_SET_VALUES  (1<<16)
 
+/* used to force a section of IDL to be little-endian */
+#define LIBNDR_FLAG_LITTLE_ENDIAN (1<<17)
+
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
