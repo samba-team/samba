@@ -38,7 +38,7 @@ struct printjob {
 	fstring filename; /* the filename used to spool the file */
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
-	fstring qname; /* name of the print queue the job was sent to */
+	int snum;     /* service number of printer for this job */
 };
 
 /* Information for print interfaces */
