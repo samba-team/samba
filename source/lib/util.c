@@ -513,22 +513,30 @@ int set_blocking(int fd, BOOL set)
  Transfer some data between two fd's.
 ****************************************************************************/
 
+#ifndef TRANSFER_BUF_SIZE
+#define TRANSFER_BUF_SIZE 65536
+#endif
+
 ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
 						ssize_t (*write_fn)(int, const void *, size_t))
 {
-	static char buf[16384];
+	char *buf;
 	size_t total = 0;
 	ssize_t read_ret;
 	ssize_t write_ret;
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
+	if ((buf = malloc(TRANSFER_BUF_SIZE)) == NULL)
+		return -1;
+
 	while (total < n) {
-		num_to_read_thistime = MIN((n - total), sizeof(buf));
+		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
 
 		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
 		if (read_ret == -1) {
 			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
+			SAFE_FREE(buf);
 			return -1;
 		}
 		if (read_ret == 0)
@@ -541,6 +549,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
  
 			if (write_ret == -1) {
 				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
+				SAFE_FREE(buf);
 				return -1;
 			}
 			if (write_ret == 0)
@@ -552,6 +561,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 		total += (size_t)read_ret;
 	}
 
+	SAFE_FREE(buf);
 	return (ssize_t)total;		
 }
 
