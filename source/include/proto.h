@@ -2346,11 +2346,6 @@ off_t smbw_lseek(int fd, off_t offset, int whence);
 int smbw_dup(int fd);
 int smbw_dup2(int fd, int fd2);
 int smbw_fork(void);
-int smbw_acl(const char *pathp, int cmd, int nentries, aclent_t *aclbufp);
-int smbw_facl(int fd, int cmd, int nentries, aclent_t *aclbufp);
-void stat64_convert(struct stat *st, struct stat64 *st64);
-void dirent64_convert(struct dirent *d, struct dirent64 *d64);
-void xstat_convert(int vers, struct stat *st, struct kernel_stat *kbuf);
 
 /*The following definitions come from  smbwrapper/smbw_dir.c  */
 
