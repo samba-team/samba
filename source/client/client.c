@@ -92,9 +92,9 @@ extern file_info def_finfo;
 
 /* timing globals */
 off_t get_total_size = 0;
-int get_total_time_ms = 0;
+unsigned int get_total_time_ms = 0;
 off_t put_total_size = 0;
-int put_total_time_ms = 0;
+unsigned int put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
