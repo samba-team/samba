@@ -2259,8 +2259,11 @@ void cli_shutdown(struct cli_state *cli)
 
 /****************************************************************************
   return error codes for the last packet
-  returns 0 if there was no error and the bext approx of a unix errno
+  returns 0 if there was no error and the best approx of a unix errno
   otherwise
+
+  for 32 bit "warnings", a return code of 0 is expected.
+
 ****************************************************************************/
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 {

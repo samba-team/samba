@@ -107,13 +107,11 @@ struct
   {"ntlogin",    cmd_netlogon_login_test, "<username> NT Domain login test"},
 #endif
   {"wksinfo",    cmd_wks_query_info,   "DCE/RPC - Workstation Query Info"},
-#if 0
   {"srvinfo",    cmd_srv_query_info,   "DCE/RPC - Server Query Info"},
   {"srvsessions",cmd_srv_enum_sess,    "DCE/RPC - List sessions on a server"},
   {"srvshares",  cmd_srv_enum_shares,  "DCE/RPC - List shares on a server"},
   {"srvconnections",cmd_srv_enum_conn, "DCE/RPC - List connections on a server"},
   {"srvfiles",   cmd_srv_enum_files,   "DCE/RPC - List files on a server"},
-#endif
   {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
   {"lookupsids", cmd_lsa_lookup_sids,  "Resolve names from SIDs"},
   {"enumusers",  cmd_sam_enum_users,   "SAM User Database Query (experimental!)"},
