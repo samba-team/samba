@@ -16,7 +16,7 @@
 	for their new password twice, to ensure that the new password
 	was typed correctly. No passwords will be echoed on the screen 
 	whilst being typed. If you have a blank SMB password (specified by 
-	the string &quot;NO PASSWORD&quot; in the smbpasswd file) then just press 
+	the string "NO PASSWORD" in the smbpasswd file) then just press 
 	the &lt;Enter&gt; key when asked for your old password. </p><p>smbpasswd can also be used by a normal user to change their
 	SMB password on remote machines, such as Windows NT Primary Domain 
 	Controllers.   See the (<i class="parameter"><tt>-r</tt></i>) and <i class="parameter"><tt>-U</tt></i> options 
@@ -64,10 +64,10 @@
 		HUGE amounts of log data, most of which is extremely cryptic. 
 		</p></dd><dt><span class="term">-n</span></dt><dd><p>This option specifies that the username following 
 		should have their password set to null (i.e. a blank password) in 
-		the local smbpasswd file. This is done by writing the string &quot;NO 
-		PASSWORD&quot; as the first part of the first password stored in the 
+		the local smbpasswd file. This is done by writing the string "NO 
+		PASSWORD" as the first part of the first password stored in the 
 		smbpasswd file. </p><p>Note that to allow users to logon to a Samba server once 
-		the password has been set to &quot;NO PASSWORD&quot; in the smbpasswd
+		the password has been set to "NO PASSWORD" in the smbpasswd
 		file the administrator must set the following parameter in the [global]
 		section of the <tt class="filename">smb.conf</tt> file : </p><p><b class="command">null passwords = yes</b></p><p>This option is only available when running smbpasswd as 
 		root.</p></dd><dt><span class="term">-r remote machine name</span></dt><dd><p>This option allows a user to specify what machine 
@@ -89,7 +89,7 @@
 		a real password database so it is not possible to change passwords 
 		specifying a Win95/98  machine as remote machine target. </p></dd><dt><span class="term">-R name resolve order</span></dt><dd><p>This option allows the user of smbpasswd to determine
 		what name resolution services to use when looking up the NetBIOS
-		name of the host being connected to. </p><p>The options are :&quot;lmhosts&quot;, &quot;host&quot;, &quot;wins&quot; and &quot;bcast&quot;. They
+		name of the host being connected to. </p><p>The options are :"lmhosts", "host", "wins" and "bcast". They
 		 cause names to be resolved as follows: </p><div class="itemizedlist"><ul type="disc"><li><p><tt class="constant">lmhosts</tt>: Lookup an IP 
             address in the Samba lmhosts file. If the line in lmhosts has 
             no name type attached to the NetBIOS name (see the <a href="lmhosts.5.html"><span class="citerefentry"><span class="refentrytitle">lmhosts</span>(5)</span></a> for details) then
@@ -127,7 +127,7 @@
 		has been configured to use the experimental
 		<b class="command">--with-ldapsam</b> option. The <i class="parameter"><tt>-w</tt></i> 
 		switch is used to specify the password to be used with the 
-		<a class="indexterm" name="id2797339"></a><i class="parameter"><tt>ldap admin dn</tt></i>.  Note that the password is stored in
+		<a class="indexterm" name="id2800537"></a><a href="#"><i class="parameter"><tt>ldap admin dn</tt></i></a>.  Note that the password is stored in
 		the <tt class="filename">secrets.tdb</tt> and is keyed off 
 		of the admin's DN.  This means that if the value of <i class="parameter"><tt>ldap
 		admin dn</tt></i> ever changes, the password will need to be 
@@ -147,7 +147,7 @@
 	smbd</b> running on the local machine by specifying either <i class="parameter"><tt>allow
 	hosts</tt></i> or <i class="parameter"><tt>deny hosts</tt></i> entry in 
 	the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file and neglecting to 
-	allow &quot;localhost&quot; access to the smbd. </p><p>In addition, the smbpasswd command is only useful if Samba
+	allow "localhost" access to the smbd. </p><p>In addition, the smbpasswd command is only useful if Samba
 	has been set up to use encrypted passwords. </p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.5.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(5)</span></a>, <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 

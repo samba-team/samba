@@ -1,6 +1,6 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbtree</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbtree.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbtree &#8212; A text based smb network browser
 	</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbtree</tt>  [-b] [-D] [-S]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">smbtree</b> is a smb browser program 
-	in text mode. It is similar to the &quot;Network Neighborhood&quot; found 
+	in text mode. It is similar to the "Network Neighborhood" found 
 	on Windows computers. It prints a tree with all 
 	the known domains, the servers in those domains and 
 	the shares on the servers.
@@ -31,9 +31,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796642"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2799845"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-N</span></dt><dd><p>If specified, this parameter suppresses the normal
 password prompt from the client to the user. This is useful when

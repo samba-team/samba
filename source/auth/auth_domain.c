@@ -26,9 +26,6 @@
 
 extern BOOL global_machine_password_needs_changing;
 
-extern userdom_struct current_user_info;
-
-
 /**
  * Connect to a remote server for domain security authenticaion.
  *

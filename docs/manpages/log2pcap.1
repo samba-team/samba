@@ -21,12 +21,10 @@
 .SH NAME
 log2pcap \- Extract network traces from Samba log files
 .SH "SYNOPSIS"
-.ad l
-.hy 0
-.HP 9
-\fBlog2pcap\fR [\-h] [logfile] [pcap_file]
-.ad
-.hy
+
+.nf
+\fBlog2pcap\fR [-h] [-q] [logfile] [pcap_file]
+.fi
 
 .SH "DESCRIPTION"
 
@@ -42,8 +40,13 @@ The log file must have a \fIlog level\fR of at least \fB5\fR to get the SMB head
 .SH "OPTIONS"
 
 .TP
-\-h
+-h
 If this parameter is specified the output file will be a hex dump, in a format that is readable by the text2pcap utility\&.
+
+
+.TP
+-q
+Be quiet\&. No warning messages about missing or incomplete data will be given\&.
 
 
 .TP
@@ -57,7 +60,7 @@ Name of the output file to write the pcap (or hexdump) data to\&. If this argume
 
 
 .TP
-\-h|\-\-help
+-h|--help
 Print a summary of command line options\&.
 
 
@@ -81,7 +84,7 @@ Convert to pcap using text2pcap:
 
 .nf
 
-	$ log2pcap \-h samba\&.log | text2pcap \-T 139,139 \- trace\&.pcap
+	$ log2pcap -h samba\&.log | text2pcap -T 139,139 - trace\&.pcap
 	.fi
 
 

@@ -1,35 +1,34 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 4. Common errors</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-ClientApp.html" title="Chapter 3. Specific client application problems"><link rel="next" href="FAQ-features.html" title="Chapter 5. Features"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 4. Common errors</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-errors"></a>Chapter 4. Common errors</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-errors.html#id2815002">Not listening for calling name</a></dt><dt><a href="FAQ-errors.html#id2816347">System Error 1240</a></dt><dt><a href="FAQ-errors.html#id2816385">smbclient ignores -N !</a></dt><dt><a href="FAQ-errors.html#id2816438">The data on the CD-Drive I've shared seems to be corrupted!</a></dt></dl></div><div xmlns:ns4="" class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2815002"></a>Not listening for calling name</h2></div></div><div></div></div><ns4:p>
-</ns4:p><pre class="programlisting">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 4. Common errors</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-ClientApp.html" title="Chapter 3. Specific client application problems"><link rel="next" href="FAQ-features.html" title="Chapter 5. Features"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 4. Common errors</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-ClientApp.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="FAQ-features.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-errors"></a>Chapter 4. Common errors</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-errors.html#id2817184">Not listening for calling name</a></dt><dt><a href="FAQ-errors.html#id2817226">System Error 1240</a></dt><dt><a href="FAQ-errors.html#id2816174">smbclient ignores -N !</a></dt><dt><a href="FAQ-errors.html#id2816225">The data on the CD-Drive I've shared seems to be corrupted!</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817184"></a>Not listening for calling name</h2></div></div><div></div></div><p>
+</p><pre class="programlisting">
 Session request failed (131,129) with myname=HOBBES destname=CALVIN
 Not listening for calling name
-</pre><ns4:p>
-</ns4:p><p>
+</pre><p>
+</p><p>
 If you get this when talking to a Samba box then it means that your
-global &quot;hosts allow&quot; or &quot;hosts deny&quot; settings are causing the Samba 
+global "hosts allow" or "hosts deny" settings are causing the Samba 
 server to refuse the connection. 
 </p><p>
-Look carefully at your &quot;hosts allow&quot; and &quot;hosts deny&quot; lines in the
+Look carefully at your "hosts allow" and "hosts deny" lines in the
 global section of smb.conf. 
 </p><p>
 It can also be a problem with reverse DNS lookups not functioning 
 correctly, leading to the remote host identity not being able to
 be confirmed, but that is less likely.
-</p></div><div xmlns:ns5="" class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816347"></a>System Error 1240</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2817226"></a>System Error 1240</h2></div></div><div></div></div><p>
 System error 1240 means that the client is refusing to talk
 to a non-encrypting server. Microsoft changed WinNT in service
 pack 3 to refuse to connect to servers that do not support
 SMB password encryption.
-</p><ns5:p>There are two main solutions:
-</ns5:p><table class="simplelist" border="0" summary="Simple list"><tr><td>enable SMB password encryption in Samba. See the encryption part of 
+</p><p>There are two main solutions:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td>enable SMB password encryption in Samba. See the encryption part of 
 the samba HOWTO Collection</td></tr><tr><td>disable this behaviour in NT. See the section about 
-Windows NT in the chapter &quot;Portability&quot; of the samba HOWTO collection
-</td></tr></table><ns5:p>
-</ns5:p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816385"></a>smbclient ignores -N !</h2></div></div><div></div></div><p>
+Windows NT in the chapter "Portability" of the samba HOWTO collection
+</td></tr></table><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816174"></a>smbclient ignores -N !</h2></div></div><div></div></div><p>
 &#8220;<span class="quote">When getting the list of shares available on a host using the command
 <b class="command">smbclient -N -L</b>
 the program always prompts for the password if the server is a Samba server.
-It also ignores the &quot;-N&quot; argument when querying some (but not all) of our
+It also ignores the "-N" argument when querying some (but not all) of our
 NT servers.
 </span>&#8221;
 </p><p>
@@ -43,7 +42,7 @@ This will set both the username and password to null, which is
 an anonymous login for SMB. Using -N would only set the password
 to null, and this is not accepted as an anonymous login for most
 SMB servers.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816438"></a>The data on the CD-Drive I've shared seems to be corrupted!</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816225"></a>The data on the CD-Drive I've shared seems to be corrupted!</h2></div></div><div></div></div><p>
 Some OSes (notably Linux) default to auto detection of file type on
 cdroms and do cr/lf translation. This is a very bad idea when use with
 Samba. It causes all sorts of stuff ups.

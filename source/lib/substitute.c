@@ -98,16 +98,17 @@ const char* get_local_machine_name(void)
 	return local_machine;
 }
 
+/*******************************************************************
+ Setup the string used by %U substitution.
+********************************************************************/
 
-/*
-  setup the string used by %U substitution 
-*/
 void sub_set_smb_name(const char *name)
 {
 	fstring tmp;
 
 	/* don't let anonymous logins override the name */
-	if (! *name) return;
+	if (! *name)
+		return;
 
 	fstrcpy(tmp,name);
 	trim_string(tmp," "," ");
@@ -115,6 +116,18 @@ void sub_set_smb_name(const char *name)
 	alpha_strcpy(smb_user_name,tmp,SAFE_NETBIOS_CHARS,sizeof(smb_user_name)-1);
 }
 
+/*******************************************************************
+ Setup the strings used by substitutions. Called per packet. Ensure
+ %U name is set correctly also.
+********************************************************************/
+
+void set_current_user_info(const userdom_struct *pcui)
+{
+	current_user_info = *pcui;
+	/* The following is safe as current_user_info.smb_name
+	 * has already been sanitised in register_vuid. */
+	fstrcpy(smb_user_name, current_user_info.smb_name);
+}
 
 /*******************************************************************
  Given a pointer to a %$(NAME) expand it as an environment variable.
