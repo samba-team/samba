@@ -145,26 +145,6 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		goto done;
 	}
 
-	/* validate the account and fill in UNIX uid and gid. Standard
-	 * getpwnam() is used instead of Get_Pwnam() as we do not need
-	 * to try case permutations
-	 *
-	 * FIXME: are we sure we do not need ?
-	 */
-	if (!username || !(pw = getpwnam_alloc(username))) {
-		if (!(tdb_state->permit_non_unix_accounts)) {
-			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", username));
-			ret = False;
-			goto done;
-		}
-	}
-		
-	if (pw) {
-		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
-
-		passwd_free(&pw);
-	}
-
 	pdb_set_logon_time(sampass, logon_time, PDB_SET);
 	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
 	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
