@@ -207,6 +207,21 @@ NTSTATUS ndr_pull_array_uint32(struct ndr_pull *ndr, int ndr_flags, uint32_t *da
 }
 
 /*
+  pull a const array of HYPER_T
+*/
+NTSTATUS ndr_pull_array_HYPER_T(struct ndr_pull *ndr, int ndr_flags, HYPER_T *data, uint32_t n)
+{
+	uint32_t i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_pull_HYPER_T(ndr, &data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   push a uint8
 */
 NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8_t v)
@@ -342,6 +357,21 @@ NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32
 	}
 	for (i=0;i<n;i++) {
 		NDR_CHECK(ndr_push_uint32(ndr, data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  push an array of HYPER_T
+*/
+NTSTATUS ndr_push_array_HYPER_T(struct ndr_push *ndr, int ndr_flags, const HYPER_T *data, uint32_t n)
+{
+	int i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_push_HYPER_T(ndr, data[i]));
 	}
 	return NT_STATUS_OK;
 }
@@ -796,6 +826,24 @@ void ndr_print_union(struct ndr_print *ndr, const char *name, uint16_t level, co
 void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level)
 {
 	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
+}
+
+void ndr_print_array_HYPER_T(struct ndr_print *ndr, const char *name, 
+			    const HYPER_T *data, uint32_t count)
+{
+	int i;
+
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			ndr_print_HYPER_T(ndr, idx, data[i]);
+			free(idx);
+		}
+	}
+	ndr->depth--;	
 }
 
 void ndr_print_array_uint32(struct ndr_print *ndr, const char *name, 
