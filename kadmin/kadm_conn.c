@@ -88,12 +88,15 @@ parse_ports(krb5_context context, const char *str)
 }
 
 static pid_t pgrp;
-int term_flag;
+sig_atomic_t term_flag, doing_useful_work;
 
 static RETSIGTYPE
 wait_term(int sig)
 {
-    term_flag = 1;
+    if(doing_useful_work)
+	term_flag = 1;
+    else
+	exit(0);
     SIGRETURN(0);
 }
 
