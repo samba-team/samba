@@ -1346,25 +1346,25 @@ void posix_locking_close_file(files_struct *fsp)
  Create the in-memory POSIX lock databases.
 ********************************************************************/
 
-BOOL posix_locking_init(void)
+BOOL posix_locking_init(int read_only)
 {
 	if (posix_lock_tdb && posix_pending_close_tdb)
 		return True;
-
+	
 	if (!posix_lock_tdb)
 		posix_lock_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
-					  O_RDWR|O_CREAT, 0644);
-    if (!posix_lock_tdb) {
-        DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
+					  read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
+	if (!posix_lock_tdb) {
+		DEBUG(0,("Failed to open POSIX byte range locking database.\n"));
 		return False;
-    }
+	}
 	if (!posix_pending_close_tdb)
 		posix_pending_close_tdb = tdb_open(NULL, 0, TDB_INTERNAL,
-   	            O_RDWR|O_CREAT, 0644);
-    if (!posix_pending_close_tdb) {
-        DEBUG(0,("Failed to open POSIX pending close database.\n"));
+						   read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644);
+	if (!posix_pending_close_tdb) {
+		DEBUG(0,("Failed to open POSIX pending close database.\n"));
 		return False;
-    }
+	}
 
 	return True;
 }
