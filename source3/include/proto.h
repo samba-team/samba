@@ -5,12 +5,8 @@
 
 /*The following definitions come from  client/client.c  */
 
-void do_dir(char *inbuf,char *outbuf,char *mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo);
-char *complete_cmd_null(char *text, int state);
-void complete_process_file(file_info *f);
-char *complete_remote_file(char *text, int state);
-char *complete_cmd(char *text, int state);
-char **completion_fn(char *text, int start, int end);
+void do_list(const char *mask,int attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs);
+struct cli_state *do_connect(char *server, char *share);
 
 /*The following definitions come from  client/clientutil.c  */
 
@@ -37,11 +33,11 @@ BOOL cli_reopen_connection(char *inbuf,char *outbuf);
 
 /*The following definitions come from  client/clitar.c  */
 
-void cmd_block(char *dum_in, char *dum_out);
-void cmd_tarmode(char *dum_in, char *dum_out);
-void cmd_setmode(char *dum_in, char *dum_out);
-void cmd_tar(char *inbuf, char *outbuf);
-int process_tar(char *inbuf, char *outbuf);
+void cmd_block(void);
+void cmd_tarmode(void);
+void cmd_setmode(void);
+void cmd_tar(void);
+int process_tar(void);
 int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind);
 
 /*The following definitions come from  lib/access.c  */
@@ -397,8 +393,8 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 ssize_t cli_write(struct cli_state *cli,
-				int fnum, uint16 write_mode,
-				char *buf, off_t offset, size_t size);
+		  int fnum, uint16 write_mode,
+		  char *buf, off_t offset, size_t size);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint32 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
@@ -416,14 +412,15 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 		   uint32 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino);
-int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info *));
+int cli_list(struct cli_state *cli,const char *Mask,int attribute, 
+	     void (*fn)(file_info *, const char *));
 BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_password,
                              char *old_password);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
-BOOL cli_initialise(struct cli_state *cli);
+struct cli_state *cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
@@ -437,6 +434,12 @@ BOOL cli_establish_connection(struct cli_state *cli,
 int cli_printjob_del(struct cli_state *cli, int job);
 int cli_print_queue(struct cli_state *cli, 
 		    void (*fn)(struct print_job_info *));
+BOOL cli_chkpath(struct cli_state *cli, char *path);
+BOOL cli_message_start(struct cli_state *cli, char *host, char *username, 
+			      int *grp);
+BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
+BOOL cli_message_end(struct cli_state *cli, int grp);
+BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -936,7 +939,6 @@ char *lp_nis_home_map_name(void);
 char *lp_netbios_aliases(void);
 char *lp_driverfile(void);
 char *lp_panic_action(void);
-char *lp_domain_sid(void);
 char *lp_domain_groups(void);
 char *lp_domain_admin_group(void);
 char *lp_domain_guest_group(void);
@@ -966,7 +968,6 @@ BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);
 BOOL lp_wins_proxy(void);
 BOOL lp_local_master(void);
-BOOL lp_domain_controller(void);
 BOOL lp_domain_master(void);
 BOOL lp_domain_logons(void);
 BOOL lp_preferred_master(void);
@@ -986,7 +987,6 @@ BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
 BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
-BOOL lp_net_wksta_user_logon(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
 BOOL lp_ole_locking_compat(void);

@@ -1037,7 +1037,6 @@ BOOL server_validate(char *user, char *domain,
 		     char *ntpass, int ntpasslen)
 {
   struct cli_state *cli;
-  extern fstring local_machine;
   static unsigned char badpass[24];
   static BOOL tested_password_server = False;
   static BOOL bad_password_server = False;
