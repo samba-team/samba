@@ -1,3 +1,7 @@
+2001-02-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_cred.c: implement krb5_get_cred_from_kdc_opt
+
 2001-02-14  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: test for lber.h when trying to link against
