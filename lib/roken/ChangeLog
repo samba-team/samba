@@ -1,3 +1,8 @@
+2000-12-29  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (EXTRA_libroken_la_SOURCES): ifaddrs.h ->
+	ifaddrs.hin
+
 2000-12-25  Assar Westerlund  <assar@sics.se>
 
 	* getarg.c (print_arg): add a case for arg_strings
