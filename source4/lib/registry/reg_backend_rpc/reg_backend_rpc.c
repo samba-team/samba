@@ -321,11 +321,11 @@ static WERROR rpc_query_key(REG_KEY *k)
     struct rpc_data *mydata = k->handle->backend_data;
     struct rpc_key_data *mykeydata;
 
-    r.in.handle = &mykeydata->pol;
     init_winreg_String(&r.in.class, NULL);
 
 	error = rpc_key_put_rpc_data(k, &mykeydata);
 	if(!W_ERROR_IS_OK(error)) return error;
+    r.in.handle = &mykeydata->pol;
 	
     status = dcerpc_winreg_QueryInfoKey(mydata->pipe, k->mem_ctx, &r);
 
