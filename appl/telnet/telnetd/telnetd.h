@@ -88,11 +88,15 @@
 #endif
 #include <ctype.h>
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <termios.h>
+
 #ifdef HAVE_CURSES_H
 #include <curses.h>
 #endif
-#include <termios.h>
-#include <unistd.h>
 
 #ifdef HAVE_PTY_H
 #include <pty.h>
