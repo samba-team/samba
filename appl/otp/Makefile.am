@@ -1,10 +1,9 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies 
-
-CFLAGS = @CFLAGS@ $(WFLAGS)
+include $(top_srcdir)/Makefile.am.common
 
 bin_PROGRAMS = otp otpprint
+bin_SUIDS = otp
 otp_SOURCES = otp.c otp_locl.h
 otpprint_SOURCES = otpprint.c otp_locl.h
 
@@ -13,8 +12,3 @@ LDADD = \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/roken/libroken.la \
 	$(DBLIB)
-
-## XXX how should this be done?
-install-exec-hook:
-	@if chown 0:0 $(DESTDIR)$(bindir)/otp && chmod u+s $(DESTDIR)$(bindir)/otp; then :;else \
-	chmod 0 $(DESTDIR)$(bindir)/otp; fi

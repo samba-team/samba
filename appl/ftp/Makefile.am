@@ -1,4 +1,5 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
+include $(top_srcdir)/Makefile.am.common
+
 SUBDIRS = common ftp ftpd

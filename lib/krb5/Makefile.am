@@ -1,16 +1,10 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include
-
-CFLAGS=$(WFLAGS) @CFLAGS@
-
-COMPILE_ET = ../com_err/compile_et
+INCLUDES += $(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libkrb5.la
-
-SUFFIXES = .et .h
 
 ERR_FILES = krb5_err.c heim_err.c
 
@@ -96,15 +90,13 @@ libkrb5_la_SOURCES = \
 	warn.c \
 	write_message.c \
 	$(ERR_FILES)
-libkrb5_la_LDFLAGS = -version-info 1:0:0
 
+libkrb5_la_LDFLAGS = -version-info 1:0:0
 
 $(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h
 
 $(srcdir)/krb5-protos.h:
 	cd $(srcdir); perl ../../cf/make-proto.pl $(libkrb5_la_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
-
-INCLUDES = $(INCLUDE_krb4)
 
 libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
@@ -112,34 +104,9 @@ man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \
 	krb5_parse_name.3 krb5_sname_to_principal.3 krb5_unparse_name.3
 
-
-
-incdir = $(includedir)
-inc_DATA = krb5_err.h heim_err.h
-idir = $(top_builddir)/include
+include_HEADERS = krb5.h krb5-protos.h
+include__DATA = krb5_err.h heim_err.h
 
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
-
-all-local: $(inc_DATA)
-	@for i in $(inc_DATA); do \
-		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
-			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
-			$(INSTALL_DATA) $$i $(idir)/$$i; \
-		fi ; \
-	done
-
-.et.c:
-	$(COMPILE_ET) $<
-
-.et.h:
-	$(COMPILE_ET) $<
-
-krb5_err.h: krb5_err.et
-
-krb5_err.c: krb5_err.et
-
-heim_err.h: heim_err.et
-
-heim_err.c: heim_err.et
 
 $(libkrb5_la_OBJECTS): krb5_err.h heim_err.h

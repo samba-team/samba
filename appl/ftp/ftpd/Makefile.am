@@ -1,10 +1,8 @@
 # $Id$
 
-CFLAGS = @CFLAGS@ $(WFLAGS)
+include $(top_srcdir)/Makefile.am.common
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
-
-INCLUDES = -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
+INCLUDES += -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
 
 libexec_PROGRAMS = ftpd
 
