@@ -22,7 +22,7 @@
 		<arg choice="opt">-h</arg>
 		<arg choice="opt">-V</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
-		<arg choice="opt">-l &lt;log file&gt;</arg>
+		<arg choice="opt">-l &lt;log directory&gt;</arg>
 		<arg choice="opt">-p &lt;port number&gt;</arg>
 		<arg choice="opt">-O &lt;socket option&gt;</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
@@ -148,16 +148,21 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-l &lt;log file&gt;</term>
-		<listitem><para>If specified, <replaceable>log file</replaceable> 
-		specifies a log filename into which informational and debug 
-		messages from the running server will be logged. The log 
+		<term>-l &lt;log directory&gt;</term>
+		<listitem><para>If specified,
+		<replaceable>log directory</replaceable> 
+		specifies a log directory into which the "log.smbd" log
+		file will be created for informational and debug 
+		messages from the running server. The log 
 		file generated is never removed by the server although 
 		its size may be controlled by the <ulink 
 		url="smb.conf.5.html#maxlogsize">max log size</ulink>
 		option in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> file.  The default log 
-		file name is specified at compile time.</para></listitem>
+		smb.conf(5)</filename></ulink> file.
+		</para>
+
+		<para>The default log directory is specified at
+		compile time.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
