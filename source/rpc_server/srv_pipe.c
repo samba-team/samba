@@ -102,6 +102,6 @@ int read_pipe(pipes_struct *p, char *data, int n)
 		return -1;		
 	}
 
-	return read_data(p->m->fd, data, n);
+	return read_with_timeout(p->m->fd, data, 16, n, 10000);
 }
 

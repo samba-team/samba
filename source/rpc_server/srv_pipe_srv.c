@@ -148,7 +148,10 @@ static BOOL api_pipe_fault_resp(rpcsrv_struct *l, uint32 status,
 
 	DEBUG(5,("api_pipe_fault_resp: make response\n"));
 
-	l->faulted_once_before = True;
+	if (l->auth_validated == False)
+	{
+		l->faulted_once_before = True;
+	}
 
 	prs_init(&(rhdr     ), 0, 4, False);
 	prs_init(&(rfault   ), 0, 4, False);

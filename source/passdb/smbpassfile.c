@@ -33,6 +33,8 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 {
   unsigned int mac_file_len;
   char *p;
+  fstring dom_name;
+  fstring trust_name;
 
   pstrcpy(mac_file, lp_smb_passwd_file());
   p = strrchr(mac_file, '/');
@@ -48,9 +50,14 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
     return;
   }
 
-  pstrcat(mac_file, domain);
+	fstrcpy(dom_name, domain);
+	strupper(dom_name);
+	fstrcpy(trust_name, name);
+	strupper(trust_name);
+
+  pstrcat(mac_file, dom_name);
   pstrcat(mac_file, ".");
-  pstrcat(mac_file, name);
+  pstrcat(mac_file, trust_name);
   pstrcat(mac_file, ".mac");
 
   DEBUG(5,("trust_account_file_name: %s\n", mac_file));
