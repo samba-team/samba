@@ -653,8 +653,11 @@ void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 			continue;
 
 		/* Iterate the printer list on this pipe. */
-		for (pol = p->pipe_handles.Policy; pol && pol->data_ptr; pol = pol->next ) {
+		for (pol = p->pipe_handles.Policy; pol; pol = pol->next ) {
 			Printer_entry *find_printer = (Printer_entry *)pol->data_ptr;
+
+			if (!find_printer)
+				continue;
 
 			/*
 			 * if the entry is the given printer or if it's a printerserver
