@@ -259,7 +259,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 /* List the available commands on a given pipe */
 
 static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                         int argc, char **argv)
+				 int argc, const char **argv)
 {
 	struct cmd_list *tmp;
         struct cmd_set *tmp_set;
@@ -364,7 +364,7 @@ static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /* Change the debug level */
 
 static NTSTATUS cmd_debuglevel(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                               int argc, char **argv)
+                               int argc, const char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -479,7 +479,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Run command */
 
-	result = cmd_entry->fn(cli, mem_ctx, argc, (char **) argv);
+	result = cmd_entry->fn(cli, mem_ctx, argc, (const char **) argv);
 
 	/* Cleanup */
 
