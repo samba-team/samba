@@ -60,7 +60,7 @@ extern fstring local_machine;
 #define QNLEN 12		/* queue name maximum length */
 
 #define MAJOR_VERSION 4
-#define MINOR_VERSION 0
+#define MINOR_VERSION 1
 
 extern int Client;
 
