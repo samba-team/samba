@@ -185,7 +185,7 @@ enable_shared=yes
 # which needs '.lib').
 enable_static=yes
 enable_fast_install=yes
-enable_dlopen=yes
+enable_dlopen=unknown
 enable_win32_dll=no
 ltmain=
 silent=
