@@ -18,6 +18,7 @@ popper \- pop 3 server
 .SH SYNOPSIS
 .B /usr/etc/popper
 [ -d ]
+[ -k ]
 [ -t trace-file]
 .SH DESCRIPTION
 .I Popper
@@ -36,6 +37,10 @@ information is saved using syslog(8).  The
 flag turns on debugging and saves the trace information in
 .I trace\-file
 using fprintf(s).
+.PP
+The
+.B \-k
+flag tells popper to talk the kerberised POP protocol (KPOP).
 .SH HOW TO OBTAIN THE SERVER
 .PP
 The POP server is available via anonymous ftp from ftp.CC.Berkeley.EDU
