@@ -1268,6 +1268,9 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	BOOL bad_path = False;
 	files_struct *fsp;
 	NTSTATUS status;
+	SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
+	ssize_t retval = -1;
+
 	START_PROFILE(SMBopenX);
 
 	/* If it's an IPC, pass off the pipe handler. */
@@ -1320,18 +1323,22 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 
 	size = sbuf.st_size;
 
-	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
-		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(inbuf,smb_vwv9);
-		if (allocation_size && (allocation_size > (SMB_BIG_UINT)size)) {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
-			if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
-				close_file(fsp,False);
-				END_PROFILE(SMBntcreateX);
-				return ERROR_NT(NT_STATUS_DISK_FULL);
-			}
-		} else {
-			fsp->initial_allocation_size = smb_roundup(fsp->conn,(SMB_BIG_UINT)size);
+	/* Setting the "size" field in vwv9 and vwv10 causes the file to be set to this size,
+	   if the file is truncated or created. */
+	if (((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) && allocation_size) {
+		fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
+		if (vfs_allocate_file_space(fsp, fsp->initial_allocation_size) == -1) {
+			close_file(fsp,False);
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
+		retval = vfs_set_filelen(fsp, (SMB_OFF_T)allocation_size);
+		if (retval < 0) {
+			close_file(fsp,False);
+			END_PROFILE(SMBwrite);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+		size = get_allocation_size(conn,fsp,&sbuf);
 	}
 
 	fmode = dos_mode(conn,fname,&sbuf);
@@ -1371,7 +1378,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		put_dos_date3(outbuf,smb_vwv4,mtime & ~1);
 	else
 		put_dos_date3(outbuf,smb_vwv4,mtime);
-	SIVAL(outbuf,smb_vwv6,(uint32)get_allocation_size(conn,fsp,&sbuf));
+	SIVAL(outbuf,smb_vwv6,(uint32)size);
 	SSVAL(outbuf,smb_vwv8,rmode);
 	SSVAL(outbuf,smb_vwv11,smb_action);
 

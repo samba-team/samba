@@ -918,8 +918,9 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		
 	file_len = sbuf.st_size;
 	fmode = dos_mode(conn,fname,&sbuf);
-	if(fmode == 0)
+	if(fmode == 0) {
 		fmode = FILE_ATTRIBUTE_NORMAL;
+	}
 	if (!fsp->is_directory && (fmode & aDIR)) {
 		close_file(fsp,False);
 		END_PROFILE(SMBntcreateX);
@@ -956,11 +957,13 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * correct bit for extended oplock reply.
 	 */
 	
-	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
 		extended_oplock_granted = True;
+	}
 	
-	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		extended_oplock_granted = True;
+	}
 
 #if 0
 	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
@@ -1481,7 +1484,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 						oplock_request,&rmode,&smb_action);
 
 		if (!fsp) { 
-
 			if(errno == EISDIR) {
 
 				/*
@@ -1511,32 +1513,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
-  
-		file_len = sbuf.st_size;
-		fmode = dos_mode(conn,fname,&sbuf);
-		if(fmode == 0)
-			fmode = FILE_ATTRIBUTE_NORMAL;
-
-		if (fmode & aDIR) {
-			talloc_destroy(ctx);
-			close_file(fsp,False);
-			restore_case_semantics(conn, file_attributes);
-			return ERROR_NT(NT_STATUS_ACCESS_DENIED);
-		} 
-
-		/* 
-		 * If the caller set the extended oplock request bit
-		 * and we granted one (by whatever means) - set the
-		 * correct bit for extended oplock reply.
-		 */
-    
-		if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-			extended_oplock_granted = True;
-		}
-  
-		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-			extended_oplock_granted = True;
-		}
 	}
 
 	/*
@@ -1578,7 +1554,18 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	}
 
 	restore_case_semantics(conn, file_attributes);
+	talloc_destroy(ctx);
 
+	file_len = sbuf.st_size;
+	fmode = dos_mode(conn,fname,&sbuf);
+	if(fmode == 0) {
+		fmode = FILE_ATTRIBUTE_NORMAL;
+	}
+	if (!fsp->is_directory && (fmode & aDIR)) {
+		close_file(fsp,False);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
+	} 
+	
 	/* Save the requested allocation size. */
 	if ((smb_action == FILE_WAS_CREATED) || (smb_action == FILE_WAS_OVERWRITTEN)) {
 		SMB_BIG_UINT allocation_size = (SMB_BIG_UINT)IVAL(params,12);
@@ -1589,7 +1576,6 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, allocation_size);
 			if (fsp->is_directory) {
 				close_file(fsp,False);
-				END_PROFILE(SMBntcreateX);
 				/* Can't set allocation size on a directory. */
 				return ERROR_NT(NT_STATUS_ACCESS_DENIED);
 			}
@@ -1600,6 +1586,20 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		} else {
 			fsp->initial_allocation_size = smb_roundup(fsp->conn, (SMB_BIG_UINT)file_len);
 		}
+	}
+
+	/* 
+	 * If the caller set the extended oplock request bit
+	 * and we granted one (by whatever means) - set the
+	 * correct bit for extended oplock reply.
+	 */
+    
+	if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
+		extended_oplock_granted = True;
+	}
+  
+	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		extended_oplock_granted = True;
 	}
 
 	/* Realloc the size of parameters and data we will return */

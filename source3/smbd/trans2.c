@@ -58,14 +58,18 @@ SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, SMB
 {
 	SMB_BIG_UINT ret;
 
+	if(S_ISDIR(sbuf->st_mode)) {
+		return 0;
+	}
+
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
 #else
 	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
 #endif
 
-	if (!ret && fsp && fsp->initial_allocation_size)
-		ret = fsp->initial_allocation_size;
+	if (fsp && fsp->initial_allocation_size)
+		ret = MAX(ret,fsp->initial_allocation_size);
 
 	return smb_roundup(conn, ret);
 }
@@ -2800,7 +2804,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	fullpathname = fname;
 	file_size = get_file_size(sbuf);
-	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 	if (mode & aDIR) {
 		/* This is necessary, as otherwise the desktop.ini file in
 		 * this folder is ignored */
@@ -2858,6 +2861,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
+	allocation_size = get_allocation_size(conn,fsp,&sbuf);
+
 	if (fsp) {
 		if (fsp->pending_modtime) {
 			/* the pending modtime overrides the current modtime */
@@ -2869,6 +2874,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		if (fsp1 && fsp1->pending_modtime) {
 			/* the pending modtime overrides the current modtime */
 			sbuf.st_mtime = fsp1->pending_modtime;
+		}
+		if (fsp1 && fsp1->initial_allocation_size) {
+			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
 		}
 	}
 
