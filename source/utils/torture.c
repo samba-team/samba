@@ -682,6 +682,64 @@ static void run_attrtest(void)
 }
 
 
+/*
+  This checks a couple of trans2 calls
+*/
+static void run_trans2test(void)
+{
+	static struct cli_state cli;
+	int fnum;
+	uint32 size;
+	time_t c_time, a_time, m_time;
+	char *fname = "\\trans2.tst";
+
+	printf("staring trans2 test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	if (!cli_qfileinfo(&cli, fnum, &c_time, &a_time, &m_time, &size)) {
+		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(&cli));
+	}
+	cli_close(&cli, fnum);
+
+	sleep(2);
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+
+	if (!cli_qpathinfo(&cli, fname, &c_time, &a_time, &m_time, &size)) {
+		printf("ERROR: qpathinfo failed (%s)\n", cli_errstr(&cli));
+	} else {
+		if (c_time != m_time) {
+			printf("create time=%s", ctime(&c_time));
+			printf("modify time=%s", ctime(&m_time));
+			printf("This system appears to have sticky create times\n");
+		}
+		if (a_time % (60*60) == 0) {
+			printf("access time=%s", ctime(&a_time));
+			printf("This system appears to set a midnight access time\n");
+		}
+
+		if (abs(m_time - time(NULL)) > 60) {
+			printf("ERROR: totally incorrect times - maybe word reversed?\n");
+		}
+	}
+
+	cli_unlink(&cli, fname);
+
+	close_connection(&cli);
+
+	printf("trans2 test finished\n");
+}
+
+
 static void create_procs(int nprocs, int numops)
 {
 	int i, status;
@@ -801,6 +859,7 @@ static void create_procs(int nprocs, int numops)
 	run_unlinktest();
 	run_browsetest();
 	run_attrtest();
+	run_trans2test();
 
 	return(0);
 }

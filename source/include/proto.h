@@ -75,6 +75,10 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
 		int *attr, uint32 *size, time_t *t);
 BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
+BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
+		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
+BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
+		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 			 char *myname);

@@ -238,13 +238,6 @@ Byte offset   Type     name                description
 
 #define NT_FILE_ATTRIBUTE_NORMAL        0x80
 
-/* Function prototypes */
-
-
-int reply_findnclose(char *inbuf,char *outbuf,int length,int bufsize);
-
-int reply_findclose(char *inbuf,char *outbuf,int length,int bufsize);
-
 #endif
 
 

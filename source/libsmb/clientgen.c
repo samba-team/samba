@@ -24,6 +24,7 @@
 #endif
 
 #include "includes.h"
+#include "trans2.h"
 
 
 extern int DEBUGLEVEL;
@@ -57,8 +58,8 @@ static BOOL cli_send_trans(struct cli_state *cli,
 	char *outdata,*outparam;
 	char *p;
 
-	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*SIZEOFWORD)); /* hack */
-	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*SIZEOFWORD+this_lparam));
+	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
+	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
 
 	bzero(cli->outbuf,smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
@@ -83,7 +84,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 	SSVAL(cli->outbuf,smb_dsoff,smb_offset(outdata,cli->outbuf)); /* dsoff */
 	SCVAL(cli->outbuf,smb_suwcnt,lsetup);	/* suwcnt */
 	for (i=0;i<lsetup;i++)		/* setup[] */
-		SSVAL(cli->outbuf,smb_setup+i*SIZEOFWORD,setup[i]);
+		SSVAL(cli->outbuf,smb_setup+i*2,setup[i]);
 	p = smb_buf(cli->outbuf);
 	if (trans==SMBtrans) {
 		strcpy(p,name);			/* name[] */
@@ -131,7 +132,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 			SSVAL(cli->outbuf,smb_sdsoff,smb_offset(outdata,cli->outbuf)); /* dsoff */
 			SSVAL(cli->outbuf,smb_sdsdisp,tot_data);	/* dsdisp */
 			if (trans==SMBtrans2)
-				SSVAL(cli->outbuf,smb_sfid,fid);		/* fid */
+				SSVALS(cli->outbuf,smb_sfid,fid);		/* fid */
 			if (this_lparam)			/* param[] */
 				memcpy(outparam,param,this_lparam);
 			if (this_ldata)			/* data[] */
@@ -243,7 +244,7 @@ static BOOL cli_api(struct cli_state *cli,
 		    int *rdrcnt, char *param,char *data, 
 		    char **rparam, char **rdata)
 {
-  cli_send_trans(cli,SMBtrans,"\\PIPE\\LANMAN",0,0,
+  cli_send_trans(cli,SMBtrans,PIPE_LANMAN,0,0,
 		 data,param,NULL,
 		 drcnt,prcnt,0,
 		 mdrcnt,mprcnt,0);
@@ -939,6 +940,111 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t)
 		return False;
 	}
 
+	return True;
+}
+
+/****************************************************************************
+send a qpathinfo call
+****************************************************************************/
+BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
+		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	param_len = strlen(fname) + 7;
+
+	memset(param, 0, param_len);
+	SSVAL(param, 0, SMB_INFO_STANDARD);
+	pstrcpy(&param[6], fname);
+
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 10, 0)) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
+		return False;
+	}
+
+	if (!rdata || data_len < 22) {
+		return False;
+	}
+
+	if (c_time) {
+		*c_time = make_unix_date2(rdata+0);
+	}
+	if (a_time) {
+		*a_time = make_unix_date2(rdata+4);
+	}
+	if (m_time) {
+		*m_time = make_unix_date2(rdata+8);
+	}
+	if (size) {
+		*size = IVAL(rdata, 12);
+	}
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
+	return True;
+}
+
+
+/****************************************************************************
+send a qfileinfo call
+****************************************************************************/
+BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
+		   time_t *c_time, time_t *a_time, time_t *m_time, uint32 *size)
+{
+	int data_len = 0;
+	int param_len = 0;
+	uint16 setup = TRANSACT2_QFILEINFO;
+	pstring param;
+	char *rparam=NULL, *rdata=NULL;
+
+	param_len = 4;
+
+	memset(param, 0, param_len);
+	SSVAL(param, 0, fnum);
+	SSVAL(param, 2, SMB_INFO_STANDARD);
+
+	if (!cli_send_trans(cli, SMBtrans2, NULL, -1, 0, 
+			    NULL, param, &setup, 
+			    data_len, param_len, 1,
+			    cli->max_xmit, 2, 0)) {
+		return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2, &data_len, &param_len, 
+			       &rdata, &rparam)) {
+		return False;
+	}
+
+	if (!rdata || data_len < 22) {
+		return False;
+	}
+
+	if (c_time) {
+		*c_time = make_unix_date2(rdata+0);
+	}
+	if (a_time) {
+		*a_time = make_unix_date2(rdata+4);
+	}
+	if (m_time) {
+		*m_time = make_unix_date2(rdata+8);
+	}
+	if (size) {
+		*size = IVAL(rdata, 12);
+	}
+
+	if (rdata) free(rdata);
+	if (rparam) free(rparam);
 	return True;
 }
 
