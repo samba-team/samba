@@ -41,6 +41,13 @@ static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *p
 	pkey->pid = sys_getpid();
 	pkey->cnum = conn?conn->cnum:-1;
 	fstrcpy(pkey->name, name);
+#ifdef DEVELOPER
+	{
+		size_t sl = strlen(pkey->name);
+		if (sizeof(fstring)-sl)
+			memset(&pkey->name[sl], '\0', sizeof(fstring)-sl);
+	}
+#endif
 
 	pkbuf->dptr = (char *)pkey;
 	pkbuf->dsize = sizeof(*pkey);
