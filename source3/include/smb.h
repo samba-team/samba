@@ -180,6 +180,7 @@ implemented */
 #define ERROR_INSUFFICIENT_BUFFER	(122)
 #define ERROR_INVALID_NAME		(123)
 #define ERROR_INVALID_LEVEL		(124)
+#define ERROR_MORE_DATA         (234)
 #define ERROR_NO_MORE_ITEMS		(259)
 #define ERROR_EAS_DIDNT_FIT		(275) /* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED		(282) /* Extended attributes not supported */
