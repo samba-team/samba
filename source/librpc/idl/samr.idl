@@ -341,11 +341,18 @@
 		samr_Name description;
 	} samr_GroupInfoDesciption;
 
+	typedef enum {
+		GroupInfoAll = 1,
+		GroupInfoName,
+		GroupInfoX,
+		GroupInfoDescription
+	} GroupInfo;
+
 	typedef union {
-		[case(1)] samr_GroupInfoAll all;
-		[case(2)] samr_GroupInfoName name;
-		[case(3)] samr_GroupInfoX unknown;
-		[case(4)] samr_GroupInfoDesciption description;
+		[case(GroupInfoAll)]         samr_GroupInfoAll        all;
+		[case(GroupInfoName)]        samr_GroupInfoName       name;
+		[case(GroupInfoX)]           samr_GroupInfoX          unknown;
+		[case(GroupInfoDescription)] samr_GroupInfoDesciption description;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
