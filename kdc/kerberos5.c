@@ -42,6 +42,16 @@ RCSID("$Id$");
 
 #define MAX_TIME ((time_t)((1U << 31) - 1))
 
+static void
+fix_time(time_t **t)
+{
+    if(*t == NULL){
+	ALLOC(*t);
+	**t = MAX_TIME;
+    }
+    if(**t == 0) **t = MAX_TIME; /* fix for old clients */
+}
+
 krb5_error_code
 as_rep(KDC_REQ *req, 
        krb5_data *reply,
@@ -354,10 +364,7 @@ as_rep(KDC_REQ *req,
 	    kdc_log(2, "Postdated ticket requested -- %s", 
 		    client_name);
 	}
-	if(b->till == NULL){
-	    ALLOC(b->till);
-	    *b->till = MAX_TIME;
-	}
+	fix_time(&b->till);
 	t = *b->till;
 	if(client->max_life)
 	    t = min(t, start + *client->max_life);
@@ -682,10 +689,7 @@ tgs_make_reply(KDC_REQ_BODY *b, EncTicketPart *tgt,
     rep.msg_type = krb_tgs_rep;
 
     et.authtime = tgt->authtime;
-    if(b->till == NULL){
-	ALLOC(b->till);
-	*b->till = MAX_TIME;
-    }
+    fix_time(&b->till);
     et.endtime = min(tgt->endtime, *b->till);
     ALLOC(et.starttime);
     *et.starttime = kdc_time;
