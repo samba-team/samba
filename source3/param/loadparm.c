@@ -1293,6 +1293,13 @@ static void init_globals(void)
 
 	if (!done_init) {
 		int i;
+
+		/* The logfile can be set before this is invoked. Free it if so. */
+		if (Globals.szLogFile != NULL) {
+			string_free(&Globals.szLogFile);
+			Globals.szLogFile = NULL;
+		}
+
 		memset((void *)&Globals, '\0', sizeof(Globals));
 
 		for (i = 0; parm_table[i].label; i++)
