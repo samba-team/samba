@@ -583,8 +583,8 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 		<title>smb.conf for Winbind set-up</title>
 <smbconfsection>[global]</smbconfsection>
      &lt;...&gt;
-<smbconfcomment> separate domain and username with '+', like DOMAIN+username</smbconfcomment>
-<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
+<smbconfcomment> separate domain and username with '\', like DOMAIN\username</smbconfcomment>
+<smbconfoption><name>winbind separator</name><value>\</value></smbconfoption>
 <smbconfcomment> use uids from 10000 to 20000 for domain users</smbconfcomment>
 <smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption>
 <smbconfcomment> use gids from 10000 to 20000 for domain groups</smbconfcomment>
@@ -686,16 +686,16 @@ your PDC. For example, I get the following response:
 </para>
 
 <para><screen>
-	CEO+Administrator
-	CEO+burdell
-	CEO+Guest
-	CEO+jt-ad
-	CEO+krbtgt
-	CEO+TsInternetUser
+	CEO\Administrator
+	CEO\burdell
+	CEO\Guest
+	CEO\jt-ad
+	CEO\krbtgt
+	CEO\TsInternetUser
 </screen></para>
 
 <para>
-Obviously, I have named my domain <quote>CEO</quote> and my <smbconfoption><name>winbind separator</name></smbconfoption> is <quote>+</quote>.
+Obviously, I have named my domain <quote>CEO</quote> and my <smbconfoption><name>winbind separator</name></smbconfoption> is <quote>\</quote>.
 </para>
 
 <para>
@@ -704,15 +704,15 @@ You can do the same sort of thing to get group information from the PDC:
 
 <para><screen>
 &rootprompt;<userinput>/usr/local/samba/bin/wbinfo -g</userinput>
-	CEO+Domain Admins
-	CEO+Domain Users
-	CEO+Domain Guests
-	CEO+Domain Computers
-	CEO+Domain Controllers
-	CEO+Cert Publishers
-	CEO+Schema Admins
-	CEO+Enterprise Admins
-	CEO+Group Policy Creator Owners
+	CEO\Domain Admins
+	CEO\Domain Users
+	CEO\Domain Guests
+	CEO\Domain Computers
+	CEO\Domain Controllers
+	CEO\Cert Publishers
+	CEO\Schema Admins
+	CEO\Enterprise Admins
+	CEO\Group Policy Creator Owners
 </screen></para>
 
 <para>
@@ -1201,18 +1201,18 @@ cost of running a mixed UNIX and NT network.</para>
 
 <para><screen>
 &rootprompt;<userinput>wbinfo -u</userinput>
-MIDEARTH+maryo
-MIDEARTH+jackb
-MIDEARTH+ameds
+MIDEARTH\maryo
+MIDEARTH\jackb
+MIDEARTH\ameds
 ...
-MIDEARTH+root
+MIDEARTH\root
 
 &rootprompt;<userinput>wbinfo -g</userinput>
-MIDEARTH+Domain Users
-MIDEARTH+Domain Admins
-MIDEARTH+Domain Guests
+MIDEARTH\Domain Users
+MIDEARTH\Domain Admins
+MIDEARTH\Domain Guests
 ...
-MIDEARTH+Accounts
+MIDEARTH\Accounts
 
 &rootprompt;<userinput>getent passwd</userinput>
 root:x:0:0:root:/root:/bin/bash

@@ -404,7 +404,6 @@ Domain Member Servers (DMSs) and Domain Member Clients (DMCs).
         idmap gid = 10000-20000
         template primary group = "Domain Users"
         template shell = /bin/bash
-        winbind separator = +
 </screen>
 	</para>
 
