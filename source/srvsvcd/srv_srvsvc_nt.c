@@ -377,6 +377,25 @@ static void make_srv_share_502_info(SH_INFO_502_HDR * sh502,
 }
 
 /*******************************************************************
+ fill in a share info level 1005 structure.
+
+ is the share a dfs root? return 3 else return 0
+ ********************************************************************/
+static void make_srv_share_1005_info(SHARE_INFO_1005* sh1005, int snum)
+{
+  DEBUG(1, ("make_srv_share_1005_info\n"));
+  sh1005->dfs_root_flag = 0;
+
+#ifdef MS_DFS
+  if(lp_host_msdfs() && *lp_dfsmap(snum))
+    sh1005->dfs_root_flag = 3;
+#endif
+
+  DEBUG(5, ("make_srv_share_1005_info: set dfs_root_flag to %u\n",
+	sh1005->dfs_root_flag));
+}
+
+/*******************************************************************
  makes a SRV_R_NET_SHARE_ENUM structure.
 ********************************************************************/
 static uint32 make_srv_share_info_ctr(SRV_SHARE_INFO_CTR * ctr,
@@ -557,6 +576,16 @@ uint32 _srv_net_share_get_info(const UNISTR2 *srv_name,
 						info502_data, snum);
 			return NT_STATUS_NOPROBLEMO;
 		}
+	case 1005:
+	  {
+	    ctr->info.id1005 = g_new(SHARE_INFO_1005, 1);
+	    if(ctr->info.id1005 == NULL)
+	      {
+		return NT_STATUS_NO_MEMORY;
+	      }
+	    make_srv_share_1005_info(ctr->info.id1005, snum);
+	    return NT_STATUS_NOPROBLEMO;
+	  }
 		default:
 		{
 			return NT_STATUS_INVALID_INFO_CLASS;

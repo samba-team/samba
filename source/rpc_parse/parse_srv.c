@@ -507,6 +507,27 @@ static BOOL srv_io_share_info_502(char *desc,
 	return True;
 }
 
+static void srv_free_share_info_1005(SHARE_INFO_1005* sh1005)
+{
+	if(sh1005 == NULL)
+		return;
+}
+	
+static BOOL srv_io_share_info_1005(char* desc, SHARE_INFO_1005* sh1005,
+				   uint32 count, prs_struct* ps, int depth)
+{
+	if(sh1005 == NULL)
+		return False;
+		
+	prs_debug(ps, depth, desc, "srv_io_share_info1005");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag);
+	return True;
+}
+
 /*******************************************************************
  reads or writes a structure.
  ********************************************************************/
@@ -547,6 +568,16 @@ static void srv_free_share_info_union(SHARE_INFO_UNION * info,
 			}
 			safe_free(info->id502);
 			info->id502 = NULL;
+			break;
+		}
+		case 1005:
+		{
+			for (i=0; i < count; i++)
+			{
+				srv_free_share_info_1005(&(info->id1005[i]));
+			}
+			safe_free(info->id1005);
+			info->id1005 = NULL;
 			break;
 		}
 		default:
@@ -618,6 +649,21 @@ static BOOL srv_io_share_info_union(const char *desc,
 			}
 			return srv_io_share_info_502("", info->id502, count,
 						     ps, depth);
+		}
+		case 1005:
+		{
+			if(UNMARSHALLING(ps))
+			{
+				info->id1005 = g_new(SHARE_INFO_1005, count);
+				if(info->id1005 == NULL)
+				{
+					DEBUG(1,
+					      ("srv_io_share_info_ctr at level 1005: malloc failed\n"));
+					return False;
+				}
+			}
+			return srv_io_share_info_1005("", info->id1005, count,
+						      ps, depth);
 		}
 		default:
 		{

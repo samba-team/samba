@@ -447,6 +447,7 @@ static const struct api_struct api_lsa_cmds[] = {
 	{"LSA_LOOKUPSIDS", LSA_LOOKUPSIDS, api_lsa_lookup_sids},
 	{"LSA_LOOKUPNAMES", LSA_LOOKUPNAMES, api_lsa_lookup_names},
 	{"LSA_SET_INFO", LSA_SET_INFO, api_lsa_set_info},
+/*	{"LSA_UNK_2D",  LSA_UNK_2D, api_lsa_unk_2d}, */
 	{NULL, 0, NULL}
 };
 

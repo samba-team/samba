@@ -100,6 +100,7 @@ enum SID_NAME_USE
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
 #define LSA_OPENPOLICY2        0x2c
+#define LSA_UNK_2D             0x2d /* LsaGetConnectedCredentials ? */
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
@@ -517,6 +518,30 @@ typedef struct lsa_r_lookup_names
 
 } LSA_R_LOOKUP_NAMES;
 
+/* LSA_Q_UNK_2D - gets username\domain of connected user
+                  called when "Take Ownership" is clicked -SK */
+typedef struct lsa_q_unk_2d
+{
+  uint32 ptr_srvname;
+  UNISTR2 uni2_srvname;
+  uint32 unk1; /* 3 unknown uint32's are seen right after uni2_srvname */
+  uint32 unk2; /* unk2 appears to be a ptr, unk1 = unk3 = 0 usually */
+  uint32 unk3; 
+} LSA_Q_UNK_2D;
+
+/* LSA_R_UNK_2D */
+typedef struct lsa_r_unk_2d
+{
+  uint32 ptr_user_name;
+  UNIHDR hdr_user_name;
+  UNISTR2 uni2_user_name;
+  
+  uint32 ptr_dom_name;
+  UNIHDR hdr_dom_name;
+  UNISTR2 uni2_dom_name;
+
+  uint32 status;
+} LSA_R_UNK_2D;
 
 #endif /* _RPC_LSA_H */
 

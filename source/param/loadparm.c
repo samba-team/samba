@@ -3252,6 +3252,11 @@ static void set_default_server_announce_type(void)
 	{
 		default_server_announce |= SV_TYPE_TIME_SOURCE;
 	}
+
+	if (lp_host_msdfs())
+	{
+		default_server_announce |= SV_TYPE_DFS_SERVER;
+	}
 }
 
 /***********************************************************

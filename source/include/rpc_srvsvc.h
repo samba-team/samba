@@ -428,6 +428,11 @@ typedef struct _share_info_502
 	SH_INFO_502_DATA info502_data;
 } SHARE_INFO_502;
 
+/* SHARE_INFO_1005 (level 1005 share info: is dfs root? ) */
+typedef struct _share_info_1005
+{
+  uint32 dfs_root_flag;
+} SHARE_INFO_1005;
 /*
  * This is the clean way, where microsoft always
  * has "void *".
@@ -438,6 +443,7 @@ typedef union _share_info_union
 	SHARE_INFO_1   *id1;
 	SHARE_INFO_2   *id2;
 	SHARE_INFO_502 *id502;
+        SHARE_INFO_1005 *id1005;
 	void *id;
 } SHARE_INFO_UNION;
 
