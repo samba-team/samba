@@ -64,6 +64,9 @@ init_auth
     Checksum cksum;
     krb5_enctype enctype;
 
+    output_token->length = 0;
+    output_token->value  = NULL;
+
     outbuf.length = 0;
     outbuf.data   = NULL;
 
@@ -122,6 +125,7 @@ init_auth
     flags |= GSS_C_CONF_FLAG;
     flags |= GSS_C_INTEG_FLAG;
     flags |= GSS_C_SEQUENCE_FLAG;
+    flags |= GSS_C_TRANS_FLAG;
 
     if (ret_flags)
 	*ret_flags = flags;
