@@ -57,9 +57,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->user.account_name= cli_credentials_get_username(ctx->credentials);
-	libnetctx->user.domain_name	= cli_credentials_get_domain(ctx->credentials);
-	libnetctx->user.password	= cli_credentials_get_password(ctx->credentials);
+	libnetctx->credentials = ctx->credentials;
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_CHANGE_PASSWORD_GENERIC;
@@ -134,9 +132,7 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	if (!libnetctx) {
 		return -1;	
 	}
-	libnetctx->user.account_name= cli_credentials_get_username(ctx->credentials);
-	libnetctx->user.domain_name	= cli_credentials_get_domain(ctx->credentials);
-	libnetctx->user.password	= cli_credentials_get_password(ctx->credentials);
+	libnetctx->credentials = ctx->credentials;
 
 	/* prepare password change */
 	r.generic.level			= LIBNET_SET_PASSWORD_GENERIC;
