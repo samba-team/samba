@@ -277,7 +277,8 @@ const char *tmpdir(void)
  Add a gid to an array of gids if it's not already there.
 ****************************************************************************/
 
-void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
+void add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
+			     gid_t **gids, int *num)
 {
 	int i;
 
@@ -285,8 +286,11 @@ void add_gid_to_array_unique(gid_t gid, gid_t **gids, int *num)
 		if ((*gids)[i] == gid)
 			return;
 	}
-	
-	*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
+
+	if (mem_ctx != NULL)
+		*gids = TALLOC_REALLOC_ARRAY(mem_ctx, *gids, gid_t, *num+1);
+	else
+		*gids = SMB_REALLOC_ARRAY(*gids, gid_t, *num+1);
 
 	if (*gids == NULL)
 		return;

@@ -518,7 +518,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		add_sid_to_array_unique(&alias, sids, num);
+		add_sid_to_array_unique(NULL, &alias, sids, num);
 
 		if (sids == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -665,7 +665,7 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		if (!string_to_sid(&member, member_string))
 			continue;
 		
-		add_sid_to_array(&member, closure->sids, closure->num);
+		add_sid_to_array(NULL, &member, closure->sids, closure->num);
 	}
 
 	return 0;
@@ -1348,11 +1348,42 @@ NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
-				       const DOM_SID *members,
+				       TALLOC_CTX *mem_ctx,
+				       const DOM_SID *domain_sid,
+				       const DOM_SID const *members,
 				       int num_members,
-				       DOM_SID **aliases, int *num)
+				       uint32 **alias_rids,
+				       int *num_alias_rids)
 {
-	return alias_memberships(members, num_members, aliases, num);
+	DOM_SID *alias_sids;
+	int i, num_alias_sids;
+	NTSTATUS result;
+
+	alias_sids = NULL;
+	num_alias_sids = 0;
+
+	result = alias_memberships(members, num_members,
+				   &alias_sids, &num_alias_sids);
+
+	if (!NT_STATUS_IS_OK(result))
+		return result;
+
+	*alias_rids = TALLOC_ARRAY(mem_ctx, uint32, num_alias_sids);
+	if ((alias_sids != 0) && (*alias_rids == NULL))
+		return NT_STATUS_NO_MEMORY;
+
+	*num_alias_rids = 0;
+
+	for (i=0; i<num_alias_sids; i++) {
+		if (!sid_peek_check_rid(domain_sid, &alias_sids[i],
+					&(*alias_rids)[*num_alias_rids]))
+			continue;
+		*num_alias_rids += 1;
+	}
+
+	SAFE_FREE(alias_sids);
+
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************

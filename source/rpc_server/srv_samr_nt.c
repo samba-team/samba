@@ -3230,8 +3230,8 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
 {
-	int num_groups = 0;
-	uint32 *rids=NULL;
+	int num_alias_rids;
+	uint32 *alias_rids;
 	struct samr_info *info = NULL;
 	int i;
 		
@@ -3239,8 +3239,6 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	NTSTATUS ntstatus2;
 
 	DOM_SID *members;
-	DOM_SID *aliases;
-	int num_aliases;
 	BOOL res;
 
 	r_u->status = NT_STATUS_OK;
@@ -3273,35 +3271,20 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	for (i=0; i<q_u->num_sids1; i++)
 		sid_copy(&members[i], &q_u->sid[i].sid);
 
+	alias_rids = NULL;
+	num_alias_rids = 0;
+
 	become_root();
-	res = pdb_enum_alias_memberships(members,
-					 q_u->num_sids1, &aliases,
-					 &num_aliases);
+	res = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
+					 q_u->num_sids1,
+					 &alias_rids, &num_alias_rids);
 	unbecome_root();
 
 	if (!res)
 		return NT_STATUS_UNSUCCESSFUL;
 
-	rids = NULL;
-	num_groups = 0;
-
-	for (i=0; i<num_aliases; i++) {
-		uint32 rid;
-
-		if (!sid_peek_check_rid(&info->sid, &aliases[i], &rid))
-			continue;
-
-		rids = TALLOC_REALLOC_ARRAY(p->mem_ctx, rids, uint32, num_groups+1);
-
-		if (rids == NULL)
-			return NT_STATUS_NO_MEMORY;
-
-		rids[num_groups] = rid;
-		num_groups += 1;
-	}
-	SAFE_FREE(aliases);
-
-	init_samr_r_query_useraliases(r_u, num_groups, rids, NT_STATUS_OK);
+	init_samr_r_query_useraliases(r_u, num_alias_rids, alias_rids,
+				      NT_STATUS_OK);
 	return NT_STATUS_OK;
 }
 

@@ -337,10 +337,12 @@ typedef struct pdb_context
 				      DOM_SID **members, int *num_members);
 
 	NTSTATUS (*pdb_enum_alias_memberships)(struct pdb_context *context,
-					       const DOM_SID *members,
+					       TALLOC_CTX *mem_ctx,
+					       const DOM_SID *domain_sid,
+					       const DOM_SID const *members,
 					       int num_members,
-					       DOM_SID **aliases,
-					       int *num_aliases);
+					       uint32 **alias_rids,
+					       int *num_alias_rids);
 
 	NTSTATUS (*pdb_lookup_rids)(struct pdb_context *context,
 				    TALLOC_CTX *mem_ctx,
@@ -445,9 +447,12 @@ typedef struct pdb_methods
 				  const DOM_SID *alias, DOM_SID **members,
 				  int *num_members);
 	NTSTATUS (*enum_alias_memberships)(struct pdb_methods *methods,
-					   const DOM_SID *members,
+					   TALLOC_CTX *mem_ctx,
+					   const DOM_SID *domain_sid,
+					   const DOM_SID const *members,
 					   int num_members,
-					   DOM_SID **aliases, int *num);
+					   uint32 **alias_rids,
+					   int *num_alias_rids);
 	NTSTATUS (*lookup_rids)(struct pdb_methods *methods,
 				TALLOC_CTX *mem_ctx,
 				const DOM_SID *domain_sid,
