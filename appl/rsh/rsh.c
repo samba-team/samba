@@ -278,15 +278,15 @@ send_krb5_auth(int s,
       errx (1, "krb5_auth_con_getkey: %s",
 	    krb5_get_err_text(context, status));
 
-    len = strlen(local_user) + 1;
-    if (net_write (s, local_user, len) != len)
+    len = strlen(remote_user) + 1;
+    if (net_write (s, remote_user, len) != len)
 	err (1, "write");
     if (do_encrypt && net_write (s, "-x ", 3) != 3)
 	err (1, "write");
     if (net_write (s, cmd, cmd_len) != cmd_len)
 	err (1, "write");
-    len = strlen(remote_user) + 1;
-    if (net_write (s, remote_user, len) != len)
+    len = strlen(local_user) + 1;
+    if (net_write (s, local_user, len) != len)
 	err (1, "write");
 
     if (!do_forward || krb5_forward_cred (auth_context, s, hostname)) {
