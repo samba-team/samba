@@ -287,7 +287,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 /* Process a new connection by adding it to the client connection list */
 
-static void new_connection(int listen_sock, BOOL privilaged)
+static void new_connection(int listen_sock, BOOL privileged)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
@@ -318,7 +318,7 @@ static void new_connection(int listen_sock, BOOL privilaged)
 
 	state->last_access = time(NULL);	
 
-	state->privilaged = privilaged;
+	state->privileged = privileged;
 
 	/* Add to connection list */
 	
@@ -639,7 +639,7 @@ static void process_loop(void)
 						break;
 					}
 				}
-				/* new, non-privilaged connection */
+				/* new, non-privileged connection */
 				new_connection(listen_sock, False);
 			}
             
@@ -653,7 +653,7 @@ static void process_loop(void)
 						break;
 					}
 				}
-				/* new, privilaged connection */
+				/* new, privileged connection */
 				new_connection(listen_priv_sock, True);
 			}
             

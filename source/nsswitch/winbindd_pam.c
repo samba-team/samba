@@ -179,8 +179,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 	DATA_BLOB lm_resp, nt_resp;
 
-	if (!state->privilaged) {
-		DEBUG(2, ("winbindd_pam_auth_crap: non-privilaged access denied!\n"));
+	if (!state->privileged) {
+		DEBUG(2, ("winbindd_pam_auth_crap: non-privileged access denied!\n"));
 		/* send a better message than ACCESS_DENIED */
 		push_utf8_fstring(state->response.data.auth.error_string, "winbind client not authorized to use winbindd_pam_auth_crap");
 		result =  NT_STATUS_ACCESS_DENIED;

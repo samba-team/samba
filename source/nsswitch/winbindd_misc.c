@@ -239,7 +239,7 @@ enum winbindd_result winbindd_netbios_name(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 {
 
-	DEBUG(3, ("[%5d]: request location of privilaged pipe\n", state->pid));
+	DEBUG(3, ("[%5d]: request location of privileged pipe\n", state->pid));
 	
 	state->response.extra_data = strdup(get_winbind_priv_pipe_dir());
 	if (!state->response.extra_data)
