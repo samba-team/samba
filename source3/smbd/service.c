@@ -723,7 +723,7 @@ connection_struct *make_connection_with_chdir(const char *service_in, DATA_BLOB 
 	 * so we have to do it as a separate step  --jerry
 	 */
 	 
-	if (vfs_ChDir(conn,conn->connectpath) != 0) {
+	if ( conn && vfs_ChDir(conn,conn->connectpath) != 0 ) {
 		DEBUG(0,("move_driver_to_download_area: Can't change directory to %s for [print$] (%s)\n",
 			 conn->connectpath,strerror(errno)));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
