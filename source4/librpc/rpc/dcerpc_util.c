@@ -105,17 +105,17 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	twr.towers.floors[1].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on an RPC connection ... */
-	twr.towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN_RPC_C;
+	twr.towers.floors[2].lhs.protocol = EPM_PROTOCOL_NCACN;
 	twr.towers.floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr.towers.floors[2].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on a TCP port ... */
-	twr.towers.floors[3].lhs.protocol = EPM_PROTOCOL_NCACN_TCP;
+	twr.towers.floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 	twr.towers.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr.towers.floors[3].rhs.rhs_data = data_blob_talloc_zero(p, 2);
 
 	/* on an IP link ... */
-	twr.towers.floors[4].lhs.protocol = EPM_PROTOCOL_NCACN_IP;
+	twr.towers.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 	twr.towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr.towers.floors[4].rhs.rhs_data = data_blob_talloc_zero(p, 4);
 

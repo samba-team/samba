@@ -42,26 +42,35 @@ interface epmapper
 	} epm_prot_uuid;
 
 	typedef enum {
-		EPM_PROTOCOL_NCACN_DNET_NSP	= 0x04,
-		EPM_PROTOCOL_NCACN_OSI_TP4  = 0x05,
-		EPM_PROTOCOL_NCACN_OSI_CLNS = 0x06,
-		EPM_PROTOCOL_NCACN_TCP     	= 0x07,
-		EPM_PROTOCOL_NCADG_UDP     	= 0x08,
-		EPM_PROTOCOL_NCACN_IP      	= 0x09,
-		EPM_PROTOCOL_NCADG_RPC      = 0x0a, /* Connectionless RPC */
-		EPM_PROTOCOL_NCACN_RPC_C   	= 0x0b,
-		EPM_PROTOCOL_NCACN_SPX     	= 0x0c,
-		EPM_PROTOCOL_UUID    		= 0x0d,
-		EPM_PROTOCOL_NCADG_IPX  	= 0x0e,
-		EPM_PROTOCOL_NCACN_SMB     	= 0x0f,
-		EPM_PROTOCOL_NCACN_PIPE    	= 0x10,
-		EPM_PROTOCOL_NCACN_NETBIOS 	= 0x11,
-		EPM_PROTOCOL_NCACN_NB_NB   	= 0x12, /* NetBIOS over NetBEUI */
-		EPM_PROTOCOL_NCACN_HTTP    	= 0x1f
+		
+		/* Level 4 and higher */
+		EPM_PROTOCOL_DNET_NSP		= 0x04,
+		EPM_PROTOCOL_OSI_TP4  		= 0x05,
+		EPM_PROTOCOL_OSI_CLNS 		= 0x06,
+		EPM_PROTOCOL_TCP     		= 0x07,
+		EPM_PROTOCOL_UDP     		= 0x08,
+		EPM_PROTOCOL_IP      		= 0x09,
+
+		/* These 4 are protocol identifiers, always at level 3 or lower */
+		EPM_PROTOCOL_NCADG 			= 0x0a, /* Connectionless RPC */
+		EPM_PROTOCOL_NCACN 			= 0x0b,
+		EPM_PROTOCOL_NCALRPC 		= 0x0c, /* Local RPC */
+		EPM_PROTOCOL_UUID 			= 0x0d,
+
+		EPM_PROTOCOL_IPX  			= 0x0e,
+		EPM_PROTOCOL_SMB     		= 0x0f,
+		EPM_PROTOCOL_PIPE    		= 0x10,
+		EPM_PROTOCOL_NETBIOS 		= 0x11,
+		EPM_PROTOCOL_NB_NB   		= 0x12, /* NetBIOS over NetBEUI */
+		EPM_PROTOCOL_SPX     		= 0x13,
+		EPM_PROTOCOL_NB_IPX  		= 0x14, /* NetBIOS over IPX */
+		EPM_PROTOCOL_HTTP    		= 0x1f,
+		EPM_PROTOCOL_UNIX_DS  		= 0x20,  /* Unix domain socket */
+		EPM_PROTOCOL_NULL			= 0x21
 	} epm_protocols;
 
 	typedef [nodiscriminant] union {
-		[case(13)] epm_prot_uuid uuid;
+		[case(EPM_PROTOCOL_UUID)] epm_prot_uuid uuid;
 		[default]  [flag(NDR_REMAINING)] DATA_BLOB lhs_data;
 	} epm_protocol_info;
 
