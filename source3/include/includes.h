@@ -55,7 +55,6 @@
 #endif
 
 
-#include <sys/un.h>
 #include <sys/types.h>
 
 #ifdef TIME_WITH_SYS_TIME
@@ -95,6 +94,10 @@
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
 #endif
 
 #ifdef HAVE_SYS_SYSCALL_H
