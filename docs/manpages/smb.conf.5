@@ -293,34 +293,6 @@ gets it wrong then sending me a level 3 log should allow me to fix it.
 There are some quite creative things that can be done with these
 substitutions and other smb.conf options.
 
-.B New for 1.9.18p3 and above.
-
-Thanks to a patch from Branko Cibej, Samba can now expand environment
-variables in the smb.conf file.
-
-To embed an environment variable, use the syntax :
-
-%$(ENVIRONMENT_VARIABLE_NAME)
-
-(substitute 'ENVIRONMENT_VARIABLE_NAME' with the name of the
-environment variable you wish to have substituted at this point.
-
-The entire '%$(ENVIRONMENT_VARIABLE_NAME)' string will be replaced
-by the contents of the environment variable. If a non-existing
-environment variable is specified, the original string will be
-left alone (and will probably cause a parsing error in the smb.conf
-at that point).
-
-Remember, the environment used will be that of the smbd/nmbd process,
-not that of the connecting user. As this is usually started at boot 
-time, then it will be very different from that of a normal user. 
-Remember to add any special variables into the environment before 
-starting the master smbd/nmbd.
-
-If smbd/nmbd is run from inetd, then the environment used will be
-inherited from inetd. In this case you will need to specify
-any special variables before starting inetd.
-
 .SS NAME MANGLING
 
 Samba supports "name mangling" so that DOS and Windows clients can use
@@ -544,8 +516,6 @@ use rhosts
 
 valid chars
 
-win95 bug compatibility
-
 wins proxy
 
 wins server
@@ -600,6 +570,8 @@ directory mode
 dont descend
 
 dos filetimes
+
+dos filetime resolution
 
 exec
 
@@ -1347,6 +1319,29 @@ options (UTIME_WORKAROUND) which was broken and is now removed.
 
 .B Example:
         dos filetimes = True
+
+.SS dos filetime resolution (S)
+Under the DOS and Windows FAT filesystem, the finest granulatity on
+time resolution is two seconds. Setting this parameter for a share
+causes Samba to round the reported time down to the nearest two
+second boundary when a query call that requires one second resolution
+is made to smbd. 
+
+This option is mainly used as a compatibility option for Visual C++ 
+when used against Samba shares. If oplocks are enabled on a share,
+Visual C++ uses two different time reading calls to check if a file 
+has changed since it was last read. One of these calls uses a one-second 
+granularity, the other uses a two second granularity. As the two second 
+call rounds any odd second down, then if the file has a timestamp of an 
+odd number of seconds then the two timestamps will not match and Visual 
+C++ will keep reporting the file has changed. Setting this option causes 
+the two timestamps to match, and Visual C++ is happy.
+
+.B Default:
+        dos filetime resolution = False
+
+.B Example:
+        dos filetime resolution = True
 
 .SS encrypt passwords (G)
 
@@ -3786,28 +3781,6 @@ only to areas that are outside the directory tree being exported.
 
 .B Example:
  	wide links = no
-
-.SS win95 bug compatibility (G)
-
-This boolean controls the behavior of smbd with respect to the reporting
-of 'access time' on files and directories. With this set to true, Samba
-will return the modify time (UNIX mtime) as the access time to the client.
-
-This is sometimes desirable due to the fact that in Windows, a files
-access time is only updated when the file is closed, whereas on UNIX,
-a files access time is updated as soon as it is read. For Visual C++
-to work correctly on a Samba share with oplocks, it is desirable to
-set this parameter to 'yes'. This parameter also causes Samba to
-swap the Date and Time information in two of the trans2 SMB calls,
-as a Windows 95 server does. Other bug-for-bug compatible fixes
-will also be turned on by setting this flag as the need arises
-to be bug compatible with a Windows 95 server.
-
-.B Default:
-        win95 bug compatibility = no
-
-.B Example:
-        win95 bug compatibility = yes
 
 .SS wins proxy (G)
 
