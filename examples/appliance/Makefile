@@ -1,6 +1,3 @@
-# Samba appliance Makefile
-# use at your own risk!
-
 PREFIX=/usr/local/samba
 CONFIGOPTS=--with-pam --prefix=$(PREFIX)
 
@@ -20,6 +17,10 @@ tngb:
 clean:
 	(cd head/source; make clean)
 	(cd tng; make clean)
+
+proto:
+	(cd head/source; make proto)
+	(cd tng; make proto)
 
 distclean:
 	(cd head/source; make clean; rm -f config.cache; rm -f Makefile)
