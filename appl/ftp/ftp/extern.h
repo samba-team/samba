@@ -80,7 +80,7 @@ int	getreply (int);
 int	globulize (char **);
 char   *gunique (char *);
 void	help (int, char **);
-char   *hookup (char *, int);
+char   *hookup (const char *, int);
 void	ftp_idle (int, char **);
 int     initconn (void);
 void	intr (int);
