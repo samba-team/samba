@@ -272,7 +272,8 @@ krb5_auth_con_getkey(krb5_context context,
 		     krb5_keyblock **keyblock);
 
 void
-krb5_free_keyblock(krb5_keyblock *keyblock);
+krb5_free_keyblock(krb5_context context,
+		   krb5_keyblock *keyblock);
 
 krb5_error_code
 krb5_auth_setcksumtype(krb5_context context,
