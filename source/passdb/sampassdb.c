@@ -597,7 +597,6 @@ struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
 /*************************************************************
  converts a smb_passwd structure to a sam_passwd structure.
  **************************************************************/
-
 struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 {
 	static struct sam_passwd pw_buf;
@@ -605,6 +604,15 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	static fstring nt_name;
 	static fstring unix_name;
 	static pstring unix_gecos;
+
+	static pstring home_dir;
+	static pstring home_drive;
+	static pstring logon_script;
+	static pstring profile_path;
+	static pstring acct_desc;
+	static pstring workstations;
+
+	extern BOOL sam_logon_in_ssb;
 
 	if (user == NULL) return NULL;
 
@@ -638,6 +646,40 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 		unix_to_nt_time(&pw_buf.pass_last_set_time, user->pass_last_set_time);
 		unix_to_nt_time(&pw_buf.pass_can_change_time, user->pass_last_set_time);
 	}
+
+	DEBUG(5,("getsamfile21pwent\n"));
+
+	pstrcpy(logon_script , lp_logon_script       ());
+	pstrcpy(profile_path , lp_logon_path         ());
+	pstrcpy(home_drive   , lp_logon_drive        ());
+	pstrcpy(home_dir     , lp_logon_home         ());
+	pstrcpy(workstations , "");
+
+	/* XXXX hack to get standard_sub_basic() to use sam logon username */
+	/* possibly a better way would be to do a become_user() call */
+
+	sam_logon_in_ssb = True;
+
+	standard_sub_basic(logon_script);
+	standard_sub_basic(profile_path);
+	standard_sub_basic(home_drive);
+	standard_sub_basic(home_dir);
+	standard_sub_basic(workstations);
+
+	sam_logon_in_ssb = False;
+
+	if (pw_buf.home_dir == NULL)
+		pw_buf.home_dir     = home_dir;
+	if (pw_buf.dir_drive == NULL)
+		pw_buf.dir_drive    = home_drive;
+	if (pw_buf.logon_script == NULL)
+		pw_buf.logon_script = logon_script;
+	if (pw_buf.profile_path == NULL)
+		pw_buf.profile_path = profile_path;
+	if (pw_buf.acct_desc == NULL)
+		pw_buf.acct_desc    = acct_desc;
+	if (pw_buf.workstations == NULL)
+		pw_buf.workstations = workstations;
 
 	return &pw_buf;
 }

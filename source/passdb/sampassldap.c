@@ -155,6 +155,19 @@ static struct sam_passwd *ldapsam_getsam()
         sam21->unknown_str = NULL;
         sam21->munged_dial = NULL;
 
+	/* XXXX hack to get standard_sub_basic() to use sam logon username */
+	/* possibly a better way would be to do a become_user() call */
+
+	sam_logon_in_ssb = True;
+
+	standard_sub_basic(logon_script);
+	standard_sub_basic(profile_path);
+	standard_sub_basic(home_drive);
+	standard_sub_basic(home_dir);
+	standard_sub_basic(workstations);
+
+	sam_logon_in_ssb = False;
+
         ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
 	return sam21;
 }

@@ -108,10 +108,6 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 		          samlogon_user));
 	}
 
-	/* XXXX hack to get standard_sub_basic() to use sam logon username */
-	/* possibly a better way would be to do a become_user() call */
-	sam_logon_in_ssb = True;
-
 	pstrcpy(full_name    , "");
 	pstrcpy(logon_script , lp_logon_script       ());
 	pstrcpy(profile_path , lp_logon_path         ());
@@ -119,6 +115,17 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	pstrcpy(home_dir     , lp_logon_home         ());
 	pstrcpy(acct_desc    , "");
 	pstrcpy(workstations , "");
+
+	/* XXXX hack to get standard_sub_basic() to use sam logon username */
+	/* possibly a better way would be to do a become_user() call */
+
+	sam_logon_in_ssb = True;
+
+	standard_sub_basic(logon_script);
+	standard_sub_basic(profile_path);
+	standard_sub_basic(home_drive);
+	standard_sub_basic(home_dir);
+	standard_sub_basic(workstations);
 
 	sam_logon_in_ssb = False;
 
