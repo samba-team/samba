@@ -207,13 +207,22 @@ BOOL create_rpc_reply(pipes_struct *p,
 
 static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 {
+	uchar *pwd = NULL;
+	uchar null_pwd[16];
 	uchar lm_owf[24];
 	uchar nt_owf[128];
 	size_t lm_owf_len;
 	size_t nt_owf_len;
+	size_t usr_len;
+	size_t dom_len;
+	size_t wks_len;
+	BOOL anonymous = False;
+
 	struct smb_passwd *smb_pass = NULL;
 	
 	user_struct *vuser = get_valid_user_struct(p->vuid);
+
+	memset(null_pwd, 0, sizeof(null_pwd));
 
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -225,13 +234,23 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 
 	lm_owf_len = p->ntlmssp_resp.hdr_lm_resp.str_str_len;
 	nt_owf_len = p->ntlmssp_resp.hdr_nt_resp.str_str_len;
+	usr_len    = p->ntlmssp_resp.hdr_usr    .str_str_len;
+	dom_len    = p->ntlmssp_resp.hdr_domain .str_str_len;
+	wks_len    = p->ntlmssp_resp.hdr_wks    .str_str_len;
 
-
-	if (lm_owf_len == 0) return False;
-	if (nt_owf_len == 0) return False;
-	if (p->ntlmssp_resp.hdr_usr    .str_str_len == 0) return False;
-	if (p->ntlmssp_resp.hdr_domain .str_str_len == 0) return False;
-	if (p->ntlmssp_resp.hdr_wks    .str_str_len == 0) return False;
+	if (lm_owf_len == 0 && nt_owf_len == 0 &&
+	    usr_len == 0 && dom_len == 0 && wks_len == 0)
+	{
+		anonymous = True;
+	}
+	else
+	{
+		if (lm_owf_len == 0) return False;
+		if (nt_owf_len == 0) return False;
+		if (p->ntlmssp_resp.hdr_usr    .str_str_len == 0) return False;
+		if (p->ntlmssp_resp.hdr_domain .str_str_len == 0) return False;
+		if (p->ntlmssp_resp.hdr_wks    .str_str_len == 0) return False;
+	}
 
 	if (lm_owf_len > sizeof(lm_owf)) return False;
 	if (nt_owf_len > sizeof(nt_owf)) return False;
@@ -269,21 +288,36 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 		fstrcpy(p->wks      , p->ntlmssp_resp.wks   );
 	}
 
-	DEBUG(5,("user: %s domain: %s wks: %s\n", p->user_name, p->domain, p->wks));
 
-	become_root(True);
-	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
-	                      (uchar*)p->ntlmssp_chal.challenge,
-	                      lm_owf, lm_owf_len,
-	                      nt_owf, nt_owf_len,
-	                      NULL, vuser->dc.user_sess_key);
-	smb_pass = getsmbpwnam(p->user_name);
-	unbecome_root(True);
+	if (anonymous)
+	{
+		DEBUG(5,("anonymous user session\n"));
+		mdfour(vuser->dc.user_sess_key, null_pwd, 16);
+		pwd = null_pwd;
+		p->ntlmssp_validated = True;
+	}
+	else
+	{
+		DEBUG(5,("user: %s domain: %s wks: %s\n", p->user_name, p->domain, p->wks));
+		become_root(True);
+		p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
+				      (uchar*)p->ntlmssp_chal.challenge,
+				      lm_owf, lm_owf_len,
+				      nt_owf, nt_owf_len,
+				      NULL, vuser->dc.user_sess_key);
+		smb_pass = getsmbpwnam(p->user_name);
+		unbecome_root(True);
 
-	if (p->ntlmssp_validated && smb_pass != NULL && smb_pass->smb_passwd)
+		if (smb_pass != NULL)
+		{
+			pwd = smb_pass->smb_passwd;
+		}
+	}
+
+	if (p->ntlmssp_validated && pwd != NULL)
 	{
 		uchar p24[24];
-		NTLMSSPOWFencrypt(smb_pass->smb_passwd, lm_owf, p24);
+		NTLMSSPOWFencrypt(pwd, lm_owf, p24);
 		{
 			unsigned char j = 0;
 			int ind;
@@ -314,7 +348,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 			p->ntlmssp_hash[256] = 0;
 			p->ntlmssp_hash[257] = 0;
 		}
-/*		NTLMSSPhash(p->ntlmssp_hash, p24); */
 		p->ntlmssp_seq_num = 0;
 	}
 	else
