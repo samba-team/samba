@@ -732,6 +732,23 @@ struct ldap_message *ldap_ldif2msg(const char *s)
 	return ldif_read(fgetc_string, &state);
 }
 
+static void ldap_encode_response(enum ldap_request_tag tag,
+				 struct ldap_Result *result,
+				 ASN1_DATA *data)
+{
+	asn1_push_tag(data, ASN1_APPLICATION(tag));
+	asn1_write_enumerated(data, result->resultcode);
+	asn1_write_OctetString(data, result->dn,
+			       (result->dn) ? strlen(result->dn) : 0);
+	asn1_write_OctetString(data, result->errormessage,
+			       (result->errormessage) ?
+			       strlen(result->errormessage) : 0);
+	if (result->referral != NULL)
+		asn1_write_OctetString(data, result->referral,
+				       strlen(result->referral));
+	asn1_pop_tag(data);
+}
+
 BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 {
 	ASN1_DATA data;
@@ -746,17 +763,20 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		struct ldap_BindRequest *r = &msg->r.BindRequest;
 		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_BindRequest));
 		asn1_write_Integer(&data, r->version);
-		asn1_write_OctetString(&data, r->dn, (r->dn != NULL) ? strlen(r->dn) : 0);
+		asn1_write_OctetString(&data, r->dn,
+				       (r->dn != NULL) ? strlen(r->dn) : 0);
 
 		switch (r->mechanism) {
 		case LDAP_AUTH_MECH_SIMPLE:
-			asn1_push_tag(&data, r->mechanism | 0x80); /* context, primitive */
+			/* context, primitive */
+			asn1_push_tag(&data, r->mechanism | 0x80);
 			asn1_write(&data, r->creds.password,
 				   strlen(r->creds.password));
 			asn1_pop_tag(&data);
 			break;
 		case LDAP_AUTH_MECH_SASL:
-			asn1_push_tag(&data, r->mechanism | 0xa0); /* context, constructed */
+			/* context, constructed */
+			asn1_push_tag(&data, r->mechanism | 0xa0);
 			asn1_write_OctetString(&data, r->creds.SASL.mechanism,
 					       strlen(r->creds.SASL.mechanism));
 			asn1_write_OctetString(&data, r->creds.SASL.creds.data,
@@ -772,7 +792,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_BindResponse: {
-/*		struct ldap_BindResponse *r = &msg->r.BindResponse; */
+		struct ldap_BindResponse *r = &msg->r.BindResponse;
+		ldap_encode_response(msg->type, &r->response, &data);
 		break;
 	}
 	case LDAP_TAG_UnbindRequest: {
@@ -817,11 +838,31 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultEntry: {
-/*		struct ldap_SearchResultEntry *r = &msg->r.SearchResultEntry; */
+		struct ldap_SearchResEntry *r = &msg->r.SearchResultEntry;
+		asn1_push_tag(&data, ASN1_APPLICATION(LDAP_TAG_SearchResultEntry));
+		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
+		asn1_push_tag(&data, ASN1_SEQUENCE(0));
+		for (i=0; i<r->num_attributes; i++) {
+			struct ldap_attribute *attr = &r->attributes[i];
+			asn1_push_tag(&data, ASN1_SEQUENCE(0));
+			asn1_write_OctetString(&data, attr->name,
+					       strlen(attr->name));
+			asn1_push_tag(&data, ASN1_SEQUENCE(1));
+			for (j=0; j<attr->num_values; j++) {
+				asn1_write_OctetString(&data,
+						       attr->values[j].data,
+						       attr->values[j].length);
+			}
+			asn1_pop_tag(&data);
+			asn1_pop_tag(&data);
+		}
+		asn1_pop_tag(&data);
+		asn1_pop_tag(&data);
 		break;
 	}
 	case LDAP_TAG_SearchResultDone: {
-/*		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone; */
+		struct ldap_SearchResultDone *r = &msg->r.SearchResultDone;
+		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
 	case LDAP_TAG_ModifyRequest: {
@@ -956,7 +997,8 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ExtendedResponse: {
-/*		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse; */
+		struct ldap_ExtendedResponse *r = &msg->r.ExtendedResponse;
+		ldap_encode_response(msg->type, &r->response, &data);
 		break;
 	}
 	default:
@@ -1022,6 +1064,111 @@ static BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 	return True;
 }
 				       
+static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
+			       char **filter)
+{
+	uint8 filter_tag, tag_desc;
+
+	if (!asn1_peek_uint8(data, &filter_tag))
+		return False;
+
+	tag_desc = filter_tag;
+	filter_tag &= 0x1f;	/* strip off the asn1 stuff */
+	tag_desc &= 0xe0;
+
+	switch(filter_tag) {
+	case 0: {
+		/* AND of one or more filters */
+		if (tag_desc != 0xa0) /* context compount */
+			return False;
+
+		asn1_start_tag(data, ASN1_CONTEXT(0));
+
+		*filter = talloc_strdup(mem_ctx, "(&");
+		if (*filter == NULL)
+			return False;
+
+		while (asn1_tag_remaining(data) > 0) {
+			char *subfilter;
+			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
+				return False;
+			*filter = talloc_asprintf(mem_ctx, "%s%s", *filter,
+						  subfilter);
+			if (*filter == NULL)
+				return False;
+		}
+		asn1_end_tag(data);
+
+		*filter = talloc_asprintf(mem_ctx, "%s)", *filter);
+		break;
+	}
+	case 1: {
+		/* OR of one or more filters */
+		if (tag_desc != 0xa0) /* context compount */
+			return False;
+
+		asn1_start_tag(data, ASN1_CONTEXT(1));
+
+		*filter = talloc_strdup(mem_ctx, "(|");
+		if (*filter == NULL)
+			return False;
+
+		while (asn1_tag_remaining(data) > 0) {
+			char *subfilter;
+			if (!ldap_decode_filter(mem_ctx, data, &subfilter))
+				return False;
+			*filter = talloc_asprintf(mem_ctx, "%s%s", *filter,
+						  subfilter);
+			if (*filter == NULL)
+				return False;
+		}
+
+		asn1_end_tag(data);
+
+		*filter = talloc_asprintf(mem_ctx, "%s)", *filter);
+		break;
+	}
+	case 3: {
+		/* equalityMatch */
+		const char *attrib, *value;
+		if (tag_desc != 0xa0) /* context compound */
+			return False;
+		asn1_start_tag(data, ASN1_CONTEXT(3));
+		asn1_read_OctetString_talloc(mem_ctx, data, &attrib);
+		asn1_read_OctetString_talloc(mem_ctx, data, &value);
+		asn1_end_tag(data);
+		if ((data->has_error) || (attrib == NULL) || (value == NULL))
+			return False;
+		*filter = talloc_asprintf(mem_ctx, "(%s=%s)", attrib, value);
+		break;
+	}
+	case 7: {
+		/* Normal presence, "attribute=*" */
+		int attr_len;
+		char *attr_name;
+		if (tag_desc != 0x80) /* context simple */
+			return False;
+		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(7)))
+			return False;
+		attr_len = asn1_tag_remaining(data);
+		attr_name = malloc(attr_len+1);
+		if (attr_name == NULL)
+			return False;
+		asn1_read(data, attr_name, attr_len);
+		attr_name[attr_len] = '\0';
+		*filter = talloc_asprintf(mem_ctx, "(%s=*)", attr_name);
+		SAFE_FREE(attr_name);
+		asn1_end_tag(data);
+		break;
+	}
+	default:
+		return False;
+	}
+	if (*filter == NULL)
+		return False;
+	return True;
+}
+
 BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 {
 	uint8 tag;
@@ -1035,8 +1182,28 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	switch(tag) {
 
 	case ASN1_APPLICATION(LDAP_TAG_BindRequest): {
-/*		struct ldap_BindRequest *r = &msg->r.BindRequest; */
+		struct ldap_BindRequest *r = &msg->r.BindRequest;
+		DATA_BLOB blob;
 		msg->type = LDAP_TAG_BindRequest;
+		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_BindRequest));
+		asn1_read_Integer(data, &r->version);
+		asn1_read_OctetString(data, &blob);
+		r->dn = blob2string_talloc(msg->mem_ctx, blob);
+		if (asn1_peek_tag(data, 0x80)) {
+			int pwlen;
+			r->creds.password = NULL;
+			/* Mechanism 0 (SIMPLE) */
+			asn1_start_tag(data, 0x80);
+			pwlen = asn1_tag_remaining(data);
+			if (pwlen != 0) {
+				char *pw = talloc(msg->mem_ctx, pwlen+1);
+				asn1_read(data, pw, pwlen);
+				pw[pwlen] = '\0';
+				r->creds.password = pw;
+			}
+			asn1_end_tag(data);
+		}
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1050,14 +1217,43 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_UnbindRequest): {
-/*		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest; */
 		msg->type = LDAP_TAG_UnbindRequest;
 		break;
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchRequest): {
-/*		struct ldap_SearchRequest *r = &msg->r.SearchRequest; */
+		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
 		msg->type = LDAP_TAG_SearchRequest;
+		asn1_start_tag(data, ASN1_APPLICATION(LDAP_TAG_SearchRequest));
+		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->basedn);
+		asn1_read_enumerated(data, (int *)&(r->scope));
+		asn1_read_enumerated(data, (int *)&(r->deref));
+		asn1_read_Integer(data, &r->sizelimit);
+		asn1_read_Integer(data, &r->timelimit);
+		asn1_read_BOOLEAN2(data, &r->attributesonly);
+
+		/* Maybe create a TALLOC_CTX for the filter? This can waste
+		 * quite a bit of memory recursing down. */
+		ldap_decode_filter(msg->mem_ctx, data, &r->filter);
+
+		asn1_start_tag(data, ASN1_SEQUENCE(0));
+
+		r->num_attributes = 0;
+		r->attributes = NULL;
+
+		while (asn1_tag_remaining(data) > 0) {
+			const char *attr;
+			if (!asn1_read_OctetString_talloc(msg->mem_ctx, data,
+							  &attr))
+				return False;
+			if (!add_string_to_array(msg->mem_ctx, attr,
+						 &r->attributes,
+						 &r->num_attributes))
+				return False;
+		}
+
+		asn1_end_tag(data);
+		asn1_end_tag(data);
 		break;
 	}
 
@@ -1522,7 +1718,7 @@ static BOOL ldap_abandon_message(struct ldap_connection *conn, int msgid,
 
 struct ldap_message *new_ldap_search_message(const char *base,
 					     enum ldap_scope scope,
-					     const char *filter,
+					     char *filter,
 					     int num_attributes,
 					     const char **attributes)
 {

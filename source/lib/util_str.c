@@ -2062,3 +2062,19 @@ void string_append(char **left, const char *right)
 
 	safe_strcat(*left, right, new_len-1);
 }
+
+BOOL add_string_to_array(TALLOC_CTX *mem_ctx,
+			 const char *str, const char ***strings,
+			 int *num)
+{
+	*strings = talloc_realloc(mem_ctx, *strings,
+				  ((*num)+1) * sizeof(**strings));
+
+	if (*strings == NULL)
+		return False;
+
+	(*strings)[*num] = str;
+	*num += 1;
+
+	return True;
+}

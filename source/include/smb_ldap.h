@@ -106,7 +106,7 @@ struct ldap_SearchRequest {
 	uint32 timelimit;
 	uint32 sizelimit;
 	BOOL attributesonly;
-	const char *filter;
+	char *filter;
 	int num_attributes;
 	const char **attributes;
 };
