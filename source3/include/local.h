@@ -25,6 +25,11 @@
 */
 #define PRINTCAP_NAME "/etc/printcap"
 
+/* define what facility to use for syslog */
+#ifndef SYSLOG_FACILITY
+#define SYSLOG_FACILITY LOG_DAEMON
+#endif
+
 /* set these to define the limits of the server. NOTE These are on a
    per-client basis. Thus any one machine can't connect to more than
    MAX_CONNECTIONS services, but any number of machines may connect at
