@@ -1400,7 +1400,8 @@ LDAP_rename(krb5_context context, HDB * db, const char *new_name)
     return HDB_ERR_DB_INUSE;
 }
 
-static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
+static krb5_error_code
+LDAP__connect(krb5_context context, HDB * db)
 {
     int rc, version = LDAP_VERSION3;
     /*
@@ -1427,7 +1428,7 @@ static krb5_error_code LDAP__connect(krb5_context context, HDB * db)
     if (HDB2LDAP(db) != NULL) /* server is UP */
 	return 0;
 
-    rc = ldap_initialize((LDAP **)&db->hdb_db, "ldapi:///");
+    rc = ldap_initialize(&((struct hdbldapdb *)db->hdb_db)->h_lp, "ldapi:///");
     if (rc != LDAP_SUCCESS) {
 	krb5_set_error_string(context, "ldap_initialize: %s", 
 			      ldap_err2string(rc));
