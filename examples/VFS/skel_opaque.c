@@ -384,6 +384,78 @@ static int skel_sys_acl_free_qualifier(vfs_handle_struct *handle, connection_str
 	return -1;
 }
 
+static ssize_t skel_getxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static ssize_t skel_lgetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, void *value, size_t
+size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static ssize_t skel_listxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static ssize_t skel_llistxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, char *list, size_t size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_removexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_lremovexattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_setxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_lsetxattr(vfs_handle_struct *handle, struct connection_struct *conn,const char *path, const char *name, const void *value, size_t size, int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
 
 /* VFS operations structure */
 
@@ -468,6 +540,20 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_sys_acl_free_acl),		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_OPAQUE},
 	
+	/* EA operations. */
+	{SMB_VFS_OP(skel_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_fgetxattr),			SMB_VFS_OP_FGETXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_listxattr),			SMB_VFS_OP_LISTXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_llistxattr),			SMB_VFS_OP_LLISTXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_flistxattr),			SMB_VFS_OP_FLISTXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_removexattr),			SMB_VFS_OP_REMOVEXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_lremovexattr),			SMB_VFS_OP_LREMOVEXATTR,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_fremovexattr),			SMB_VFS_OP_FREMOVEXATTR,		SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_setxattr),			SMB_VFS_OP_SETXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_lsetxattr),			SMB_VFS_OP_LSETXATTR,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_fsetxattr),			SMB_VFS_OP_FSETXATTR,			SMB_VFS_LAYER_OPAQUE},
+
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
 
