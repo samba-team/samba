@@ -360,6 +360,12 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 		goto done;
 	}
 
+	if ( !(user_rid = pdb_get_user_rid(newpwd)) ) {
+		DEBUG(0,("tdb_update_sam: SAM_ACCOUNT (%s) with no RID!\n", pdb_get_username(newpwd)));
+		ret = False;
+		goto done;
+	}
+
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd, False)) == -1) {
 		DEBUG(0,("tdb_update_sam: ERROR - Unable to copy SAM_ACCOUNT info BYTE buffer!\n"));
