@@ -42,6 +42,16 @@ interface/version dce/rpc pipe identification
 	}, 0x02                       \
 }                                 \
 
+#define SYNT_SVCCTL_V2          \
+{                                 \
+	{                             \
+		0x81, 0xbb, 0x7a, 0x36,   \
+		0x44, 0x98, 0xf1, 0x35,   \
+		0xad, 0x32, 0x98, 0xf0,   \
+		0x38, 0x00, 0x10, 0x03    \
+	}, 0x02                       \
+}                                 \
+
 #define SYNT_NETLOGON_V2          \
 {                                 \
 	{                             \
@@ -129,6 +139,7 @@ struct pipe_id_info pipe_names [] =
 	{ PIPE_SAMR    , SYNT_SAMR_V1    , PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_NETLOGON, SYNT_NETLOGON_V1, PIPE_LSASS    , TRANS_SYNT_V2 },
 	{ PIPE_SRVSVC  , SYNT_SRVSVC_V3  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
+	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WKSSVC  , SYNT_WKSSVC_V1  , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ PIPE_WINREG  , SYNT_WINREG_V1  , PIPE_WINREG   , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0    , NULL          , SYNT_NONE_V0  }

@@ -373,7 +373,22 @@ typedef struct q_samr_query_domain_info
 
 } SAMR_Q_QUERY_DOMAIN_INFO;
 
-typedef struct sam_unkown_info_2_info
+typedef struct sam_unknown_info_6_info
+{
+	uint32 unknown_0; /* 0x0000 0000 */
+
+	uint32 ptr_0;     /* pointer to unknown structure */
+	uint8  padding[12]; /* 12 bytes zeros */
+
+} SAM_UNK_INFO_6;
+
+typedef struct sam_unknown_info_7_info
+{
+	uint16 unknown_0; /* 0x0003 */
+
+} SAM_UNK_INFO_7;
+
+typedef struct sam_unknown_info_2_info
 {
 	uint32 unknown_0; /* 0x0000 0000 */
 	uint32 unknown_1; /* 0x8000 0000 */
@@ -410,6 +425,8 @@ typedef struct sam_unknown_ctr_info
 	union
 	{
 		SAM_UNK_INFO_2 inf2;
+		SAM_UNK_INFO_6 inf6;
+		SAM_UNK_INFO_7 inf7;
 
 	} info;
 

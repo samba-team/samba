@@ -261,6 +261,61 @@ void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_st
 /*******************************************************************
 makes a structure.
 ********************************************************************/
+void make_unk_info6(SAM_UNK_INFO_6 *u_6)
+{
+	if (u_6 == NULL) return;
+
+	u_6->unknown_0 = 0x00000000;
+	u_6->ptr_0 = 1;
+	memset(u_6->padding, 0, sizeof(u_6->padding)); /* 12 bytes zeros */
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth)
+{
+	if (u_6 == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info6");
+	depth++;
+
+	prs_uint32("unknown_0", ps, depth, &u_6->unknown_0); /* 0x0000 0000 */
+	prs_uint32("ptr_0", ps, depth, &u_6->ptr_0);     /* pointer to unknown structure */
+	prs_uint8s(False, "padding", ps, depth, u_6->padding, sizeof(u_6->padding)); /* 12 bytes zeros */
+
+	prs_align(ps);
+
+}
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
+void make_unk_info7(SAM_UNK_INFO_7 *u_7)
+{
+	if (u_7 == NULL) return;
+
+	u_7->unknown_0 = 0x0003;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth)
+{
+	if (u_7 == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_unk_info7");
+	depth++;
+
+	prs_uint16("unknown_0", ps, depth, &u_7->unknown_0); /* 0x0003 */
+	prs_align(ps);
+
+}
+
+/*******************************************************************
+makes a structure.
+********************************************************************/
 void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server)
 {
 	int len_domain = strlen(domain);
@@ -376,6 +431,16 @@ void samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 	{
 		switch (r_u->switch_value)
 		{
+			case 0x06:
+			{
+				sam_io_unk_info6("unk_inf6", &r_u->ctr->info.inf6, ps, depth);
+				break;
+			}
+			case 0x07:
+			{
+				sam_io_unk_info7("unk_inf7", &r_u->ctr->info.inf7, ps, depth);
+				break;
+			}
 			case 0x02:
 			{
 				sam_io_unk_info2("unk_inf2", &r_u->ctr->info.inf2, ps, depth);

@@ -326,6 +326,7 @@ typedef char fstring[128];
 #define PIPE_WINREG   "\\PIPE\\winreg"
 #define PIPE_WKSSVC   "\\PIPE\\wkssvc"
 #define PIPE_NETLOGON "\\PIPE\\NETLOGON"
+#define PIPE_SVCCTL   "\\PIPE\\SVCCTL"
 #define PIPE_NTLSA    "\\PIPE\\ntlsa"
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"

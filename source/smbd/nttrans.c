@@ -37,6 +37,7 @@ static void remove_pending_change_notify_requests_by_mid(int mid);
 static char *known_nt_pipes[] = {
   "\\LANMAN",
   "\\srvsvc",
+  "\\svcctl",
   "\\samr",
   "\\wkssvc",
   "\\NETLOGON",

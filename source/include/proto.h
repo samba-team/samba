@@ -47,6 +47,10 @@ BOOL make_alias_line(char *p, int max_len,
 
 struct aliasdb_ops *file_initialise_alias_db(void);
 
+/*The following definitions come from  groupdb/aliasldap.c  */
+
+struct aliasdb_ops *ldap_initialise_alias_db(void);
+
 /*The following definitions come from  groupdb/aliasunix.c  */
 
 BOOL get_unixalias_members(struct group *grp,
@@ -77,6 +81,10 @@ void bidb_init_blt(LOCAL_GRP *blt);
 BOOL make_builtin_line(char *p, int max_len,
 				LOCAL_GRP *blt,
 				LOCAL_GRP_MEMBER **mem, int *num_mem);
+
+/*The following definitions come from  groupdb/builtinldap.c  */
+
+struct aliasdb_ops *ldap_initialise_builtin_db(void);
 
 /*The following definitions come from  groupdb/builtinunix.c  */
 
@@ -113,6 +121,10 @@ BOOL make_group_line(char *p, int max_len,
 /*The following definitions come from  groupdb/groupfile.c  */
 
 struct groupdb_ops *file_initialise_group_db(void);
+
+/*The following definitions come from  groupdb/groupldap.c  */
+
+struct groupdb_ops *ldap_initialise_group_db(void);
 
 /*The following definitions come from  groupdb/groupunix.c  */
 
@@ -1174,9 +1186,8 @@ char *lp_driverfile(void);
 char *lp_panic_action(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
-char *lp_ldap_filter(void);
-char *lp_ldap_root(void);
-char *lp_ldap_rootpasswd(void);
+char *lp_ldap_bind_as(void);
+char *lp_ldap_passwd_file(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -1361,7 +1372,14 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb/ldap.c  */
 
-struct passdb_ops *ldap_initialise_password_db(void);
+BOOL ldap_open_connection(BOOL modify);
+void ldap_close_connection();
+BOOL ldap_search_for(char *filter);
+BOOL ldap_search_by_name(const char *user);
+BOOL ldap_search_by_uid(int uid);
+BOOL ldap_get_attribute(char *attribute, char *value);
+struct smb_passwd *ldap_getpw();
+struct smb_passdb_ops *ldap_initialise_password_db(void);
 
 /*The following definitions come from  passdb/nispass.c  */
 
@@ -1417,6 +1435,10 @@ struct smb_passwd *getsmbgrpuid(uid_t unix_uid,
 		uint32 **grps, int *num_grps,
 		uint32 **alss, int *num_alss);
 
+/*The following definitions come from  passdb/passgrpldap.c  */
+
+struct passgrp_ops *ldap_initialise_password_grp(void);
+
 /*The following definitions come from  passdb/sampass.c  */
 
 void *startsamfilepwent(BOOL update);
@@ -1442,6 +1464,12 @@ struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user);
 struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user);
 struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user);
 struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam);
+
+/*The following definitions come from  passdb/sampassldap.c  */
+
+BOOL ldap_search_by_rid(uint32 rid);
+BOOL ldap_search_by_ntname(const char *ntname);
+struct sam_passdb_ops *ldap_initialise_sam_password_db(void);
 
 /*The following definitions come from  passdb/smbpass.c  */
 
@@ -2105,6 +2133,10 @@ void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int
 void make_samr_q_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 				POLICY_HND *domain_pol, uint16 switch_value);
 void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_struct *ps, int depth);
+void make_unk_info6(SAM_UNK_INFO_6 *u_6);
+void sam_io_unk_info6(char *desc, SAM_UNK_INFO_6 *u_6, prs_struct *ps, int depth);
+void make_unk_info7(SAM_UNK_INFO_7 *u_7);
+void sam_io_unk_info7(char *desc, SAM_UNK_INFO_7 *u_7, prs_struct *ps, int depth);
 void make_unk_info2(SAM_UNK_INFO_2 *u_2, char *domain, char *server);
 void sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth);
 void make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u, 
@@ -2448,6 +2480,18 @@ void make_time_of_day_info(TIME_OF_DAY_INFO *tod, uint32 elapsedt, uint32 msecs,
 			   uint32 month, uint32 year, uint32 weekday);
 void srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_parse/parse_svc.c  */
+
+void make_svc_q_open_policy(SVC_Q_OPEN_POLICY *q_u,
+				char *server, uint16 unknown)  ;
+void svc_io_q_open_policy(char *desc, SVC_Q_OPEN_POLICY *q_u, prs_struct *ps, int depth);
+void make_svc_r_open_policy(SVC_R_OPEN_POLICY *r_u, POLICY_HND *hnd,
+				uint32 status)  ;
+void svc_io_r_open_policy(char *desc,  SVC_R_OPEN_POLICY *r_u, prs_struct *ps, int depth);
+void make_svc_q_close(SVC_Q_CLOSE *q_c, POLICY_HND *hnd);
+void svc_io_q_close(char *desc,  SVC_Q_CLOSE *q_u, prs_struct *ps, int depth);
+void svc_io_r_close(char *desc,  SVC_R_CLOSE *r_u, prs_struct *ps, int depth);
+
 /*The following definitions come from  rpc_parse/parse_wks.c  */
 
 void make_wks_q_query_info(WKS_Q_QUERY_INFO *q_u,
@@ -2537,6 +2581,10 @@ BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
 BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
+
+/*The following definitions come from  rpc_server/srv_svcctl.c  */
+
+BOOL api_svcctl_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
