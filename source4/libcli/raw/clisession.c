@@ -399,6 +399,8 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 		goto done;
 	}
 
+	gensec_want_feature(session->gensec, GENSEC_WANT_SESSION_KEY);
+
 	status = gensec_set_domain(session->gensec, parms->generic.in.domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 

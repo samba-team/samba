@@ -36,7 +36,10 @@ struct gensec_target {
 	const struct sock_addr *addr;
 	const char *service;
 };
-		
+
+#define GENSEC_WANT_SESSION_KEY 0x1
+#define GENSEC_WANT_SIGN 0x2
+#define GENSEC_WANT_SEAL 0x4
 
 /* GENSEC mode */
 enum gensec_role
@@ -86,6 +89,7 @@ struct gensec_security {
 	struct gensec_target target;
 	enum gensec_role gensec_role;
 	BOOL subcontext;
+	uint32 want_features;
 };
 
 /* this structure is used by backends to determine the size of some critical types */

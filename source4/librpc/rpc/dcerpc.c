@@ -942,3 +942,21 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p)
 	}
 	return p->transport.peer_name(p);
 }
+
+/*
+  a useful function to get the auth_level 
+*/
+
+uint32 dcerpc_auth_level(struct dcerpc_pipe *p) 
+{
+	uint8_t auth_level;
+
+	if (p->flags & DCERPC_SEAL) {
+		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	} else if (p->flags & DCERPC_SIGN) {
+		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	} else {
+		auth_level = DCERPC_AUTH_LEVEL_NONE;
+	}
+	return auth_level;
+}

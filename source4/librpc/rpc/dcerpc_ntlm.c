@@ -60,7 +60,7 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 		return status;
 	}
 
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_NTLMSSP);
+	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_NTLMSSP, dcerpc_auth_level(p));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client NTLMSSP mechanism: %s\n",
 			  nt_errstr(status)));
@@ -68,7 +68,8 @@ NTSTATUS dcerpc_bind_auth_ntlm(struct dcerpc_pipe *p,
 	}
 	
 	status = dcerpc_bind_auth3(p, DCERPC_AUTH_TYPE_NTLMSSP,
-				  uuid, version);
+				   dcerpc_auth_level(p),
+				   uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Failed to bind to pipe with NTLMSSP: %s\n", nt_errstr(status)));
