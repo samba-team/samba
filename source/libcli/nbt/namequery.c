@@ -91,6 +91,7 @@ NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
+	io->out.rcode = packet->operation & NBT_RCODE;
 	io->out.name = packet->answers[0].name;
 	io->out.num_addrs = packet->answers[0].rdata.netbios.length / 6;
 	io->out.reply_addrs = talloc_array(mem_ctx, const char *, io->out.num_addrs);
@@ -184,6 +185,7 @@ NTSTATUS nbt_name_status_recv(struct nbt_name_request *req,
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
+	io->out.rcode = packet->operation & NBT_RCODE;
 	io->out.name = packet->answers[0].name;
 	talloc_steal(mem_ctx, io->out.name.name);
 	talloc_steal(mem_ctx, io->out.name.scope);
