@@ -387,7 +387,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_ads_cldap.o utils/net_help.o \
 	   utils/net_cache.o
 
 NET_OBJ = $(NET_OBJ1) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
-	  $(RPC_PARSE_OBJ) $(PASSDB_GET_SET_OBJ) \
+	  $(RPC_PARSE_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	  $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 	  $(LIBMSRPC_OBJ) $(LIBMSRPC_SERVER_OBJ) \
 	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ)
