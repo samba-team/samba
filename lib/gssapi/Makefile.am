@@ -33,6 +33,7 @@ libgssapi_la_SOURCES =		\
 	add_oid_set_member.c	\
 	arcfour.c		\
 	canonicalize_name.c	\
+	ccache_name.c		\
 	cfx.c			\
 	compare_name.c		\
 	compat.c		\
