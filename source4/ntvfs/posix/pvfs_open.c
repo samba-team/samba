@@ -124,7 +124,7 @@ static NTSTATUS pvfs_open_setup_eas_acl(struct pvfs_state *pvfs,
 		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
 		set.set_secdesc.in.sd = io->ntcreatex.in.sec_desc;
 
-		status = pvfs_acl_set(pvfs, req, name, fd, &set);
+		status = pvfs_acl_set(pvfs, req, name, fd, SEC_STD_WRITE_DAC, &set);
 	} else {
 		/* otherwise setup an inherited acl from the parent */
 		status = pvfs_acl_inherit(pvfs, req, name, fd);
@@ -463,8 +463,11 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 	
 	if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
-		access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE;
+		access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE | 
+			SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
 	}
+
+	access_mask |= SEC_FILE_READ_ATTRIBUTE;
 
 	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		flags = O_RDWR;

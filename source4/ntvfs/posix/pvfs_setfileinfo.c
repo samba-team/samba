@@ -29,11 +29,11 @@
 /*
   determine what access bits are needed for a call
 */
-static uint32_t pvfs_setfileinfo_access(enum smb_setfileinfo_level level)
+static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 {
 	uint32_t needed;
 
-	switch (level) {
+	switch (info->generic.level) {
 	case RAW_SFILEINFO_EA_SET:
 		needed = SEC_FILE_WRITE_EA;
 		break;
@@ -49,6 +49,13 @@ static uint32_t pvfs_setfileinfo_access(enum smb_setfileinfo_level level)
 
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		needed = 0;
+		break;
+
+	case RAW_SFILEINFO_SEC_DESC:
+		needed = 0;
+		if (info->set_secdesc.in.secinfo_flags & (SECINFO_DACL|SECINFO_SACL)) {
+			needed |= SEC_STD_WRITE_DAC;
+		}
 		break;
 
 	default:
@@ -248,7 +255,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	h = f->handle;
 
-	access_needed = pvfs_setfileinfo_access(info->generic.level);
+	access_needed = pvfs_setfileinfo_access(info);
 	if ((f->access_mask & access_needed) != access_needed) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -358,7 +365,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 					       &info->rename_information.in);
 
 	case RAW_SFILEINFO_SEC_DESC:
-		return pvfs_acl_set(pvfs, req, h->name, h->fd, info);
+		return pvfs_acl_set(pvfs, req, h->name, h->fd, f->access_mask, info);
 
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -442,7 +449,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	access_needed = pvfs_setfileinfo_access(info->generic.level);
+	access_needed = pvfs_setfileinfo_access(info);
 	status = pvfs_access_check_simple(pvfs, req, name, access_needed);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

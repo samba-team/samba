@@ -185,12 +185,15 @@ static void normalise_sd_flags(struct security_descriptor *sd, uint32_t secinfo_
 NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs, 
 		      struct smbsrv_request *req,
 		      struct pvfs_filename *name, int fd, 
+		      uint32_t access_mask,
 		      union smb_setfileinfo *info)
 {
 	struct xattr_NTACL *acl;
 	uint32_t secinfo_flags = info->set_secdesc.in.secinfo_flags;
 	struct security_descriptor *new_sd, *sd;
 	NTSTATUS status;
+	uid_t uid = -1;
+	gid_t gid = -1;
 
 	acl = talloc_p(req, struct xattr_NTACL);
 	if (acl == NULL) {
@@ -215,12 +218,28 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 
 	new_sd = info->set_secdesc.in.sd;
 
+	uid = name->st.st_uid;
+	gid = name->st.st_gid;
+
 	/* only set the elements that have been specified */
-	if (secinfo_flags & SECINFO_OWNER) {
+	if ((secinfo_flags & SECINFO_OWNER) && 
+	    !dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
+		if (!(access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		sd->owner_sid = new_sd->owner_sid;
+		status = sidmap_sid_to_unixuid(pvfs->sidmap, sd->owner_sid, &uid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
-	if (secinfo_flags & SECINFO_GROUP) {
+	if ((secinfo_flags & SECINFO_GROUP) &&
+	    !dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
 		sd->group_sid = new_sd->group_sid;
+		status = sidmap_sid_to_unixgid(pvfs->sidmap, sd->owner_sid, &gid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	if (secinfo_flags & SECINFO_DACL) {
 		sd->dacl = new_sd->dacl;
@@ -228,7 +247,22 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 	}
 	if (secinfo_flags & SECINFO_SACL) {
 		sd->sacl = new_sd->sacl;
+		if (!(access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		pvfs_translate_generic_bits(sd->sacl);
+	}
+
+	if (uid != -1 || gid != -1) {
+		int ret;
+		if (fd == -1) {
+			ret = chown(name->full_name, uid, gid);
+		} else {
+			ret = fchown(fd, uid, gid);
+		}
+		if (ret == -1) {
+			return pvfs_map_errno(pvfs, errno);
+		}
 	}
 
 	status = pvfs_acl_save(pvfs, name, fd, acl);
