@@ -90,4 +90,10 @@ DECL(ext_keytab);
 DECL(help);
 DECL(exit_kdb_edit);
 
+void init_des_key(hdb_entry *ent);
+void set_keys(hdb_entry *ent, char *password);
+char *time2str(time_t t);
+void event2string(Event *ev, char **str);
+int flags2int(HDBFlags *f);
+
 #endif /* __ADMIN_LOCL_H__ */
