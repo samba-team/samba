@@ -73,7 +73,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	}
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_GET);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_GET, princ);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -96,7 +96,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	    goto fail;
 	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_DELETE);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_DELETE, princ);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -126,7 +126,8 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	krb5_unparse_name_fixed(context->context, ent.principal, 
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_ADD);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_ADD,
+					  ent.principal);
 	if(ret){
 	    kadm5_free_principal_ent(context->context, &ent);
 	    memset(password, 0, strlen(password));
@@ -156,7 +157,8 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	krb5_unparse_name_fixed(context->context, ent.principal, 
 				name, sizeof(name));
 	krb5_warnx(context->context, "%s: %s %s", client, op, name);
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_MODIFY);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_MODIFY,
+					  ent.principal);
 	if(ret){
 	    kadm5_free_principal_ent(context, &ent);
 	    goto fail;
@@ -183,7 +185,11 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	krb5_warnx(context->context, "%s: %s %s -> %s", 
 		   client, op, name, name2);
 	ret = _kadm5_acl_check_permission(context, 
-					  KADM5_PRIV_ADD|KADM5_PRIV_DELETE);
+					  KADM5_PRIV_ADD,
+					  princ2)
+	    || _kadm5_acl_check_permission(context, 
+					   KADM5_PRIV_DELETE,
+					   princ);
 	if(ret){
 	    krb5_free_principal(context->context, princ);
 	    goto fail;
@@ -220,7 +226,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 				       princ))
 	    ret = 0;
 	else
-	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW, princ);
 
 	if(ret) {
 	    krb5_free_principal(context->context, princ);
@@ -283,7 +289,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 				       princ))
 	    ret = 0;
 	else
-	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW, princ);
 
 	if(ret) {
 	    int16_t dummy = n_key_data;
@@ -324,7 +330,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 				       princ))
 	    ret = 0;
 	else
-	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW, princ);
 
 	if(ret) {
 	    krb5_free_principal(context->context, princ);
@@ -367,7 +373,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	}else
 	    exp = NULL;
 	krb5_warnx(context->context, "%s: %s %s", client, op, exp ? exp : "*");
-	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_LIST);
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_LIST, NULL);
 	if(ret){
 	    free(exp);
 	    goto fail;

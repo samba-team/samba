@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -543,7 +543,8 @@ kadm_ser_add(krb5_context context,
     krb5_warnx(context, "v4-compat %s: add %s",
 	       principal_string, name);
 
-    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_ADD);
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_ADD,
+				       ent.principal);
     if (ret)
 	goto fail;
 
@@ -597,7 +598,8 @@ kadm_ser_get(krb5_context context,
     krb5_warnx(context, "v4-compat %s: get %s",
 	       principal_string, name);
 
-    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_GET);
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_GET,
+				       ent.principal);
     if (ret)
 	goto fail;
 
@@ -647,7 +649,8 @@ kadm_ser_mod(krb5_context context,
     krb5_warnx(context, "v4-compat %s: mod %s",
 	       principal_string, name);
 
-    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_MODIFY);
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_MODIFY,
+				       ent.principal);
     if (ret)
 	goto fail;
 
@@ -701,7 +704,8 @@ kadm_ser_del(krb5_context context,
     krb5_warnx(context, "v4-compat %s: del %s",
 	       principal_string, name);
 
-    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_DELETE);
+    ret = _kadm5_acl_check_permission (kadm_handle, KADM5_PRIV_DELETE,
+				       ent.principal);
     if (ret)
 	goto fail;
 
@@ -878,8 +882,7 @@ decode_packet(krb5_context context,
 	goto out;
     }
     
-    checksum = des_quad_cksum((des_cblock*)(msg + off), NULL, rlen, 
-			      0, &ad.session);
+    checksum = des_quad_cksum(msg + off, NULL, rlen, 0, &ad.session);
     if(checksum != ad.checksum) {
 	krb5_warnx(context, "decode_packet: bad checksum");
 	make_you_loose_packet (KADM_BAD_CHK, reply);
