@@ -269,15 +269,16 @@ Join a domain using the administrator username and password
                 goto done; \
         }
 
-static int join_domain_byuser(char *domain, char *remote_machine,
+static int join_domain_byuser(char *domain, char *remote,
 			      char *username, char *password)
 {
 	/* libsmb variables */
 
+	pstring pdc_name;
 	struct nmb_name calling, called;
 	struct ntuser_creds creds;
 	struct cli_state cli;
-	fstring dest_host, acct_name;
+	fstring acct_name;
 	struct in_addr dest_ip;
 	TALLOC_CTX *mem_ctx;
 
@@ -301,6 +302,8 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	NTSTATUS result;
 	int retval = 1;
 
+	pstrcpy(pdc_name, remote ? remote : "");
+
 	/* Connect to remote machine */
 
 	ZERO_STRUCT(cli);
@@ -319,17 +322,34 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	init_rpcclient_creds(&creds, username, domain, password);
 	cli_init_creds(&cli, &creds);
 
-	if (!resolve_srv_name(remote_machine, dest_host, &dest_ip)) {
-		DEBUG(0, ("Could not resolve name %s\n", remote_machine));
-		goto done;
+	/*
+	 * If we are given a remote machine assume this is the PDC.
+	 */
+	
+	if(remote == NULL) {
+                struct in_addr *ip_list;
+                int addr_count;
+                if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
+			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+		if ((addr_count < 1) || (is_zero_ip(ip_list[0]))) {
+			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+
+		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
+			return 1;
+		}
 	}
 
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
+	make_nmb_name(&called, pdc_name, 0x20);
 	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
 
-	if (!cli_establish_connection(&cli, dest_host, &dest_ip, &calling, 
+	if (!cli_establish_connection(&cli, pdc_name, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {
-		DEBUG(0, ("Error connecting to %s\n", dest_host));
+		DEBUG(0, ("Error connecting to %s\n", pdc_name));
 		goto done;
 	}
 
@@ -533,13 +553,13 @@ Join a domain. Old server manager method.
 
 static int join_domain(char *domain, char *remote)
 {
-	pstring remote_machine;
+	pstring pdc_name;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
 	DOM_SID domain_sid;
 	BOOL ret;
 
-	pstrcpy(remote_machine, remote ? remote : "");
+	pstrcpy(pdc_name, remote ? remote : "");
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
@@ -568,22 +588,30 @@ machine %s in domain %s.\n", global_myname, domain);
 	 */
 	
 	if(remote == NULL) {
-		pstrcpy(remote_machine, lp_passwordserver());
+                struct in_addr *ip_list;
+                int addr_count;
+                if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
+			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+		if ((addr_count < 1) || (is_zero_ip(ip_list[0]))) {
+			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
+			return 1;
+		}
+
+		if (!lookup_dc_name(global_myname, domain, &ip_list[0], pdc_name)) {
+			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
+			return 1;
+		}
 	}
 
-	if(!*remote_machine) {
-		fprintf(stderr, "No password server list given in smb.conf - \
-unable to join domain.\n");
-		return 1;
-	}
-
-	if (!fetch_domain_sid( domain, remote_machine, &domain_sid) ||
+	if (!fetch_domain_sid( domain, pdc_name, &domain_sid) ||
 		!secrets_store_domain_sid(domain, &domain_sid)) {
 		fprintf(stderr,"Failed to get domain SID. Unable to join domain %s.\n",domain);
 		return 1;
 	}
 		
-	ret = change_trust_account_password( domain, remote_machine);
+	ret = change_trust_account_password( domain, pdc_name);
 	
 	if(!ret) {
 		trust_password_delete(domain);
@@ -684,7 +712,7 @@ static BOOL password_change(const char *remote_machine, char *user_name,
 			return False;
 		}
 		ret = remote_password_change(remote_machine, user_name, 
-									 old_passwd, new_passwd, err_str, sizeof(err_str));
+					 old_passwd, new_passwd, err_str, sizeof(err_str));
 		if(*err_str)
 			fprintf(stderr, err_str);
 		return ret;
@@ -722,7 +750,7 @@ static BOOL store_ldap_admin_pw (char* pw)
  Handle password changing for root.
 *************************************************************/
 
-static int process_root()
+static int process_root(void)
 {
 	struct passwd  *pwd;
 	int result = 0;
@@ -903,9 +931,10 @@ static int process_root()
 
 
 /*************************************************************
-handle password changing for non-root
+ Handle password changing for non-root.
 *************************************************************/
-static int process_nonroot()
+
+static int process_nonroot(void)
 {
 	struct passwd  *pwd = NULL;
 	int result = 0;
