@@ -98,6 +98,9 @@ static BOOL brl_same_context(struct lock_context *ctx1,
 static BOOL brl_conflict(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
+	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+		return False;
+
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
 	}
@@ -119,6 +122,9 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 static BOOL brl_conflict1(struct lock_struct *lck1, 
 			 struct lock_struct *lck2)
 {
+	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+		return False;
+
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
 	}
@@ -148,6 +154,9 @@ static BOOL brl_conflict1(struct lock_struct *lck1,
 
 static BOOL brl_conflict_other(struct lock_struct *lck1, struct lock_struct *lck2)
 {
+	if (lck1->lock_type == PENDING_LOCK || lck2->lock_type == PENDING_LOCK )
+		return False;
+
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) 
 		return False;
 
@@ -386,15 +395,29 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 }
 
 /****************************************************************************
+ Check if an unlock overlaps a pending lock.
+****************************************************************************/
+
+static BOOL brl_pending_overlap(struct lock_struct *lock, struct lock_struct *pend_lock)
+{
+	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
+		return True;
+	if ((lock->start >= pend_lock->start) && (lock->start <= pend_lock->start + pend_lock->size))
+		return True;
+	return False;
+}
+
+/****************************************************************************
  Unlock a range of bytes.
 ****************************************************************************/
 
 BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		uint16 smbpid, pid_t pid, uint16 tid,
-		br_off start, br_off size)
+		br_off start, br_off size,
+		BOOL remove_pending_locks_only)
 {
 	TDB_DATA kbuf, dbuf;
-	int count, i;
+	int count, i, j;
 	struct lock_struct *locks;
 	struct lock_context context;
 
@@ -452,9 +475,34 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 		struct lock_struct *lock = &locks[i];
 
 		if (brl_same_context(&lock->context, &context) &&
-		    lock->fnum == fnum &&
-		    lock->start == start &&
-		    lock->size == size) {
+				lock->fnum == fnum &&
+				lock->start == start &&
+				lock->size == size) {
+
+			if (remove_pending_locks_only && lock->lock_type != PENDING_LOCK)
+				continue;
+
+			if (lock->lock_type != PENDING_LOCK) {
+				/* Send unlock messages to any pending waiters that overlap. */
+				for (j=0; j<count; j++) {
+					struct lock_struct *pend_lock = &locks[j];
+
+					/* Ignore non-pending locks. */
+					if (pend_lock->lock_type != PENDING_LOCK)
+						continue;
+
+					/* We could send specific lock info here... */
+					if (brl_pending_overlap(lock, pend_lock)) {
+						DEBUG(10,("brl_unlock: sending unlock message to pid %u\n",
+									(unsigned int)pend_lock->context.pid ));
+
+						message_send_pid(pend_lock->context.pid,
+								MSG_SMB_UNLOCK,
+								NULL, 0, True);
+					}
+				}
+			}
+
 			/* found it - delete it */
 			if (count == 1) {
 				tdb_delete(tdb, kbuf);
@@ -546,7 +594,7 @@ BOOL brl_locktest(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 {
 	TDB_DATA kbuf, dbuf;
-	int count, i, dcount=0;
+	int count, i, j, dcount=0;
 	struct lock_struct *locks;
 
 	kbuf = locking_key(dev,ino);
@@ -561,12 +609,34 @@ void brl_close(SMB_DEV_T dev, SMB_INO_T ino, pid_t pid, int tid, int fnum)
 	/* there are existing locks - remove any for this fnum */
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
+
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
 		if (lock->context.tid == tid &&
 		    lock->context.pid == pid &&
 		    lock->fnum == fnum) {
+
+			/* Send unlock messages to any pending waiters that overlap. */
+			for (j=0; j<count; j++) {
+				struct lock_struct *pend_lock = &locks[j];
+
+				/* Ignore our own or non-pending locks. */
+				if (pend_lock->lock_type != PENDING_LOCK)
+					continue;
+
+				if (pend_lock->context.tid == tid &&
+				    pend_lock->context.pid == pid &&
+				    pend_lock->fnum == fnum)
+					continue;
+
+				/* We could send specific lock info here... */
+				if (brl_pending_overlap(lock, pend_lock))
+					message_send_pid(pend_lock->context.pid,
+							MSG_SMB_UNLOCK,
+							NULL, 0, True);
+			}
+
 			/* found it - delete it */
 			if (count > 1 && i < count-1) {
 				memmove(&locks[i], &locks[i+1], 
