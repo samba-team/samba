@@ -44,7 +44,7 @@ struct odb_context {
 	struct tdb_wrap *w;
 	servid_t server;
 	uint16_t tid;
-	void *messaging_ctx;
+	struct messaging_context *messaging_ctx;
 };
 
 /* 
@@ -76,7 +76,7 @@ struct odb_lock {
   notifications.
 */
 struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid, 
-			     void *messaging_ctx)
+			     struct messaging_context *messaging_ctx)
 {
 	char *path;
 	struct odb_context *odb;

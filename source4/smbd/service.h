@@ -125,7 +125,7 @@ struct server_connection {
 
 	struct server_service *service;
 
-	void *messaging_ctx;
+	struct messaging_context *messaging_ctx;
 };
 
 #endif /* _SERVER_SERVICE_H */
