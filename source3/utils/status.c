@@ -155,10 +155,6 @@ static void print_brl(SMB_DEV_T dev, SMB_INO_T ino, int pid,
   ******************************************************************/
 static int profile_dump(void)
 {
-#ifndef WITH_PROFILE
-	fprintf(stderr,"ERROR: not compiled with profile support\n");
-	return -1;
-#else
 	if (!profile_setup(True)) {
 		fprintf(stderr,"Failed to initialise profile memory\n");
 		return -1;
@@ -497,7 +493,6 @@ static int profile_dump(void)
 	printf("election_time:                  %u\n", profile_p->election_time);
 
 	return 0;
-#endif
 }
 
 
