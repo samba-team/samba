@@ -157,7 +157,7 @@ kadm5_s_get_principal(void *server_handle,
 		break;
 	    }
 	    memcpy(kd->key_data_contents[1], sp->data, kd->key_data_length[1]);
-	    out->n_key_data = i;
+	    out->n_key_data = i + 1;
 	}
 	krb5_data_free(&salt);
     }
