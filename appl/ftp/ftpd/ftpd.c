@@ -771,7 +771,10 @@ pass(char *passwd)
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name, "", realm, 
 					       passwd, 1, NULL);
-		    if (rval != 0 )
+		    if (rval == KSUCCESS ){
+			if(k_hasafs())
+			    k_afsklog(0, 0);
+		    }else 
 			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {
 		    char *s;
