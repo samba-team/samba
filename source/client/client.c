@@ -1146,7 +1146,7 @@ static void print_server(char *sname, uint32 type, char *comment)
 		typestr[0] = 0;
 		for (i = 0; i < 32; i++)
 		{
-			if (IS_BIT_SET(type, 1 << i)
+			if (IS_BITS_SET(type, 1 << i))
 			{
 				switch (1 << i)
 				{
