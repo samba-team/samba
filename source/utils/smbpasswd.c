@@ -237,6 +237,12 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
             
                   for(p++;*p && !finished; p++) {
                     switch (*p) {
+#if 0
+                      /* 
+                       * Hmmm. Don't allow these to be set/read independently
+                       * of the actual password fields. We don't want a mismatch.
+                       * JRA.
+                       */
                       case 'N':
                         /* 'N'o password. */
                         pw_buf.acct_ctrl |= ACB_PWNOTREQ;
@@ -245,6 +251,7 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
                         /* 'D'isabled. */
                         pw_buf.acct_ctrl |= ACB_DISABLED;
                         break;
+#endif
                       case 'H':
                         /* 'H'omedir required. */
                         pw_buf.acct_ctrl |= ACB_HOMDIRREQ;
@@ -313,6 +320,41 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
 }
 
 /**********************************************************
+ Encode the account control bits into a string.
+**********************************************************/
+
+char *encode_acct_ctrl(uint16 acct_ctrl)
+{
+  static fstring acct_str;
+  char *p = acct_str;
+
+  *p++ = '[';
+
+  if(acct_ctrl & ACB_HOMDIRREQ)
+    *p++ = 'H';
+  if(acct_ctrl & ACB_TEMPDUP)
+    *p++ = 'T';
+  if(acct_ctrl & ACB_NORMAL)
+    *p++ = 'U';
+  if(acct_ctrl & ACB_MNS)
+    *p++ = 'M';
+  if(acct_ctrl & ACB_WSTRUST)
+    *p++ = 'W';
+  if(acct_ctrl & ACB_SVRTRUST)
+    *p++ = 'S';
+  if(acct_ctrl & ACB_AUTOLOCK)
+    *p++ = 'L';
+  if(acct_ctrl & ACB_PWNOEXP)
+    *p++ = 'X';
+  if(acct_ctrl & ACB_DOMTRUST)
+    *p++ = 'I';
+
+  *p++ = ']';
+  *p = '\0';
+  return acct_str;
+}
+
+/**********************************************************
  Allocate an unused uid in the smbpasswd file to a new
  machine account.
 ***********************************************************/
@@ -368,7 +410,7 @@ int main(int argc, char **argv)
   char            readbuf[16 * 1024];
   BOOL is_root = False;
   pstring  user_name;
-  pstring  machine_gcos_name;
+  pstring  machine_dir_name;
   char *remote_machine = NULL;
   BOOL		 add_user = False;
   BOOL		 got_new_pass = False;
@@ -668,9 +710,9 @@ int main(int argc, char **argv)
 
     pwd = &machine_account_pwd;
     pwd->pw_name = user_name;
-    sprintf(machine_gcos_name, "Machine account for %s", user_name);
-    pwd->pw_gecos = machine_gcos_name;
-    pwd->pw_dir = "";
+    sprintf(machine_dir_name, "Machine account for %s", user_name);
+    pwd->pw_gecos = "";
+    pwd->pw_dir = machine_dir_name;
     pwd->pw_shell = "";
     pwd->pw_uid = get_machine_uid();
       
@@ -749,6 +791,7 @@ int main(int argc, char **argv)
       int new_entry_length;
       char *new_entry;
       long offpos;
+      uint16 acct_ctrl = (machine_account ? ACB_SVRTRUST : ACB_NORMAL);
 
       /* The add user write needs to be atomic - so get the fd from 
          the fp and do a raw write() call.
@@ -764,7 +807,7 @@ Error was %s\n", prog_name, user_name, pfile, strerror(errno));
       }
 
       new_entry_length = strlen(user_name) + 1 + 15 + 1 + 
-                         32 + 1 + 32 + 1 + strlen(pwd->pw_gecos) + 
+                         32 + 1 + 32 + 1 + sizeof(fstring) + 
                          1 + strlen(pwd->pw_dir) + 1 + 
                          strlen(pwd->pw_shell) + 1;
       if((new_entry = (char *)malloc( new_entry_length )) == 0) {
@@ -797,7 +840,7 @@ Error was %s\n", prog_name, pwd->pw_name, pfile, strerror(errno));
       }
       p += 32;
       *p++ = ':';
-      sprintf(p, "%s:%s:%s\n", pwd->pw_gecos, 
+      sprintf(p, "%s:%s:%s\n", encode_acct_ctrl(acct_ctrl),
               pwd->pw_dir, pwd->pw_shell);
       if(write(fd, new_entry, strlen(new_entry)) != strlen(new_entry)) {
         fprintf(stderr, "%s: Failed to add entry for user %s to file %s. \
