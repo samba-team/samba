@@ -157,20 +157,21 @@ char *get_numlist(char *p, uint32 **num, int *count)
 	int val;
 
 	if (num == NULL || count == NULL)
-	{
 		return NULL;
-	}
 
 	(*count) = 0;
 	(*num  ) = NULL;
 
-	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
-	{
-		(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if ((*num) == NULL)
-		{
+	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
+		uint32 *tn;
+
+		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
+		if (tn == NULL) {
+			if (*num)
+				free(*num);
 			return NULL;
-		}
+		} else
+			(*num) = tn;
 		(*num)[(*count)] = val;
 		(*count)++;
 		p++;
