@@ -1,7 +1,7 @@
-!==
-!== PRINTER_DRIVER2.txt for Samba release 2.2.0-alpha0 09 Oct 2000
-!==
 
+!==
+!== PRINTER_DRIVER.txt for Samba release 2.2.0 14 Sep 2000
+!==
 ==========================================================================
         Gerald Carter <jerry@samba.org> 14 Sep 2000
 ===========================================================================
@@ -72,9 +72,26 @@ appropriate values for your site):
 			read only = yes
 			write list = ntadmin
 
+The 'write list' is used to allow administrative level user accounts
+to have write access in order to update files on the share.
+See the smb.conf(5) man page for more information on configuring
+file shares.
+
 The requirement for 'guest ok = yes' depends upon how your
 site is configured.  If users will be guaranteed to have 
 an account on the Samba host, then this is a non-issue.
+
+  [author's note: The non-issue is that if all your Windows 
+  NT users are guarenteed to be authenticated by the Samba server
+  (such as a domain member server and the NT user has already
+  been validated by the Domain Controller in order to logon
+  to the Windows NT console), then guest access is not necessary.
+  Of course, in a workgroup environment where you just want
+  to be able to print without worrying about silly accounts
+  and security, then configure the share for gues access.
+  You'll probably want to add 'map to guest = Bad User'
+  in the [global] section as well.  Make sure you understand
+  what this parameter does before using it though. --jerry]
 
 In order for a Windows NT print server to support the
 downloading of driver files by multiple client architectures,
@@ -86,16 +103,17 @@ Next create the directory tree below the [print$] share for
 each architecture you wish to support.
 
 	[print$]-----
-				|-W32X86			; "Windows NT x86"
-				|-WIN40				; "Windows 95/98"
-				|-W32ALPHA			; "Windows NT Alpha_AXP"
-				|-W32MIPS			; "Windows NT R4000"
-				|-W32PPC			; "Windows NT PowerPC"
+		|-W32X86		; "Windows NT x86"
+		|-WIN40			; "Windows 95/98"
+		|-W32ALPHA		; "Windows NT Alpha_AXP"
+		|-W32MIPS		; "Windows NT R4000"
+		|-W32PPC		; "Windows NT PowerPC"
 
 
 These directories should be owned by an administrative account.
 Currently this must initially be an "root" account (uid = 0).
 
+!== The Windows NT APW
 
 Once you have created the required [print$] service and associated
 subdirectories, simply log onto the Samba server using a root account
@@ -138,6 +156,7 @@ also be able modify other printer properties such as
 ACLs and device settings using this dialog box.
 
 
+!== Imprints  
 
 The Imprints tool set provides a UNIX equivalent of the Windows
 NT Add Printer Wizard.  For complete information, please refer
@@ -206,6 +225,7 @@ The Installation Client
 		create the printer
 		
 
+!== The printer driver name space problem
 
 	One of the problems encountered when implementing the Imprints
 	tool set was the name space issues between various supported
@@ -283,3 +303,5 @@ Here are the possible scenarios for supporting migration:
 
 
 
+!== end of PRINTER_DRIVER2.txt =======================================
+!=====================================================================
