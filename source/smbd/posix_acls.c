@@ -559,6 +559,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 							SEC_ACL *dacl)
 {
 	extern DOM_SID global_sid_World;
+	extern struct generic_mapping *file_generic_mapping;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
@@ -589,8 +590,13 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		 * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
 		 */
 
-		psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
-							GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ATTRIBUTES);
+		/*
+		 * Convert GENERIC bits to specific bits.
+		 */
+ 
+		se_map_generic(&psa->info.mask, &file_generic_mapping);
+
+		psa->info.mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
 
 		if(psa->info.mask != UNIX_ACCESS_NONE)
 			psa->info.mask &= ~UNIX_ACCESS_NONE;

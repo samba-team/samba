@@ -1155,11 +1155,11 @@ void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
-void del_share_mode(files_struct *fsp);
+size_t del_share_mode(files_struct *fsp, share_mode_entry **ppse);
 BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(files_struct *fsp);
 BOOL downgrade_share_oplock(files_struct *fsp);
-BOOL modify_share_mode(files_struct *fsp, int new_mode, uint16 new_oplock);
+BOOL modify_delete_flag( SMB_DEV_T dev, SMB_INO_T inode, BOOL delete_on_close);
 int share_mode_forall(SHAREMODE_FN(fn));
 
 /*The following definitions come from  locking/posix.c  */
