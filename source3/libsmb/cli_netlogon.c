@@ -493,6 +493,9 @@ NTSTATUS cli_netlogon_sam_logon(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r.status;
 
  done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
         return result;
 }
 
@@ -504,7 +507,7 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			   char* machine_name, uint8 hashed_mach_pwd[16])
 {
 	prs_struct rbuf;
-	prs_struct buf; 
+	prs_struct qbuf; 
 	DOM_CRED new_clnt_cred;
 	NET_Q_SRV_PWSET q_s;
 	uint16 sec_chan_type = 2;
@@ -513,7 +516,7 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	gen_next_creds( cli, &new_clnt_cred);
 	
-	prs_init(&buf , 1024, mem_ctx, MARSHALL);
+	prs_init(&qbuf , 1024, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0,    mem_ctx, UNMARSHALL);
 	
 	/* create and send a MSRPC command with api NET_SRV_PWSET */
@@ -522,7 +525,8 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	
 	if (!mach_acct) {
 		DEBUG(0,("talloc_asprintf failed!\n"));
-		return NT_STATUS_NO_MEMORY;
+		nt_status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	DEBUG(4,("cli_net_srv_pwset: srv:%s acct:%s sc: %d mc: %s clnt %s %x\n",
@@ -535,18 +539,20 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			 &new_clnt_cred, (char *)hashed_mach_pwd);
 	
 	/* turn parameters into data stream */
-	if(!net_io_q_srv_pwset("", &q_s,  &buf, 0)) {
+	if(!net_io_q_srv_pwset("", &q_s,  &qbuf, 0)) {
 		DEBUG(0,("cli_net_srv_pwset: Error : failed to marshall NET_Q_SRV_PWSET struct.\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 	
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, NET_SRVPWSET, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, NET_SRVPWSET, &qbuf, &rbuf))
 	{
 		NET_R_SRV_PWSET r_s;
 		
 		if (!net_io_r_srv_pwset("", &r_s, &rbuf, 0)) {
-			return NT_STATUS_UNSUCCESSFUL;
+			nt_status =  NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		
 		nt_status = r_s.status;
@@ -555,7 +561,7 @@ NTSTATUS cli_net_srv_pwset(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		{
 			/* report error code */
 			DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(nt_status)));
-			return nt_status;
+			goto done;
 		}
 
 		/* Update the credentials. */
@@ -569,6 +575,10 @@ password ?).\n", cli->desthost ));
 			nt_status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 	
 	return nt_status;
 }
