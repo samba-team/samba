@@ -7,13 +7,25 @@ FULLBUILD=$1
 
 ( cd build/pidl && make ) || exit 1
 
+PIDL="build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --client librpc/gen_rpc/rpc_"
+
+if [ x$FULLBUILD = xFULL ]; then
+      echo Rebuilding all idl files in librpc/idl
+      $PIDL librpc/idl/*.idl || exit 1
+      exit 0
+fi
+
+list=""
+
 for f in librpc/idl/*.idl; do
-    base=`basename $f .idl`
-    ndr=librpc/gen_ndr/ndr_$base
-    if [ x$FULLBUILD = xFULL -o "$f" -nt $ndr.c ]; then
-      echo Processing $f
-      build/pidl/pidl.pl --output $ndr --parse --header --parser --client librpc/gen_rpc/rpc_$base.c $f || exit 1
+    basename=`basename $f .idl`
+    if [ "$f" -nt librpc/gen_ndr/ndr_$basename.c ]; then
+	list="$list $f"
     fi
 done
+
+if [ "x$list" != x ]; then
+    $PIDL $list || exit 1
+fi
 
 exit 0

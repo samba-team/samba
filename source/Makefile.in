@@ -1088,11 +1088,9 @@ proto_exists: include/proto.h include/build_env.h \
 		include/tdbsam2_parse_info.h
 
 delheaders:
-	@echo Removing prototype headers
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
 
 include/proto.h:
-	@echo Building include/proto.h
 	@cd $(srcdir) && $(SHELL) script/mkproto.sh $(PERL) \
 	  -h _PROTO_H_ $(builddir)/include/proto.h \
 	  $(PROTO_OBJ)

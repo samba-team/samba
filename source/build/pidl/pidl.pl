@@ -12,6 +12,7 @@ use FindBin qw($RealBin);
 use lib "$RealBin";
 use lib "$RealBin/lib";
 use Getopt::Long;
+use File::Basename;
 use idl;
 use dump;
 use header;
@@ -98,65 +99,78 @@ if ($opt_help) {
     exit(0);
 }
 
-my($idl_file) = shift;
-die "ERROR: You must specify an idl file to process" unless ($idl_file);
+sub process_file($)
+{
+	my $idl_file = shift;
+	my $output;
 
-if (!defined($opt_output)) {
-	$opt_output = $idl_file;
+	my $basename = basename($idl_file, ".idl");
+
+	if (!defined($opt_output)) {
+		$output = $idl_file;
+	} else {
+		$output = $opt_output . $basename;
+	}
+
+	my($pidl_file) = util::ChangeExtension($output, "pidl");
+
+	if ($opt_parse) {
+		print "Generating $pidl_file from $idl_file\n";
+		my($idl) = IdlParse($idl_file);
+		defined $idl || die "Failed to parse $idl_file";
+		util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
+		
+		IdlValidator::Validate($idl);
+	}
+	
+	if ($opt_dump) {
+		my($idl) = util::LoadStructure($pidl_file);
+		print IdlDump::Dump($idl);
+	}
+	
+	if ($opt_header) {
+		my($idl) = util::LoadStructure($pidl_file);
+		my($header) = util::ChangeExtension($output, "h");
+		print "Generating $header\n";
+		util::FileSave($header, IdlHeader::Parse($idl));
+	}
+	
+	if ($opt_parser) {
+		my($idl) = util::LoadStructure($pidl_file);
+		my($parser) = util::ChangeExtension($output, "c");
+		print "Generating $parser\n";
+		IdlParser::Parse($idl, $parser);
+	}
+	
+	if ($opt_eparser) {
+		my($idl) = util::LoadStructure($pidl_file);
+		my($parser) = util::ChangeExtension($output, "c");
+		print "Generating $parser for ethereal\n";
+		util::FileSave($parser, IdlEParser::Parse($idl));
+	}
+	
+	if ($opt_client) {
+		my($idl) = util::LoadStructure($pidl_file);
+		my($client) = $opt_client . $basename;
+		$client = util::ChangeExtension($client, "c");
+		print "Generating $client client calls\n";
+		util::FileSave($client, IdlClient::Parse($idl));
+	}
+	
+	if ($opt_diff) {
+		my($idl) = util::LoadStructure($pidl_file);
+		my($tempfile) = util::ChangeExtension($output, "tmp");
+		util::FileSave($tempfile, IdlDump::Dump($idl));
+		system("diff -wu $idl_file $tempfile");
+		unlink($tempfile);
+	}
+	
+	if (!$opt_keep) {
+		system("rm -f $pidl_file");
+	}
 }
 
-my($pidl_file) = util::ChangeExtension($opt_output, "pidl");
 
-if ($opt_parse) {
-    print "Generating $pidl_file from $idl_file\n";
-    my($idl) = IdlParse($idl_file);
-    defined $idl || die "Failed to parse $idl_file";
-    util::SaveStructure($pidl_file, $idl) || die "Failed to save $pidl_file";
-
-    IdlValidator::Validate($idl);
-}
-
-if ($opt_dump) {
-    my($idl) = util::LoadStructure($pidl_file);
-    print IdlDump::Dump($idl);
-}
-
-if ($opt_header) {
-    my($idl) = util::LoadStructure($pidl_file);
-    my($header) = util::ChangeExtension($opt_output, "h");
-    print "Generating $header\n";
-    util::FileSave($header, IdlHeader::Parse($idl));
-}
-
-if ($opt_parser) {
-    my($idl) = util::LoadStructure($pidl_file);
-    my($parser) = util::ChangeExtension($opt_output, "c");
-    print "Generating $parser\n";
-    IdlParser::Parse($idl, $parser);
-}
-
-if ($opt_eparser) {
-    my($idl) = util::LoadStructure($pidl_file);
-    my($parser) = util::ChangeExtension($opt_output, "c");
-    print "Generating $parser for ethereal\n";
-    util::FileSave($parser, IdlEParser::Parse($idl));
-}
-
-if ($opt_client) {
-    my($idl) = util::LoadStructure($pidl_file);
-    my($client) = util::ChangeExtension($opt_client, "c");
-    print "Generating $client client calls\n";
-    util::FileSave($client, IdlClient::Parse($idl));
-}
-
-if ($opt_diff) {
-    my($idl) = util::LoadStructure($pidl_file);
-    my($tempfile) = util::ChangeExtension($opt_output, "tmp");
-    util::FileSave($tempfile, IdlDump::Dump($idl));
-    system("diff -wu $idl_file $tempfile");
-    unlink($tempfile);
-}
-
-if (!$opt_keep) {
-	system("rm -f $pidl_file");
+foreach my $filename (@ARGV) {
+	process_file($filename);
 }
