@@ -649,7 +649,7 @@ static void usage(void)
 
 enum {
 	OPT_SET_AUTH_USER = 1000,
-	OPT_SEQUENCE,
+	OPT_SEQUENCE
 };
 
 int main(int argc, char **argv)
