@@ -1360,9 +1360,6 @@ void sys_adminlog(int priority, const char *format_str, ...)
 	int ret;
 	char *msgbuf = NULL;
 
-	if (!lp_admin_log())
-		return;
-
 	va_start( ap, format_str );
 	ret = vasprintf( &msgbuf, format_str, ap );
 	va_end( ap );
