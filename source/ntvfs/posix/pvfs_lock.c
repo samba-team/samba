@@ -188,6 +188,7 @@ static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reas
 				if (pending->wait_handle == NULL) {
 					pvfs_lock_async_failed(pvfs, req, f, locks, i, NT_STATUS_NO_MEMORY);
 				} else {
+					talloc_steal(pending, pending->wait_handle);
 					DLIST_ADD(f->pending_list, pending);
 				}
 				return;
@@ -224,7 +225,6 @@ void pvfs_lock_close(struct pvfs_state *pvfs, struct pvfs_file *f)
 	for (p=f->pending_list;p;p=next) {
 		next = p->next;
 		DLIST_REMOVE(f->pending_list, p);
-		talloc_free(p->wait_handle);
 		p->req->async_states->status = NT_STATUS_RANGE_NOT_LOCKED;
 		p->req->async_states->send_fn(p->req);
 	}
@@ -374,6 +374,7 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 				if (pending->wait_handle == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
+				talloc_steal(pending, pending->wait_handle);
 				DLIST_ADD(f->pending_list, pending);
 				return NT_STATUS_OK;
 			}
