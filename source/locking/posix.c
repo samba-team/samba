@@ -957,7 +957,7 @@ static struct unlock_list *posix_unlock_list(TALLOC_CTX *ctx, struct unlock_list
 				(double)lock->start, (double)lock->size ));
 
 			if ( (ul_curr->start >= (lock->start + lock->size)) ||
-				 (lock->start > (ul_curr->start + ul_curr->size))) {
+				 (lock->start >= (ul_curr->start + ul_curr->size))) {
 
 				/* No overlap with this lock - leave this range alone. */
 /*********************************************
