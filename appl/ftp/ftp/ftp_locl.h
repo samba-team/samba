@@ -55,9 +55,6 @@
 
 #include "krb4.h"
 
-extern char *optarg;
-extern int optind, opterr;
-
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);
 int pclose(FILE*);

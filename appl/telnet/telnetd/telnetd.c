@@ -186,8 +186,6 @@ int main(int argc, char **argv)
 	struct sockaddr_in from;
 	int on = 1, fromlen;
 	register int ch;
-	extern char *optarg;
-	extern int optind;
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 	int tos = -1;
 #endif

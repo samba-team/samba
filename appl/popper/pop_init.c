@@ -77,7 +77,6 @@ pop_init(POP *p,int argcount,char **argmessage)
     int                     errflag = 0;
     int                     c;
     int                     len;
-    extern char         *   optarg;
     int                     options = 0;
     int                     sp = 0;             /*  Socket pointer */
     char                *   trace_file_name;

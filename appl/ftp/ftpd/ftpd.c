@@ -99,9 +99,6 @@ RCSID("$Id$");
 
 void yyparse();
 
-extern char *optarg;
-extern int optind, opterr;
-
 #ifndef LOG_FTP
 #define LOG_FTP LOG_DAEMON
 #endif
@@ -155,15 +152,6 @@ static char ttyline[20];
    authorized and anonymous connections, 2 only authorized */
 static int auth_level = 1;
 
-#ifdef sun
-extern char *optarg;
-extern int optind, opterr;
-
-int fclose(FILE*);
-#endif
-
-char *getusershell(void);
-
 /*
  * Timeout intervals for retrying connections
  * to hosts that don't accept PORT cmds.  This
@@ -206,7 +194,7 @@ static void	 dolog (struct sockaddr_in *);
 static void	 end_login (void);
 static FILE	*getdatasock (char *);
 static char	*gunique (char *);
-static void	 lostconn (int);
+static RETSIGTYPE	 lostconn (int);
 static int	 receive_data (FILE *, FILE *);
 static void	 send_data (FILE *, FILE *, off_t);
 static struct passwd * sgetpwnam (char *);
@@ -436,7 +424,7 @@ main(int argc, char **argv)
 	/* NOTREACHED */
 }
 
-static void
+static RETSIGTYPE
 lostconn(int signo)
 {
 

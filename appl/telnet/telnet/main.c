@@ -38,6 +38,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #include <config.h>
+#include "roken.h"
 
 RCSID("$Id$");
 
@@ -99,8 +100,6 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
-	extern char *optarg;
-	extern int optind;
 	int ch;
 	char *user;
 #ifdef	FORWARD
