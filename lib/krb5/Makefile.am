@@ -4,6 +4,8 @@ include $(top_srcdir)/Makefile.am.common
 
 INCLUDES += $(INCLUDE_krb4)
 
+bin_PROGRAMS = verify_krb5_conf
+
 noinst_PROGRAMS = dump_config
 
 check_PROGRAMS = n-fold-test string-to-key-test
@@ -38,6 +40,7 @@ libkrb5_la_SOURCES = \
 	changepw.c \
 	codec.c \
 	config_file.c \
+	config_file_netinfo.c \
 	convert_creds.c \
 	constants.c \
 	context.c \
