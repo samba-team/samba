@@ -1,3 +1,9 @@
+2000-12-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-common.h: add c++ externs
+
+	* roken.h.in: fix last commit differently
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* err.hin (warnerr): remove, it's not part of the err.h interface
