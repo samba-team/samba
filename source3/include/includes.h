@@ -958,10 +958,6 @@ struct smb_ldap_privates;
 #define SYNC_DNS 1
 #endif
 
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 256
-#endif
-
 #ifndef SEEK_SET
 #define SEEK_SET 0
 #endif
