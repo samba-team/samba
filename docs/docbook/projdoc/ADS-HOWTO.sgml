@@ -10,10 +10,8 @@
 <title>Samba as a ADS domain member</title>
 
 <para>
-This is a VERY ROUGH guide to setting up the current (November 2001)
-pre-alpha version of Samba 3.0 with kerberos authentication against a
-Windows2000 KDC. The procedures listed here are likely to change as
-the code develops.
+This is a rough guide to setting up Samba 3.0 with kerberos authentication against a
+Windows2000 KDC. 
 </para>
 
 <para>Pieces you need before you begin:
@@ -76,13 +74,17 @@ to get them off CD2.</para>
 
 <para><programlisting>
   realm = YOUR.KERBEROS.REALM
-  ads server = your.kerberos.server
   security = ADS
   encrypt passwords = yes
 </programlisting></para>
 
-<para>Strictly speaking, you can omit the realm name and you can use an IP
-  address for the ads server. In that case Samba will auto-detect these.</para>
+<para>
+In case samba can't figure out your ads server using your realm name, use the 
+<command>ads server</command> option in <filename>smb.conf</filename>:
+<programlisting>
+  ads server = your.kerberos.server
+</programlisting>
+</para>
 
 <para>You do *not* need a smbpasswd file, although it won't do any harm
   and if you have one then Samba will be able to fall back to normal
