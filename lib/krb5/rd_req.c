@@ -228,7 +228,7 @@ krb5_verify_ap_req(krb5_context context,
 	*ticket = malloc(sizeof(**ticket));
 	**ticket = t;
     } else
-	free_EncTicketPart(&t.ticket);
+	krb5_free_ticket (context, &t);
     return 0;
 }
 		   
