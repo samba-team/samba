@@ -38,8 +38,7 @@
    like that but at the moment it's simply staying as part of winbind.  I
    think the TNG architecture of forcing every user of the rpc layer to use
    the connection caching system is a bad idea.  It should be an optional
-   method of using the routines.  We actually cache policy handles - tng
-   caches connections to pipes.
+   method of using the routines.
 
    The TNG design is quite good but I disagree with some aspects of the
    implementation. -tpot
@@ -55,51 +54,12 @@
      - There needs to be a utility function in libsmb/namequery.c that does
        cm_get_dc_name() 
 
-     - When closing down sam handles we need to close down user, group and
-       domain handles.
-
      - Take care when destroying cli_structs as they can be shared between
        various sam handles.
 
  */
 
 #include "winbindd.h"
-
-/* We store lists of connections here */
-
-enum sam_pipe_type {
-        SAM_PIPE_BASIC,         /* A basic handle */
-        SAM_PIPE_DOM,           /* A domain handle */
-        SAM_PIPE_USER,          /* A handle on a user */
-        SAM_PIPE_GROUP          /* A handle on a group */
-};
-
-/* Return a string description of a SAM pipe type */
-
-static char *pipe_type(enum sam_pipe_type pt)
-{
-        char *msg;
-
-        switch (pt) {
-        case SAM_PIPE_BASIC:
-                msg = "BASIC";
-                break;
-        case SAM_PIPE_DOM:
-                msg = "DOMAIN";
-                break;
-        case SAM_PIPE_USER:
-                msg = "USER";
-                break;
-        case SAM_PIPE_GROUP:
-                msg = "GROUP";
-                break;
-        default:
-                msg = "??";
-                break;
-        }
-
-        return msg;
-}
 
 /* Global list of connections.  Initially a DLIST but can become a hash
    table or whatever later. */
@@ -111,15 +71,6 @@ struct winbindd_cm_conn {
         fstring pipe_name;
         struct cli_state *cli;
         POLICY_HND pol;
-
-        /* Pipe-specific properties for this instance */
-
-        union {
-                struct {
-                        enum sam_pipe_type pipe_type;
-                        uint32 rid;
-                } samr;
-        } pipe_data;
 };
 
 struct winbindd_cm_conn *cm_conns = NULL;
@@ -419,8 +370,7 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
         for (conn = cm_conns; conn; conn = conn->next) {
                 if (strequal(conn->domain, domain) &&
-                    strequal(conn->pipe_name, PIPE_SAMR) &&
-                    conn->pipe_data.samr.pipe_type == SAM_PIPE_BASIC) {
+                    strequal(conn->pipe_name, PIPE_SAMR)) {
 
                         if (!connection_ok(conn)) {
                                 DLIST_REMOVE(cm_conns, conn);
@@ -461,6 +411,8 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
         return &hnd;        
 }
+
+#if 0
 
 /* Return a SAM domain policy handle on a domain */
 
@@ -682,7 +634,10 @@ CLI_POLICY_HND *cm_get_sam_group_handle(char *domain, DOM_SID *domain_sid,
         return &hnd;
 }
 
-/* Get a handle on a netlogon pipe */
+#endif
+
+/* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
+   netlogon pipe as no handle is returned. */
 
 struct cli_state *cm_get_netlogon_cli(char *domain, unsigned char *trust_passwd)
 {
@@ -718,7 +673,7 @@ static void dump_conn_list(void)
 {
         struct winbindd_cm_conn *con;
 
-        DEBUG(0, ("\tDomain          Controller      Pipe             Handle type\n"));
+        DEBUG(0, ("\tDomain          Controller      Pipe\n"));
 
         for(con = cm_conns; con; con = con->next) {
                 char *msg;
@@ -728,30 +683,6 @@ static void dump_conn_list(void)
                 asprintf(&msg, "\t%-15s %-15s %-16s", con->domain, 
                          con->controller, con->pipe_name);
                 
-                /* Display sam specific info */
-                
-                if (strequal(con->pipe_name, PIPE_SAMR)) {
-                        char *msg2;
-                        
-                        asprintf(&msg2, "%s %-7s", msg, 
-                                 pipe_type(con->pipe_data.samr.pipe_type));
-
-                        free(msg);
-                        msg = msg2;
-                }
-                
-                if (strequal(con->pipe_name, PIPE_SAMR) &&
-                    (con->pipe_data.samr.pipe_type == SAM_PIPE_USER ||
-                     con->pipe_data.samr.pipe_type == SAM_PIPE_GROUP)) {
-                        char *msg2;
-
-                        asprintf(&msg2, "%s %4xh", msg, 
-                                 con->pipe_data.samr.rid);
-
-                        free(msg);
-                        msg = msg2;
-                }
-
                 DEBUG(0, ("%s\n", msg));
                 free(msg);
         }
