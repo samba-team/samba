@@ -40,14 +40,12 @@
 
 RCSID("$Id$");
 
-char *prog;
-
 static void
 usage (void)
 {
   fprintf(stderr,
 	  "Usage: %s [-e] [-h] [-n count] [-f alg] num seed\n",
-	  prog);
+	  __progname);
   exit (1);
 }
 
@@ -93,7 +91,7 @@ main (int argc, char **argv)
   void (*fn)(OtpKey, char *);
   OtpAlgorithm *alg = otp_find_alg (OTP_ALG_DEFAULT);
 
-  prog = argv[0];
+  set_progname (argv[0]);
 
   while ((c = getopt (argc, argv, "ehn:f:")) != EOF)
     switch (c) {
@@ -108,10 +106,8 @@ main (int argc, char **argv)
       break;
     case 'f' :
       alg = otp_find_alg (optarg);
-      if (alg == NULL) {
-	fprintf (stderr, "%s: Unknown algorithm: %s\n", prog, optarg);
-	return 1;
-      }
+      if (alg == NULL)
+	errx(1, "Unknown algorithm: %s", optarg);
       break;
     default :
       usage ();
