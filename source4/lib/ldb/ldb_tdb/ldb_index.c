@@ -385,6 +385,7 @@ static int ltdb_index_dn_or(struct ldb_module *module,
 				return -1;
 			}
 			dn_list_free(ldb, &list2);
+			ret = 1;
 		}
 	}
 
