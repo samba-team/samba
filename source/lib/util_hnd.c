@@ -342,7 +342,7 @@ void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd)
 
 	if (p != NULL && p->open)
 	{
-		DEBUG(3, ("policy(pnum=%x %s): Getting policy state\n",
+		DEBUG(5, ("policy(pnum=%x %s): Getting policy state\n",
 			  p->pnum, pol_get_name(p)));
 		return p->dev;
 	}
@@ -487,7 +487,7 @@ const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
 
 	if (p != NULL && p->open)
 	{
-		DEBUG(3, ("Getting policy vuser_key pnum=%x pid=%d vuid=%x\n",
+		DEBUG(5, ("Getting policy vuser_key pnum=%x pid=%d vuid=%x\n",
 			  p->pnum, p->key.pid, p->key.vuid));
 		return &p->key;
 	}
