@@ -154,7 +154,7 @@ void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL message_init(void);
 BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
 void message_dispatch(void);
-void message_register(int msg_type,
+void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 void message_deregister(int msg_type);
 BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
@@ -751,6 +751,11 @@ ssize_t cli_write(struct cli_state *cli,
 		  char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
+
+/*The following definitions come from  libsmb/clisecdesc.c  */
+
+SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd);
+BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd);
 
 /*The following definitions come from  libsmb/clitrans.c  */
 
@@ -1860,17 +1865,18 @@ BOOL cli_nt_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr);
 BOOL do_lsa_open_policy(struct cli_state *cli,
 			char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos);
-BOOL do_lsa_lookup_sids(struct cli_state *cli,
-			POLICY_HND *hnd,
-			int num_sids,
-			DOM_SID **sids,
-			char ***names,
-			int *num_names);
 BOOL do_lsa_query_info_pol(struct cli_state *cli,
 			POLICY_HND *hnd, uint16 info_class,
 			fstring domain_name, DOM_SID *domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, POLICY_HND *hnd);
 BOOL cli_lsa_get_domain_sid(struct cli_state *cli, char *server);
+uint32 lsa_open_policy(const char *system_name, POLICY_HND *hnd,
+		       BOOL sec_qos, uint32 des_access);
+uint32 lsa_close(POLICY_HND *hnd);
+uint32 lsa_lookup_sids(POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+		       char ***names, uint32 **types, int *num_names);
+uint32 lsa_lookup_names(POLICY_HND *hnd, int num_names, char **names,
+			DOM_SID **sids, uint32 **types, int *num_sids);
 
 /*The following definitions come from  rpc_client/cli_netlogon.c  */
 
@@ -2232,8 +2238,7 @@ BOOL lsa_io_r_lookup_sids(char *desc, LSA_R_LOOKUP_SIDS *r_s, prs_struct *ps, in
 void init_q_lookup_names(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_NAMES *q_l, 
 			 POLICY_HND *hnd, int num_names, char **names);
 BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, int depth);
-BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc, 
-			   LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth);
 void init_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
 BOOL lsa_io_r_close(char *desc,  LSA_R_CLOSE *r_c, prs_struct *ps, int depth);
@@ -2419,6 +2424,7 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32);
 BOOL prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *data8s, int len);
 BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
+BOOL prs_buffer5(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER5 *str);
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str);
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str);
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str);
@@ -3029,9 +3035,6 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
-void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr);
-void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n);
-void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				char *srv_name, uint32 info_level,
 				uint32 preferred_len, ENUM_HND *hnd);
@@ -3329,6 +3332,12 @@ uint32 local_lookup_user_rid(char *user_name, uint32 *rid);
 #if OLD_NTDOMAIN
 BOOL api_wkssvc_rpc(pipes_struct *p);
 #endif
+
+/*The following definitions come from  rpcclient/cmd_lsarpc.c  */
+
+uint32 cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
+void add_lsa_commands(void);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 

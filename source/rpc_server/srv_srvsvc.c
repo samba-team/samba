@@ -109,7 +109,7 @@ static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
  Fill in a share info structure.
  ********************************************************************/
 
-static BOOL init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
+static BOOL init_srv_share_info_ctr(TALLOC_CTX *ctx, SRV_SHARE_INFO_CTR *ctr,
 	       uint32 info_level, uint32 *resume_hnd, uint32 *total_entries)
 {
 	int num_entries = 0;
@@ -142,7 +142,7 @@ static BOOL init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 		SRV_SHARE_INFO_1 *info1;
 		int i = 0;
 
-		info1 = malloc(num_entries * sizeof(SRV_SHARE_INFO_1));
+		info1 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_1));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum)) {
@@ -159,7 +159,7 @@ static BOOL init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
 		SRV_SHARE_INFO_2 *info2;
 		int i = 0;
 
-		info2 = malloc(num_entries * sizeof(SRV_SHARE_INFO_2));
+		info2 = talloc(ctx, num_entries * sizeof(SRV_SHARE_INFO_2));
 
 		for (snum = *resume_hnd; snum < num_services; snum++) {
 			if (lp_browseable(snum) && lp_snum_ok(snum)) {
@@ -183,12 +183,12 @@ static BOOL init_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr,
  Inits a SRV_R_NET_SHARE_ENUM structure.
 ********************************************************************/
 
-static void init_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n,
+static void init_srv_r_net_share_enum(TALLOC_CTX *ctx, SRV_R_NET_SHARE_ENUM *r_n,
 				      uint32 info_level, uint32 resume_hnd)  
 {
 	DEBUG(5,("init_srv_r_net_share_enum: %d\n", __LINE__));
 
-	if (init_srv_share_info_ctr(&r_n->ctr, info_level,
+	if (init_srv_share_info_ctr(ctx, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries)) {
 		r_n->status = 0x0;
 	} else {
@@ -207,21 +207,25 @@ static BOOL srv_reply_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 {
 	SRV_R_NET_SHARE_ENUM r_n;
 	BOOL ret;
+	TALLOC_CTX *ctx = talloc_init();
 
 	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
 
+	if (!ctx) {
+		DEBUG(0,("srv_reply_net_share_enum: talloc_init failed.\n"));
+		return False;
+	}
+
 	/* Create the list of shares for the response. */
-	init_srv_r_net_share_enum(&r_n,
+	init_srv_r_net_share_enum(ctx, &r_n,
 				q_n->ctr.info_level,
 				get_enum_hnd(&q_n->enum_hnd));
 
 	/* store the response in the SMB stream */
 	ret = srv_io_r_net_share_enum("", &r_n, rdata, 0);
 
-	/* Free the memory used by the response. */
-	free_srv_r_net_share_enum(&r_n);
-
 	DEBUG(5,("srv_net_share_enum: %d\n", __LINE__));
+	talloc_destroy(ctx);
 
 	return ret;
 }
@@ -285,9 +289,6 @@ static BOOL srv_reply_net_share_get_info(SRV_Q_NET_SHARE_GET_INFO *q_n,
 
 	/* store the response in the SMB stream */
 	ret = srv_io_r_net_share_get_info("", &r_n, rdata, 0);
-
-	/* Free the memory used by the response. */
-	free_srv_r_net_share_get_info(&r_n);
 
 	DEBUG(5,("srv_net_share_get_info: %d\n", __LINE__));
 
@@ -1024,9 +1025,6 @@ static BOOL api_srv_net_share_enum(pipes_struct *p)
 
 	ret = srv_reply_net_share_enum(&q_n, rdata);
 
-	/* Free any data allocated in the unmarshalling. */
-	free_srv_q_net_share_enum(&q_n);
-
 	return ret;
 }
 
@@ -1048,9 +1046,6 @@ static BOOL api_srv_net_share_get_info(pipes_struct *p)
 	}
 
 	ret = srv_reply_net_share_get_info(&q_n, rdata);
-
-	/* Free any data allocated in the unmarshalling. */
-	free_srv_q_net_share_get_info(&q_n);
 
 	return ret;
 }

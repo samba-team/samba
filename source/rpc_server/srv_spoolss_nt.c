@@ -2021,7 +2021,7 @@ static DEVICEMODE *construct_dev_mode(int snum)
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
 
-	safe_strcpy(adevice, printer->info_2->printername, sizeof(adevice));
+	snprintf(adevice, sizeof(adevice), printer->info_2->printername);
 	init_unistr(&devmode->devicename, adevice);
 
 	snprintf(aform, sizeof(aform), ntdevmode->formname);

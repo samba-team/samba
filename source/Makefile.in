@@ -121,11 +121,13 @@ PARAM_OBJ = param/loadparm.o param/params.o
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
-	     libsmb/clitrans.o \
+	     libsmb/clitrans.o libsmb/clisecdesc.o \
 	     libsmb/namequery.o libsmb/nmblib.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
-	     libsmb/passchange.o libsmb/unexpected.o
+	     libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
+
+LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_pipe.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
@@ -135,11 +137,15 @@ RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_pipe.o rpc_server/srv_dfs.o \
 		 rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
-RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
-                rpc_parse/parse_net.o rpc_parse/parse_prs.o \
+# this includes only the low level parse code, not stuff
+# that requires knowledge of security contexts
+RPC_PARSE_OBJ1 = rpc_parse/parse_prs.o rpc_parse/parse_sec.o \
+				rpc_parse/parse_misc.o
+
+RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
-                rpc_parse/parse_wks.o rpc_parse/parse_sec.o \
+                rpc_parse/parse_wks.o \
 		rpc_parse/parse_spoolss.o rpc_parse/parse_dfs.o \
 		rpc_parse/parse_creds.o
 
@@ -152,7 +158,11 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_srvsvc.o   \
 		rpc_client/cli_samr.o  \
 		rpc_client/cli_reg.o \
-		rpc_client/cli_spoolss_notify.o
+		rpc_client/cli_spoolss_notify.o \
+		rpc_client/cli_connect.o \
+		rpc_client/cli_use.o \
+		rpc_client/ncacn_np_use.o \
+		lib/util_list.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -228,7 +238,7 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
-SMBCONTROL_OBJ = utils/smbcontrol.o smbd/connection.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
@@ -242,12 +252,10 @@ SMBPASSWD_OBJ = utils/smbpasswd.o lib/msrpc-client.o $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o \
-		lib/cmd_interp.o lib/util_list.o \
+		lib/cmd_interp.o \
 	   	lib/msrpc-client.o \
-		rpc_client/cli_connect.o \
-		rpc_client/cli_use.o \
-		rpc_client/ncacn_np_use.o \
 		rpcclient/spoolss_cmds.o rpcclient/cmd_spoolss.o \
+		rpcclient/cmd_lsarpc.o \
 		rpcclient/display_spool.o rpcclient/display_sec.o \
 		rpc_client/msrpc_spoolss.o rpc_client/cli_spoolss.o
 
@@ -294,6 +302,10 @@ MSGTEST_OBJ = utils/msgtest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
+SMBCACLS_OBJ = utils/smbcacls.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
+				$(UBIQX_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) \
+				$(LIBMSRPC_OBJ)
+
 
 LOCKTEST2_OBJ = utils/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
@@ -314,7 +326,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) \
-	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1)
+	    $(SMBWRAPPER_OBJ) $(SMBTORTURE_OBJ) $(RPCCLIENT_OBJ1) $(LIBMSRPC_OBJ)
 
 NSS_OBJ_0 = nsswitch/wins.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIBSMB_OBJ) $(LIB_OBJ) $(NSSWINS_OBJ)
 NSS_OBJ = $(NSS_OBJ_0:.o=.po)
@@ -362,6 +374,8 @@ masktest : CHECK bin/masktest
 msgtest : CHECK bin/msgtest
 
 locktest : CHECK bin/locktest
+
+smbcacls : CHECK bin/smbcacls
 
 locktest2 : CHECK bin/locktest2
 
@@ -515,6 +529,10 @@ bin/masktest: $(MASKTEST_OBJ) bin/.dummy
 bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/smbcacls: $(SMBCACLS_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBCACLS_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@

@@ -243,7 +243,6 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 		/* report error code */
 		DEBUG(0,("SRV_R_NET_SHARE_ENUM: %s\n", get_nt_error_msg(r_o->status)));
 		prs_mem_free(&rdata);
-		free_srv_r_net_share_enum(r_o);
 		return False;
 	}
 
@@ -252,7 +251,6 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 		DEBUG(0,("SRV_R_NET_SHARE_ENUM: info class %d does not match request %d\n",
 			r_o->ctr.switch_value, switch_value));
 		prs_mem_free(&rdata);
-		free_srv_r_net_share_enum(r_o);
 		return False;
 	}
 

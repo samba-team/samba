@@ -291,7 +291,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info1 = malloc(num_entries * sizeof(SRV_SHARE_INFO_1))))
+			if (!(info1 = prs_alloc_mem(ps, num_entries * sizeof(SRV_SHARE_INFO_1))))
 				return False;
 			memset(info1, '\0', num_entries * sizeof(SRV_SHARE_INFO_1));
 			ctr->share.info1 = info1;
@@ -317,7 +317,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		int i;
 
 		if (UNMARSHALLING(ps)) {
-			if (!(info2 = malloc(num_entries * sizeof(SRV_SHARE_INFO_2))))
+			if (!(info2 = prs_alloc_mem(ps,num_entries * sizeof(SRV_SHARE_INFO_2))))
 				return False;
 			memset(info2, '\0', num_entries * sizeof(SRV_SHARE_INFO_2));
 			ctr->share.info2 = info2;
@@ -343,43 +343,6 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 	}
 
 	return True;
-}
-
-/*******************************************************************
- Frees a SRV_SHARE_INFO_CTR structure.
-********************************************************************/
-
-void free_srv_share_info_ctr(SRV_SHARE_INFO_CTR *ctr)
-{
-	if(!ctr)
-		return;
-	if(ctr->share.info)
-		free(ctr->share.info);
-	memset(ctr, '\0', sizeof(SRV_SHARE_INFO_CTR));
-}
-
-/*******************************************************************
- Frees a SRV_Q_NET_SHARE_ENUM structure.
-********************************************************************/
-
-void free_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n)
-{
-	if(!q_n)
-		return;
-	free_srv_share_info_ctr(&q_n->ctr);
-	memset(q_n, '\0', sizeof(SRV_Q_NET_SHARE_ENUM));
-}
-
-/*******************************************************************
- Frees a SRV_R_NET_SHARE_ENUM structure.
-********************************************************************/
-
-void free_srv_r_net_share_enum(SRV_R_NET_SHARE_ENUM *r_n)
-{
-	if(!r_n)
-		return;
-	free_srv_share_info_ctr(&r_n->ctr);
-	memset(r_n, '\0', sizeof(SRV_R_NET_SHARE_ENUM));
 }
 
 /*******************************************************************

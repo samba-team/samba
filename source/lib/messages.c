@@ -1,25 +1,25 @@
-/*
+/* 
    Unix SMB/Netbios implementation.
    Version 3.0
    Samba internal messaging functions
    Copyright (C) Andrew Tridgell 2000
-
+   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-
+   
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
+   
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* this module is used for internal messaging between Samba daemons.
+/* this module is used for internal messaging between Samba daemons. 
 
    The idea is that if a part of Samba wants to do communication with
    another Samba process then it will do a message_register() of a
@@ -87,14 +87,14 @@ void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 }
 
 /****************************************************************************
- Initialise the messaging functions.
+ Initialise the messaging functions. 
 ****************************************************************************/
 BOOL message_init(void)
 {
 	if (tdb) return True;
 
-	tdb = tdb_open(lock_path("messages.tdb"),
-		       0, TDB_CLEAR_IF_FIRST,
+	tdb = tdb_open(lock_path("messages.tdb"), 
+		       0, TDB_CLEAR_IF_FIRST, 
 		       O_RDWR|O_CREAT,0600);
 
 	if (!tdb) {
@@ -128,7 +128,7 @@ static TDB_DATA message_key_pid(pid_t pid)
 
 
 /****************************************************************************
-notify a process that it has a message. If the process doesn't exist
+notify a process that it has a message. If the process doesn't exist 
 then delete its record in the database
 ****************************************************************************/
 static BOOL message_notify(pid_t pid)
@@ -327,7 +327,7 @@ void message_dispatch(void)
 /****************************************************************************
 register a dispatch function for a particular message type
 ****************************************************************************/
-void message_register(int msg_type,
+void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len))
 {
 	struct dispatch_fns *dfn;
