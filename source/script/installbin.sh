@@ -2,10 +2,10 @@
 
 INSTALLPERMS=$1
 DESTDIR=$2
-BASEDIR=$3
-BINDIR=$4
-LIBDIR=$5
-VARDIR=$6
+BASEDIR=`echo $3 | sed 's/\/\//\//g'`
+BINDIR=`echo $4 | sed 's/\/\//\//g'`
+LIBDIR=`echo $5 | sed 's/\/\//\//g'`
+VARDIR=`echo $6 | sed 's/\/\//\//g'`
 shift
 shift
 shift

@@ -3,7 +3,7 @@
 # 5 July 96 Dan.Shearer@UniSA.Edu.Au  Don't hardcode script names, get from Make
 
 INSTALLPERMS=$1
-BINDIR=$2
+BINDIR=`echo $2 | sed 's/\/\//\//g'`
 
 shift
 shift

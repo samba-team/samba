@@ -1,7 +1,7 @@
 #!/bin/sh
 #first version March 1998, Andrew Tridgell
 
-SWATDIR=$1
+SWATDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
 BOOKDIR=$SWATDIR/using_samba
 

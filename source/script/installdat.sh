@@ -1,7 +1,7 @@
 #!/bin/sh
 #fist version March 2002, Herb  Lewis
 
-DATDIR=$1
+DATDIR=`echo $1 | sed 's/\/\//\//g'`
 SRCDIR=$2/
 
 echo Installing dat files in $DATDIR
