@@ -311,10 +311,10 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 }
 
 /****************************************************************************
-update the internal database from the system print queue for a queue
+update the internal database from the system print queue for a queue in the background
 ****************************************************************************/
 
-static void print_queue_update(int snum)
+static void print_queue_update_background(int snum)
 {
 	int i, qcount;
 	print_queue_struct *queue = NULL;
@@ -465,6 +465,54 @@ static void print_queue_update(int snum)
 
 	/* Delete our pid from the db. */
 	set_updating_pid(printer_name, True);
+}
+
+/****************************************************************************
+this is the receive function of the background lpq updater
+****************************************************************************/
+static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
+{
+	int snum;
+	snum=*((int *)buf);
+	print_queue_update_background(snum);
+}
+
+/****************************************************************************
+main thread of the background lpq updater
+****************************************************************************/
+void start_background_queue(void)
+{
+	DEBUG(3,("Starting background LPQ thread\n"));
+	if(sys_fork()==0) {
+		DEBUG(5,("background LPQ thread started\n"));
+
+		claim_connection(NULL,"smbd lpq backend",MAXSTATUS,False);
+
+		if (!locking_init(0)) {
+			exit(1);
+		}
+
+		if (!print_backend_init()) {
+			exit(1);
+		}
+
+		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
+		
+		DEBUG(5,("background LPQ thread waiting for messages\n"));
+		while (1) {
+			pause();
+			DEBUG(10,("background LPQ thread got a message\n"));
+			message_dispatch();
+		}
+	}
+}
+
+/****************************************************************************
+update the internal database from the system print queue for a queue
+****************************************************************************/
+static void print_queue_update(int snum)
+{
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
 }
 
 /****************************************************************************

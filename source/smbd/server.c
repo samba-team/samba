@@ -791,6 +791,8 @@ static void usage(char *pname)
 	/* Setup the main smbd so that we can get messages. */
 	claim_connection(NULL,"",MAXSTATUS,True);
 
+	start_background_queue();
+
 	if (!open_sockets(is_daemon,port))
 		exit(1);
 
