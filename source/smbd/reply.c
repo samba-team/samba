@@ -312,7 +312,7 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		*q++ = 0;
 		fstrcpy(user,q);
 	}
-	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_CONVERT);
+	p += srvstr_pull(inbuf, devicename, p, sizeof(devicename), 6, STR_CONVERT|STR_ASCII);
 
 	DEBUG(4,("Got device type %s\n",devicename));
 
@@ -342,7 +342,8 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 				 STR_CONVERT|STR_TERMINATE|STR_ASCII);
 		set_message_end(outbuf,p);
 	} else {
-		char *fsname = lp_fstype(SNUM(conn));
+		/* NT sets the fstype of IPC$ to the null string */
+		char *fsname = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
 
 		set_message(outbuf,3,0,True);
 
@@ -1087,8 +1088,8 @@ int reply_chkpth(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   BOOL bad_path = False;
   SMB_STRUCT_STAT sbuf;
   START_PROFILE(SMBchkpth);
- 
-  pstrcpy(name,smb_buf(inbuf) + 1);
+
+  srvstr_pull(inbuf, name, smb_buf(inbuf) + 1, sizeof(name), -1, STR_TERMINATE);
 
   RESOLVE_DFSPATH(name, conn, inbuf, outbuf);
 
