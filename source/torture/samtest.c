@@ -369,6 +369,7 @@ int main(int argc, char *argv[])
 		{"command",	'e', POPT_ARG_STRING,	&cmdstr, 'e', "Execute semicolon seperated cmds"},
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
 		{"configfile", 'c', POPT_ARG_STRING, &config_file, 0,"use different configuration file",NULL},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version},
 		{ 0, 0, 0, 0}
 	};
 
