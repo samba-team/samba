@@ -1245,8 +1245,6 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
           return False;
   }
 
-  DEBUG(10, ("connect_to_domain_password_server: got mutex for server %s\n", server ));
-
   if (!cli_connect(pcli, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));

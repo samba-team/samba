@@ -500,6 +500,9 @@ BOOL message_named_mutex(char *name, unsigned int timeout)
 			return False;
 	}
 
+	if (ret == 0)
+		DEBUG(10,("message_named_mutex: got mutex for %s\n", name ));
+
 	return (ret == 0);
 }
 
@@ -514,4 +517,5 @@ void message_named_mutex_release(char *name)
 	key.dsize = strlen(name)+1;
 
 	tdb_chainunlock(tdb, key);
+	DEBUG(10,("message_named_mutex: released mutex for %s\n", name ));
 }
