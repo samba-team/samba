@@ -1024,12 +1024,13 @@ static BOOL cli_calc_session_pwds(struct cli_state *cli,
 send a session setup 
 ****************************************************************************/
 BOOL cli_session_setup(struct cli_state *cli, 
-				char *myhostname, char *user,
+				char *user,
 				char *pass, int passlen,
 				char *ntpass, int ntpasslen,
 				char *user_domain)
 {
 	fstring pword, ntpword;
+	extern pstring global_myname;
 
 	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1)
 	{
@@ -1038,7 +1039,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	fstrcpy(cli->usr.user_name, user);
 
-	return cli_calc_session_pwds(cli, myhostname, pword, ntpword,
+	return cli_calc_session_pwds(cli, global_myname, pword, ntpword,
 				pass, &passlen,
 				ntpass, &ntpasslen, cli->nt.usr_sess_key,
 	                        cli->use_ntlmv2) &&
@@ -3356,7 +3357,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 
 		/* attempt clear-text session */
-		if (!cli_session_setup(cli, calling->name,
+		if (!cli_session_setup(cli, 
 		               cli->usr.user_name,
 	                       passwd, pass_len,
 	                       ntpasswd, ntpass_len,

@@ -57,7 +57,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 				char *ntpass, int ntpasslen,
 				char *user_domain);
 BOOL cli_session_setup(struct cli_state *cli, 
-				char *myhostname, char *user,
+				char *user,
 				char *pass, int passlen,
 				char *ntpass, int ntpasslen,
 				char *user_domain);
@@ -239,13 +239,6 @@ char *smb_err_msg(uint8 class, uint32 num);
 BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
-
-/*The following definitions come from  libsmb/unexpected.c  */
-
-void unexpected_packet(struct packet_struct *p);
-void clear_unexpected(time_t t);
-struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
-					 char *mailslot_name);
 
 /*The following definitions come from  lib/util_hnd.c  */
 
