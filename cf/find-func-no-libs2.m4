@@ -4,7 +4,7 @@ dnl
 dnl Look for function in any of the specified libraries
 dnl
 
-dnl AC_FIND_FUNC_NO_LIBS2(func, libraries, includes, arguments)
+dnl AC_FIND_FUNC_NO_LIBS2(func, libraries, includes, arguments, extra libs)
 AC_DEFUN(AC_FIND_FUNC_NO_LIBS2, [
 
 AC_MSG_CHECKING([for $1])
@@ -18,7 +18,7 @@ if eval "test \"\$ac_cv_func_$1\" != yes" ; then
 		else
 			ac_lib=""
 		fi
-		LIBS="$ac_lib $ac_save_LIBS"
+		LIBS="$ac_lib $5 $ac_save_LIBS"
 		AC_TRY_LINK([$3],[$1($4)],eval "if test -n \"$ac_lib\";then ac_cv_funclib_$1=$ac_lib; else ac_cv_funclib_$1=yes; fi";break)
 	done
 	eval "ac_cv_funclib_$1=\${ac_cv_funclib_$1-no}"
