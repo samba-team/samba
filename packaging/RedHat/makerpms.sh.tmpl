@@ -43,13 +43,14 @@ case $RPMVER in
        echo Building for RPM v3.x
        sed -e "s/MANDIR_MACRO/\%\{prefix\}\/man/g" < samba.spec > $SPECFILE
        ;;
-    4.1*)
-       echo Building for RPM v4.1
-       RPM="rpmbuild"
+    4.0*)
+       ## catch rpm v4.0.x first
+       echo Building for RPM v4.0
        sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
-    4*)
-       echo Building for RPM v4.x
+    4.*)
+       echo Building for RPM v4.1 or later
+       RPM="rpmbuild"
        sed -e "s/MANDIR_MACRO/\%\{_mandir\}/g" < samba.spec > $SPECFILE
        ;;
     *)
