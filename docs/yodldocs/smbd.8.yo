@@ -304,26 +304,26 @@ You will probably want to set up the NetBIOS name server url(bf(nmbd))(nmbd.8.ht
 the same time as bf(smbd). To do this refer to the man page for
 url(bf(nmbd (8)))(nmbd.8.html).
 
-First, ensure that a port is configured in the file /etc/services. The
+First, ensure that a port is configured in the file tt(/etc/services). The
 well-known port 139 should be used if possible, though any port may be
 used.
 
-Ensure that a line similar to the following is in /etc/services:
+Ensure that a line similar to the following is in tt(/etc/services):
 
 tt(netbios-ssn	139/tcp)
 
 Note for NIS/YP users - you may need to rebuild the NIS service maps
-rather than alter your local /etc/services file.
+rather than alter your local tt(/etc/services file).
 
-Next, put a suitable line in the file /etc/inetd.conf (in the unlikely
+Next, put a suitable line in the file tt(/etc/inetd.conf) (in the unlikely
 event that you are using a meta-daemon other than inetd, you are on
 your own). Note that the first item in this line matches the service
-name in /etc/services.  Substitute appropriate values for your system
+name in tt(/etc/services).  Substitute appropriate values for your system
 in this line (see bf(inetd (8))):
 
 tt(netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd -d1 -l/var/adm/smblogs/log -s/usr/local/samba/lib/smb.conf)
 
-(The above should appear in /etc/inetd.conf as a single
+(The above should appear in tt(/etc/inetd.conf) as a single
 line. Depending on your terminal characteristics, it may not appear
 that way in this man page.  If the above appears as more than one
 line, please treat any newlines or indentation as a single space or
