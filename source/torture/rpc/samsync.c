@@ -765,17 +765,21 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 					ret &= samsync_handle_domain(mem_ctx, samsync_state, 
 								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
-				case NETR_DELTA_USER:
-					ret &= samsync_handle_user(mem_ctx, samsync_state, 
-								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
-					break;
 				case NETR_DELTA_GROUP:
 					ret &= samsync_handle_group(mem_ctx, samsync_state, 
 								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
+				case NETR_DELTA_USER:
+					ret &= samsync_handle_user(mem_ctx, samsync_state, 
+								   r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
 				case NETR_DELTA_ALIAS:
 					ret &= samsync_handle_alias(mem_ctx, samsync_state, 
 								    r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
+					break;
+				case NETR_DELTA_POLICY:
+					ret &= samsync_handle_policy(mem_ctx, samsync_state, 
+								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
 				case NETR_DELTA_TRUSTED_DOMAIN:
 					ret &= samsync_handle_trusted_domain(mem_ctx, samsync_state, 
@@ -783,10 +787,6 @@ static BOOL test_DatabaseSync(struct samsync_state *samsync_state,
 					break;
 				case NETR_DELTA_SECRET:
 					ret &= samsync_handle_secret(mem_ctx, samsync_state, 
-								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
-					break;
-				case NETR_DELTA_POLICY:
-					ret &= samsync_handle_policy(mem_ctx, samsync_state, 
 								     r.in.database_id, &r.out.delta_enum_array->delta_enum[d]);
 					break;
 				}
