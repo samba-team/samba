@@ -1,7 +1,0 @@
-19 June 2000
-
-Changes from DocBook V4.0 to DocBook V4.1:
-
-No user-visible changes; removed some 4.0 future use comments that had
-accidentally been left in the DTD and fixed a couple of incorrect FPIs.
-See 40chg.txt for a list of the significant changes.
