@@ -448,7 +448,7 @@ static service sDefault = {
 	0,			/* iSecurity_force_mode */
 	0755,			/* iDir_mask */
 	0000,			/* iDir_force_mode */
-	777,			/* iDir_Security_mask */
+	0777,			/* iDir_Security_mask */
 	0,			/* iDir_Security_force_mode */
 	0,			/* iMaxConnections */
 	CASE_LOWER,		/* iDefaultCase */
