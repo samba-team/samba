@@ -1,3 +1,12 @@
+2004-10-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* resolve.c: put dns_type_to_string and dns_string_to_type in the
+	abi
+
+	* resolve.c: add ds_record
+	
+	* resolve.h: add ds_record
+	
 2004-10-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ndbm_wrap.c: undefine open so this works on solaris with large
