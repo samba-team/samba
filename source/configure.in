@@ -4,12 +4,14 @@ dnl Process this file with autoconf to produce a configure script.
 dnl disabled 2.53 requirement - we do work with 2.52 on suse 7.3 for example
 dnl AC_PREREQ(2.53)
 
-
 AC_INIT(include/includes.h)
 AC_CONFIG_HEADER(include/config.h)
 
 AC_DISABLE_STATIC
 AC_ENABLE_SHARED
+
+SMB_VERSION_STRING=`cat include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
+echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
 #################################################
 # Directory handling stuff to support both the
