@@ -6,6 +6,11 @@
 /*The following definitions come from  client/client.c  */
 
 void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo);
+char *complete_cmd_null(char *text, int state);
+void complete_process_file(file_info *f);
+char *complete_remote_file(char *text, int state);
+char *complete_cmd(char *text, int state);
+char **completion_fn(char *text, int start, int end);
 
 /*The following definitions come from  client/clientutil.c  */
 
@@ -930,6 +935,7 @@ BOOL lp_passwd_chat_debug(void);
 BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
 BOOL lp_stat_cache(void);
+BOOL lp_kernel_oplocks(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -1055,6 +1061,7 @@ int lp_default_server_announce(void);
 int lp_major_announce_version(void);
 int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
+void lp_set_kernel_oplocks(BOOL val);
 
 /*The following definitions come from  param/params.c  */
 
@@ -1794,7 +1801,7 @@ int reply_nttrans(connection_struct *conn,
 void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
 uint16 fd_attempt_close(file_fd_struct *fd_ptr);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action);
+		      mode_t mode,int *oplock_request, int *Access,int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
@@ -1806,6 +1813,7 @@ BOOL process_local_message(int sock, char *buffer, int buf_size);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
+void check_kernel_oplocks(BOOL *have_oplocks);
 
 /*The following definitions come from  smbd/password.c  */
 

@@ -687,7 +687,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 open a file with a share mode
 ****************************************************************************/
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
-		      mode_t mode,int oplock_request, int *Access,int *action)
+		      mode_t mode,int *oplock_request, int *Access,int *action)
 {
   int flags=0;
   int flags2=0;
@@ -922,24 +922,34 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
          be extended to level II oplocks (multiple reader
          oplocks). */
 
-      if(oplock_request && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
+      if((*oplock_request) && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
 	      !IS_VETO_OPLOCK_PATH(conn,fname))
       {
+#if defined(HAVE_KERNEL_OPLOCKS)
+        /*
+         * Try and get a *real* oplock on this file.
+         * If we fail, set the port and oplock request to
+         * zero so that  we don't tell other SMB's that we
+         * got an oplock.
+         */
+        if(lp_kernel_oplocks())
+#endif /* HAVE_KERNEL_OPLOCKS */
+
         fsp->granted_oplock = True;
         fsp->sent_oplock_break = False;
         global_oplocks_open++;
         port = oplock_port;
 
         DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", oplock_request, fname, (unsigned int)dev, (double)inode));
+dev = %x, inode = %.0f\n", *oplock_request, fname, (unsigned int)dev, (double)inode));
 
       }
       else
       {
         port = 0;
-        oplock_request = 0;
+        *oplock_request = 0;
       }
-      set_share_mode(token, fsp, port, oplock_request);
+      set_share_mode(token, fsp, port, *oplock_request);
     }
 
     if ((flags2&O_TRUNC) && file_existed)
