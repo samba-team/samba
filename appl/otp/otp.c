@@ -105,7 +105,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
     ctx = &newctx;
     ret = 0;
   } else
-    ret = 1;
+    return 1;
 
   dbm = otp_db_open ();
   if (dbm == NULL) {
@@ -245,7 +245,7 @@ print_otp_entry_for_name (void *db, char *user)
   ctx.user = user;
   if (!otp_simple_get(db, &ctx)) {
     fprintf(stdout,
-	    "%s\totp-%s %d",
+	    "%s\totp-%s %d %s",
 	    ctx.user, ctx.alg->name, ctx.n, ctx.seed);
     if (ctx.lock_time)
       fprintf(stdout,
