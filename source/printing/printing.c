@@ -1907,6 +1907,7 @@ static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 
 /****************************************************************************
  Get a printer queue listing.
+ set queue = NULL and status = NULL if you just want to update the cache
 ****************************************************************************/
 
 int print_queue_status(int snum, 
@@ -1917,17 +1918,25 @@ int print_queue_status(int snum,
 	struct traverse_count_struct tsc;
 	fstring keystr;
 	TDB_DATA data, key;
-	const char *printername = lp_const_servicename(snum);
-	struct tdb_print_db *pdb = get_print_db_byname(printername);
+	const char *printername;
+	struct tdb_print_db *pdb;
+
+	/* make sure the database is up to date */
+
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
+
+	/* return if we are done */
+
+	if ( !queue || !status )
+		return 0;
 
 	*queue = NULL;
+	printername = lp_const_servicename(snum);
+	pdb = get_print_db_byname(printername);
 	
 	if (!pdb)
 		return 0;
-
-	/* make sure the database is up to date */
-	if (print_cache_expired(snum))
-		print_queue_update(snum);
 
 	/*
 	 * Fetch the queue status.  We must do this first, as there may

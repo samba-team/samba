@@ -212,6 +212,8 @@ WERROR cli_spoolss_rrpcn(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (r.unknown0 == 0x00080000)
 		DEBUG(8,("cli_spoolss_reply_rrpcn: I think the spooler resonded that the notification was ignored.\n"));
+	else if ( r.unknown0 != 0x0 )
+		DEBUG(8,("cli_spoolss_reply_rrpcn: unknown0 is non-zero [0x%x]\n", r.unknown0));
 	
 	result = r.status;
 
