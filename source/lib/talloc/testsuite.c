@@ -609,6 +609,48 @@ static BOOL test_realloc_child(void)
 	return True;
 }
 
+
+/*
+  test type checking
+*/
+static BOOL test_type(void)
+{
+	void *root;
+	struct el1 {
+		int count;
+	};
+	struct el2 {
+		int count;
+	};
+	struct el1 *el1;
+
+	printf("TESTING talloc type checking\n");
+
+	root = talloc_new(NULL);
+
+	el1 = talloc(root, struct el1);
+
+	el1->count = 1;
+
+	if (talloc_get_type(el1, struct el1) != el1) {
+		printf("type check failed on el1\n");
+		return False;
+	}
+	if (talloc_get_type(el1, struct el2) != NULL) {
+		printf("type check failed on el1 with el2\n");
+		return False;
+	}
+	talloc_set_type(el1, struct el2);
+	if (talloc_get_type(el1, struct el2) != el1) {
+		printf("type set failed on el1 with el2\n");
+		return False;
+	}
+
+	talloc_free(root);
+
+	return True;
+}
+
 /*
   test steal
 */
@@ -664,13 +706,13 @@ static BOOL test_steal(void)
 }
 
 /*
-  test ldb alloc fn
+  test talloc_realloc_fn
 */
-static BOOL test_ldb(void)
+static BOOL test_realloc_fn(void)
 {
 	void *root, *p1;
 
-	printf("TESTING LDB\n");
+	printf("TESTING talloc_realloc_fn\n");
 
 	root = talloc_new(NULL);
 
@@ -774,7 +816,8 @@ BOOL torture_local_talloc(void)
 	ret &= test_realloc_child();
 	ret &= test_steal();
 	ret &= test_unref_reparent();
-	ret &= test_ldb();
+	ret &= test_realloc_fn();
+	ret &= test_type();
 	if (ret) {
 		ret &= test_speed();
 	}

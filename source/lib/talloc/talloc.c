@@ -424,6 +424,23 @@ const char *talloc_get_name(const void *ptr)
 	return "UNNAMED";
 }
 
+
+/*
+  check if a pointer has the given name. If it does, return the pointer,
+  otherwise return NULL
+*/
+void *talloc_check_name(const void *ptr, const char *name)
+{
+	const char *pname;
+	if (ptr == NULL) return NULL;
+	pname = talloc_get_name(ptr);
+	if (pname == name || strcmp(pname, name) == 0) {
+		return discard_const_p(void, ptr);
+	}
+	return NULL;
+}
+
+
 /*
   this is for compatibility with older versions of talloc
 */
@@ -1029,3 +1046,5 @@ void *talloc_autofree_context(void)
 	}
 	return cleanup_context;
 }
+
+
