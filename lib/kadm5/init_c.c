@@ -224,15 +224,15 @@ get_new_cache(krb5_context context,
     return 0;
 }
 
-static krb5_error_code
-get_cred_cache(krb5_context context,
-	       const char *client_name,
-	       const char *server_name,
-	       const char *password,
-	       krb5_prompter_fct prompter,
-	       const char *keytab,
-	       krb5_ccache ccache,
-	       krb5_ccache *ret_cache)
+krb5_error_code
+_kadm5_c_get_cred_cache(krb5_context context,
+			const char *client_name,
+			const char *server_name,
+			const char *password,
+			krb5_prompter_fct prompter,
+			const char *keytab,
+			krb5_ccache ccache,
+			krb5_ccache *ret_cache)
 {
     krb5_error_code ret;
     krb5_ccache id = NULL;
@@ -387,9 +387,11 @@ kadm_connect(kadm5_client_context *ctx)
 	krb5_warnx (context, "failed to contact %s", hostname);
 	return KADM5_FAILURE;
     }
-    ret = get_cred_cache(context, ctx->client_name, ctx->service_name, 
-			 NULL, ctx->prompter, ctx->keytab, 
-			 ctx->ccache, &cc);
+    ret = _kadm5_c_get_cred_cache(context,
+				  ctx->client_name, 
+				  ctx->service_name, 
+				  NULL, ctx->prompter, ctx->keytab, 
+				  ctx->ccache, &cc);
     
     if(ret) {
 	freeaddrinfo (ai);
@@ -509,8 +511,10 @@ kadm5_c_init_with_context(krb5_context context,
 	return ret;
 
     if(password != NULL && *password != '\0') {
-	ret = get_cred_cache(context, client_name, service_name, 
-			     password, prompter, keytab, ccache, &cc);
+	ret = _kadm5_c_get_cred_cache(context, 
+				      client_name,
+				      service_name, 
+				      password, prompter, keytab, ccache, &cc);
 	if(ret)
 	    return ret; /* XXX */
 	ccache = cc;
