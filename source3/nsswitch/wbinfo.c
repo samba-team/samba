@@ -482,7 +482,7 @@ static BOOL wbinfo_lookupname(char *name)
 
 	/* Display response */
 
-	d_printf("%s %d\n", response.data.sid.sid, response.data.sid.type);
+	d_printf("%s %s (%d)\n", response.data.sid.sid, sid_type_lookup(response.data.sid.type), response.data.sid.type);
 
 	return True;
 }
