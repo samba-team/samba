@@ -122,7 +122,7 @@ Profile Path:   \\BERSERKER\profile
 		<citerefentry><refentrytitle>smbpasswd</refentrytitle>
 		<manvolnum>5</manvolnum></citerefentry> for details)</para>
 
-		<para>Example: <command>pdbedit -l -w</command></para>
+		<para>Example: <command>pdbedit -L -w</command></para>
 		<screen>
 sorce:500:508818B733CE64BEAAD3B435B51404EE:D2A2418EFC466A8A0F6B1DBB5C3DB80C:[UX         ]:LCT-00000000:
 samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:BC281CE3F53B6A5146629CD4751D3490:[UX         ]:LCT-3BFA1E8D:
