@@ -345,6 +345,10 @@
 #include <poll.h>
 #endif
 
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
 #ifdef HAVE_SYS_CAPABILITY_H
 
 #if defined(BROKEN_REDHAT_7_SYSTEM_HEADERS) && !defined(_I386_STATFS_H)
