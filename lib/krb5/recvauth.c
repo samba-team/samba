@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -163,7 +163,8 @@ krb5_recvauth_match_version(krb5_context context,
 			    NULL,
 			    NULL,
 			    server,
-			    0,
+			    NULL,
+			    NULL,
 			    &error_data);
       if (ret2 == 0) {
 	  krb5_write_message (context, p_fd, &error_data);
