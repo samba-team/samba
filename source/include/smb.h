@@ -431,6 +431,7 @@ typedef struct clnt_info
 typedef struct clnt_info2
 {
   DOM_CLNT_SRV login;
+  uint32        ptr_cred;
   DOM_CRED      cred;
 
 } DOM_CLNT_INFO2;
@@ -454,8 +455,9 @@ typedef struct arc4_owf_info
 /* DOM_ID_INFO_1 */
 typedef struct id_info_1
 {
+  uint32            ptr_id_info1;        /* pointer to id_info_1 */
   UNIHDR            hdr_domain_name;     /* domain name unicode header */
-  uint32            param;               /* param control */
+  uint32            param_ctrl;          /* param control */
   DOM_LOGON_ID      logon_id;            /* logon ID */
   UNIHDR            hdr_user_name;       /* user name unicode header */
   UNIHDR            hdr_workgroup_name;  /* workgroup name unicode header */
@@ -471,9 +473,10 @@ typedef struct id_info_1
 typedef struct sam_info
 {
   DOM_CLNT_INFO2 client;
+  uint32         ptr_rtn_cred; /* pointer to return credentials */
   DOM_CRED       rtn_cred; /* return credentials */
   uint16         logon_level;
-  uint32         auth_level; /* undocumented */
+  uint16         switch_value;
   
   union
   {

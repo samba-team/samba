@@ -102,13 +102,10 @@ char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int de
 	DEBUG(5,("%s%04x smb_io_unihdr\n",  tab_depth(depth), PTR_DIFF(q, base)));
 	depth++;
 
-	/* should be value 4, so enforce it. */
-	hdr->undoc = 4;
-
 	q = align_offset(q, base, align);
 	
-	DBG_RW_IVAL("uni_max_len", depth, base, io, q, hdr->uni_max_len); q += 4;
-	DBG_RW_IVAL("uni_str_len", depth, base, io, q, hdr->uni_str_len); q += 4;
+	DBG_RW_SVAL("uni_max_len", depth, base, io, q, hdr->uni_max_len); q += 4;
+	DBG_RW_SVAL("uni_str_len", depth, base, io, q, hdr->uni_str_len); q += 4;
 	DBG_RW_IVAL("undoc      ", depth, base, io, q, hdr->undoc      ); q += 4;
 
 	return q;
@@ -340,6 +337,10 @@ char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int 
 	q = align_offset(q, base, align);
 	
 	q = smb_io_clnt_srv(io, &(clnt->login), q, base, align, depth);
+
+	q = align_offset(q, base, align);
+	
+	DBG_RW_IVAL("ptr_cred", depth, base, io, q, clnt->ptr_cred); q += 4;
 	q = smb_io_cred    (io, &(clnt->cred ), q, base, align, depth);
 
 	return q;
@@ -410,20 +411,25 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 
 	q = align_offset(q, base, align);
 	
-	q = smb_io_unihdr(io, &(id->hdr_domain_name   ), q, base, align, depth);
+	DBG_RW_IVAL("ptr_id_info1", depth, base, io, q, id->ptr_id_info1); q += 4;
 
-	DBG_RW_IVAL("param", depth, base, io, q, id->param); q += 4;
-	q = smb_io_logon_id(io, &(id->logon_id), q, base, align, depth);
+	if (id->ptr_id_info1 != 0)
+	{
+		q = smb_io_unihdr(io, &(id->hdr_domain_name   ), q, base, align, depth);
 
-	q = smb_io_unihdr(io, &(id->hdr_user_name     ), q, base, align, depth);
-	q = smb_io_unihdr(io, &(id->hdr_workgroup_name), q, base, align, depth);
+		DBG_RW_IVAL("param_ctrl", depth, base, io, q, id->param_ctrl); q += 4;
+		q = smb_io_logon_id(io, &(id->logon_id), q, base, align, depth);
 
-	q = smb_io_arc4_owf(io, &(id->arc4_lm_owf), q, base, align, depth);
-	q = smb_io_arc4_owf(io, &(id->arc4_nt_owf), q, base, align, depth);
+		q = smb_io_unihdr(io, &(id->hdr_user_name     ), q, base, align, depth);
+		q = smb_io_unihdr(io, &(id->hdr_workgroup_name), q, base, align, depth);
 
-	q = smb_io_unistr2(io, &(id->uni_domain_name   ), q, base, align, depth);
-	q = smb_io_unistr2(io, &(id->uni_user_name     ), q, base, align, depth);
-	q = smb_io_unistr2(io, &(id->uni_workgroup_name), q, base, align, depth);
+		q = smb_io_arc4_owf(io, &(id->arc4_lm_owf), q, base, align, depth);
+		q = smb_io_arc4_owf(io, &(id->arc4_nt_owf), q, base, align, depth);
+
+		q = smb_io_unistr2(io, &(id->uni_domain_name   ), q, base, align, depth);
+		q = smb_io_unistr2(io, &(id->uni_user_name     ), q, base, align, depth);
+		q = smb_io_unistr2(io, &(id->uni_workgroup_name), q, base, align, depth);
+	}
 
 	return q;
 }
@@ -441,12 +447,14 @@ char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align
 	q = align_offset(q, base, align);
 	
 	q = smb_io_clnt_info2(io, &(sam->client  ), q, base, align, depth);
+
+	DBG_RW_IVAL("ptr_rtn_cred", depth, base, io, q, sam->ptr_rtn_cred); q += 4;
 	q = smb_io_cred      (io, &(sam->rtn_cred), q, base, align, depth);
 
-	DBG_RW_IVAL("logon_level", depth, base, io, q, sam->logon_level); q += 4;
-	DBG_RW_SVAL("auth_level ", depth, base, io, q, sam->auth_level ); q += 4;
+	DBG_RW_SVAL("logon_level ", depth, base, io, q, sam->logon_level); q += 2;
+	DBG_RW_SVAL("switch_value", depth, base, io, q, sam->switch_value); q += 2;
 
-	switch (sam->auth_level)
+	switch (sam->switch_value)
 	{
 		case 1:
 		{
@@ -456,6 +464,7 @@ char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align
 		default:
 		{
 			/* PANIC! */
+			DEBUG(4,("smb_io_sam_info: unknown switch_value!\n"));
 			break;
 		}
 	}
