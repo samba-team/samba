@@ -353,10 +353,19 @@ void pidfile (const char*);
 #endif
 
 #ifndef HAVE_BSWAP32
+
+#ifndef HAVE_U_INT32_T
+typedef unsigned int u_int32_t;
+#endif
+
 u_int32_t bswap32(u_int32_t);
 #endif
 
 #ifndef HAVE_BSWAP16
+#ifndef HAVE_U_INT16_T
+typedef unsigned short u_int16_t;
+#endif
+
 u_int16_t bswap16(u_int16_t);
 #endif
 
