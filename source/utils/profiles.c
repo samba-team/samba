@@ -496,7 +496,7 @@ void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid)
 
 }
 
-void process_acl(ACL *acl, const char *prefix)
+void process_acl(ACL *acl, char *prefix)
 {
   int ace_cnt, i;
   ACE *ace;
