@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999-2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,7 +73,7 @@ del_enctype(int argc, char **argv)
 	usage ();
 	return 0;
     }
-    if(argc - optind < 3 || help_flag) {
+    if(argc - optind < 2 || help_flag) {
 	usage ();
 	return 0;
     }
