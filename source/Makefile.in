@@ -280,7 +280,7 @@ XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_OBJ = modules/weird.o
 
-IDMAP_OBJ = sam/idmap.o sam/idmap_util.o sam/idmap_tdb.o
+IDMAP_OBJ = sam/idmap.o sam/idmap_util.o sam/idmap_tdb.o sam/idmap_winbind.o
 
 GROUPDB_OBJ = groupdb/mapping.o
 

@@ -32,6 +32,7 @@ static struct {
 	struct idmap_methods *methods;
 
 } remote_idmap_functions[] = {
+	{ "winbind", idmap_reg_winbind, NULL },
 	{ NULL, NULL, NULL }
 };
 
