@@ -175,6 +175,8 @@ long sys_random(void);
 void sys_srandom(unsigned int seed);
 int sys_getgroups(int setlen, gid_t *gidset);
 int sys_setgroups(int setlen, gid_t *gidset);
+struct passwd *sys_getpwnam(const char *name);
+struct passwd *sys_getpwuid(uid_t uid);
 
 /*The following definitions come from  lib/time.c  */
 
@@ -261,7 +263,7 @@ void standard_sub_basic(char *str);
 void standard_sub(connection_struct *conn,char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
-BOOL process_exists(int pid);
+BOOL process_exists(pid_t pid);
 char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
@@ -333,12 +335,13 @@ size_t sid_size(DOM_SID *sid);
 BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
 void close_sockets(void );
-ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_udp_socket(int fd,char *buf,size_t len);
 ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned int time_out);
 BOOL send_keepalive(int client);
 ssize_t read_data(int fd,char *buffer,size_t N);
 ssize_t write_data(int fd,char *buffer,size_t N);
+ssize_t write_socket_data(int fd,char *buffer,size_t N);
+ssize_t write_socket(int fd,char *buf,size_t len);
 ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout);
 BOOL receive_smb(int fd,char *buffer, unsigned int timeout);
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout);
@@ -372,6 +375,7 @@ BOOL trim_string(char *s,const char *front,const char *back);
 BOOL strhasupper(const char *s);
 BOOL strhaslower(const char *s);
 size_t count_chars(const char *s,char c);
+BOOL str_is_all(const char *s,char c);
 char *safe_strcpy(char *dest,const char *src, size_t maxlength);
 char *safe_strcat(char *dest, const char *src, size_t maxlength);
 char *alpha_strcpy(char *dest, const char *src, size_t maxlength);
@@ -442,7 +446,7 @@ ssize_t cli_write(struct cli_state *cli,
 		  int fnum, uint16 write_mode,
 		  char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
-		     int fnum, char *buf, off_t offset, size_t size);
+		     int fnum, char *buf, off_t offset, size_t size1);
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time);
@@ -600,7 +604,8 @@ int get_share_modes(connection_struct *conn,
 void del_share_mode(int token, files_struct *fsp);
 BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(int token, files_struct *fsp);
-BOOL modify_share_mode(int token, files_struct *fsp, int new_mode);
+BOOL downgrade_share_oplock(int token, files_struct *fsp);
+BOOL modify_share_mode(int token, files_struct *fsp, int new_mode, uint16 new_oplock);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 void share_status(FILE *f);
 
@@ -1135,6 +1140,7 @@ BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_share_modes(int );
 BOOL lp_oplocks(int );
+BOOL lp_level2_oplocks(int );
 BOOL lp_onlyuser(int );
 BOOL lp_manglednames(int );
 BOOL lp_widelinks(int );
@@ -1150,10 +1156,14 @@ BOOL lp_dos_filetime_resolution(int );
 BOOL lp_fake_dir_create_times(int );
 BOOL lp_blocking_locks(int );
 BOOL lp_mangle_locks(int );
-int lp_create_mode(int );
+int lp_create_mask(int );
 int lp_force_create_mode(int );
-int lp_dir_mode(int );
+int _lp_security_mask(int );
+int _lp_force_security_mode(int );
+int lp_dir_mask(int );
 int lp_force_dir_mode(int );
+int _lp_dir_security_mask(int );
+int _lp_force_dir_security_mode(int );
 int lp_max_connections(int );
 int lp_defaultcase(int );
 int lp_minprintspace(int );
@@ -1187,6 +1197,10 @@ int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
 BOOL lp_kernel_oplocks(void);
+int lp_security_mask(int snum);
+int lp_force_security_mode(int snum);
+int lp_dir_security_mask(int snum);
+int lp_force_dir_security_mode(int snum);
 
 /*The following definitions come from  param/params.c  */
 
@@ -2339,8 +2353,8 @@ uint16 dptr_attr(int key);
 void dptr_close(int *key);
 void dptr_closecnum(connection_struct *conn);
 void dptr_idlecnum(connection_struct *conn);
-void dptr_closepath(char *path,int pid);
-int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,int pid);
+void dptr_closepath(char *path,uint16 spid);
+int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect_close,uint16 spid);
 BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
@@ -2375,7 +2389,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 
 SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
-ssize_t write_file(files_struct *fsp,char *data,size_t n);
+ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
 void sync_file(connection_struct *conn, files_struct *fsp);
 
 /*The following definitions come from  smbd/filename.c  */
@@ -2451,7 +2465,8 @@ int reply_nttranss(connection_struct *conn,
 		   char *inbuf,char *outbuf,int length,int bufsize);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
 void remove_pending_change_notify_requests_by_filename(files_struct *fsp);
-void process_pending_change_notify_queue(time_t t);
+BOOL process_pending_change_notify_queue(time_t t);
+BOOL change_notifies_pending(void);
 int reply_nttrans(connection_struct *conn,
 		  char *inbuf,char *outbuf,int length,int bufsize);
 
@@ -2469,14 +2484,16 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
 
-int32 get_number_of_open_oplocks(void);
+int32 get_number_of_exclusive_open_oplocks(void);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
-BOOL set_file_oplock(files_struct *fsp);
+BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
+void downgrade_file_oplock(files_struct *fsp);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
+BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);
