@@ -973,6 +973,9 @@
 /* Define if you have working AF_LOCAL sockets */
 #undef HAVE_WORKING_AF_LOCAL
 
+/* Define to 1 if you have the <xfs/xqm.h> header file. */
+#undef HAVE_XFS_XQM_H
+
 /* Whether the system has yp_get_default_domain() */
 #undef HAVE_YP_GET_DEFAULT_DOMAIN
 
