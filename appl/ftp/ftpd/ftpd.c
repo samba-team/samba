@@ -223,7 +223,9 @@ struct getargs args[] = {
     { NULL, 'v', arg_flag, &debug, "enable debugging" },
     { "builtin-ls", 'B', arg_flag, &use_builtin_ls, "use built-in ls to list files" },
     { "good-chars", 0, arg_string, &good_chars, "allowed anonymous upload filename chars" },
+#ifdef KRB5    
     { "gss-bindings", 0,  arg_flag, &ftp_do_gss_bindings, "Require GSS-API bindings", NULL},
+#endif
     { "version", 0, arg_flag, &version_flag },
     { "help", 'h', arg_flag, &help_flag }
 };

@@ -59,8 +59,10 @@ struct getargs getargs[] = {
       "passive mode", NULL},
     { NULL,	't', arg_counter, &trace,
       "Packet tracing", NULL},
+#ifdef KRB5
     { "gss-bindings", 0,  arg_negative_flag, &ftp_do_gss_bindings,
       "Use GSS-API bindings", NULL},
+#endif
     { NULL,	'v', arg_counter, &verbose,
       "verbosity", NULL},
     { NULL,	'K', arg_negative_flag, &use_kerberos,
@@ -98,7 +100,9 @@ main(int argc, char **argv)
 	lineedit = 1;
 	passivemode = 0; /* passive mode not active */
         use_kerberos = 1;
+#ifdef KRB5
 	ftp_do_gss_bindings = 1;
+#endif
 
 	if(getarg(getargs, num_args, argc, argv, &optind))
 		usage(1);
