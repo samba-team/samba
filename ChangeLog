@@ -1,3 +1,24 @@
+Sat Sep 13 00:59:36 1997  Assar Westerlund  <assar@sics.se>
+
+	* appl/telnet/telnet/commands.c: AF_INET6 support
+
+	* admin/misc.c: new file
+
+	* lib/krb5/context.c: new configuration variable `max_retries'
+
+	* lib/krb5/get_addrs.c: fixes and better #ifdef's
+
+	* lib/krb5/config_file.c: implement krb5_config_get_int
+
+	* lib/krb5/auth_context.c, send_to_kdc.c, sock_principal.c:
+ 	AF_INET6 support
+
+	* kuser/klist.c: support for printing IPv6-addresses
+
+	* kdc/connect.c: support AF_INET6
+
+	* configure.in: test for gethostbyname2 and struct sockaddr_in6
+
 Thu Sep 11 07:25:28 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/asn1/k5.asn1: Use `METHOD-DATA' instead of `SEQUENCE OF
