@@ -4406,7 +4406,7 @@ BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, p
 		return False;
 	if(!prs_uint32("untiltime", ps, depth, &il->untiltime))
 		return False;
-	if(!prs_werror("status", ps, depth, &il->status))
+	if(!prs_uint32("status", ps, depth, &il->status))
 		return False;
 	if(!prs_uint32("cjobs", ps, depth, &il->cjobs))
 		return False;

@@ -2633,7 +2633,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 				DEBUGADD(106,("default_priority:[%d]\n", info2->default_priority));
 				DEBUGADD(106,("starttime:[%d]\n", info2->starttime));
 				DEBUGADD(106,("untiltime:[%d]\n", info2->untiltime));
-				DEBUGADD(106,("status:[%s]\n", werror_str(info2->status)));
+				DEBUGADD(106,("status:[%d]\n", info2->status));
 				DEBUGADD(106,("cjobs:[%d]\n", info2->cjobs));
 				DEBUGADD(106,("averageppm:[%d]\n", info2->averageppm));
 				DEBUGADD(106,("changeid:[%d]\n", info2->changeid));
