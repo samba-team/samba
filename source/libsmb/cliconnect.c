@@ -790,8 +790,9 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 }
 
 /****************************************************************************
-establishes a connection right up to doing tconX, reading in a password.
+ Establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
+
 BOOL cli_establish_connection(struct cli_state *cli, 
 				char *dest_host, struct in_addr *dest_ip,
 				struct nmb_name *calling, struct nmb_name *called,
@@ -805,49 +806,39 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	/* establish connection */
 
 	if ((!cli->initialised))
-	{
 		return False;
-	}
 
-	if (cli->fd == -1)
-	{
-		if (!cli_connect(cli, dest_host, dest_ip))
-		{
+	if (cli->fd == -1) {
+		if (!cli_connect(cli, dest_host, dest_ip)) {
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
 					  nmb_namestr(called), inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
 
-	if (!cli_session_request(cli, calling, called))
-	{
+	if (!cli_session_request(cli, calling, called)) {
 		DEBUG(1,("failed session request\n"));
 		if (do_shutdown)
 			cli_shutdown(cli);
 		return False;
 	}
 
-	if (!cli_negprot(cli))
-	{
+	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		if (do_shutdown)
           		cli_shutdown(cli);
 		return False;
 	}
 
-	if (cli->pwd.cleartext || cli->pwd.null_pwd)
-	{
+	if (cli->pwd.cleartext || cli->pwd.null_pwd) {
 		fstring passwd;
 		int pass_len;
 
-		if (cli->pwd.null_pwd)
-		{
+		if (cli->pwd.null_pwd) {
 			/* attempt null session */
 			passwd[0] = 0;
 			pass_len = 1;
-		}
-		else
-		{
+		} else {
 			/* attempt clear-text session */
 			pwd_get_cleartext(&(cli->pwd), passwd);
 			pass_len = strlen(passwd);
@@ -857,31 +848,22 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_session_setup(cli, cli->user_name,
 	                       passwd, pass_len,
 	                       NULL, 0,
-	                       cli->domain))
-		{
+	                       cli->domain)) {
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
-			{
 				cli_shutdown(cli);
-			}
 			return False;
 		}
-		if (do_tcon)
-		{
+		if (do_tcon) {
 			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)passwd, strlen(passwd)))
-			{
+			                    (char*)passwd, strlen(passwd))) {
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-				{
 					cli_shutdown(cli);
-				}
 				return False;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		/* attempt encrypted session */
 		unsigned char nt_sess_pwd[24];
 		unsigned char lm_sess_pwd[24];
@@ -894,8 +876,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_session_setup(cli, cli->user_name,
 	                       (char*)lm_sess_pwd, sizeof(lm_sess_pwd),
 	                       (char*)nt_sess_pwd, sizeof(nt_sess_pwd),
-	                       cli->domain))
-		{
+	                       cli->domain)) {
 			DEBUG(1,("failed session setup\n"));
 			if (do_shutdown)
 		              cli_shutdown(cli);
@@ -904,22 +885,19 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
     		DEBUG(1,("session setup ok\n"));
     
-    		if (*cli->server_domain || *cli->server_os || *cli->server_type)
-    		{
+    		if (*cli->server_domain || *cli->server_os || *cli->server_type) {
     			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
 				 cli->server_domain,
 				 cli->server_os,
 				 cli->server_type));
     		}
 		
-		if (do_tcon)
-		{
+		if (do_tcon) {
 			if (!cli_send_tconX(cli, service, service_type,
-			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd)))
-			{
+			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd))) {
 				DEBUG(1,("failed tcon_X\n"));
 				if (do_shutdown)
-                  cli_shutdown(cli);
+					cli_shutdown(cli);
 				return False;
 			}
 		}
