@@ -18,6 +18,61 @@ typedef struct {
 	char *server_realm;
 } ADS_STRUCT;
 
+typedef struct {
+	char *printerName;
+	char *serverName;
+	char *shortServerName;
+	char *versionNumber;
+	char *uNCName;
+	char **description;
+	char *assetNumber;
+	char *bytesPerMinute;
+	char *defaultPriority;
+	char *driverName;
+	char *driverVersion;
+	char *location;
+	char *operatingSystem;
+	char *operatingSystemHotfix;
+	char *operatingSystemServicePack;
+	char *operatingSystemVersion;
+	char *physicalLocationObject;
+	char **portName;
+	char *printAttributes;
+	char **printBinNames;
+	char *printCollate;
+	char *printColor;
+	char *printDuplexSupported;
+	char *printEndTime;
+	char *printFOrmName;
+	char *printKeepPrintedJobs;
+	char **printLanguage;
+	char *printMACAddress;
+	char *printMaxCopies;
+	char *printMaxResolutionSupported;
+	char *printMaxXExtent;
+	char *printMaxYExtent;
+	char **printMediaReady;
+	char **printMediaSupported;
+	char *printMemory;
+	char *printMinXExtent;
+	char *printMinYExtent;
+	char *printNetworkAddress;
+	char *printNotify;
+	char *printNumberUp;
+	char **printOrientationsSupported;
+	char *printOwner;
+	char *printPagesPerMinute;
+	char *printRate;
+	char *printRateUnit;
+	char *printSeparatorFile;
+	char **printShareName;
+	char *printSpooling;
+	char *printStaplingSupported;
+	char *printStartTime;
+	char *printStatus;
+	char *priority;
+} ADS_PRINTER_ENTRY;
+
 /* there are 4 possible types of errors the ads subsystem can produce */
 enum ads_error_type {ADS_ERROR_KRB5, ADS_ERROR_GSS, 
 		     ADS_ERROR_LDAP, ADS_ERROR_SYSTEM};
