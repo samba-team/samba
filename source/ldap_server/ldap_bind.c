@@ -115,12 +115,12 @@ reply:
 		return status;
 	}
 
-	ret = ldapsrv_append_to_buf(&call->conn->sasl_out_buffer, call->conn->out_buffer.data, call->conn->out_buffer.length);
+/*	ret = ldapsrv_append_to_buf(&call->conn->sasl_out_buffer, call->conn->out_buffer.data, call->conn->out_buffer.length);
 	if (!ret) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	ldapsrv_consumed_from_buf(&call->conn->out_buffer, call->conn->out_buffer.length);
-
+*/
 	status = gensec_session_info(call->conn->gensec, &call->conn->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
