@@ -1611,6 +1611,7 @@ AC_MSG_CHECKING(for /usr/kerberos)
 if test -d /usr/kerberos; then
     LDFLAGS="$LDFLAGS -L/usr/kerberos/lib"
     CFLAGS="$CFLAGS -I/usr/kerberos/include"
+    CPPFLAGS="$CPPFLAGS -I/usr/kerberos/include"
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
@@ -1629,6 +1630,7 @@ AC_ARG_WITH(krb5,
     AC_MSG_RESULT(yes)
     LIBS="$LIBS -lkrb5"
     CFLAGS="$CFLAGS -I$withval/include"
+    CPPFLAGS="$CPPFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
     AC_DEFINE(HAVE_KRB5)
     have_krb5=yes;
