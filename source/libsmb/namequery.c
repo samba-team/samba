@@ -564,19 +564,23 @@ BOOL name_register_wins(const char *name, int name_type)
    * Do a broadcast register ...
    */
 
-  if (!lp_wins_server())
+  if (0 == wins_srv_count())
     return False;
 
-  DEBUG(4, ("name_register_wins:Registering my name %s on %s\n", name, lp_wins_server()));
+  if( DEBUGLVL( 4 ) )
+    {
+    dbg_text( "name_register_wins: Registering my name %s ", name );
+    dbg_text( "with WINS server %s.\n", wins_srv_name() );
+    }
 
-  sock = open_socket_in(SOCK_DGRAM, 0, 3, 
-			interpret_addr("0.0.0.0"), True);
+  sock = open_socket_in( SOCK_DGRAM, 0, 3, 
+			 interpret_addr("0.0.0.0"), True );
 
   if (sock == -1) return False;
 
-  set_socket_options(sock, "SO_BROADCAST");
+  set_socket_options(sock, "SO_BROADCAST");     /* ????! crh */
 
-  sendto_ip.s_addr = inet_addr(lp_wins_server());
+  sendto_ip = wins_srv_ip();
 
   if (num_interfaces > 1) {
 
