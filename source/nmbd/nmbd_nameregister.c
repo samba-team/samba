@@ -144,12 +144,12 @@ name %s on subnet %s.\n", inet_ntoa(p->ip), nmb_namestr(answer_name), subrec->su
        the success function. */
     standard_success_register(subrec, rrec->userdata, answer_name, nb_flags, ttl, registered_ip);
     if( rrec->success_fn)
-      (*rrec->success_fn)(subrec, rrec->userdata, answer_name, nb_flags, ttl, registered_ip);
+      (*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, answer_name, nb_flags, ttl, registered_ip);
   }
   else
   {
     if( rrec->fail_fn)
-      (*rrec->fail_fn)(subrec, rrec, question_name);
+      (*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
     /* Remove the name. */
     standard_fail_register( subrec, rrec, question_name);
   }
@@ -226,12 +226,12 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
        the success function. */
     standard_success_register(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
     if( rrec->success_fn)
-      (*rrec->success_fn)(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
+      (*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
   }
   else
   {
     if( rrec->fail_fn)
-      (*rrec->fail_fn)(subrec, rrec, question_name);
+      (*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
     /* Remove the name. */
     standard_fail_register( subrec, rrec, question_name);
   }
