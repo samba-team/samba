@@ -1,3 +1,15 @@
+2002-05-07  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.1: document -a
+
+	* kuser/kinit.c: add command line switch for extra addresses
+
+2002-04-30  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* configure.in: remove some duplicate tests
+
+	* configure.in: use AC_HELP_STRING
+
 2002-04-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/crypto.c (usage2arcfour): don't abort if the usage is
