@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -97,7 +97,7 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(void)
 {
-    arg_printusage (args, num_args, "init", "realm");
+    arg_printusage (args, num_args, "init", "realm...");
 }
 
 int
@@ -115,6 +115,11 @@ init(int argc, char **argv)
     args[1].value = &realm_max_rlife;
 
     if(getarg(args, num_args, argc, argv, &optind)) {
+	usage();
+	return 0;
+    }
+
+    if(argc - optind < 1) {
 	usage();
 	return 0;
     }
