@@ -1,5 +1,9 @@
 1999-11-30  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ftpd.c (getdatasock): make sure to keep the port-number of
+ 	the outgoing connections.  It has to be `ftp-data' or some people
+ 	might get upset.
+
 	* ftpd/ftpd.c (args): set correct variable when `-l' so that
  	logging actually works
 
