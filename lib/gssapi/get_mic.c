@@ -82,7 +82,7 @@ OM_uint32 gss_get_mic
   memset (&zero, 0, sizeof(zero));
   gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
-  des_cbc_cksum ((const void *)hash, (viod *)hash, sizeof(hash),
+  des_cbc_cksum ((const void *)hash, (void *)hash, sizeof(hash),
 		 schedule, &zero);
   memcpy (p - 8, hash, 8);
 
