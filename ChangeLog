@@ -1,3 +1,7 @@
+Wed Jul  8 10:45:45 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/asn1/k5.asn1: hmac-sha1-des3 = 12
+
 Tue Jun 30 18:08:05 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/send_to_kdc.c (krb5_sendto_kdc): do not close the
