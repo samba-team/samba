@@ -3639,7 +3639,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	DOM_SID owner_sid;
 	size_t sd_size;
 	enum SID_NAME_USE name_type;
-
+	fstring dos_domain;
+	
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
@@ -3649,7 +3650,14 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
+	/* Note that for hysterical raisins, the argument to
+	   secrets_fetch_domain_sid() must be in dos codepage format.  
+	   Aargh! */
+
+	fstrcpy(dos_domain, lp_workgroup());
+	unix_to_dos(dos_domain, True);
+
+	if (secrets_fetch_domain_sid(dos_domain, &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
