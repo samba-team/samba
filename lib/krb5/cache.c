@@ -73,7 +73,14 @@ char*
 krb5_cc_get_name(krb5_context context,
 		 krb5_ccache id)
 {
-    return ((krb5_fcache*)(id->data.data))->filename;
+    if (id)
+	return ((krb5_fcache*)(id->data.data))->filename;
+    else {
+	char *f = krb5_cc_default_name (context);
+	if (strncmp (f, "FILE:", 5))
+	    abort ();
+	return f + 5;
+    }
 }
 
 char*
@@ -303,7 +310,7 @@ krb5_cc_start_seq_get (krb5_context context,
     krb5_ret_int16 (sp, &tag);
     krb5_ret_principal (sp, &principal);
     krb5_storage_free(sp);
-    krb5_free_principal (principal);
+    krb5_free_principal (context, principal);
     return 0;
 }
 
