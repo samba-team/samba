@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -95,8 +95,16 @@ krb5_storage *
 krb5_storage_from_mem(void *buf, size_t len)
 {
     krb5_storage *sp = malloc(sizeof(krb5_storage));
-    mem_storage *s = malloc(sizeof(*s));
+    mem_storage *s;
+    if(sp == NULL)
+	return NULL;
+    s = malloc(sizeof(*s));
+    if(s == NULL) {
+	free(sp);
+	return NULL;
+    }
     sp->data = s;
+    sp->host_byteorder = 0;
     s->base = buf;
     s->size = len;
     s->ptr = buf;
