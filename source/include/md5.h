@@ -1,5 +1,9 @@
 #ifndef MD5_H
 #define MD5_H
+#ifndef HEADER_MD5_H
+/* Try to avoid clashes with OpenSSL */
+#define HEADER_MD5_H 
+#endif
 
 struct MD5Context {
 	uint32 buf[4];
