@@ -157,8 +157,8 @@ void ads_destroy(ADS_STRUCT **ads)
 	}
 }
 
-
-static void ads_display_status_helper(char *m, OM_uint32 code, int type)
+#if HAVE_KRB5
+static void ads_display_status_helper(const char *m, uint32 code, int type)
 {
      int maj_stat, min_stat;
      gss_buffer_desc msg;
@@ -177,9 +177,12 @@ static void ads_display_status_helper(char *m, OM_uint32 code, int type)
 	       break;
      }
 }
+#endif
 
-void ads_display_status(char * msg, int maj_stat,int min_stat)
+void ads_display_status(const char *msg, int maj_stat,int min_stat)
 {
+#if HAVE_KRB5
      ads_display_status_helper(msg, maj_stat, GSS_C_GSS_CODE);
      ads_display_status_helper(msg, min_stat, GSS_C_MECH_CODE);
+#endif
 }
