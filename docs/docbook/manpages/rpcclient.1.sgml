@@ -162,9 +162,8 @@
 		<varlistentry>
 		<term>-W domain</term>
 		<listitem><para>Set the SMB domain of the username.   This 
-		overrides the default  domain which is the domain of the 
-		server specified with the  <parameter>-S</parameter> option.  
-		If the domain specified is the same as the server's NetBIOS name, 
+		overrides the default domain which is the domain defined in 
+		smb.conf.  If the domain specified is the same as the server's NetBIOS name, 
 		it causes the client to log on using the  server's local SAM (as 
 		opposed to the Domain SAM). </para></listitem>
 		</varlistentry>

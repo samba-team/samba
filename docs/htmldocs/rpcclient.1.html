@@ -236,14 +236,8 @@ CLASS="COMMAND"
 ><DD
 ><P
 >Set the SMB domain of the username.   This 
-		overrides the default  domain which is the domain of the 
-		server specified with the  <TT
-CLASS="PARAMETER"
-><I
->-S</I
-></TT
-> option.  
-		If the domain specified is the same as the server's NetBIOS name, 
+		overrides the default domain which is the domain defined in 
+		smb.conf.  If the domain specified is the same as the server's NetBIOS name, 
 		it causes the client to log on using the  server's local SAM (as 
 		opposed to the Domain SAM). </P
 ></DD
@@ -253,7 +247,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN91"
+NAME="AEN90"
 ></A
 ><H2
 >COMMANDS</H2
@@ -647,7 +641,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN211"
+NAME="AEN210"
 ></A
 ><H2
 >BUGS</H2
@@ -688,7 +682,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN221"
+NAME="AEN220"
 ></A
 ><H2
 >VERSION</H2
@@ -699,7 +693,7 @@ NAME="AEN221"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN224"
+NAME="AEN223"
 ></A
 ><H2
 >AUTHOR</H2
