@@ -231,11 +231,3 @@ BOOL cli_transport_select(struct cli_transport *transport)
 	return True;
 }
 
-/*
-  store the user session key for a transport
-*/
-void cli_transport_set_session_key(struct cli_transport *transport,
-				   const uint8 session_key[16])
-{
-	memcpy(transport->negotiate.user_session_key, session_key, 16);
-}

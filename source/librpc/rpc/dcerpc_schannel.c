@@ -57,7 +57,7 @@ static NTSTATUS schan_sign_packet(struct dcerpc_security *dcerpc_security,
 }
 
 static NTSTATUS schan_session_key(struct dcerpc_security *dcerpc_security, 
-				  uint8 session_key[16])
+				  DATA_BLOB *session_key)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -84,7 +84,7 @@ NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	uint8 mach_pwd[16];
-	struct netr_CredentialState creds;
+	struct creds_CredentialState creds;
 	const char *workgroup, *workstation;
 	uint32 negotiate_flags = 0;
 

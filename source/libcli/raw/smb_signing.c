@@ -220,7 +220,8 @@ static void cli_transport_simple_free_signing_context(struct cli_transport *tran
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
 BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
-				      const uchar user_transport_key[16], const DATA_BLOB response)
+				      const DATA_BLOB user_session_key, 
+				      const DATA_BLOB response)
 {
 	struct smb_basic_signing_context *data;
 
@@ -235,10 +236,13 @@ BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
 	data = smb_xmalloc(sizeof(*data));
 	transport->negotiate.sign_info.signing_context = data;
 	
-	data->mac_key = data_blob(NULL, MIN(response.length + 16, 40));
+	data->mac_key = data_blob(NULL, response.length + user_session_key.length);
 
-	memcpy(&data->mac_key.data[0], user_transport_key, 16);
-	memcpy(&data->mac_key.data[16],response.data, MIN(response.length, 40 - 16));
+	memcpy(&data->mac_key.data[0], user_session_key.data, user_session_key.length);
+
+	if (response.length) {
+		memcpy(&data->mac_key.data[user_session_key.length],response.data, response.length);
+	}
 
 	/* Initialise the sequence number */
 	data->next_seq_num = 0;

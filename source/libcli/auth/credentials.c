@@ -27,7 +27,7 @@
 
   this call is made after the netr_ServerReqChallenge call
 */
-static void creds_init(struct netr_CredentialState *creds,
+static void creds_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
 		       const uint8 machine_password[16])
@@ -48,11 +48,11 @@ static void creds_init(struct netr_CredentialState *creds,
 
 	SIVAL(time_cred.data, 0, IVAL(client_challenge->data, 0));
 	SIVAL(time_cred.data, 4, IVAL(client_challenge->data, 4));
-	cred_hash2(creds->client.data, time_cred.data, creds->session_key);
+	cred_hash2(creds->client.data, time_cred.data, creds->session_key, 1);
 
 	SIVAL(time_cred.data, 0, IVAL(server_challenge->data, 0));
 	SIVAL(time_cred.data, 4, IVAL(server_challenge->data, 4));
-	cred_hash2(creds->server.data, time_cred.data, creds->session_key);
+	cred_hash2(creds->server.data, time_cred.data, creds->session_key, 1);
 
 	creds->seed = creds->client;
 }
@@ -62,7 +62,7 @@ static void creds_init(struct netr_CredentialState *creds,
   step the credentials to the next element in the chain, updating the
   current client and server credentials and the seed
 */
-static void creds_step(struct netr_CredentialState *creds)
+static void creds_step(struct creds_CredentialState *creds)
 {
 	struct netr_Credential time_cred;
 
@@ -76,7 +76,7 @@ static void creds_step(struct netr_CredentialState *creds)
 
 	DEBUG(5,("\tseed+time   %08x:%08x\n", IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	cred_hash2(creds->client.data, time_cred.data, creds->session_key);
+	cred_hash2(creds->client.data, time_cred.data, creds->session_key, 1);
 
 	DEBUG(5,("\tCLIENT      %08x:%08x\n", 
 		 IVAL(creds->client.data, 0), IVAL(creds->client.data, 4)));
@@ -87,7 +87,7 @@ static void creds_step(struct netr_CredentialState *creds)
 	DEBUG(5,("\tseed+time+1 %08x:%08x\n", 
 		 IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	cred_hash2(creds->server.data, time_cred.data, creds->session_key);
+	cred_hash2(creds->server.data, time_cred.data, creds->session_key, 1);
 
 	DEBUG(5,("\tSERVER      %08x:%08x\n", 
 		 IVAL(creds->server.data, 0), IVAL(creds->server.data, 4)));
@@ -95,7 +95,30 @@ static void creds_step(struct netr_CredentialState *creds)
 	creds->seed = time_cred;
 }
 
+/*
+  DES encrypt a 16 byte password buffer using the session key
+*/
+void creds_des_encrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
+{
+	struct netr_Password tmp;
+	cred_hash3(tmp.data, pass->data, creds->session_key, 1);
+	*pass = tmp;
+}
 
+/*
+  ARCFOUR encrypt/decrypt a password buffer using the session key
+*/
+void creds_arcfour_crypt(struct creds_CredentialState *creds, char *data, size_t len)
+{
+	DATA_BLOB session_key = data_blob(NULL, 16);
+	
+	memcpy(&session_key.data[0], creds->session_key, 8);
+	memset(&session_key.data[8], '\0', 8);
+
+	SamOEMhashBlob(data, len, &session_key);
+
+	data_blob_free(&session_key);
+}
 
 /*****************************************************************
 The above functions are common to the client and server interface
@@ -106,7 +129,7 @@ next comes the client specific functions
   initialise the credentials chain and return the first client
   credentials
 */
-void creds_client_init(struct netr_CredentialState *creds,
+void creds_client_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
 		       const uint8 machine_password[16],
@@ -120,7 +143,7 @@ void creds_client_init(struct netr_CredentialState *creds,
 /*
   check that a credentials reply from a server is correct
 */
-BOOL creds_client_check(struct netr_CredentialState *creds,
+BOOL creds_client_check(struct creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials)
 {
 	if (memcmp(received_credentials->data, creds->server.data, 8) != 0) {
@@ -134,7 +157,7 @@ BOOL creds_client_check(struct netr_CredentialState *creds,
   produce the next authenticator in the sequence ready to send to 
   the server
 */
-void creds_client_authenticator(struct netr_CredentialState *creds,
+void creds_client_authenticator(struct creds_CredentialState *creds,
 				struct netr_Authenticator *next)
 {
 	creds_step(creds);
@@ -144,12 +167,3 @@ void creds_client_authenticator(struct netr_CredentialState *creds,
 }
 
 
-/*
-  encrypt a 16 byte password buffer using the session key
-*/
-void creds_client_encrypt(struct netr_CredentialState *creds, struct netr_Password *pass)
-{
-	struct netr_Password tmp;
-	cred_hash3(tmp.data, pass->data, creds->session_key, 1);
-	*pass = tmp;
-}

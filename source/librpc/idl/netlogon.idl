@@ -68,14 +68,6 @@ interface netlogon
 		uint8 data[8];
 	} netr_Credential;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 session_key[8];
-		uint32 sequence;
-		netr_Credential seed;
-		netr_Credential client;
-		netr_Credential server;
-	} netr_CredentialState;
-
 	typedef struct {
 		[value(strlen_m(r->string)*2)] uint16 size;
 		[value(r->size)]               uint16 length;

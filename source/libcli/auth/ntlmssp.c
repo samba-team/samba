@@ -1093,7 +1093,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 
-		SMBsesskeygen_ntv1(nt_hash, NULL, user_session_key);
+		SMBsesskeygen_ntv1(nt_hash, user_session_key);
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
@@ -1108,7 +1108,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 				     nt_response.data);
 			E_md4hash(ntlmssp_state->password, nt_hash);
 			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+			SMBsesskeygen_ntv1(nt_hash, session_key.data);
 			dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 		}
 

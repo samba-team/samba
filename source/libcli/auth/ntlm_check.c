@@ -59,7 +59,7 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
 	if (user_sess_key != NULL) {
 		*user_sess_key = data_blob(NULL, 16);
-		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key->data);
+		SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
 	}
 	
 	
@@ -195,7 +195,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		if (memcmp(nt_interactive_pwd->data, nt_pw, 16) == 0) {
 			if (user_sess_key) {
 				*user_sess_key = data_blob(NULL, 16);
-				SMBsesskeygen_ntv1(nt_pw, NULL, user_sess_key->data);
+				SMBsesskeygen_ntv1(nt_pw, user_sess_key->data);
 			}
 			return NT_STATUS_OK;
 		} else {

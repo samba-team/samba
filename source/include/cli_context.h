@@ -66,10 +66,6 @@ struct cli_negotiate {
 	unsigned int writebraw_supported:1;
 
 	const char *server_domain;
-
-	/* remember the session key for data encryption in various sub-protocols
-	   such as LSA */
-	uint8 user_session_key[16];
 };
 	
 /* this is the context for a SMB socket associated with the socket itself */
@@ -189,6 +185,8 @@ struct cli_session {
 
 	/* default pid for this session */
 	uint32 pid;
+
+	DATA_BLOB user_session_key;
 };
 
 /* 
