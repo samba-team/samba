@@ -233,7 +233,7 @@ enum ndr_err_code {
 				if ((n) == 0) { \
 					(s) = NULL; \
 				} else { \
-					(s) = talloc(ndr, (n) * elsize); \
+					(s) = talloc_array(ndr, elsize, n, __location__); \
                                		if (!(s)) return ndr_pull_error(ndr, \
 									NDR_ERR_ALLOC, \
 									"Alloc %u * %u failed\n", \
