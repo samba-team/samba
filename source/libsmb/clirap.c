@@ -237,6 +237,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	p += 4;
 	
 	pstrcpy(p, workgroup);
+	unix_to_dos(p, True);
 	p = skip_string(p,1);
 	
 	if (cli_api(cli, 

@@ -49,12 +49,12 @@ static FILE *fp;
 
 /*******************************************************************
   This is the NetServerEnum callback.
+  Note sname and comment are in UNIX codepage format.
   ******************************************************************/
 static void callback(const char *sname, uint32 stype, const char *comment)
 {
 	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
-
 
 /*******************************************************************
   Synchronise browse lists with another browse server.
@@ -67,6 +67,7 @@ static void sync_child(char *name, int nm_type,
 		       char *fname)
 {
 	extern fstring local_machine;
+	fstring unix_workgroup;
 	static struct cli_state cli;
 	uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 	struct nmb_name called, calling;
@@ -101,14 +102,20 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
+	/* All the cli_XX functions take UNIX character set. */
+	fstrcpy(unix_workgroup, cli.server_domain?cli.server_domain:workgroup);
+	dos_to_unix(unix_workgroup, True);
+
 	/* Fetch a workgroup list. */
-	cli_NetServerEnum(&cli, cli.server_domain?cli.server_domain:workgroup, 
+	cli_NetServerEnum(&cli, unix_workgroup,
 			  local_type|SV_TYPE_DOMAIN_ENUM,
 			  callback);
 	
 	/* Now fetch a server list. */
 	if (servers) {
-		cli_NetServerEnum(&cli, workgroup, 
+		fstrcpy(unix_workgroup, workgroup);
+		dos_to_unix(unix_workgroup, True);
+		cli_NetServerEnum(&cli, unix_workgroup, 
 				  local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
 				  callback);
 	}
@@ -247,6 +254,9 @@ static void complete_sync(struct sync_record *s)
 		if (!fgets_slash(line,sizeof(pstring),f)) continue;
 		
 		ptr = line;
+
+		/* The line is written in UNIX character set. Convert to DOS codepage. */
+		unix_to_dos(line,True);
 
 		if (!next_token(&ptr,server,NULL,sizeof(server)) ||
 		    !next_token(&ptr,type_str,NULL, sizeof(type_str)) ||
