@@ -48,3 +48,10 @@ krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
     free_KRB_ERROR(&rep->error);
     return 0;
 }
+
+krb5_error_code
+krb5_xfree (void *ptr)
+{
+    free (ptr);
+    return 0;
+}
