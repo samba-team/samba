@@ -608,7 +608,7 @@ static void usage(char *pname)
 	reopen_logs();
 
 	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1997\n"));
+	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));

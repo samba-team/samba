@@ -662,7 +662,7 @@ int main(int argc,char *argv[])
   reopen_logs();
 
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1997\n" ) );
+  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
 
   if( !get_myname( myhostname, NULL) )
   {
