@@ -111,10 +111,14 @@ krb5_cc_default_name(krb5_context context)
     static char name[1024];
     char *p;
     p = getenv("KRB5CCNAME");
-    if(p)
-	strcpy(name, p);
-    else
-	sprintf(name, "FILE:/tmp/krb5cc_%d", getuid());
+    if(p) {
+	strncpy (name, p, sizeof(name));
+	name[sizeof(name) - 1] = '\0';
+    } else
+	snprintf(name,
+		 sizeof(name),
+		 "FILE:/tmp/krb5cc_%u",
+		 (unsigned)getuid());
     return name;
 }
 
