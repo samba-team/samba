@@ -530,9 +530,10 @@ handle_tcp(struct descr *d, int index, int min_free)
 		"That page doesn't exist, maybe you are looking for "
 		"<A HREF=\"http://www.pdc.kth.se/heimdal\">Heimdal</A>?\r\n";
 	    write(d[index].s, msg, strlen(msg));
-	    free(data);
 	    clear_descr(d + index);
 	    kdc_log(0, "HTTP request from %s is non KDC request", addr);
+	    kdc_log(5, "Request: %s", t);
+	    free(data);
 	    goto out;
 	}
 	{
