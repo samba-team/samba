@@ -108,14 +108,9 @@ void dcesrv_tcp_init(struct server_service *service, const struct model_ops *mod
 		}
 	} else {
 		struct in_addr *ifip;
-		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
-		if (!mem_ctx) {
-			smb_panic("No memory");
-		}
-
-		ifip = interpret_addr2(mem_ctx, lp_socket_address());
+		ifip = interpret_addr2(dce_ctx, lp_socket_address());
 		add_socket_rpc(service, model_ops, dce_ctx,  ifip);
-		talloc_destroy(mem_ctx);
+		talloc_free(ifip);
 	}
 
 	return;	

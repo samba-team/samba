@@ -24,7 +24,6 @@
 #include "rpc_server/common/common.h"
 
 struct server_pipe_state {
-	TALLOC_CTX *mem_ctx;
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
 	BOOL authenticated;
@@ -44,34 +43,27 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 {
 	struct server_pipe_state *state;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("netlogon_bind");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	state = talloc_p(mem_ctx, struct server_pipe_state);
+	state = talloc_p(dce_call->conn, struct server_pipe_state);
 	if (state == NULL) {
-		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(state);
-	state->mem_ctx = mem_ctx;
 	state->authenticated = True;
 	
 	if (dce_call->conn->auth_state.session_info == NULL) {
-		talloc_free(mem_ctx);
+		talloc_free(state);
 		smb_panic("No session info provided by schannel level setup!");
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 	
 	status = dcerpc_schannel_creds(dce_call->conn->auth_state.gensec_security, 
-				       mem_ctx, 
+				       state, 
 				       &state->creds);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("getting schannel credentials failed with %s\n", nt_errstr(status)));
-		talloc_free(mem_ctx);
+		talloc_free(state);
 		return status;
 	}
 	
@@ -110,7 +102,7 @@ static void netlogon_unbind(struct dcesrv_connection *conn, const struct dcesrv_
 	struct server_pipe_state *pipe_state = conn->private;
 
 	if (pipe_state) {
-		talloc_free(pipe_state->mem_ctx);
+		talloc_free(pipe_state);
 	}
 
 	conn->private = NULL;
@@ -123,31 +115,21 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 					struct netr_ServerReqChallenge *r)
 {
 	struct server_pipe_state *pipe_state = dce_call->conn->private;
-	TALLOC_CTX *pipe_mem_ctx;
 
 	ZERO_STRUCTP(r->out.credentials);
 
 	/* destroyed on pipe shutdown */
 
 	if (pipe_state) {
-		talloc_free(pipe_state->mem_ctx);
+		talloc_free(pipe_state);
 		dce_call->conn->private = NULL;
 	}
 	
-	pipe_mem_ctx = talloc_init("internal netlogon pipe state for %s", 
-				   r->in.computer_name);
-	
-	if (!pipe_mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	pipe_state = talloc_p(pipe_mem_ctx, struct server_pipe_state);
+	pipe_state = talloc_p(dce_call->conn, struct server_pipe_state);
 	if (!pipe_state) {
-		talloc_free(pipe_mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_state->mem_ctx = pipe_mem_ctx;
 	pipe_state->authenticated = False;
 	pipe_state->creds = NULL;
 	pipe_state->account_name = NULL;
@@ -247,7 +229,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	}
 
 	if (!pipe_state->creds) {
-		pipe_state->creds = talloc_p(pipe_state->mem_ctx, struct creds_CredentialState);
+		pipe_state->creds = talloc_p(pipe_state, struct creds_CredentialState);
 		if (!pipe_state->creds) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -269,14 +251,14 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		talloc_free(pipe_state->account_name);
 	}
 
-	pipe_state->account_name = talloc_strdup(pipe_state->mem_ctx, r->in.account_name);
+	pipe_state->account_name = talloc_strdup(pipe_state, r->in.account_name);
 	
 	if (pipe_state->computer_name) {
 		/* We don't want a memory leak on this long-lived talloc context */
 		talloc_free(pipe_state->account_name);
 	}
 
-	pipe_state->computer_name = talloc_strdup(pipe_state->mem_ctx, r->in.computer_name);
+	pipe_state->computer_name = talloc_strdup(pipe_state, r->in.computer_name);
 
 	/* remember this session key state */
 	nt_status = schannel_store_session_key(mem_ctx, pipe_state->computer_name, pipe_state->creds);
