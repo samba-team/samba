@@ -261,7 +261,7 @@ char *rep_inet_ntoa(struct in_addr ip);
 
 void get_sam_domain_name(void);
 BOOL get_member_domain_sid(void);
-BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5);
+BOOL get_domain_sids(DOM_SID *sid3, DOM_SID *sid5, char *servers);
 void generate_wellknown_sids(void);
 BOOL generate_sam_sid(char *domain_name);
 BOOL map_domain_name_to_sid(DOM_SID *sid, char **nt_domain);
@@ -458,7 +458,7 @@ void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const char *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd);
-BOOL pwdb_initialise(BOOL server);
+BOOL pwdb_initialise(BOOL is_server);
 
 /*The following definitions come from  lib/util_sid.c  */
 
