@@ -106,7 +106,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util_array.o lib/util_str.o lib/util_sid.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o lib/fnmatch.o \
-	  tdb/tdb.o lib/talloc.o lib/hash.o
+	  tdb/tdb.o lib/talloc.o lib/hash.o lib/substitute.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o ubiqx/debugparse.o
