@@ -1218,7 +1218,7 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 			struct in_addr name_ip;
 			if (resolve_name( name, &name_ip, 0x20) == False)
 				continue;
-			return_iplist[*count++] = name_ip;
+			return_iplist[(*count)++] = name_ip;
 		}
 		*ip_list = return_iplist;
 		return (*count != 0);
