@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -36,7 +36,10 @@
  * SUCH DAMAGE.
  */
 
-#include "krb_locl.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "roken.h"
 #include "resolve.h"
 
 RCSID("$Id$");
@@ -252,16 +255,20 @@ dns_lookup(const char *domain, const char *type_name)
     u_long old_options = 0;
     
     type = string_to_type(type_name);
+#if 0
     if (krb_dns_debug) {
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
 	krb_warning("dns_lookup(%s, %s)\n", domain, type_name);
     }
+#endif
     len = res_search(domain, C_IN, type, reply, sizeof(reply));
+#if 0
     if (krb_dns_debug) {
         _res.options = old_options;
 	krb_warning("dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
     }
+#endif
     if (len >= 0)
 	r = parse_reply(reply, len);
     return r;
