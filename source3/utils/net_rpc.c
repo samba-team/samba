@@ -1125,16 +1125,27 @@ rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, 1000,
-				      num_members, group_rids,
-				      &num_names, &names, &name_types);
+	do {
+		int this_time = 512;
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
+		if (num_members < this_time)
+			this_time = num_members;
 
-	for (i = 0; i < num_members; i++) {
-		printf("%s\n", names[i]);
-	}
+		result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol, 1000,
+					      this_time, group_rids,
+					      &num_names, &names, &name_types);
+
+		if (!NT_STATUS_IS_OK(result))
+			goto done;
+
+		for (i = 0; i < this_time; i++) {
+			printf("%s\n", names[i]);
+		}
+
+		num_members -= this_time;
+		group_rids += 512;
+
+	} while (num_members > 0);
 
  done:
 	return result;
