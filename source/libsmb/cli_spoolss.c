@@ -473,6 +473,10 @@ WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 
 	switch (level) {
+	case 0:
+		decode_printer_info_0(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_0);
+		break;
 	case 1:
 		decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
 				      &ctr->printers_1);
