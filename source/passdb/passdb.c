@@ -428,59 +428,6 @@ NTSTATUS pdb_set_sam_sids(SAM_ACCOUNT *account_data, const struct passwd *pwd)
 	return NT_STATUS_OK;
 }
 
-/******************************************************************
- * Get the free RID base if idmap is configured, otherwise return 0
- ******************************************************************/
-
-uint32 pdb_get_free_rid_base(void)
-{
-	uint32 low, high;
-	if (pdb_get_free_rid_range(&low, &high)) {
-		return low;
-	}
-	return 0;
-}
-
-/******************************************************************
- * Get the the non-algorithmic RID range if idmap range are defined
- ******************************************************************/
-
-BOOL pdb_get_free_rid_range(uint32 *low, uint32 *high)
-{
-	uid_t u_low, u_high;
-       	gid_t g_low, g_high;
-	uint32 id_low, id_high;
-
-	if (lp_idmap_only()) {
-		*low = BASE_RID;
-		*high = -1;
-	}
-
-	if (lp_idmap_uid(&u_low, &u_high) && lp_idmap_gid(&g_low, &g_high)) {
-		if (u_low < g_low) {
-			id_low = u_low;
-		} else {
-			id_low = g_low;
-		}
-		if (u_high > g_high) {
-			id_high = u_high;
-		} else {
-			id_high = g_high;
-		}
-
-		*low = fallback_pdb_uid_to_user_rid(id_low);
-		if (fallback_pdb_user_rid_to_uid(-1) < id_high) {
-			*high = -1;
-		} else {
-			*high = fallback_pdb_uid_to_user_rid(id_high);
-		}
-
-		return True;
-	}
-
-	return False;
-}
-
 /**********************************************************
  Encode the account control bits into a string.
  length = length of string to encode into (including terminating
