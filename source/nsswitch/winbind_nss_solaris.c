@@ -19,7 +19,7 @@
 #endif
 #include "winbind_nss_config.h"
 
-#ifdef HAVE_NSS_COMMON_H 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
 
 #undef NSS_DEBUG
 
