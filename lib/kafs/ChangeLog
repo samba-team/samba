@@ -1,3 +1,7 @@
+2001-08-26  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: handle both krb5 and krb4 cases
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkafs_la_LDFLAGS): set version to 3:0:3

@@ -1,3 +1,7 @@
+2001-08-26  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/Makefile.am: also link with the library for logout
+
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c: include libutil.h if it exists
