@@ -690,18 +690,22 @@ static void process_loop(void)
  These are split out from the main winbindd for use by the background daemon.
 *****************************************************************************/
 
-int winbind_setup_common(void)
+BOOL winbind_setup_common(void)
 {
-	load_interfaces();
+  	load_interfaces();
 
 	if (!secrets_init()) {
 
 		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
-		return 1;
-
+		return False;
 	}
 
 	namecache_enable();	/* Enable netbios namecache */
+
+	/* Check winbindd parameters are valid */
+
+	if (!winbindd_param_init())
+		return False;
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted
@@ -713,11 +717,8 @@ int winbind_setup_common(void)
 
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_param_init())
-		return 1;
-
 	if (!winbindd_idmap_init())
-		return 1;
+		return False;
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
@@ -740,7 +741,7 @@ int winbind_setup_common(void)
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
-	return 0;
+	return True;
 }
 
 /* Main function */
@@ -886,7 +887,7 @@ int main(int argc, char **argv)
 	if (opt_dual_daemon)
 		do_dual_daemon();
 
-	if (winbind_setup_common() != 0)
+	if (!winbind_setup_common())
 		return 1;
 
 	/* Initialise messaging system */
