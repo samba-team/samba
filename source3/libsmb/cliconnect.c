@@ -241,9 +241,19 @@ static void set_signing_on_cli (struct cli_state *cli, char* pass, uint8 respons
 {
 	uint8 zero_sig[8];
 	ZERO_STRUCT(zero_sig);
-	if (memcmp(&cli->outbuf[smb_ss_field], zero_sig, 8) != 0) {
+
+	DEBUG(5, ("Server returned security sig:\n"));
+	dump_data(5, &cli->inbuf[smb_ss_field], 8);
+
+	if (cli->sign_info.use_smb_signing) {
+		DEBUG(5, ("smb signing already active on connection\n"));
+	} else if (memcmp(&cli->inbuf[smb_ss_field], zero_sig, 8) != 0) {
+
+		DEBUG(3, ("smb signing enabled!\n"));
 		cli->sign_info.use_smb_signing = True;
 		cli_calculate_mac_key(cli, pass, response);
+	} else {
+		DEBUG(5, ("smb signing NOT enabled!\n"));
 	}
 }
 
@@ -273,6 +283,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	uchar pword[24];
 	uchar ntpword[24];
 	char *p;
+	BOOL have_plaintext = False;
 
 	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword)) {
 		return False;
@@ -285,8 +296,8 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		SMBencrypt(pass,cli->secblob.data,pword);
 		SMBNTencrypt(pass,cli->secblob.data,ntpword);
 
+		have_plaintext = True;
 		set_temp_signing_on_cli(cli);
-
 	} else {
 		/* pre-encrypted password supplied.  Only used for 
 		   security=server, can't do
@@ -347,7 +358,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 
 	fstrcpy(cli->user_name, user);
 
-	if (passlen != 24) {
+	if (have_plaintext) {
 		/* Have plaintext orginal */
 		set_signing_on_cli(cli, pass, ntpword);
 	}
