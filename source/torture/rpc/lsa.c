@@ -329,6 +329,28 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	return True;
 }
 
+
+static BOOL test_Close(struct dcerpc_pipe *p, 
+		       TALLOC_CTX *mem_ctx, 
+		       struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct lsa_Close r;
+
+	printf("\ntesting Close\n");
+
+	r.in.handle = handle;
+	status = dcerpc_lsa_Close(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("\n");
+
+	return True;
+}
+
 BOOL torture_rpc_lsa(int dummy)
 {
         NTSTATUS status;
@@ -353,6 +375,10 @@ BOOL torture_rpc_lsa(int dummy)
 	}
 
 	if (!test_EnumAccounts(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+	
+	if (!test_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 	
