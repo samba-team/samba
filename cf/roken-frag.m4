@@ -89,7 +89,6 @@ AC_CHECK_HEADERS([\
 	usersec.h				\
 	util.h					\
 	vis.h					\
-	winsock.h				\
 ])
 	
 AC_REQUIRE([CHECK_NETINET_IP_AND_TCP])

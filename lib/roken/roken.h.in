@@ -95,9 +95,6 @@ struct sockaddr_dl;
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
