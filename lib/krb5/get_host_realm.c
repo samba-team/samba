@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -142,6 +142,7 @@ config_find_realm(krb5_context context,
 krb5_error_code
 krb5_get_host_realm_int (krb5_context context,
 			 const char *host,
+			 unsigned int use_dns,
 			 krb5_realm **realms)
 {
     const char *p;
@@ -149,10 +150,12 @@ krb5_get_host_realm_int (krb5_context context,
     for (p = host; p != NULL; p = strchr (p + 1, '.')) {
 	if(config_find_realm(context, p, realms) == 0)
 	    return 0;
-	else if(dns_find_realm(context, p, "krb5-realm", realms) == 0)
-	    return 0;
-	else if(dns_find_realm(context, p, "_kerberos", realms) == 0)
-	    return 0;
+	else if(use_dns) {
+	    if(dns_find_realm(context, p, "krb5-realm", realms) == 0)
+		return 0;
+	    if(dns_find_realm(context, p, "_kerberos", realms) == 0)
+		return 0;
+	}
     }
     p = strchr(host, '.');
     if(p != NULL) {
@@ -190,5 +193,5 @@ krb5_get_host_realm(krb5_context context,
 	host = hostname;
     }
 
-    return krb5_get_host_realm_int (context, host, realms);
+    return krb5_get_host_realm_int (context, host, 1, realms);
 }
