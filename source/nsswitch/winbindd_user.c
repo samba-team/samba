@@ -91,11 +91,22 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
     POSIX_ID uid, gid;
     char *tmp;
 
-    /* Get domain */
+    /* Parse domain and username */
+
+    memset(name_user, 0, sizeof(fstring));
 
     tmp = state->request.data.username;
     next_token(&tmp, name_domain, "/\\", sizeof(fstring));
     next_token(NULL, name_user, "", sizeof(fstring));
+
+    /* Reject names that don't have a domain - i.e name_domain contains the
+       entire name. */
+ 
+    if (strequal(name_user, "")) {
+        return WINBINDD_ERROR;
+    }
+
+    /* Get info for the domain */
 
     if ((domain = find_domain_from_name(name_domain)) == NULL) {
         DEBUG(0, ("could not find domain entry for domain %s\n", name_domain));

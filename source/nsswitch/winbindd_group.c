@@ -450,11 +450,20 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 
     /* Look for group domain name */
 
+    memset(name_group, 0, sizeof(fstring));
+
     tmp = state->request.data.groupname;
     next_token(&tmp, name_domain, "/\\", sizeof(fstring));
     next_token(NULL, name_group, "", sizeof(fstring));
 
-    /* Get domain sid for the domain */
+    /* Reject names that don't have a domain - i.e name_domain contains the
+       entire name. */
+
+    if (strequal(name_group, "")) {
+        return WINBINDD_ERROR;
+    }    
+
+    /* Get info for the domain */
 
     if ((domain = find_domain_from_name(name_domain)) == NULL) {
         DEBUG(0, ("getgrname_from_group(): could not get domain sid for "
