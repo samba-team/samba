@@ -49,7 +49,7 @@ main (int argc, char **argv)
   }				  
 
   cred.client = principal;
-  cred.times.endtime = time (NULL) + 4711;
+  cred.times.endtime = 0;
 
   err = krb5_build_principal_ext (context,
 				  &cred.server,
