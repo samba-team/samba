@@ -652,6 +652,7 @@ int cli_ctemp(struct cli_tree *tree, const char *path, char **tmp_path)
 	open_parms.openx.level = RAW_OPEN_CTEMP;
 	open_parms.ctemp.in.attrib = 0;
 	open_parms.ctemp.in.directory = path;
+	open_parms.ctemp.in.write_time = 0;
 
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	if (tmp_path) {
