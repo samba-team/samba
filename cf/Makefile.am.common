@@ -6,7 +6,9 @@ SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include
 
-CFLAGS += $(WFLAGS)
+## bug/feature in Automake 1.4, CFLAGS isn't set until everything else
+## is done
+CFLAGS = @CFLAGS@ $(WFLAGS)
 
 COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
 
@@ -15,15 +17,28 @@ COMPILE_ET = $(top_builddir)/lib/com_err/compile_et
 buildinclude = $(top_builddir)/include
 
 ## these aren't detected by automake
-LIB_XauReadAuth = @LIB_XauReadAuth@
-LIB_crypt = @LIB_crypt@
-LIB_dbm_firstkey = @LIB_dbm_firstkey@
-LIB_dbopen = @LIB_dbopen@
-LIB_dlopen = @LIB_dlopen@
-LIB_el_init = @LIB_el_init@
-LIB_logwtmp = @LIB_logwtmp@
-LIB_readline = @LIB_readline@
-LIB_tgetent = @LIB_tgetent@
+LIB_XauReadAuth		= @LIB_XauReadAuth@
+LIB_crypt		= @LIB_crypt@
+LIB_dbm_firstkey	= @LIB_dbm_firstkey@
+LIB_dbopen		= @LIB_dbopen@
+LIB_dlopen		= @LIB_dlopen@
+LIB_dn_expand		= @LIB_dn_expand@
+LIB_el_init		= @LIB_el_init@
+LIB_getattr		= @LIB_getattr@
+LIB_gethostbyname	= @LIB_gethostbyname@
+LIB_getpwent_r		= @LIB_getpwent_r@
+LIB_getpwnam_r		= @LIB_getpwnam_r@
+LIB_getsockopt		= @LIB_getsockopt@
+LIB_logout		= @LIB_logout@
+LIB_logwtmp		= @LIB_logwtmp@
+LIB_odm_initialize	= @LIB_odm_initialize@
+LIB_readline		= @LIB_readline@
+LIB_res_search		= @LIB_res_search@
+LIB_setpcred		= @LIB_setpcred@
+LIB_setsockopt		= @LIB_setsockopt@
+LIB_socket		= @LIB_socket@
+LIB_syslog		= @LIB_syslog@
+LIB_tgetent		= @LIB_tgetent@
 
 HESIODLIB = @HESIODLIB@
 HESIODINCLUDE = @HESIODINCLUDE@
