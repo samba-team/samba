@@ -80,7 +80,7 @@ doit(pam_handle_t *pamh, char *name, char *inst, char *pwd, char *tkt)
     krb_set_tkt_string(tkt);
 	
     krb_get_lrealm(realm, 1);
-    ret = krb_verify_user(name, inst, realm, pwd, 1, NULL);
+    ret = krb_verify_user(name, inst, realm, pwd, KRB_VERIFY_SECURE, NULL);
     memset(pwd, 0, strlen(pwd));
     switch(ret){
     case KSUCCESS:
