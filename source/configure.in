@@ -1652,9 +1652,16 @@ AC_ARG_WITH(smbmount,
 [  --with-smbmount         Include SMBMOUNT (Linux only) support (default=no)],
 [ case "$withval" in
   yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_SMBMOUNT)
-    MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+	case "$host_os" in
+	*linux*)
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(WITH_SMBMOUNT)
+		MPROGS="bin/smbmount bin/smbmnt bin/smbumount"
+		;;
+	*)
+		AC_MSG_ERROR(not on a linux system!)
+		;;
+	esac
     ;;
   *)
     AC_MSG_RESULT(no)
