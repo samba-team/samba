@@ -8,7 +8,7 @@ lib_LIBRARIES = libeditline.a
 
 ## hata
 
-libeditline_a_SOURCES = foo.c
+libeditline_a_SOURCES =
 
 EXTRA_libeditline_a_SOURCES = \
 complete.c edit_compat.c editline.c sysunix.c
