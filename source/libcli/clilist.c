@@ -117,11 +117,11 @@ int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	int ff_dir_handle=0;
 
 	/* initialize state for search */
-	state.dirlist = NULL;
 	state.mem_ctx = talloc_init("smbcli_list_new");
 	state.dirlist_len = 0;
 	state.total_received = 0;
 	
+	state.dirlist = talloc(state.mem_ctx, 0);
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
 	if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
@@ -258,11 +258,11 @@ int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribu
 	int i;
 
 	/* initialize state for search */
-	state.dirlist = NULL;
 	state.mem_ctx = talloc_init("smbcli_list_old");
 	state.dirlist_len = 0;
 	state.total_received = 0;
-	
+
+	state.dirlist = talloc(state.mem_ctx, 0);
 	mask = talloc_strdup(state.mem_ctx, Mask);
   
 	while (1) {
