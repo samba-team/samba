@@ -307,171 +307,171 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count, int *flags)
 {
-  BOOL found=False;
-  int i, retries = 3;
-  int retry_time = bcast?250:2000;
-  struct timeval tval;
-  struct packet_struct p;
-  struct packet_struct *p2;
-  struct nmb_packet *nmb = &p.packet.nmb;
-  struct in_addr *ip_list = NULL;
-
-  memset((char *)&p,'\0',sizeof(p));
-  (*count) = 0;
-  (*flags) = 0;
-
-  nmb->header.name_trn_id = generate_trn_id();
-  nmb->header.opcode = 0;
-  nmb->header.response = False;
-  nmb->header.nm_flags.bcast = bcast;
-  nmb->header.nm_flags.recursion_available = False;
-  nmb->header.nm_flags.recursion_desired = recurse;
-  nmb->header.nm_flags.trunc = False;
-  nmb->header.nm_flags.authoritative = False;
-  nmb->header.rcode = 0;
-  nmb->header.qdcount = 1;
-  nmb->header.ancount = 0;
-  nmb->header.nscount = 0;
-  nmb->header.arcount = 0;
-
-  make_nmb_name(&nmb->question.question_name,name,name_type);
-
-  nmb->question.question_type = 0x20;
-  nmb->question.question_class = 0x1;
-
-  p.ip = to_ip;
-  p.port = NMB_PORT;
-  p.fd = fd;
-  p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
-
-  GetTimeOfDay(&tval);
-
-  if (!send_packet(&p)) 
-    return NULL;
-
-  retries--;
-
+	BOOL found=False;
+	int i, retries = 3;
+	int retry_time = bcast?250:2000;
+	struct timeval tval;
+	struct packet_struct p;
+	struct packet_struct *p2;
+	struct nmb_packet *nmb = &p.packet.nmb;
+	struct in_addr *ip_list = NULL;
+	
+	memset((char *)&p,'\0',sizeof(p));
+	(*count) = 0;
+	(*flags) = 0;
+	
+	nmb->header.name_trn_id = generate_trn_id();
+	nmb->header.opcode = 0;
+	nmb->header.response = False;
+	nmb->header.nm_flags.bcast = bcast;
+	nmb->header.nm_flags.recursion_available = False;
+	nmb->header.nm_flags.recursion_desired = recurse;
+	nmb->header.nm_flags.trunc = False;
+	nmb->header.nm_flags.authoritative = False;
+	nmb->header.rcode = 0;
+	nmb->header.qdcount = 1;
+	nmb->header.ancount = 0;
+	nmb->header.nscount = 0;
+	nmb->header.arcount = 0;
+	
+	make_nmb_name(&nmb->question.question_name,name,name_type);
+	
+	nmb->question.question_type = 0x20;
+	nmb->question.question_class = 0x1;
+	
+	p.ip = to_ip;
+	p.port = NMB_PORT;
+	p.fd = fd;
+	p.timestamp = time(NULL);
+	p.packet_type = NMB_PACKET;
+	
+	GetTimeOfDay(&tval);
+	
+	if (!send_packet(&p)) 
+		return NULL;
+	
+	retries--;
+	
 	while (1) {
-	  struct timeval tval2;
-      struct in_addr *tmp_ip_list;
-
-	  GetTimeOfDay(&tval2);
-	  if (TvalDiff(&tval,&tval2) > retry_time) {
-		  if (!retries)
-			  break;
-		  if (!found && !send_packet(&p))
-			  return NULL;
-		  GetTimeOfDay(&tval);
-		  retries--;
-	  }
-	  
-	  if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
-		  struct nmb_packet *nmb2 = &p2->packet.nmb;
-		  debug_nmb_packet(p2);
-
-		  /* If we get a Negative Name Query Response from a WINS
-		   * server, we should report it and give up.
-		   */
-		  if( 0 == nmb2->header.opcode		/* A query response   */
-		      && !(bcast)			/* from a WINS server */
-		      && nmb2->header.rcode		/* Error returned     */
-		    ) {
-
-		    if( DEBUGLVL( 3 ) ) {
-		      /* Only executed if DEBUGLEVEL >= 3 */
+		struct timeval tval2;
+		struct in_addr *tmp_ip_list;
+		
+		GetTimeOfDay(&tval2);
+		if (TvalDiff(&tval,&tval2) > retry_time) {
+			if (!retries)
+				break;
+			if (!found && !send_packet(&p))
+				return NULL;
+			GetTimeOfDay(&tval);
+			retries--;
+		}
+		
+		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {     
+			struct nmb_packet *nmb2 = &p2->packet.nmb;
+			debug_nmb_packet(p2);
+			
+			/* If we get a Negative Name Query Response from a WINS
+			 * server, we should report it and give up.
+			 */
+			if( 0 == nmb2->header.opcode		/* A query response   */
+			    && !(bcast)			/* from a WINS server */
+			    && nmb2->header.rcode		/* Error returned     */
+				) {
+				
+				if( DEBUGLVL( 3 ) ) {
+					/* Only executed if DEBUGLEVEL >= 3 */
 					dbgtext( "Negative name query response, rcode 0x%02x: ", nmb2->header.rcode );
-		      switch( nmb2->header.rcode ) {
-		        case 0x01:
-			  dbgtext( "Request was invalidly formatted.\n" );
-			  break;
-		        case 0x02:
-			  dbgtext( "Problem with NBNS, cannot process name.\n");
-			  break;
-		        case 0x03:
-			  dbgtext( "The name requested does not exist.\n" );
-			  break;
-		        case 0x04:
-			  dbgtext( "Unsupported request error.\n" );
-			  break;
-		        case 0x05:
-			  dbgtext( "Query refused error.\n" );
-			  break;
-		        default:
-			  dbgtext( "Unrecognized error code.\n" );
-			  break;
-		      }
-		    }
-	            free_packet(p2);
-		    return( NULL );
-		  }
-
-		  if (nmb2->header.opcode != 0 ||
-		      nmb2->header.nm_flags.bcast ||
-		      nmb2->header.rcode ||
-		      !nmb2->header.ancount) {
-			  /* 
-			   * XXXX what do we do with this? Could be a
-			   * redirect, but we'll discard it for the
+					switch( nmb2->header.rcode ) {
+					case 0x01:
+						dbgtext( "Request was invalidly formatted.\n" );
+						break;
+					case 0x02:
+						dbgtext( "Problem with NBNS, cannot process name.\n");
+						break;
+					case 0x03:
+						dbgtext( "The name requested does not exist.\n" );
+						break;
+					case 0x04:
+						dbgtext( "Unsupported request error.\n" );
+						break;
+					case 0x05:
+						dbgtext( "Query refused error.\n" );
+						break;
+					default:
+						dbgtext( "Unrecognized error code.\n" );
+						break;
+					}
+				}
+				free_packet(p2);
+				return( NULL );
+			}
+			
+			if (nmb2->header.opcode != 0 ||
+			    nmb2->header.nm_flags.bcast ||
+			    nmb2->header.rcode ||
+			    !nmb2->header.ancount) {
+				/* 
+				 * XXXX what do we do with this? Could be a
+				 * redirect, but we'll discard it for the
 				 * moment.
 				 */
-			  free_packet(p2);
-			  continue;
-		  }
-
-          tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
-                                                * ( (*count) + nmb2->answers->rdlength/6 ) );
- 
-          if (!tmp_ip_list) {
-              DEBUG(0,("name_query: Realloc failed.\n"));
-              SAFE_FREE(ip_list);
-          }
- 
-          ip_list = tmp_ip_list;
-
-		  if (ip_list) {
+				free_packet(p2);
+				continue;
+			}
+			
+			tmp_ip_list = (struct in_addr *)Realloc( ip_list, sizeof( ip_list[0] )
+								 * ( (*count) + nmb2->answers->rdlength/6 ) );
+			
+			if (!tmp_ip_list) {
+				DEBUG(0,("name_query: Realloc failed.\n"));
+				SAFE_FREE(ip_list);
+			}
+			
+			ip_list = tmp_ip_list;
+			
+			if (ip_list) {
 				DEBUG(2,("Got a positive name query response from %s ( ", inet_ntoa(p2->ip)));
-			  for (i=0;i<nmb2->answers->rdlength/6;i++) {
-				  putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
-				  DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
-				  (*count)++;
-			  }
-			  DEBUGADD(2,(")\n"));
-		  }
+				for (i=0;i<nmb2->answers->rdlength/6;i++) {
+					putip((char *)&ip_list[(*count)],&nmb2->answers->rdata[2+i*6]);
+					DEBUGADD(2,("%s ",inet_ntoa(ip_list[(*count)])));
+					(*count)++;
+				}
+				DEBUGADD(2,(")\n"));
+			}
+			
+			found=True;
+			retries=0;
+			/* We add the flags back ... */
+			if (nmb2->header.response)
+				(*flags) |= NM_FLAGS_RS;
+			if (nmb2->header.nm_flags.authoritative)
+				(*flags) |= NM_FLAGS_AA;
+			if (nmb2->header.nm_flags.trunc)
+				(*flags) |= NM_FLAGS_TC;
+			if (nmb2->header.nm_flags.recursion_desired)
+				(*flags) |= NM_FLAGS_RD;
+			if (nmb2->header.nm_flags.recursion_available)
+				(*flags) |= NM_FLAGS_RA;
+			if (nmb2->header.nm_flags.bcast)
+				(*flags) |= NM_FLAGS_B;
+			free_packet(p2);
+			/*
+			 * If we're doing a unicast lookup we only
+			 * expect one reply. Don't wait the full 2
+			 * seconds if we got one. JRA.
+			 */
+			if(!bcast && found)
+				break;
+		}
+	}
 
-		  found=True;
-		  retries=0;
-		  /* We add the flags back ... */
-		  if (nmb2->header.response)
-		    (*flags) |= NM_FLAGS_RS;
-		  if (nmb2->header.nm_flags.authoritative)
-		    (*flags) |= NM_FLAGS_AA;
-		  if (nmb2->header.nm_flags.trunc)
-		    (*flags) |= NM_FLAGS_TC;
-		  if (nmb2->header.nm_flags.recursion_desired)
-		    (*flags) |= NM_FLAGS_RD;
-		  if (nmb2->header.nm_flags.recursion_available)
-		    (*flags) |= NM_FLAGS_RA;
-		  if (nmb2->header.nm_flags.bcast)
-		    (*flags) |= NM_FLAGS_B;
-		  free_packet(p2);
-		  /*
-		   * If we're doing a unicast lookup we only
-		   * expect one reply. Don't wait the full 2
-		   * seconds if we got one. JRA.
-		   */
-		  if(!bcast && found)
-			  break;
-	  }
-  }
+	/* Reach here if we've timed out waiting for replies.. */
+	if (!bcast && !found) {
+		/* Timed out wating for WINS server to respond.  Mark it dead. */
+		wins_srv_died( to_ip );
+	}
 
-  /* Reach here if we've timed out waiting for replies.. */
-	if( !bcast && !found ) {
-    /* Timed out wating for WINS server to respond.  Mark it dead. */
-    wins_srv_died( to_ip );
-    }
-
-  return ip_list;
+	return ip_list;
 }
 
 /********************************************************
@@ -583,75 +583,6 @@ void endlmhosts(XFILE *fp)
 	x_fclose(fp);
 }
 
-BOOL name_register_wins(const char *name, int name_type)
-{
-  int sock, i, return_count;
-  int num_interfaces = iface_count();
-  struct in_addr sendto_ip;
-
-  /* 
-   * Check if we have any interfaces, prevents a segfault later
-   */
-
-  if (num_interfaces <= 0)
-    return False;         /* Should return some indication of the problem */
-
-  /*
-   * Do a broadcast register ...
-   */
-
-  if (0 == wins_srv_count())
-    return False;
-
-  sendto_ip = wins_srv_ip();
-
-  if( DEBUGLVL( 4 ) )
-    {
-    dbgtext( "name_register_wins: Registering my name %s ", name );
-    dbgtext( "with WINS server %s.\n", inet_ntoa(sendto_ip));
-    }
-
-  sock = open_socket_in( SOCK_DGRAM, 0, 3, 
-			 interpret_addr("0.0.0.0"), True );
-
-  if (sock == -1) return False;
-
-  set_socket_options(sock, "SO_BROADCAST");     /* ????! crh */
-
-  if (num_interfaces > 1) {
-
-    for (i = 0; i < num_interfaces; i++) {
-      
-      if (!name_register(sock, name, name_type, *iface_n_ip(i), 
-			 NMB_NAME_MULTIHOMED_REG_OPCODE,
-			 True, sendto_ip, &return_count)) {
-
-	close(sock);
-	return False;
-
-      }
-
-    }
-
-  }
-  else {
-
-    if (!name_register(sock, name, name_type, *iface_n_ip(0),
-		       NMB_NAME_REG_OPCODE,
-		       True, sendto_ip, &return_count)) {
-
-      close(sock);
-      return False;
-
-    }
-
-  }
-
-  close(sock);
-
-  return True;
-
-}
 
 /********************************************************
  Resolve via "bcast" method.
