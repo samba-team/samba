@@ -38,13 +38,23 @@ BOOL torture_dcom_simple(void)
 	struct dcom_interface *interfaces;
 	struct IStream_Read r_read;
 	struct IStream_Write r_write;
+	WERROR results[2];
+	struct dcom_context *ctx;
 
 	mem_ctx = talloc_init("torture_dcom_simple");
+
+	dcom_init(&ctx, lp_parm_string(-1, "torture", "userdomain"),
+			  	lp_parm_string(-1, "torture", "username"), 
+				  lp_parm_string(-1, "torture", "password"));
 
 	GUID_from_string(DCERPC_ISTREAM_UUID, &IID[0]);
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &IID[1]);
 	GUID_from_string(CLSID_SIMPLE, &clsid);
-	error = dcom_create_object(mem_ctx, &clsid, lp_parm_string(-1, "torture", "binding"), 2, IID, &interfaces, lp_parm_string(-1, "torture", "userdomain"), lp_parm_string(-1, "torture", "username"), lp_parm_string(-1, "torture", "password"));
+	error = dcom_create_object(ctx, &clsid, 
+							  lp_parm_string(-1, "torture", "binding"), 2, IID,
+							  &interfaces, 
+							  results);
+							  
 
 	if (!W_ERROR_IS_OK(error)) {
 		printf("dcom_create_object failed - %s\n", win_errstr(error));
@@ -52,19 +62,23 @@ BOOL torture_dcom_simple(void)
 	}
 	
 	ZERO_STRUCT(r_read);
-	status = dcerpc_IStream_Read(interfaces[0].pipe, NULL, mem_ctx, &r_read);
-	if (NT_STATUS_IS_ERR(error)) {
-		printf("IStream::Read() failed - %s\n", win_errstr(error));
+	status = dcerpc_IStream_Read(&interfaces[0], mem_ctx, &r_read);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("IStream::Read() failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	status = dcerpc_IStream_Write(interfaces[0].pipe, NULL, mem_ctx, &r_write);
-	if (NT_STATUS_IS_ERR(error)) {
-		printf("IStream::Write() failed - %s\n", win_errstr(error));
+	status = dcerpc_IStream_Write(&interfaces[0], mem_ctx, &r_write);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("IStream::Write() failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
-	/*FIXME: dcerpc_IUnknown_Release();*/
+	status = dcerpc_IUnknown_Release(&interfaces[1], mem_ctx, NULL);
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("IUnknown::Release() failed - %s\n", nt_errstr(status));
+		return False;
+	}
 
 	talloc_destroy(mem_ctx);
 

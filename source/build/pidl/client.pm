@@ -19,22 +19,35 @@ sub ParseFunction($)
 
 	return if (util::has_property($fn, "local"));
 
-	my $objargdef = "";
-	my $objarg = ", NULL";
+	my $objarg;
 	if (util::has_property($fn, "object")) {
-		$objargdef = ", struct GUID *object";
-		$objarg = ", object";
+		$objarg = "&d->objref->u_objref.u_standard.std.ipid";
+		# FIXME: Support custom marshalling
+		
+		$res .= "
+struct rpc_request *dcerpc_$name\_send(struct dcom_interface *d, TALLOC_CTX *mem_ctx, struct $name *r)
+{
+	struct dcerpc_pipe *p;
+	NTSTATUS status = dcom_get_pipe(d, &p);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return NULL;
 	}
 
-	$res .= 
-"
-struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p$objargdef, TALLOC_CTX *mem_ctx, struct $name *r)
-{
-        if (p->flags & DCERPC_DEBUG_PRINT_IN) {
+";
+	} else {
+		$objarg = "NULL";
+		$res .= "
+struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+{";
+	}
+
+	$res.="
+    if (p->flags & DCERPC_DEBUG_PRINT_IN) {
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
-	return dcerpc_ndr_request_send(p$objarg, DCERPC_$uname, mem_ctx,
+	return dcerpc_ndr_request_send(p, $objarg, DCERPC_$uname, mem_ctx,
 				    (ndr_push_flags_fn_t) ndr_push_$name,
 				    (ndr_pull_flags_fn_t) ndr_pull_$name,
 				    r, sizeof(*r));
@@ -42,13 +55,32 @@ struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *p$objargdef, TALLOC_C
 
 ";
 
-	$objarg = "" unless (util::has_property($fn, "object"));
+	if (util::has_property($fn, "object")) {
 	$res .= 
 "
-NTSTATUS dcerpc_$name(struct dcerpc_pipe *p$objargdef, TALLOC_CTX *mem_ctx, struct $name *r)
+NTSTATUS dcerpc_$name(struct dcom_interface *d, TALLOC_CTX *mem_ctx, struct $name *r)
 {
-	struct rpc_request *req = dcerpc_$name\_send(p$objarg, mem_ctx, r);
+	struct dcerpc_pipe *p;
+	NTSTATUS status = dcom_get_pipe(d, &p);
+	struct rpc_request *req;
+	
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+	
+	";
+	} else {
+	$res .= 
+"
+NTSTATUS dcerpc_$name(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $name *r)
+{
+	struct rpc_request *req;
 	NTSTATUS status;
+	";
+	}
+
+	$res .= "
+	req = dcerpc_$name\_send(p, mem_ctx, r);
 	if (req == NULL) return NT_STATUS_NO_MEMORY;
 
 	status = dcerpc_ndr_request_recv(req);

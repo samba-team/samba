@@ -25,10 +25,22 @@ struct IUnknown_AddRef;
 struct IUnknown_Release;
 struct IUnknown_QueryInterface;
 
+struct dcom_oxid_mapping;
+
+struct dcom_context 
+{
+	struct dcom_oxid_mapping *oxids;
+	const char *domain;
+	const char *user;
+	const char *password;
+};
+
 struct dcom_interface
 {
+	struct dcom_context *ctx;
 	struct dcerpc_pipe *pipe;
-	struct OBJREF object;
+	struct OBJREF *objref;
+	uint32_t private_references;
 };
 
 #endif /* _DCOM_H */

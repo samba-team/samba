@@ -974,7 +974,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
   perform a full request/response pair on a dcerpc pipe
 */
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
-			struct GUID *object,
+			struct OBJREF *object,
 			uint16_t opnum,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
@@ -1141,7 +1141,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
   call dcerpc_ndr_request_recv() to receive the answer
 */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						struct GUID *object,
+						struct OBJREF *object,
 					    uint32_t opnum,
 					    TALLOC_CTX *mem_ctx,
 					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -1278,7 +1278,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
   standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
-				struct GUID *object,
+				struct OBJREF *object,
 			    uint32_t opnum,
 			    TALLOC_CTX *mem_ctx,
 			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),

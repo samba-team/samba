@@ -303,16 +303,14 @@ sub HeaderFnProto($)
     my $fn = shift;
     my $name = $fn->{NAME};
 	
-	return if (util::has_property($fn, "call_as") );
-
-	my $objarg = "";
+	my $firstarg = "dcerpc_pipe";
 	if (util::has_property($fn, "object")) {
-		$objarg = ", struct GUID *";
+		$firstarg = "dcom_interface"; 
 	}
 	
     $res .= "void ndr_print_$name(struct ndr_print *, const char *, int, struct $name *);\n";
-    $res .= "struct rpc_request *dcerpc_$name\_send(struct dcerpc_pipe *$objarg, TALLOC_CTX *, struct $name *);\n";
-    $res .= "NTSTATUS dcerpc_$name(struct dcerpc_pipe *$objarg, TALLOC_CTX *, struct $name *);\n";
+    $res .= "struct rpc_request *dcerpc_$name\_send(struct $firstarg *, TALLOC_CTX *, struct $name *);\n";
+    $res .= "NTSTATUS dcerpc_$name(struct $firstarg *, TALLOC_CTX *, struct $name *);\n";
     $res .= "\n";
 }
 
