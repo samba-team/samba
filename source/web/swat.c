@@ -40,6 +40,42 @@ connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
 struct current_user current_user;
 
+static int enum_index(int value, struct enum_list *enumlist)
+{
+int i;
+	for (i=0;enumlist[i].name;i++)
+		if (value == enumlist[i].value) break;
+	return(i);
+}
+
+static char *fix_backslash(char *string)
+{
+static char newstring[1024];
+char *p = newstring;
+
+	*p = '\0';
+        while (*string) {
+                if (*string == '\\') {*p++ = '\\';*p++ = '\\';}
+                else *p++ = *string;
+                ++string;
+                *p = '\0';
+        }
+	return newstring;
+}
+
+static char *make_parm_name(char *label)
+{
+static char parmname[1024];
+char *p = parmname;
+
+	while (*label) {
+		if (*label == ' ') *p++ = '_';
+		else *p++ = *label;
+		++label;
+		*p = '\0';
+	}
+	return parmname;
+}
 
 /* start the page with standard stuff */
 static void print_header(void)
@@ -97,45 +133,64 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	switch (parm->type) {
 	case P_CHAR:
 		printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
-		       parm->label, *(char *)ptr);
+		       make_parm_name(parm->label), *(char *)ptr);
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%c\'\">",
+			make_parm_name(parm->label),(char)(parm->def.cvalue));
 		break;
 
 	case P_STRING:
 	case P_USTRING:
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       parm->label, *(char **)ptr);
+		       make_parm_name(parm->label), *(char **)ptr);
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
+			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
 	case P_GSTRING:
 	case P_UGSTRING:
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       parm->label, (char *)ptr);
+		       make_parm_name(parm->label), (char *)ptr);
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
+			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
 	case P_BOOL:
-		printf("<input type=radio name=\"parm_%s\" value=Yes %s>yes&nbsp;&nbsp;", parm->label, (*(BOOL *)ptr)?"CHECKED":"");
-		printf("<input type=radio name=\"parm_%s\" value=No %s>no", parm->label, (*(BOOL *)ptr)?"":"CHECKED");
+		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
+		printf("<option %s>Yes", (*(BOOL *)ptr)?"selected":"");
+		printf("<option %s>No", (*(BOOL *)ptr)?"":"selected");
+		printf("</select>");
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
+			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?0:1);
 		break;
 
 	case P_BOOLREV:
-		printf("<input type=radio name=\"parm_%s\" value=Yes %s>yes&nbsp;&nbsp;", parm->label, (*(BOOL *)ptr)?"":"CHECKED");
-		printf("<input type=radio name=\"parm_%s\" value=No %s>no", parm->label, (*(BOOL *)ptr)?"CHECKED":"");
+		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
+		printf("<option %s>Yes", (*(BOOL *)ptr)?"":"selected");
+		printf("<option %s>No", (*(BOOL *)ptr)?"selected":"");
+		printf("</select>");
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
+			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?1:0);
 		break;
 
 	case P_INTEGER:
-		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", parm->label, *(int *)ptr);
+		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
+			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
 
 	case P_OCTAL:
-		printf("<input type=text size=8 name=\"parm_%s\" value=0%o>", parm->label, *(int *)ptr);
+		printf("<input type=text size=8 name=\"parm_%s\" value=0%o>", make_parm_name(parm->label), *(int *)ptr);
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'0%o\'\">",
+			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
 
 	case P_ENUM:
+		printf("<select name=\"parm_%s\">",make_parm_name(parm->label)); 
 		for (i=0;parm->enum_list[i].name;i++)
-			printf("<input type=radio name=\"parm_%s\" value=%s %s>%s&nbsp;&nbsp;", 
-			       parm->label, parm->enum_list[i].name, 
-			       (*(int *)ptr)==parm->enum_list[i].value?"CHECKED":"", 
-			       parm->enum_list[i].name);
+			printf("<option %s>%s",(*(int *)ptr)==parm->enum_list[i].value?"selected":"",parm->enum_list[i].name);
+		printf("</select>");
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
+			make_parm_name(parm->label),enum_index((int)(parm->def.ivalue),parm->enum_list));
 		break;
 	case P_SEP:
 		break;
@@ -160,7 +215,42 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 		}
 		if (parm->flags & FLAG_HIDE) continue;
 		if (!advanced) {
-			if (!printers && !(parm->flags & FLAG_BASIC)) continue;
+			if (!printers && !(parm->flags & FLAG_BASIC)) {
+				void *ptr = parm->ptr;
+
+				switch (parm->type) {
+				case P_CHAR:
+					if (*(char *)ptr == (char)(parm->def.cvalue)) continue;
+					break;
+
+				case P_STRING:
+				case P_USTRING:
+					if (!strcmp(*(char **)ptr,(char *)(parm->def.svalue))) continue;
+					break;
+
+				case P_GSTRING:
+				case P_UGSTRING:
+					if (!strcmp((char *)ptr,(char *)(parm->def.svalue))) continue;
+					break;
+
+				case P_BOOL:
+				case P_BOOLREV:
+					if (*(BOOL *)ptr == (BOOL)(parm->def.bvalue)) continue;
+					break;
+
+				case P_INTEGER:
+				case P_OCTAL:
+					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
+					break;
+
+
+				case P_ENUM:
+					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
+					break;
+				case P_SEP:
+					continue;
+				}
+			}
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
 		if (heading && heading != last_heading) {
@@ -239,7 +329,7 @@ static void commit_parameters(int snum)
 	char *v;
 
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
-		sprintf(label, "parm_%s", parm->label);
+		sprintf(label, "parm_%s", make_parm_name(parm->label));
 		if ((v = cgi_variable(label))) {
 			if (parm->flags & FLAG_HIDE) continue;
 			commit_parameter(snum, parm, v); 
@@ -330,9 +420,10 @@ static void globals_page(void)
 		save_reload();
 	}
 
-	printf("<FORM method=post>\n");
+	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
+	printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 	if (advanced == 0) {
 		printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 	} else {
@@ -348,7 +439,7 @@ static void globals_page(void)
 		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
-	printf("</form>\n");
+	printf("</FORM>\n");
 }
 
 /* display a shares editing page  */
@@ -386,7 +477,7 @@ static void shares_page(void)
 		snum = lp_servicenumber(share);
 	}
 
-	printf("<FORM method=post>\n");
+	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<table>\n");
 	printf("<tr><td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
@@ -470,7 +561,7 @@ static void printers_page(void)
 		snum = lp_servicenumber(share);
 	}
 
-	printf("<FORM method=post>\n");
+	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<table>\n");
 	printf("<tr><td><input type=submit name=selectshare value=\"Choose Printer\"></td>\n");

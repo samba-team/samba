@@ -79,6 +79,12 @@ void status_page(void)
 	int autorefresh=0;
 	int refresh_interval=30;
 
+	if (cgi_variable("smbd_restart")) {
+		if (smbd_running())
+			stop_smbd();
+		start_smbd();
+	}
+
 	if (cgi_variable("smbd_start")) {
 		start_smbd();
 	}
@@ -87,6 +93,11 @@ void status_page(void)
 		stop_smbd();
 	}
 
+	if (cgi_variable("nmbd_restart")) {
+		if (nmbd_running())
+			stop_nmbd();
+		start_nmbd();
+	}
 	if (cgi_variable("nmbd_start")) {
 		start_nmbd();
 	}
@@ -161,16 +172,16 @@ void status_page(void)
 
 	fflush(stdout);
 	if (smbd_running()) {
-		printf("<tr><td>smbd:</td><td>running</td><td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td></tr>\n");
+		printf("<tr><td>smbd:</td><td>running</td><td><input type=submit name=\"smbd_stop\" value=\"Stop smbd\"></td><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
 	} else {
-		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td></tr>\n");
+		printf("<tr><td>smbd:</td><td>not running</td><td><input type=submit name=\"smbd_start\" value=\"Start smbd\"></td>><td><input type=submit name=\"smbd_restart\" value=\"Restart smbd\"></td></tr>\n");
 	}
 
 	fflush(stdout);
 	if (nmbd_running()) {
-		printf("<tr><td>nmbd:</td><td>running</td><td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td></tr>\n");
+		printf("<tr><td>nmbd:</td><td>running</td><td><input type=submit name=\"nmbd_stop\" value=\"Stop nmbd\"></td><td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td></tr>\n");
 	} else {
-		printf("<tr><td>nmbd:</td><td>not running</td><td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td></tr>\n");
+		printf("<tr><td>nmbd:</td><td>not running</td><td><input type=submit name=\"nmbd_start\" value=\"Start nmbd\"></td><td><input type=submit name=\"nmbd_restart\" value=\"Restart nmbd\"></td></tr>\n");
 	}
 
 	printf("</table>\n");
