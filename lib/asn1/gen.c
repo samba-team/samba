@@ -379,6 +379,25 @@ decode_type (char *name, Type *t)
     decode_primitive ("octet_string", name);
     break;
   case TBitString:
+    /* XXX */
+    fprintf (codefile,
+	     "l = der_match_tag (p, len, UNIV, PRIM, UT_BitString);\n"
+	     "if(l < 0)\n"
+	     "return l;\n"
+	     "p += l;\n"
+	     "len -= l;\n"
+	     "ret += l;\n"
+	     "l = der_get_length (p, len, &reallen);\n"
+	     "if(l < 0)\n"
+	     "return l;\n"
+	     "p += l;\n"
+	     "len -= l;\n"
+	     "ret += l;\n"
+	     "if(len < reallen)\n"
+	     "return -1;\n"
+	     "p += reallen;\n"
+	     "len -= reallen;\n"
+	     "ret += reallen;\n");
     break;
   case TSequence: {
     Member *m;
@@ -427,13 +446,21 @@ decode_type (char *name, Type *t)
 	       "return -1;\n"
 	       "oldlen = len;\n"
 	       "len = newlen;\n");
+      if (m->optional)
+	fprintf (codefile,
+		 "%s = malloc(sizeof(*%s));\n",
+		 s, s);
       decode_type (s, m->type);
       fprintf (codefile,
 	       "len = oldlen - newlen;\n"
-	       "}\n");
-      if (!m->optional)
+	       "}\n"
+	       "else {\n");
+      if(m->optional)
 	fprintf (codefile,
-		 "else {\n"
+		 "%s = NULL;\n"
+		 "}\n", s);
+      else
+	fprintf (codefile,
 		 "return l;\n"
 		 "}\n");
       fprintf (codefile,

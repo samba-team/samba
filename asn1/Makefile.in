@@ -25,7 +25,7 @@ FOO_HDRS	= lex.h parse.h hash.h symbol.h gen.h
 PROG		= foo
 
 ASN1_SRCS	= der_get.c der_put.c
-ASN1_OBJS	= der_get.o der_put.o foo.o
+ASN1_OBJS	= foo.o der_get.o der_put.o
 ASN1_HDRS	=
 
 .c.o:
@@ -45,7 +45,7 @@ foo:		$(FOO_OBJS)
 libasn1.a:	$(ASN1_OBJS)
 		ar cr $@ $(ASN1_OBJS)
 
-foo.c foo.h:	k5.asn1
+foo.c foo.h:	k5.asn1 foo
 		./foo $(srcdir)/k5.asn1
 
 parse.h:	parse.c

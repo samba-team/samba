@@ -179,7 +179,7 @@ krb5_get_in_tkt(krb5_context context,
      if (err) {
 	  return err;
      }
-     if(decode_AS_REP(resp.data, resp.length, &rep) < 0)
+     if(decode_AS_REP(resp.data, resp.length, &rep.part1) < 0)
        return ASN1_PARSE_ERROR;
 
      free (rep.part1.crealm);
@@ -213,6 +213,8 @@ krb5_get_in_tkt(krb5_context context,
 	  decrypt_proc = decrypt_tkt;
 
      err = (*decrypt_proc)(context, key, decryptarg, &rep);
+     if (err)
+       return err;
      memset (key->contents.data, 0, key->contents.length);
      krb5_data_free (&key->contents);
      free (key);

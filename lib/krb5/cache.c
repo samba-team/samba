@@ -224,7 +224,8 @@ ret_principal(int fd,
 
   p = ALLOC(1, krb5_principal_data);
 
-  ret_int32(fd, &p->type);
+  if(ret_int32(fd, &p->type))
+    return -1;
   ret_int32(fd, &p->ncomp);
   ret_data(fd, &p->realm);
   p->comp = ALLOC(p->ncomp, krb5_data);
