@@ -8671,7 +8671,7 @@ if test "${with_sam_pwdb+set}" = set; then
   withval="$with_sam_pwdb"
    case "$withval" in
   ""|passdb)
-    SAM_PWDB_LIB='$(SAMRPASSLIB)'
+    SAM_PWDB_LIB='$(SAMRPASSLIB) $(SMBPWLIB)'
     sampwlibname="passdb"
     ;;
   tdb)
@@ -8689,7 +8689,7 @@ if test "${with_sam_pwdb+set}" = set; then
 esac
 else
   
-  SAM_PWDB_LIB='$(SAMRPASSLIB)'
+  SAM_PWDB_LIB='$(SAMRPASSLIB) $(SMBPWLIB)'
   sampwlibname="passdb (default)"
 
 fi

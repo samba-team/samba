@@ -678,7 +678,7 @@ AC_ARG_WITH(sam_pwdb,
                           which password-database to use (passdb)],
 [ case "$withval" in
   ""|passdb)
-    SAM_PWDB_LIB='$(SAMRPASSLIB)'
+    SAM_PWDB_LIB='$(SAMRPASSLIB) $(SMBPWLIB)'
     sampwlibname="passdb"
     ;;
   tdb)
@@ -694,7 +694,7 @@ AC_ARG_WITH(sam_pwdb,
     sampwlibname="passdb (unknown specified!)"
     ;;
 esac], [
-  SAM_PWDB_LIB='$(SAMRPASSLIB)'
+  SAM_PWDB_LIB='$(SAMRPASSLIB) $(SMBPWLIB)'
   sampwlibname="passdb (default)"
 ])
 AC_MSG_RESULT($sampwlibname)
