@@ -161,7 +161,8 @@ void status_page(void)
 
 	f = sys_fopen(fname,"r");
 	if (!f) {
-		printf("Couldn't open status file %s\n",fname);
+		/* open failure either means no connections have been
+                   made or status=no */
 		if (!lp_status(-1))
 			printf("You need to have status=yes in your smb config file\n");
 	}
