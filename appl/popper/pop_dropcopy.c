@@ -114,7 +114,8 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     switch(errno) {
         case EWOULDBLOCK:
             return pop_msg(p,POP_FAILURE,
-                 "Maildrop lock busy!  Is another session active?");
+                 "%sMaildrop lock busy!  Is another session active?", 
+			   (p->flags & POP_FLAG_CAPA) ? "[IN-USE] " : "");
             /* NOTREACHED */
         default:
             return pop_msg(p,POP_FAILURE,"flock: '%s': %s", p->temp_drop,
