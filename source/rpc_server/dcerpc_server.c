@@ -693,9 +693,8 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
 	pkt.u.alter_resp.assoc_group_id = call->pkt.u.alter.assoc_group_id;
-	pkt.u.alter_resp.secondary_address = NULL;
 	pkt.u.alter_resp.num_results = 1;
-	pkt.u.alter_resp.ctx_list = talloc_p(call, struct dcerpc_ack_ctx);
+	pkt.u.alter_resp.ctx_list = talloc_array(call, struct dcerpc_ack_ctx, 1);
 	if (!pkt.u.alter_resp.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
