@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -557,7 +557,7 @@ doit (char *hostname,
 #ifdef KRB4
 static int use_v4 = 0;
 #endif
-static int use_v5 = 1;
+static int use_v5 = 0;
 static int use_only_broken = 0;
 static int use_broken = 1;
 static char *port_str;
@@ -626,6 +626,12 @@ main(int argc, char **argv)
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
 	usage (1);
+
+    /* default to v5 */
+#ifdef KRB4
+    if(use_v4 == 0 && use_v5 == 0)
+#endif
+	use_v5 = 1;
 
     if (use_only_broken) {
 #ifdef KRB4
