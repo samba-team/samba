@@ -307,6 +307,17 @@ Byte offset   Type     name                description
 #define SMB_FILE_TRACKING_INFORMATION			1036
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
+/* NT passthough levels for qfsinfo. */
+
+#define SMB_FS_VOLUME_INFORMATION			1001
+#define SMB_FS_LABEL_INFORMATION			1002
+#define SMB_FS_SIZE_INFORMATION				1003
+#define SMB_FS_DEVICE_INFORMATION			1004
+#define SMB_FS_ATTRIBUTE_INFORMATION			1005
+#define SMB_FS_CONTROL_INFORMATION			1006
+#define SMB_FS_FULL_SIZE_INFORMATION			1007
+#define SMB_FS_OBJECTID_INFORMATION			1008
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.

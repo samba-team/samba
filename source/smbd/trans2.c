@@ -1363,6 +1363,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		}
 
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
+		case SMB_FS_ATTRIBUTE_INFORMATION:
 		{
 			int fstype_len;
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
@@ -1383,13 +1384,14 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		}
 
 		case SMB_QUERY_FS_LABEL_INFO:
+		case SMB_FS_LABEL_INFORMATION:
 			data_len = 4 + strlen(vname);
 			SIVAL(pdata,0,strlen(vname));
 			pstrcpy(pdata+4,vname);      
 			break;
 
 		case SMB_QUERY_FS_VOLUME_INFO:      
-
+		case SMB_FS_VOLUME_INFORMATION:
 			/* 
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
@@ -1418,6 +1420,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			break;
 
 		case SMB_QUERY_FS_SIZE_INFO:
+		case SMB_FS_SIZE_INFORMATION:
 		{
 			SMB_BIG_UINT dfree,dsize,bsize;
 			data_len = 24;
@@ -1429,10 +1432,28 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			break;
 		}
 
+		case SMB_FS_FULL_SIZE_INFORMATION:
+		{
+			SMB_BIG_UINT dfree,dsize,bsize;
+			data_len = 32;
+			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
+			SBIG_UINT(pdata,0,dsize);
+			SBIG_UINT(pdata,8,dsize);
+			SBIG_UINT(pdata,16,dfree);
+			SIVAL(pdata,24,bsize/512);
+			SIVAL(pdata,28,512);
+			break;
+		}
+
 		case SMB_QUERY_FS_DEVICE_INFO:
+		case SMB_FS_DEVICE_INFORMATION:
 			data_len = 8;
 			SIVAL(pdata,0,0); /* dev type */
 			SIVAL(pdata,4,0); /* characteristics */
+			break;
+
+		case SMB_FS_OBJECTID_INFORMATION:
+			data_len = 64;
 			break;
 
 		/*
