@@ -2134,24 +2134,6 @@ AC_ARG_WITH(tdbsam,
 )
 
 #################################################
-# check for a LDAP password database
-AC_MSG_CHECKING(whether to use LDAP SAM database)
-AC_ARG_WITH(ldapsam,
-[  --with-ldapsam          Include experimental LDAP SAM support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_LDAP_SAM)
-    LIBS="-lldap -llber $LIBS"
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
 # check for a NISPLUS password database
 AC_MSG_CHECKING(whether to use NISPLUS SAM database)
 AC_ARG_WITH(nisplussam,

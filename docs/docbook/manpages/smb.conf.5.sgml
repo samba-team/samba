@@ -3312,12 +3312,6 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPADMINDN">ldap admin dn (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-
 		<para>
 		The <parameter>ldap admin dn</parameter> defines the Distinguished 
 		Name (DN) name used by Samba to contact the <link linkend="LDAPSERVER">ldap
@@ -3338,12 +3332,6 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPFILTER">ldap filter (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-
 		<para>
 		This parameter specifies the RFC 2254 compliant LDAP search filter.
 		The default is to match the login name with the <constant>uid</constant> 
@@ -3359,12 +3347,6 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPSSL">ldap ssl (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-		
 		<para>
 		This option is used to define whether or not Samba should
 		use SSL when connecting to the <link linkend="LDAPSERVER"><parameter>ldap
@@ -3393,14 +3375,7 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPSUFFIX">ldap suffix (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.
-		</para>
-		
-	
-		
+		<listitem>
 		<para>Default : <emphasis>none</emphasis></para>
 		</listitem>
 		</varlistentry>
@@ -3409,11 +3384,7 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPUSERSUFFIX">ldap user suffix (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development. It specified where users are added to the 
-                tree.
+	        <listitem><para>It specifies where users are added to the tree.
 		</para>
 		
 	
@@ -3426,10 +3397,7 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPSUFFIX">ldap machine suffix (G)</term>
-		<listitem><para>This parameter is only available if Samba has been
-		configure to include the <command>--with-ldapsam</command> option
-		at compile time. This option should be considered experimental and
-		under active development.  It specifies where machines should be 
+		<listitem><para>It specifies where machines should be 
                 added to the ldap tree.
 		</para>
 		

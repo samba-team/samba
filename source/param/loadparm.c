@@ -203,7 +203,6 @@ typedef struct
 	int winbind_cache_time;
 	int iLockSpinCount;
 	int iLockSpinTime;
-#ifdef WITH_LDAP_SAM
 	char *szLdapMachineSuffix;
 	char *szLdapUserSuffix;
 	int ldap_port;
@@ -211,7 +210,6 @@ typedef struct
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
-#endif				/* WITH_LDAP_SAM */
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -524,11 +522,9 @@ static BOOL handle_non_unix_account_range(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
-#if WITH_LDAP_SAM
 static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_user_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_suffix ( char *pszParmValue, char **ptr );
-#endif
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -571,7 +567,6 @@ static struct enum_list enum_printing[] = {
 	{-1, NULL}
 };
 
-#ifdef WITH_LDAP_SAM
 static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_ON, "Yes"},
 	{LDAP_SSL_ON, "yes"},
@@ -585,7 +580,6 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_START_TLS, "start_tls"},
 	{-1, NULL}
 };
-#endif /* WITH_LDAP_SAM */
 
 /* Types of machine we can announce as. */
 #define ANNOUNCE_AS_NT_SERVER 1
@@ -951,7 +945,6 @@ static struct parm_struct parm_table[] = {
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"share modes", P_BOOL, P_LOCAL,  &sDefault.bShareModes, NULL, NULL, FLAG_SHARE|FLAG_GLOBAL},
 
-#ifdef WITH_LDAP_SAM
 	{"Ldap Options", P_SEP, P_SEPARATOR},
 	
         {"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, handle_ldap_suffix, NULL, 0},
@@ -960,7 +953,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
-#endif /* WITH_LDAP_SAM */
 
 	{"Miscellaneous Options", P_SEP, P_SEPARATOR},
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, 0},
@@ -1315,7 +1307,6 @@ static void init_globals(void)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = False;
 
-#ifdef WITH_LDAP_SAM
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -1323,7 +1314,6 @@ static void init_globals(void)
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_ON;
-#endif /* WITH_LDAP_SAM */
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1520,14 +1510,12 @@ FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
-#ifdef WITH_LDAP_SAM
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_machine_suffix, &Globals.szLdapMachineSuffix)
 FN_GLOBAL_STRING(lp_ldap_user_suffix, &Globals.szLdapUserSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
-#endif /* WITH_LDAP_SAM */
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
@@ -2626,7 +2614,6 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 	return debug_parse_levels( pszParmValue );
 }
 
-#ifdef WITH_LDAP_SAM
 /***************************************************************************
  Handle the ldap machine suffix option
 ***************************************************************************/
@@ -2709,7 +2696,6 @@ static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
        string_set(ptr, suffix); 
        return True;
 }
-#endif /* WITH_LDAP_SAM */
 
 /***************************************************************************
 initialise a copymap
