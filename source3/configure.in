@@ -709,7 +709,7 @@ AC_TRY_RUN([
 #include <sys/types.h>
 #include <fcntl.h>
 #ifndef F_GETLEASE
-#define F_GETLEASE	13
+#define F_GETLEASE	1025
 #endif
 main() {
        int fd = open("/dev/null", O_RDONLY);
