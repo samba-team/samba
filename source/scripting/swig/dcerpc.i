@@ -347,40 +347,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *password);
 
 %include "librpc/gen_ndr/misc.i"
-
-/* Wrapped functions returning NTSTATUS */
-
-%exception {
-	$action
-
-	if (NT_STATUS_IS_ERR(result)) {
-		set_ntstatus_exception(NT_STATUS_V(result));
-		return NULL;
-	}
-}
-
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
-
-/* Wrapped functions returning WERROR */
-
-%exception {
-	$action
-
-	if (NT_STATUS_IS_ERR(result)) {
-		set_ntstatus_exception(NT_STATUS_V(result));
-		return NULL;
-	}
-
-	/* Emulate NT_STATUS_IS_ERR() */
-
-	if (!W_ERROR_IS_OK(arg3->out.result) && 
-	    !(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER))) {
-		set_werror_exception(W_ERROR_V(arg3->out.result));
-		return NULL;
-	}
-}
-
 %include "librpc/gen_ndr/winreg.i"
 %include "librpc/gen_ndr/spoolss.i"
 

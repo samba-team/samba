@@ -346,9 +346,26 @@ sub ParseFunction($)
     } else {
 	$result .= "\tPyDict_SetItemString(temp, \"result\", PyLong_FromLong(W_ERROR_V(arg3->out.result)));\n";
     }
-    $result .= "\tresultobj = temp;\n";
 
-    $result .= "\ttalloc_free(mem_ctx);\n";
+    $result .= "\n";
+
+    $result .= "\tresultobj = temp;\n\n";
+
+	
+
+    $result .= "\tif (NT_STATUS_IS_ERR(result)) {\n";
+    $result .= "\t\tset_ntstatus_exception(NT_STATUS_V(result));\n";
+    $result .= "\t\tgoto fail;\n";
+    $result .= "\t}\n";
+
+    if (!($fn->{RETURN_TYPE} eq "NTSTATUS")) {
+	$result .= "\tif (!W_ERROR_IS_OK(arg3->out.result) && \n";
+	$result .= "\t\t!(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER))) {\n";
+	$result .= "\t\tset_werror_exception(W_ERROR_V(arg3->out.result));\n";
+	$result .= "\t\tgoto fail;\n";
+	$result .= "\t}\n";
+    }
+
     $result .= "}\n\n";
 
     # Function definitions
