@@ -625,6 +625,7 @@ static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 		if (gid==map->gid) {
 			if (!with_priv)
 				free_privilege(&map->priv_set);
+			SAFE_FREE(kbuf.dptr);
 			return True;
 		}
 		
@@ -692,6 +693,7 @@ static BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv
 		if (StrCaseCmp(name, map->nt_name)==0) {
 			if (!with_priv)
 				free_privilege(&map->priv_set);
+			SAFE_FREE(kbuf.dptr);
 			return True;
 		}
 
