@@ -1495,3 +1495,53 @@ krb5_get_init_creds_password(krb5_context context,
     memset(buf, 0, sizeof(buf));
     return ret;
 }
+
+static krb5_error_code
+init_creds_keyblock_key_proc (krb5_context context,
+			      krb5_enctype type,
+			      krb5_salt salt,
+			      krb5_const_pointer keyseed,
+			      krb5_keyblock **key)
+{
+    return krb5_copy_keyblock (context, keyseed, key);
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_keyblock(krb5_context context,
+			     krb5_creds *creds,
+			     krb5_principal client,
+			     krb5_keyblock *keyblock,
+			     krb5_deltat start_time,
+			     const char *in_tkt_service,
+			     krb5_get_init_creds_opt *options)
+{
+    struct krb5_get_init_creds_ctx ctx;
+    krb5_error_code ret;
+    
+    ret = get_init_creds_common(context, creds, client, start_time,
+				in_tkt_service, options, &ctx);
+    if (ret)
+	goto out;
+
+    ret = krb5_get_in_cred (context,
+			    ctx.flags.i,
+			    ctx.addrs,
+			    ctx.etypes,
+			    ctx.pre_auth_types,
+			    NULL,
+			    init_creds_keyblock_key_proc,
+			    keyblock,
+			    NULL,
+			    NULL,
+			    &ctx.cred,
+			    NULL);
+
+    if (ret == 0 && creds)
+	*creds = ctx.cred;
+    else
+	krb5_free_cred_contents (context, &ctx.cred);
+
+ out:
+    free_init_creds_ctx(context, &ctx);
+    return ret;
+}
