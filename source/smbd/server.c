@@ -508,7 +508,7 @@ void exit_server(char *reason)
  Initialise connect, service and file structs.
 ****************************************************************************/
 
-static void init_structs(void )
+static BOOL init_structs(void )
 {
 	/*
 	 * Set the machine NETBIOS name if not already
@@ -523,7 +523,15 @@ static void init_structs(void )
 		p = strchr( myname, '.' );
 		if (p) 
 			*p = 0;
-		set_global_myname_unix(myname);
+		if (!set_global_myname_unix(myname)) {
+			DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+			return False;
+		}
+	}
+
+	if (!set_netbios_aliases(lp_netbios_aliases())) {
+		DEBUG( 0, ( "init_structs: malloc fail.\n" ) );
+		return False;
 	}
 
 	conn_init();
@@ -536,6 +544,8 @@ static void init_structs(void )
 	init_dptrs();
 
 	secrets_init();
+
+	return True;
 }
 
 /****************************************************************************
