@@ -198,9 +198,6 @@ for i in smbd nmbd swat smbmount smbumount smbmnt debug2html rpctorture smbtortu
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT/usr/sbin
 done
-# Now link smbmount to mount.smb 
-# Nah! We need to do this as a post installation process to make sure we get the right link
-# ln -s $RPM_BUILD_ROOT/usr/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # Install level 1 man pages
 # At a later date add back to line below: smbsh.1
@@ -213,7 +210,7 @@ done
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
 install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/srcdone
-for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 \      ISO8859-7 KOI8-R
+for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
 install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
 done
@@ -403,33 +400,8 @@ fi
 # %attr(0755,root,root) /usr/bin/smbsh
 # %attr(0755,root,root) /usr/bin/smbwrapper.so
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(-,root,root) /usr/share/swat/help/welcome.html
-%attr(-,root,root) /usr/share/swat/help/DOMAIN_MEMBER.html
-%attr(-,root,root) /usr/share/swat/help/lmhosts.5.html
-%attr(-,root,root) /usr/share/swat/help/make_smbcodepage.1.html
-%attr(-,root,root) /usr/share/swat/help/nmbd.8.html
-%attr(-,root,root) /usr/share/swat/help/nmblookup.1.html
-%attr(-,root,root) /usr/share/swat/help/samba.7.html
-%attr(-,root,root) /usr/share/swat/help/smb.conf.5.html
-%attr(-,root,root) /usr/share/swat/help/smbclient.1.html
-%attr(-,root,root) /usr/share/swat/help/smbd.8.html
-%attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
-%attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
-%attr(-,root,root) /usr/share/swat/help/smbrun.1.html
-# %attr(-,root,root) /usr/share/swat/help/smbsh.1.html
-%attr(-,root,root) /usr/share/swat/help/smbstatus.1.html
-%attr(-,root,root) /usr/share/swat/help/smbtar.1.html
-%attr(-,root,root) /usr/share/swat/help/swat.8.html
-%attr(-,root,root) /usr/share/swat/help/testparm.1.html
-%attr(-,root,root) /usr/share/swat/help/testprns.1.html
-%attr(-,root,root) /usr/share/swat/images/globals.gif
-%attr(-,root,root) /usr/share/swat/images/home.gif
-%attr(-,root,root) /usr/share/swat/images/passwd.gif
-%attr(-,root,root) /usr/share/swat/images/printers.gif
-%attr(-,root,root) /usr/share/swat/images/shares.gif
-%attr(-,root,root) /usr/share/swat/images/samba.gif
-%attr(-,root,root) /usr/share/swat/images/status.gif
-%attr(-,root,root) /usr/share/swat/images/viewconfig.gif
+%attr(-,root,root) /usr/share/swat/help/*
+%attr(-,root,root) /usr/share/swat/images/*
 %attr(-,root,root) /usr/share/swat/include/header.html
 %attr(-,root,root) /usr/share/swat/include/footer.html
 %attr(-,root,root) /usr/share/swat/using_samba/*
