@@ -2046,6 +2046,152 @@ static void run_oplock2(int dummy)
 }
 
 /*
+  Test delete on close semantics.
+ */
+static void run_deletetest(int dummy)
+{
+    static struct cli_state cli1;
+    char *fname = "\\delete.file";
+    int fnum1, fnum2;
+
+    printf("starting delete test\n");
+
+    if (!open_connection(&cli1)) {
+        return;
+    }
+
+	cli_sockopt(&cli1, sockops);
+
+	/* Test 1 - this should *NOT* delete the file on close. */
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_DELETE, FILE_OVERWRITE_IF, DELETE_ON_CLOSE_FLAG);
+								
+	if (fnum1 == -1) {
+		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[1] close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+    if (fnum1 == -1) {
+        printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[1] close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	printf("first delete on close test succeeded.\n");
+
+	/* Test 2 - this should delete the file on close. */
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+								
+	if (fnum1 == -1) {
+		printf("[2] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[2] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[2] close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
+    if (fnum1 != -1) {
+		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
+		if (!cli_close(&cli1, fnum1)) {
+			printf("[2] close failed (%s)\n", cli_errstr(&cli1));
+		}
+		cli_unlink(&cli1, fname);
+    } else
+		printf("second delete on close test succeeded.\n");
+
+
+	/* Test 3 - ... */
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("[3] open - 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	/* This should fail with a sharing violation. */
+
+	fnum2 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0);
+
+	if (fnum2 != -1) {
+		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
+		return;
+	}
+
+	/* This should succeed. */
+
+	fnum2 = cli_nt_create_full(&cli1, fname, 0x30196, FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OPEN, 0);
+
+	if (fnum2 == -1) {
+		printf("[3] open  - 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[3] setting delete_on_close failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[3] close 1 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum2)) {
+        printf("[3] close 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+    fnum1 = cli_open(&cli1, fname, O_RDONLY, DENY_NONE);
+    if (fnum1 != -1) {
+		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
+		if (!cli_close(&cli1, fnum1)) {
+			printf("[3] close failed (%s)\n", cli_errstr(&cli1));
+		}
+		cli_unlink(&cli1, fname);
+    } else
+		printf("third delete on close test succeeded.\n");
+
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+    close_connection(&cli1);
+
+    printf("finished delete test 1\n");
+}
+
+/*
   Test open mode returns on read-only files.
  */
 static void run_opentest(int dummy)
@@ -2279,6 +2425,7 @@ static struct {
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"OPEN", run_opentest, 0},
+	{"DELETE", run_deletetest, 0},
 	{NULL, NULL, 0}};
 
 
