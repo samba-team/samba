@@ -787,7 +787,7 @@ static void parse_mount_smb(int argc, char **argv)
 			} else if(!strcmp(opts, "debug")) {
 				DEBUGLEVEL = val;
 			} else if(!strcmp(opts, "ip")) {
-				dest_ip = *interpret_addr2(opteq+1);
+				dest_ip = interpret_addr2(opteq+1);
 				if (is_zero_ip(dest_ip)) {
 					fprintf(stderr,"Can't resolve address %s\n", opteq+1);
 					exit(1);

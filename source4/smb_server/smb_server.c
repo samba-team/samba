@@ -725,18 +725,10 @@ static void smbsrv_init(struct server_service *service, const struct model_ops *
 			add_socket(service, model_ops, NULL, ifip);
 		}
 	} else {
-		struct in_addr *ifip;
-		TALLOC_CTX *mem_ctx = talloc_init("open_sockets_smbd");
-
-		if (!mem_ctx) {
-			smb_panic("No memory");
-		}	
-
+		struct in_addr ifip;
 		/* Just bind to lp_socket_address() (usually 0.0.0.0) */
-		ifip = interpret_addr2(mem_ctx, lp_socket_address());
-		add_socket(service, model_ops, NULL, ifip);
-
-		talloc_free(mem_ctx);
+		ifip = interpret_addr2(lp_socket_address());
+		add_socket(service, model_ops, NULL, &ifip);
 	}
 }
 

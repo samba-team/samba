@@ -406,16 +406,18 @@ BOOL is_ipaddress(const char *str)
 /****************************************************************************
  Interpret an internet address or name into an IP address in 4 byte form.
 ****************************************************************************/
-
 uint32_t interpret_addr(const char *str)
 {
 	struct hostent *hp;
 	uint32_t res;
 
-	if (strcmp(str,"0.0.0.0") == 0)
-		return(0);
-	if (strcmp(str,"255.255.255.255") == 0)
-		return(0xFFFFFFFF);
+	if (str == NULL || 
+	    strcmp(str,"0.0.0.0") == 0) {
+		return 0;
+	}
+	if (strcmp(str,"255.255.255.255") == 0) {
+		return 0xFFFFFFFF;
+	}
 
 	/* if it's in the form of an IP address then get the lib to interpret it */
 	if (is_ipaddress(str)) {
@@ -444,16 +446,12 @@ uint32_t interpret_addr(const char *str)
 /*******************************************************************
  A convenient addition to interpret_addr().
 ******************************************************************/
-
-struct in_addr *interpret_addr2(TALLOC_CTX *mem_ctx, const char *str)
+struct in_addr interpret_addr2(const char *str)
 {
-	struct in_addr *ret;
+	struct in_addr ret;
 	uint32_t a = interpret_addr(str);
-	
-	ret = talloc(mem_ctx, sizeof(struct in_addr));
-	if (!ret) return NULL;
-	ret->s_addr = a;
-	return(ret);
+	ret.s_addr = a;
+	return ret;
 }
 
 /*******************************************************************

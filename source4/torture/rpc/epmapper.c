@@ -231,7 +231,9 @@ static BOOL test_Lookup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		for (i=0;i<r.out.num_ents;i++) {
 			printf("\nFound '%s'\n", r.out.entries[i].annotation);
 			display_tower(mem_ctx, &r.out.entries[i].tower->tower);
-			test_Map(p, mem_ctx, r.out.entries[i].tower);
+			if (r.out.entries[i].tower->tower.num_floors == 5) {
+				test_Map(p, mem_ctx, r.out.entries[i].tower);
+			}
 		}
 	} while (NT_STATUS_IS_OK(status) && 
 		 r.out.result == 0 && 

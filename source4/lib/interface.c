@@ -116,7 +116,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (!p) {
-		ip = *interpret_addr2(mem_ctx, token);
+		ip = interpret_addr2(token);
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr &&
 			    !ip_equal(allones_ip, probed_ifaces[i].netmask)) {
@@ -132,10 +132,10 @@ static void interpret_interface(TALLOC_CTX *mem_ctx, const char *token)
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip = *interpret_addr2(mem_ctx, token);
+	ip = interpret_addr2(token);
 
 	if (strlen(p) > 2) {
-		nmask = *interpret_addr2(mem_ctx, p);
+		nmask = interpret_addr2(p);
 	} else {
 		nmask.s_addr = htonl(((ALLONES >> atoi(p)) ^ ALLONES));
 	}
@@ -174,8 +174,8 @@ void load_interfaces(void)
 		return;
     }
 
-	allones_ip = *interpret_addr2(mem_ctx, "255.255.255.255");
-	loopback_ip = *interpret_addr2(mem_ctx, "127.0.0.1");
+	allones_ip = interpret_addr2("255.255.255.255");
+	loopback_ip = interpret_addr2("127.0.0.1");
 
 	SAFE_FREE(probed_ifaces);
 

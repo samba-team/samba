@@ -29,7 +29,7 @@ struct pvfs_wait {
 	void *private;
 	struct timed_event *te;
 	int msg_type;
-	void *msg_ctx;
+	struct messaging_context *msg_ctx;
 	struct event_context *ev;
 	struct smbsrv_request *req;
 	BOOL timed_out;
@@ -51,7 +51,7 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
 /*
   receive a completion message for a wait
 */
-static void pvfs_wait_dispatch(void *msg_ctx, void *private, uint32_t msg_type, 
+static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uint32_t msg_type, 
 			       servid_t src, DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = private;
