@@ -159,7 +159,7 @@ plain_authenticate (POP *p, struct sockaddr_in *addr)
 static int kerberos_flag;
 static char *auth_str;
 static int debug_flag;
-static interactive_flag;
+static int interactive_flag;
 static char *port_str;
 static char *trace_file;
 static int timeout;
