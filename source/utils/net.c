@@ -305,6 +305,14 @@ static int net_join(int argc, const char **argv)
 	return net_rpc_join(argc, argv);
 }
 
+static int net_changetrustpw(int argc, const char **argv)
+{
+	if (net_ads_check() == 0)
+		return net_ads_changetrustpw(argc, argv);
+
+	return net_rpc_changetrustpw(argc, argv);
+}
+
 static int net_share(int argc, const char **argv)
 {
 	if (net_rpc_check(0))
@@ -485,6 +493,7 @@ static struct functable net_func[] = {
 	{"ADMIN", net_rap_admin},
 	{"SERVICE", net_rap_service},	
 	{"PASSWORD", net_rap_password},
+	{"CHANGETRUSTPW", net_changetrustpw},
 	{"TIME", net_time},
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
