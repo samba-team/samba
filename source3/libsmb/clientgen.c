@@ -427,6 +427,65 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	return (cli->rap_error == 0);
 }
 
+/****************************************************************************
+call a NetShareEnum - try and browse available connections on a host
+****************************************************************************/
+BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *))
+{
+  char *rparam = NULL;
+  char *rdata = NULL;
+  char *p;
+  int rdrcnt,rprcnt;
+  pstring param;
+  int count = -1;
+
+  /* now send a SMBtrans command with api RNetShareEnum */
+  p = param;
+  SSVAL(p,0,0); /* api number */
+  p += 2;
+  strcpy(p,"WrLeh");
+  p = skip_string(p,1);
+  strcpy(p,"B13BWz");
+  p = skip_string(p,1);
+  SSVAL(p,0,1);
+  SSVAL(p,2,BUFFER_SIZE);
+  p += 4;
+
+  if (cli_api(cli, 
+              PTR_DIFF(p,param),
+              0, /* data count */ 
+              1024, /* mprcount */
+              BUFFER_SIZE, /* mdrcount */
+              &rprcnt, &rdrcnt,
+	      param,NULL,
+              &rparam,&rdata))
+    {
+      int res = SVAL(rparam,0);
+      int converter=SVAL(rparam,2);
+      int i;
+      BOOL long_share_name=False;
+      
+      if (res == 0)
+	{
+	  count=SVAL(rparam,4);
+	  p = rdata;
+
+	  for (i=0;i<count;i++,p+=20)
+	    {
+	      char *sname = p;
+	      int type = SVAL(p,14);
+	      int comment_offset = IVAL(p,16) & 0xFFFF;
+	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+	      fn(sname, type, cmnt);
+	    }
+	}
+    }
+  
+  if (rparam) free(rparam);
+  if (rdata) free(rdata);
+
+  return(count>0);
+}
 
 /****************************************************************************
 call a NetServerEnum for the specified workgroup and servertype mask.
