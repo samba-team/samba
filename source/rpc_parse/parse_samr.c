@@ -5148,6 +5148,12 @@ static BOOL sam_io_logon_hrs(const char *desc, LOGON_HRS * hrs,
 	if(!prs_align(ps))
 		return False;
 
+	if(!prs_uint32("maxlen", ps, depth, &hrs->max_len))
+		return False;
+
+	if(!prs_uint32("offset", ps, depth, &hrs->offset))
+		return False;
+
 	if(!prs_uint32("len  ", ps, depth, &hrs->len))
 		return False;
 
@@ -5471,7 +5477,7 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			LOGON_HRS * hrs,
 			uint16 bad_password_count,
 			uint16 logon_count,
-			char newpass[516], uint32 unknown_6)
+			char newpass[516])
 {
 	usr->logon_time = *logon_time;	/* all zeros */
 	usr->logoff_time = *logoff_time;	/* all zeros */
@@ -5535,9 +5541,6 @@ void init_sam_user_info23W(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 
-	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
-	usr->padding4 = 0;
-
 	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
 }
 
@@ -5562,7 +5565,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   uint32 group_rid, uint32 acb_info,
 			   uint32 fields_present, uint16 logon_divs,
 			   LOGON_HRS * hrs, uint16 bad_password_count, uint16 logon_count,
-			   char newpass[516], uint32 unknown_6)
+			   char newpass[516])
 {
 	DATA_BLOB blob = base64_decode_data_blob(mung_dial);
 	
@@ -5630,9 +5633,6 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 
 	data_blob_free(&blob);
 	
-	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
-	usr->padding4 = 0;
-
 	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
 }
 
@@ -5757,16 +5757,9 @@ static BOOL sam_io_user_info23(const char *desc, SAM_USER_INFO_23 * usr,
 
 	/* ok, this is only guess-work (as usual) */
 	if (usr->ptr_logon_hrs) {
-		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
-			return False;
-		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
-			return False;
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
-	} else if (UNMARSHALLING(ps)) {
-		usr->unknown_6 = 0;
-		usr->padding4 = 0;
-	}
+	} 
 
 	return True;
 }
@@ -5876,16 +5869,9 @@ static BOOL sam_io_user_info25(const char *desc, SAM_USER_INFO_25 * usr, prs_str
 #if 0 /* JRA - unknown... */
 	/* ok, this is only guess-work (as usual) */
 	if (usr->ptr_logon_hrs) {
-		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
-			return False;
-		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
-			return False;
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
-	} else if (UNMARSHALLING(ps)) {
-		usr->unknown_6 = 0;
-		usr->padding4 = 0;
-	}
+	} 
 #endif
 
 	return True;
@@ -5925,8 +5911,7 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 			   uint16 logon_divs,
 			   LOGON_HRS * hrs,
 			   uint16 bad_password_count,
-			   uint16 logon_count,
-			   uint32 unknown_6)
+			   uint16 logon_count)
 {
 	usr->logon_time = *logon_time;
 	usr->logoff_time = *logoff_time;
@@ -5986,9 +5971,6 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
 	copy_unistr2(&usr->uni_munged_dial, mung_dial);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
-
-	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
-	usr->padding4 = 0;
 
 	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
 }
@@ -6136,14 +6118,17 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 	data_blob_free(&munged_dial_blob);
 
-	usr->unknown_6 = pdb_get_unknown_6(pw);
-	usr->padding4 = 0;
-
 	if (pdb_get_hours(pw)) {
+		usr->logon_hrs.max_len = 1260;
+		usr->logon_hrs.offset = 0;
 		usr->logon_hrs.len = pdb_get_hours_len(pw);
 		memcpy(&usr->logon_hrs.hours, pdb_get_hours(pw), MAX_HOURS_LEN);
-	} else
+	} else {
+		usr->logon_hrs.max_len = 1260;
+		usr->logon_hrs.offset = 0;
+		usr->logon_hrs.len = 0;
 		memset(&usr->logon_hrs, 0xff, sizeof(usr->logon_hrs));
+	}
 
 	return NT_STATUS_OK;
 }
@@ -6256,17 +6241,8 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 
 	/* ok, this is only guess-work (as usual) */
 	if (usr->ptr_logon_hrs) {
-		if(!prs_align(ps))
-			return False;
-		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
-			return False;
-		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
-			return False;
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
-	} else if (UNMARSHALLING(ps)) {
-		usr->unknown_6 = 0;
-		usr->padding4 = 0;
 	}
 
 	return True;
