@@ -1,3 +1,7 @@
+2002-05-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: version number
+
 2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* common.c (find_cells): make file parameter const
