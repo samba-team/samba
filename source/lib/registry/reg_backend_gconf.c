@@ -150,7 +150,7 @@ static WERROR gconf_get_subkey_by_id(TALLOC_CTX *mem_ctx, struct registry_key *p
 	return WERR_OK;
 }
 
-static WERROR gconf_set_value(struct registry_key *key, const char *valname, uint32 type, void *data, int len)
+static WERROR gconf_set_value(struct registry_key *key, const char *valname, uint32_t type, void *data, int len)
 {
 	GError *error = NULL;
 	char *valpath;
