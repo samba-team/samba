@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -297,6 +297,10 @@ extern gss_OID GSS_KRB5_NT_MACHINE_UID_NAME;
 extern gss_OID GSS_KRB5_NT_STRING_UID_NAME;
 
 extern gss_OID GSS_KRB5_MECHANISM;
+
+/* for compatibility with MIT api 8/
+
+#define gss_mech_krb5 GSS_KRB5_MECHANISM
 
 /* Major status codes */
 
