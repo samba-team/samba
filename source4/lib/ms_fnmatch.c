@@ -173,6 +173,9 @@ static int ms_fnmatch_w(const smb_ucs2_t *pattern, const smb_ucs2_t *string,
 			break;
 
 		case UCS2_CHAR('*'):
+			while (*p == UCS2_CHAR('*')) {
+				p++;
+			}
 			for (; *n; n++) {
 				if (ms_fnmatch_w(p, n, protocol) == 0) return 0;
 			}
