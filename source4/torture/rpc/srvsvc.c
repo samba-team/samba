@@ -118,7 +118,7 @@ static BOOL test_NetSessEnum(struct dcerpc_pipe *p,
 }
 
 static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p, 
-			   TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	struct srvsvc_NetShareEnumAll r;
@@ -126,15 +126,18 @@ static BOOL test_NetShareEnumAll(struct dcerpc_pipe *p,
 	uint32 levels[] = {0, 1, 2, 501, 502, 1004};
 	int i;
 	BOOL ret = True;
+	uint32 resume_handle;
+
+	ZERO_STRUCT(c0);
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.ctr.ctr0 = &c0;
-	r.in.ctr.ctr0->count = 0;
-	r.in.ctr.ctr0->array = NULL;
-	r.in.preferred_len = (uint32)-1;
-	r.in.resume_handle = NULL;
+	r.in.max_buffer = (uint32)-1;
+	r.in.resume_handle = &resume_handle;
+	r.out.resume_handle = &resume_handle;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		resume_handle = 0;
 		r.in.level = levels[i];
 		printf("testing NetShareEnumAll level %u\n", r.in.level);
 		status = dcerpc_srvsvc_NetShareEnumAll(p, mem_ctx, &r);

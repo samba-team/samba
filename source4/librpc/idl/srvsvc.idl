@@ -314,28 +314,22 @@
 		unistr *comment;
 	} srvsvc_NetShare1004;
 
-	typedef struct {
-		uint32 count;
-		[size_is(count)] srvsvc_NetShare1004 *array;
-	} srvsvc_NetShareCtr1004;
-
 	typedef union {
 		[case(0)] srvsvc_NetShareCtr0 *ctr0;
 		[case(1)] srvsvc_NetShareCtr1 *ctr1;
 		[case(2)] srvsvc_NetShareCtr2 *ctr2;
 		[case(501)] srvsvc_NetShareCtr501 *ctr501;
 		[case(502)] srvsvc_NetShareCtr502 *ctr502;
-		[case(1004)] srvsvc_NetShareCtr1004 *ctr1004;
 		[default] ;
-	} srvsvc_NetShareCtr;
+	} srvsvc_NetShareUnion;
 
-	WERROR srvsvc_NetShareEnumAll(
-		[in]       unistr *server_unc,
-		[in,out]   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
-		[in]       uint32 preferred_len,
-		[out]      uint32 totalentries,
-		[in,out]   uint32 *resume_handle
+	WERROR srvsvc_NetShareEnumAll (
+		[in]         unistr *server_unc,
+		[in,out]     uint32 level,
+		[in,out,switch_is(level)] srvsvc_NetShareUnion ctr,
+		[in]         uint32 max_buffer,
+		[out]        uint32 totalentries,
+		[in,out]     uint32 *resume_handle
 		);
 
 	/******************/
@@ -561,7 +555,7 @@
 	WERROR srvsvc_NetShareEnum(
 		[in]       unistr *server_unc,
 	 	[in,out]	   uint32 level,
-		[in,out,switch_is(level)]   srvsvc_NetShareCtr ctr,
+		[in,out,switch_is(level)]   srvsvc_NetShareUnion ctr,
 		[in]       uint32 preferred_len,
 		[out]      uint32 totalentries,
 		[in,out]   uint32 *resume_handle
