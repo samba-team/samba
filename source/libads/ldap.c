@@ -84,6 +84,10 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 			       bind_path, scope,
 			       exp, (char **) attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
+	if (rc == LDAP_SIZELIMIT_EXCEEDED) {
+		DEBUG(3,("Warning! sizelimit exceeded in ldap. Truncating.\n"));
+		rc = 0;
+	}
 	return ADS_ERROR(rc);
 }
 /*
