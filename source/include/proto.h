@@ -336,6 +336,10 @@ BOOL become_uid(uid_t uid);
 BOOL become_gid(gid_t gid);
 BOOL unbecome_to_initial_uid(void);
 BOOL become_id(uid_t uid,gid_t gid);
+BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
+				uid_t new_uid, gid_t new_gid,
+				int n_groups, gid_t* groups);
+BOOL become_guest(void);
 void become_root(BOOL save_dir) ;
 void unbecome_root(BOOL restore_dir);
 
@@ -4507,7 +4511,6 @@ int reply_trans2(connection_struct *conn,
 
 /*The following definitions come from  smbd/uid.c  */
 
-BOOL become_guest(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void );
 

@@ -23,8 +23,8 @@
 
 extern int DEBUGLEVEL;
 
-uid_t initial_uid;
-gid_t initial_gid;
+static uid_t initial_uid;
+static gid_t initial_gid;
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -189,7 +189,7 @@ BOOL unbecome_to_initial_uid(void)
   if (dos_ChDir(OriginalDir) != 0)
     DEBUG( 0, ( "chdir(%s) failed in unbecome_to_initial_uid\n", OriginalDir) );
 
-  DEBUG(5,("unbecome_vuser now uid=(%d,%d) gid=(%d,%d)\n",
+  DEBUG(5,("unbecome_to_initial_uid now uid=(%d,%d) gid=(%d,%d)\n",
 	(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
 
   current_user.conn = NULL;
@@ -197,7 +197,6 @@ BOOL unbecome_to_initial_uid(void)
 
   return(True);
 }
-
 
 /****************************************************************************
   become the specified uid and gid
@@ -207,8 +206,100 @@ BOOL become_id(uid_t uid,gid_t gid)
 	return(become_gid(gid) && become_uid(uid));
 }
 
+/****************************************************************************
+  become the user of a connection number
+****************************************************************************/
+BOOL become_unix_sec_ctx(uint16 vuid, connection_struct *conn,
+				uid_t new_uid, gid_t new_gid,
+				int n_groups, gid_t* groups)
+{
+	gid_t gid;
+	uid_t uid;
+
+	unbecome_to_initial_uid();
+
+	if (current_user.uid == new_uid)
+	{
+		DEBUG(4,("Skipping become_vuser - already user\n"));
+		return(True);
+	}
+
+	uid = new_uid;
+	gid = new_gid;
+	current_user.ngroups = n_groups;
+	current_user.groups  = groups;
+	
+	if (initial_uid == 0)
+	{
+		if (!become_gid(gid)) return(False);
+
+#ifdef HAVE_SETGROUPS      
+		if (!(conn != NULL && conn->ipc))
+		{
+			/* groups stuff added by ih/wreu */
+			if (current_user.ngroups > 0)
+			{
+				if (setgroups(current_user.ngroups,
+					      current_user.groups)<0) {
+					DEBUG(0,("setgroups call failed!\n"));
+				}
+			}
+		}
+#endif
+
+		if (conn == NULL)
+		{
+			if (!become_uid(uid)) return False;
+		}
+		else
+		{
+			if (!conn->admin_user && !become_uid(uid)) return False;
+		}
+	}
+	
+	current_user.conn = conn;
+	current_user.vuid = vuid;
+
+	DEBUG(5,("become_unix_sec_ctx uid=(%d,%d) gid=(%d,%d)\n",
+		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+  
+	return(True);
+}
+
+/****************************************************************************
+become the guest user
+****************************************************************************/
+BOOL become_guest(void)
+{
+  BOOL ret;
+  static const struct passwd *pass=NULL;
+
+  if (initial_uid != 0) 
+    return(True);
+
+  if (!pass)
+    pass = Get_Pwnam(lp_guestaccount(-1),True);
+  if (!pass) return(False);
+
+#ifdef AIX
+  /* MWW: From AIX FAQ patch to WU-ftpd: call initgroups before setting IDs */
+  initgroups(pass->pw_name, (gid_t)pass->pw_gid);
+#endif
+
+  ret = become_id(pass->pw_uid,pass->pw_gid);
+
+  if (!ret) {
+    DEBUG(1,("Failed to become guest. Invalid guest account?\n"));
+  }
+
+  current_user.conn = NULL;
+  current_user.vuid = UID_FIELD_INVALID;
+
+  return(ret);
+}
+
 static struct current_user current_user_saved;
-static int become_root_depth;
+static int become_root_depth = 0;
 static pstring become_root_dir;
 
 /****************************************************************************
