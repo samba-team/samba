@@ -52,7 +52,7 @@ char *smb_readline(char *prompt, void (*callback)(void),
 		rl_attempted_completion_function = completion_fn;
 	}
 
-	rl_event_hook = (Function *)callback;
+	if (callback) rl_event_hook = (Function *)callback;
 	ret = readline(prompt);
 	if (ret && *ret) add_history(ret);
 	return ret;

@@ -455,11 +455,6 @@ static void usage(char *pname)
 	charset_initialise();
 	setlinebuf(stdout);
 
-#ifdef HAVE_LIBREADLINE
-	/* Allow conditional parsing of the ~/.inputrc file. */
-	rl_readline_name = "rpcclient";
-#endif    
-	
 	DEBUGLEVEL = 1;
 
 	/* Parse options */
@@ -610,24 +605,16 @@ static void usage(char *pname)
 	/* Loop around accepting commands */
 	while(1) {
 		pstring prompt, cmd;
+		char *line;
 		uint32 result;
 
 		ZERO_STRUCT(cmd);
 		
 		slprintf(prompt, sizeof(prompt) - 1, "rpcclient $> ");
 
-#if HAVE_READLINE
-		cmd = readline(prompt);
-#else
-		printf("%s", prompt);
+		line = smb_readline(prompt, NULL, NULL);
 
-		if (!fgets(cmd, sizeof(cmd) - 1, stdin)) {
-			break;
-		}
-
-		cmd[strlen(cmd) - 1] = '\0';
-#endif
-		result = process_cmd(&cli, cmd);
+		result = process_cmd(&cli, line);
 	}
 	
 	return 0;
