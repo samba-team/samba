@@ -728,7 +728,17 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	for (i = 0; i < num_entries; i++) {
 		pwd = &disp_user_info[i+start_idx];
 		temp_name = pdb_get_username(pwd);
-		init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
+
+		/*
+		 * usrmgr expects a non-NULL terminated string with
+		 * trust relationships
+		 */
+		if (pdb_get_acct_ctrl(pwd) & ACB_DOMTRUST) {
+			init_unistr2(&uni_temp_name, temp_name, UNI_FLAGS_NONE);
+		} else {
+			init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
+		}
+
 		user_sid = pdb_get_user_sid(pwd);
 
 		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
