@@ -451,7 +451,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 		uint32 flags = 0x000003e8; /* Unknown */
 
 		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-					       flags, 1, (char **) &argv[0],
+					       flags, 1, &argv[0],
 					       &num_rids, &user_rids,
 					       &name_types);
 
@@ -548,7 +548,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	/* Get handle on user */
 
 	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-				       flags, 1, (char **) &argv[0],
+				       flags, 1, &argv[0],
 				       &num_rids, &rids, &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
@@ -874,7 +874,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 
 	if (argc != 1) {
 		d_printf("Usage: net rpc trustdom add <domain_name>\n");
-		return NT_STATUS_OK;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* 
@@ -985,6 +985,12 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 	 * Connect to \\server\ipc$ as 'our domain' account with password
 	 */
 
+	if (argc != 1) {
+		d_printf("Usage: net rpc trustdom add <domain_name>\n");
+		return -1;
+	}
+
+
 	domain_name = smb_xstrdup(argv[0]);
 	strupper(domain_name);
 	
@@ -1061,10 +1067,8 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 		return -1;
 	}
 
-	if (cli->nt_pipe_fnum) {
+	if (cli->nt_pipe_fnum)
 		cli_nt_session_close(cli);
-		talloc_destroy(mem_ctx);
-	}
 
 
 	/*
@@ -1104,6 +1108,17 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 	   but I still don't know if it's _really_ necessary */
 			
 	/*
+	 * Store the password in secrets db
+	 */
+
+	if (!secrets_store_trusted_domain_password(domain_name, wks_info.uni_lan_grp.buffer,
+						   wks_info.uni_lan_grp.uni_str_len, opt_password,
+						   domain_sid)) {
+		DEBUG(0, ("Storing password for trusted domain failed.\n"));
+		return -1;
+	}
+	
+	/*
 	 * Close the pipes and clean up
 	 */
 	 
@@ -1116,20 +1131,9 @@ static int rpc_trustdom_establish(int argc, const char **argv) {
 
 	if (cli->nt_pipe_fnum)
 		cli_nt_session_close(cli);
-
+	 
 	talloc_destroy(mem_ctx);
 	 
-	 
-	/*
-	 * Store the password in secrets db
-	 */
-
-	if (!secrets_store_trusted_domain_password(domain_name, opt_password,
-						   domain_sid)) {
-		DEBUG(0, ("Storing password for trusted domain failed.\n"));
-		return -1;
-	}
-	
 	DEBUG(0, ("Success!\n"));
 	return 0;
 }

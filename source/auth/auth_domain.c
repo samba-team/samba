@@ -527,7 +527,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	}
 
 	/*
-	 * Get the machine account password for the trusted domain
+	 * Get the trusted account password for the trusted domain
 	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 

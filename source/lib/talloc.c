@@ -287,6 +287,15 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 		return NULL;
 }
 
+/** strdup_w with a talloc */
+smb_ucs2_t *talloc_strdup_w(TALLOC_CTX *t, const smb_ucs2_t *p)
+{
+	if (p)
+		return talloc_memdup(t, p, (strlen_w(p) + 1) * sizeof(smb_ucs2_t));
+	else
+		return NULL;
+}
+
 /**
  * Perform string formatting, and return a pointer to newly allocated
  * memory holding the result, inside a memory pool.

@@ -416,14 +416,18 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 
 /***************************************************************************
  _lsa_enum_trust_dom - this needs fixing to do more than return NULL ! JRA.
+ ufff, done :)  mimir
  ***************************************************************************/
 
 NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
 {
 	struct lsa_info *info;
-	uint32 enum_context = 0;
-	char *dom_name = NULL;
-	DOM_SID *dom_sid = NULL;
+	uint32 enum_context = q_u->enum_context;
+	/* it's set to 10 as a "our" preferred length */
+	uint32 max_num_domains = q_u->preferred_len < 10 ? q_u->preferred_len : 10;
+	TRUSTDOM **trust_doms;
+	uint32 num_domains;
+	NTSTATUS nt_status;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
@@ -432,9 +436,13 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_E
 	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* set up the LSA QUERY INFO response */
-	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? NT_STATUS_OK : NT_STATUS_NO_MORE_ENTRIES);
+	nt_status = secrets_get_trusted_domains(p->mem_ctx, enum_context, max_num_domains, &num_domains, &trust_doms);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	/* set up the lsa_enum_trust_dom response */
+	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, max_num_domains, num_domains, trust_doms);
 
 	return r_u->status;
 }

@@ -4535,7 +4535,7 @@ inits a SAMR_Q_LOOKUP_NAMES structure.
 
 NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
-			      uint32 num_names, char **name)
+			      uint32 num_names, const char **name)
 {
 	uint32 i;
 
