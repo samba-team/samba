@@ -769,6 +769,7 @@ BOOL check_oem_password(char *user,
 	
 	if (acct_ctrl & ACB_DISABLED) {
 		DEBUG(0,("check_lanman_password: account %s disabled.\n", user));
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -785,13 +786,17 @@ BOOL check_oem_password(char *user,
 	if (lanman_pw == NULL) {
 		if (acct_ctrl & ACB_PWNOTREQ) {
 			if (!pdb_set_lanman_passwd(sampass, null_pw)) {
+				pdb_free_sam(sampass);
 				return False;
 			}
 			lanman_pw = pdb_get_lanman_passwd(sampass);
-			if (!lanman_pw)
+			if (!lanman_pw) {
+				pdb_free_sam(sampass);
 				return False;
+			}
 		} else {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
+			pdb_free_sam(sampass);
 			return False;
 		}
 	}
@@ -800,10 +805,13 @@ BOOL check_oem_password(char *user,
 		if (acct_ctrl & ACB_PWNOTREQ) {
 			pdb_set_nt_passwd(sampass, null_ntpw);
 			nt_pw = pdb_get_nt_passwd(sampass);
-			if (!nt_pw)
+			if (!nt_pw) {
+				pdb_free_sam(sampass);
 				return False;
+			}
 		} else {
 			DEBUG(0,("check_oem_password: no ntlm password !\n"));
+			pdb_free_sam(sampass);
 			return False;
 		}
 	}
@@ -821,6 +829,7 @@ BOOL check_oem_password(char *user,
 	new_pw_len = IVAL(lmdata, 512);
 	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1) {
 		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
+		pdb_free_sam(sampass);
 		return False;
 	}
 
@@ -856,6 +865,7 @@ BOOL check_oem_password(char *user,
 		if (memcmp(lanman_pw, unenc_old_pw, 16))
 		{
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
+			pdb_free_sam(sampass);
 			return False;
 		}
 
@@ -863,6 +873,7 @@ BOOL check_oem_password(char *user,
 		DEBUG(100,
 		      ("check_oem_password: password %s ok\n", new_passwd));
 #endif
+		pdb_free_sam(sampass);
 		return True;
 	}
 
@@ -876,17 +887,20 @@ BOOL check_oem_password(char *user,
 	if (memcmp(lanman_pw, unenc_old_pw, 16))
 	{
 		DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
+		pdb_free_sam(sampass);
 		return False;
 	}
 
 	if (memcmp(nt_pw, unenc_old_ntpw, 16))
 	{
 		DEBUG(0,("check_oem_password: old nt password doesn't match.\n"));
+		pdb_free_sam(sampass);
 		return False;
 	}
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("check_oem_password: password %s ok\n", new_passwd));
 #endif
+	pdb_free_sam(sampass);
 	return True;
 }
 
@@ -943,12 +957,14 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 	if (ret == False)
 	{
 		DEBUG(0,("check_plaintext_password: getsmbpwnam returned NULL\n"));
+		pdb_free_sam(sampass);
 		return False;
 	}
 
 	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED)
 	{
 		DEBUG(0,("check_plaintext_password: account %s disabled.\n", user));
+		pdb_free_sam(sampass);
 		return (False);
 	}
 
@@ -966,8 +982,11 @@ BOOL check_plaintext_password(char *user, char *old_passwd,
 #endif
 
 	if (memcmp(pdb_get_nt_passwd(sampass), old_ntpw, 16)
-	    && memcmp(pdb_get_lanman_passwd(sampass), old_pw, 16))
+	    && memcmp(pdb_get_lanman_passwd(sampass), old_pw, 16)) {
+		pdb_free_sam(sampass);
 		return (False);
-	else
+	} else {
+		pdb_free_sam(sampass);
 		return (True);
+	}
 }
