@@ -148,6 +148,10 @@ static int ltdb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 	
 	ret = ltdb_store(ldb, msg, TDB_INSERT);
 
+	if (strcmp(msg->dn, "@INDEXLIST") == 0) {
+		ltdb_reindex(ldb);
+	}
+
 	ltdb_unlock(ldb);
 
 	return ret;
@@ -205,6 +209,10 @@ static int ltdb_delete(struct ldb_context *ldb, const char *dn)
 	ret = ltdb_index_del(ldb, &msg);
 
 	ltdb_search_dn1_free(ldb, &msg);
+
+	if (strcmp(dn, "@INDEXLIST") == 0) {
+		ltdb_reindex(ldb);
+	}
 
 	ltdb_unlock(ldb);
 	return ret;
@@ -429,6 +437,10 @@ static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 
 	/* we've made all the mods - save the modified record back into the database */
 	ret = ltdb_store(ldb, &msg2, TDB_MODIFY);
+
+	if (strcmp(msg2.dn, "@INDEXLIST") == 0) {
+		ltdb_reindex(ldb);
+	}
 
 	free(tdb_key.dptr);
 	free(tdb_data.dptr);
