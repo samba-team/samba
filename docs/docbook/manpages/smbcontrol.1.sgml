@@ -121,7 +121,7 @@
 
 		<para>The <constant>printnotify</constant> message-type sends a 
 		message to smbd which in turn sends a printer notify message to 
-		any Windows NT clients connected to  a printer. This message-type
+		any Windows NT clients connected to a printer. This message-type
 		takes the following arguments:
 
 		<variablelist>

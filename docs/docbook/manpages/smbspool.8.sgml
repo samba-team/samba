@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbspool</refname>
-	<refpurpose>send print file to an SMB printer</refpurpose>
+	<refpurpose>send a print file to an SMB printer</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -79,11 +79,11 @@
 
 		<listitem><para>The copies argument (argv[4]) contains 
 		the number of copies to be printed of the named file. If 
-		no filename is provided than this argument is not used by 
+		no filename is provided then this argument is not used by 
 		smbspool.</para></listitem>
 
 		<listitem><para>The options argument (argv[5]) contains 
-		the print options in a single string and is presently 
+		the print options in a single string and is currently 
 		not used by smbspool.</para></listitem>
 
 		<listitem><para>The filename argument (argv[6]) contains the 

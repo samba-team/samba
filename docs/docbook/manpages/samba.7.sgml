@@ -22,8 +22,10 @@
 	<para>The Samba software suite is a collection of programs 
 	that implements the Server Message Block (commonly abbreviated 
 	as SMB) protocol for UNIX systems. This protocol is sometimes 
-	also referred to as the Common Internet File System (CIFS), 
-	LanManager or NetBIOS protocol.</para>
+	also referred to as the Common Internet File System (CIFS). For a
+	more thorough description, see <ulink url="http://www.ubiqx.org/cifs/">
+	http://www.ubiqx.org/cifs/</ulink>. Samba also implements the NetBIOS
+	protocol in nmbd.</para>
 	
 	<variablelist>
 		<varlistentry>
@@ -39,7 +41,7 @@
 		<varlistentry>
 		<term><command>nmbd</command></term>
 		<listitem><para>The <command>nmbd</command>
-		daemon provides NetBIOS nameserving and browsing
+		daemon provides NetBIOS nameservice and browsing
 		support. The configuration file for this daemon 
 		is described in <filename>smb.conf</filename></para>
 		</listitem>
@@ -68,7 +70,7 @@
 		<term><command>testprns</command></term>
 		<listitem><para>The <command>testprns</command>
 		utility supports testing printer names defined 
-		in your <filename>printcap></filename> file used 
+		in your <filename>printcap</filename> file used 
 		by Samba.</para>
 		</listitem>
 		</varlistentry>
@@ -115,12 +117,14 @@
 	component is described in a separate manual page. It is strongly 
 	recommended that you read the documentation that comes with Samba 
 	and the manual pages of those components that you use. If the 
-	manual pages aren't clear enough then please send a patch or 
-	bug report to <ulink url="mailto:samba@samba.org">
-	samba@samba.org</ulink></para>
-	
-	
+	manual pages and documents aren't clear enough then please visit
+	<ulink url="http://devel.samba.org/">http://devel.samba.org</ulink>
+	for information on how to file a bug report or submit a patch.</para>
 
+	<para>If you require help, visit the Samba webpage at
+	<ulink url="http://samba.org/">http://www.samba.org/</ulink> and
+	explore the many option available to you.
+	
 </refsect1>
 
 <refsect1>
@@ -164,11 +168,10 @@
 	<ulink url="http://lists.samba.org/">http://lists.samba.org</ulink>.
 	</para>
 
-	<para>If you have patches to submit or bugs to report 
-	then you may mail them directly to samba-patches@samba.org.
-	Note, however, that due to the enormous popularity of this 
-	package the Samba Team may take some time to respond to mail. We 
-	prefer patches in <command>diff -u</command> format.</para>
+	<para>If you have patches to submit, visit
+	<ulink url="http://devel.samba.org/">http://devel.samba.org/</ulink>
+	for information on how to do it properly. We prefer patches in
+	<command>diff -u</command> format.</para>
 </refsect1>
 
 <refsect1>

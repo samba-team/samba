@@ -19,7 +19,7 @@
 	<cmdsynopsis>
 		<command>smbroupedit</command>
 		<arg choice="opt">-v [l|s]</arg>
-		<arg choice="opt">-a UNIX-groupname [-d NT-groupname|-p prividge|</arg>
+		<arg choice="opt">-a UNIX-groupname [-d NT-groupname|-p privilege|]</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -73,10 +73,10 @@ etc.
 <para>For examples,</para>
 <para><programlisting>
 Users
-    SID : S-1-5-32-545
+    SID       : S-1-5-32-545
     Unix group: -1
     Group type: Local group
-    Comment :
+    Comment   :
     Privilege : No privilege
 </programlisting></para>
 
@@ -195,7 +195,7 @@ Domain Admins (S-1-5-21-1108995562-3116817432-1375597819-512) -> -1
 </orderedlist>
 
 <para>
-To verify that you mapping has taken effect:
+To verify that your mapping has taken effect:
 </para>
 
 <para><programlisting>
