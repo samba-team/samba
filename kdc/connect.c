@@ -203,7 +203,7 @@ struct descr {
     time_t timeout;
     struct sockaddr_storage __ss;
     struct sockaddr *sa;
-    int sock_len;
+    socklen_t sock_len;
     char addr_string[128];
 };
 

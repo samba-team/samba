@@ -250,7 +250,7 @@ main(int argc, char **argv)
     else {
 	struct sockaddr_storage ss;
 	struct sockaddr *sa = (struct sockaddr *)&ss;
-	int sin_len = sizeof(ss);
+	socklen_t sin_len = sizeof(ss);
 	char addr_name[256];
 	krb5_ticket *ticket;
 	char *server;
