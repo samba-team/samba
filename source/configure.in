@@ -480,7 +480,7 @@ case "$host_os" in
 	*irix*)
 		AC_DEFINE(SYSV, 1, [Whether to enable System V compatibility])
 		;;
-	*freebsd*)
+	*freebsd*|*DragonFly*)
 		AC_DEFINE(FREEBSD, 1, [Whether the host os is FreeBSD])
 		;;
 #
@@ -1163,7 +1163,8 @@ if test "$enable_shared" = "yes"; then
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
-		*netbsd* | *freebsd*)  BLDSHARED="true"
+		*netbsd* | *freebsd* | *DragonFly* )  
+			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,--export-dynamic"
 			SONAMEFLAG="-Wl,-soname,"
@@ -4006,7 +4007,7 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 	fi
 
 	;;
-	*freebsd*)
+	*freebsd* | *DragonFly* )
 		AC_CACHE_CHECK([for freebsd sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/types.h>
