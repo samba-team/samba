@@ -1,8 +1,9 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
+   Version 3.0.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Tim Potter      2000-2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1110,6 +1111,107 @@ int open_pipe_sock(char *path)
 	}
 
 	return sock;
+}
+
+/*******************************************************************
+ Create protected unix domain socket.
+
+ some unixen cannot set permissions on a ux-dom-sock, so we
+ have to make sure that the directory contains the protection
+ permissions, instead.
+ ******************************************************************/
+int create_pipe_sock(const char *socket_dir,
+					const char *socket_name,
+					mode_t dir_perms)
+{
+        struct sockaddr_un sunaddr;
+        struct stat st;
+        int sock;
+        mode_t old_umask;
+        pstring path;
+        
+        /* Create the socket directory or reuse the existing one */
+        
+        if (lstat(socket_dir, &st) == -1) {
+                
+                if (errno == ENOENT) {
+                        
+                        /* Create directory */
+                        
+                        if (mkdir(socket_dir, dir_perms) == -1) {
+                                DEBUG(0, ("error creating socket directory "
+                                          "%s: %s\n", socket_dir, 
+                                          strerror(errno)));
+                                return -1;
+                        }
+                        
+                } else {
+                        
+                        DEBUG(0, ("lstat failed on socket directory %s: %s\n",
+                                  socket_dir, strerror(errno)));
+                        return -1;
+                }
+                
+        } else {
+                
+                /* Check ownership and permission on existing directory */
+                
+                if (!S_ISDIR(st.st_mode)) {
+                        DEBUG(0, ("socket directory %s isn't a directory\n",
+                                  socket_dir));
+                        return -1;
+                }
+                
+                if ((st.st_uid != sec_initial_uid()) || 
+                    ((st.st_mode & 0777) != dir_perms)) {
+                        DEBUG(0, ("invalid permissions on socket directory "
+                                  "%s\n", socket_dir));
+                        return -1;
+                }
+        }
+        
+        /* Create the socket file */
+        
+        old_umask = umask(0);
+        
+        sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        
+        if (sock == -1) {
+                perror("socket");
+		umask(old_umask);
+                return -1;
+        }
+        
+        snprintf(path, sizeof(path), "%s/%s", socket_dir, socket_name);
+        
+        unlink(path);
+        memset(&sunaddr, 0, sizeof(sunaddr));
+        sunaddr.sun_family = AF_UNIX;
+        safe_strcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path)-1);
+        
+        if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
+                DEBUG(0, ("bind failed on pipe socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+		umask(old_umask);
+                return -1;
+        }
+        
+        if (listen(sock, 5) == -1) {
+                DEBUG(0, ("listen failed on pipe socket %s: %s\n",
+                          path,
+                          strerror(errno)));
+                close(sock);
+		umask(old_umask);
+                return -1;
+        }
+        
+        umask(old_umask);
+        
+        /* Success! */
+        
+        return sock;
 }
 
 /*******************************************************************
