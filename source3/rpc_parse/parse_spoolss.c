@@ -952,7 +952,7 @@ BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_
 	if (!smb_io_pol_hnd("printer handle",&(r_u->handle),ps,depth))
 		return False;
 
-	if (!prs_werror("status code", ps, depth, &(r_u->status)))
+	if (!prs_werror("status", ps, depth, &(r_u->status)))
 		return False;
 
 	return True;
