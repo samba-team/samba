@@ -307,7 +307,7 @@ static xmlNodePtr parseSambaXMLFile(struct pdb_xml *data)
 	return cur;
 }
 
-static NTSTATUS xmlsam_setsampwent(struct pdb_methods *methods, BOOL update)
+static NTSTATUS xmlsam_setsampwent(struct pdb_methods *methods, BOOL update, uint16 acb_mask)
 {
 	pdb_xml *data;
 
