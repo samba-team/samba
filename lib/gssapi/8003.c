@@ -122,7 +122,7 @@ gssapi_krb5_create_8003_checksum (
     /* 
      * see rfc1964 (section 1.1.1 (Initial Token), and the checksum value 
      * field's format) */
-    result->cksumtype = 0x8003;
+    result->cksumtype = CKSUMTYPE_GSSAPI;
     if (fwd_data->length > 0 && (flags & GSS_C_DELEG_FLAG))
 	result->checksum.length = 24 + 4 + fwd_data->length;
     else 
@@ -179,7 +179,7 @@ gssapi_krb5_verify_8003_checksum(
     static unsigned char zeros[16];
 
     /* XXX should handle checksums > 24 bytes */
-    if(cksum->cksumtype != 0x8003 || cksum->checksum.length < 24) {
+    if(cksum->cksumtype != CKSUMTYPE_GSSAPI || cksum->checksum.length < 24) {
 	*minor_status = 0;
 	return GSS_S_BAD_BINDINGS;
     }
