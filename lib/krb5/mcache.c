@@ -181,7 +181,7 @@ mcc_get_next (krb5_context context,
 {
     struct link *l;
 
-    l = MCC_CURSOR(cursor);
+    l = MCC_CURSOR(*cursor);
     if (l != NULL) {
 	MCC_CURSOR(*cursor) = l->next;
 	return krb5_copy_creds_contents (context,
