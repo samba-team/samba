@@ -329,6 +329,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.smb_nt_passwd = NULL;
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_DISABLED;
+      return &pw_buf;
     }
 
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
