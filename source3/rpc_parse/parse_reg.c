@@ -118,6 +118,32 @@ void reg_io_r_flush_key(char *desc,  REG_R_FLUSH_KEY *r_r, prs_struct *ps, int d
 	prs_uint32("status", ps, depth, &(r_r->status));
 }
 
+/*******************************************************************
+reads or writes SEC_DESC_BUF and SEC_DATA structures.
+********************************************************************/
+static void reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec, SEC_DESC_BUF *data, prs_struct *ps, int depth)
+{
+	if (ptr != 0)
+	{
+		uint32 hdr_offset;
+		uint32 old_offset;
+		smb_io_hdrbuf_pre("hdr_sec", hdr_sec, ps, depth, &hdr_offset);
+		old_offset = ps->offset;
+		if (ptr3 != NULL)
+		{
+			prs_uint32("ptr3", ps, depth, ptr3);
+		}
+		if (ptr3 == NULL || *ptr3 != 0)
+		{
+			sec_io_desc_buf("data   ", data   , ps, depth);
+		}
+		smb_io_hdrbuf_post("hdr_sec", hdr_sec, ps, depth, hdr_offset,
+		                   data->max_len, data->len);
+		ps->offset = old_offset + data->len + sizeof(uint32) * ((ptr3 != NULL) ? 5 : 3);
+		prs_align(ps);
+	}
+}
+
 
 
 /*******************************************************************
@@ -125,19 +151,12 @@ creates a structure.
 ********************************************************************/
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
-				SEC_ACCESS *sam_access)
+				SEC_ACCESS *sam_access,
+				SEC_DESC_BUF *sec_buf,
+				int sec_len, SEC_DESC *sec)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	int len_class = class != NULL ? strlen(class) + 1: 0;
-
-	static unsigned char data[] =
-	{
-		0x01, 0x00, 0x00, 0x80,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00
-	};
 
 	ZERO_STRUCTP(q_c);
 
@@ -153,17 +172,13 @@ void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 	memcpy(&(q_c->sam_access), sam_access, sizeof(q_c->sam_access));
 
 	q_c->ptr1 = 1;
-	q_c->unknown_0 = 0x0000000C;
+	q_c->sec_info = DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION;
 
+	q_c->data = sec_buf;
 	q_c->ptr2 = 1;
-	q_c->sec_len1 = 0x14;
-	q_c->sec_len2 = 0x14;
-	q_c->sec_len3 = 0x0;
-	q_c->sec_len4 = 0x14;
-	q_c->sec_len5 = 0x0;
-	q_c->sec_len6 = 0x14;
-
-	memcpy(&q_c->buf_unk, data, sizeof(q_c->buf_unk));
+	make_buf_hdr(&(q_c->hdr_sec), sec_len, sec_len);
+	q_c->ptr3 = 1;
+	make_sec_desc_buf(q_c->data, sec_len, sec);
 
 	q_c->unknown_2 = 0x00000000;
 }
@@ -194,27 +209,15 @@ void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 	sec_io_access("sam_access", &r_q->sam_access, ps, depth);
 
 	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
-	if (r_q->ptr2 != 0)
+	if (r_q->ptr1 != 0)
 	{
-		prs_uint32("unknown_0", ps, depth, &(r_q->unknown_0));
+		prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
 	}
 
 	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
-	if (r_q->ptr2)
-	{
-		prs_uint32("sec_len1", ps, depth, &(r_q->sec_len1));
-		prs_uint32("sec_len2", ps, depth, &(r_q->sec_len2));
-		prs_uint32("sec_len3", ps, depth, &(r_q->sec_len3));
-		prs_uint32("sec_len4", ps, depth, &(r_q->sec_len4));
-		prs_uint32("sec_len5", ps, depth, &(r_q->sec_len5));
-		prs_uint32("sec_len6", ps, depth, &(r_q->sec_len6));
-		prs_uint8s(False, "buf_unk", ps, depth, r_q->buf_unk, sizeof(r_q->buf_unk));
-		prs_align(ps);
+	reg_io_hdrbuf_sec(r_q->ptr2, &r_q->ptr3, &r_q->hdr_sec, r_q->data, ps, depth);
 
-		prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
-	}
-
-	prs_align(ps);
+	prs_uint32("unknown_2", ps, depth, &(r_q->unknown_2));
 }
 
 
@@ -575,18 +578,7 @@ void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
 	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
 
-	if (r_q->ptr != 0)
-	{
-		uint32 hdr_offset;
-		uint32 old_offset;
-		smb_io_hdrbuf_pre("hdr_sec", &(r_q->hdr_sec), ps, depth, &hdr_offset);
-		old_offset = ps->offset;
-		sec_io_desc_buf("data   ", r_q->data   , ps, depth);
-		smb_io_hdrbuf_post("hdr_sec", &(r_q->hdr_sec), ps, depth, hdr_offset,
-		                   r_q->data->max_len, r_q->data->len);
-		ps->offset = old_offset + r_q->data->len + sizeof(uint32) * 3;
-		prs_align(ps);
-	}
+	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
 }
 
 /*******************************************************************
@@ -646,18 +638,7 @@ void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
 	prs_uint32("ptr     ", ps, depth, &(r_q->ptr     ));
 
-	if (r_q->ptr != 0)
-	{
-		uint32 hdr_offset;
-		uint32 old_offset;
-		smb_io_hdrbuf_pre("hdr_sec", &(r_q->hdr_sec), ps, depth, &hdr_offset);
-		old_offset = ps->offset;
-		sec_io_desc_buf("data   ", r_q->data   , ps, depth);
-		smb_io_hdrbuf_post("hdr_sec", &(r_q->hdr_sec), ps, depth, hdr_offset,
-		                   r_q->data->max_len, r_q->data->len);
-		ps->offset = old_offset + r_q->data->len + sizeof(uint32) * 3;
-		prs_align(ps);
-	}
+	reg_io_hdrbuf_sec(r_q->ptr, NULL, &r_q->hdr_sec, r_q->data, ps, depth);
 }
 
 #if 0

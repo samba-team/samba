@@ -1655,11 +1655,7 @@ extern int unix_ERR_code;
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
 /* zero a structure given a pointer to the structure */
-#if 0
-#define ZERO_STRUCTP(x) { }
-#else
-#define ZERO_STRUCTP(x) { if (x != NULL) memset((char *)(x), 0, sizeof(*(x))); }
-#endif
+#define ZERO_STRUCTP(x) { memset((char *)(x), 0, sizeof(*(x))); }
 
 #define ZERO_STRUCTPN(x) { if (x != NULL) ZERO_STRUCTP(x); }
 

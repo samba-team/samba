@@ -228,20 +228,12 @@ typedef struct q_reg_create_key_info
 	SEC_ACCESS sam_access; /* access rights flags, see rpc_secdes.h */
 
 	uint32 ptr1;
-	uint32 unknown_0; /* 0x0000 000C */
+	uint32 sec_info; /* xxxx_SECURITY_INFORMATION */
 
-	uint32 ptr2;
-	uint32 sec_len1; /* 0x14 - length of security descriptor, bytes */
-	uint32 sec_len2; /* 0x14 - length of security descriptor, bytes */
-	uint32 sec_len3; /* 0x0 - length of security descriptor, bytes */
-	uint32 sec_len4; /* 0x14 - length of security descriptor, bytes */
-	uint32 sec_len5; /* 0x0 - length of security descriptor, bytes */
-	uint32 sec_len6; /* 0x14 - length of security descriptor, bytes */
-#if 0
-	SEC_DES sec_desc;
-#else
-	uint8 buf_unk[20];  /* 01 00 00 80   00 00 00 00   00 00 00 00   00 00 00 00   00 00 00 00  */
-#endif
+	uint32 ptr2;       /* pointer */
+	BUFHDR hdr_sec;    /* header for security data */
+	uint32 ptr3;       /* pointer */
+	SEC_DESC_BUF *data;
 
 	uint32 unknown_2; /* 0x0000 0000 */
 
