@@ -72,7 +72,6 @@ srv_find_realm(krb5_context context, char ***res, int *count,
 	       const char *realm, const char *proto, const char *service)
 {
     char domain[1024];
-    char alt_domain[1024];
     krb5_error_code ret;
     struct dns_reply *r;
     struct resource_record *rr;
@@ -80,15 +79,8 @@ srv_find_realm(krb5_context context, char ***res, int *count,
     snprintf(domain, sizeof(domain), "_%s._%s.%s.", service, proto, realm);
     
     r = dns_lookup(domain, "srv");
-    if(r == NULL && context->srv_try_rfc2052) {
-	snprintf(alt_domain, sizeof(alt_domain), "%s.%s.%s.", 
-		 service, proto, realm);
-	r = dns_lookup(alt_domain, "srv");
-    }
     if(r == NULL && context->srv_try_txt)
 	r = dns_lookup(domain, "txt");
-    if(r == NULL && context->srv_try_rfc2052 && context->srv_try_txt)
-	r = dns_lookup(alt_domain, "txt");
     if(r == NULL)
 	return 0;
 
