@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -114,7 +114,7 @@ krb5_mk_safe(krb5_context context,
       free (buf);
       return ENOMEM;
   }
-  memcpy (outbuf->data, buf + sizeof(buf) - len, len);
+  memcpy (outbuf->data, buf + buf_size - len, len);
   free (buf);
   return 0;
 }
