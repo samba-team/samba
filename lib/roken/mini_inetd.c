@@ -50,5 +50,6 @@ mini_inetd (int port)
      close(s);
      dup2(s2, STDIN_FILENO);
      dup2(s2, STDOUT_FILENO);
+     dup2(s2, STDERR_FILENO);
      close(s2);
 }
