@@ -85,6 +85,10 @@ struct tdb_traverse_lock {
 	u32 hash;
 };
 
+#ifndef PRINTF_ATTRIBUTE
+#define PRINTF_ATTRIBUTE(a,b)
+#endif
+
 /* this is the context structure that is returned from a db open */
 typedef struct tdb_context {
 	char *name; /* the name of the database */
