@@ -1297,7 +1297,7 @@ Can't find printer handle we created for printer %s\n", name ));
 			printer_default->access_required = PRINTER_ACCESS_USE;
 
 		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER) 
-			? "PRINTER_ACCESS_ADMINSTER" : "PRINTER_ACCESS_USE" ));
+			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 
 		Printer->access_granted = printer_default->access_required;
 
@@ -7211,7 +7211,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
 
 	status = delete_printer_data( printer->info_2, SPOOL_PRINTERDATA_KEY, valuename );
-	if ( NT_STATUS_IS_OK(status) )
+	if ( W_ERROR_IS_OK(status) )
 		status = mod_a_printer(*printer, 2);
 
 	free_a_printer(&printer, 2);
@@ -7960,26 +7960,46 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
 WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX *q_u, SPOOL_R_DELETEPRINTERDATAEX *r_u)
 {
-	SPOOL_Q_DELETEPRINTERDATA q_u_local;
-	SPOOL_R_DELETEPRINTERDATA r_u_local;
-	fstring key;
-	
-        /* From MSDN documentation of SetPrinterDataEx: pass request to
-           SetPrinterData if key is "PrinterDriverData" */
+	POLICY_HND 	*handle = &q_u->handle;
+	UNISTR2 	*value = &q_u->valuename;
+	UNISTR2 	*key = &q_u->keyname;
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 		snum=0;
+	WERROR 		status = WERR_OK;
+	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
+	pstring		valuename, keyname;
+	
+	DEBUG(5,("spoolss_deleteprinterdataex\n"));
+	
+	if (!Printer) {
+		DEBUG(2,("_spoolss_deleteprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
 
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-	
-	memcpy(&q_u_local.handle, &q_u->handle, sizeof(POLICY_HND));
-	copy_unistr2(&q_u_local.valuename, &q_u->valuename);
-	
-	return _spoolss_deleteprinterdata( p, &q_u_local, &r_u_local );
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterdataex: printer properties change denied by handle\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+
+	unistr2_to_ascii( valuename, value, sizeof(valuename)-1 );
+	unistr2_to_ascii( keyname, key, sizeof(keyname)-1 );
+
+	status = delete_printer_data( printer->info_2, keyname, valuename );
+	if ( W_ERROR_IS_OK(status) )
+		status = mod_a_printer(*printer, 2);
+
+	free_a_printer(&printer, 2);
+
+	return status;
 }
-
-
-
 
 /********************************************************************
  * spoolss_enumprinterkey
@@ -8059,25 +8079,48 @@ done:
 
 WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
 {
-	Printer_entry 	*Printer = find_printer_index_by_hnd(p, &q_u->handle);
-	fstring key;
+	POLICY_HND		*handle = &q_u->handle;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, &q_u->handle);
+	fstring 		key;
+	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
+	int 			snum=0;
+	WERROR			status;
+	
+	DEBUG(5,("spoolss_deleteprinterkey\n"));
 	
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(&q_u->handle)));
+		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	/* if keyname == NULL, return error */
+	
+	if ( !q_u->keyname.buffer )
+		return WERR_INVALID_PARAM;
+		
+	if (!get_printer_snum(p, handle, &snum))
+		return WERR_BADFID;
+
+	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
+		DEBUG(3, ("_spoolss_deleteprinterkey: printer properties change denied by handle\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (!W_ERROR_IS_OK(status))
+		return status;
+	
+	/* delete the key and all subneys */
 	
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
-
-        if (strcmp(key, SPOOL_PRINTERDATA_KEY) != 0)
-	        return WERR_INVALID_PARAM;
-		
-	/* 
-	 * this is what 2k returns when you try to delete the "PrinterDriverData"
-	 * key
-	 */
-	 
-	return WERR_ACCESS_DENIED;	
+ 
+	status = delete_all_printer_data( printer->info_2, key );	
+	if ( W_ERROR_IS_OK(status) )
+		status = mod_a_printer(*printer, 2);
+	
+	free_a_printer( &printer, 2 );
+	
+	return status;
 }
 
 
