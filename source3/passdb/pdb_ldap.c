@@ -541,8 +541,13 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state,
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
-	
+	char           *utf8_filter;
+
 	SMB_ASSERT(ldap_state);
+
+	if (push_utf8_allocate(&utf8_filter, filter) == (size_t)-1) {
+		return LDAP_NO_MEMORY;
+	}
 
 	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
 		
@@ -557,17 +562,22 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state,
 		DEBUG(0,("%s: LDAP server is down!\n",FUNCTION_MACRO));
 		ldapsam_close(ldap_state);	
 	}
-	
+
+	SAFE_FREE(utf8_filter);
 	return rc;
 }
 
-static int ldapsam_modify(struct ldapsam_privates *ldap_state, char *dn, LDAPMod *attrs[])
+static int ldapsam_modify(struct ldapsam_privates *ldap_state, const char *dn, LDAPMod *attrs[])
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
-	
-	if (!ldap_state)
-		return (-1);
+	char           *utf8_dn;
+
+	SMB_ASSERT(ldap_state);
+
+	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+		return LDAP_NO_MEMORY;
+	}
 
 	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
 		
@@ -582,6 +592,7 @@ static int ldapsam_modify(struct ldapsam_privates *ldap_state, char *dn, LDAPMod
 		ldapsam_close(ldap_state);	
 	}
 	
+	SAFE_FREE(utf8_dn);
 	return rc;
 }
 
@@ -589,9 +600,13 @@ static int ldapsam_add(struct ldapsam_privates *ldap_state, const char *dn, LDAP
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
+	char           *utf8_dn;
 	
-	if (!ldap_state)
-		return (-1);
+	SMB_ASSERT(ldap_state);
+
+	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+		return LDAP_NO_MEMORY;
+	}
 
 	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
 		
@@ -606,6 +621,7 @@ static int ldapsam_add(struct ldapsam_privates *ldap_state, const char *dn, LDAP
 		ldapsam_close(ldap_state);	
 	}
 		
+	SAFE_FREE(utf8_dn);
 	return rc;
 }
 
@@ -613,9 +629,13 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 {
 	int 		rc = LDAP_SERVER_DOWN;
 	int 		attempts = 0;
+	char           *utf8_dn;
 	
-	if (!ldap_state)
-		return (-1);
+	SMB_ASSERT(ldap_state);
+
+	if (push_utf8_allocate(&utf8_dn, dn) == (size_t)-1) {
+		return LDAP_NO_MEMORY;
+	}
 
 	while ((rc == LDAP_SERVER_DOWN) && (attempts < 8)) {
 		
@@ -630,6 +650,7 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 		ldapsam_close(ldap_state);	
 	}
 		
+	SAFE_FREE(utf8_dn);
 	return rc;
 }
 
@@ -741,15 +762,24 @@ static BOOL get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 				  const char *attribute, pstring value)
 {
 	char **values;
+	value[0] = '\0';
 
 	if ((values = ldap_get_values (ldap_struct, entry, attribute)) == NULL) {
-		value = NULL;
 		DEBUG (10, ("get_single_attribute: [%s] = [<does not exist>]\n", attribute));
 		
 		return False;
 	}
 	
-	pstrcpy(value, values[0]);
+	if (convert_string(CH_UTF8, CH_UNIX,
+		values[0], -1,
+		value, sizeof(pstring)) == (size_t)-1)
+	{
+		DEBUG(1, ("get_single_attribute: string conversion of [%s] = [%s] failed!\n", 
+			  attribute, values[0]));
+		ldap_value_free(values);
+		return False;
+	}
+	
 	ldap_value_free(values);
 #ifdef DEBUG_PASSWORDS
 	DEBUG (100, ("get_single_attribute: [%s] = [%s]\n", attribute, value));
@@ -817,6 +847,8 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 
 	if (value != NULL)
 	{
+		char *utf8_value = NULL;
+
 		j = 0;
 		if (mods[i]->mod_values != NULL) {
 			for (; mods[i]->mod_values[j] != NULL; j++);
@@ -828,7 +860,14 @@ static void make_a_mod (LDAPMod *** modlist, int modop, const char *attribute, c
 			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
 			return;
 		}
-		mods[i]->mod_values[j] = strdup(value);
+
+		if (push_utf8_allocate(&utf8_value, value) == (size_t)-1) {
+			DEBUG (0, ("make_a_mod: String conversion failure!\n"));
+			return;
+		}
+
+		mods[i]->mod_values[j] = utf8_value;
+
 		mods[i]->mod_values[j + 1] = NULL;
 	}
 	*modlist = mods;
@@ -999,8 +1038,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			munged_dial,
 			workstations;
 	struct passwd	*pw;
-	uint32 		user_rid, 
-			group_rid;
+	uint32 		user_rid; 
 	uint8 		smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
 	uint16 		acct_ctrl = 0, 
@@ -1056,12 +1094,12 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
 
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "primaryGroupID", temp)) {
-		group_rid = 0;
+		pdb_set_group_sid_from_rid(sampass, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 	} else {
+		uint32 group_rid;
 		group_rid = (uint32)atol(temp);
 		pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
 	}
-
 
 	/* 
 	 * If so configured, try and get the values from LDAP 
@@ -1091,7 +1129,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 		}
 	}
 
-	if (group_rid == 0 && pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT) {
+	if ((pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) 
+		&& (pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT)) {
 		GROUP_MAP map;
 		gid = pdb_get_gid(sampass);
 		/* call the mapping code here */
@@ -1879,22 +1918,32 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		struct berval *bv;
 		char *retoid;
 		struct berval *retdata;
+		char *utf8_password;
+
+		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if ((ber = ber_alloc_t(LBER_USE_DER))==NULL) {
 			DEBUG(0,("ber_alloc_t returns NULL\n"));
+			SAFE_FREE(utf8_password);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
+
 		ber_printf (ber, "{");
 		ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_ID,dn);
-	        ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, pdb_get_plaintext_passwd(newpwd));
+	        ber_printf (ber, "ts", LDAP_TAG_EXOP_X_MODIFY_PASSWD_NEW, utf8_password);
 	        ber_printf (ber, "N}");
 
 	        if ((rc = ber_flatten (ber, &bv))<0) {
 			DEBUG(0,("ber_flatten returns a value <0\n"));
+			ber_free(ber,1);
+			SAFE_FREE(utf8_password);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		
-		ber_free(ber,1);
+		SAFE_FREE(utf8_password);
+		ber_free(ber, 1);
 
 		if ((rc = ldapsam_extended_operation(ldap_state, LDAP_EXOP_X_MODIFY_PASSWD,
 						    bv, NULL, NULL, &retoid, &retdata))!=LDAP_SUCCESS) {
