@@ -60,7 +60,7 @@ static NTSTATUS guestsam_getsampwnam (struct pdb_methods *methods, SAM_ACCOUNT *
 	if (!pdb_set_acct_ctrl(sam_account, ACB_NORMAL, PDB_DEFAULT))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_DEFAULT))
+	if (!pdb_set_user_sid_from_rid(sam_account, DOMAIN_USER_RID_GUEST, PDB_SET))
 		return NT_STATUS_UNSUCCESSFUL;
 	
 	if (!pdb_set_group_sid_from_rid(sam_account, DOMAIN_GROUP_RID_GUESTS, PDB_DEFAULT))
