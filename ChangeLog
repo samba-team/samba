@@ -1,3 +1,21 @@
+2000-06-22  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/lex.l: fix includes, and lex stuff
+	* lib/asn1/lex.h (error_message): update prototype
+	(yylex): add
+	* lib/asn1/gen_length.c (length_type): fail on malloc error
+	* lib/asn1/gen_decode.c (decode_type): fail on malloc error
+
+2000-06-21  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/get_for_creds.c: be more compatible with MIT code.
+	From Daniel Kouril <kouril@ics.muni.cz>
+	* lib/krb5/rd_cred.c: be more compatible with MIT code.  From
+	Daniel Kouril <kouril@ics.muni.cz>
+	* kdc/kerberos5.c (get_pa_etype_info): do not set salttype if it's
+	vanilla pw-salt, that keeps win2k happy.  also do the malloc check
+	correctly.  From Daniel Kouril <kouril@ics.muni.cz>
+
 2000-06-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/hprop.c: add hdb keytabs
