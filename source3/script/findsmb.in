@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!@PERL@
 #
 # Prints info on all smb responding machines on a subnet.
 # This script needs to be run on a machine without nmbd running and be
