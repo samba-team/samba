@@ -2287,47 +2287,80 @@ if test "x$prefix" = xNONE -a "$sbindir" = "\${exec_prefix}/sbin"; then
 fi
 
 #################################################
-# check whether winbind is supported on this platform
+# Check whether winbind is supported on this platform.  If so we need to
+# build and install client programs (WINBIND_TARGETS), sbin programs
+# (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
 
-AC_MSG_CHECKING(whether to compile winbind)
+AC_MSG_CHECKING(whether to build winbind)
+
+# Initially, the value of $host_os decides whether winbind is supported
 
 case "$host_os" in 
         *linux*|*solaris*)
-                WINBIND_TARGETS="\$(WINBIND_PROGS)"
-		WINBIND_STARGETS="\$(WINBIND_SPROGS)"
-		case "$with_pam" in
-			yes)
-				WINBIND_STARGETS="$WINBIND_STARGETS \$(WINBIND_PAM_PROGS)"
-			;;
-			*)
-		esac
+		HAVE_WINBIND=yes
                 ;;
         *)
+		HAVE_WINBIND=no
                 winbind_no_reason=", unsupported on $host_os"
                 ;;
 esac
 
+# Check the setting of --with-winbindd
+
 AC_ARG_WITH(winbind,
-[  --with-winbind   	Build winbind library (default, if supported by OS)
-  --without-winbind 	Don't build winbind library],
+[  --with-winbind   	Build winbind (default, if supported by OS)
+  --without-winbind 	Don't build winbind],
 [ 
   case "$withval" in
+	yes)
+		HAVE_WINBIND=yes
+		;;
         no)
-                WINBIND_TARGETS=""
-		WINBIND_STARGETS="" 
-	        winbind_reason=""
+		HAVE_WINBIND=no
+                winbind_reason=""
                 ;;
   esac ],
 )
 
-if test x"$WINBIND_TARGETS" = x; then
-        AC_MSG_RESULT(no$winbind_no_reason)
-else
-        AC_MSG_RESULT(yes)
+# We need unix domain sockets for winbind
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+	if test x"$samba_cv_unixsocket" = x"no"; then
+		winbind_no_reason=", no unix domain socket support on $host_os"
+		HAVE_WINBIND=no
+	fi
 fi
+
+# Display test results
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+
+        AC_MSG_RESULT(yes)
+
+	WINBIND_TARGETS="\$(WINBIND_PROGS)"
+	WINBIND_STARGETS="\$(WINBIND_SPROGS)"
+	WINBIND_LTARGETS="\$(WINBIND_LPROGS)"
+
+	case "$with_pam" in
+		yes)
+			WINBIND_PAM_PROGS="\$(WINBIND_PAM_PROGS)"
+		;;
+	esac
+else
+        AC_MSG_RESULT(no$winbind_no_reason)
+
+	WINBIND_TARGETS=""
+	WINBIND_STARGETS=""
+	WINBIND_LTARGETS=""
+	WINBIND_PAM_PROGS=""
+fi
+
+# Substitution time!
 
 AC_SUBST(WINBIND_TARGETS)
 AC_SUBST(WINBIND_STARGETS)
+AC_SUBST(WINBIND_LTARGETS)
+AC_SUBST(WINBIND_PAM_PROGS)
 
 #################################################
 # final configure stuff

@@ -93,8 +93,8 @@ ac_help="$ac_help
   --with-acl-support        Include ACL support
   --without-acl-support  Don't include ACL support (default)"
 ac_help="$ac_help
-  --with-winbind   	Build winbind library (default, if supported by OS)
-  --without-winbind 	Don't build winbind library"
+  --with-winbind   	Build winbind (default, if supported by OS)
+  --without-winbind 	Don't build winbind"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -12243,46 +12243,79 @@ if test "x$prefix" = xNONE -a "$sbindir" = "\${exec_prefix}/sbin"; then
 fi
 
 #################################################
-# check whether winbind is supported on this platform
+# Check whether winbind is supported on this platform.  If so we need to
+# build and install client programs (WINBIND_TARGETS), sbin programs
+# (WINBIND_STARGETS) and shared libraries (WINBIND_LTARGETS).
 
-echo $ac_n "checking whether to compile winbind""... $ac_c" 1>&6
-echo "configure:12250: checking whether to compile winbind" >&5
+echo $ac_n "checking whether to build winbind""... $ac_c" 1>&6
+echo "configure:12252: checking whether to build winbind" >&5
+
+# Initially, the value of $host_os decides whether winbind is supported
 
 case "$host_os" in 
         *linux*|*solaris*)
-                WINBIND_TARGETS="\$(WINBIND_PROGS)"
-		WINBIND_STARGETS="\$(WINBIND_SPROGS)"
-		case "$with_pam" in
-			yes)
-				WINBIND_STARGETS="$WINBIND_STARGETS \$(WINBIND_PAM_PROGS)"
-			;;
-			*)
-		esac
+		HAVE_WINBIND=yes
                 ;;
         *)
+		HAVE_WINBIND=no
                 winbind_no_reason=", unsupported on $host_os"
                 ;;
 esac
+
+# Check the setting of --with-winbindd
 
 # Check whether --with-winbind or --without-winbind was given.
 if test "${with_winbind+set}" = set; then
   withval="$with_winbind"
    
   case "$withval" in
+	yes)
+		HAVE_WINBIND=yes
+		;;
         no)
-                WINBIND_TARGETS=""
-		WINBIND_STARGETS="" 
-	        winbind_reason=""
+		HAVE_WINBIND=no
+                winbind_reason=""
                 ;;
   esac 
 fi
 
 
-if test x"$WINBIND_TARGETS" = x; then
-        echo "$ac_t""no$winbind_no_reason" 1>&6
-else
-        echo "$ac_t""yes" 1>&6
+# We need unix domain sockets for winbind
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+	if test x"$samba_cv_unixsocket" = x"no"; then
+		winbind_no_reason=", no unix domain socket support on $host_os"
+		HAVE_WINBIND=no
+	fi
 fi
+
+# Display test results
+
+if test x"$HAVE_WINBIND" = x"yes"; then
+
+        echo "$ac_t""yes" 1>&6
+
+	WINBIND_TARGETS="\$(WINBIND_PROGS)"
+	WINBIND_STARGETS="\$(WINBIND_SPROGS)"
+	WINBIND_LTARGETS="\$(WINBIND_LPROGS)"
+
+	case "$with_pam" in
+		yes)
+			WINBIND_PAM_PROGS="\$(WINBIND_PAM_PROGS)"
+		;;
+	esac
+else
+        echo "$ac_t""no$winbind_no_reason" 1>&6
+
+	WINBIND_TARGETS=""
+	WINBIND_STARGETS=""
+	WINBIND_LTARGETS=""
+	WINBIND_PAM_PROGS=""
+fi
+
+# Substitution time!
+
+
 
 
 
@@ -12294,11 +12327,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 12298 "configure"
+#line 12331 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:12302: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:12335: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
@@ -12491,6 +12524,8 @@ s%@ROFF@%$ROFF%g
 s%@QUOTAOBJS@%$QUOTAOBJS%g
 s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
 s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
+s%@WINBIND_LTARGETS@%$WINBIND_LTARGETS%g
+s%@WINBIND_PAM_PROGS@%$WINBIND_PAM_PROGS%g
 s%@builddir@%$builddir%g
 
 CEOF
