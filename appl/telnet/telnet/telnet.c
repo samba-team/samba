@@ -628,8 +628,7 @@ is_unique(char *name, char **as, char **ae)
 	return (1);
 }
 
-#ifndef HAVE_SETUPTERM
-char termbuf[1024];
+static char termbuf[1024];
 
 static int
 setupterm(char *tname, int fd, int *errp)
@@ -644,10 +643,6 @@ setupterm(char *tname, int fd, int *errp)
 		*errp = 0;
 	return(-1);
 }
-#else
-#define	termbuf	ttytype
-extern char ttytype[];
-#endif
 
 int resettermname = 1;
 
