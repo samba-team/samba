@@ -22,11 +22,11 @@
 #include "includes.h"
 
 #ifdef HAVE_DLOPEN
-NTSTATUS smb_load_module(const char *module_name)
+int smb_load_module(const char *module_name)
 {
 	void *handle;
 	init_module_function *init;
-	NTSTATUS nt_status;
+	int status;
 	const char *error;
 
 	/* Always try to use LAZY symbol resolving; if the plugin has 
@@ -37,7 +37,7 @@ NTSTATUS smb_load_module(const char *module_name)
 
 	if(!handle) {
 		DEBUG(0, ("Error loading module '%s': %s\n", module_name, sys_dlerror()));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 
 	init = sys_dlsym(handle, "init_module");
@@ -47,22 +47,101 @@ NTSTATUS smb_load_module(const char *module_name)
 	error = sys_dlerror();
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", module_name, error));
-		return NT_STATUS_UNSUCCESSFUL;
+		return False;
 	}
 
-	nt_status = init();
+	status = init();
 
 	DEBUG(2, ("Module '%s' loaded\n", module_name));
 
-	return nt_status;
+	return status;
+}
+
+/* Load all modules in list and return number of 
+ * modules that has been successfully loaded */
+int smb_load_modules(const char **modules)
+{
+	int i;
+	int success = 0;
+
+	for(i = 0; modules[i]; i++){
+		if(smb_load_module(modules[i])) {
+			success++;
+		}
+	}
+
+	DEBUG(2, ("%d modules successfully loaded\n", success));
+
+	return success;
+}
+
+int smb_probe_module(const char *subsystem, const char *module)
+{
+	pstring full_path;
+	
+	/* Check for absolute path */
+	if(strchr_m(module, '/'))return smb_load_module(module);
+	
+	pstrcpy(full_path, lib_path(subsystem));
+	pstrcat(full_path, "/");
+	pstrcat(full_path, module);
+	pstrcat(full_path, ".");
+	pstrcat(full_path, shlib_ext());
+
+	DEBUG(5, ("Probing module %s: Trying to load from %s\n", module, full_path));
+	
+	return smb_load_module(full_path);
 }
 
 #else /* HAVE_DLOPEN */
 
-NTSTATUS smb_load_module(const char *module_name)
+int smb_load_module(const char *module_name)
 {
-	DEBUG(0,("This samba executable has not been build with plugin support"));
-	return NT_STATUS_NOT_SUPPORTED;
+	DEBUG(0,("This samba executable has not been built with plugin support"));
+	return False;
+}
+
+int smb_load_modules(const char **modules)
+{
+	DEBUG(0,("This samba executable has not been built with plugin support"));
+	return False;
+}
+
+int smb_probe_module(const char *subsystem, const char *module)
+{
+	DEBUG(0,("This samba executable has not been built with plugin support, not probing")); 
+	return False;
 }
 
 #endif /* HAVE_DLOPEN */
+
+void init_modules(void)
+{
+	/* FIXME: This can cause undefined symbol errors :
+	 *  smb_register_vfs() isn't available in nmbd, for example */
+	if(lp_preload_modules()) 
+		smb_load_modules(lp_preload_modules());
+}
+
+
+/*************************************************************************
+ * This functions /path/to/foobar.so -> foobar
+ ************************************************************************/
+void module_path_get_name(const char *path, pstring name)
+{
+	char *s;
+
+	/* First, make the path relative */
+	s = strrchr(path, '/');
+	if(s) pstrcpy(name, s+1);
+	else pstrcpy(name, path);
+	
+	if (dyn_SHLIBEXT && *dyn_SHLIBEXT && strlen(dyn_SHLIBEXT) < strlen(name)) {
+		int n = strlen(name) - strlen(dyn_SHLIBEXT);
+		
+		/* Remove extension if necessary */
+		if (name[n-1] == '.' && !strcmp(name+n, dyn_SHLIBEXT)) {
+			name[n-1] = '\0';
+		}
+	}
+}
