@@ -404,6 +404,13 @@ if test "$ac_cv_func_getnameinfo" = "yes"; then
   fi
 fi
 
+if test "$ac_cv_func_getaddrinfo" = "yes"; then
+  rk_BROKEN_GETADDRINFO
+  if test "$ac_cv_func_getaddrinfo_numserv" = no; then
+    LIBOBJS="$LIBOBJS getaddrinfo.o"
+  fi
+fi
+
 AC_NEED_PROTO([#include <stdlib.h>], setenv)
 AC_NEED_PROTO([#include <stdlib.h>], unsetenv)
 AC_NEED_PROTO([#include <unistd.h>], gethostname)
