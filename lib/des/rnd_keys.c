@@ -149,7 +149,8 @@ static volatile unsigned char *gdata; /* Global data */
 static volatile int igdata;	/* Index into global data */
 static int gsize;
 
-#ifndef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
+#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__)
+/* Visual C++ 4.0 (Windows95/NT) */
 
 static
 RETSIGTYPE
@@ -187,7 +188,7 @@ des_not_rand_data(unsigned char *data, int size)
 
 #endif
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__)
 
 #ifndef HAVE_SETITIMER
 void pacemaker(struct timeval *tv)
