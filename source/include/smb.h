@@ -1217,6 +1217,10 @@ struct bitmap {
 #define WRITE_OWNER_ACCESS   (1L<<19)
 #define SYNCHRONIZE_ACCESS   (1L<<20)
 #define SYSTEM_SECURITY_ACCESS (1L<<24)
+#define GENERIC_ALL_ACCESS   (1<<28)
+#define GENERIC_EXECUTE_ACCESS  (1<<29)
+#define GENERIC_WRITE_ACCESS   (1<<30)
+#define GENERIC_READ_ACCESS   (1<<31)
 
 /* Flags field. */
 #define REQUEST_OPLOCK 2

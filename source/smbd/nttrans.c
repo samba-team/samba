@@ -1601,12 +1601,35 @@ name = %s\n", fsp->fsp_name ));
 }
 
 /****************************************************************************
+ Map unix perms to NT.
+****************************************************************************/
+
+static SEC_ACCESS map_unix_perms( mode_t perm, int r_mask, int w_mask, int x_mask, BOOL is_directory)
+{
+	SEC_ACCESS sa;
+	uint32 nt_mask = 0;
+
+	nt_mask |= (perm & r_mask) ? GENERIC_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES : 0;
+	if(is_directory)
+		nt_mask |= (perm & w_mask) ? GENERIC_WRITE_ACCESS|FILE_DELETE_CHILD : 0;
+	else
+		nt_mask |= (perm & w_mask) ? GENERIC_WRITE_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES : 0;
+	nt_mask |= (perm & x_mask) ? GENERIC_EXECUTE_ACCESS|FILE_EXECUTE : 0;
+
+	if(perm & (r_mask|w_mask|x_mask))
+		nt_mask |= GENERIC_ALL_ACCESS;
+	init_sec_access(&sa,nt_mask);
+	return sa;
+}
+
+/****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns True.
 ****************************************************************************/
 
 static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
+#if 1
   static DOM_SID world_sid;
   static BOOL world_sid_initialized = False;
   SEC_ACL *daclp;
@@ -1639,7 +1662,8 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
   return sec_desc_size;
 
-#if 0
+#else
+
   extern DOM_SID global_sam_sid;
   static DOM_SID world_sid;
   static BOOL world_sid_initialized = False;
@@ -1648,6 +1672,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   DOM_SID owner_sid;
   DOM_SID group_sid;
   size_t sec_desc_size;
+  SEC_ACL *psa;
   
   *ppdesc = NULL;
 
@@ -1679,9 +1704,28 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
    * Create the generic 3 element UNIX acl.
    */
 
-  init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-  init_sec_ace(&ace_list[0], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
-  init_sec_ace(&ace_list[0], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+  init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+				map_unix_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory), 0);
+  init_sec_ace(&ace_list[1], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+				map_unix_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory), 0);
+  init_sec_ace(&ace_list[2], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+				map_unix_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory), 0);
+
+  if((psa = make_sec_acl( 3, 3, ace_list)) == NULL) {
+    DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+    return 0;
+  }
+
+  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sec_desc_size);
+
+  if(!*ppdesc) {
+    DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
+    sec_desc_size = 0;
+  }
+
+  free_sec_acl(&psa);
+
+  return sec_desc_size;
 #endif
 }
 
