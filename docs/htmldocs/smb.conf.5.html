@@ -89,7 +89,7 @@ CLASS="REPLACEABLE"
 >Section and parameter names are not case sensitive.</P
 ><P
 >Only the first equals sign in a parameter is significant. 
-	Whitespace before or after the first equals sign is discarded. 
+	Whitespace before or after the first equals sign is discarded.
 	Leading, trailing and internal whitespace in section and parameter 
 	names is irrelevant. Leading and trailing whitespace in a parameter 
 	value is discarded. Internal whitespace within a parameter value 
@@ -140,7 +140,7 @@ NAME="AEN28"
 ><P
 >Sections may be designated <EM
 >guest</EM
-> services, 
+> services,
 	in which case no password is required to access them. A specified 
 	UNIX <EM
 >guest account</EM
@@ -629,7 +629,7 @@ CLASS="VARIABLELIST"
 >%d</DT
 ><DD
 ><P
->The process id of the current server 
+>The process id of the current server
 		process.</P
 ></DD
 ><DT
@@ -753,7 +753,7 @@ CLASS="VARIABLELIST"
 >short preserve case = yes/no</DT
 ><DD
 ><P
->controls if new files which conform to 8.3 syntax, 
+>controls if new files which conform to 8.3 syntax,
 		that is all in upper case and of suitable length, are created 
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
@@ -1977,6 +1977,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#NTSTATUSSUPPORT"
+><TT
+CLASS="PARAMETER"
+><I
+>nt status support</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#NULLPASSWORDS"
 ><TT
 CLASS="PARAMETER"
@@ -3011,7 +3023,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN974"
+NAME="AEN978"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4478,7 +4490,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1462"
+NAME="AEN1466"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -12736,20 +12748,20 @@ NAME="NTSMBSUPPORT"
 HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
-> will negotiate NT specific SMB 
-		support with Windows NT clients. Although this is a developer 
-		debugging option and should be left alone, benchmarking has discovered 
-		that Windows NT clients give faster performance with this option 
+> will negotiate NT specific SMB
+		support with Windows NT/2k/XP clients. Although this is a developer
+		debugging option and should be left alone, benchmarking has discovered
+		that Windows NT clients give faster performance with this option
 		set to <TT
 CLASS="CONSTANT"
 >no</TT
->. This is still being investigated. 
+>. This is still being investigated.
 	 	If this option is set to <TT
 CLASS="CONSTANT"
 >no</TT
-> then Samba offers 
-		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-		This information may be of use if any users are having problems 
+> then Samba offers
+		exactly the same SMB calls that versions prior to Samba 2.0 offered.
+		This information may be of use if any users are having problems
 		with NT SMB support.</P
 ><P
 >You should not need to ever disable this parameter.</P
@@ -12757,6 +12769,34 @@ CLASS="CONSTANT"
 >Default: <B
 CLASS="COMMAND"
 >nt smb support = yes</B
+></P
+></DD
+><DT
+><A
+NAME="NTSTATUSSUPPORT"
+></A
+>nt status support (G)</DT
+><DD
+><P
+>This boolean parameter controls whether <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <TT
+CLASS="CONSTANT"
+>no</TT
+> then Samba offers
+		exactly the same SMB error calls that versions prior to Samba 2.2.3
+		offered.</P
+><P
+>You should not need to ever disable this parameter.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>nt status support = yes</B
 ></P
 ></DD
 ><DT
@@ -19384,7 +19424,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6120"
+NAME="AEN6134"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19414,7 +19454,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6126"
+NAME="AEN6140"
 ></A
 ><H2
 >VERSION</H2
@@ -19425,7 +19465,7 @@ NAME="AEN6126"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6129"
+NAME="AEN6143"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19504,7 +19544,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6149"
+NAME="AEN6163"
 ></A
 ><H2
 >AUTHOR</H2

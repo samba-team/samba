@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "15 April 2002" "" ""
+.TH "SMB.CONF" "5" "24 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -30,7 +30,7 @@ line represents either a comment, a section name or a parameter.
 Section and parameter names are not case sensitive.
 .PP
 Only the first equals sign in a parameter is significant. 
-Whitespace before or after the first equals sign is discarded. 
+Whitespace before or after the first equals sign is discarded.
 Leading, trailing and internal whitespace in section and parameter 
 names is irrelevant. Leading and trailing whitespace in a parameter 
 value is discarded. Internal whitespace within a parameter value 
@@ -70,7 +70,7 @@ client as an extension of their native file systems) or
 printable services (used by the client to access print services 
 on the host running the server).
 .PP
-Sections may be designated \fBguest\fR services, 
+Sections may be designated \fBguest\fR services,
 in which case no password is required to access them. A specified 
 UNIX \fBguest account\fR is used to define access
 privileges in this case.
@@ -381,7 +381,7 @@ protocol negotiation. It can be one of CORE, COREPLUS,
 LANMAN1, LANMAN2 or NT1.
 .TP
 \fB%d\fR
-The process id of the current server 
+The process id of the current server
 process.
 .TP
 \fB%a\fR
@@ -442,7 +442,7 @@ case that the client passes, or if they are forced to be the
 "default" case. Default \fByes\fR.
 .TP
 \fBshort preserve case = yes/no\fR
-controls if new files which conform to 8.3 syntax, 
+controls if new files which conform to 8.3 syntax,
 that is all in upper case and of suitable length, are created 
 upper case, or if they are forced to be the "default" 
 case. This option can be use with "preserve case = yes" 
@@ -780,6 +780,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fInt smb support\fR
+.TP 0.2i
+\(bu
+\fInt status support\fR
 .TP 0.2i
 \(bu
 \fInull passwords\fR
@@ -4666,19 +4669,31 @@ alone.
 Default: \fBnt pipe support = yes\fR
 .TP
 \fBnt smb support (G)\fR
-This boolean parameter controls whether smbd(8)will negotiate NT specific SMB 
-support with Windows NT clients. Although this is a developer 
-debugging option and should be left alone, benchmarking has discovered 
-that Windows NT clients give faster performance with this option 
-set to no. This is still being investigated. 
-If this option is set to no then Samba offers 
-exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-This information may be of use if any users are having problems 
+This boolean parameter controls whether smbd(8)will negotiate NT specific SMB
+support with Windows NT/2k/XP clients. Although this is a developer
+debugging option and should be left alone, benchmarking has discovered
+that Windows NT clients give faster performance with this option
+set to no. This is still being investigated.
+If this option is set to no then Samba offers
+exactly the same SMB calls that versions prior to Samba 2.0 offered.
+This information may be of use if any users are having problems
 with NT SMB support.
 
 You should not need to ever disable this parameter.
 
 Default: \fBnt smb support = yes\fR
+.TP
+\fBnt status support (G)\fR
+This boolean parameter controls whether smbd(8)will negotiate NT specific status
+support with Windows NT/2k/XP clients. This is a developer
+debugging option and should be left alone.
+If this option is set to no then Samba offers
+exactly the same SMB error calls that versions prior to Samba 2.2.3
+offered.
+
+You should not need to ever disable this parameter.
+
+Default: \fBnt status support = yes\fR
 .TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
