@@ -293,7 +293,7 @@ static struct dispatch_table cache_table[] = {
 	/* Enumeration functions */
 
 	{ WINBINDD_LIST_USERS, cache_list_users, "LIST_USERS" },
-	{ WINBINDD_LIST_GROUPS, winbindd_list_groups, "LIST_GROUPS" },
+	{ WINBINDD_LIST_GROUPS, cache_list_groups, "LIST_GROUPS" },
 	{ WINBINDD_LIST_TRUSTDOM, winbindd_list_trusted_domains, "LIST_TRUSTDOM" },
 	{ WINBINDD_SHOW_SEQUENCE, winbindd_show_sequence, "SHOW_SEQUENCE" },
 

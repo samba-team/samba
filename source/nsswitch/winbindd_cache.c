@@ -1627,7 +1627,7 @@ enum winbindd_result cache_lookupname(struct winbindd_cli_state *state)
 
 */
 
-struct list_users_private {
+struct list_entries_private {
 	struct winbindd_domain *domain;
 	BOOL expect_data;
 	char *extra_data;
@@ -1639,7 +1639,7 @@ cache_list_users_next(struct winbindd_cli_state *state);
 
 enum winbindd_result cache_list_users(struct winbindd_cli_state *state)
 {
-	struct list_users_private *priv;
+	struct list_entries_private *priv;
 
 	if (state->continuation_private != NULL) {
 		DEBUG(0, ("Internal error, continuation_private != NULL\n"));
@@ -1648,7 +1648,7 @@ enum winbindd_result cache_list_users(struct winbindd_cli_state *state)
 
 	state->continuation = cache_list_users_next;
 	state->continuation_private = priv =
-		malloc(sizeof(struct list_users_private));
+		malloc(sizeof(struct list_entries_private));
 
 	priv->domain = domain_list();
 	priv->expect_data = False;
@@ -1662,8 +1662,8 @@ static enum winbindd_result
 cache_list_users_next(struct winbindd_cli_state *state)
 {
 	struct cache_entry *centry;
-	struct list_users_private *priv =
-		(struct list_users_private *)state->continuation_private;
+	struct list_entries_private *priv =
+		(struct list_entries_private *)state->continuation_private;
 	int i, num_entries;
 	TALLOC_CTX *mem_ctx;
 	BOOL expired = False;
@@ -1722,6 +1722,125 @@ cache_list_users_next(struct winbindd_cli_state *state)
 		centry_string(centry, mem_ctx);
 		centry_string(centry, mem_ctx);
 		centry_string(centry, mem_ctx);
+	}
+
+	expired = centry_expired(priv->domain, centry);
+
+	centry_free(centry);
+	talloc_destroy(mem_ctx);
+
+ no_entries:
+
+	priv->domain = priv->domain->next;
+
+	if (priv->domain == NULL) {
+		state->response.length = sizeof(state->response);
+		if (priv->extra_data != NULL) {
+			priv->extra_data[priv->extra_data_len - 1] = '\0';
+			state->response.extra_data = priv->extra_data;
+			state->response.length += priv->extra_data_len;
+		}
+		SAFE_FREE(state->continuation_private);
+		return WINBINDD_OK;
+	}
+
+	if (expired) {
+		state->send_to_background = True;
+		fstrcpy(state->request.domain_name, priv->domain->name);
+		return WINBINDD_PENDING;
+	}
+
+	/* If we had tail recursion, we could call ourselves :-) */
+	goto next_domain;
+}	
+
+static enum winbindd_result
+cache_list_groups_next(struct winbindd_cli_state *state);
+
+enum winbindd_result cache_list_groups(struct winbindd_cli_state *state)
+{
+	struct list_entries_private *priv;
+
+	if (state->continuation_private != NULL) {
+		DEBUG(0, ("Internal error, continuation_private != NULL\n"));
+		return WINBINDD_ERROR;
+	}
+
+	state->continuation = cache_list_groups_next;
+	state->continuation_private = priv =
+		malloc(sizeof(struct list_entries_private));
+
+	priv->domain = domain_list();
+	priv->expect_data = False;
+	priv->extra_data = NULL;
+	priv->extra_data_len = 0;
+
+	return cache_list_groups_next(state);
+}
+
+static enum winbindd_result
+cache_list_groups_next(struct winbindd_cli_state *state)
+{
+	struct cache_entry *centry;
+	struct list_entries_private *priv =
+		(struct list_entries_private *)state->continuation_private;
+	int i, num_entries;
+	TALLOC_CTX *mem_ctx;
+	BOOL expired = False;
+
+ next_domain:
+
+	centry = wcache_fetch_only("GL/%s/domain", priv->domain->name);
+
+	if ((centry == NULL) && (priv->expect_data)) {
+		/* We've been called again after the dual had been asked to
+		 * query the data */
+		priv->expect_data = False;
+		goto no_entries;
+	}
+
+	priv->expect_data = False;
+
+	if (centry == NULL) {
+		priv->expect_data = True;
+		state->send_to_background = True;
+		fstrcpy(state->request.domain_name, priv->domain->name);
+		return WINBINDD_PENDING;
+	}
+
+	num_entries = centry_uint32(centry);
+
+	priv->extra_data = Realloc(priv->extra_data,
+				   priv->extra_data_len +
+				   sizeof(fstring) * num_entries);
+
+	if (priv->extra_data == NULL) {
+		return WINBINDD_ERROR;
+	}
+
+	mem_ctx = talloc_init("cache_list_groups_next");
+
+	for (i=0; i<num_entries; i++) {
+		char *p;
+		fstring acct_name, name;
+
+		p = centry_string(centry, mem_ctx);
+
+		if ((p == NULL) || (*p == '\0'))
+			fstrcpy(acct_name, "");
+		else
+			fstrcpy(acct_name, p);
+
+		fill_domain_username(name, priv->domain->name, acct_name);
+
+		memcpy(&priv->extra_data[priv->extra_data_len], name, 
+		       strlen(name));
+		priv->extra_data_len += strlen(name);
+		priv->extra_data[priv->extra_data_len++] = ',';
+
+		/* Dump acct_desc and group_rid */
+		centry_string(centry, mem_ctx);
+		centry_uint32(centry);
 	}
 
 	expired = centry_expired(priv->domain, centry);
