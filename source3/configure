@@ -1900,7 +1900,7 @@ else
 fi
 done
 
-for ac_hdr in readline/history.h sys/capability.h sysacll.h sys/syscall.h
+for ac_hdr in readline/history.h sys/capability.h syscall.h sys/syscall.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -4553,7 +4553,7 @@ else
 fi
 done
 
-for ac_func in llseek _llseek __llseek readdir64 _readdir64 __readdir64
+for ac_func in __sys_llseek llseek _llseek __llseek readdir64 _readdir64 __readdir64
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4560: checking for $ac_func" >&5
