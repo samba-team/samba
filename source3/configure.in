@@ -1615,7 +1615,6 @@ AC_ARG_WITH(krb5,
     CFLAGS="$CFLAGS -I$withval/include"
     LDFLAGS="$LDFLAGS -L$withval/lib"
     AC_DEFINE(HAVE_KRB5)
-    AC_DEFINE_UNQUOTED(KRB5_DIR,${withval})
     have_krb5=yes;
     ;;
   esac ],
