@@ -398,6 +398,10 @@ interfaces
 
 keepalive
 
+lm announce
+
+lm interval
+
 lock dir
 
 load printers
@@ -432,7 +436,11 @@ max ttl
 
 max xmit
 
+max wins ttl
+
 message command
+
+min wins ttl
 
 netbios aliases
 
@@ -1706,6 +1714,45 @@ difficulties.
 
 .B Example:
  	keep alive = 60
+
+.SS lm announce (G)
+
+This parameter determines if Samba will produce Lanman announce
+broadcasts that are needed by OS/2 clients in order for them to
+see the Samba server in their browse list. This parameter can
+have three values, true, false, or auto. The default is auto.
+If set to False Samba will never produce these broadcasts. If
+set to true Samba will produce Lanman announce broadcasts at
+a frequency set by the parameter 'lm interval'. If set to auto
+Samba will not send Lanman announce broadcasts by default but
+will listen for them. If it hears such a broadcast on the wire
+it will then start sending them at a frequency set by the parameter 
+'lm interval'.
+
+See also "lm interval".
+
+.B Default:
+       lm announce = auto
+
+.B Example:
+       lm announce = true
+
+.SS lm interval (G)
+
+If Samba is set to produce Lanman announce broadcasts needed
+by OS/2 clients (see the "lm announce" parameter) this parameter
+defines the frequency in seconds with which they will be made.
+If this is set to zero then no Lanman announcements will be
+made despite the setting of the "lm announce" parameter.
+
+See also "lm announce".
+
+.B Default:
+        lm interval = 60
+
+.B Example:
+        lm interval = 120
+
 .SS load printers (G)
 A boolean variable that controls whether all printers in the printcap
 will be loaded for browsing by default. 
@@ -2252,10 +2299,23 @@ A synonym for this parameter is 'packet size'.
 .SS max ttl (G)
 
 This option tells nmbd what the default 'time to live' of NetBIOS
-names should be (in seconds). You should never need to change this parameter.
+names should be (in seconds) when nmbd is requesting a name using
+either a broadcast or from a WINS server. You should never need to 
+change this parameter.
 
 .B Default:
 	max ttl = 14400
+
+.SS max wins ttl (G)
+
+This option tells nmbd when acting as a WINS server (wins support = true)
+what the maximum 'time to live' of NetBIOS names that nmbd will grant will
+be (in seconds). You should never need to change this parameter.     
+The default is 3 days (259200 seconds).
+
+.B Default:
+        max wins ttl = 259200
+
 .SS max xmit (G)
 
 This option controls the maximum packet size that will be negotiated
@@ -2342,6 +2402,17 @@ kilobytes. The default is 0, which means no limit.
 
 .B Example:
 	min print space = 2000
+
+.SS min wins ttl (G)
+
+This option tells nmbd when acting as a WINS server (wins support = true)
+what the minimum 'time to live' of NetBIOS names that nmbd will grant will
+be (in seconds). You should never need to change this parameter.
+The default is 6 hours (21600 seconds).
+
+.B Default:
+        min wins ttl = 21600
+
 
 .SS netbios aliases (G)
 
@@ -3765,6 +3836,7 @@ network.
 
 .B Default:
 	wins support = no
+
 .SS workgroup (G)
 
 This controls what workgroup your server will appear to be in when
