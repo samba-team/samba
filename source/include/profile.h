@@ -104,6 +104,8 @@ struct profile_stats {
 	unsigned syscall_link_time;
 	unsigned syscall_mknod_count;
 	unsigned syscall_mknod_time;
+	unsigned syscall_realpath_count;
+	unsigned syscall_realpath_time;
 /* stat cache counters */
 	unsigned statcache_lookups;
 	unsigned statcache_misses;

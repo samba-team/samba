@@ -91,6 +91,7 @@ struct vfs_ops {
 	int (*readlink)(struct connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 	int (*link)(struct connection_struct *conn, const char *oldpath, const char *newpath);
 	int (*mknod)(struct connection_struct *conn, const char *path, mode_t mode, SMB_DEV_T dev);
+	char *(*realpath)(struct connection_struct *conn, const char *path, char *resolved_path);
 
 	/* NT ACL operations. */
 

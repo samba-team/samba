@@ -74,6 +74,7 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_readlink,
 	vfswrap_link,
 	vfswrap_mknod,
+	vfswrap_realpath,
 
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,

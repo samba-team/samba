@@ -369,7 +369,7 @@ Byte offset   Type     name                description
  * Oh this is fun. "Standard UNIX permissions" has no
  * meaning in POSIX. We need to define the mapping onto
  * and off the wire as this was not done in the original HP
- * code. JRA.
+ * spec. JRA.
  */
 
 #define UNIX_X_OTH			0000001

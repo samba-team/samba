@@ -411,9 +411,12 @@ static uint32  unix_perms_to_wire(mode_t perms)
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
-static mode_t unix_perms_from_wire( connection_struct *conn, uint32 perms)
+static mode_t unix_perms_from_wire( connection_struct *conn, SMB_STRUCT_STAT *pst, uint32 perms)
 {
 	mode_t ret = 0;
+
+	if (perms == MODE_NO_CHANGE)
+		return pst->st_mode;
 
 	ret |= ((perms & UNIX_X_OTH ) ? S_IXOTH : 0);
 	ret |= ((perms & UNIX_W_OTH ) ? S_IWOTH : 0);
@@ -434,10 +437,16 @@ static mode_t unix_perms_from_wire( connection_struct *conn, uint32 perms)
 	ret |= ((perms & UNIX_SET_UID ) ? S_ISVTX : 0);
 #endif
 
-	/* Apply mode mask */
-	ret &= lp_create_mask(SNUM(conn));
-	/* Add in force bits */
-	ret |= lp_force_create_mode(SNUM(conn));
+	if (VALID_STAT(*pst) && S_ISDIR(pst->st_mode)) {
+		ret &= lp_dir_mask(SNUM(conn));
+		/* Add in force bits */
+		ret |= lp_force_dir_mode(SNUM(conn));
+	} else {
+		/* Apply mode mask */
+		ret &= lp_create_mask(SNUM(conn));
+		/* Add in force bits */
+		ret |= lp_force_create_mode(SNUM(conn));
+	}
 
 	return ret;
 }
@@ -2156,9 +2165,36 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
  Returns true if this pathname is within the share, and thus safe.
 ****************************************************************************/
 
-static BOOL ensure_link_is_safe(connection_struct *conn, char *link_dest)
+static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in, char *link_dest_out)
 {
-	return False;
+#ifdef PATH_MAX
+	char resolved_name[PATH_MAX+1];
+#else
+	pstring resolved_name;
+#endif
+	pstring link_dest;
+
+	pstrcpy(link_dest, link_dest_in);
+
+	if (*link_dest != '/') {
+		pstrcpy(link_dest, conn->connectpath);
+		pstrcat(link_dest, link_dest_in);
+	}
+
+	if (conn->vfs_ops.realpath(conn,dos_to_unix(link_dest,False),resolved_name) == NULL)
+		return -1;
+
+	pstrcpy(link_dest_out, unix_to_dos(resolved_name,False));
+
+	/*
+	 * Check if the link is within the share.
+	 */
+
+	if (strncmp(conn->connectpath, link_dest_out, strlen(conn->connectpath))) {
+		errno = EACCES;
+		return -1;
+	}
+	return 0;
 }
 
 /****************************************************************************
@@ -2172,7 +2208,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	char *pdata = *ppdata;
 	uint16 tran_call = SVAL(inbuf, smb_setup0);
 	uint16 info_level;
-	int mode=0;
+	int dosmode=0;
 	SMB_OFF_T size=0;
 	struct utimbuf tvs;
 	SMB_STRUCT_STAT sbuf;
@@ -2276,6 +2312,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
 		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 
+	if (VALID_STAT(sbuf))
+		unixmode = sbuf.st_mode;
+
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
 		tran_call,fname,info_level,total_data));
 
@@ -2290,7 +2329,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	size = sbuf.st_size;
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
-	mode = dos_mode(conn,fname,&sbuf);
+	dosmode = dos_mode(conn,fname,&sbuf);
 	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)UID_NO_CHANGE;
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)GID_NO_CHANGE;
 
@@ -2313,7 +2352,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			/* write time */
 			tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
 
-			mode = SVAL(pdata,l1_attrFile);
+			dosmode = SVAL(pdata,l1_attrFile);
 			size = IVAL(pdata,l1_cbFile);
 			break;
 		}
@@ -2328,7 +2367,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
 			size = IVAL(pdata,16);
-			mode = IVAL(pdata,24);
+			dosmode = IVAL(pdata,24);
 			break;
 
 		/* XXXX nor this.  not in cifs6.txt, either. */
@@ -2339,7 +2378,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
 			size = IVAL(pdata,16);
-			mode = IVAL(pdata,24);
+			dosmode = IVAL(pdata,24);
 			break;
 
 		case SMB_SET_FILE_BASIC_INFO:
@@ -2369,7 +2408,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 							: write_time);
 
 			/* attributes */
-			mode = IVAL(pdata,32);
+			dosmode = IVAL(pdata,32);
 			break;
 		}
 
@@ -2490,6 +2529,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		 */
 
 		case SMB_SET_FILE_UNIX_BASIC:
+		{
+			uint32 raw_unixmode;
 
 			if (total_data < 100)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
@@ -2509,7 +2550,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			pdata += 8;
 			set_grp = (gid_t)IVAL(pdata,0);
 			pdata += 8;
-			unixmode = unix_perms_from_wire(conn, IVAL(pdata,20));
+			raw_unixmode = IVAL(pdata,20);
+			unixmode = unix_perms_from_wire(conn, &sbuf, raw_unixmode);
 
 			if (!VALID_STAT(sbuf)) {
 
@@ -2533,6 +2575,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				if (tran_call == TRANSACT2_SETFILEINFO)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
+				if (raw_unixmode == MODE_NO_CHANGE)
+					return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 				dev = makedev(dev_major, dev_minor);
 
 				/* We can only create as the owner/group we are. */
@@ -2546,6 +2591,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						file_type != UNIX_TYPE_FIFO)
 					return(ERROR_DOS(ERRDOS,ERRnoaccess));
 
+				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC doing mknod dev %.0f mode \
+0%o for file %s\n", (double)dev, unixmode, fname ));
+
 				/* Ok - do the mknod. */
 				if (conn->vfs_ops.mknod(conn,dos_to_unix(fname,False), unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
@@ -2557,7 +2605,40 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			}
 
+			/*
+			 * Deal with the UNIX specific mode set.
+			 */
+
+			if (raw_unixmode != MODE_NO_CHANGE) {
+				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC setting mode 0%o for file %s\n",
+					unixmode, fname ));
+				if (vfs_chmod(conn,fname,unixmode) != 0)
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+
+			/*
+			 * Deal with the UNIX specific uid set.
+			 */
+
+			if ((set_owner != (uid_t)UID_NO_CHANGE) && (sbuf.st_uid != set_owner)) {
+				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing owner %u for file %s\n",
+					(unsigned int)set_owner, fname ));
+				if (vfs_chown(conn,fname,set_owner, (gid_t)-1) != 0)
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+
+			/*
+			 * Deal with the UNIX specific gid set.
+			 */
+
+			if ((set_grp != (uid_t)GID_NO_CHANGE) && (sbuf.st_gid != set_grp)) {
+				DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_BASIC changing group %u for file %s\n",
+					(unsigned int)set_owner, fname ));
+				if (vfs_chown(conn,fname,(uid_t)-1, set_grp) != 0)
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
 			break;
+		}
 
 		case SMB_SET_FILE_UNIX_LINK:
 		{
@@ -2574,10 +2655,14 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			pstrcpy(link_dest, pdata);
 
-			if (!ensure_link_is_safe(conn, link_dest))
-				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			dos_to_unix(link_dest, True);
 			dos_to_unix(fname, True);
+
+			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
+				fname, link_dest ));
+
 			if (conn->vfs_ops.symlink(conn,link_dest,fname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
@@ -2597,11 +2682,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			pstrcpy(link_dest, pdata);
 
-			if (!ensure_link_is_safe(conn, link_dest))
-				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 			dos_to_unix(link_dest, True);
 			dos_to_unix(fname, True);
+
+			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
+				fname, link_dest ));
+
 			if (conn->vfs_ops.link(conn,link_dest,fname) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			SSVAL(params,0,0);
@@ -2623,7 +2712,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
 	DEBUG(6,("size: %.0f ", (double)size));
-	DEBUG(6,("mode: %x\n"  , mode));
+	DEBUG(6,("dosmode: %x\n"  , dosmode));
 
 	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
 			(info_level == SMB_SET_FILE_ALLOCATION_INFO) ||
@@ -2668,12 +2757,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 	}
 
 	/* check the mode isn't different, before changing it */
-	if ((mode != 0) && (mode != dos_mode(conn, fname, &sbuf))) {
+	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, &sbuf))) {
 
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n",
-			fname, mode ));
+			fname, dosmode ));
 
-		if(file_chmod(conn, fname, mode, NULL)) {
+		if(file_chmod(conn, fname, dosmode, NULL)) {
 			DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}

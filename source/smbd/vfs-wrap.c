@@ -702,6 +702,21 @@ int vfswrap_mknod(connection_struct *conn, const char *pathname, mode_t mode, SM
 	return result;
 }
 
+char *vfswrap_realpath(connection_struct *conn, const char *path, char *resolved_path)
+{
+	char *result;
+
+	START_PROFILE(syscall_realpath);
+
+#ifdef VFS_CHECK_NULL
+	if ((path == NULL) || (resolved_path == NULL))
+                smb_panic("NULL pointer passed to vfswrap_realpath()\n");
+#endif
+	result = sys_realpath(path, resolved_path);
+	END_PROFILE(syscall_realpath);
+	return result;
+}
+
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
 {
 	size_t result;

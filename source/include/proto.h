@@ -946,6 +946,7 @@ int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
+char *sys_realpath(const char *path, char *resolved_path);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
 int sys_symlink(const char *oldpath, const char *newpath);
@@ -4586,6 +4587,7 @@ int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *ne
 int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz);
 int vfswrap_link(connection_struct *conn, const char *oldpath, const char *newpath);
 int vfswrap_mknod(connection_struct *conn, const char *pathname, mode_t mode, SMB_DEV_T dev);
+char *vfswrap_realpath(connection_struct *conn, const char *path, char *resolved_path);
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc);
 size_t vfswrap_get_nt_acl(files_struct *fsp, char *name, SEC_DESC **ppdesc);
 BOOL vfswrap_fset_nt_acl(files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd);
