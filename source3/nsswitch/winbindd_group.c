@@ -1082,3 +1082,88 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	return result;
 }
+
+
+/* Get user supplementary sids. This is equivalent to the
+   winbindd_getgroups() function but it involves a SID->SIDs mapping
+   rather than a NAME->SID->SIDS->GIDS mapping, which means we avoid
+   idmap. This call is designed to be used with applications that need
+   to do ACL evaluation themselves. Note that the cached info3 data is
+   not used 
+
+   this function assumes that the SID that comes in is a user SID. If
+   you pass in another type of SID then you may get unpredictable
+   results.
+*/
+enum winbindd_result winbindd_getusersids(struct winbindd_cli_state *state)
+{
+	DOM_SID user_sid;
+	NTSTATUS status;
+	DOM_SID **user_grpsids;
+	struct winbindd_domain *domain;
+	enum winbindd_result result = WINBINDD_ERROR;
+	unsigned int i;
+	TALLOC_CTX *mem_ctx;
+	char *ret;
+	uint32 num_groups;
+	unsigned ofs, ret_size = 0;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	if (!string_to_sid(&user_sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n", state->request.data.sid));
+		return WINBINDD_ERROR;
+	}
+
+	if (!(mem_ctx = talloc_init("winbindd_getusersids(%s)",
+				    state->request.data.username))) {
+		return WINBINDD_ERROR;
+	}
+
+	/* Get info for the domain */	
+	if ((domain = find_domain_from_sid(&user_sid)) == NULL) {
+		DEBUG(0,("could not find domain entry for sid %s\n", 
+			  sid_string_static(&user_sid)));
+		goto done;
+	}
+
+	status = domain->methods->lookup_usergroups(domain, mem_ctx, 
+						    &user_sid, &num_groups, 
+						    &user_grpsids);
+	if (!NT_STATUS_IS_OK(status)) 
+		goto done;
+
+	if (num_groups == 0) {
+		goto no_groups;
+	}
+
+	/* work out the response size */
+	for (i = 0; i < num_groups; i++) {
+		const char *s = sid_string_static(user_grpsids[i]);
+		ret_size += strlen(s) + 1;
+	}
+
+	/* build the reply */
+	ret = malloc(ret_size);
+	if (!ret) goto done;
+	ofs = 0;
+	for (i = 0; i < num_groups; i++) {
+		const char *s = sid_string_static(user_grpsids[i]);
+		safe_strcpy(ret + ofs, s, ret_size - ofs);
+		ofs += strlen(ret+ofs) + 1;
+	}
+
+no_groups:
+	/* Send data back to client */
+	state->response.data.num_entries = num_groups;
+	state->response.extra_data = ret;
+	state->response.length += ret_size;
+	result = WINBINDD_OK;
+
+ done:
+	talloc_destroy(mem_ctx);
+
+	return result;
+}
+
