@@ -38,7 +38,11 @@ RCSID("$Id$");
 
 #include "sl_locl.h"
 
-static size_t __attribute__ ((unused))
+static size_t
+print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
+    __attribute__ ((unused));
+
+static size_t
 print_sl (FILE *stream, int mdoc, int longp, SL_cmd *c)
 {
     if(mdoc){
