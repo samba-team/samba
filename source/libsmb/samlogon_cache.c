@@ -52,6 +52,56 @@ BOOL netsamlogon_cache_shutdown(void)
 }
 
 /***********************************************************************
+ Clear cache getpwnam and getgroups entries from the winbindd cache
+***********************************************************************/
+void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
+{
+	fstring domain;
+	TDB_DATA key;
+	BOOL got_tdb = False;
+
+	/* We may need to call this function from smbd which will not have
+           winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
+
+	if (!tdb) {
+		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000,
+				   TDB_DEFAULT, O_RDWR, 0600);
+		if (!tdb) {
+			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
+			return;
+		}
+		got_tdb = True;
+	}
+
+	unistr2_to_unix(domain, &user->uni_logon_dom, sizeof(domain) - 1);
+
+	/* Clear U/DOMAIN/RID cache entry */
+
+	asprintf(&key.dptr, "U/%s/%d", domain, user->user_rid);
+	key.dsize = strlen(key.dptr) - 1; /* keys are not NULL terminated */
+
+	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key.dptr));
+
+	tdb_delete(tdb, key);
+
+	SAFE_FREE(key.dptr);
+
+	/* Clear UG/DOMAIN/RID cache entry */
+
+	asprintf(&key.dptr, "UG/%s/%d", domain, user->user_rid);
+	key.dsize = strlen(key.dptr) - 1; /* keys are not NULL terminated */
+
+	DEBUG(10, ("netsamlogon_clear_cached_user: clearing %s\n", key.dptr));
+
+	tdb_delete(tdb, key);
+
+	SAFE_FREE(key.dptr);
+
+	if (got_tdb)
+		tdb_close(tdb);
+}
+
+/***********************************************************************
  Store a NET_USER_INFO_3 structure in a tdb for later user 
 ***********************************************************************/
 
@@ -132,4 +182,21 @@ NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, DOM_SID *dom_sid, u
 	return user;
 }
 
+BOOL netsamlogon_cache_have(DOM_SID *dom_sid, uint32 rid)
+{
+	TALLOC_CTX *mem_ctx = talloc_init_named("netsamlogon_cache_have");
+	NET_USER_INFO_3 *user = NULL;
+	BOOL result;
 
+	if (!mem_ctx)
+		return False;
+
+	user = netsamlogon_cache_get(mem_ctx, dom_sid, rid);
+
+	result = (user != NULL);
+
+	talloc_destroy(mem_ctx);
+	SAFE_FREE(user);
+
+	return result;
+}
