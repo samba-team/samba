@@ -682,6 +682,7 @@ static int process_root(int argc, char *argv[])
 
 	switch(argc) {
 	case 0:
+		fstrcpy(user_name, "");
 		break;
 	case 1:
 		fstrcpy(user_name, argv[0]);
@@ -747,10 +748,21 @@ static int process_root(int argc, char *argv[])
 		 */
 
 		if(local_flags & LOCAL_ENABLE_USER) {
-			struct smb_passwd *smb_pass = getsmbpwnam(user_name);
-			if((smb_pass != NULL) && (smb_pass->smb_passwd != NULL)) {
+			
+			SAM_ACCOUNT *sampass = NULL;
+			
+			pdb_init_sam(&sampass);
+			if (!pdb_getsampwnam(sampass, user_name)) {
+				printf("ERROR: Unable to locate %s in passdb!\n", user_name);
+				pdb_free_sam(sampass);
+				result = 1;
+				goto done;
+			}
+			if((sampass != NULL) && (pdb_get_lanman_passwd(sampass) != NULL)) {
 				new_passwd = xstrdup("XXXX"); /* Don't care. */
 			}
+			
+			pdb_free_sam(sampass);
 		}
 
 		if(!new_passwd)
@@ -769,13 +781,27 @@ static int process_root(int argc, char *argv[])
 	} 
 
 	if(!(local_flags & (LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_ENABLE_USER|LOCAL_DELETE_USER|LOCAL_SET_NO_PASSWORD))) {
-		struct smb_passwd *smb_pass = getsmbpwnam(user_name);
+		SAM_ACCOUNT *sampass = NULL;
+		uint16 acct_ctrl;
+		
+		pdb_init_sam(&sampass);
+		
+		if (!pdb_getsampwnam(sampass, user_name)) {
+			printf("ERROR: Unable to locate %s in passdb!\n", user_name);
+			pdb_free_sam(sampass);
+			result = 1;
+			goto done;
+		}
+		
 		printf("Password changed for user %s.", user_name );
-		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_DISABLED ))
+		acct_ctrl = pdb_get_acct_ctrl(sampass);
+		if(acct_ctrl & ACB_DISABLED)
 			printf(" User has disabled flag set.");
-		if((smb_pass != NULL) && (smb_pass->acct_ctrl & ACB_PWNOTREQ))
+		if(acct_ctrl & ACB_PWNOTREQ)
 			printf(" User has no password flag set.");
 		printf("\n");
+		
+		pdb_free_sam(sampass);
 	}
 
  done:
@@ -899,7 +925,7 @@ int main(int argc, char **argv)
 	
 	charset_initialise();
 	
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(False)) {
 		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}

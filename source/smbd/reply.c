@@ -457,21 +457,25 @@ int reply_ioctl(connection_struct *conn,
 
 /****************************************************************************
  always return an error: it's just a matter of which one...
+ FIXME: memory leak - no call to pdb_free_sam()  --jerry
  ****************************************************************************/
 static int session_trust_account(connection_struct *conn, char *inbuf, char *outbuf, char *user,
                                 char *smb_passwd, int smb_passlen,
                                 char *smb_nt_passwd, int smb_nt_passlen)
 {
-  struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
+  SAM_ACCOUNT *sam_trust_acct = NULL; /* check if trust account exists */
+  uint16        acct_ctrl;  
+
   if (lp_security() == SEC_USER) {
-    smb_trust_acct = getsmbpwnam(user);
+    pdb_init_sam(&sam_trust_acct);
+    pdb_getsampwnam(sam_trust_acct, user);
   } else {
     DEBUG(0,("session_trust_account: Trust account %s only supported with security = user\n", user));
     SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
     return(ERROR(0, NT_STATUS_LOGON_FAILURE));
   }
 
-  if (smb_trust_acct == NULL) {
+  if (sam_trust_acct == NULL) {
     /* lkclXXXX: workstation entry doesn't exist */
     DEBUG(0,("session_trust_account: Trust account %s user doesn't exist\n",user));
     SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
@@ -483,25 +487,26 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
       return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
-    if (!smb_password_ok(smb_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd)) {
+    if (!smb_password_ok(sam_trust_acct, NULL, (unsigned char *)smb_passwd, (unsigned char *)smb_nt_passwd)) {
       DEBUG(0,("session_trust_account: Trust Account %s - password failed\n", user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_LOGON_FAILURE));
     }
 
-    if (smb_trust_acct->acct_ctrl & ACB_DOMTRUST) {
+    acct_ctrl = pdb_get_acct_ctrl(sam_trust_acct);
+    if (acct_ctrl & ACB_DOMTRUST) {
       DEBUG(0,("session_trust_account: Domain trust account %s denied by server\n",user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT));
     }
 
-    if (smb_trust_acct->acct_ctrl & ACB_SVRTRUST) {
+    if (acct_ctrl & ACB_SVRTRUST) {
       DEBUG(0,("session_trust_account: Server trust account %s denied by server\n",user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT));
     }
 
-    if (smb_trust_acct->acct_ctrl & ACB_WSTRUST) {
+    if (acct_ctrl & ACB_WSTRUST) {
       DEBUG(4,("session_trust_account: Wksta trust account %s denied by server\n", user));
       SSVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
       return(ERROR(0, NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT));

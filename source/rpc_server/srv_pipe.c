@@ -269,8 +269,7 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	fstring domain;
 	fstring wks;
 	BOOL guest_user = False;
-	struct smb_passwd *smb_pass = NULL;
-	struct passwd *pass = NULL;
+	SAM_ACCOUNT *sampass = NULL;
 	uchar null_smb_passwd[16];
 	uchar *smb_passwd_ptr = NULL;
 	
@@ -359,15 +358,6 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 
 	}
 
-	/*
-	 * Find the user in the unix password db.
-	 */
-
-	if(!(pass = Get_Pwnam(pipe_user_name,True))) {
-		DEBUG(1,("Couldn't find user '%s' in UNIX password database.\n",pipe_user_name));
-		return(False);
-	}
-
 	if(!guest_user) {
 
 		become_root();
@@ -380,33 +370,32 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 			return False;
 		}
 
-		if(!(smb_pass = getsmbpwnam(pipe_user_name))) {
+		pdb_init_sam(&sampass);
+
+		if(!pdb_getsampwnam(sampass, pipe_user_name)) {
 			DEBUG(1,("api_pipe_ntlmssp_verify: Cannot find user %s in smb passwd database.\n",
 				pipe_user_name));
+			pdb_free_sam(sampass);
 			unbecome_root();
 			return False;
 		}
-
+		
 		unbecome_root();
 
-		if (smb_pass == NULL) {
-			DEBUG(1,("api_pipe_ntlmssp_verify: Couldn't find user '%s' in smb_passwd file.\n", 
-				pipe_user_name));
-			return(False);
-		}
-
-		/* Quit if the account was disabled. */
-		if((smb_pass->acct_ctrl & ACB_DISABLED) || !smb_pass->smb_passwd) {
+	        /* Quit if the account was disabled. */
+	        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
-			return(False);
-		}
-
-		if(!smb_pass->smb_nt_passwd) {
+			pdb_free_sam(sampass);
+			return False;
+ 	       }
+ 
+		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
-			return(False);
-		}
-
-		smb_passwd_ptr = smb_pass->smb_passwd;
+			pdb_free_sam(sampass);
+			return False;
+	        }
+ 
+	        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -457,8 +446,8 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	p->pipe_user.uid = pass->pw_uid;
-	p->pipe_user.gid = pass->pw_gid;
+	p->pipe_user.uid = pdb_get_uid(sampass);
+	p->pipe_user.gid = pdb_get_gid(sampass);
 
 	/* Set up pipe user group membership. */
 	initialise_groups(pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);

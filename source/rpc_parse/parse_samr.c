@@ -5722,48 +5722,54 @@ void init_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
  *************************************************************************/
 
-void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
-			   NTTIME * logon_time,
-			   NTTIME * logoff_time,
-			   NTTIME * kickoff_time,
-			   NTTIME * pass_last_set_time,
-			   NTTIME * pass_can_change_time,
-			   NTTIME * pass_must_change_time,
-			   char *user_name,
-			   char *full_name,
-			   char *home_dir,
-			   char *dir_drive,
-			   char *log_scr,
-			   char *prof_path,
-			   char *desc,
-			   char *wkstas,
-			   char *unk_str,
-			   char *mung_dial,
-			   uint32 user_rid,
-			   uint32 group_rid,
-			   uint32 acb_info,
-			   uint32 unknown_3,
-			   uint16 logon_divs,
-			   LOGON_HRS * hrs,
-			   uint32 unknown_5, uint32 unknown_6)
+void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 {
-	int len_user_name = user_name != NULL ? strlen(user_name) : 0;
-	int len_full_name = full_name != NULL ? strlen(full_name) : 0;
-	int len_home_dir = home_dir != NULL ? strlen(home_dir) : 0;
-	int len_dir_drive = dir_drive != NULL ? strlen(dir_drive) : 0;
-	int len_logon_script = log_scr != NULL ? strlen(log_scr) : 0;
-	int len_profile_path = prof_path != NULL ? strlen(prof_path) : 0;
-	int len_description = desc != NULL ? strlen(desc) : 0;
-	int len_workstations = wkstas != NULL ? strlen(wkstas) : 0;
-	int len_unknown_str = unk_str != NULL ? strlen(unk_str) : 0;
-	int len_munged_dial = mung_dial != NULL ? strlen(mung_dial) : 0;
+	NTTIME 		logon_time, logoff_time, kickoff_time,
+			pass_last_set_time, pass_can_change_time,
+			pass_must_change_time;
 
-	usr->logon_time = *logon_time;
-	usr->logoff_time = *logoff_time;
-	usr->kickoff_time = *kickoff_time;
-	usr->pass_last_set_time = *pass_last_set_time;
-	usr->pass_can_change_time = *pass_can_change_time;
-	usr->pass_must_change_time = *pass_must_change_time;
+	int 		len_user_name, len_full_name, len_home_dir,
+			len_dir_drive, len_logon_script, len_profile_path,
+			len_description, len_workstations, len_unknown_str,
+			len_munged_dial;
+			
+	char*		user_name = pdb_get_username(pw);
+	char*		full_name = pdb_get_fullname(pw);
+	char*		home_dir  = pdb_get_homedir(pw);
+	char*		dir_drive = pdb_get_dirdrive(pw);
+	char*		logon_script = pdb_get_logon_script(pw);
+	char*		profile_path = pdb_get_profile_path(pw);
+	char*		description = pdb_get_acct_desc(pw);
+	char*		workstations = pdb_get_workstations(pw);
+	char*		munged_dial = pdb_get_munged_dial(pw);
+
+	len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
+	len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
+	len_home_dir     = home_dir     != NULL ? strlen(home_dir    )+1 : 0;
+	len_dir_drive    = dir_drive    != NULL ? strlen(dir_drive   )+1 : 0;
+	len_logon_script = logon_script != NULL ? strlen(logon_script)+1 : 0;
+	len_profile_path = profile_path != NULL ? strlen(profile_path)+1 : 0;
+	len_description  = description  != NULL ? strlen(description )+1 : 0;
+	len_workstations = workstations != NULL ? strlen(workstations)+1 : 0;
+	len_unknown_str  = 0;
+	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
+
+
+	/* Create NTTIME structs */
+	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(pw));
+	unix_to_nt_time (&logoff_time, 		pdb_get_logoff_time(pw));
+	unix_to_nt_time (&kickoff_time, 	pdb_get_kickoff_time(pw));
+	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(pw));
+	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(pw));
+	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(pw));
+	
+	/* structure assignment */
+	usr->logon_time            = logon_time;
+	usr->logoff_time           = logoff_time;
+	usr->kickoff_time          = kickoff_time;
+	usr->pass_last_set_time    = pass_last_set_time;
+	usr->pass_can_change_time  = pass_can_change_time;
+	usr->pass_must_change_time = pass_must_change_time;
 
 	init_uni_hdr(&usr->hdr_user_name, len_user_name);
 	init_uni_hdr(&usr->hdr_full_name, len_full_name);
@@ -5779,14 +5785,14 @@ void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	ZERO_STRUCT(usr->nt_pwd);
 	ZERO_STRUCT(usr->lm_pwd);
 
-	usr->user_rid = user_rid;
-	usr->group_rid = group_rid;
-	usr->acb_info = acb_info;
-	usr->unknown_3 = unknown_3;	/* 0x00ff ffff */
+	usr->user_rid  = pdb_get_user_rid(pw);
+	usr->group_rid = pdb_get_group_rid(pw);
+	usr->acb_info  = pdb_get_acct_ctrl(pw);
+	usr->unknown_3 = pdb_get_unknown3(pw);
 
-	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
-	usr->ptr_logon_hrs = hrs ? 1 : 0;
-	usr->unknown_5 = unknown_5;	/* 0x0002 0000 */
+	usr->logon_divs = pdb_get_logon_divs(pw); 
+	usr->ptr_logon_hrs = pdb_get_hours(pw) ? 1 : 0;
+	usr->unknown_5 = pdb_get_unknown5(pw); /* 0x0002 0000 */
 
 	ZERO_STRUCT(usr->padding1);
 
@@ -5794,17 +5800,21 @@ void init_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
 	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
 	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
-	init_unistr2(&usr->uni_logon_script, log_scr, len_logon_script);
-	init_unistr2(&usr->uni_profile_path, prof_path, len_profile_path);
-	init_unistr2(&usr->uni_acct_desc, desc, len_description);
-	init_unistr2(&usr->uni_workstations, wkstas, len_workstations);
-	init_unistr2(&usr->uni_unknown_str, unk_str, len_unknown_str);
-	init_unistr2(&usr->uni_munged_dial, mung_dial, len_munged_dial);
+	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
+	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
+	init_unistr2(&usr->uni_acct_desc, description, len_description);
+	init_unistr2(&usr->uni_workstations, workstations, len_workstations);
+	init_unistr2(&usr->uni_unknown_str, NULL, len_unknown_str);
+	init_unistr2(&usr->uni_munged_dial, munged_dial, len_munged_dial);
 
-	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
+	usr->unknown_6 = pdb_get_unknown6(pw);
 	usr->padding4 = 0;
 
-	memcpy(&usr->logon_hrs, hrs, sizeof(usr->logon_hrs));
+	if (pdb_get_hours(pw)) {
+		usr->logon_hrs.len = pdb_get_hours_len(pw);
+		memcpy(&usr->logon_hrs.hours, pdb_get_hours(pw), MAX_HOURS_LEN);
+	} else
+		memset(&usr->logon_hrs, 0xff, sizeof(usr->logon_hrs));
 }
 
 /*******************************************************************

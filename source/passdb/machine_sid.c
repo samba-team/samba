@@ -70,7 +70,7 @@ BOOL pdb_generate_sam_sid(void)
 	generate_wellknown_sids();
 
 	pstrcpy(sid_file, lp_smb_passwd_file());
-	p = strrchr_m(sid_file, '/');
+	p = strrchr(sid_file, '/');
 	if(p != NULL) {
 		*++p = '\0';
 	}

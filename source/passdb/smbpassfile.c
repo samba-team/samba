@@ -30,13 +30,15 @@
 extern int DEBUGLEVEL;
 extern pstring global_myname;
 
-BOOL global_machine_password_needs_changing = False;
+
+static int mach_passwd_lock_depth;
+static FILE *mach_passwd_fp;
 
 /***************************************************************
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
+static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
   if (fd < 0)
     return False;
@@ -58,7 +60,7 @@ BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-BOOL pw_file_unlock(int fd, int *plock_depth)
+static BOOL pw_file_unlock(int fd, int *plock_depth)
 {
   BOOL ret=True;
 
@@ -74,9 +76,6 @@ BOOL pw_file_unlock(int fd, int *plock_depth)
   return ret;
 }
 
-static int mach_passwd_lock_depth;
-static FILE *mach_passwd_fp;
-
 /************************************************************************
  Routine to get the name for an old trust account file.
 ************************************************************************/
@@ -85,12 +84,20 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
 {
   unsigned int mac_file_len;
   char *p;
-
+#ifdef WITH_TDBPWD
+  pstrcpy(mac_file, lp_tdb_passwd_file());
+#else
   pstrcpy(mac_file, lp_smb_passwd_file());
-  p = strrchr(mac_file, '/');
-  if(p != NULL)
-    *++p = '\0';
+#endif
 
+  /* strip the filename to the last '/' */
+
+  p = strrchr(mac_file, '/');
+  if (p) {
+    p++;
+    p = '\0';
+  }
+ 
   mac_file_len = strlen(mac_file);
 
   if ((int)(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) < 0)

@@ -117,7 +117,9 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
 
 static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
-	struct smb_passwd *smb_pass;
+	SAM_ACCOUNT *sampass = NULL;
+	uint8 *pass;
+	BOOL ret;
 
 #if 0
     /*
@@ -136,22 +138,29 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
 		return False;
 	}
 #endif /* 0 */
+	if(!pdb_init_sam(&sampass))
+		return False;
 
 	/* JRA. This is ok as it is only used for generating the challenge. */
-
 	become_root();
-	smb_pass = getsmbpwnam(mach_acct);
+	ret=pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
 
-	if ((smb_pass) != NULL && !(smb_pass->acct_ctrl & ACB_DISABLED) &&
-        (smb_pass->smb_nt_passwd != NULL))
-	{
-		memcpy(md4pw, smb_pass->smb_nt_passwd, 16);
-		dump_data(5, md4pw, 16);
+ 	if (ret==False) {
+ 		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+		pdb_free_sam(sampass);
+		return False;
+	}
 
+	if (!(pdb_get_acct_ctrl(sampass) & ACB_DISABLED) && ((pass=pdb_get_nt_passwd(sampass)) != NULL)) {
+		memcpy(md4pw, pass, 16);
+		dump_data(5, md4pw, 16);
+ 		pdb_free_sam(sampass);
 		return True;
 	}
+ 	
 	DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
+	pdb_free_sam(sampass);
 	return False;
 }
 
@@ -306,8 +315,8 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	uint32 status = NT_STATUS_NOPROBLEMO;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
-	struct smb_passwd *smb_pass;
-	BOOL ret;
+	SAM_ACCOUNT *sampass=NULL;
+	BOOL ret=False;
 	unsigned char pwd[16];
 	int i;
 
@@ -325,24 +334,33 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	pstrcpy(mach_acct, dos_unistrn2(q_u->clnt_id.login.uni_acct_name.buffer,
 	                            q_u->clnt_id.login.uni_acct_name.uni_str_len));
 
+	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+
+	pdb_init_sam(&sampass);
+
+	become_root();
+	ret=pdb_getsampwnam(sampass, mach_acct);
+	unbecome_root();
+
+	/* Ensure the account exists and is a machine account. */
+
+	if (ret==False || !(pdb_get_acct_ctrl(sampass) & ACB_WSTRUST)) {
+		pdb_free_sam(sampass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+				    				    
+
 	/*
 	 * Check the machine account name we're changing is the same
 	 * as the one we've authenticated from. This prevents arbitrary
 	 * machines changing other machine account passwords.
 	 */
 
-	if (!strequal(mach_acct, p->dc.mach_acct))
+	if (!strequal(mach_acct, p->dc.mach_acct)) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_ACCESS_DENIED;
+	}
 	
-	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
-
-	become_root();
-	smb_pass = getsmbpwnam(mach_acct);
-	unbecome_root();
-
-	/* Ensure the account exists and is a machine account. */
-	if (smb_pass == NULL || !(smb_pass->acct_ctrl & ACB_WSTRUST))
-		return NT_STATUS_NO_SUCH_USER;
 
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
@@ -352,20 +370,21 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	smb_pass->smb_passwd    = pwd;
-	smb_pass->smb_nt_passwd = pwd;
-	smb_pass->acct_ctrl     = ACB_WSTRUST;
-
+	pdb_set_lanman_passwd (sampass, pwd);
+	pdb_set_nt_passwd     (sampass, pwd);
+	pdb_set_acct_ctrl     (sampass, ACB_WSTRUST);
+ 
 	become_root();
-	ret = mod_smbpwd_entry(smb_pass,False);
+	ret = pdb_update_sam_account (sampass,False);
 	unbecome_root();
 
-	if (!ret)
-		status = NT_STATUS_WRONG_PASSWORD;
+	if (ret)
+		status = NT_STATUS_NOPROBLEMO;
 
 	/* set up the LSA Server Password Set response */
 	init_net_r_srv_pwset(r_u, &srv_cred, status);
 
+	pdb_free_sam(sampass);
 	return r_u->status;
 }
 
@@ -401,7 +420,7 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
  net_login_interactive:
  *************************************************************************/
 
-static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_pass, pipes_struct *p)
+static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
 {
 	uint32 status = 0x0;
 
@@ -437,9 +456,8 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_p
 	dump_data(100, nt_pwd, 16);
 #endif
 
-	if (memcmp(smb_pass->smb_passwd   , lm_pwd, 16) != 0 ||
-	    memcmp(smb_pass->smb_nt_passwd, nt_pwd, 16) != 0)
-	{
+	if (memcmp(pdb_get_lanman_passwd(sampass), lm_pwd, 16) != 0 ||
+	    memcmp(pdb_get_nt_passwd(sampass), nt_pwd, 16) != 0) {
 		status = NT_STATUS_WRONG_PASSWORD;
 	}
 
@@ -450,8 +468,10 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, struct smb_passwd *smb_p
  _net_login_network:
  *************************************************************************/
 
-static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
+static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 {
+	uint8    *nt_pwd, *lanman_pwd;
+
 	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
 		id2->hdr_lm_chal_resp.str_str_len, 
 		id2->hdr_nt_chal_resp.str_str_len));
@@ -459,12 +479,11 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 	/* JRA. Check the NT password first if it exists - this is a higher quality 
            password, if it exists and it doesn't match - fail. */
 
-	if (id2->hdr_nt_chal_resp.str_str_len == 24 && 
-		smb_pass->smb_nt_passwd != NULL)
-	{
-		if(smb_password_check((char *)id2->nt_chal_resp.buffer,
-		                   smb_pass->smb_nt_passwd,
-                           id2->lm_chal)) 
+	nt_pwd = pdb_get_nt_passwd(sampass);
+	lanman_pwd = pdb_get_lanman_passwd(sampass);
+
+	if (id2->hdr_nt_chal_resp.str_str_len == 24 && nt_pwd != NULL)	{
+		if(smb_password_check((char *)id2->nt_chal_resp.buffer, nt_pwd, id2->lm_chal)) 
 			return NT_STATUS_NO_PROBLEMO;
 		else
 			return NT_STATUS_WRONG_PASSWORD;
@@ -478,11 +497,9 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, struct smb_passwd *smb_pass)
 	   not do, for various security-hole reasons).
 	 */
 
-	if (lp_lanman_auth() &&
-	    id2->hdr_lm_chal_resp.str_str_len == 24 &&
+	if (lp_lanman_auth() && id2->hdr_lm_chal_resp.str_str_len == 24 &&
 		smb_password_check((char *)id2->lm_chal_resp.buffer,
-		                   smb_pass->smb_passwd,
-		                   id2->lm_chal))
+		                   lanman_pwd, id2->lm_chal)) 
 	{
 		return NT_STATUS_NO_PROBLEMO;
 	}
@@ -502,10 +519,11 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	uint32 status = NT_STATUS_NOPROBLEMO;
 	NET_USER_INFO_3 *usr_info = NULL;
 	DOM_CRED srv_cred;
-	struct smb_passwd *smb_pass = NULL;
-	struct sam_passwd *sam_pass = NULL;
+	SAM_ACCOUNT *sampass = NULL;
 	UNISTR2 *uni_samlogon_user = NULL;
 	fstring nt_username;
+	BOOL ret;
+	uint16 acct_ctrl;
    
 	usr_info = (NET_USER_INFO_3 *)talloc(p->mem_ctx, sizeof(NET_USER_INFO_3));
 	if (!usr_info)
@@ -560,92 +578,63 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 
 	map_username(nt_username);
 
-	/*
-	 * We previously called Get_Pwnam(ntusername, True) here which could
-	 * have modified the case of the username.  Beaware of this
-	 * is the username case in smbpasswd does not match that in /etc/passwd
-	 * and domain logons begin to fail.  -- jerry
-	 */
-
-	/* XXXX hack to get standard_sub_basic() to use sam logon username */
-	/* possibly a better way would be to do a become_user() call */
-	sam_logon_in_ssb = True;
-	pstrcpy(samlogon_user, nt_username);
-
+	/* get the account information */
+	pdb_init_sam(&sampass);
 	become_root();
-	sam_pass = getsam21pwnam(nt_username);
+	ret = pdb_getsampwnam(sampass, nt_username);
 	unbecome_root();
-	smb_pass = pdb_sam_to_smb(sam_pass);
 
-	sam_logon_in_ssb = False;
-        
-	if ((smb_pass=pdb_sam_to_smb(sam_pass)) == NULL)
+	if (!ret)
 		return NT_STATUS_NO_SUCH_USER;
-	else if (smb_pass->acct_ctrl & ACB_DISABLED)
+
+	acct_ctrl = pdb_get_acct_ctrl(sampass);
+
+	if (acct_ctrl & ACB_DISABLED)
 		return NT_STATUS_ACCOUNT_DISABLED;
     
 	/* Validate password - if required. */
-    
-	if (smb_pass->acct_ctrl & ACB_PWNOTREQ) {
-	  if (!lp_null_passwords()) {
-	    DEBUG(3,("Account for user %s has a null password and null passwords are NOT allowed",nt_username));
-	    return NT_STATUS_ACCOUNT_DISABLED;
-	  }
-	} 
+
+	if (!(acct_ctrl & ACB_PWNOTREQ)) {
+		switch (q_u->sam_id.logon_level) {
+		case INTERACTIVE_LOGON_TYPE:
+			/* interactive login. */
+			status = net_login_interactive(&q_u->sam_id.ctr->auth.id1, sampass, p);
+			break;
+		case NET_LOGON_TYPE:
+			/* network login.  lm challenge and 24 byte responses */
+			status = net_login_network(&q_u->sam_id.ctr->auth.id2, sampass);
+			break;
+		}
+	}
+
+	if (status != NT_STATUS_NOPROBLEMO)
+		return status;
 
 #ifdef WITH_PAM
 	become_root();
-#if 0	/* JERRY */
-	status = smb_pam_accountcheck(nt_username);
-#else
-	status = smb_pam_accountcheck(sam_pass->smb_name);
-#endif
+	status = smb_pam_accountcheck(pdb_get_username(sampass));
 	unbecome_root();
 	if (status != NT_STATUS_NOPROBLEMO)
 		return status;
 #endif
 
-	if (!(smb_pass->acct_ctrl & ACB_PWNOTREQ)) {
-		switch (q_u->sam_id.logon_level) {
-		case INTERACTIVE_LOGON_TYPE:
-			/* interactive login. */
-			status = net_login_interactive(&q_u->sam_id.ctr->auth.id1, smb_pass, p);
-			break;
-		case NET_LOGON_TYPE:
-			/* network login.  lm challenge and 24 byte responses */
-			status = net_login_network(&q_u->sam_id.ctr->auth.id2, smb_pass);
-			break;
-		}
-	}
-    
-	if (status != NT_STATUS_NOPROBLEMO)
-		return status;
 
 	/* lkclXXXX this is the point at which, if the login was
 		successful, that the SAM Local Security Authority should
 		record that the user is logged in to the domain.
 	*/
     
-	/* return the profile plus other bits :-) */
-    
 	{
 		DOM_GID *gids = NULL;
 		int num_gids = 0;
-		NTTIME dummy_time;
 		pstring my_name;
 		pstring my_workgroup;
 		pstring domain_groups;
-		uint32 r_uid;
-		uint32 r_gid;
 	
 		/* set up pointer indicating user/password failed to be found */
 		usr_info->ptr_user_info = 0;
         
-		dummy_time.low  = 0xffffffff;
-		dummy_time.high = 0x7fffffff;
-
 		pstrcpy(my_workgroup, lp_workgroup());
-        
 		pstrcpy(my_name, global_myname);
 		strupper(my_name);
 
@@ -665,44 +654,17 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		gids = NULL;
 		num_gids = make_dom_gids(p->mem_ctx, domain_groups, &gids);
         
-		if (pdb_name_to_rid(nt_username, &r_uid, &r_gid))
-		{
-			init_net_user_info3(p->mem_ctx, usr_info,
-					&dummy_time, /* logon_time */
-					&dummy_time, /* logoff_time */
-					&dummy_time, /* kickoff_time */
-					&dummy_time, /* pass_last_set_time */
-					&dummy_time, /* pass_can_change_time */
-					&dummy_time, /* pass_must_change_time */
-                                
-					nt_username , /* user_name */
-					sam_pass->full_name,	/* full_name */
-					sam_pass->logon_script    , /* logon_script */
-					sam_pass->profile_path    , /* profile_path */
-					sam_pass->home_dir        , /* home_dir */
-					sam_pass->dir_drive      , /* dir_drive */
-                               
-					0, /* logon_count */
-					0, /* bad_pw_count */
-                                
-					r_uid   , /* RID user_id */
-					r_gid   , /* RID group_id */
-					num_gids,    /* uint32 num_groups */
-					gids    , /* DOM_GID *gids */
-					0x20    , /* uint32 user_flgs (?) */
-                               
-					NULL, /* char sess_key[16] */
-                                
-					my_name     , /* char *logon_srv */
-					my_workgroup, /* char *logon_dom */
-                                
-					&global_sam_sid,     /* DOM_SID *dom_sid */
-					NULL); /* char *other_sids */
-		}
-		else
-		{
-			return NT_STATUS_NO_SUCH_USER;
-		}
+		init_net_user_info3(p->mem_ctx, usr_info, sampass,
+                            0, /* logon_count */
+                            0, /* bad_pw_count */
+                            num_gids,    /* uint32 num_groups */
+                            gids    , /* DOM_GID *gids */
+                            0x20    , /* uint32 user_flgs (?) */
+                            NULL, /* char sess_key[16] */
+                            my_name     , /* char *logon_srv */
+                            my_workgroup, /* char *logon_dom */
+                            &global_sam_sid,     /* DOM_SID *dom_sid */
+                            NULL); /* char *other_sids */
         
     }
 

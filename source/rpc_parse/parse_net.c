@@ -1192,64 +1192,62 @@ static BOOL smb_io_sam_info(char *desc, DOM_SAM_INFO *sam, prs_struct *ps, int d
  Init
  *************************************************************************/
 
-void init_net_user_info3(TALLOC_CTX *ctx,
-	NET_USER_INFO_3 *usr,
-	NTTIME *logon_time,
-	NTTIME *logoff_time,
-	NTTIME *kickoff_time,
-	NTTIME *pass_last_set_time,
-	NTTIME *pass_can_change_time,
-	NTTIME *pass_must_change_time,
-
-	char *user_name,
-	char *full_name,
-	char *logon_script,
-	char *profile_path,
-	char *home_dir,
-	char *dir_drive,
-
-	uint16 logon_count,
-	uint16 bad_pw_count,
-
-	uint32 user_id,
-	uint32 group_id,
-	uint32 num_groups,
-	DOM_GID *gids,
-	uint32 user_flgs,
-
-	char *sess_key,
-
-	char *logon_srv,
-	char *logon_dom,
-
-	DOM_SID *dom_sid,
-	char *other_sids)
+void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sampw,
+			 uint16 logon_count, uint16 bad_pw_count,
+ 		 	 uint32 num_groups, DOM_GID *gids,
+			 uint32 user_flgs, char *sess_key,
+ 			 char *logon_srv, char *logon_dom,
+			 DOM_SID *dom_sid, char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
 	/* need to count the number of space-delimited sids */
 	int i;
 	int num_other_sids = 0;
+	
+	NTTIME 		logon_time, logoff_time, kickoff_time,
+			pass_last_set_time, pass_can_change_time,
+			pass_must_change_time;
 
-	int len_user_name    = strlen(user_name   );
-	int len_full_name    = strlen(full_name   );
-	int len_logon_script = strlen(logon_script);
-	int len_profile_path = strlen(profile_path);
-	int len_home_dir     = strlen(home_dir    );
-	int len_dir_drive    = strlen(dir_drive   );
+	int 		len_user_name, len_full_name, len_home_dir,
+			len_dir_drive, len_logon_script, len_profile_path;
+			
+	char*		user_name = pdb_get_username(sampw);
+	char*		full_name = pdb_get_fullname(sampw);
+	char*		home_dir  = pdb_get_homedir(sampw);
+	char*		dir_drive = pdb_get_dirdrive(sampw);
+	char*		logon_script = pdb_get_logon_script(sampw);
+	char*		profile_path = pdb_get_profile_path(sampw);
 
 	int len_logon_srv    = strlen(logon_srv);
 	int len_logon_dom    = strlen(logon_dom);
 
-    memset(usr, '\0', sizeof(*usr));
+	len_user_name    = strlen(user_name   );
+	len_full_name    = strlen(full_name   );
+	len_home_dir     = strlen(home_dir    );
+	len_dir_drive    = strlen(dir_drive   );
+	len_logon_script = strlen(logon_script);
+	len_profile_path = strlen(profile_path);
+
+
+	ZERO_STRUCTP(usr);
 
 	usr->ptr_user_info = 1; /* yes, we're bothering to put USER_INFO data here */
 
-	usr->logon_time            = *logon_time;
-	usr->logoff_time           = *logoff_time;
-	usr->kickoff_time          = *kickoff_time;
-	usr->pass_last_set_time    = *pass_last_set_time;
-	usr->pass_can_change_time  = *pass_can_change_time;
-	usr->pass_must_change_time = *pass_must_change_time;
+
+	/* Create NTTIME structs */
+	unix_to_nt_time (&logon_time, 		pdb_get_logon_time(sampw));
+	unix_to_nt_time (&logoff_time, 		pdb_get_logoff_time(sampw));
+	unix_to_nt_time (&kickoff_time, 	pdb_get_kickoff_time(sampw));
+	unix_to_nt_time (&pass_last_set_time, 	pdb_get_pass_last_set_time(sampw));
+	unix_to_nt_time (&pass_can_change_time,	pdb_get_pass_can_change_time(sampw));
+	unix_to_nt_time (&pass_must_change_time,pdb_get_pass_must_change_time(sampw));
+
+	usr->logon_time            = logon_time;
+	usr->logoff_time           = logoff_time;
+	usr->kickoff_time          = kickoff_time;
+	usr->pass_last_set_time    = pass_last_set_time;
+	usr->pass_can_change_time  = pass_can_change_time;
+	usr->pass_must_change_time = pass_must_change_time;
 
 	init_uni_hdr(&usr->hdr_user_name, len_user_name);
 	init_uni_hdr(&usr->hdr_full_name, len_full_name);
@@ -1261,8 +1259,8 @@ void init_net_user_info3(TALLOC_CTX *ctx,
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
 
-	usr->user_id = user_id;
-	usr->group_id = group_id;
+	usr->user_id = pdb_get_user_rid(sampw);
+	usr->group_id = pdb_get_group_rid(sampw);
 	usr->num_groups = num_groups;
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;

@@ -769,7 +769,7 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	if(!initialize_password_db()) {
+	if(!initialize_password_db(False)) {
 		exit(1);
 	}
 
