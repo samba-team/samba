@@ -1304,7 +1304,7 @@ void init_devicemode(NT_DEVICEMODE *nt_devmode)
 	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY | 
 				       DEFAULTSOURCE | COPIES | SCALE | 
 				       PAPERSIZE | ORIENTATION;
-	nt_devmode->orientation      = 2;
+	nt_devmode->orientation      = 1;
 	nt_devmode->papersize        = PAPER_A4;
 	nt_devmode->paperlength      = 0;
 	nt_devmode->paperwidth       = 0;
