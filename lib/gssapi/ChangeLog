@@ -1,3 +1,8 @@
+2002-05-20  Jacques Vidrine <n@nectar.com>
+
+	* verify_mic.c (gss_verify_mic), unwrap.c (gss_unwrap): initialize
+	  the qop_state parameter.  from Doug Rabson <dfr@nlsystems.com>
+
 2002-05-09  Jacques Vidrine <n@nectar.com>
 
 	* acquire_cred.c: handle GSS_C_INITIATE/GSS_C_ACCEPT/GSS_C_BOTH
