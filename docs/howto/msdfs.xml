@@ -42,8 +42,7 @@
 	</para>
 
 	<para>
-	To enable SMB-based DFS for Samba, configure it with the <option>--with-msdfs</option>
-	option. Once built, a Samba server can be made a DFS server by setting the global 
+	A Samba server can be made a DFS server by setting the global 
 	Boolean <smbconfoption><name>host msdfs</name></smbconfoption>
 	parameter in the &smb.conf; file. You designate a share as a DFS
 	root using the Share Level Boolean <smbconfoption><name>msdfs root</name></smbconfoption> parameter. A DFS root directory on Samba hosts DFS
