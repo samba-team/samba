@@ -3734,7 +3734,8 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	
 	/* If user is NULL then use the current_user structure */
 
-	if (!user) user = &current_user;
+	if (!user)
+		user = &current_user;
 
 	/* Always allow root or printer admins to do anything */
 
@@ -3783,7 +3784,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	
 	map_printer_permissions(secdesc->sec);
 
-	result = se_access_check(secdesc->sec, user, access_type,
+	result = se_access_check(secdesc->sec, user->nt_user_token, access_type,
 				 &access_granted, &status);
 
 	DEBUG(4, ("access check was %s\n", result ? "SUCCESS" : "FAILURE"));

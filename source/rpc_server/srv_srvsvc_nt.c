@@ -307,8 +307,7 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	struct current_user tmp_user;
-	struct current_user *puser = NULL;
+	NT_USER_TOKEN *token = NULL;
 	user_struct *vuser = get_valid_user_struct(vuid);
 	BOOL ret = True;
 
@@ -321,26 +320,12 @@ BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 d
 	if (!psd)
 		goto out;
 
-	ZERO_STRUCT(tmp_user);
-	if (vuser) {
-		tmp_user.vuid = vuid;
-		tmp_user.uid = vuser->uid;
-		tmp_user.gid = vuser->gid;
-		tmp_user.ngroups = vuser->n_groups;
-		tmp_user.groups = vuser->groups;
-		tmp_user.nt_user_token = vuser->nt_user_token;
-	} else {
-		tmp_user.vuid = vuid;
-		tmp_user.uid = conn->uid;
-		tmp_user.gid = conn->gid;
-		tmp_user.ngroups = conn->ngroups;
-		tmp_user.groups = conn->groups;
-		tmp_user.nt_user_token = conn->nt_user_token;
-	}
+	if (vuser)
+		token = vuser->nt_user_token;
+	else
+		token = conn->nt_user_token;
 
-	puser = &tmp_user;
-
-	ret = se_access_check(psd, puser, desired_access, &granted, &status);
+	ret = se_access_check(psd, token, desired_access, &granted, &status);
 
   out:
 
