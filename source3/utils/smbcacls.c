@@ -283,7 +283,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 {
 	int fnum;
 	SEC_DESC *sd, *old;
-	int i, j;
+	int i, j, sd_size;
 
 	sd = sec_desc_parse(acl);
 	if (!sd) {
@@ -306,16 +306,18 @@ static void cacl_set(struct cli_state *cli, char *filename,
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->dacl->ace[i],
 						  &old->dacl->ace[j])) {
-					if (j == old->dacl->num_aces-1) {
+					if (j != old->dacl->num_aces-1) {
+						old->dacl->ace[j] = old->dacl->ace[j+1];
+					}
+					old->dacl->num_aces--;
+					if (old->dacl->num_aces == 0) {
 						free(old->dacl->ace);
 						old->dacl->ace=NULL;
 						free(old->dacl);
 						old->dacl = NULL;
-					} else {
-						old->dacl->ace[j] = old->dacl->ace[j+1];
-						old->dacl->num_aces--;
+						old->off_dacl = 0;
 					}
-					j--;
+					break;
 				}
 			}
 		}
@@ -323,16 +325,18 @@ static void cacl_set(struct cli_state *cli, char *filename,
 			for (j=0;old->sacl && j<old->sacl->num_aces;j++) {
 				if (sec_ace_equal(&sd->sacl->ace[i],
 						  &old->sacl->ace[j])) {
-					if (j == old->sacl->num_aces-1) {
+					if (j != old->sacl->num_aces-1) {
+						old->sacl->ace[j] = old->sacl->ace[j+1];
+					}
+					old->sacl->num_aces--;
+					if (old->sacl->num_aces == 0) {
 						free(old->sacl->ace);
 						old->sacl->ace=NULL;
 						free(old->sacl);
 						old->sacl = NULL;
-					} else {
-						old->sacl->ace[j] = old->sacl->ace[j+1];
-						old->sacl->num_aces--;
+						old->off_sacl = 0;
 					}
-					j--;
+					break;
 				}
 			}
 		}
@@ -373,7 +377,14 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		
 	}
 
-	if (!cli_set_secdesc(cli, fnum, old)) {
+	if (sd != old) {
+		free_sec_desc(&sd);
+	}
+
+	sd = make_sec_desc(old->revision, old->type, old->owner_sid, old->grp_sid, 
+			   old->sacl, old->dacl, &sd_size);
+
+	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed\n");
 		return;
 	}
