@@ -66,40 +66,6 @@ AC_STRUCT_ST_RDEV
 AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(ssize_t, int)
 
-dnl stolen from Amanda
-AC_PATH_PROGS(GETCONF,getconf)
-if test x${GETCONF+set} = x"set"; then
-    case "$host_os" in
-    *hp*) GETCONF_LFS="XBS5_ILP32_OFFBIG";;
-    esac
-    GETCONF_LFS=${GETCONF_LFS-"LFS"}
-    AC_CACHE_CHECK(
-	[for large file compilation CFLAGS], amanda_cv_LFS_CFLAGS, [
-	    amanda_cv_LFS_CFLAGS=
-	    if $GETCONF ${GETCONF_LFS}_CFLAGS >/dev/null 2>&1; then
-		amanda_cv_LFS_CFLAGS=`$GETCONF ${GETCONF_LFS}_CFLAGS 2>/dev/null`
-	    fi
-    ])
-    AC_CACHE_CHECK(
-	[for large file compilation LDFLAGS], amanda_cv_LFS_LDFLAGS, [
-	    amanda_cv_LFS_LDFLAGS=
-	    if $GETCONF ${GETCONF_LFS}_LDFLAGS >/dev/null 2>&1; then
-		amanda_cv_LFS_LDFLAGS=`$GETCONF ${GETCONF_LFS}_LDFLAGS 2>/dev/null`
-	    fi
-    ])
-    AC_CACHE_CHECK(
-	[for large file compilation LIBS], amanda_cv_LFS_LIBS, [
-	    amanda_cv_LFS_LIBS=
-	    if $GETCONF ${GETCONF_LFS}_LIBS >/dev/null 2>&1; then
-		amanda_cv_LFS_LIBS=`$GETCONF ${GETCONF_LFS}_LIBS 2>/dev/null`
-	    fi
-    ])
-fi
-CFLAGS="$amanda_cv_LFS_CFLAGS $CFLAGS"
-CPPFLAGS="$amanda_cv_LFS_CFLAGS $CPPFLAGS"
-LDFLAGS="$amanda_cv_LFS_LDFLAGS $LDFLAGS"
-LIBS="$amanda_cv_LFS_LIBS $LIBS"
-
 AC_CACHE_CHECK([for errno in errno.h],samba_cv_errno, [
     AC_TRY_COMPILE([#include <errno.h>],[int i = errno],
 	samba_cv_errno=yes,samba_cv_have_errno_decl=no)])
