@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1989 Regents of the University of California.
+ * Copyright (c) 1989, 1999 Regents of the University of California.
  * All rights reserved.  The Berkeley software License Agreement
  * specifies the terms and conditions for redistribution.
  */
@@ -26,6 +26,9 @@ krb4_verify_password (POP *p)
 	      TKT_ROOT "_popper.%u", (unsigned)getpid());
     krb_set_tkt_string (tkt);
 
+#ifndef KRB_VERIFY_SECURE
+#define KRB_VERIFY_SECURE 1
+#endif
     status = krb_verify_user(p->user, "", lrealm,
 			     p->pop_parm[1], KRB_VERIFY_SECURE, "pop");
     dest_tkt(); /* no point in keeping the tickets */
