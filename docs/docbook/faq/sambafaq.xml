@@ -1,11 +1,12 @@
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
-<!ENTITY general SYSTEM "general.sgml">
-<!ENTITY install SYSTEM "install.sgml">
-<!ENTITY errors SYSTEM "errors.sgml">
-<!ENTITY clientapp SYSTEM "clientapp.sgml">
-<!ENTITY features SYSTEM "features.sgml">
-<!ENTITY config SYSTEM "config.sgml">
-<!ENTITY printing SYSTEM "printing.sgml">
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book SYSTEM "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!ENTITY general SYSTEM "general.xml">
+<!ENTITY install SYSTEM "install.xml">
+<!ENTITY errors SYSTEM "errors.xml">
+<!ENTITY clientapp SYSTEM "clientapp.xml">
+<!ENTITY features SYSTEM "features.xml">
+<!ENTITY config SYSTEM "config.xml">
+<!ENTITY printing SYSTEM "printing.xml">
 ]>
 
 <book id="Samba-FAQ">
