@@ -110,7 +110,7 @@ static int net_ads_info(int argc, const char **argv)
 	return 0;
 }
 
-static void use_in_memory_ccache() {
+static void use_in_memory_ccache(void) {
 	/* Use in-memory credentials cache so we do not interfere with
 	 * existing credentials */
 	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
