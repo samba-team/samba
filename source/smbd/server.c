@@ -476,10 +476,6 @@ static void init_structs(void)
 	conn_init();
 	file_init();
 	init_rpc_pipe_hnd(); /* for RPC pipes */
-	if (!init_policy_hnd(MAX_SERVER_POLICY_HANDLES)) 
-	{
-		exit_server("could not allocate policy handles\n");
-	}
 	init_dptrs();
 	init_dfs_table();
 }

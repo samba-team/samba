@@ -1,0 +1,53 @@
+Samba, The Next Generation.
+Sun Jan 2nd 2000.
+lkcl, samba team.
+
+if you got this far, you probably obtained samba using cvs.  well done.
+in order to maintain it, you will need to use cvs update, but occasionally
+this will fail, and you will need to delete your cvs tree and start again.
+instructions, in case it was a while since you last did that, are at
+http://samba.org/cvs.html.  remember to use SAMBA_TNG as the tag name.
+
+compilation and usage instructions.  the following are executed at the unix
+prompt, if you hadn't already guessed.
+
+./configure
+make
+[make install]
+
+to run samba, you will need:
+
+bin/smbd
+bin/nmbd
+
+if you are using any nt clients, running the following will change the
+behaviour of the nt clients towards samba, which will improve the nt
+clients' reliability and performance:
+
+bin/srvsvcd
+bin/wkssvcd
+
+if you intend to operate samba with "encrypt passwords = yes", you will
+also need:
+
+bin/lsarpcd
+bin/samrd
+bin/netlogond
+bin/winregd
+
+if you need NT-style printing:
+
+bin/spoolssd
+
+if you want to be able to start/stop services remotely (yes, dammit,
+you can only do this as root, you think i'm stupid????), you will need,
+as well as your own rc.services script in /usr/local/samba/bin:
+
+bin/svcctld
+
+
+i _really_ like this daemon architecture stuff.  if ever there's a problem,
+or you want to upgrade one component, just kill the relevant daemon,
+NOT smbd and NOT any of the other services, and restart it.  i think
+that's just great :)
+
