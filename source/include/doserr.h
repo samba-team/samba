@@ -54,6 +54,7 @@
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
+#define ERRnetnamedel 64 /* Network name deleted or not available */
 #define ERRnosuchshare 67 /* You specified an invalid share name */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRinvalidparam 87
@@ -75,6 +76,7 @@
 #define ERRbuftoosmall 2123
 #define ERRunknownipc 2142
 #define ERRnosuchprintjob 2151
+#define ERRinvgroup 2455
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */
@@ -168,7 +170,7 @@
 #define WERR_BUF_TOO_SMALL W_ERROR(2123)
 #define WERR_JOB_NOT_FOUND W_ERROR(2151)
 #define WERR_DEST_NOT_FOUND W_ERROR(2152)
-#define WERR_NOTL_LOCAL_DOMAIN W_ERROR(2320)
+#define WERR_NOT_LOCAL_DOMAIN W_ERROR(2320)
 #define WERR_PRINTER_DRIVER_IN_USE W_ERROR(3001)
 #define WERR_STATUS_MORE_ENTRIES   W_ERROR(0x0105)
 
