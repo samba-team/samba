@@ -52,6 +52,10 @@ static void do_global_checks(void)
 'security=share' mode.\n");
 	}
 
+    if (lp_security() == SEC_DOMAIN && !lp_encrypted_passwords()) {
+		printf("ERROR: in 'security=domain' mode the 'encrypt passwords' parameter must also be set to 'true'.\n");
+	}
+
 	if (lp_wins_support() && *lp_wins_server()) {
 		printf("ERROR: both 'wins support = true' and 'wins server = <server>' \
 cannot be set in the smb.conf file. nmbd will abort with this setting.\n");

@@ -222,15 +222,18 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
 
   char *tok[MAXTOK];
   int  count = 0;
+  pstring line2;
+
+  pstrcpy(line2,line);
 
 #ifdef	OSF1
   int length;
-  length = strlen(line);
-  if (line[length-3] == ':')
+  length = strlen(line2);
+  if (line2[length-3] == ':')
 	return(False);
 #endif	/* OSF1 */
 
-  tok[0] = strtok(line," \t");
+  tok[0] = strtok(line2," \t");
   count++;
 
   while (((tok[count] = strtok(NULL," \t")) != NULL) && (count < MAXTOK)) {

@@ -1684,6 +1684,31 @@ struct nmb_name {
 
 #define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
 
+/*
+   Do you want session setups at user level security with a invalid
+   password to be rejected or allowed in as guest? WinNT rejects them
+   but it can be a pain as it means "net view" needs to use a password
+
+   You have 3 choices in the setting of map_to_guest:
+
+   "NEVER_MAP_TO_GUEST" means session setups with an invalid password
+   are rejected. This is the default.
+
+   "MAP_TO_GUEST_ON_BAD_USER" means session setups with an invalid password
+   are rejected, unless the username does not exist, in which case it
+   is treated as a guest login
+
+   "MAP_TO_GUEST_ON_BAD_PASSWORD" means session setups with an invalid password
+   are treated as a guest login
+
+   Note that map_to_guest only has an effect in user or server
+   level security.
+*/
+
+#define NEVER_MAP_TO_GUEST 0
+#define MAP_TO_GUEST_ON_BAD_USER 1
+#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
+
 #endif /* _SMB_H */
 
 /* _SMB_H */

@@ -400,7 +400,7 @@ creates a BUFFER3 structure from a hex string.
 void make_buffer3_hex(BUFFER3 *str, char *buf)
 {
 	ZERO_STRUCTP(str);
-	str->buf_max_len = str->buf_len = strhex_to_str(str->buffer, sizeof(str->buffer), buf);
+	str->buf_max_len = str->buf_len = strhex_to_str((char *)str->buffer, sizeof(str->buffer), buf);
 }
 
 /*******************************************************************

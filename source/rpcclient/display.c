@@ -1245,11 +1245,10 @@ char *get_reg_val_type_str(uint32 type)
 		}
 		default:
 		{
-			snprintf(typestr, sizeof(typestr), "[%d]", type);
-			return typestr;
 			break;
 		}
 	}
+	snprintf(typestr, sizeof(typestr), "[%d]", type);
 	return typestr;
 }
 

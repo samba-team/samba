@@ -182,6 +182,7 @@ typedef struct
   int machine_password_timeout;
   int change_notify_timeout;
   int stat_cache_size;
+  int map_to_guest;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -468,6 +469,29 @@ static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "uppe
 
 static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
 
+/* 
+   Do you want session setups at user level security with a invalid
+   password to be rejected or allowed in as guest? WinNT rejects them
+   but it can be a pain as it means "net view" needs to use a password
+
+   You have 3 choices in the setting of map_to_guest:
+
+   "Never" means session setups with an invalid password
+   are rejected. This is the default.
+
+   "Bad User" means session setups with an invalid password
+   are rejected, unless the username does not exist, in which case it
+   is treated as a guest login
+
+   "Bad Password" means session setups with an invalid password
+   are treated as a guest login
+
+   Note that map_to_guest only has an effect in user or server
+   level security.
+*/
+
+static struct enum_list enum_map_to_guest[] = {{NEVER_MAP_TO_GUEST, "Never"}, {MAP_TO_GUEST_ON_BAD_USER, "Bad User"}, {MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"}, {-1, NULL}};
+
 #ifdef WITH_SSL
 static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3, "ssl3"},
   {SMB_SSL_V23, "ssl2or3"}, {SMB_SSL_TLS1, "tls1"}, {-1, NULL}};
@@ -492,6 +516,7 @@ static struct parm_struct parm_table[] =
   {"encrypt passwords",P_BOOL,    P_GLOBAL, &Globals.bEncryptPasswords, NULL,   NULL,  FLAG_BASIC},
   {"update encrypted", P_BOOL,    P_GLOBAL, &Globals.bUpdateEncrypt,    NULL,   NULL,  FLAG_BASIC},
   {"use rhosts",       P_BOOL,    P_GLOBAL, &Globals.bUseRhosts,        NULL,   NULL,  0},
+  {"map to guest",     P_ENUM,    P_GLOBAL, &Globals.map_to_guest,      NULL,   enum_map_to_guest, 0},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL,   NULL,  0},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL,   NULL,  0},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL,   NULL,  0},
@@ -868,6 +893,7 @@ static void init_globals(void)
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
   Globals.bStatCache = True; /* use stat cache by default */
+  Globals.map_to_guest = 0; /* By Default, "Never" */
 
 #ifdef WITH_LDAP
   /* default values for ldap */
@@ -1187,6 +1213,7 @@ FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
+FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)
