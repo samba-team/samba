@@ -136,10 +136,15 @@ void echo_get_pipe_fns( struct api_struct **fns, int *n_fns )
 
 NTSTATUS rpc_echo_init(void)
 {
-
 	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION,
 		"rpcecho", "rpcecho", api_echo_cmds,
 		sizeof(api_echo_cmds) / sizeof(struct api_struct));
 }
 
+#else /* DEVELOPER */
+
+NTSTATUS rpc_echo_init(void)
+{
+	return NT_STATUS_OK;
+}
 #endif /* DEVELOPER */
