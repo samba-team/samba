@@ -1582,7 +1582,7 @@
 		NAME MANGLING</link>. Also note the <link linkend="SHORTPRESERVECASE">
 		<parameter>short preserve case"</parameter></link> parameter.</para>
 
-		<para>Default: <command>default case = lower</command></para></listitem>
+		<para>Default: <command>default case = lower</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -1615,13 +1615,13 @@
 
 		<para>Example:</para>
 		
-		<screen><programlisting>
+		<para><programlisting>
 [global]
 	default service = pub
         
 [pub]
 	path = /%S
-		</programlisting></screen>
+		</programlisting></para>
 		</listitem>
 		</varlistentry>
 		
@@ -2026,8 +2026,8 @@
 		strangely and may fail.</para>
 		
 		<para>If <link linkend="DOMAINLOGONS"><command>domain logons = yes</command>
-		</link>, then the default behavior is to enable the <para>domain 
-		master</para> parameter.  If <parameter>domain logons</parameter> is 
+		</link>, then the default behavior is to enable the <parameter>domain 
+		master</parameter> parameter.  If <parameter>domain logons</parameter> is 
 		not enabled (the default setting), then neither will <parameter>domain 
 		master</parameter> ne enabled by default.</para>
 
@@ -4930,11 +4930,11 @@
 		<para>A minimal printcap file would look something like this:</para>
 
 		<para><programlisting>
-		print1|My Printer 1
-		print2|My Printer 2
-		print3|My Printer 3
-		print4|My Printer 4
-		print5|My Printer 5
+print1|My Printer 1
+print2|My Printer 2
+print3|My Printer 3
+print4|My Printer 4
+print5|My Printer 5
 		</programlisting></para>
 	
 		<para>where the '|' separates aliases of a printer. The fact 
@@ -4972,14 +4972,12 @@
 
 
 		
-
-
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVER">printer driver (S)</term>
-		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		<listitem><para><emphasis>Note :</emphasis>This is a depreciated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
 		</filename> ofthe Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
@@ -5009,10 +5007,10 @@
 
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVERFILE">printer driver file (G)</term>
-		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		<listitem><para><emphasis>Note :</emphasis>This is a depreciated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
 		</filename> ofthe Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
@@ -5045,10 +5043,10 @@
 
 		<varlistentry>
 		<term><anchor id="PRINTERDRIVERLOCATION">printer driver location (S)</term>
-		<listitem><emphasis>Note :</emphasis>This is a depreciated 
+		<listitem><para><emphasis>Note :</emphasis>This is a depreciated 
 		parameter and will be removed in the next major release
 		following version 2.2.  Please see the instructions in
-		<filename>PRINTER_DRIVER2.txt<filename> in the <filename>docs
+		<filename>PRINTER_DRIVER2.txt</filename> in the <filename>docs
 		</filename> ofthe Samba distribution for more information
 		on the new method of loading printer drivers onto a Samba server.
 		</para>
@@ -5501,7 +5499,7 @@
 		<para>See also <link linkend="POSTEXEC"><parameter>
 		postexec</parameter></link>.</para>
 
-		<para>Default: <emphasis>root postexec = &lt;empty string&gt;
+		<para>Default: <command>root postexec = &lt;empty string&gt;
 		</command></para>
 		</listitem>
 		</varlistentry>
@@ -5517,7 +5515,7 @@
 		preexec</parameter></link> and <link linkend="PREEXECCLOSE">
 		<parameter>preexec close</parameter></link>.</para>
 		
-		<para>Default: <emphasis>root preexec = &lt;empty string&gt;
+		<para>Default: <command>root preexec = &lt;empty string&gt;
 		</command></para>
 		</listitem>
 		</varlistentry>
@@ -5533,7 +5531,7 @@
 		preexec</parameter></link> and <link linkend="PREEXECCLOSE">
 		<parameter>preexec close</parameter></link>.</para>
 
-		<para>Default: <emphasis>root preexec close = no</command></para>
+		<para>Default: <command>root preexec close = no</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -6767,7 +6765,7 @@
 		this parameter determines access to the services.</para>
 
 		<para>Default: <command>The guest account if a guest service, 
-		else &ltempty string&gt;.</command></para>
+		else &lt;empty string&gt;.</command></para>
 
 		<para>Examples:<command>username = fred, mary, jack, jane, 
 		@users, @pcgroup</command></para>
