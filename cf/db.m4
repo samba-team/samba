@@ -2,29 +2,35 @@ dnl $Id$
 dnl
 dnl tests for various db libraries
 dnl
-AC_DEFUN([rk_DB],[berkeley_db=db
-AC_ARG_WITH(berkeley-db,
-[  --without-berkeley-db   if you don't want berkeley db],[
-if test "$withval" = no; then
-	berkeley_db=""
-fi
+AC_DEFUN([rk_DB],[
+AC_ARG_ENABLE(berkeley-db,
+                       AC_HELP_STRING([--disable-berkeley-db],
+                                      [if you don't want berkeley db]),[
 ])
 
 have_ndbm=no
 db_type=unknown
 
-if test "$berkeley_db"; then
+if test "$enable_berkeley_db" != no; then
 
   AC_CHECK_HEADERS([				\
+	db4/db.h				\
+	db3/db.h				\
 	db.h					\
 	db_185.h				\
   ])
 
-dnl db_create is used by db3
+dnl db_create is used by db3 and db4
 
-  AC_FIND_FUNC_NO_LIBS(db_create, $berkeley_db, [
+  AC_FIND_FUNC_NO_LIBS(db_create, db4 db3 db, [
   #include <stdio.h>
+  #ifdef HAVE_DB4_DB_H
+  #include <db4/db.h>
+  #elif defined(HAVE_DB3_DB_H)
+  #include <db3/db.h>
+  #else
   #include <db.h>
+  #endif
   ],[NULL, NULL, 0])
 
   if test "$ac_cv_func_db_create" = "yes"; then
@@ -34,14 +40,16 @@ dnl db_create is used by db3
     else
       DBLIB=""
     fi
-    AC_DEFINE(HAVE_DB3, 1, [define if you have a berkeley db3 library])
+    AC_DEFINE(HAVE_DB3, 1, [define if you have a berkeley db3/4 library])
   else
 
 dnl dbopen is used by db1/db2
 
-    AC_FIND_FUNC_NO_LIBS(dbopen, $berkeley_db, [
+    AC_FIND_FUNC_NO_LIBS(dbopen, db2 db, [
     #include <stdio.h>
-    #if defined(HAVE_DB_185_H)
+    #if defined(HAVE_DB2_DB_H)
+    #include <db2/db.h>
+    #elif defined(HAVE_DB_185_H)
     #include <db_185.h>
     #elif defined(HAVE_DB_H)
     #include <db.h>
@@ -96,8 +104,6 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
   #include <stdio.h>
   #if defined(HAVE_NDBM_H)
   #include <ndbm.h>
-  #elif defined(HAVE_DBM_H)
-  #include <dbm.h>
   #else
   #error no ndbm.h
   #endif
