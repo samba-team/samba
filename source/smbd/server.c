@@ -3225,7 +3225,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 {
   static char *orig_inbuf;
   static char *orig_outbuf;
-  int smb_com2 = CVAL(inbuf,smb_vwv0);
+  int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
   unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
   char *inbuf2, *outbuf2;
   int outsize2;
@@ -3260,15 +3260,18 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   inbuf2 = orig_inbuf + smb_off2 + 4 - smb_wct;
   outbuf2 = orig_outbuf + SVAL(outbuf,smb_vwv1) + 4 - smb_wct;
 
+  /* remember the original command type */
+  smb_com1 = CVAL(orig_outbuf,smb_com);
+
   /* save the data which will be overwritten by the new headers */
   memcpy(inbuf_saved,inbuf2,smb_wct);
   memcpy(outbuf_saved,outbuf2,smb_wct);
 
   /* give the new packet the same header as the first part of the SMB */
-  memcpy(inbuf2,orig_inbuf,smb_wct);
+  memmove(inbuf2,orig_inbuf,smb_wct);
 
   /* create the in buffer */
-  CVAL(outbuf2,smb_com) = smb_com2;
+  CVAL(inbuf2,smb_com) = smb_com2;
 
   /* create the out buffer */
   bzero(outbuf2,smb_size);
@@ -3296,9 +3299,8 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   /* copy the new reply header over the old one, but preserve 
      the smb_com field */
-  smb_com2 = CVAL(orig_outbuf,smb_com);
   memmove(orig_outbuf,outbuf2,smb_wct);
-  CVAL(orig_outbuf,smb_com) = smb_com2;
+  CVAL(orig_outbuf,smb_com) = smb_com1;
 
   /* restore the saved data, being careful not to overwrite any
    data from the reply header */
@@ -3309,7 +3311,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
     memmove(outbuf2+ofs,outbuf_saved+ofs,smb_wct-ofs);
   }
 
-  return(outsize2 + chain_size);
+  return outsize2;
 }
 
 
@@ -3350,6 +3352,8 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
 
   outsize = switch_message(type,inbuf,outbuf,size,bufsize);
+
+  outsize += chain_size;
 
   if(outsize > 4)
     smb_setlen(outbuf,outsize - 4);
