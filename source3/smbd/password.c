@@ -188,6 +188,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 {
 	NT_USER_TOKEN *token;
 	DOM_SID *psids;
+	int i, psid_ndx = 0;
 	int i;
 
 	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
@@ -202,11 +203,19 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups)
 
 	psids = token->user_sids;
 
+	token->num_sids = 2;
 	token->num_sids = ngroups + 2;
 
 	uid_to_sid( &psids[0], uid);
 	gid_to_sid( &psids[1], gid);
 
+	for (i = 0; i < ngroups; i++) {
+		if (groups[i] != gid) {
+			gid_to_sid( &psids[psid_ndx+2], groups[i]);
+			psid_ndx++;
+			token->num_sids++;
+		}
+	}
 	for (i = 0; i < ngroups; i++)
 		gid_to_sid( &psids[i+2], groups[i]);
 
@@ -254,6 +263,7 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
+  initialise_groups(unix_name, uid, gid);
   initialize_groups(unix_name, uid, gid);
   get_current_groups( &vuser->n_groups, &vuser->groups);
 
