@@ -228,7 +228,7 @@ DB__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
     if(code == 1)
 	return HDB_ERR_NOENTRY;
     
-    krb5_data_copy(reply, v.size, v.data);
+    krb5_data_copy(reply, v.data, v.size);
     return 0;
 }
 
