@@ -402,8 +402,14 @@ static struct enum_list enum_protocol[] = {{PROTOCOL_NT1, "NT1"}, {PROTOCOL_LANM
 					   {PROTOCOL_COREPLUS, "COREPLUS"}, 
 					   {PROTOCOL_COREPLUS, "CORE+"}, {-1, NULL}};
 
+#ifdef DOMAIN_CLIENT
+static struct enum_list enum_security[] = {{SEC_SHARE, "SHARE"},  {SEC_USER, "USER"}, 
+					   {SEC_SERVER, "SERVER"}, {SEC_DOMAIN, "DOMAIN"},
+                                           {-1, NULL}};
+#else /* DOMAIN_CLIENT */
 static struct enum_list enum_security[] = {{SEC_SHARE, "SHARE"},  {SEC_USER, "USER"}, 
 					   {SEC_SERVER, "SERVER"}, {-1, NULL}};
+#endif /* DOMAIN_CLIENT */
 
 static struct enum_list enum_printing[] = {{PRINT_SYSV, "sysv"}, {PRINT_AIX, "aix"}, 
 					   {PRINT_HPUX, "hpux"}, {PRINT_BSD, "bsd"},
