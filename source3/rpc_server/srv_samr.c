@@ -1018,7 +1018,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	uint32 status = 0x0;
 
 	struct smb_passwd *smb_pass;
-	DOM_GID gids[LSA_MAX_GROUPS];
+	DOM_GID *gids = NULL;
 	int num_groups = 0;
 	int pol_idx;
 	uint32 rid;
@@ -1053,7 +1053,8 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	{
 		pstring groups;
 		get_domain_user_groups(groups, smb_pass->smb_name);
-		num_groups = make_dom_gids(groups, gids);
+                gids = NULL;
+		num_groups = make_dom_gids(groups, &gids);
 	}
 
 	/* construct the response.  lkclXXXX: gids are not copied! */
@@ -1062,6 +1063,8 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	/* store the response in the SMB stream */
 	samr_io_r_query_usergroups("", &r_u, rdata, 0);
 
+        if(gids)
+          free((char *)gids);
 	DEBUG(5,("samr_query_usergroups: %d\n", __LINE__));
 
 }

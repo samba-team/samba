@@ -297,8 +297,8 @@ void make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 void lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
 void lsa_io_q_enum_trust_dom(char *desc,  LSA_Q_ENUM_TRUST_DOM *q_e, prs_struct *ps, int depth);
 void make_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e,
-				uint32 enum_context, char *domain_name, char *domain_sid,
-				uint32 status);
+                           uint32 enum_context, char *domain_name, DOM_SID *domain_sid,
+                           uint32 status);
 void lsa_io_r_enum_trust_dom(char *desc,  LSA_R_ENUM_TRUST_DOM *r_e, prs_struct *ps, int depth);
 void make_lsa_q_close(LSA_Q_CLOSE *q_c, POLICY_HND *hnd);
 void lsa_io_q_close(char *desc,  LSA_Q_CLOSE *q_c, prs_struct *ps, int depth);
@@ -320,9 +320,8 @@ void smb_io_lookup_level(char *desc, LOOKUP_LEVEL *level, prs_struct *ps, int de
 uint32 get_enum_hnd(ENUM_HND *enh);
 void make_enum_hnd(ENUM_HND *enh, uint32 hnd);
 void smb_io_enum_hnd(char *desc,  ENUM_HND *hnd, prs_struct *ps, int depth);
-void make_dom_sid(DOM_SID *sid, char *str_sid);
 void smb_io_dom_sid(char *desc,  DOM_SID *sid, prs_struct *ps, int depth);
-void make_dom_sid2(DOM_SID2 *sid, char *str_sid);
+void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid);
 void smb_io_dom_sid2(char *desc,  DOM_SID2 *sid, prs_struct *ps, int depth);
 void make_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
 void smb_io_strhdr(char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
@@ -459,7 +458,7 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 	char *logon_srv,
 	char *logon_dom,
 
-	char *dom_sid,
+	DOM_SID *dom_sid,
 	char *other_sids);
 void net_io_user_info3(char *desc,  NET_USER_INFO_3 *usr, prs_struct *ps, int depth);
 void net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int depth);
@@ -562,7 +561,7 @@ void make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 void samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid, char *sid);
+				POLICY_HND *connect_pol, uint32 rid, DOM_SID *sid);
 void samr_io_q_open_domain(char *desc,  SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_domain(char *desc,  SAMR_R_OPEN_DOMAIN *r_u, prs_struct *ps, int depth);
 void make_samr_q_unknown_8(SAMR_Q_UNKNOWN_8 *q_u,
@@ -571,7 +570,7 @@ void samr_io_q_unknown_8(char *desc,  SAMR_Q_UNKNOWN_8 *q_u, prs_struct *ps, int
 void make_samr_q_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 				POLICY_HND *user_pol, uint16 switch_value);
 void samr_io_q_unknown_3(char *desc,  SAMR_Q_UNKNOWN_3 *q_u, prs_struct *ps, int depth);
-void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sid);
+void make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, char *sidstr);
 void sam_io_dom_sid3(char *desc,  DOM_SID3 *sid3, prs_struct *ps, int depth);
 void make_sam_sid_stuff(SAM_SID_STUFF *stf,
 				uint16 unknown_2, uint16 unknown_3,
@@ -909,7 +908,7 @@ BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  lib/rpc/server/srv_util.c  */
 
-int make_dom_gids(char *gids_str, DOM_GID *gids);
+int make_dom_gids(char *gids_str, DOM_GID **ppgids);
 BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end);
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
@@ -2043,8 +2042,6 @@ int struni2(uint16 *p, char *buf);
 char *unistr(char *buf);
 int unistrncpy(char *dst, char *src, int len);
 int unistrcpy(char *dst, char *src);
-void fstrcpy(char *dest, char *src);
-void fstrcat(char *dest, char *src);
 char *safe_strcpy(char *dest, char *src, int maxlength);
 char *safe_strcat(char *dest, char *src, int maxlength);
 char *align4(char *q, char *base);
@@ -2053,7 +2050,8 @@ char *align_offset(char *q, char *base, int align_offset_len);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);
-char *dom_sid_to_string(DOM_SID *sid);
+char *sid_to_string(pstring sidstr_out, DOM_SID *sid);
+BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 
 /*The following definitions come from  web/cgi.c  */
 

@@ -6,7 +6,8 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  
+ *  Copyright (C) Jeremy Allison                    1998.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -52,7 +53,7 @@ static void lsa_reply_open_policy(prs_struct *rdata)
 /***************************************************************************
 make_dom_query
  ***************************************************************************/
-static void make_dom_query(DOM_QUERY *d_q, char *dom_name, char *dom_sid)
+static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
 	int domlen = strlen(dom_name);
 
@@ -73,7 +74,7 @@ lsa_reply_query_info
  ***************************************************************************/
 static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 				prs_struct *rdata,
-				uint32 enum_context, char *dom_name, char *dom_sid)
+				uint32 enum_context, char *dom_name, DOM_SID *dom_sid)
 {
 	LSA_R_ENUM_TRUST_DOM r_e;
 
@@ -89,7 +90,7 @@ static void lsa_reply_enum_trust_dom(LSA_Q_ENUM_TRUST_DOM *q_e,
 lsa_reply_query_info
  ***************************************************************************/
 static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, char *dom_sid)
+				char *dom_name, DOM_SID *dom_sid)
 {
 	LSA_R_QUERY_INFO r_q;
 
@@ -112,14 +113,10 @@ make_dom_ref
  pretty much hard-coded choice of "other" sids, unfortunately...
 
  ***************************************************************************/
-static void make_dom_ref(DOM_R_REF *ref,
-				char *dom_name, char *dom_sid,
-				char *other_sid1, char *other_sid2, char *other_sid3)
+static void make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid,
+                         DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
 {
 	int len_dom_name   = strlen(dom_name);
-	int len_other_sid1 = strlen(other_sid1);
-	int len_other_sid2 = strlen(other_sid2);
-	int len_other_sid3 = strlen(other_sid3);
 
 	ref->undoc_buffer = 1;
 	ref->num_ref_doms_1 = 4;
@@ -128,9 +125,9 @@ static void make_dom_ref(DOM_R_REF *ref,
 	ref->num_ref_doms_2 = 4;
 
 	make_uni_hdr2(&(ref->hdr_dom_name  ), len_dom_name  , len_dom_name  , 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[0]), len_other_sid1, len_other_sid1, 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[1]), len_other_sid2, len_other_sid2, 0);
-	make_uni_hdr2(&(ref->hdr_ref_dom[2]), len_other_sid3, len_other_sid3, 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[0]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[1]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
+	make_uni_hdr2(&(ref->hdr_ref_dom[2]), sizeof(DOM_SID), sizeof(DOM_SID), 0);
 
 	if (dom_name != NULL)
 	{
@@ -148,8 +145,8 @@ make_reply_lookup_rids
  ***************************************************************************/
 static void make_reply_lookup_rids(LSA_R_LOOKUP_RIDS *r_l,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				char *dom_name, char *dom_sid,
-				char *other_sid1, char *other_sid2, char *other_sid3)
+				char *dom_name, DOM_SID *dom_sid,
+				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
 {
 	int i;
 
@@ -232,8 +229,8 @@ lsa_reply_lookup_sids
  ***************************************************************************/
 static void lsa_reply_lookup_sids(prs_struct *rdata,
 				int num_entries, DOM_SID2 sid[MAX_LOOKUP_SIDS],
-				char *dom_name, char *dom_sid,
-				char *other_sid1, char *other_sid2, char *other_sid3)
+				char *dom_name, DOM_SID *dom_sid,
+				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
 {
 	LSA_R_LOOKUP_SIDS r_l;
 	DOM_R_REF ref;
@@ -254,8 +251,8 @@ lsa_reply_lookup_rids
  ***************************************************************************/
 static void lsa_reply_lookup_rids(prs_struct *rdata,
 				int num_entries, uint32 dom_rids[MAX_LOOKUP_SIDS],
-				char *dom_name, char *dom_sid,
-				char *other_sid1, char *other_sid2, char *other_sid3)
+				char *dom_name, DOM_SID *dom_sid,
+				DOM_SID *other_sid1, DOM_SID *other_sid2, DOM_SID *other_sid3)
 {
 	LSA_R_LOOKUP_RIDS r_l;
 
@@ -309,16 +306,16 @@ static void api_lsa_query_info( int uid, prs_struct *data,
 {
 	LSA_Q_QUERY_INFO q_i;
 	pstring dom_name;
-	pstring dom_sid;
+	DOM_SID dom_sid;
 
 	/* grab the info class and policy handle */
 	lsa_io_q_query("", &q_i, data, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domain_sid());
+	string_to_sid(&dom_sid, lp_domain_sid());
 
 	/* construct reply.  return status is always 0x0 */
-	lsa_reply_query_info(&q_i, rdata, dom_name, dom_sid);
+	lsa_reply_query_info(&q_i, rdata, dom_name, &dom_sid);
 }
 
 /***************************************************************************
@@ -329,19 +326,26 @@ static void api_lsa_lookup_sids( int uid, prs_struct *data,
 {
 	LSA_Q_LOOKUP_SIDS q_l;
 	pstring dom_name;
-	pstring dom_sid;
+	DOM_SID dom_sid;
+	DOM_SID sid_S_1_1;
+	DOM_SID sid_S_1_3;
+	DOM_SID sid_S_1_5;
 
 	/* grab the info class and policy handle */
 	lsa_io_q_lookup_sids("", &q_l, data, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domain_sid());
+
+	string_to_sid(&dom_sid , lp_domain_sid());
+	string_to_sid(&sid_S_1_1, "S-1-1");
+        string_to_sid(&sid_S_1_3, "S-1-3");
+        string_to_sid(&sid_S_1_5, "S-1-5");
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_sids(rdata,
-	            q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
-				dom_name, dom_sid, /* domain name, domain SID */
-				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
+                              q_l.sids.num_entries, q_l.sids.sid, /* SIDs */
+                              dom_name, &dom_sid, /* domain name, domain SID */
+                              &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
 }
 
 /***************************************************************************
@@ -353,7 +357,10 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	int i;
 	LSA_Q_LOOKUP_RIDS q_l;
 	pstring dom_name;
-	pstring dom_sid;
+	DOM_SID dom_sid;
+	DOM_SID sid_S_1_1;
+	DOM_SID sid_S_1_3;
+	DOM_SID sid_S_1_5;
 	uint32 dom_rids[MAX_LOOKUP_SIDS];
 	uint32 dummy_g_rid;
 
@@ -361,7 +368,11 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 	lsa_io_q_lookup_rids("", &q_l, data, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
-	pstrcpy(dom_sid , lp_domain_sid());
+
+	string_to_sid(&dom_sid , lp_domain_sid());
+	string_to_sid(&sid_S_1_1, "S-1-1");
+        string_to_sid(&sid_S_1_3, "S-1-3");
+        string_to_sid(&sid_S_1_5, "S-1-5");
 
 	/* convert received RIDs to strings, so we can do them. */
 	for (i = 0; i < q_l.num_entries; i++)
@@ -376,9 +387,9 @@ static void api_lsa_lookup_names( int uid, prs_struct *data,
 
 	/* construct reply.  return status is always 0x0 */
 	lsa_reply_lookup_rids(rdata,
-	            q_l.num_entries, dom_rids, /* text-converted SIDs */
-				dom_name, dom_sid, /* domain name, domain SID */
-				"S-1-1", "S-1-3", "S-1-5"); /* the three other SIDs */
+                              q_l.num_entries, dom_rids, /* text-converted SIDs */
+                              dom_name, &dom_sid, /* domain name, domain SID */
+                              &sid_S_1_1, &sid_S_1_3, &sid_S_1_5); /* the three other SIDs */
 }
 
 /***************************************************************************

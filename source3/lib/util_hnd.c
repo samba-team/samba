@@ -206,22 +206,23 @@ BOOL set_lsa_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 ****************************************************************************/
 BOOL set_lsa_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 {
-	int pnum = find_lsa_policy_by_hnd(hnd);
+  pstring sidstr;
+  int pnum = find_lsa_policy_by_hnd(hnd);
 
-	if (OPEN_POL(pnum))
-	{
-		DEBUG(3,("%s Setting policy sid=%s pnum=%x\n",
-		          timestring(), dom_sid_to_string(sid), pnum));
+  if (OPEN_POL(pnum))
+  {
+    DEBUG(3,("%s Setting policy sid=%s pnum=%x\n",
+          timestring(), sid_to_string(sidstr, sid), pnum));
 
-		memcpy(&(Policy[pnum].dev.samr.sid), sid, sizeof(*sid));
-		return True;
-	}
-	else
-	{
-		DEBUG(3,("%s Error setting policy sid=%s (pnum=%x)\n",
-		          timestring(), dom_sid_to_string(sid), pnum));
-		return False;
-	}
+    memcpy(&(Policy[pnum].dev.samr.sid), sid, sizeof(*sid));
+    return True;
+  }
+  else
+  {
+    DEBUG(3,("%s Error setting policy sid=%s (pnum=%x)\n",
+          timestring(), sid_to_string(sidstr, sid), pnum));
+    return False;
+  }
 }
 
 /****************************************************************************

@@ -4943,29 +4943,85 @@ char *tab_depth(int depth)
 }
 
 /*****************************************************************
- Convert a domain SID to an ascii string. (non-reentrant).
+ Convert a SID to an ascii string.
 *****************************************************************/
 
-/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-char *dom_sid_to_string(DOM_SID *sid)
+char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
 {
-  static pstring sidstr;
   char subauth[16];
   int i;
+  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia = (sid->id_auth[5]) +
               (sid->id_auth[4] << 8 ) +
               (sid->id_auth[3] << 16) +
               (sid->id_auth[2] << 24);
 
-  slprintf(sidstr, sizeof(sidstr) - 1, "S-%d-%d", sid->sid_rev_num, ia);
+  slprintf(sidstr_out, sizeof(pstring) - 1, "S-%d-%d", sid->sid_rev_num, ia);
 
   for (i = 0; i < sid->num_auths; i++)
   {
     slprintf(subauth, sizeof(subauth)-1, "-%d", sid->sub_auths[i]);
-    pstrcat(sidstr, subauth);
+    pstrcat(sidstr_out, subauth);
   }
 
-  DEBUG(7,("dom_sid_to_string returning %s\n", sidstr));
-  return sidstr;
+  DEBUG(7,("sid_to_string returning %s\n", sidstr_out));
+  return sidstr_out;
 }
 
+/*****************************************************************
+ Convert a string to a SID. Returns True on success, False on fail.
+*****************************************************************/  
+   
+BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
+{
+  pstring tok;
+  char *p = sidstr;
+  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+  uint32 ia;
+
+  memset((char *)sidout, '\0', sizeof(DOM_SID));
+
+  if(StrnCaseCmp( sidstr, "S-", 2)) {
+    DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
+    return False;
+  }
+
+  p += 2;
+  if(!next_token(&p, tok, "-")) {
+    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    return False;
+  }
+
+  /* Get the revision number. */
+  sidout->sid_rev_num = atoi(tok);
+
+  if(!next_token(&p, tok, "-")) {
+    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    return False;
+  }
+
+  /* identauth in decimal should be <  2^32 */
+  ia = atoi(tok);
+
+  /* NOTE - the ia value is in big-endian format. */
+  sidout->id_auth[0] = 0;
+  sidout->id_auth[1] = 0;
+  sidout->id_auth[2] = (ia & 0xff000000) >> 24;
+  sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
+  sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
+  sidout->id_auth[5] = (ia & 0x000000ff);
+
+  sidout->num_auths = 0;
+
+  while(next_token(&p, tok, "-") && sidout->num_auths < MAXSUBAUTHS) {
+    /* 
+     * NOTE - the subauths are in native machine-endian format. They
+     * are converted to little-endian when linearized onto the wire.
+     */
+    sidout->sub_auths[sidout->num_auths++] = atoi(tok);
+  }
+
+  DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
+
+  return True;
+}

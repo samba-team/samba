@@ -560,7 +560,9 @@ static int make_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 
 	for (count = 0, ptr = sids_str; next_token(&ptr, s2, NULL) && count < max_sids; count++) 
 	{
-		make_dom_sid2(&sids[count], s2);
+                DOM_SID tmpsid;
+                string_to_sid(&tmpsid, s2);
+		make_dom_sid2(&sids[count], &tmpsid);
 	}
 
 	return count;
@@ -908,7 +910,7 @@ void make_net_user_info3(NET_USER_INFO_3 *usr,
 	char *logon_srv,
 	char *logon_dom,
 
-	char *dom_sid,
+	DOM_SID *dom_sid,
 	char *other_sids)
 {
 	/* only cope with one "other" sid, right now. */
