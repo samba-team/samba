@@ -108,7 +108,10 @@ htmlman: $(HTMLDIR) $(MANPAGES_HTML) $(HTMLDIR)/samba.css
 html-single: $(HTMLDIR) $(HTMLDIR)/samba.css $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html $(HTMLDIR)/Samba-Guide.html
 	cp -p $(GUIDEDOC_IMAGES_PNG) $(HOWTODIR_IMAGES_PNG) $(HTMLDIR)/images/
 
-html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel
+html: $(HTMLDIR)/howto $(HTMLDIR)/guide $(HTMLDIR)/devel $(HTMLDIR)/index.html
+
+$(HTMLDIR)/index.html: htmldocs.html $(HTMLDIR)
+	cp $< $@
 	
 $(HTMLDIR)/howto: $(HTMLDIR) $(HTMLDIR)/howto/samba.css Samba-HOWTO-Collection.xml
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/howto/" xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
