@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -43,12 +43,12 @@
 
 RCSID("$Id$");
 
-#ifndef HAVE_STRCPY_TRUNCATE
+#ifndef HAVE_STRLCPY
 
-int
-strcpy_truncate (char *dst, const char *src, size_t dst_sz)
+size_t
+strlcpy (char *dst, const char *src, size_t dst_sz)
 {
-    int n;
+    size_t n;
     char *p;
 
     for (p = dst, n = 0;
