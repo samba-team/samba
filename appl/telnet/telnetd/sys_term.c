@@ -58,7 +58,11 @@ struct	utmpx wtmp;
 struct	utmp wtmp;
 # endif /* HAVE_UTMPX */
 
+#ifdef HAVE_UT_HOST
 int	utmp_len = sizeof(wtmp.ut_host);
+#else
+int	utmp_len = MaxHostNameLen;
+#endif
 # ifndef PARENT_DOES_UTMP
 char	wtmpf[]	= "/usr/adm/wtmp";
 char	utmpf[] = "/etc/utmp";
@@ -906,6 +910,7 @@ extern void utmp_sig_notify P((int));
 /* I_FIND seems to live a life of its own */
 static int my_find(int fd, char *module)
 {
+#if defined(I_FIND) && defined(I_LIST)
   static int flag;
   static struct str_list sl;
   int n;
@@ -930,6 +935,7 @@ static int my_find(int fd, char *module)
   for(i=0; i<sl.sl_nmods; i++)
     if(!strcmp(sl.sl_modlist[i].l_name, module))
       return 1;
+#endif
   return 0;
 }
 
@@ -1823,7 +1829,9 @@ rmut(void)
 					continue;
 				(void) lseek(f, ((long)u)-((long)utmp), L_SET);
 				SCPYN(u->ut_name, "");
+#ifdef HAVE_UT_HOST
 				SCPYN(u->ut_host, "");
+#endif
 				(void) time(&u->ut_time);
 				(void) write(f, (char *)u, sizeof(wtmp));
 				found++;
@@ -1836,7 +1844,9 @@ rmut(void)
 		if (f >= 0) {
 			SCPYN(wtmp.ut_line, line+5);
 			SCPYN(wtmp.ut_name, "");
+#ifdef HAVE_UT_HOST
 			SCPYN(wtmp.ut_host, "");
+#endif
 			(void) time(&wtmp.ut_time);
 			(void) write(f, (char *)&wtmp, sizeof(wtmp));
 			(void) close(f);
