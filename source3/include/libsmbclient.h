@@ -93,22 +93,22 @@ struct smbc_dirent
 	    SMBC_DIR=7,
 	    SMBC_FILE=8,
 	    SMBC_LINK=9,*/ 
-	uint smbc_type; 
+	unsigned int smbc_type; 
 
 	/** Length of this smbc_dirent in bytes
 	 */
-	uint dirlen;
+	unsigned int dirlen;
 	/** The length of the comment string in bytes (includes null 
 	 *  terminator)
 	 */
-	uint commentlen;
+	unsigned int commentlen;
 	/** Points to the null terminated comment string 
 	 */
 	char *comment;
 	/** The length of the name string in bytes (includes null 
 	 *  terminator)
 	 */
-	uint namelen;
+	unsigned int namelen;
 	/** Points to the null terminated name string 
 	 */
 	char name[1];
