@@ -18,6 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "python/py_spoolss.h"
+
 struct pyconv py_FORM[] = {
 	{ "flags", PY_UINT32, offsetof(FORM, flags) },
 	{ "width", PY_UINT32, offsetof(FORM, size_x) },
@@ -43,7 +45,7 @@ struct pyconv py_FORM_1[] = {
 
 /* Add a form */
 
-static PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -95,7 +97,7 @@ static PyObject *spoolss_addform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Get form properties */
 
-static PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -142,7 +144,7 @@ static PyObject *spoolss_getform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Set form properties */
 
-static PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
+PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -180,8 +182,7 @@ static PyObject *spoolss_setform(PyObject *self, PyObject *args, PyObject *kw)
 
 /* Delete a form */
 
-static PyObject *spoolss_deleteform(PyObject *self, PyObject *args, 
-				    PyObject *kw)
+PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -212,8 +213,7 @@ static PyObject *spoolss_deleteform(PyObject *self, PyObject *args,
 
 /* Enumerate forms */
 
-static PyObject *spoolss_enumforms(PyObject *self, PyObject *args, 
-				   PyObject *kw)
+PyObject *spoolss_enumforms(PyObject *self, PyObject *args, PyObject *kw)
 {
 	PyObject *result;
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;

@@ -18,6 +18,8 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "python/py_spoolss.h"
+
 /* Structure/hash conversions */
 
 struct pyconv py_DRIVER_INFO_1[] = {
@@ -80,8 +82,8 @@ struct pyconv py_DRIVER_DIRECTORY_1[] = {
 
 /* Enumerate printer drivers */
 
-static PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
-					    PyObject *kw)
+PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
+				     PyObject *kw)
 {
 	WERROR werror;
 	PyObject *result = Py_None, *creds = NULL;
@@ -179,8 +181,8 @@ static PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 /* Fetch printer driver */
 
-static PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
-					  PyObject *kw)
+PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
+				   PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
@@ -232,8 +234,8 @@ static PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
 
 /* Fetch printer driver directory */
 
-static PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
-					     PyObject *kw)
+PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args, 
+				      PyObject *kw)
 {
 	WERROR werror;
 	PyObject *result = Py_None, *creds = NULL;
