@@ -487,6 +487,13 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
 {
     uid_t id_low, id_high = 0;
 
+    /* Give a nicer error message if no parameters specified */
+
+    if (strequal(paramstr, "")) {
+        DEBUG(0, ("winbid %s parameter missing\n", is_user ? "uid" : "gid"));
+        return False;
+    }
+    
     /* Parse entry */
 
     if (sscanf(paramstr, "%u-%u", &id_low, &id_high) != 2) {
