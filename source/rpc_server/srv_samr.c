@@ -337,7 +337,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	if (pwd == NULL) {
 		/* totally done, reset everything */
-		endpwent();
+		sys_endpwent();
 		current_idx = 0;
 		mapped_idx = 0;
 	}
