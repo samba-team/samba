@@ -330,6 +330,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 static int verbose = 0;
 static int print_security = 0;
+static int full_print = 0;
 
 /* 
  * These definitions are for the in-memory registry structure.
@@ -2990,7 +2991,7 @@ int print_key(const char *path, char *name, char *class_name, int root,
 	      int terminal, int vals)
 {
 
-  /*if (terminal)*/ fprintf(stdout, "[%s%s]\n", path, name);
+  if (full_print || terminal) fprintf(stdout, "[%s%s]\n", path, name);
 
   return 1;
 }
@@ -3142,9 +3143,10 @@ int print_val(const char *path, char *val_name, int val_type, int data_len,
 
 void usage(void)
 {
-  fprintf(stderr, "Usage: editreg [-v] [-p] [-k] [-s] [-c <command-file>] <registryfile>\n");
+  fprintf(stderr, "Usage: editreg [-f] [-v] [-p] [-k] [-s] [-c <command-file>] <registryfile>\n");
   fprintf(stderr, "Version: 0.1\n\n");
   fprintf(stderr, "\n\t-v\t sets verbose mode");
+  fprintf(stderr, "\n\t-f\t sets full print mode where non-terminals are printed");
   fprintf(stderr, "\n\t-p\t prints the registry");
   fprintf(stderr, "\n\t-s\t prints security descriptors");
   fprintf(stderr, "\n\t-c <command-file>\t specifies a command file");
@@ -3172,12 +3174,17 @@ int main(int argc, char *argv[])
    * Now, process the arguments
    */
 
-  while ((opt = getopt(argc, argv, "spvko:c:")) != EOF) {
+  while ((opt = getopt(argc, argv, "fspvko:c:")) != EOF) {
     switch (opt) {
     case 'c':
       commands = 1;
       cmd_file_name = optarg;
       regf_opt += 2;
+      break;
+
+    case 'f':
+      full_print = 1;
+      regf_opt++;
       break;
 
     case 'o':
@@ -3192,6 +3199,7 @@ int main(int argc, char *argv[])
 
     case 's':
       print_security++;
+      full_print++;
       regf_opt++;
       break;
 
