@@ -52,6 +52,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	struct winbindd_domain *domain;
 	int i;
 
+	char *domain_name = NULL;
 	char *name = NULL;
 	enum SID_NAME_USE type;
 
@@ -72,7 +73,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	sid_copy(&dom_sid, sid);
 	sid_split_rid(&dom_sid, &rid);
 
-	domain = find_domain_from_sid(&dom_sid);
+	domain = find_lookup_domain_from_sid(sid);
 
 	if (domain == NULL) {
 		DEBUG(3, ("Could not find domain for sid %s\n",
@@ -81,7 +82,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	}
 
 	result = domain->methods->sid_to_name(domain, mem_ctx, sid,
-					      &name, &type);
+					      &domain_name, &name, &type);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("sid_to_name failed for sid %s\n",
@@ -92,7 +93,7 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 	DEBUG(10, ("Found name %s, type %d\n", name, type));
 
 	if (type == SID_NAME_USER) {
-		add_member(domain->name, name, members, num_members);
+		add_member(domain_name, name, members, num_members);
 		goto done;
 	}
 
@@ -102,7 +103,15 @@ add_expanded_sid(const DOM_SID *sid, char **members, int *num_members)
 		goto done;
 	}
 
-	/* Expand the domain group */
+	/* Expand the domain group, this must be done via the target domain */
+
+	domain = find_domain_from_sid(sid);
+
+	if (domain == NULL) {
+		DEBUG(3, ("Could not find domain from SID %s\n",
+			  sid_string_static(sid)));
+		goto done;
+	}
 
 	result = domain->methods->lookup_groupmem(domain, mem_ctx,
 						  sid, &num_names,
@@ -221,6 +230,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
+			    const char *domain_name,
 			    const char *name,
 			    DOM_SID *sid,
 			    enum SID_NAME_USE *type)
@@ -240,6 +250,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
+			    char **domain_name,
 			    char **name,
 			    enum SID_NAME_USE *type)
 {
@@ -250,6 +261,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	if (!pdb_get_aliasinfo(sid, &info))
 		return NT_STATUS_NONE_MAPPED;
 
+	*domain_name = talloc_strdup(mem_ctx, domain->name);
 	*name = talloc_strdup(mem_ctx, info.acct_name);
 	*type = SID_NAME_ALIAS;
 
@@ -300,7 +312,45 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				char ***alt_names,
 				DOM_SID **dom_sids)
 {
-	return NT_STATUS_OK;
+	NTSTATUS nt_status;
+	int enum_ctx = 0;
+	int num_sec_domains;
+	TRUSTDOM **domains;
+	*num_domains = 0;
+	*names = NULL;
+	*alt_names = NULL;
+	*dom_sids = NULL;
+	do {
+		int i;
+		nt_status = secrets_get_trusted_domains(mem_ctx, &enum_ctx, 1,
+							&num_sec_domains,
+							&domains);
+		*names = talloc_realloc(mem_ctx, *names,
+					sizeof(*names) *
+					(num_sec_domains + *num_domains));
+		*alt_names = talloc_realloc(mem_ctx, *alt_names,
+					    sizeof(*alt_names) *
+					    (num_sec_domains + *num_domains));
+		*dom_sids = talloc_realloc(mem_ctx, *dom_sids,
+					   sizeof(**dom_sids) *
+					   (num_sec_domains + *num_domains));
+
+		for (i=0; i< num_sec_domains; i++) {
+			if (pull_ucs2_talloc(mem_ctx, &(*names)[*num_domains],
+					     domains[i]->name) == -1) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			(*alt_names)[*num_domains] = NULL;
+			(*dom_sids)[*num_domains] = domains[i]->sid;
+			(*num_domains)++;
+		}
+
+	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_MORE_ENTRIES)) {
+		return NT_STATUS_OK;
+	}
+	return nt_status;
 }
 
 /* find the domain sid for a domain */
