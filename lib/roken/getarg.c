@@ -46,17 +46,22 @@ RCSID("$Id$");
 #include "getarg.h"
 
 static size_t
-print_arg (int longp, struct getargs *arg)
+print_arg (FILE *stream, int mdoc, int longp, struct getargs *arg)
 {
     const char *s;
 
     if (arg->type == arg_flag || arg->type == arg_negative_flag)
 	return 0;
 
-    if (longp)
-	putc ('=', stderr);
-    else
-	putc (' ', stderr);
+    if(mdoc){
+	if(longp)
+	    fprintf(stream, "= Ns");
+	fprintf(stream, " Ar ");
+    }else
+	if (longp)
+	    putc ('=', stream);
+	else
+	    putc (' ', stream);
 
     if (arg->arg_help)
 	s = arg->arg_help;
@@ -65,8 +70,92 @@ print_arg (int longp, struct getargs *arg)
     else if (arg->type == arg_string)
 	s = "string";
 
-    fprintf (stderr, "%s", s);
+    fprintf (stream, "%s", s);
     return 1 + strlen(s);
+}
+
+static void
+mandoc_template(struct getargs *args,
+		size_t num_args,
+		const char *extra_string)
+{
+    int i;
+    size_t max_len = 0;
+    char timestr[64], cmd[64];
+    const char *p;
+    time_t t;
+
+    printf(".\\\" Things to fix:\n");
+    printf(".\\\"   * correct section, and operating system\n");
+    printf(".\\\"   * remove Op from mandatory flags\n");
+    printf(".\\\"   * use better macros for arguments (like .Pa for files)\n");
+    printf(".\\\"\n");
+    t = time(NULL);
+    strftime(timestr, sizeof(timestr), "%b %d, %Y", localtime(&t));
+    printf(".Dd %s\n", timestr);
+    p = strrchr(__progname, '/');
+    if(p) p++; else p = __progname;
+    strncpy(cmd, p, sizeof(cmd));
+    cmd[sizeof(cmd)-1] = '\0';
+    strupr(cmd);
+       
+    printf(".Dt %s SECTION\n", cmd);
+    printf(".Os OPERATING_SYSTEM\n");
+    printf(".Sh NAME\n");
+    printf(".Nm %s\n", p);
+    printf(".Nd\n");
+    printf("in search of a description\n");
+    printf(".Sh SYNOPSIS\n");
+    printf(".Nm\n");
+    for(i = 0; i < num_args; i++){
+	if(args[i].short_name){
+	    printf(".Op Fl %c", args[i].short_name);
+	    print_arg(stdout, 1, 0, args + i);
+	    printf("\n");
+	}
+	if(args[i].long_name){
+	    printf(".Op Fl -%s", args[i].long_name);
+	    print_arg(stdout, 1, 1, args + i);
+	    printf("\n");
+	}
+    /*
+	    if(args[i].type == arg_strings)
+		fprintf (stderr, "...");
+		*/
+    }
+    if (extra_string && *extra_string)
+	printf (".Ar %s\n", extra_string);
+    printf(".Sh DESCRIPTION\n");
+    printf("Supported options:\n");
+    printf(".Bl -tag -width Ds\n");
+    for(i = 0; i < num_args; i++){
+	if(args[i].short_name){
+	    printf(".It Fl %c", args[i].short_name);
+	    print_arg(stdout, 1, 0, args + i);
+	    printf("\n");
+	}
+	if(args[i].long_name){
+	    printf(".It Fl -%s", args[i].long_name);
+	    print_arg(stdout, 1, 1, args + i);
+	    printf("\n");
+	}
+	if(args[i].help)
+	    printf("%s\n", args[i].help);
+    /*
+	    if(args[i].type == arg_strings)
+		fprintf (stderr, "...");
+		*/
+    }
+    printf(".El\n");
+    printf(".\\\".Sh ENVIRONMENT\n");
+    printf(".\\\".Sh FILES\n");
+    printf(".\\\".Sh EXAMPLES\n");
+    printf(".\\\".Sh DIAGNOSTICS\n");
+    printf(".\\\".Sh SEE ALSO\n");
+    printf(".\\\".Sh STANDARDS\n");
+    printf(".\\\".Sh HISTORY\n");
+    printf(".\\\".Sh AUTHORS\n");
+    printf(".\\\".Sh BUGS\n");
 }
 
 void
@@ -77,6 +166,10 @@ arg_printusage (struct getargs *args,
     int i;
     size_t max_len = 0;
 
+    if(getenv("GETARGMANDOC")){
+	mandoc_template(args, num_args, extra_string);
+	return;
+    }
     fprintf (stderr, "Usage: %s", __progname);
     for (i = 0; i < num_args; ++i) {
 	size_t len = 0;
@@ -89,7 +182,7 @@ arg_printusage (struct getargs *args,
 	    }
 	    fprintf (stderr, "%s", args[i].long_name);
 	    len += 2 + strlen(args[i].long_name);
-	    len += print_arg (1, &args[i]);
+	    len += print_arg (stderr, 0, 1, &args[i]);
 	    putc (']', stderr);
 	    if(args[i].type == arg_strings)
 		fprintf (stderr, "...");
@@ -97,7 +190,7 @@ arg_printusage (struct getargs *args,
 	if (args[i].short_name) {
 	    len += 2;
 	    fprintf (stderr, " [-%c", args[i].short_name);
-	    len += print_arg (0, &args[i]);
+	    len += print_arg (stderr, 0, 0, &args[i]);
 	    putc (']', stderr);
 	    if(args[i].type == arg_strings)
 		fprintf (stderr, "...");
@@ -117,7 +210,7 @@ arg_printusage (struct getargs *args,
 	    if (args[i].short_name) {
 		fprintf (stderr, "-%c", args[i].short_name);
 		count += 2;
-		count += print_arg (0, &args[i]);
+		count += print_arg (stderr, 0, 0, &args[i]);
 	    }
 	    if (args[i].short_name && args[i].long_name) {
 		fprintf (stderr, " or ");
@@ -131,7 +224,7 @@ arg_printusage (struct getargs *args,
 		}
 		fprintf (stderr, "%s", args[i].long_name);
 		count += 2 + strlen(args[i].long_name);
-		count += print_arg (1, &args[i]);
+		count += print_arg (stderr, 0, 1, &args[i]);
 	    }
 	    while(count++ <= max_len)
 		putc (' ', stderr);
