@@ -180,6 +180,6 @@ setup(
     # code, although it implements a compatible data format.
     Extension(name = "tdbpack",
               sources = [os.path.join(samba_srcdir, "python", "py_tdbpack.c")],
-              extra_compile_args = ["-I include"])
+              extra_compile_args = ["-I."])
     ],
 )
