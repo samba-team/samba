@@ -66,7 +66,7 @@ static void ldappassgrp_member(char *attribute, uint32 **rids, int *numrids)
 
 static void *ldappassgrp_enumfirst(BOOL update)
 {
-	if (!ldap_open_connection(False))
+	if (!ldap_connect())
 		return NULL;
 
 	ldap_search_for("&(objectclass=sambaAccount)(|(group=*)(alias=*))");
@@ -76,7 +76,7 @@ static void *ldappassgrp_enumfirst(BOOL update)
 
 static void ldappassgrp_enumclose(void *vp)
 {
-	ldap_close_connection();
+	ldap_disconnect();
 }
 
 
@@ -106,7 +106,7 @@ static struct smb_passwd *ldappassgrp_getpwbynam(const char *name,
 {
 	struct smb_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_ntname(name);
@@ -114,7 +114,7 @@ static struct smb_passwd *ldappassgrp_getpwbynam(const char *name,
 	ldappassgrp_member("alias", als_rids, num_alss);
 	ret = ldap_getpw();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -124,7 +124,7 @@ static struct smb_passwd *ldappassgrp_getpwbyuid(uid_t userid,
 {
 	struct smb_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_uid(userid);
@@ -132,7 +132,7 @@ static struct smb_passwd *ldappassgrp_getpwbyuid(uid_t userid,
 	ldappassgrp_member("alias", als_rids, num_alss);
 	ret = ldap_getpw();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -142,7 +142,7 @@ static struct smb_passwd *ldappassgrp_getpwbyrid(uint32 user_rid,
 {
 	struct smb_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_rid(user_rid);
@@ -150,7 +150,7 @@ static struct smb_passwd *ldappassgrp_getpwbyrid(uint32 user_rid,
 	ldappassgrp_member("alias", als_rids, num_alss);
 	ret = ldap_getpw();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 

@@ -30,9 +30,9 @@
 extern int DEBUGLEVEL;
 
 /* Internal state */
-LDAP *ldap_struct;
-LDAPMessage *ldap_results;
-LDAPMessage *ldap_entry;
+extern LDAP *ldap_struct;
+extern LDAPMessage *ldap_results;
+extern LDAPMessage *ldap_entry;
 
 
 /*******************************************************************
@@ -44,7 +44,7 @@ BOOL ldap_search_by_rid(uint32 rid)
         fstring filter;
 
         slprintf(filter, sizeof(filter)-1,
-                 "(&(rid=%d)(objectclass=sambaAccount))", rid);
+                 "(&(rid=%x)(objectclass=sambaAccount))", rid);
         return ldap_search_for(filter);
 }
 
@@ -120,7 +120,7 @@ static struct sam_passwd *ldapsam_getsam()
 		sam21->unix_gid = (gid_t)(-1);
 	
 	if(ldap_get_attribute("grouprid", temp))
-		sam21->group_rid = atoi(temp);
+		sam21->group_rid = strtol(temp, NULL, 16);
 	else
 		sam21->group_rid = 0xFFFFFFFF;
 	
@@ -174,6 +174,7 @@ static struct sam_passwd *ldapsam_getsam()
         sam21->unknown_str = NULL;
         sam21->munged_dial = NULL;
 
+        ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
 	return sam21;
 }
 
@@ -201,7 +202,7 @@ static struct sam_disp_info *ldapsam_getdispinfo()
 	DEBUG(2,("Retrieving account [%s]\n",nt_name));
 
 	if(ldap_get_attribute("rid", temp))
-		dispinfo.user_rid = atoi(temp);
+		dispinfo.user_rid = strtol(temp, NULL, 16);
 	else {
 		DEBUG(0,("Missing rid\n"));
 		return NULL; }
@@ -211,6 +212,7 @@ static struct sam_disp_info *ldapsam_getdispinfo()
 	else
 		dispinfo.full_name = NULL;
 
+        ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
 	return &dispinfo;
 }
 
@@ -231,7 +233,7 @@ static void ldapsam_sammods(struct sam_passwd *newpwd, LDAPMod ***mods,
 	slprintf(temp, sizeof(temp)-1, "%d", newpwd->unix_gid);
 	ldap_make_mod(mods, operation, "gidNumber", temp);
 
-	slprintf(temp, sizeof(temp)-1, "%d", newpwd->group_rid);
+	slprintf(temp, sizeof(temp)-1, "%x", newpwd->group_rid);
 	ldap_make_mod(mods, operation, "grouprid", temp);
 
 	ldap_make_mod(mods, operation, "cn", newpwd->full_name);
@@ -261,7 +263,7 @@ static void ldapsam_sammods(struct sam_passwd *newpwd, LDAPMod ***mods,
 
 static void *ldapsam_enumfirst(BOOL update)
 {
-	if (!ldap_open_connection(False))
+	if (!ldap_connect())
 		return NULL;
 
 	ldap_search_for("objectclass=sambaAccount");
@@ -271,7 +273,7 @@ static void *ldapsam_enumfirst(BOOL update)
 
 static void ldapsam_enumclose(void *vp)
 {
-	ldap_close_connection();
+	ldap_disconnect();
 }
 
 
@@ -299,13 +301,13 @@ static struct sam_passwd *ldapsam_getsambynam(const char *name)
 {
 	struct sam_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_ntname(name);
 	ret = ldapsam_getsam();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -313,13 +315,13 @@ static struct sam_passwd *ldapsam_getsambyuid(uid_t userid)
 {
 	struct sam_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 	   return NULL;
 
 	ldap_search_by_uid(userid);
 	ret = ldapsam_getsam();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -327,13 +329,13 @@ static struct sam_passwd *ldapsam_getsambyrid(uint32 user_rid)
 {
 	struct sam_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 	   return NULL;
 
 	ldap_search_by_rid(user_rid);
 	ret = ldapsam_getsam();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -351,6 +353,9 @@ static BOOL ldapsam_addsam(struct sam_passwd *newpwd)
 {	
 	LDAPMod **mods;
 
+	if (!newpwd || !ldap_allocaterid(&newpwd->user_rid))
+		return (False);
+
 	ldapsam_sammods(newpwd, &mods, LDAP_MOD_ADD);
 	return ldap_makemods("uid", newpwd->unix_name, mods, True);
 }
@@ -358,6 +363,9 @@ static BOOL ldapsam_addsam(struct sam_passwd *newpwd)
 static BOOL ldapsam_modsam(struct sam_passwd *pwd, BOOL override)
 {
 	LDAPMod **mods;
+
+	if (!pwd)
+		return (False);
 
 	ldapsam_sammods(pwd, &mods, LDAP_MOD_REPLACE);
 	return ldap_makemods("uid", pwd->unix_name, mods, False);
@@ -372,13 +380,13 @@ static struct sam_disp_info *ldapsam_getdispbynam(const char *name)
 {
 	struct sam_disp_info *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 	   return NULL;
 
 	ldap_search_by_ntname(name);
 	ret = ldapsam_getdispinfo();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -386,13 +394,13 @@ static struct sam_disp_info *ldapsam_getdispbyrid(uint32 user_rid)
 {
 	struct sam_disp_info *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 	   return NULL;
 
 	ldap_search_by_rid(user_rid);
 	ret = ldapsam_getdispinfo();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 

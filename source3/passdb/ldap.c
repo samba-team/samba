@@ -43,7 +43,7 @@ static pstring ldap_secret;
   Open connections to the LDAP server.
  ******************************************************************/	
 
-BOOL ldap_open_connection(BOOL modify)
+BOOL ldap_connect(void)
 {
 	int err;
 
@@ -66,7 +66,7 @@ BOOL ldap_open_connection(BOOL modify)
   close connections to the LDAP server.
  ******************************************************************/	
 
-void ldap_close_connection(void)
+void ldap_disconnect(void)
 {
 	if(!ldap_struct)
 		return;
@@ -171,7 +171,7 @@ struct smb_passwd *ldap_getpw(void)
 		return NULL; }
 	smbpw.unix_uid = atoi(temp);
 
-        if(ldap_get_attribute("ntuid", nt_name)) {
+        if(!ldap_get_attribute("ntuid", nt_name)) {
 		DEBUG(0,("Missing ntuid\n"));
 		return NULL; }
 	smbpw.nt_name = nt_name;
@@ -179,7 +179,7 @@ struct smb_passwd *ldap_getpw(void)
 	if(!ldap_get_attribute("rid", temp)) {
 		DEBUG(0,("Missing rid\n"));
 		return NULL; }
-	smbpw.user_rid = atoi(temp);
+	smbpw.user_rid = strtol(temp, NULL, 16);
 
 	if(ldap_get_attribute("acctFlags", temp))
 		smbpw.acct_ctrl = pwdb_decode_acct_ctrl(temp);
@@ -206,7 +206,6 @@ struct smb_passwd *ldap_getpw(void)
 	else
 		smbpw.pass_last_set_time = (time_t)(-1);
 
-	ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
 	return &smbpw;
 }
 
@@ -279,7 +278,7 @@ struct smb_passwd *ldap_getpw(void)
 	      ldap_make_mod(mods, LDAP_MOD_ADD, "uidNumber", temp);
 
 	      ldap_make_mod(mods, LDAP_MOD_ADD, "ntuid", newpwd->nt_name);
-	      slprintf(temp, sizeof(temp)-1, "%d", newpwd->user_rid);
+	      slprintf(temp, sizeof(temp)-1, "%x", newpwd->user_rid);
 	      ldap_make_mod(mods, LDAP_MOD_ADD, "rid", temp);
 	}
 
@@ -312,34 +311,102 @@ struct smb_passwd *ldap_getpw(void)
  *************************************************************************/
  BOOL ldap_makemods(char *attribute, char *value, LDAPMod **mods, BOOL add)
 {
-	pstring dn;
+	pstring filter;
+	char *dn;
 	int entries;
 	int err = 0;
 	BOOL rc;
 
-	slprintf(dn, sizeof(dn)-1, "%s=%s, %s", attribute, value,
-		 lp_ldap_suffix());
+	slprintf(filter, sizeof(filter)-1, "%s=%s", attribute, value);
 
-	if(!ldap_open_connection(True))
+	if (!ldap_connect())
 		return (False);
 
-	if(add)
-		err = ldap_add_s(ldap_struct, dn, mods);
+	ldap_search_for(filter);
 
-	if(!add || (err = LDAP_ALREADY_EXISTS))
+	if (ldap_entry)
+	{
+		dn = ldap_get_dn(ldap_struct, ldap_entry);
 		err = ldap_modify_s(ldap_struct, dn, mods);
+		free(dn);
+	}
+	else if (add)
+	{
+		pstrcat(filter, ", ");
+		pstrcat(filter, lp_ldap_suffix());
+		err = ldap_add_s(ldap_struct, filter, mods);
+	}
 
-	if(err == LDAP_SUCCESS) {
-		DEBUG(2,("Updated entry [%s]\n",value));
+	if (err == LDAP_SUCCESS)
+	{
+		DEBUG(2,("Updated entry [%s]\n", value));
 		rc = True;
 	} else {
 		DEBUG(0,("update: %s\n", ldap_err2string(err)));
 		rc = False;
 	}
 
-	ldap_close_connection();
+	ldap_disconnect();
 	ldap_mods_free(mods, 1);
 	return rc;
+}
+
+
+/************************************************************************
+  Return next available RID, starting from 1000
+ ************************************************************************/
+
+BOOL ldap_allocaterid(uint32 *rid)
+{
+	pstring newdn;
+	fstring rid_str;
+	LDAPMod **mods;
+	char *dn;
+	int err;
+
+	DEBUG(2, ("Allocating new RID\n"));
+
+	if (!ldap_connect())
+		return (False);
+
+	ldap_search_for("(&(id=root)(objectClass=sambaConfig))");
+
+	if (ldap_entry && ldap_get_attribute("nextrid", rid_str))
+		*rid = strtol(rid_str, NULL, 16);
+	else
+		*rid = 1000;
+
+	mods = NULL;
+	if(!ldap_entry)
+	{
+		ldap_make_mod(&mods, LDAP_MOD_ADD, "objectClass",
+			      "sambaConfig");
+		ldap_make_mod(&mods, LDAP_MOD_ADD, "id", "root");
+	}
+
+	slprintf(rid_str, sizeof(fstring)-1, "%x", (*rid) + 1);
+	ldap_make_mod(&mods, LDAP_MOD_REPLACE, "nextrid", rid_str);
+
+	if (ldap_entry)
+	{
+                dn = ldap_get_dn(ldap_struct, ldap_entry);
+                err = ldap_modify_s(ldap_struct, dn, mods);
+                free(dn);
+	} else {
+		pstrcpy(newdn, "id=root, ");
+		pstrcat(newdn, lp_ldap_suffix());
+		ldap_add_s(ldap_struct, newdn, mods);
+	}
+
+	ldap_disconnect();
+
+	if(err != LDAP_SUCCESS)
+	{
+		DEBUG(0,("nextrid update: %s\n", ldap_err2string(err)));
+		return (False);
+	}
+
+	return (True);
 }
 
 
@@ -349,7 +416,7 @@ struct smb_passwd *ldap_getpw(void)
 
 static void *ldap_enumfirst(BOOL update)
 {
-	if (!ldap_open_connection(False))
+	if (!ldap_connect())
 		return NULL;
 
 	ldap_search_for("objectclass=sambaAccount");
@@ -359,7 +426,7 @@ static void *ldap_enumfirst(BOOL update)
 
 static void ldap_enumclose(void *vp)
 {
-	ldap_close_connection();
+	ldap_disconnect();
 }
 
 
@@ -387,13 +454,13 @@ static struct smb_passwd *ldap_getpwbynam(const char *name)
 {
 	struct smb_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_name(name);
 	ret = ldap_getpw();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -401,19 +468,23 @@ static struct smb_passwd *ldap_getpwbyuid(uid_t userid)
 {
 	struct smb_passwd *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return NULL;
 
 	ldap_search_by_uid(userid);
 	ret = ldap_getpw();
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
 static struct smb_passwd *ldap_getcurrentpw(void *vp)
 {
-	return ldap_getpw();
+	struct smb_passwd *ret;
+
+	ret = ldap_getpw();
+	ldap_entry = ldap_next_entry(ldap_struct, ldap_entry);
+	return ret;
 }
 
 
@@ -424,6 +495,9 @@ static BOOL ldap_addpw(struct smb_passwd *newpwd)
 {
 	LDAPMod **mods;
 
+	if (!newpwd || !ldap_allocaterid(&newpwd->user_rid))
+		return (False);
+
 	ldap_smbpwmods(newpwd, &mods, LDAP_MOD_ADD);
 	return ldap_makemods("uid", newpwd->unix_name, mods, True);
 }
@@ -431,6 +505,9 @@ static BOOL ldap_addpw(struct smb_passwd *newpwd)
 static BOOL ldap_modpw(struct smb_passwd *pwd, BOOL override)
 {
 	LDAPMod **mods;
+
+	if (!pwd)
+		return (False);
 
 	ldap_smbpwmods(pwd, &mods, LDAP_MOD_REPLACE);
 	return ldap_makemods("uid", pwd->unix_name, mods, False);

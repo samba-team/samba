@@ -1375,13 +1375,14 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb/ldap.c  */
 
-BOOL ldap_open_connection(BOOL modify);
-void ldap_close_connection(void);
+BOOL ldap_connect(void);
+void ldap_disconnect(void);
 BOOL ldap_search_for(char *filter);
 BOOL ldap_search_by_name(const char *user);
 BOOL ldap_search_by_uid(int uid);
 BOOL ldap_get_attribute(char *attribute, char *value);
 struct smb_passwd *ldap_getpw(void);
+BOOL ldap_allocaterid(uint32 *rid);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
 
 /*The following definitions come from  passdb/nispass.c  */

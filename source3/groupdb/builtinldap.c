@@ -58,10 +58,10 @@ static LOCAL_GRP *ldapbuiltin_getgrp(LOCAL_GRP *group,
 		DEBUG(0, ("Missing cn\n"));
                 return NULL; }
 	
-	DEBUG(2,("Retrieving alias [%s]\n", group->name));
+	DEBUG(2,("Retrieving builtin alias [%s]\n", group->name));
 
         if(ldap_get_attribute("rid", temp)) {
-		group->rid = atoi(temp);
+		group->rid = strtol(temp, NULL, 16);
 	} else {
 		DEBUG(0, ("Missing rid\n"));
 		return NULL;
@@ -129,14 +129,35 @@ static void ldapbuiltin_grpmods(LOCAL_GRP *group, LDAPMod ***mods,
 		ldap_make_mod(mods, LDAP_MOD_ADD, "objectClass", "sambaBuiltin");
 		ldap_make_mod(mods, LDAP_MOD_ADD, "cn", group->name);
 
-		slprintf(temp, sizeof(temp)-1, "%d", (gid_t)(-1));
-		ldap_make_mod(mods, LDAP_MOD_ADD, "gidNumber", temp);
-
-		slprintf(temp, sizeof(temp)-1, "%d", group->rid);
+		slprintf(temp, sizeof(temp)-1, "%x", group->rid);
 		ldap_make_mod(mods, LDAP_MOD_ADD, "rid", temp);
 	}
 
 	ldap_make_mod(mods, operation, "description", group->comment);
+}
+
+
+/************************************************************************
+  Create a builtin alias member entry
+ ************************************************************************/
+
+static BOOL ldapbuiltin_memmods(DOM_SID *user_sid, LDAPMod ***mods,
+			      int operation)
+{
+	pstring member;
+	pstring sid_str;
+	fstring name;
+	uint8 type;
+
+	if (lookup_sid(user_sid, name, &type))
+		return (False);
+	sid_to_string(sid_str, user_sid);
+
+	slprintf(member, sizeof(member)-1, "%s,%s,%d", name, sid_str, type);
+
+	*mods = NULL;
+	ldap_make_mod(mods, operation, "member", member);
+	return True;
 }
 
 
@@ -149,7 +170,7 @@ static void *ldapbuiltin_enumfirst(BOOL update)
 	if (lp_server_role() == ROLE_DOMAIN_NONE)
 		return NULL;
 
-	if (!ldap_open_connection(False))
+	if (!ldap_connect())
 		return NULL;
 
 	ldap_search_for("objectClass=sambaBuiltin");
@@ -159,7 +180,7 @@ static void *ldapbuiltin_enumfirst(BOOL update)
 
 static void ldapbuiltin_enumclose(void *vp)
 {
-	ldap_close_connection();
+	ldap_disconnect();
 }
 
 
@@ -189,7 +210,7 @@ static LOCAL_GRP *ldapbuiltin_getgrpbynam(const char *name,
 	fstring filter;
 	LOCAL_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
@@ -198,7 +219,7 @@ static LOCAL_GRP *ldapbuiltin_getgrpbynam(const char *name,
 
 	ret = ldapbuiltin_getgrp(&localgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -208,7 +229,7 @@ static LOCAL_GRP *ldapbuiltin_getgrpbygid(gid_t grp_id,
 	fstring filter;
 	LOCAL_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
@@ -216,7 +237,7 @@ static LOCAL_GRP *ldapbuiltin_getgrpbygid(gid_t grp_id,
 	ldap_search_for(filter);
 	ret = ldapbuiltin_getgrp(&localgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -226,15 +247,15 @@ static LOCAL_GRP *ldapbuiltin_getgrpbyrid(uint32 grp_rid,
 	fstring filter;
 	LOCAL_GRP *ret;
 
-	if(!ldap_open_connection(False))
+	if(!ldap_connect())
 		return (False);
 
 	slprintf(filter, sizeof(filter)-1,
-		 "(&(rid=%d)(objectClass=sambaBuiltin))", grp_rid);
+		 "(&(rid=%x)(objectClass=sambaBuiltin))", grp_rid);
 	ldap_search_for(filter);
 	ret = ldapbuiltin_getgrp(&localgrp, members, num_membs);
 
-	ldap_close_connection();
+	ldap_disconnect();
 	return ret;
 }
 
@@ -244,9 +265,20 @@ static LOCAL_GRP *ldapbuiltin_getcurrentgrp(void *vp,
 	return ldapbuiltin_getgrp(&localgrp, members, num_membs);
 }
 
+
+/*************************************************************************
+  Add/modify/delete builtin aliases.
+ *************************************************************************/
+
 static BOOL ldapbuiltin_addgrp(LOCAL_GRP *group)
 {
 	LDAPMod **mods;
+
+	if (!ldap_allocaterid(&group->rid))
+	{
+	    DEBUG(0,("RID generation failed\n"));
+	    return (False);
+	}
 
 	ldapbuiltin_grpmods(group, &mods, LDAP_MOD_ADD); 
 	return ldap_makemods("cn", group->name, mods, True);
@@ -260,12 +292,83 @@ static BOOL ldapbuiltin_modgrp(LOCAL_GRP *group)
 	return ldap_makemods("cn", group->name, mods, False);
 }
 
+static BOOL ldapbuiltin_delgrp(uint32 grp_rid)
+{
+	fstring filter;
+	char *dn;
+	int err;
+
+	if (!ldap_connect())
+		return (False);
+
+	slprintf(filter, sizeof(filter)-1,
+		 "(&(rid=%x)(objectClass=sambaBuiltin))", grp_rid);
+	ldap_search_for(filter);
+
+	if (!ldap_entry || !(dn = ldap_get_dn(ldap_struct, ldap_entry)))
+	{
+		ldap_disconnect();
+		return (False);
+	}
+
+	err = ldap_delete_s(ldap_struct, dn);
+	free(dn);
+	ldap_disconnect();
+
+	if (err != LDAP_SUCCESS)
+	{
+		DEBUG(0, ("delete: %s\n", ldap_err2string(err)));
+		return (False);
+	}
+
+	return True;
+}
+
+
+/*************************************************************************
+  Add users to/remove users from aliases.
+ *************************************************************************/
+
+static BOOL ldapbuiltin_addmem(uint32 grp_rid, DOM_SID *user_sid)
+{
+	LDAPMod **mods;
+        fstring rid_str;
+
+	slprintf(rid_str, sizeof(rid_str)-1, "%x", grp_rid);
+
+	if(!ldapbuiltin_memmods(user_sid, &mods, LDAP_MOD_ADD))
+		return (False);
+
+	return ldap_makemods("rid", rid_str, mods, False);
+}
+
+static BOOL ldapbuiltin_delmem(uint32 grp_rid, DOM_SID *user_sid)
+{
+	LDAPMod **mods;
+        fstring rid_str;
+
+	slprintf(rid_str, sizeof(rid_str)-1, "%x", grp_rid);
+
+	if(!ldapbuiltin_memmods(user_sid, &mods, LDAP_MOD_DELETE))
+		return (False);
+
+	return ldap_makemods("rid", rid_str, mods, False);
+}
+
+
+/*************************************************************************
+  Return builtin aliases that a user is in.
+ *************************************************************************/
+
 static BOOL ldapbuiltin_getusergroups(const char *name,
 			LOCAL_GRP **groups, int *num_grps)
 {
 	LOCAL_GRP *grouplist;
 	fstring filter;
 	int i;
+
+	if(!ldap_connect())
+		return (False);
 
 	slprintf(filter, sizeof(pstring)-1,
 		 "(&(member=%s,*)(objectclass=sambaBuiltin))", name);
@@ -275,6 +378,7 @@ static BOOL ldapbuiltin_getusergroups(const char *name,
 
 	if(!i) {
 		*groups = NULL;
+		ldap_disconnect();
 		return (True);
 	}
 
@@ -283,6 +387,7 @@ static BOOL ldapbuiltin_getusergroups(const char *name,
 		i--;
 	} while(ldapbuiltin_getgrp(&grouplist[i], NULL, NULL) && (i > 0));
 
+	ldap_disconnect();
 	return (True);
 }
 
@@ -301,6 +406,10 @@ static struct aliasdb_ops ldapbuiltin_ops =
 
 	ldapbuiltin_addgrp,
 	ldapbuiltin_modgrp,
+	ldapbuiltin_delgrp,
+
+	ldapbuiltin_addmem,
+	ldapbuiltin_delmem,
 
 	ldapbuiltin_getusergroups
 };
