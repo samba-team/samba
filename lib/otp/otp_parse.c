@@ -2146,12 +2146,13 @@ get_altword (char *s, void *a)
 {
   OtpAlgorithm *alg = (OtpAlgorithm *)a;
   int ret;
-  char *res = malloc(alg->hashsize);
+  unsigned char *res = malloc(alg->hashsize);
 
   if (res == NULL)
     return -1;
   alg->hash (s, strlen(s), res);
-  ret = res[alg->hashsize - 1] | ((res[alg->hashsize - 2] & 0x03) << 8);
+  ret = (unsigned)(res[alg->hashsize - 1]) | 
+      ((res[alg->hashsize - 2] & 0x03) << 8);
   free (res);
   return ret;
 }
