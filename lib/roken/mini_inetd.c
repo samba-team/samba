@@ -101,6 +101,8 @@ mini_inetd (int port)
     hints.ai_flags    = AI_PASSIVE;
     hints.ai_socktype = SOCK_STREAM;
 
+    snprintf (portstr, sizeof(portstr), "%d", ntohs(port));
+
     error = getaddrinfo (NULL, portstr, &hints, &ai);
     if (error)
 	errx (1, "getaddrinfo: %s", gai_strerror (error));
