@@ -59,6 +59,12 @@ extern pstring user_socket_options;
 extern int dcelogin_atmost_once;
 #endif /* DFS_AUTH */
 
+/*
+ * This is set on startup - it defines the SID for this
+ * machine.
+*/
+DOM_SID global_machine_sid;
+
 connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
 
@@ -133,6 +139,185 @@ void  *dflt_sig(void)
 void  killkids(void)
 {
   if(am_parent) kill(0,SIGTERM);
+}
+
+/****************************************************************************
+ Read the machine SID from a file.
+****************************************************************************/
+
+static BOOL read_sid_from_file(int fd, char *sid_file)
+{
+  fstring fline;
+
+  if(read(fd, &fline, sizeof(fline) -1 ) < 0) {
+    DEBUG(0,("read_sid_from_file: unable to read file %s. Error was %s\n",
+           sid_file, strerror(errno) ));
+    return False;
+  }
+
+  /*
+   * Convert to the machine SID.
+   */
+
+  fline[sizeof(fline)-1] = '\0';
+  if(!string_to_sid( &global_machine_sid, fline)) {
+    DEBUG(0,("read_sid_from_file: unable to generate machine SID.\n"));
+    return False;
+  }
+
+  return True;
+}
+
+/****************************************************************************
+ Generate the global machine sid. Look for the MACHINE.SID file first, if
+ not found then look in smb.conf and use it to create the MACHINE.SID file.
+****************************************************************************/
+
+static BOOL generate_machine_sid(void)
+{
+  int fd;
+  char *p;
+  pstring sid_file;
+  fstring sid_string;
+  struct stat st;
+  uchar raw_sid_data[12];
+
+  pstrcpy(sid_file, lp_smb_passwd_file());
+  p = strrchr(sid_file, '/');
+  if(p != NULL)
+    *++p = '\0';
+
+  pstrcat(sid_file, "MACHINE.SID");
+
+  if((fd = open( sid_file, O_RDWR | O_CREAT, 0644)) < 0 ) {
+    DEBUG(0,("generate_machine_sid: unable to open or create file %s. Error was %s\n",
+             sid_file, strerror(errno) ));
+    return False;
+  }
+
+  /*
+   * Check if the file contains data.
+   */
+
+  if(fstat( fd, &st) < 0) {
+    DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+             sid_file, strerror(errno) ));
+    close(fd);
+    return False;
+  }
+
+  if(st.st_size > 0) {
+    /*
+     * We have a valid SID - read it.
+     */
+    if(!read_sid_from_file( fd, sid_file)) {
+      DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+             sid_file, strerror(errno) )); 
+      close(fd);
+      return False;
+    }
+    close(fd);
+    return True;
+  }
+
+  /*
+   * The file contains no data - we may need to generate our
+   * own sid. Try the lp_domain_sid() first.
+   */
+
+  if(*lp_domain_sid())
+    fstrcpy( sid_string, lp_domain_sid());
+  else {
+    /*
+     * Generate the new sid data & turn it into a string.
+     */
+    int i;
+    generate_random_buffer( raw_sid_data, 12, True);
+
+    fstrcpy( sid_string, "S-1-5-21");
+    for( i = 0; i < 3; i++) {
+      fstring tmp_string;
+      slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
+      fstrcat( sid_string, tmp_string);
+    }
+  }
+
+  fstrcat(sid_string, "\n");
+
+  /*
+   * Ensure our new SID is valid.
+   */
+
+  if(!string_to_sid( &global_machine_sid, sid_string)) {
+    DEBUG(0,("generate_machine_sid: unable to generate machine SID.\n"));
+    return False;
+  }
+
+  /*
+   * Do an exclusive blocking lock on the file.
+   */
+
+  if(!do_file_lock( fd, 60, F_WRLCK)) {
+    DEBUG(0,("generate_machine_sid: unable to lock file %s. Error was %s\n",
+             sid_file, strerror(errno) ));
+    close(fd);
+    return False;
+  }
+
+  /*
+   * At this point we have a blocking lock on the SID 
+   * file - check if in the meantime someone else wrote
+   * SID data into the file. If so - they were here first,
+   * use their data.
+   */
+
+  if(fstat( fd, &st) < 0) {
+    DEBUG(0,("generate_machine_sid: unable to stat file %s. Error was %s\n",
+             sid_file, strerror(errno) ));
+    close(fd);
+    return False;
+  }
+
+  if(st.st_size > 0) {
+    /*
+     * We have a valid SID - read it.
+     */
+    if(!read_sid_from_file( fd, sid_file)) {
+      DEBUG(0,("generate_machine_sid: unable to read file %s. Error was %s\n",
+             sid_file, strerror(errno) ));
+      close(fd);
+      return False;
+    } 
+    close(fd);
+    return True;
+  }   
+
+  /*
+   * The file is still empty and we have an exlusive lock on it.
+   * Write out out SID data into the file.
+   */
+
+  if(fchmod(fd, 0644) < 0) {
+    DEBUG(0,("generate_machine_sid: unable to set correct permissions on file %s. \
+Error was %s\n", sid_file, strerror(errno) ));
+    close(fd);
+    return False;
+  }
+
+  if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
+    DEBUG(0,("generate_machine_sid: unable to write file %s. Error was %s\n",
+          sid_file, strerror(errno) ));
+    close(fd);
+    return False;
+  }
+ 
+  /*
+   * Unlock & exit.
+   */
+ 
+  do_file_lock( fd, 60, F_UNLCK);
+  close(fd);
+  return True;
 }
 
 /****************************************************************************
@@ -5187,6 +5372,12 @@ static void usage(char *pname)
 
   pstrcpy(global_myworkgroup, lp_workgroup());
 
+  if(!generate_machine_sid())
+  {
+    DEBUG(0,("ERROR: Samba cannot get a machine SID.\n"));
+    exit(1);
+  }
+
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
@@ -5256,5 +5447,3 @@ static void usage(char *pname)
   exit_server("normal exit");
   return(0);
 }
-
-
