@@ -14,7 +14,7 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>nmblookup</command>
+		<command>smbcacls</command>
 		<arg choice="req">//server/share</arg>
 		<arg choice="req">filename</arg>
 		<arg choice="opt">-U username</arg>
