@@ -57,9 +57,9 @@ sub ParseStruct($)
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 	    if (defined $e->{POINTERS}) {
-		$res .= "\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
+		$res .= "\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, drep, \"$e->{NAME}\");\n";
 	    } else {
-		$res .= "\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
+		$res .= "\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, drep, \"$e->{NAME}\");\n";
 	    }
 	}	
 
@@ -68,7 +68,7 @@ sub ParseStruct($)
 	$res .= "\n\t/* Parse buffers */\n\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    $res .= "\tif (ptr_$e->{NAME})\n\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
+	    $res .= "\tif (ptr_$e->{NAME})\n\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, drep, \"$e->{NAME}\");\n\n",
 	    if (defined $e->{POINTERS});
 	}
     }
@@ -86,7 +86,7 @@ sub ParseUnionElement($)
 #    $res .= "}\n\n";
 
     $res .= "\tcase $element->{DATA}->{NAME}: \n";
-    $res .= "\t\toffset = dissect_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
+    $res .= "\t\toffset = dissect_$element->{DATA}->{TYPE}(tvb, offset, pinfo, tree, drep, \"$element->{DATA}->{NAME}\");\n\t\tbreak;\n";
 
 #    $res .= "[case($element->{CASE})] ";
 #    ParseElement($element->{DATA});
@@ -132,7 +132,7 @@ sub ParseTypedef($)
     my($typedef) = shift;
 
     $res .= "static int dissect_$typedef->{NAME}(tvbuff_t *tvb, int offset,\
-\tpacket_info *pinfo, proto_tree *tree)\n{\n";
+\tpacket_info *pinfo, proto_tree *tree, char *drep)\n{\n";
     ParseType($typedef->{DATA});
     $res .= "}\n\n";
 }
@@ -151,18 +151,18 @@ sub ParseFunctionArg($$)
 	    
 	foreach my $prop (@{$arg->{PROPERTIES}}) {
 	    if ($prop =~ /context_handle/) {
-		$res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree, \"policy_hnd\");\n";
+		$res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree, drep);\n";
 		$is_pol = 1;
 	    }
 	}
 	
 	if (!$is_pol) {
 	    if ($arg->{POINTERS}) {
-		$res .= "\tptr_$arg->{NAME} = dissect_dcerpc_ptr(tvb, offset, pinfo, tree, \"$arg->{NAME}\");\n";
+		$res .= "\tptr_$arg->{NAME} = dissect_dcerpc_ptr(tvb, offset, pinfo, tree, drep, \"$arg->{NAME}\");\n";
 		$res .= "\tif (ptr_$arg->{NAME})\
-\t\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, \"$arg->{NAME}\");\n\n";
+\t\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, drep, \"$arg->{NAME}\");\n\n";
 	    } else {
-		$res .= "\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, \"$arg->{NAME}\");\n";
+		$res .= "\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, drep, \"$arg->{NAME}\");\n";
 	    }
 	}
     }
@@ -177,7 +177,7 @@ sub ParseFunction($)
     # Input function
 
     $res .= "static int $function->{NAME}_q(tvbuff_t *tvb, int offset,\
-\tpacket_info *pinfo, proto_tree *tree)\n{\n";
+\tpacket_info *pinfo, proto_tree *tree, char *drep)\n{\n";
 
     foreach my $arg (@{$function->{DATA}}) {
 	ParseFunctionArg($arg, "in");
@@ -188,13 +188,13 @@ sub ParseFunction($)
     # Output function
 
     $res .= "static int $function->{NAME}_r(tvbuff_t *tvb, int offset,\
-\tpacket_info *pinfo, proto_tree *tree)\n{\n";
+\tpacket_info *pinfo, proto_tree *tree, char *drep)\n{\n";
 
     foreach my $arg (@{$function->{DATA}}) {
 	ParseFunctionArg($arg, "out");
     }
 
-    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, \"status\");\n";
+    $res .= "\n\toffset = dissect_ntstatus(tvb, offset, pinfo, tree, drep);\n";
 
     $res .= "\n\treturn 0;\n}\n\n";
 
