@@ -1,3 +1,7 @@
+2002-04-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ndbm_wrap.{c,h}: ndbm wrapper for newer db libraries
+
 2002-04-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.h.in: move mini_inetd protos to after addrinfo definition
