@@ -27,7 +27,9 @@
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
 	return domain->sam_handle_open &&
-		domain->sam_dom_handle_open;
+		domain->sam_dom_handle_open &&
+		rpc_hnd_ok(&domain->sam_handle) &&
+		rpc_hnd_ok(&domain->sam_dom_handle);
 }
 
 static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
@@ -123,6 +125,19 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 	if (!domain->got_domain_info) {
 		domain->got_domain_info = get_domain_info(domain);
 		if (!domain->got_domain_info) return False;
+	}
+
+	if ((domain->sam_handle_open && !rpc_hnd_ok(&domain->sam_handle)) ||
+	    (domain->sam_dom_handle_open && !rpc_hnd_ok(&domain->sam_dom_handle))) {
+		domain->got_domain_info = get_domain_info(domain);
+		if (domain->sam_dom_handle_open) {
+			samr_close(&domain->sam_dom_handle);
+			domain->sam_dom_handle_open = False;
+		}
+		if (domain->sam_handle_open) {
+			samr_close(&domain->sam_handle);
+			domain->sam_handle_open = False;
+		}
 	}
 
 	/* Open sam handle if it isn't already open */
