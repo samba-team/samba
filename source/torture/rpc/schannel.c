@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 #define TEST_MACHINE_NAME "schanneltest"
 
@@ -98,6 +99,23 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
+	status = dcerpc_pipe_connect_b(&p, &b, 
+				       DCERPC_NETLOGON_UUID,
+				       DCERPC_NETLOGON_VERSION,
+				       lp_workgroup(), 
+				       TEST_MACHINE_NAME,
+				       machine_password);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with schannel\n");
+		goto failed;
+	}
+
+#if 0
+	if (!test_netlogon_ops(p, mem_ctx)) {
+		printf("Failed to process schannel secured ops\n");
+		goto failed;
+	}
+#endif
 
 	torture_leave_domain(join_ctx);
 	dcerpc_pipe_close(p);

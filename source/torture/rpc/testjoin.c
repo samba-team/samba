@@ -85,10 +85,10 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
   an opaque pointer is returned. Pass it to torture_leave_domain() 
   when finished
 */
-void *torture_join_domain(const char *machine_name, 
-			  const char *domain,
-			  uint16 acct_flags,
-			  const char **machine_password)
+struct test_join *torture_join_domain(const char *machine_name, 
+				      const char *domain,
+				      uint16 acct_flags,
+				      const char **machine_password)
 {
 	NTSTATUS status;
 	struct samr_Connect c;
@@ -209,7 +209,7 @@ again:
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
-		torture_leave_domain(&join);
+		torture_leave_domain(join);
 		goto failed;
 	}
 
@@ -235,8 +235,9 @@ again:
 		goto failed;
 	}
 
-	*machine_password = join->machine_password;
-
+	if (machine_password) {
+		*machine_password = join->machine_password;
+	}
 	return join;
 
 failed:
@@ -248,9 +249,8 @@ failed:
 /*
   leave the domain, deleting the machine acct
 */
-void torture_leave_domain(void *join_ctx)
+void torture_leave_domain(struct test_join *join)
 {
-	struct test_join *join = join_ctx;
 	struct samr_DeleteUser d;
 	NTSTATUS status;
 
@@ -276,9 +276,9 @@ struct test_join_ads_dc {
 	struct test_join *join;
 };
 
-void *torture_join_domain_ads_dc(const char *machine_name, 
-			  const char *domain,
-			  const char **machine_password)
+struct test_join_ads_dc *torture_join_domain_ads_dc(const char *machine_name, 
+						    const char *domain,
+						    const char **machine_password)
 {
 	struct test_join_ads_dc *join;
 
@@ -354,9 +354,8 @@ void *torture_join_domain_ads_dc(const char *machine_name,
 	return join;
 }
 		
-void torture_leave_domain_ads_dc(void *join_ctx)
+void torture_leave_domain_ads_dc(struct test_join_ads_dc *join)
 {
-	struct test_join_ads_dc *join = join_ctx;
 
 	if (join->join) {
 		torture_leave_domain(join->join);

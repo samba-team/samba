@@ -89,6 +89,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/xplogin.o \
 		torture/rpc/schannel.o \
 		torture/rpc/netlogon.o \
+		torture/rpc/samlogon.o \
 		torture/rpc/bind.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB
