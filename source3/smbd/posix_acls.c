@@ -42,9 +42,445 @@ typedef struct canon_ace {
 	enum ace_owner owner_type;
 	enum ace_attribute attr;
 	posix_id unix_ug; 
+	BOOL inherited;
 } canon_ace;
 
 #define ALL_ACE_PERMS (S_IRUSR|S_IWUSR|S_IXUSR)
+
+/*
+ * EA format of user.SAMBA_PAI (Samba_Posix_Acl_Interitance)
+ * attribute on disk.
+ *
+ * |  1   |  1   |   2         |         2           |  .... 
+ * +------+------+-------------+---------------------+-------------+--------------------+
+ * | vers | flag | num_entries | num_default_entries | ..entries.. | default_entries... |
+ * +------+------+-------------+---------------------+-------------+--------------------+
+ */
+
+#define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
+
+#define PAI_VERSION_OFFSET	0
+#define PAI_FLAG_OFFSET		1
+#define PAI_NUM_ENTRIES_OFFSET	2
+#define PAI_NUM_DEFAULT_ENTRIES_OFFSET	4
+#define PAI_ENTRIES_BASE	6
+
+#define PAI_VERSION		1
+#define PAI_ACL_FLAG_PROTECTED	0x1
+#define PAI_ENTRY_LENGTH	5
+
+/*
+ * In memory format of user.SAMBA_PAI attribute.
+ */
+
+struct pai_entry {
+	struct pai_entry *next, *prev;
+	enum ace_owner owner_type;
+	posix_id unix_ug; 
+};
+	
+struct pai_val {
+	BOOL protected;
+	unsigned int num_entries;
+	struct pai_entry *entry_list;
+	unsigned int num_def_entries;
+	struct pai_entry *def_entry_list;
+};
+
+/************************************************************************
+ Return a uint32 of the pai_entry principal.
+************************************************************************/
+
+static uint32 get_pai_entry_val(struct pai_entry *paie)
+{
+	switch (paie->owner_type) {
+		case UID_ACE:
+			DEBUG(10,("get_pai_entry_val: uid = %u\n", (unsigned int)paie->unix_ug.uid ));
+			return (uint32)paie->unix_ug.uid;
+		case GID_ACE:
+			DEBUG(10,("get_pai_entry_val: gid = %u\n", (unsigned int)paie->unix_ug.gid ));
+			return (uint32)paie->unix_ug.gid;
+		case WORLD_ACE:
+		default:
+			DEBUG(10,("get_pai_entry_val: world ace\n"));
+			return (uint32)-1;
+	}
+}
+
+/************************************************************************
+ Return a uint32 of the entry principal.
+************************************************************************/
+
+static uint32 get_entry_val(canon_ace *ace_entry)
+{
+	switch (ace_entry->owner_type) {
+		case UID_ACE:
+			DEBUG(10,("get_entry_val: uid = %u\n", (unsigned int)ace_entry->unix_ug.uid ));
+			return (uint32)ace_entry->unix_ug.uid;
+		case GID_ACE:
+			DEBUG(10,("get_entry_val: gid = %u\n", (unsigned int)ace_entry->unix_ug.gid ));
+			return (uint32)ace_entry->unix_ug.gid;
+		case WORLD_ACE:
+		default:
+			DEBUG(10,("get_entry_val: world ace\n"));
+			return (uint32)-1;
+	}
+}
+
+/************************************************************************
+ Count the inherited entries.
+************************************************************************/
+
+static unsigned int num_inherited_entries(canon_ace *ace_list)
+{
+	unsigned int num_entries = 0;
+
+	for (; ace_list; ace_list = ace_list->next)
+		if (ace_list->inherited)
+			num_entries++;
+	return num_entries;
+}
+
+/************************************************************************
+ Create the on-disk format. Caller must free.
+************************************************************************/
+
+static char *create_pai_buf(canon_ace *file_ace_list, canon_ace *dir_ace_list, BOOL protected, size_t *store_size)
+{
+	char *pai_buf = NULL;
+	canon_ace *ace_list = NULL;
+	char *entry_offset = NULL;
+	unsigned int num_entries = 0;
+	unsigned int num_def_entries = 0;
+
+	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next)
+		if (ace_list->inherited)
+			num_entries++;
+
+	for (ace_list = dir_ace_list; ace_list; ace_list = ace_list->next)
+		if (ace_list->inherited)
+			num_def_entries++;
+
+	*store_size = PAI_ENTRIES_BASE + ((num_entries + num_def_entries)*PAI_ENTRY_LENGTH);
+
+	pai_buf = malloc(*store_size);
+	if (!pai_buf) {
+		return NULL;
+	}
+
+	/* Set up the header. */
+	memset(pai_buf, '\0', PAI_ENTRIES_BASE);
+	SCVAL(pai_buf,PAI_VERSION_OFFSET,PAI_VERSION);
+	SCVAL(pai_buf,PAI_FLAG_OFFSET,(protected ? PAI_ACL_FLAG_PROTECTED : 0));
+	SSVAL(pai_buf,PAI_NUM_ENTRIES_OFFSET,num_entries);
+	SSVAL(pai_buf,PAI_NUM_DEFAULT_ENTRIES_OFFSET,num_def_entries);
+
+	entry_offset = pai_buf + PAI_ENTRIES_BASE;
+
+	for (ace_list = dir_ace_list; ace_list; ace_list = ace_list->next) {
+		if (ace_list->inherited) {
+			uint8 type_val = (unsigned char)ace_list->owner_type;
+			uint32 entry_val = get_entry_val(ace_list);
+
+			SCVAL(entry_offset,0,type_val);
+			SIVAL(entry_offset,1,entry_val);
+			entry_offset += PAI_ENTRY_LENGTH;
+		}
+	}
+
+	for (ace_list = file_ace_list; ace_list; ace_list = ace_list->next) {
+		if (ace_list->inherited) {
+			uint8 type_val = (unsigned char)ace_list->owner_type;
+			uint32 entry_val = get_entry_val(ace_list);
+
+			SCVAL(entry_offset,0,type_val);
+			SIVAL(entry_offset,1,entry_val);
+			entry_offset += PAI_ENTRY_LENGTH;
+		}
+	}
+
+	return pai_buf;
+}
+
+/************************************************************************
+ Store the user.SAMBA_PAI attribute on disk.
+************************************************************************/
+
+static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_list,
+					canon_ace *dir_ace_list, BOOL protected)
+{
+	int ret;
+	size_t store_size;
+	char *pai_buf;
+
+	if (!lp_map_acl_inherit(SNUM(fsp->conn)))
+		return;
+
+	/*
+	 * Don't store if this ACL isn't protected and
+	 * none of the entries in it are marked as inherited.
+	 */
+
+	if (!protected && num_inherited_entries(file_ace_list) == 0 && num_inherited_entries(dir_ace_list) == 0) {
+		/* Instead just remove the attribute if it exists. */
+		if (fsp->fd != -1)
+			SMB_VFS_FREMOVEXATTR(fsp, fsp->fd, SAMBA_POSIX_INHERITANCE_EA_NAME);
+		else
+			SMB_VFS_REMOVEXATTR(fsp->conn, fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME);
+		return;
+	}
+
+	pai_buf = create_pai_buf(file_ace_list, dir_ace_list, protected, &store_size);
+
+	if (fsp->fd != -1)
+		ret = SMB_VFS_FSETXATTR(fsp, fsp->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+				pai_buf, store_size, 0);
+	else
+		ret = SMB_VFS_SETXATTR(fsp->conn,fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME,
+				pai_buf, store_size, 0);
+
+	SAFE_FREE(pai_buf);
+
+	DEBUG(10,("store_inheritance_attribute:%s for file %s\n", protected ? " (protected)" : "", fsp->fsp_name));
+	if (ret == -1 && errno != ENOSYS)
+		DEBUG(1,("store_inheritance_attribute: Error %s\n", strerror(errno) ));
+}
+
+/************************************************************************
+ Delete the in memory inheritance info.
+************************************************************************/
+
+static void free_inherited_info(struct pai_val *pal)
+{
+	if (pal) {
+		struct pai_entry *paie, *paie_next;
+		for (paie = pal->entry_list; paie; paie = paie_next) {
+			paie_next = paie->next;
+			SAFE_FREE(paie);
+		}
+		for (paie = pal->def_entry_list; paie; paie = paie_next) {
+			paie_next = paie->next;
+			SAFE_FREE(paie);
+		}
+		SAFE_FREE(pal);
+	}
+}
+
+/************************************************************************
+ Was this ACL protected ?
+************************************************************************/
+
+static BOOL get_protected_flag(struct pai_val *pal)
+{
+	if (!pal)
+		return False;
+	return pal->protected;
+}
+
+/************************************************************************
+ Was this ACE inherited ?
+************************************************************************/
+
+static BOOL get_inherited_flag(struct pai_val *pal, canon_ace *ace_entry, BOOL default_ace)
+{
+	struct pai_entry *paie;
+
+	if (!pal)
+		return False;
+
+	/* If the entry exists it is inherited. */
+	for (paie = (default_ace ? pal->def_entry_list : pal->entry_list); paie; paie = paie->next) {
+		if (ace_entry->owner_type == paie->owner_type &&
+				get_entry_val(ace_entry) == get_pai_entry_val(paie))
+			return True;
+	}
+	return False;
+}
+
+/************************************************************************
+ Ensure an attribute just read is valid.
+************************************************************************/
+
+static BOOL check_pai_ok(char *pai_buf, size_t pai_buf_data_size)
+{
+	uint16 num_entries;
+	uint16 num_def_entries;
+
+	if (pai_buf_data_size < PAI_ENTRIES_BASE) {
+		/* Corrupted - too small. */
+		return False;
+	}
+
+	if (CVAL(pai_buf,PAI_VERSION_OFFSET) != PAI_VERSION)
+		return False;
+
+	num_entries = SVAL(pai_buf,PAI_NUM_ENTRIES_OFFSET);
+	num_def_entries = SVAL(pai_buf,PAI_NUM_DEFAULT_ENTRIES_OFFSET);
+
+	/* Check the entry lists match. */
+	/* Each entry is 5 bytes (type plus 4 bytes of uid or gid). */
+
+	if (((num_entries + num_def_entries)*PAI_ENTRY_LENGTH) + PAI_ENTRIES_BASE != pai_buf_data_size)
+		return False;
+
+	return True;
+}
+
+
+/************************************************************************
+ Convert to in-memory format.
+************************************************************************/
+
+static struct pai_val *create_pai_val(char *buf, size_t size)
+{
+	char *entry_offset;
+	struct pai_val *paiv = NULL;
+	int i;
+
+	if (!check_pai_ok(buf, size))
+		return NULL;
+
+	paiv = malloc(sizeof(struct pai_val));
+	if (!paiv)
+		return NULL;
+
+	memset(paiv, '\0', sizeof(struct pai_val));
+
+	paiv->protected = (CVAL(buf,PAI_FLAG_OFFSET) == PAI_ACL_FLAG_PROTECTED);
+
+	paiv->num_entries = SVAL(buf,PAI_NUM_ENTRIES_OFFSET);
+	paiv->num_def_entries = SVAL(buf,PAI_NUM_DEFAULT_ENTRIES_OFFSET);
+
+	entry_offset = buf + PAI_ENTRIES_BASE;
+
+	DEBUG(10,("create_pai_val:%s num_entries = %u, num_def_entries = %u\n",
+			paiv->protected ? " (protected)" : "", paiv->num_entries, paiv->num_def_entries ));
+
+	for (i = 0; i < paiv->num_entries; i++) {
+		struct pai_entry *paie;
+
+		paie = malloc(sizeof(struct pai_entry));
+		if (!paie) {
+			free_inherited_info(paiv);
+			return NULL;
+		}
+
+		paie->owner_type = (enum ace_owner)CVAL(entry_offset,0);
+		switch( paie->owner_type) {
+			case UID_ACE:
+				paie->unix_ug.uid = (uid_t)IVAL(entry_offset,1);
+				DEBUG(10,("create_pai_val: uid = %u\n", (unsigned int)paie->unix_ug.uid ));
+				break;
+			case GID_ACE:
+				paie->unix_ug.gid = (gid_t)IVAL(entry_offset,1);
+				DEBUG(10,("create_pai_val: gid = %u\n", (unsigned int)paie->unix_ug.gid ));
+				break;
+			case WORLD_ACE:
+				paie->unix_ug.world = -1;
+				DEBUG(10,("create_pai_val: world ace\n"));
+				break;
+			default:
+				free_inherited_info(paiv);
+				return NULL;
+		}
+		entry_offset += PAI_ENTRY_LENGTH;
+		DLIST_ADD(paiv->entry_list, paie);
+	}
+
+	for (i = 0; i < paiv->num_def_entries; i++) {
+		struct pai_entry *paie;
+
+		paie = malloc(sizeof(struct pai_entry));
+		if (!paie) {
+			free_inherited_info(paiv);
+			return NULL;
+		}
+
+		paie->owner_type = (enum ace_owner)CVAL(entry_offset,0);
+		switch( paie->owner_type) {
+			case UID_ACE:
+				paie->unix_ug.uid = (uid_t)IVAL(entry_offset,1);
+				DEBUG(10,("create_pai_val: (def) uid = %u\n", (unsigned int)paie->unix_ug.uid ));
+				break;
+			case GID_ACE:
+				paie->unix_ug.gid = (gid_t)IVAL(entry_offset,1);
+				DEBUG(10,("create_pai_val: (def) gid = %u\n", (unsigned int)paie->unix_ug.gid ));
+				break;
+			case WORLD_ACE:
+				paie->unix_ug.world = -1;
+				DEBUG(10,("create_pai_val: (def) world ace\n"));
+				break;
+			default:
+				free_inherited_info(paiv);
+				return NULL;
+		}
+		entry_offset += PAI_ENTRY_LENGTH;
+		DLIST_ADD(paiv->def_entry_list, paie);
+	}
+
+	return paiv;
+}
+
+/************************************************************************
+ Load the user.SAMBA_PAI attribute.
+************************************************************************/
+
+static struct pai_val *load_inherited_info(files_struct *fsp)
+{
+	char *pai_buf;
+	size_t pai_buf_size = 1024;
+	struct pai_val *paiv = NULL;
+	ssize_t ret;
+
+	if (!lp_map_acl_inherit(SNUM(fsp->conn)))
+		return NULL;
+
+	if ((pai_buf = malloc(pai_buf_size)) == NULL)
+		return NULL;
+
+	do {
+		if (fsp->fd != -1)
+			ret = SMB_VFS_FGETXATTR(fsp, fsp->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+					pai_buf, pai_buf_size);
+		else
+			ret = SMB_VFS_GETXATTR(fsp->conn,fsp->fsp_name,SAMBA_POSIX_INHERITANCE_EA_NAME,
+					pai_buf, pai_buf_size);
+
+		if (ret == -1) {
+			if (errno != ERANGE) {
+				break;
+			}
+			/* Buffer too small - enlarge it. */
+			pai_buf_size *= 2;
+			SAFE_FREE(pai_buf);
+			if ((pai_buf = malloc(pai_buf_size)) == NULL)
+				return NULL;
+		}
+	} while (ret == -1);
+
+	DEBUG(10,("load_inherited_info: ret = %d for file %s\n", ret, fsp->fsp_name));
+
+	if (ret == -1) {
+		/* No attribute or not supported. */
+#if defined(ENOATTR)
+		if (errno != ENOATTR)
+			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
+#else
+		if (errno != ENOSYS)
+			DEBUG(10,("load_inherited_info: Error %s\n", strerror(errno) ));
+#endif
+		SAFE_FREE(pai_buf);
+		return NULL;
+	}
+
+	paiv = create_pai_val(pai_buf, ret);
+
+	if (paiv && paiv->protected)
+		DEBUG(10,("load_inherited_info: ACL is protected for file %s\n", fsp->fsp_name));
+
+	SAFE_FREE(pai_buf);
+	return paiv;
+}
 
 /****************************************************************************
  Functions to manipulate the internal ACE format.
@@ -106,7 +542,7 @@ static void print_canon_ace(canon_ace *pace, int num)
 	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
 	if (pace->owner_type == UID_ACE) {
 		const char *u_name = uidtoname(pace->unix_ug.uid);
-		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name);
+		dbgtext( "uid %u (%s) %s", (unsigned int)pace->unix_ug.uid, u_name, pace->inherited ? "(inherited) " : "");
 	} else if (pace->owner_type == GID_ACE) {
 		char *g_name = gidtoname(pace->unix_ug.gid);
 		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name);
@@ -949,6 +1385,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
 		current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
+		current_ace->inherited = ((psa->flags & SEC_ACE_FLAG_INHERITED_ACE) ? True : False);
 
 		/*
 		 * Now add the created ace to either the file list, the directory
@@ -1616,7 +2053,7 @@ static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
 ****************************************************************************/
 
 static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
-					DOM_SID *powner, DOM_SID *pgroup, SMB_ACL_TYPE_T the_acl_type)
+					DOM_SID *powner, DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	extern DOM_SID global_sid_World;
 	connection_struct *conn = fsp->conn;
@@ -1723,6 +2160,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		ace->trustee = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
+		ace->inherited = get_inherited_flag(pal, ace, (the_acl_type == SMB_ACL_TYPE_DEFAULT));
 
 		DLIST_ADD(list_head, ace);
 	}
@@ -1908,6 +2346,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 		if( DEBUGLVL( 10 ))
 			print_canon_ace( p_ace, i);
+
 	}
 
 	if (needs_mask && !got_mask_entry) {
@@ -2186,6 +2625,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
 	size_t num_profile_acls = 0;
+	struct pai_val *pal = NULL;
  
 	*ppdesc = NULL;
 
@@ -2228,6 +2668,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 			posix_acl ? "present" :  "absent",
 			dir_acl ? "present" :  "absent" ));
 
+	pal = load_inherited_info(fsp);
+
 	/*
 	 * Get the owner, group and world SIDs.
 	 */
@@ -2241,7 +2683,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		create_file_sids(&sbuf, &owner_sid, &group_sid);
 	}
 
-	if (security_info & DACL_SECURITY_INFORMATION) {
+	if ((security_info & DACL_SECURITY_INFORMATION) && !(security_info & PROTECTED_DACL_SECURITY_INFORMATION)) {
 
 		/*
 		 * In the optimum case Creator Owner and Creator Group would be used for
@@ -2253,7 +2695,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 */
 
 		/* Create the canon_ace lists. */
-		file_ace = canonicalise_acl( fsp, posix_acl, &sbuf, &owner_sid, &group_sid, SMB_ACL_TYPE_ACCESS );
+		file_ace = canonicalise_acl( fsp, posix_acl, &sbuf, &owner_sid, &group_sid, pal, SMB_ACL_TYPE_ACCESS );
 
 		/* We must have *some* ACLS. */
 	
@@ -2265,7 +2707,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		if (fsp->is_directory && dir_acl) {
 			dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf,
 					&global_sid_Creator_Owner,
-					&global_sid_Creator_Group, SMB_ACL_TYPE_DEFAULT );
+					&global_sid_Creator_Group, pal, SMB_ACL_TYPE_DEFAULT );
 		}
 
 		/*
@@ -2347,7 +2789,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 				SEC_ACCESS acc;
 
 				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
+				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, ace->inherited ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 			}
 
 			/* The User must have access to a profile share - even if we can't map the SID. */
@@ -2355,7 +2797,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 				SEC_ACCESS acc;
 
 				init_sec_access(&acc,FILE_GENERIC_ALL);
-				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc, 0);
+				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED,
+						acc, 0);
 			}
 
 			ace = dir_ace;
@@ -2365,7 +2808,9 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	
 				acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
 				init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc,
-						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
+						SEC_ACE_FLAG_INHERIT_ONLY|
+						(ace->inherited ? SEC_ACE_FLAG_INHERITED_ACE : 0));
 			}
 
 			/* The User must have access to a profile share - even if we can't map the SID. */
@@ -2375,7 +2820,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 				init_sec_access(&acc,FILE_GENERIC_ALL);
 				init_sec_ace(&nt_ace_list[num_aces++], &global_sid_Builtin_Users, SEC_ACE_TYPE_ACCESS_ALLOWED, acc,
 						SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
-						SEC_ACE_FLAG_INHERIT_ONLY);
+						SEC_ACE_FLAG_INHERIT_ONLY|0);
 			}
 
 			/*
@@ -2412,11 +2857,6 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
 		sd_size = 0;
 	} else {
-#if 1
-		/*
-		 * JRA. Setting this flag causes W2K clients not to
-		 * propagate ACL sets down a directory tree correctly.
-		 */
 		/*
 		 * Windows 2000: The DACL_PROTECTED flag in the security
 		 * descriptor marks the ACL as non-inheriting, i.e., no
@@ -2426,8 +2866,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 * any ACEs that are inherited dynamically. The DACL_PROTECTED
 		 * flag doesn't seem to bother Windows NT.
 		 */
-		(*ppdesc)->type |= SE_DESC_DACL_PROTECTED;
-#endif
+		if (get_protected_flag(pal))
+			(*ppdesc)->type |= SE_DESC_DACL_PROTECTED;
 	}
 
  done:
@@ -2438,6 +2878,7 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, dir_acl);
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
+	free_inherited_info(pal);
 	SAFE_FREE(nt_ace_list);
 
 	return sd_size;
@@ -2659,6 +3100,10 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 					}
 				}
 			}
+
+			if (acl_set_support)
+				store_inheritance_attributes(fsp, file_ace_list, dir_ace_list,
+						(psd->type & SE_DESC_DACL_PROTECTED) ? True : False);
 
 			/*
 			 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
