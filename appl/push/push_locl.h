@@ -87,6 +87,10 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef HESIOD
+#include <hesiod.h>
+#endif
+
 #include <roken.h>
 #include <err.h>
 #include <getarg.h>
