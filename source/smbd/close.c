@@ -68,11 +68,15 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
   Common code to close a file or a directory.
 ****************************************************************************/
 
-void close_filestruct(files_struct *fsp)
+static int close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
+	int ret = 0;
     
-    flush_write_cache(fsp, CLOSE_FLUSH);
+	if(flush_write_cache(fsp, CLOSE_FLUSH) == -1)
+		ret = -1;
+
+	delete_write_cache(fsp);
 
 	fsp->is_directory = False; 
 	fsp->stat_open = False; 
@@ -82,6 +86,8 @@ void close_filestruct(files_struct *fsp)
 		free((char *)fsp->wbmpx_ptr);
 		fsp->wbmpx_ptr = NULL; 
 	}  
+
+	return ret;
 }    
 
 /****************************************************************************
@@ -98,10 +104,17 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	BOOL delete_on_close = fsp->delete_on_close;
 	connection_struct *conn = fsp->conn;
 	int err = 0;
+	int err1 = 0;
 
 	remove_pending_lock_requests_by_fid(fsp);
 
-	close_filestruct(fsp);
+	/*
+	 * If we're flushing on a close we can get a write
+	 * error here, we must remember this.
+	 */
+
+	if (close_filestruct(fsp) == -1)
+		err1 = -1;
 
 	if (normal_close && fsp->print_file) {
 		print_fsp_end(fsp);
@@ -156,7 +169,10 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 
 	file_free(fsp);
 
-	return err;
+	if (err == -1 || err1 == -1)
+		return -1;
+	else
+		return 0;
 }
 
 /****************************************************************************
