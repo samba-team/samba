@@ -1187,6 +1187,16 @@ struct bitmap {
 #define FILE_OVERWRITE 4
 #define FILE_OVERWRITE_IF 5
 
+/* CreateOptions field. */
+#define FILE_DIRECTORY_FILE       0x0001
+#define FILE_WRITE_THROUGH        0x0002
+#define FILE_SEQUENTIAL_ONLY      0x0004
+#define FILE_NON_DIRECTORY_FILE   0x0040
+#define FILE_NO_EA_KNOWLEDGE      0x0200
+#define FILE_EIGHT_DOT_THREE_ONLY 0x0400
+#define FILE_RANDOM_ACCESS        0x0800
+#define FILE_DELETE_ON_CLOSE      0x1000
+
 /* Responses when opening a file. */
 #define FILE_WAS_OPENED 1
 #define FILE_WAS_CREATED 2
