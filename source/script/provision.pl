@@ -437,7 +437,7 @@ print "
 Installation:
 - Please move $newdb/*.ldb to the private/ directory of your
   Samba4 installation
-- Please use $newdb/dnsdomain.zone in BIND on your dns server
+- Please use $newdb/$dnsdomain.zone in BIND on your dns server
 ";
 
 
