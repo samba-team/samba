@@ -160,6 +160,34 @@ init(int argc, char **argv)
 	ent.flags.invalid = 1;
 	db->store(context, db, &ent);
 	hdb_free_entry(context, &ent);
+
+	/* Create `kadmin/changepw' */
+	memset(&ent, 0, sizeof(ent));
+	init_des_key(&ent);
+	ent.kvno = 1;
+	krb5_build_principal(context, &ent.principal,
+			     strlen(argv[i]), argv[i],
+			     "kadmin",
+			     "changepw",
+			     NULL);
+	if(default_life){
+	    ent.max_life = malloc(sizeof(*ent.max_life));
+	    *ent.max_life = default_life;
+	}
+	if(default_renew){
+	    ent.max_renew = malloc(sizeof(*ent.max_renew));
+	    *ent.max_renew = default_renew;
+	}
+	ent.created_by.time = time(NULL);
+	krb5_build_principal(context, &ent.created_by.principal, 
+			     strlen(argv[i]), argv[i],
+			     "kadmin",
+			     NULL);
+	ent.flags.initial   = 1;
+	ent.flags.server    = 1;
+	ent.flags.change_pw = 1;
+	db->store(context, db, &ent);
+	hdb_free_entry(context, &ent);
     }
     db->close(context, db);
     return 0;
