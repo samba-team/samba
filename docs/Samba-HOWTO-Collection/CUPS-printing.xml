@@ -232,7 +232,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption><name>print command</name><value>echo "NEW: `date`: printfile %f" \</value></smbconfoption>
 	<member><parameter> >> /tmp/smbprn.log ; \</parameter></member>
 	<member><parameter>echo "     `date`: p-%p s-%s f-%f" >> /tmp/smbprn.log ; \</parameter></member>
-	<member><parameter>echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log : rm %f</parameter></member>
+	<member><parameter>echo "     `date`: j-%j J-%J z-%z c-%c" >> /tmp/smbprn.log ; rm %f</parameter></member>
 	<smbconfoption><name>public</name><value>no</value></smbconfoption>
 	<smbconfoption><name>guest ok</name><value>no</value></smbconfoption>
 	<smbconfoption><name>writable</name><value>no</value></smbconfoption>
