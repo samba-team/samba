@@ -43,7 +43,7 @@ enum GENSEC_KRB5_STATE {
 
 struct gensec_krb5_state {
 	DATA_BLOB session_key;
-	struct PAC_LOGON_INFO *logon_info;
+	DATA_BLOB pac;
 	enum GENSEC_KRB5_STATE state_position;
 	krb5_context krb5_context;
 	krb5_auth_context krb5_auth_context;
@@ -281,6 +281,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 	ZERO_STRUCT(gensec_krb5_state->ticket);
 	ZERO_STRUCT(gensec_krb5_state->krb5_keyblock);
 	gensec_krb5_state->session_key = data_blob(NULL, 0);
+	gensec_krb5_state->pac = data_blob(NULL, 0);
 
 	ret = krb5_init_context(&gensec_krb5_state->krb5_context);
 	if (ret) {
@@ -544,12 +545,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 		}
 
 		if (pac.data) {
-			/* decode and verify the pac */
-			nt_status = gensec_krb5_decode_pac(gensec_krb5_state, &gensec_krb5_state->logon_info, pac,
-							   gensec_krb5_state);
-		} else {
-			/* NULL PAC, we might need to figure this information out the hard way */
-			gensec_krb5_state->logon_info = NULL;
+			gensec_krb5_state->pac = data_blob_talloc_reference(gensec_krb5_state, &pac);
 		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
@@ -612,7 +608,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
-	struct PAC_LOGON_INFO *logon_info = gensec_krb5_state->logon_info;
+	struct PAC_LOGON_INFO *logon_info;
 	struct nt_user_token *ptoken;
 	struct dom_sid *sid;
 	char *p;
@@ -621,10 +617,6 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	const char *realm;
 
 	*session_info_out = NULL;
-
-	/* IF we have the PAC - otherwise we need to get this
-	 * data from elsewere - local ldb, or (TODO) lookup of some
-	 * kind... */
 
 	principal = talloc_strdup(gensec_krb5_state, gensec_krb5_state->peer_principal);
 	p = strchr(principal, '@');
@@ -635,17 +627,50 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	username = principal;
 	realm = p;
 	
-	if (logon_info) {
+	/* decode and verify the pac */
+	nt_status = gensec_krb5_decode_pac(gensec_krb5_state, &logon_info, gensec_krb5_state->pac,
+					   gensec_krb5_state);
+
+	/* IF we have the PAC - otherwise we need to get this
+	 * data from elsewere - local ldb, or (TODO) lookup of some
+	 * kind... */
+
+	if (NT_STATUS_IS_OK(nt_status)) {
 		nt_status = make_server_info(gensec_krb5_state, &server_info, gensec_krb5_state->peer_principal);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
 		
 		server_info->guest = False;
+
+		if (logon_info->account_name.string) {
+			server_info->account_name
+				= talloc_reference(server_info, 
+						   logon_info->account_name.string);
+		} else {
+			server_info->account_name = talloc_strdup(server_info, username);
+		}
+
+		server_info->domain = talloc_reference(server_info, 
+						       logon_info->dom_name.string);
+		server_info->realm = talloc_strdup(server_info, realm);
+		server_info->full_name = talloc_reference(server_info, 
+							  logon_info->full_name.string);
+		server_info->logon_script = talloc_reference(server_info, 
+							     logon_info->logon_script.string);
+		server_info->profile_path = talloc_reference(server_info, 
+							     logon_info->profile_path.string);
+		server_info->home_directory = talloc_reference(server_info, 
+							       logon_info->home_directory.string);
+		server_info->home_drive = talloc_reference(server_info, 
+							   logon_info->home_drive.string);
 		
-		server_info->account_name = talloc_strdup(server_info, principal);
-		server_info->domain = talloc_strdup(server_info, realm);
-		if (!server_info->domain) {
+		server_info->logon_count = logon_info->logon_count;
+		/* TODO: bad password count */
+
+		server_info->acct_flags = logon_info->acct_flags;
+
+		if (!server_info->domain || !server_info->account_name || !server_info->realm) {
 			free_server_info(&server_info);
 			return NT_STATUS_NO_MEMORY;
 		}
