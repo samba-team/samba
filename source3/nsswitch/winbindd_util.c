@@ -123,7 +123,7 @@ BOOL init_domain_list(void)
 	struct winbindd_domain *domain;
 	DOM_SID *dom_sids;
 	char **names;
-	int num_domains = 0;
+	uint32 num_domains = 0;
 
 	if (!(mem_ctx = talloc_init_named("init_domain_list")))
 		return False;

@@ -244,7 +244,7 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	trust_passwd[14] = '\0';
 
-	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
+	E_md4hash(trust_passwd, orig_trust_passwd_hash);
 
 	return trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
 }
@@ -1221,7 +1221,7 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	WERROR result;
 	ENUM_HND hnd;
 	uint32 preferred_len = 0xffffffff, i;
-	char *username=NULL;
+	const char *username=NULL;
 
 	init_enum_hnd(&hnd, 0);
 

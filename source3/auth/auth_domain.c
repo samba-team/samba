@@ -503,7 +503,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("Trust password for domain %s is %s\n", user_info->domain.str, trust_password));
 #endif
-	E_md4hash((uchar *)trust_password, trust_md4_password);
+	E_md4hash(trust_password, trust_md4_password);
 	SAFE_FREE(trust_password);
 
 #if 0

@@ -317,7 +317,7 @@ WERROR cli_srvsvc_net_remote_tod(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 }
 
 WERROR cli_srvsvc_net_file_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				uint32 file_level, char *user_name,
+				uint32 file_level, const char *user_name,
 				SRV_FILE_INFO_CTR *ctr,	int preferred_len,
 				ENUM_HND *hnd)
 {
