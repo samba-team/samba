@@ -40,12 +40,19 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	char *p = pattern, *n = string;
 	char c;
 
-	if (strcmp(p,"?")==0 && strcmp(n,".")==0) return 0;
+	if (strcmp(p,"?")==0 && strcmp(n,".")==0) goto match;
 
 	while ((c = *p++)) {
 		switch (c) {
+		case '.':
+			if (!strchr(p,'.') && !*n && ms_fnmatch_lanman_core(p, n)==0)
+				goto match;
+			if (*n != '.') goto nomatch;
+			n++;
+			break;
+
 		case '?':
-			if (*n == '.' || ! *n) return ms_fnmatch_lanman_core(p, n);
+			if ((*n == '.' && n[1] != '.') || ! *n) goto next;
 			n++;
 			break;
 
@@ -55,7 +62,7 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 				if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
 				goto nomatch;
 			}
-			if (! *n) return ms_fnmatch_lanman_core(p, n);
+			if (! *n) goto next;
 			n++;
 			break;
 
@@ -90,10 +97,13 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 	
 	if (! *n) goto match;
 	
-
  nomatch:
 	if (verbose) printf("NOMATCH pattern=[%s] string=[%s]\n", pattern, string);
 	return -1;
+
+next:
+	if (ms_fnmatch_lanman_core(p, n) == 0) goto match;
+        goto nomatch;
 
  match:
 	if (verbose) printf("MATCH   pattern=[%s] string=[%s]\n", pattern, string);
@@ -102,19 +112,11 @@ int ms_fnmatch_lanman_core(char *pattern, char *string)
 
 int ms_fnmatch_lanman(char *pattern, char *string)
 {
-	int ret;
-	pattern = strdup(pattern);
-
-	/* it appears that '.' at the end of a pattern is stripped if the 
-	   pattern contains any wildcard characters. Bizarre */
-	if (strpbrk(pattern, "?*<>\"")) {
-		int len = strlen(pattern);
-		if (len > 0 && pattern[len-1] == '.') pattern[len-1] = 0;
+	if (!strpbrk(pattern, "?*<>\"")) {
+		return strcmp(pattern, string);
 	}
 
-	ret = ms_fnmatch_lanman_core(pattern, string);
-	free(pattern);
-	return ret;
+	return ms_fnmatch_lanman_core(pattern, string);
 }
 
 static BOOL reg_match_one(char *pattern, char *file)
