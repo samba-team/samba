@@ -953,6 +953,12 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	unsigned openfn=0;
 	unsigned accessmode=0;
 
+	/* you must open for RW not just write - otherwise getattrE doesn't
+	   work! */
+	if ((flags & O_ACCMODE) == O_WRONLY) {
+		flags = (flags & ~O_ACCMODE) | O_RDWR;
+	}
+
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
 	if (!(flags & O_EXCL)) {
@@ -964,9 +970,9 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 
 	accessmode = (share_mode<<4);
 
-	if ((flags & O_RDWR) == O_RDWR) {
+	if ((flags & O_ACCMODE) == O_RDWR) {
 		accessmode |= 2;
-	} else if ((flags & O_WRONLY) == O_WRONLY) {
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
 		accessmode |= 1;
 	} 
 
@@ -1503,8 +1509,8 @@ BOOL cli_qpathinfo2(struct cli_state *cli, char *fname,
 send a qfileinfo call
 ****************************************************************************/
 BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
-		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   uint32 *size, int *mode)
+		   uint32 *mode, size_t *size,
+		   time_t *c_time, time_t *a_time, time_t *m_time)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -2172,6 +2178,7 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 		case NT_STATUS_NO_MEMORY: return ENOMEM;
 		case NT_STATUS_ACCESS_DENIED: return EACCES;
 		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
+		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
 		}
 
 		/* for all other cases - a default code */
