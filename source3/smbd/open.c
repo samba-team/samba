@@ -631,8 +631,6 @@ static int access_table(int new_deny,int old_deny,int old_mode,
     if (old_deny == new_deny && share_pid == pid) 
 	return(AALL);    
 
-    if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
-
     /* the new smbpub.zip spec says that if the file extension is
        .com, .dll, .exe or .sym then allow the open. I will force
        it to read-only as this seems sensible although the spec is
@@ -644,6 +642,10 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 	  strequal(fname,".sym"))
 	return(AREAD);
     }
+
+    if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
+    if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
+
 
     return(AFAIL);
   }
@@ -707,7 +709,7 @@ static int check_share_mode( share_mode_entry *share, int deny_mode,
 
   {
     int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-                                share->pid,fname);
+				      share->pid,fname);
 
     if ((access_allowed == AFAIL) ||
         (!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
