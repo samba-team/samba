@@ -1253,7 +1253,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 			}
 
 			if (!sid_peek_rid(psid, &rid)) {
-				DEBUG(10,("local_sid_to_uid: invalid SID!\n"));
+				DEBUG(10,("local_sid_to_gid: invalid SID!\n"));
 					return False;
 			}
 
