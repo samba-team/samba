@@ -607,7 +607,6 @@ typedef struct nt_user_token {
 
 
 /* a set of flags to control handling of request structures */
-#define REQ_CONTROL_PROTECTED (1<<0) /* don't destroy this request */
 #define REQ_CONTROL_LARGE     (1<<1) /* allow replies larger than max_xmit */
 #define REQ_CONTROL_ASYNC     (1<<2) /* the backend will answer this one later */
 
