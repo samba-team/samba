@@ -197,13 +197,11 @@ extract_ticket(krb5_context context,
 	goto out;
     }
 
-#if 0 /* XXX - This check fails */
     if (creds->times.starttime != 0
 	&& tmp_time != creds->times.starttime) {
 	err = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
-#endif
 
     creds->times.starttime = tmp_time;
 
