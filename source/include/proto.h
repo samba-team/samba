@@ -759,6 +759,15 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, 
                                 uint32 *num_domains, char ***domain_names, 
                                 DOM_SID **domain_sids);
+NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_context, uint32 pref_max_length,
+				uint32 *count, char ***privs_name, uint32 **privs_high, uint32 **privs_low);
+NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, char *name, uint16 lang_id, uint16 lang_id_sys,
+			      fstring description, uint16 *lang_id_desc);
+NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length, 
+                                uint32 *num_sids, DOM_SID **sids);
 
 /*The following definitions come from  libsmb/cli_netlogon.c  */
 
@@ -4220,7 +4229,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf);
 int close_file_fchmod(files_struct *fsp);
 files_struct *open_directory(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action);
+							SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);
 
 /*The following definitions come from  smbd/oplock.c  */
@@ -4433,6 +4442,7 @@ BOOL reset_stat_cache( void );
 
 /*The following definitions come from  smbd/trans2.c  */
 
+NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
 int reply_findclose(connection_struct *conn,
 		    char *inbuf,char *outbuf,int length,int bufsize);
 int reply_findnclose(connection_struct *conn, 

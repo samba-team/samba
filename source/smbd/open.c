@@ -626,6 +626,7 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	int deny_mode = GET_DENY_MODE(share_mode);
 	BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
 	BOOL delete_access_requested = GET_DELETE_ACCESS_REQUESTED(share_mode);
+	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
 	SMB_DEV_T dev = 0;
@@ -913,6 +914,17 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	set_share_mode(fsp, port, oplock_request);
 
+	if (delete_on_close) {
+		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
+
+		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			unlock_share_entry_fsp(fsp);
+			fd_close(conn,fsp);
+			file_free(fsp);
+			return NULL;
+		}
+	}
+	
 	unlock_share_entry_fsp(fsp);
 
 	conn->num_files_open++;
@@ -1035,11 +1047,12 @@ int close_file_fchmod(files_struct *fsp)
 ****************************************************************************/
 
 files_struct *open_directory(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int smb_ofun, mode_t unixmode, int *action)
+							SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action)
 {
 	extern struct current_user current_user;
 	BOOL got_stat = False;
 	files_struct *fsp = file_new(conn);
+	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
 
 	if(!fsp)
 		return NULL;
@@ -1140,6 +1153,16 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	fsp->is_directory = True;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
+
+	if (delete_on_close) {
+		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
+
+		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			file_free(fsp);
+			return NULL;
+		}
+	}
+	
 	/*
 	 * Note that the file name here is the *untranslated* name
 	 * ie. it is still in the DOS codepage sent from the client.
