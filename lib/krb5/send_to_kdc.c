@@ -183,10 +183,8 @@ krb5_sendto_kdc (krb5_context context,
      port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
      ret = krb5_get_krbhst (context, realm, &hostlist);
-     if (ret) {
-	  close (fd);
+     if (ret)
 	  return ret;
-     }
 
      buf = malloc(krb5_max_sockaddr_size ());
      if (buf == NULL) {
