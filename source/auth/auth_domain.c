@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 BOOL global_machine_password_needs_changing = False;
 
 extern pstring global_myname;

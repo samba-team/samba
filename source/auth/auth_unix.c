@@ -20,6 +20,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DGBC_AUTH
+
 /**
  * update the encrypted smbpasswd file from the plaintext username and password
  *  
