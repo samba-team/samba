@@ -1,3 +1,7 @@
+2001-08-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ls.c: implement -R
+
 2001-08-08  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ls.c: make -a and -A do the same as in ls(1)
