@@ -14,6 +14,7 @@ BEGIN {
 }
 
 END {
+  print ""
   print "#endif /* ",headername," */"
 }
 
@@ -131,7 +132,7 @@ END {
     gotstart = 1;
   }
 
-  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST/ ) {
+  if( $0 ~ /^SAM_ACCT_INFO_NODE|^SMB_ACL_T|^ADS_MODLIST|^PyObject/ ) {
     gotstart = 1;
   }
 
