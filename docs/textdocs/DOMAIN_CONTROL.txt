@@ -1,5 +1,5 @@
 !==
-!== DOMAIN_CONTROL.txt for Samba release TNG-prealpha 21 Mar 2000
+!== DOMAIN_CONTROL.txt for Samba release TNG-prealpha 24 Mar 2000
 !==
 Initial Release:	August 22, 1996
 Contributor:		John H Terpstra <samba-bugs@samba.org>
