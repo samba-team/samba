@@ -8,6 +8,7 @@
 <!ENTITY CodingSuggestions SYSTEM "CodingSuggestions.sgml">
 <!ENTITY Tracing SYSTEM "Tracing.sgml">
 <!ENTITY cifsntdomain SYSTEM "cifsntdomain.sgml">
+<!ENTITY printing SYSTEM "printing.sgml">
 ]>
 
 <book id="Samba-Developer-Documentation">
@@ -25,7 +26,7 @@
 <title>Abstract</title>
 
 <para>
-<emphasis>Last Update</emphasis> : Mon aug 26 12:41:19 CEST 2002
+<emphasis>Last Update</emphasis> : Mon Sep 30 15:23:53 CDT 2002
 </para>
 
 <para>
@@ -58,5 +59,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &unix-smb;
 &Tracing;
 &cifsntdomain;
+&printing;
 
 </book>
