@@ -161,7 +161,8 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o lib/genparser.o lib/genparser_samba.o
+	  lib/module.o lib/genparser.o lib/genparser_samba.o \
+	  lib/ldap_escape.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
 
