@@ -2220,14 +2220,37 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return WERR_NOMEM;
-#ifdef HAVE_ADS
 		SIVAL(*data, 0, 3);
-#else
-		SIVAL(*data, 0, 2);
-#endif
 		*needed = 0x4;
 		return WERR_OK;
 	}
+
+	if (!StrCaseCmp(value, "MinorVersion")) {
+		*type = 0x4;
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+			return WERR_NOMEM;
+		SIVAL(*data, 0, 0);
+		*needed = 0x4;
+		return WERR_OK;
+	}
+
+#if 0	/* JERRY */	
+	/* REG_BINARY
+	 *  uint32 size	 	 = 0x114
+	 *  uint32 major	 = 5
+	 *  uint32 minor	 = [0|1]
+	 *  uint32 build 	 = [2195|2600]
+	 *  extra unicode string = e.g. "Service Pack 3"
+	 */
+	if (!StrCaseCmp(value, "OSVersion")) {
+		*type = 0x4;
+		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
+			return WERR_NOMEM;
+		SIVAL(*data, 0, 2);
+		*needed = 0x4;
+		return WERR_OK;
+	}
+#endif
 
    	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		fstring string;
@@ -3843,13 +3866,11 @@ static BOOL construct_printer_info_0(Printer_entry *print_hnd, PRINTER_INFO_0 *p
 
 	printer->global_counter = global_counter;
 	printer->total_pages = 0;
-#ifdef HAVE_ADS
+	
+	/* in 2.2 we reported ourselves as 0x0004 and 0x0565 */
 	printer->major_version = 0x0005; 	/* NT 5 */
 	printer->build_version = 0x0893; 	/* build 2195 */
-#else
-	printer->major_version = 0x0004; 	/* NT 4 */
-	printer->build_version = 0x0565; 	/* build 1381 */
-#endif
+	
 	printer->unknown7 = 0x1;
 	printer->unknown8 = 0x0;
 	printer->unknown9 = 0x0;
