@@ -58,9 +58,6 @@ struct fcc_cursor {
 
 #define FCC_CURSOR(C) ((struct fcc_cursor*)(C))
 
-#define KRB5_CC_LOCK_RETRY_COUNT 50
-#define KRB5_CC_LOCK_RETRY 1
-
 static const char*
 fcc_get_name(krb5_context context,
 	     krb5_ccache id)
@@ -71,16 +68,23 @@ fcc_get_name(krb5_context context,
 static int
 xlock(int fd, krb5_boolean exclusive)
 {
+    int ret;
 #ifdef HAVE_FCNTL
     struct flock l;
+
     l.l_start = 0;
     l.l_len = 0;
     l.l_type = exclusive ? F_WRLCK : F_RDLCK;
     l.l_whence = SEEK_SET;
-    return fcntl(fd, F_SETLK, &l);
+    ret = fcntl(fd, F_SETLKW, &l);
 #else
-    return flock(fd, (exclusive ? LOCK_EX : LOCK_SH) | LOCK_NB);
+    ret = flock(fd, exclusive ? LOCK_EX : LOCK_SH);
 #endif
+    if(ret < 0)
+	ret = errno;
+    if(ret == EACCES) /* fcntl can return EACCES instead of EAGAIN */
+	ret = EAGAIN;
+    return ret;
 }
 
 static int
@@ -92,7 +96,7 @@ xunlock(int fd)
     l.l_len = 0;
     l.l_type = F_UNLCK;
     l.l_whence = SEEK_SET;
-    return fcntl(fd, F_SETLK, &l);
+    return fcntl(fd, F_SETLKW, &l);
 #else
     return flock(fd, LOCK_UN);
 #endif
@@ -103,18 +107,8 @@ fcc_lock(krb5_context context, krb5_ccache id,
 	 int fd, krb5_boolean exclusive)
 {
     krb5_error_code ret = 0;
-    int i;
-    for (i = 0; i < KRB5_CC_LOCK_RETRY_COUNT; i++) {
-	if (xlock(fd, exclusive) < 0) {
-	    ret = errno;
-	    if(ret == EAGAIN) {
-		sleep(KRB5_CC_LOCK_RETRY);
-		continue;
-	    }
-	}
-	break;
-    }
-    if(ret == EAGAIN) 
+    ret = xlock(fd, exclusive);
+    if(ret == EAGAIN)
 	krb5_set_error_string(context, "timed out locking cache file %s", 
 			      fcc_get_name(context, id));
     else if(ret != 0)
