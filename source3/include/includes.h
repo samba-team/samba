@@ -393,7 +393,12 @@
 #endif /* HAVE_SYS_SHM_H */
 
 #ifdef HAVE_NATIVE_ICONV
+#ifdef HAVE_ICONV
 #include <iconv.h>
+#endif
+#ifdef HAVE_GICONV
+#include <giconv.h>
+#endif
 #endif
 
 #if HAVE_KRB5_H
