@@ -1328,10 +1328,10 @@ NTSTATUS sam_init_ads(SAM_METHODS *sam_method, const char *module_params)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ads_state->ads_bind_dn = talloc_strdup(sam_ads_state->mem_ctx, lp_parm_string(NULL,"sam_ads","bind as"));
-	sam_ads_state->ads_bind_pw = talloc_strdup(sam_ads_state->mem_ctx, lp_parm_string(NULL,"sam_ads","bind pw"));
+	sam_ads_state->ads_bind_dn = talloc_strdup(sam_ads_state->mem_ctx, lp_parm_const_string(GLOBAL_SECTION_SNUM,"sam_ads","bind as", ""));
+	sam_ads_state->ads_bind_pw = talloc_strdup(sam_ads_state->mem_ctx, lp_parm_const_string(GLOBAL_SECTION_SNUM,"sam_ads","bind pw", ""));
 
-	sam_ads_state->bind_plaintext = strequal(lp_parm_string(NULL, "sam_ads", "plaintext bind"), "yes");
+	sam_ads_state->bind_plaintext = lp_parm_bool(GLOBAL_SECTION_SNUM, "sam_ads", "plaintext bind" , True);
 
 	if (!sam_ads_state->ads_bind_dn || !sam_ads_state->ads_bind_pw) {
 		DEBUG(0, ("talloc_strdup() failed for bind dn or password\n"));

@@ -25,12 +25,12 @@
 #define CONFIG_LOGON_TIME_DEFAULT			"logon_time"
 #define CONFIG_LOGOFF_TIME_DEFAULT			"logoff_time"
 #define CONFIG_KICKOFF_TIME_DEFAULT			"kickoff_time"
-#define CONFIG_PASS_LAST_SET_TIME_DEFAULT	"pass_last_set_time"
-#define CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT	"pass_can_change_time"
-#define CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT "pass_must_change_time"
+#define CONFIG_PASS_LAST_SET_TIME_DEFAULT		"pass_last_set_time"
+#define CONFIG_PASS_CAN_CHANGE_TIME_DEFAULT		"pass_can_change_time"
+#define CONFIG_PASS_MUST_CHANGE_TIME_DEFAULT 		"pass_must_change_time"
 #define CONFIG_USERNAME_DEFAULT 			"username"
 #define CONFIG_DOMAIN_DEFAULT				"domain"
-#define CONFIG_NT_USERNAME_DEFAULT  		"nt_username"
+#define CONFIG_NT_USERNAME_DEFAULT  			"nt_username"
 #define CONFIG_FULLNAME_DEFAULT				"nt_fullname"
 #define CONFIG_HOME_DIR_DEFAULT				"home_dir"
 #define CONFIG_DIR_DRIVE_DEFAULT			"dir_drive"
@@ -40,8 +40,8 @@
 #define CONFIG_WORKSTATIONS_DEFAULT			"workstations"
 #define CONFIG_UNKNOWN_STR_DEFAULT			"unknown_str"
 #define CONFIG_MUNGED_DIAL_DEFAULT			"munged_dial"
-#define CONFIG_UID_DEFAULT					"uid"
-#define CONFIG_GID_DEFAULT					"gid"
+#define CONFIG_UID_DEFAULT				"uid"
+#define CONFIG_GID_DEFAULT				"gid"
 #define CONFIG_USER_SID_DEFAULT				"user_sid"
 #define CONFIG_GROUP_SID_DEFAULT			"group_sid"
 #define CONFIG_LM_PW_DEFAULT				"lm_pw"
@@ -53,11 +53,11 @@
 #define CONFIG_HOURS_LEN_DEFAULT			"hours_len"
 #define CONFIG_UNKNOWN_5_DEFAULT			"unknown_5"
 #define CONFIG_UNKNOWN_6_DEFAULT			"unknown_6"
-#define CONFIG_HOST_DEFAULT					"localhost"
-#define CONFIG_USER_DEFAULT					"samba"
-#define CONFIG_PASS_DEFAULT					""
-#define CONFIG_PORT_DEFAULT					"3306"
-#define CONFIG_DB_DEFAULT					"samba"
+#define CONFIG_HOST_DEFAULT				"localhost"
+#define CONFIG_USER_DEFAULT				"samba"
+#define CONFIG_PASS_DEFAULT				""
+#define CONFIG_PORT_DEFAULT				"3306"
+#define CONFIG_DB_DEFAULT				"samba"
 
 static int mysqlsam_debug_level = DBGC_ALL;
 
@@ -91,7 +91,7 @@ typedef struct pdb_mysql_query {
 }
 
 static void pdb_mysql_int_field(struct pdb_methods *m,
-					struct pdb_mysql_query *q, char *name, int value)
+					struct pdb_mysql_query *q, const char *name, int value)
 {
 	if (!name || strchr(name, '\''))
 		return;                 /* This field shouldn't be set by us */
@@ -110,7 +110,7 @@ static void pdb_mysql_int_field(struct pdb_methods *m,
 
 static NTSTATUS pdb_mysql_string_field(struct pdb_methods *methods,
 					   struct pdb_mysql_query *q,
-					   char *name, const char *value)
+					   const char *name, const char *value)
 {
 	char *esc_value;
 	struct pdb_mysql_data *data;
@@ -145,20 +145,17 @@ static NTSTATUS pdb_mysql_string_field(struct pdb_methods *methods,
 	return NT_STATUS_OK;
 }
 
-static char * config_value(pdb_mysql_data * data, char *name, char *default_value)
-{
-	if (lp_parm_string(NULL, data->location, name))
-		return lp_parm_string(NULL, data->location, name);
+#define config_value(data,name,default_value) \
+	lp_parm_const_string(GLOBAL_SECTION_SNUM, (data)->location, name, default_value)
 
-	return default_value;
-}
+static const char * config_value_write(pdb_mysql_data * data, const char *name, const char *default_value) {
+	char const *v = NULL;
+	char const *swrite = NULL;
 
-static char * config_value_write(pdb_mysql_data * data, char *name, char *default_value) {
-	char *v = config_value(data, name, NULL);
-	char *swrite;
+	v = lp_parm_const_string(GLOBAL_SECTION_SNUM, data->location, name, default_value);
 
 	if (!v)
-		return default_value;
+		return NULL;
 
 	swrite = strchr(v, ':');
 
@@ -176,13 +173,15 @@ static char * config_value_write(pdb_mysql_data * data, char *name, char *defaul
 	return swrite;
 }
 
-static const char * config_value_read(pdb_mysql_data * data, char *name, char *default_value)
+static const char * config_value_read(pdb_mysql_data * data, const char *name, const char *default_value)
 {
-	char *v = config_value(data, name, NULL);
+	char *v = NULL;
 	char *swrite;
 
+	v = lp_parm_talloc_string(GLOBAL_SECTION_SNUM, data->location, name, default_value);
+
 	if (!v)
-		return default_value;
+		return "NULL";
 
 	swrite = strchr(v, ':');
 
@@ -190,7 +189,7 @@ static const char * config_value_read(pdb_mysql_data * data, char *name, char *d
 	if (!swrite) {
 		if (strlen(v) == 0)
 			return "NULL";
-		return v;
+		return (const char *)v;
 	}
 
 	/* Otherwise, we have to cut the ':write_part' */
@@ -198,11 +197,11 @@ static const char * config_value_read(pdb_mysql_data * data, char *name, char *d
 	if (strlen(v) == 0)
 		return "NULL";
 
-	return v;
+	return (const char *)v;
 }
 
 /* Wrapper for atol that returns 0 if 'a' points to NULL */
-static long xatol(char *a)
+static long xatol(const char *a)
 {
 	long ret = 0;
 
@@ -369,7 +368,7 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	}
 	
 	DEBUG(5,
-		("mysqlsam_setsampwent succeeded(%lu results)!\n",
+		("mysqlsam_setsampwent succeeded(%llu results)!\n",
 				mysql_num_rows(data->pwent)));
 	
 	return NT_STATUS_OK;
