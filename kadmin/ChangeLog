@@ -1,5 +1,8 @@
 2000-09-19  Assar Westerlund  <assar@sics.se>
 
+	* server.c (kadmind_loop): send in keytab to v4 handling function
+	* version4.c: allow the specification of what keytab to use
+
 	* get.c (print_entry_long): actually print the actual saltvalue
 	used if it's not the default
 

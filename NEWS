@@ -6,7 +6,7 @@ Changes in release 0.3c
 
  * kadmind: handle several realms
 
- * bug fixes
+ * bug fixes (including memory leaks)
 
 Changes in release 0.3b
 
