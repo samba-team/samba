@@ -342,7 +342,7 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 	char *newpass = samr_rand_pass(mem_ctx);
 
 	s.in.handle = handle;
@@ -352,14 +352,14 @@ static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
 	u.info24.pw_len = strlen(newpass);
 
-	status = dcerpc_fetch_session_key(p, session_key);
+	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
 		return False;
 	}
 
-	SamOEMhash(u.info24.password.data, session_key, 516);
+	SamOEMhashBlob(u.info24.password.data, 516, &session_key);
 
 	printf("Testing SetUserInfo level 24 (set password)\n");
 
@@ -383,7 +383,7 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
 	char *newpass = samr_rand_pass(mem_ctx);
 
 	s.in.handle = handle;
@@ -396,14 +396,14 @@ static BOOL test_SetUserPass_23(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
 
-	status = dcerpc_fetch_session_key(p, session_key);
+	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
 		return False;
 	}
 
-	SamOEMhash(u.info23.password.data, session_key, 516);
+	SamOEMhashBlob(u.info23.password.data, 516, &session_key);
 
 	printf("Testing SetUserInfo level 23 (set password)\n");
 
@@ -427,7 +427,8 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8 confounder[16];
 	char *newpass = samr_rand_pass(mem_ctx);	
 	struct MD5Context ctx;
@@ -439,7 +440,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	encode_pw_buffer(u.info26.password.data, newpass, STR_UNICODE);
 	u.info26.pw_len = strlen(newpass);
 
-	status = dcerpc_fetch_session_key(p, session_key);
+	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -450,10 +451,10 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	MD5Init(&ctx);
 	MD5Update(&ctx, confounder, 16);
-	MD5Update(&ctx, session_key, 16);
-	MD5Final(session_key, &ctx);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &ctx);
 
-	SamOEMhash(u.info26.password.data, session_key, 516);
+	SamOEMhashBlob(u.info26.password.data, 516, &confounded_session_key);
 	memcpy(&u.info26.password.data[516], confounder, 16);
 
 	printf("Testing SetUserInfo level 26 (set password ex)\n");
@@ -477,7 +478,8 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	BOOL ret = True;
-	uint8 session_key[16];
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8 confounder[16];
 	char *newpass = samr_rand_pass(mem_ctx);	
 	struct MD5Context ctx;
@@ -492,7 +494,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
 
-	status = dcerpc_fetch_session_key(p, session_key);
+	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -503,10 +505,10 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	MD5Init(&ctx);
 	MD5Update(&ctx, confounder, 16);
-	MD5Update(&ctx, session_key, 16);
-	MD5Final(session_key, &ctx);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &ctx);
 
-	SamOEMhash(u.info25.password.data, session_key, 516);
+	SamOEMhashBlob(u.info25.password.data, 516, &confounded_session_key);
 	memcpy(&u.info25.password.data[516], confounder, 16);
 
 	printf("Testing SetUserInfo level 25 (set password ex)\n");
