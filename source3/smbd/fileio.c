@@ -141,7 +141,7 @@ static unsigned int allocated_write_caches;
 static unsigned int num_write_caches;
 
 /****************************************************************************
- *Really* write to a file
+ *Really* write to a file.
 ****************************************************************************/
 
 static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_t n)
@@ -149,7 +149,7 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
   if ((pos != -1) && (seek_file(fsp,pos) == -1))
     return -1;
 
-  return write_data(fsp->fd,data,n);
+  return vfs_write_data(fsp,data,n);
 }
 
 /****************************************************************************
