@@ -171,8 +171,7 @@ ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	*p++ = max_msg_size>>16;
 	*p++ = max_msg_size>>8;
 	*p++ = max_msg_size;
-	snprintf(p, strlen(ads->bind_path)+1, "dn:%s", ads->bind_path);
-	p += strlen(ads->bind_path);
+	snprintf(p, strlen(ads->bind_path)+4, "dn:%s", ads->bind_path);
 
 	output_token.length = strlen(ads->bind_path) + 8;
 
