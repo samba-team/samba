@@ -88,7 +88,7 @@ passwords they are in trouble.
 Samba can try to cope with this by either using the "password level"
 option which causes Samba to try the offered password with up to the
 specified number of case changes, or by using the "password server"
-option which allows Samba to do it's validation via another machine
+option which allows Samba to do its validation via another machine
 (typically a WinNT server).
 
 Samba supports the password encryption method used by SMB
@@ -128,7 +128,7 @@ The second major problem is the "opportunistic locking" requested by
 some clients. If a client requests opportunistic locking then it is
 asking the server to notify it if anyone else tries to do something on
 the same file, at which time the client will say if it is willing to
-give up it's lock. Unix has no simple way of implementing
+give up its lock. Unix has no simple way of implementing
 opportunistic locking, and currently Samba has no support for it.
 
 Deny Modes

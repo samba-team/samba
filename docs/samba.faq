@@ -605,7 +605,7 @@ To syncronize your PC's clock with your Samba server:
 * Close the properties dialog box by choosing 'OK'
 
 Each time you start your computer (or login for Win95) your PC will
-synchronize it's clock with your Samba server.
+synchronize its clock with your Samba server.
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

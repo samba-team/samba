@@ -315,7 +315,7 @@ codes of locking calls to tell clients that everything is OK.
 
 The second class of locking is the "deny modes". These are set by an
 application when it opens a file to determine what types of access
-should be allowed simultaneously with it's open. A client may ask for
+should be allowed simultaneously with its open. A client may ask for
 DENY_NONE, DENY_READ, DENY_WRITE or DENY_ALL. There are also special
 compatability modes called DENY_FCB and DENY_DOS.
 

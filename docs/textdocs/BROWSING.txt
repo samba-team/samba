@@ -320,7 +320,7 @@ all smb.conf files :
         wins server = <name or IP address>
 
 where <name or IP address> is either the DNS name of the WINS server
-machine or it's IP address.
+machine or its IP address.
 
 Note that this line MUST NOT BE SET in the smb.conf file of the Samba
 server acting as the WINS server itself. If you set both the
@@ -358,7 +358,7 @@ server as a domain master browser set the following option in the
         domain master = yes
 
 The domain master browser should also preferrably be the local master
-browser for it's own subnet. In order to achieve this set the following
+browser for its own subnet. In order to achieve this set the following
 options in the [global] section of the smb.conf file :
 
         domain master = yes
