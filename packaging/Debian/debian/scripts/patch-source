@@ -1,6 +1,5 @@
 #!/bin/sh -e
 #
-# $Id: patch-source,v 1.2.2.2 2002/05/02 20:20:29 jerry Exp $
 #
 
 for patch in debian/patches/*.patch; do
