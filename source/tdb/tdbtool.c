@@ -89,8 +89,10 @@ tdbtool:
   show      key        : show a record by key
   delete    key        : delete a record by key
   free                 : print the database freelist
-  first                : print the first record
-  next                 : print the next record
+  1 | first            : print the first record
+  n | next             : print the next record
+  q | quit             : terminate
+  \\n                   : repeat 'next' command
 ");
 }
 
@@ -250,8 +252,10 @@ static void info_tdb(void)
 {
 	int count;
 	total_bytes = 0;
-	count = tdb_traverse(tdb, traverse_fn, NULL);
-	printf("%d records totalling %d bytes\n", count, total_bytes);
+	if ((count = tdb_traverse(tdb, traverse_fn, NULL) == -1))
+		printf("Error = %s\n", tdb_errorstr(tdb));
+	else
+		printf("%d records totalling %d bytes\n", count, total_bytes);
 }
 
 static char *getline(char *prompt)
@@ -363,11 +367,16 @@ int main(int argc, char *argv[])
             info_tdb();
         } else if (strcmp(tok, "free") == 0) {
             tdb_printfreelist(tdb);
-        } else if (strcmp(tok, "first") == 0) {
+        } else if ( (strcmp(tok, "1") == 0) ||
+                    (strcmp(tok, "first") == 0)) {
             bIterate = 1;
             first_record(tdb, &iterate_kbuf);
-        } else if (strcmp(tok, "next") == 0) {
+        } else if ((strcmp(tok, "n") == 0) ||
+                   (strcmp(tok, "next") == 0)) {
             next_record(tdb, &iterate_kbuf);
+        } else if ((strcmp(tok, "q") == 0) ||
+                   (strcmp(tok, "quit") == 0)) {
+            break;
         } else {
             help();
         }

@@ -2651,7 +2651,7 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 	/* right now that's enough ! */	
 	NT_PRINTER_PARAM *param;
 	
-	DEBUG(105, ("get_specific_param\n"));
+	DEBUG(10, ("get_specific_param\n"));
 	
 	param=printer.info_2->specific;
 		
@@ -2668,9 +2668,9 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		param=param->next;
 	}
 	
-	DEBUG(106, ("found one param\n"));
 	if (param != NULL)
 	{
+        DEBUGADD(10, ("get_specific_param: found one param\n"));
 		/* exited because it exist */
 		*type=param->type;	
 		
@@ -2680,10 +2680,10 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 		memcpy(*data, param->data, param->data_len);
 		*len=param->data_len;
 
-		DEBUG(106, ("exit of get_specific_param:true\n"));
+		DEBUGADD(10, ("get_specific_param: exit true\n"));
 		return (True);
 	}
-	DEBUG(106, ("exit of get_specific_param:false\n"));
+	DEBUGADD(10, ("get_specific_param: exit false\n"));
 	return (False);
 }
 

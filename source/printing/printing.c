@@ -76,7 +76,9 @@ BOOL print_backend_init(void)
 	if (tdb && local_pid == sys_getpid()) return True;
 	tdb = tdb_open(lock_path("printing.tdb"), 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
-		DEBUG(0,("Failed to open printing backend database\n"));
+		DEBUG(0,("print_backend_init: Failed to open printing backend database. Error = [%s]\n",
+				 tdb_errorstr(tdb)));
+		return False;
 	}
 	local_pid = sys_getpid();
 
