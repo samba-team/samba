@@ -1,3 +1,7 @@
+2004-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gai_strerror.c: correct ifdef for EAI_ADDRFAMILY
+
 2003-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* resolve.c: parse dns header, add support for SSHFP
