@@ -33,8 +33,6 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
-
 extern FILE* out_hnd;
 
 
@@ -43,7 +41,6 @@ workstation get info query
 ****************************************************************************/
 void cmd_wks_query_info(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
 	fstring dest_wks;
 	WKS_INFO_100 ctr;
 	uint32 info_level = 100;
@@ -64,17 +61,8 @@ void cmd_wks_query_info(struct client_info *info, int argc, char *argv[])
 	DEBUG(4,("cmd_wks_query_info: server:%s info level: %d\n",
 				dest_wks, info_level));
 
-	DEBUG(5, ("cmd_wks_query_info: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open LSARPC session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_WKSSVC, &nt_pipe_fnum) : False;
-
 	/* send info level: receive requested info.  hopefully. */
-	res = res ? do_wks_query_info(smb_cli, nt_pipe_fnum,
-				dest_wks, info_level, &ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? wks_query_info( dest_wks, info_level, &ctr) : False;
 
 	if (res)
 	{

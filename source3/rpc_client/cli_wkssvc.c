@@ -34,16 +34,21 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a WKS Open Policy
 ****************************************************************************/
-BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum, 
-			char *server_name, uint32 switch_value,
+BOOL wks_query_info( char *srv_name, uint32 switch_value,
 			WKS_INFO_100 *wks100)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
 	WKS_Q_QUERY_INFO q_o;
 	BOOL valid_info = False;
+	struct cli_connection *con = NULL;
 
-	if (server_name == 0 || wks100 == NULL) return False;
+	if (wks100 == NULL) return False;
+
+	if (!cli_connection_init(srv_name, PIPE_WKSSVC, &con))
+	{
+		return False;
+	}
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -53,13 +58,13 @@ BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("WKS Query Info\n"));
 
 	/* store the parameters */
-	make_wks_q_query_info(&q_o, server_name, switch_value);
+	make_wks_q_query_info(&q_o, srv_name, switch_value);
 
 	/* turn parameters into data stream */
 	wks_io_q_query_info("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, WKS_QUERY_INFO, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, WKS_QUERY_INFO, &buf, &rbuf))
 	{
 		WKS_R_QUERY_INFO r_o;
 		BOOL p;
@@ -84,6 +89,8 @@ BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum,
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	cli_connection_unlink(con);
 
 	return valid_info;
 }
