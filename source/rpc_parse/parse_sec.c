@@ -570,24 +570,6 @@ SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BU
 }
 
 /*******************************************************************
- Tallocs a duplicate SID. 
-********************************************************************/ 
-
-static DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, DOM_SID *src)
-{
-  DOM_SID *dst;
-
-  if(!src)
-    return NULL;
-
-  if((dst = talloc_zero(ctx, sizeof(DOM_SID))) != NULL) {
-    sid_copy( dst, src);
-  }
-
-  return dst;
-}
-
-/*******************************************************************
  Creates a SEC_DESC structure
 ********************************************************************/
 
