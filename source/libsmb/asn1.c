@@ -389,7 +389,9 @@ BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
 	if (!asn1_start_tag(&data, tag))
 		return False;
 	*result = asn1_tag_remaining(&data)+data.ofs;
-	asn1_end_tag(&data);
+	/* We can't use asn1_end_tag here, as we did not consume the complete
+	 * tag, so asn1_end_tag would flag an error and not free nesting */
+	free(data.nesting);
 	return True;
 }
 
