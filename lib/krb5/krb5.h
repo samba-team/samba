@@ -368,7 +368,8 @@ krb5_free_address(krb5_context context,
 		  krb5_address *address);
 
 void
-krb5_free_authenticator(krb5_authenticator *authenticator);
+krb5_free_authenticator(krb5_context,
+			krb5_authenticator *authenticator);
 
 krb5_error_code
 krb5_auth_initvector(krb5_context context,
@@ -524,7 +525,7 @@ krb5_rd_priv(krb5_context context,
 
 krb5_error_code
 krb5_sendauth(krb5_context context,
-	      krb5_auth_context auth_context,
+	      krb5_auth_context *auth_context,
 	      krb5_pointer fd,
 	      char *appl_version,
 	      krb5_principal client,
@@ -534,16 +535,15 @@ krb5_sendauth(krb5_context context,
 	      krb5_creds *in_creds,
 	      krb5_ccache ccache,
 	      /*krb5_error*/ void **error,
-	      /*krb5_ap_rep_enc_part*/ void **rep_result,
+	      krb5_ap_rep_enc_part **rep_result,
 	      krb5_creds ** out_creds);
 
 krb5_error_code
 krb5_recvauth(krb5_context context,
-	      krb5_auth_context auth_context,
+	      krb5_auth_context *auth_context,
 	      krb5_pointer fd,
 	      char *appl_version,
 	      krb5_principal server,
-	      char *rc_type,
 	      int32_t flags,
 	      krb5_keytab keytab,
 	      krb5_ticket **ticket);
@@ -554,7 +554,8 @@ krb5_parse_name(krb5_context context,
 		krb5_principal *principal);
 
 void
-krb5_free_principal(krb5_principal principal);
+krb5_free_principal(krb5_context context,
+		    krb5_principal principal);
 
 krb5_error_code
 krb5_unparse_name(krb5_context context,
@@ -620,6 +621,13 @@ krb5_425_conv_principal(krb5_context context,
 			krb5_principal *princ);
 
 krb5_error_code
+krb5_sname_to_principal (krb5_context context,
+			 const char *hostname,
+			 const char *sname,
+			 int32_t type,
+			 krb5_principal *ret_princ);
+
+krb5_error_code
 krb5_get_krbhst (krb5_context context,
 		 const krb5_data *realm,
 		 char ***hostlist);
@@ -656,6 +664,18 @@ krb5_string_to_key (char *str,
 krb5_error_code
 krb5_get_salt (krb5_principal princ,
 	       krb5_data *salt);
+
+ssize_t
+krb5_net_read (krb5_context context,
+	       int fd,
+	       void *buf,
+	       size_t len);
+
+ssize_t
+krb5_net_write (krb5_context context,
+		int fd,
+		void *buf,
+		size_t len);
 
 #include "cache.h"
 
