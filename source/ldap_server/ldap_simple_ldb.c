@@ -110,8 +110,6 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		ldapsrv_queue_reply(call, ent_r);
 	}
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, call);
-	ldb_search_free(ldb, res);
 	talloc_free(samdb);
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
