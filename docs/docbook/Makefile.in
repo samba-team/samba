@@ -82,21 +82,21 @@ html:
 # Text files
 
 $(TXTDIR)/Samba-HOWTO-Collection.txt: $(PROJDOC)/samba-doc.sgml
-	$(DOCBOOK2TXT) -o . $<
+	$(DOCBOOK2TXT) -d samba.dsl -o . $<
 	mv ./samba-doc.txt $@
 
 $(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.sgml
-	$(DOCBOOK2TXT) -o . $<
+	$(DOCBOOK2TXT) -d samba.dsl -o . $<
 	mv ./dev-doc.txt $@
 
 # PostScript
 
 $(PSDIR)/Samba-HOWTO-Collection.ps: $(PROJDOC)/samba-doc.sgml
-	$(DOCBOOK2PS) -o . $<
+	$(DOCBOOK2PS) -d samba.dsl -o . $<
 	mv ./samba-doc.ps $@
 
 $(PSDIR)/Samba-Developers-Guide.ps: $(DEVDOC)/dev-doc.sgml
-	$(DOCBOOK2PS) -o . $<
+	$(DOCBOOK2PS) -d samba.dsl -o . $<
 	mv ./dev-doc.ps $@
 
 # Adobe PDF files
@@ -110,19 +110,19 @@ $(PDFDIR)/Samba-Developers-Guide.pdf: $(HTMLDIR)/Samba-Developers-Guide.html
 # Single large HTML files
 
 $(HTMLDIR)/Samba-HOWTO-Collection.html: $(PROJDOC)/samba-doc.sgml
-	$(DOCBOOK2HTML) -u -o . $<
+	$(DOCBOOK2HTML) -d samba.dsl -u -o . $<
 	mv ./samba-doc.html $@
 
 $(HTMLDIR)/Samba-Developers-Guide.html: $(DEVDOC)/dev-doc.sgml
-	$(DOCBOOK2HTML) -u -o . $<
+	$(DOCBOOK2HTML) -d samba.dsl -u -o . $<
 	mv ./dev-doc.html $@
 
 
 $(HTMLDIR)/%.html: $(MANPROJDOC)/%.sgml
-	$(DOCBOOK2HTML) -u -o $(HTMLDIR) $<
+	$(DOCBOOK2HTML) -d samba.dsl -u -o $(HTMLDIR) $<
 
 $(MANDIR)/%: $(MANPROJDOC)/%.sgml 
-	$(DOCBOOK2MAN) -o $(MANDIR) $<
+	$(DOCBOOK2MAN) -d samba.dsl -o $(MANDIR) $<
 	$(PERL) scripts/strip-links.pl < $@ > $@.temp
 	mv $@.temp $@
 
