@@ -811,17 +811,21 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 static int update_trustpw(struct pdb_context *in, const char *dom_name,
                           const char *dom_sid, const char* flag)
 {
+	TALLOC_CTX *mem_ctx = NULL;
 	SAM_TRUST_PASSWD trust;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	smb_ucs2_t *uni_name = NULL;
 	char *givenpass = NULL;
 	time_t lct;
 
 	if (!dom_name) return -1;
 
-	/* unicode domain name */
-	trust.private.uni_name_len = strlen(dom_name);
-	push_ucs2(NULL, &trust.private.uni_name, dom_name, trust.private.uni_name_len,
-		  STR_TERMINATE);
+	mem_ctx = talloc_init("pdbedit: updating trust password");
+	
+	/* unicode name */
+	trust.private.uni_name_len = strnlen(dom_name, 32);
+	push_ucs2_talloc(mem_ctx, &uni_name, dom_name);
+	strncpy_w(trust.private.uni_name, uni_name, 32);
 	
 	/* domain sid */
 	if (dom_sid) {
@@ -851,6 +855,7 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	/* update the trust password */
 	nt_status = in->pdb_update_trust_passwd(in, &trust);
 
+	talloc_destroy(mem_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("Coulnd't modify trust password\n");
 	}
