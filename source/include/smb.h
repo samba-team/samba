@@ -888,11 +888,12 @@ struct bitmap {
 	int n;
 };
 
-#define FLAG_BASIC 1 /* fundamental options */
-#define FLAG_HIDE  2 /* options that should be hidden in SWAT */
-#define FLAG_PRINT 4 /* printing options */
-#define FLAG_GLOBAL 8 /* local options that should be globally settable in SWAT */
+#define FLAG_BASIC 	0x01 /* fundamental options */
+#define FLAG_SHARE 	0x02 /* file sharing options */
+#define FLAG_PRINT 	0x04 /* printing options */
+#define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
 #define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
+#define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
