@@ -29,6 +29,7 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern fstring myworkgroup;
 
 /****************************************************************************
 Send a name release response.
@@ -94,6 +95,21 @@ subnet %s from owner IP %s\n",
   /* If someone is releasing a broadcast group name, just ignore it. */
   if( group && !ismyip(owner_ip) )
     return;
+
+  /*
+   * Code to work around a bug in FTP OnNet software NBT implementation.
+   * They do a broadcast name release for WORKGROUP<0> and WORKGROUP<1e>
+   * names and *don't set the group bit* !!!!!
+   */
+
+  if( !group && !ismyip(owner_ip) && strequal(question->name, myworkgroup) && 
+      ((question->name_type == 0x0) || (question->name_type == 0x1e)))
+  {
+    DEBUG(6,("process_name_release_request: FTP OnNet bug workaround. Ignoring \
+group release name %s from IP %s on subnet %s with no group bit set.\n",
+        namestr(question), inet_ntoa(owner_ip), subrec->subnet_name ));
+    return;
+  }
 
   namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_ANY_NAME);
 

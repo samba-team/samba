@@ -393,21 +393,16 @@ void *dptr_fetch(char *buf,int *num)
 }
 
 /****************************************************************************
-fetch the dir ptr and seek it given the lanman2 parameter block
+fetch the dir ptr.
 ****************************************************************************/
-void *dptr_fetch_lanman2(char *params,int dptr_num)
+void *dptr_fetch_lanman2(int dptr_num)
 {
   void *p = dptr_get(dptr_num,dircounter++);
-  uint32 resume_key = SVAL(params,6);
-  BOOL uses_resume_key = BITSETW(params+10,2);
-  BOOL continue_bit = BITSETW(params+10,3);
 
   if (!p) {
     DEBUG(3,("fetched null dirptr %d\n",dptr_num));
     return(NULL);
   }
-  if(uses_resume_key && !continue_bit)
-    SeekDir(p,resume_key);
   DEBUG(3,("fetching dirptr %d for path %s\n",dptr_num,dptr_path(dptr_num)));
   return(p);
 }

@@ -299,9 +299,9 @@ typedef unsigned short mode_t;
 #include <rpcsvc/ypclnt.h>
 #include <termios.h>
 #include <sys/stropts.h>
-#ifndef USE_LIBDES
+#if !defined(USE_LIBDES) && !defined(KRB4_AUTH)
 #include <crypt.h>
-#endif /* USE_LIBDES */
+#endif /* !USE_LIBDES && !KRB4_AUTH */
 extern int gettimeofday (struct timeval *, void *);
 extern int gethostname (char *name, int namelen);
 extern int innetgr (const char *, const char *, const char *, const char *);
@@ -1138,6 +1138,10 @@ union semun {
 
 #ifdef KRB5_AUTH
 #include <krb5.h>
+#endif
+
+#ifdef KRB4_AUTH
+#include <krb.h>
 #endif
 
 #ifdef NO_UTIMBUF

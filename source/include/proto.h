@@ -164,7 +164,7 @@ int dptr_create(int cnum,char *path, BOOL expect_close,int pid);
 BOOL dptr_fill(char *buf1,unsigned int key);
 BOOL dptr_zero(char *buf);
 void *dptr_fetch(char *buf,int *num);
-void *dptr_fetch_lanman2(char *params,int dptr_num);
+void *dptr_fetch_lanman2(int dptr_num);
 BOOL dir_check_ftype(int cnum,int mode,struct stat *st,int dirtype);
 BOOL get_dir_entry(int cnum,char *mask,int dirtype,char *fname,int *size,int *mode,time_t *date,BOOL check_descend);
 void *OpenDir(int cnum, char *name, BOOL use_veto);
