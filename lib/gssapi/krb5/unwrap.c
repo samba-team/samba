@@ -21,23 +21,19 @@ OM_uint32 gss_unwrap
   int i;
   int32_t seq_number;
   size_t padlength;
+  OM_uint32 ret;
 
   p = input_message_buffer->value;
-  len = GSS_KRB5_MECHANISM->length + 28;
+  ret = gssapi_krb5_verify_header (&p,
+				   input_message_buffer->length,
+				   "\x02\x01");
+  if (ret)
+      return ret;
 
-  if (
-      input_message_buffer->length < len
-      || memcmp (p, "\x60\x07\x06\x05", 4) != 0
-      || memcmp (p + 4, GSS_KRB5_MECHANISM->elements,
-		 GSS_KRB5_MECHANISM->length) != 0)
-    return GSS_S_BAD_MECH;
-  if (memcmp (p + 4 + GSS_KRB5_MECHANISM->length, "\x02\x01", 2) != 0)
-    return GSS_S_DEFECTIVE_TOKEN;
-  p += 6 + GSS_KRB5_MECHANISM->length;
   if (memcmp (p, "\x00\x00", 2) != 0)
     return GSS_S_BAD_SIG;
   p += 2;
-  if (memcmp (p, "\x0\x00", 2) != 0)
+  if (memcmp (p, "\x00\x00", 2) != 0)
     return GSS_S_BAD_MIC;
   p += 2;
   if (memcmp (p, "\xff\xff", 2) != 0)
@@ -45,55 +41,16 @@ OM_uint32 gss_unwrap
   p += 2;
   p += 16;
 
-  md5_init (&md5);
-  md5_update (&md5, p - 24, 8);
-  md5_update (&md5, p, input_message_buffer->length - len);
-  md5_finito (&md5, hash);
-
-  memset (&zero, 0, sizeof(zero));
-  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
-	  sizeof(key));
-  des_set_key (&key, schedule);
-  des_cbc_cksum ((des_cblock *)hash,
-		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
-  if (memcmp (p - 8, hash, 8) != 0)
-    return GSS_S_BAD_MIC;
-
-  /* verify sequence number */
-  
-  krb5_auth_getremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				&seq_number);
-  seq_data[0] = (seq_number >> 0)  & 0xFF;
-  seq_data[1] = (seq_number >> 8)  & 0xFF;
-  seq_data[2] = (seq_number >> 16) & 0xFF;
-  seq_data[3] = (seq_number >> 24) & 0xFF;
-  memset (seq_data + 4,
-	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
-	  4);
-
-  p -= 16;
-  des_set_key (&key, schedule);
-  des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
-		   schedule, (des_cblock *)hash, DES_DECRYPT);
-
-  memset (key, 0, sizeof(key));
-  memset (schedule, 0, sizeof(schedule));
-
-  if (memcmp (p, seq_data, 8) != 0) {
-    return GSS_S_BAD_MIC;
-  }
-
-  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
-				context_handle->auth_context,
-				++seq_number);
+  len = p - (u_char *)input_message_buffer->value;
 
   /* decrypt data */
 
-  p += 16;
-
   memset (&zero, 0, sizeof(zero));
+#if 0
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+#endif
+  memcpy (&key, context_handle->auth_context->remote_subkey.keyvalue.data,
 	  sizeof(key));
   for (i = 0; i < sizeof(key); ++i)
     key[i] ^= 0xf0;
@@ -118,6 +75,53 @@ OM_uint32 gss_unwrap
   if (i != 0)
     return GSS_S_BAD_MIC;
 
+  md5_init (&md5);
+  md5_update (&md5, p - 24, 8);
+  md5_update (&md5, p, input_message_buffer->length - len);
+  md5_finito (&md5, hash);
+
+  memset (&zero, 0, sizeof(zero));
+#if 0
+  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+#endif
+  memcpy (&key, context_handle->auth_context->remote_subkey.keyvalue.data,
+	  sizeof(key));
+  des_set_key (&key, schedule);
+  des_cbc_cksum ((des_cblock *)hash,
+		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
+  if (memcmp (p - 8, hash, 8) != 0)
+    return GSS_S_BAD_MIC;
+
+  /* verify sequence number */
+  
+  krb5_auth_getremoteseqnumber (gssapi_krb5_context,
+				context_handle->auth_context,
+				&seq_number);
+  seq_data[0] = (seq_number >> 0)  & 0xFF;
+  seq_data[1] = (seq_number >> 8)  & 0xFF;
+  seq_data[2] = (seq_number >> 16) & 0xFF;
+  seq_data[3] = (seq_number >> 24) & 0xFF;
+  memset (seq_data + 4,
+	  (context_handle->more_flags & LOCAL) ? 0xFF : 0,
+	  4);
+
+  p -= 16;
+  des_set_key (&key, schedule);
+  des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
+		   schedule, (des_cblock *)hash, DES_DECRYPT);
+
+  memset (key, 0, sizeof(key));
+  memset (schedule, 0, sizeof(schedule));
+
+  if (memcmp (p, seq_data, 8) != 0) {
+    return GSS_S_BAD_MIC;
+  }
+
+  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+				context_handle->auth_context,
+				++seq_number);
+
   /* copy out data */
 
   output_message_buffer->length = input_message_buffer->length
@@ -126,7 +130,7 @@ OM_uint32 gss_unwrap
   if(output_message_buffer->value == NULL)
     return GSS_S_FAILURE;
   memcpy (output_message_buffer->value,
-	  p + 8,
+	  p + 24,
 	  output_message_buffer->length);
   return GSS_S_COMPLETE;
 }
