@@ -108,7 +108,10 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Open a LSA policy handle */
+/** Open a LSA policy handle
+  *
+  * @param cli Handle on an initialised SMB connection 
+  */
 
 NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
@@ -131,10 +134,10 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	if (sec_qos) {
 		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
                                  &qos);
 	} else {
-		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
                                  NULL);
 	}
 
@@ -435,7 +438,9 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Query info policy */
+/** Query info policy
+ *
+ *  @param domain_sid - returned remote server's domain sid */
 
 NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *pol, uint16 info_class, 
