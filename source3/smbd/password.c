@@ -1225,7 +1225,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
   DEBUG(100,("checking authorisation on user=%s pass=%s\n",user,password));
 #endif
 
-  /* there are several possabilities:
+  /* there are several possibilities:
      1) login as the given user with given password
      2) login as a previously registered username with the given password
      3) login as a session list username with the given password
