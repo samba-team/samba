@@ -424,6 +424,7 @@ krb5_get_init_creds_password(krb5_context context,
 
     done = 0;
     while(!done) {
+	memset(&kdc_reply, 0, sizeof(kdc_reply));
 	ret = krb5_get_in_cred (context,
 				flags.i,
 				addrs,
@@ -467,23 +468,26 @@ krb5_get_init_creds_password(krb5_context context,
 			if (pre_auth_types)
 			    free (pre_auth_types);
 			ALLOC(pre_auth_types, 2);
-			if (pre_auth_types == NULL)
+			if (pre_auth_types == NULL) {
+			    free_METHOD_DATA(&md);
 			    goto out;
+			}
 			pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
 			pre_auth_types[1] = 0;
 			break;
-		    case pa_key_info:
+		    case pa_etype_info:
 			preauth = &preauth2;
 			ALLOC_SEQ(preauth, 1);
 			preauth->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
-			krb5_decode_PA_KEY_INFO(context,
-						md.val[i].padata_value.data, 
-						md.val[i].padata_value.length,
-						&preauth->val[0].info,
-						NULL);
+			krb5_decode_ETYPE_INFO(context,
+					       md.val[i].padata_value.data, 
+					       md.val[i].padata_value.length,
+					       &preauth->val[0].info,
+					       NULL);
 			break;
 		    }
 		}
+		free_METHOD_DATA(&md);
 	    }else{
 		if (pre_auth_types)
 		    free (pre_auth_types);
@@ -493,6 +497,7 @@ krb5_get_init_creds_password(krb5_context context,
 		pre_auth_types[0] = KRB5_PADATA_ENC_TIMESTAMP;
 		pre_auth_types[1] = 0;
 	    }
+	    krb5_free_kdc_rep (context, &kdc_reply);
 	    break;
 	}
 	default:
@@ -506,25 +511,20 @@ krb5_get_init_creds_password(krb5_context context,
 		      &kdc_reply,
 		      prompter,
 		      data);
+out:
+    memset (buf, 0, sizeof(buf));
     krb5_free_kdc_rep (context, &kdc_reply);
 
     free (pre_auth_types);
-    free (etypes);
-    if (creds)
-	*creds = this_cred;
-    else
-	krb5_free_creds_contents (context, &this_cred);
-    return 0;
-
-out:
-    memset (buf, 0, sizeof(buf));
-    free (pre_auth_types);
     if(preauth) {
-	free_PA_KEY_INFO(&preauth->val[0].info);
+	free_ETYPE_INFO(&preauth->val[0].info);
 	free(preauth->val);
     }
     free (etypes);
-    krb5_free_creds_contents (context, &this_cred);
+    if (ret == 0 && creds)
+	*creds = this_cred;
+    else
+	krb5_free_creds_contents (context, &this_cred);
     return ret;
 }
 
