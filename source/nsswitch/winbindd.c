@@ -401,13 +401,9 @@ void winbind_client_read(struct winbindd_cli_state *state)
     
 	/* Read data */
 
-	do {
-
-		n = read(state->sock, state->read_buf_len + 
-			 (char *)&state->request, 
-			 sizeof(state->request) - state->read_buf_len);
-
-	} while (n == -1 && errno == EINTR);
+	n = sys_read(state->sock, state->read_buf_len + 
+		 (char *)&state->request, 
+		 sizeof(state->request) - state->read_buf_len);
 	
 	DEBUG(10,("client_read: read %d bytes. Need %d more for a full request.\n", n, sizeof(state->request) - n - state->read_buf_len ));
 
@@ -453,9 +449,7 @@ static void client_write(struct winbindd_cli_state *state)
 			state->write_buf_len;
 	}
 	
-	do {
-		num_written = write(state->sock, data, state->write_buf_len);
-	} while (num_written == -1 && errno == EINTR);
+	num_written = sys_write(state->sock, data, state->write_buf_len);
 	
 	DEBUG(10,("client_write: wrote %d bytes.\n", num_written ));
 
