@@ -401,6 +401,7 @@ password.
 <p><br>Here is a list of all global parameters. See the section of each
 parameter for details.  Note that some are synonyms.
 <p><br><ul>
+<p><br><li > <a href="smb.conf.5.html#adduserscript"><strong>add user script</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceas"><strong>announce as</strong></a>
 <p><br><li > <a href="smb.conf.5.html#announceversion"><strong>announce version</strong></a>
 <p><br><li > <a href="smb.conf.5.html#autoservices"><strong>auto services</strong></a>
@@ -416,6 +417,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#debuglevel"><strong>debuglevel</strong></a>
 <p><br><li > <a href="smb.conf.5.html#default"><strong>default</strong></a>
 <p><br><li > <a href="smb.conf.5.html#defaultservice"><strong>default service</strong></a>
+<p><br><li > <a href="smb.conf.5.html#deleteuserscript"><strong>delete user script</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dfreecommand"><strong>dfree command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#dnsproxy"><strong>dns proxy</strong></a>
 <p><br><li > <a href="smb.conf.5.html#domainadmingroup"><strong>domain admin group</strong></a>
@@ -651,6 +653,46 @@ parameter for details. Note that some are synonyms.
 <h2>EXPLANATION OF EACH PARAMETER</h2>
     
 <p><br><ul>
+<p><br><a name="adduserscript"></a>
+<li><strong><strong>add user script (G)</strong></strong>
+<p><br>This is the full pathname to a script that will be run <em>AS ROOT</em> by
+<a href="smbd.8.html"><strong>smbd (8)</strong></a> under special circumstances decribed
+below.
+<p><br>Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows <a href="smbd.8.html"><strong>smbd</strong></a> to create
+the required UNIX users <em>ON DEMAND</em> when a user accesses the Samba
+server.
+<p><br>In order to use this option, <a href="smbd.8.html"><strong>smbd</strong></a> must be set to
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> or
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a> and <strong>"add user script"</strong>
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of <strong>%u</strong>, which expands into the UNIX user name to
+create.
+<p><br>When the Windows user attempts to access the Samba server, at
+<em>"login"</em>(session setup in the SMB protocol) time,
+<a href="smbd.8.html"><strong>smbd</strong></a> contacts the <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a> and attempts to authenticate the given user
+with the given password. If the authentication succeeds then
+<a href="smbd.8.html"><strong>smbd</strong></a> attempts to find a UNIX user in the UNIX
+password database to map the Windows user into. If this lookup fails,
+and <strong>"add user script"</strong> is set then <a href="smbd.8.html"><strong>smbd</strong></a> will
+call the specified script <em>AS ROOT</em>, expanding any <strong>%u</strong> argument
+to be the user name to create.
+<p><br>If this script successfully creates the user then
+<a href="smbd.8.html"><strong>smbd</strong></a> will continue on as though the UNIX user
+already existed. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts.
+<p><br>See also <a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a>,
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>, <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a>, <a href="smb.conf.5.html#deleteuserscript"><strong>delete user
+script</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	add user script = &lt;empty string&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	add user script = /usr/local/samba/bin/add_user %u</code>
 <p><br><a name="adminusers"></a>
 <li><strong><strong>admin users (S)</strong></strong>
 <p><br>This is a list of users who will be granted administrative privileges
@@ -820,7 +862,7 @@ request immediately if the lock range cannot be obtained.
 <p><br><strong>Example:</strong>
 <code>	blocking locks = False</code>
 <p><br><a name="browsable"></a>
-<li><strong><strong>browseable (S)</strong></strong>
+<li><strong><strong>browsable (S)</strong></strong>
 <p><br>Synonym for <a href="smb.conf.5.html#browseable"><strong>browseable</strong></a>.
 <p><br><a name="browselist"></a>
 <li><strong><strong>browse list(G)</strong></strong>
@@ -1100,6 +1142,51 @@ interesting things.
 
 </pre>
 
+<p><br><a name="deleteuserscript"></a>
+<li><strong><strong>delete user script (G)</strong></strong>
+<p><br>This is the full pathname to a script that will be run <em>AS ROOT</em> by
+<a href="smbd.8.html"><strong>smbd (8)</strong></a> under special circumstances decribed
+below.
+<p><br>Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows <a href="smbd.8.html"><strong>smbd</strong></a> to delete
+the required UNIX users <em>ON DEMAND</em> when a user accesses the Samba
+server and the Windows NT user no longer exists.
+<p><br>In order to use this option, <a href="smbd.8.html"><strong>smbd</strong></a> must be set to
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a> and <strong>"delete user
+script"</strong> must be set to a full pathname for a script that will delete
+a UNIX user given one argument of <strong>%u</strong>, which expands into the UNIX
+user name to delete. <em>NOTE</em> that this is different to the
+<a href="smb.conf.5.html#adduserscript"><strong>add user script</strong></a> which will work with the
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> option as well as
+<a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>. The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists. In the
+<a href="smb.conf.5.html#securityequalserver"><strong>security=server</strong></a> mode a missing user
+is treated the same as an invalid password logon attempt. Deleting
+the user in this circumstance would not be a good idea.
+<p><br>When the Windows user attempts to access the Samba server, at
+<em>"login"</em>(session setup in the SMB protocol) time,
+<a href="smbd.8.html"><strong>smbd</strong></a> contacts the <a href="smb.conf.5.html#passwordserver"><strong>password
+server</strong></a> and attempts to authenticate the given user
+with the given password. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+<a href="smbd.8.html"><strong>smbd</strong></a> attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account. If this lookup succeeds,
+and <strong>"delete user script"</strong> is set then <a href="smbd.8.html"><strong>smbd</strong></a> will
+call the specified script <em>AS ROOT</em>, expanding any <strong>%u</strong> argument
+to be the user name to delete.
+<p><br>This script should delete the given UNIX username. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts.
+<p><br>See also <a href="smb.conf.5.html#securityequaldomain"><strong>security=domain</strong></a>,
+<a href="smb.conf.5.html#passwordserver"><strong>password server</strong></a>, <a href="smb.conf.5.html#adduserscript"><strong>add user
+script</strong></a>.
+<p><br><strong>Default:</strong>
+<code>	delete user script = &lt;empty string&gt;</code>
+<p><br><strong>Example:</strong>
+<code>	delete user script = /usr/local/samba/bin/del_user %u</code>
 <p><br><a name="deletereadonly"></a>
 <li><strong><strong>delete readonly (S)</strong></strong>
 <p><br>This parameter allows readonly files to be deleted.  This is not
@@ -2430,12 +2517,6 @@ error. Unfortunately WfWg totally ignores the error code and carries
 on regardless, saying that the message was delivered.
 <p><br>If you want to silently delete it then try:
 <p><br><code>"message command = rm %s"</code>.
-<p><br>For the really adventurous, try something like this:
-<p><br><code>message command = csh -c 'csh &lt; %s |&amp; /usr/local/samba/bin/smbclient -M %m; rm %s' &amp;</code>
-<p><br>this would execute the command as a script on the server, then give
-them the result in a WinPopup message. Note that this could cause a
-loop if you send a message from the server using smbclient! You better
-wrap the above in a script that checks for this :-)
 <p><br><strong>Default:</strong>
 <code>	no message command</code>
 <p><br><strong>Example:</strong>
@@ -4327,10 +4408,10 @@ need to set this to <code>"yes"</code> for some older clients.
 <code>	wins proxy = no</code>
 <p><br><a name="winsserver"></a>
 <li><strong><strong>wins server (G)</strong></strong>
-<p><br>This specifies the DNS name (or IP address) of the WINS server that
-<a href="nmbd.8.html"><strong>nmbd</strong></a> should register with. If you have a WINS
-server on your network then you should set this to the WINS servers
-name.
+<p><br>This specifies the IP address (or DNS name: IP address for preference)
+of the WINS server that <a href="nmbd.8.html"><strong>nmbd</strong></a> should register with.
+If you have a WINS server on your network then you should set this to
+the WINS server's IP.        
 <p><br>You should point this at your WINS server if you have a
 multi-subnetted network.
 <p><br><em>NOTE</em>. You need to set up Samba to point to a WINS server if you

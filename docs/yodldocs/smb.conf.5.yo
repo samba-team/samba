@@ -479,6 +479,8 @@ parameter for details.  Note that some are synonyms.
 
 startit()
 
+it() link(bf(add user script))(adduserscript)
+
 it() link(bf(announce as))(announceas)
 
 it() link(bf(announce version))(announceversion)
@@ -508,6 +510,8 @@ it() link(bf(debuglevel))(debuglevel)
 it() link(bf(default))(default)
 
 it() link(bf(default service))(defaultservice)
+
+it() link(bf(delete user script))(deleteuserscript)
 
 it() link(bf(dfree command))(dfreecommand)
 
@@ -971,6 +975,55 @@ label(EXPLANATIONOFEACHPARAMETER)
 manpagesection(EXPLANATION OF EACH PARAMETER)
 
 startdit()
+
+label(adduserscript)
+dit(bf(add user script (G)))
+
+This is the full pathname to a script that will be run em(AS ROOT) by
+url(bf(smbd (8)))(smbd.8.html) under special circumstances decribed
+below.
+
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows url(bf(smbd))(smbd.8.html) to create
+the required UNIX users em(ON DEMAND) when a user accesses the Samba
+server.
+
+In order to use this option, url(bf(smbd))(smbd.8.html) must be set to
+link(bf(security=server))(securityequalserver) or
+link(bf(security=domain))(securityequaldomain) and bf("add user script")
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of bf(%u), which expands into the UNIX user name to
+create.
+
+When the Windows user attempts to access the Samba server, at
+em("login")(session setup in the SMB protocol) time,
+url(bf(smbd))(smbd.8.html) contacts the link(bf(password
+server))(passwordserver) and attempts to authenticate the given user
+with the given password. If the authentication succeeds then
+url(bf(smbd))(smbd.8.html) attempts to find a UNIX user in the UNIX
+password database to map the Windows user into. If this lookup fails,
+and bf("add user script") is set then url(bf(smbd))(smbd.8.html) will
+call the specified script em(AS ROOT), expanding any bf(%u) argument
+to be the user name to create.
+
+If this script successfully creates the user then
+url(bf(smbd))(smbd.8.html) will continue on as though the UNIX user
+already existed. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts.
+
+See also link(bf(security=server))(securityequalserver),
+link(bf(security=domain))(securityequaldomain), link(bf(password
+server))(passwordserver), link(bf(delete user
+script))(deleteuserscript).
+
+  bf(Default:)
+tt(	add user script = <empty string>)
+
+  bf(Example:)
+tt(	add user script = /usr/local/samba/bin/add_user %u)
 
 label(adminusers)
 dit(bf(admin users (S)))
@@ -1564,7 +1617,7 @@ dit(bf(default case (S)))
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING). Also note
 the link(bf("short preserve case"))(shortpreservecase) parameter.
 
-label(default service)
+label(defaultservice)
 dit(bf(default service (G)))
 
 This parameter specifies the name of a service which will be connected
@@ -1595,6 +1648,60 @@ verb(
 	[pub]
 		path = /%S
 )
+
+label(deleteuserscript)
+dit(bf(delete user script (G)))
+
+This is the full pathname to a script that will be run em(AS ROOT) by
+url(bf(smbd (8)))(smbd.8.html) under special circumstances decribed
+below.
+
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task. This option allows url(bf(smbd))(smbd.8.html) to delete
+the required UNIX users em(ON DEMAND) when a user accesses the Samba
+server and the Windows NT user no longer exists.
+
+In order to use this option, url(bf(smbd))(smbd.8.html) must be set to
+link(bf(security=domain))(securityequaldomain) and bf("delete user
+script") must be set to a full pathname for a script that will delete
+a UNIX user given one argument of bf(%u), which expands into the UNIX
+user name to delete. em(NOTE) that this is different to the
+link(bf(add user script))(adduserscript) which will work with the
+link(bf(security=server))(securityequalserver) option as well as
+link(bf(security=domain))(securityequaldomain). The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists. In the
+link(bf(security=server))(securityequalserver) mode a missing user
+is treated the same as an invalid password logon attempt. Deleting
+the user in this circumstance would not be a good idea.
+
+When the Windows user attempts to access the Samba server, at
+em("login")(session setup in the SMB protocol) time,
+url(bf(smbd))(smbd.8.html) contacts the link(bf(password
+server))(passwordserver) and attempts to authenticate the given user
+with the given password. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+url(bf(smbd))(smbd.8.html) attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account. If this lookup succeeds,
+and bf("delete user script") is set then url(bf(smbd))(smbd.8.html) will
+call the specified script em(AS ROOT), expanding any bf(%u) argument
+to be the user name to delete.
+
+This script should delete the given UNIX username. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts.
+
+See also link(bf(security=domain))(securityequaldomain),
+link(bf(password server))(passwordserver), link(bf(add user
+script))(adduserscript).
+
+  bf(Default:)
+tt(	delete user script = <empty string>)
+
+  bf(Example:)
+tt(	delete user script = /usr/local/samba/bin/del_user %u)
 
 label(deletereadonly)
 dit(bf(delete readonly (S)))

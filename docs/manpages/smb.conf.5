@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "24 Nov 1998" "smb.conf 2.0.0beta2"
+.TH "smb\&.conf " "5" "23 Oct 1998" "Samba" "SAMBA" 
 .PP 
 .SH "NAME" 
 smb\&.conf \- The configuration file for the Samba suite
@@ -491,6 +491,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .PP 
 .IP 
 .IP o 
+\fBadd user script\fP
+.IP 
+.IP o 
 \fBannounce as\fP
 .IP 
 .IP o 
@@ -534,6 +537,9 @@ parameter for details\&.  Note that some are synonyms\&.
 .IP 
 .IP o 
 \fBdefault service\fP
+.IP 
+.IP o 
+\fBdelete user script\fP
 .IP 
 .IP o 
 \fBdfree command\fP
@@ -1215,6 +1221,54 @@ parameter for details\&. Note that some are synonyms\&.
 .SH "EXPLANATION OF EACH PARAMETER" 
 .PP 
 .IP 
+.IP "\fBadd user script (G)\fP" 
+.IP 
+This is the full pathname to a script that will be run \fIAS ROOT\fP by
+\fBsmbd (8)\fP under special circumstances decribed
+below\&.
+.IP 
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server\&. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task\&. This option allows \fBsmbd\fP to create
+the required UNIX users \fION DEMAND\fP when a user accesses the Samba
+server\&.
+.IP 
+In order to use this option, \fBsmbd\fP must be set to
+\fBsecurity=server\fP or
+\fBsecurity=domain\fP and \fB"add user script"\fP
+must be set to a full pathname for a script that will create a UNIX user
+given one argument of \fB%u\fP, which expands into the UNIX user name to
+create\&.
+.IP 
+When the Windows user attempts to access the Samba server, at
+\fI"login"\fP(session setup in the SMB protocol) time,
+\fBsmbd\fP contacts the \fBpassword
+server\fP and attempts to authenticate the given user
+with the given password\&. If the authentication succeeds then
+\fBsmbd\fP attempts to find a UNIX user in the UNIX
+password database to map the Windows user into\&. If this lookup fails,
+and \fB"add user script"\fP is set then \fBsmbd\fP will
+call the specified script \fIAS ROOT\fP, expanding any \fB%u\fP argument
+to be the user name to create\&.
+.IP 
+If this script successfully creates the user then
+\fBsmbd\fP will continue on as though the UNIX user
+already existed\&. In this way, UNIX users are dynamically created to
+match existing Windows NT accounts\&.
+.IP 
+See also \fBsecurity=server\fP,
+\fBsecurity=domain\fP, \fBpassword
+server\fP, \fBdelete user
+script\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	add user script = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW	add user script = /usr/local/samba/bin/add_user %u\fP
+.IP 
 .IP "\fBadmin users (S)\fP" 
 .IP 
 This is a list of users who will be granted administrative privileges
@@ -1433,7 +1487,7 @@ This parameter can be set per share\&.
 \fBExample:\fP
 \f(CW	blocking locks = False\fP
 .IP 
-.IP "\fBbrowseable (S)\fP" 
+.IP "\fBbrowsable (S)\fP" 
 .IP 
 Synonym for \fBbrowseable\fP\&.
 .IP 
@@ -1830,6 +1884,59 @@ interesting things\&.
 .DE 
  
 
+.IP 
+.IP "\fBdelete user script (G)\fP" 
+.IP 
+This is the full pathname to a script that will be run \fIAS ROOT\fP by
+\fBsmbd (8)\fP under special circumstances decribed
+below\&.
+.IP 
+Normally, a Samba server requires that UNIX users are created for all
+users accessing files on this server\&. For sites that use Windows NT
+account databases as their primary user database creating these users
+and keeping the user list in sync with the Windows NT PDC is an
+onerous task\&. This option allows \fBsmbd\fP to delete
+the required UNIX users \fION DEMAND\fP when a user accesses the Samba
+server and the Windows NT user no longer exists\&.
+.IP 
+In order to use this option, \fBsmbd\fP must be set to
+\fBsecurity=domain\fP and \fB"delete user
+script"\fP must be set to a full pathname for a script that will delete
+a UNIX user given one argument of \fB%u\fP, which expands into the UNIX
+user name to delete\&. \fINOTE\fP that this is different to the
+\fBadd user script\fP which will work with the
+\fBsecurity=server\fP option as well as
+\fBsecurity=domain\fP\&. The reason for this
+is only when Samba is a domain member does it get the information
+on an attempted user logon that a user no longer exists\&. In the
+\fBsecurity=server\fP mode a missing user
+is treated the same as an invalid password logon attempt\&. Deleting
+the user in this circumstance would not be a good idea\&.
+.IP 
+When the Windows user attempts to access the Samba server, at
+\fI"login"\fP(session setup in the SMB protocol) time,
+\fBsmbd\fP contacts the \fBpassword
+server\fP and attempts to authenticate the given user
+with the given password\&. If the authentication fails with the specific
+Domain error code meaning that the user no longer exists then
+\fBsmbd\fP attempts to find a UNIX user in the UNIX
+password database that matches the Windows user account\&. If this lookup succeeds,
+and \fB"delete user script"\fP is set then \fBsmbd\fP will
+call the specified script \fIAS ROOT\fP, expanding any \fB%u\fP argument
+to be the user name to delete\&.
+.IP 
+This script should delete the given UNIX username\&. In this way, UNIX
+users are dynamically deleted to match existing Windows NT accounts\&.
+.IP 
+See also \fBsecurity=domain\fP,
+\fBpassword server\fP, \fBadd user
+script\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	delete user script = <empty string>\fP
+.IP 
+\fBExample:\fP
+\f(CW	delete user script = /usr/local/samba/bin/del_user %u\fP
 .IP 
 .IP "\fBdelete readonly (S)\fP" 
 .IP 
@@ -3575,15 +3682,6 @@ on regardless, saying that the message was delivered\&.
 If you want to silently delete it then try:
 .IP 
 \f(CW"message command = rm %s"\fP\&.
-.IP 
-For the really adventurous, try something like this:
-.IP 
-\f(CWmessage command = csh -c \'csh < %s |& /usr/local/samba/bin/smbclient -M %m; rm %s\' &\fP
-.IP 
-this would execute the command as a script on the server, then give
-them the result in a WinPopup message\&. Note that this could cause a
-loop if you send a message from the server using smbclient! You better
-wrap the above in a script that checks for this :-)
 .IP 
 \fBDefault:\fP
 \f(CW	no message command\fP
@@ -6089,10 +6187,10 @@ need to set this to \f(CW"yes"\fP for some older clients\&.
 .IP 
 .IP "\fBwins server (G)\fP" 
 .IP 
-This specifies the DNS name (or IP address) of the WINS server that
-\fBnmbd\fP should register with\&. If you have a WINS
-server on your network then you should set this to the WINS servers
-name\&.
+This specifies the IP address (or DNS name: IP address for preference)
+of the WINS server that \fBnmbd\fP should register with\&.
+If you have a WINS server on your network then you should set this to
+the WINS server\'s IP\&.        
 .IP 
 You should point this at your WINS server if you have a
 multi-subnetted network\&.
