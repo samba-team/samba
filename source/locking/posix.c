@@ -150,9 +150,8 @@ static size_t get_posix_pending_close_entries(files_struct *fsp, int **entries)
 
 	dbuf = tdb_fetch(posix_pending_close_tdb, kbuf);
 
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (int *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(int));
@@ -177,9 +176,8 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 
 	dbuf = tdb_fetch(posix_lock_tdb, kbuf);
 
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr)
 		return 0;
-	}
 
 	*entries = (struct posix_lock *)dbuf.dptr;
 	count = (size_t)(dbuf.dsize / sizeof(struct posix_lock));
@@ -282,9 +280,9 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	ret = conn->vfs_ops.close(fsp,fsp->fd);
 
 	if (saved_errno != 0) {
-        errno = saved_errno;
+		errno = saved_errno;
 		ret = -1;
-    } 
+	} 
 
 	fsp->fd = -1;
 
@@ -339,8 +337,9 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 	return True;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return False;
+
+	SAFE_FREE(dbuf.dptr);
+	return False;
 }
 
 /****************************************************************************
@@ -386,17 +385,18 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 		goto fail;
 	}
 
-    SAFE_FREE(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: dev=%.0f inode=%.0f\n",
 			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
 			(double)fsp->dev, (double)fsp->inode ));
 
-    return True;
+	return True;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return False;
+
+	SAFE_FREE(dbuf.dptr);
+	return False;
 }
 
 /****************************************************************************
@@ -493,13 +493,14 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 			posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
 				(unsigned int)num_overlapping_records ));
 
-    SAFE_FREE(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	return num_overlapping_records;
 
  fail:
-    SAFE_FREE(dbuf.dptr);
-    return -1;
+
+	SAFE_FREE(dbuf.dptr);
+	return -1;
 }
 
 /****************************************************************************
@@ -525,12 +526,12 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 		return F_WRLCK;
 	}
 
-  /*
-   * This return should be the most normal, as we attempt
-   * to always open files read/write.
-   */
+	/*
+	 * This return should be the most normal, as we attempt
+	 * to always open files read/write.
+	 */
 
-  return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
+	return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
 }
 
 /****************************************************************************
@@ -557,9 +558,9 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * and the underlying system can handle 64 bit signed locks.
 	 */
 
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T max_positive_lock_offset = ~mask;
+	SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+	SMB_OFF_T mask = (mask2<<1);
+	SMB_OFF_T max_positive_lock_offset = ~mask;
 
 #else /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
@@ -569,7 +570,7 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * All offsets & counts must be 2^31 or less.
 	 */
 
-    SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
+	SMB_OFF_T max_positive_lock_offset = 0x7FFFFFFF;
 
 #endif /* !LARGE_SMB_OFF_T || HAVE_BROKEN_FCNTL64_LOCKS */
 
@@ -723,10 +724,10 @@ BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_co
  */
 
 struct lock_list {
-    struct lock_list *next;
-    struct lock_list *prev;
-    SMB_OFF_T start;
-    SMB_OFF_T size;
+	struct lock_list *next;
+	struct lock_list *prev;
+	SMB_OFF_T start;
+	SMB_OFF_T size;
 };
 
 /****************************************************************************
