@@ -316,6 +316,7 @@ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 {
 	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
+	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 }
 
 BOOL cli_credentials_is_anonymous(struct cli_credentials *credentials)
