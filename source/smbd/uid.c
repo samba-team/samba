@@ -175,24 +175,8 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 		 * re-create it.
 		 */
 
-		if (vuser && vuser->guest)
-			is_guest = True;
-
-                if (vuser && vuser->nt_user_token) {
-
-                        /* Modify the user and group in the nt user token
-                           as it may be been changed by the force user and
-                           force group parameters. */
-
-                        token = dup_nt_token(vuser->nt_user_token);
-
-                        nt_token_set_user(token, uid);
-                        nt_token_set_group(token, gid);
-
-                } else
-                        token = create_nt_token(uid, gid, current_user.ngroups,
-                                                current_user.groups, is_guest, 
-                                                NULL);
+        token = create_nt_token(uid, gid, current_user.ngroups,
+                                current_user.groups, is_guest);
 
 		must_free_token = True;
 	}
@@ -276,6 +260,44 @@ void become_root(void)
 void unbecome_root(void)
 {
 	pop_sec_ctx();
+}
+
+/*****************************************************************
+ Convert the suplimentary SIDs returned in a netlogon into UNIX
+ group gid_t's. Add to the total group array.
+*****************************************************************/  
+
+void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN *ptok)
+{
+	int total_groups;
+	int current_n_groups = *n_groups;
+	gid_t *final_groups = NULL;
+	size_t i;
+
+	if (!ptok || (ptok->num_sids == 0))
+		return;
+
+	total_groups = current_n_groups + ptok->num_sids;
+
+	final_groups = (gid_t *)malloc(total_groups * sizeof(gid_t));
+	if (!final_groups) {
+		DEBUG(0,("add_supplementary_nt_login_groups: Failed to malloc new groups.\n"));
+		return;
+	}
+
+	memcpy(final_groups, *pp_groups, current_n_groups * sizeof(gid_t));
+	for (i = 0; i < ptok->num_sids; i++) {
+		enum SID_NAME_USE sid_type;
+
+		if (sid_to_gid(&ptok->user_sids[i], &final_groups[current_n_groups + i], &sid_type)) {
+			SAFE_FREE(final_groups);
+			return;
+		}
+	}
+
+	SAFE_FREE(*pp_groups);
+	*pp_groups = final_groups;
+	*n_groups = total_groups;
 }
 
 /*****************************************************************
