@@ -2032,6 +2032,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_QUERY_FILE_ALL_INFO:
+		case SMB_FILE_ALL_INFORMATION:
 			put_long_date(pdata,c_time);
 			put_long_date(pdata+8,sbuf.st_atime);
 			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
@@ -2044,19 +2045,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			pdata += 24;
-			SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
-			pdata += 8; /* index number */
 			pdata += 4; /* EA info */
-			if (mode & aRONLY)
-				SIVAL(pdata,0,0xA9);
-			else
-				SIVAL(pdata,0,0xd01BF);
-			pdata += 4;
-			SOFF_T(pdata,0,pos); /* current offset */
-			pdata += 8;
-			SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
-			pdata += 4;
-			pdata += 4; /* alignment */
 			len = srvstr_push(outbuf, pdata+4, dos_fname, -1, STR_TERMINATE);
 			SIVAL(pdata,0,len);
 			pdata += 4 + len;
@@ -2111,28 +2100,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 #if 0
-	/* Not yet finished... JRA */
-	case 1018:
-		{
-			put_long_date(pdata,c_time);
-			put_long_date(pdata+8,sbuf.st_atime);
-			put_long_date(pdata+16,sbuf.st_mtime); /* write time */
-			put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-			SIVAL(pdata,32,mode);
-			SIVAL(pdata,36,0); /* ??? */
-			SIVAL(pdata,40,0x20); /* ??? */
-			SIVAL(pdata,44,0); /* ??? */
-			SOFF_T(pdata,48,size);
-			SIVAL(pdata,56,0x1); /* ??? */
-			SIVAL(pdata,60,0); /* ??? */
-			SIVAL(pdata,64,0); /* ??? */
-			SIVAL(pdata,68,length); /* Following string length in bytes. */
-			dos_PutUniCode(pdata+72,,False);
-			break;
-		}
-#endif
-
-#if 0
 		/*
 		 * NT4 server just returns "invalid query" to this - if we try to answer
 		 * it then NTws gets a BSOD! (tridge).
@@ -2155,7 +2122,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_COMPRESSION_INFORMATION:
-			SOFF_T(pdata,0,allocation_size);
+			SOFF_T(pdata,0,file_size);
 			SIVAL(pdata,8,0); /* ??? */
 			SIVAL(pdata,12,0); /* ??? */
 			data_size = 16;
