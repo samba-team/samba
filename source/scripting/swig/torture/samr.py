@@ -77,6 +77,142 @@ def test_QuerySecurity(pipe, handle):
 
     result = dcerpc.samr_QuerySecurity(pipe, r)
 
+def test_GetDomPwInfo(pipe, domain):
+
+    print 'testing samr_GetDomPwInfo'
+
+    r = {}
+    r['handle'] = handle
+    r['name'] = {}
+    r['name']['name_len'] = 0
+    r['name']['name_size'] = 0
+    r['name']['name'] = domain
+
+    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+
+    r['name']['name'] = '\\\\%s' % domain
+
+    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+
+    r['name']['name'] = '\\\\__NONAME__'
+
+    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+
+    r['name']['name'] = '\\\\Builtin'
+
+    result = dcerpc.samr_GetDomPwInfo(pipe, r)
+
+def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
+
+    r = {}
+    r['handle'] = domain_handle
+    r['sid'] = {}
+    r['sid']['sid_rev_num'] = 1
+    r['sid']['id_auth'] = [1, 2, 3, 4, 5, 6]
+    r['sid']['num_auths'] = 4
+    r['sid']['sub_auths'] = [7, 8, 9, 10]
+
+    result = dcerpc.samr_RemoveMemberFromForeignDomain(pipe, r)
+
+def test_CreateUser2(pipe, domain_handle):
+    pass
+
+def test_LookupName(pipe, domain_handle, name):
+
+    r = {}
+    r['handle'] = domain_handle
+    r['num_names'] = 1
+    r['names'] = []
+    r['names'].append({'name_len': 0, 'name_size': 0, 'name': name})
+
+    result = dcerpc.samr_LookupNames(pipe, r)
+
+    rid = result['rids']['ids'][0]
+
+    r['num_names'] = 2
+    r['names'].append({'name_len': 0, 'name_size': 0, 'name': 'xxNONAMExx'})
+
+
+    try:
+        result = dcerpc.samr_LookupNames(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0x00000107:
+            raise dcerpc.NTSTATUS(arg)
+
+    r['num_names'] = 0
+
+    result = dcerpc.samr_LookupNames(pipe, r)
+
+    return rid
+
+def test_OpenUser_byname(pipe, domain_handle, name):
+
+    rid = test_LookupName(pipe, domain_handle, name)
+
+    r = {}
+    r['handle'] = domain_handle
+    r['access_mask'] = 0x02000000
+    r['rid'] = rid
+
+    result = dcerpc.samr_OpenUser(pipe, r)
+
+    return result['acct_handle']
+
+def test_DeleteUser_byname(pipe, domain_handle, name):
+
+    user_handle = test_OpenUser_byname(pipe, domain_handle, name)
+    
+    r = {}
+    r['handle'] = user_handle
+
+    dcerpc.samr_DeleteUser(pipe, r)
+
+def test_CreateUser(pipe, domain_handle):
+
+    r = {}
+    r['handle'] = domain_handle
+    r['account_name'] = {}
+    r['account_name']['name_len'] = 0
+    r['account_name']['name_size'] = 0
+    r['account_name']['name'] = 'samrtorturetest'
+    r['access_mask'] = 0x02000000
+
+    try:
+        result = dcerpc.samr_CreateUser(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] == 0xc0000022:
+            return
+        elif arg[0] == 0xc0000063:
+            test_DeleteUser_byname(pipe, domain_handle, 'samrtorturetest')
+            result = dcerpc.samr_CreateUser(pipe, r)
+        else:
+            raise dcerpc.NTSTATUS(arg)
+
+    user_handle = result['acct_handle']
+
+    # samr_QueryUserInfo(), etc
+
+def test_OpenDomain(pipe, handle, domain_sid):
+
+    print 'testing samr_OpenDomain'
+
+    r = {}
+    r['handle'] = handle
+    r['access_mask'] = 0x02000000
+    r['sid'] = domain_sid
+
+    result = dcerpc.samr_OpenDomain(pipe, r)
+
+    domain_handle = result['domain_handle']
+
+    test_QuerySecurity(pipe, domain_handle)
+
+    test_RemoveMemberFromForeignDomain(pipe, domain_handle)
+
+    test_CreateUser2(pipe, domain_handle)
+
+    test_CreateUser(pipe, domain_handle)
+    
 def test_LookupDomain(pipe, handle, domain):
 
     print 'testing samr_LookupDomain'
@@ -86,9 +222,13 @@ def test_LookupDomain(pipe, handle, domain):
     r['domain'] = {}
     r['domain']['name_len'] = 0
     r['domain']['name_size'] = 0
-    r['domain']['name'] = domain
+    r['domain']['name'] = None
 
-    result = dcerpc.samr_LookupDomain(pipe, r)
+    try:
+        result = dcerpc.samr_LookupDomain(pipe, r)
+    except dcerpc.NTSTATUS, arg:
+        if arg[0] != 0xc000000d:
+            raise dcerpc.NTSTATUS(arg)
 
     r['domain']['name'] = 'xxNODOMAINxx'
 
@@ -98,6 +238,14 @@ def test_LookupDomain(pipe, handle, domain):
         if arg[0] != 0xc00000df:
             raise dcerpc.NTSTATUS(arg)
 
+    r['domain']['name'] = domain
+
+    result = dcerpc.samr_LookupDomain(pipe, r)
+
+    test_GetDomPwInfo(pipe, domain)
+
+    test_OpenDomain(pipe, handle, result['sid'])
+    
 def test_EnumDomains(pipe, handle):
 
     print 'testing samr_EnumDomains'
