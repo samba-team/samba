@@ -3357,15 +3357,19 @@ NTSTATUS rename_internals_fsp(connection_struct *conn, files_struct *fsp, char *
 	pstring newname_last_component;
 	NTSTATUS error = NT_STATUS_OK;
 	BOOL dest_exists;
+	BOOL rcdest = True;
 
 	ZERO_STRUCT(sbuf);
-	unix_convert(newname,conn,newname_last_component,&bad_path,&sbuf);
+	rcdest = unix_convert(newname,conn,newname_last_component,&bad_path,&sbuf);
 
 	/* Quick check for "." and ".." */
-	if (newname_last_component[0] == '.') {
+	if (!bad_path && newname_last_component[0] == '.') {
 		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	}
+	if (!rcdest && bad_path) {
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
 	/* Ensure newname contains a '/' */
@@ -3472,6 +3476,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
 	BOOL rc = True;
+	BOOL rcdest = True;
 	SMB_STRUCT_STAT sbuf1, sbuf2;
 
 	*directory = *mask = 0;
@@ -3479,15 +3484,7 @@ NTSTATUS rename_internals(connection_struct *conn, char *name, char *newname, BO
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
 	rc = unix_convert(name,conn,0,&bad_path1,&sbuf1);
-	unix_convert(newname,conn,newname_last_component,&bad_path2,&sbuf2);
-
-	/* Quick check for "." and ".." */
-	if (!bad_path2 && newname_last_component[0] == '.') {
-		if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
-			DEBUG(10,("rename_internals: newname_last_component = '.' or '..'\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
+	rcdest = unix_convert(newname,conn,newname_last_component,&bad_path2,&sbuf2);
 
 	/*
 	 * Split the old name into directory and last component
@@ -3612,6 +3609,17 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			return error;
 		}
 
+		/* Quick check for "." and ".." */
+		if (!bad_path2 && newname_last_component[0] == '.') {
+			if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
+				DEBUG(10,("rename_internals: newname_last_component = '.' or '..'\n"));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
+		if (!rcdest && bad_path2) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
 		error = can_rename(directory,conn,&sbuf1);
 
 		if (!NT_STATUS_IS_OK(error)) {
@@ -3661,6 +3669,17 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 		const char *dname;
 		pstring destname;
 		
+		/* Quick check for "." and ".." */
+		if (!bad_path2 && newname_last_component[0] == '.') {
+			if (!newname_last_component[1] || (newname_last_component[1] == '.' && !newname_last_component[2])) {
+				DEBUG(10,("rename_internals: newname_last_component = '.' or '..'\n"));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
+		if (!rcdest && bad_path2) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
 		if (check_name(directory,conn))
 			dirptr = OpenDir(conn, directory, True);
 		
