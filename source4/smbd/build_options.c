@@ -524,7 +524,7 @@ void build_options(BOOL screen)
        output(screen,"   sizeof(char):    %d\n",sizeof(char));
        output(screen,"   sizeof(int):     %d\n",sizeof(int));
        output(screen,"   sizeof(long):    %d\n",sizeof(long));
-       output(screen,"   sizeof(uint8):   %d\n",sizeof(uint8));
+       output(screen,"   sizeof(uint8_t):   %d\n",sizeof(uint8_t));
        output(screen,"   sizeof(uint16_t):  %d\n",sizeof(uint16_t));
        output(screen,"   sizeof(uint32_t):  %d\n",sizeof(uint32_t));
        output(screen,"   sizeof(short):   %d\n",sizeof(short));

@@ -26,7 +26,7 @@
   allocate a new rpc handle
 */
 struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection *dce_conn, 
-					uint8 handle_type)
+					uint8_t handle_type)
 {
 	TALLOC_CTX *mem_ctx;
 	struct dcesrv_handle *h;
@@ -72,7 +72,7 @@ void dcesrv_handle_destroy(struct dcesrv_connection *dce_conn,
 */
 struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_connection *dce_conn, 
 					  struct policy_handle *p,
-					  uint8 handle_type)
+					  uint8_t handle_type)
 {
 	struct dcesrv_handle *h;
 

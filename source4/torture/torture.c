@@ -170,10 +170,10 @@ NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
 
 /* check if the server produced the expected error code */
 static BOOL check_error(int line, struct cli_state *c, 
-			uint8 eclass, uint32_t ecode, NTSTATUS nterr)
+			uint8_t eclass, uint32_t ecode, NTSTATUS nterr)
 {
         if (cli_is_dos_error(c->tree)) {
-                uint8 class;
+                uint8_t class;
                 uint32_t num;
 
                 /* Check DOS error */

@@ -357,7 +357,7 @@ union smb_fileinfo {
 			uint32_t ea_size;
 			uint_t num_eas;
 			struct ea_struct {
-				uint8 flags;
+				uint8_t flags;
 				WIRE_STRING name;
 				DATA_BLOB value;
 			} *eas;		
@@ -371,13 +371,13 @@ union smb_fileinfo {
 			uint32_t nlink;
 			WIRE_STRING fname;	
 			WIRE_STRING alt_fname;	
-			uint8 delete_pending;
-			uint8 directory;
+			uint8_t delete_pending;
+			uint8_t directory;
 			uint64_t compressed_size;
 			uint16_t format;
-			uint8 unit_shift;
-			uint8 chunk_shift;
-			uint8 cluster_shift;
+			uint8_t unit_shift;
+			uint8_t chunk_shift;
+			uint8_t cluster_shift;
 			uint64_t file_id;
 			uint32_t access_flags; /* seen 0x001f01ff from w2k3 */
 			uint64_t position;
@@ -535,8 +535,8 @@ union smb_fileinfo {
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t nlink;
-			uint8 delete_pending;
-			uint8 directory;
+			uint8_t delete_pending;
+			uint8_t directory;
 			uint32_t ea_size;
 			WIRE_STRING fname;
 		} out;
@@ -571,9 +571,9 @@ union smb_fileinfo {
 		struct {
 			uint64_t compressed_size;
 			uint16_t format;
-			uint8 unit_shift;
-			uint8 chunk_shift;
-			uint8 cluster_shift;
+			uint8_t unit_shift;
+			uint8_t chunk_shift;
+			uint8_t cluster_shift;
 		} out;
 	} compression_info;
 
@@ -831,7 +831,7 @@ union smb_setfileinfo {
 		union setfileinfo_file file;
 
 		struct {
-			uint8 overwrite;
+			uint8_t overwrite;
 			uint32_t root_fid;
 			const char *new_name;
 		} in;
@@ -1092,12 +1092,12 @@ union smb_open {
 			uint32_t open_disposition;
 			uint32_t create_options;
 			uint32_t impersonation;
-			uint8  security_flags;
+			uint8_t  security_flags;
 			const char *fname;
 		} in;
 
 		struct {
-			uint8 oplock_level;
+			uint8_t oplock_level;
 			uint16_t fnum;
 			uint32_t create_action;
 			NTTIME create_time;
@@ -1109,7 +1109,7 @@ union smb_open {
 			uint64_t size;
 			uint16_t file_type;
 			uint16_t ipc_state;
-			uint8  is_directory;
+			uint8_t  is_directory;
 		} out;
 	} ntcreatex, generic;
 
@@ -1551,7 +1551,7 @@ union smb_lpq {
 			uint16_t restart_idx;
 			struct {
 				time_t time;
-				uint8 status;
+				uint8_t status;
 				uint16_t job;
 				uint32_t size;
 				char *user;
@@ -1592,7 +1592,7 @@ union smb_ioctl {
 			uint32_t function;
 			uint16_t fnum;
 			BOOL fsctl;
-			uint8 filter;
+			uint8_t filter;
 		} in;
 		struct {
 			DATA_BLOB blob;
@@ -1628,10 +1628,10 @@ struct smb_trans2 {
 	struct {
 		uint16_t max_param;
 		uint16_t max_data;
-		uint8  max_setup;
+		uint8_t  max_setup;
 		uint16_t flags;
 		uint32_t timeout;
-		uint8  setup_count;
+		uint8_t  setup_count;
 		uint16_t *setup;
 		const char *trans_name; /* SMBtrans only */
 		DATA_BLOB params;
@@ -1639,7 +1639,7 @@ struct smb_trans2 {
 	} in;
 
 	struct {
-		uint8  setup_count;
+		uint8_t  setup_count;
 		uint16_t *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;
@@ -1649,7 +1649,7 @@ struct smb_trans2 {
 /* struct for nttransact2 call */
 struct smb_nttrans {
 	struct {
-		uint8  max_setup;
+		uint8_t  max_setup;
 		uint32_t max_param;
 		uint32_t max_data;
 		uint32_t setup_count;
@@ -1660,7 +1660,7 @@ struct smb_nttrans {
 	} in;
 
 	struct {
-		uint8  setup_count;
+		uint8_t  setup_count;
 		uint16_t *setup;
 		DATA_BLOB params;
 		DATA_BLOB data;

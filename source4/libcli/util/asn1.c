@@ -31,7 +31,7 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
-		uint8 *newp;
+		uint8_t *newp;
 		newp = Realloc(data->data, data->ofs+len);
 		if (!newp) {
 			SAFE_FREE(data->data);
@@ -46,14 +46,14 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 	return True;
 }
 
-/* useful fn for writing a uint8 */
-BOOL asn1_write_uint8(ASN1_DATA *data, uint8 v)
+/* useful fn for writing a uint8_t */
+BOOL asn1_write_uint8(ASN1_DATA *data, uint8_t v)
 {
 	return asn1_write(data, &v, 1);
 }
 
 /* push a tag onto the asn1 data buffer. Used for nested structures */
-BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
+BOOL asn1_push_tag(ASN1_DATA *data, uint8_t tag)
 {
 	struct nesting *nesting;
 
@@ -187,7 +187,7 @@ BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
 /* check a BOOLEAN */
 BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
-	uint8 b = 0;
+	uint8_t b = 0;
 
 	asn1_read_uint8(data, &b);
 	if (b != ASN1_BOOLEAN) {
@@ -228,16 +228,16 @@ BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 	return True;
 }
 
-/* read a uint8 from a ASN1 buffer */
-BOOL asn1_read_uint8(ASN1_DATA *data, uint8 *v)
+/* read a uint8_t from a ASN1 buffer */
+BOOL asn1_read_uint8(ASN1_DATA *data, uint8_t *v)
 {
 	return asn1_read(data, v, 1);
 }
 
 /* start reading a nested asn1 structure */
-BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
+BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 {
-	uint8 b;
+	uint8_t b;
 	struct nesting *nesting;
 	
 	if (!asn1_read_uint8(data, &b))
@@ -314,7 +314,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 /* read an object ID from a ASN1 buffer */
 BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
-	uint8 b;
+	uint8_t b;
 	pstring aoid;
 	fstring el;
 
@@ -392,7 +392,7 @@ BOOL asn1_read_OctetString(ASN1_DATA *data, DATA_BLOB *blob)
 /* read an interger */
 BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 {
-	uint8 b;
+	uint8_t b;
 	*i = 0;
 	
 	if (!asn1_start_tag(data, ASN1_INTEGER)) return False;
@@ -407,7 +407,7 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 /* check a enumarted value is correct */
 BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 {
-	uint8 b;
+	uint8_t b;
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
 	asn1_read_uint8(data, &b);
 	asn1_end_tag(data);
@@ -419,7 +419,7 @@ BOOL asn1_check_enumerated(ASN1_DATA *data, int v)
 }
 
 /* write an enumarted value to the stream */
-BOOL asn1_write_enumerated(ASN1_DATA *data, uint8 v)
+BOOL asn1_write_enumerated(ASN1_DATA *data, uint8_t v)
 {
 	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return False;
 	asn1_write_uint8(data, v);

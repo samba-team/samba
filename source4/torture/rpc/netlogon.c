@@ -241,7 +241,7 @@ static BOOL test_SetupCredentials(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate a;
 	const char *plain_pass;
-	uint8 mach_pwd[16];
+	uint8_t mach_pwd[16];
 
 	printf("Testing ServerReqChallenge\n");
 
@@ -295,7 +295,7 @@ static BOOL test_SetupCredentials2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
 	const char *plain_pass;
-	uint8 mach_pwd[16];
+	uint8_t mach_pwd[16];
 
 	printf("Testing ServerReqChallenge\n");
 
@@ -374,8 +374,8 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			       DATA_BLOB *chall, 
 			       DATA_BLOB *lm_response, 
 			       DATA_BLOB *nt_response, 
-			       uint8 lm_key[8], 
-			       uint8 user_session_key[16], 
+			       uint8_t lm_key[8], 
+			       uint8_t user_session_key[16], 
 			       char **error_string)
 {
 	NTSTATUS status;

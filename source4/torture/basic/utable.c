@@ -29,7 +29,7 @@ BOOL torture_utable(int dummy)
 	smb_ucs2_t c2;
 	int c, len, fd;
 	int chars_allowed=0, alt_allowed=0;
-	uint8 valid[0x10000];
+	uint8_t valid[0x10000];
 
 	printf("starting utable\n");
 

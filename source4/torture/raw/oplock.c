@@ -45,7 +45,7 @@ static struct {
 /*
   a handler function for oplock break requests
 */
-static BOOL oplock_handler_ack(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private)
+static BOOL oplock_handler_ack(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	struct cli_tree *tree = private;
 	break_info.fnum = fnum;
@@ -60,7 +60,7 @@ static BOOL oplock_handler_ack(struct cli_transport *transport, uint16_t tid, ui
 /*
   a handler function for oplock break requests - close the file
 */
-static BOOL oplock_handler_close(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *private)
+static BOOL oplock_handler_close(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
 	NTSTATUS status;

@@ -24,7 +24,7 @@
 static void get_challenge(struct server_context *smb, char buff[8]) 
 {
 	NTSTATUS nt_status;
-	const uint8 *cryptkey;
+	const uint8_t *cryptkey;
 
 	/* muliple negprots are not premitted */
 	if (smb->negotiate.auth_context) {
@@ -182,7 +182,7 @@ static void reply_lanman2(struct request_context *req, uint16_t choice)
 static DATA_BLOB negprot_spnego(struct server_context *smb)
 {
 	DATA_BLOB blob;
-	uint8 guid[16];
+	uint8_t guid[16];
 	const char *OIDs_krb5[] = {OID_KERBEROS5,
 				   OID_KERBEROS5_OLD,
 				   OID_NTLMSSP,

@@ -28,7 +28,7 @@
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 
-static const uint8 *get_ntlm_challenge(struct auth_context *auth_context) 
+static const uint8_t *get_ntlm_challenge(struct auth_context *auth_context) 
 {
 	DATA_BLOB challenge = data_blob(NULL, 0);
 	const char *challenge_set_by = NULL;

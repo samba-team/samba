@@ -227,7 +227,7 @@ int cli_nt_create_full(struct cli_tree *tree, const char *fname,
 		       uint32_t CreatFlags, uint32_t DesiredAccess,
 		       uint32_t FileAttributes, uint32_t ShareAccess,
 		       uint32_t CreateDisposition, uint32_t CreateOptions,
-		       uint8 SecurityFlags)
+		       uint8_t SecurityFlags)
 {
 	union smb_open open_parms;
 	TALLOC_CTX *mem_ctx;

@@ -1238,7 +1238,7 @@ static NTSTATUS trans_backend(struct request_context *req, struct smb_trans2 *tr
 /****************************************************************************
  Reply to an SMBtrans or SMBtrans2 request
 ****************************************************************************/
-void reply_trans_generic(struct request_context *req, uint8 command)
+void reply_trans_generic(struct request_context *req, uint8_t command)
 {
 	struct smb_trans2 trans;
 	int i;

@@ -145,7 +145,7 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 						 uint32_t *out_flags) 
 {
 	void *sam_ctx;
-	uint8 *mach_pwd;
+	uint8_t *mach_pwd;
 	uint16_t acct_flags;
 	int num_records;
 	struct ldb_message **msgs;

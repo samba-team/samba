@@ -427,7 +427,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32_t *ol
 size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
-	uint8 bt;
+	uint8_t bt;
 	uint16_t w;
 	uint32_t d;
 	int i;
@@ -445,7 +445,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 		switch ((c = *fmt++)) {
 		case 'b': /* unsigned 8-bit integer */
 			len = 1;
-			bt = (uint8)va_arg(ap, int);
+			bt = (uint8_t)va_arg(ap, int);
 			if (bufsize && bufsize >= len)
 				SSVAL(buf, 0, bt);
 			break;
@@ -521,7 +521,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 {
 	va_list ap;
-	uint8 *bt;
+	uint8_t *bt;
 	uint16_t *w;
 	uint32_t *d;
 	int len;
@@ -539,7 +539,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 		switch ((c=*fmt++)) {
 		case 'b':
 			len = 1;
-			bt = va_arg(ap, uint8 *);
+			bt = va_arg(ap, uint8_t *);
 			if (bufsize < len)
 				goto no_space;
 			*bt = SVAL(buf, 0);

@@ -239,7 +239,7 @@ void SMBOWFencrypt_ntv2(const uchar kr[16],
 }
 
 void SMBsesskeygen_ntv2(const uchar kr[16],
-			const uchar * nt_resp, uint8 sess_key[16])
+			const uchar * nt_resp, uint8_t sess_key[16])
 {
 	/* a very nice, 128 bit, variable session key */
 	
@@ -255,7 +255,7 @@ void SMBsesskeygen_ntv2(const uchar kr[16],
 #endif
 }
 
-void SMBsesskeygen_ntv1(const uchar kr[16], uint8 sess_key[16])
+void SMBsesskeygen_ntv1(const uchar kr[16], uint8_t sess_key[16])
 {
 	/* yes, this session key does not change - yes, this 
 	   is a problem - but it is 128 bits */
@@ -270,7 +270,7 @@ void SMBsesskeygen_ntv1(const uchar kr[16], uint8 sess_key[16])
 
 void SMBsesskeygen_lm_sess_key(const uchar lm_hash[16],
 			       const uchar lm_resp[24], /* only uses 8 */ 
-			       uint8 sess_key[16])
+			       uint8_t sess_key[16])
 {
 	/* Calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */

@@ -27,7 +27,7 @@
 struct netlogon_string {
 	uint32_t comp_len;
 	char **component;
-	uint8 extra_flag;
+	uint8_t extra_flag;
 };
 
 struct cldap_netlogon_reply {

@@ -232,7 +232,7 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s2.in.level = lvl1; \
 		u = *q.out.info; \
 		if (lvl1 == 21) { \
-			uint8 *bitmap = u.info21.logon_hours.bitmap; \
+			uint8_t *bitmap = u.info21.logon_hours.bitmap; \
 			ZERO_STRUCT(u.info21); \
 			if (fpval == SAMR_FIELD_LOGON_HOURS) { \
 				u.info21.logon_hours.units_per_week = 168; \
@@ -430,7 +430,7 @@ static BOOL test_SetUserPassEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	uint8 confounder[16];
+	uint8_t confounder[16];
 	char *newpass = samr_rand_pass(mem_ctx);	
 	struct MD5Context ctx;
 
@@ -481,7 +481,7 @@ static BOOL test_SetUserPass_25(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	uint8 confounder[16];
+	uint8_t confounder[16];
 	char *newpass = samr_rand_pass(mem_ctx);	
 	struct MD5Context ctx;
 
@@ -707,8 +707,8 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle user_handle;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
-	uint8 old_nt_hash[16], new_nt_hash[16];
-	uint8 old_lm_hash[16], new_lm_hash[16];
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	status = test_OpenUser_byname(p, mem_ctx, handle, TEST_USERNAME, &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -768,7 +768,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	struct samr_AsciiName server, account;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
-	uint8 old_lm_hash[16], new_lm_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing OemChangePasswordUser2\n");
 
@@ -810,8 +810,8 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Hash nt_verifier, lm_verifier;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
-	uint8 old_nt_hash[16], new_nt_hash[16];
-	uint8 old_lm_hash[16], new_lm_hash[16];
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing ChangePasswordUser2\n");
 
@@ -863,8 +863,8 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Hash nt_verifier, lm_verifier;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
-	uint8 old_nt_hash[16], new_nt_hash[16];
-	uint8 old_lm_hash[16], new_lm_hash[16];
+	uint8_t old_nt_hash[16], new_nt_hash[16];
+	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing ChangePasswordUser3\n");
 
