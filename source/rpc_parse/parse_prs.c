@@ -807,3 +807,31 @@ BOOL prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	}
 	return True;
 }
+
+/* useful function to store a structure in rpc wire format */
+int tdb_prs_store(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+    TDB_DATA kbuf, dbuf;
+    kbuf.dptr = keystr;
+    kbuf.dsize = strlen(keystr)+1;
+    dbuf.dptr = prs_data_p(ps);
+    dbuf.dsize = prs_offset(ps);
+    return tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+}
+
+/* useful function to fetch a structure into rpc wire format */
+int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps)
+{
+    TDB_DATA kbuf, dbuf;
+    kbuf.dptr = keystr;
+    kbuf.dsize = strlen(keystr)+1;
+
+    dbuf = tdb_fetch(tdb, kbuf);
+    if (!dbuf.dptr) return -1;
+
+    ZERO_STRUCTP(ps);
+    prs_init(ps, 0, 4, UNMARSHALL);
+    prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
+
+    return 0;
+} 
