@@ -252,7 +252,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, uint_t new_si
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
 */
-static void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
+void smbcli_req_grow_data(struct smbcli_request *req, uint_t new_size)
 {
 	int delta;
 
@@ -299,7 +299,7 @@ BOOL smbcli_request_receive(struct smbcli_request *req)
 		event_loop_once(req->transport->event.ctx);
 	}
 
-	return True;
+	return req->state == SMBCLI_REQUEST_DONE;
 }
 
 
