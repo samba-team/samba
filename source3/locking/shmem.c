@@ -41,7 +41,7 @@ extern int DEBUGLEVEL;
 #define SHM_FILE_MODE 0644
 #endif
 
-#define SHMEM_HASH_SIZE 113
+#define SHMEM_HASH_SIZE 13
 
 
 /* WARNING : offsets are used because mmap() does not guarantee that all processes have the 
@@ -605,6 +605,9 @@ static BOOL smb_shm_free(int offset)
    smb_shm_header_p->consistent = False;
    
    DEBUG(6,("smb_shm_free : freeing %d bytes at offset %d\n",header_p->size*CellSize,offset));
+
+   /* zero the area being freed - this allows us to find bugs faster */
+   memset(smb_shm_offset2addr(offset), 0, header_p->size*CellSize);
 
    if ( scanner_p == prev_p )
    {

@@ -48,11 +48,7 @@ extern int DEBUGLEVEL;
 #define SEMAPHORE_PERMS 0666
 #endif
 
-#ifdef SEMMSL
-#define SHMEM_HASH_SIZE (SEMMSL-1)
-#else
-#define SHMEM_HASH_SIZE 63
-#endif
+#define SHMEM_HASH_SIZE 13
 
 #define MIN_SHM_SIZE 0x1000
 
@@ -330,6 +326,9 @@ static BOOL shm_free(int offset)
 	
 	DEBUG(6,("shm_free : freeing %d bytes at offset %d\n",
 		 header_p->size*CellSize,offset));
+
+	/* zero the area being freed - this allows us to find bugs faster */
+	memset(shm_offset2addr(offset), 0, header_p->size*CellSize);
 	
 	if (scanner_p == prev_p) {
 		shm_header_p->statistics.cells_free += header_p->size;
