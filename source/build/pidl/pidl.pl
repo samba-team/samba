@@ -20,7 +20,7 @@ use server;
 use client;
 use proxy;
 use stub;
-use parser;
+use ndr;
 use eparser;
 use validator;
 use util;
@@ -70,7 +70,7 @@ sub ShowHelp()
              --parse               parse a idl file to a .pidl file
              --dump                dump a pidl file back to idl
              --header              create a C header file
-             --parser              create a C parser
+             --parser              create a C NDR parser
              --client              create a C client
              --server              create server boilerplate
              --template            print a template for a pipe
@@ -211,7 +211,7 @@ $dcom
 
 	if ($opt_parser) {
 		my($parser) = util::ChangeExtension($output, ".c");
-		IdlParser::Parse($pidl, $parser);
+		util::FileSave($parser, NdrParser::Parse($pidl, $parser));
 		if($opt_eparser) {
 		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
 		  IdlEParser::RewriteC($pidl, $parser, $eparser);

@@ -190,7 +190,7 @@ sub HeaderType($$$)
 	} elsif (util::is_bitmap($e->{TYPE})) {
 		my $bitmap = util::get_bitmap($e->{TYPE});
 		$res .= util::bitmap_type_decl($bitmap);
-	} elsif (util::is_scalar_type($data)) {
+	} elsif (NdrParser::is_scalar_type($data)) {
 		$res .= util::map_type($data);
 	} elsif (util::has_property($e, "switch_is")) {
 		$res .= "union $data";
