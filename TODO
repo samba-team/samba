@@ -21,6 +21,12 @@ $Id$
 
 - appl/test
 
+* should test more stuff
+
+- doc
+
+* there's some room for improvement here.
+
 - kdc
 
 * implement support for interoperability with kerberos V4.
@@ -41,7 +47,12 @@ $Id$
 
 - lib/auth
 
+* PAM and afskauthlib
+
 - lib/des
+
+* md4, md5, and sha doesn't work on Crays.  There might be some other
+  code that that doesn't work either.
 
 - lib/editline
 
