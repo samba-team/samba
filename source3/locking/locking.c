@@ -233,7 +233,7 @@ BOOL locking_init(int read_only)
 		return False;
 	}
 	
-	if (!posix_locking_init())
+	if (!posix_locking_init(read_only))
 		return False;
 
 	return True;
