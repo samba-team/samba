@@ -1,3 +1,8 @@
+Tue Feb 17 22:20:27 1998  Bjoern Groenvall  <bg@sics.se>
+
+	* com_right.h: Change typedefs so that one may mix MIT compile_et
+ 	generated code with krb4 dito.
+
 Tue Feb 17 16:30:55 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* compile_et.c (generate): Always return a value.
