@@ -806,7 +806,7 @@ extern void telnet P((int, int, char *));
  */
 void doit(struct sockaddr_in *who)
 {
-	char *host, *inet_ntoa();
+	const char *host;
 	int t;
 	struct hostent *hp;
 	int level;
