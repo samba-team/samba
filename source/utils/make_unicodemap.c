@@ -149,7 +149,7 @@ static int do_compile(const char *codepage, const char *input_file, const char *
   SMB_STRUCT_STAT st;
 
   /* Get the size of the input file. Read the entire thing into memory. */
-  if(sys_stat((char *)input_file, &st)!= 0) {
+  if(sys_stat(input_file, &st)!= 0) {
     fprintf(stderr, "%s: failed to get the file size for file %s. Error was %s\n",
             prog_name, input_file, strerror(errno));
     exit(1);

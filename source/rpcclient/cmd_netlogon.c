@@ -62,7 +62,9 @@ static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
 				      char **argv)
 {
+#if 0
 	uint32 query_level = 1;
+#endif
 	TALLOC_CTX *mem_ctx;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
 
