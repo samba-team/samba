@@ -233,6 +233,7 @@ typedef struct
   BOOL bTimestampLogs;
   BOOL bNTSmbSupport;
   BOOL bNTPipeSupport;
+  BOOL bNTAclSupport;
   BOOL bStatCache;
   BOOL bKernelOplocks;
 } global;
@@ -601,8 +602,9 @@ static struct parm_struct parm_table[] =
   {"read bmpx",        P_BOOL,    P_GLOBAL, &Globals.bReadbmpx,         NULL,   NULL,  0},
   {"read raw",         P_BOOL,    P_GLOBAL, &Globals.bReadRaw,          NULL,   NULL,  0},
   {"write raw",        P_BOOL,    P_GLOBAL, &Globals.bWriteRaw,         NULL,   NULL,  0},
-  {"nt smb support",   P_BOOL,    P_GLOBAL, &Globals.bNTSmbSupport,    NULL,   NULL,  0},
-  {"nt pipe support",   P_BOOL,    P_GLOBAL, &Globals.bNTPipeSupport,    NULL,   NULL,  0},
+  {"nt smb support",   P_BOOL,    P_GLOBAL, &Globals.bNTSmbSupport,     NULL,   NULL,  0},
+  {"nt pipe support",  P_BOOL,    P_GLOBAL, &Globals.bNTPipeSupport,    NULL,   NULL,  0},
+  {"nt acl support",   P_BOOL,    P_GLOBAL, &Globals.bNTAclSupport,     NULL,   NULL,  0},
   {"announce version", P_STRING,  P_GLOBAL, &Globals.szAnnounceVersion, NULL,   NULL,  0},
   {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as, 0},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL,   NULL,  0},
@@ -899,6 +901,7 @@ static void init_globals(void)
   Globals.bOleLockingCompat = True;
   Globals.bNTSmbSupport = True; /* Do NT SMB's by default. */
   Globals.bNTPipeSupport = True; /* Do NT pipes by default. */
+  Globals.bNTAclSupport = False; /* Don't use NT ACLs by default. */
   Globals.bStatCache = True; /* use stat cache by default */
   Globals.map_to_guest = 0; /* By Default, "Never" */
 
@@ -1195,6 +1198,7 @@ FN_GLOBAL_BOOL(lp_passwd_chat_debug,&Globals.bPasswdChatDebug)
 FN_GLOBAL_BOOL(lp_ole_locking_compat,&Globals.bOleLockingCompat)
 FN_GLOBAL_BOOL(lp_nt_smb_support,&Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_nt_pipe_support,&Globals.bNTPipeSupport)
+FN_GLOBAL_BOOL(lp_nt_acl_support,&Globals.bNTAclSupport)
 FN_GLOBAL_BOOL(lp_stat_cache,&Globals.bStatCache)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)

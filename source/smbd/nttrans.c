@@ -1609,15 +1609,16 @@ static SEC_ACCESS map_unix_perms( mode_t perm, int r_mask, int w_mask, int x_mas
 	SEC_ACCESS sa;
 	uint32 nt_mask = 0;
 
-	nt_mask |= (perm & r_mask) ? GENERIC_READ_ACCESS|FILE_READ_DATA|FILE_READ_ATTRIBUTES : 0;
-	if(is_directory)
-		nt_mask |= (perm & w_mask) ? GENERIC_WRITE_ACCESS|FILE_DELETE_CHILD : 0;
-	else
-		nt_mask |= (perm & w_mask) ? GENERIC_WRITE_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES : 0;
-	nt_mask |= (perm & x_mask) ? GENERIC_EXECUTE_ACCESS|FILE_EXECUTE : 0;
-
-	if(perm & (r_mask|w_mask|x_mask))
-		nt_mask |= GENERIC_ALL_ACCESS;
+	if((perm & (r_mask|w_mask|x_mask)) == (r_mask|w_mask|x_mask)) {
+		nt_mask = UNIX_ACCESS_RWX;
+	} else {
+		nt_mask |= (perm & r_mask) ? UNIX_ACCESS_R : 0;
+		if(is_directory)
+			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
+		else
+			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
+		nt_mask |= (perm & x_mask) ? UNIX_ACCESS_X : 0;
+	}
 	init_sec_access(&sa,nt_mask);
 	return sa;
 }
@@ -1629,41 +1630,6 @@ static SEC_ACCESS map_unix_perms( mode_t perm, int r_mask, int w_mask, int x_mas
 
 static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
-#if 1
-  static DOM_SID world_sid;
-  static BOOL world_sid_initialized = False;
-  SEC_ACL *daclp;
-  DOM_SID owner_sid;
-  DOM_SID group_sid;
-  size_t sec_desc_size;
-
-  /*
-   * The security descriptor returned has no SACL and no DACL
-   * and the owner and group sids are S-1-1-0 (World Sid).
-   * JRA.
-   */
-
-  *ppdesc = NULL;
-
-  if(!world_sid_initialized) {
-    world_sid_initialized = True;
-    string_to_sid( &world_sid, "S-1-1-0");
-  }
-
-  sid_copy( &owner_sid, &world_sid);
-  sid_copy( &group_sid, &world_sid);
-
-  *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, NULL, &sec_desc_size);
-
-  if(!*ppdesc) {
-    DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
-    return 0;
-  }
-
-  return sec_desc_size;
-
-#else
-
   extern DOM_SID global_sam_sid;
   static DOM_SID world_sid;
   static BOOL world_sid_initialized = False;
@@ -1672,48 +1638,54 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   DOM_SID owner_sid;
   DOM_SID group_sid;
   size_t sec_desc_size;
-  SEC_ACL *psa;
+  SEC_ACL *psa = NULL;
   
   *ppdesc = NULL;
-
-  if(fsp->is_directory) {
-    if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
-      return 0;
-    }
-  } else {
-    if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
-      return 0;
-    }
-  }
-
-  /*
-   * Get the owner, group and world SIDs.
-   */
-
-  sid_copy(&owner_sid, &global_sam_sid);
-  sid_copy(&group_sid, &global_sam_sid);
-  sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
-  sid_append_rid(&group_sid, pdb_uid_to_user_rid(sbuf.st_gid));
 
   if(!world_sid_initialized) {
     world_sid_initialized = True;
     string_to_sid( &world_sid, "S-1-1-0");
   }
 
-  /*
-   * Create the generic 3 element UNIX acl.
-   */
+  if(!lp_nt_acl_support()) {
+    sid_copy( &owner_sid, &world_sid);
+    sid_copy( &group_sid, &world_sid);
+  } else {
 
-  init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+    if(fsp->is_directory) {
+      if(sys_stat(fsp->fsp_name, &sbuf) != 0) {
+        return 0;
+      }
+    } else {
+      if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+        return 0;
+      }
+    }
+
+    /*
+     * Get the owner, group and world SIDs.
+     */
+
+    sid_copy(&owner_sid, &global_sam_sid);
+    sid_copy(&group_sid, &global_sam_sid);
+    sid_append_rid(&owner_sid, pdb_uid_to_user_rid(sbuf.st_uid));
+    sid_append_rid(&group_sid, pdb_uid_to_user_rid(sbuf.st_gid));
+
+    /*
+     * Create the generic 3 element UNIX acl.
+     */
+
+    init_sec_ace(&ace_list[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
 				map_unix_perms(sbuf.st_mode, S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory), 0);
-  init_sec_ace(&ace_list[1], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+    init_sec_ace(&ace_list[1], &group_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
 				map_unix_perms(sbuf.st_mode, S_IRGRP, S_IWGRP, S_IXGRP, fsp->is_directory), 0);
-  init_sec_ace(&ace_list[2], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
+    init_sec_ace(&ace_list[2], &world_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, 
 				map_unix_perms(sbuf.st_mode, S_IROTH, S_IWOTH, S_IXOTH, fsp->is_directory), 0);
 
-  if((psa = make_sec_acl( 3, 3, ace_list)) == NULL) {
-    DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
-    return 0;
+    if((psa = make_sec_acl( 3, 3, ace_list)) == NULL) {
+      DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+      return 0;
+    }
   }
 
   *ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sec_desc_size);
@@ -1726,7 +1698,6 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
   free_sec_acl(&psa);
 
   return sec_desc_size;
-#endif
 }
 
 /****************************************************************************
