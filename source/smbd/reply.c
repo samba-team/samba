@@ -2001,7 +2001,6 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 	int count=0;
 	NTSTATUS error = NT_STATUS_OK;
 	BOOL has_wild;
-	BOOL exists=False;
 	BOOL bad_path = False;
 	BOOL rc = True;
 	SMB_STRUCT_STAT sbuf;
@@ -2043,8 +2042,6 @@ NTSTATUS unlink_internals(connection_struct *conn, int dirtype, char *name)
 
 		if (vfs_unlink(conn,directory) == 0)
 			count++;
-		if (!count)
-			exists = vfs_file_exist(conn,directory,&sbuf);    
 	} else {
 		void *dirptr = NULL;
 		char *dname;
