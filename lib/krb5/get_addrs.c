@@ -294,7 +294,7 @@ get_addrs_int (krb5_context context, krb5_addresses *res, int flags)
 krb5_error_code
 krb5_get_all_client_addrs (krb5_context context, krb5_addresses *res)
 {
-    int flags = LOOP | EXTRA_ADDRESSES;
+    int flags = LOOP_IF_NONE | EXTRA_ADDRESSES;
 
     if (context->scan_interfaces)
 	flags |= SCAN_INTERFACES;
