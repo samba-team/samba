@@ -2,9 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-2001
-
    Extensively modified by Andrew Tridgell, 1995
+   Copyright (C) Jeremy Allison 1994-2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,257 +37,268 @@ extern pstring global_myname;
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_trans2_replies(char *outbuf, int bufsize, char *params, 
-			       int paramsize, char *pdata, int datasize)
+static int send_trans2_replies(char *outbuf, int bufsize, char *params, int paramsize, char *pdata, int datasize)
 {
-  /* As we are using a protocol > LANMAN1 then the max_send
-     variable must have been set in the sessetupX call.
-     This takes precedence over the max_xmit field in the
-     global struct. These different max_xmit variables should
-     be merged as this is now too confusing */
+	/* As we are using a protocol > LANMAN1 then the max_send
+		variable must have been set in the sessetupX call.
+		This takes precedence over the max_xmit field in the
+		global struct. These different max_xmit variables should
+		be merged as this is now too confusing */
 
-  extern int max_send;
-  int data_to_send = datasize;
-  int params_to_send = paramsize;
-  int useable_space;
-  char *pp = params;
-  char *pd = pdata;
-  int params_sent_thistime, data_sent_thistime, total_sent_thistime;
-  int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
-  int data_alignment_offset = 0;
+	extern int max_send;
+	int data_to_send = datasize;
+	int params_to_send = paramsize;
+	int useable_space;
+	char *pp = params;
+	char *pd = pdata;
+	int params_sent_thistime, data_sent_thistime, total_sent_thistime;
+	int alignment_offset = 1; /* JRA. This used to be 3. Set to 1 to make netmon parse ok. */
+	int data_alignment_offset = 0;
 
-  /* Initially set the wcnt area to be 10 - this is true for all
-     trans2 replies */
-  set_message(outbuf,10,0,True);
+	/* Initially set the wcnt area to be 10 - this is true for all
+		trans2 replies */
+	set_message(outbuf,10,0,True);
 
-  /* If there genuinely are no parameters or data to send just send
-     the empty packet */
-  if(params_to_send == 0 && data_to_send == 0)
-  {
-    if (!send_smb(smbd_server_fd(),outbuf))
-      exit_server("send_trans2_replies: send_smb failed.");
-    return 0;
-  }
+	/* If there genuinely are no parameters or data to send just send
+		the empty packet */
 
-  /* When sending params and data ensure that both are nicely aligned */
-  /* Only do this alignment when there is also data to send - else
-     can cause NT redirector problems. */
-  if (((params_to_send % 4) != 0) && (data_to_send != 0))
-    data_alignment_offset = 4 - (params_to_send % 4);
+	if(params_to_send == 0 && data_to_send == 0) {
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("send_trans2_replies: send_smb failed.");
+		return 0;
+	}
 
-  /* Space is bufsize minus Netbios over TCP header minus SMB header */
-  /* The alignment_offset is to align the param bytes on an even byte
-     boundary. NT 4.0 Beta needs this to work correctly. */
-  useable_space = bufsize - ((smb_buf(outbuf)+
-                    alignment_offset+data_alignment_offset) - 
-                    outbuf);
+	/* When sending params and data ensure that both are nicely aligned */
+	/* Only do this alignment when there is also data to send - else
+		can cause NT redirector problems. */
 
-  /* useable_space can never be more than max_send minus the
-     alignment offset. */
-  useable_space = MIN(useable_space, 
-                      max_send - (alignment_offset+data_alignment_offset));
+	if (((params_to_send % 4) != 0) && (data_to_send != 0))
+		data_alignment_offset = 4 - (params_to_send % 4);
+
+	/* Space is bufsize minus Netbios over TCP header minus SMB header */
+	/* The alignment_offset is to align the param bytes on an even byte
+		boundary. NT 4.0 Beta needs this to work correctly. */
+
+	useable_space = bufsize - ((smb_buf(outbuf)+ alignment_offset+data_alignment_offset) - outbuf);
+
+	/* useable_space can never be more than max_send minus the alignment offset. */
+
+	useable_space = MIN(useable_space, max_send - (alignment_offset+data_alignment_offset));
 
 
-  while (params_to_send || data_to_send)
-  {
-    /* Calculate whether we will totally or partially fill this packet */
-    total_sent_thistime = params_to_send + data_to_send + 
-                            alignment_offset + data_alignment_offset;
-    /* We can never send more than useable_space */
-    /*
-     * Note that 'useable_space' does not include the alignment offsets,
-     * but we must include the alignment offsets in the calculation of
-     * the length of the data we send over the wire, as the alignment offsets
-     * are sent here. Fix from Marc_Jacobsen@hp.com.
-     */
-    total_sent_thistime = MIN(total_sent_thistime, useable_space+
-			        alignment_offset + data_alignment_offset);
+	while (params_to_send || data_to_send) {
+		/* Calculate whether we will totally or partially fill this packet */
 
-    set_message(outbuf, 10, total_sent_thistime, True);
+		total_sent_thistime = params_to_send + data_to_send + alignment_offset + data_alignment_offset;
 
-    /* Set total params and data to be sent */
-    SSVAL(outbuf,smb_tprcnt,paramsize);
-    SSVAL(outbuf,smb_tdrcnt,datasize);
+		/* We can never send more than useable_space */
+		/*
+		 * Note that 'useable_space' does not include the alignment offsets,
+		 * but we must include the alignment offsets in the calculation of
+		 * the length of the data we send over the wire, as the alignment offsets
+		 * are sent here. Fix from Marc_Jacobsen@hp.com.
+		 */
 
-    /* Calculate how many parameters and data we can fit into
-       this packet. Parameters get precedence */
+		total_sent_thistime = MIN(total_sent_thistime, useable_space+ alignment_offset + data_alignment_offset);
 
-    params_sent_thistime = MIN(params_to_send,useable_space);
-    data_sent_thistime = useable_space - params_sent_thistime;
-    data_sent_thistime = MIN(data_sent_thistime,data_to_send);
+		set_message(outbuf, 10, total_sent_thistime, True);
 
-    SSVAL(outbuf,smb_prcnt, params_sent_thistime);
+		/* Set total params and data to be sent */
+		SSVAL(outbuf,smb_tprcnt,paramsize);
+		SSVAL(outbuf,smb_tdrcnt,datasize);
 
-    /* smb_proff is the offset from the start of the SMB header to the
-       parameter bytes, however the first 4 bytes of outbuf are
-       the Netbios over TCP header. Thus use smb_base() to subtract
-       them from the calculation */
+		/* Calculate how many parameters and data we can fit into
+			this packet. Parameters get precedence */
 
-    SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
+		params_sent_thistime = MIN(params_to_send,useable_space);
+		data_sent_thistime = useable_space - params_sent_thistime;
+		data_sent_thistime = MIN(data_sent_thistime,data_to_send);
 
-    if(params_sent_thistime == 0)
-      SSVAL(outbuf,smb_prdisp,0);
-    else
-      /* Absolute displacement of param bytes sent in this packet */
-      SSVAL(outbuf,smb_prdisp,pp - params);
+		SSVAL(outbuf,smb_prcnt, params_sent_thistime);
 
-    SSVAL(outbuf,smb_drcnt, data_sent_thistime);
-    if(data_sent_thistime == 0)
-    {
-      SSVAL(outbuf,smb_droff,0);
-      SSVAL(outbuf,smb_drdisp, 0);
-    }
-    else
-    {
-      /* The offset of the data bytes is the offset of the
-         parameter bytes plus the number of parameters being sent this time */
-      SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
-            smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
-      SSVAL(outbuf,smb_drdisp, pd - pdata);
-    }
+		/* smb_proff is the offset from the start of the SMB header to the
+			parameter bytes, however the first 4 bytes of outbuf are
+			the Netbios over TCP header. Thus use smb_base() to subtract
+			them from the calculation */
 
-    /* Copy the param bytes into the packet */
-    if(params_sent_thistime)
-      memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
-    /* Copy in the data bytes */
-    if(data_sent_thistime)
-      memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
-             data_alignment_offset,pd,data_sent_thistime);
+		SSVAL(outbuf,smb_proff,((smb_buf(outbuf)+alignment_offset) - smb_base(outbuf)));
 
-    DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
-          params_sent_thistime, data_sent_thistime, useable_space));
-    DEBUG(9,("t2_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
-          params_to_send, data_to_send, paramsize, datasize));
+		if(params_sent_thistime == 0)
+			SSVAL(outbuf,smb_prdisp,0);
+		else
+			/* Absolute displacement of param bytes sent in this packet */
+			SSVAL(outbuf,smb_prdisp,pp - params);
 
-    /* Send the packet */
-    if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_trans2_replies: send_smb failed.");
+		SSVAL(outbuf,smb_drcnt, data_sent_thistime);
+		if(data_sent_thistime == 0) {
+			SSVAL(outbuf,smb_droff,0);
+			SSVAL(outbuf,smb_drdisp, 0);
+		} else {
+			/* The offset of the data bytes is the offset of the
+				parameter bytes plus the number of parameters being sent this time */
+			SSVAL(outbuf,smb_droff,((smb_buf(outbuf)+alignment_offset) - 
+				smb_base(outbuf)) + params_sent_thistime + data_alignment_offset);
+			SSVAL(outbuf,smb_drdisp, pd - pdata);
+		}
 
-    pp += params_sent_thistime;
-    pd += data_sent_thistime;
+		/* Copy the param bytes into the packet */
 
-    params_to_send -= params_sent_thistime;
-    data_to_send -= data_sent_thistime;
+		if(params_sent_thistime)
+			memcpy((smb_buf(outbuf)+alignment_offset),pp,params_sent_thistime);
 
-    /* Sanity check */
-    if(params_to_send < 0 || data_to_send < 0)
-    {
-      DEBUG(0,("send_trans2_replies failed sanity check pts = %d, dts = %d\n!!!",
-            params_to_send, data_to_send));
-      return -1;
-    }
-  }
+		/* Copy in the data bytes */
 
-  return 0;
+		if(data_sent_thistime)
+			memcpy(smb_buf(outbuf)+alignment_offset+params_sent_thistime+
+				data_alignment_offset,pd,data_sent_thistime);
+
+		DEBUG(9,("t2_rep: params_sent_thistime = %d, data_sent_thistime = %d, useable_space = %d\n",
+			params_sent_thistime, data_sent_thistime, useable_space));
+		DEBUG(9,("t2_rep: params_to_send = %d, data_to_send = %d, paramsize = %d, datasize = %d\n",
+			params_to_send, data_to_send, paramsize, datasize));
+
+		/* Send the packet */
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("send_trans2_replies: send_smb failed.");
+
+		pp += params_sent_thistime;
+		pd += data_sent_thistime;
+
+		params_to_send -= params_sent_thistime;
+		data_to_send -= data_sent_thistime;
+
+		/* Sanity check */
+
+		if(params_to_send < 0 || data_to_send < 0) {
+			DEBUG(0,("send_trans2_replies failed sanity check pts = %d, dts = %d\n!!!",
+				params_to_send, data_to_send));
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 /****************************************************************************
  Reply to a TRANSACT2_OPEN.
 ****************************************************************************/
 
-static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, 
-			   int bufsize,  
-			   char **pparams, char **ppdata)
+static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  char *params = *pparams;
-  int16 open_mode = SVAL(params, 2);
-  int16 open_attr = SVAL(params,6);
-  BOOL oplock_request = (((SVAL(params,0)|(1<<1))>>1) | ((SVAL(params,0)|(1<<2))>>1));
+	char *params = *pparams;
+	int16 open_mode;
+	int16 open_attr;
+	BOOL oplock_request;
 #if 0
-  BOOL return_additional_info = BITSETW(params,0);
-  int16 open_sattr = SVAL(params, 4);
-  time_t open_time = make_unix_date3(params+8);
+	BOOL return_additional_info;
+	int16 open_sattr;
+	time_t open_time;
 #endif
-  int16 open_ofun = SVAL(params,12);
-  int32 open_size = IVAL(params,14);
-  char *pname = &params[28];
-  int16 namelen = strlen(pname)+1;
+	int16 open_ofun;
+	int32 open_size;
+	char *pname;
+	int16 namelen;
 
-  pstring fname;
-  mode_t unixmode;
-  SMB_OFF_T size=0;
-  int fmode=0,mtime=0,rmode;
-  SMB_INO_T inode = 0;
-  SMB_STRUCT_STAT sbuf;
-  int smb_action = 0;
-  BOOL bad_path = False;
-  files_struct *fsp;
+	pstring fname;
+	mode_t unixmode;
+	SMB_OFF_T size=0;
+	int fmode=0,mtime=0,rmode;
+	SMB_INO_T inode = 0;
+	SMB_STRUCT_STAT sbuf;
+	int smb_action = 0;
+	BOOL bad_path = False;
+	files_struct *fsp;
 
-  StrnCpy(fname,pname,namelen);
+	/*
+	 * Ensure we have enough parameters to perform the operation.
+	 */
 
-  DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
-	   fname,open_mode, open_attr, open_ofun, open_size));
+	if (total_params < 29)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  if (IS_IPC(conn)) {
+	open_mode = SVAL(params, 2);
+	open_attr = SVAL(params,6);
+	oplock_request = (((SVAL(params,0)|(1<<1))>>1) | ((SVAL(params,0)|(1<<2))>>1));
+#if 0
+	return_additional_info = BITSETW(params,0);
+	open_sattr = SVAL(params, 4);
+	open_time = make_unix_date3(params+8);
+#endif
+	open_ofun = SVAL(params,12);
+	open_size = IVAL(params,14);
+	pname = &params[28];
+	namelen = strlen(pname)+1;
+
+	StrnCpy(fname,pname,namelen);
+
+	DEBUG(3,("trans2open %s mode=%d attr=%d ofun=%d size=%d\n",
+		fname,open_mode, open_attr, open_ofun, open_size));
+
+	if (IS_IPC(conn))
 		return(ERROR_DOS(ERRSRV,ERRaccess));
-  }
 
-  /* XXXX we need to handle passed times, sattr and flags */
+	/* XXXX we need to handle passed times, sattr and flags */
 
-  unix_convert(fname,conn,0,&bad_path,&sbuf);
+	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
-  if (!check_name(fname,conn))
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	if (!check_name(fname,conn)) {
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
+		}
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
 
-  unixmode = unix_mode(conn,open_attr | aARCH, fname);
+	unixmode = unix_mode(conn,open_attr | aARCH, fname);
       
-  fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,unixmode,
-		   oplock_request, &rmode,&smb_action);
+	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,unixmode,
+			oplock_request, &rmode,&smb_action);
       
-  if (!fsp)
-  {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	if (!fsp) {
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
+		}
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
 
-  size = sbuf.st_size;
-  fmode = dos_mode(conn,fname,&sbuf);
-  mtime = sbuf.st_mtime;
-  inode = sbuf.st_ino;
-  if (fmode & aDIR) {
-    close_file(fsp,False);
-    return(ERROR_DOS(ERRDOS,ERRnoaccess));
-  }
+	size = sbuf.st_size;
+	fmode = dos_mode(conn,fname,&sbuf);
+	mtime = sbuf.st_mtime;
+	inode = sbuf.st_ino;
+	if (fmode & aDIR) {
+		close_file(fsp,False);
+		return(ERROR_DOS(ERRDOS,ERRnoaccess));
+	}
 
-  /* Realloc the size of parameters and data we will return */
-  params	= Realloc(*pparams, 28);
-  if( params == NULL ) {
-    return(ERROR_DOS(ERRDOS,ERRnomem));
-  }
-  *pparams	= params;
+	/* Realloc the size of parameters and data we will return */
+	params = Realloc(*pparams, 28);
+	if( params == NULL )
+		return(ERROR_DOS(ERRDOS,ERRnomem));
+	*pparams = params;
 
-  memset((char *)params,'\0',28);
-  SSVAL(params,0,fsp->fnum);
-  SSVAL(params,2,fmode);
-  put_dos_date2(params,4, mtime);
-  SIVAL(params,8, (uint32)size);
-  SSVAL(params,12,rmode);
+	memset((char *)params,'\0',28);
+	SSVAL(params,0,fsp->fnum);
+	SSVAL(params,2,fmode);
+	put_dos_date2(params,4, mtime);
+	SIVAL(params,8, (uint32)size);
+	SSVAL(params,12,rmode);
 
-  if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
-    smb_action |= EXTENDED_OPLOCK_GRANTED;
-  }
+	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+		smb_action |= EXTENDED_OPLOCK_GRANTED;
 
-  SSVAL(params,18,smb_action);
-  /*
-   * WARNING - this may need to be changed if SMB_INO_T <> 4 bytes.
-   */
-  SIVAL(params,20,inode);
+	SSVAL(params,18,smb_action);
+
+	/*
+	 * WARNING - this may need to be changed if SMB_INO_T <> 4 bytes.
+	 */
+	SIVAL(params,20,inode);
  
-  /* Send the required number of replies */
-  send_trans2_replies(outbuf, bufsize, params, 28, *ppdata, 0);
+	/* Send the required number of replies */
+	send_trans2_replies(outbuf, bufsize, params, 28, *ppdata, 0);
 
-  return -1;
+	return -1;
 }
 
 /*********************************************************
@@ -394,6 +404,41 @@ static uint32  unix_perms_to_wire(mode_t perms)
 #ifdef S_ISUID
 	ret |= ((perms & S_ISVTX) ?  UNIX_SET_UID : 0);
 #endif
+	return ret;
+}
+
+/****************************************************************************
+ Map wire perms onto standard UNIX permissions. Obey share restrictions.
+****************************************************************************/
+
+static mode_t unix_perms_from_wire( connection_struct *conn, uint32 perms)
+{
+	mode_t ret = 0;
+
+	ret |= ((perms & UNIX_X_OTH ) ? S_IXOTH : 0);
+	ret |= ((perms & UNIX_W_OTH ) ? S_IWOTH : 0);
+	ret |= ((perms & UNIX_R_OTH ) ? S_IROTH : 0);
+	ret |= ((perms & UNIX_X_GRP ) ? S_IXGRP : 0);
+	ret |= ((perms & UNIX_W_GRP ) ? S_IWGRP : 0);
+	ret |= ((perms & UNIX_R_GRP ) ? S_IRGRP : 0);
+	ret |= ((perms & UNIX_X_USR ) ? S_IXUSR : 0);
+	ret |= ((perms & UNIX_W_USR ) ? S_IWUSR : 0);
+	ret |= ((perms & UNIX_R_USR ) ? S_IRUSR : 0);
+#ifdef S_ISVTX
+	ret |= ((perms & UNIX_STICKY ) ? S_ISVTX : 0);
+#endif
+#ifdef S_ISGID
+	ret |= ((perms & UNIX_SET_GID ) ? S_ISGID : 0);
+#endif
+#ifdef S_ISUID
+	ret |= ((perms & UNIX_SET_UID ) ? S_ISVTX : 0);
+#endif
+
+	/* Apply mode mask */
+	ret &= lp_create_mask(SNUM(conn));
+	/* Add in force bits */
+	ret |= lp_force_create_mode(SNUM(conn));
+
 	return ret;
 }
 
@@ -787,663 +832,685 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
  Reply to a TRANS2_FINDFIRST.
 ****************************************************************************/
 
-static int call_trans2findfirst(connection_struct *conn,
-				char *inbuf, char *outbuf, int bufsize,  
-				char **pparams, char **ppdata)
+static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  /* We must be careful here that we don't return more than the
-     allowed number of data bytes. If this means returning fewer than
-     maxentries then so be it. We assume that the redirector has
-     enough room for the fixed number of parameter bytes it has
-     requested. */
-  uint32 max_data_bytes = SVAL(inbuf, smb_mdrcnt);
-  char *params = *pparams;
-  char *pdata = *ppdata;
-  int dirtype = SVAL(params,0);
-  int maxentries = SVAL(params,2);
-  BOOL close_after_first = BITSETW(params+4,0);
-  BOOL close_if_end = BITSETW(params+4,1);
-  BOOL requires_resume_key = BITSETW(params+4,2);
-  int info_level = SVAL(params,6);
-  pstring directory;
-  pstring mask;
-  char *p, *wcard;
-  int last_name_off=0;
-  int dptr_num = -1;
-  int numentries = 0;
-  int i;
-  BOOL finished = False;
-  BOOL dont_descend = False;
-  BOOL out_of_space = False;
-  int space_remaining;
-  BOOL bad_path = False;
-  SMB_STRUCT_STAT sbuf;
+	/* We must be careful here that we don't return more than the
+		allowed number of data bytes. If this means returning fewer than
+		maxentries then so be it. We assume that the redirector has
+		enough room for the fixed number of parameter bytes it has
+		requested. */
+	uint32 max_data_bytes = SVAL(inbuf, smb_mdrcnt);
+	char *params = *pparams;
+	char *pdata = *ppdata;
+	int dirtype;
+	int maxentries;
+	BOOL close_after_first;
+	BOOL close_if_end;
+	BOOL requires_resume_key;
+	int info_level;
+	pstring directory;
+	pstring mask;
+	char *p, *wcard;
+	int last_name_off=0;
+	int dptr_num = -1;
+	int numentries = 0;
+	int i;
+	BOOL finished = False;
+	BOOL dont_descend = False;
+	BOOL out_of_space = False;
+	int space_remaining;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
 
-  *directory = *mask = 0;
+	if (total_params < 12)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  DEBUG(3,("call_trans2findfirst: dirtype = %d, maxentries = %d, close_after_first=%d, close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
-	   dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
-	   info_level, max_data_bytes));
+	*directory = *mask = 0;
+
+	dirtype = SVAL(params,0);
+	maxentries = SVAL(params,2);
+	close_after_first = BITSETW(params+4,0);
+	close_if_end = BITSETW(params+4,1);
+	requires_resume_key = BITSETW(params+4,2);
+	info_level = SVAL(params,6);
+
+	DEBUG(3,("call_trans2findfirst: dirtype = %d, maxentries = %d, close_after_first=%d, \
+close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
+		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
+		info_level, max_data_bytes));
   
-  switch (info_level) 
-    {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case SMB_FIND_FILE_DIRECTORY_INFO:
-    case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-    case SMB_FIND_FILE_NAMES_INFO:
-    case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-      break;
-    default:
-      return(ERROR_DOS(ERRDOS,ERRunknownlevel));
-    }
+	switch (info_level) {
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case SMB_FIND_FILE_DIRECTORY_INFO:
+		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
+		case SMB_FIND_FILE_NAMES_INFO:
+		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+			break;
+		case SMB_FIND_FILE_UNIX:
+			if (!lp_unix_extensions())
+				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+			break;
+		default:
+			return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+	}
 
-  pstrcpy(directory, params + 12); /* Complete directory path with 
-				     wildcard mask appended */
+	pstrcpy(directory, params + 12); /* Complete directory path with wildcard mask appended */
 
-  RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
+	RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
 
-  DEBUG(5,("path=%s\n",directory));
+	DEBUG(5,("path=%s\n",directory));
 
-  unix_convert(directory,conn,0,&bad_path,&sbuf);
-  if(!check_name(directory,conn)) {
-    if((errno == ENOENT) && bad_path)
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbadpath;
-    }
+	unix_convert(directory,conn,0,&bad_path,&sbuf);
+	if(!check_name(directory,conn)) {
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
+		}
 
 #if 0
-    /* Ugly - NT specific hack - maybe not needed ? (JRA) */
-    if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && 
-       (get_remote_arch() == RA_WINNT))
-    {
-      unix_ERR_class = ERRDOS;
-      unix_ERR_code = ERRbaddirectory;
-    }
+		/* Ugly - NT specific hack - maybe not needed ? (JRA) */
+		if((errno == ENOTDIR) && (Protocol >= PROTOCOL_NT1) && (get_remote_arch() == RA_WINNT)) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbaddirectory;
+		}
 #endif 
 
-    return(UNIXERROR(ERRDOS,ERRbadpath));
-  }
+		return(UNIXERROR(ERRDOS,ERRbadpath));
+	}
 
-  p = strrchr(directory,'/');
-  if(p == NULL) {
-    pstrcpy(mask,directory);
-    pstrcpy(directory,"./");
-  } else {
-    pstrcpy(mask,p+1);
-    *p = 0;
-  }
+	p = strrchr(directory,'/');
+	if(p == NULL) {
+		pstrcpy(mask,directory);
+		pstrcpy(directory,"./");
+	} else {
+		pstrcpy(mask,p+1);
+		*p = 0;
+	}
 
-  DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
+	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
-  pdata	= Realloc(*ppdata, max_data_bytes + 1024);
-  if( pdata == NULL ) {
-    return(ERROR_DOS(ERRDOS,ERRnomem));
-  }
-  *ppdata	= pdata;
-  memset((char *)pdata,'\0',max_data_bytes + 1024);
+	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	if( pdata == NULL )
+		return(ERROR_DOS(ERRDOS,ERRnomem));
+	*ppdata = pdata;
+	memset((char *)pdata,'\0',max_data_bytes + 1024);
 
-  /* Realloc the params space */
-  params = Realloc(*pparams, 10);
-  if( params == NULL ) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *pparams	= params;
+	/* Realloc the params space */
+	params = Realloc(*pparams, 10);
+	if( params == NULL )
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
 
-  dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
-  if (dptr_num < 0)
-    return(UNIXERROR(ERRDOS,ERRbadfile));
+	dptr_num = dptr_create(conn,directory, False, True ,SVAL(inbuf,smb_pid));
+	if (dptr_num < 0)
+		return(UNIXERROR(ERRDOS,ERRbadfile));
 
-  /* Save the wildcard match and attribs we are using on this directory - 
-     needed as lanman2 assumes these are being saved between calls */
+	/* Save the wildcard match and attribs we are using on this directory - 
+		needed as lanman2 assumes these are being saved between calls */
 
-  if(!(wcard = strdup(mask))) {
-    dptr_close(&dptr_num);
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
+	if(!(wcard = strdup(mask))) {
+		dptr_close(&dptr_num);
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	}
 
-  dptr_set_wcard(dptr_num, wcard);
-  dptr_set_attr(dptr_num, dirtype);
+	dptr_set_wcard(dptr_num, wcard);
+	dptr_set_attr(dptr_num, dirtype);
 
-  DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
+	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n",dptr_num, wcard, dirtype));
 
-  /* We don't need to check for VOL here as this is returned by 
-     a different TRANS2 call. */
+	/* We don't need to check for VOL here as this is returned by 
+		a different TRANS2 call. */
   
-  DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-	   conn->dirpath,lp_dontdescend(SNUM(conn))));
-  if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
-    dont_descend = True;
+	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n", conn->dirpath,lp_dontdescend(SNUM(conn))));
+
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+		dont_descend = True;
     
-  p = pdata;
-  space_remaining = max_data_bytes;
-  out_of_space = False;
+	p = pdata;
+	space_remaining = max_data_bytes;
+	out_of_space = False;
 
-  for (i=0;(i<maxentries) && !finished && !out_of_space;i++)
-  {
-    BOOL got_exact_match = False;
+	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
+		BOOL got_exact_match = False;
 
-    /* this is a heuristic to avoid seeking the dirptr except when 
-       absolutely necessary. It allows for a filename of about 40 chars */
-    if (space_remaining < DIRLEN_GUESS && numentries > 0)
-    {
-      out_of_space = True;
-      finished = False;
-    }
-    else
-    {
-      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-                   requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
-                   &last_name_off);
-    }
+		/* this is a heuristic to avoid seeking the dirptr except when 
+			absolutely necessary. It allows for a filename of about 40 chars */
 
-    if (finished && out_of_space)
-      finished = False;
+		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
+			out_of_space = True;
+			finished = False;
+		} else {
+			finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
+					requires_resume_key,dont_descend,
+					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+					&last_name_off);
+		}
 
-    if (!finished && !out_of_space)
-      numentries++;
+		if (finished && out_of_space)
+			finished = False;
 
-    /*
-     * As an optimisation if we know we aren't looking
-     * for a wildcard name (ie. the name matches the wildcard exactly)
-     * then we can finish on any (first) match.
-     * This speeds up large directory searches. JRA.
-     */
+		if (!finished && !out_of_space)
+			numentries++;
 
-    if(got_exact_match)
-      finished = True;
+		/*
+		 * As an optimisation if we know we aren't looking
+		 * for a wildcard name (ie. the name matches the wildcard exactly)
+		 * then we can finish on any (first) match.
+		 * This speeds up large directory searches. JRA.
+		 */
 
-    space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
-  }
+		if(got_exact_match)
+			finished = True;
+
+		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+	}
   
-  /* Check if we can close the dirptr */
-  if(close_after_first || (finished && close_if_end))
-  {
-    DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-    dptr_close(&dptr_num);
-  }
+	/* Check if we can close the dirptr */
 
-  /* 
-   * If there are no matching entries we must return ERRDOS/ERRbadfile - 
-   * from observation of NT.
-   */
+	if(close_after_first || (finished && close_if_end)) {
+		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
+		dptr_close(&dptr_num);
+	}
 
-  if(numentries == 0) {
-    dptr_close(&dptr_num);
-	  return ERROR_DOS(ERRDOS,ERRbadfile);
-  }
+	/* 
+	 * If there are no matching entries we must return ERRDOS/ERRbadfile - 
+	 * from observation of NT.
+	 */
 
-  /* At this point pdata points to numentries directory entries. */
+	if(numentries == 0) {
+		dptr_close(&dptr_num);
+		return ERROR_DOS(ERRDOS,ERRbadfile);
+	}
 
-  /* Set up the return parameter block */
-  SSVAL(params,0,dptr_num);
-  SSVAL(params,2,numentries);
-  SSVAL(params,4,finished);
-  SSVAL(params,6,0); /* Never an EA error */
-  SSVAL(params,8,last_name_off);
+	/* At this point pdata points to numentries directory entries. */
 
-  send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
+	/* Set up the return parameter block */
+	SSVAL(params,0,dptr_num);
+	SSVAL(params,2,numentries);
+	SSVAL(params,4,finished);
+	SSVAL(params,6,0); /* Never an EA error */
+	SSVAL(params,8,last_name_off);
 
-  if ((! *directory) && dptr_path(dptr_num))
-    slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
+	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
 
-  DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-	    smb_fn_name(CVAL(inbuf,smb_com)), 
-	    mask, directory, dirtype, numentries ) );
+	if ((! *directory) && dptr_path(dptr_num))
+		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
-  /* 
-   * Force a name mangle here to ensure that the
-   * mask as an 8.3 name is top of the mangled cache.
-   * The reasons for this are subtle. Don't remove
-   * this code unless you know what you are doing
-   * (see PR#13758). JRA.
-   */
+	DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
+		smb_fn_name(CVAL(inbuf,smb_com)), 
+		mask, directory, dirtype, numentries ) );
 
-  if(!is_8_3( mask, False))
-    name_map_mangle(mask, True, True, SNUM(conn));
+	/* 
+	 * Force a name mangle here to ensure that the
+	 * mask as an 8.3 name is top of the mangled cache.
+	 * The reasons for this are subtle. Don't remove
+	 * this code unless you know what you are doing
+	 * (see PR#13758). JRA.
+	 */
 
-  return(-1);
+	if(!is_8_3( mask, False))
+		name_map_mangle(mask, True, True, SNUM(conn));
+
+	return(-1);
 }
 
 /****************************************************************************
  Reply to a TRANS2_FINDNEXT.
 ****************************************************************************/
 
-static int call_trans2findnext(connection_struct *conn, 
-			       char *inbuf, char *outbuf, 
-			       int length, int bufsize,
-			       char **pparams, char **ppdata)
+static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  /* We must be careful here that we don't return more than the
-     allowed number of data bytes. If this means returning fewer than
-     maxentries then so be it. We assume that the redirector has
-     enough room for the fixed number of parameter bytes it has
-     requested. */
-  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
-  char *params = *pparams;
-  char *pdata = *ppdata;
-  int dptr_num = SVAL(params,0);
-  int maxentries = SVAL(params,2);
-  uint16 info_level = SVAL(params,4);
-  uint32 resume_key = IVAL(params,6);
-  BOOL close_after_request = BITSETW(params+10,0);
-  BOOL close_if_end = BITSETW(params+10,1);
-  BOOL requires_resume_key = BITSETW(params+10,2);
-  BOOL continue_bit = BITSETW(params+10,3);
-  pstring resume_name;
-  pstring mask;
-  pstring directory;
-  char *p;
-  uint16 dirtype;
-  int numentries = 0;
-  int i, last_name_off=0;
-  BOOL finished = False;
-  BOOL dont_descend = False;
-  BOOL out_of_space = False;
-  int space_remaining;
+	/* We must be careful here that we don't return more than the
+		allowed number of data bytes. If this means returning fewer than
+		maxentries then so be it. We assume that the redirector has
+		enough room for the fixed number of parameter bytes it has
+		requested. */
+	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
+	char *params = *pparams;
+	char *pdata = *ppdata;
+	int dptr_num;
+	int maxentries;
+	uint16 info_level;
+	uint32 resume_key;
+	BOOL close_after_request;
+	BOOL close_if_end;
+	BOOL requires_resume_key;
+	BOOL continue_bit;
+	pstring resume_name;
+	pstring mask;
+	pstring directory;
+	char *p;
+	uint16 dirtype;
+	int numentries = 0;
+	int i, last_name_off=0;
+	BOOL finished = False;
+	BOOL dont_descend = False;
+	BOOL out_of_space = False;
+	int space_remaining;
 
-  *mask = *directory = *resume_name = 0;
+	if (total_params < 12)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  pstrcpy( resume_name, params+12);
+	dptr_num = SVAL(params,0);
+	maxentries = SVAL(params,2);
+	info_level = SVAL(params,4);
+	resume_key = IVAL(params,6);
+	close_after_request = BITSETW(params+10,0);
+	close_if_end = BITSETW(params+10,1);
+	requires_resume_key = BITSETW(params+10,2);
+	continue_bit = BITSETW(params+10,3);
 
-  DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
+	*mask = *directory = *resume_name = 0;
+
+	pstrcpy( resume_name, params+12);
+
+	DEBUG(3,("call_trans2findnext: dirhandle = %d, max_data_bytes = %d, maxentries = %d, \
 close_after_request=%d, close_if_end = %d requires_resume_key = %d \
 resume_key = %d resume name = %s continue=%d level = %d\n",
-	   dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
-	   requires_resume_key, resume_key, resume_name, continue_bit, info_level));
+		dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
+		requires_resume_key, resume_key, resume_name, continue_bit, info_level));
 
-  switch (info_level) 
-    {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case SMB_FIND_FILE_DIRECTORY_INFO:
-    case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-    case SMB_FIND_FILE_NAMES_INFO:
-    case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-      break;
-    default:
-      return ERROR_DOS(ERRDOS,ERRunknownlevel);
-    }
+	switch (info_level) {
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case SMB_FIND_FILE_DIRECTORY_INFO:
+		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
+		case SMB_FIND_FILE_NAMES_INFO:
+		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+			break;
+		case SMB_FIND_FILE_UNIX:
+			if (!lp_unix_extensions())
+				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
+			break;
+		default:
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
 
-  pdata = Realloc( *ppdata, max_data_bytes + 1024);
-  if(pdata == NULL) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *ppdata	= pdata;
-  memset((char *)pdata,'\0',max_data_bytes + 1024);
+	pdata = Realloc( *ppdata, max_data_bytes + 1024);
+	if(pdata == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
 
-  /* Realloc the params space */
-  params = Realloc(*pparams, 6*SIZEOFWORD);
-  if( params == NULL ) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *pparams	= params;
+	*ppdata	= pdata;
+	memset((char *)pdata,'\0',max_data_bytes + 1024);
 
-  /* Check that the dptr is valid */
-  if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num)))
-    return ERROR_DOS(ERRDOS,ERRnofiles);
+	/* Realloc the params space */
+	params = Realloc(*pparams, 6*SIZEOFWORD);
+	if( params == NULL )
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
 
-  string_set(&conn->dirpath,dptr_path(dptr_num));
+	/* Check that the dptr is valid */
+	if(!(conn->dirptr = dptr_fetch_lanman2(dptr_num)))
+		return ERROR_DOS(ERRDOS,ERRnofiles);
 
-  /* Get the wildcard mask from the dptr */
-  if((p = dptr_wcard(dptr_num))== NULL) {
-    DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
-    return ERROR_DOS(ERRDOS,ERRnofiles);
-  }
-  pstrcpy(mask, p);
-  pstrcpy(directory,conn->dirpath);
+	string_set(&conn->dirpath,dptr_path(dptr_num));
 
-  /* Get the attr mask from the dptr */
-  dirtype = dptr_attr(dptr_num);
+	/* Get the wildcard mask from the dptr */
+	if((p = dptr_wcard(dptr_num))== NULL) {
+		DEBUG(2,("dptr_num %d has no wildcard\n", dptr_num));
+		return ERROR_DOS(ERRDOS,ERRnofiles);
+	}
+	pstrcpy(mask, p);
+	pstrcpy(directory,conn->dirpath);
 
-  DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%d)\n",
-	   dptr_num, mask, dirtype, 
-	   (long)conn->dirptr,
-	   TellDir(conn->dirptr)));
+	/* Get the attr mask from the dptr */
+	dirtype = dptr_attr(dptr_num);
 
-  /* We don't need to check for VOL here as this is returned by 
-     a different TRANS2 call. */
+	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%d)\n",
+		dptr_num, mask, dirtype, (long)conn->dirptr, TellDir(conn->dirptr)));
 
-  DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
-  if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
-    dont_descend = True;
+	/* We don't need to check for VOL here as this is returned by 
+		a different TRANS2 call. */
+
+	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",conn->dirpath,lp_dontdescend(SNUM(conn))));
+	if (in_list(conn->dirpath,lp_dontdescend(SNUM(conn)),case_sensitive))
+		dont_descend = True;
     
-  p = pdata;
-  space_remaining = max_data_bytes;
-  out_of_space = False;
+	p = pdata;
+	space_remaining = max_data_bytes;
+	out_of_space = False;
 
-  /* 
-   * Seek to the correct position. We no longer use the resume key but
-   * depend on the last file name instead.
-   */
-  if(requires_resume_key && *resume_name && !continue_bit)
-  {
-    /*
-     * Fix for NT redirector problem triggered by resume key indexes
-     * changing between directory scans. We now return a resume key of 0
-     * and instead look for the filename to continue from (also given
-     * to us by NT/95/smbfs/smbclient). If no other scans have been done between the
-     * findfirst/findnext (as is usual) then the directory pointer
-     * should already be at the correct place. Check this by scanning
-     * backwards looking for an exact (ie. case sensitive) filename match. 
-     * If we get to the beginning of the directory and haven't found it then scan
-     * forwards again looking for a match. JRA.
-     */
+	/* 
+	 * Seek to the correct position. We no longer use the resume key but
+	 * depend on the last file name instead.
+	 */
 
-    int current_pos, start_pos;
-    char *dname = NULL;
-    void *dirptr = conn->dirptr;
-    start_pos = TellDir(dirptr);
-    for(current_pos = start_pos; current_pos >= 0; current_pos--)
-    {
-      DEBUG(7,("call_trans2findnext: seeking to pos %d\n", current_pos));
+	if(requires_resume_key && *resume_name && !continue_bit) {
 
-      SeekDir(dirptr, current_pos);
-      dname = ReadDirName(dirptr);
+		/*
+		 * Fix for NT redirector problem triggered by resume key indexes
+		 * changing between directory scans. We now return a resume key of 0
+		 * and instead look for the filename to continue from (also given
+		 * to us by NT/95/smbfs/smbclient). If no other scans have been done between the
+		 * findfirst/findnext (as is usual) then the directory pointer
+		 * should already be at the correct place. Check this by scanning
+		 * backwards looking for an exact (ie. case sensitive) filename match. 
+		 * If we get to the beginning of the directory and haven't found it then scan
+		 * forwards again looking for a match. JRA.
+		 */
 
-      /*
-       * Remember, name_map_mangle is called by
-       * get_lanman2_dir_entry(), so the resume name
-       * could be mangled. Ensure we do the same
-       * here.
-       */
+		int current_pos, start_pos;
+		char *dname = NULL;
+		void *dirptr = conn->dirptr;
+		start_pos = TellDir(dirptr);
 
-      if(dname != NULL)
-        name_map_mangle( dname, False, True, SNUM(conn));
+		for(current_pos = start_pos; current_pos >= 0; current_pos--) {
+			DEBUG(7,("call_trans2findnext: seeking to pos %d\n", current_pos));
 
-      if(dname && strcsequal( resume_name, dname))
-      {
-        SeekDir(dirptr, current_pos+1);
-        DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-        break;
-      }
-    }
+			SeekDir(dirptr, current_pos);
+			dname = ReadDirName(dirptr);
 
-    /*
-     * Scan forward from start if not found going backwards.
-     */
+			/*
+			 * Remember, name_map_mangle is called by
+			 * get_lanman2_dir_entry(), so the resume name
+			 * could be mangled. Ensure we do the same
+			 * here.
+			 */
 
-    if(current_pos < 0)
-    {
-      DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
-      SeekDir(dirptr, start_pos);
-      for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos))
-      {
-        /*
-         * Remember, name_map_mangle is called by
-         * get_lanman2_dir_entry(), so the resume name
-         * could be mangled. Ensure we do the same
-         * here.
-         */
+			if(dname != NULL)
+				name_map_mangle( dname, False, True, SNUM(conn));
 
-        if(dname != NULL)
-          name_map_mangle( dname, False, True, SNUM(conn));
+			if(dname && strcsequal( resume_name, dname)) {
+				SeekDir(dirptr, current_pos+1);
+				DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
+				break;
+			}
+		}
 
-        if(dname && strcsequal( resume_name, dname))
-        {
-          SeekDir(dirptr, current_pos+1);
-          DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
-          break;
-        }
-      } /* end for */
-    } /* end if current_pos */
-  } /* end if requires_resume_key && !continue_bit */
+		/*
+		 * Scan forward from start if not found going backwards.
+		 */
 
-  for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
-  {
-    BOOL got_exact_match = False;
+		if(current_pos < 0) {
+			DEBUG(7,("call_trans2findnext: notfound: seeking to pos %d\n", start_pos));
+			SeekDir(dirptr, start_pos);
+			for(current_pos = start_pos; (dname = ReadDirName(dirptr)) != NULL; SeekDir(dirptr,++current_pos)) {
 
-    /* this is a heuristic to avoid seeking the dirptr except when 
-       absolutely necessary. It allows for a filename of about 40 chars */
-    if (space_remaining < DIRLEN_GUESS && numentries > 0)
-    {
-      out_of_space = True;
-      finished = False;
-    }
-    else
-    {
-      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-                   requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
-                   &last_name_off);
-    }
+				/*
+				 * Remember, name_map_mangle is called by
+				 * get_lanman2_dir_entry(), so the resume name
+				 * could be mangled. Ensure we do the same
+				 * here.
+				 */
 
-    if (finished && out_of_space)
-      finished = False;
+				if(dname != NULL)
+					name_map_mangle( dname, False, True, SNUM(conn));
 
-    if (!finished && !out_of_space)
-      numentries++;
+				if(dname && strcsequal( resume_name, dname)) {
+					SeekDir(dirptr, current_pos+1);
+					DEBUG(7,("call_trans2findnext: got match at pos %d\n", current_pos+1 ));
+					break;
+				}
+			} /* end for */
+		} /* end if current_pos */
+	} /* end if requires_resume_key && !continue_bit */
 
-    /*
-     * As an optimisation if we know we aren't looking
-     * for a wildcard name (ie. the name matches the wildcard exactly)
-     * then we can finish on any (first) match.
-     * This speeds up large directory searches. JRA.
-     */
+	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
+		BOOL got_exact_match = False;
 
-    if(got_exact_match)
-      finished = True;
+		/* this is a heuristic to avoid seeking the dirptr except when 
+			absolutely necessary. It allows for a filename of about 40 chars */
 
-    space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
-  }
+		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
+			out_of_space = True;
+			finished = False;
+		} else {
+			finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
+					requires_resume_key,dont_descend,
+					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+					&last_name_off);
+		}
+
+		if (finished && out_of_space)
+			finished = False;
+
+		if (!finished && !out_of_space)
+			numentries++;
+
+		/*
+		 * As an optimisation if we know we aren't looking
+		 * for a wildcard name (ie. the name matches the wildcard exactly)
+		 * then we can finish on any (first) match.
+		 * This speeds up large directory searches. JRA.
+		 */
+
+		if(got_exact_match)
+			finished = True;
+
+		space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
+	}
   
-  /* Check if we can close the dirptr */
-  if(close_after_request || (finished && close_if_end))
-  {
-    DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-    dptr_close(&dptr_num); /* This frees up the saved mask */
-  }
+	/* Check if we can close the dirptr */
+	if(close_after_request || (finished && close_if_end)) {
+		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
+		dptr_close(&dptr_num); /* This frees up the saved mask */
+	}
 
 
-  /* Set up the return parameter block */
-  SSVAL(params,0,numentries);
-  SSVAL(params,2,finished);
-  SSVAL(params,4,0); /* Never an EA error */
-  SSVAL(params,6,last_name_off);
+	/* Set up the return parameter block */
+	SSVAL(params,0,numentries);
+	SSVAL(params,2,finished);
+	SSVAL(params,4,0); /* Never an EA error */
+	SSVAL(params,6,last_name_off);
 
-  send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
+	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
 
-  if ((! *directory) && dptr_path(dptr_num))
-    slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
+	if ((! *directory) && dptr_path(dptr_num))
+		slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
-  DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-	    smb_fn_name(CVAL(inbuf,smb_com)), 
-	    mask, directory, dirtype, numentries ) );
+	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
+		smb_fn_name(CVAL(inbuf,smb_com)), 
+		mask, directory, dirtype, numentries ) );
 
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
  Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
 
-static int call_trans2qfsinfo(connection_struct *conn, 
-			      char *inbuf, char *outbuf, 
-			      int length, int bufsize,
-			      char **pparams, char **ppdata)
+static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
-  char *pdata = *ppdata;
-  char *params = *pparams;
-  uint16 info_level = SVAL(params,0);
-  int data_len;
-  SMB_STRUCT_STAT st;
-  char *vname = volume_label(SNUM(conn));
-  int snum = SNUM(conn);
-  char *fstype = lp_fstype(SNUM(conn));
+	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
+	char *pdata = *ppdata;
+	char *params = *pparams;
+	uint16 info_level;
+	int data_len;
+	SMB_STRUCT_STAT st;
+	char *vname = volume_label(SNUM(conn));
+	int snum = SNUM(conn);
+	char *fstype = lp_fstype(SNUM(conn));
 
-  DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
+	if (total_params < 2)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  if(vfs_stat(conn,".",&st)!=0) {
-    DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
-    return ERROR_DOS(ERRSRV,ERRinvdevice);
-  }
+	info_level = SVAL(params,0);
+	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
-  pdata = Realloc(*ppdata, max_data_bytes + 1024);
-  if ( pdata == NULL ) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *ppdata	= pdata;
-  memset((char *)pdata,'\0',max_data_bytes + 1024);
+	if(vfs_stat(conn,".",&st)!=0) {
+		DEBUG(2,("call_trans2qfsinfo: stat of . failed (%s)\n", strerror(errno)));
+		return ERROR_DOS(ERRSRV,ERRinvdevice);
+	}
 
-  switch (info_level) 
-  {
-    case 1:
-    {
-      SMB_BIG_UINT dfree,dsize,bsize;
-      data_len = 18;
-      conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-      SIVAL(pdata,l1_idFileSystem,st.st_dev);
-      SIVAL(pdata,l1_cSectorUnit,bsize/512);
-      SIVAL(pdata,l1_cUnit,dsize);
-      SIVAL(pdata,l1_cUnitAvail,dfree);
-      SSVAL(pdata,l1_cbSector,512);
-      DEBUG(5,("call_trans2qfsinfo : bsize=%u, id=%x, cSectorUnit=%u, cUnit=%u, cUnitAvail=%u, cbSector=%d\n",
-		 (unsigned int)bsize, (unsigned int)st.st_dev, ((unsigned int)bsize)/512, (unsigned int)dsize,
-         (unsigned int)dfree, 512));
-      break;
-    }
+	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	if ( pdata == NULL )
+		return ERROR_DOS(ERRDOS,ERRnomem);
 
-    case 2:
-    { 
-      /* Return volume name */
-      int volname_len = MIN(strlen(vname),11);
-      data_len = l2_vol_szVolLabel + volname_len + 1;
-      /* 
-       * Add volume serial number - hash of a combination of
-       * the called hostname and the service name.
-       */
-      SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
-      SCVAL(pdata,l2_vol_cch,volname_len);
-      StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
-      DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
-	       (unsigned)st.st_ctime, volname_len,
-	       pdata+l2_vol_szVolLabel));
-      break;
-    }
+	*ppdata = pdata;
+	memset((char *)pdata,'\0',max_data_bytes + 1024);
 
-    case SMB_QUERY_FS_ATTRIBUTE_INFO:
-    {
-      int fstype_len;
-      SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-            (lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
+	switch (info_level) {
+		case 1:
+		{
+			SMB_BIG_UINT dfree,dsize,bsize;
+			data_len = 18;
+			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
+			SIVAL(pdata,l1_idFileSystem,st.st_dev);
+			SIVAL(pdata,l1_cSectorUnit,bsize/512);
+			SIVAL(pdata,l1_cUnit,dsize);
+			SIVAL(pdata,l1_cUnitAvail,dfree);
+			SSVAL(pdata,l1_cbSector,512);
+			DEBUG(5,("call_trans2qfsinfo : bsize=%u, id=%x, cSectorUnit=%u, cUnit=%u, cUnitAvail=%u, cbSector=%d\n",
+				(unsigned int)bsize, (unsigned int)st.st_dev, ((unsigned int)bsize)/512, (unsigned int)dsize,
+				(unsigned int)dfree, 512));
+			break;
+		}
+
+		case 2:
+		{ 
+			/* Return volume name */
+			int volname_len = MIN(strlen(vname),11);
+			data_len = l2_vol_szVolLabel + volname_len + 1;
+			/* 
+			 * Add volume serial number - hash of a combination of
+			 * the called hostname and the service name.
+			 */
+			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
+			SCVAL(pdata,l2_vol_cch,volname_len);
+			StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
+			DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",
+				(unsigned)st.st_ctime, volname_len,
+				pdata+l2_vol_szVolLabel));
+			break;
+		}
+
+		case SMB_QUERY_FS_ATTRIBUTE_INFO:
+		{
+			int fstype_len;
+			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
+				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
-      SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
-      SIVAL(pdata,0,0x700FF);
+			SIVAL(pdata,0,0x4006); /* FS ATTRIBUTES == long filenames supported? */
+			SIVAL(pdata,0,0x700FF);
 #endif /* Old code. */
 
-      SIVAL(pdata,4,255); /* Max filename component length */
-      /* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
-         and will think we can't do long filenames */
-      fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
-      SIVAL(pdata,8,fstype_len);
-      data_len = 12 + fstype_len;
-      SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-      break;
-    }
+			SIVAL(pdata,4,255); /* Max filename component length */
+			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
+				and will think we can't do long filenames */
+			fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
+			SIVAL(pdata,8,fstype_len);
+			data_len = 12 + fstype_len;
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			break;
+		}
 
-    case SMB_QUERY_FS_LABEL_INFO:
-      data_len = 4 + strlen(vname);
-      SIVAL(pdata,0,strlen(vname));
-      pstrcpy(pdata+4,vname);      
-      break;
+		case SMB_QUERY_FS_LABEL_INFO:
+			data_len = 4 + strlen(vname);
+			SIVAL(pdata,0,strlen(vname));
+			pstrcpy(pdata+4,vname);      
+			break;
 
-    case SMB_QUERY_FS_VOLUME_INFO:      
+		case SMB_QUERY_FS_VOLUME_INFO:      
 
-      /* 
-       * Add volume serial number - hash of a combination of
-       * the called hostname and the service name.
-       */
-      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
-	    (str_checksum(local_machine)<<16));
+			/* 
+			 * Add volume serial number - hash of a combination of
+			 * the called hostname and the service name.
+			 */
+			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
+				(str_checksum(local_machine)<<16));
 
-      /* NT4 always serves this up as unicode but expects it to be
-       * delivered as ascii! (tridge && JRA)
-       */
-      if ((get_remote_arch() != RA_WIN2K) && (global_client_caps & CAP_NT_SMBS)) {
-	      data_len = 18 + strlen(vname);
-	      SIVAL(pdata,12,strlen(vname));
-	      pstrcpy(pdata+18,vname);      
-      } else {
-          int vnamelen;
+			/* NT4 always serves this up as unicode but expects it to be
+			 * delivered as ascii! (tridge && JRA)
+			 */
+			if ((get_remote_arch() != RA_WIN2K) && (global_client_caps & CAP_NT_SMBS)) {
+				data_len = 18 + strlen(vname);
+				SIVAL(pdata,12,strlen(vname));
+				pstrcpy(pdata+18,vname);      
+			} else {
+				int vnamelen;
 
-          vnamelen = dos_PutUniCode(pdata+18, vname, sizeof(pstring), False);
-	      data_len = 18 + vnamelen;
-	      SIVAL(pdata,12,vnamelen);
-		  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-      }
+				vnamelen = dos_PutUniCode(pdata+18, vname, sizeof(pstring), False);
+				data_len = 18 + vnamelen;
+				SIVAL(pdata,12,vnamelen);
+				SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			}
 
-      DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
-	       (int)strlen(vname),vname));
-      break;
+			DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
+				(int)strlen(vname),vname));
+			break;
 
-    case SMB_QUERY_FS_SIZE_INFO:
-    {
-      SMB_BIG_UINT dfree,dsize,bsize;
-      data_len = 24;
-      conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-      SBIG_UINT(pdata,0,dsize);
-      SBIG_UINT(pdata,8,dfree);
-      SIVAL(pdata,16,bsize/512);
-      SIVAL(pdata,20,512);
-      break;
-    }
+		case SMB_QUERY_FS_SIZE_INFO:
+		{
+			SMB_BIG_UINT dfree,dsize,bsize;
+			data_len = 24;
+			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
+			SBIG_UINT(pdata,0,dsize);
+			SBIG_UINT(pdata,8,dfree);
+			SIVAL(pdata,16,bsize/512);
+			SIVAL(pdata,20,512);
+			break;
+		}
 
-    case SMB_QUERY_FS_DEVICE_INFO:
-      data_len = 8;
-      SIVAL(pdata,0,0); /* dev type */
-      SIVAL(pdata,4,0); /* characteristics */
-      break;
+		case SMB_QUERY_FS_DEVICE_INFO:
+			data_len = 8;
+			SIVAL(pdata,0,0); /* dev type */
+			SIVAL(pdata,4,0); /* characteristics */
+			break;
 
-    case SMB_MAC_QUERY_FS_INFO:
-	    /*
-	     * Thursby MAC extension... ONLY on NTFS filesystems
-	     * once we do streams then we don't need this
-	     */
-	    if (strequal(lp_fstype(SNUM(conn)),"NTFS")) {
-		    data_len = 88;
-		    SIVAL(pdata,84,0x100); /* Don't support mac... */
-		    break;
-	    }
-	    /* drop through */
-    default:
-	  return ERROR_DOS(ERRDOS,ERRunknownlevel);
-  }
+		/*
+		 * Query the version and capabilities of the CIFS UNIX extensions
+		 * in use.
+		 */
 
-  send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len);
+		case SMB_CIFS_UNIX_QUERY_INFO:
 
-  DEBUG( 4, ( "%s info_level = %d\n",
-            smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
+			if (!lp_unix_extensions())
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
 
-  return -1;
+			data_len = 12;
+			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
+			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
+			SBIG_UINT(pdata,4,((SMB_BIG_UINT)0)); /* No capabilities for now... */
+			break;
+
+		case SMB_MAC_QUERY_FS_INFO:
+			/*
+			 * Thursby MAC extension... ONLY on NTFS filesystems
+			 * once we do streams then we don't need this
+			 */
+			if (strequal(lp_fstype(SNUM(conn)),"NTFS")) {
+				data_len = 88;
+				SIVAL(pdata,84,0x100); /* Don't support mac... */
+				break;
+			}
+			/* drop through */
+		default:
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
+
+	send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len);
+
+	DEBUG( 4, ( "%s info_level = %d\n", smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
+
+	return -1;
 }
 
 /****************************************************************************
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
 
-static int call_trans2setfsinfo(connection_struct *conn,
-				char *inbuf, char *outbuf, int length, 
-				int bufsize,
-				char **pparams, char **ppdata)
+static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  /* Just say yes we did it - there is nothing that
-     can be set here so it doesn't matter. */
-  int outsize;
-  DEBUG(3,("call_trans2setfsinfo\n"));
+	/* Just say yes we did it - there is nothing that
+		can be set here so it doesn't matter. */
+	int outsize;
+	DEBUG(3,("call_trans2setfsinfo\n"));
 
-  if (!CAN_WRITE(conn))
-    return(ERROR_DOS(ERRSRV,ERRaccess));
+	if (!CAN_WRITE(conn))
+		return(ERROR_DOS(ERRSRV,ERRaccess));
 
-  outsize = set_message(outbuf,10,0,True);
+	outsize = set_message(outbuf,10,0,True);
 
-  return outsize;
+	return outsize;
 }
 
 /****************************************************************************
@@ -1451,11 +1518,8 @@ static int call_trans2setfsinfo(connection_struct *conn,
   file name or file id).
 ****************************************************************************/
 
-static int call_trans2qfilepathinfo(connection_struct *conn,
-				    char *inbuf, char *outbuf, int length, 
-				    int bufsize,
-				    char **pparams,char **ppdata,
-				    int total_data)
+static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
 	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 	char *params = *pparams;
@@ -1469,6 +1533,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
 	char *fname;
+	char *fullpathname;
 	char *p;
 	int l;
 	SMB_OFF_T pos = 0;
@@ -1477,7 +1542,12 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	time_t c_time;
 
 	if (tran_call == TRANSACT2_QFILEINFO) {
-		files_struct *fsp = file_fsp(params,0);
+		files_struct *fsp;
+
+		if (total_params < 4)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
@@ -1490,8 +1560,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			 */
 			fname = fsp->fsp_name;
 			unix_convert(fname,conn,0,&bad_path,&sbuf);
-			if (!check_name(fname,conn) || 
-					(!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
+			if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && 
+					(INFO_LEVEL_IS_UNIX(info_level) ? vfs_lstat(conn,fname,&sbuf) : vfs_stat(conn,fname,&sbuf)))) {
 				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
 
 				if((errno == ENOENT) && bad_path) {
@@ -1522,6 +1592,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		}
 	} else {
 		/* qpathinfo */
+		if (total_params < 6)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 		info_level = SVAL(params,0);
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QPATHINFO: level = %d\n", info_level));
@@ -1532,7 +1605,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
 		unix_convert(fname,conn,0,&bad_path,&sbuf);
-		if (!check_name(fname,conn) || (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
+		if (!check_name(fname,conn) || (!VALID_STAT(sbuf) &&
+			(INFO_LEVEL_IS_UNIX(info_level) ? vfs_lstat(conn,fname,&sbuf) : vfs_stat(conn,fname,&sbuf)))) {
 			DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
 			if((errno == ENOENT) && bad_path) {
 				unix_ERR_class = ERRDOS;
@@ -1541,6 +1615,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
 	}
+
+
+	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 
 	DEBUG(3,("call_trans2qfilepathinfo %s level=%d call=%d total_data=%d\n",
 			fname,info_level,tran_call,total_data));
@@ -1552,6 +1630,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		p++;
 	l = strlen(p);  
 	mode = dos_mode(conn,fname,&sbuf);
+	fullpathname = fname;
 	size = sbuf.st_size;
 	allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
 	if (mode & aDIR)
@@ -1882,6 +1961,95 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		break;
 #endif
 
+	/*
+	 * CIFS UNIX Extensions.
+	 */
+
+	case SMB_QUERY_FILE_UNIX_BASIC:
+
+		DEBUG(4,("call_trans2qfilepathinfo: st_mode=%o\n",(int)sbuf.st_mode));
+
+		SOFF_T(pdata,0,sbuf.st_size);             /* File size 64 Bit */
+		pdata += 8;
+
+#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+		SOFF_T(pdata,0,sbuf.st_blocks*STAT_ST_BLOCKSIZE); /* Number of bytes used on disk - 64 Bit */
+#else
+		/* Can't get the value - fake it using size. */
+		SOFF_T(pdata,0,sbuf.st_size);             /* Number of bytes used on disk - 64 Bit */
+#endif
+		pdata += 8;
+
+		put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
+		put_long_date(pdata+8,sbuf.st_atime);     /* Last access time 64 Bit */
+		put_long_date(pdata+16,sbuf.st_mtime);    /* Last modification time 64 Bit */
+		pdata += 24;
+
+		SIVAL(pdata,0,sbuf.st_uid);               /* user id for the owner */
+		SIVAL(pdata,4,0);
+		pdata += 8;
+
+		SIVAL(pdata,0,sbuf.st_gid);               /* group id of owner */
+		SIVAL(pdata,4,0);
+		pdata += 8;
+
+		SIVAL(pdata,0,unix_filetype(sbuf.st_mode));
+		pdata += 4;
+
+		SIVAL(pdata,0,unix_dev_major(sbuf.st_rdev));   /* Major device number if type is device */
+		SIVAL(pdata,4,0);
+		pdata += 8;
+
+		SIVAL(pdata,0,unix_dev_minor(sbuf.st_rdev));   /* Minor device number if type is device */
+		SIVAL(pdata,4,0);
+		pdata += 8;
+
+		SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino);   /* inode number */
+		pdata += 8;
+
+		SIVAL(pdata,0, unix_perms_to_wire(sbuf.st_mode));     /* Standard UNIX file permissions */
+		SIVAL(pdata,4,0);
+		pdata += 8;
+
+		SIVAL(pdata,0,sbuf.st_nlink);             /* number of hard links */
+		SIVAL(pdata,4,0);
+		pdata += 8+1;
+		data_size = PTR_DIFF(pdata,(*ppdata));
+
+		{
+			int i;
+			DEBUG(4,("call_trans2qfilepathinfo: SMB_QUERY_FILE_UNIX_BASIC"));
+
+			for (i=0; i<100; i++)
+				DEBUG(4,("%d=%x, ",i, (*ppdata)[i]));
+			DEBUG(4,("\n"));
+		}
+
+		break;
+
+	case SMB_QUERY_FILE_UNIX_LINK:
+		{
+			pstring buffer;
+			int len;
+
+#ifdef S_ISLNK
+			if(!S_ISLNK(sbuf.st_mode))
+				return(UNIXERROR(ERRSRV,ERRbadlink));
+#else
+			return(UNIXERROR(ERRDOS,ErrNotALink));
+#endif
+			len = conn->vfs_ops.readlink(conn,dos_to_unix(fullpathname,False), buffer, sizeof(pstring)-1);     /* read link */
+			if (len == -1)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			buffer[len] = 0;
+			unix_to_dos(buffer,True);
+			pstrcpy(pdata,buffer);                            /* write '\0' terminated string */
+			pdata += strlen(buffer)+1;
+			data_size = PTR_DIFF(pdata,(*ppdata));
+
+			break;
+		}
+
 	default:
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
@@ -1985,13 +2153,20 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 }
 
 /****************************************************************************
+ Returns true if this pathname is within the share, and thus safe.
+****************************************************************************/
+
+static BOOL ensure_link_is_safe(connection_struct *conn, char *link_dest)
+{
+	return False;
+}
+
+/****************************************************************************
  Reply to a TRANS2_SETFILEINFO (set file info by fileid).
 ****************************************************************************/
 
-static int call_trans2setfilepathinfo(connection_struct *conn,
-				      char *inbuf, char *outbuf, int length, 
-				      int bufsize, char **pparams, 
-				      char **ppdata, int total_data)
+static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -2006,8 +2181,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	int fd = -1;
 	BOOL bad_path = False;
 	files_struct *fsp = NULL;
+	uid_t set_owner = (uid_t)UID_NO_CHANGE;
+	gid_t set_grp = (uid_t)GID_NO_CHANGE;
+	mode_t unixmode = 0;
 
 	if (tran_call == TRANSACT2_SETFILEINFO) {
+
+		if (total_params < 4)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
@@ -2058,6 +2240,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	} else {
 		/* set path info */
+		if (total_params < 6)
+			return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 		info_level = SVAL(params,0);    
 		fname = fname1;
 		pstrcpy(fname,&params[6]);
@@ -2069,8 +2254,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			}
 			return(UNIXERROR(ERRDOS,ERRbadpath));
 		}
- 
-		if(!VALID_STAT(sbuf)) {
+
+		/*
+		 * For CIFS UNIX extensions the target name may not exist.
+		 */
+
+		if(!VALID_STAT(sbuf) && !INFO_LEVEL_IS_UNIX(info_level)) {
+
 			DEBUG(3,("stat of %s failed (%s)\n", fname, strerror(errno)));
 			if((errno == ENOENT) && bad_path) {
 				unix_ERR_class = ERRDOS;
@@ -2082,6 +2272,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 	if (!CAN_WRITE(conn))
 		return ERROR_DOS(ERRSRV,ERRaccess);
+
+	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions())
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
 		tran_call,fname,info_level,total_data));
@@ -2098,6 +2291,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
 	mode = dos_mode(conn,fname,&sbuf);
+	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)UID_NO_CHANGE;
+	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)GID_NO_CHANGE;
 
 	if (total_data > 4 && IVAL(pdata,0) == total_data) {
 		/* uggh, EAs for OS2 */
@@ -2109,6 +2304,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
 		{
+			if (total_data < l1_cbFile+4)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 			/* access time */
 			tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
 
@@ -2124,6 +2322,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		it's also not in the cifs6.txt spec.
 		*/
 		case SMB_INFO_QUERY_EAS_FROM_LIST:
+			if (total_data < 28)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
 			size = IVAL(pdata,16);
@@ -2132,6 +2333,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 
 		/* XXXX nor this.  not in cifs6.txt, either. */
 		case SMB_INFO_QUERY_ALL_EAS:
+			if (total_data < 28)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 			tvs.actime = make_unix_date2(pdata+8);
 			tvs.modtime = make_unix_date2(pdata+12);
 			size = IVAL(pdata,16);
@@ -2144,6 +2348,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 			time_t write_time;
 			time_t changed_time;
+
+			if (total_data < 36)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
 			/* Ignore create time at offset pdata. */
 
@@ -2170,7 +2377,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_SET_FILE_ALLOCATION_INFO:
 		{
 			int ret = -1;
-			SMB_OFF_T allocation_size = IVAL(pdata,0);
+			SMB_OFF_T allocation_size;
+
+			if (total_data < 8)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+			allocation_size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
 			allocation_size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
 #else /* LARGE_SMB_OFF_T */
@@ -2234,6 +2446,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_SET_FILE_END_OF_FILE_INFO:
 		{
+			if (total_data < 8)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
 			size = IVAL(pdata,0);
 #ifdef LARGE_SMB_OFF_T
 			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
@@ -2248,8 +2463,13 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		case SMB_FILE_DISPOSITION_INFORMATION:
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
-			BOOL delete_on_close = (CVAL(pdata,0) ? True : False);
+			BOOL delete_on_close;
 			NTSTATUS status;
+
+			if (total_data < 1)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+			delete_on_close = (CVAL(pdata,0) ? True : False);
 
 			if (tran_call != TRANSACT2_SETFILEINFO)
 				return(ERROR_DOS(ERRDOS,ERRunknownlevel));
@@ -2263,6 +2483,130 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 				return ERROR_NT(status);
 
 			break;
+		}
+
+		/*
+		 * CIFS UNIX extensions.
+		 */
+
+		case SMB_SET_FILE_UNIX_BASIC:
+
+			if (total_data < 100)
+				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
+
+			size=IVAL(pdata,0); /* first 8 Bytes are size */
+#ifdef LARGE_SMB_OFF_T
+			size |= (((SMB_OFF_T)IVAL(pdata,4)) << 32);
+#else /* LARGE_SMB_OFF_T */
+			if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+#endif /* LARGE_SMB_OFF_T */
+			pdata+=24;          /* ctime & st_blocks are not changed */
+			tvs.actime = interpret_long_date(pdata); /* access_time */
+			tvs.modtime = interpret_long_date(pdata+8); /* modification_time */
+			pdata+=16;
+			set_owner = (uid_t)IVAL(pdata,0);
+			pdata += 8;
+			set_grp = (gid_t)IVAL(pdata,0);
+			pdata += 8;
+			unixmode = unix_perms_from_wire(conn, IVAL(pdata,20));
+
+			if (!VALID_STAT(sbuf)) {
+
+				/*
+				 * The only valid use of this is to create character and block
+				 * devices, and named pipes. This is deprecated (IMHO) and 
+				 * a new info level should be used for mknod. JRA.
+				 */
+
+#if defined(HAVE_MAKEDEV_FN)
+				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+#else /* HAVE_MAKEDEV_FN */
+				uint32 file_type = IVAL(pdata,0);
+				uint32 dev_major = IVAL(pdata,4);
+				uint32 dev_minor = IVAL(pdata,12);
+
+				uid_t myuid = geteuid();
+				gid_t mygid = getegid();
+				SMB_DEV_T dev;
+
+				if (tran_call == TRANSACT2_SETFILEINFO)
+					return(ERROR_DOS(ERRDOS,ERRnoaccess));
+
+				dev = makedev(dev_major, dev_minor);
+
+				/* We can only create as the owner/group we are. */
+
+				if ((set_owner != myuid) && (set_owner != (uid_t)UID_NO_CHANGE))
+					return(ERROR_DOS(ERRDOS,ERRnoaccess));
+				if ((set_grp != mygid) && (set_grp != (gid_t)GID_NO_CHANGE))
+					return(ERROR_DOS(ERRDOS,ERRnoaccess));
+
+				if (file_type != UNIX_TYPE_CHARDEV && file_type != UNIX_TYPE_BLKDEV &&
+						file_type != UNIX_TYPE_FIFO)
+					return(ERROR_DOS(ERRDOS,ERRnoaccess));
+
+				/* Ok - do the mknod. */
+				if (conn->vfs_ops.mknod(conn,dos_to_unix(fname,False), unixmode, dev) != 0)
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+				SSVAL(params,0,0);
+				send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+				return(-1);
+#endif /* HAVE_MAKEDEV_FN */
+
+			}
+
+			break;
+
+		case SMB_SET_FILE_UNIX_LINK:
+		{
+			pstring link_dest;
+			/* Set a symbolic link. */
+			/* Don't allow this if follow links is false. */
+
+			if (!lp_symlinks(SNUM(conn)))
+				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+
+			/* Disallow if already exists. */
+			if (VALID_STAT(sbuf))
+				return(ERROR_DOS(ERRDOS,ERRbadpath));
+
+			pstrcpy(link_dest, pdata);
+
+			if (!ensure_link_is_safe(conn, link_dest))
+				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+			dos_to_unix(link_dest, True);
+			dos_to_unix(fname, True);
+			if (conn->vfs_ops.symlink(conn,link_dest,fname) != 0)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
+		}
+
+		case SMB_SET_FILE_UNIX_HLINK:
+		{
+			pstring link_dest;
+
+			/* Set a hard link. */
+
+			/* Disallow if already exists. */
+			if (VALID_STAT(sbuf))
+				return(ERROR_DOS(ERRDOS,ERRbadpath));
+
+			pstrcpy(link_dest, pdata);
+
+			if (!ensure_link_is_safe(conn, link_dest))
+				return(ERROR_DOS(ERRDOS,ERRnoaccess));
+
+			dos_to_unix(link_dest, True);
+			dos_to_unix(fname, True);
+			if (conn->vfs_ops.link(conn,link_dest,fname) != 0)
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			SSVAL(params,0,0);
+			send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+			return(-1);
 		}
 
 		default:
@@ -2370,9 +2714,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	}
 
 	SSVAL(params,0,0);
-
 	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
-  
 	return(-1);
 }
 
@@ -2380,50 +2722,49 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
  Reply to a TRANS2_MKDIR (make directory with extended attributes).
 ****************************************************************************/
 
-static int call_trans2mkdir(connection_struct *conn,
-			    char *inbuf, char *outbuf, int length, int bufsize,
-			    char **pparams, char **ppdata)
+static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  char *params = *pparams;
-  pstring directory;
-  int ret = -1;
-  SMB_STRUCT_STAT sbuf;
-  BOOL bad_path = False;
+	char *params = *pparams;
+	pstring directory;
+	int ret = -1;
+	SMB_STRUCT_STAT sbuf;
+	BOOL bad_path = False;
 
-  if (!CAN_WRITE(conn))
-    return ERROR_DOS(ERRSRV,ERRaccess);
+	if (!CAN_WRITE(conn))
+		return ERROR_DOS(ERRSRV,ERRaccess);
 
-  pstrcpy(directory, &params[4]);
+	if (total_params < 4)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
+	pstrcpy(directory, &params[4]);
 
-  unix_convert(directory,conn,0,&bad_path,&sbuf);
-  if (check_name(directory,conn))
-    ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
+	DEBUG(3,("call_trans2mkdir : name = %s\n", directory));
+
+	unix_convert(directory,conn,0,&bad_path,&sbuf);
+	if (check_name(directory,conn))
+		ret = vfs_mkdir(conn,directory,unix_mode(conn,aDIR,directory));
   
-  if(ret < 0)
-    {
-      DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
-      if((errno == ENOENT) && bad_path)
-      {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
+	if(ret < 0) {
+		DEBUG(5,("call_trans2mkdir error (%s)\n", strerror(errno)));
+		if((errno == ENOENT) && bad_path) {
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadpath;
+		}
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
 
-  /* Realloc the parameter and data sizes */
-  params = Realloc(*pparams,2);
-  if(params == NULL) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *pparams	= params;
+	/* Realloc the parameter and data sizes */
+	params = Realloc(*pparams,2);
+	if(params == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
 
-  SSVAL(params,0,0);
+	SSVAL(params,0,0);
 
-  send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
   
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
@@ -2431,45 +2772,45 @@ static int call_trans2mkdir(connection_struct *conn,
  We don't actually do this - we just send a null response.
 ****************************************************************************/
 
-static int call_trans2findnotifyfirst(connection_struct *conn,
-				      char *inbuf, char *outbuf, 
-				      int length, int bufsize,
-				      char **pparams, char **ppdata)
+static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  static uint16 fnf_handle = 257;
-  char *params = *pparams;
-  uint16 info_level = SVAL(params,4);
+	static uint16 fnf_handle = 257;
+	char *params = *pparams;
+	uint16 info_level;
 
-  DEBUG(3,("call_trans2findnotifyfirst - info_level %d\n", info_level));
+	if (total_params < 6)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  switch (info_level) 
-    {
-    case 1:
-    case 2:
-      break;
-    default:
-      return ERROR_DOS(ERRDOS,ERRunknownlevel);
-    }
+	info_level = SVAL(params,4);
+	DEBUG(3,("call_trans2findnotifyfirst - info_level %d\n", info_level));
 
-  /* Realloc the parameter and data sizes */
-  params = Realloc(*pparams,6);
-  if(params == NULL) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *pparams	= params;
+	switch (info_level) {
+		case 1:
+		case 2:
+			break;
+		default:
+			return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
 
-  SSVAL(params,0,fnf_handle);
-  SSVAL(params,2,0); /* No changes */
-  SSVAL(params,4,0); /* No EA errors */
+	/* Realloc the parameter and data sizes */
+	params = Realloc(*pparams,6);
+	if(params == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
 
-  fnf_handle++;
+	SSVAL(params,0,fnf_handle);
+	SSVAL(params,2,0); /* No changes */
+	SSVAL(params,4,0); /* No EA errors */
 
-  if(fnf_handle == 0)
-    fnf_handle = 257;
+	fnf_handle++;
 
-  send_trans2_replies(outbuf, bufsize, params, 6, *ppdata, 0);
+	if(fnf_handle == 0)
+		fnf_handle = 257;
+
+	send_trans2_replies(outbuf, bufsize, params, 6, *ppdata, 0);
   
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
@@ -2477,69 +2818,66 @@ static int call_trans2findnotifyfirst(connection_struct *conn,
  changes). Currently this does nothing.
 ****************************************************************************/
 
-static int call_trans2findnotifynext(connection_struct *conn,
-				     char *inbuf, char *outbuf, 
-				     int length, int bufsize,
-				     char **pparams, char **ppdata)
+static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  char *params = *pparams;
+	char *params = *pparams;
 
-  DEBUG(3,("call_trans2findnotifynext\n"));
+	DEBUG(3,("call_trans2findnotifynext\n"));
 
-  /* Realloc the parameter and data sizes */
-  params = Realloc(*pparams,4);
-  if(params == NULL) {
-    return ERROR_DOS(ERRDOS,ERRnomem);
-  }
-  *pparams	= params;
+	/* Realloc the parameter and data sizes */
+	params = Realloc(*pparams,4);
+	if(params == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
+	*pparams = params;
 
-  SSVAL(params,0,0); /* No changes */
-  SSVAL(params,2,0); /* No EA errors */
+	SSVAL(params,0,0); /* No changes */
+	SSVAL(params,2,0); /* No EA errors */
 
-  send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0);
+	send_trans2_replies(outbuf, bufsize, params, 4, *ppdata, 0);
   
-  return(-1);
+	return(-1);
 }
 
 /****************************************************************************
  Reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>.
 ****************************************************************************/
 
-static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
-				     char* outbuf, int length, int bufsize,
-				     char** pparams, char** ppdata)
+static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  char *params = *pparams;
-  enum remote_arch_types ra_type = get_remote_arch();
-  BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
-  pstring pathname;
-  int reply_size = 0;
-  int max_referral_level = SVAL(params,0);
+	char *params = *pparams;
+	enum remote_arch_types ra_type = get_remote_arch();
+	BOOL NT_arch = ((ra_type == RA_WINNT) || (ra_type == RA_WIN2K));
+	pstring pathname;
+	int reply_size = 0;
+	int max_referral_level;
 
+	DEBUG(10,("call_trans2getdfsreferral\n"));
 
-  DEBUG(10,("call_trans2getdfsreferral\n"));
+	if (total_params < 2)
+		return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
-  if(!lp_host_msdfs())
-    return ERROR_DOS(ERRDOS,ERRbadfunc);
+	max_referral_level = SVAL(params,0);
 
-  /* if pathname is in UNICODE, convert to DOS */
-  /* NT always sends in UNICODE, may not set UNICODE flag */
-  if(NT_arch || (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS))
-    {
-      unistr_to_dos(pathname, &params[2], sizeof(pathname));
-      DEBUG(10,("UNICODE referral for %s\n",pathname));
-    }
-  else
-    pstrcpy(pathname,&params[2]);
+	if(!lp_host_msdfs())
+		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
-  if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
-    return ERROR_DOS(ERRDOS,ERRbadfile);
+	/* if pathname is in UNICODE, convert to DOS */
+	/* NT always sends in UNICODE, may not set UNICODE flag */
+	if(NT_arch || (SVAL(inbuf,smb_flg2) & FLAGS2_UNICODE_STRINGS)) {
+		unistr_to_dos(pathname, &params[2], sizeof(pathname));
+		DEBUG(10,("UNICODE referral for %s\n",pathname));
+	} else
+		pstrcpy(pathname,&params[2]);
+
+	if((reply_size = setup_dfs_referral(pathname,max_referral_level,ppdata)) < 0)
+		return ERROR_DOS(ERRDOS,ERRbadfile);
     
-  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | 
-	FLAGS2_DFS_PATHNAMES);
-  send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
+	SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_UNICODE_STRINGS | FLAGS2_DFS_PATHNAMES);
+	send_trans2_replies(outbuf,bufsize,0,0,*ppdata,reply_size);
 
-  return(-1);
+	return(-1);
 }
 
 #define LMCAT_SPL       0x53
@@ -2549,38 +2887,35 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   reply to a TRANS2_IOCTL - used for OS/2 printing.
 ****************************************************************************/
 
-static int call_trans2ioctl(connection_struct *conn, char* inbuf,
-                            char* outbuf, int length, int bufsize,
-                            char** pparams, char** ppdata)
+static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
+			char **pparams, int total_params, char **ppdata, int total_data)
 {
-  char *pdata = *ppdata;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv15);
+	char *pdata = *ppdata;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
 
-  if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
-      (SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-    pdata = Realloc(*ppdata, 32);
-    if(pdata == NULL) {
-      return ERROR_DOS(ERRDOS,ERRnomem);
-    }
-    *ppdata = pdata;
+	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
+			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+		pdata = Realloc(*ppdata, 32);
+		if(pdata == NULL)
+			return ERROR_DOS(ERRDOS,ERRnomem);
+		*ppdata = pdata;
 
-    SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
-    StrnCpy(pdata+2, global_myname, 15);           /* Our NetBIOS name */
-    StrnCpy(pdata+18, lp_servicename(SNUM(conn)), 13); /* Service name */
-    send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
-    return(-1);
-  } else {
-    DEBUG(2,("Unknown TRANS2_IOCTL\n"));
-    return ERROR_DOS(ERRSRV,ERRerror);
-  }
+		SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
+		StrnCpy(pdata+2, global_myname, 15);           /* Our NetBIOS name */
+		StrnCpy(pdata+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
+		return(-1);
+	} else {
+		DEBUG(2,("Unknown TRANS2_IOCTL\n"));
+		return ERROR_DOS(ERRSRV,ERRerror);
+	}
 }
 
 /****************************************************************************
  Reply to a SMBfindclose (stop trans2 directory search).
 ****************************************************************************/
 
-int reply_findclose(connection_struct *conn,
-		    char *inbuf,char *outbuf,int length,int bufsize)
+int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int outsize = 0;
 	int dptr_num=SVALS(inbuf,smb_vwv0);
@@ -2602,8 +2937,7 @@ int reply_findclose(connection_struct *conn,
  Reply to a SMBfindnclose (stop FINDNOTIFYFIRST directory search).
 ****************************************************************************/
 
-int reply_findnclose(connection_struct *conn, 
-		     char *inbuf,char *outbuf,int length,int bufsize)
+int reply_findnclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int outsize = 0;
 	int dptr_num= -1;
@@ -2629,8 +2963,7 @@ int reply_findnclose(connection_struct *conn,
  Reply to a SMBtranss2 - just ignore it!
 ****************************************************************************/
 
-int reply_transs2(connection_struct *conn,
-		  char *inbuf,char *outbuf,int length,int bufsize)
+int reply_transs2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	START_PROFILE(SMBtranss2);
 	DEBUG(4,("Ignoring transs2 of length %d\n",length));
@@ -2642,8 +2975,7 @@ int reply_transs2(connection_struct *conn,
  Reply to a SMBtrans2.
 ****************************************************************************/
 
-int reply_trans2(connection_struct *conn,
-		 char *inbuf,char *outbuf,int length,int bufsize)
+int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
 	int outsize = 0;
 	unsigned int total_params = SVAL(inbuf, smb_tpscnt);
@@ -2783,93 +3115,84 @@ int reply_trans2(connection_struct *conn,
 	switch(tran_call)  {
 	case TRANSACT2_OPEN:
 		START_PROFILE_NESTED(Trans2_open);
-		outsize = call_trans2open(conn, 
-					  inbuf, outbuf, bufsize, 
-					  &params, &data);
+		outsize = call_trans2open(conn, inbuf, outbuf, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_open);
 		break;
 
 	case TRANSACT2_FINDFIRST:
 		START_PROFILE_NESTED(Trans2_findfirst);
-		outsize = call_trans2findfirst(conn, inbuf, outbuf, 
-					       bufsize, &params, &data);
+		outsize = call_trans2findfirst(conn, inbuf, outbuf, bufsize,
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_findfirst);
 		break;
 
 	case TRANSACT2_FINDNEXT:
 		START_PROFILE_NESTED(Trans2_findnext);
-		outsize = call_trans2findnext(conn, inbuf, outbuf, 
-					      length, bufsize, 
-					      &params, &data);
+		outsize = call_trans2findnext(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_findnext);
 		break;
 
 	case TRANSACT2_QFSINFO:
 		START_PROFILE_NESTED(Trans2_qfsinfo);
-	    outsize = call_trans2qfsinfo(conn, inbuf, outbuf, 
-					 length, bufsize, &params, 
-					 &data);
+	    outsize = call_trans2qfsinfo(conn, inbuf, outbuf, length, bufsize,
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
 
 	case TRANSACT2_SETFSINFO:
 		START_PROFILE_NESTED(Trans2_setfsinfo);
-		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, 
-					       length, bufsize, 
-					       &params, &data);
+		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_setfsinfo);
 		break;
 
 	case TRANSACT2_QPATHINFO:
 	case TRANSACT2_QFILEINFO:
 		START_PROFILE_NESTED(Trans2_qpathinfo);
-		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, 
-						   length, bufsize, 
-						   &params, &data, total_data);
+		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_qpathinfo);
 		break;
 	case TRANSACT2_SETPATHINFO:
 	case TRANSACT2_SETFILEINFO:
 		START_PROFILE_NESTED(Trans2_setpathinfo);
-		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, 
-						     length, bufsize, 
-						     &params, &data, 
-						     total_data);
+		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_setpathinfo);
 		break;
 
 	case TRANSACT2_FINDNOTIFYFIRST:
 		START_PROFILE_NESTED(Trans2_findnotifyfirst);
-		outsize = call_trans2findnotifyfirst(conn, inbuf, outbuf, 
-						     length, bufsize, 
-						     &params, &data);
+		outsize = call_trans2findnotifyfirst(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_findnotifyfirst);
 		break;
 
 	case TRANSACT2_FINDNOTIFYNEXT:
 		START_PROFILE_NESTED(Trans2_findnotifynext);
-		outsize = call_trans2findnotifynext(conn, inbuf, outbuf, 
-						    length, bufsize, 
-						    &params, &data);
+		outsize = call_trans2findnotifynext(conn, inbuf, outbuf, length, bufsize, 
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_findnotifynext);
 		break;
 	case TRANSACT2_MKDIR:
 		START_PROFILE_NESTED(Trans2_mkdir);
-		outsize = call_trans2mkdir(conn, inbuf, outbuf, length, 
-					   bufsize, &params, &data);
+		outsize = call_trans2mkdir(conn, inbuf, outbuf, length, bufsize,
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_mkdir);
 		break;
 
 	case TRANSACT2_GET_DFS_REFERRAL:
 		START_PROFILE_NESTED(Trans2_get_dfs_referral);
-        outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length,
-					    bufsize, &params, &data);
+		outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length, bufsize,
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_get_dfs_referral);
 		break;
 	case TRANSACT2_IOCTL:
 		START_PROFILE_NESTED(Trans2_ioctl);
-		outsize = call_trans2ioctl(conn,inbuf,outbuf,length,
-						bufsize,&params,&data);
+		outsize = call_trans2ioctl(conn,inbuf,outbuf,length, bufsize,
+				&params, total_params, &data, total_data);
 		END_PROFILE_NESTED(Trans2_ioctl);
 		break;
 	default:

@@ -235,6 +235,7 @@
 #undef STAT_ST_BLOCKSIZE
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
+#undef HAVE_MAKEDEV_FN
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

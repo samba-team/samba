@@ -278,6 +278,7 @@ typedef struct
 	BOOL bHostMSDfs;
 	BOOL bHideLocalUsers;
 	BOOL bUseMmap;
+	BOOL bUnixExtensions;
 }
 global;
 
@@ -831,6 +832,7 @@ static struct parm_struct parm_table[] = {
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, 0},
 	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, 0},
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, 0},
+	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, 0},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
 	
@@ -1321,6 +1323,7 @@ static void init_globals(void)
 #else
 	Globals.bUseMmap = True;
 #endif
+	Globals.bUnixExtensions = False;
 
 #ifdef WITH_SSL
 	Globals.sslVersion = SMB_SSL_V23;
@@ -1593,6 +1596,7 @@ FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
 FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
+FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)

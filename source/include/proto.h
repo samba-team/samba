@@ -1920,6 +1920,7 @@ BOOL lp_host_msdfs(void);
 BOOL lp_kernel_oplocks(void);
 BOOL lp_enhanced_browsing(void);
 BOOL lp_use_mmap(void);
+BOOL lp_unix_extensions(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -4504,14 +4505,10 @@ BOOL reset_stat_cache( void );
 /*The following definitions come from  smbd/trans2.c  */
 
 NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close);
-int reply_findclose(connection_struct *conn,
-		    char *inbuf,char *outbuf,int length,int bufsize);
-int reply_findnclose(connection_struct *conn, 
-		     char *inbuf,char *outbuf,int length,int bufsize);
-int reply_transs2(connection_struct *conn,
-		  char *inbuf,char *outbuf,int length,int bufsize);
-int reply_trans2(connection_struct *conn,
-		 char *inbuf,char *outbuf,int length,int bufsize);
+int reply_findclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_findnclose(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_transs2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
+int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 
 /*The following definitions come from  smbd/uid.c  */
 

@@ -38,6 +38,11 @@ static int fd_open(struct connection_struct *conn, char *fname,
 	flags |= O_NONBLOCK;
 #endif
 
+#ifdef O_NOFOLLOW
+	if (!lp_symlinks(SNUM(conn)))
+		flags |= O_NOFOLLOW;
+#endif
+
 	fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
 
 	/* Fix for files ending in '.' */

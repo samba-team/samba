@@ -321,8 +321,11 @@ Byte offset   Type     name                description
 #define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
 #define SMB_SET_FILE_UNIX_BASIC        0x200
 
-#define MODE_NO_CHANGE                 -1     /* file mode value which */
+#define MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
                                               /* means "don't change it" */
+#define UID_NO_CHANGE                  0xFFFFFFFF
+#define GID_NO_CHANGE                  0xFFFFFFFF
+
 /*
  LARGE_INTEGER EndOfFile                File size
  LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
@@ -395,5 +398,28 @@ Byte offset   Type     name                description
 #define SMB_SET_FILE_UNIX_HLINK        0x203
 
 #define SMB_FIND_FILE_UNIX             0x202
+
+/*
+ Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus
+ 64-bits worth of capability fun :-).
+*/
+
+#define SMB_CIFS_UNIX_QUERY_INFO      0x200
+
+/* Returns the following.
+
+  UINT16             major version number
+  UINT16             minor version number
+  LARGE_INTEGER      capability bitfield
+
+*/
+
+#define CIFS_UNIX_MAJOR_VERSION 1
+#define CIFS_UNIX_MINOR_VERSION 0
+
+#define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
+#define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+
+/* ... more as we think of them :-). */
 
 #endif
