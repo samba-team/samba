@@ -118,6 +118,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 
 struct winbindd_domain *domain_list(void);
 void free_domain_list(void);
+void rescan_trusted_domains(void);
 BOOL init_domain_list(void);
 struct winbindd_domain *find_domain_from_name(const char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
