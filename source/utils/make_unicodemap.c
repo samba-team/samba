@@ -294,7 +294,6 @@ int main(int argc, char **argv)
   const char *codepage = NULL;
   char *input_file = NULL;
   char *output_file = NULL;
-  BOOL compile = False;
 
   prog_name = argv[0];
 
