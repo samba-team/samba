@@ -1,3 +1,7 @@
+1999-08-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmind.c: use HDB keytabs
+
 1999-08-25  Assar Westerlund  <assar@sics.se>
 
 	* cpw.c (set_password): use correct variable.  From Love

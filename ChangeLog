@@ -1,3 +1,17 @@
+1999-08-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/get_addrs.c: krb5_get_all_server_addrs shouldn't return
+	extra addresses
+
+	* kpasswd/kpasswdd.c: use HDB keytabs; change some error messages;
+	add --realm flag
+
+	* lib/krb5/address.c (krb5_append_addresses): remove duplicates
+
+1999-08-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/hdb/keytab.c: HDB keytab backend
+
 1999-08-25  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/keytab.c
