@@ -22,6 +22,22 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+
+
+
+/****************************************************************************
+represent a credential as a string
+****************************************************************************/
+char *credstr(uchar *cred)
+{
+	static fstring buf;
+	sprintf(buf,"%02X%02X%02X%02X%02X%02X%02X%02X",
+		cred[0], cred[1], cred[2], cred[3], 
+		cred[4], cred[5], cred[6], cred[7]);
+	return buf;
+}
+
+
 /****************************************************************************
   setup the session key. 
 Input: 8 byte challenge block
@@ -31,11 +47,10 @@ Output:
       8 byte session key
 ****************************************************************************/
 void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass, 
-		       uint32 session_key[2])
+		      uchar session_key[8])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];
-	unsigned char netsesskey[8];
 
 	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
 	sum[1] = IVAL(clnt_chal->data, 4) + IVAL(srv_chal->data, 4);
@@ -43,18 +58,15 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	cred_hash1(netsesskey, sum2,(unsigned char *)pass);
-
-	session_key[0] = IVAL(netsesskey, 0);
-	session_key[1] = IVAL(netsesskey, 4);
+	cred_hash1(session_key, sum2,(unsigned char *)pass);
 
 	/* debug output */
 	DEBUG(4,("cred_session_key\n"));
 
-	DEBUG(5,("	clnt_chal: %lx %lx\n", clnt_chal->data[0], clnt_chal->data[1]));
-	DEBUG(5,("	srv_chal : %lx %lx\n", srv_chal ->data[0], srv_chal ->data[1]));
-	DEBUG(5,("	clnt+srv : %lx %lx\n", sum            [0], sum            [1]));
-	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
+	DEBUG(5,("	clnt_chal: %s\n", credstr(clnt_chal->data)));
+	DEBUG(5,("	srv_chal : %s\n", credstr(srv_chal->data)));
+	DEBUG(5,("	clnt+srv : %s\n", credstr(sum2)));
+	DEBUG(5,("	sess_key : %s\n", credstr(session_key)));
 }
 
 
@@ -69,36 +81,24 @@ Input:
 Output:
       8 byte credential
 ****************************************************************************/
-void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
+void cred_create(uchar session_key[8], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred)
 {
 	DOM_CHAL time_cred;
-	unsigned char calc_cred[8];
-	unsigned char timecred[8];
-	unsigned char netsesskey[8];
 
-	SIVAL(netsesskey, 0, session_key[0]);
-	SIVAL(netsesskey, 4, session_key[1]);
+	SIVAL(time_cred.data, 0, IVAL(stor_cred->data, 0) + timestamp.time);
+	SIVAL(time_cred.data, 4, IVAL(stor_cred->data, 4));
 
-	SIVAL(timecred, 0, IVAL(stor_cred, 0) + timestamp.time);
-	SIVAL(timecred, 4, IVAL(stor_cred, 4));
-
-	cred_hash2(calc_cred, timecred, netsesskey);
-
-	cred->data[0] = IVAL(calc_cred, 0);
-	cred->data[1] = IVAL(calc_cred, 4);
-
-	time_cred.data[0] = IVAL(timecred, 0);
-	time_cred.data[1] = IVAL(timecred, 4);
+	cred_hash2(cred->data, time_cred.data, session_key);
 
 	/* debug output*/
 	DEBUG(4,("cred_create\n"));
 
-	DEBUG(5,("	sess_key : %lx %lx\n", session_key    [0], session_key    [1]));
-	DEBUG(5,("	stor_cred: %lx %lx\n", stor_cred->data[0], stor_cred->data[1]));
+	DEBUG(5,("	sess_key : %s\n", credstr(session_key)));
+	DEBUG(5,("	stor_cred: %s\n", credstr(stor_cred->data)));
 	DEBUG(5,("	timestamp: %lx\n"    , timestamp.time));
-	DEBUG(5,("	timecred : %lx %lx\n", time_cred .data[0], time_cred .data[1]));
-	DEBUG(5,("	calc_cred: %lx %lx\n", cred     ->data[0], cred     ->data[1]));
+	DEBUG(5,("	timecred : %s\n", credstr(time_cred.data)));
+	DEBUG(5,("	calc_cred: %s\n", credstr(cred->data)));
 }
 
 
@@ -115,7 +115,7 @@ Output:
       returns 1 if computed credential matches received credential
       returns 0 otherwise
 ****************************************************************************/
-int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
+int cred_assert(DOM_CHAL *cred, char session_key[8], DOM_CHAL *stored_cred,
 		UTIME timestamp)
 {
 	DOM_CHAL cred2;
@@ -125,8 +125,8 @@ int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 	/* debug output*/
 	DEBUG(4,("cred_assert\n"));
 
-	DEBUG(5,("	challenge : %lx %lx\n", cred->data[0], cred->data[1]));
-	DEBUG(5,("	calculated: %lx %lx\n", cred2.data[0], cred2.data[1]));
+	DEBUG(5,("	challenge : %s\n", credstr(cred->data)));
+	DEBUG(5,("	calculated: %s\n", credstr(cred2.data)));
 
 	if (memcmp(cred->data, cred2.data, 8) == 0)
 	{
@@ -144,8 +144,8 @@ int cred_assert(DOM_CHAL *cred, uint32 session_key[2], DOM_CHAL *stored_cred,
 /****************************************************************************
   checks credentials; generates next step in the credential chain
 ****************************************************************************/
-BOOL clnt_deal_with_creds(uint32 sess_key[2],
-		DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred)
+BOOL clnt_deal_with_creds(char sess_key[8],
+			  DOM_CRED *sto_clnt_cred, DOM_CRED *rcv_srv_cred)
 {
 	UTIME new_clnt_time;
 	uint32 new_cred;
@@ -157,7 +157,7 @@ BOOL clnt_deal_with_creds(uint32 sess_key[2],
 
 	/* check that the received server credentials are valid */
 	if (!cred_assert(&(rcv_srv_cred->challenge), sess_key,
-                    &(sto_clnt_cred->challenge), new_clnt_time))
+			 &(sto_clnt_cred->challenge), new_clnt_time))
 	{
 		return False;
 	}
@@ -169,8 +169,7 @@ BOOL clnt_deal_with_creds(uint32 sess_key[2],
 	/* store new seed in client credentials */
 	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);
 
-	DEBUG(5,("	new clnt cred: %lx %lx\n", sto_clnt_cred->challenge.data[0],
-	                                       sto_clnt_cred->challenge.data[1]));
+	DEBUG(5,("	new clnt cred: %s\n", credstr(sto_clnt_cred->challenge.data)));
 	return True;
 }
 
@@ -178,9 +177,9 @@ BOOL clnt_deal_with_creds(uint32 sess_key[2],
 /****************************************************************************
   checks credentials; generates next step in the credential chain
 ****************************************************************************/
-BOOL deal_with_creds(uint32 sess_key[2],
-		DOM_CRED *sto_clnt_cred, 
-		DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred)
+BOOL deal_with_creds(uchar sess_key[8],
+		     DOM_CRED *sto_clnt_cred, 
+		     DOM_CRED *rcv_clnt_cred, DOM_CRED *rtn_srv_cred)
 {
 	UTIME new_clnt_time;
 	uint32 new_cred;
@@ -212,8 +211,7 @@ BOOL deal_with_creds(uint32 sess_key[2],
 	cred_create(sess_key, &(sto_clnt_cred->challenge), new_clnt_time,
 	            &(rtn_srv_cred->challenge));
 	
-	DEBUG(5,("deal_with_creds: clnt_cred[0]=%lx\n",
-	          sto_clnt_cred->challenge.data[0]));
+	DEBUG(5,("deal_with_creds: clnt_cred=%s\n", credstr(sto_clnt_cred->challenge.data)));
 
 	/* store new seed in client credentials */
 	SIVAL(sto_clnt_cred->challenge.data, 0, new_cred);

@@ -63,7 +63,7 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 
 	UTIME zerotime;
 
-	uint32 sess_key[2];
+	uchar sess_key[8];
 	char nt_owf_mach_pwd[16];
 	fstring mach_acct;
 	fstring mach_pwd;
@@ -221,8 +221,8 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	fstrcpy(mach_pwd , myhostname);
 	strcat(mach_acct, "$");
 
-	clnt_chal.data[0] = 0x11111111;
-	clnt_chal.data[1] = 0x22222222;
+	SIVAL(clnt_chal.data, 0, 0x11111111);
+	SIVAL(clnt_chal.data, 4, 0x22222222);
 	
 	/* send a client challenge; receive a server challenge */
 	if (!do_lsa_req_chal(fnum, ++call_id, desthost, myhostname, &clnt_chal, &srv_chal))
