@@ -346,7 +346,11 @@ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 */
 const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
-	time_t t = nt_time_to_unix(nt);
+	time_t t;
+	if (nt == 0) {
+		return "NTTIME(0)";
+	}
+	t = nt_time_to_unix(nt);
 	return timestring(mem_ctx, t);
 }
 
