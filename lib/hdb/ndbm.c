@@ -173,15 +173,14 @@ NDBM_seq(krb5_context context, HDB *db, hdb_entry *entry, int first)
     if(ret) return ret;
     value = dbm_fetch(d, key);
     db->unlock(context, db);
-    /* krb5_data_free(&data); */
     data.data = value.dptr;
     data.length = value.dsize;
-    hdb_value2entry(context, &data, entry);
+    if(hdb_value2entry(context, &data, entry))
+	return NDBM_seq(context, db, entry, 0);
     if (entry->principal == NULL) {
 	entry->principal = malloc (sizeof(*entry->principal));
 	hdb_key2principal (context, &key_data, entry->principal);
     }
-    /* krb5_data_free(&data); */
     return 0;
 }
 
@@ -224,6 +223,51 @@ NDBM_rename(krb5_context context, HDB *db, const char *new_name)
     return 0;
 }
 
+static krb5_error_code
+NDBM__get(krb5_context context, HDB *db, krb5_data key, krb5_data *reply)
+{
+    DBM *d = (DBM*)db->db;
+    datum k, v;
+    int code;
+
+    k.dptr  = key.data;
+    k.dsize = key.length;
+    code = db->lock(context, db, HDB_RLOCK);
+    if(code)
+	return code;
+    v = dbm_fetch(d, k);
+    db->unlock(context, db);
+    if(v.dptr == NULL)
+	return HDB_ERR_NOENTRY;
+
+    krb5_data_copy(reply, v.dptr, v.dsize);
+    return 0;
+}
+
+static krb5_error_code
+NDBM__put(krb5_context context, HDB *db, int replace, 
+	krb5_data key, krb5_data value)
+{
+    DBM *d = (DBM*)db->db;
+    datum k, v;
+    int code;
+
+    k.dptr  = key.data;
+    k.dsize = key.length;
+    v.dptr  = value.data;
+    v.dsize = value.length;
+
+    code = db->lock(context, db, HDB_WLOCK);
+    if(code)
+	return code;
+    code = dbm_store(d, k, v, replace ? DBM_REPLACE : DBM_INSERT);
+    db->unlock(context, db);
+    if(code == 1)
+	return HDB_ERR_EXISTS;
+    if (code < 0)
+	return code;
+    return 0;
+}
 
 krb5_error_code
 hdb_ndbm_open(krb5_context context, HDB **db, 
@@ -245,7 +289,10 @@ hdb_ndbm_open(krb5_context context, HDB **db,
     (*db)->lock = NDBM_lock;
     (*db)->unlock = NDBM_unlock;
     (*db)->rename = NDBM_rename;
+    (*db)->_get = NDBM__get;
+    (*db)->_put = NDBM__put;
     return 0;
 }
+
 
 #endif
