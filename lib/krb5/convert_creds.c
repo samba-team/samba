@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -98,6 +98,172 @@ _krb5_krb_life_to_time(int start, int life_)
     return start + _tkt_lifetimes[life - TKTLIFEMINFIXED];
 }
 
+/*
+ * Write a Kerberos 4 ticket file
+ */
+
+#define KRB5_TF_LCK_RETRY_COUNT 50
+#define KRB5_TF_LCK_RETRY 1
+
+#ifndef TKT_ROOT
+#define TKT_ROOT "/tmp/tkt"
+#endif
+
+static krb5_error_code
+write_v4_cc(krb5_context context, const char *tkfile, 
+	    krb5_storage *sp, int append)
+{
+    char static_path[1024], *path = NULL;
+    krb5_error_code ret;
+    struct stat sb;
+    krb5_data data;
+    int fd, i;
+
+    if (tkfile == NULL) {
+	if (!issuid())
+	    path = getenv("KRBTKFILE");
+	if (path == NULL) {
+	    snprintf(static_path, sizeof(static_path),
+		     "%s%u", TKT_ROOT, (unsigned)getuid());
+	    path = static_path;
+	}
+    } else {
+	strlcpy(static_path, tkfile, sizeof(static_path));
+	path = static_path;
+    }
+
+    fd = open(path, O_WRONLY|O_CREAT, 0600);
+    if (fd < 0) {
+	krb5_set_error_string(context, 
+			      "krb5_krb_tf_setup: error opening file %s", 
+			      path);
+	return errno;
+    }
+
+    if (fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
+	close(fd);
+	krb5_set_error_string(context, 
+			      "krb5_krb_tf_setup: tktfile %s is not a file",
+			      path);
+	return KRB5_FCC_PERM;
+    }
+
+    for (i = 0; i < KRB5_TF_LCK_RETRY_COUNT; i++) {
+	if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+	    sleep(KRB5_TF_LCK_RETRY);
+	} else
+	    break;
+    }
+    if (i == KRB5_TF_LCK_RETRY_COUNT) {
+	close(fd);
+	krb5_set_error_string(context,
+			      "krb5_krb_tf_setup: failed to lock %s",
+			      path);
+	return KRB5_FCC_PERM;
+    }
+
+    if (!append) {
+	ret = ftruncate(fd, 0);
+	if (ret < 0) {
+	    flock(fd, LOCK_UN);
+	    close(fd);
+	    krb5_set_error_string(context,
+				  "krb5_krb_tf_setup: failed to truncate %s",
+				  path);
+	    return KRB5_FCC_PERM;
+	}
+    }
+    ret = lseek(fd, 0L, SEEK_END);
+    if (ret < 0) {
+	ret = errno;
+	close(fd);
+	return ret;
+    }
+
+    krb5_storage_to_data(sp, &data);
+
+    ret = write(fd, data.data, data.length);
+    if (ret != data.length)
+	ret = KRB5_CC_IO;
+
+    krb5_free_data_contents(context, &data);
+
+    flock(fd, LOCK_UN);
+    close(fd);
+
+    return 0;
+}
+
+
+krb5_error_code
+_krb5_krb_tf_setup(krb5_context context, 
+		   struct credentials *v4creds, 
+		   const char *tkfile,
+		   int append)
+{
+    krb5_error_code ret;
+    krb5_storage *sp;
+
+    sp = krb5_storage_emem();
+    if (sp == NULL)
+	return ENOMEM;
+
+    krb5_storage_set_byteorder(sp, KRB5_STORAGE_BYTEORDER_HOST);
+    krb5_storage_set_eof_code(sp, KRB5_CC_IO);
+
+    krb5_clear_error_string(context);
+
+    if (!append) {
+	ret = krb5_store_stringz(sp, v4creds->pname);
+	if (ret < 0)
+	    goto error;
+	ret = krb5_store_stringz(sp, v4creds->pinst);
+	if (ret < 0)
+	    goto error;
+    }
+
+    /* cred */
+    ret = krb5_store_stringz(sp, v4creds->service);
+    if (ret < 0)
+	goto error;
+    ret = krb5_store_stringz(sp, v4creds->instance);
+    if (ret < 0)
+	goto error;
+    ret = krb5_store_stringz(sp, v4creds->realm);
+    if (ret < 0)
+	goto error;
+    ret = krb5_storage_write(sp, v4creds->session, 8);
+    if (ret != 8) {
+	ret = KRB5_CC_IO;
+	goto error;
+    }
+    ret = krb5_store_int32(sp, v4creds->lifetime);
+    if (ret)
+	goto error;
+    ret = krb5_store_int32(sp, v4creds->kvno);
+    if (ret)
+	goto error;
+    ret = krb5_store_int32(sp, v4creds->ticket_st.length);
+    if (ret)
+	goto error;
+
+    ret = krb5_storage_write(sp, v4creds->ticket_st.dat, 
+			     v4creds->ticket_st.length);
+    if (ret != v4creds->ticket_st.length) {
+	ret = KRB5_CC_IO;
+	goto error;
+    }
+    ret = krb5_store_int32(sp, v4creds->issue_date);
+    if (ret)
+	goto error;
+
+    ret = write_v4_cc(context, tkfile, sp, append);
+
+ error:
+    krb5_storage_free(sp);
+
+    return ret;
+}
 
 /* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
  * This is done by sending them to the 524 function in the KDC.  If
