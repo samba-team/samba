@@ -48,15 +48,22 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 	
 	/* obtain ticket & session key */
 	memset((char *)&creds, 0, sizeof(creds));
-	if ((retval = krb5_copy_principal(context, server, &creds.server)))
+	if ((retval = krb5_copy_principal(context, server, &creds.server))) {
+		DEBUG(1,("krb5_copy_principal failed (%s)\n", 
+			 error_message(retval)));
 		goto cleanup_princ;
+	}
 	
-	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client)))
+	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client))) {
+		DEBUG(1,("krb5_cc_get_principal failed (%s)\n", 
+			 error_message(retval)));
 		goto cleanup_creds;
+	}
 
 	if ((retval = krb5_get_credentials(context, 0,
 					   ccache, &creds, &credsp))) {
-		DEBUG(1,("krb5_get_credentials failed (%d)\n", retval));
+		DEBUG(1,("krb5_get_credentials failed (%s)\n", 
+			 error_message(retval)));
 		goto cleanup_creds;
 	}
 
@@ -64,7 +71,8 @@ static krb5_error_code krb5_mk_req2(krb5_context context,
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				      &in_data, credsp, outbuf);
 	if (retval) {
-		DEBUG(1,("krb5_mk_req_extended failed (%d)\n", retval));
+		DEBUG(1,("krb5_mk_req_extended failed (%s)\n", 
+			 error_message(retval)));
 	}
 	
 	krb5_free_creds(context, credsp);
@@ -92,12 +100,14 @@ DATA_BLOB krb5_get_ticket(char *service, char *realm)
 
 	retval = krb5_init_context(&context);
 	if (retval) {
-		DEBUG(1,("krb5_init_context failed\n"));
+		DEBUG(1,("krb5_init_context failed (%s)\n", 
+			 error_message(retval)));
 		goto failed;
 	}
 
 	if ((retval = krb5_cc_default(context, &ccdef))) {
-		DEBUG(1,("krb5_cc_default failed\n"));
+		DEBUG(1,("krb5_cc_default failed (%s)\n",
+			 error_message(retval)));
 		goto failed;
 	}
 
@@ -106,7 +116,6 @@ DATA_BLOB krb5_get_ticket(char *service, char *realm)
 				   0, 
 				   service, realm,
 				   ccdef, &packet))) {
-		DEBUG(1,("krb5_mk_req2 failed\n"));
 		goto failed;
 	}
 

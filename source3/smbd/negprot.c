@@ -163,7 +163,7 @@ static int negprot_spnego(char *p, uint8 cryptkey[8])
 	DATA_BLOB blob;
 	extern pstring global_myname;
 	uint8 guid[16];
-	const char *OIDs[] = {OID_NTLMSSP, 
+	const char *OIDs[] = {OID_NTLMSSP,
 			      OID_KERBEROS5_OLD,
 			      NULL};
 	char *principle;
