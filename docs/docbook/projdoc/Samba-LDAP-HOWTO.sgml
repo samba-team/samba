@@ -38,6 +38,11 @@ a guide to LDAP for System Administrators which has a planned release date of
 early summer, 2002.
 </para>
 
+<para>It may also be helpful to suppplement the reading of the HOWTO with 
+the <ulink url="http://www.unav.es/cti/ldap-smb/ldap-smb-2_2-howto.html">Samba-PDC-LDAP-HOWTO</ulink>
+maintained by Ignacio Coupeau.
+</para>
+
 </sect1>
 
 
