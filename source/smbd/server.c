@@ -815,6 +815,9 @@ static void usage(char *pname)
 	if (!share_info_db_init())
 		exit(1);
 
+	if (!init_registry())
+		exit(1);
+
 	if(!initialize_password_db(False))
 		exit(1);
 
