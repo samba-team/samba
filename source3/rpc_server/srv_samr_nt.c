@@ -2240,7 +2240,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 
 		if (*add_script) {
   			int add_ret;
-  			all_string_sub(add_script, "%u", account, sizeof(account));
+  			all_string_sub(add_script, "%u", account, sizeof(add_script));
   			add_ret = smbrun(add_script,NULL);
  			DEBUG(3,("_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   		}
@@ -3626,7 +3626,7 @@ static int smb_delete_user(const char *unix_user)
 	pstrcpy(del_script, lp_deluser_script());
 	if (! *del_script)
 		return -1;
-	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
+	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
 	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
 
