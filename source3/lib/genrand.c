@@ -24,6 +24,55 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+static uint32 counter = 0;
+
+/****************************************************************
+ Try and get a seed by looking at the atimes of files in a given
+ directory. XOR them into the buf array.
+*****************************************************************/
+
+static void do_dirrand(char *name, unsigned char *buf, int buf_len)
+{
+  void *dp = sys_opendir(name);
+  pstring fullname;
+  int len_left;
+  int fullname_len;
+  char *pos;
+
+  pstrcpy(fullname, name);
+  fullname_len = strlen(fullname);
+
+  if(fullname_len + 2 > sizeof(pstring))
+    return;
+
+  if(fullname[fullname_len] != '/') {
+    fullname[fullname_len] = '/';
+    fullname[fullname_len+1] = '\0';
+    fullname_len = strlen(fullname);
+  }
+
+  len_left = sizeof(pstring) - fullname_len - 1;
+  pos = &fullname[fullname_len];
+
+  if(dp != NULL) {
+    char *p;
+
+    while ((p = readdirname(dp))) {           
+      struct stat st;
+
+      if(strlen(p) <= len_left)
+        strcpy(pos, p);
+
+      if(sys_stat(fullname,&st) == 0) {
+        SIVAL(buf, ((counter * 4)%(buf_len-4)), 
+              IVAL(buf,((counter * 4)%(buf_len-4))) ^ st.st_atime);
+        counter++;
+        DEBUG(10,("do_dirrand: value from file %s.\n", fullname));
+      }
+    }
+    closedir(dp); 
+  }
+}
 
 /**************************************************************
  Try and get a good random number seed. Try a number of
@@ -36,13 +85,13 @@ extern int DEBUGLEVEL;
 
 static uint32 do_reseed(void)
 {
-  static int counter = 0;
   unsigned char md4_outbuf[16];
   unsigned char md4_inbuf[40];
   BOOL got_random = False;
   uint32 v1, v2, ret;
   int fd;
   struct timeval tval;
+  pid_t mypid;
 
   memset(md4_inbuf, '\0', sizeof(md4_inbuf));
 
@@ -62,29 +111,17 @@ static uint32 do_reseed(void)
     /*
      * /dev/random failed - try /tmp/ for timestamps.
      */
-    void *dp = sys_opendir("/tmp");
-
-    if(dp != NULL) {
-      char *p;
-
-      while ((p = readdirname(dp))) {           
-        struct stat st;
-        if(sys_stat(p,&st) != 0)
-          SIVAL(md4_inbuf, ((counter%sizeof(md4_inbuf))/4), 
-                IVAL(md4_inbuf,((counter%sizeof(md4_inbuf))/4)) ^ st.st_atime);
-          counter++;
-          DEBUG(10,("do_reseed: value from file %s.\n", p));
-        }
-      }
-    closedir(dp); 
+    do_dirrand("/tmp", md4_inbuf, sizeof(md4_inbuf));
+    do_dirrand("/dev", md4_inbuf, sizeof(md4_inbuf));
   }
 
   /*
    * Finally add the counter, time of day, and pid.
    */
   GetTimeOfDay(&tval);
-  v1 = (counter++) + getpid() + tval.tv_sec;
-  v2 = (counter++) * getpid() + tval.tv_usec;
+  mypid = getpid();
+  v1 = (counter++) + mypid + tval.tv_sec;
+  v2 = (counter++) * mypid + tval.tv_usec;
 
   SIVAL(md4_inbuf, 32, v1 ^ IVAL(md4_inbuf, 32));
   SIVAL(md4_inbuf, 36, v1 ^ IVAL(md4_inbuf, 36));

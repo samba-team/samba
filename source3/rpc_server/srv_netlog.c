@@ -289,10 +289,9 @@ static void api_net_req_chal( int uid,
 		memcpy(vuser->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
 
 		/* create a server challenge for the client */
-		/* PAXX: set these to random values. */
-		/* lkcl: paul, you mentioned that it doesn't really matter much */
-		SIVAL(vuser->dc.srv_chal.data, 0, 0x11111111);
-		SIVAL(vuser->dc.srv_chal.data, 4, 0x11111111);
+		/* Set these to random values. */
+                generate_random_buffer(vuser->dc.srv_chal.data, 8, False);
+
 		memcpy(vuser->dc.srv_cred.challenge.data, vuser->dc.srv_chal.data, 8);
 
 		bzero(vuser->dc.sess_key, sizeof(vuser->dc.sess_key));
