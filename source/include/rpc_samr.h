@@ -27,9 +27,7 @@
 #ifndef _RPC_SAMR_H /* _RPC_SAMR_H */
 #define _RPC_SAMR_H 
 
-
 #include "rpc_misc.h"
-
 
 /*******************************************************************
  the following information comes from a QuickView on samsrv.dll,
@@ -180,17 +178,17 @@ SamrTestPrivateFunctionsUser
 
 /* Access bits to Domain-objects */
 
-#define DOMAIN_ACCESS_LOOKUP_INFO_1  0x000000001
-#define DOMAIN_ACCESS_SET_INFO_1     0x000000002
-#define DOMAIN_ACCESS_LOOKUP_INFO_2  0x000000004
-#define DOMAIN_ACCESS_SET_INFO_2     0x000000008
-#define DOMAIN_ACCESS_CREATE_USER    0x000000010
-#define DOMAIN_ACCESS_CREATE_GROUP   0x000000020
-#define DOMAIN_ACCESS_CREATE_ALIAS   0x000000040
-#define DOMAIN_ACCESS_UNKNOWN_80     0x000000080
-#define DOMAIN_ACCESS_ENUM_ACCOUNTS  0x000000100
-#define DOMAIN_ACCESS_OPEN_ACCOUNT   0x000000200
-#define DOMAIN_ACCESS_SET_INFO_3     0x000000400
+#define DOMAIN_ACCESS_LOOKUP_INFO_1  0x00000001
+#define DOMAIN_ACCESS_SET_INFO_1     0x00000002
+#define DOMAIN_ACCESS_LOOKUP_INFO_2  0x00000004
+#define DOMAIN_ACCESS_SET_INFO_2     0x00000008
+#define DOMAIN_ACCESS_CREATE_USER    0x00000010
+#define DOMAIN_ACCESS_CREATE_GROUP   0x00000020
+#define DOMAIN_ACCESS_CREATE_ALIAS   0x00000040
+#define DOMAIN_ACCESS_UNKNOWN_80     0x00000080
+#define DOMAIN_ACCESS_ENUM_ACCOUNTS  0x00000100
+#define DOMAIN_ACCESS_OPEN_ACCOUNT   0x00000200
+#define DOMAIN_ACCESS_SET_INFO_3     0x00000400
 
 #define DOMAIN_ALL_ACCESS  ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
                              DOMAIN_ACCESS_SET_INFO_3        | \
@@ -224,17 +222,17 @@ SamrTestPrivateFunctionsUser
 
 /* Access bits to User-objects */
 
-#define USER_ACCESS_GET_NAME_ETC     0x000000001
-#define USER_ACCESS_GET_LOCALE       0x000000002
-#define USER_ACCESS_SET_LOC_COM      0x000000004
-#define USER_ACCESS_GET_LOGONINFO    0x000000008
-#define USER_ACCESS_UNKNOWN_10       0x000000010
-#define USER_ACCESS_SET_ATTRIBUTES   0x000000020
-#define USER_ACCESS_CHANGE_PASSWORD  0x000000040
-#define USER_ACCESS_SET_PASSWORD     0x000000080
-#define USER_ACCESS_GET_GROUPS       0x000000100
-#define USER_ACCESS_UNKNOWN_200      0x000000200
-#define USER_ACCESS_UNKNOWN_400      0x000000400
+#define USER_ACCESS_GET_NAME_ETC     0x00000001
+#define USER_ACCESS_GET_LOCALE       0x00000002
+#define USER_ACCESS_SET_LOC_COM      0x00000004
+#define USER_ACCESS_GET_LOGONINFO    0x00000008
+#define USER_ACCESS_UNKNOWN_10       0x00000010
+#define USER_ACCESS_SET_ATTRIBUTES   0x00000020
+#define USER_ACCESS_CHANGE_PASSWORD  0x00000040
+#define USER_ACCESS_SET_PASSWORD     0x00000080
+#define USER_ACCESS_GET_GROUPS       0x00000100
+#define USER_ACCESS_UNKNOWN_200      0x00000200
+#define USER_ACCESS_UNKNOWN_400      0x00000400
 
 #define USER_ALL_ACCESS    ( STANDARD_RIGHTS_REQUIRED_ACCESS | \
                              USER_ACCESS_UNKNOWN_400       | \
@@ -315,9 +313,6 @@ SamrTestPrivateFunctionsUser
 			     
 #define ALIAS_EXECUTE      ( STANDARD_RIGHTS_EXECUTE_ACCESS  | \
                              ALIAS_ACCESS_LOOKUP_INFO )
-
-
-
 
 typedef struct _DISP_USER_INFO {
 	SAM_ACCOUNT *sam;
@@ -1651,7 +1646,7 @@ typedef struct r_samr_create_user_info
 {
 	POLICY_HND user_pol;       /* policy handle associated with user */
 
-	uint32 unknown_0;     /* 0x0007 03ff */
+	uint32 access_granted;
 	uint32 user_rid;      /* user RID */
 	NTSTATUS status;         /* return status */
 
@@ -2025,6 +2020,4 @@ typedef struct r_samr_set_domain_info
 
 } SAMR_R_SET_DOMAIN_INFO;
 
-
 #endif /* _RPC_SAMR_H */
-
