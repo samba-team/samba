@@ -84,6 +84,7 @@ krb5_error_code
 krb5_encrypt (krb5_context context,
 	      void *ptr,
 	      size_t len,
+	      int etype,
 	      krb5_keyblock *keyblock,
 	      krb5_data *result);
 
