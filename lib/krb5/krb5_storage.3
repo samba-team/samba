@@ -233,6 +233,8 @@ Store integers in in little endian byte order.
 Stores the integers in host byte order, used for compatibility with
 version 1 of file keytabs and version 1 and 2 of file credential
 caches.
+.It KRB5_STORAGE_CREDS_FLAGS_WRONG_BITORDER
+store the credential flags in a krb5_creds in the reverse bit order.
 .El
 .Pp
 .Fn krb5_storage_set_byteorder
