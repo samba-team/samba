@@ -1207,7 +1207,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		rid [i] = 0xffffffff;
 		type[i] = SID_NAME_UNKNOWN;
 
-		fstrcpy(name, dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len));
+		fstrcpy(name, dos_to_unix_static(dos_unistrn2(q_u->uni_name[i].buffer, q_u->uni_name[i].uni_str_len)));
 
 		/*
 		 * we are only looking for a name
@@ -1221,7 +1221,7 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 		 * to the local_lookup_name function.
 		 */
  
-		if(local_lookup_name(global_myname_dos(), name, &sid, &local_type)) {
+		if(local_lookup_name(global_myname_unix(), name, &sid, &local_type)) {
 			sid_split_rid(&sid, &local_rid);
  
 			if (sid_equal(&sid, &pol_sid)) {

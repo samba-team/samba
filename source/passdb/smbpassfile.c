@@ -274,7 +274,7 @@ BOOL migrate_from_old_password_file(const char *domain)
 {
 	struct machine_acct_pass pass;
 
-	if (!trust_password_file_lock(domain, global_myname_dos()))
+	if (!trust_password_file_lock(domain, global_myname_unix()))
 		return True;
 
 	if (!get_trust_account_password_from_file( pass.hash, &pass.mod_time)) {
@@ -285,7 +285,7 @@ BOOL migrate_from_old_password_file(const char *domain)
 	if (!secrets_store(trust_keystr(domain), (void *)&pass, sizeof(pass)))
 		return False;
 
-	trust_password_file_delete(domain, global_myname_dos());
+	trust_password_file_delete(domain, global_myname_unix());
 	trust_password_file_unlock();
 
 	return True;
