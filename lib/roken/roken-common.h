@@ -261,11 +261,15 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 
 int ROKEN_LIB_FUNCTION simple_execve(const char*, char*const[], char*const[]);
 int ROKEN_LIB_FUNCTION simple_execvp(const char*, char *const[]);
+int ROKEN_LIB_FUNCTION simple_execvp_timed(const char *, char *const[], 
+					   time_t (*)(void *), void *, time_t);
 int ROKEN_LIB_FUNCTION simple_execlp(const char*, ...);
 int ROKEN_LIB_FUNCTION simple_execle(const char*, ...);
 int ROKEN_LIB_FUNCTION simple_execl(const char *file, ...);
 
 int ROKEN_LIB_FUNCTION wait_for_process(pid_t);
+int ROKEN_LIB_FUNCTION wait_for_process_timed(pid_t, time_t (*)(void *), 
+					      void *, time_t);
 int ROKEN_LIB_FUNCTION pipe_execv(FILE**, FILE**, FILE**, const char*, ...);
 
 void ROKEN_LIB_FUNCTION print_version(const char *);

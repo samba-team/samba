@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2001, 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -58,28 +58,89 @@ RCSID("$Id$");
    -1   on `unspecified' system errors
    -2   on fork failures
    -3   on waitpid errors
+   -4   exec timeout
    0-   is return value from subprocess
    126  if the program couldn't be executed
    127  if the program couldn't be found
    128- is 128 + signal that killed subprocess
+
+   possible values `func' can return:
+   ((time_t)-2)		exit loop w/o killing child and return
+   			`exec timeout'/-4 from simple_exec
+   ((time_t)-1)		kill child with SIGTERM and wait for child to exit
+   0			don't timeout again
+   n			seconds to next timeout
    */
+
+static int sig_alarm;
+
+static RETSIGTYPE
+sigtimeout(int sig)
+{
+    sig_alarm = 1;
+    SIGRETURN(0);
+}
+
+int
+wait_for_process_timed(pid_t pid, time_t (*func)(void *), 
+		       void *ptr, time_t timeout)
+{
+    RETSIGTYPE (*old_func)(int sig) = NULL;
+    unsigned int oldtime = 0;
+    int ret;
+
+    sig_alarm = 0;
+
+    if (func) {
+	old_func = signal(SIGALRM, sigtimeout);
+	oldtime = alarm(timeout);
+    }
+
+    while(1) {
+	int status;
+
+	while(waitpid(pid, &status, 0) < 0) {
+	    if (errno != EINTR) {
+		ret = -3;
+		goto out;
+	    }
+	    if (func == NULL)
+		continue;
+	    if (sig_alarm == 0)
+		continue;
+	    timeout = (*func)(ptr);
+	    if (timeout == (time_t)-1) {
+		kill(pid, SIGTERM);
+		continue;
+	    } else if (timeout == (time_t)-2) {
+		ret = -4;
+		goto out;
+	    }
+	    alarm(timeout);
+	}
+	if(WIFSTOPPED(status))
+	    continue;
+	if(WIFEXITED(status)) {
+	    ret = WEXITSTATUS(status);
+	    break;
+	}
+	if(WIFSIGNALED(status)) {
+	    ret = WTERMSIG(status) + 128;
+	    break;
+	}
+    }
+ out:
+    if (func) {
+	signal(SIGALRM, old_func);
+	alarm(oldtime);
+    }
+    return ret;
+}
 
 int
 wait_for_process(pid_t pid)
 {
-    while(1) {
-	int status;
-
-	while(waitpid(pid, &status, 0) < 0)
-	    if (errno != EINTR)
-		return -3;
-	if(WIFSTOPPED(status))
-	    continue;
-	if(WIFEXITED(status))
-	    return WEXITSTATUS(status);
-	if(WIFSIGNALED(status))
-	    return WTERMSIG(status) + 128;
-    }
+    return wait_for_process_timed(pid, NULL, NULL, 0);
 }
 
 int
@@ -170,7 +231,8 @@ pipe_execv(FILE **stdin_fd, FILE **stdout_fd, FILE **stderr_fd,
 }
 
 int
-simple_execvp(const char *file, char *const args[])
+simple_execvp_timed(const char *file, char *const args[], 
+		    time_t (*func)(void *), void *ptr, time_t timeout)
 {
     pid_t pid = fork();
     switch(pid){
@@ -180,13 +242,20 @@ simple_execvp(const char *file, char *const args[])
 	execvp(file, args);
 	exit((errno == ENOENT) ? EX_NOTFOUND : EX_NOEXEC);
     default: 
-	return wait_for_process(pid);
+	return wait_for_process_timed(pid, func, ptr, timeout);
     }
+}
+
+int
+simple_execvp(const char *file, char *const args[])
+{
+    return simple_execvp_timed(file, args, NULL, NULL, 0);
 }
 
 /* gee, I'd like a execvpe */
 int
-simple_execve(const char *file, char *const args[], char *const envp[])
+simple_execve_timed(const char *file, char *const args[], char *const envp[],
+		    time_t (*func)(void *), void *ptr, time_t timeout)
 {
     pid_t pid = fork();
     switch(pid){
@@ -196,8 +265,14 @@ simple_execve(const char *file, char *const args[], char *const envp[])
 	execve(file, args, envp);
 	exit((errno == ENOENT) ? EX_NOTFOUND : EX_NOEXEC);
     default: 
-	return wait_for_process(pid);
+	return wait_for_process_timed(pid, func, ptr, timeout);
     }
+}
+
+int
+simple_execve(const char *file, char *const args[], char *const envp[])
+{
+    return simple_execve_timed(file, args, envp, NULL, NULL, 0);
 }
 
 int
