@@ -1,3 +1,7 @@
+2000-10-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* common/buffer.c: HAVE_ST_BLKSIZE -> HAVE_STRUCT_STAT_ST_BLKSIZE
+
 2000-10-08  Assar Westerlund  <assar@sics.se>
 
 	* ftp/ftp.c (*): check that fds are not too large to select on
