@@ -1,0 +1,32 @@
+#!/bin/sh
+
+scriptname="$0"
+step="$1"
+keywords="$2"
+pkglist="$3"
+
+# Source in the standard functions library, ccsSetup.sh
+. ccsSetup.sh
+
+ccs_return_value=0
+
+SERVICE="swat            598/tcp         Samba Web Administration Tool"
+INETD="swat    stream  tcp     nowait  root    /usr/lib/samba/sbin/swat swat"
+
+PostConfigure()
+{
+	grep -q "^swat[	 ]" /etc/services ||
+		echo $SERVICE >> /etc/services
+
+	grep -q "^swat[	 ]" /etc/inetd.conf ||
+		echo $INETD >> /etc/inetd.conf
+
+	kill -HUP `cat /etc/inetd.pid`
+}
+
+case "$step" in
+        POST_CONFIGURE) PostConfigure ;;
+esac
+
+exit $ccs_return_value
+
