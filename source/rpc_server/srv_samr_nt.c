@@ -4116,7 +4116,8 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 		return r_u->status;
 	}
 		
-	if (!get_local_group_from_sid(&group_sid, &map))
+	if (!get_local_group_from_sid(&group_sid, &map) &&
+	    !get_builtin_group_from_sid(&group_sid, &map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
 	ctr=&q_u->ctr;
