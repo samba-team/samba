@@ -129,7 +129,7 @@ struct vfs_ops {
     ssize_t (*write)(int fd, char *data, size_t n);
     SMB_OFF_T (*lseek)(int filedes, SMB_OFF_T offset, int whence);
     int (*rename)(char *old, char *new);
-    void (*fsync)(int fd);
+    int (*fsync)(int fd);
     int (*stat)(char *fname, SMB_STRUCT_STAT *sbuf);
     int (*fstat)(int fd, SMB_STRUCT_STAT *sbuf);
     int (*lstat)(char *path, SMB_STRUCT_STAT *sbuf);
