@@ -1604,7 +1604,7 @@ int smbc_opendir(const char *fname)
 
 		if (!name_status_find(0, rem_ip, server)) {
 
-			DEBUG(0, ("Could not get the name of local master browser for server %s\n", server);
+			DEBUG(0, ("Could not get the name of local master browser for server %s\n", server));
 			errno = EINVAL;
 			return -1;
 
