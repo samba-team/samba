@@ -75,7 +75,7 @@ void generate_next_challenge(char *challenge)
 /*******************************************************************
 set the last challenge sent, usually from a password server
 ********************************************************************/
-BOOL set_challenge(char *challenge)
+BOOL set_challenge(unsigned char *challenge)
 {
   memcpy(saved_challenge,challenge,8);
   challenge_sent = True;

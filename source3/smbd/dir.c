@@ -428,7 +428,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
   pstring pathreal;
   BOOL isrootdir;
   pstring filename;
-  BOOL matched;
   BOOL needslash;
 
   *path = *pathreal = *filename = 0;
@@ -453,8 +452,6 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       if (dname == NULL) 
 	return(False);
       
-      matched = False;
-
       pstrcpy(filename,dname);      
 
       if ((strcmp(filename,mask) == 0) ||

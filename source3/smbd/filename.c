@@ -332,7 +332,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
                   BOOL *bad_path, SMB_STRUCT_STAT *pst)
 {
   SMB_STRUCT_STAT st;
-  char *start, *end, *orig_start;
+  char *start, *end;
   pstring dirpath;
   pstring orig_path;
   int saved_errno;
@@ -365,17 +365,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    */
 
   trim_string(name,"/","/");
-
-  /*
-   * If we trimmed down to a single '\0' character
-   * then we should use the "." directory to avoid
-   * searching the cache.
-   */
-
-  if(!*name) {
-    name[0] = '.';
-    name[1] = '\0';
-  }
 
   /*
    * Ensure saved_last_component is valid even if file exists.
@@ -412,6 +401,15 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
     }      
     return(True);
   }
+
+  /*
+   * If we trimmed down to a single '\0' character
+   * then we will be using the "." directory.
+   * As we know this is valid we can return true here.
+   */
+
+  if(!*name)
+    return(True);
 
   start = name;
   while (strncmp(start,"./",2) == 0)
@@ -479,7 +477,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * as is first, then trying to scan the directory for matching names.
    */
 
-  for (orig_start = start; start ; start = (end?end+1:(char *)NULL)) {
+  for (; start ; start = (end?end+1:(char *)NULL)) {
       /* 
        * Pinpoint the end of this section of the filename.
        */

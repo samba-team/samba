@@ -132,22 +132,22 @@ void cmd_sam_enum_users(struct client_info *info)
 #ifdef DEBUG_TESTING
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		num_entries = strtoul(tmp, (char**)NULL, 16);
+		num_entries = (uint16)strtoul(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		unk_0 = strtoul(tmp, (char**)NULL, 16);
+		unk_0 = (uint16)strtoul(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		acb_mask = strtoul(tmp, (char**)NULL, 16);
+		acb_mask = (uint16)strtoul(tmp, (char**)NULL, 16);
 	}
 
 	if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 	{
-		unk_1 = strtoul(tmp, (char**)NULL, 16);
+		unk_1 = (uint16)strtoul(tmp, (char**)NULL, 16);
 	}
 #endif
 

@@ -230,14 +230,13 @@ static uint32 write_this_server_name( struct subnet_record *subrec,
 {
   struct subnet_record *ssub;
   struct work_record *iwork;
-  struct server_record *sserv;
 
   /* Go through all the subnets we have already seen. */
   for (ssub = FIRST_SUBNET; ssub != subrec; ssub = NEXT_SUBNET_INCLUDING_UNICAST(ssub)) 
   {
     for(iwork = ssub->workgrouplist; iwork; iwork = iwork->next)
     {
-      if((sserv = find_server_in_workgroup( iwork, servrec->serv.name)) != NULL)
+      if(find_server_in_workgroup( iwork, servrec->serv.name) != NULL)
       {
         /*
          * We have already written out this server record, don't

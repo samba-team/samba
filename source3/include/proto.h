@@ -135,7 +135,7 @@ int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
 
 /*The following definitions come from  lib/pidfile.c  */
 
-int pidfile_pid(char *name);
+pid_t pidfile_pid(char *name);
 void pidfile_create(char *name);
 
 /*The following definitions come from  lib/replace.c  */
@@ -460,11 +460,11 @@ void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
 void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr);
-void pwd_set_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16]);
-void pwd_get_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16]);
+void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
+void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16]);
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr);
-void pwd_make_lm_nt_owf(struct pwd_info *pwd, char cryptkey[8]);
-void pwd_get_lm_nt_owf(struct pwd_info *pwd, char lm_owf[24], char nt_owf[24]);
+void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8]);
+void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24]);
 
 /*The following definitions come from  libsmb/smbdes.c  */
 
@@ -2023,7 +2023,7 @@ void check_kernel_oplocks(void);
 /*The following definitions come from  smbd/password.c  */
 
 void generate_next_challenge(char *challenge);
-BOOL set_challenge(char *challenge);
+BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
@@ -2210,7 +2210,7 @@ void start_smbd(void);
 void start_nmbd(void);
 void stop_smbd(void);
 void stop_nmbd(void);
-void kill_pid(int pid);
+void kill_pid(pid_t pid);
 
 /*The following definitions come from  web/statuspage.c  */
 

@@ -133,7 +133,7 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 /****************************************************************************
  stores lm and nt hashed passwords
  ****************************************************************************/
-void pwd_set_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16])
+void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	pwd_init(pwd);
 
@@ -165,7 +165,7 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16])
 /****************************************************************************
  gets lm and nt hashed passwords
  ****************************************************************************/
-void pwd_get_lm_nt_16(struct pwd_info *pwd, char lm_pwd[16], char nt_pwd[16])
+void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	pwd_deobfuscate(pwd);
 	memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
@@ -191,7 +191,7 @@ void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 /****************************************************************************
  makes lm and nt OWF crypts
  ****************************************************************************/
-void pwd_make_lm_nt_owf(struct pwd_info *pwd, char cryptkey[8])
+void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 {
 	pwd_deobfuscate(pwd);
 
@@ -226,11 +226,10 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, char cryptkey[8])
 /****************************************************************************
  gets lm and nt crypts
  ****************************************************************************/
-void pwd_get_lm_nt_owf(struct pwd_info *pwd, char lm_owf[24], char nt_owf[24])
+void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24])
 {
 	pwd_deobfuscate(pwd);
 	memcpy(lm_owf, pwd->smb_lm_owf, 24);
 	memcpy(nt_owf, pwd->smb_nt_owf, 24);
 	pwd_obfuscate(pwd);
 }
-

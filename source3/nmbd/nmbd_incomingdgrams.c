@@ -544,7 +544,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
 				      int port)
 {                     
   char outbuf[1024];
-  char *p, *countptr, *nameptr;
+  char *p, *countptr;
   unsigned int count = 0;
   int len;
   struct server_record *servrec;
@@ -565,8 +565,6 @@ static void send_backup_list_response(struct subnet_record *subrec,
   SIVAL(p,0,token); /* The sender's unique info. */
   p += 4;
   
-  nameptr = p;
-
   /* We always return at least one name - our own. */
   count = 1;
   StrnCpy(p,global_myname,15);
@@ -793,7 +791,6 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
 void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  struct work_record *work;
   char *workgroup_name = dgram->dest_name.name;
 
   DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
@@ -808,7 +805,7 @@ void process_lm_announce_request(struct subnet_record *subrec, struct packet_str
     return;
   }
 
-  if((work = find_workgroup_on_subnet(subrec, workgroup_name)) == NULL)
+  if(find_workgroup_on_subnet(subrec, workgroup_name) == NULL)
   {
     DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
             workgroup_name));

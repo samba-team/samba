@@ -41,7 +41,6 @@ static struct var variables[MAX_VARIABLES];
 static int num_variables;
 static int content_length;
 static int request_post;
-static int request_get;
 static char *query_string;
 static char *baseurl;
 static char *pathinfo;
@@ -410,7 +409,6 @@ void cgi_setup(char *rootdir, int auth_required)
 #endif
 		if (line[0] == '\r' || line[0] == '\n') break;
 		if (strncasecmp(line,"GET ", 4)==0) {
-			request_get = 1;
 			url = strdup(&line[4]);
 		} else if (strncasecmp(line,"POST ", 5)==0) {
 			request_post = 1;

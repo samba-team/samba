@@ -41,20 +41,14 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   struct dgram_packet *dgram = &p->packet.dgram;
   pstring my_name;
   fstring reply_name;
-  BOOL add_slashes = False;
   pstring outbuf;
-  int code,reply_code;
-  char   unknown_byte = 0;
-  uint16 request_count = 0;
+  int code;
   uint16 token = 0;
 
   uint32 ntversion;
   uint16 lmnttoken;
   uint16 lm20token;
-  uint32 allowableaccount; /* Control bits, i.e. 0x80 == workstation trust a/c. */
   uint32 domainsidsize;
-  uint16 requestcount;
-  char *domainsid;
   char *getdc;
   char *uniuser; /* Unicode user name. */
   pstring ascuser;
@@ -84,13 +78,9 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       getdc = skip_string(user,1);
       q = skip_string(getdc,1);
-      unknown_byte = CVAL(q,0);
-      request_count = SVAL(q,1);
       token = SVAL(q,3);
 
-      reply_code = 0x6;
       fstrcpy(reply_name,my_name); 
-      add_slashes = True;
 
       DEBUG(3,("process_logon_packet: Domain login request from %s at IP %s user=%s token=%x\n",
              machine,inet_ntoa(p->ip),user,token));
@@ -175,14 +165,11 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
     {
       char *q = buf + 2;
 
-      requestcount = SVAL(q, 0); q += 2;
       unicomp = q;
       uniuser = skip_unicode_string(unicomp,1);
       getdc = skip_unicode_string(uniuser,1);
       q = skip_string(getdc,1);
-      allowableaccount = IVAL(q, 0); q += 4;
       domainsidsize = IVAL(q, 0); q += 4;
-      domainsid = q;
       q += domainsidsize + 3;
       ntversion = IVAL(q, 0); q += 4;
       lmnttoken = SVAL(q, 0); q += 2;

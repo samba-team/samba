@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+void *memcpy (void *, void *, unsigned int);
 
 /* NOTE: This code makes no attempt to be fast! 
 

@@ -108,7 +108,9 @@ int     DEBUGLEVEL = 1;
 
 static BOOL    stdout_logging = False;
 static int     debug_count    = 0;
+#ifdef WITH_SYSLOG
 static int     syslog_level   = 0;
+#endif
 static pstring format_bufr    = { '\0' };
 static int     format_pos     = 0;
 
@@ -513,8 +515,10 @@ BOOL dbghdr( int level, char *file, char *func, int line )
     return( True );
     }
 
+#ifdef WITH_SYSLOG
   /* Set syslog_level. */
   syslog_level = level;
+#endif
 
   /* Don't print a header if we're logging to stdout. */
   if( stdout_logging )
