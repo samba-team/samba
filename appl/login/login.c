@@ -411,6 +411,7 @@ do_login(struct passwd *pwd, char *tty, char *ttyn)
     add_env("HOME", pwd->pw_dir);
     add_env("USER", pwd->pw_name);
     add_env("LOGNAME", pwd->pw_name);
+    add_env("SHELL", pwd->pw_shell);
     exec_shell(pwd->pw_shell, rootlogin);
 }
 
