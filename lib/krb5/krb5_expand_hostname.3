@@ -75,12 +75,17 @@ and return the realms
 .Fa new_hostname
 is belive to belong to in
 .Fa realms .
-.Fn krb5_get_host_realm
-is used to determine the the realms.
-Caller must free the hostname with
-.Xr free 3
-and the realmlist with
-.Fn krb5_free_host_realm .
+.Fa Realms
+is a array terminated with
+.Dv NULL .
+Caller must free the
+.Fa realms
+with
+.Fn krb5_free_host_realm 
+and
+.Fa new_hostname
+with
+.Xr free 3 .
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5_free_host_realm 3 ,
