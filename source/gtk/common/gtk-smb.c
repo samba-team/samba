@@ -336,6 +336,7 @@ struct dcerpc_binding *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d
 		binding->transport = NCACN_IP_TCP;
 	} else if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->transport_ncalrpc))) {
 		binding->transport = NCALRPC;
+		binding->host = NULL;
 	} else {
 		binding->transport = NCACN_NP;
 	}
