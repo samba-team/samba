@@ -127,8 +127,7 @@
 		has been configured to use the experimental
 		<b class="command">--with-ldapsam</b> option. The <i class="parameter"><tt>-w</tt></i> 
 		switch is used to specify the password to be used with the 
-		<a href="smb.conf.5.html#LDAPADMINDN" target="_top"><i class="parameter"><tt>ldap admin 
-		dn</tt></i></a>.  Note that the password is stored in
+		<a class="indexterm" name="id2797339"></a><i class="parameter"><tt>ldap admin dn</tt></i>.  Note that the password is stored in
 		the <tt class="filename">secrets.tdb</tt> and is keyed off 
 		of the admin's DN.  This means that if the value of <i class="parameter"><tt>ldap
 		admin dn</tt></i> ever changes, the password will need to be 
@@ -149,9 +148,7 @@
 	hosts</tt></i> or <i class="parameter"><tt>deny hosts</tt></i> entry in 
 	the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file and neglecting to 
 	allow &quot;localhost&quot; access to the smbd. </p><p>In addition, the smbpasswd command is only useful if Samba
-	has been set up to use encrypted passwords. See the document <a href="pwencrypt.html" target="_top">
-	&quot;LanMan and NT Password Encryption in Samba&quot;</a> in the docs directory for details 
-	on how to do this. </p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.5.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(5)</span></a>, <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
+	has been set up to use encrypted passwords. </p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba suite.</p></div><div class="refsect1" lang="en"><h2>SEE ALSO</h2><p><a href="smbpasswd.5.html"><span class="citerefentry"><span class="refentrytitle">smbpasswd</span>(5)</span></a>, <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a>.</p></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>The original Samba software and related utilities 
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</p><p>The original Samba man pages were written by Karl Auer. 

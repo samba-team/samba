@@ -1,6 +1,0 @@
-All old text documents have been converted to docbook.
-To create ASCII versions of the official documentation
-run the following command in ../docbook/:
-
-	$ make txt
-

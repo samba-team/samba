@@ -24,16 +24,15 @@
 		Defaults to trying 445 first, then 139.
 		</p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a href="smb.conf.5.html#netbiosname" target="_top"><i class="parameter"><tt>NetBIOS
-name</tt></i></a> parameter in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  However, a command
+to setting the <a class="indexterm" name="id2796721"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
+However, a command
 line setting will take precedence over settings in
-<a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
+<tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
 information such as what printcap file to use, as well 
 as descriptions of all the services that the server is 
-to provide. See <a href="smb.conf.5.html" target="_top"><tt class="filename">
-smb.conf(5)</tt></a> for more information.
+to provide. See <tt class="filename">smb.conf</tt> for more information.
 The default configuration file name is determined at 
 compile time.</p></dd><dt><span class="term">-S server</span></dt><dd><p>
 		Name of target server. You should specify either 
@@ -54,9 +53,8 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a href="smb.conf.5.html#loglevel" target="_top">log
-level</a> parameter in the <a href="smb.conf.5.html" target="_top">
-<tt class="filename">smb.conf(5)</tt></a> file.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>TIME</h3><p>The <b class="command">NET TIME</b> command allows you to view the time on a remote server
+override the <a class="indexterm" name="id2796870"></a><i class="parameter"><tt>log level</tt></i> parameter
+in the <tt class="filename">smb.conf</tt> file.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>TIME</h3><p>The <b class="command">NET TIME</b> command allows you to view the time on a remote server
 	or synchronise the time on the local server with the time on the remote server.</p><div class="refsect3" lang="en"><h4>TIME</h4><p>Without any options, the <b class="command">NET TIME</b> command 
 displays the time on the remote server.
 </p></div><div class="refsect3" lang="en"><h4>TIME SYSTEM</h4><p> Displays the time on the remote server in a format ready for <b class="command">/bin/date</b></p></div><div class="refsect3" lang="en"><h4>TIME SET</h4><p>Tries to set the date and time of the local server to that on 
@@ -95,12 +93,12 @@ The type defaults to 0x20 (workstation).
 </p></div><div class="refsect3" lang="en"><h4>LOOKUP LDAP [<i class="replaceable"><tt>DOMAIN</tt></i></h4><p>Give IP address of LDAP server of specified <i class="replaceable"><tt>DOMAIN</tt></i>. Defaults to local domain.</p></div><div class="refsect3" lang="en"><h4>LOOKUP KDC [<i class="replaceable"><tt>REALM</tt></i>]</h4><p>Give IP address of KDC for the specified <i class="replaceable"><tt>REALM</tt></i>.
 Defaults to local realm.</p></div><div class="refsect3" lang="en"><h4>LOOKUP DC [<i class="replaceable"><tt>DOMAIN</tt></i>]</h4><p>Give IP's of Domain Controllers for specified <i class="replaceable"><tt>
 DOMAIN</tt></i>. Defaults to local domain.</p></div><div class="refsect3" lang="en"><h4>LOOKUP MASTER <i class="replaceable"><tt>DOMAIN</tt></i></h4><p>Give IP of master browser for specified <i class="replaceable"><tt>DOMAIN</tt></i>
-or workgroup. Defaults to local domain.</p></div></div><div xmlns:ns1="" class="refsect2" lang="en"><h3>CACHE</h3><p>Samba uses a general caching interface called 'gencache'. It 
-can be controlled using 'NET CACHE'.</p><ns1:p>All the timeout parameters support the suffixes:
+or workgroup. Defaults to local domain.</p></div></div><div class="refsect2" lang="en"><h3>CACHE</h3><p>Samba uses a general caching interface called 'gencache'. It 
+can be controlled using 'NET CACHE'.</p><p>All the timeout parameters support the suffixes:
 
-</ns1:p><table class="simplelist" border="0" summary="Simple list"><tr><td>s - Seconds</td></tr><tr><td>m - Minutes</td></tr><tr><td>h - Hours</td></tr><tr><td>d - Days</td></tr><tr><td>w - Weeks</td></tr></table><ns1:p>
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td>s - Seconds</td></tr><tr><td>m - Minutes</td></tr><tr><td>h - Hours</td></tr><tr><td>d - Days</td></tr><tr><td>w - Weeks</td></tr></table><p>
 
-</ns1:p><div class="refsect3" lang="en"><h4>CACHE ADD <i class="replaceable"><tt>key</tt></i> <i class="replaceable"><tt>data</tt></i> <i class="replaceable"><tt>time-out</tt></i></h4><p>Add specified key+data to the cache with the given timeout.</p></div><div class="refsect3" lang="en"><h4>CACHE DEL <i class="replaceable"><tt>key</tt></i></h4><p>Delete key from the cache.</p></div><div class="refsect3" lang="en"><h4>CACHE SET <i class="replaceable"><tt>key</tt></i> <i class="replaceable"><tt>data</tt></i> <i class="replaceable"><tt>time-out</tt></i></h4><p>Update data of existing cache entry.</p></div><div class="refsect3" lang="en"><h4>CACHE SEARCH <i class="replaceable"><tt>PATTERN</tt></i></h4><p>Search for the specified pattern in the cache data.</p></div><div class="refsect3" lang="en"><h4>CACHE LIST</h4><p>
+</p><div class="refsect3" lang="en"><h4>CACHE ADD <i class="replaceable"><tt>key</tt></i> <i class="replaceable"><tt>data</tt></i> <i class="replaceable"><tt>time-out</tt></i></h4><p>Add specified key+data to the cache with the given timeout.</p></div><div class="refsect3" lang="en"><h4>CACHE DEL <i class="replaceable"><tt>key</tt></i></h4><p>Delete key from the cache.</p></div><div class="refsect3" lang="en"><h4>CACHE SET <i class="replaceable"><tt>key</tt></i> <i class="replaceable"><tt>data</tt></i> <i class="replaceable"><tt>time-out</tt></i></h4><p>Update data of existing cache entry.</p></div><div class="refsect3" lang="en"><h4>CACHE SEARCH <i class="replaceable"><tt>PATTERN</tt></i></h4><p>Search for the specified pattern in the cache data.</p></div><div class="refsect3" lang="en"><h4>CACHE LIST</h4><p>
 List all current items in the cache.
 </p></div><div class="refsect3" lang="en"><h4>CACHE FLUSH</h4><p>Remove all the current items from the cache.</p></div></div><div class="refsect2" lang="en"><h3>GETLOCALSID [DOMAIN]</h3><p>Print the SID of the specified domain, or if the parameter is
 omitted, the SID of the domain the local server is in.</p></div><div class="refsect2" lang="en"><h3>SETLOCALSID S-1-5-21-x-y-z</h3><p>Sets domain sid for the local server to the specified SID.</p></div><div class="refsect2" lang="en"><h3>GROUPMAP</h3><p>Manage the mappings between Windows group SIDs and UNIX groups.

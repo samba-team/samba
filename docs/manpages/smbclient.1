@@ -114,20 +114,6 @@ This number is the TCP port number that will be used when making connections to 
 
 
 .TP
--l logfilename
-If specified, \fIlogfilename\fR specifies a base filename into which operational data from the running client will be logged\&.
-
-
-The default base name is specified at compile time\&.
-
-
-The base name is used to generate actual log file names\&. For example, if the name specified was "log", the debug file would be \fIlog\&.client\fR\&.
-
-
-The log file generated is never removed by the client\&.
-
-
-.TP
 -h|--help
 Print a summary of command line options\&.
 
@@ -176,7 +162,7 @@ Prints the version number for \fBsmbd\fR\&.
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -190,7 +176,7 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .TP
@@ -243,7 +229,7 @@ Be cautious about including passwords in scripts\&. Also, on many systems the co
 
 .TP
 -n <primary NetBIOS name>
-This option allows you to override the NetBIOS name that Samba uses for itself\&. This is identical to setting the \fINetBIOS name\fR parameter in the \fBsmb.conf\fR(5) file\&. However, a command line setting will take precedence over settings in \fBsmb.conf\fR(5)\&.
+This option allows you to override the NetBIOS name that Samba uses for itself\&. This is identical to setting the \fInetbios name\fR parameter in the \fIsmb\&.conf\fR file\&. However, a command line setting will take precedence over settings in \fIsmb\&.conf\fR\&.
 
 
 .TP
@@ -258,7 +244,7 @@ Set the SMB domain of the username\&. This overrides the default domain which is
 
 .TP
 -O socket options
-TCP socket options to set on the client socket\&. See the socket options parameter in the \fBsmb.conf\fR(5) manual page for the list of valid options\&.
+TCP socket options to set on the client socket\&. See the socket options parameter in the \fIsmb\&.conf\fR manual page for the list of valid options\&.
 
 
 .TP

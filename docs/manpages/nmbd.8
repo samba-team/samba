@@ -89,7 +89,7 @@ Prints the version number for \fBsmbd\fR\&.
 
 .TP
 -s <configuration file>
-The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fI smb\&.conf(5)\fR for more information\&. The default configuration file name is determined at compile time\&.
+The file specified contains the configuration details required by the server\&. The information in this file includes server-specific information such as what printcap file to use, as well as descriptions of all the services that the server is to provide\&. See \fIsmb\&.conf\fR for more information\&. The default configuration file name is determined at compile time\&.
 
 
 .TP
@@ -103,7 +103,7 @@ The higher this value, the more detail will be logged to the log files about the
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.
 
 
-Note that specifying this parameter here will override the log level parameter in the \fIsmb\&.conf(5)\fR file\&.
+Note that specifying this parameter here will override the \fIlog level\fR parameter in the \fIsmb\&.conf\fR file\&.
 
 
 .TP
@@ -120,7 +120,7 @@ UDP port number is a positive integer value\&. This option changes the default U
 
 .TP
 \fI/etc/inetd\&.conf\fR
-If the server is to be run by the \fBinetd\fR meta-daemon, this file must contain suitable startup information for the meta-daemon\&. See the install document for details\&.
+If the server is to be run by the \fBinetd\fR meta-daemon, this file must contain suitable startup information for the meta-daemon\&.
 
 
 .TP
@@ -128,12 +128,12 @@ If the server is to be run by the \fBinetd\fR meta-daemon, this file must contai
 or whatever initialization script your system uses)\&.
 
 
-If running the server as a daemon at startup, this file will need to contain an appropriate startup sequence for the server\&. See the "How to Install and Test SAMBA" document for details\&.
+If running the server as a daemon at startup, this file will need to contain an appropriate startup sequence for the server\&.
 
 
 .TP
 \fI/etc/services\fR
-If running the server via the meta-daemon \fBinetd\fR, this file must contain a mapping of service name (e\&.g\&., netbios-ssn) to service port (e\&.g\&., 139) and protocol type (e\&.g\&., tcp)\&. See the "How to Install and Test SAMBA" document for details\&.
+If running the server via the meta-daemon \fBinetd\fR, this file must contain a mapping of service name (e\&.g\&., netbios-ssn) to service port (e\&.g\&., 139) and protocol type (e\&.g\&., tcp)\&.
 
 
 .TP
@@ -141,10 +141,10 @@ If running the server via the meta-daemon \fBinetd\fR, this file must contain a 
 This is the default location of the \fBsmb.conf\fR(5) server configuration file\&. Other common places that systems install this file are \fI/usr/samba/lib/smb\&.conf\fR and \fI/etc/samba/smb\&.conf\fR\&.
 
 
-When run as a WINS server (see the \fBwins support\fR parameter in the \fBsmb.conf\fR(5) man page), \fBnmbd\fR will store the WINS database in the file \fIwins\&.dat\fR in the \fIvar/locks\fR directory configured under wherever Samba was configured to install itself\&.
+When run as a WINS server (see the \fIwins support\fR parameter in the \fBsmb.conf\fR(5) man page), \fBnmbd\fR will store the WINS database in the file \fIwins\&.dat\fR in the \fIvar/locks\fR directory configured under wherever Samba was configured to install itself\&.
 
 
-If \fBnmbd\fR is acting as a \fB browse master\fR (see the \fBlocal master\fR parameter in the \fBsmb.conf\fR(5) man page, \fBnmbd\fR will store the browsing database in the file \fIbrowse\&.dat \fR in the \fIvar/locks\fR directory configured under wherever Samba was configured to install itself\&.
+If \fBnmbd\fR is acting as a \fB browse master\fR (see the \fIlocal master\fR parameter in the \fBsmb.conf\fR(5) man page, \fBnmbd\fR will store the browsing database in the file \fIbrowse\&.dat \fR in the \fIvar/locks\fR directory configured under wherever Samba was configured to install itself\&.
 
 
 .SH "SIGNALS"
