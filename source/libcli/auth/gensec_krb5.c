@@ -489,7 +489,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 	{
 		krb5_data inbuf;
 		krb5_ap_rep_enc_part *repl = NULL;
-		uint8 tok_id[2];
+		uint8_t tok_id[2];
 		DATA_BLOB unwrapped_in;
 
 		if (!gensec_gssapi_parse_krb5_wrap(out_mem_ctx, &in, &unwrapped_in, tok_id)) {
@@ -525,7 +525,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		char *principal;
 		DATA_BLOB unwrapped_in;
 		DATA_BLOB unwrapped_out = data_blob(NULL, 0);
-		uint8 tok_id[2];
+		uint8_t tok_id[2];
 
 		if (!in.data) {
 			*out = unwrapped_out;
@@ -689,7 +689,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 }
 
 static BOOL gensec_krb5_have_feature(struct gensec_security *gensec_security,
-				     uint32 feature)
+				     uint32_t feature)
 {
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		return True;

@@ -41,7 +41,7 @@ void update_joblist(void)
 	struct atsvc_JobEnum r;
 	struct atsvc_enum_ctr ctr;
 	int i;
-	uint32 resume_handle = 0;
+	uint32_t resume_handle = 0;
 
         gtk_list_store_clear(store_jobs);
 

@@ -316,7 +316,7 @@ static NTSTATUS gensec_gssapi_unwrap(struct gensec_security *gensec_security,
 }
 
 static BOOL gensec_gssapi_have_feature(struct gensec_security *gensec_security, 
-				       uint32 feature) 
+				       uint32_t feature) 
 {
 	struct gensec_gssapi_state *gensec_gssapi_state = gensec_security->private_data;
 	if (feature & GENSEC_FEATURE_SIGN) {
