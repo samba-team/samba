@@ -19,4 +19,5 @@ LDADD = ../libtelnet/libtelnet.a \
 	$(LIB_krb4) \
 	$(LIB_des) \
 	$(LIB_tgetent) \
+	$(LIB_kdfs) \
 	$(LIB_roken)

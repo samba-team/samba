@@ -20,4 +20,5 @@ LDADD = \
 	$(LIB_des) \
 	$(LIB_tgetent) \
 	$(LIB_logwtmp) \
+	$(LIB_kdfs) \
 	$(LIB_roken)
