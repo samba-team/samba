@@ -719,45 +719,31 @@ typedef struct sam_alias_mem_info_info
 /* SAM_DELTA_POLICY (0x0D) */
 typedef struct
 {
-	uint32 unknown1; /* 0x5000 */
-	uint32 unknown2; /* 0 */
-	uint32 unknown3; /* 0 */
-	uint32 unknown4; /* 0 */
-	uint32 count1;
-	uint32 ptr1;
-	uint16 count2;
-	uint16 count3;
-	uint32 ptr2;
-	uint32 ptr3;
+	uint32   max_log_size; /* 0x5000 */
+	UINT64_S audit_retention_period; /* 0 */
+	uint32   auditing_mode; /* 0 */
+	uint32   num_events;
+	uint32   ptr_events;
+	UNIHDR   hdr_dom_name;
+	uint32   sid_ptr;
 
-	uint32 unknown4b; /* 0x02000000 */
-	uint32 unknown5; /* 0x00100000 */
-	uint32 unknown6; /* 0x00010000 */
-	uint32 unknown7; /* 0x0f000000 */
-	uint32 unknown8; /* 0 */
-	uint32 unknown9; /* 0 */
-	uint32 unknown10; /* 0 */
-	uint32 unknown11; /* 0x3c*/
-	uint32 unknown12; /* 0*/
+	uint32   paged_pool_limit; /* 0x02000000 */
+	uint32   non_paged_pool_limit; /* 0x00100000 */
+	uint32   min_workset_size; /* 0x00010000 */
+	uint32   max_workset_size; /* 0x0f000000 */
+	uint32   page_file_limit; /* 0 */
+	UINT64_S time_limit; /* 0 */
+	NTTIME   modify_time; /* 0x3c*/
+	NTTIME   create_time; /* a7080110 */
+	BUFHDR2  hdr_sec_desc;
 
-	uint32 unknown13; /* a7080110 */
-	uint32 unknown14; /* 01bfb0dd */
-	uint32 unknown15; /* 0f */
-	uint32 unknown16; /* 68 */
-	uint32 unknown17; /* 00169000 */
+	uint32   num_event_audit_options;
+	uint32   event_audit_option;
 
-	uint32 count4;
-	uint32 unknown18; /* 0  times count4 */
-	
-	uint32 unknown19; /* 8 */
-
-	uint32 unknown20; /* 0x04 times count1 */
-	
-	uint32 ptr4;
-	
-	UNISTR2 domain_name;
+	UNISTR2  domain_name;
 	DOM_SID2 domain_sid;
 
+	BUFFER4  buf_sec_desc;
 } SAM_DELTA_POLICY;
 
 /* SAM_DELTA_TRUST_DOMS */
@@ -783,29 +769,24 @@ typedef struct
 /* SAM_DELTA_PRIVS (0x10) */
 typedef struct
 {
-	uint32 buf_size;
-	SEC_DESC *sec_desc;
 	DOM_SID2 sid;
 
 	uint32 priv_count;
-	uint32 reserved1; /* 0x0 */
+	uint32 priv_control;
 
-	uint32 ptr1;
-	uint32 ptr2;
+	uint32 priv_attr_ptr;
+	uint32 priv_name_ptr;
 
-	uint32 unknown1;
-	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
-	uint32 unknown5;
-	uint32 unknown6;
-	uint32 unknown7;
-	uint32 unknown8;
-	uint32 unknown9;
+	uint32   paged_pool_limit; /* 0x02000000 */
+	uint32   non_paged_pool_limit; /* 0x00100000 */
+	uint32   min_workset_size; /* 0x00010000 */
+	uint32   max_workset_size; /* 0x0f000000 */
+	uint32   page_file_limit; /* 0 */
+	UINT64_S time_limit; /* 0 */
+	uint32   system_flags; /* 1 */
+	BUFHDR2  hdr_sec_desc;
 	
 	uint32 buf_size2;
-	uint32 ptr3;
-	uint32 unknown10; /* 48 bytes 0x0*/
 	
 	uint32 attribute_count;
 	uint32 *attributes;
@@ -814,7 +795,7 @@ typedef struct
 	UNIHDR *hdr_privslist;
 	UNISTR2 *uni_privslist;
 
-
+	BUFFER4 buf_sec_desc;
 } SAM_DELTA_PRIVS;
 
 /* SAM_DELTA_SECRET */

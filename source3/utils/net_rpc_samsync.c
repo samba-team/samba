@@ -171,9 +171,7 @@ int rpc_samdump(int argc, const char **argv)
 
 	dump_database(cli, SAM_DATABASE_DOMAIN, &ret_creds);
 	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
-
-	/* Currently we crash on PRIVS somewhere in unmarshalling */
-	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
+	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
 
 	cli_nt_session_close(cli);
         

@@ -2357,84 +2357,80 @@ static BOOL net_io_sam_policy_info(char *desc, SAM_DELTA_POLICY *info,
 				      prs_struct *ps, int depth)
 {
 	int i;
-
 	prs_debug(ps, depth, desc, "net_io_sam_policy_info");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("unknown1", ps, depth, &info->unknown1))
+	if (!prs_uint32("max_log_size", ps, depth, &info->max_log_size))
                 return False;
-	if (!prs_uint32("unknown2", ps, depth, &info->unknown2))
+	if (!prs_uint64("audit_retention_period", ps, depth,
+			&info->audit_retention_period))
                 return False;
-	if (!prs_uint32("unknown3", ps, depth, &info->unknown3))
+	if (!prs_uint32("auditing_mode", ps, depth, &info->auditing_mode))
                 return False;
-	if (!prs_uint32("unknown4", ps, depth, &info->unknown4))
+	if (!prs_uint32("num_events", ps, depth, &info->num_events))
                 return False;
-	if (!prs_uint32("count1", ps, depth, &info->count1))
-                return False;
-	if (!prs_uint32("ptr1", ps, depth, &info->ptr1))
-                return False;
-
-	if (!prs_uint16("count2", ps, depth, &info->count2))
-                return False;
-	if (!prs_uint16("count3", ps, depth, &info->count3))
+	if (!prs_uint32("ptr_events", ps, depth, &info->ptr_events))
                 return False;
 
-	if (!prs_uint32("ptr2", ps, depth, &info->ptr2))
-                return False;
-	if (!prs_uint32("ptr3", ps, depth, &info->ptr3))
+	if (!smb_io_unihdr("hdr_dom_name", &info->hdr_dom_name, ps, depth))
+		return False;
+
+	if (!prs_uint32("sid_ptr", ps, depth, &info->sid_ptr))
                 return False;
 
-	if (!prs_uint32("unknown4b", ps, depth, &info->unknown4b))
+	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
                 return False;
-	if (!prs_uint32("unknown5", ps, depth, &info->unknown5))
+	if (!prs_uint32("non_paged_pool_limit", ps, depth,
+			&info->non_paged_pool_limit))
                 return False;
-	if (!prs_uint32("unknown6", ps, depth, &info->unknown6))
+	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
                 return False;
-	if (!prs_uint32("unknown7", ps, depth, &info->unknown7))
+	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
                 return False;
-	if (!prs_uint32("unknown8", ps, depth, &info->unknown8))
+	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
                 return False;
-	if (!prs_uint32("unknown9", ps, depth, &info->unknown9))
+	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
                 return False;
-	if (!prs_uint32("unknown10", ps, depth, &info->unknown10))
+	if (!smb_io_time("modify_time", &info->modify_time, ps, depth))
                 return False;
-	if (!prs_uint32("unknown11", ps, depth, &info->unknown11))
+	if (!smb_io_time("create_time", &info->create_time, ps, depth))
                 return False;
-	if (!prs_uint32("unknown12", ps, depth, &info->unknown12))
-                return False;
-
-	if (!prs_uint32("unknown13", ps, depth, &info->unknown13))
-                return False;
-	if (!prs_uint32("unknown14", ps, depth, &info->unknown14))
-                return False;
-	if (!prs_uint32("unknown15", ps, depth, &info->unknown15))
-                return False;
-	if (!prs_uint32("unknown16", ps, depth, &info->unknown16))
-                return False;
-	if (!prs_uint32("unknown17", ps, depth, &info->unknown17))
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
                 return False;
 
-	for (i=0; i<info->count2; i++)
-		if (!prs_uint32("unknown18", ps, depth, &info->unknown18))
-	                return False;
+	for (i=0; i<4; i++) {
+		UNIHDR dummy;
+		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
+			return False;
+	}
 
-	if (!prs_uint32("unknown19", ps, depth, &info->unknown19))
+	for (i=0; i<4; i++) {
+		uint32 reserved;
+		if (!prs_uint32("reserved", ps, depth, &reserved))
+			return False;
+	}
+
+	if (!prs_uint32("num_event_audit_options", ps, depth,
+			&info->num_event_audit_options))
                 return False;
 
-	for (i=0; i<info->count1; i++)
-		if (!prs_uint32("unknown20", ps, depth, &info->unknown20))
-        	        return False;
-
-	if (!prs_uint32("ptr4", ps, depth, &info->ptr4))
-                return False;
+	for (i=0; i<info->num_event_audit_options; i++)
+		if (!prs_uint32("event_audit_option", ps, depth,
+				&info->event_audit_option))
+			return False;
 
 	if (!smb_io_unistr2("domain_name", &info->domain_name, True, ps, depth))
                 return False;
 
 	if(!smb_io_dom_sid2("domain_sid", &info->domain_sid, ps, depth))
+		return False;
+
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+
 		return False;
 
 	return True;
@@ -2589,52 +2585,48 @@ static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("buf_size", ps, depth, &info->buf_size))
-                return False;
-
-	if(!sec_io_desc("sec_desc", &info->sec_desc, ps, depth))
-		return False;
-
 	if(!smb_io_dom_sid2("sid", &info->sid, ps, depth))
 		return False;
 
 	if(!prs_uint32("priv_count", ps, depth, &info->priv_count))
                 return False;
-	if(!prs_uint32("reserved1", ps, depth, &info->reserved1))
+	if(!prs_uint32("priv_control", ps, depth, &info->priv_control))
                 return False;
 
-	if(!prs_uint32("ptr1", ps, depth, &info->ptr1))
+	if(!prs_uint32("priv_attr_ptr", ps, depth, &info->priv_attr_ptr))
                 return False;
-	if(!prs_uint32("ptr2", ps, depth, &info->ptr2))
-                return False;
-
-	if(!prs_uint32("unknown1", ps, depth, &info->unknown1))
-                return False;
-	if(!prs_uint32("unknown2", ps, depth, &info->unknown2))
-                return False;
-	if(!prs_uint32("unknown3", ps, depth, &info->unknown3))
-                return False;
-	if(!prs_uint32("unknown4", ps, depth, &info->unknown4))
-                return False;
-	if(!prs_uint32("unknown5", ps, depth, &info->unknown5))
-                return False;
-	if(!prs_uint32("unknown6", ps, depth, &info->unknown6))
-                return False;
-	if(!prs_uint32("unknown7", ps, depth, &info->unknown7))
-                return False;
-	if(!prs_uint32("unknown8", ps, depth, &info->unknown8))
-                return False;
-	if(!prs_uint32("unknown9", ps, depth, &info->unknown9))
+	if(!prs_uint32("priv_name_ptr", ps, depth, &info->priv_name_ptr))
                 return False;
 
-	if(!prs_uint32("buf_size2", ps, depth, &info->buf_size2))
+	if (!prs_uint32("paged_pool_limit", ps, depth, &info->paged_pool_limit))
                 return False;
-	if(!prs_uint32("ptr3", ps, depth, &info->ptr3))
+	if (!prs_uint32("non_paged_pool_limit", ps, depth,
+			&info->non_paged_pool_limit))
+                return False;
+	if (!prs_uint32("min_workset_size", ps, depth, &info->min_workset_size))
+                return False;
+	if (!prs_uint32("max_workset_size", ps, depth, &info->max_workset_size))
+                return False;
+	if (!prs_uint32("page_file_limit", ps, depth, &info->page_file_limit))
+                return False;
+	if (!prs_uint64("time_limit", ps, depth, &info->time_limit))
+                return False;
+	if (!prs_uint32("system_flags", ps, depth, &info->system_flags))
+                return False;
+	if (!smb_io_bufhdr2("hdr_sec_desc", &info->hdr_sec_desc, ps, depth))
                 return False;
 
-	for (i=0; i<12; i++)
-		if(!prs_uint32("unknown10", ps, depth, &info->unknown10))
-	                return False;
+	for (i=0; i<4; i++) {
+		UNIHDR dummy;
+		if (!smb_io_unihdr("dummy", &dummy, ps, depth))
+			return False;
+	}
+
+	for (i=0; i<4; i++) {
+		uint32 reserved;
+		if (!prs_uint32("reserved", ps, depth, &reserved))
+			return False;
+	}
 
 	if(!prs_uint32("attribute_count", ps, depth, &info->attribute_count))
                 return False;
@@ -2658,6 +2650,10 @@ static BOOL net_io_sam_privs_info(char *desc, SAM_DELTA_PRIVS *info,
 	for (i=0; i<info->privlist_count; i++)
 		if (!smb_io_unistr2("uni_privslist", &info->uni_privslist[i], True, ps, depth))
 			return False;
+
+	if (!smb_io_buffer4("buf_sec_desc", &info->buf_sec_desc,
+                            info->hdr_sec_desc.buffer, ps, depth))
+                return False;
 
 	return True;
 }
