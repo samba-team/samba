@@ -1058,6 +1058,21 @@ krb5_string_to_keytype(krb5_context context,
 }
 
 krb5_error_code
+krb5_enctype_keysize(krb5_context context,
+		     krb5_enctype type,
+		     size_t *keysize)
+{
+    struct encryption_type *et = _find_enctype(type);
+    if(et == NULL) {
+	krb5_set_error_string(context, "encryption type %d not supported",
+			      type);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    *keysize = et->keytype->size;
+    return 0;
+}
+
+krb5_error_code
 krb5_generate_random_keyblock(krb5_context context,
 			      krb5_enctype type,
 			      krb5_keyblock *key)
