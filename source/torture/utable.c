@@ -67,7 +67,7 @@ BOOL torture_utable(int dummy)
 		if (strncmp(alt_name, "X_A_L", 5) != 0) {
 			alt_allowed++;
 			valid[c] = 1;
-			/* d_printf("fname=[%s] alt_name=[%s]\n", fname, alt_name); */
+			d_printf("fname=[%s] alt_name=[%s]\n", fname, alt_name);
 		}
 
 		cli_close(&cli, fnum);

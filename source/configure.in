@@ -2525,15 +2525,6 @@ AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_PROGS)
 
 #################################################
-# Check for SWAT i18n support
-
-PACKAGE=i18n_swat
-AC_DEFINE_UNQUOTED(PACKAGE, "$PACKAGE")
-AC_SUBST(PACKAGE)
-ALL_LINGUAS="en ja pl tr"
-AM_GNU_GETTEXT
-
-#################################################
 # final configure stuff
 
 echo "checking configure summary"
@@ -2544,4 +2535,4 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
 builddir=`pwd`
 AC_SUBST(builddir)
 
-AC_OUTPUT(include/stamp-h Makefile intl/Makefile po/Makefile.in)
+AC_OUTPUT(include/stamp-h Makefile)

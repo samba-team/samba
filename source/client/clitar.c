@@ -1382,7 +1382,7 @@ int cmd_setmode(void)
       case 'a': attra[direct]|=aARCH;
 	break;
       default: DEBUG(0, ("setmode <filename> <perm=[+|-]rsha>\n"));
-	return;
+	return 1;
       }
   }
 
