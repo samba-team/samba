@@ -101,4 +101,8 @@ void mini_inetd (int port);
 #define STDOUT_FILENO 1
 #endif
 
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
+
 #endif /*  __ROKEN_H__ */
