@@ -299,6 +299,12 @@ krb5_change_password (krb5_context	context,
 		}
 	    }
 	    
+	    if (sock >= FD_SETSIZE) {
+		ret = ERANGE;
+		close (sock);
+		goto out;
+	    }
+
 	    FD_ZERO(&fdset);
 	    FD_SET(sock, &fdset);
 	    tv.tv_usec = 0;
