@@ -81,7 +81,10 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 	if (passlen > 0 && (cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen != 24) {
 		/* Encrypted mode needed, and non encrypted password supplied. */
 		lm_response = data_blob(NULL, 24);
-		SMBencrypt(pass, cli->secblob.data,(uchar *)lm_response.data);
+		if (!SMBencrypt(pass, cli->secblob.data,(uchar *)lm_response.data)) {
+			DEBUG(1, ("Password is > 14 chars in length, and is therefore incompatible with Lanman authentication\n"));
+			return False;
+		}
 	} else if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && passlen == 24) {
 		/* Encrypted mode needed, and encrypted password supplied. */
 		lm_response = data_blob(pass, passlen);
@@ -106,7 +109,7 @@ static BOOL cli_session_setup_lanman2(struct cli_state *cli, const char *user,
 
 	p = smb_buf(cli->outbuf);
 	memcpy(p,lm_response.data,lm_response.length);
-	p += passlen;
+	p += lm_response.length;
 	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
 	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
