@@ -464,6 +464,7 @@ NTSTATUS make_server_info(struct auth_serversupplied_info **server_info,
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
+	ZERO_STRUCTP(*server_info);
 	(*server_info)->mem_ctx = mem_ctx;
 	
 	return NT_STATUS_OK;
