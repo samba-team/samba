@@ -35,7 +35,7 @@ LIBS = $(LDB_LIB)($(OBJS))
 
 DIRS = lib bin
 
-all: $(DIRS) $(BINS) $(LIBS)
+all: $(DIRS) $(BINS) $(LIBS) manpages
 
 lib:
 	mkdir -p lib
@@ -63,8 +63,11 @@ bin/ldbedit: tools/ldbedit.o $(LIBS)
 bin/ldbtest: tools/ldbtest.o $(LIBS)
 	$(CC) -o bin/ldbtest tools/ldbtest.o $(LIB_FLAGS)
 
+manpages:
+	man/build_manpages.sh
+
 clean:
-	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB)
+	rm -f */*.o *~ */*~ $(BINS) $(LDB_LIB) man/man?/*.[13]
 
 proto:
 	mkproto.pl */*.c > include/proto.h
