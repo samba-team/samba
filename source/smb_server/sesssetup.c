@@ -209,18 +209,15 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 	vuid = SVAL(req->in.hdr,HDR_UID);
 	smb_sess = smbsrv_session_find(req->smb_conn, vuid);
-	if (smb_sess) {
+	if (smb_sess && !smb_sess->session_info) {
 		if (!smb_sess->gensec_ctx) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
 
-		/* what is when the client is already successful authentificated? */
-		if (smb_sess->session_info) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
 		status = gensec_update(smb_sess->gensec_ctx, req, sess->spnego.in.secblob, &sess->spnego.out.secblob);
 	} else {
+		smb_sess = NULL;
+
 		status = gensec_server_start(req->smb_conn, &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
