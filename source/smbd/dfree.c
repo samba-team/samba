@@ -208,6 +208,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 	 * If external disk calculation specified, use it.
 	 */
 
+#ifdef HAVE_POPEN
 	dfree_command = lp_dfree_command();
 	if (dfree_command && *dfree_command) {
 		pstring line;
@@ -249,6 +250,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 			fsusage(path, dfree, dsize);
 		}
 	} else
+#endif /* HAVE_POPEN */
 		fsusage(path, dfree, dsize);
 
 	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
