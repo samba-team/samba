@@ -50,6 +50,10 @@ OM_uint32 gss_indicate_mechs
   if (ret)
       return ret;
 
+  ret = gss_add_oid_set_member(minor_status, GSS_SPNEGO_MECHANISM, mech_set);
+  if (ret)
+      return ret;
+
   *minor_status = 0;
   return GSS_S_COMPLETE;
 }
