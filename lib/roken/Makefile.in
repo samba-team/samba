@@ -39,6 +39,7 @@ SOURCES = \
 	base64.c \
 	chown.c \
 	concat.c \
+	copyhostent.c \
 	daemon.c \
 	emalloc.c \
 	erealloc.c \
