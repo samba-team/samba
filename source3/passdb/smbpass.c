@@ -80,7 +80,7 @@ static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
   (*plock_depth)++;
 
   if(pw_file_lock_depth == 0) {
-    if (do_pw_lock(fd, secs, type)) {
+    if (!do_pw_lock(fd, secs, type)) {
       DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
                  strerror(errno)));
       return False;
@@ -135,7 +135,7 @@ void *startsmbpwent(BOOL update)
   /* Set a 16k buffer to do more efficient reads */
   setvbuf(fp, s_readbuf, _IOFBF, sizeof(s_readbuf));
 
-  if (!pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 5, &pw_file_lock_depth))
+  if (!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 5, &pw_file_lock_depth))
   {
     DEBUG(0, ("startsmbpwent: unable to lock file %s\n", pfile));
     fclose(fp);
@@ -774,7 +774,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   lockfd = fileno(fp);
 
-  if (!pw_file_lock(lockfd, F_RDLCK | F_WRLCK, 5, &pw_file_lock_depth)) {
+  if (!pw_file_lock(lockfd, F_WRLCK, 5, &pw_file_lock_depth)) {
     DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
     fclose(fp);
     return False;
@@ -1076,6 +1076,35 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 static int mach_passwd_lock_depth;
 
 /************************************************************************
+ Routine to get the name for a machine account file.
+************************************************************************/
+
+static void get_machine_account_file_name( char *domain, char *name, char *mac_file)
+{
+  unsigned int mac_file_len;
+  char *p;
+
+  pstrcpy(mac_file, lp_smb_passwd_file());
+  p = strrchr(mac_file, '/');
+  if(p != NULL)
+    *++p = '\0';
+
+  mac_file_len = strlen(mac_file);
+
+  if (sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6 < 0)
+  {
+    DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
+              mac_file));
+    return;
+  }
+
+  strcat(mac_file, domain);
+  strcat(mac_file, ".");
+  strcat(mac_file, name);
+  strcat(mac_file, ".mac");
+}
+ 
+/************************************************************************
  Routine to lock the machine account password file for a domain.
 ************************************************************************/
 
@@ -1083,41 +1112,27 @@ void *machine_password_lock( char *domain, char *name, BOOL update)
 {
   FILE *fp;
   pstring mac_file;
-  unsigned int mac_file_len;
-  char *p;
 
   if(mach_passwd_lock_depth == 0) {
 
-    pstrcpy(mac_file, lp_smb_passwd_file());
-    p = strrchr(mac_file, '/');
-
-    if(p != NULL)
-      *++p = '\0';
-
-    mac_file_len = strlen(mac_file);
-
-    if (sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6 < 0)
-    {
-      DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
-                mac_file));
-      return NULL;
-    }
-
-    strcat(mac_file, domain);
-    strcat(mac_file, ".");
-    strcat(mac_file, name);
-    strcat(mac_file, ".mac");
+    get_machine_account_file_name( domain, name, mac_file);
 
     if((fp = fopen(mac_file, "r+b")) == NULL) {
-      DEBUG(0,("machine_password_lock: cannot open file %s - Error was %s.\n",
-            mac_file, strerror(errno) ));
-      return NULL;
+      if(errno == ENOENT && update) {
+        fp = fopen(mac_file, "w+b");
+      }
+
+      if(fp == NULL) {
+        DEBUG(0,("machine_password_lock: cannot open file %s - Error was %s.\n",
+              mac_file, strerror(errno) ));
+        return NULL;
+      }
     }
 
     chmod(mac_file, 0600);
   }
 
-  if(!pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 
+  if(!pw_file_lock(fileno(fp), (update ? F_WRLCK : F_RDLCK), 
                                       60, &mach_passwd_lock_depth))
   {
     DEBUG(0,("machine_password_lock: cannot lock file %s\n", mac_file));
@@ -1139,6 +1154,18 @@ BOOL machine_password_unlock( void *token )
   if(mach_passwd_lock_depth == 0)
     fclose(fp);
   return ret;
+}
+
+/************************************************************************
+ Routine to delete the machine account password file for a domain.
+************************************************************************/
+
+BOOL machine_password_delete( char *domain, char *name )
+{
+  pstring mac_file;
+
+  get_machine_account_file_name( domain, name, mac_file);
+  return (unlink( mac_file ) == 0);
 }
 
 /************************************************************************

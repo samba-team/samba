@@ -402,7 +402,7 @@ static void api_net_srv_pwset( int uid,
                     DEBUG(100,("%02X ", q_a.pwd[i]));
                   DEBUG(100,("\n"));
 
-                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 1);
+                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 0);
 
                   /* lies!  nt and lm passwords are _not_ the same: don't care */
                   smb_pass->smb_passwd    = pwd;

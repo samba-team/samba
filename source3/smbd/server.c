@@ -26,6 +26,7 @@ pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern pstring sesssetup_user;
 extern fstring global_myworkgroup;
+extern pstring global_myname;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -4941,6 +4942,21 @@ static void init_structs(void )
 {
   int i;
   get_myname(myhostname,NULL);
+
+  /*
+   * Set the machine NETBIOS name if not already
+   * set from the config file.
+   */
+
+  if (!*global_myname)
+  {
+    char *p;
+    fstrcpy( global_myname, myhostname );
+    p = strchr( global_myname, '.' );
+    if (p) 
+      *p = 0;
+  }
+  strupper( global_myname );
 
   for (i=0;i<MAX_CONNECTIONS;i++)
     {

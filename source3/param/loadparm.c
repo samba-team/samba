@@ -2144,14 +2144,16 @@ static void lp_add_auto_services(char *str)
 {
   char *s;
   char *p;
-  int homes = lp_servicenumber(HOMES_NAME);
-  int printers = lp_servicenumber(PRINTERS_NAME);
+  int homes, printers;
 
   if (!str)
     return;
 
   s = strdup(str);
   if (!s) return;
+
+  homes = lp_servicenumber(HOMES_NAME);
+  printers = lp_servicenumber(PRINTERS_NAME);
 
   for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP))
     {
