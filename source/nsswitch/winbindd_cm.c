@@ -152,11 +152,9 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 		return True;
 	}
 
-	if (!get_dc_list(True, domain, &ip_list, &count)) {
-		if (!get_dc_list(False, domain, &ip_list, &count)) {
-			DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-			return False;
-		}
+	if (!get_dc_list(False, domain, &ip_list, &count)) {
+		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
+		return False;
 	}
 
 	/* Pick a nice close server */
