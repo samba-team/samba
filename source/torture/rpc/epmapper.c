@@ -66,7 +66,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 			printf(" IP:");
 			{
 				struct ipv4_addr in;
-				in.addr = htonl(rhs->ip.address);
+				in.addr = htonl(rhs->ip.ipaddr.addr);
 				printf("%s", sys_inet_ntoa(in));
 			}
 			break;
@@ -158,7 +158,7 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	twr->tower.floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 	twr->tower.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
-	twr->tower.floors[4].rhs.ip.address = 0;
+	twr->tower.floors[4].rhs.ip.ipaddr.addr = 0;
 
 	status = dcerpc_epm_Map(p, mem_ctx, &r);
 	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {

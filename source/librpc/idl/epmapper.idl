@@ -99,7 +99,7 @@ interface epmapper
 	} epm_rhs_tcp;
 
 	typedef struct {
-		uint32 address;
+		ipv4_addr ipaddr;
 	} epm_rhs_ip;
 
 	typedef struct {

@@ -386,13 +386,13 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		return talloc_asprintf(mem_ctx, "%d", floor->rhs.http.port);
 
 	case EPM_PROTOCOL_IP:
-		if (floor->rhs.ip.address == 0) {
+		if (floor->rhs.ip.ipaddr.addr == 0) {
 			return NULL; 
 		}
 
 		{
 			struct ipv4_addr in;
-			in.addr = htonl(floor->rhs.ip.address);
+			in.addr = htonl(floor->rhs.ip.ipaddr.addr);
 			return talloc_strdup(mem_ctx, sys_inet_ntoa(in));
 		}
 
@@ -458,9 +458,9 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor 
 
 	case EPM_PROTOCOL_IP:
 		if (strlen(data) > 0) {
-			floor->rhs.ip.address = ntohl(interpret_addr(data));
+			floor->rhs.ip.ipaddr.addr = ntohl(interpret_addr(data));
 		} else {
-			floor->rhs.ip.address = 0;
+			floor->rhs.ip.ipaddr.addr = 0;
 		}
 		return NT_STATUS_OK;
 
