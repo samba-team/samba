@@ -493,6 +493,8 @@ static BOOL get_dcs_1c(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	SAFE_FREE(iplist);
+
 	return True;
 }
 
