@@ -282,11 +282,9 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 
 		if (lp_client_ntlmv2_auth()) {
 			uchar ntlm_v2_hash[16];
-			uchar ntlmv2_response[16];
-			uchar lmv2_response[16];
-			DATA_BLOB ntlmv2_client_data;
-			DATA_BLOB lmv2_client_data;
 			DATA_BLOB server_chal;
+
+			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
 			/* We don't use the NT# directly.  Instead we use it mashed up with
 			   the username and domain.
@@ -295,48 +293,16 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			if (!ntv2_owf_gen(nt_hash, user, workgroup, ntlm_v2_hash)) {
 				return False;
 			}
-
-			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
-
-			/* NTLMv2 */
-
-			/* We also get to specify some random data */
-			ntlmv2_client_data = data_blob(NULL, 20);
-			generate_random_buffer(ntlmv2_client_data.data, ntlmv2_client_data.length, False);
-			memset(ntlmv2_client_data.data, 'A', ntlmv2_client_data.length);
-
-			/* Given that data, and the challenge from the server, generate a response */
-			SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, ntlmv2_client_data, ntlmv2_response);
-
-			/* put it into nt_response, for the code below to put into the packet */
-			nt_response = data_blob(NULL, ntlmv2_client_data.length + sizeof(ntlmv2_response));
-			memcpy(nt_response.data, ntlmv2_response, sizeof(ntlmv2_response));
-			/* after the first 16 bytes is the random data we generated above, so the server can verify us with it */
-			memcpy(nt_response.data + sizeof(ntlmv2_response), ntlmv2_client_data.data, ntlmv2_client_data.length);
-			data_blob_free(&ntlmv2_client_data);
-
+			
+			nt_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 64 /* pick a number, > 8 */);
 
 			/* LMv2 */
 
-			/* We also get to specify some random data, but only 8 bytes (24 byte total response) */
-			lmv2_client_data = data_blob(NULL, 8);
-			generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length, False);
-			memset(lmv2_client_data.data, 'B', lmv2_client_data.length);
-
-			/* Calculate response */
-			SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, lmv2_client_data, lmv2_response);
-
-			/* Calculate response */
-			lm_response = data_blob(NULL, lmv2_client_data.length + sizeof(lmv2_response));
-			memcpy(lm_response.data, lmv2_response, sizeof(lmv2_response));
-			/* after the first 16 bytes is the 8 bytes of random data we made above */
-			memcpy(lm_response.data + sizeof(lmv2_response), lmv2_client_data.data, lmv2_client_data.length);
-			data_blob_free(&lmv2_client_data);
-
-			data_blob_free(&server_chal);
+			lm_response = NTLMv2_generate_response(ntlm_v2_hash, server_chal, 8);
 
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, ntlmv2_response, user_session_key);
+			/* use only the first 16 bytes of nt_response for session key */
+			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response.data, user_session_key);
 
 		} else {
 			/* non encrypted password supplied. Ignore ntpass. */
