@@ -430,9 +430,9 @@ do_version4(unsigned char *buf,
 	max_end = krb_life_to_time(ad.time_sec, ad.life);
 	max_end = min(max_end, krb_life_to_time(kdc_time, life));
 	if(server->max_life)
-	    max_end = min(max_end, kdc_time + server->max_life);
+	    max_end = min(max_end, kdc_time + *server->max_life);
 	if(client && client->max_life)
-	    max_end = min(max_end, kdc_time + client->max_life);
+	    max_end = min(max_end, kdc_time + *client->max_life);
 	life = min(life, krb_time_to_life(kdc_time, max_end));
 	
 	issue_time = kdc_time;
