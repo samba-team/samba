@@ -103,7 +103,7 @@ static struct dns_reply*
 parse_reply(unsigned char *data, int len)
 {
     unsigned char *p;
-    unsigned char host[128];
+    char host[128];
     int status;
     
     struct dns_reply *r;
@@ -120,7 +120,7 @@ parse_reply(unsigned char *data, int len)
 	dns_free_data(r);
 	return NULL;
     }
-    r->q.domain = strdup((char*)host);
+    r->q.domain = strdup(host);
     p += status;
     r->q.type = (p[0] << 8 | p[1]);
     p += 2;
@@ -145,7 +145,7 @@ parse_reply(unsigned char *data, int len)
 	p += 2;
 	*rr = (struct resource_record*)calloc(1, 
 					      sizeof(struct resource_record));
-	(*rr)->domain = strdup((char*)host);
+	(*rr)->domain = strdup(host);
 	(*rr)->type = type;
 	(*rr)->class = class;
 	(*rr)->ttl = ttl;
@@ -159,7 +159,7 @@ parse_reply(unsigned char *data, int len)
 		dns_free_data(r);
 		return NULL;
 	    }
-	    (*rr)->u.txt = strdup((char*)host);
+	    (*rr)->u.txt = strdup(host);
 	    break;
 	case T_MX:
 	case T_AFSDB:{
@@ -169,9 +169,9 @@ parse_reply(unsigned char *data, int len)
 		return NULL;
 	    }
 	    (*rr)->u.mx = (struct mx_record*)malloc(sizeof(struct mx_record) + 
-						    strlen((char*)host));
+						    strlen(host));
 	    (*rr)->u.mx->preference = (p[0] << 8) | p[1];
-	    strcpy((*rr)->u.mx->domain, (char*)host);
+	    strcpy((*rr)->u.mx->domain, host);
 	    break;
 	}
 	case T_SRV:{
@@ -182,11 +182,11 @@ parse_reply(unsigned char *data, int len)
 	    }
 	    (*rr)->u.srv = 
 		(struct srv_record*)malloc(sizeof(struct srv_record) + 
-					   strlen((char*)host));
+					   strlen(host));
 	    (*rr)->u.srv->priority = (p[0] << 8) | p[1];
 	    (*rr)->u.srv->weight = (p[2] << 8) | p[3];
 	    (*rr)->u.srv->port = (p[4] << 8) | p[5];
-	    strcpy((*rr)->u.srv->target, (char*)host);
+	    strcpy((*rr)->u.srv->target, host);
 	    break;
 	}
 	case T_TXT:{
