@@ -584,7 +584,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 /* Print usage information */
 static void usage(void)
 {
-	printf("Usage: rpcclient server [options]\n");
+	printf("Usage: rpcclient [options] server\n");
 
 	printf("\t-A authfile           file containing user credentials\n");
 	printf("\t-c \"command string\"   execute semicolon separated cmds\n");
@@ -633,69 +633,86 @@ int main(int argc, char *argv[])
 		usage();
 		return 0;
 	}
-	
-	if (strncmp("//", argv[1], 2) == 0 || strncmp("\\\\", argv[1], 2) == 0)
-		argv[1] += 2;
 
-	pstrcpy(server, argv[1]);
+        /*
+	 * M. Sweet: getopt() behaves slightly differently on various
+	 * platforms.  The following loop ensures that the System V,
+	 * BSD, and Linux (glibc) implementations work similarly to
+	 * allow the server name anywhere on the command-line.
+	 */
 
-	argv++;
-	argc--;
+	pstrcpy(server, "");
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
-		switch (opt) {
-		case 'A':
-			/* only get the username, password, and domain from the file */
-			read_authfile (optarg, username, password, domain);
-			if (strlen (password))
+        while (argc > optind) {
+		while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
+			switch (opt) {
+			case 'A':
+				/* only get the username, password, and domain from the file */
+				read_authfile (optarg, username, password, domain);
+				if (strlen (password))
+					got_pass = True;
+				break;
+
+			case 'c':
+				pstrcpy(cmdstr, optarg);
+				break;
+
+			case 'd':
+				DEBUGLEVEL = atoi(optarg);
+				break;
+
+			case 'l':
+				slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
+				lp_set_logfile(logfile);
+				interactive = False;
+				break;
+
+			case 'N':
 				got_pass = True;
-			break;
+				break;
 
-		case 'c':
-			pstrcpy(cmdstr, optarg);
-			break;
+			case 's':
+				pstrcpy(servicesf, optarg);
+				break;
 
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
-			lp_set_logfile(logfile);
-			interactive = False;
-			break;
-
-		case 'N':
-			got_pass = True;
-			break;
-			
-		case 's':
-			pstrcpy(servicesf, optarg);
-			break;
-
-		case 'U': {
-			char *lp;
-			pstrcpy(username,optarg);
-			if ((lp=strchr(username,'%'))) {
-				*lp = 0;
-				pstrcpy(password,lp+1);
-				got_pass = True;
-				memset(strchr(optarg,'%')+1,'X',strlen(password));
+			case 'U': {
+				char *lp;
+				pstrcpy(username,optarg);
+				if ((lp=strchr(username,'%'))) {
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					got_pass = True;
+					memset(strchr(optarg,'%')+1,'X',strlen(password));
+				}
+				break;
 			}
-			break;
+
+			case 'W':
+				pstrcpy(domain, optarg);
+				break;
+
+			case 'h':
+			default:
+				usage();
+				return 1;
+			}
 		}
-		
-		case 'W':
-			pstrcpy(domain, optarg);
-			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
+
+		if (argc > optind) {
+			if (strncmp("//", argv[optind], 2) == 0 ||
+			    strncmp("\\\\", argv[optind], 2) == 0)
+				argv[optind] += 2;
+
+			pstrcpy(server, argv[optind]);
+
+			optind ++;
 		}
 	}
 
+	if (!server[0]) {
+		usage();
+		return 1;
+	}
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
