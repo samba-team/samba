@@ -1559,6 +1559,148 @@ static int cmd_rmdir(void)
 }
 
 /****************************************************************************
+ UNIX hardlink.
+****************************************************************************/
+
+static int cmd_link(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+  
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		d_printf("link <src> <dest>\n");
+		return 1;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_hardlink(cli, src, dest)) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), src, dest);
+		return 1;
+	}  
+
+	return 0;
+}
+
+/****************************************************************************
+ UNIX symlink.
+****************************************************************************/
+
+static int cmd_symlink(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		d_printf("symlink <src> <dest>\n");
+		return 1;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_symlink(cli, src, dest)) {
+		d_printf("%s symlinking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest);
+		return 1;
+	} 
+
+	return 0;
+}
+
+/****************************************************************************
+ UNIX chmod.
+****************************************************************************/
+
+static int cmd_chmod(void)
+{
+	pstring src;
+	mode_t mode;
+	fstring buf, buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		d_printf("chmod mode file\n");
+		return 1;
+	}
+
+	mode = (mode_t)strtol(buf, NULL, 8);
+	pstrcat(src,buf2);
+
+	if (!cli_unix_chmod(cli, src, mode)) {
+		d_printf("%s chmod file %s 0%o\n",
+			cli_errstr(cli), src, (unsigned int)mode);
+		return 1;
+	} 
+
+	return 0;
+}
+
+/****************************************************************************
+ UNIX chown.
+****************************************************************************/
+
+static int cmd_chown(void)
+{
+	pstring src;
+	uid_t uid;
+	gid_t gid;
+	fstring buf, buf2, buf3;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+		d_printf("chown uid gid file\n");
+		return 1;
+	}
+
+	uid = (uid_t)atoi(buf);
+	gid = (gid_t)atoi(buf2);
+	pstrcat(src,buf3);
+
+	if (!cli_unix_chown(cli, src, uid, gid)) {
+		d_printf("%s chown file %s uid=%d, gid=%d\n",
+			cli_errstr(cli), src, (int)uid, (int)gid);
+		return 1;
+	} 
+
+	return 0;
+}
+
+/****************************************************************************
 rename some files
 ****************************************************************************/
 static int cmd_rename(void)
@@ -1826,6 +1968,8 @@ struct
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
@@ -1834,6 +1978,7 @@ struct
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
+  {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -1858,6 +2003,7 @@ struct
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
+  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
