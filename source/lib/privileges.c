@@ -170,6 +170,9 @@ void reset_privilege(PRIVILEGE_SET *priv_set)
 
 void destroy_privilege(PRIVILEGE_SET **priv_set)
 {
+	if (priv_set == NULL || *priv_set == NULL)
+		return;
+
 	reset_privilege(*priv_set);
 	if (!((*priv_set)->ext_ctx))
 		/* mem_ctx is local, destroy it */
