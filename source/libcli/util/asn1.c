@@ -184,6 +184,14 @@ BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
 	return !data->has_error;
 }
 
+BOOL asn1_read_BOOLEAN2(ASN1_DATA *data, BOOL *v)
+{
+	asn1_start_tag(data, ASN1_BOOLEAN);
+	asn1_read_uint8(data, (uint8 *)v);
+	asn1_end_tag(data);
+	return !data->has_error;
+}
+
 /* check a BOOLEAN */
 BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
@@ -216,19 +224,27 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 	return True;
 }
 
+/* Peek into an ASN1 buffer, not advancing the pointer */
+BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
+{
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
+		return False;
+
+	if (data->ofs + len > data->length)
+		return False;
+
+	memcpy(p, data->data + data->ofs, len);
+	return True;
+}
+
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
-	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
+	if (!asn1_peek(data, p, len)) {
 		data->has_error = True;
 		return False;
 	}
 
-	if (data->ofs + len > data->length) {
-		data->has_error = True;
-		return False;
-	}
-	memcpy(p, data->data + data->ofs, len);
 	data->ofs += len;
 	return True;
 }
@@ -239,26 +255,19 @@ BOOL asn1_read_uint8(ASN1_DATA *data, uint8_t *v)
 	return asn1_read(data, v, 1);
 }
 
-/* read from a ASN1 buffer, advancing the buffer pointer */
-BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
-{
-	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
-		data->has_error = True;
-		return False;
-	}
-
-	if (data->ofs + len > data->length) {
-		data->has_error = True;
-		return False;
-	}
-	memcpy(p, data->data + data->ofs, len);
-	return True;
-}
-
-/* read a uint8_t from a ASN1 buffer */
 BOOL asn1_peek_uint8(ASN1_DATA *data, uint8_t *v)
 {
 	return asn1_peek(data, v, 1);
+}
+
+BOOL asn1_peek_tag(ASN1_DATA *data, uint8_t tag)
+{
+	uint8_t b;
+
+	if (!asn1_peek(data, &b, sizeof(b)))
+		return False;
+
+	return (b == tag);
 }
 
 /* start reading a nested asn1 structure */
@@ -304,6 +313,89 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 	return !data->has_error;
 }
 
+#if 0
+static BOOL read_one_uint8(int sock, uint8_t *result, ASN1_DATA *data,
+			   const struct timeval *endtime)
+{
+	if (read_data_until(sock, result, 1, endtime) != 1)
+		return False;
+
+	return asn1_write(data, result, 1);
+}
+
+/* Read a complete ASN sequence (ie LDAP result) from a socket */
+BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
+			      const struct timeval *endtime)
+{
+	uint8_t b;
+	size_t len;
+	char *buf;
+
+	ZERO_STRUCTP(data);
+
+	if (!read_one_uint8(sock, &b, data, endtime))
+		return False;
+
+	if (b != 0x30) {
+		data->has_error = True;
+		return False;
+	}
+
+	if (!read_one_uint8(sock, &b, data, endtime))
+		return False;
+
+	if (b & 0x80) {
+		int n = b & 0x7f;
+		if (!read_one_uint8(sock, &b, data, endtime))
+			return False;
+		len = b;
+		while (n > 1) {
+			if (!read_one_uint8(sock, &b, data, endtime))
+				return False;
+			len = (len<<8) | b;
+			n--;
+		}
+	} else {
+		len = b;
+	}
+
+	buf = malloc(len);
+	if (buf == NULL)
+		return False;
+
+	if (read_data_until(sock, buf, len, endtime) != len)
+		return False;
+
+	if (!asn1_write(data, buf, len))
+		return False;
+
+	free(buf);
+
+	data->ofs = 0;
+	
+	return True;
+}
+#endif
+
+/* Get the length to be expected in buf */
+BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
+			uint8_t tag, size_t *result)
+{
+	ASN1_DATA data;
+
+	/* Fake the asn1_load to avoid the memdup, this is just to be able to
+	 * re-use the length-reading in asn1_start_tag */
+	ZERO_STRUCT(data);
+	data.data = buf;
+	data.length = buf_length;
+	if (!asn1_start_tag(&data, tag))
+		return False;
+	*result = asn1_tag_remaining(&data)+data.ofs;
+	/* We can't use asn1_end_tag here, as we did not consume the complete
+	 * tag, so asn1_end_tag would flag an error and not free nesting */
+	free(data.nesting);
+	return True;
+}
 
 /* stop reading a tag */
 BOOL asn1_end_tag(ASN1_DATA *data)
@@ -342,7 +434,7 @@ int asn1_tag_remaining(ASN1_DATA *data)
 BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8_t b;
-	char *oid = NULL;
+	char *tmp_oid = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("asn1_read_OID");
 	if (!mem_ctx) {
 		return False;
@@ -351,8 +443,8 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
 	asn1_read_uint8(data, &b);
 
-	oid = talloc_asprintf(mem_ctx, "%u",  b/40);
-	oid = talloc_asprintf_append(mem_ctx, oid, " %u",  b%40);
+	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b/40);
+	tmp_oid = talloc_asprintf_append(mem_ctx, tmp_oid, " %u",  b%40);
 
 	while (!data->has_error && asn1_tag_remaining(data) > 0) {
 		uint_t v = 0;
@@ -360,12 +452,12 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 			asn1_read_uint8(data, &b);
 			v = (v<<7) | (b&0x7f);
 		} while (!data->has_error && b & 0x80);
-		oid = talloc_asprintf_append(mem_ctx, oid, " %u",  v);
+		tmp_oid = talloc_asprintf_append(mem_ctx, tmp_oid, " %u",  v);
 	}
 
 	asn1_end_tag(data);
 
-	*OID = strdup(oid);
+	*OID = strdup(tmp_oid);
 	talloc_destroy(mem_ctx);
 
 	return (*OID && !data->has_error);
@@ -437,6 +529,20 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	}
 	return asn1_end_tag(data);	
 	
+}
+
+/* read an interger */
+BOOL asn1_read_enumerated(ASN1_DATA *data, int *v)
+{
+	*v = 0;
+	
+	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
+	while (asn1_tag_remaining(data)>0) {
+		uint8_t b;
+		asn1_read_uint8(data, &b);
+		*v = (*v << 8) + b;
+	}
+	return asn1_end_tag(data);	
 }
 
 /* check a enumarted value is correct */
