@@ -857,6 +857,10 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		   
 		if ( *which_domain && !strequal(which_domain, domain->name) )
 			continue;
+
+		if ( !domain->initialized )
+			set_dc_type_and_flags( domain );
+
 			
 		ZERO_STRUCT(groups);
 
