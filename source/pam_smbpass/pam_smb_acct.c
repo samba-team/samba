@@ -46,12 +46,14 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 
     const char *name;
     const char *p;
-    struct smb_passwd *smb_pwent = NULL;
+    SAM_ACCOUNT *sampass = NULL;
 
     extern BOOL in_client;
 
     /* Samba initialization. */
     setup_logging( "pam_smbpass", False );
+    charset_initialise();
+    codepage_initialise(lp_client_code_page());
     in_client = True;
 
     ctrl = set_ctrl( flags, argc, argv );
@@ -75,12 +77,13 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     }
 
     /* Get the user's record. */
-    smb_pwent = getsmbpwnam( name );
+    pdb_init_sam(&sampass);
+    pdb_getsampwnam(sampass, name );
 
-    if (!smb_pwent)
+    if (!sampass)
         return PAM_USER_UNKNOWN;
 
-    if (smb_pwent->acct_ctrl & ACB_DISABLED) {
+    if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
         if (on( SMB_DEBUG, ctrl )) {
             _log_err( LOG_DEBUG
                       , "acct: account %s is administratively disabled", name );
