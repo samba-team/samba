@@ -203,7 +203,8 @@ _my_get_smbpwnam(FILE * fp, char *name, BOOL * valid_old_pwd,
  */
 static void usage(char *name)
 {
-	fprintf(stderr, "Usage is : %s [-add] [username]\n", name);
+	fprintf(stderr, "Usage (as root) is : %s [-add] [username] [password]\n", name);
+	fprintf(stderr, "Usage (as user) is : %s [old password  new password]\n", name);
 	exit(1);
 }
 
@@ -223,6 +224,7 @@ static void usage(char *name)
   BOOL            valid_old_pwd = False;
   BOOL 			got_valid_nt_entry = False;
   BOOL            add_user = False;
+  int             add_pass = 0;
   long            seekpos;
   int             pwfd;
   char            ascii_p16[66];
@@ -250,27 +252,51 @@ static void usage(char *name)
   real_uid = getuid();
   
   /* Deal with usage problems */
-  if (real_uid == 0) {
+  if (real_uid == 0)
+  {
     /* As root we can change anothers password and add a user. */
-    if (argc > 3 )
+    if (argc > 4 )
       usage(argv[0]);
-  } else if (argc != 1) {
+  }
+  else if (argc == 2 || argc > 3)
+  {
     fprintf(stderr, "%s: Only root can set anothers password.\n", argv[0]);
     usage(argv[0]);
   }
   
-  if (real_uid == 0 && (argc > 1)) {
+  if (real_uid == 0 && (argc > 1))
+  {
     /* We are root - check if we should add the user */
     if ((argv[1][0] == '-') && (argv[1][1] == 'a'))
       add_user = True;
-    if(add_user && (argc != 3))
+
+    if(add_user && (argc != 4 || argc != 3))
       usage(argv[0]);
 
-    /* If we are root we can change anothers password. */
+    /* root can specify password on command-line */
+    if (argc == (add_user ? 4 : 3))
+    {
+      /* -a argument (add_user): new password is 3rd argument. */
+      /* no -a argument (add_user): new password is 2nd argument */
+
+      add_pass = add_user ? 3 : 2;
+    }
+
+    /* If we are root we can change another's password. */
     strncpy(user_name, add_user ? argv[2] : argv[1], sizeof(user_name) - 1);
     user_name[sizeof(user_name) - 1] = '\0';
+
     pwd = getpwnam(user_name);
-  } else {
+  }
+  else
+  {
+    /* non-root can specify old pass / new pass on command-line */
+    if (argc == 3)
+    {
+       /* non-root specifies new password as 2nd argument */
+       add_pass = 2;
+    }
+
     pwd = getpwuid(real_uid);
   }
   
@@ -278,24 +304,50 @@ static void usage(char *name)
     fprintf(stderr, "%s: Unable to get UNIX password entry for user.\n", argv[0]);
     exit(1);
   }
+
   /* If we are root we don't ask for the old password. */
   old_passwd[0] = '\0';
-  if (real_uid != 0) {
-    p = getpass("Old SMB password:");
-    strncpy(old_passwd, p, sizeof(fstring));
+  if (real_uid != 0)
+  {
+    if (add_pass)
+    {
+      /* old password, as non-root, is 1st argument */
+      strncpy(old_passwd, argv[1], sizeof(fstring));
+    }
+    else
+    {
+      p = getpass("Old SMB password:");
+      strncpy(old_passwd, p, sizeof(fstring));
+    }
     old_passwd[sizeof(fstring)-1] = '\0';
   }
-  new_passwd[0] = '\0';
-  p = getpass("New SMB password:");
-  strncpy(new_passwd, p, sizeof(fstring));
-  new_passwd[sizeof(fstring)-1] = '\0';
-  p = getpass("Retype new SMB password:");
-  if (strcmp(p, new_passwd)) {
-    fprintf(stderr, "%s: Mismatch - password unchanged.\n", argv[0]);
-    exit(1);
+
+  if (add_pass)
+  {
+    /* new password is specified on the command line */
+    strncpy(new_passwd, argv[add_user ? 3 : 2], sizeof(new_passwd) - 1);
+    new_passwd[sizeof(new_passwd) - 1] = '\0';
+  }
+  else
+  {
+    new_passwd[0] = '\0';
+
+    p = getpass("New SMB password:");
+
+    strncpy(new_passwd, p, sizeof(fstring));
+    new_passwd[sizeof(fstring)-1] = '\0';
+
+    p = getpass("Retype new SMB password:");
+
+    if (strcmp(p, new_passwd))
+    {
+      fprintf(stderr, "%s: Mismatch - password unchanged.\n", argv[0]);
+      exit(1);
+    }
   }
   
-  if (new_passwd[0] == '\0') {
+  if (new_passwd[0] == '\0')
+  {
     printf("Password not set\n");
     exit(0);
   }
