@@ -315,6 +315,38 @@ find_method (const char *filename, const char **rest)
 }
 
 krb5_error_code
+hdb_list_builtin(krb5_context context, char **list)
+{
+    const struct hdb_method *h;
+    size_t len = 0;
+    char *p, *buf = NULL;
+
+    for (h = methods; h->prefix != NULL; ++h) {
+	if (h->prefix[0] == '\0')
+	    continue;
+	len += strlen(h->prefix) + 2;
+    }
+
+    len += 1;
+    buf = malloc(len);
+    if (buf == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+    buf[0] = '\0';
+
+    for (h = methods; h->prefix != NULL; ++h) {
+	if (h->prefix[0] == '\0')
+	    continue;
+	if (h != methods)
+	    strlcat(buf, ", ", len);
+	strlcat(buf, h->prefix, len);
+    }
+    *list = buf;
+    return 0;
+}
+
+krb5_error_code
 hdb_create(krb5_context context, HDB **db, const char *filename)
 {
     const struct hdb_method *h;
