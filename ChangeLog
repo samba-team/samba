@@ -2,7 +2,8 @@
 
 	* lib/krb5/auth_context.c: use krb5_generate_subkey_extended()
 
-	* lib/krb5/generate_subkey.c: add krb5_generate_subkey_extended()
+	* lib/krb5/generate_subkey.c: add krb5_generate_subkey_extended(),
+	  set *subkey to NULL if key geneartion fails
 
 	* lib/krb5/build_auth.c: support for enctype negotiation
 	  (client sends EtypeList in Authenticator authz data)
