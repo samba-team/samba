@@ -285,6 +285,7 @@ BOOL modify_share_mode(int token, files_struct *fsp, int new_mode)
 
 int share_mode_forall(void (*fn)(share_mode_entry *, char *))
 {
+	if (!share_ops) return 0;
 	return share_ops->forall(fn);
 }
 
