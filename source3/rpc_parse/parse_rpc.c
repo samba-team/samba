@@ -1129,6 +1129,18 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(const char *desc, RPC_AUTH_NTLMSSP_CHK *chk, pr
 }
 
 /*******************************************************************
+creates an RPC_AUTH_NETSEC_NEG structure.
+********************************************************************/
+void init_rpc_auth_netsec_neg(RPC_AUTH_NETSEC_NEG *neg,
+			      const char *domain, const char *myname)
+{
+	neg->unknown1 = 0;
+	neg->unknown2 = 0x13;
+	fstrcpy(neg->domain, domain);
+	fstrcpy(neg->myname, myname);
+}
+
+/*******************************************************************
  Reads or writes an RPC_AUTH_NETSEC_NEG structure.
 ********************************************************************/
 
@@ -1148,11 +1160,11 @@ BOOL smb_io_rpc_auth_netsec_neg(const char *desc, RPC_AUTH_NETSEC_NEG *neg,
 		return False;
 	if(!prs_uint32("unknown2", ps, depth, &neg->unknown2))
 		return False;
-	if(!prs_string("domain  ", ps, depth, neg->domain,
-		       strlen(&ps->data_p[ps->data_offset]), sizeof(neg->domain)))
-		return False;
 	if(!prs_string("myname  ", ps, depth, neg->myname, 
-		       strlen(&ps->data_p[ps->data_offset]), sizeof(neg->myname)))
+		       strlen(neg->myname), sizeof(neg->myname)))
+		return False;
+	if(!prs_string("domain  ", ps, depth, neg->domain,
+		       strlen(neg->domain), sizeof(neg->domain)))
 		return False;
 
 	return True;

@@ -191,6 +191,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 	BOOL auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	BOOL auth_seal = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
+	BOOL auth_schannel = (cli->saved_netlogon_pipe_fnum != 0);
 
 	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s\n",
 	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal)));
@@ -292,6 +293,48 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 			return False;
 		}
 		cli->ntlmssp_seq_num++;
+	}
+
+	if (auth_schannel) {
+		RPC_AUTH_NETSEC_CHK chk;
+		char data[RPC_AUTH_NETSEC_CHK_LEN];
+		char *dp = prs_data_p(rdata) + len - auth_len;
+		prs_struct auth_verf;
+
+		if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
+			DEBUG(0,("rpc_auth_pipe: wrong auth len %d\n", auth_len));
+			return False;
+		}
+
+		if (dp - prs_data_p(rdata) > prs_data_size(rdata)) {
+			DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
+			return False;
+		}
+
+		DEBUG(10,("rpc_auth_pipe: verify netsec\n"));
+		dump_data(100, dp, auth_len);
+
+		memcpy(data, dp, sizeof(data));
+		dump_data(100, data, sizeof(data));
+
+		prs_init(&auth_verf, 0, cli->mem_ctx, UNMARSHALL);
+
+		/* The endinness must be preserved. JRA. */
+		prs_set_endian_data( &auth_verf, rdata->bigendian_data);
+
+		prs_give_memory(&auth_verf, data, RPC_AUTH_NETSEC_CHK_LEN, False);
+
+		if (!smb_io_rpc_auth_netsec_chk("auth_sign", &chk, &auth_verf, 0)) {
+			DEBUG(0, ("rpc_auth_pipe: unmarshalling "
+				  "RPC_AUTH_NETSECK_CHK failed\n"));
+			return False;
+		}
+
+		if (!netsec_decode(&cli->auth_info, &chk, reply_data, data_len)) {
+			DEBUG(0, ("rpc_auth_pipe: Could not decode schannel\n"));
+			return False;
+		}
+		cli->auth_info.seq_num++;
 	}
 	return True;
 }
@@ -542,7 +585,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, prs_struct *data, prs_struct *rd
 
  ********************************************************************/
 
-static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_call_id,
+static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, BOOL do_netsec, uint32 rpc_call_id,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
                                 const char *my_name, const char *domain, uint32 neg_flags)
 {
@@ -589,6 +632,43 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
 
 		if(!smb_io_rpc_auth_ntlmssp_neg("ntlmssp_neg", &ntlmssp_neg, &auth_info, 0)) {
 			DEBUG(0,("create_rpc_bind_req: failed to marshall RPC_AUTH_NTLMSSP_NEG.\n"));
+			return False;
+		}
+
+		/* Auth len in the rpc header doesn't include auth_header. */
+		auth_len = prs_offset(&auth_info) - RPC_HDR_AUTH_LEN;
+	}
+
+	if (do_netsec) {
+		RPC_HDR_AUTH hdr_auth;
+		RPC_AUTH_NETSEC_NEG netsec_neg;
+
+		/*
+		 * Create the auth structs we will marshall.
+		 */
+
+		init_rpc_hdr_auth(&hdr_auth, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL,
+				  0x00, 1);
+		init_rpc_auth_netsec_neg(&netsec_neg, my_name, domain);
+
+		/*
+		 * Use the 4k buffer to store the auth info.
+		 */
+
+		prs_give_memory( &auth_info, buffer, sizeof(buffer), False);
+
+		/*
+		 * Now marshall the data into the temporary parse_struct.
+		 */
+
+		if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &auth_info, 0)) {
+			DEBUG(0,("Failed to marshall RPC_HDR_AUTH.\n"));
+			return False;
+		}
+
+		if(!smb_io_rpc_auth_netsec_neg("netsec_neg",
+					       &netsec_neg, &auth_info, 0)) {
+			DEBUG(0,("Failed to marshall RPC_AUTH_NETSEC_NEG.\n"));
 			return False;
 		}
 
@@ -747,9 +827,9 @@ static uint32 create_rpc_request(prs_struct *rpc_out, uint8 op_num, int data_len
 	 */
 
 	if (auth_len != 0)
-		alloc_hint = data_left - RPC_HEADER_LEN - RPC_HDR_AUTH_LEN - auth_len;
+		alloc_hint = data_len - RPC_HEADER_LEN - RPC_HDR_AUTH_LEN - auth_len;
 	else
-		alloc_hint = data_left - RPC_HEADER_LEN;
+		alloc_hint = data_len - RPC_HEADER_LEN;
 
 	DEBUG(10,("create_rpc_request: data_len: %x auth_len: %x alloc_hint: %x\n",
 	           data_len, auth_len, alloc_hint));
@@ -771,16 +851,34 @@ static uint32 create_rpc_request(prs_struct *rpc_out, uint8 op_num, int data_len
 }
 
 /*******************************************************************
- Puts an auth header into an rpc request.
+ Puts an NTLMSSP auth header into an rpc request.
  ********************************************************************/
 
-static BOOL create_auth_hdr(prs_struct *outgoing_packet, BOOL auth_verify)
+static BOOL create_ntlmssp_auth_hdr(prs_struct *outgoing_packet, BOOL auth_verify)
 {
 	RPC_HDR_AUTH hdr_auth;
 
 	init_rpc_hdr_auth(&hdr_auth, NTLMSSP_AUTH_TYPE,
 			  NTLMSSP_AUTH_LEVEL, 0x08, 
 			  (auth_verify ? 1 : 0));
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, 
+				outgoing_packet, 0)) {
+		DEBUG(0,("create_auth_hdr:Failed to marshal RPC_HDR_AUTH.\n"));
+		return False;
+	}
+	return True;
+}
+
+/*******************************************************************
+ Puts a NETLOGON schannel auth header into an rpc request.
+ ********************************************************************/
+
+static BOOL create_netsec_auth_hdr(prs_struct *outgoing_packet, int padding)
+{
+	RPC_HDR_AUTH hdr_auth;
+
+	init_rpc_hdr_auth(&hdr_auth, NETSEC_AUTH_TYPE,
+			  NETSEC_AUTH_LEVEL, padding, 1);
 	if(!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, 
 				outgoing_packet, 0)) {
 		DEBUG(0,("create_auth_hdr:Failed to marshal RPC_HDR_AUTH.\n"));
@@ -825,19 +923,26 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 {
 	uint32 auth_len, max_data, data_left, data_sent;
 	BOOL ret = False;
-	BOOL auth_verify, auth_seal;
+	BOOL auth_verify, auth_seal, auth_schannel;
 	fstring dump_name;
 
 	auth_verify = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SIGN) != 0);
 	auth_seal   = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
+	auth_schannel = (cli->saved_netlogon_pipe_fnum != 0);
 
-	auth_len = (auth_verify ? RPC_AUTH_NTLMSSP_CHK_LEN : 0);
+	auth_len = 0;
+
+	if (auth_verify)
+		auth_len = RPC_AUTH_NTLMSSP_CHK_LEN;
+
+	if (auth_schannel)
+		auth_len = RPC_AUTH_NETSEC_CHK_LEN;
 
 	/*
 	 * calc how much actual data we can send in a PDU fragment
 	 */
 	max_data = cli->max_xmit_frag - RPC_HEADER_LEN - RPC_HDR_REQ_LEN -
-		(auth_verify ? RPC_HDR_AUTH_LEN : 0) - auth_len;
+		(auth_verify ? RPC_HDR_AUTH_LEN : 0) - auth_len - 8;
 
 	for (data_left = prs_offset(data), data_sent = 0; data_left > 0;) {
 		prs_struct outgoing_packet;
@@ -845,13 +950,28 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		uint8 flags = 0;
 		uint32 crc32 = 0;
 		uint32 callid = 0;
+		uint32 auth_padding = 0;
+		RPC_AUTH_NETSEC_CHK verf;
 
 		/*
 		 * how much will we send this time
 		 */
 		send_size = MIN(data_left, max_data);
+
+		/*
+		 * NT expects the data that is sealed to be 8-byte
+		 * aligned. The padding must be encrypted as well and
+		 * taken into account when generating the
+		 * authentication verifier. The amount of padding must
+		 * be stored in the auth header.
+		 */
+
+		if (auth_schannel)
+			auth_padding = 8 - (send_size & 7);
+
 		data_len = RPC_HEADER_LEN + RPC_HDR_REQ_LEN + send_size +
-			(auth_verify ? RPC_HDR_AUTH_LEN : 0) + auth_len;
+			((auth_verify|auth_schannel) ? RPC_HDR_AUTH_LEN : 0) +
+			auth_len + auth_padding;
 
 		/*
 		 * Malloc parse struct to hold it (and enough for alignments).
@@ -891,18 +1011,65 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		/*
 		 * Now copy the data into the outgoing packet.
 		 */
-		if(!prs_append_some_prs_data(&outgoing_packet, data, 
-					     data_sent, send_size)) {
-			DEBUG(0,("rpc_api_pipe_req: Failed to append data to outgoing packet.\n"));
-			prs_mem_free(&outgoing_packet);
-			return False;
+
+		if (auth_schannel) {
+			static const uchar netsec_sig[8] = NETSEC_SIGNATURE;
+			static const uchar nullbytes[8] = { 0,0,0,0,0,0,0,0 };
+			uchar sign[8];
+			BOOL ret;
+			int i;
+			prs_struct netsec_blob;
+
+			memset(sign, 0, sizeof(sign));
+			sign[4] = 0x80;
+
+			if (!prs_init(&netsec_blob, send_size+auth_padding,
+				      cli->mem_ctx, MARSHALL)) {
+				DEBUG(0,("Could not malloc %u bytes",
+					 send_size+auth_padding));
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
+
+			if(!prs_append_some_prs_data(&netsec_blob, data, 
+						     data_sent, send_size)) {
+				DEBUG(0,("Failed to append data to netsec blob\n"));
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
+
+			netsec_blob.align = 8;
+
+			if (!prs_align(&netsec_blob)) {
+				DEBUG(0,("Could not align netsec blob\n"));
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
+
+			init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes,
+						 sign, nullbytes);
+
+			netsec_encode(&(cli->auth_info), &verf,
+				      prs_data_p(&netsec_blob),
+				      prs_data_size(&netsec_blob));
+
+			prs_append_prs_data(&outgoing_packet, &netsec_blob);
+			prs_mem_free(&netsec_blob);
+		} else {
+			if(!prs_append_some_prs_data(&outgoing_packet, data, 
+						     data_sent, send_size)) {
+				DEBUG(0,("rpc_api_pipe_req: Failed to append "
+					 "data to outgoing packet.\n"));
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
 		}
 
 		/*
 		 * Add a trailing auth_verifier if needed.
 		 */
 		if (auth_seal || auth_verify) {
-			if(!create_auth_hdr(&outgoing_packet, auth_verify)) {
+			if(!create_ntlmssp_auth_hdr(&outgoing_packet, auth_verify)) {
 				prs_mem_free(&outgoing_packet);
 				return False;
 			}
@@ -913,6 +1080,21 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		 */
 		if (auth_verify) {
 			if (!create_auth_data(cli, crc32, &outgoing_packet)) {
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
+		}
+
+		if (auth_schannel) {
+
+			if (!create_netsec_auth_hdr(&outgoing_packet,
+						    auth_padding)) {
+				prs_mem_free(&outgoing_packet);
+				return False;
+			}
+
+			if (!smb_io_rpc_auth_netsec_chk("", &verf,
+							&outgoing_packet, 0)) {
 				prs_mem_free(&outgoing_packet);
 				return False;
 			}
@@ -1191,7 +1373,8 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_name)
+static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_name,
+			  BOOL do_netsec)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1220,7 +1403,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_name)
 	rpc_call_id = get_rpc_call_id();
 
 	/* Marshall the outgoing data. */
-	create_rpc_bind_req(&rpc_out, do_auth, rpc_call_id,
+	create_rpc_bind_req(&rpc_out, do_auth, do_netsec, rpc_call_id,
 	                    &abstract, &transfer,
 	                    global_myname(), cli->domain, cli->ntlmssp_cli_flgs);
 
@@ -1310,7 +1493,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 
 	/******************* bind request on pipe *****************/
 
-	if (!rpc_pipe_bind(cli, pipe_idx, global_myname())) {
+	if (!rpc_pipe_bind(cli, pipe_idx, global_myname(), False)) {
 		DEBUG(2,("cli_nt_session_open: rpc bind to %s failed\n",
 			 get_pipe_name_from_index(pipe_idx)));
 		cli_close(cli, cli->nt_pipe_fnum);
@@ -1340,6 +1523,106 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 }
 
 
+/****************************************************************************
+ Open a session to the NETLOGON pipe using schannel.
+ ****************************************************************************/
+
+BOOL cli_nt_open_netlogon(struct cli_state *cli, const char *trust_password,
+			  int sec_chan)
+{
+	NTSTATUS result;
+	uint32 neg_flags = 0x000001ff;
+	int fnum;
+
+	if (lp_client_schannel() != False)
+		neg_flags |= NETLOGON_NEG_SCHANNEL;
+
+
+	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+		return False;
+	}
+
+	if (!secrets_init()) {
+		DEBUG(3,("Failed to init secrets.tdb\n"));
+		return False;
+	}
+
+	result = cli_nt_setup_creds(cli, sec_chan, trust_password,
+				    &neg_flags, 2);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		cli_nt_session_close(cli);
+		return False;
+	}
+
+	if ((lp_client_schannel() == True) &&
+	    ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+
+		DEBUG(3, ("Server did not offer schannel\n"));
+		cli_nt_session_close(cli);
+		return False;
+	}
+
+	if ((lp_client_schannel() == False) ||
+	    ((neg_flags & NETLOGON_NEG_SCHANNEL) == 0)) {
+		return True;
+	}
+
+	/* Server offered schannel, so try it. */
+
+	cli->auth_info.seq_num = 0;
+	memcpy(cli->auth_info.sess_key, cli->sess_key,
+	       sizeof(cli->auth_info.sess_key));
+
+	cli->saved_netlogon_pipe_fnum = cli->nt_pipe_fnum;
+
+	if (cli->capabilities & CAP_NT_SMBS) {
+
+		/* If we open \\PIPE\NETLOGON here, NT4SP6
+		   gives us an ACCESS_DENIED. Do I have to
+		   understand this?
+		*/
+		if ((fnum = cli_nt_create(cli, PIPE_NETLOGON_PLAIN,
+					  DESIRED_ACCESS_PIPE)) == -1) {
+			DEBUG(0,("cli_nt_create failed to %s machine %s. "
+				 "Error was %s\n",
+				 PIPE_NETLOGON, cli->desthost,
+				 cli_errstr(cli)));
+			return False;
+		}
+		
+		cli->nt_pipe_fnum = (uint16)fnum;
+	} else {
+		if ((fnum = cli_open(cli, PIPE_NETLOGON,
+				     O_CREAT|O_RDWR, DENY_NONE)) == -1) {
+			DEBUG(0,("cli_open failed on pipe %s to machine %s. "
+				 "Error was %s\n",
+				 PIPE_NETLOGON, cli->desthost,
+				 cli_errstr(cli)));
+			return False;
+		}
+
+		cli->nt_pipe_fnum = (uint16)fnum;
+
+		/**************** Set Named Pipe State ***************/
+		if (!rpc_pipe_set_hnd_state(cli, PIPE_NETLOGON, 0x4300)) {
+			DEBUG(0,("Pipe hnd state failed.  Error was %s\n",
+				  cli_errstr(cli)));
+			cli_close(cli, cli->nt_pipe_fnum);
+			return False;
+		}
+	}
+
+	if (!rpc_pipe_bind(cli, PI_NETLOGON, global_myname(), True)) {
+		DEBUG(2,("rpc bind to %s failed\n", PIPE_NETLOGON));
+		cli_close(cli, cli->nt_pipe_fnum);
+		return False;
+	}
+
+	return True;
+}
+
+
 const char *cli_pipe_get_name(struct cli_state *cli)
 {
 	return cli->pipe_name;
@@ -1352,6 +1635,10 @@ close the session
 
 void cli_nt_session_close(struct cli_state *cli)
 {
+	if (cli->saved_netlogon_pipe_fnum != 0) {
+		cli_close(cli, cli->saved_netlogon_pipe_fnum);
+		cli->saved_netlogon_pipe_fnum = 0;
+	}
 	cli_close(cli, cli->nt_pipe_fnum);
 	cli->nt_pipe_fnum = 0;
 }

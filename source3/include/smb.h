@@ -187,6 +187,8 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 #define PIPE_SPOOLSS  "\\PIPE\\spoolss"
 #define PIPE_NETDFS   "\\PIPE\\netdfs"
 
+#define PIPE_NETLOGON_PLAIN "\\NETLOGON"
+
 #define PI_LSARPC		0
 #define PI_LSARPC_DS		1
 #define PI_SAMR			2
