@@ -262,7 +262,7 @@ implemented */
 #ifndef _PSTRING
 
 #define PSTRING_LEN 1024
-#define FSTRING_LEN 128
+#define FSTRING_LEN 256
 
 typedef char pstring[PSTRING_LEN];
 typedef char fstring[FSTRING_LEN];
@@ -278,8 +278,8 @@ typedef char fstring[FSTRING_LEN];
 typedef uint16 smb_ucs2_t;
 
 /* ucs2 string types. */
-typedef smb_ucs2_t wpstring[1024];
-typedef smb_ucs2_t wfstring[128];
+typedef smb_ucs2_t wpstring[PSTRING_LEN];
+typedef smb_ucs2_t wfstring[FSTRING_LEN];
 
 /* pipe string names */
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
@@ -734,7 +734,7 @@ struct connections_data {
 	gid_t gid;
 	char name[24];
 	char addr[24];
-	char machine[128];
+	char machine[FSTRING_LEN];
 	time_t start;
 };
 
