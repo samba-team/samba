@@ -313,7 +313,8 @@ static NTSTATUS cmd_help(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		while(tmp_set->name) {
 
 			printf("%15s\t\t%s\n", tmp_set->name,
-			       tmp_set->description);
+			       tmp_set->description ? tmp_set->description:
+			       NULL);
 
 			tmp_set++;
 		}
