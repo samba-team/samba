@@ -113,7 +113,7 @@ struct cli_state {
 
 	/* the session key for this CLI, outside 
 	   any per-pipe authenticaion */
-	unsigned char user_session_key[16];
+	DATA_BLOB user_session_key;
 
 	/*
 	 * Only used in NT domain calls.
@@ -133,7 +133,7 @@ struct cli_state {
                                               schannel. */
 	struct netsec_auth_struct auth_info;
 
-	NTLMSSP_CLIENT_STATE *ntlmssp_pipe_state;
+	NTLMSSP_STATE *ntlmssp_pipe_state;
 
 	unsigned char sess_key[16];        /* Current session key. */
 	DOM_CRED clnt_cred;                /* Client credential. */

@@ -1265,7 +1265,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 			 
 			 uint16 logon_count, uint16 bad_pw_count,
  		 	 uint32 num_groups, const DOM_GID *gids,
-			 uint32 user_flgs, uchar sess_key[16],
+			 uint32 user_flgs, uchar nt_session_key[16],
+			 uchar lm_session_key[16],
  			 const char *logon_srv, const char *logon_dom,
 			 const DOM_SID *dom_sid, const char *other_sids)
 {
@@ -1307,14 +1308,18 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
 
-	if (sess_key != NULL)
-		memcpy(usr->user_sess_key, sess_key, sizeof(usr->user_sess_key));
+	if (nt_session_key != NULL)
+		memcpy(usr->user_sess_key, nt_session_key, sizeof(usr->user_sess_key));
 	else
 		memset((char *)usr->user_sess_key, '\0', sizeof(usr->user_sess_key));
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
 	memset((char *)usr->padding, '\0', sizeof(usr->padding));
+
+	if (lm_session_key != NULL) 
+		memcpy(usr->padding, lm_session_key, sizeof(usr->user_sess_key));
+
 
 	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
 
