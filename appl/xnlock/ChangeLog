@@ -1,3 +1,7 @@
+2003-02-10  Assar Westerlund  <assar@kth.se>
+
+	* xnlock.c (verify): move ret to where it's used
+
 2002-08-23  Assar Westerlund  <assar@kth.se>
 
 	* xnlock.c: add --version as a special case

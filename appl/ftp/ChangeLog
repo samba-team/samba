@@ -1,3 +1,7 @@
+2003-02-10  Assar Westerlund  <assar@kth.se>
+
+	* ftpd/ftpd.c (accept_with_timeout): use socklen_t
+
 2002-10-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/main.c: reinstate -n flag (from Torbjörn Granlund)
