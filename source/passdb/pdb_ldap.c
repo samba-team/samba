@@ -587,9 +587,6 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 	make_a_mod(mods, ldap_state, "uid", pdb_get_username(sampass));
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
-	slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_uid(sampass));
-	make_a_mod(mods, ldap_state, "uidNumber", temp);
-
 	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
 	make_a_mod(mods, ldap_state, "pwdLastSet", temp);
 
