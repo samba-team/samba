@@ -99,7 +99,8 @@ static int open_pipe_sock(void)
 		return -1;
 	}
 	
-	if (!S_ISDIR(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISDIR(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
@@ -128,7 +129,8 @@ static int open_pipe_sock(void)
 	
 	/* Check permissions on unix socket file */
 	
-	if (!S_ISSOCK(st.st_mode) || (st.st_uid != 0)) {
+	if (!S_ISSOCK(st.st_mode) || 
+	    (st.st_uid != 0 && st.st_uid != geteuid())) {
 		return -1;
 	}
 	
