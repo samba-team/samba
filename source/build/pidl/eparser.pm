@@ -10,11 +10,15 @@ use Data::Dumper;
 
 my($res);
 
-sub is_simple_type($)
+sub is_scalar_type($)
 {
     my($type) = shift;
 
     return 1, if ($type eq "uint32");
+    return 1, if ($type eq "long");
+    return 1, if ($type eq "short");
+    return 1, if ($type eq "char");
+    return 1, if ($type eq "uint16");
 
     return 0;
 }
@@ -37,19 +41,88 @@ sub ParseProperties($)
 
 #####################################################################
 # parse a structure element
-sub ParseElement($)
+sub ParseElement($$)
 {
-    my($element) = shift;
-    (defined $element->{PROPERTIES}) && ParseProperties($element->{PROPERTIES});
-    ParseType($element->{TYPE});
-    $res .= " ";
-    if ($element->{POINTERS}) {
-	for (my($i)=0; $i < $element->{POINTERS}; $i++) {
-	    $res .= "*";
+    my($elt) = shift;
+    my($flags) = shift;
+
+#    (defined $elt->{PROPERTIES}) && ParseProperties($elt->{PROPERTIES});
+#    ParseType($elt->{TYPE});
+
+#    $res .= "/* ";
+#    if ($elt->{POINTERS}) {
+#	for (my($i)=0; $i < $elt->{POINTERS}; $i++) {
+#	    $res .= "*";
+#	}
+#    }
+#    $res .= "$elt->{NAME}";
+#    (defined $elt->{ARRAY_LEN}) && ($res .= "[$elt->{ARRAY_LEN}]");
+
+#    $res .= "*/\n\n";
+
+    # Arg is a policy handle
+	    
+    foreach my $prop (@{$elt->{PROPERTIES}}) {
+	if ($prop =~ /context_handle/) {
+	    $res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree);\n";
+	    return;
 	}
     }
-    $res .= "$element->{NAME}";
-    (defined $element->{ARRAY_LEN}) && ($res .= "[$element->{ARRAY_LEN}]");
+
+    # Parse type
+
+    if ($flags =~ /scalars/) {
+
+	# Pointers are scalars
+
+	if ($elt->{POINTERS}) {
+	    $res .= "\t\tptr_$elt->{NAME} = dissect_ptr(tvb, offset, pinfo, tree, \"$elt->{NAME}\");\n";
+	} else {
+
+	    # Simple type are scalars too
+
+	    if (is_scalar_type($elt->{TYPE})) {
+		$res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n";
+	    }
+	}
+
+    } else {
+
+	# Scalars are not buffers
+
+	if (!is_scalar_type($elt->{TYPE})) {
+
+	    # If we have a pointer, check it
+
+	    if ($elt->{POINTERS}) {
+		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
+	    }
+	    
+	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+	    
+	    if ($elt->{POINTERS}) {
+		$res .= "\t\t}\n\n";
+	    }
+	}
+    }
+
+    return;
+    
+#    if (is_simple_type($elt->{TYPE})) {
+#	if ($flags =~ /scalars/ && !$elt->{POINTERS}) {
+#	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, \"$elt->{NAME}}\");\n\n",
+#	}
+#    } else {
+#	if ($flags =~ /buffers/) {
+#	    if ($elt->{POINTERS}) {
+#		$res .= "\t\tif (ptr_$elt->{NAME}) {\n\t";
+#	    }
+#	    $res .= "\t\tdissect_$elt->{TYPE}(tvb, offset, pinfo, tree, flags, \"$elt->{NAME}\");\n\n";
+#	    if ($elt->{POINTERS}) {
+#		$res .= "\t\t}\n\n";
+#	    }
+#	}
+#    }
 }
 
 #####################################################################
@@ -65,11 +138,13 @@ sub ParseStruct($)
 	$res .= "\tif (flags & PARSE_SCALARS) {\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    if (defined $e->{POINTERS}) {
-		$res .= "\t\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
-	    } else {
-		$res .= "\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
-	    }
+	    ParseElement($e, "scalars");
+
+#	    if (defined $e->{POINTERS}) {
+#		$res .= "\t\toffset = dissect_ptr(tvb, offset, pinfo, tree, &ptr_$e->{NAME}, \"$e->{NAME}\");\n";
+#	    } else {
+#		$res .= "\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n";
+#	    }
 	}	
 
 	$res .= "\t}\n\n";
@@ -79,8 +154,9 @@ sub ParseStruct($)
 	$res .= "\tif (flags & PARSE_BUFFERS) {\n";
 
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-	    $res .= "\t\tif (ptr_$e->{NAME})\n\t\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
-	    if (defined $e->{POINTERS});
+	    ParseElement($e, "buffers");
+#	    $res .= "\t\tif (ptr_$e->{NAME})\n\t\t\toffset = dissect_$e->{TYPE}(tvb, offset, pinfo, tree, \"$e->{NAME}\");\n\n",
+#	    if (defined $e->{POINTERS});
 	}
 
 	$res .= "\t}\n\n";
@@ -160,29 +236,7 @@ sub ParseFunctionArg($$)
     if (@{$arg->{PROPERTIES}}[0] =~ /$io/) {
 	my $is_pol = 0;
 	    
-	# Arg is a policy handle - no pointer
-	    
-	foreach my $prop (@{$arg->{PROPERTIES}}) {
-	    if ($prop =~ /context_handle/) {
-		$res .= "\toffset = dissect_policy_hnd(tvb, offset, pinfo, tree);\n";
-		$is_pol = 1;
-	    }
-	}
-	
-	if (!$is_pol) {
-	    if ($arg->{POINTERS}) {
-		$res .= "\tptr_$arg->{NAME} = dissect_dcerpc_ptr(tvb, offset, pinfo, tree, \"$arg->{NAME}\");\n";
-		$res .= "\tif (ptr_$arg->{NAME})\n\t\toffset = ";
-
-		if (is_simple_type($arg->{TYPE})) {
-		    $res .= "dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, \"$arg->{NAME}}\");\n\n";
-		} else {
-		    $res .= "dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, PARSE_SCALARS|PARSE_BUFFERS, \"$arg->{NAME}\");\n\n";
-		}
-	    } else {
-		$res .= "\toffset = dissect_dcerpc_$arg->{TYPE}(tvb, offset, pinfo, tree, \"$arg->{NAME}\");\n";
-	    }
-	}
+	ParseElement($arg, "scalars");
     }
 }
     
