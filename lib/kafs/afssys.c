@@ -3,6 +3,10 @@
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
+
 #include <signal.h>
 #include <setjmp.h>
 #include <errno.h>
