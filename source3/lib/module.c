@@ -162,8 +162,6 @@ void module_path_get_name(const char *path, pstring name)
 static smb_idle_event_struct *smb_idle_event_list = NULL;
 NTSTATUS smb_register_idle_event(smb_idle_event_struct *idle_event)
 {
-	smb_idle_event_struct *tmp_event = smb_idle_event_list;
-
 	if (!idle_event) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -220,8 +218,6 @@ void smb_run_idle_events(time_t now)
 static smb_exit_event_struct *smb_exit_event_list = NULL;
 NTSTATUS smb_register_exit_event(smb_exit_event_struct *exit_event)
 {
-	smb_exit_event_struct *tmp_event = smb_exit_event_list;
-
 	if (!exit_event) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
