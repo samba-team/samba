@@ -134,7 +134,7 @@ static NTSTATUS fill_dynamic_values(void *mem_ctx, struct ldap_attribute *attrs)
 		DATA_BLOB *currentTime = talloc_array_p(mem_ctx, DATA_BLOB, num_currentTime);
 		char *str = ldap_timestring(mem_ctx, time(NULL));
 		ALLOC_CHECK(str);
-		currentTime[0].data = str;
+		currentTime[0].data = (void *)str;
 		currentTime[0].length = strlen(str);
 		ATTR_SINGLE_NOVAL(mem_ctx, attrs, currentTime, num_currentTime, "currentTime");
 		return NT_STATUS_OK;
