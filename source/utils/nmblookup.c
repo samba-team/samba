@@ -42,15 +42,6 @@ int RootPort = 0;
   **************************************************************************/
 static BOOL open_sockets(void)
 {
-  struct hostent *hp;
- 
-  /* get host info */
-  if ((hp = Get_Hostbyname(myhostname)) == 0) 
-    {
-      DEBUG(0,( "Get_Hostbyname: Unknown host. %s\n",myhostname));
-      return False;
-    }   
-
   ServerFD = open_socket_in( SOCK_DGRAM,
                              (RootPort ? 137 :0),
                              3,

@@ -482,9 +482,11 @@ void free_nmb_packet(struct nmb_packet *nmb)
   ******************************************************************/
 void free_packet(struct packet_struct *packet)
 {  
-  if (packet->packet_type == NMB_PACKET)
-    free_nmb_packet(&packet->packet.nmb);
-  free(packet);
+	if (packet->locked) 
+		return;
+	if (packet->packet_type == NMB_PACKET)
+		free_nmb_packet(&packet->packet.nmb);
+	free(packet);
 }
 
 /*******************************************************************
@@ -511,6 +513,7 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
   packet->ip = lastip;
   packet->port = lastport;
   packet->fd = fd;
+  packet->locked = False;
   packet->timestamp = time(NULL);
   packet->packet_type = packet_type;
   switch (packet_type) 

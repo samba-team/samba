@@ -1,0 +1,257 @@
+/*
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   a async DNS handler
+   Copyright (C) Andrew Tridgell 1994-1997
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+   Revision History:
+
+   14 jan 96: lkcl@pires.co.uk
+   added multiple workgroup domain master support
+
+*/
+
+#include "includes.h"
+
+extern int DEBUGLEVEL;
+
+
+/***************************************************************************
+  add a DNS result to the name cache
+  ****************************************************************************/
+static struct name_record *add_dns_result(struct nmb_name *question, struct in_addr addr)
+{
+	int name_type = question->name_type;
+	char *qname = question->name;
+
+	if (!addr.s_addr) {
+		/* add the fail to WINS cache of names. give it 1 hour in the cache */
+		DEBUG(3,("Negative DNS answer for %s\n", qname));
+		add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,60*60,DNSFAIL,addr,
+				  True, True);
+		return NULL;
+	}
+
+	/* add it to our WINS cache of names. give it 2 hours in the cache */
+	DEBUG(3,("DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
+
+	return add_netbios_entry(wins_subnet,qname,name_type,NB_ACTIVE,2*60*60,DNS,addr,
+				 True,True);
+}
+
+
+
+#ifndef SYNC_DNS
+
+static int fd_in = -1, fd_out = -1;
+static int child_pid = -1;
+static int in_dns;
+
+/* this is the structure that is passed between the parent and child */
+struct query_record {
+	struct nmb_name name;
+	struct in_addr result;
+};
+
+/* a queue of pending requests waiting for DNS responses */
+static struct packet_struct *dns_queue;
+
+
+
+/***************************************************************************
+  return the fd used to gather async dns replies. This is added to the select
+  loop
+  ****************************************************************************/
+int asyncdns_fd(void)
+{
+	return fd_in;
+}
+
+/***************************************************************************
+  handle DNS queries arriving from the parent
+  ****************************************************************************/
+static void asyncdns_process(void)
+{
+	struct query_record r;
+	fstring qname;
+
+	DEBUGLEVEL = 0;
+
+	while (1) {
+		if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) 
+			break;
+
+		fstrcpy(qname, r.name.name);
+
+		r.result.s_addr = interpret_addr(qname);
+
+		if (write_data(fd_out, (char *)&r, sizeof(r)) != sizeof(r))
+			break;
+	}
+
+	exit(0);
+}
+
+
+/***************************************************************************
+  create a child process to handle DNS lookups
+  ****************************************************************************/
+void start_async_dns(void)
+{
+	int fd1[2], fd2[2];
+
+	signal(SIGCLD, SIG_IGN);
+
+	if (pipe(fd1) || pipe(fd2)) {
+		return;
+	}
+
+	child_pid = fork();
+
+	if (child_pid) {
+		fd_in = fd1[0];
+		fd_out = fd2[1];
+		close(fd1[1]);
+		close(fd2[0]);
+		DEBUG(3,("async DNS initialised\n"));
+		return;
+	}
+
+	fd_in = fd2[0];
+	fd_out = fd1[1];
+
+	asyncdns_process();
+}
+
+
+/***************************************************************************
+check if a particular name is already being queried
+  ****************************************************************************/
+static BOOL query_in_queue(struct query_record *r)
+{
+	struct packet_struct *p;
+	for (p = dns_queue; p; p = p->next) {
+		struct nmb_packet *nmb = &p->packet.nmb;
+		struct nmb_name *question = &nmb->question.question_name;
+
+		if (name_equal(question, &r->name)) 
+			return True;
+	}
+	return False;
+}
+
+
+/***************************************************************************
+  check the DNS queue
+  ****************************************************************************/
+void run_dns_queue(void)
+{
+	struct query_record r;
+	struct packet_struct *p, *p2;
+
+	if (fd_in == -1)
+		return;
+
+	if (read_data(fd_in, (char *)&r, sizeof(r)) != sizeof(r)) {
+		DEBUG(0,("Incomplete DNS answer from child!\n"));
+		fd_in = -1;
+		return;
+	}
+
+	add_dns_result(&r.name, r.result);
+
+	/* loop over the whole dns queue looking for entries that
+	   match the result we just got */
+	for (p = dns_queue; p;) {
+		struct nmb_packet *nmb = &p->packet.nmb;
+		struct nmb_name *question = &nmb->question.question_name;
+
+		if (name_equal(question, &r.name)) {
+			DEBUG(3,("DNS calling reply_name_query\n"));
+			in_dns = 1;
+			reply_name_query(p);
+			in_dns = 0;
+			p->locked = False;
+
+			if (p->prev)
+				p->prev->next = p->next;
+			else
+				dns_queue = p->next;
+			if (p->next)
+				p->next->prev = p->prev;
+			p2 = p->next;
+			free_packet(p);
+			p = p2;
+		} else {
+			p = p->next;
+		}
+	}
+
+}
+
+/***************************************************************************
+queue a DNS query
+  ****************************************************************************/
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n)
+{
+	struct query_record r;
+	
+	if (in_dns || fd_in == -1)
+		return False;
+
+	r.name = *question;
+
+	if (!query_in_queue(&r) && 
+	    !write_data(fd_out, (char *)&r, sizeof(r))) {
+		DEBUG(3,("failed to send DNS query to child!\n"));
+		return False;
+	}
+
+	p->locked = True;
+	p->next = dns_queue;
+	p->prev = NULL;
+	if (p->next)
+		p->next->prev = p;
+	dns_queue = p;
+
+
+	DEBUG(3,("added DNS query for %s\n", namestr(question)));
+	return True;
+}
+
+#else
+
+
+/***************************************************************************
+  we use this then we can't do async DNS lookups
+  ****************************************************************************/
+BOOL queue_dns_query(struct packet_struct *p,struct nmb_name *question,
+		     struct name_record **n)
+{
+	int name_type = question->name_type;
+	char *qname = question->name;
+	struct in_addr dns_ip;
+
+	DEBUG(3,("DNS search for %s - ", namestr(question)));
+
+	dns_ip.s_addr = interpret_addr(qname);
+
+	*n = add_dns_result(question, dns_ip);
+	return False;
+}
+#endif

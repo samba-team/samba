@@ -569,23 +569,31 @@ void reply_name_query(struct packet_struct *p)
     /* look up the name in the cache */
     n = find_name_search(&d, question, FIND_LOCAL, p->ip);
 
+    /* check for a previous DNS lookup */
+    if (!n && (n = find_name_search(&d, question, FIND_WINS, p->ip))) {
+	    if (n->source != DNS && n->source != DNSFAIL) {
+		    n = NULL;
+	    } else {
+		    DEBUG(5,("Found DNS cache entry %s\n", namestr(&n->name)));
+	    }
+    }
+
     /* it is a name that already failed DNS lookup or it's expired */
     if (n && (n->source == DNSFAIL ||
-              (n->death_time && n->death_time < p->timestamp)))
-    {
-      success = False;
+              (n->death_time && n->death_time < p->timestamp))) {
+	    DEBUG(5,("expired name %s\n", namestr(&n->name)));
+	    success = False;
     }
+
    
     /* do we want to do dns lookups? */
-    /* XXXX this DELAYS nmbd while it does a search.  lp_dns_proxy()
-       can be switched off, to ensure that the blocking doesn't occur.
-       a better solution would be to fork, but this will require a
-       mechanism to carry on processing after the query is resolved
-       (similar to the netbios queue).
-     */
-    if (success && !n && (lp_dns_proxy() || !bcast))
-    {
-      n = dns_name_search(question, p->timestamp);
+    if (success && !n && (lp_dns_proxy() || !bcast)) {
+	    BOOL dns_type = (name_type == 0x20 || name_type == 0);
+	    if (dns_type && wins_subnet) {
+		    /* add it to the dns name query queue */
+		    if (queue_dns_query(p, question, &n))
+			    return;
+	    }
     }
   }
 
