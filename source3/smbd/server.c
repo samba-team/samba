@@ -142,6 +142,40 @@ static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
 
 
 /****************************************************************************
+ Have we reached the process limit ?
+****************************************************************************/
+
+BOOL allowable_number_of_smbd_processes(void)
+{
+	int max_processes = lp_max_smbd_processes();
+
+	if (!max_processes)
+		return True;
+
+	{
+		TDB_CONTEXT *tdb = conn_tdb_ctx();
+		int32 val;
+		if (!tdb) {
+			DEBUG(0,("allowable_number_of_smbd_processes: can't open connection tdb.\n" ));
+			return False;
+		}
+
+		val = tdb_fetch_int32(tdb, "INFO/total_smbds");
+		if (val == -1 && (tdb_error(tdb) != TDB_ERR_NOEXIST)) {
+			DEBUG(0,("allowable_number_of_smbd_processes: can't fetch INFO/total_smbds. Error %s\n",
+				tdb_errorstr(tdb) ));
+			return False;
+		}
+		if (val > max_processes) {
+			DEBUG(0,("allowable_number_of_smbd_processes: number of processes (%d) is over allowed limit (%d)\n",
+				val, max_processes ));
+			return False;
+		}
+	}
+	return True;
+}
+
+/****************************************************************************
  Open the socket communication.
 ****************************************************************************/
 
@@ -321,7 +355,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
 			socklen_t in_addrlen = sizeof(addr);
-			
+
 			s = -1;
 			for(i = 0; i < num_sockets; i++) {
 				if(FD_ISSET(fd_listenset[i],&lfds)) {
@@ -347,7 +381,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			if (smbd_server_fd() != -1 && interactive)
 				return True;
 			
-			if (smbd_server_fd() != -1 && sys_fork()==0) {
+			if (allowable_number_of_smbd_processes() && smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
