@@ -965,65 +965,9 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS check_correct_backend_entries(SAM_BACKEND_ENTRY **backend_entries, int *nBackends)
-{
-	BOOL     has_builtin     = False;
-	BOOL     has_workgroup   = False;
-	DOM_SID *global_sam_sid  = get_global_sam_sid(); /* lp_workgroup doesn't play nicely with multiple domains */
-	int      increase_by     = 0;
-	int i, j;
-	
-	DEBUG(5,("check_correct_backend_entries: %d\n", __LINE__));
-	
-	for (i = 0; i < *nBackends; i++) {
-		if (sid_equal((*backend_entries)[i].domain_sid, &global_sid_Builtin)) {
-			DEBUG(20,("check_correct_backend_entries: smb.conf specified BUILTIN domain\n"));
-			has_builtin = True;
-		}
-		if (sid_equal((*backend_entries)[i].domain_sid, global_sam_sid)) {
-			DEBUG(20,("check_correct_backend_entries: smb.conf specified main domain\n"));
-			has_workgroup = True;
-		}
-		for (j = i + 1; j < *nBackends; j++) {
-			if (sid_equal((*backend_entries)[i].domain_sid, (*backend_entries)[j].domain_sid)) {
-				DEBUG(0,("two backend modules claim the same domain %s\n",
-					sid_string_static((*backend_entries)[j].domain_sid)));
-				return NT_STATUS_INVALID_PARAMETER;			
-			}
-		}		
-	}
-	
-	if (!has_workgroup) increase_by++;
-	if (!has_builtin)   increase_by++;
-	
-	if (increase_by > 0) {
-		*nBackends += increase_by;
-
-		(*backend_entries) = (SAM_BACKEND_ENTRY *)realloc((*backend_entries), sizeof(SAM_BACKEND_ENTRY) * (*nBackends+1));
-		if (!has_workgroup) {
-			DEBUG(4,("There was no backend specified for domain %s; using %s\n",
-				lp_workgroup(), SAM_DEFAULT_BACKEND));
-			(*backend_entries)[i].module_name   = SAM_DEFAULT_BACKEND;
-			(*backend_entries)[i].module_params = NULL;
-			(*backend_entries)[i].domain_name   = lp_workgroup();
-			(*backend_entries)[i].domain_sid    = (DOM_SID *)malloc(sizeof(DOM_SID)); 
-			sid_copy((*backend_entries)[i].domain_sid, global_sam_sid);
-			i++;
-		}
-		if (!has_builtin) {
-			DEBUG(4,("There was no backend specified for domain BUILTIN; using %s\n", 
-					 SAM_DEFAULT_BACKEND));
-			(*backend_entries)[i].module_name   = SAM_DEFAULT_BACKEND;
-			(*backend_entries)[i].module_params = NULL;
-			(*backend_entries)[i].domain_name   = "BUILTIN";
-			(*backend_entries)[i].domain_sid    = (DOM_SID *)malloc(sizeof(DOM_SID)); 
-			sid_copy((*backend_entries)[i].domain_sid, &global_sid_Builtin);
-			i++;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
+/******************************************************************
+ create sam_methods struct based on sam_backend_entry
+ *****************************************************************/
 
 static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS **methods, SAM_BACKEND_ENTRY *backend_entry)
 {
@@ -1048,7 +992,6 @@ static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS
 					backend_entry->module_name, nt_errstr(nt_status)));
 			}
 			return nt_status;
-			break; /* unreached */
 		}
 	}
 	
@@ -1057,6 +1000,90 @@ static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS
 	return NT_STATUS_INVALID_PARAMETER;
 }
 
+static NTSTATUS sam_context_check_default_backends(SAM_CONTEXT *context)
+{
+	SAM_BACKEND_ENTRY entry;
+	DOM_SID *global_sam_sid  = get_global_sam_sid(); /* lp_workgroup doesn't play nicely with multiple domains */
+	SAM_METHODS *methods, *tmpmethods;
+	NTSTATUS ntstatus;
+	
+	DEBUG(5,("sam_context_check_default_backends: %d\n", __LINE__));
+
+	/* Make sure domain lp_workgroup() is available */
+	
+	ntstatus = sam_get_methods_by_sid(context, &methods, &global_sid_Builtin);
+
+	if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_NO_SUCH_DOMAIN)) {
+		DEBUG(4,("There was no backend specified for domain %s; using %s\n",
+			lp_workgroup(), SAM_DEFAULT_BACKEND));
+
+		SAM_ASSERT(global_sam_sid);
+
+		entry.module_name = SAM_DEFAULT_BACKEND;
+		entry.module_params = NULL;
+		entry.domain_name = lp_workgroup();
+		entry.domain_sid = (DOM_SID *)malloc(sizeof(DOM_SID));
+		sid_copy(entry.domain_sid, global_sam_sid);
+
+		if (!NT_STATUS_IS_OK(ntstatus = make_sam_methods_backend_entry(context, &methods, &entry))) {
+			DEBUG(4,("make_sam_methods_backend_entry failed\n"));
+			return ntstatus;
+		}
+
+		methods->parent = context;
+		DLIST_ADD_END(context->methods, methods, tmpmethods);
+
+	} else if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(2, ("sam_get_methods_by_sid failed for %s\n", lp_workgroup()));
+		return ntstatus;
+	}
+
+	/* Make sure the BUILTIN domain is available */
+
+	ntstatus = sam_get_methods_by_sid(context, &methods, global_sam_sid);
+	
+	if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_NO_SUCH_DOMAIN)) {
+		DEBUG(4,("There was no backend specified for domain BUILTIN; using %s\n", 
+				 SAM_DEFAULT_BACKEND));
+		entry.module_name = SAM_DEFAULT_BACKEND;
+		entry.module_params = NULL;
+		entry.domain_name = "BUILTIN";
+		entry.domain_sid    = (DOM_SID *)malloc(sizeof(DOM_SID)); 
+		sid_copy(entry.domain_sid, &global_sid_Builtin);
+
+		if (!NT_STATUS_IS_OK(ntstatus = make_sam_methods_backend_entry(context, &methods,  &entry))) {
+			DEBUG(4,("make_sam_methods_backend_entry failed\n"));
+			return ntstatus;
+		}
+
+		methods->parent = context;
+		DLIST_ADD_END(context->methods, methods, tmpmethods);
+	} else if (!NT_STATUS_IS_OK(ntstatus)) {
+		DEBUG(2, ("sam_get_methods_by_sid failed for BUILTIN\n"));
+		return ntstatus;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS check_duplicate_backend_entries(SAM_BACKEND_ENTRY **backend_entries, int *nBackends)
+{
+	int i, j;
+	
+	DEBUG(5,("check_duplicate_backend_entries: %d\n", __LINE__));
+	
+	for (i = 0; i < *nBackends; i++) {
+		for (j = i + 1; j < *nBackends; j++) {
+			if (sid_equal((*backend_entries)[i].domain_sid, (*backend_entries)[j].domain_sid)) {
+				DEBUG(0,("two backend modules claim the same domain %s\n",
+					sid_string_static((*backend_entries)[j].domain_sid)));
+				return NT_STATUS_INVALID_PARAMETER;			
+			}
+		}		
+	}
+
+	return NT_STATUS_OK;
+}
 
 NTSTATUS make_sam_context_list(SAM_CONTEXT **context, char **sam_backends_param)
 {
@@ -1095,8 +1122,8 @@ NTSTATUS make_sam_context_list(SAM_CONTEXT **context, char **sam_backends_param)
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = check_correct_backend_entries(&backends, &nBackends))) {
-		DEBUG(4,("check_correct_backend_entries failed\n"));
+	if (!NT_STATUS_IS_OK(nt_status = check_duplicate_backend_entries(&backends, &nBackends))) {
+		DEBUG(4,("check_duplicate_backend_entries failed\n"));
 		for (j = 0; j < nBackends; j++) SAFE_FREE(backends[j].domain_sid);
 		SAFE_FREE(backends);
 		free_sam_context(context);
@@ -1153,7 +1180,6 @@ NTSTATUS make_sam_context(SAM_CONTEXT **context)
 	return NT_STATUS_OK;
 }
 
-
 /******************************************************************
   Return an already initialised sam_context, to facilitate backward 
   compatibility (see functions below).
@@ -1165,15 +1191,18 @@ struct sam_context *sam_get_static_context(BOOL reload)
 
 	if ((sam_context) && (reload)) {
 		sam_context->free_fn(&sam_context);
-		if (!NT_STATUS_IS_OK(make_sam_context_list(&sam_context, lp_sam_backend()))) {
-			DEBUG(4,("make_sam_context_list failed\n"));
-			return NULL;
-		}
+		sam_context = NULL;
 	}
 
 	if (!sam_context) {
 		if (!NT_STATUS_IS_OK(make_sam_context_list(&sam_context, lp_sam_backend()))) {
 			DEBUG(4,("make_sam_context_list failed\n"));
+			return NULL;
+		}
+
+		/* Make sure the required domains (default domain, builtin) are available */
+		if (!NT_STATUS_IS_OK(sam_context_check_default_backends(sam_context))) {
+			DEBUG(4,("sam_context_check_default_backends failed\n"));
 			return NULL;
 		}
 	}
