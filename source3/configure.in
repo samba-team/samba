@@ -1732,8 +1732,7 @@ AC_ARG_WITH(tdbsam,
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_TDBPWD)
-#    AC_MSG_ERROR([TDB password database not supported in this version.])
+    AC_DEFINE(WITH_TDBSAM)
     ;;
   *)
     AC_MSG_RESULT(no)
