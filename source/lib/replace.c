@@ -192,7 +192,7 @@ Corrections by richard.kettlewell@kewill.com
 	}
 	endgrent();
 	ret = sys_setgroups(i,grouplst);
-	SAFE_FREE((char *)grouplst);
+	SAFE_FREE(grouplst);
 	return ret;
 #endif /* HAVE_SETGROUPS */
 }

@@ -209,7 +209,7 @@ The maximum size I will believe is 100k.\n", prog_name, size);
   {
     fprintf(stderr, "%s: read failed for file %s. Error was %s.\n", prog_name,
             input_file, strerror(errno));
-    SAFE_FREE((char *)buf);
+    SAFE_FREE(buf);
     fclose(fp);
     exit(1);
   }

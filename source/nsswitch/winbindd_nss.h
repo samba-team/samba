@@ -23,7 +23,7 @@
 */
 
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if(x) {free(x); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
 #ifndef _WINBINDD_NTDOM_H

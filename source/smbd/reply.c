@@ -4815,7 +4815,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 	if (nwritten < (ssize_t)numtowrite) {
 		if(write_through) {
 			/* We are returning an error - we can delete the aux struct */
-			SAFE_FREE((char *)wbms);
+			SAFE_FREE(wbms);
 			fsp->wbmpx_ptr = NULL;
 			END_PROFILE(SMBwriteBs);
 			return(ERROR_DOS(ERRHRD,ERRdiskfull));
@@ -4834,7 +4834,7 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 			send_response = True;
 		}
 
-		SAFE_FREE((char *)wbms);
+		SAFE_FREE(wbms);
 		fsp->wbmpx_ptr = NULL;
 	}
 

@@ -299,7 +299,7 @@ BOOL initialise_wins(void)
     if(nb_flags_str[strlen(nb_flags_str)-1] == 'S')
     {
       DEBUG(5,("initialise_wins: Ignoring SELF name %s\n", line));
-      SAFE_FREE((char *)ip_list);
+      SAFE_FREE(ip_list);
       continue;
     }
       
@@ -338,7 +338,7 @@ BOOL initialise_wins(void)
              name, type, ttl, inet_ntoa(ip_list[0]), nb_flags));
     }
 
-    SAFE_FREE((char *)ip_list);
+    SAFE_FREE(ip_list);
   } 
     
   fclose(fp);

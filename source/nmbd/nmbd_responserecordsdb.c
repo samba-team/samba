@@ -81,7 +81,7 @@ void remove_response_record(struct subnet_record *subrec,
 		  (*rrec->userdata->free_fn)(rrec->userdata);
 	  } else {
 		  ZERO_STRUCTP(rrec->userdata);
-		  SAFE_FREE((char *)rrec->userdata);
+		  SAFE_FREE(rrec->userdata);
 	  }
   }
 
@@ -90,7 +90,7 @@ void remove_response_record(struct subnet_record *subrec,
   free_packet(rrec->packet);
 
   ZERO_STRUCTP(rrec);
-  SAFE_FREE((char *)rrec);
+  SAFE_FREE(rrec);
 
   num_response_packets--; /* count of total number of packets still around */
 }

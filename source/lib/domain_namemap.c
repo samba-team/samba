@@ -242,7 +242,7 @@ static void delete_name_entry(name_map_entry *gmep)
 	SAFE_FREE(gmep->grp.nt_name);
 	SAFE_FREE(gmep->grp.nt_domain);
 	SAFE_FREE(gmep->grp.unix_name);
-	SAFE_FREE((char*)gmep);
+	SAFE_FREE(gmep);
 }
 
 /**************************************************************************

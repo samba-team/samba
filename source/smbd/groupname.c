@@ -54,7 +54,7 @@ static void delete_groupname_map_list(void)
   while((gmep = (groupname_map_entry *)ubi_slRemHead( &groupname_map_list )) != NULL) {
     SAFE_FREE(gmep->windows_name);
     SAFE_FREE(gmep->unix_name);
-    SAFE_FREE((char *)gmep);
+    SAFE_FREE(gmep);
   }
 }
 
@@ -187,7 +187,7 @@ Error was %s.\n", unixname, strerror(errno) ));
       fclose(fp);
       SAFE_FREE(new_ep->windows_name);
       SAFE_FREE(new_ep->unix_name);
-      SAFE_FREE((char *)new_ep);
+      SAFE_FREE(new_ep);
       file_lines_free(lines);
       return;
     }

@@ -85,7 +85,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
   if(msg->msg_buf == NULL)
   {
     DEBUG(0,("push_message: malloc fail (2)\n"));
-    SAFE_FREE((char *)msg);
+    SAFE_FREE(msg);
     return False;
   }
 
@@ -178,8 +178,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
   
 		/* Free the message we just copied. */
-		SAFE_FREE((char *)msg->msg_buf);
-		SAFE_FREE((char *)msg);
+		SAFE_FREE(msg->msg_buf);
+		SAFE_FREE(msg);
 		
 		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
 		return True;

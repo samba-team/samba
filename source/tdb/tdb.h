@@ -137,7 +137,7 @@ extern TDB_DATA tdb_null;
 
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
 #endif
 
 #ifdef  __cplusplus

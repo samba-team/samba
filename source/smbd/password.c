@@ -1432,7 +1432,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli, unsigned char *trust_passwd
 		}
 	}
 
-	SAFE_FREE((char *)ip_list);
+	SAFE_FREE(ip_list);
 
 	return connected_ok;
 }

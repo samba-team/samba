@@ -246,7 +246,7 @@ static void dptr_close_internal(dptr_struct *dptr)
   /* Lanman 2 specific code */
   SAFE_FREE(dptr->wcard);
   string_set(&dptr->path,"");
-  SAFE_FREE((char *)dptr);
+  SAFE_FREE(dptr);
 }
 
 /****************************************************************************
@@ -435,7 +435,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum > 254) {
         DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-        SAFE_FREE((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
@@ -464,7 +464,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum < 255) {
         DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-        SAFE_FREE((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
