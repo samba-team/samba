@@ -1224,9 +1224,9 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 }
 
 /********************************************************
- Get the IP address list of the Domain Master Browsers
+ Get the IP address list of the Local Master Browsers
 ********************************************************/
-BOOL get_dmb_list(struct in_addr **ip_list, int *count)
+BOOL get_lmb_list(struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
 }
