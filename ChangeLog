@@ -1,3 +1,8 @@
+2003-01-21  Jacques Vidrine  <nectar@kth.se>
+
+	* kuser/kuser_locl.h: include crypto-headers.h for
+	des_read_pw_string prototype
+
 2003-01-16  Love  <lha@it.su.se>
 
 	* admin/ktutil.8: document -v, --verbose
