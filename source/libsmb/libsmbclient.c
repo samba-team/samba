@@ -4094,7 +4094,6 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                         dos_attr_parse(context, dad, srv, namevalue);
 
                         /* Set the new DOS attributes */
-#warning "Should try Set Path Info first, but it's not yet implemented"
 #if 0                           /* not yet implemented */
                         if (! cli_setpathinfo(&srv->cli, path,
                                               dad->c_time,
@@ -4233,7 +4232,6 @@ int smbc_setxattr_ctx(SMBCCTX *context,
                                 dos_attr_parse(context, dad, srv, namevalue);
 
                                 /* Set the new DOS attributes */
-#warning "Should try Set Path Info first, but it's not yet implemented"
 #if 0                           /* not yet implemented */
                                 ret2 = cli_setpathinfo(&srv->cli, path,
                                                        dad->c_time,
