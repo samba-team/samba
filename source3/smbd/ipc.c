@@ -3205,7 +3205,7 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 
 	make_rpc_hdr(&p->hdr, RPC_BINDACK, RPC_FLG_FIRST | RPC_FLG_LAST,
 				 p->hdr.call_id,
-	             p->rdata.offset + p->rauth.offset,
+	             p->rdata.offset + p->rauth.offset + 0x10,
 	             p->rauth.offset);
 
 	smb_io_rpc_hdr("", &p->hdr, &p->rhdr, 0);
