@@ -78,7 +78,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 		ndr_print_function_debug(ndr_print_fn, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
-	status = dcerpc_ndr_request(private->c_pipe, opnum, mem_ctx,
+	status = dcerpc_ndr_request(private->c_pipe, NULL, opnum, mem_ctx,
 				    (ndr_push_flags_fn_t) ndr_push_fn,
 				    (ndr_pull_flags_fn_t) ndr_pull_fn,
 				    r, struct_size);

@@ -169,6 +169,13 @@ interface dcerpc
 		[case(DCERPC_PKT_BIND_NAK)]  dcerpc_bind_nak bind_nak;
 	} dcerpc_payload;
 
+	typedef struct {
+	} dcerpc_empty;
+	
+	typedef [nodiscriminant] union {
+		[default] dcerpc_empty empty;
+		[case(DCERPC_PFC_FLAG_ORPC)] GUID object;
+	} dcerpc_object;
 
 	/* pfc_flags values */
 	const uint8 DCERPC_PFC_FLAG_FIRST  = 0x01;
@@ -193,7 +200,7 @@ interface dcerpc
 		uint16 frag_length;	/* Total length of fragment */
 		uint16 auth_length;	/* authenticator length */
 		uint32 call_id;		/* Call identifier */
-		
+		[switch_is(pfc_flags & DCERPC_PFC_FLAG_ORPC)] dcerpc_object object;
 		[switch_is(ptype)] dcerpc_payload u;
 	} dcerpc_packet;
 }

@@ -127,7 +127,7 @@ static void try_expand(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_table 
 		memcpy(stub_in.data, base_in->data, insert_ofs);
 		memcpy(stub_in.data+insert_ofs+n, base_in->data+insert_ofs, base_in->length-insert_ofs);
 
-		status = dcerpc_request(p, opnum, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, mem_ctx, &stub_in, &stub_out);
 
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
@@ -168,7 +168,7 @@ static void test_ptr_scan(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_tab
 	/* work out which elements are pointers */
 	for (ofs=min_ofs;ofs<=max_ofs-4;ofs+=4) {
 		SIVAL(stub_in.data, ofs, 1);
-		status = dcerpc_request(p, opnum, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			print_depth(depth);
@@ -210,7 +210,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 		data_blob_clear(&stub_in);
 
 
-		status = dcerpc_request(p, opnum, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d\n", 
@@ -223,7 +223,7 @@ static void test_scan_call(TALLOC_CTX *mem_ctx, const struct dcerpc_interface_ta
 
 		fill_blob_handle(&stub_in, mem_ctx, &handle);
 
-		status = dcerpc_request(p, opnum, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, opnum, mem_ctx, &stub_in, &stub_out);
 
 		if (NT_STATUS_IS_OK(status)) {
 			printf("opnum %d   min_input %d - output %d (with handle)\n", 

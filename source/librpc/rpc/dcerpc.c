@@ -835,6 +835,7 @@ static int dcerpc_req_destructor(void *ptr)
   perform the send size of a async dcerpc request
 */
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
+					struct GUID *object,
 					uint16_t opnum,
 					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *stub_data)
@@ -875,6 +876,11 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	pkt.u.request.alloc_hint = remaining;
 	pkt.u.request.context_id = 0;
 	pkt.u.request.opnum = opnum;
+	if (object) {
+		pkt.object.object = *object;
+		pkt.pfc_flags |= DCERPC_PFC_FLAG_ORPC;
+		/* FIXME: pfc_cflags is reset below! */
+	}
 
 	DLIST_ADD(p->pending, req);
 
@@ -962,6 +968,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
   perform a full request/response pair on a dcerpc pipe
 */
 NTSTATUS dcerpc_request(struct dcerpc_pipe *p, 
+			struct GUID *object,
 			uint16_t opnum,
 			TALLOC_CTX *mem_ctx,
 			DATA_BLOB *stub_data_in,
@@ -969,7 +976,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	req = dcerpc_request_send(p, opnum, mem_ctx, stub_data_in);
+	req = dcerpc_request_send(p, object, opnum, mem_ctx, stub_data_in);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1128,6 +1135,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
   call dcerpc_ndr_request_recv() to receive the answer
 */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
+						struct GUID *object,
 					    uint32_t opnum,
 					    TALLOC_CTX *mem_ctx,
 					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -1177,7 +1185,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	dump_data(10, request.data, request.length);
 
 	/* make the actual dcerpc request */
-	req = dcerpc_request_send(p, opnum, mem_ctx, &request);
+	req = dcerpc_request_send(p, object, opnum, mem_ctx, &request);
 
 	if (req != NULL) {
 		req->ndr.ndr_push = ndr_push;
@@ -1264,6 +1272,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
   standard format
 */
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
+				struct GUID *object,
 			    uint32_t opnum,
 			    TALLOC_CTX *mem_ctx,
 			    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),
@@ -1273,7 +1282,7 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 {
 	struct rpc_request *req;
 
-	req = dcerpc_ndr_request_send(p, opnum, mem_ctx, ndr_push, ndr_pull, struct_ptr, struct_size);
+	req = dcerpc_ndr_request_send(p, object, opnum, mem_ctx, ndr_push, ndr_pull, struct_ptr, struct_size);
 	if (req == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -53,7 +53,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	memset(stub_in.data, 0xFF, stub_in.length);
 
 	for (i=0;i<200;i++) {
-		status = dcerpc_request(p, i, mem_ctx, &stub_in, &stub_out);
+		status = dcerpc_request(p, NULL, i, mem_ctx, &stub_in, &stub_out);
 		if (!NT_STATUS_IS_OK(status) &&
 		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			break;

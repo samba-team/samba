@@ -162,7 +162,10 @@ sub struct_alignment
 	for my $e (@{$s->{ELEMENTS}}) {
 		my $a = 1;
 
-		if (!util::need_wire_pointer($e)
+		if (util::has_property($e, "align")) 
+		{ 
+			$a = $e->{PROPERTIES}->{align};
+		} elsif (!util::need_wire_pointer($e)
 		    && defined $structs{$e->{TYPE}}) {
 			if ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
 				$a = struct_alignment($structs{$e->{TYPE}}->{DATA});
@@ -1315,6 +1318,11 @@ sub ParseFunctionPush($)
 	pidl $static . "NTSTATUS ndr_push_$fn->{NAME}(struct ndr_push *ndr, int flags, struct $fn->{NAME} *r)\n{\n";
 
 	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
+
+	if (util::has_property($fn, "object")) {
+		# FIXME: Set COM version and possibly causality ID 
+	}
+	
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPush($e, "in");
@@ -1323,6 +1331,7 @@ sub ParseFunctionPush($)
 
 	pidl "\nndr_out:\n";
 	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
+
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
 			ParseFunctionElementPush($e, "out");
@@ -1449,6 +1458,7 @@ sub ParseFunctionPull($)
 
 	pidl "\nndr_out:\n";
 	pidl "\tif (!(flags & NDR_OUT)) goto done;\n\n";
+
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "out")) {
 			ParseFunctionElementPull($e, "out");

@@ -67,6 +67,7 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
+	GUID_from_string(DCERPC_ICLASSFACTORY_UUID, &iids[0]);
 	r.in.Mode = MODE_GET_CLASS_OBJECT;
 
 	status = dcerpc_RemoteActivation(p, mem_ctx, &r);
