@@ -773,8 +773,9 @@ bin/.dummy:
 
 bin/smbd@EXEEXT@: $(SMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(KRB5LIBS) $(LDAP_LIBS) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) \
-	  $(AUTH_LIBS) $(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@
+	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LDAP_LIBS) \
+		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
+		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@
 
 bin/nmbd@EXEEXT@: $(NMBD_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -791,7 +792,9 @@ bin/swat@EXEEXT@: $(SWAT_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/rpcclient@EXEEXT@: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PASSDB_LIBS) $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(PASSDB_LIBS) $(RPCCLIENT_OBJ) \
+		$(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
+		$(KRB5LIBS) $(LDAP_LIBS)
 
 bin/smbclient@EXEEXT@: $(CLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
@@ -850,7 +853,8 @@ bin/smbtree@EXEEXT@: $(SMBTREE_OBJ) @BUILD_POPT@ bin/.dummy
 
 bin/smbpasswd@EXEEXT@: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(PASSDB_LIBS) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) 
+	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(PASSDB_LIBS) \
+		$(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) 
 
 bin/pdbedit@EXEEXT@: $(PDBEDIT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
