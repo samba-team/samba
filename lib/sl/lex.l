@@ -1,6 +1,6 @@
 %{
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -38,8 +38,11 @@
 RCSID("$Id$");
 
 static unsigned lineno = 1;
-void error_message(char *, ...);
-int getstring(void);
+static int getstring(void);
+
+#define YY_NO_UNPUT
+
+#undef ECHO
 
 %}
 
@@ -66,7 +69,7 @@ yywrap ()
 }
 #endif
 
-int
+static int
 getstring(void)
 {
     char x[128];
@@ -102,7 +105,7 @@ getstring(void)
 }
 
 void
-error_message (char *format, ...)
+error_message (const char *format, ...)
 {
      va_list args;
 
