@@ -1794,7 +1794,8 @@ static BOOL api_SetUserPassword(connection_struct *conn,uint16 vuid, char *param
         SSVAL(*rparam,0,NERR_badpass);
     }
 
-    pdb_free_sam(sampass);
+    if (sampass)
+      pdb_free_sam(sampass);
   }
 
   /*
