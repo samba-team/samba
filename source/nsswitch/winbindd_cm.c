@@ -84,17 +84,15 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 	zero_ip(&exclude_ip);
 	/* Lookup domain controller name. Try the real PDC first to avoid
 	   SAM sync delays */
-	if (get_dc_list(True, domain, &ip_list, &count)) {
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[0], srv_name)) {
-			dc_ip = ip_list[0];
+	if (get_pdc_ip(domain, &dc_ip)) {
+		if (name_status_find(domain, 0x1c, 0x20, dc_ip, srv_name)) {
 			goto done;
 		}
 		/* Didn't get name, remember not to talk to this DC. */
-		exclude_ip = ip_list[0];
-		SAFE_FREE(ip_list);
+		exclude_ip = dc_ip;
 	}
 
-	if (!get_dc_list(False, domain, &ip_list, &count)) {
+	if (!get_dc_list(domain, &ip_list, &count)) {
 		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
 		return False;
 	}

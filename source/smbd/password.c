@@ -1438,8 +1438,23 @@ static BOOL find_connect_pdc(struct cli_state **ppcli, unsigned char *trust_pass
 	if (time_now - last_change_time < 3600)
 		use_pdc_only = True;
 
-	if (!get_dc_list(use_pdc_only, lp_workgroup_unix(), &ip_list, &count))
-		return False;
+	if (use_pdc_only) {
+		struct in_addr pdc_ip;
+
+		if (!get_pdc_ip(lp_workgroup_unix(), &pdc_ip))
+			return False;
+
+		if ((ip_list = (struct in_addr *)
+		     malloc(sizeof(struct in_addr))) == NULL) 
+			return False;
+
+		ip_list[0] = pdc_ip;
+		count = 1;
+
+	} else {
+		if (!get_dc_list(lp_workgroup_unix(), &ip_list, &count))
+			return False;
+	}
 
 	/*
 	 * Firstly try and contact a PDC/BDC who has the same

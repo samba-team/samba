@@ -343,22 +343,20 @@ static int join_domain_byuser(char *domain, char *remote,
 	 */
 	
 	if(remote == NULL || !strcmp(remote, "*")) {
-                struct in_addr *ip_list;
-                int addr_count;
-                if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
+                if (!get_pdc_ip(domain, &dest_ip)) {
 			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
 			return 1;
 		}
-		if ((addr_count < 1) || (is_zero_ip(ip_list[0]))) {
-			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
+		if (is_zero_ip(dest_ip)) {
+			fprintf(stderr, "Incorrect entry returned when finding the domain controller for domain %s.\n", domain);
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
+		if (!lookup_dc_name(global_myname_unix(), domain, &dest_ip, 
+				    pdc_name)) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
-		dest_ip = ip_list[0];
 	}
 
 	make_nmb_name(&called, pdc_name, 0x20);
@@ -616,18 +614,19 @@ machine %s in domain %s.\n", global_myname_unix(), domain);
 	 */
 	
 	if(remote == NULL || !strcmp(remote, "*")) {
-                struct in_addr *ip_list = NULL;
-                int addr_count;
-                if (!get_dc_list(True /* PDC only*/, domain, &ip_list, &addr_count)) {
+		struct in_addr dest_ip;
+
+                if (!get_pdc_ip(domain, &dest_ip)) {
 			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
 			return 1;
 		}
-		if ((addr_count < 1) || (is_zero_ip(ip_list[0]))) {
+		if (is_zero_ip(dest_ip)) {
 			fprintf(stderr, "Incorrect entries returned when finding the domain controller for domain %s.\n", domain);
 			return 1;
 		}
 
-		if (!lookup_dc_name(global_myname_unix(), domain, &ip_list[0], pdc_name)) {
+		if (!lookup_dc_name(global_myname_unix(), domain, &dest_ip, 
+				    pdc_name)) {
 			fprintf(stderr, "Unable to lookup the name for the domain controller for domain %s.\n", domain);
 			return 1;
 		}
@@ -669,7 +668,7 @@ static int set_domain_sid_from_dc( const char *domain, const char *remote )
 	if(remote == NULL || !strcmp(remote, "*")) {
                 struct in_addr *ip_list = NULL;
                 int addr_count;
-                if (!get_dc_list(False , domain, &ip_list, &addr_count)) {
+                if (!get_dc_list(domain, &ip_list, &addr_count)) {
 			fprintf(stderr, "Unable to find the domain controller for domain %s.\n", domain);
 			return 1;
 		}

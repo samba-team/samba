@@ -187,7 +187,7 @@ static struct cli_state *init_connection(struct cli_state *cli,
 
         /* Look up name of PDC controller */
 
-        if (!get_dc_list(True, lp_workgroup(), &dest_ip, &count)) {
+        if (!get_dc_list(lp_workgroup(), &dest_ip, &count)) {
                 DEBUG(0, ("Cannot find domain controller for domain %s\n",
                           lp_workgroup()));
                 return NULL;
