@@ -66,6 +66,7 @@ pwdProperties: 1
 pwdHistoryLength: 24
 objectSid: ${DOMAINSID}
 serverState: 1
+nTMixedDomain: 1
 uASCompat: 1
 modifiedCount: 1
 objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
