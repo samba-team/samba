@@ -128,8 +128,8 @@
 	/* Function    0x08     */
 
 	typedef struct {
-		uint16 min_password_len;
-		uint16 password_history;
+		uint16 min_password_length;
+		uint16 password_history_length;
 		uint32 password_properties;
 		/* yes, these are signed. They are in negative 100ns */
 		int64  max_password_age;
@@ -137,7 +137,7 @@
 	} samr_DomInfo1;
 
 	typedef struct {
-		uint64 force_logoff_time;
+		NTTIME force_logoff_time;
 		samr_String comment;
 		samr_String domain;  /* domain name */
 		samr_String primary; /* PDC name if this is a BDC */
@@ -151,18 +151,15 @@
 	} samr_DomInfo2;
 
 	typedef struct {
-		uint64 force_logoff_time;
+		NTTIME force_logoff_time;
 	} samr_DomInfo3;
 
 	typedef struct {
-		/* I'm not entirely sure this is a comment. win2003
-		   allows it to be set, and it seems harmless (like a
-		   comment) but I haven't seen it show up anywhere */
 		samr_String comment;
 	} samr_DomInfo4;
 
 	typedef struct {
-		samr_String domain;
+		samr_String domain_name;
 	} samr_DomInfo5;
 
 	typedef struct {
@@ -175,7 +172,7 @@
 
 	typedef struct {
 		HYPER_T sequence_num;
-		NTTIME last_xxx_time;
+		NTTIME domain_create_time;
 	} samr_DomInfo8;
 
 	typedef struct {
@@ -197,7 +194,7 @@
 
 	typedef struct {
 		HYPER_T sequence_num;
-		NTTIME last_xxx_time;
+		NTTIME domain_create_time;
 		uint32 unknown1;
 		uint32 unknown2;
 	} samr_DomInfo13;
@@ -948,7 +945,7 @@
 	const uint32 DOMAIN_REFUSE_PASSWORD_CHANGE   = 0x00000020;
 
 	typedef struct {
-		uint16 min_password_len;
+		uint16 min_password_length;
 		uint32 password_properties;
 	} samr_PwInfo;
 
