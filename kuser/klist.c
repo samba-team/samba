@@ -336,13 +336,17 @@ static int version_flag = 0;
 static int help_flag	= 0;
 static int do_verbose	= 0;
 static int do_test	= 0;
+#ifdef KRB4
 static int do_tokens	= 0;
+#endif
 
 static struct getargs args[] = {
     { "test",			't', arg_flag, &do_test,
       "test for having tickets", NULL },
+#ifdef KRB4
     { "tokens",			'T',   arg_flag, &do_tokens,
       "display AFS tokens", NULL },
+#endif
     { "verbose",		'v', arg_flag, &do_verbose,
       "Verbose output", NULL },
     { "version", 		0,   arg_flag, &version_flag, 
