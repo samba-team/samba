@@ -363,6 +363,7 @@ static struct winbindd_dispatch_table child_dispatch_table[] = {
 	  "LIST_TRUSTDOM" },
 	{ WINBINDD_INIT_CONNECTION, winbindd_init_connection,
 	  "INIT_CONNECTION" },
+	{ WINBINDD_GETDCNAME, winbindd_getdcname, "GETDCNAME" },
 
 	/* End of list */
 

@@ -274,6 +274,7 @@ static struct winbindd_dispatch_table dispatch_table[] = {
 	{ WINBINDD_DOMAIN_INFO, winbindd_domain_info, "DOMAIN_INFO" },
 	{ WINBINDD_NETBIOS_NAME, winbindd_netbios_name, "NETBIOS_NAME" },
 	{ WINBINDD_PRIV_PIPE_DIR, winbindd_priv_pipe_dir, "WINBINDD_PRIV_PIPE_DIR" },
+	{ WINBINDD_GETDCNAME, winbindd_getdcname_async, "GETDCNAME" },
 
 	/* WINS functions */
 

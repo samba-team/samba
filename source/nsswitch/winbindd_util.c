@@ -395,7 +395,7 @@ enum winbindd_result winbindd_init_connection(struct winbindd_cli_state *state)
 	state->request.data.init_conn.dcname
 		[sizeof(state->request.data.init_conn.dcname)-1]='\0';
 
-	domain = find_domain_from_name(state->request.domain_name);
+	domain = find_domain_from_name_noinit(state->request.domain_name);
 
 	if (domain == NULL) {
 		DEBUG(1, ("Could not find domain %s\n",
@@ -490,6 +490,25 @@ struct winbindd_domain *find_domain_from_name(const char *domain_name)
 			if (!domain->initialized)
 				set_dc_type_and_flags(domain);
 
+			return domain;
+		}
+	}
+
+	/* Not found */
+
+	return NULL;
+}
+
+struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
+{
+	struct winbindd_domain *domain;
+
+	/* Search through list */
+
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		if (strequal(domain_name, domain->name) ||
+		    (domain->alt_name[0] &&
+		     strequal(domain_name, domain->alt_name))) {
 			return domain;
 		}
 	}

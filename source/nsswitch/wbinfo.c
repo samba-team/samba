@@ -316,6 +316,32 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 	return True;
 }
 
+/* Get a foreign DC's name */
+static BOOL wbinfo_getdcname(const char *domain_name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	fstrcpy(request.domain_name, domain_name);
+
+	/* Send request */
+
+	if (winbindd_request(WINBINDD_GETDCNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		d_printf("Could not get dc name for %s\n", domain_name);
+		return False;
+	}
+
+	/* Display response */
+
+	d_printf("%s\n", response.data.dc_name);
+
+	return True;
+}
+
 /* Check trust account password */
 
 static BOOL wbinfo_check_secret(void)
@@ -1058,6 +1084,7 @@ enum {
 	OPT_GET_AUTH_USER,
 	OPT_DOMAIN_NAME,
 	OPT_SEQUENCE,
+	OPT_GETDCNAME,
 	OPT_USERSIDS
 };
 
@@ -1102,6 +1129,8 @@ int main(int argc, char **argv)
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
  		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
+		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
+		  "Get a DC name for a foreign domain", "domainname" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
@@ -1326,6 +1355,9 @@ int main(int argc, char **argv)
 			break;
 		case OPT_GET_AUTH_USER:
 			wbinfo_get_auth_user();
+			break;
+		case OPT_GETDCNAME:
+			wbinfo_getdcname(string_arg);
 			break;
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:

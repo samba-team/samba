@@ -84,6 +84,7 @@ enum winbindd_cmd {
 
 	WINBINDD_DOMAIN_INFO,	/* Most of what we know from
 				   struct winbindd_domain */
+	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
@@ -263,6 +264,7 @@ struct winbindd_response {
 		} info;
 		fstring domain_name;
 		fstring netbios_name;
+		fstring dc_name;
 
 		struct auth_reply {
 			uint32 nt_status;

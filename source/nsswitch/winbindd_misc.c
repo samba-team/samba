@@ -167,6 +167,78 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state *st
 	return WINBINDD_OK;
 }
 
+enum winbindd_result winbindd_getdcname_async(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+
+	state->request.domain_name
+		[sizeof(state->request.domain_name)-1] = '\0';
+
+	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
+		  state->request.domain_name));
+
+	domain = find_our_domain();
+	if (domain == NULL) {
+                DEBUG(1, ("Cannot find our own domain!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	return async_request(state->mem_ctx, &domain->child,
+			     &state->request, &state->response,
+			     request_finished_cont, state);
+}
+
+enum winbindd_result winbindd_getdcname(struct winbindd_cli_state *state)
+{
+	struct winbindd_domain *domain;
+	fstring dcname_slash;
+	char *p;
+	struct rpc_pipe_client *cli;
+	NTSTATUS result;
+
+	state->request.domain_name
+		[sizeof(state->request.domain_name)-1] = '\0';
+
+	DEBUG(3, ("[%5lu]: Get DC name for %s\n", (unsigned long)state->pid,
+		  state->request.domain_name));
+
+	domain = find_our_domain();
+	if (domain == NULL) {
+                DEBUG(1, ("Cannot find our own domain!\n"));
+		return WINBINDD_ERROR;
+	}
+
+	{
+		/* These var's can be ignored -- we're not requesting
+		   anything in the credential chain here */
+		unsigned char *session_key;
+		DOM_CRED *creds;
+		result = cm_connect_netlogon(domain, state->mem_ctx, &cli,
+					     &session_key, &creds);
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("Can't contact our the NETLOGON pipe\n"));
+		return WINBINDD_ERROR;
+	}
+
+	result = rpccli_netlogon_getdcname(cli, state->mem_ctx, domain->dcname,
+					   state->request.domain_name,
+					   dcname_slash);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5, ("Error requesting DCname: %s\n", nt_errstr(result)));
+		return WINBINDD_ERROR;
+	}
+
+	p = dcname_slash;
+	if (*p == '\\') p+=1;
+	if (*p == '\\') p+=1;
+
+	fstrcpy(state->response.data.dc_name, p);
+
+	return WINBINDD_OK;
+}
 
 enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 {
