@@ -156,6 +156,13 @@ struct dcinfo
 	uchar  md4pw[16];   /* md4(machine password) */
 
 	fstring mach_acct;  /* Machine name we've authenticated. */
+
+	fstring remote_machine;  /* Machine name we've authenticated. */
+
+	BOOL challange_sent;
+	BOOL got_session_key;
+	BOOL authenticated;
+
 };
 
 /*
