@@ -161,7 +161,7 @@ static char** get_userattr_delete_list( int schema_ver )
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( attrib_map_to_delete_v30 );
 		default:
-			DEBUG(0,("get_userattr_list: unknown schema version specified!\n"));
+			DEBUG(0,("get_userattr_delete_list: unknown schema version specified!\n"));
 			break;
 	}
 	
@@ -1396,7 +1396,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	}
 
 	if (!init_sam_from_ldap(ldap_state, user, entry)) {
-		DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
+		DEBUG(1,("ldapsam_getsampwsid: init_sam_from_ldap failed!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -2462,7 +2462,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base!\n",
+	DEBUG(2, ("ldapsam_setsamgrent: %d entries in the base!\n",
 		  ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
 				     ldap_state->result)));
 
@@ -2586,13 +2586,13 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_modify_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -2627,7 +2627,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_delete_entry: Could not delete attributes "
+		DEBUG(0, ("ldapsam_modify_aliasmem: Could not modify alias "
 			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
@@ -2685,13 +2685,13 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_enum_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_enum_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
