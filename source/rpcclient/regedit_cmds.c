@@ -23,6 +23,96 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+extern struct client_info cli_info;
+
+/* Complete a remote registry enum */
+
+static uint32 reg_list_len = 0;
+static char **reg_name = NULL;
+
+static void reg_init(int val, const char *full_keyname, int num)
+{
+	switch (val)
+	{
+		case 0:
+		{
+			free_char_array(reg_list_len, reg_name);
+			reg_list_len = 0;
+			reg_name = NULL;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+
+static void reg_key_list(const char *full_name,
+			 const char *name, time_t key_mod_time)
+{
+	fstring key_name;
+	slprintf(key_name, sizeof(key_name) - 1, "%s\\", name);
+	add_chars_to_array(&reg_list_len, &reg_name, key_name);
+}
+
+static void reg_val_list(const char *full_name,
+			 const char *name, uint32 type, const BUFFER2 * value)
+{
+	add_chars_to_array(&reg_list_len, &reg_name, name);
+}
+
+extern char** cmd_argv;
+extern uint32 cmd_argc;
+
+static char *complete_regenum(char *text, int state)
+{
+	pstring full_keyname;
+	static uint32 i = 0;
+
+	if (state == 0)
+	{
+		fstring srv_name;
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
+		if (cmd_argc >= 2 && cmd_argv != NULL && cmd_argv[1] != NULL)
+		{
+			char *sep;
+			split_server_keyname(srv_name, full_keyname,
+					     cmd_argv[1]);
+
+			sep = strrchr(full_keyname, '\\');
+			if (sep != NULL)
+			{
+				*sep = 0;
+			}
+		}
+
+		/* Iterate all keys / values */
+		if (!msrpc_reg_enum_key(srv_name, full_keyname,
+					reg_init, reg_key_list, reg_val_list))
+		{
+			return NULL;
+		}
+
+		i = 0;
+	}
+
+	for (; i < reg_list_len; i++)
+	{
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, reg_name[i], strlen(text)))
+		{
+			char *name = strdup(reg_name[i]);
+			i++;
+			return name;
+		}
+	}
+
+	return NULL;
+}
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/

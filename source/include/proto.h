@@ -180,14 +180,12 @@ struct command_set *add_cmd_set_to_array(uint32 * len,
 					 struct command_set ***array,
 					 const struct command_set *cmd);
 void add_command_set(const struct command_set *cmds);
-char *complete_regenum(char *text, int state);
 char *complete_samenum_usr(char *text, int state);
 char *complete_samenum_als(char *text, int state);
 char *complete_samenum_grp(char *text, int state);
 char *complete_samenum_usr(char *text, int state);
 char *complete_samenum_als(char *text, int state);
 char *complete_samenum_grp(char *text, int state);
-char *complete_regenum(char *text, int state);
 void readline_init(void);
 int command_main(int argc, char *argv[]);
 
