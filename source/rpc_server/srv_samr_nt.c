@@ -53,6 +53,8 @@ struct samr_info {
 	DOM_SID sid;
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	DISP_INFO disp_info;
+
+	TALLOC_CTX *mem_ctx;
 };
 
 /*******************************************************************
@@ -63,17 +65,27 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 {
 	struct samr_info *info;
 	fstring sid_str;
+	TALLOC_CTX *mem_ctx;
+	
+	if (psid) {
+		sid_to_string(sid_str, psid);
+	} else {
+		fstrcpy(sid_str,"(NULL)");
+	}
 
-	if ((info = (struct samr_info *)malloc(sizeof(struct samr_info))) == NULL)
+	mem_ctx = talloc_init_named("samr_info for domain sid %s", sid_str);
+
+	if ((info = (struct samr_info *)talloc(mem_ctx, sizeof(struct samr_info))) == NULL)
 		return NULL;
 
 	ZERO_STRUCTP(info);
+	DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_str));
 	if (psid) {
-		DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_to_string(sid_str, psid) ));
 		sid_copy( &info->sid, psid);
 	} else {
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
 	}
+	info->mem_ctx = mem_ctx;
 	return info;
 }
 
@@ -84,18 +96,13 @@ static void free_samr_db(struct samr_info *info)
 {
 	int i;
 
-	if (info->disp_info.group_dbloaded) {
-		for (i=0; i<info->disp_info.num_group_account; i++)
-			SAFE_FREE(info->disp_info.disp_group_info[i].grp);
-
-		SAFE_FREE(info->disp_info.disp_group_info);
-	}
+	/* Groups are talloced */
 
 	if (info->disp_info.user_dbloaded){
-		for (i=0; i<info->disp_info.num_user_account; i++)
+		for (i=0; i<info->disp_info.num_user_account; i++) {
+			/* Not really a free, actually a 'clear' */
 			pdb_free_sam(&info->disp_info.disp_user_info[i].sam);
-
-		SAFE_FREE(info->disp_info.disp_user_info);
+		}
 	}
 
 	info->disp_info.user_dbloaded=False;
@@ -110,7 +117,7 @@ static void free_samr_info(void *ptr)
 	struct samr_info *info=(struct samr_info *) ptr;
 
 	free_samr_db(info);
-	SAFE_FREE(info);
+	talloc_destroy(info->mem_ctx);
 }
 
 /*******************************************************************
@@ -147,6 +154,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	DISP_USER_INFO *pwd_array = NULL;
+	NTSTATUS nt_status = NT_STATUS_OK;
+	TALLOC_CTX *mem_ctx = info->mem_ctx;
 
 	DEBUG(10,("load_sampwd_entries\n"));
 
@@ -161,7 +170,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	for (pdb_init_sam(&pwd); pdb_getsampwent(pwd) == True; pwd=NULL, pdb_init_sam(&pwd) ) {
+	for (; (NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(mem_ctx, &pwd))) 
+		     && pdb_getsampwent(pwd) == True; pwd=NULL) {
 		
 		if (acb_mask != 0 && !(pdb_get_acct_ctrl(pwd) & acb_mask)) {
 			pdb_free_sam(&pwd);
@@ -173,7 +183,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 		if (info->disp_info.num_user_account % MAX_SAM_ENTRIES == 0) {
 		
 			DEBUG(10,("load_sampwd_entries: allocating more memory\n"));
-			pwd_array=(DISP_USER_INFO *)Realloc(info->disp_info.disp_user_info, 
+			pwd_array=(DISP_USER_INFO *)talloc_realloc(mem_ctx, info->disp_info.disp_user_info, 
 			                  (info->disp_info.num_user_account+MAX_SAM_ENTRIES)*sizeof(DISP_USER_INFO));
 
 			if (pwd_array==NULL)
@@ -198,7 +208,7 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 
 	DEBUG(12,("load_sampwd_entries: done\n"));
 
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
@@ -207,6 +217,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 	DISP_GROUP_INFO *grp_array = NULL;
 	uint32 group_entries = 0;
 	uint32 i;
+	TALLOC_CTX *mem_ctx = info->mem_ctx;
 
 	DEBUG(10,("load_group_domain_entries\n"));
 
@@ -220,7 +231,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 
 	info->disp_info.num_group_account=group_entries;
 
-	grp_array=(DISP_GROUP_INFO *)malloc(info->disp_info.num_group_account*sizeof(DISP_GROUP_INFO));
+	grp_array=(DISP_GROUP_INFO *)talloc(mem_ctx, info->disp_info.num_group_account*sizeof(DISP_GROUP_INFO));
 
 	if (group_entries!=0 && grp_array==NULL) {
 		SAFE_FREE(map);
@@ -231,7 +242,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 
 	for (i=0; i<group_entries; i++) {
 	
-		grp_array[i].grp=(DOMAIN_GRP *)malloc(sizeof(DOMAIN_GRP));
+		grp_array[i].grp=(DOMAIN_GRP *)talloc(mem_ctx, sizeof(DOMAIN_GRP));
 	
 		fstrcpy(grp_array[i].grp->name, map[i].nt_name);
 		fstrcpy(grp_array[i].grp->comment, map[i].comment);
@@ -262,14 +273,17 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 {
 	SAM_ACCOUNT *pwd = NULL;
 	BOOL not_finished = True;
- 
+	NTSTATUS nt_status;
+
 	(*num_entries) = 0;
 	(*total_entries) = 0;
 
 	if (pw_buf == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	pdb_init_sam(&pwd);
+	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
+		return nt_status;
+	}
 
 	if (!pdb_setsampwent(False)) {
 		DEBUG(0, ("get_sampwd_entries: Unable to open passdb.\n"));
@@ -281,10 +295,16 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 	       && (*num_entries) < max_num_entries) 
 	{
 	        int user_name_len;
-		
+		const char *user_name;
+
 	        if (start_idx > 0) {
 
-			pdb_reset_sam(pwd);
+			pdb_free_sam(&pwd);
+			
+			if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
+				pdb_endsampwent();
+				return nt_status;
+			}
 
 			/* skip the requested number of entries.
 			   not very efficient, but hey...  */
@@ -292,31 +312,41 @@ static NTSTATUS get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 			continue;
 		}
 		
-		user_name_len = strlen(pdb_get_username(pwd))+1;
-		init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pdb_get_username(pwd), user_name_len);
-		init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
-		pw_buf[(*num_entries)].user_rid = pdb_get_user_rid(pwd);
-		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
-		
-		/* Now check if the NT compatible password is available. */
-		if (pdb_get_nt_passwd(pwd))
-			memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
-		
-		pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
-		
-		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
-			  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
-		
-		if (acb_mask == 0 || (pdb_get_acct_ctrl(pwd) & acb_mask)) {
-			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-			(*num_entries)++;
-		} else {
+		user_name = pdb_get_username(pwd);
+
+		if (!user_name) {
+			DEBUG(2, ("account had NULL username!\n"));
+		} else if (!(acb_mask == 0 || (pdb_get_acct_ctrl(pwd) & acb_mask))) {
 			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+		} else {
+			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
+			
+			user_name_len = strlen(user_name)+1;
+			init_unistr2(&pw_buf[(*num_entries)].uni_user_name, user_name, user_name_len);
+			init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
+			pw_buf[(*num_entries)].user_rid = pdb_get_user_rid(pwd);
+			memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
+			
+			/* Now check if the NT compatible password is available. */
+			if (pdb_get_nt_passwd(pwd))
+				memcpy( pw_buf[(*num_entries)].nt_pwd , pdb_get_nt_passwd(pwd), 16);
+			
+			pw_buf[(*num_entries)].acb_info = pdb_get_acct_ctrl(pwd);
+			
+			DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
+				  (*num_entries), pdb_get_username(pwd), pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd) ));
+			
+			(*num_entries)++;
 		}
 
 		(*total_entries)++;
 		
-		pdb_reset_sam(pwd);
+		pdb_free_sam(&pwd);
+
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&pwd))) {
+			pdb_endsampwent();
+			return nt_status;
+		}
 
 	}
 	
@@ -936,7 +966,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 			become_root();		
 			r_u->status=load_sampwd_entries(info, acb_mask);
 			unbecome_root();
-			if (NT_STATUS_IS_ERR(r_u->status)) {
+			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
 				return r_u->status;
 			}
@@ -945,7 +975,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 		case 0x3:
 		case 0x5:
 			r_u->status = load_group_domain_entries(info, &info->sid);
-			if (NT_STATUS_IS_ERR(r_u->status))
+			if (!NT_STATUS_IS_OK(r_u->status))
 				return r_u->status;
 			num_account = info->disp_info.num_group_account;
 			break;
@@ -992,7 +1022,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, max_entries, enum_context, info->disp_info.disp_user_info);
-		if (NT_STATUS_IS_ERR(disp_ret))
+		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
 	case 0x2:
@@ -1001,7 +1031,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, max_entries, enum_context, info->disp_info.disp_user_info);
-		if (NT_STATUS_IS_ERR(disp_ret))
+		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
 	case 0x3:
@@ -1010,7 +1040,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, max_entries, enum_context, info->disp_info.disp_group_info);
-		if (NT_STATUS_IS_ERR(disp_ret))
+		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
 	case 0x4:
@@ -1019,7 +1049,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, max_entries, enum_context, info->disp_info.disp_user_info);
-		if (NT_STATUS_IS_ERR(disp_ret))
+		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
 	case 0x5:
@@ -1028,7 +1058,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, max_entries, enum_context, info->disp_info.disp_group_info);
-		if (NT_STATUS_IS_ERR(disp_ret))
+		if (!NT_STATUS_IS_OK(disp_ret))
 			return disp_ret;
 		break;
 
@@ -1393,12 +1423,18 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
 	POLICY_HND *user_pol = &r_u->user_pol;
 	struct samr_info *info = NULL;
 	BOOL ret;
+	NTSTATUS nt_status;
 
 	r_u->status = NT_STATUS_OK;
 
 	/* find the domain policy handle. */
 	if (!find_policy_by_hnd(p, &domain_pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
+
+	nt_status = pdb_init_sam_talloc(p->mem_ctx, &sampass);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	/* Get the domain SID stored in the domain policy */
 	if(!get_lsa_policy_samr_sid(p, &domain_pol, &sid))
@@ -1408,15 +1444,12 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
 	if(!sid_append_rid(&sid, q_u->user_rid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	pdb_init_sam(&sampass);
-
 	become_root();
 	ret=pdb_getsampwsid(sampass, &sid);
 	unbecome_root();
 
 	/* check that the SID exists in our domain. */
 	if (ret == False) {
-		pdb_free_sam(&sampass);
         	return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -1437,12 +1470,17 @@ NTSTATUS _api_samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN
  get_user_info_10. Safe. Only gives out acb bits.
  *************************************************************************/
 
-static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
+static NTSTATUS get_user_info_10(TALLOC_CTX *mem_ctx, SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
+	NTSTATUS nt_status;
 
-	pdb_init_sam(&smbpass);
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	become_root();
 	ret = pdb_getsampwsid(smbpass, user_sid);
@@ -1450,8 +1488,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
 
 	if (ret==False) {
 		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
-		pdb_free_sam(&smbpass);
-		return False;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
@@ -1461,7 +1498,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
 
 	pdb_free_sam(&smbpass);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -1470,10 +1507,11 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, DOM_SID *user_sid)
  user. JRA. 
  *************************************************************************/
 
-static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, DOM_SID *user_sid)
+static NTSTATUS get_user_info_12(pipes_struct *p, TALLOC_CTX *mem_ctx, SAM_USER_INFO_12 * id12, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *smbpass=NULL;
 	BOOL ret;
+	NTSTATUS nt_status;
 
 	if (!p->ntlmssp_auth_validated)
 		return NT_STATUS_ACCESS_DENIED;
@@ -1484,7 +1522,12 @@ static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, DOM_S
 	/*
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
 	 */
-	pdb_init_sam(&smbpass);
+
+	nt_status = pdb_init_sam_talloc(mem_ctx, &smbpass);
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	ret = pdb_getsampwsid(smbpass, user_sid);
 
@@ -1513,12 +1556,12 @@ static NTSTATUS get_user_info_12(pipes_struct *p, SAM_USER_INFO_12 * id12, DOM_S
  get_user_info_20
  *************************************************************************/
 
-static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
+static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx, SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
 
-	pdb_init_sam(&sampass);
+	pdb_init_sam_talloc(mem_ctx, &sampass);
 
 	become_root();
 	ret = pdb_getsampwsid(sampass, user_sid);
@@ -1526,8 +1569,7 @@ static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 
 	if (ret == False) {
 		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
-		pdb_free_sam(&sampass);
-		return False;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	samr_clear_sam_passwd(sampass);
@@ -1539,19 +1581,23 @@ static BOOL get_user_info_20(SAM_USER_INFO_20 *id20, DOM_SID *user_sid)
 	
 	pdb_free_sam(&sampass);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
  get_user_info_21
  *************************************************************************/
 
-static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
+static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
+	NTSTATUS nt_status;
 
-	pdb_init_sam(&sampass);
+	nt_status = pdb_init_sam_talloc(mem_ctx, &sampass);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	become_root();
 	ret = pdb_getsampwsid(sampass, user_sid);
@@ -1559,8 +1605,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
 
 	if (ret == False) {
 		DEBUG(4,("User %s not found\n", sid_string_static(user_sid)));
-		pdb_free_sam(&sampass);
-		return False;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	samr_clear_sam_passwd(sampass);
@@ -1572,7 +1617,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, DOM_SID *user_sid)
 	
 	pdb_free_sam(&sampass);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1610,8 +1655,8 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (!get_user_info_10(ctr->info.id10, &info->sid))
-			return NT_STATUS_NO_SUCH_USER;
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_10(p->mem_ctx, ctr->info.id10, &info->sid)))
+			return r_u->status;
 		break;
 
 #if 0
@@ -1645,24 +1690,24 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		if (NT_STATUS_IS_ERR(r_u->status = get_user_info_12(p, ctr->info.id12, &info->sid)))
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_12(p, p->mem_ctx, ctr->info.id12, &info->sid)))
 			return r_u->status;
 		break;
-
+		
 	case 20:
 		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_20));
 		if (ctr->info.id20 == NULL)
 			return NT_STATUS_NO_MEMORY;
-		if (!get_user_info_20(ctr->info.id20, &info->sid))
-			return NT_STATUS_NO_SUCH_USER;
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_20(p->mem_ctx, ctr->info.id20, &info->sid)))
+			return r_u->status;
 		break;
 
 	case 21:
 		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_21));
 		if (ctr->info.id21 == NULL)
 			return NT_STATUS_NO_MEMORY;
-		if (!get_user_info_21(ctr->info.id21, &info->sid))
-			return NT_STATUS_NO_SUCH_USER;
+		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_21(p->mem_ctx, ctr->info.id21, &info->sid)))
+			return r_u->status;
 		break;
 
 	default:
@@ -1672,7 +1717,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 	init_samr_r_query_userinfo(r_u, ctr, r_u->status);
 
 	DEBUG(5,("_samr_query_userinfo: %d\n", __LINE__));
-
+	
 	return r_u->status;
 }
 
@@ -1712,7 +1757,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	pdb_init_sam(&sam_pass);
-
+	
 	become_root();
 	ret = pdb_getsampwsid(sam_pass, &info->sid);
 	unbecome_root();
@@ -1721,19 +1766,19 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-
+	
 	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_GROUP;
 	}
-
+	
 	/* construct the response.  lkclXXXX: gids are not copied! */
 	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
-
+	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
 	
 	pdb_free_sam(&sam_pass);
-
+	
 	return r_u->status;
 }
 
@@ -1764,13 +1809,13 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 	ZERO_STRUCTP(ctr);
 
 	r_u->status = NT_STATUS_OK;
-
+	
 	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
-
+	
 	/* find the policy handle.  open a policy on it. */
 	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
-
+	
 	switch (q_u->switch_value) {
 		case 0x01:
 			account_policy_get(AP_MIN_PASSWORD_LEN, &min_pass_len);
@@ -1789,7 +1834,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			become_root();		
 			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
 			unbecome_root();
-			if (NT_STATUS_IS_ERR(r_u->status)) {
+			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
 				return r_u->status;
 			}
@@ -1797,7 +1842,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 			free_samr_db(info);
 			
 			r_u->status=load_group_domain_entries(info, &global_sam_sid);
-			if (NT_STATUS_IS_ERR(r_u->status)) {
+			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_group_domain_entries failed\n"));
 				return r_u->status;
 			}
@@ -1835,12 +1880,12 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
             		break;
         	default:
             		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
+		}
+	
 	init_samr_r_query_dom_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
-
+	
 	DEBUG(5,("_samr_query_dom_info: %d\n", __LINE__));
-
+	
 	return r_u->status;
 }
 
@@ -2659,7 +2704,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 		 * if there is an error, we just continue as
 		 * it can be an unfound user or group
 		 */
-		if (NT_STATUS_IS_ERR(r_u->status)) {
+		if (!NT_STATUS_IS_OK(r_u->status)) {
 			DEBUG(10,("_samr_query_useraliases: an error occured while getting groups\n"));
 			continue;
 		}
@@ -2749,7 +2794,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 		pass = getpwuid_alloc(uid[i]);
 		if (!pass) continue;
 
-		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+		if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_user))) {
 			passwd_free(&pass);
 			continue;
 		}
@@ -2843,7 +2888,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 		pass = getpwuid_alloc(uid[i]);
 		if (!pass) continue;
 
-		if (NT_STATUS_IS_ERR(pdb_init_sam(&sam_user))) {
+		if (!NT_STATUS_IS_OK(pdb_init_sam(&sam_user))) {
 			passwd_free(&pass);
 			continue;
 		}
@@ -2917,7 +2962,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	}
 
 	ret = pdb_init_sam(&sam_user);
-	if (NT_STATUS_IS_ERR(ret))
+	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 	
 	check = pdb_getsampwsid(sam_user, &q_u->sid.sid);
@@ -3062,7 +3107,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	sid_append_rid(&user_sid, q_u->rid);
 
 	ret = pdb_init_sam(&sam_user);
-	if (NT_STATUS_IS_ERR(ret))
+	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 	
 	check = pdb_getsampwsid(sam_user, &user_sid);
@@ -3726,7 +3771,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 			become_root();		
 			r_u->status=load_sampwd_entries(info, ACB_NORMAL);
 			unbecome_root();
-			if (NT_STATUS_IS_ERR(r_u->status)) {
+			if (!NT_STATUS_IS_OK(r_u->status)) {
 				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
 				return r_u->status;
 			}
