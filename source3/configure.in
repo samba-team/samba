@@ -2543,8 +2543,16 @@ if test x"$with_ads_support" != x"no"; then
       [krb5_enctype enctype; enctype = ENCTYPE_ARCFOUR_HMAC_MD5;],
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=yes,
       samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5=no)])
-
-  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes"; then
+  AC_CACHE_CHECK([for KEYTYPE_ARCFOUR_56],
+                 samba_cv_HAVE_KEYTYPE_ARCFOUR_56,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_keytype keytype; keytype = KEYTYPE_ARCFOUR_56;],
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=yes,
+      samba_cv_HAVE_KEYTYPE_ARCFOUR_56=no)])
+# Heimdals with KEYTYPE_ARCFOUR but not KEYTYPE_ARCFOUR_56 are broken
+# w.r.t. arcfour and windows, so we must not enable it here
+  if test x"$samba_cv_HAVE_ENCTYPE_ARCFOUR_HMAC_MD5" = x"yes" -a\
+          x"$samba_cv_HAVE_KEYTYPE_ARCFOUR_56" = x"yes"; then
     AC_DEFINE(HAVE_ENCTYPE_ARCFOUR_HMAC_MD5,1,
               [Whether the ENCTYPE_ARCFOUR_HMAC_MD5 key type is available])
   fi
