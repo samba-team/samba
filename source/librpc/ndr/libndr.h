@@ -153,3 +153,5 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint16, v
 #include "librpc/ndr/ndr_lsa.h"
 #include "librpc/ndr/ndr_dfs.h"
 #include "librpc/ndr/ndr_spoolss.h"
+#include "librpc/ndr/ndr_samr.h"
+

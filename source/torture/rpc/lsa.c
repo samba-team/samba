@@ -21,65 +21,6 @@
 
 #include "includes.h"
 
-
-/*
-  these really shouldn't be here ....
-*/
-static char *lsa_sid_string_talloc(TALLOC_CTX *mem_ctx, struct dom_sid *sid)
-{
-	int i, ofs, maxlen;
-	uint32 ia;
-	char *ret;
-	
-	if (!sid) {
-		return talloc_asprintf(mem_ctx, "(NULL SID)");
-	}
-
-	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc(mem_ctx, maxlen);
-	if (!ret) return NULL;
-
-	ia = (sid->id_auth[5]) +
-		(sid->id_auth[4] << 8 ) +
-		(sid->id_auth[3] << 16) +
-		(sid->id_auth[2] << 24);
-
-	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
-		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
-
-	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
-	}
-
-	return ret;
-}
-
-static int dom_sid_compare(struct dom_sid *sid1, struct dom_sid *sid2)
-{
-	int i;
-
-	if (sid1 == sid2) return 0;
-	if (!sid1) return -1;
-	if (!sid2) return 1;
-
-	/* Compare most likely different rids, first: i.e start at end */
-	if (sid1->num_auths != sid2->num_auths)
-		return sid1->num_auths - sid2->num_auths;
-
-	for (i = sid1->num_auths-1; i >= 0; --i)
-		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return sid1->sub_auths[i] - sid2->sub_auths[i];
-
-	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return sid1->sid_rev_num - sid2->sid_rev_num;
-
-	for (i = 0; i < 6; i++)
-		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return sid1->id_auth[i] - sid2->id_auth[i];
-
-	return 0;
-}
-
 static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct lsa_ObjectAttribute attr;
@@ -335,8 +276,8 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 
 static BOOL test_QuerySecObj(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx, 
-			     struct policy_handle *acct_handle,
-			     struct dom_sid *sid)
+			     struct policy_handle *handle,
+			     struct policy_handle *acct_handle)
 {
 	NTSTATUS status;
 	struct lsa_QuerySecObj r;
@@ -366,7 +307,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 	struct lsa_OpenAccount r;
 	struct policy_handle acct_handle;
 
-	printf("Testing OpenAccount(%s)\n", lsa_sid_string_talloc(mem_ctx, sid));
+	printf("Testing OpenAccount\n");
 
 	r.in.handle = handle;
 	r.in.sid = sid;
@@ -590,7 +531,7 @@ static BOOL test_Close(struct dcerpc_pipe *p,
 
 	status = dcerpc_lsa_Close(p, mem_ctx, &r);
 	/* its really a fault - we need a status code for rpc fault */
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 		printf("Close failed - %s\n", nt_errstr(status));
 		return False;
 	}
