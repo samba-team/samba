@@ -503,15 +503,20 @@ static int make_rpc_reply(char *inbuf, char *q, int data_len)
 
 static int lsa_reply_open_policy(char *q, char *base)
 {
+	int i;
 	char *start = q;
 	LSA_R_OPEN_POL r_o;
 
 	/* set up the LSA QUERY INFO response */
-	bzero(&(r_o.pol.data), POL_HND_SIZE);
+	/* bzero(&(r_o.pol.data), POL_HND_SIZE); */
+	for (i = 0; i < POL_HND_SIZE; i++)
+	{
+		r_o.pol.data[i] = i;
+	}
 	r_o.status = 0x0;
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_open_pol(False, &r_o, q, base, 4);
+	q = lsa_io_r_open_pol(False, &r_o, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -601,7 +606,7 @@ static int lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, char *q, char *base,
 	r_q.status = 0x0;
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_query(False, &r_q, q, base, 4);
+	q = lsa_io_r_query(False, &r_q, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -697,7 +702,7 @@ static int lsa_reply_lookup_sids(char *q, char *base,
 	r_l.status = 0x0;
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4);
+	q = lsa_io_r_lookup_sids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -717,7 +722,7 @@ static int lsa_reply_lookup_rids(char *q, char *base,
 	r_l.status = 0x0;
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_lookup_rids(False, &r_l, q, base, 4);
+	q = lsa_io_r_lookup_rids(False, &r_l, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -741,7 +746,7 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 	make_lsa_r_req_chal(&r_c, srv_chal, 0);
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_req_chal(False, &r_c, q, base, 4);
+	q = lsa_io_r_req_chal(False, &r_c, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -766,7 +771,7 @@ static int lsa_reply_auth_2(LSA_Q_AUTH_2 *q_a, char *q, char *base,
 	make_lsa_r_auth_2(&r_a, resp_cred, &(q_a->clnt_flgs), status);
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_auth_2(False, &r_a, q, base, 4);
+	q = lsa_io_r_auth_2(False, &r_a, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -789,7 +794,7 @@ static int lsa_reply_srv_pwset(LSA_Q_SRV_PWSET *q_s, char *q, char *base,
 	make_lsa_r_srv_pwset(&r_s, srv_cred, status);
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4);
+	q = lsa_io_r_srv_pwset(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -924,7 +929,7 @@ static int lsa_reply_sam_logon(LSA_Q_SAM_LOGON *q_s, char *q, char *base,
 	r_s.status = user_info != NULL ? 0 : (0xC000000|NT_STATUS_NO_SUCH_USER);
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4);
+	q = lsa_io_r_sam_logon(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -945,7 +950,7 @@ static int lsa_reply_sam_logoff(LSA_Q_SAM_LOGOFF *q_s, char *q, char *base,
 	r_s.status = status;
 
 	/* store the response in the SMB stream */
-	q = lsa_io_r_sam_logoff(False, &r_s, q, base, 4);
+	q = lsa_io_r_sam_logoff(False, &r_s, q, base, 4, 0);
 
 	/* return length of SMB data stored */
 	return q - start; 
@@ -978,7 +983,7 @@ static void api_lsa_query_info( char *param, char *data,
 	pstring dom_sid;
 
 	/* grab the info class and policy handle */
-	lsa_io_q_query(True, &q_i, data + 0x18, data + 0x18, 4);
+	lsa_io_q_query(True, &q_i, data + 0x18, data + 0x18, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
@@ -1004,7 +1009,7 @@ static void api_lsa_lookup_sids( char *param, char *data,
 	fstring dom_sids[MAX_LOOKUP_SIDS];
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data + 0x18, 4);
+	lsa_io_q_lookup_sids(True, &q_l, data + 0x18, data + 0x18, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
@@ -1038,7 +1043,7 @@ static void api_lsa_lookup_names( char *param, char *data,
 	uint32 dom_rids[MAX_LOOKUP_SIDS];
 
 	/* grab the info class and policy handle */
-	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data + 0x18, 4);
+	lsa_io_q_lookup_rids(True, &q_l, data + 0x18, data + 0x18, 4, 0);
 
 	pstrcpy(dom_name, lp_workgroup());
 	pstrcpy(dom_sid , lp_domainsid());
@@ -1224,7 +1229,7 @@ static void api_lsa_req_chal( user_struct *vuser,
 	fstring mach_acct;
 
 	/* grab the challenge... */
-	lsa_io_q_req_chal(True, &q_r, data + 0x18, data + 0x18, 4);
+	lsa_io_q_req_chal(True, &q_r, data + 0x18, data + 0x18, 4, 0);
 
 	fstrcpy(mach_acct, unistr2(q_r.uni_logon_clnt.buffer));
 
@@ -1255,7 +1260,7 @@ static void api_lsa_auth_2( user_struct *vuser,
 	srv_time.time = 0;
 
 	/* grab the challenge... */
-	lsa_io_q_auth_2(True, &q_a, data + 0x18, data + 0x18, 4);
+	lsa_io_q_auth_2(True, &q_a, data + 0x18, data + 0x18, 4, 0);
 
 	/* check that the client credentials are valid */
 	cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
@@ -1313,7 +1318,7 @@ static void api_lsa_srv_pwset( user_struct *vuser,
 	DOM_CRED srv_cred;
 
 	/* grab the challenge and encrypted password ... */
-	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data + 0x18, 4);
+	lsa_io_q_srv_pwset(True, &q_a, data + 0x18, data + 0x18, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_a.clnt_id.cred), &srv_cred);
@@ -1340,7 +1345,7 @@ static void api_lsa_sam_logoff( user_struct *vuser,
 	DOM_CRED srv_cred;
 
 	/* grab the challenge... */
-	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data + 0x18, 4);
+	lsa_io_q_sam_logoff(True, &q_l, data + 0x18, data + 0x18, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_cred);
@@ -1368,7 +1373,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 
 	DOM_CRED srv_creds;
 
-	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data + 0x18, 4);
+	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data + 0x18, 4, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
 	deal_with_credentials(vuser, &(q_l.sam_id.client.cred), &srv_creds);
@@ -1655,7 +1660,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 	uint16 opnum = SVAL(data,22);
 	int pkttype  = CVAL(data, 2);
 
-	user_struct *vuser = get_valid_user_struct(uid);
+	user_struct *vuser;
 
 	if (pkttype == 0x0b) /* RPC BIND */
 	{
@@ -1666,7 +1671,7 @@ BOOL api_netlogrpcTNP(int cnum,int uid, char *param,char *data,
 
 	DEBUG(4,("netlogon TransactNamedPipe op %x\n",opnum));
 
-	if (vuser == NULL) return False;
+	if ((vuser = get_valid_user_struct(uid)) == NULL) return False;
 
 	DEBUG(3,("Username of UID %d is %s\n", vuser->uid, vuser->name));
 #if defined(NETGROUP) && defined(AUTOMOUNT)
