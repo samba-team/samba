@@ -477,14 +477,24 @@ static void print_queue_receive(int msg_type, pid_t src, void *buf, size_t len)
 	print_queue_update_background(snum);
 }
 
+static pid_t background_lpq_updater_pid;
+
 /****************************************************************************
 main thread of the background lpq updater
 ****************************************************************************/
 void start_background_queue(void)
 {
-	DEBUG(3,("Starting background LPQ thread\n"));
-	if(sys_fork()==0) {
-		DEBUG(5,("background LPQ thread started\n"));
+	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
+	background_lpq_updater_pid = sys_fork();
+
+	if (background_lpq_updater_pid == -1) {
+		DEBUG(5,("start_background_queue: background LPQ thread failed to start. %s\n", strerror(errno) ));
+		exit(1);
+	}
+
+	if(background_lpq_updater_pid == 0) {
+		/* Child. */
+		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
 
 		claim_connection(NULL,"smbd lpq backend",MAXSTATUS,False);
 
@@ -498,10 +508,10 @@ void start_background_queue(void)
 
 		message_register(MSG_PRINTER_UPDATE, print_queue_receive);
 		
-		DEBUG(5,("background LPQ thread waiting for messages\n"));
+		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
 			pause();
-			DEBUG(10,("background LPQ thread got a message\n"));
+			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
 			message_dispatch();
 		}
 	}
@@ -512,7 +522,7 @@ update the internal database from the system print queue for a queue
 ****************************************************************************/
 static void print_queue_update(int snum)
 {
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
+	message_send_pid(background_lpq_updater_pid, MSG_PRINTER_UPDATE, &snum, sizeof(snum), False);
 }
 
 /****************************************************************************
