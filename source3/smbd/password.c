@@ -612,7 +612,16 @@ BOOL password_check(char *password)
 {
 
 #ifdef USE_PAM
+/* This falls through if the password check fails
+	- if NO_CRYPT is defined this causes an error msg
+		saying Warning - no crypt available
+	- if NO_CRYPT is NOT defined this is a potential security hole
+		as it may authenticate via the crypt call when PAM
+		settings say it should fail.
   if (pam_auth(this_user,password)) return(True);
+Hence we make a direct return to avoid a second chance!!!
+*/
+  return (pam_auth(this_user,password));
 #endif
 
 #ifdef AFS_AUTH
