@@ -26,6 +26,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/un.h>
+#include <X11/Xauth.h>
 
 #include <krb.h>
 
@@ -50,5 +51,5 @@ int copy_encrypted (int fd1, int fd2, des_cblock *iv,
 
 RETSIGTYPE childhandler (int);
 
-int get_local_xsocket (unsigned dnr);
+int get_local_xsocket (int *num);
 int connect_local_xsocket (unsigned dnr);
