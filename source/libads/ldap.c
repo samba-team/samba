@@ -359,9 +359,10 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 		"1.2.840.113556.1.4.1413",
 		{0, NULL},
 		(char) 1};
-	LDAPControl *controls[2] = {
-		&PermitModify,
-		NULL };
+	LDAPControl *controls[2];
+
+	controls[0] = &PermitModify;
+	controls[1] = NULL;
 
 	/* find the end of the list, marked by NULL or -1 */
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
