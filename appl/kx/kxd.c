@@ -128,7 +128,7 @@ recv_conn (int sock, kx_context *kc,
 	 exit (1);
      }
      kc->thisaddr_len = addrlen;
-     addrlen = sizeof(kc->thataddr);
+     addrlen = sizeof(kc->__ss_that);
      kc->thataddr = (struct sockaddr*)&kc->__ss_that;
      if (getpeername (sock, kc->thataddr, &addrlen) < 0) {
 	 syslog (LOG_ERR, "getpeername: %m");
