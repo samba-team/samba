@@ -859,22 +859,53 @@ extern void utmp_sig_notify P((int));
 #endif
 
 #ifdef STREAMSPTY
+
+/* I_FIND seems to live a life of its own */
+static int my_find(int fd, char *module)
+{
+  static int flag;
+  static struct str_list sl;
+  int n;
+  int i;
+  
+  if(!flag){
+    n = ioctl(fd, I_LIST, 0);
+    if(n < 0){
+      perror("ioctl(fd, I_LIST, 0)");
+      return -1;
+    }
+    sl.sl_modlist=(struct str_mlist*)malloc(n * sizeof(struct str_mlist));
+    sl.sl_nmods = n;
+    n = ioctl(fd, I_LIST, &sl);
+    if(n != 0){
+      perror("ioctl(fd, I_LIST, n)");
+      return -1;
+    }
+    flag = 1;
+  }
+  
+  for(i=0; i<sl.sl_nmods; i++)
+    if(!strcmp(sl.sl_modlist[i].l_name, module))
+      return 1;
+  return 0;
+}
+
 static void maybe_push_modules(int fd, char **modules)
 {
   char **p;
   int err;
 
   for(p=modules; *p; p++){
-    err=ioctl(fd, I_FIND, *p);
+    err = my_find(fd, *p);
     if(err == 1)
       break;
     if(err < 0 && errno != EINVAL)
-      fatalperror(net, "I_FIND");
+      fatalperror(net, "my_find()");
     /* module not pushed or does not exist */
   }
   /* p points to null or to an already pushed module, now push all
      modules before this one */
-
+  
   for(p--; p >= modules; p--){
     err = ioctl(fd, I_PUSH, *p);
     if(err < 0 && errno != EINVAL)
