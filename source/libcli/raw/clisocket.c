@@ -22,19 +22,6 @@
 #include "includes.h"
 
 /*
-  destroy a socket
- */
-static int sock_destructor(void *ptr)
-{
-	struct smbcli_socket *sock = ptr;
-	if (sock->fd != -1) {
-		close(sock->fd);
-		sock->fd = -1;
-	}
-	return 0;
-}
-
-/*
   create a smbcli_socket context
 */
 struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
@@ -47,14 +34,12 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
 	}
 
 	ZERO_STRUCTP(sock);
-	sock->fd = -1;
+	sock->sock = NULL;
 	sock->port = 0;
 
 	/* 20 second default timeout */
 	sock->timeout = 20000;
 	sock->hostname = NULL;
-
-	talloc_set_destructor(sock, sock_destructor);
 
 	return sock;
 }
@@ -65,10 +50,7 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx)
 */
 BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int port)
 {
-	if (getenv("LIBSMB_PROG")) {
-		sock->fd = sock_exec(getenv("LIBSMB_PROG"));
-		return sock->fd != -1;
-	}
+	NTSTATUS status;
 
 	if (port == 0) {
 		int i;
@@ -82,18 +64,23 @@ BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int por
 		return False;
 	}
 
-	sock->dest_ip = *ip;
-	sock->port = port;
-	sock->fd = open_socket_out(SOCK_STREAM,
-				   &sock->dest_ip,
-				   sock->port, 
-				   LONG_CONNECT_TIMEOUT);
-	if (sock->fd == -1) {
+	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock->sock, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+	talloc_steal(sock, sock->sock);
+
+	status = socket_connect(sock->sock, NULL, 0, inet_ntoa(*ip), port, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sock->sock);
+		sock->sock = NULL;
 		return False;
 	}
 
-	set_blocking(sock->fd, False);
-	set_socket_options(sock->fd, lp_socket_options());
+	sock->dest_ip = *ip;
+	sock->port = port;
+
+	socket_set_option(sock->sock, lp_socket_options(), NULL);
 
 	return True;
 }
@@ -104,9 +91,9 @@ BOOL smbcli_sock_connect(struct smbcli_socket *sock, struct in_addr *ip, int por
 ****************************************************************************/
 void smbcli_sock_dead(struct smbcli_socket *sock)
 {
-	if (sock->fd != -1) {
-		close(sock->fd);
-		sock->fd = -1;
+	if (sock->sock != NULL) {
+		talloc_free(sock->sock);
+		sock->sock = NULL;
 	}
 }
 
@@ -115,7 +102,7 @@ void smbcli_sock_dead(struct smbcli_socket *sock)
 ****************************************************************************/
 void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 {
-	set_socket_options(sock->fd, options);
+	socket_set_option(sock->sock, options, NULL);
 }
 
 /****************************************************************************
@@ -123,12 +110,24 @@ void smbcli_sock_set_options(struct smbcli_socket *sock, const char *options)
 ****************************************************************************/
 ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t len)
 {
-	if (sock->fd == -1) {
+	NTSTATUS status;
+	DATA_BLOB blob;
+	size_t nsent;
+
+	if (sock->sock == NULL) {
 		errno = EIO;
 		return -1;
 	}
 
-	return write(sock->fd, data, len);
+	blob.data = discard_const(data);
+	blob.length = len;
+
+	status = socket_send(sock->sock, &blob, &nsent, 0);
+	if (NT_STATUS_IS_ERR(status)) {
+		return -1;
+	}
+
+	return nsent;
 }
 
 
@@ -137,12 +136,20 @@ ssize_t smbcli_sock_write(struct smbcli_socket *sock, const char *data, size_t l
 ****************************************************************************/
 ssize_t smbcli_sock_read(struct smbcli_socket *sock, char *data, size_t len)
 {
-	if (sock->fd == -1) {
+	NTSTATUS status;
+	size_t nread;
+
+	if (sock->sock == NULL) {
 		errno = EIO;
 		return -1;
 	}
 
-	return read(sock->fd, data, len);
+	status = socket_recv(sock->sock, data, len, &nread, 0);
+	if (NT_STATUS_IS_ERR(status)) {
+		return -1;
+	}
+
+	return nread;
 }
 
 /****************************************************************************
@@ -155,10 +162,12 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 	char *name, *p;
 	BOOL ret;
 
+#if 0
 	if (getenv("LIBSMB_PROG")) {
 		sock->fd = sock_exec(getenv("LIBSMB_PROG"));
 		return sock->fd != -1;
 	}
+#endif
 
 	name = talloc_strdup(sock, host);
 
