@@ -83,8 +83,8 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, char *buf, off_t offset,
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
 ssize_t smbcli_write(struct smbcli_tree *tree,
-		  int fnum, uint16_t write_mode,
-		  const char *buf, off_t offset, size_t size)
+		     int fnum, uint16_t write_mode,
+		     const uint8_t *buf, off_t offset, size_t size)
 {
 	union smb_write parms;
 	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
