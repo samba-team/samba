@@ -280,6 +280,67 @@ int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 }
 
 
+/*******************************************************************
+duplicate string
+********************************************************************/
+smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
+{
+	smb_ucs2_t *dest;
+	uint32 len;
+	
+	len = strlen_w(src);
+	dest = (smb_ucs2_t *)malloc((len+1)*sizeof(smb_ucs2_t));
+	if (!dest) {
+		DEBUG(0,("strdup_w: out of memory!\n"));
+		return NULL;
+	}
+
+	memcpy(dest, src, (len+1)*sizeof(smb_ucs2_t));
+	
+	return dest;
+}
+
+/*******************************************************************
+copy a string with max len
+********************************************************************/
+
+smb_ucs2_t *strncpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
+{
+	size_t len;
+	
+	if (!dest || !src) return NULL;
+	
+	for (len = 0; (src[len] != 0) && (len < max); len++)
+		dest[len] = src[len];
+	while (len < max)
+		dest[len++] = 0;
+	
+	return dest;
+}
+
+
+/*******************************************************************
+append a string of len bytes and add a terminator
+********************************************************************/
+
+smb_ucs2_t *strncat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
+{	
+	size_t start;
+	size_t len;	
+	
+	if (!dest || !src) return NULL;
+	
+	start = strlen_w(dest);
+	len = strlen_w(src);
+	if (len > max) len = max;
+
+	memcpy(&dest[start], src, len);			
+	dest[start+len+1] = 0;
+	
+	return dest;
+}
+
+
 /*
   The *_wa() functions take a combination of 7 bit ascii
   and wide characters They are used so that you can use string
@@ -303,6 +364,8 @@ int strcmp_wa(const smb_ucs2_t *a, const char *b)
 	while (*b && *a == UCS2_CHAR(*b)) { a++; b++; }
 	return (*a - UCS2_CHAR(*b));
 }
+
+
 
 smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c)
 {
@@ -335,5 +398,49 @@ smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
 		s++;
 	}
 	return NULL;
+}
+
+
+/*******************************************************************
+copy a string with max len
+********************************************************************/
+
+smb_ucs2_t *strncpy_wa(smb_ucs2_t *dest, const char *src, const size_t max)
+{
+	smb_ucs2_t *ucs2_src;
+
+	if (!dest || !src) return NULL;
+	ucs2_src = (smb_ucs2_t *)malloc((strlen(src)+1)*sizeof(smb_ucs2_t));
+	if (!ucs2_src) {
+		DEBUG(0,("strncpy_wa: out of memory!\n"));
+		return NULL;
+	}
+	push_ucs2(NULL, ucs2_src, src, -1, STR_TERMINATE|STR_NOALIGN);
+	
+	strncpy_w(dest, ucs2_src, max);
+	SAFE_FREE(ucs2_src);
+	return dest;
+}
+
+
+/*******************************************************************
+append a string of len bytes and add a terminator
+********************************************************************/
+
+smb_ucs2_t *strncat_wa(smb_ucs2_t *dest, const char *src, const size_t max)
+{
+	smb_ucs2_t *ucs2_src;
+
+	if (!dest || !src) return NULL;
+	ucs2_src = (smb_ucs2_t *)malloc((strlen(src)+1)*sizeof(smb_ucs2_t));
+	if (!ucs2_src) {
+		DEBUG(0,("strncat_wa: out of memory!\n"));
+		return NULL;
+	}
+	push_ucs2(NULL, ucs2_src, src, -1, STR_TERMINATE|STR_NOALIGN);
+	
+	strncat_w(dest, ucs2_src, max);
+	SAFE_FREE(ucs2_src);
+	return dest;
 }
 
