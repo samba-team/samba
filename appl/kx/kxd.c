@@ -172,7 +172,7 @@ create_and_write_cookie (char *xauthfile,
      auth.name = COOKIE_TYPE;
      auth.name_length = strlen(auth.name);
      auth.data_length = sz;
-     auth.data = cookie;
+     auth.data = (char*)cookie;
      des_rand_data (cookie, sz);
      cookie_len = sz;
 
@@ -194,6 +194,7 @@ doit(int sock)
      des_key_schedule schedule;
      des_cblock key;
      int localx;
+     u_int32_t tmp;
 
      if (recv_conn (sock, &key, schedule, &thataddr))
 	  return 1;
@@ -203,9 +204,8 @@ doit(int sock)
 	  localx = get_local_xsocket (&display_num);
 	  if (localx < 0)
 	       return 1;
-	  display_num = htonl(display_num);
-	  if (write (sock, &display_num, sizeof(display_num)) !=
-	      sizeof(display_num))
+	  tmp = htonl(display_num);
+	  if (write (sock, &tmp, sizeof(tmp)) != sizeof(tmp))
 	       return 1;
 	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
 	  if (write (sock, xauthfile, sizeof(xauthfile)) !=
