@@ -1,5 +1,38 @@
+2004-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/mk_rep.c (krb5_mk_rep): abort on internal asn1 encode
+	error
+	
+	* lib/krb5/mk_rep.c (krb5_mk_rep): abort on internal asn1 encode
+	error
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): abort on internal asn1
+	encode error
+
+	* lib/krb5/mk_priv.c (krb5_mk_priv): abort on internal asn1 encode
+	error
+
+	* lib/krb5/get_cred.c (make_pa_tgs_req): abort on internal asn1
+	encode error
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): abort on
+	internal asn1 encode error
+
+	* lib/krb5/build_ap_req.c (krb5_build_ap_req): abort on internal
+	asn1 encode error
+
+2004-01-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/setup.texi: some text about order of [capaths] realms
+	
 2004-01-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/context.c: register WRFILE ops
+	
+	* lib/krb5/keytab_file.c: add krb5_wrfkt_ops/WRFILE (same as FILE)
+	
+	* lib/krb5/krb5.h: add krb5_wrfkt_ops
+	
 	* kpasswd/kpasswdd.c (change): use the right password when
 	changing the password
 
