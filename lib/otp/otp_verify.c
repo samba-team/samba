@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -39,7 +39,7 @@ RCSID("$Id$");
 #include "otp_locl.h"
 
 int
-otp_verify_user_1 (OtpContext *ctx, char *passwd)
+otp_verify_user_1 (OtpContext *ctx, const char *passwd)
 {
   OtpKey key1, key2;
 
@@ -58,7 +58,7 @@ otp_verify_user_1 (OtpContext *ctx, char *passwd)
 }
 
 int
-otp_verify_user (OtpContext *ctx, char *passwd)
+otp_verify_user (OtpContext *ctx, const char *passwd)
 {
   void *dbm;
   int ret;
