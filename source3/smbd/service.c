@@ -237,7 +237,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 		}
 	}
 
-	strupper(dev);
+	strupper_m(dev);
 
 	if (lp_print_ok(snum)) {
 		if (!strequal(dev, "LPT1:")) {
@@ -828,7 +828,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	
 	fstrcpy(service, service_in);
 
-	strlower(service);
+	strlower_m(service);
 
 	snum = find_service(service);
 

@@ -1396,11 +1396,11 @@ BOOL cli_NetWkstaUserLogoff(struct cli_state *cli,char *user, char *workstation)
   PUTDWORD(p, 0); /* Null pointer */
   PUTDWORD(p, 0); /* Null pointer */
   fstrcpy(upperbuf, user);
-  strupper(upperbuf);
+  strupper_m(upperbuf);
   PUTSTRINGF(p, upperbuf, RAP_USERNAME_LEN);
   p++; /* strange format, but ok */
   fstrcpy(upperbuf, workstation);
-  strupper(upperbuf);
+  strupper_m(upperbuf);
   PUTSTRINGF(p, upperbuf, RAP_MACHNAME_LEN);
   PUTWORD(p, CLI_BUFFER_SIZE);
   PUTWORD(p, CLI_BUFFER_SIZE);

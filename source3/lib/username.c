@@ -219,7 +219,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 
 	/* Try in all lower case first as this is the most 
 	   common case on UNIX systems */
-	strlower(user2);
+	strlower_m(user2);
 	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
 	ret = getpwnam_alloc(user2);
 	if(ret)
@@ -234,7 +234,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	}
 
 	/* Try as uppercase, if username wasn't originally uppercase */
-	strupper(user2);
+	strupper_m(user2);
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n", user2));
 		ret = getpwnam_alloc(user2);
@@ -243,7 +243,7 @@ static struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	}
 
 	/* Try all combinations up to usernamelevel */
-	strlower(user2);
+	strlower_m(user2);
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n", lp_usernamelevel(), user2));
 	ret = uname_string_combinations(user2, getpwnam_alloc, lp_usernamelevel());
 

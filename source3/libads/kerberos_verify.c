@@ -84,7 +84,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	}
 
 	fstrcpy(myname, global_myname());
-	strlower(myname);
+	strlower_m(myname);
 	asprintf(&host_princ_s, "HOST/%s@%s", myname, lp_realm());
 	ret = krb5_parse_name(context, host_princ_s, &host_princ);
 	if (ret) {

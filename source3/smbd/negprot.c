@@ -192,7 +192,7 @@ static int negprot_spnego(char *p)
 	}
 #endif
 
-	strlower((char *)guid);
+	strlower_m((char *)guid);
 
 #if 0
 	/* strangely enough, NT does not sent the single OID NTLMSSP when

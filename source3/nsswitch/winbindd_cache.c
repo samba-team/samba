@@ -595,7 +595,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 		return;
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
-	strupper(uname);
+	strupper_m(uname);
 	centry_end(centry, "NS/%s", sid_to_string(sid_string, sid));
 	DEBUG(10,("wcache_save_name_to_sid: %s -> %s\n", uname, sid_string));
 	centry_free(centry);
@@ -918,7 +918,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		goto do_query;
 
 	fstrcpy(uname, name);
-	strupper(uname);
+	strupper_m(uname);
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, uname);
 	if (!centry)
 		goto do_query;

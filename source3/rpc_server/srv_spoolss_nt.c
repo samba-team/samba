@@ -4339,7 +4339,7 @@ static BOOL construct_printer_info_7(Printer_entry *print_hnd, PRINTER_INFO_7 *p
 	
 	if (is_printer_published(print_hnd, snum, &guid)) {
 		asprintf(&guid_str, "{%s}", smb_uuid_string_static(guid));
-		strupper(guid_str);
+		strupper_m(guid_str);
 		init_unistr(&printer->guid, guid_str);
 		printer->action = SPOOL_DS_PUBLISH;
 	} else {
@@ -4689,7 +4689,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 */
 
 	unistr2_to_ascii(name, servername, sizeof(name)-1);
-	strupper(name);
+	strupper_m(name);
 
 	switch (level) {
 	case 1:

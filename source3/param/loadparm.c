@@ -2478,7 +2478,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 				case P_USTRING:
 					string_set(dest_ptr,
 						   *(char **)src_ptr);
-					strupper(*(char **)dest_ptr);
+					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
 					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
@@ -3175,7 +3175,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
-			strupper(*(char **)parm_ptr);
+			strupper_m(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
@@ -3184,7 +3184,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_UGSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
-			strupper((char *)parm_ptr);
+			strupper_m((char *)parm_ptr);
 			break;
 
 		case P_ENUM:

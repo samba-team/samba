@@ -984,7 +984,7 @@ BOOL parse_lpq_entry(int snum,char *line,
          printer status line: 
 	 handle them so that most severe condition is shown */
       int i;
-      strlower(line);
+      strlower_m(line);
       
       switch (status->status) {
       case LPSTAT_OK:

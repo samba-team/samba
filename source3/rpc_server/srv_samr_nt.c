@@ -2225,7 +2225,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	 */
 
 	rpcstr_pull(account, user_account.buffer, sizeof(account), user_account.uni_str_len*2, 0);
-	strlower(account);
+	strlower_m(account);
 
 	pdb_init_sam(&sam_pass);
 
@@ -2578,7 +2578,7 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 	name = get_global_sam_name();
 
 	fstrcpy(dom[0],name);
-	strupper(dom[0]);
+	strupper_m(dom[0]);
 	fstrcpy(dom[1],"Builtin");
 
 	if (!make_enum_domains(p->mem_ctx, &r_u->sam, &r_u->uni_dom_name, num_entries, dom))

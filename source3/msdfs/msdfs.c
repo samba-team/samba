@@ -164,7 +164,7 @@ BOOL is_msdfs_link(connection_struct* conn, char* path,
 	if (!path || !conn)
 		return False;
 
-	strlower(path);
+	strlower_m(path);
 
 	if (sbufp == NULL)
 		sbufp = &st;
@@ -740,7 +740,7 @@ static BOOL junction_to_local_path(struct junction_map* jn, char* path,
 
 	safe_strcpy(path, lp_pathname(snum), max_pathlen-1);
 	safe_strcat(path, "/", max_pathlen-1);
-	strlower(jn->volume_name);
+	strlower_m(jn->volume_name);
 	safe_strcat(path, jn->volume_name, max_pathlen-1);
 
 	pstrcpy(conn_path, lp_pathname(snum));

@@ -112,7 +112,7 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 	}
 
 	if(!case_sensitive)
-		strupper(original_path);
+		strupper_m(original_path);
 
 	if (original_path_length != translated_path_length) {
 		if (original_path_length < translated_path_length) {
@@ -221,7 +221,7 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	pstrcpy(chk_name, name);
 
 	if(!case_sensitive) {
-		strupper( chk_name );
+		strupper_m( chk_name );
 		/*
 		 * In some language encodings the length changes
 		 * if we uppercase. We need to treat this differently

@@ -127,7 +127,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
   p++;
 
   fstrcpy(myname, global_myname());
-  strupper(myname);
+  strupper_m(myname);
   myname[15]='\0';
   push_pstring_base(p, myname, outbuf);
 

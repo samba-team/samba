@@ -216,7 +216,7 @@ got_connection:
 		/* by default use the machine account */
 		fstring myname;
 		fstrcpy(myname, global_myname());
-		strlower(myname);
+		strlower_m(myname);
 		asprintf(&ads->auth.user_name, "HOST/%s", myname);
 	}
 
@@ -997,13 +997,13 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	psp = talloc_asprintf(ctx, "HOST/%s.%s", 
 			      hostname, 
 			      ads->config.realm);
-	strlower(&psp[5]);
+	strlower_m(&psp[5]);
 	servicePrincipalName[1] = psp;
 	servicePrincipalName[2] = talloc_asprintf(ctx, "CIFS/%s", hostname);
 	psp2 = talloc_asprintf(ctx, "CIFS/%s.%s", 
 			       hostname, 
 			       ads->config.realm);
-	strlower(&psp2[5]);
+	strlower_m(&psp2[5]);
 	servicePrincipalName[3] = psp2;
 
 	free(ou_str);
@@ -1285,7 +1285,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, (void **)&res, host);
 	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
@@ -1330,7 +1330,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 	/* hostname must be lowercase */
 	host = strdup(hostname);
-	strlower(host);
+	strlower_m(host);
 
 	status = ads_find_machine_acct(ads, &res, host);
 	if (!ADS_ERR_OK(status)) {

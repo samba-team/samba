@@ -314,7 +314,7 @@ char *strupper_static(const char *s)
 	static pstring str;
 
 	pstrcpy(str, s);
-	strupper(str);
+	strupper_m(str);
 
 	return str;
 }
@@ -327,9 +327,9 @@ void strnorm(char *s)
 {
 	extern int case_default;
 	if (case_default == CASE_UPPER)
-		strupper(s);
+		strupper_m(s);
 	else
-		strlower(s);
+		strlower_m(s);
 }
 
 /**

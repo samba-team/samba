@@ -511,8 +511,8 @@ WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 
 	/* Initialise input parameters */
 	
@@ -732,8 +732,8 @@ WERROR cli_spoolss_getprinterdriver(struct cli_state *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-	fstrcpy (server, cli->desthost);
-	strupper (server);
+	fstrcpy(server, cli->desthost);
+	strupper_m(server);
 
 	/* Initialise input parameters */
 
@@ -813,8 +813,8 @@ WERROR cli_spoolss_enumprinterdrivers (struct cli_state *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 
 	/* Initialise input parameters */
 
@@ -899,8 +899,8 @@ WERROR cli_spoolss_getprinterdriverdir (struct cli_state *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 
 	/* Initialise input parameters */
 
@@ -967,8 +967,8 @@ WERROR cli_spoolss_addprinterdriver (struct cli_state *cli,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 
 	/* Initialise input parameters */
 
@@ -1021,10 +1021,10 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
-        slprintf (client, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (client);
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(client, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(client);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 	fstrcpy  (user, cli->user_name);
 
 	/* Initialise input parameters */
@@ -1084,8 +1084,8 @@ WERROR cli_spoolss_deleteprinterdriver (struct cli_state *cli,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper (server);
+        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+        strupper_m(server);
 
 	/* Write the request */
 

@@ -576,7 +576,7 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods, SAM_ACCOUNT 
 	
 	/* Data is stored in all lower-case */
 	fstrcpy(name, sname);
-	strlower(name);
+	strlower_m(name);
 
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
@@ -683,7 +683,7 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods, SAM_AC
 	fstring		name;
 	
 	fstrcpy(name, pdb_get_username(sam_pass));
-	strlower(name);
+	strlower_m(name);
 	
 	/* open the TDB */
 	if (!(pwd_tdb = tdb_open_log(tdb_state->tdbsam_location, 0, TDB_DEFAULT, O_RDWR, 0600))) {
@@ -804,7 +804,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 	data.dptr = buf;
 
 	fstrcpy(name, pdb_get_username(newpwd));
-	strlower(name);
+	strlower_m(name);
 	
 	DEBUG(5, ("Storing %saccount %s with RID %d\n", flag == TDB_INSERT ? "(new) " : "", name, user_rid));
 

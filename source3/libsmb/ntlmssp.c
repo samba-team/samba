@@ -175,11 +175,11 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname[0] = '\0';
 	get_mydomname(dnsdomname);
-	strlower(dnsdomname);
+	strlower_m(dnsdomname);
 	
 	dnsname[0] = '\0';
 	get_myfullname(dnsname);
-	strlower(dnsname);
+	strlower_m(dnsname);
 	
 	if (chal_flags & NTLMSSP_CHAL_TARGET_INFO) 
 	{

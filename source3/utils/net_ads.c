@@ -162,7 +162,7 @@ retry:
        if ((cp = strchr(ads->auth.user_name, '@'))!=0) {
                *cp++ = '\0';
                ads->auth.realm = smb_xstrdup(cp);
-               strupper(ads->auth.realm);
+               strupper_m(ads->auth.realm);
        }
 
 	status = ads_connect(ads);
@@ -1039,7 +1039,7 @@ int net_ads_changetrustpw(int argc, const char **argv)
     }
 
     hostname = strdup(global_myname());
-    strlower(hostname);
+    strlower_m(hostname);
     asprintf(&host_principal, "%s@%s", hostname, ads->config.realm);
     SAFE_FREE(hostname);
     d_printf("Changing password for principal: HOST/%s\n", host_principal);

@@ -103,7 +103,7 @@ static BOOL parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
-	strupper(domain);
+	strupper_m(domain);
 
 	return True;
 }

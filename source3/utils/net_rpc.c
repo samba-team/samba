@@ -255,7 +255,7 @@ static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, struct cli_stat
 	}
 	
 	fstrcpy(trust_passwd, global_myname());
-	strlower(trust_passwd);
+	strlower_m(trust_passwd);
 
 	/*
 	 * Machine names can be 15 characters, but the max length on
@@ -1633,7 +1633,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strupper(acct_name);
+	strupper_m(acct_name);
 
 	/* Get samr policy handle */
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
@@ -1764,11 +1764,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	domain_name = smb_xstrdup(argv[0]);
-	strupper(domain_name);
+	strupper_m(domain_name);
 
 	/* account name used at first is our domain's name with '$' */
 	asprintf(&acct_name, "%s$", lp_workgroup());
-	strupper(acct_name);
+	strupper_m(acct_name);
 	
 	/*
 	 * opt_workgroup will be used by connection functions further,
@@ -1933,7 +1933,7 @@ static int rpc_trustdom_revoke(int argc, const char **argv)
 	
 	/* generate upper cased domain name */
 	domain_name = smb_xstrdup(argv[0]);
-	strupper(domain_name);
+	strupper_m(domain_name);
 
 	/* delete password of the trust */
 	if (!trusted_domain_password_delete(domain_name)) {
@@ -2167,7 +2167,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			do padding[--pad_len] = ' '; while (pad_len);
 
 			/* set opt_* variables to remote domain */
-			strupper(trusting_dom_names[i]);
+			strupper_m(trusting_dom_names[i]);
 			opt_workgroup = talloc_strdup(mem_ctx, trusting_dom_names[i]);
 			opt_target_workgroup = opt_workgroup;
 			
