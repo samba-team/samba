@@ -2172,8 +2172,6 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 	if (!ensure_canon_entry_valid(&list_head, fsp, powner, pgroup, psbuf, False))
 		goto fail;
 
-	arrange_posix_perms(fsp->fsp_name,&list_head );
-
 	/*
 	 * Now go through the list, masking the permissions with the
 	 * acl_mask. Ensure all DENY Entries are at the start of the list.
@@ -2196,6 +2194,8 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 			print_canon_ace(ace, ace_count);
 		}
 	}
+
+	arrange_posix_perms(fsp->fsp_name,&list_head );
 
 	print_canon_ace_list( "canonicalise_acl: ace entries after arrange", list_head );
 
