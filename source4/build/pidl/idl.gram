@@ -107,7 +107,8 @@ property: 'unique'
 	  | 'context_handle'
 	  | 'string'
 	  | 'public'
-	  | 'relative'
+	  | 'relative'	  
+	  | 'nodiscriminant'
 	  | 'subcontext'
 	  | 'byte_count_pointer' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}
           | 'size_is' '(' expression ')' {{ "$item[1]" => "$item{expression}" }}

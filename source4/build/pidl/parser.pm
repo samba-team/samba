@@ -475,6 +475,8 @@ sub ParseStructPush($)
 
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
+	$res .= "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
+
 	my $align = struct_alignment($struct);
 	$res .= "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
 
@@ -482,6 +484,8 @@ sub ParseStructPush($)
 		$e->{PARENT} = $struct;
 		ParseElementPushScalar($e, "r->", "NDR_SCALARS");
 	}	
+
+	$res .= "\tndr_push_struct_end(ndr);\n";
 
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
@@ -540,6 +544,7 @@ sub ParseStructPull($)
 		}
 	}
 
+	$res .= "\tNDR_CHECK(ndr_pull_struct_start(ndr));\n";
 
 	if (defined $conform_e) {
 		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
@@ -553,6 +558,8 @@ sub ParseStructPull($)
 	foreach my $e (@{$struct->{ELEMENTS}}) {
 		ParseElementPullScalar($e, "r->", "NDR_SCALARS");
 	}	
+
+	$res .= "\tndr_pull_struct_end(ndr);\n";
 
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
@@ -570,7 +577,12 @@ sub ParseUnionPush($)
 {
 	my $e = shift;
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
-	$res .= "\tNDR_CHECK(ndr_push_uint16(ndr, level));\n";
+
+	$res .= "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
+
+	if (!util::has_property($e, "nodiscriminant")) {
+		$res .= "\tNDR_CHECK(ndr_push_uint16(ndr, level));\n";
+	}
 	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		$res .= "\tcase $el->{CASE}:\n";
@@ -580,6 +592,7 @@ sub ParseUnionPush($)
 	$res .= "\tdefault:\n";
 	$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	$res .= "\t}\n";
+	$res .= "\tndr_push_struct_end(ndr);\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	$res .= "\tswitch (level) {\n";
@@ -617,7 +630,12 @@ sub ParseUnionPull($)
 	my $e = shift;
 
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
-	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
+
+	$res .= "\tNDR_CHECK(ndr_pull_struct_start(ndr));\n";
+
+	if (!util::has_property($e, "nodiscriminant")) {
+		$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
+	}
 	$res .= "\tswitch (*level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		$res .= "\tcase $el->{CASE}: {\n";
@@ -631,6 +649,7 @@ sub ParseUnionPull($)
 	$res .= "\tdefault:\n";
 	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
 	$res .= "\t}\n";
+	$res .= "\tndr_pull_struct_end(ndr);\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	$res .= "\tswitch (*level) {\n";
