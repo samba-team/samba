@@ -128,6 +128,8 @@ int fb64_reply (unsigned char *, int, struct fb *);
 static void fb64_session (Session_Key *, int, struct fb *);
 void fb64_stream_key (des_cblock, struct stinfo *);
 int fb64_keyid (int, unsigned char *, int *, struct fb *);
+void fb64_printsub(unsigned char *, int ,
+		   unsigned char *, int , char *);
 
 void cfb64_init(int server)
 {

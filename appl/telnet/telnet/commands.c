@@ -350,11 +350,12 @@ send_wontcmd(char *name)
     return(send_tncmd(send_wont, "wont", name));
 }
 
+extern char *telopts[];		/* XXX */
+
 static int
 send_tncmd(void (*func)(), char *cmd, char *name)
 {
     char **cpp;
-    extern char *telopts[];
     int val = 0;
 
     if (isprefix(name, "help") || isprefix(name, "?")) {

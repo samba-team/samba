@@ -825,8 +825,6 @@ void getptyslave(void)
     int t = -1;
 
     struct winsize ws;
-    extern int def_row, def_col;
-    extern int def_tspeed, def_rspeed;
     /*
      * Opening the slave side may cause initilization of the
      * kernel tty structure.  We need remember the state of

@@ -95,6 +95,8 @@ extern char
     dont[],
     will[],
     wont[],
+    do_dont_resp[],
+    will_wont_resp[],
     options[],		/* All the little options */
     *hostname;		/* Who are we connected to? */
 #if	defined(ENCRYPTION)
@@ -433,3 +435,4 @@ extern int linemode;
 #ifdef KLUDGELINEMODE
 extern int kludgelinemode;
 #endif
+extern int want_status_response;

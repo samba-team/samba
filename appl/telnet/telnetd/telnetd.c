@@ -138,6 +138,10 @@ char valid_opts[] = "Bd:hklnS:u:UL:y"
 
 static void doit(struct sockaddr*, int);
 
+#ifdef ENCRYPTION
+extern int des_check_key;
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -150,7 +154,6 @@ main(int argc, char **argv)
     int tos = -1;
 #endif
 #ifdef ENCRYPTION
-    extern int des_check_key;
     des_check_key = 1;	/* Kludge for Mac NCSA telnet 2.6 /bg */
 #endif
     pfrontp = pbackp = ptyobuf;

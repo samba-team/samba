@@ -176,7 +176,6 @@ void
 optionstatus(void)
 {
     int i;
-    extern char will_wont_resp[], do_dont_resp[];
 
     for (i = 0; i < 256; i++) {
 	if (do_dont_resp[i]) {
@@ -254,7 +253,6 @@ printsub(int direction, unsigned char *pointer, int length)
 {
     int i;
     unsigned char buf[512];
-    extern int want_status_response;
 
     if (showoptions || direction == 0 ||
 	(want_status_response && (pointer[0] == TELOPT_STATUS))) {

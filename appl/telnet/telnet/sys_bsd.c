@@ -491,9 +491,8 @@ TerminalNewMode(int f)
 	}
     } else {
         sigset_t sm;
-#ifdef	SIGINFO
-	RETSIGTYPE ayt_status(int);
 
+#ifdef	SIGINFO
 	signal(SIGINFO, ayt_status);
 #endif
 #ifdef	SIGTSTP

@@ -182,6 +182,11 @@ extern struct clocks_t clocks;
 extern int log_unauth;
 extern int no_warn;
 
+extern int def_tspeed, def_rspeed;
+#ifdef	TIOCSWINSZ
+extern int def_row, def_col;
+#endif
+
 #ifdef STREAMSPTY
 extern int really_stream;
 #endif
