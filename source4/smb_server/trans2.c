@@ -403,6 +403,65 @@ static NTSTATUS trans2_qfsinfo(struct smbsrv_request *req, struct smb_trans2 *tr
 	return NT_STATUS_INVALID_LEVEL;
 }
 
+
+/*
+  trans2 open implementation
+*/
+static NTSTATUS trans2_open(struct smbsrv_request *req, struct smb_trans2 *trans)
+{
+	union smb_open *io;
+	NTSTATUS status;
+
+	/* make sure we got enough parameters */
+	if (trans->in.params.length < 29) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	io = talloc_p(req, union smb_open);
+	if (io == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	io->t2open.level         = RAW_OPEN_T2OPEN;
+	io->t2open.in.flags      = SVAL(trans->in.params.data, VWV(0));
+	io->t2open.in.open_mode  = SVAL(trans->in.params.data, VWV(1));
+	io->t2open.in.file_attrs = SVAL(trans->in.params.data, VWV(3));
+	io->t2open.in.write_time = srv_pull_dos_date(req->smb_conn, 
+						    trans->in.params.data + VWV(4));;
+	io->t2open.in.open_func  = SVAL(trans->in.params.data, VWV(6));
+	io->t2open.in.size       = IVAL(trans->in.params.data, VWV(7));
+	io->t2open.in.timeout    = IVAL(trans->in.params.data, VWV(9));
+	io->t2open.in.num_eas    = 0;
+	io->t2open.in.eas        = NULL;
+
+	trans2_pull_blob_string(req, &trans->in.params, 28, &io->t2open.in.fname, 0);
+
+	status = ea_pull_list(&trans->in.data, io, &io->t2open.in.num_eas, &io->t2open.in.eas);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = ntvfs_openfile(req, io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	trans2_setup_reply(req, trans, 30, 0, 0);
+
+	SSVAL(trans->out.params.data, VWV(0), io->t2open.out.fnum);
+	SSVAL(trans->out.params.data, VWV(1), io->t2open.out.attrib);
+	srv_push_dos_date3(req->smb_conn, trans->out.params.data, 
+			   VWV(2), io->t2open.out.write_time);
+	SIVAL(trans->out.params.data, VWV(4), io->t2open.out.size);
+	SSVAL(trans->out.params.data, VWV(6), io->t2open.out.access);
+	SIVAL(trans->out.params.data, VWV(7), io->t2open.out.ftype);
+	SIVAL(trans->out.params.data, VWV(8), io->t2open.out.devstate);
+	SIVAL(trans->out.params.data, VWV(9), io->t2open.out.action);
+	SIVAL(trans->out.params.data, VWV(10), io->t2open.out.unknown);
+
+	return status;
+}
+
 /*
   fill in the reply from a qpathinfo or qfileinfo call
 */
@@ -1240,6 +1299,8 @@ static NTSTATUS trans2_backend(struct smbsrv_request *req, struct smb_trans2 *tr
 		return trans2_setpathinfo(req, trans);
 	case TRANSACT2_QFSINFO:
 		return trans2_qfsinfo(req, trans);
+	case TRANSACT2_OPEN:
+		return trans2_open(req, trans);
 	}
 
 	/* an unknown trans2 command */
