@@ -3506,12 +3506,17 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			srvstr_pull(inbuf, link_target, pdata, sizeof(link_target), -1, STR_TERMINATE);
 
 			/* !widelinks forces the target path to be within the share. */
+			/* This means we can interpret the target as a pathname. */
 			if (!lp_widelinks(SNUM(conn))) {
 				pstring rel_name;
 				char *last_dirp = NULL;
 
-				unix_format(link_target);
-
+				srvstr_get_path(inbuf, link_target, pdata, sizeof(link_target),
+						-1, STR_TERMINATE, &status);
+				if (!NT_STATUS_IS_OK(status)) {
+					return ERROR_NT(status);
+				}
+				unix_convert(link_target,conn,0,&bad_path,&sbuf);
 				pstrcpy(rel_name, newname);
 				last_dirp = strrchr_m(rel_name, '/');
 				if (last_dirp) {
@@ -3520,6 +3525,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 					pstrcpy(rel_name, "./");
 				}
 				pstrcat(rel_name, link_target);
+
 				if (ensure_link_is_safe(conn, rel_name) != 0) {
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
