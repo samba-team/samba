@@ -97,3 +97,7 @@ Add the following two lines to /etc/xml/catalog for db2latex:
 
 catalog entries for the other DTD's and XSL scripts should be present on your 
 system already.
+
+Windows Help files
+----------
+http://htmlhelp.berlios.de/howto/mshh4wine.php
