@@ -4,6 +4,7 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -429,7 +430,7 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 	smb_ucs2_t *ns;
 	smb_ucs2_t *p, *r, *t;
 
-	DEBUG(3, ("unix_clean_name_w\n")); /*  [%unicode]\n")); */
+	DEBUG(3, ("unix_clean_path\n")); /*  [%unicode]\n")); */
 
 	/* convert '\' to '/' */
 	ns = strdup_w(s);
@@ -450,7 +451,7 @@ smb_ucs2_t *unix_clean_path(const smb_ucs2_t *s)
 
 	/* reduce any /../ */
 	t = ns;
-	while ((r = strstr_wa(t, "/..")) != NULL) {
+	while ((r = strstr_wa(t, "/.."))) {
 		t = &(r[3]);
 		if (*t == UCS2_CHAR('/') || *t == 0) {
 			*r = 0;

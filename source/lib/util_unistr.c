@@ -231,6 +231,18 @@ size_t strlen_w(const smb_ucs2_t *src)
 }
 
 /*******************************************************************
+ Count up to max number of characters in a smb_ucs2_t string.
+********************************************************************/
+size_t strnlen_w(const smb_ucs2_t *src, size_t max)
+{
+	size_t len;
+
+	for(len = 0; *src++ && (len < max); len++) ;
+
+	return len;
+}
+
+/*******************************************************************
 wide strchr()
 ********************************************************************/
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
@@ -440,8 +452,7 @@ smb_ucs2_t *strncat_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
 	if (!dest || !src) return NULL;
 	
 	start = strlen_w(dest);
-	len = strlen_w(src);
-	if (len > max) len = max;
+	len = strnlen_w(src, max);
 
 	memcpy(&dest[start], src, len*sizeof(smb_ucs2_t));			
 	dest[start+len] = 0;
@@ -464,7 +475,6 @@ smb_ucs2_t *strcat_w(smb_ucs2_t *dest, const smb_ucs2_t *src)
 	
 	return dest;
 }
-
 
 /*******************************************************************
 replace any occurence of oldc with newc in unicode string
@@ -591,6 +601,35 @@ smb_ucs2_t *strncpy_wa(smb_ucs2_t *dest, const char *src, const size_t max)
 	
 	strncpy_w(dest, ucs2_src, max);
 	SAFE_FREE(ucs2_src);
+	return dest;
+}
+
+/*******************************************************************
+convert and duplicate an ascii string
+********************************************************************/
+smb_ucs2_t *strdup_wa(const char *src)
+{
+	return strndup_wa(src, 0);
+}
+
+/* if len == 0 then duplicate the whole string */
+smb_ucs2_t *strndup_wa(const char *src, size_t len)
+{
+	smb_ucs2_t *dest, *s;
+
+	s = acnv_dosu2(src);	
+	if (!len) len = strlen_w(s);
+	dest = (smb_ucs2_t *)malloc((len + 1) * sizeof(smb_ucs2_t));
+	if (!dest) {
+		DEBUG(0,("strdup_w: out of memory!\n"));
+		SAFE_FREE(s);
+		return NULL;
+	}
+
+	memcpy(dest, src, len * sizeof(smb_ucs2_t));
+	dest[len] = 0;
+
+	SAFE_FREE(s);
 	return dest;
 }
 

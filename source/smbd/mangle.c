@@ -437,13 +437,12 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 	}
 	else /* FOUND */
 	{
-		p = (smb_ucs2_t *)malloc(data.dsize*sizeof(smb_ucs2_t));
+		p = acnv_dosu2(data.dptr);
 		if (!p)
 		{
 			DEBUG(0,("mangle: out of memory!\n"));
 			goto done;
 		}
-		dos_to_ucs2(p, data.dptr, data.dsize*sizeof(smb_ucs2_t));
 	}
 		
 	if (ext)
@@ -491,18 +490,15 @@ char *dos_mangle(const char *dos_unmangled)
 {
 	smb_ucs2_t *in, *out;
 	char *dos_mangled;
-	size_t len;
 
 	if (!dos_unmangled || !*dos_unmangled) return NULL;
 
-	len = (strlen(dos_unmangled) + 1) * sizeof(smb_ucs2_t);
-	in = (smb_ucs2_t *)malloc(len);
+	in = acnv_dosu2(dos_unmangled);
 	if (!in)
 	{
 		DEBUG(0,("dos_mangle: out of memory!\n"));
 		return NULL;
 	}
-	dos_to_ucs2(in, dos_unmangled, len);
 
 	out = mangle(in);
 	if (!out)
@@ -511,13 +507,12 @@ char *dos_mangle(const char *dos_unmangled)
 		return NULL;
 	}
 
-	dos_mangled = (char *)malloc(PSTRING_LEN);
+	dos_mangled = acnv_u2dos(out);
 	if (!dos_mangled)
 	{
 		DEBUG(0,("dos_mangle: out of memory!\n"));
 		goto done;
 	}
-	ucs2_to_dos (dos_mangled, out, PSTRING_LEN);
 
 done:
 	SAFE_FREE(in);
@@ -529,18 +524,15 @@ char *dos_unmangle(const char *dos_mangled)
 {
 	smb_ucs2_t *in, *out;
 	char *dos_unmangled;
-	size_t len;
 
 	if (!dos_mangled || !*dos_mangled) return NULL;
 
-	len = (strlen(dos_mangled) + 1) * sizeof(smb_ucs2_t);
-	in = (smb_ucs2_t *)malloc(len);
+	in = acnv_dosu2(dos_mangled);
 	if (!in)
 	{
 		DEBUG(0,("dos_unmangle: out of memory!\n"));
 		return NULL;
 	}
-	dos_to_ucs2(in, dos_mangled, len);
 
 	out = mangle(in);
 	if (!out)
@@ -549,13 +541,12 @@ char *dos_unmangle(const char *dos_mangled)
 		return NULL;
 	}
 
-	dos_unmangled = (char *)malloc(PSTRING_LEN);
+	dos_unmangled = acnv_u2dos(out);
 	if (!dos_unmangled)
 	{
 		DEBUG(0,("dos_unmangle: out of memory!\n"));
 		goto done;
 	}
-	ucs2_to_dos (dos_unmangled, out, PSTRING_LEN);
 
 done:
 	SAFE_FREE(in);
@@ -574,14 +565,13 @@ BOOL is_8_3(const char *fname, BOOL check_case)
 
 	if (strlen(fname) > 12) return False;
 	
-	ucs2name = (smb_ucs2_t *)malloc(13 * sizeof(smb_ucs2_t));
+	ucs2name = acnv_uxu2(fname);
 	if (!ucs2name)
 	{
 		DEBUG(0,("is_8_3: out of memory!\n"));
 		goto done;
 	}
 
-	push_ucs2(NULL, ucs2name, fname, 13, STR_TERMINATE);
 	ret = is_8_3_w(ucs2name);
 
 done:
@@ -650,7 +640,7 @@ NTSTATUS is_valid_name(const smb_ucs2_t *fname)
 
 	if (!fname || !*fname) return NT_STATUS_INVALID_PARAMETER;
 
-	DEBUG(10,("has_valid_chars: testing\n")); /* [%s]\n", s)); */
+	DEBUG(10,("is_valid_name: testing\n")); /* [%s]\n", s)); */
 	
 	ret = has_valid_chars(fname);
 	if (NT_STATUS_IS_ERR(ret)) return ret;
@@ -703,7 +693,6 @@ NTSTATUS is_valid_name(const smb_ucs2_t *fname)
 BOOL is_mangled(const char *s)
 {
 	smb_ucs2_t *u2, *res;
-	size_t u2len;
 	BOOL ret = False;
 	
 	DEBUG(10,("is_mangled: testing [%s]\n", s));
@@ -711,14 +700,12 @@ BOOL is_mangled(const char *s)
 	if (!s || !*s) return False;
 	if ((strlen(s) > 12) || (!strchr(s, '~'))) return False;
 	
-	u2len = (strlen(s) + 1) * sizeof(smb_ucs2_t);
-	u2 = (smb_ucs2_t *)malloc(u2len);
+	u2 = acnv_dosu2(s);
 	if (!u2)
 	{
 		DEBUG(0,("is_mangled: out of memory!\n"));
 		return ret;
 	}
-	dos_to_ucs2(u2, s, u2len);
 
 	res = unmangle(u2);
 	if (res) ret = True;
@@ -774,7 +761,6 @@ void reset_mangled_cache(void)
 BOOL check_mangled_cache(char *s)
 {
 	smb_ucs2_t *u2, *res;
-	size_t slen, u2len;
 	BOOL ret = False;
 
 	DEBUG(10,("check_mangled_cache: I'm so ugly, please remove me!\n"));
@@ -782,15 +768,12 @@ BOOL check_mangled_cache(char *s)
 
 	if (!s || !*s) return False;
 
-	slen = strlen(s);
-	u2len = (slen + 1) * sizeof(smb_ucs2_t);
-	u2 = (smb_ucs2_t *)malloc(u2len);
+	u2 = acnv_dosu2(s);
 	if (!u2)
 	{
 		DEBUG(0,("check_mangled_cache: out of memory!\n"));
 		return ret;
 	}
-	dos_to_ucs2(u2, s, u2len);
 
 	res = unmangle(u2);
 	if (res)
@@ -814,22 +797,18 @@ BOOL check_mangled_cache(char *s)
 void mangle_name_83(char *s)
 {
 	smb_ucs2_t *u2, *res;
-	size_t slen, u2len;
 
 	DEBUG(10,("mangle_name_83: I'm so ugly, please remove me!\n"));
 	DEBUG(10,("mangle_name_83: testing -> [%s]\n", s));
 
 	if (!s || !*s) return;
 	
-	slen = strlen(s);
-	u2len = (slen + 1) * sizeof(smb_ucs2_t);
-	u2 = (smb_ucs2_t *)malloc(u2len);
+	u2 = acnv_dosu2(s);
 	if (!u2)
 	{
 		DEBUG(0,("mangle_name_83: out of memory!\n"));
 		return;
 	}
-	dos_to_ucs2(u2, s, u2len);
 
 	res = mangle(u2);
 	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
