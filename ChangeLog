@@ -1,3 +1,9 @@
+2005-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: Since the decode can't make out the diffrence
+	between PA-PK-AS-REP-19 and PA-PK-AS-REQ-Win2k, try harder to
+	verify both cases
+
 2005-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/test/uu_client.c: print size_t by casting to unsigned long
