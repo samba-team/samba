@@ -1,3 +1,21 @@
+Thu Mar 11 14:48:54 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/Makefile.in: add WFLAGS
+
+	* telnet/Makefile.in: add WFLAGS
+
+	* libtelnet/Makefile.in: add WFLAGS
+
+	* telnetd/sys_term.c: remove unused variables
+
+	* telnet/telnet.c: fix some warnings
+
+	* telnet/main.c: fix some warnings
+
+	* telnet/commands.c: fix types in format string
+
+	* libtelnet/auth.c: fix types in format string
+
 Mon Mar  1 10:50:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* telnetd/sys_term.c: HAVE_UT_* -> HAVE_STRUCT_UTMP*_UT_*
