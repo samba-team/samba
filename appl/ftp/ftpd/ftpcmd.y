@@ -620,7 +620,9 @@ cmd
 					      "%s: not a plain file.", $3);
 				} else {
 					struct tm *t;
-					t = gmtime(&stbuf.st_mtime);
+					time_t st_mtime = stbuf.st_mtime;
+
+					t = gmtime(&st_mtime);
 					reply(213,
 					      "%04d%02d%02d%02d%02d%02d",
 					      t->tm_year + 1900,
