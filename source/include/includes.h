@@ -206,8 +206,15 @@
 #include <netinet/tcp.h>
 #endif
 
-#ifdef HAVE_TERMIOS_H
+#if defined(HAVE_TERMIOS_H)
+/* POSIX terminal handling. */
 #include <termios.h>
+#elif defined(HAVE_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <termio.h>
+#elif defined(HAVE_SYS_TERMIO_H)
+/* Older SYSV terminal handling - don't use if we can avoid it. */
+#include <sys/termio.h>
 #endif
 
 #if HAVE_DIRENT_H

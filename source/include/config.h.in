@@ -792,6 +792,9 @@
 /* Define if you have the <sys/syscall.h> header file.  */
 #undef HAVE_SYS_SYSCALL_H
 
+/* Define if you have the <sys/termio.h> header file.  */
+#undef HAVE_SYS_TERMIO_H
+
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
 
@@ -806,6 +809,9 @@
 
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
+
+/* Define if you have the <termio.h> header file.  */
+#undef HAVE_TERMIO_H
 
 /* Define if you have the <termios.h> header file.  */
 #undef HAVE_TERMIOS_H
