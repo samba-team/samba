@@ -161,13 +161,16 @@ krb5_verify(struct passwd *login_info, struct passwd *su_info,
 #if 1
 	    krb5_warn(context, ret, "krb5_cc_gen_new");
 #endif
+	    krb5_free_principal (context, p);
 	    return 1;
 	}
 	ret = krb5_verify_user_lrealm(context, p, ccache, NULL, TRUE, NULL);
+	krb5_free_principal (context, p);
 	if(ret) {
-	    krb5_free_principal (context, p);
 	    krb5_cc_destroy(context, ccache);
 	    switch (ret) {
+	    case KRB5_LIBOS_PWDINTR :
+		break;
 	    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
 	    case KRB5KRB_AP_ERR_MODIFIED:
 		krb5_warnx(context, "Password incorrect");
@@ -180,6 +183,7 @@ krb5_verify(struct passwd *login_info, struct passwd *su_info,
 	}
 	return 0;
     }
+    krb5_free_principal (context, p);
 #endif
     return 1;
 }
