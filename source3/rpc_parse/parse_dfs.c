@@ -139,7 +139,7 @@ BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int 
 	prs_debug(ps, depth, desc, "dfs_io_r_dfs_remove");
 	depth++;
 
-	if(!prs_ntstatus("status", ps, depth, &r_d->status))
+	if(!prs_werror("status", ps, depth, &r_d->status))
 		return False;
 
 	return True;
@@ -225,7 +225,7 @@ BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "dfs_io_r_dfs_add");
 	depth++;
 
-	if(!prs_ntstatus("status", ps, depth, &r_d->status))
+	if(!prs_werror("status", ps, depth, &r_d->status))
 		return False;
 
 	return True;
@@ -300,7 +300,7 @@ BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, 
 
 	if(!dfs_io_dfs_info_ctr("", &r_i->ctr, 1, r_i->level, ps, depth))
 		return False;
-	if(!prs_ntstatus("status", ps, depth, &r_i->status))
+	if(!prs_werror("status", ps, depth, &r_i->status))
 		return False;
 	return True;
 }
@@ -501,7 +501,7 @@ BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int dept
 
 	if(!smb_io_enum_hnd("resume_hnd", &q_d->reshnd, ps, depth))
 		return False;
-	if(!prs_ntstatus("status", ps, depth, &q_d->status))
+	if(!prs_werror("status", ps, depth, &q_d->status))
 		return False;
 	return True;
 }

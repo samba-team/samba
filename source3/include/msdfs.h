@@ -59,8 +59,6 @@ struct dfs_path
   pstring restofthepath;
 };
 
-#ifdef WITH_MSDFS
-
 #define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
 { if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \
      dfs_redirect(name,conn)) \
@@ -76,13 +74,5 @@ struct dfs_path
 { if(lp_msdfs_root(SNUM(conn)) && lp_host_msdfs())  \
 	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS | SMB_SUPPORT_SEARCH_BITS); \
 }
-
-#else
-/* Stub macros */
-#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) ;
-#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) ;
-#define init_dfsroot(conn, inbuf, outbuf) ;
-
-#endif
 
 #endif /* _MSDFS_H */

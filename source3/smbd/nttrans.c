@@ -41,9 +41,7 @@ static char *known_nt_pipes[] = {
   "\\lsarpc",
   "\\winreg",
   "\\spoolss",
-#ifdef WITH_MSDFS
   "\\netdfs",
-#endif
   NULL
 };
 
