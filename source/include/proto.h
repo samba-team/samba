@@ -327,8 +327,9 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);
 void sid_copy(DOM_SID *sid1, DOM_SID *sid2);
+BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid);
 BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2);
-int sid_size(DOM_SID *sid);
+size_t sid_size(DOM_SID *sid);
 
 /*The following definitions come from  lib/util_sock.c  */
 

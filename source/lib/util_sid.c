@@ -153,6 +153,27 @@ void sid_copy(DOM_SID *sid1, DOM_SID *sid2)
 	sid1->num_auths   = sid2->num_auths;
 	sid1->sid_rev_num = sid2->sid_rev_num;
 }
+
+/*****************************************************************
+ Write a sid out into on-the-wire format.
+*****************************************************************/  
+
+BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
+{
+	size_t i;
+
+	if(len < sid_size(sid))
+		return False;
+
+	SCVAL(outbuf,0,sid->sid_rev_num);
+	SCVAL(outbuf,1,sid->num_auths);
+	memcpy(&outbuf[2], sid->id_auth, 6);
+	for(i = 0; i < sid->num_auths; i++)
+		SIVAL(outbuf, 8 + (i*4), sid->sub_auths[i]);
+
+	return True;
+}
+
 /*****************************************************************
  compare two sids
 *****************************************************************/  
@@ -181,7 +202,7 @@ BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2)
 /*****************************************************************
  calculates size of a sid
 *****************************************************************/  
-int sid_size(DOM_SID *sid)
+size_t sid_size(DOM_SID *sid)
 {
 	if (sid == NULL)
 	{

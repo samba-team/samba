@@ -55,7 +55,7 @@ static char *known_nt_pipes[] = {
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-static int send_nt_replies(char *outbuf, int bufsize, char *params,
+static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_error, char *params,
                            int paramsize, char *pdata, int datasize)
 {
   extern int max_send;
@@ -74,6 +74,13 @@ static int send_nt_replies(char *outbuf, int bufsize, char *params,
    */
 
   set_message(outbuf,18,0,True);
+
+  if(nt_error != 0) {
+    /* NT Error. */
+    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+
+    ERROR(0,nt_error);
+  }
 
   /* 
    * If there genuinely are no parameters or data to send just send
@@ -1114,7 +1121,7 @@ static int call_nt_transact_create(connection_struct *conn,
   }
 
   /* Send the required number of replies */
-  send_nt_replies(outbuf, bufsize, params, 69, *ppdata, 0);
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 69, *ppdata, 0);
 
   return -1;
 }
@@ -1174,7 +1181,7 @@ static int call_nt_transact_rename(connection_struct *conn,
     /*
      * Rename was successful.
      */
-    send_nt_replies(outbuf, bufsize, NULL, 0, NULL, 0);
+    send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
 
     DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n", 
           fsp->fsp_name, new_name));
@@ -1536,23 +1543,83 @@ name = %s\n", fsp->fsp_name ));
 
 /****************************************************************************
  Reply to query a security descriptor - currently this is not implemented (it
- is planned to be though).
+ is planned to be though). Right now it just returns the same thing NT would
+ when queried on a FAT filesystem. JRA.
 ****************************************************************************/
 
+#define NO_NT_SEC_DESC_REPLY_SIZE 0x2C
+
+/* This is a hacked up description of the null SD on
+   the wire. I'll fix this when we do this properly. JRA. */
+
+#define SD_REVISION_OFFSET        0
+#define SD_CONTROL_OFFSET         2
+#define SD_OWNER_OFFSET           4
+#define SD_GROUP_OFFSET           8
+#define SD_SACL_OFFSET          0xC
+#define SD_DACL_OFFSET         0x10
+#define SD_OWNER_START_OFFSET  0x14
+
 static int call_nt_transact_query_security_desc(connection_struct *conn,
-						char *inbuf, char *outbuf, 
-						int length, 
-                                                int bufsize, 
+                                                char *inbuf, char *outbuf, 
+                                                int length, int bufsize, 
                                                 char **ppsetup, char **ppparams, char **ppdata)
 {
-  static BOOL logged_message = False;
+  uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+  char *params = *ppparams;
+  char *data = *ppdata;
+  static DOM_SID world_sid;
+  static BOOL world_sid_initialized = False;
+  size_t world_sid_size;
 
-  if(!logged_message) {
-    DEBUG(0,("call_nt_transact_query_security_desc: Currently not implemented.\n"));
-    logged_message = True; /* Only print this once... */
+  files_struct *fsp = file_fsp(params,0);
+
+  if(!fsp)
+    return(ERROR(ERRDOS,ERRbadfid));
+
+  DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
+
+  params = *ppparams = Realloc(*ppparams, 4);
+  if(params == NULL)
+    return(ERROR(ERRDOS,ERRnomem));
+
+  SIVAL(params,0,NO_NT_SEC_DESC_REPLY_SIZE);
+
+  data = *ppdata = Realloc(*ppdata, NO_NT_SEC_DESC_REPLY_SIZE);
+  if(data == NULL)
+    return(ERROR(ERRDOS,ERRnomem));
+
+  if(max_data_count < NO_NT_SEC_DESC_REPLY_SIZE) {
+    send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_BUFFER_TOO_SMALL, params, 4, *ppdata, 0);
+    return -1;
   }
 
-  return(ERROR(ERRSRV,ERRnosupport));
+  memset(data, '\0', NO_NT_SEC_DESC_REPLY_SIZE);
+
+  /*
+   * The security descriptor returned has no SACL and no DACL
+   * and the owner and group sids are S-1-1-0 (World Sid).
+   * JRA.
+   */
+
+  if(!world_sid_initialized) {
+    world_sid_initialized = True;
+    string_to_sid( &world_sid, "S-1-1-0");
+  }
+
+  world_sid_size = sid_size(&world_sid);
+
+  SSVAL(data, SD_REVISION_OFFSET, 1);
+  SSVAL(data, SD_CONTROL_OFFSET, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT);
+  SIVAL(data, SD_OWNER_OFFSET, SD_OWNER_START_OFFSET);
+  SIVAL(data, SD_GROUP_OFFSET, SD_OWNER_START_OFFSET + world_sid_size);
+  SIVAL(data, SD_SACL_OFFSET, 0);
+  SIVAL(data, SD_DACL_OFFSET, 0);
+  sid_linearize(&data[SD_OWNER_START_OFFSET], world_sid_size, &world_sid);
+  sid_linearize(&data[SD_OWNER_START_OFFSET+world_sid_size], world_sid_size, &world_sid);
+
+  send_nt_replies(inbuf, outbuf, bufsize, 0, params, 4, data, NO_NT_SEC_DESC_REPLY_SIZE);
+  return -1;
 }
    
 /****************************************************************************
