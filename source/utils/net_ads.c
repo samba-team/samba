@@ -125,21 +125,26 @@ static int net_ads_user(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
+	int rescount;
+	void *cookie = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
-
+	
 	if (!(ads = ads_startup())) return -1;
-	rc = ads_search(ads, &res, "(objectclass=user)", attrs);
-	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_search: %s\n", ads_errstr(rc));
-		return -1;
-	}
 
-	if (ads_count_replies(ads, res) == 0) {
-		d_printf("No users found\n");
-		return -1;
-	}
+	do {
+		rc = ads_do_paged_search(ads, ads->bind_path, 
+					 LDAP_SCOPE_SUBTREE, 
+					 "(objectclass=user)", attrs, &res, 
+					 &rescount, &cookie);
 
-	ads_dump(ads, res);
+		if (!ADS_ERR_OK(rc)) {
+			d_printf("ads_search: %s\n", ads_errstr(rc));
+			return -1;
+		}
+		ads_dump(ads, res);
+
+	} while (cookie);
+
 	ads_destroy(&ads);
 	return 0;
 }
@@ -149,21 +154,27 @@ static int net_ads_group(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
+	int rescount;
+	void *cookie = NULL;
 	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
 
 	if (!(ads = ads_startup())) return -1;
-	rc = ads_search(ads, &res, "(objectclass=group)", attrs);
-	if (!ADS_ERR_OK(rc)) {
-		d_printf("ads_search: %s\n", ads_errstr(rc));
-		return -1;
-	}
 
-	if (ads_count_replies(ads, res) == 0) {
-		d_printf("No groups found\n");
-		return -1;
-	}
+	do {
+		rc = ads_do_paged_search(ads, ads->bind_path, 
+					 LDAP_SCOPE_SUBTREE, 
+					 "(objectclass=group)", attrs, &res, 
+					 &rescount, &cookie);
 
-	ads_dump(ads, res);
+		if (!ADS_ERR_OK(rc)) {
+			d_printf("ads_search: %s\n", ads_errstr(rc));
+			return -1;
+		}
+		ads_dump(ads, res);
+
+	} while (cookie);
+
+	ads_destroy(&ads);
 	return 0;
 }
 
