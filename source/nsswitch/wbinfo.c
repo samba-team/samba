@@ -255,8 +255,7 @@ static BOOL wbinfo_check_secret(void)
 
         ZERO_STRUCT(response);
 
-        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) ==
-                NSS_STATUS_SUCCESS;
+        result = winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response);
 		
 	d_printf("checking the trust secret via RPC calls %s\n", 
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
