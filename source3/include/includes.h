@@ -1319,4 +1319,11 @@ BOOL get_krb5_smb_session_key(krb5_context context, krb5_auth_context auth_conte
 #endif
 #define FALSE __ERROR__XX__DONT_USE_FALSE
 
+/* If we have blacklisted mmap() try to avoid using it accidentally by
+   undefining the HAVE_MMAP symbol. */
+
+#ifdef MMAP_BLACKLIST
+#undef HAVE_MMAP
+#endif
+
 #endif /* _INCLUDES_H */
