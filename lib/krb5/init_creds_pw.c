@@ -229,14 +229,14 @@ get_init_creds_common(krb5_context context,
     flags->i = 0;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
-	flags->b.forwardable = 1;
+	flags->b.forwardable = options->forwardable;
     else
 	flags->b.forwardable = get_config_bool (context,
 						*client_realm,
 						"forwardable");
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
-	flags->b.proxiable = 1;
+	flags->b.proxiable = options->proxiable;
     else
 	flags->b.proxiable = get_config_bool (context,
 					      *client_realm,
