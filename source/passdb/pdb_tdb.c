@@ -569,31 +569,6 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 }
 
 /***************************************************************************
- Search by uid
- **************************************************************************/
-
-BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
-{
-	struct passwd	*pw;
-	fstring		name;
-
-	if (user==NULL) {
-		DEBUG(0,("pdb_getsampwuid: SAM_ACCOUNT is NULL.\n"));
-		return False;
-	}
-
-	pw = sys_getpwuid(uid);
-	if (pw == NULL) {
-		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist!\n", uid));
-		return False;
-	}
-	fstrcpy (name, pw->pw_name);
-
-	return pdb_getsampwnam (user, name);
-
-}
-
-/***************************************************************************
  Search by rid
  **************************************************************************/
 

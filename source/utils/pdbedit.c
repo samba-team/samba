@@ -187,13 +187,13 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
 	if (homedir)
-		pdb_set_homedir(sam_pwent, homedir);
+		pdb_set_homedir(sam_pwent, homedir, True);
 	if (drive)
-		pdb_set_dir_drive(sam_pwent,drive);
+		pdb_set_dir_drive(sam_pwent, drive, True);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script);
+		pdb_set_logon_script(sam_pwent, script, True);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile);
+		pdb_set_profile_path (sam_pwent, profile, True);
 	
 	if (pdb_update_sam_account (sam_pwent, True))
 		print_user_info (username, True, False);
@@ -323,13 +323,13 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
 	if (homedir)
-		pdb_set_homedir (sam_pwent, homedir);
+		pdb_set_homedir (sam_pwent, homedir, True);
 	if (drive)
-		pdb_set_dir_drive (sam_pwent, drive);
+		pdb_set_dir_drive (sam_pwent, drive, True);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script);
+		pdb_set_logon_script(sam_pwent, script, True);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile);
+		pdb_set_profile_path (sam_pwent, profile, True);
 	
 	/* TODO: Check uid not being in MACHINE UID range!! */
 	pdb_set_uid (sam_pwent, pwd->pw_uid);

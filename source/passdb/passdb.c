@@ -828,8 +828,11 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	to->unknown_6 = from->unknown_6;
 }
 
+#if 0	/* JERRY */
 /*************************************************************
  Copies a SAM_ACCOUNT.
+ FIXME!!!!  This is broken as SAM_ACCOUNT contains two 
+ pointers.   --jerry
  **************************************************************/
 
 void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
@@ -838,7 +841,10 @@ void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 		return;
 
 	memcpy(to, from, sizeof(SAM_ACCOUNT));
-}
+	
+	
+} 
+#endif 
 
 /*************************************************************
  Change a password entry in the local smbpasswd file.
@@ -1694,3 +1700,34 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
+
+/***************************************************************************
+ Search by uid.  Wrapper around pdb_getsampwnam()
+ **************************************************************************/
+
+BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
+{
+	struct passwd	*pw;
+	fstring		name;
+
+	if (user==NULL) {
+		DEBUG(0,("pdb_getsampwuid: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
+
+	/*
+	 * Never trust the uid in the passdb.  Lookup the username first
+	 * and then lokup the user by name in the sam.
+	 */
+	 
+	if ((pw=sys_getpwuid(uid)) == NULL)  {
+		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
+		return False;
+	}
+	
+	fstrcpy (name, pw->pw_name);
+
+	return pdb_getsampwnam (user, name);
+
+}
+
