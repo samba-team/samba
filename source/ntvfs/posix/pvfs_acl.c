@@ -470,10 +470,14 @@ static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs,
 	for (i=0;i<parent_sd->dacl->num_aces;i++) {
 		struct security_ace ace = parent_sd->dacl->aces[i];
 		NTSTATUS status;
+		const struct dom_sid *creator = NULL, *new_id = NULL;
+		uint32_t orig_flags;
 
 		if (!pvfs_inheritable_ace(pvfs, &ace, container)) {
 			continue;
 		}
+
+		orig_flags = ace.flags;
 
 		/* see the RAW-ACLS inheritance test for details on these rules */
 		if (!container) {
@@ -489,7 +493,39 @@ static NTSTATUS pvfs_acl_inherit_aces(struct pvfs_state *pvfs,
 			}
 		}
 
-		status = security_descriptor_dacl_add(sd, &ace);
+		/* the CREATOR sids are special when inherited */
+		if (dom_sid_equal(&ace.trustee, pvfs->sid_cache.creator_owner)) {
+			creator = pvfs->sid_cache.creator_owner;
+			new_id = sd->owner_sid;
+		} else if (dom_sid_equal(&ace.trustee, pvfs->sid_cache.creator_group)) {
+			creator = pvfs->sid_cache.creator_group;
+			new_id = sd->group_sid;
+		} else {
+			new_id = &ace.trustee;
+		}
+
+		if (creator && container && 
+		    (ace.flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+			uint32_t flags = ace.flags;
+
+			ace.trustee = *new_id;
+			ace.flags = 0;
+			status = security_descriptor_dacl_add(sd, &ace);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
+			ace.trustee = *creator;
+			ace.flags = flags | SEC_ACE_FLAG_INHERIT_ONLY;
+			status = security_descriptor_dacl_add(sd, &ace);
+		} else if (container && 
+			   !(orig_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
+			status = security_descriptor_dacl_add(sd, &ace);
+		} else {
+			ace.trustee = *new_id;
+			status = security_descriptor_dacl_add(sd, &ace);
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
