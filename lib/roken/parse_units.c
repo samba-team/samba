@@ -240,6 +240,39 @@ unparse_units (int num, const struct units *units, char *s, size_t len)
 			      "0");
 }
 
+void
+print_units_table (const struct units *units, FILE *f)
+{
+    const struct units *u, *u2;
+    unsigned max_sz = 0;
+
+    for (u = units; u->name; ++u) {
+	max_sz = max(max_sz, strlen(u->name));
+    }
+
+    for (u = units; u->name;) {
+	char buf[1024];
+	const struct units *next;
+
+	for (next = u + 1; next->name && next->mult == u->mult; ++next)
+	    ;
+
+	if (next->name) {
+	    for (u2 = next;
+		 u2->name && u->mult % u2->mult != 0;
+		 ++u2)
+		;
+	    if (u2->name == NULL)
+		--u2;
+	    unparse_units (u->mult, u2, buf, sizeof(buf));
+	    fprintf (f, "1 %*s = %s\n", max_sz, u->name, buf);
+	} else {
+	    fprintf (f, "1 %s\n", u->name);
+	}
+	u = next;
+    }
+}
+
 static int
 print_flag (char *s, size_t len, int div, const char *name, int rem)
 {
@@ -259,4 +292,13 @@ unparse_flags (int num, const struct units *units, char *s, size_t len)
 			      print_flag,
 			      update_flag,
 			      "");
+}
+
+void
+print_flags_table (const struct units *units, FILE *f)
+{
+    const struct units *u;
+
+    for(u = units; u->name; ++u)
+	fprintf(f, "%s%s", u->name, (u+1)->name ? ", " : "\n");
 }
