@@ -34,7 +34,7 @@
 #define MSG_MORE 0x8000
 #endif
 
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -48,7 +48,7 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 	if (header) {
 		hdr_len = header->length;
 		while (total < hd_len) {
-			ret = sys_send(outfd, header->data + total,hdr_len - total, MSG_MORE);
+			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
 			if (ret == -1)
 				return -1;
 			total += ret;
@@ -60,9 +60,9 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 		ssize_t nwritten;
 		do {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
-			nwritten = sendfile64(outfd, infd, &offset, total);
+			nwritten = sendfile64(tofd, fromfd, &offset, total);
 #else
-			nwritten = sendfile(outfd, infd, &offset, total);
+			nwritten = sendfile(tofd, fromfd, &offset, total);
 #endif
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1)
@@ -76,7 +76,7 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 
 #elif defined(SOLARIS_SENDFILE_API)
 
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
 }
 
@@ -85,7 +85,7 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
 	size_t total=0;
 	struct iovec hdtrl[2];
@@ -115,9 +115,9 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 
 		do {
 #if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
-			nwritten = sendfile64(outfd, infd, offset, total, &hdtrl[0], 0);
+			nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
 #else
-			nwritten = sendfile(outfd, infd, offset, total, &hdtrl[0], 0);
+			nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
 #endif
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1)
@@ -155,11 +155,12 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
 	size_t total=0;
 	struct sf_hdtr hdr;
 	struct iovec hdtrl;
+	size_t hdr_len = 0;
 
 	hdr->headers = &hdtrl;
 	hdr->hdr_cnt = 1;
@@ -167,29 +168,61 @@ ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T off
 	hdr->trl_cnt = 0;
 
 	/* Set up the header iovec. */
-	hdtrl.iov_base = header->data;
-	hdtrl.iov_len = header->length;
+	if (header) {
+		hdtrl.iov_base = header->data;
+		hdtrl.iov_len = hdr_len = header->length;
+	} else {
+		hdtrl.iov_base = NULL;
+		hdtrl.iov_len = 0;
+	}
 
 	total = count;
-	while (total) {
-		ssize_t nwritten;
+	while (total + hdtrl.iov_len) {
+		SMB_OFF_T nwritten;
+		int ret;
+
+		/*
+		 * FreeBSD sendfile returns 0 on success, -1 on error.
+		 * Remember, the tofd and fromfd are reversed..... :-).
+		 * nwritten includes the header data sent.
+		 */
+
 		do {
-#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(SENDFILE64)
-			nwritten = sendfile64(outfd, infd, &offset, total, &hdr, NULL, 0);
-#else
-			nwritten = sendfile(outfd, infd, &offset, total, &hdr, NULL, 0);
-#endif
-		} while (nwritten == -1 && errno == EINTR);
-		if (nwritten == -1)
+			ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+		} while (ret == -1 && errno == EINTR);
+		if (ret == -1)
 			return -1;
+
+		if (nwritten == 0)
+			return -1; /* I think we're at EOF here... */
+
+		/*
+		 * If this was a short (signal interrupted) write we may need
+		 * to subtract it from the header data, or null out the header
+		 * data altogether if we wrote more than hdtrl.iov_len bytes.
+		 * We change nwritten to be the number of file bytes written.
+		 */
+
+		if (hdtrl[0].iov_base && hdtrl.iov_len) {
+			if (nwritten >= hdtrl.iov_len) {
+				nwritten -= hdtrl.iov_len;
+				hdtrl.iov_base = NULL;
+				hdtrl.iov_len = 0;
+			} else {
+				nwritten = 0;
+				hdtrl.iov_base += nwritten;
+				hdtrl.iov_len -= nwritten;
+			}
+		}
 		total -= nwritten;
+		offset += nwritten;
 	}
-	return count + header->length;
+	return count + hdr_len;
 }
 
 #else /* No sendfile implementation. Return error. */
 
-ssize_t sys_sendfile(int outfd, int infd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count)
 {
 	/* No sendfile syscall. */
 	errno = ENOSYS;
