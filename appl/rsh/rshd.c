@@ -307,6 +307,8 @@ recv_krb5_auth (int s, u_char *buf,
     if (strncmp (cmd, "-x ", 3) == 0) {
 	do_encrypt = 1;
 	memmove (cmd, cmd + 3, strlen(cmd) - 2);
+    } else {
+	do_encrypt = 0;
     }
 
     {
