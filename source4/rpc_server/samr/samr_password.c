@@ -251,7 +251,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	const char *user_dn, *domain_dn = NULL;
 	int ret;
 	struct ldb_message **res, mod;
-	const char * const attrs[] = { "objectSid", "ntPwdHash", "unicodePwd", NULL };
+	const char * const attrs[] = { "objectSid", "ntPwdHash", "lmPwdHash", "unicodePwd", NULL };
 	const char * const dom_attrs[] = { "minPwdLength", "pwdHistoryLength", 
 					   "pwdProperties", "minPwdAge", "maxPwdAge", 
 					   NULL };

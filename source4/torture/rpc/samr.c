@@ -1036,7 +1036,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII|STR_TERMINATE);
 	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
-	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
 	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
@@ -1091,7 +1091,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
 	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
-	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
 	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
