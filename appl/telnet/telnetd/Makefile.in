@@ -28,10 +28,8 @@ PROGS = telnetd
 SOURCES=telnetd.c state.c termstat.c slc.c sys_term.c \
 	utility.c global.c authenc.c
 
-
 OBJECTS=telnetd.o state.o termstat.o slc.o sys_term.o \
 	utility.o global.o authenc.o
-
 
 libtop = @libtop@
 
@@ -54,6 +52,9 @@ telnetd: $(OBJECTS)
 install: all
 	$(MKINSTALLDIRS) $(prefix)/libexec
 	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/libexec; done
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
 
 clean cleandir:
 	rm -f *.o *.a telnetd \#* *~ core

@@ -58,6 +58,9 @@ rpw.o: rpw.c
 speed.o: speed.c
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
 
+mdtest.o: mdtest.c
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) $(CFLAGS) $<
+
 install: all
 	$(MKINSTALLDIRS) $(libdir)
 	$(INSTALL) -m 0555 $(LIB) $(libdir)

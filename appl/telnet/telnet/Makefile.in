@@ -22,7 +22,7 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-SOURCES=commands.c main.c network.c ring.c \
+SOURCES=authenc.c commands.c main.c network.c ring.c \
 	sys_bsd.c telnet.c terminal.c \
 	utilities.c $(GETOPT_SRC)
 
@@ -50,6 +50,9 @@ telnet: $(OBJECTS)
 install: all
 	$(MKINSTALLDIRS) $(prefix)/bin
 	for x in $(PROGS); do $(INSTALL) $$x $(prefix)/bin; done
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
 
 clean cleandir:
 	rm -f *.o *.a telnet \#* *~ core

@@ -40,7 +40,11 @@ LIBROKEN= $(LIBTOP)/roken/libroken.a
 
 PROGS = ftpd
 
+ftpd_SOURCES = ftpd.c ftpcmd.c logwtmp.c popen.c auth.c krb4.c kauth.c
 ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
+
+SOURCES = $(ftpd_SOURCES)
+OBJECTS = $(ftpd_OBJS)
 
 all: ftpd
 
@@ -59,6 +63,9 @@ ftpcmd.c: ftpcmd.y
 	$(YACC) $(YFLAGS) $<
 	chmod a-w y.tab.c
 	mv -f y.tab.c ftpcmd.c
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
 
 clean cleandir:
 	rm -f *~ *.o core ftpd ftpcmd.c \#*

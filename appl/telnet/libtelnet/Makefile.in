@@ -35,6 +35,9 @@ libtelnet.a: $(OBJECTS)
 install:
 	@true
 
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
 clean cleandir:
 	rm -f *.o *.a \#* *~ core
 
