@@ -383,7 +383,7 @@ if (!$opt_adminpass) {
 }
 
 # allow provisioning to be run from the source directory
-$ENV{"PATH"} .= ":bin";
+$ENV{"PATH"} .= ":bin:../bin";
 
 
 my $res = apply_substitutions($data);
