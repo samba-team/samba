@@ -702,17 +702,17 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 /*The following definitions come from  shmem.c  */
 
-BOOL shm_open( char *file_name, int size);
-BOOL shm_close( void );
-shm_offset_t shm_alloc(int size);
-BOOL shm_free(shm_offset_t offset);
-shm_offset_t shm_get_userdef_off(void);
-BOOL shm_set_userdef_off(shm_offset_t userdef_off);
-void * shm_offset2addr(shm_offset_t offset);
-shm_offset_t shm_addr2offset(void *addr);
-BOOL shm_lock(void);
-BOOL shm_unlock(void);
-BOOL shm_get_usage(int *bytes_free,
+BOOL smb_shm_open( char *file_name, int size);
+BOOL smb_shm_close( void );
+smb_shm_offset_t smb_shm_alloc(int size);
+BOOL smb_shm_free(smb_shm_offset_t offset);
+smb_shm_offset_t smb_shm_get_userdef_off(void);
+BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
+void * smb_shm_offset2addr(smb_shm_offset_t offset);
+smb_shm_offset_t shm_addr2offset(void *addr);
+BOOL smb_shm_lock(void);
+BOOL smb_shm_unlock(void);
+BOOL smb_shm_get_usage(int *bytes_free,
 		   int *bytes_used,
 		   int *bytes_overhead);
 

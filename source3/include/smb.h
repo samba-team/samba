@@ -55,8 +55,8 @@
 typedef int BOOL;
 
 /* offset in shared memory */
-typedef  int shm_offset_t;
-#define NULL_OFFSET (shm_offset_t)(0)
+typedef  int smb_shm_offset_t;
+#define NULL_OFFSET (smb_shm_offset_t)(0)
 
 
 /*
@@ -419,7 +419,7 @@ struct interface
 /* share mode record in shared memory */
 typedef struct
 {
-  shm_offset_t next_offset; /* offset of next record in list in shared mem */
+  smb_shm_offset_t next_offset; /* offset of next record in list in shared mem */
   int locking_version;
   int share_mode;
   struct timeval time;

@@ -175,27 +175,27 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
   trim_string(shmem_file_name,"","/");
   if (!*shmem_file_name) exit(-1);
   strcat(shmem_file_name, "/SHARE_MEM_FILE");
-  if(!shm_open(shmem_file_name, SHMEM_SIZE)) exit(-1);
+  if(!smb_shm_open(shmem_file_name, SHMEM_SIZE)) exit(-1);
   
-  if(!shm_lock())
+  if(!smb_shm_lock())
   {
-     shm_close();
+     smb_shm_close();
      exit (-1);
   }
 
-  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
   prev_p = scanner_p;
   while(scanner_p)
   {
      int pid,mode;
-     time_t t;
+     struct timeval t;
      
      pid = scanner_p->pid;
      
      if ( !Ucrit_checkPid(pid) )
      {
 	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
 	continue;
      }
      
@@ -204,20 +204,21 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 	DEBUG(2,("Deleting stale share mode record"));
 	if(prev_p == scanner_p)
 	{
-	   shm_set_userdef_off(scanner_p->next_offset);
-	   shm_free(shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+	   smb_shm_set_userdef_off(scanner_p->next_offset);
+	   smb_shm_free(smb_shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
            prev_p = scanner_p;
 	}
 	else
 	{
 	   prev_p->next_offset = scanner_p->next_offset;
-  	   shm_free(shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)shm_offset2addr(prev_p->next_offset);
+  	   smb_shm_free(smb_shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)smb_shm_offset2addr(prev_p->next_offset);
 	}
 	continue;
      }
-     t = scanner_p->time;
+     t.tv_sec = scanner_p->time.tv_sec;
+     t.tv_usec = scanner_p->time.tv_usec;
      mode = scanner_p->share_mode;
      strcpy(fname, scanner_p->file_name);
 #else
@@ -289,17 +290,17 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
 #if FAST_SHARE_MODES
      prev_p = scanner_p ;
-     scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+     scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
   } /* end while */
 
-  shm_get_usage(&bytes_free, &bytes_used, &bytes_overhead);
+  smb_shm_get_usage(&bytes_free, &bytes_used, &bytes_overhead);
   bytes_total = bytes_free + bytes_used + bytes_overhead;
-  shm_unlock();
+  smb_shm_unlock();
 
   /*******************************************************************
   deinitialize the shared memory for share_mode management 
   ******************************************************************/
-  shm_close();
+  smb_shm_close();
 
 #else
   } /* end while */

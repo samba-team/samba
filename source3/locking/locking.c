@@ -114,7 +114,7 @@ BOOL start_share_mode_mgmt(void)
   trim_string(shmem_file_name,"","/");
   if (!*shmem_file_name) return(False);
   strcat(shmem_file_name, "/SHARE_MEM_FILE");
-  return shm_open(shmem_file_name, SHMEM_SIZE);
+  return smb_shm_open(shmem_file_name, SHMEM_SIZE);
 }
 
 
@@ -123,7 +123,7 @@ BOOL start_share_mode_mgmt(void)
   ******************************************************************/
 BOOL stop_share_mode_mgmt(void)
 {
-   return shm_close();
+   return smb_shm_close();
 }
 
 #else
@@ -191,9 +191,9 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
 
   *pid = 0;
 
-  if(!shm_lock()) return (0);
+  if(!smb_shm_lock()) return (0);
 
-  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
   prev_p = scanner_p;
   while(scanner_p)
   {
@@ -205,13 +205,13 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
      else
      {
 	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
      }
   }
   
   if(!found)
   {
-     shm_unlock();
+     smb_shm_unlock();
      return (0);
   }
   
@@ -219,13 +219,13 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
   {
      DEBUG(2,("Deleting old share mode record due to old locking version %d",scanner_p->locking_version));
      if(prev_p == scanner_p)
-	shm_set_userdef_off(scanner_p->next_offset);
+	smb_shm_set_userdef_off(scanner_p->next_offset);
      else
 	prev_p->next_offset = scanner_p->next_offset;
-     shm_free(shm_addr2offset(scanner_p));
+     smb_shm_free(smb_shm_addr2offset(scanner_p));
      *pid = 0;
 	
-     shm_unlock();
+     smb_shm_unlock();
      return (0);
   }
   
@@ -241,16 +241,16 @@ int get_share_mode(int cnum,struct stat *sbuf,int *pid)
   if (! *pid)
   {
      if(prev_p == scanner_p)
-	shm_set_userdef_off(scanner_p->next_offset);
+	smb_shm_set_userdef_off(scanner_p->next_offset);
      else
 	prev_p->next_offset = scanner_p->next_offset;
-     shm_free(shm_addr2offset(scanner_p));
+     smb_shm_free(smb_shm_addr2offset(scanner_p));
   }
   
   if (*pid)
     DEBUG(5,("Read share mode record mode 0x%X pid=%d\n",ret,*pid));
 
-  if(!shm_unlock()) return (0);
+  if(!smb_shm_unlock()) return (0);
   
   return(ret);
   
@@ -309,20 +309,20 @@ void del_share_mode(int fnum)
 {
 #if FAST_SHARE_MODES
   struct stat st;
-  time_t t=0;
+  struct timeval t;
   int pid=0;
   BOOL del = False;
   share_mode_record *scanner_p;
   share_mode_record *prev_p;
   BOOL found = False;
 
+  t.tv_sec = t.tv_usec = 0;
   
+  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return;
   
-  if (fstat(Files[fnum].fd,&st) != 0) return;
+  if (!smb_shm_lock()) return;
   
-  if (!shm_lock()) return;
-  
-  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
   prev_p = scanner_p;
   while(scanner_p)
   {
@@ -334,37 +334,39 @@ void del_share_mode(int fnum)
      else
      {
 	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
      }
   }
     
   if(!found)
   {
-     shm_unlock();
+     smb_shm_unlock();
      return;
   }
   
-  t = scanner_p->time;
+  t.tv_sec = scanner_p->time.tv_sec;
+  t.tv_usec = scanner_p->time.tv_usec;
   pid = scanner_p->pid;
   
   if( (scanner_p->locking_version != LOCKING_VERSION) || !pid || !process_exists(pid))
     del = True;
 
-  if (!del && t == Files[fnum].open_time && pid==(int)getpid())
+  if (!del && (memcmp(&t,&Files[fnum].open_time,sizeof(t)) == 0)
+      && pid==(int)getpid())
     del = True;
 
   if (del)
   {
      DEBUG(2,("Deleting share mode record\n"));
      if(prev_p == scanner_p)
-	shm_set_userdef_off(scanner_p->next_offset);
+	smb_shm_set_userdef_off(scanner_p->next_offset);
      else
 	prev_p->next_offset = scanner_p->next_offset;
-     shm_free(shm_addr2offset(scanner_p));
+     smb_shm_free(smb_shm_addr2offset(scanner_p));
 	
   }
 
-  shm_unlock();
+  smb_shm_unlock();
   return;
 
 #else
@@ -418,30 +420,31 @@ BOOL set_share_mode(int fnum,int mode)
 #if FAST_SHARE_MODES
   int pid = (int)getpid();
   struct stat st;
-  shm_offset_t new_off;
+  smb_shm_offset_t new_off;
   share_mode_record *new_p;
   
   
-  if (fstat(Files[fnum].fd,&st) != 0) return(False);
+  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return(False);
   
-  if (!shm_lock()) return (False);
-  new_off = shm_alloc(sizeof(share_mode_record) + strlen(Files[fnum].name) );
+  if (!smb_shm_lock()) return (False);
+  new_off = smb_shm_alloc(sizeof(share_mode_record) + strlen(Files[fnum].name) );
   if (new_off == NULL_OFFSET) return (False);
-  new_p = (share_mode_record *)shm_offset2addr(new_off);
+  new_p = (share_mode_record *)smb_shm_offset2addr(new_off);
   new_p->locking_version = LOCKING_VERSION;
   new_p->share_mode = mode;
-  new_p->time = Files[fnum].open_time;
+  new_p->time.tv_sec = Files[fnum].open_time.tv_sec;
+  new_p->time.tv_usec = Files[fnum].open_time.tv_usec;
   new_p->pid = pid;
   new_p->st_dev = st.st_dev;
   new_p->st_ino = st.st_ino;
   strcpy(new_p->file_name,Files[fnum].name);
-  new_p->next_offset = shm_get_userdef_off();
-  shm_set_userdef_off(new_off);
+  new_p->next_offset = smb_shm_get_userdef_off();
+  smb_shm_set_userdef_off(new_off);
 
 
   DEBUG(3,("Created share record for %s with mode 0x%X pid=%d\n",Files[fnum].name,mode,pid));
 
-  if (!shm_unlock()) return (False);
+  if (!smb_shm_unlock()) return (False);
   return(True);
 
 #else
@@ -496,9 +499,9 @@ void clean_share_modes(void)
   share_mode_record *prev_p;
   int pid;
   
-  if (!shm_lock()) return;
+  if (!smb_shm_lock()) return;
   
-  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
   prev_p = scanner_p;
   while(scanner_p)
   {
@@ -509,28 +512,28 @@ void clean_share_modes(void)
 	DEBUG(2,("Deleting stale share mode record"));
 	if(prev_p == scanner_p)
 	{
-	   shm_set_userdef_off(scanner_p->next_offset);
-	   shm_free(shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+	   smb_shm_set_userdef_off(scanner_p->next_offset);
+	   smb_shm_free(smb_shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
            prev_p = scanner_p;
 	}
 	else
 	{
 	   prev_p->next_offset = scanner_p->next_offset;
-  	   shm_free(shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)shm_offset2addr(prev_p->next_offset);
+  	   smb_shm_free(smb_shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)smb_shm_offset2addr(prev_p->next_offset);
 	}
 	
      }
      else
      {
 	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
      }
   }
     
 
-  shm_unlock();
+  smb_shm_unlock();
   return;
   
 #else

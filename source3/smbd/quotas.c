@@ -413,7 +413,7 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
 #else
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-  #endif
+#endif
 #endif
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
