@@ -73,7 +73,11 @@ static size_t	 topreclen;	/* toprec length */
 static char	*toprec;	/* Additional record specified by cgetset() */
 static int	 gottoprec;	/* Flag indicating retrieval of toprecord */
 
-#ifdef HAVE_DBOPEN
+#if defined(HAVE_DBOPEN) && defined(HAVE_DB_H)
+#define USE_DB
+#endif
+
+#if USE_DB
 static int	cdbget (DB *, char **, const char *);
 #endif
 static int 	getent (char **, size_t *, char **, int, const char *, int, char *);
@@ -280,7 +284,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
 	if (fd >= 0) {
 	    (void)lseek(fd, (off_t)0, SEEK_SET);
 	} else {
-#ifdef HAVE_DBOPEN
+#if USE_DB
 	    char pbuf[_POSIX_PATH_MAX];
 	    char *cbuf;
 	    size_t clen;
@@ -607,7 +611,7 @@ getent(char **cap, size_t *len, char **db_array, int fd,
     return (0);
 }	
 
-#ifdef HAVE_DBOPEN
+#if USE_DB
 static int
 cdbget(DB *capdbp, char **bp, const char *name)
 {
@@ -638,7 +642,7 @@ cdbget(DB *capdbp, char **bp, const char *name)
 	*bp = (char *)data.data + 1;
 	return (((char *)(data.data))[0] == TCERR ? 1 : 0);
 }
-#endif /* HAVE_DBOPEN */
+#endif /* USE_DB */
 
 /*
  * Cgetmatch will return 0 if name is one of the names of the capability
