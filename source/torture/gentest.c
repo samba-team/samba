@@ -51,7 +51,7 @@ static uint_t num_open_handles;
 /* state information for the servers. We open NINSTANCES connections to
    each server */
 static struct {
-	struct cli_state *cli[NINSTANCES];
+	struct smbcli_state *cli[NINSTANCES];
 	char *server_name;
 	char *share_name;
 	char *username;
@@ -94,8 +94,8 @@ static struct {
 
 #define BAD_HANDLE 0xFFFE
 
-static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
-static void idle_func(struct cli_transport *transport, void *private);
+static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
+static void idle_func(struct smbcli_transport *transport, void *private);
 
 /*
   check if a string should be ignored. This is used as the basis
@@ -127,7 +127,7 @@ static BOOL connect_servers_fast(void)
 	for (h=0;h<options.max_open_handles;h++) {
 		if (!open_handles[h].active) continue;
 		for (i=0;i<NSERVERS;i++) {
-			if (NT_STATUS_IS_ERR((cli_close(servers[i].cli[open_handles[h].instance]->tree,
+			if (NT_STATUS_IS_ERR((smbcli_close(servers[i].cli[open_handles[h].instance]->tree,
 				       open_handles[h].server_fnum[i])))) {
 				return False;
 			}
@@ -158,8 +158,8 @@ static BOOL connect_servers(void)
 	for (i=0;i<NSERVERS;i++) {
 		for (j=0;j<NINSTANCES;j++) {
 			if (servers[i].cli[j]) {
-				cli_tdis(servers[i].cli[j]);
-				cli_shutdown(servers[i].cli[j]);
+				smbcli_tdis(servers[i].cli[j]);
+				smbcli_shutdown(servers[i].cli[j]);
 				servers[i].cli[j] = NULL;
 			}
 		}
@@ -171,7 +171,7 @@ static BOOL connect_servers(void)
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
 			       servers[i].username, j);
-			status = cli_full_connection(&servers[i].cli[j],
+			status = smbcli_full_connection(&servers[i].cli[j],
 						     "gentest",
 						     servers[i].server_name, NULL, 
 						     servers[i].share_name, "?????", 
@@ -184,8 +184,8 @@ static BOOL connect_servers(void)
 				return False;
 			}
 
-			cli_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
-			cli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 1, NULL);
+			smbcli_oplock_handler(servers[i].cli[j]->transport, oplock_handler, NULL);
+			smbcli_transport_idle_handler(servers[i].cli[j]->transport, idle_func, 1, NULL);
 		}
 	}
 
@@ -234,10 +234,10 @@ static void gen_add_handle(int instance, const char *name, uint16_t fnums[NSERVE
 		/* we have to force close a random handle */
 		h = random() % options.max_open_handles;
 		for (i=0;i<NSERVERS;i++) {
-			if (NT_STATUS_IS_ERR((cli_close(servers[i].cli[open_handles[h].instance]->tree, 
+			if (NT_STATUS_IS_ERR((smbcli_close(servers[i].cli[open_handles[h].instance]->tree, 
 				       open_handles[h].server_fnum[i])))) {
 				printf("INTERNAL ERROR: Close failed when recovering handle! - %s\n",
-				       cli_errstr(servers[i].cli[open_handles[h].instance]->tree));
+				       smbcli_errstr(servers[i].cli[open_handles[h].instance]->tree));
 			}
 		}
 		printf("Recovered handle %d\n", h);
@@ -670,13 +670,13 @@ static struct ea_struct gen_ea_struct(void)
 /*
   this is called when a change notify reply comes in
 */
-static void async_notify(struct cli_request *req)
+static void async_notify(struct smbcli_request *req)
 {
 	struct smb_notify notify;
 	NTSTATUS status;
 	int i, j;
 	uint16_t tid;
-	struct cli_transport *transport = req->transport;
+	struct smbcli_transport *transport = req->transport;
 
 	tid = SVAL(req->in.hdr, HDR_TID);
 
@@ -704,13 +704,13 @@ static void async_notify(struct cli_request *req)
 /*
   the oplock handler will either ack the break or close the file
 */
-static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
 	union smb_close io;
 	NTSTATUS status;
 	int i, j;
 	BOOL do_close;
-	struct cli_tree *tree = NULL;
+	struct smbcli_tree *tree = NULL;
 
 	srandom(current_op.seed);
 	do_close = gen_chance(50);
@@ -736,7 +736,7 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16
 
 	if (!do_close) {
 		printf("oplock ack fnum=%d\n", fnum);
-		return cli_oplock_ack(tree, fnum, level);
+		return smbcli_oplock_ack(tree, fnum, level);
 	}
 
 	printf("oplock close fnum=%d\n", fnum);
@@ -758,14 +758,14 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16
   an operation on another connection blocking until that break is acked
   we check for operations on all transports in the idle function
 */
-static void idle_func(struct cli_transport *transport, void *private)
+static void idle_func(struct smbcli_transport *transport, void *private)
 {
 	int i, j;
 	for (i=0;i<NSERVERS;i++) {
 		for (j=0;j<NINSTANCES;j++) {
 			if (servers[i].cli[j] &&
 			    transport != servers[i].cli[j]->transport) {
-				cli_transport_process(servers[i].cli[j]->transport);
+				smbcli_transport_process(servers[i].cli[j]->transport);
 			}
 		}
 	}
@@ -803,7 +803,7 @@ static void check_pending(void)
 
 	for (j=0;j<NINSTANCES;j++) {
 		for (i=0;i<NSERVERS;i++) {
-			cli_transport_process(servers[i].cli[j]->transport);
+			smbcli_transport_process(servers[i].cli[j]->transport);
 		}
 	}	
 }
@@ -938,7 +938,7 @@ again:
 	ZERO_STRUCT(oplocks); \
 	ZERO_STRUCT(notifies); \
 	for (i=0;i<NSERVERS;i++) { \
-		struct cli_tree *tree = servers[i].cli[instance]->tree; \
+		struct smbcli_tree *tree = servers[i].cli[instance]->tree; \
 		status[i] = call; \
 	} \
 	current_op.status = status[0]; \
@@ -1780,7 +1780,7 @@ static BOOL handler_notify(int instance)
 	GEN_SET_FNUM(in.fnum);
 
 	for (n=0;n<NSERVERS;n++) {
-		struct cli_request *req;
+		struct smbcli_request *req;
 		req = smb_raw_changenotify_send(servers[n].cli[instance]->tree, &parm[n]);
 		req->async.fn = async_notify;
 	}
@@ -1795,14 +1795,14 @@ static void wipe_files(void)
 {
 	int i;
 	for (i=0;i<NSERVERS;i++) {
-		int n = cli_deltree(servers[i].cli[0]->tree, "\\gentest");
+		int n = smbcli_deltree(servers[i].cli[0]->tree, "\\gentest");
 		if (n == -1) {
 			printf("Failed to wipe tree on server %d\n", i);
 			exit(1);
 		}
-		if (NT_STATUS_IS_ERR(cli_mkdir(servers[i].cli[0]->tree, "\\gentest"))) {
+		if (NT_STATUS_IS_ERR(smbcli_mkdir(servers[i].cli[0]->tree, "\\gentest"))) {
 			printf("Failed to create \\gentest - %s\n",
-			       cli_errstr(servers[i].cli[0]->tree));
+			       smbcli_errstr(servers[i].cli[0]->tree));
 			exit(1);
 		}
 		if (n > 0) {

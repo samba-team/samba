@@ -42,13 +42,13 @@
 /*
   test session ops
 */
-static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_session(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
 	char *username, *domain, *password;
-	struct cli_session *session;
-	struct cli_tree *tree;
+	struct smbcli_session *session;
+	struct smbcli_tree *tree;
 	union smb_sesssetup setup;
 	union smb_open io;
 	union smb_write wr;
@@ -59,9 +59,9 @@ static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING SESSION HANDLING\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -70,7 +70,7 @@ static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	domain = lp_workgroup();
 
 	printf("create a second security context on the same transport\n");
-	session = cli_session_init(cli->transport);
+	session = smbcli_session_init(cli->transport);
 	setup.generic.level = RAW_SESSSETUP_GENERIC;
 	setup.generic.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.generic.in.capabilities = 0; /* ignored in secondary session setup */
@@ -84,7 +84,7 @@ static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	session->vuid = setup.generic.out.vuid;
 
 	printf("use the same tree as the existing connection\n");
-	tree = cli_tree_init(session);
+	tree = smbcli_tree_init(session);
 	tree->tid = cli->tree->tid;
 	cli->tree->reference_count++;
 
@@ -141,7 +141,7 @@ static BOOL test_session(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* close down the new tree, which will also close the session
 	   as the reference count will be 0 */
-	cli_tree_close(tree);
+	smbcli_tree_close(tree);
 	
 done:
 	return ret;
@@ -151,12 +151,12 @@ done:
 /*
   test tree ops
 */
-static BOOL test_tree(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_tree(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
 	char *share;
-	struct cli_tree *tree;
+	struct smbcli_tree *tree;
 	union smb_tcon tcon;
 	union smb_open io;
 	union smb_write wr;
@@ -167,16 +167,16 @@ static BOOL test_tree(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING TREE HANDLING\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	share = lp_parm_string(-1, "torture", "share");
 
 	printf("create a second tree context on the same session\n");
-	tree = cli_tree_init(cli->session);
+	tree = smbcli_tree_init(cli->session);
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
@@ -245,7 +245,7 @@ static BOOL test_tree(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
 	/* close down the new tree */
-	cli_tree_close(tree);
+	smbcli_tree_close(tree);
 	
 done:
 	return ret;
@@ -255,7 +255,7 @@ done:
 /*
   test pid ops
 */
-static BOOL test_pid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_pid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	BOOL ret = True;
@@ -269,9 +269,9 @@ static BOOL test_pid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING PID HANDLING\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -357,7 +357,7 @@ done:
 */
 BOOL torture_raw_context(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
@@ -380,7 +380,7 @@ BOOL torture_raw_context(int dummy)
 	}
 
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);

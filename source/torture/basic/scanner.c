@@ -45,7 +45,7 @@ static void trans2_check_hit(const char *format, int op, int level, NTSTATUS sta
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static NTSTATUS try_trans2(struct cli_state *cli, 
+static NTSTATUS try_trans2(struct smbcli_state *cli, 
 			   int op,
 			   char *param, char *data,
 			   int param_len, int data_len,
@@ -81,7 +81,7 @@ static NTSTATUS try_trans2(struct cli_state *cli,
 }
 
 
-static NTSTATUS try_trans2_len(struct cli_state *cli, 
+static NTSTATUS try_trans2_len(struct smbcli_state *cli, 
 			     const char *format,
 			     int op, int level,
 			     char *param, char *data,
@@ -117,7 +117,7 @@ static NTSTATUS try_trans2_len(struct cli_state *cli,
 /****************************************************************************
 check whether a trans2 opnum exists at all
 ****************************************************************************/
-static BOOL trans2_op_exists(struct cli_state *cli, int op)
+static BOOL trans2_op_exists(struct smbcli_state *cli, int op)
 {
 	int data_len = 0;
 	int param_len = 0;
@@ -151,7 +151,7 @@ static BOOL trans2_op_exists(struct cli_state *cli, int op)
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static BOOL scan_trans2(struct cli_state *cli, int op, int level, 
+static BOOL scan_trans2(struct smbcli_state *cli, int op, int level, 
 			int fnum, int dnum, int qfnum, const char *fname)
 {
 	int data_len = 0;
@@ -217,19 +217,19 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli->tree, "\\newfile.dat");
-	cli_rmdir(cli->tree, "\\newfile.dat");
+	smbcli_unlink(cli->tree, "\\newfile.dat");
+	smbcli_rmdir(cli->tree, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
-	cli_mkdir(cli->tree, "\\testdir");
+	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
 	param_len += push_string(NULL, &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_rmdir(cli->tree, "\\testdir");
+	smbcli_rmdir(cli->tree, "\\testdir");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
@@ -238,7 +238,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 
 BOOL torture_trans2_scan(int dummy)
 {
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum, qfnum;
@@ -249,19 +249,19 @@ BOOL torture_trans2_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
-		printf("file open failed - %s\n", cli_errstr(cli->tree));
+		printf("file open failed - %s\n", smbcli_errstr(cli->tree));
 	}
-	dnum = cli_nt_create_full(cli->tree, "\\", 
+	dnum = smbcli_nt_create_full(cli->tree, "\\", 
 				  0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
 				  NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE, 
 				  NTCREATEX_DISP_OPEN, 
 				  NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (dnum == -1) {
-		printf("directory open failed - %s\n", cli_errstr(cli->tree));
+		printf("directory open failed - %s\n", smbcli_errstr(cli->tree));
 	}
-	qfnum = cli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
+	qfnum = smbcli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
 				   NTCREATEX_FLAGS_EXTENDED, 
 				   SEC_RIGHTS_MAXIMUM_ALLOWED, 
 				   0,
@@ -269,7 +269,7 @@ BOOL torture_trans2_scan(int dummy)
 				   NTCREATEX_DISP_OPEN, 
 				   0, 0);
 	if (qfnum == -1) {
-		printf("quota open failed - %s\n", cli_errstr(cli->tree));
+		printf("quota open failed - %s\n", smbcli_errstr(cli->tree));
 	}
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
@@ -321,7 +321,7 @@ static void nttrans_check_hit(const char *format, int op, int level, NTSTATUS st
 /****************************************************************************
 check for existence of a nttrans call
 ****************************************************************************/
-static NTSTATUS try_nttrans(struct cli_state *cli, 
+static NTSTATUS try_nttrans(struct smbcli_state *cli, 
 			    int op,
 			    char *param, char *data,
 			    int param_len, int data_len,
@@ -363,7 +363,7 @@ static NTSTATUS try_nttrans(struct cli_state *cli,
 }
 
 
-static NTSTATUS try_nttrans_len(struct cli_state *cli, 
+static NTSTATUS try_nttrans_len(struct smbcli_state *cli, 
 			     const char *format,
 			     int op, int level,
 			     char *param, char *data,
@@ -398,7 +398,7 @@ static NTSTATUS try_nttrans_len(struct cli_state *cli,
 /****************************************************************************
 check for existance of a nttrans call
 ****************************************************************************/
-static BOOL scan_nttrans(struct cli_state *cli, int op, int level, 
+static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
@@ -456,19 +456,19 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 
 	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli->tree, "\\newfile.dat");
-	cli_rmdir(cli->tree, "\\newfile.dat");
+	smbcli_unlink(cli->tree, "\\newfile.dat");
+	smbcli_rmdir(cli->tree, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
-	cli_mkdir(cli->tree, "\\testdir");
+	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
 	param_len += push_string(NULL, &param[2], "\\testdir", -1, STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_rmdir(cli->tree, "\\testdir");
+	smbcli_rmdir(cli->tree, "\\testdir");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
@@ -477,7 +477,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 
 BOOL torture_nttrans_scan(int dummy)
 {
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
@@ -488,9 +488,9 @@ BOOL torture_nttrans_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE);
-	dnum = cli_open(cli->tree, "\\", O_RDONLY, DENY_NONE);
+	dnum = smbcli_open(cli->tree, "\\", O_RDONLY, DENY_NONE);
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);
@@ -517,9 +517,9 @@ BOOL torture_nttrans_scan(int dummy)
 /* scan for valid base SMB requests */
 BOOL torture_smb_scan(int dummy)
 {
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	int op;
-	struct cli_request *req;
+	struct smbcli_request *req;
 	NTSTATUS status;
 
 	for (op=0x0;op<=0xFF;op++) {
@@ -529,30 +529,30 @@ BOOL torture_smb_scan(int dummy)
 			return False;
 		}
 
-		req = cli_request_setup(cli->tree, op, 0, 0);
+		req = smbcli_request_setup(cli->tree, op, 0, 0);
 
-		if (!cli_request_send(req)) {
-			cli_request_destroy(req);
+		if (!smbcli_request_send(req)) {
+			smbcli_request_destroy(req);
 			break;
 		}
 
 		usleep(10000);
-		cli_transport_process(cli->transport);
-		if (req->state > CLI_REQUEST_RECV) {
-			status = cli_request_simple_recv(req);
+		smbcli_transport_process(cli->transport);
+		if (req->state > SMBCLI_REQUEST_RECV) {
+			status = smbcli_request_simple_recv(req);
 			printf("op=0x%x status=%s\n", op, nt_errstr(status));
 			torture_close_connection(cli);
 			continue;
 		}
 
 		sleep(1);
-		cli_transport_process(cli->transport);
-		if (req->state > CLI_REQUEST_RECV) {
-			status = cli_request_simple_recv(req);
+		smbcli_transport_process(cli->transport);
+		if (req->state > SMBCLI_REQUEST_RECV) {
+			status = smbcli_request_simple_recv(req);
 			printf("op=0x%x status=%s\n", op, nt_errstr(status));
 		} else {
 			printf("op=0x%x no reply\n", op);
-			cli_request_destroy(req);
+			smbcli_request_destroy(req);
 			continue; /* don't attempt close! */
 		}
 

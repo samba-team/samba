@@ -22,7 +22,7 @@
 
 BOOL torture_utable(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	fstring fname;
 	const char *alt_name;
 	int fnum;
@@ -41,8 +41,8 @@ BOOL torture_utable(int dummy)
 
 	memset(valid, 0, sizeof(valid));
 
-	cli_mkdir(cli->tree, "\\utable");
-	cli_unlink(cli->tree, "\\utable\\*");
+	smbcli_mkdir(cli->tree, "\\utable");
+	smbcli_unlink(cli->tree, "\\utable\\*");
 
 	for (c=1; c < 0x10000; c++) {
 		char *p;
@@ -56,13 +56,13 @@ BOOL torture_utable(int dummy)
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
 
-		fnum = cli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
+		fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
 				DENY_NONE);
 		if (fnum == -1) continue;
 
 		chars_allowed++;
 
-		cli_qpathinfo_alt_name(cli->tree, fname, &alt_name);
+		smbcli_qpathinfo_alt_name(cli->tree, fname, &alt_name);
 
 		if (strncmp(alt_name, "X_A_L", 5) != 0) {
 			alt_allowed++;
@@ -70,8 +70,8 @@ BOOL torture_utable(int dummy)
 			d_printf("fname=[%s] alt_name=[%s]\n", fname, alt_name);
 		}
 
-		cli_close(cli->tree, fnum);
-		cli_unlink(cli->tree, fname);
+		smbcli_close(cli->tree, fnum);
+		smbcli_unlink(cli->tree, fname);
 
 		if (c % 100 == 0) {
 			printf("%d (%d/%d)\r", c, chars_allowed, alt_allowed);
@@ -79,7 +79,7 @@ BOOL torture_utable(int dummy)
 	}
 	printf("%d (%d/%d)\n", c, chars_allowed, alt_allowed);
 
-	cli_rmdir(cli->tree, "\\utable");
+	smbcli_rmdir(cli->tree, "\\utable");
 
 	d_printf("%d chars allowed   %d alt chars allowed\n", chars_allowed, alt_allowed);
 
@@ -116,7 +116,7 @@ static char *form_name(int c)
 
 BOOL torture_casetable(int dummy)
 {
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	char *fname;
 	int fnum;
 	int c, i;
@@ -132,8 +132,8 @@ BOOL torture_casetable(int dummy)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	cli_deltree(cli->tree, "\\utable");
-	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, "\\utable"))) {
+	smbcli_deltree(cli->tree, "\\utable");
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\utable"))) {
 		printf("Failed to create utable directory!\n");
 		return False;
 	}
@@ -146,7 +146,7 @@ BOOL torture_casetable(int dummy)
 		d_printf("%04x (%c)\n", c, isprint(c)?c:'.');
 
 		fname = form_name(c);
-		fnum = cli_nt_create_full(cli->tree, fname, 0,
+		fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 #if 0
 					  SEC_RIGHT_MAXIMUM_ALLOWED, 
 #else
@@ -163,7 +163,7 @@ BOOL torture_casetable(int dummy)
 
 		size = 0;
 
-		if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &size, 
+		if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, NULL, &size, 
 						   NULL, NULL, NULL, NULL, NULL))) continue;
 
 		if (size > 0) {
@@ -173,11 +173,11 @@ BOOL torture_casetable(int dummy)
 			if (size/sizeof(int) >= MAX_EQUIVALENCE) {
 				printf("too many chars match?? size=%d c=0x%04x\n",
 				       size, c);
-				cli_close(cli->tree, fnum);
+				smbcli_close(cli->tree, fnum);
 				return False;
 			}
 
-			cli_read(cli->tree, fnum, (char *)c2, 0, size);
+			smbcli_read(cli->tree, fnum, (char *)c2, 0, size);
 			printf("%04x: ", c);
 			equiv[c][0] = c;
 			for (i=0; i<size/sizeof(int); i++) {
@@ -188,12 +188,12 @@ BOOL torture_casetable(int dummy)
 			fflush(stdout);
 		}
 
-		cli_write(cli->tree, fnum, 0, (char *)&c, size, sizeof(c));
-		cli_close(cli->tree, fnum);
+		smbcli_write(cli->tree, fnum, 0, (char *)&c, size, sizeof(c));
+		smbcli_close(cli->tree, fnum);
 	}
 
-	cli_unlink(cli->tree, "\\utable\\*");
-	cli_rmdir(cli->tree, "\\utable");
+	smbcli_unlink(cli->tree, "\\utable\\*");
+	smbcli_rmdir(cli->tree, "\\utable");
 
 	return True;
 }

@@ -29,7 +29,7 @@
 
    the prefix BASEDIR is added before the name
 */
-static NTSTATUS unicode_open(struct cli_tree *tree,
+static NTSTATUS unicode_open(struct smbcli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
 			     uint32_t open_disposition, 
 			     const uint32_t *u_name, 
@@ -90,7 +90,7 @@ static NTSTATUS unicode_open(struct cli_tree *tree,
 /*
   see if the server recognises composed characters
 */
-static BOOL test_composed(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_composed(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const uint32_t name1[] = {0x61, 0x308};
 	const uint32_t name2[] = {0xe4};
@@ -119,7 +119,7 @@ static BOOL test_composed(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 /*
   see if the server recognises a naked diacritical
 */
-static BOOL test_diacritical(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_diacritical(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const uint32_t name1[] = {0x308};
 	const uint32_t name2[] = {0x308, 0x308};
@@ -150,7 +150,7 @@ static BOOL test_diacritical(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 /*
   see if the server recognises a partial surrogate pair
 */
-static BOOL test_surrogate(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_surrogate(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const uint32_t name1[] = {0xd800};
 	const uint32_t name2[] = {0xdc00};
@@ -189,7 +189,7 @@ static BOOL test_surrogate(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 /*
   see if the server recognises wide-a characters
 */
-static BOOL test_widea(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_widea(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const uint32_t name1[] = {'a'};
 	const uint32_t name2[] = {0xff41};
@@ -228,7 +228,7 @@ static BOOL test_widea(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 BOOL torture_charset(int dummy)
 {
-	static struct cli_state *cli;
+	static struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
@@ -240,12 +240,12 @@ BOOL torture_charset(int dummy)
 
 	printf("Starting charset tests\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1) {
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
 		printf("Failed to clean " BASEDIR "\n");
 		return False;
 	}
-	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
 		return False;
 	}
 

@@ -118,7 +118,7 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 }
 
 
-static void dump_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds)
+static void dump_database(struct smbcli_state *cli, uint_t db_type, DOM_CRED *ret_creds)
 {
 	uint_t sync_context = 0;
         NTSTATUS result;
@@ -135,7 +135,7 @@ static void dump_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_c
 	d_printf("Dumping database %u\n", db_type);
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
+		result = smbcli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type,
 					       sync_context,
 					       &num_deltas, &hdr_deltas, &deltas);
 		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
@@ -152,7 +152,7 @@ static void dump_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_c
 int rpc_samdump(int argc, const char **argv)
 {
         NTSTATUS result;
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 	uint8_t trust_password[16];
 	DOM_CRED ret_creds;
 	uint32_t neg_flags = 0x000001ff;
@@ -165,7 +165,7 @@ int rpc_samdump(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+	if (!smbcli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -175,7 +175,7 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 	
-	result = cli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password, &neg_flags, 2);
+	result = smbcli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password, &neg_flags, 2);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
 		goto fail;
@@ -185,13 +185,13 @@ int rpc_samdump(int argc, const char **argv)
 	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
 	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
 
-	cli_nt_session_close(cli);
+	smbcli_nt_session_close(cli);
         
         return 0;
 
 fail:
 	if (cli) {
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 	}
 	return -1;
 }
@@ -635,7 +635,7 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 }
 
 static void
-fetch_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds,
+fetch_database(struct smbcli_state *cli, uint_t db_type, DOM_CRED *ret_creds,
 	       DOM_SID dom_sid)
 {
 	uint_t sync_context = 0;
@@ -653,7 +653,7 @@ fetch_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds,
 	d_printf("Fetching database %u\n", db_type);
 
 	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
+		result = smbcli_netlogon_sam_sync(cli, mem_ctx, ret_creds,
 					       db_type, sync_context,
 					       &num_deltas,
 					       &hdr_deltas, &deltas);
@@ -672,7 +672,7 @@ fetch_database(struct cli_state *cli, uint_t db_type, DOM_CRED *ret_creds,
 int rpc_vampire(int argc, const char **argv)
 {
         NTSTATUS result;
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 	uint8_t trust_password[16];
 	DOM_CRED ret_creds;
 	uint32_t neg_flags = 0x000001ff;
@@ -686,7 +686,7 @@ int rpc_vampire(int argc, const char **argv)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+	if (!smbcli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto fail;
 	}
@@ -697,7 +697,7 @@ int rpc_vampire(int argc, const char **argv)
 		goto fail;
 	}
 	
-	result = cli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password,
+	result = smbcli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password,
 				    &neg_flags, 2);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
@@ -713,13 +713,13 @@ int rpc_vampire(int argc, const char **argv)
 	/* Currently we crash on PRIVS somewhere in unmarshalling */
 	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
 
-	cli_nt_session_close(cli);
+	smbcli_nt_session_close(cli);
         
         return 0;
 
 fail:
 	if (cli) {
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 	}
 	return -1;
 }

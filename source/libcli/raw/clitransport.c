@@ -24,24 +24,24 @@
 /*
   an event has happened on the socket
 */
-static void cli_transport_event_handler(struct event_context *ev, struct fd_event *fde, 
+static void smbcli_transport_event_handler(struct event_context *ev, struct fd_event *fde, 
 					time_t t, uint16_t flags)
 {
-	struct cli_transport *transport = fde->private;
+	struct smbcli_transport *transport = fde->private;
 
-	cli_transport_process(transport);
+	smbcli_transport_process(transport);
 }
 
 /*
   create a transport structure based on an established socket
 */
-struct cli_transport *cli_transport_init(struct cli_socket *sock)
+struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock)
 {
 	TALLOC_CTX *mem_ctx;
-	struct cli_transport *transport;
+	struct smbcli_transport *transport;
 	struct fd_event fde;
 
-	mem_ctx = talloc_init("cli_transport");
+	mem_ctx = talloc_init("smbcli_transport");
 	if (!mem_ctx) return NULL;
 
 	transport = talloc_zero(mem_ctx, sizeof(*transport));
@@ -59,7 +59,7 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
 	transport->options.use_spnego = lp_use_spnego();
 	transport->negotiate.max_xmit = ~0;
 	
-	cli_init_signing(transport);
+	smbcli_init_signing(transport);
 
 	transport->socket->reference_count++;
 
@@ -67,7 +67,7 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
 
 	fde.fd = sock->fd;
 	fde.flags = EVENT_FD_READ;
-	fde.handler = cli_transport_event_handler;
+	fde.handler = smbcli_transport_event_handler;
 	fde.private = transport;
 	fde.ref_count = 1;
 
@@ -80,11 +80,11 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
   decrease reference count on a transport, and destroy if it becomes
   zero
 */
-void cli_transport_close(struct cli_transport *transport)
+void smbcli_transport_close(struct smbcli_transport *transport)
 {
 	transport->reference_count--;
 	if (transport->reference_count <= 0) {
-		cli_sock_close(transport->socket);
+		smbcli_sock_close(transport->socket);
 		event_remove_fd(transport->event.ctx, transport->event.fde);
 		event_remove_timed(transport->event.ctx, transport->event.te);
 		event_context_destroy(transport->event.ctx);
@@ -95,14 +95,14 @@ void cli_transport_close(struct cli_transport *transport)
 /*
   mark the transport as dead
 */
-void cli_transport_dead(struct cli_transport *transport)
+void smbcli_transport_dead(struct smbcli_transport *transport)
 {
-	cli_sock_dead(transport->socket);
+	smbcli_sock_dead(transport->socket);
 
 	/* all pending sends become errors */
 	while (transport->pending_send) {
-		struct cli_request *req = transport->pending_send;
-		req->state = CLI_REQUEST_ERROR;
+		struct smbcli_request *req = transport->pending_send;
+		req->state = SMBCLI_REQUEST_ERROR;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		DLIST_REMOVE(transport->pending_send, req);
 		if (req->async.fn) {
@@ -112,8 +112,8 @@ void cli_transport_dead(struct cli_transport *transport)
 
 	/* as do all pending receives */
 	while (transport->pending_recv) {
-		struct cli_request *req = transport->pending_recv;
-		req->state = CLI_REQUEST_ERROR;
+		struct smbcli_request *req = transport->pending_recv;
+		req->state = SMBCLI_REQUEST_ERROR;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		DLIST_REMOVE(transport->pending_recv, req);
 		if (req->async.fn) {
@@ -126,7 +126,7 @@ void cli_transport_dead(struct cli_transport *transport)
 /*
   enable select for write on a transport
 */
-static void cli_transport_write_enable(struct cli_transport *transport)
+static void smbcli_transport_write_enable(struct smbcli_transport *transport)
 {
 	transport->event.fde->flags |= EVENT_FD_WRITE;
 }
@@ -134,7 +134,7 @@ static void cli_transport_write_enable(struct cli_transport *transport)
 /*
   disable select for write on a transport
 */
-static void cli_transport_write_disable(struct cli_transport *transport)
+static void smbcli_transport_write_disable(struct smbcli_transport *transport)
 {
 	transport->event.fde->flags &= ~EVENT_FD_WRITE;
 }
@@ -142,13 +142,13 @@ static void cli_transport_write_disable(struct cli_transport *transport)
 /****************************************************************************
 send a session request (if appropriate)
 ****************************************************************************/
-BOOL cli_transport_connect(struct cli_transport *transport,
+BOOL smbcli_transport_connect(struct smbcli_transport *transport,
 			   struct nmb_name *calling, 
 			   struct nmb_name *called)
 {
 	char *p;
 	int len = NBT_HDR_SIZE;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	if (called) {
 		transport->called = *called;
@@ -160,7 +160,7 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 	}
 
   	/* allocate output buffer */
-	req = cli_request_setup_nonsmb(transport, NBT_HDR_SIZE + 2*nbt_mangled_name_len());
+	req = smbcli_request_setup_nonsmb(transport, NBT_HDR_SIZE + 2*nbt_mangled_name_len());
 
 	/* put in the destination name */
 	p = req->out.buffer + NBT_HDR_SIZE;
@@ -175,20 +175,20 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 	_smb_setlen(req->out.buffer,len-4);
 	SCVAL(req->out.buffer,0,0x81);
 
-	if (!cli_request_send(req) ||
-	    !cli_request_receive(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req) ||
+	    !smbcli_request_receive(req)) {
+		smbcli_request_destroy(req);
 		return False;
 	}
 	
 	if (CVAL(req->in.buffer,0) != 0x82) {
 		transport->error.etype = ETYPE_NBT;
 		transport->error.e.nbt_error = CVAL(req->in.buffer,4);
-		cli_request_destroy(req);
+		smbcli_request_destroy(req);
 		return False;
 	}
 
-	cli_request_destroy(req);
+	smbcli_request_destroy(req);
 	return True;
 }
 
@@ -196,10 +196,10 @@ BOOL cli_transport_connect(struct cli_transport *transport,
 /****************************************************************************
 get next mid in sequence
 ****************************************************************************/
-uint16_t cli_transport_next_mid(struct cli_transport *transport)
+uint16_t smbcli_transport_next_mid(struct smbcli_transport *transport)
 {
 	uint16_t mid;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	mid = transport->next_mid;
 
@@ -225,7 +225,7 @@ again:
 static void idle_handler(struct event_context *ev, 
 			 struct timed_event *te, time_t t)
 {
-	struct cli_transport *transport = te->private;
+	struct smbcli_transport *transport = te->private;
 	te->next_event = t + transport->idle.period;
 	transport->idle.func(transport, transport->idle.private);
 }
@@ -234,8 +234,8 @@ static void idle_handler(struct event_context *ev,
   setup the idle handler for a transport
   the period is in seconds
 */
-void cli_transport_idle_handler(struct cli_transport *transport, 
-				void (*idle_func)(struct cli_transport *, void *),
+void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
+				void (*idle_func)(struct smbcli_transport *, void *),
 				uint_t period,
 				void *private)
 {
@@ -257,27 +257,27 @@ void cli_transport_idle_handler(struct cli_transport *transport,
 /*
   process some pending sends
 */
-static void cli_transport_process_send(struct cli_transport *transport)
+static void smbcli_transport_process_send(struct smbcli_transport *transport)
 {
 	while (transport->pending_send) {
-		struct cli_request *req = transport->pending_send;
+		struct smbcli_request *req = transport->pending_send;
 		ssize_t ret;
-		ret = cli_sock_write(transport->socket, req->out.buffer, req->out.size);
+		ret = smbcli_sock_write(transport->socket, req->out.buffer, req->out.size);
 		if (ret == -1) {
 			if (errno == EAGAIN || errno == EINTR) {
 				return;
 			}
-			cli_transport_dead(transport);
+			smbcli_transport_dead(transport);
 		}
 		req->out.buffer += ret;
 		req->out.size -= ret;
 		if (req->out.size == 0) {
 			DLIST_REMOVE(transport->pending_send, req);
 			if (req->one_way_request) {
-				req->state = CLI_REQUEST_DONE;
-				cli_request_destroy(req);
+				req->state = SMBCLI_REQUEST_DONE;
+				smbcli_request_destroy(req);
 			} else {
-				req->state = CLI_REQUEST_RECV;
+				req->state = SMBCLI_REQUEST_RECV;
 				DLIST_ADD(transport->pending_recv, req);
 			}
 		}
@@ -285,19 +285,19 @@ static void cli_transport_process_send(struct cli_transport *transport)
 
 	/* we're out of requests to send, so don't wait for write
 	   events any more */
-	cli_transport_write_disable(transport);
+	smbcli_transport_write_disable(transport);
 }
 
 /*
   we have a full request in our receive buffer - match it to a pending request
   and process
  */
-static void cli_transport_finish_recv(struct cli_transport *transport)
+static void smbcli_transport_finish_recv(struct smbcli_transport *transport)
 {
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
 	uint16_t wct, mid = 0;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	buffer = transport->recv_buffer.buffer;
 	len = transport->recv_buffer.req_size;
@@ -355,14 +355,14 @@ static void cli_transport_finish_recv(struct cli_transport *transport)
 
 	/* handle non-SMB replies */
 	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE) {
-		req->state = CLI_REQUEST_ERROR;
+		req->state = SMBCLI_REQUEST_ERROR;
 		goto error;
 	}
 
 	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
 		DEBUG(2,("bad reply size for mid %d\n", mid));
 		req->status = NT_STATUS_UNSUCCESSFUL;
-		req->state = CLI_REQUEST_ERROR;
+		req->state = SMBCLI_REQUEST_ERROR;
 		goto error;
 	}
 
@@ -394,10 +394,10 @@ static void cli_transport_finish_recv(struct cli_transport *transport)
 		req->status = transport->error.e.nt_status;
 	}
 
-	if (!cli_request_check_sign_mac(req)) {
+	if (!smbcli_request_check_sign_mac(req)) {
 		transport->error.etype = ETYPE_SOCKET;
 		transport->error.e.socket_error = SOCKET_READ_BAD_SIG;
-		req->state = CLI_REQUEST_ERROR;
+		req->state = SMBCLI_REQUEST_ERROR;
 		goto error;
 	};
 
@@ -406,7 +406,7 @@ async:
 	   notify that the reply has been received. This might destroy
 	   the request so it must happen last */
 	DLIST_REMOVE(transport->pending_recv, req);
-	req->state = CLI_REQUEST_DONE;
+	req->state = SMBCLI_REQUEST_DONE;
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
@@ -415,21 +415,21 @@ async:
 error:
 	if (req) {
 		DLIST_REMOVE(transport->pending_recv, req);
-		req->state = CLI_REQUEST_ERROR;
+		req->state = SMBCLI_REQUEST_ERROR;
 	}
 }
 
 /*
   process some pending receives
 */
-static void cli_transport_process_recv(struct cli_transport *transport)
+static void smbcli_transport_process_recv(struct smbcli_transport *transport)
 {
 	/* a incoming packet goes through 2 stages - first we read the
 	   4 byte header, which tells us how much more is coming. Then
 	   we read the rest */
 	if (transport->recv_buffer.received < NBT_HDR_SIZE) {
 		ssize_t ret;
-		ret = cli_sock_read(transport->socket, 
+		ret = smbcli_sock_read(transport->socket, 
 				    transport->recv_buffer.header + 
 				    transport->recv_buffer.received,
 				    NBT_HDR_SIZE - transport->recv_buffer.received);
@@ -437,7 +437,7 @@ static void cli_transport_process_recv(struct cli_transport *transport)
 			if (errno == EINTR || errno == EAGAIN) {
 				return;
 			}
-			cli_transport_dead(transport);
+			smbcli_transport_dead(transport);
 			return;
 		}
 
@@ -449,7 +449,7 @@ static void cli_transport_process_recv(struct cli_transport *transport)
 			transport->recv_buffer.buffer = talloc(transport->mem_ctx,
 							       NBT_HDR_SIZE+transport->recv_buffer.req_size);
 			if (transport->recv_buffer.buffer == NULL) {
-				cli_transport_dead(transport);
+				smbcli_transport_dead(transport);
 				return;
 			}
 			memcpy(transport->recv_buffer.buffer, transport->recv_buffer.header, NBT_HDR_SIZE);
@@ -458,7 +458,7 @@ static void cli_transport_process_recv(struct cli_transport *transport)
 
 	if (transport->recv_buffer.received < transport->recv_buffer.req_size) {
 		ssize_t ret;
-		ret = cli_sock_read(transport->socket, 
+		ret = smbcli_sock_read(transport->socket, 
 				    transport->recv_buffer.buffer + 
 				    transport->recv_buffer.received,
 				    transport->recv_buffer.req_size - 
@@ -467,7 +467,7 @@ static void cli_transport_process_recv(struct cli_transport *transport)
 			if (errno == EINTR || errno == EAGAIN) {
 				return;
 			}
-			cli_transport_dead(transport);
+			smbcli_transport_dead(transport);
 			return;
 		}
 		transport->recv_buffer.received += ret;
@@ -475,7 +475,7 @@ static void cli_transport_process_recv(struct cli_transport *transport)
 
 	if (transport->recv_buffer.received != 0 &&
 	    transport->recv_buffer.received == transport->recv_buffer.req_size) {
-		cli_transport_finish_recv(transport);
+		smbcli_transport_finish_recv(transport);
 	}
 }
 
@@ -483,10 +483,10 @@ static void cli_transport_process_recv(struct cli_transport *transport)
   process some read/write requests that are pending
   return False if the socket is dead
 */
-BOOL cli_transport_process(struct cli_transport *transport)
+BOOL smbcli_transport_process(struct smbcli_transport *transport)
 {
-	cli_transport_process_send(transport);
-	cli_transport_process_recv(transport);
+	smbcli_transport_process_send(transport);
+	smbcli_transport_process_recv(transport);
 	if (transport->socket->fd == -1) {
 		return False;
 	}
@@ -498,19 +498,19 @@ BOOL cli_transport_process(struct cli_transport *transport)
 /*
   put a request into the send queue
 */
-void cli_transport_send(struct cli_request *req)
+void smbcli_transport_send(struct smbcli_request *req)
 {
 	/* check if the transport is dead */
 	if (req->transport->socket->fd == -1) {
-		req->state = CLI_REQUEST_ERROR;
+		req->state = SMBCLI_REQUEST_ERROR;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		return;
 	}
 
 	/* put it on the outgoing socket queue */
-	req->state = CLI_REQUEST_SEND;
-	DLIST_ADD_END(req->transport->pending_send, req, struct cli_request *);
+	req->state = SMBCLI_REQUEST_SEND;
+	DLIST_ADD_END(req->transport->pending_send, req, struct smbcli_request *);
 
 	/* make sure we look for write events */
-	cli_transport_write_enable(req->transport);
+	smbcli_transport_write_enable(req->transport);
 }

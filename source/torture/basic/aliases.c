@@ -20,7 +20,7 @@
 
 #include "includes.h"
 
-int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *fname);
+int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname);
 
 struct trans2_blobs {
 	struct trans2_blobs *next, *prev;
@@ -29,7 +29,7 @@ struct trans2_blobs {
 };
 
 /* look for aliases for a query */
-static void gen_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_offset)
+static void gen_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int level_offset)
 {
 	TALLOC_CTX *mem_ctx;
 	uint16_t level;
@@ -78,7 +78,7 @@ static void gen_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_
 }
 
 /* look for qfsinfo aliases */
-static void qfsinfo_aliases(struct cli_state *cli)
+static void qfsinfo_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QFSINFO;
@@ -99,7 +99,7 @@ static void qfsinfo_aliases(struct cli_state *cli)
 }
 
 /* look for qfileinfo aliases */
-static void qfileinfo_aliases(struct cli_state *cli)
+static void qfileinfo_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QFILEINFO;
@@ -118,25 +118,25 @@ static void qfileinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob(NULL, 4);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 
 	gen_aliases(cli, &t2, 2);
 
-	cli_close(cli->tree, fnum);
-	cli_unlink(cli->tree, fname);
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
 }
 
 
 /* look for qpathinfo aliases */
-static void qpathinfo_aliases(struct cli_state *cli)
+static void qpathinfo_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_QPATHINFO;
@@ -158,29 +158,29 @@ static void qpathinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 6);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli->tree, fnum);
+	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_close(cli->tree, fnum);
 
 	SIVAL(t2.in.params.data, 2, 0);
 
-	cli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
+	smbcli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
 			       fname, STR_TERMINATE);
 
 	gen_aliases(cli, &t2, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	talloc_destroy(mem_ctx);
 }
 
 
 /* look for trans2 findfirst aliases */
-static void findfirst_aliases(struct cli_state *cli)
+static void findfirst_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_FINDFIRST;
@@ -202,14 +202,14 @@ static void findfirst_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli->tree, fnum);
+	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 0, 0);
 	SSVAL(t2.in.params.data, 2, 1);
@@ -217,19 +217,19 @@ static void findfirst_aliases(struct cli_state *cli)
 	SSVAL(t2.in.params.data, 6, 0);
 	SIVAL(t2.in.params.data, 8, 0);
 
-	cli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
+	smbcli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
 			       fname, STR_TERMINATE);
 
 	gen_aliases(cli, &t2, 6);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	talloc_destroy(mem_ctx);
 }
 
 
 
 /* look for aliases for a set function */
-static void gen_set_aliases(struct cli_state *cli, struct smb_trans2 *t2, int level_offset)
+static void gen_set_aliases(struct smbcli_state *cli, struct smb_trans2 *t2, int level_offset)
 {
 	TALLOC_CTX *mem_ctx;
 	uint16_t level;
@@ -295,7 +295,7 @@ static void gen_set_aliases(struct cli_state *cli, struct smb_trans2 *t2, int le
 
 
 /* look for setfileinfo aliases */
-static void setfileinfo_aliases(struct cli_state *cli)
+static void setfileinfo_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_SETFILEINFO;
@@ -314,25 +314,25 @@ static void setfileinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob(NULL, 6);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
 
 	SSVAL(t2.in.params.data, 0, fnum);
 	SSVAL(t2.in.params.data, 4, 0);
 
 	gen_set_aliases(cli, &t2, 2);
 
-	cli_close(cli->tree, fnum);
-	cli_unlink(cli->tree, fname);
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
 }
 
 /* look for setpathinfo aliases */
-static void setpathinfo_aliases(struct cli_state *cli)
+static void setpathinfo_aliases(struct smbcli_state *cli)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_SETPATHINFO;
@@ -354,25 +354,25 @@ static void setpathinfo_aliases(struct cli_state *cli)
 	t2.in.params = data_blob_talloc(mem_ctx, NULL, 4);
 	t2.in.data = data_blob(NULL, 0);
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 
 	fnum = create_complex_file(cli, cli->mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 	}
 
-	cli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
-	cli_close(cli->tree, fnum);
+	smbcli_write(cli->tree, fnum, 0, (char *)&t2, 0, sizeof(t2));
+	smbcli_close(cli->tree, fnum);
 
 	SSVAL(t2.in.params.data, 2, 0);
 
-	cli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
+	smbcli_blob_append_string(cli->session, mem_ctx, &t2.in.params, 
 			       fname, STR_TERMINATE);
 
 	gen_set_aliases(cli, &t2, 0);
 
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fname))) {
-		printf("unlink: %s\n", cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {
+		printf("unlink: %s\n", smbcli_errstr(cli->tree));
 	}
 	talloc_destroy(mem_ctx);
 }
@@ -381,7 +381,7 @@ static void setpathinfo_aliases(struct cli_state *cli)
 /* look for aliased info levels in trans2 calls */
 BOOL torture_trans2_aliases(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 
 	if (!torture_open_connection(&cli)) {
 		return False;

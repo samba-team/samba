@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #define SETUP_REQUEST_TREE(cmd, wct, buflen) do { \
-	req = cli_request_setup(tree, cmd, wct, buflen); \
+	req = smbcli_request_setup(tree, cmd, wct, buflen); \
 	if (!req) return NULL; \
 } while (0)
 
@@ -30,10 +30,10 @@
 /****************************************************************************
  Initialize the tree context
 ****************************************************************************/
-struct cli_tree *cli_tree_init(struct cli_session *session)
+struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session)
 {
-	struct cli_tree *tree;
-	TALLOC_CTX *mem_ctx = talloc_init("cli_tree");
+	struct smbcli_tree *tree;
+	TALLOC_CTX *mem_ctx = talloc_init("smbcli_tree");
 	if (mem_ctx == NULL) {
 		return NULL;
 	}
@@ -54,12 +54,12 @@ struct cli_tree *cli_tree_init(struct cli_session *session)
 /****************************************************************************
 reduce reference count on a tree and destroy if <= 0
 ****************************************************************************/
-void cli_tree_close(struct cli_tree *tree)
+void smbcli_tree_close(struct smbcli_tree *tree)
 {
 	if (!tree) return;
 	tree->reference_count--;
 	if (tree->reference_count <= 0) {
-		cli_session_close(tree->session);
+		smbcli_session_close(tree->session);
 		talloc_destroy(tree->mem_ctx);
 	}
 }
@@ -68,16 +68,16 @@ void cli_tree_close(struct cli_tree *tree)
 /****************************************************************************
  Send a tconX (async send)
 ****************************************************************************/
-struct cli_request *smb_tree_connect_send(struct cli_tree *tree, union smb_tcon *parms)
+struct smbcli_request *smb_tree_connect_send(struct smbcli_tree *tree, union smb_tcon *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	switch (parms->tcon.level) {
 	case RAW_TCON_TCON:
 		SETUP_REQUEST_TREE(SMBtcon, 0, 0);
-		cli_req_append_ascii4(req, parms->tcon.in.service, STR_ASCII);
-		cli_req_append_ascii4(req, parms->tcon.in.password,STR_ASCII);
-		cli_req_append_ascii4(req, parms->tcon.in.dev,     STR_ASCII);
+		smbcli_req_append_ascii4(req, parms->tcon.in.service, STR_ASCII);
+		smbcli_req_append_ascii4(req, parms->tcon.in.password,STR_ASCII);
+		smbcli_req_append_ascii4(req, parms->tcon.in.dev,     STR_ASCII);
 		break;
 
 	case RAW_TCON_TCONX:
@@ -86,14 +86,14 @@ struct cli_request *smb_tree_connect_send(struct cli_tree *tree, union smb_tcon 
 		SSVAL(req->out.vwv, VWV(1), 0);
 		SSVAL(req->out.vwv, VWV(2), parms->tconx.in.flags);
 		SSVAL(req->out.vwv, VWV(3), parms->tconx.in.password.length);
-		cli_req_append_blob(req, &parms->tconx.in.password);
-		cli_req_append_string(req, parms->tconx.in.path,   STR_TERMINATE | STR_UPPER);
-		cli_req_append_string(req, parms->tconx.in.device, STR_TERMINATE | STR_ASCII);
+		smbcli_req_append_blob(req, &parms->tconx.in.password);
+		smbcli_req_append_string(req, parms->tconx.in.path,   STR_TERMINATE | STR_UPPER);
+		smbcli_req_append_string(req, parms->tconx.in.device, STR_TERMINATE | STR_ASCII);
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -103,18 +103,18 @@ struct cli_request *smb_tree_connect_send(struct cli_tree *tree, union smb_tcon 
 /****************************************************************************
  Send a tconX (async recv)
 ****************************************************************************/
-NTSTATUS smb_tree_connect_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
+NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
 {
 	char *p;
 
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
 		goto failed;
 	}
 
 	switch (parms->tcon.level) {
 	case RAW_TCON_TCON:
-		CLI_CHECK_WCT(req, 2);
+		SMBCLI_CHECK_WCT(req, 2);
 		parms->tcon.out.max_xmit = SVAL(req->in.vwv, VWV(0));
 		parms->tcon.out.cnum = SVAL(req->in.vwv, VWV(1));
 		break;
@@ -130,23 +130,23 @@ NTSTATUS smb_tree_connect_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, uni
 		p = req->in.data;
 		if (!p) break;
 
-		p += cli_req_pull_string(req, mem_ctx, &parms->tconx.out.dev_type, 
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->tconx.out.dev_type, 
 					 p, -1, STR_ASCII | STR_TERMINATE);
-		p += cli_req_pull_string(req, mem_ctx, &parms->tconx.out.fs_type, 
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->tconx.out.fs_type, 
 					 p, -1, STR_TERMINATE);
 		break;
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /****************************************************************************
  Send a tconX (sync interface)
 ****************************************************************************/
-NTSTATUS smb_tree_connect(struct cli_tree *tree, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
+NTSTATUS smb_tree_connect(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_tcon *parms)
 {
-	struct cli_request *req = smb_tree_connect_send(tree, parms);
+	struct smbcli_request *req = smb_tree_connect_send(tree, parms);
 	return smb_tree_connect_recv(req, mem_ctx, parms);
 }
 
@@ -154,35 +154,35 @@ NTSTATUS smb_tree_connect(struct cli_tree *tree, TALLOC_CTX *mem_ctx, union smb_
 /****************************************************************************
  Send a tree disconnect.
 ****************************************************************************/
-NTSTATUS smb_tree_disconnect(struct cli_tree *tree)
+NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	if (!tree) return NT_STATUS_OK;
-	req = cli_request_setup(tree, SMBtdis, 0, 0);
+	req = smbcli_request_setup(tree, SMBtdis, 0, 0);
 
-	if (cli_request_send(req)) {
-		cli_request_receive(req);
+	if (smbcli_request_send(req)) {
+		smbcli_request_receive(req);
 	}
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /*
-  a convenient function to establish a cli_tree from scratch, using reasonable default
+  a convenient function to establish a smbcli_tree from scratch, using reasonable default
   parameters
 */
-NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree, 
+NTSTATUS smbcli_tree_full_connection(struct smbcli_tree **ret_tree, 
 				  const char *my_name, 
 				  const char *dest_host, int port,
 				  const char *service, const char *service_type,
 				  const char *user, const char *domain, 
 				  const char *password)
 {
-	struct cli_socket *sock;
-	struct cli_transport *transport;
-	struct cli_session *session;
-	struct cli_tree *tree;
+	struct smbcli_socket *sock;
+	struct smbcli_transport *transport;
+	struct smbcli_session *session;
+	struct smbcli_tree *tree;
 	NTSTATUS status;
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -193,20 +193,20 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 
 	*ret_tree = NULL;
 
-	sock = cli_sock_init();
+	sock = smbcli_sock_init();
 	if (!sock) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* open a TCP socket to the server */
-	if (!cli_sock_connect_byname(sock, dest_host, port)) {
+	if (!smbcli_sock_connect_byname(sock, dest_host, port)) {
 		DEBUG(2,("Failed to establish socket connection - %s\n", strerror(errno)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	transport = cli_transport_init(sock);
+	transport = smbcli_transport_init(sock);
 	if (!transport) {
-		cli_sock_close(sock);
+		smbcli_sock_close(sock);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -214,8 +214,8 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called,  dest_host, 0x20);
 
-	if (!cli_transport_connect(transport, &calling, &called)) {
-		cli_transport_close(transport);
+	if (!smbcli_transport_connect(transport, &calling, &called)) {
+		smbcli_transport_close(transport);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -223,13 +223,13 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	/* negotiate protocol options with the server */
 	status = smb_raw_negotiate(transport);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_transport_close(transport);
+		smbcli_transport_close(transport);
 		return status;
 	}
 
-	session = cli_session_init(transport);
+	session = smbcli_session_init(transport);
 	if (!session) {
-		cli_transport_close(transport);
+		smbcli_transport_close(transport);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -255,16 +255,16 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 
 	status = smb_raw_session_setup(session, mem_ctx, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_session_close(session);
+		smbcli_session_close(session);
 		talloc_destroy(mem_ctx);
 		return status;
 	}
 
 	session->vuid = setup.generic.out.vuid;
 
-	tree = cli_tree_init(session);
+	tree = smbcli_tree_init(session);
 	if (!tree) {
-		cli_session_close(session);
+		smbcli_session_close(session);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -288,7 +288,7 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	SAFE_FREE(in_path);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		cli_tree_close(tree);
+		smbcli_tree_close(tree);
 		talloc_destroy(mem_ctx);
 		return status;
 	}

@@ -138,18 +138,18 @@ static int find_handle(int handle)
 
 
 
-static struct cli_state *c;
+static struct smbcli_state *c;
 
 /*
   a handler function for oplock break requests
 */
-static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static BOOL oplock_handler(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
 {
-	struct cli_tree *tree = private;
-	return cli_oplock_ack(tree, fnum, level);
+	struct smbcli_tree *tree = private;
+	return smbcli_oplock_ack(tree, fnum, level);
 }
 
-void nb_setup(struct cli_state *cli, int id, int warmupt)
+void nb_setup(struct smbcli_state *cli, int id, int warmupt)
 {
 	warmup = warmupt;
 	nbio_id = id;
@@ -162,7 +162,7 @@ void nb_setup(struct cli_state *cli, int id, int warmupt)
 		printf("skipping I/O\n");
 
 	if (cli) {
-		cli_oplock_handler(cli->transport, oplock_handler, cli->tree);
+		smbcli_oplock_handler(cli->transport, oplock_handler, cli->tree);
 	}
 }
 
@@ -560,7 +560,7 @@ void nb_qfsinfo(int level, NTSTATUS status)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS ret;
 
-	mem_ctx = talloc_init("cli_dskattr");
+	mem_ctx = talloc_init("smbcli_dskattr");
 
 	io.generic.level = level;
 	ret = smb_raw_fsinfo(c->tree, mem_ctx, &io);
@@ -582,7 +582,7 @@ void nb_findfirst(const char *mask, int level, int maxcnt, int count, NTSTATUS s
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS ret;
 
-	mem_ctx = talloc_init("cli_dskattr");
+	mem_ctx = talloc_init("smbcli_dskattr");
 
 	io.t2ffirst.level = level;
 	io.t2ffirst.in.max_count = maxcnt;
@@ -630,14 +630,14 @@ void nb_deltree(const char *dname)
 		free(f);
 	}
 
-	total_deleted = cli_deltree(c->tree, dname);
+	total_deleted = smbcli_deltree(c->tree, dname);
 
 	if (total_deleted == -1) {
 		printf("Failed to cleanup tree %s - exiting\n", dname);
 		exit(1);
 	}
 
-	cli_rmdir(c->tree, dname);
+	smbcli_rmdir(c->tree, dname);
 }
 
 void nb_cleanup(const char *cname)
@@ -646,6 +646,6 @@ void nb_cleanup(const char *cname)
 	asprintf(&dname, "\\clients\\%s", cname);
 	nb_deltree(dname);
 	free(dname);
-	cli_rmdir(c->tree, "clients");
+	smbcli_rmdir(c->tree, "clients");
 	children[nbio_id].done = 1;
 }

@@ -768,7 +768,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
         ADS_STRUCT *ads;
         ADS_STATUS rc;
 	const char *servername;
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	struct in_addr 		server_ip;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx = talloc_init("net_ads_printer_publish");
@@ -793,15 +793,15 @@ static int net_ads_printer_publish(int argc, const char **argv)
 
 	resolve_name(servername, &server_ip, 0x20);
 
-	nt_status = cli_full_connection(&cli, lp_netbios_name(), servername, 
+	nt_status = smbcli_full_connection(&cli, lp_netbios_name(), servername, 
 					&server_ip, 0,
 					"IPC$", "IPC",  
 					opt_user_name, opt_workgroup,
 					opt_password ? opt_password : "", 
-					CLI_FULL_CONNECTION_USE_KERBEROS, 
+					SMBCLI_FULL_CONNECTION_USE_KERBEROS, 
 					NULL);
 
-	cli_nt_session_open(cli, PI_SPOOLSS);
+	smbcli_nt_session_open(cli, PI_SPOOLSS);
 	get_remote_printer_publishing_data(cli, mem_ctx, &mods, argv[0]);
 
         rc = ads_add_printer_entry(ads, prt_dn, mem_ctx, &mods);

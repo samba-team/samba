@@ -38,7 +38,7 @@ static BOOL single_search_callback(void *private, union smb_search_data *file)
 /*
   do a single file (non-wildcard) search 
 */
-static NTSTATUS single_search(struct cli_state *cli, 
+static NTSTATUS single_search(struct smbcli_state *cli, 
 			      TALLOC_CTX *mem_ctx,
 			      const char *pattern,
 			      enum smb_search_level level,
@@ -102,7 +102,7 @@ static union smb_search_data *find(const char *name)
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_one_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	BOOL ret = True;
 	int fnum;
@@ -116,7 +116,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -356,7 +356,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 
 	return ret;
 }
@@ -391,7 +391,7 @@ enum continue_type {CONT_FLAGS, CONT_NAME, CONT_RESUME_KEY};
 /*
   do a single file (non-wildcard) search 
 */
-static NTSTATUS multiple_search(struct cli_state *cli, 
+static NTSTATUS multiple_search(struct smbcli_state *cli, 
 				TALLOC_CTX *mem_ctx,
 				const char *pattern,
 				enum smb_search_level level,
@@ -539,7 +539,7 @@ static int search_old_compare(union smb_search_data *d1, union smb_search_data *
 /* 
    basic testing of search calls using many files
 */
-static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_many_files(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	const int num_files = 700;
 	int i, fnum, t;
@@ -568,9 +568,9 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY}
 	};
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 || 
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 || 
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -578,14 +578,14 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (i=0;i<num_files;i++) {
 		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
-		fnum = cli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
+		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
-			printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
+			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
 		free(fname);
-		cli_close(cli->tree, fnum);
+		smbcli_close(cli->tree, fnum);
 	}
 
 
@@ -645,7 +645,7 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
@@ -656,7 +656,7 @@ done:
 */
 BOOL torture_raw_search(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

@@ -24,16 +24,16 @@
 /*
   return the time on a server. This does not require any authentication
 */
-static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
+static time_t smbcli_servertime(const char *host, struct in_addr *ip, int *zone)
 {
 	struct nmb_name calling, called;
 	time_t ret = 0;
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 
-	cli = cli_initialise(NULL);
+	cli = smbcli_initialise(NULL);
 	if (!cli) goto done;
 
-	if (!cli_connect(cli, host, ip)) {
+	if (!smbcli_connect(cli, host, ip)) {
 		fprintf(stderr,"Can't contact server\n");
 		goto done;
 	}
@@ -45,11 +45,11 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 		make_nmb_name(&called, "*SMBSERVER", 0x20);
 	}
 
-	if (!cli_session_request(cli, &calling, &called)) {
+	if (!smbcli_session_request(cli, &calling, &called)) {
 		fprintf(stderr,"Session request failed\n");
 		goto done;
 	}
-	if (!cli_negprot(cli)) {
+	if (!smbcli_negprot(cli)) {
 		fprintf(stderr,"Protocol negotiation failed\n");
 		goto done;
 	}
@@ -58,14 +58,14 @@ static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 	if (zone) *zone = cli->serverzone;
 
 done:
-	if (cli) cli_shutdown(cli);
+	if (cli) smbcli_shutdown(cli);
 	return ret;
 }
 
 /* find the servers time on the opt_host host */
 static time_t nettime(int *zone)
 {
-	return cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, zone);
+	return smbcli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, zone);
 }
 
 /* return a time as a string ready to be passed to /bin/date */
@@ -172,7 +172,7 @@ int net_time(int argc, const char **argv)
 	}
 
 	/* default - print the time */
-	t = cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, NULL);
+	t = smbcli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, NULL);
 	if (t == 0) return -1;
 
 	d_printf("%s", ctime(&t));

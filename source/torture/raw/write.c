@@ -89,7 +89,7 @@ static BOOL check_buffer(char *buf, uint_t seed, int len, int line)
 /*
   test write ops
 */
-static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -103,18 +103,18 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_WRITE_WRITE\n");
 	io.generic.level = RAW_WRITE_WRITE;
 	
-	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -140,7 +140,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.write.out.nwritten, io.write.in.count);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -159,7 +159,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.write.out.nwritten, 4000);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -190,7 +190,7 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ALL_INFO(io.write.in.count + (uint64_t)io.write.in.offset, size);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -198,9 +198,9 @@ static BOOL test_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -208,7 +208,7 @@ done:
 /*
   test writex ops
 */
-static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -222,18 +222,18 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_WRITE_WRITEX\n");
 	io.generic.level = RAW_WRITE_WRITEX;
 	
-	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -260,7 +260,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.writex.out.nwritten, io.writex.in.count);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -279,7 +279,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.writex.out.nwritten, 4000);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -312,7 +312,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Trying locked region\n");
 	cli->session->pid++;
-	if (NT_STATUS_IS_ERR(cli_lock(cli->tree, fnum, 3, 1, 0, WRITE_LOCK))) {
+	if (NT_STATUS_IS_ERR(smbcli_lock(cli->tree, fnum, 3, 1, 0, WRITE_LOCK))) {
 		printf("Failed to lock file at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -340,7 +340,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ALL_INFO(io.writex.in.count + (uint64_t)io.writex.in.offset, size);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -360,7 +360,7 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_ALL_INFO(io.writex.in.count + (uint64_t)io.writex.in.offset, size);
 
 		memset(buf, 0, maxsize);
-		if (cli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
+		if (smbcli_read(cli->tree, fnum, buf, io.writex.in.offset, 4000) != 4000) {
 			printf("read failed at %d\n", __LINE__);
 			ret = False;
 			goto done;
@@ -372,9 +372,9 @@ static BOOL test_writex(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	setup_buffer(buf, seed, maxsize);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -382,7 +382,7 @@ done:
 /*
   test write unlock ops
 */
-static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -396,18 +396,18 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_WRITE_WRITEUNLOCK\n");
 	io.generic.level = RAW_WRITE_WRITEUNLOCK;
 	
-	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -430,7 +430,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.writeunlock.in.data = buf;
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -439,14 +439,14 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(IVAL(buf,0), 0);
 
 	setup_buffer(buf, seed, maxsize);
-	cli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.writeunlock.out.nwritten, io.writeunlock.in.count);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -460,7 +460,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0;
 	io.writeunlock.in.data = buf;
-	cli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -470,7 +470,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -495,7 +495,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0xFFFFFFFF - 2000;
 	io.writeunlock.in.data = buf;
-	cli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -503,7 +503,7 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_ALL_INFO(io.writeunlock.in.count + (uint64_t)io.writeunlock.in.offset, size);
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, io.writeunlock.in.offset, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, io.writeunlock.in.offset, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -511,9 +511,9 @@ static BOOL test_writeunlock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -521,7 +521,7 @@ done:
 /*
   test write close ops
 */
-static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -535,18 +535,18 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	buf = talloc_zero(mem_ctx, maxsize);
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
 	printf("Testing RAW_WRITE_WRITECLOSE\n");
 	io.generic.level = RAW_WRITE_WRITECLOSE;
 	
-	fnum = cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -577,10 +577,10 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	fnum = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	io.writeclose.in.fnum = fnum;
 
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -593,11 +593,11 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.writeclose.out.nwritten, io.writeclose.in.count);
 
-	fnum = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	io.writeclose.in.fnum = fnum;
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 13) != 13) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 13) != 13) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -618,11 +618,11 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
 
-	fnum = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	io.writeclose.in.fnum = fnum;
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, 0, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -652,11 +652,11 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VALUE(io.writeclose.out.nwritten, 4000);
 	CHECK_ALL_INFO(io.writeclose.in.count + (uint64_t)io.writeclose.in.offset, size);
 
-	fnum = cli_open(cli->tree, fname, O_RDWR, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDWR, DENY_NONE);
 	io.writeclose.in.fnum = fnum;
 
 	memset(buf, 0, maxsize);
-	if (cli_read(cli->tree, fnum, buf, io.writeclose.in.offset, 4000) != 4000) {
+	if (smbcli_read(cli->tree, fnum, buf, io.writeclose.in.offset, 4000) != 4000) {
 		printf("read failed at %d\n", __LINE__);
 		ret = False;
 		goto done;
@@ -664,9 +664,9 @@ static BOOL test_writeclose(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_BUFFER(buf, seed, 4000);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -676,7 +676,7 @@ done:
 */
 BOOL torture_raw_write(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

@@ -23,12 +23,12 @@
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
-BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
+BOOL smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_t ack_level)
 {
 	BOOL ret;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup(tree, SMBlockingX, 8, 0);
+	req = smbcli_request_setup(tree, SMBlockingX, 8, 0);
 
 	SSVAL(req->out.vwv,VWV(0),0xFF);
 	SSVAL(req->out.vwv,VWV(1),0);
@@ -43,7 +43,7 @@ BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
 	   subsystem not to allocate an id for a reply */
 	req->one_way_request = 1;
 
-	ret = cli_request_send(req);	
+	ret = smbcli_request_send(req);	
 
 	return ret;
 }
@@ -52,8 +52,8 @@ BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
 /****************************************************************************
 set the oplock handler for a connection
 ****************************************************************************/
-void cli_oplock_handler(struct cli_transport *transport, 
-			BOOL (*handler)(struct cli_transport *, uint16_t, uint16_t, uint8_t, void *),
+void smbcli_oplock_handler(struct smbcli_transport *transport, 
+			BOOL (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
 			void *private)
 {
 	transport->oplock.handler = handler;

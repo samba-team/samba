@@ -67,7 +67,7 @@ typedef struct
 } stack;
 
 #define SEPARATORS " \t\n\r"
-extern struct cli_state *cli;
+extern struct smbcli_state *cli;
 
 /* These defines are for the do_setrattr routine, to indicate
  * setting and reseting of file attributes in the function call */
@@ -538,8 +538,8 @@ static BOOL ensurepath(char *fname)
     {
       safe_strcat(partpath, p, strlen(fname) + 1);
 
-      if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, partpath))) {
-	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, partpath)))
+      if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, partpath))) {
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, partpath)))
 	  {
 	    DEBUG(0, ("Error mkdirhiering\n"));
 	    return False;
@@ -577,7 +577,7 @@ static void do_setrattr(char *name, uint16_t attr, int set)
 {
 	uint16_t oldattr;
 
-	if (NT_STATUS_IS_ERR(cli_getatr(cli->tree, name, &oldattr, NULL, NULL)))
+	if (NT_STATUS_IS_ERR(smbcli_getatr(cli->tree, name, &oldattr, NULL, NULL)))
 		return;
 
 	if (set == ATTRSET) {
@@ -586,8 +586,8 @@ static void do_setrattr(char *name, uint16_t attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (NT_STATUS_IS_ERR(cli_setatr(cli->tree, name, attr, 0))) {
-		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli->tree)));
+	if (NT_STATUS_IS_ERR(smbcli_setatr(cli->tree, name, attr, 0))) {
+		DEBUG(1,("setatr failed: %s\n", smbcli_errstr(cli->tree)));
 	}
 }
 
@@ -637,13 +637,13 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       return;
     }
 
-  fnum = cli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
+  fnum = smbcli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
 
   dos_clean_name(rname);
 
   if (fnum == -1) {
 	  DEBUG(0,("%s opening remote file %s (%s)\n",
-		   cli_errstr(cli->tree),rname, cur_dir));
+		   smbcli_errstr(cli->tree),rname, cur_dir));
 	  return;
   }
 
@@ -656,8 +656,8 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
   safe_strcpy(finfo.name,rname, strlen(rname));
   if (!finfo1) {
 	  size_t size;
-	  if (NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, &finfo.mode, &size, NULL, &finfo.atime, &finfo.mtime))) {
-		  DEBUG(0, ("getattrE: %s\n", cli_errstr(cli->tree)));
+	  if (NT_STATUS_IS_ERR(smbcli_getattrE(cli->tree, fnum, &finfo.mode, &size, NULL, &finfo.atime, &finfo.mtime))) {
+		  DEBUG(0, ("getattrE: %s\n", smbcli_errstr(cli->tree)));
 		  return;
 	  }
 	  finfo.size = size;
@@ -695,10 +695,10 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      
 	      DEBUG(3,("nread=%.0f\n",(double)nread));
 	      
-	      datalen = cli_read(cli->tree, fnum, data, nread, read_size);
+	      datalen = smbcli_read(cli->tree, fnum, data, nread, read_size);
 	      
 	      if (datalen == -1) {
-		      DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli->tree)));
+		      DEBUG(0,("Error reading file %s : %s\n", rname, smbcli_errstr(cli->tree)));
 		      break;
 	      }
 	      
@@ -743,7 +743,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       ntarf++;
     }
   
-  cli_close(cli->tree, fnum);
+  smbcli_close(cli->tree, fnum);
 
   if (shallitime)
     {
@@ -959,7 +959,7 @@ static int get_file(file_info2 finfo)
   DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, (int)finfo.size));
 
   if (ensurepath(finfo.name) && 
-      (fnum=cli_open(cli->tree, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
+      (fnum=smbcli_open(cli->tree, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
       DEBUG(0, ("abandoning restore\n"));
       return(False);
   }
@@ -976,7 +976,7 @@ static int get_file(file_info2 finfo)
     dsize = MIN(dsize, rsize);  /* Should be only what is left */
     DEBUG(5, ("writing %i bytes, bpos = %i ...\n", dsize, bpos));
 
-    if (cli_write(cli->tree, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
+    if (smbcli_write(cli->tree, fnum, 0, buffer_p + bpos, pos, dsize) != dsize) {
 	    DEBUG(0, ("Error writing remote file\n"));
 	    return 0;
     }
@@ -1029,7 +1029,7 @@ static int get_file(file_info2 finfo)
 
   /* Now close the file ... */
 
-  if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
+  if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
 	  DEBUG(0, ("Error closing remote file\n"));
 	  return(False);
   }
@@ -1038,7 +1038,7 @@ static int get_file(file_info2 finfo)
 
   DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-  if (NT_STATUS_IS_ERR(cli_setatr(cli->tree, finfo.name, finfo.mode, finfo.mtime))) {
+  if (NT_STATUS_IS_ERR(smbcli_setatr(cli->tree, finfo.name, finfo.mode, finfo.mtime))) {
 	  if (tar_real_noisy) {
 		  DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
 		  /*return(False); */ /* Ignore, as Win95 does not allow changes */

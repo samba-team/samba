@@ -21,7 +21,7 @@
 #include "includes.h"
 
 struct delete_state {
-	struct cli_tree *tree;
+	struct smbcli_tree *tree;
 	int total_deleted;
 	BOOL failed;
 };
@@ -41,30 +41,30 @@ static void delete_fn(file_info *finfo, const char *name, void *state)
 	asprintf(&s, "%s%s", n, finfo->name);
 
 	if (finfo->mode & FILE_ATTRIBUTE_READONLY) {
-		if (NT_STATUS_IS_ERR(cli_setatr(dstate->tree, s, 0, 0))) {
+		if (NT_STATUS_IS_ERR(smbcli_setatr(dstate->tree, s, 0, 0))) {
 			DEBUG(2,("Failed to remove READONLY on %s - %s\n",
-				 s, cli_errstr(dstate->tree)));			
+				 s, smbcli_errstr(dstate->tree)));			
 		}
 	}
 
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
 		char *s2;
 		asprintf(&s2, "%s\\*", s);
-		cli_unlink(dstate->tree, s2);
-		cli_list(dstate->tree, s2, 
+		smbcli_unlink(dstate->tree, s2);
+		smbcli_list(dstate->tree, s2, 
 			 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 			 delete_fn, state);
 		free(s2);
-		if (NT_STATUS_IS_ERR(cli_rmdir(dstate->tree, s))) {
+		if (NT_STATUS_IS_ERR(smbcli_rmdir(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
-				 s, cli_errstr(dstate->tree)));
+				 s, smbcli_errstr(dstate->tree)));
 			dstate->failed = True;
 		}
 		dstate->total_deleted++;
 	} else {
-		if (NT_STATUS_IS_ERR(cli_unlink(dstate->tree, s))) {
+		if (NT_STATUS_IS_ERR(smbcli_unlink(dstate->tree, s))) {
 			DEBUG(2,("Failed to delete %s - %s\n", 
-				 s, cli_errstr(dstate->tree)));
+				 s, smbcli_errstr(dstate->tree)));
 			dstate->failed = True;
 		}
 		dstate->total_deleted++;
@@ -77,7 +77,7 @@ static void delete_fn(file_info *finfo, const char *name, void *state)
    recursively descend a tree deleting all files
    returns the number of files deleted, or -1 on error
 */
-int cli_deltree(struct cli_tree *tree, const char *dname)
+int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 {
 	char *mask;
 	struct delete_state dstate;
@@ -87,24 +87,24 @@ int cli_deltree(struct cli_tree *tree, const char *dname)
 	dstate.failed = False;
 
 	/* it might be a file */
-	if (NT_STATUS_IS_OK(cli_unlink(tree, dname))) {
+	if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {
 		return 1;
 	}
-	if (NT_STATUS_EQUAL(cli_nt_error(tree), NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
-	    NT_STATUS_EQUAL(cli_nt_error(tree), NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
-	    NT_STATUS_EQUAL(cli_nt_error(tree), NT_STATUS_NO_SUCH_FILE)) {
+	if (NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
+	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
+	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_NO_SUCH_FILE)) {
 		return 0;
 	}
 
 	asprintf(&mask, "%s\\*", dname);
-	cli_unlink(dstate.tree, mask);
-	cli_list(dstate.tree, mask, 
+	smbcli_unlink(dstate.tree, mask);
+	smbcli_list(dstate.tree, mask, 
 		 FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM, 
 		 delete_fn, &dstate);
 	free(mask);
-	if (NT_STATUS_IS_ERR(cli_rmdir(dstate.tree, dname))) {
+	if (NT_STATUS_IS_ERR(smbcli_rmdir(dstate.tree, dname))) {
 		DEBUG(2,("Failed to delete %s - %s\n", 
-			 dname, cli_errstr(dstate.tree)));
+			 dname, smbcli_errstr(dstate.tree)));
 		return -1;
 	}
 	dstate.total_deleted++;

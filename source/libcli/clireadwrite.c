@@ -24,7 +24,7 @@
 /****************************************************************************
   Read size bytes at offset offset using SMBreadX.
 ****************************************************************************/
-ssize_t cli_read(struct cli_tree *tree, int fnum, char *buf, off_t offset, 
+ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, char *buf, off_t offset, 
 		 size_t size)
 {
 	union smb_read parms;
@@ -82,7 +82,7 @@ ssize_t cli_read(struct cli_tree *tree, int fnum, char *buf, off_t offset,
               0x0004 use raw named pipe protocol
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
-ssize_t cli_write(struct cli_tree *tree,
+ssize_t smbcli_write(struct smbcli_tree *tree,
 		  int fnum, uint16_t write_mode,
 		  const char *buf, off_t offset, size_t size)
 {
@@ -128,7 +128,7 @@ ssize_t cli_write(struct cli_tree *tree,
 /****************************************************************************
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
-ssize_t cli_smbwrite(struct cli_tree *tree,
+ssize_t smbcli_smbwrite(struct smbcli_tree *tree,
 		     int fnum, char *buf, off_t offset, size_t size1)
 {
 	union smb_write parms;

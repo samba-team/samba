@@ -33,7 +33,7 @@
 
 
 /* test some ioctls */
-static BOOL test_ioctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_ioctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_ioctl ctl;
 	int fnum;
@@ -45,7 +45,7 @@ static BOOL test_ioctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		printf("Failed to create test.dat - %s\n", cli_errstr(cli->tree));
+		printf("Failed to create test.dat - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -64,12 +64,12 @@ static BOOL test_ioctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	return ret;
 }
 
 /* test some filesystem control functions */
-static BOOL test_fsctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	int fnum;
 	NTSTATUS status;
@@ -81,7 +81,7 @@ static BOOL test_fsctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		printf("Failed to create test.dat - %s\n", cli_errstr(cli->tree));
+		printf("Failed to create test.dat - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -114,7 +114,7 @@ static BOOL test_fsctl(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #endif
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	return ret;
 }
 
@@ -123,7 +123,7 @@ done:
 */
 BOOL torture_raw_ioctl(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
@@ -133,12 +133,12 @@ BOOL torture_raw_ioctl(int dummy)
 
 	mem_ctx = talloc_init("torture_raw_ioctl");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1) {
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
 		printf("Failed to clean " BASEDIR "\n");
 		return False;
 	}
-	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -151,7 +151,7 @@ BOOL torture_raw_ioctl(int dummy)
 	}
 
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);

@@ -29,7 +29,7 @@
  of the ".." name.
 *******************************************************************/
 
-BOOL mask_match(struct cli_state *cli, const char *string, char *pattern, BOOL is_case_sensitive)
+BOOL mask_match(struct smbcli_state *cli, const char *string, char *pattern, BOOL is_case_sensitive)
 {
 	fstring p2, s2;
 

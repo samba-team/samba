@@ -23,7 +23,7 @@
 #include "includes.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
-	req = cli_request_setup(tree, cmd, wct, buflen); \
+	req = smbcli_request_setup(tree, cmd, wct, buflen); \
 	if (!req) return NULL; \
 } while (0)
 
@@ -31,17 +31,17 @@
 /****************************************************************************
  Rename a file - async interface
 ****************************************************************************/
-struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_rename_send(struct smbcli_tree *tree,
 					union smb_rename *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	switch (parms->generic.level) {
 	case RAW_RENAME_RENAME:
 		SETUP_REQUEST(SMBmv, 1, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->rename.in.attrib);
-		cli_req_append_ascii4(req, parms->rename.in.pattern1, STR_TERMINATE);
-		cli_req_append_ascii4(req, parms->rename.in.pattern2, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->rename.in.pattern1, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->rename.in.pattern2, STR_TERMINATE);
 		break;
 
 	case RAW_RENAME_NTRENAME:
@@ -49,13 +49,13 @@ struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
 		SSVAL(req->out.vwv, VWV(0), parms->ntrename.in.attrib);
 		SSVAL(req->out.vwv, VWV(1), parms->ntrename.in.flags);
 		SIVAL(req->out.vwv, VWV(2), parms->ntrename.in.cluster_size);
-		cli_req_append_ascii4(req, parms->ntrename.in.old_name, STR_TERMINATE);
-		cli_req_append_ascii4(req, parms->ntrename.in.new_name, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->ntrename.in.old_name, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->ntrename.in.new_name, STR_TERMINATE);
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -65,29 +65,29 @@ struct cli_request *smb_raw_rename_send(struct cli_tree *tree,
 /****************************************************************************
  Rename a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_rename(struct cli_tree *tree,
+NTSTATUS smb_raw_rename(struct smbcli_tree *tree,
 			union smb_rename *parms)
 {
-	struct cli_request *req = smb_raw_rename_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_rename_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  Delete a file - async interface
 ****************************************************************************/
-struct cli_request *smb_raw_unlink_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_unlink_send(struct smbcli_tree *tree,
 					struct smb_unlink *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBunlink, 1, 0);
 
 	SSVAL(req->out.vwv, VWV(0), parms->in.attrib);
-	cli_req_append_ascii4(req, parms->in.pattern, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->in.pattern, STR_TERMINATE);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 	return req;
@@ -96,24 +96,24 @@ struct cli_request *smb_raw_unlink_send(struct cli_tree *tree,
 /*
   delete a file - sync interface
 */
-NTSTATUS smb_raw_unlink(struct cli_tree *tree,
+NTSTATUS smb_raw_unlink(struct smbcli_tree *tree,
 			struct smb_unlink *parms)
 {
-	struct cli_request *req = smb_raw_unlink_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_unlink_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  create a directory  using TRANSACT2_MKDIR - async interface
 ****************************************************************************/
-static struct cli_request *smb_raw_t2mkdir_send(struct cli_tree *tree, 
+static struct smbcli_request *smb_raw_t2mkdir_send(struct smbcli_tree *tree, 
 						union smb_mkdir *parms)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_MKDIR;
 	TALLOC_CTX *mem_ctx;
-	struct cli_request *req;
+	struct smbcli_request *req;
 	uint16_t data_total;
 
 	mem_ctx = talloc_init("t2mkdir");
@@ -132,7 +132,7 @@ static struct cli_request *smb_raw_t2mkdir_send(struct cli_tree *tree,
 
 	SIVAL(t2.in.params.data, VWV(0), 0); /* reserved */
 
-	cli_blob_append_string(tree->session, mem_ctx, 
+	smbcli_blob_append_string(tree->session, mem_ctx, 
 			       &t2.in.params, parms->t2mkdir.in.path, 0);
 
 	ea_put_list(t2.in.data.data, parms->t2mkdir.in.num_eas, parms->t2mkdir.in.eas);
@@ -147,10 +147,10 @@ static struct cli_request *smb_raw_t2mkdir_send(struct cli_tree *tree,
 /****************************************************************************
  Create a directory - async interface
 ****************************************************************************/
-struct cli_request *smb_raw_mkdir_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_mkdir_send(struct smbcli_tree *tree,
 				       union smb_mkdir *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	if (parms->generic.level == RAW_MKDIR_T2MKDIR) {
 		return smb_raw_t2mkdir_send(tree, parms);
@@ -162,9 +162,9 @@ struct cli_request *smb_raw_mkdir_send(struct cli_tree *tree,
 
 	SETUP_REQUEST(SMBmkdir, 0, 0);
 	
-	cli_req_append_ascii4(req, parms->mkdir.in.path, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->mkdir.in.path, STR_TERMINATE);
 
-	if (!cli_request_send(req)) {
+	if (!smbcli_request_send(req)) {
 		return NULL;
 	}
 
@@ -174,27 +174,27 @@ struct cli_request *smb_raw_mkdir_send(struct cli_tree *tree,
 /****************************************************************************
  Create a directory - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_mkdir(struct cli_tree *tree,
+NTSTATUS smb_raw_mkdir(struct smbcli_tree *tree,
 		       union smb_mkdir *parms)
 {
-	struct cli_request *req = smb_raw_mkdir_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_mkdir_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 /****************************************************************************
  Remove a directory - async interface
 ****************************************************************************/
-struct cli_request *smb_raw_rmdir_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_rmdir_send(struct smbcli_tree *tree,
 				       struct smb_rmdir *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBrmdir, 0, 0);
 	
-	cli_req_append_ascii4(req, parms->in.path, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->in.path, STR_TERMINATE);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -204,24 +204,24 @@ struct cli_request *smb_raw_rmdir_send(struct cli_tree *tree,
 /****************************************************************************
  Remove a directory - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_rmdir(struct cli_tree *tree,
+NTSTATUS smb_raw_rmdir(struct smbcli_tree *tree,
 		       struct smb_rmdir *parms)
 {
-	struct cli_request *req = smb_raw_rmdir_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_rmdir_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  Open a file using TRANSACT2_OPEN - async send 
 ****************************************************************************/
-static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree, 
+static struct smbcli_request *smb_raw_t2open_send(struct smbcli_tree *tree, 
 					       union smb_open *parms)
 {
 	struct smb_trans2 t2;
 	uint16_t setup = TRANSACT2_OPEN;
 	TALLOC_CTX *mem_ctx = talloc_init("smb_raw_t2open");
-	struct cli_request *req;
+	struct smbcli_request *req;
 	uint16_t list_size;
 
 	list_size = ea_list_size(parms->t2open.in.num_eas, parms->t2open.in.eas);
@@ -248,7 +248,7 @@ static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree,
 	SIVAL(t2.in.params.data, VWV(11), 0);
 	SSVAL(t2.in.params.data, VWV(13), 0);
 
-	cli_blob_append_string(tree->session, mem_ctx, 
+	smbcli_blob_append_string(tree->session, mem_ctx, 
 			       &t2.in.params, parms->t2open.in.fname, 
 			       STR_TERMINATE);
 
@@ -265,9 +265,9 @@ static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree,
 /****************************************************************************
  Open a file using TRANSACT2_OPEN - async recv
 ****************************************************************************/
-static NTSTATUS smb_raw_t2open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
+static NTSTATUS smb_raw_t2open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
-	struct cli_transport *transport = req?req->transport:NULL;
+	struct smbcli_transport *transport = req?req->transport:NULL;
 	struct smb_trans2 t2;
 	NTSTATUS status;
 
@@ -294,10 +294,10 @@ static NTSTATUS smb_raw_t2open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx
 /****************************************************************************
  Open a file - async send
 ****************************************************************************/
-struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *parms)
+struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_open *parms)
 {
 	int len;
-	struct cli_request *req = NULL; 
+	struct smbcli_request *req = NULL; 
 
 	switch (parms->open.level) {
 	case RAW_OPEN_T2OPEN:
@@ -307,7 +307,7 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SETUP_REQUEST(SMBopen, 2, 0);
 		SSVAL(req->out.vwv, VWV(0), parms->open.in.flags);
 		SSVAL(req->out.vwv, VWV(1), parms->open.in.search_attrs);
-		cli_req_append_ascii4(req, parms->open.in.fname, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->open.in.fname, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_OPENX:
@@ -324,7 +324,7 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SIVAL(req->out.vwv, VWV(9), parms->openx.in.size);
 		SIVAL(req->out.vwv, VWV(11),parms->openx.in.timeout);
 		SIVAL(req->out.vwv, VWV(13),0); /* reserved */
-		cli_req_append_string(req, parms->openx.in.fname, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->openx.in.fname, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_MKNEW:
@@ -332,7 +332,7 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SSVAL(req->out.vwv, VWV(0), parms->mknew.in.attrib);
 		raw_push_dos_date3(tree->session->transport, 
 				  req->out.vwv, VWV(1), parms->mknew.in.write_time);
-		cli_req_append_ascii4(req, parms->mknew.in.fname, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->mknew.in.fname, STR_TERMINATE);
 		break;
 
 	case RAW_OPEN_CREATE:
@@ -340,7 +340,7 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SSVAL(req->out.vwv, VWV(0), parms->create.in.attrib);
 		raw_push_dos_date3(tree->session->transport, 
 				  req->out.vwv, VWV(1), parms->create.in.write_time);
-		cli_req_append_ascii4(req, parms->create.in.fname, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->create.in.fname, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_CTEMP:
@@ -348,7 +348,7 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SSVAL(req->out.vwv, VWV(0), parms->ctemp.in.attrib);
 		raw_push_dos_date3(tree->session->transport, 
 				  req->out.vwv, VWV(1), parms->ctemp.in.write_time);
-		cli_req_append_ascii4(req, parms->ctemp.in.directory, STR_TERMINATE);
+		smbcli_req_append_ascii4(req, parms->ctemp.in.directory, STR_TERMINATE);
 		break;
 		
 	case RAW_OPEN_SPLOPEN:
@@ -373,13 +373,13 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 		SIVAL(req->out.vwv, 43, parms->ntcreatex.in.impersonation);
 		SCVAL(req->out.vwv, 47, parms->ntcreatex.in.security_flags);
 		
-		cli_req_append_string_len(req, parms->ntcreatex.in.fname, STR_TERMINATE, &len);
+		smbcli_req_append_string_len(req, parms->ntcreatex.in.fname, STR_TERMINATE, &len);
 		SSVAL(req->out.vwv, 5, len);
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -389,10 +389,10 @@ struct cli_request *smb_raw_open_send(struct cli_tree *tree, union smb_open *par
 /****************************************************************************
  Open a file - async recv
 ****************************************************************************/
-NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
+NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
 		goto failed;
 	}
 
@@ -401,7 +401,7 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 		return smb_raw_t2open_recv(req, mem_ctx, parms);
 
 	case RAW_OPEN_OPEN:
-		CLI_CHECK_WCT(req, 7);
+		SMBCLI_CHECK_WCT(req, 7);
 		parms->open.out.fnum = SVAL(req->in.vwv, VWV(0));
 		parms->open.out.attrib = SVAL(req->in.vwv, VWV(1));
 		parms->open.out.write_time = raw_pull_dos_date3(req->transport,
@@ -411,7 +411,7 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 		break;
 
 	case RAW_OPEN_OPENX:
-		CLI_CHECK_MIN_WCT(req, 15);
+		SMBCLI_CHECK_MIN_WCT(req, 15);
 		parms->openx.out.fnum = SVAL(req->in.vwv, VWV(2));
 		parms->openx.out.attrib = SVAL(req->in.vwv, VWV(3));
 		parms->openx.out.write_time = raw_pull_dos_date3(req->transport,
@@ -432,35 +432,35 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 		break;
 
 	case RAW_OPEN_MKNEW:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->mknew.out.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_CREATE:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->create.out.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_CTEMP:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->ctemp.out.fnum = SVAL(req->in.vwv, VWV(0));
-		cli_req_pull_string(req, mem_ctx, &parms->ctemp.out.name, req->in.data, -1, STR_TERMINATE | STR_ASCII);
+		smbcli_req_pull_string(req, mem_ctx, &parms->ctemp.out.name, req->in.data, -1, STR_TERMINATE | STR_ASCII);
 		break;
 
 	case RAW_OPEN_SPLOPEN:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->splopen.out.fnum = SVAL(req->in.vwv, VWV(0));
 		break;
 
 	case RAW_OPEN_NTCREATEX:
-		CLI_CHECK_MIN_WCT(req, 34);
+		SMBCLI_CHECK_MIN_WCT(req, 34);
 		parms->ntcreatex.out.oplock_level =              CVAL(req->in.vwv, 4);
 		parms->ntcreatex.out.fnum =                      SVAL(req->in.vwv, 5);
 		parms->ntcreatex.out.create_action =             IVAL(req->in.vwv, 7);
-		parms->ntcreatex.out.create_time =   cli_pull_nttime(req->in.vwv, 11);
-		parms->ntcreatex.out.access_time =   cli_pull_nttime(req->in.vwv, 19);
-		parms->ntcreatex.out.write_time =    cli_pull_nttime(req->in.vwv, 27);
-		parms->ntcreatex.out.change_time =   cli_pull_nttime(req->in.vwv, 35);
+		parms->ntcreatex.out.create_time =   smbcli_pull_nttime(req->in.vwv, 11);
+		parms->ntcreatex.out.access_time =   smbcli_pull_nttime(req->in.vwv, 19);
+		parms->ntcreatex.out.write_time =    smbcli_pull_nttime(req->in.vwv, 27);
+		parms->ntcreatex.out.change_time =   smbcli_pull_nttime(req->in.vwv, 35);
 		parms->ntcreatex.out.attrib =                   IVAL(req->in.vwv, 43);
 		parms->ntcreatex.out.alloc_size =               BVAL(req->in.vwv, 47);
 		parms->ntcreatex.out.size =                     BVAL(req->in.vwv, 55);
@@ -471,16 +471,16 @@ NTSTATUS smb_raw_open_recv(struct cli_request *req, TALLOC_CTX *mem_ctx, union s
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /****************************************************************************
  Open a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_open(struct cli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms)
+NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms)
 {
-	struct cli_request *req = smb_raw_open_send(tree, parms);
+	struct smbcli_request *req = smb_raw_open_send(tree, parms);
 	return smb_raw_open_recv(req, mem_ctx, parms);
 }
 
@@ -488,9 +488,9 @@ NTSTATUS smb_raw_open(struct cli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open
 /****************************************************************************
  Close a file - async send
 ****************************************************************************/
-struct cli_request *smb_raw_close_send(struct cli_tree *tree, union smb_close *parms)
+struct smbcli_request *smb_raw_close_send(struct smbcli_tree *tree, union smb_close *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	switch (parms->generic.level) {
 	case RAW_CLOSE_GENERIC:
@@ -512,8 +512,8 @@ struct cli_request *smb_raw_close_send(struct cli_tree *tree, union smb_close *p
 
 	if (!req) return NULL;
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -524,19 +524,19 @@ struct cli_request *smb_raw_close_send(struct cli_tree *tree, union smb_close *p
 /****************************************************************************
  Close a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_close(struct cli_tree *tree, union smb_close *parms)
+NTSTATUS smb_raw_close(struct smbcli_tree *tree, union smb_close *parms)
 {
-	struct cli_request *req = smb_raw_close_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_close_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  Locking calls - async interface
 ****************************************************************************/
-struct cli_request *smb_raw_lock_send(struct cli_tree *tree, union smb_lock *parms)
+struct smbcli_request *smb_raw_lock_send(struct smbcli_tree *tree, union smb_lock *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	switch (parms->generic.level) {
 	case RAW_LOCK_GENERIC:
@@ -590,8 +590,8 @@ struct cli_request *smb_raw_lock_send(struct cli_tree *tree, union smb_lock *par
 	}
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -601,26 +601,26 @@ struct cli_request *smb_raw_lock_send(struct cli_tree *tree, union smb_lock *par
 /****************************************************************************
  Locking calls - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_lock(struct cli_tree *tree, union smb_lock *parms)
+NTSTATUS smb_raw_lock(struct smbcli_tree *tree, union smb_lock *parms)
 {
-	struct cli_request *req = smb_raw_lock_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_lock_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 	
 
 /****************************************************************************
  Check for existence of a dir - async send
 ****************************************************************************/
-struct cli_request *smb_raw_chkpath_send(struct cli_tree *tree, struct smb_chkpath *parms)
+struct smbcli_request *smb_raw_chkpath_send(struct smbcli_tree *tree, struct smb_chkpath *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBchkpth, 0, 0);
 
-	cli_req_append_ascii4(req, parms->in.path, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->in.path, STR_TERMINATE);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -630,10 +630,10 @@ struct cli_request *smb_raw_chkpath_send(struct cli_tree *tree, struct smb_chkpa
 /****************************************************************************
  Check for existence of a dir - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_chkpath(struct cli_tree *tree, struct smb_chkpath *parms)
+NTSTATUS smb_raw_chkpath(struct smbcli_tree *tree, struct smb_chkpath *parms)
 {
-	struct cli_request *req = smb_raw_chkpath_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_chkpath_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
@@ -643,15 +643,15 @@ NTSTATUS smb_raw_chkpath(struct cli_tree *tree, struct smb_chkpath *parms)
  flush a file - async send
  a flush to fnum 0xFFFF will flush all files
 ****************************************************************************/
-struct cli_request *smb_raw_flush_send(struct cli_tree *tree, struct smb_flush *parms)
+struct smbcli_request *smb_raw_flush_send(struct smbcli_tree *tree, struct smb_flush *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBflush, 1, 0);
 	SSVAL(req->out.vwv, VWV(0), parms->in.fnum);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -662,20 +662,20 @@ struct cli_request *smb_raw_flush_send(struct cli_tree *tree, struct smb_flush *
 /****************************************************************************
  flush a file - sync interface
 ****************************************************************************/
-NTSTATUS smb_raw_flush(struct cli_tree *tree, struct smb_flush *parms)
+NTSTATUS smb_raw_flush(struct smbcli_tree *tree, struct smb_flush *parms)
 {
-	struct cli_request *req = smb_raw_flush_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_flush_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  seek a file - async send
 ****************************************************************************/
-struct cli_request *smb_raw_seek_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_seek_send(struct smbcli_tree *tree,
 				      struct smb_seek *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBlseek, 4, 0);
 
@@ -683,8 +683,8 @@ struct cli_request *smb_raw_seek_send(struct cli_tree *tree,
 	SSVAL(req->out.vwv, VWV(1), parms->in.mode);
 	SIVALS(req->out.vwv, VWV(2), parms->in.offset);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 	return req;
@@ -693,27 +693,27 @@ struct cli_request *smb_raw_seek_send(struct cli_tree *tree,
 /****************************************************************************
  seek a file - async receive
 ****************************************************************************/
-NTSTATUS smb_raw_seek_recv(struct cli_request *req,
+NTSTATUS smb_raw_seek_recv(struct smbcli_request *req,
 				      struct smb_seek *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
-	CLI_CHECK_WCT(req, 2);	
+	SMBCLI_CHECK_WCT(req, 2);	
 	parms->out.offset = IVAL(req->in.vwv, VWV(0));
 
 failed:	
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /*
   seek a file - sync interface
 */
-NTSTATUS smb_raw_seek(struct cli_tree *tree,
+NTSTATUS smb_raw_seek(struct smbcli_tree *tree,
 		      struct smb_seek *parms)
 {
-	struct cli_request *req = smb_raw_seek_send(tree, parms);
+	struct smbcli_request *req = smb_raw_seek_send(tree, parms);
 	return smb_raw_seek_recv(req, parms);
 }

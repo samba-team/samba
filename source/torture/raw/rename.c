@@ -40,7 +40,7 @@
 /*
   test SMBmv ops
 */
-static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_mv(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_rename io;
 	NTSTATUS status;
@@ -51,9 +51,9 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing SMBmv\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -118,9 +118,9 @@ static BOOL test_mv(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -129,7 +129,7 @@ done:
 /*
   test SMBntrename ops
 */
-static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_ntrename(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	union smb_rename io;
 	NTSTATUS status;
@@ -141,9 +141,9 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("Testing SMBntrename\n");
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -222,7 +222,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
 
-	cli_unlink(cli->tree, fname2);
+	smbcli_unlink(cli->tree, fname2);
 
 	finfo.generic.in.fname = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
@@ -254,7 +254,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
 
-	cli_unlink(cli->tree, fname2);
+	smbcli_unlink(cli->tree, fname2);
 
 	finfo.generic.in.fname = fname1;
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
@@ -303,15 +303,15 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 #if 0
 	{
 		char buf[16384];
-		fnum = cli_open(cli->tree, fname1, O_RDWR, DENY_NONE);
+		fnum = smbcli_open(cli->tree, fname1, O_RDWR, DENY_NONE);
 		memset(buf, 1, sizeof(buf));
-		cli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
-		cli_close(cli->tree, fnum);
+		smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
+		smbcli_close(cli->tree, fnum);
 
-		fnum = cli_open(cli->tree, fname2, O_RDWR, DENY_NONE);
+		fnum = smbcli_open(cli->tree, fname2, O_RDWR, DENY_NONE);
 		memset(buf, 1, sizeof(buf));
-		cli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf)-1);
-		cli_close(cli->tree, fnum);
+		smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf)-1);
+		smbcli_close(cli->tree, fnum);
 
 		torture_all_info(cli->tree, fname1);
 		torture_all_info(cli->tree, fname2);
@@ -353,7 +353,7 @@ static BOOL test_ntrename(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -363,7 +363,7 @@ done:
 */
 BOOL torture_raw_rename(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

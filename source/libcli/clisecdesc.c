@@ -24,7 +24,7 @@
 /****************************************************************************
   query the security descriptor for a open file
  ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_tree *tree, int fnum, 
+SEC_DESC *smbcli_query_secdesc(struct smbcli_tree *tree, int fnum, 
 			    TALLOC_CTX *mem_ctx)
 {
 	struct smb_nttrans parms;
@@ -72,7 +72,7 @@ SEC_DESC *cli_query_secdesc(struct cli_tree *tree, int fnum,
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
-BOOL cli_set_secdesc(struct cli_tree *tree, int fnum, SEC_DESC *sd)
+BOOL smbcli_set_secdesc(struct smbcli_tree *tree, int fnum, SEC_DESC *sd)
 {
 	struct smb_nttrans parms;
 	char param[8];
@@ -82,7 +82,7 @@ BOOL cli_set_secdesc(struct cli_tree *tree, int fnum, SEC_DESC *sd)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	mem_ctx = talloc_init("cli_set_secdesc");
+	mem_ctx = talloc_init("smbcli_set_secdesc");
 
 	prs_init(&pd, 0, mem_ctx, MARSHALL);
 	prs_give_memory(&pd, NULL, 0, True);

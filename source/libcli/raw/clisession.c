@@ -22,17 +22,17 @@
 #include "includes.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \
-	req = cli_request_setup_session(session, cmd, wct, buflen); \
+	req = smbcli_request_setup_session(session, cmd, wct, buflen); \
 	if (!req) return NULL; \
 } while (0)
 
 /****************************************************************************
  Initialize the session context
 ****************************************************************************/
-struct cli_session *cli_session_init(struct cli_transport *transport)
+struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 {
-	struct cli_session *session;
-	TALLOC_CTX *mem_ctx = talloc_init("cli_session");
+	struct smbcli_session *session;
+	TALLOC_CTX *mem_ctx = talloc_init("smbcli_session");
 	if (mem_ctx == NULL) {
 		return NULL;
 	}
@@ -55,11 +55,11 @@ struct cli_session *cli_session_init(struct cli_transport *transport)
 /****************************************************************************
 reduce reference_count and destroy is <= 0
 ****************************************************************************/
-void cli_session_close(struct cli_session *session)
+void smbcli_session_close(struct smbcli_session *session)
 {
 	session->reference_count--;
 	if (session->reference_count <= 0) {
-		cli_transport_close(session->transport);
+		smbcli_transport_close(session->transport);
 		talloc_destroy(session->mem_ctx);
 	}
 }
@@ -67,9 +67,9 @@ void cli_session_close(struct cli_session *session)
 /****************************************************************************
  Perform a session setup (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_session_setup_send(struct cli_session *session, union smb_sesssetup *parms) 
+struct smbcli_request *smb_raw_session_setup_send(struct smbcli_session *session, union smb_sesssetup *parms) 
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	switch (parms->generic.level) {
 	case RAW_SESSSETUP_GENERIC:
@@ -85,11 +85,11 @@ struct cli_request *smb_raw_session_setup_send(struct cli_session *session, unio
 		SSVAL(req->out.vwv,VWV(4),parms->old.in.vc_num);
 		SIVAL(req->out.vwv,VWV(5),parms->old.in.sesskey);
 		SSVAL(req->out.vwv,VWV(7),parms->old.in.password.length);
-		cli_req_append_blob(req, &parms->old.in.password);
-		cli_req_append_string(req, parms->old.in.user, STR_TERMINATE);
-		cli_req_append_string(req, parms->old.in.domain, STR_TERMINATE|STR_UPPER);
-		cli_req_append_string(req, parms->old.in.os, STR_TERMINATE);
-		cli_req_append_string(req, parms->old.in.lanman, STR_TERMINATE);
+		smbcli_req_append_blob(req, &parms->old.in.password);
+		smbcli_req_append_string(req, parms->old.in.user, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->old.in.domain, STR_TERMINATE|STR_UPPER);
+		smbcli_req_append_string(req, parms->old.in.os, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->old.in.lanman, STR_TERMINATE);
 		break;
 
 	case RAW_SESSSETUP_NT1:
@@ -104,12 +104,12 @@ struct cli_request *smb_raw_session_setup_send(struct cli_session *session, unio
 		SSVAL(req->out.vwv, VWV(8), parms->nt1.in.password2.length);
 		SIVAL(req->out.vwv, VWV(9), 0); /* reserved */
 		SIVAL(req->out.vwv, VWV(11), parms->nt1.in.capabilities);
-		cli_req_append_blob(req, &parms->nt1.in.password1);
-		cli_req_append_blob(req, &parms->nt1.in.password2);
-		cli_req_append_string(req, parms->nt1.in.user, STR_TERMINATE);
-		cli_req_append_string(req, parms->nt1.in.domain, STR_TERMINATE|STR_UPPER);
-		cli_req_append_string(req, parms->nt1.in.os, STR_TERMINATE);
-		cli_req_append_string(req, parms->nt1.in.lanman, STR_TERMINATE);
+		smbcli_req_append_blob(req, &parms->nt1.in.password1);
+		smbcli_req_append_blob(req, &parms->nt1.in.password2);
+		smbcli_req_append_string(req, parms->nt1.in.user, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->nt1.in.domain, STR_TERMINATE|STR_UPPER);
+		smbcli_req_append_string(req, parms->nt1.in.os, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->nt1.in.lanman, STR_TERMINATE);
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
@@ -123,15 +123,15 @@ struct cli_request *smb_raw_session_setup_send(struct cli_session *session, unio
 		SSVAL(req->out.vwv, VWV(7), parms->spnego.in.secblob.length);
 		SIVAL(req->out.vwv, VWV(8), 0); /* reserved */
 		SIVAL(req->out.vwv, VWV(10), parms->spnego.in.capabilities);
-		cli_req_append_blob(req, &parms->spnego.in.secblob);
-		cli_req_append_string(req, parms->spnego.in.os, STR_TERMINATE);
-		cli_req_append_string(req, parms->spnego.in.lanman, STR_TERMINATE);
-		cli_req_append_string(req, parms->spnego.in.domain, STR_TERMINATE);
+		smbcli_req_append_blob(req, &parms->spnego.in.secblob);
+		smbcli_req_append_string(req, parms->spnego.in.os, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->spnego.in.lanman, STR_TERMINATE);
+		smbcli_req_append_string(req, parms->spnego.in.domain, STR_TERMINATE);
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -142,20 +142,20 @@ struct cli_request *smb_raw_session_setup_send(struct cli_session *session, unio
 /****************************************************************************
  Perform a session setup (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_session_setup_recv(struct cli_request *req, 
+NTSTATUS smb_raw_session_setup_recv(struct smbcli_request *req, 
 				    TALLOC_CTX *mem_ctx, 
 				    union smb_sesssetup *parms) 
 {
 	uint16_t len;
 	char *p;
 
-	if (!cli_request_receive(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req)) {
+		return smbcli_request_destroy(req);
 	}
 	
 	if (!NT_STATUS_IS_OK(req->status) &&
 	    !NT_STATUS_EQUAL(req->status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		return cli_request_destroy(req);
+		return smbcli_request_destroy(req);
 	}
 
 	switch (parms->generic.level) {
@@ -164,35 +164,35 @@ NTSTATUS smb_raw_session_setup_recv(struct cli_request *req,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_SESSSETUP_OLD:
-		CLI_CHECK_WCT(req, 3);
+		SMBCLI_CHECK_WCT(req, 3);
 		ZERO_STRUCT(parms->old.out);
 		parms->old.out.vuid = SVAL(req->in.hdr, HDR_UID);
 		parms->old.out.action = SVAL(req->in.vwv, VWV(2));
 		p = req->in.data;
 		if (p) {
-			p += cli_req_pull_string(req, mem_ctx, &parms->old.out.os, p, -1, STR_TERMINATE);
-			p += cli_req_pull_string(req, mem_ctx, &parms->old.out.lanman, p, -1, STR_TERMINATE);
-			p += cli_req_pull_string(req, mem_ctx, &parms->old.out.domain, p, -1, STR_TERMINATE);
+			p += smbcli_req_pull_string(req, mem_ctx, &parms->old.out.os, p, -1, STR_TERMINATE);
+			p += smbcli_req_pull_string(req, mem_ctx, &parms->old.out.lanman, p, -1, STR_TERMINATE);
+			p += smbcli_req_pull_string(req, mem_ctx, &parms->old.out.domain, p, -1, STR_TERMINATE);
 		}
 		break;
 
 	case RAW_SESSSETUP_NT1:
-		CLI_CHECK_WCT(req, 3);
+		SMBCLI_CHECK_WCT(req, 3);
 		ZERO_STRUCT(parms->nt1.out);
 		parms->nt1.out.vuid   = SVAL(req->in.hdr, HDR_UID);
 		parms->nt1.out.action = SVAL(req->in.vwv, VWV(2));
 		p = req->in.data;
 		if (p) {
-			p += cli_req_pull_string(req, mem_ctx, &parms->nt1.out.os, p, -1, STR_TERMINATE);
-			p += cli_req_pull_string(req, mem_ctx, &parms->nt1.out.lanman, p, -1, STR_TERMINATE);
+			p += smbcli_req_pull_string(req, mem_ctx, &parms->nt1.out.os, p, -1, STR_TERMINATE);
+			p += smbcli_req_pull_string(req, mem_ctx, &parms->nt1.out.lanman, p, -1, STR_TERMINATE);
 			if (p < (req->in.data + req->in.data_size)) {
-				p += cli_req_pull_string(req, mem_ctx, &parms->nt1.out.domain, p, -1, STR_TERMINATE);
+				p += smbcli_req_pull_string(req, mem_ctx, &parms->nt1.out.domain, p, -1, STR_TERMINATE);
 			}
 		}
 		break;
 
 	case RAW_SESSSETUP_SPNEGO:
-		CLI_CHECK_WCT(req, 4);
+		SMBCLI_CHECK_WCT(req, 4);
 		ZERO_STRUCT(parms->spnego.out);
 		parms->spnego.out.vuid   = SVAL(req->in.hdr, HDR_UID);
 		parms->spnego.out.action = SVAL(req->in.vwv, VWV(2));
@@ -202,16 +202,16 @@ NTSTATUS smb_raw_session_setup_recv(struct cli_request *req,
 			break;
 		}
 
-		parms->spnego.out.secblob = cli_req_pull_blob(req, mem_ctx, p, len);
+		parms->spnego.out.secblob = smbcli_req_pull_blob(req, mem_ctx, p, len);
 		p += parms->spnego.out.secblob.length;
-		p += cli_req_pull_string(req, mem_ctx, &parms->spnego.out.os, p, -1, STR_TERMINATE);
-		p += cli_req_pull_string(req, mem_ctx, &parms->spnego.out.lanman, p, -1, STR_TERMINATE);
-		p += cli_req_pull_string(req, mem_ctx, &parms->spnego.out.domain, p, -1, STR_TERMINATE);
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.os, p, -1, STR_TERMINATE);
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.lanman, p, -1, STR_TERMINATE);
+		p += smbcli_req_pull_string(req, mem_ctx, &parms->spnego.out.domain, p, -1, STR_TERMINATE);
 		break;
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /*
@@ -239,7 +239,7 @@ static DATA_BLOB nt_blob(const char *pass, DATA_BLOB challenge)
 /*
   store the user session key for a transport
 */
-void cli_session_set_user_session_key(struct cli_session *session,
+void smbcli_session_set_user_session_key(struct smbcli_session *session,
 				   const DATA_BLOB *session_key)
 {
 	session->user_session_key = data_blob_talloc(session->mem_ctx, 
@@ -250,19 +250,19 @@ void cli_session_set_user_session_key(struct cli_session *session,
 /*
   setup signing for a NT1 style session setup
 */
-static void use_nt1_session_keys(struct cli_session *session, 
+static void use_nt1_session_keys(struct smbcli_session *session, 
 				 const char *password, const DATA_BLOB  *nt_response)
 {
-	struct cli_transport *transport = session->transport; 
+	struct smbcli_transport *transport = session->transport; 
 	uint8_t nt_hash[16];
 	DATA_BLOB session_key = data_blob(NULL, 16);
 
 	E_md4hash(password, nt_hash);
 	SMBsesskeygen_ntv1(nt_hash, session_key.data);
 
-	cli_transport_simple_set_signing(transport, session_key, *nt_response);
+	smbcli_transport_simple_set_signing(transport, session_key, *nt_response);
 
-	cli_session_set_user_session_key(session, &session_key);
+	smbcli_session_set_user_session_key(session, &session_key);
 	data_blob_free(&session_key);
 }
 
@@ -270,7 +270,7 @@ static void use_nt1_session_keys(struct cli_session *session,
  Perform a session setup (sync interface) using generic interface and the old
  style sesssetup call
 ****************************************************************************/
-static NTSTATUS smb_raw_session_setup_generic_old(struct cli_session *session, 
+static NTSTATUS smb_raw_session_setup_generic_old(struct smbcli_session *session, 
 						  TALLOC_CTX *mem_ctx, 
 						  union smb_sesssetup *parms) 
 {
@@ -319,7 +319,7 @@ static NTSTATUS smb_raw_session_setup_generic_old(struct cli_session *session,
  Perform a session setup (sync interface) using generic interface and the NT1
  style sesssetup call
 ****************************************************************************/
-static NTSTATUS smb_raw_session_setup_generic_nt1(struct cli_session *session, 
+static NTSTATUS smb_raw_session_setup_generic_nt1(struct smbcli_session *session, 
 						  TALLOC_CTX *mem_ctx,
 						  union smb_sesssetup *parms) 
 {
@@ -375,7 +375,7 @@ static NTSTATUS smb_raw_session_setup_generic_nt1(struct cli_session *session,
  Perform a session setup (sync interface) using generic interface and the SPNEGO
  style sesssetup call
 ****************************************************************************/
-static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session, 
+static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *session, 
 						  TALLOC_CTX *mem_ctx,
 						  union smb_sesssetup *parms) 
 {
@@ -396,7 +396,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 	s2.spnego.in.lanman = "Samba";
 	s2.spnego.out.vuid = UID_FIELD_INVALID;
 
-	cli_temp_set_signing(session->transport);
+	smbcli_temp_set_signing(session->transport);
 
 	status = gensec_client_start(&session->gensec);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -455,7 +455,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct cli_session *session
 			session_key_err = gensec_session_key(session->gensec, &session_key);
 		}
 		if (NT_STATUS_IS_OK(session_key_err)) {
-			cli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
+			smbcli_transport_simple_set_signing(session->transport, session_key, null_data_blob);
 		}
 		
 		session->vuid = s2.spnego.out.vuid;
@@ -479,7 +479,7 @@ done:
 			return session_key_err;
 		}
 
-		cli_session_set_user_session_key(session, &session_key);
+		smbcli_session_set_user_session_key(session, &session_key);
 
 		parms->generic.out.vuid = s2.spnego.out.vuid;
 		parms->generic.out.os = s2.spnego.out.os;
@@ -496,7 +496,7 @@ done:
 /****************************************************************************
  Perform a session setup (sync interface) using generic interface
 ****************************************************************************/
-static NTSTATUS smb_raw_session_setup_generic(struct cli_session *session, 
+static NTSTATUS smb_raw_session_setup_generic(struct smbcli_session *session, 
 					      TALLOC_CTX *mem_ctx,
 					      union smb_sesssetup *parms) 
 {
@@ -527,10 +527,10 @@ static NTSTATUS smb_raw_session_setup_generic(struct cli_session *session,
 this interface allows for RAW_SESSSETUP_GENERIC to auto-select session
 setup variant based on negotiated protocol options
 ****************************************************************************/
-NTSTATUS smb_raw_session_setup(struct cli_session *session, TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_session_setup(struct smbcli_session *session, TALLOC_CTX *mem_ctx, 
 			       union smb_sesssetup *parms) 
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	if (parms->generic.level == RAW_SESSSETUP_GENERIC) {
 		NTSTATUS ret = smb_raw_session_setup_generic(session, mem_ctx, parms);
@@ -555,17 +555,17 @@ NTSTATUS smb_raw_session_setup(struct cli_session *session, TALLOC_CTX *mem_ctx,
 /****************************************************************************
  Send a uloggoff (async send)
 *****************************************************************************/
-struct cli_request *smb_raw_ulogoff_send(struct cli_session *session)
+struct smbcli_request *smb_raw_ulogoff_send(struct smbcli_session *session)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	SETUP_REQUEST_SESSION(SMBulogoffX, 2, 0);
 
 	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
 	SSVAL(req->out.vwv, VWV(1), 0);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -575,24 +575,24 @@ struct cli_request *smb_raw_ulogoff_send(struct cli_session *session)
 /****************************************************************************
  Send a uloggoff (sync interface)
 *****************************************************************************/
-NTSTATUS smb_raw_ulogoff(struct cli_session *session)
+NTSTATUS smb_raw_ulogoff(struct smbcli_session *session)
 {
-	struct cli_request *req = smb_raw_ulogoff_send(session);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_ulogoff_send(session);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  Send a SMBexit
 ****************************************************************************/
-NTSTATUS smb_raw_exit(struct cli_session *session)
+NTSTATUS smb_raw_exit(struct smbcli_session *session)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup_session(session, SMBexit, 0, 0);
+	req = smbcli_request_setup_session(session, SMBexit, 0, 0);
 
-	if (cli_request_send(req)) {
-		cli_request_receive(req);
+	if (smbcli_request_send(req)) {
+		smbcli_request_receive(req);
 	}
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }

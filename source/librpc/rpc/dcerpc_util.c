@@ -435,7 +435,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 {
 	NTSTATUS status;
 	BOOL retry;
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	const char *pipe_name;
 	
 	if (!binding->options || !binding->options[0]) {
@@ -458,12 +458,12 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	}
 	    
 	if ((binding->flags & DCERPC_SCHANNEL_ANY) || !username || !username[0]) {
-		status = cli_full_connection(&cli, lp_netbios_name(),
+		status = smbcli_full_connection(&cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     "", "", NULL, 0, &retry);
 	} else {
-		status = cli_full_connection(&cli, lp_netbios_name(),
+		status = smbcli_full_connection(&cli, lp_netbios_name(),
 					     binding->host, NULL, 
 					     "ipc$", "?????", 
 					     username, domain,
@@ -477,14 +477,14 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	status = dcerpc_pipe_open_smb(p, cli->tree, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
-		cli_tdis(cli);
-		cli_shutdown(cli);
+		smbcli_tdis(cli);
+		smbcli_shutdown(cli);
                 return status;
         }
 	
 	/* this ensures that the reference count is decremented so
 	   a pipe close will really close the link */
-	cli_tree_close(cli->tree);
+	smbcli_tree_close(cli->tree);
 	
 	(*p)->flags = binding->flags;
 
@@ -649,7 +649,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 				     const char *pipe_uuid,
 				     uint32_t pipe_version)
 {
-	struct cli_tree *tree;
+	struct smbcli_tree *tree;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	struct dcerpc_binding b;
 
@@ -697,7 +697,7 @@ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p, struct dcerpc_pipe *
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 				  DATA_BLOB *session_key)
 {
-	struct cli_tree *tree;
+	struct smbcli_tree *tree;
 
 	if (p->security_state.generic_state) {
 		return gensec_session_key(p->security_state.generic_state, session_key);

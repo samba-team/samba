@@ -1405,7 +1405,7 @@ static void progress_bar(uint_t i, uint_t total)
  */
 BOOL torture_denytest1(int dummy)
 {
-	static struct cli_state *cli1;
+	static struct smbcli_state *cli1;
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
@@ -1421,10 +1421,10 @@ BOOL torture_denytest1(int dummy)
 	printf("Testing deny modes with 1 connection\n");
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1->tree, fnames[i]);
-		fnum1 = cli_open(cli1->tree, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
-		cli_write(cli1->tree, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
-		cli_close(cli1->tree, fnum1);
+		smbcli_unlink(cli1->tree, fnames[i]);
+		fnum1 = smbcli_open(cli1->tree, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
+		smbcli_write(cli1->tree, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
+		smbcli_close(cli1->tree, fnum1);
 	}
 
 	printf("testing %d entries\n", ARRAY_SIZE(denytable1));
@@ -1437,10 +1437,10 @@ BOOL torture_denytest1(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 
-		fnum1 = cli_open(cli1->tree, fname, 
+		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable1[i].mode1,
 				 denytable1[i].deny1);
-		fnum2 = cli_open(cli1->tree, fname, 
+		fnum2 = smbcli_open(cli1->tree, fname, 
 				 denytable1[i].mode2,
 				 denytable1[i].deny2);
 
@@ -1451,10 +1451,10 @@ BOOL torture_denytest1(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli1->tree, fnum2, (void *)&x, 0, 1) == 1) {
+			if (smbcli_read(cli1->tree, fnum2, (void *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli1->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (smbcli_write(cli1->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}
@@ -1479,12 +1479,12 @@ BOOL torture_denytest1(int dummy)
 			       resultstr(denytable1[i].result));
 		}
 
-		cli_close(cli1->tree, fnum1);
-		cli_close(cli1->tree, fnum2);
+		smbcli_close(cli1->tree, fnum1);
+		smbcli_close(cli1->tree, fnum2);
 	}
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1->tree, fnames[i]);
+		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 		
 	if (!torture_close_connection(cli1)) {
@@ -1501,7 +1501,7 @@ BOOL torture_denytest1(int dummy)
  */
 BOOL torture_denytest2(int dummy)
 {
-	static struct cli_state *cli1, *cli2;
+	static struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
 	int i;
 	BOOL correct = True;
@@ -1517,10 +1517,10 @@ BOOL torture_denytest2(int dummy)
 	printf("Testing deny modes with 2 connections\n");
 
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1->tree, fnames[i]);
-		fnum1 = cli_open(cli1->tree, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
-		cli_write(cli1->tree, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
-		cli_close(cli1->tree, fnum1);
+		smbcli_unlink(cli1->tree, fnames[i]);
+		fnum1 = smbcli_open(cli1->tree, fnames[i], O_RDWR|O_CREAT, DENY_NONE);
+		smbcli_write(cli1->tree, fnum1, 0, fnames[i], 0, strlen(fnames[i]));
+		smbcli_close(cli1->tree, fnum1);
 	}
 
 	GetTimeOfDay(&tv_start);
@@ -1531,10 +1531,10 @@ BOOL torture_denytest2(int dummy)
 
 		progress_bar(i, ARRAY_SIZE(denytable1));
 
-		fnum1 = cli_open(cli1->tree, fname, 
+		fnum1 = smbcli_open(cli1->tree, fname, 
 				 denytable2[i].mode1,
 				 denytable2[i].deny1);
-		fnum2 = cli_open(cli2->tree, fname, 
+		fnum2 = smbcli_open(cli2->tree, fname, 
 				 denytable2[i].mode2,
 				 denytable2[i].deny2);
 
@@ -1545,10 +1545,10 @@ BOOL torture_denytest2(int dummy)
 		} else {
 			char x = 1;
 			res = A_0;
-			if (cli_read(cli2->tree, fnum2, (void *)&x, 0, 1) == 1) {
+			if (smbcli_read(cli2->tree, fnum2, (void *)&x, 0, 1) == 1) {
 				res += A_R;
 			}
-			if (cli_write(cli2->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
+			if (smbcli_write(cli2->tree, fnum2, 0, (void *)&x, 0, 1) == 1) {
 				res += A_W;
 			}
 		}
@@ -1573,12 +1573,12 @@ BOOL torture_denytest2(int dummy)
 			       resultstr(denytable2[i].result));
 		}
 
-		cli_close(cli1->tree, fnum1);
-		cli_close(cli2->tree, fnum2);
+		smbcli_close(cli1->tree, fnum1);
+		smbcli_close(cli2->tree, fnum2);
 	}
 		
 	for (i=0;i<2;i++) {
-		cli_unlink(cli1->tree, fnames[i]);
+		smbcli_unlink(cli1->tree, fnames[i]);
 	}
 
 	if (!torture_close_connection(cli1)) {

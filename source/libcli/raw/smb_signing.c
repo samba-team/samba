@@ -30,7 +30,7 @@ struct smb_basic_signing_context {
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
-static BOOL set_smb_signing_common(struct cli_transport *transport)
+static BOOL set_smb_signing_common(struct smbcli_transport *transport)
 {
 	if (!(transport->negotiate.sec_mode & 
 	      (NEGOTIATE_SECURITY_SIGNATURES_REQUIRED|NEGOTIATE_SECURITY_SIGNATURES_ENABLED))) {
@@ -58,7 +58,7 @@ static BOOL set_smb_signing_common(struct cli_transport *transport)
 /***********************************************************
  SMB signing - Common code for 'real' implementations
 ************************************************************/
-static BOOL set_smb_signing_real_common(struct cli_transport *transport) 
+static BOOL set_smb_signing_real_common(struct smbcli_transport *transport) 
 {
 	if (transport->negotiate.sign_info.mandatory_signing) {
 		DEBUG(5, ("Mandatory SMB signing enabled!\n"));
@@ -77,7 +77,7 @@ static void mark_packet_signed(struct request_buffer *out)
 	SSVAL(out->hdr, HDR_FLG2, flags2);
 }
 
-static BOOL signing_good(struct cli_request *req, unsigned int seq, BOOL good) 
+static BOOL signing_good(struct smbcli_request *req, unsigned int seq, BOOL good) 
 {
 	if (good) {
 		if (!req->transport->negotiate.sign_info.doing_signing) {
@@ -96,7 +96,7 @@ static BOOL signing_good(struct cli_request *req, unsigned int seq, BOOL good)
 			req->transport->negotiate.sign_info.doing_signing = False;
 			if (req->transport->negotiate.sign_info.free_signing_context)
 				req->transport->negotiate.sign_info.free_signing_context(req->transport);
-			cli_null_set_signing(req->transport);
+			smbcli_null_set_signing(req->transport);
 			return True;
 		} else {
 			/* bad packet after signing started - fail and disconnect. */
@@ -206,7 +206,7 @@ BOOL check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key
 /***********************************************************
  SMB signing - Simple implementation - calculate a MAC to send.
 ************************************************************/
-static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
+static void smbcli_request_simple_sign_outgoing_message(struct smbcli_request *req)
 {
 	struct smb_basic_signing_context *data = req->transport->negotiate.sign_info.signing_context;
 
@@ -233,7 +233,7 @@ static void cli_request_simple_sign_outgoing_message(struct cli_request *req)
 /***********************************************************
  SMB signing - Simple implementation - check a MAC sent by server.
 ************************************************************/
-static BOOL cli_request_simple_check_incoming_message(struct cli_request *req)
+static BOOL smbcli_request_simple_check_incoming_message(struct smbcli_request *req)
 {
 	struct smb_basic_signing_context *data 
 		= req->transport->negotiate.sign_info.signing_context;
@@ -249,7 +249,7 @@ static BOOL cli_request_simple_check_incoming_message(struct cli_request *req)
 /***********************************************************
  SMB signing - Simple implementation - free signing context
 ************************************************************/
-static void cli_transport_simple_free_signing_context(struct cli_transport *transport)
+static void smbcli_transport_simple_free_signing_context(struct smbcli_transport *transport)
 {
 	struct smb_basic_signing_context *data = transport->negotiate.sign_info.signing_context;
 
@@ -263,7 +263,7 @@ static void cli_transport_simple_free_signing_context(struct cli_transport *tran
 /***********************************************************
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
-BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
+BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 				      const DATA_BLOB user_session_key, 
 				      const DATA_BLOB response)
 {
@@ -293,9 +293,9 @@ BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
 	/* Initialise the sequence number */
 	data->next_seq_num = 0;
 
-	transport->negotiate.sign_info.sign_outgoing_message = cli_request_simple_sign_outgoing_message;
-	transport->negotiate.sign_info.check_incoming_message = cli_request_simple_check_incoming_message;
-	transport->negotiate.sign_info.free_signing_context = cli_transport_simple_free_signing_context;
+	transport->negotiate.sign_info.sign_outgoing_message = smbcli_request_simple_sign_outgoing_message;
+	transport->negotiate.sign_info.check_incoming_message = smbcli_request_simple_check_incoming_message;
+	transport->negotiate.sign_info.free_signing_context = smbcli_transport_simple_free_signing_context;
 
 	return True;
 }
@@ -304,7 +304,7 @@ BOOL cli_transport_simple_set_signing(struct cli_transport *transport,
 /***********************************************************
  SMB signing - NULL implementation - calculate a MAC to send.
 ************************************************************/
-static void cli_request_null_sign_outgoing_message(struct cli_request *req)
+static void smbcli_request_null_sign_outgoing_message(struct smbcli_request *req)
 {
 	/* we can't zero out the sig, as we might be trying to send a
 	   transport request - which is NBT-level, not SMB level and doesn't
@@ -315,7 +315,7 @@ static void cli_request_null_sign_outgoing_message(struct cli_request *req)
 /***********************************************************
  SMB signing - NULL implementation - check a MAC sent by server.
 ************************************************************/
-static BOOL cli_request_null_check_incoming_message(struct cli_request *req)
+static BOOL smbcli_request_null_check_incoming_message(struct smbcli_request *req)
 {
 	return True;
 }
@@ -324,7 +324,7 @@ static BOOL cli_request_null_check_incoming_message(struct cli_request *req)
 /***********************************************************
  SMB signing - NULL implementation - free signing context
 ************************************************************/
-static void cli_null_free_signing_context(struct cli_transport *transport)
+static void smbcli_null_free_signing_context(struct smbcli_transport *transport)
 {
 }
 
@@ -334,13 +334,13 @@ static void cli_null_free_signing_context(struct cli_transport *transport)
  @note Used as an initialisation only - it will not correctly
        shut down a real signing mechanism
 */
-BOOL cli_null_set_signing(struct cli_transport *transport)
+BOOL smbcli_null_set_signing(struct smbcli_transport *transport)
 {
 	transport->negotiate.sign_info.signing_context = NULL;
 	
-	transport->negotiate.sign_info.sign_outgoing_message = cli_request_null_sign_outgoing_message;
-	transport->negotiate.sign_info.check_incoming_message = cli_request_null_check_incoming_message;
-	transport->negotiate.sign_info.free_signing_context = cli_null_free_signing_context;
+	transport->negotiate.sign_info.sign_outgoing_message = smbcli_request_null_sign_outgoing_message;
+	transport->negotiate.sign_info.check_incoming_message = smbcli_request_null_check_incoming_message;
+	transport->negotiate.sign_info.free_signing_context = smbcli_null_free_signing_context;
 
 	return True;
 }
@@ -348,7 +348,7 @@ BOOL cli_null_set_signing(struct cli_transport *transport)
 /***********************************************************
  SMB signing - TEMP implementation - calculate a MAC to send.
 ************************************************************/
-static void cli_request_temp_sign_outgoing_message(struct cli_request *req)
+static void smbcli_request_temp_sign_outgoing_message(struct smbcli_request *req)
 {
 	/* mark the packet as signed - BEFORE we sign it...*/
 	mark_packet_signed(&req->out);
@@ -363,7 +363,7 @@ static void cli_request_temp_sign_outgoing_message(struct cli_request *req)
 /***********************************************************
  SMB signing - TEMP implementation - check a MAC sent by server.
 ************************************************************/
-static BOOL cli_request_temp_check_incoming_message(struct cli_request *req)
+static BOOL smbcli_request_temp_check_incoming_message(struct smbcli_request *req)
 {
 	return True;
 }
@@ -371,7 +371,7 @@ static BOOL cli_request_temp_check_incoming_message(struct cli_request *req)
 /***********************************************************
  SMB signing - NULL implementation - free signing context
 ************************************************************/
-static void cli_temp_free_signing_context(struct cli_transport *transport)
+static void smbcli_temp_free_signing_context(struct smbcli_transport *transport)
 {
 	return;
 }
@@ -382,7 +382,7 @@ static void cli_temp_free_signing_context(struct cli_transport *transport)
  @note Used as an initialisation only - it will not correctly
        shut down a real signing mechanism
 */
-BOOL cli_temp_set_signing(struct cli_transport *transport)
+BOOL smbcli_temp_set_signing(struct smbcli_transport *transport)
 {
 	if (!set_smb_signing_common(transport)) {
 		return False;
@@ -390,9 +390,9 @@ BOOL cli_temp_set_signing(struct cli_transport *transport)
 
 	transport->negotiate.sign_info.signing_context = NULL;
 	
-	transport->negotiate.sign_info.sign_outgoing_message = cli_request_temp_sign_outgoing_message;
-	transport->negotiate.sign_info.check_incoming_message = cli_request_temp_check_incoming_message;
-	transport->negotiate.sign_info.free_signing_context = cli_temp_free_signing_context;
+	transport->negotiate.sign_info.sign_outgoing_message = smbcli_request_temp_sign_outgoing_message;
+	transport->negotiate.sign_info.check_incoming_message = smbcli_request_temp_check_incoming_message;
+	transport->negotiate.sign_info.free_signing_context = smbcli_temp_free_signing_context;
 
 	return True;
 }
@@ -400,20 +400,20 @@ BOOL cli_temp_set_signing(struct cli_transport *transport)
 /**
  * Free the signing context
  */
-void cli_transport_free_signing_context(struct cli_transport *transport) 
+void smbcli_transport_free_signing_context(struct smbcli_transport *transport) 
 {
 	if (transport->negotiate.sign_info.free_signing_context) {
 		transport->negotiate.sign_info.free_signing_context(transport);
 	}
 
-	cli_null_set_signing(transport);
+	smbcli_null_set_signing(transport);
 }
 
 
 /**
  * Sign a packet with the current mechanism
  */
-void cli_request_calculate_sign_mac(struct cli_request *req)
+void smbcli_request_calculate_sign_mac(struct smbcli_request *req)
 {
 	req->transport->negotiate.sign_info.sign_outgoing_message(req);
 }
@@ -424,7 +424,7 @@ void cli_request_calculate_sign_mac(struct cli_request *req)
  * @return False if we had an established signing connection
  *         which had a back checksum, True otherwise
  */
-BOOL cli_request_check_sign_mac(struct cli_request *req) 
+BOOL smbcli_request_check_sign_mac(struct smbcli_request *req) 
 {
 	BOOL good;
 
@@ -442,9 +442,9 @@ BOOL cli_request_check_sign_mac(struct cli_request *req)
 }
 
 
-BOOL cli_init_signing(struct cli_transport *transport) 
+BOOL smbcli_init_signing(struct smbcli_transport *transport) 
 {
-	if (!cli_null_set_signing(transport)) {
+	if (!smbcli_null_set_signing(transport)) {
 		return False;
 	}
 	

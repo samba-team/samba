@@ -102,9 +102,9 @@ static struct record *recorded;
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *connect_one(char *share, int snum)
+static struct smbcli_state *connect_one(char *share, int snum)
 {
-	struct cli_state *c;
+	struct smbcli_state *c;
 	fstring server, myname;
 	uint_t flags = 0;
 	NTSTATUS status;
@@ -119,10 +119,10 @@ static struct cli_state *connect_one(char *share, int snum)
 	slprintf(myname,sizeof(myname), "lock-%u-%u", getpid(), snum);
 
 	if (use_kerberos)
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+		flags |= SMBCLI_FULL_CONNECTION_USE_KERBEROS;
 
 	do {
-		status = cli_full_connection(&c, myname,
+		status = smbcli_full_connection(&c, myname,
 					     server, NULL,  
 					     share, "?????", 
 					     username[snum], lp_workgroup(), 
@@ -140,7 +140,7 @@ static struct cli_state *connect_one(char *share, int snum)
 }
 
 
-static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
+static void reconnect(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		      char *share[NSERVERS])
 {
 	int server, conn, f;
@@ -150,11 +150,11 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 		if (cli[server][conn]) {
 			for (f=0;f<NFILES;f++) {
 				if (fnum[server][conn][f] != -1) {
-					cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
+					smbcli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 					fnum[server][conn][f] = -1;
 				}
 			}
-			cli_shutdown(cli[server][conn]);
+			smbcli_shutdown(cli[server][conn]);
 		}
 		cli[server][conn] = connect_one(share[server], server);
 		if (!cli[server][conn]) {
@@ -166,7 +166,7 @@ static void reconnect(struct cli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NS
 
 
 
-static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static BOOL test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		     int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		     struct record *rec)
 {
@@ -183,10 +183,10 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_LOCK:
 		/* set a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = NT_STATUS_IS_OK(cli_lock64(cli[server][conn]->tree, 
+			ret[server] = NT_STATUS_IS_OK(smbcli_lock64(cli[server][conn]->tree, 
 						 fnum[server][conn][f],
 						 start, len, LOCK_TIMEOUT, op));
-			status[server] = cli_nt_error(cli[server][conn]->tree);
+			status[server] = smbcli_nt_error(cli[server][conn]->tree);
 			if (!exact_error_codes && 
 			    NT_STATUS_EQUAL(status[server], 
 					    NT_STATUS_FILE_LOCK_CONFLICT)) {
@@ -206,10 +206,10 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_UNLOCK:
 		/* unset a lock */
 		for (server=0;server<NSERVERS;server++) {
-			ret[server] = NT_STATUS_IS_OK(cli_unlock64(cli[server][conn]->tree, 
+			ret[server] = NT_STATUS_IS_OK(smbcli_unlock64(cli[server][conn]->tree, 
 						   fnum[server][conn][f],
 						   start, len));
-			status[server] = cli_nt_error(cli[server][conn]->tree);
+			status[server] = smbcli_nt_error(cli[server][conn]->tree);
 		}
 		if (showall || 
 		    (!hide_unlock_fails && !NT_STATUS_EQUAL(status[0],status[1]))) {
@@ -225,11 +225,11 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	case OP_REOPEN:
 		/* reopen the file */
 		for (server=0;server<NSERVERS;server++) {
-			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
+			smbcli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 		for (server=0;server<NSERVERS;server++) {
-			fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
+			fnum[server][conn][f] = smbcli_open(cli[server][conn]->tree, FILENAME,
 							 O_RDWR|O_CREAT,
 							 DENY_NONE);
 			if (fnum[server][conn][f] == -1) {
@@ -247,7 +247,7 @@ static BOOL test_one(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	return True;
 }
 
-static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void close_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 			int fnum[NSERVERS][NCONNECTIONS][NFILES])
 {
 	int server, conn, f; 
@@ -256,16 +256,16 @@ static void close_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
 		if (fnum[server][conn][f] != -1) {
-			cli_close(cli[server][conn]->tree, fnum[server][conn][f]);
+			smbcli_close(cli[server][conn]->tree, fnum[server][conn][f]);
 			fnum[server][conn][f] = -1;
 		}
 	}
 	for (server=0;server<NSERVERS;server++) {
-		cli_unlink(cli[server][0]->tree, FILENAME);
+		smbcli_unlink(cli[server][0]->tree, FILENAME);
 	}
 }
 
-static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static void open_files(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		       int fnum[NSERVERS][NCONNECTIONS][NFILES])
 {
 	int server, conn, f; 
@@ -273,7 +273,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 	for (server=0;server<NSERVERS;server++)
 	for (conn=0;conn<NCONNECTIONS;conn++)
 	for (f=0;f<NFILES;f++) {
-		fnum[server][conn][f] = cli_open(cli[server][conn]->tree, FILENAME,
+		fnum[server][conn][f] = smbcli_open(cli[server][conn]->tree, FILENAME,
 						 O_RDWR|O_CREAT,
 						 DENY_NONE);
 		if (fnum[server][conn][f] == -1) {
@@ -285,7 +285,7 @@ static void open_files(struct cli_state *cli[NSERVERS][NCONNECTIONS],
 }
 
 
-static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS], 
+static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS], 
 		   int fnum[NSERVERS][NCONNECTIONS][NFILES],
 		   int n)
 {
@@ -311,7 +311,7 @@ static int retest(struct cli_state *cli[NSERVERS][NCONNECTIONS],
  */
 static void test_locks(char *share[NSERVERS])
 {
-	struct cli_state *cli[NSERVERS][NCONNECTIONS];
+	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
 	int n, i, n1, skip, r1, r2; 
 

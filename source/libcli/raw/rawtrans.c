@@ -25,7 +25,7 @@
 /*
   check out of bounds for incoming data
 */
-static BOOL raw_trans_oob(struct cli_request *req,
+static BOOL raw_trans_oob(struct smbcli_request *req,
 			  uint_t offset, uint_t count)
 {
 	char *ptr;
@@ -49,7 +49,7 @@ static BOOL raw_trans_oob(struct cli_request *req,
 /****************************************************************************
   receive a SMB trans or trans2 response allocating the necessary memory
   ****************************************************************************/
-NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
+NTSTATUS smb_raw_trans2_recv(struct smbcli_request *req,
 			     TALLOC_CTX *mem_ctx,
 			     struct smb_trans2 *parms)
 {
@@ -63,8 +63,8 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 	parms->out.params.length = 0;
 	parms->out.params.data = NULL;
 
-	if (!cli_request_receive(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req)) {
+		return smbcli_request_destroy(req);
 	}
 	
 	/*
@@ -73,10 +73,10 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 	 * be treated as such.
 	 */
 	if (NT_STATUS_IS_ERR(req->status)) {
-		return cli_request_destroy(req);
+		return smbcli_request_destroy(req);
 	}
 
-	CLI_CHECK_MIN_WCT(req, 10);
+	SMBCLI_CHECK_MIN_WCT(req, 10);
 
 	/* parse out the lengths */
 	total_data = SVAL(req->in.vwv, VWV(1));
@@ -88,7 +88,7 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		if (!tdata) {
 			DEBUG(0,("smb_raw_receive_trans: failed to enlarge data buffer to %d bytes\n", total_data));
 			req->status = NT_STATUS_NO_MEMORY;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		parms->out.data.data = tdata;
 	}
@@ -98,20 +98,20 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		if (!tparam) {
 			DEBUG(0,("smb_raw_receive_trans: failed to enlarge param buffer to %d bytes\n", total_param));
 			req->status = NT_STATUS_NO_MEMORY;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		parms->out.params.data = tparam;
 	}
 
 	parms->out.setup_count = SVAL(req->in.vwv, VWV(9));
-	CLI_CHECK_WCT(req, 10 + parms->out.setup_count);
+	SMBCLI_CHECK_WCT(req, 10 + parms->out.setup_count);
 
 	if (parms->out.setup_count > 0) {
 		int i;
 		parms->out.setup = talloc(mem_ctx, 2 * parms->out.setup_count);
 		if (!parms->out.setup) {
 			req->status = NT_STATUS_NO_MEMORY;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		for (i=0;i<parms->out.setup_count;i++) {
 			parms->out.setup[i] = SVAL(req->in.vwv, VWV(10+i));
@@ -132,7 +132,7 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 			/* they must *only* shrink */
 			DEBUG(1,("smb_raw_receive_trans: data/params expanded!\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 
 		total_data = total_data2;
@@ -151,7 +151,7 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		    param_count + param_disp > total_param) {
 			DEBUG(1,("smb_raw_receive_trans: Buffer overflow\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		
 		/* check the server isn't being nasty */
@@ -159,7 +159,7 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		    raw_trans_oob(req, data_ofs, data_count)) {
 			DEBUG(1,("smb_raw_receive_trans: out of bounds parameters!\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 
 		if (data_count) {
@@ -180,17 +180,17 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 		if (total_data <= parms->out.data.length && total_param <= parms->out.params.length)
 			break;
 	
-		if (!cli_request_receive_more(req)) {
+		if (!smbcli_request_receive_more(req)) {
 			req->status = NT_STATUS_UNSUCCESSFUL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
-NTSTATUS smb_raw_trans_recv(struct cli_request *req,
+NTSTATUS smb_raw_trans_recv(struct smbcli_request *req,
 			     TALLOC_CTX *mem_ctx,
 			     struct smb_trans2 *parms)
 {
@@ -201,12 +201,12 @@ NTSTATUS smb_raw_trans_recv(struct cli_request *req,
  trans/trans2 raw async interface - only BLOBs used in this interface.
  note that this doesn't yet support multi-part requests
 ****************************************************************************/
-struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
+struct smbcli_request *smb_raw_trans_send_backend(struct smbcli_tree *tree,
 					       struct smb_trans2 *parms,
 					       uint8_t command)
 {
 	int wct = 14 + parms->in.setup_count;
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 	char *outdata,*outparam;
 	int i;
 	int padding;
@@ -217,7 +217,7 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 	else
 		padding = 3;
 	
-	req = cli_request_setup(tree, command, wct, padding);
+	req = smbcli_request_setup(tree, command, wct, padding);
 	if (!req) {
 		return NULL;
 	}
@@ -230,7 +230,7 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 	memset(req->out.data, 0, padding);
 
 	if (command == SMBtrans && parms->in.trans_name) {
-		namelen = cli_req_append_string(req, parms->in.trans_name, 
+		namelen = smbcli_req_append_string(req, parms->in.trans_name, 
 						STR_TERMINATE);
 	}
 
@@ -252,14 +252,14 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 		SSVAL(req->out.vwv,VWV(14)+i*2,parms->in.setup[i]);
 	}
 	if (parms->in.params.data)	{
-		cli_req_append_blob(req, &parms->in.params);
+		smbcli_req_append_blob(req, &parms->in.params);
 	}
 	if (parms->in.data.data) {
-		cli_req_append_blob(req, &parms->in.data);
+		smbcli_req_append_blob(req, &parms->in.data);
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 	
@@ -271,13 +271,13 @@ struct cli_request *smb_raw_trans_send_backend(struct cli_tree *tree,
 note that this doesn't yet support multi-part requests
 ****************************************************************************/
 
-struct cli_request *smb_raw_trans_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_trans_send(struct smbcli_tree *tree,
 				       struct smb_trans2 *parms)
 {
 	return smb_raw_trans_send_backend(tree, parms, SMBtrans);
 }
 
-struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_trans2_send(struct smbcli_tree *tree,
 				       struct smb_trans2 *parms)
 {
 	return smb_raw_trans_send_backend(tree, parms, SMBtrans2);
@@ -286,11 +286,11 @@ struct cli_request *smb_raw_trans2_send(struct cli_tree *tree,
 /*
   trans2 synchronous blob interface
 */
-NTSTATUS smb_raw_trans2(struct cli_tree *tree,
+NTSTATUS smb_raw_trans2(struct smbcli_tree *tree,
 			TALLOC_CTX *mem_ctx,
 			struct smb_trans2 *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	req = smb_raw_trans2_send(tree, parms);
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 	return smb_raw_trans2_recv(req, mem_ctx, parms);
@@ -300,11 +300,11 @@ NTSTATUS smb_raw_trans2(struct cli_tree *tree,
 /*
   trans synchronous blob interface
 */
-NTSTATUS smb_raw_trans(struct cli_tree *tree,
+NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 		       TALLOC_CTX *mem_ctx,
 		       struct smb_trans2 *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	req = smb_raw_trans_send(tree, parms);
 	if (!req) return NT_STATUS_UNSUCCESSFUL;
 	return smb_raw_trans_recv(req, mem_ctx, parms);
@@ -313,16 +313,16 @@ NTSTATUS smb_raw_trans(struct cli_tree *tree,
 /****************************************************************************
   receive a SMB nttrans response allocating the necessary memory
   ****************************************************************************/
-NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
+NTSTATUS smb_raw_nttrans_recv(struct smbcli_request *req,
 			      TALLOC_CTX *mem_ctx,
 			      struct smb_nttrans *parms)
 {
 	uint32_t total_data, recvd_data=0;
 	uint32_t total_param, recvd_param=0;
 
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
 	/* sanity check */
@@ -331,10 +331,10 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 			 "SMBnttrans", 
 			 CVAL(req->in.hdr,HDR_COM)));
 		req->status = NT_STATUS_UNSUCCESSFUL;
-		return cli_request_destroy(req);
+		return smbcli_request_destroy(req);
 	}
 
-	CLI_CHECK_MIN_WCT(req, 18);
+	SMBCLI_CHECK_MIN_WCT(req, 18);
 
 	/* parse out the lengths */
 	total_param = IVAL(req->in.vwv, 3);
@@ -346,18 +346,18 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 	if (parms->out.data.length != total_data ||
 	    parms->out.params.length != total_param) {
 		req->status = NT_STATUS_NO_MEMORY;
-		return cli_request_destroy(req);
+		return smbcli_request_destroy(req);
 	}
 
 	parms->out.setup_count = CVAL(req->in.vwv, 35);
-	CLI_CHECK_WCT(req, 18 + parms->out.setup_count);
+	SMBCLI_CHECK_WCT(req, 18 + parms->out.setup_count);
 
 	if (parms->out.setup_count > 0) {
 		int i;
 		parms->out.setup = talloc(mem_ctx, 2 * parms->out.setup_count);
 		if (!parms->out.setup) {
 			req->status = NT_STATUS_NO_MEMORY;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		for (i=0;i<parms->out.setup_count;i++) {
 			parms->out.setup[i] = SVAL(req->in.vwv, VWV(18+i));
@@ -379,7 +379,7 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 			/* they must *only* shrink */
 			DEBUG(1,("smb_raw_receive_nttrans: data/params expanded!\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 
 		total_data = total_data2;
@@ -400,7 +400,7 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 		    param_count + param_disp > total_param) {
 			DEBUG(1,("smb_raw_receive_nttrans: Buffer overflow\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 		
 		/* check the server isn't being nasty */
@@ -408,7 +408,7 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 		    raw_trans_oob(req, data_ofs, data_count)) {
 			DEBUG(1,("smb_raw_receive_nttrans: out of bounds parameters!\n"));
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 
 		if (data_count) {
@@ -431,9 +431,9 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 			break;
 		}
 		
-		if (!cli_request_receive(req) ||
-		    cli_request_is_error(req)) {
-			return cli_request_destroy(req);
+		if (!smbcli_request_receive(req) ||
+		    smbcli_request_is_error(req)) {
+			return smbcli_request_destroy(req);
 		}
 		
 		/* sanity check */
@@ -441,12 +441,12 @@ NTSTATUS smb_raw_nttrans_recv(struct cli_request *req,
 			DEBUG(0,("smb_raw_receive_nttrans: Expected nttranss, got command 0x%02x\n",
 				 CVAL(req->in.hdr, HDR_COM)));
 			req->status = NT_STATUS_UNSUCCESSFUL;
-			return cli_request_destroy(req);
+			return smbcli_request_destroy(req);
 		}
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
@@ -454,10 +454,10 @@ failed:
  nttrans raw - only BLOBs used in this interface.
  at the moment we only handle a single primary request 
 ****************************************************************************/
-struct cli_request *smb_raw_nttrans_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 					 struct smb_nttrans *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 	char *outdata, *outparam;
 	int i;
 	int align = 0;
@@ -467,7 +467,7 @@ struct cli_request *smb_raw_nttrans_send(struct cli_tree *tree,
 		align = 3;
 	}
 	
-	req = cli_request_setup(tree, SMBnttrans, 
+	req = smbcli_request_setup(tree, SMBnttrans, 
 				19 + parms->in.setup_count, 
 				align +
 				parms->in.params.length +
@@ -502,8 +502,8 @@ struct cli_request *smb_raw_nttrans_send(struct cli_tree *tree,
 		memcpy(outparam, parms->in.data.data, parms->in.data.length);
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -514,11 +514,11 @@ struct cli_request *smb_raw_nttrans_send(struct cli_tree *tree,
 /****************************************************************************
   receive a SMB nttrans response allocating the necessary memory
   ****************************************************************************/
-NTSTATUS smb_raw_nttrans(struct cli_tree *tree,
+NTSTATUS smb_raw_nttrans(struct smbcli_tree *tree,
 			 TALLOC_CTX *mem_ctx,
 			 struct smb_nttrans *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	req = smb_raw_nttrans_send(tree, parms);
 	if (!req) {

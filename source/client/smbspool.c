@@ -34,8 +34,8 @@ extern BOOL		in_client;	/* Boolean for client library */
  */
 
 static void		list_devices(void);
-static struct cli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
-static int		smb_print(struct cli_state *, char *, FILE *);
+static struct smbcli_state	*smb_connect(const char *, const char *, const char *, const char *, const char *);
+static int		smb_print(struct smbcli_state *, char *, FILE *);
 
 
 /*
@@ -57,7 +57,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
   const char	*workgroup;	/* Workgroup */
   FILE		*fp;		/* File to print */
   int		status=0;		/* Status of LPD job */
-  struct cli_state *cli;	/* SMB interface */
+  struct smbcli_state *cli;	/* SMB interface */
 
   /* we expect the URI in argv[0]. Detect the case where it is in argv[1] and cope */
   if (argc > 2 && strncmp(argv[0],"smb://", 6) && !strncmp(argv[1],"smb://", 6)) {
@@ -233,7 +233,7 @@ static int		smb_print(struct cli_state *, char *, FILE *);
     if ((status = smb_print(cli, argv[3] /* title */, fp)) != 0)
       break;
 
-  cli_shutdown(cli);
+  smbcli_shutdown(cli);
 
  /*
   * Return the queue status...
@@ -262,14 +262,14 @@ list_devices(void)
  * 'smb_connect()' - Return a connection to a server.
  */
 
-static struct cli_state *		/* O - SMB connection */
+static struct smbcli_state *		/* O - SMB connection */
 smb_connect(const char *workgroup,		/* I - Workgroup */
             const char *server,		/* I - Server */
             const char *share,		/* I - Printer */
             const char *username,		/* I - Username */
             const char *password)		/* I - Password */
 {
-  struct cli_state	*c;		/* New connection */
+  struct smbcli_state	*c;		/* New connection */
   char *myname;		/* Client name */
   NTSTATUS nt_status;
 
@@ -279,7 +279,7 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
 
   myname = get_myname();  
   	
-  nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
+  nt_status = smbcli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
 				  username, workgroup, password, 0, NULL);
   
   free(myname);
@@ -301,7 +301,7 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
  */
 
 static int				/* O - 0 = success, non-0 = failure */
-smb_print(struct cli_state *cli,	/* I - SMB connection */
+smb_print(struct smbcli_state *cli,	/* I - SMB connection */
           char             *title,	/* I - Title/job name */
           FILE             *fp)		/* I - File to print */
 {
@@ -324,10 +324,10 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   * Open the printer device...
   */
 
-  if ((fnum = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE)) == -1)
+  if ((fnum = smbcli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE)) == -1)
   {
     fprintf(stderr, "ERROR: %s opening remote file %s\n",
-            cli_errstr(cli), title);
+            smbcli_errstr(cli), title);
     return (1);
   }
 
@@ -342,19 +342,19 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
 
   while ((nbytes = fread(buffer, 1, sizeof(buffer), fp)) > 0)
   {
-    if (cli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes)
+    if (smbcli_write(cli, fnum, 0, buffer, tbytes, nbytes) != nbytes)
     {
-      fprintf(stderr, "ERROR: Error writing file: %s\n", cli_errstr(cli));
+      fprintf(stderr, "ERROR: Error writing file: %s\n", smbcli_errstr(cli));
       break;
     }
 
     tbytes += nbytes;
   } 
 
-  if (!cli_close(cli, fnum))
+  if (!smbcli_close(cli, fnum))
   {
     fprintf(stderr, "ERROR: %s closing remote file %s\n",
-            cli_errstr(cli), title);
+            smbcli_errstr(cli), title);
     return (1);
   }
   else

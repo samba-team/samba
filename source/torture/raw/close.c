@@ -25,7 +25,7 @@
 */
 BOOL torture_raw_close(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	union smb_close io;
@@ -100,7 +100,7 @@ BOOL torture_raw_close(int dummy)
 	}
 	    
 
-	cli_unlink(cli->tree, fname);
+	smbcli_unlink(cli->tree, fname);
 	REOPEN;
 
 	finfo2.generic.in.fname = fname;
@@ -137,7 +137,7 @@ BOOL torture_raw_close(int dummy)
 	CHECK_STATUS(status, NT_STATUS_UNSUCCESSFUL);
 
 	printf("testing flush\n");
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 
 	io_flush.in.fnum = fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
@@ -162,8 +162,8 @@ BOOL torture_raw_close(int dummy)
 	
 
 done:
-	cli_close(cli->tree, fnum);
-	cli_unlink(cli->tree, fname);
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
 	return ret;

@@ -22,25 +22,25 @@
 #include "includes.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
-	req = cli_request_setup(tree, cmd, wct, buflen); \
+	req = smbcli_request_setup(tree, cmd, wct, buflen); \
 	if (!req) return NULL; \
 } while (0)
 
 /* 
    send a raw smb ioctl - async send
 */
-static struct cli_request *smb_raw_smbioctl_send(struct cli_tree *tree, 
+static struct smbcli_request *smb_raw_smbioctl_send(struct smbcli_tree *tree, 
 						 union smb_ioctl *parms)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	SETUP_REQUEST(SMBioctl, 3, 0);
 
 	SSVAL(req->out.vwv, VWV(0), parms->ioctl.in.fnum);
 	SIVAL(req->out.vwv, VWV(1), parms->ioctl.in.request);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -50,17 +50,17 @@ static struct cli_request *smb_raw_smbioctl_send(struct cli_tree *tree,
 /* 
    send a raw smb ioctl - async recv
 */
-static NTSTATUS smb_raw_smbioctl_recv(struct cli_request *req, 
+static NTSTATUS smb_raw_smbioctl_recv(struct smbcli_request *req, 
 				      TALLOC_CTX *mem_ctx, 
 				      union smb_ioctl *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
-	parms->ioctl.out.blob = cli_req_pull_blob(req, mem_ctx, req->in.data, -1);
-	return cli_request_destroy(req);
+	parms->ioctl.out.blob = smbcli_req_pull_blob(req, mem_ctx, req->in.data, -1);
+	return smbcli_request_destroy(req);
 }
 
 
@@ -68,7 +68,7 @@ static NTSTATUS smb_raw_smbioctl_recv(struct cli_request *req,
 /****************************************************************************
 NT ioctl (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_ntioctl_send(struct cli_tree *tree, 
+static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree, 
 						union smb_ioctl *parms)
 {
 	struct smb_nttrans nt;
@@ -93,26 +93,26 @@ static struct cli_request *smb_raw_ntioctl_send(struct cli_tree *tree,
 /****************************************************************************
 NT ioctl (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_ntioctl_recv(struct cli_request *req, 
+static NTSTATUS smb_raw_ntioctl_recv(struct smbcli_request *req, 
 				     TALLOC_CTX *mem_ctx,
 				     union smb_ioctl *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
-	parms->ntioctl.out.blob = cli_req_pull_blob(req, mem_ctx, req->in.data, -1);
-	return cli_request_destroy(req);
+	parms->ntioctl.out.blob = smbcli_req_pull_blob(req, mem_ctx, req->in.data, -1);
+	return smbcli_request_destroy(req);
 }
 
 
 /* 
    send a raw ioctl - async send
 */
-struct cli_request *smb_raw_ioctl_send(struct cli_tree *tree, union smb_ioctl *parms)
+struct smbcli_request *smb_raw_ioctl_send(struct smbcli_tree *tree, union smb_ioctl *parms)
 {
-	struct cli_request *req = NULL;
+	struct smbcli_request *req = NULL;
 	
 	switch (parms->generic.level) {
 	case RAW_IOCTL_IOCTL:
@@ -130,7 +130,7 @@ struct cli_request *smb_raw_ioctl_send(struct cli_tree *tree, union smb_ioctl *p
 /* 
    recv a raw ioctl - async recv
 */
-NTSTATUS smb_raw_ioctl_recv(struct cli_request *req,
+NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
 			    TALLOC_CTX *mem_ctx, union smb_ioctl *parms)
 {
 	switch (parms->generic.level) {
@@ -146,10 +146,10 @@ NTSTATUS smb_raw_ioctl_recv(struct cli_request *req,
 /* 
    send a raw ioctl - sync interface
 */
-NTSTATUS smb_raw_ioctl(struct cli_tree *tree, 
+NTSTATUS smb_raw_ioctl(struct smbcli_tree *tree, 
 		TALLOC_CTX *mem_ctx, union smb_ioctl *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	req = smb_raw_ioctl_send(tree, parms);
 	return smb_raw_ioctl_recv(req, mem_ctx, parms);
 }

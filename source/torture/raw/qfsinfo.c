@@ -109,7 +109,7 @@ static union smb_fsinfo *find(const char *name)
 */
 BOOL torture_raw_qfsinfo(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int i;
 	BOOL ret = True;
 	int count;

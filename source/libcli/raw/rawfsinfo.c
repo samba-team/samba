@@ -25,15 +25,15 @@
 /****************************************************************************
  Query FS Info - SMBdskattr call (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_dskattr_send(struct cli_tree *tree, 
+static struct smbcli_request *smb_raw_dskattr_send(struct smbcli_tree *tree, 
 						union smb_fsinfo *fsinfo)
 {
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
-	req = cli_request_setup(tree, SMBdskattr, 0, 0);
+	req = smbcli_request_setup(tree, SMBdskattr, 0, 0);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -43,29 +43,29 @@ static struct cli_request *smb_raw_dskattr_send(struct cli_tree *tree,
 /****************************************************************************
  Query FS Info - SMBdskattr call (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_dskattr_recv(struct cli_request *req,
+static NTSTATUS smb_raw_dskattr_recv(struct smbcli_request *req,
 				     union smb_fsinfo *fsinfo)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
 		goto failed;
 	}
 
-	CLI_CHECK_WCT(req, 5);
+	SMBCLI_CHECK_WCT(req, 5);
 	fsinfo->dskattr.out.units_total =     SVAL(req->in.vwv, VWV(0));
 	fsinfo->dskattr.out.blocks_per_unit = SVAL(req->in.vwv, VWV(1));
 	fsinfo->dskattr.out.block_size =      SVAL(req->in.vwv, VWV(2));
 	fsinfo->dskattr.out.units_free =      SVAL(req->in.vwv, VWV(3));
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /****************************************************************************
  RAW_QFS_ trans2 interface via blobs (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_qfsinfo_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_qfsinfo_send(struct smbcli_tree *tree,
 						TALLOC_CTX *mem_ctx,
 						uint16_t info_level)
 {
@@ -94,7 +94,7 @@ static struct cli_request *smb_raw_qfsinfo_send(struct cli_tree *tree,
 /****************************************************************************
  RAW_QFS_ trans2 interface via blobs (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_qfsinfo_blob_recv(struct cli_request *req,
+static NTSTATUS smb_raw_qfsinfo_blob_recv(struct smbcli_request *req,
 					  TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *blob)
 {
@@ -129,7 +129,7 @@ static NTSTATUS smb_raw_qfsinfo_blob_recv(struct cli_request *req,
 /****************************************************************************
  Query FSInfo raw interface (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_fsinfo_send(struct cli_tree *tree, 
+struct smbcli_request *smb_raw_fsinfo_send(struct smbcli_tree *tree, 
 					TALLOC_CTX *mem_ctx, 
 					union smb_fsinfo *fsinfo)
 {
@@ -153,14 +153,14 @@ struct cli_request *smb_raw_fsinfo_send(struct cli_tree *tree,
 /****************************************************************************
  Query FSInfo raw interface (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_fsinfo_recv(struct cli_request *req, 
+NTSTATUS smb_raw_fsinfo_recv(struct smbcli_request *req, 
 			     TALLOC_CTX *mem_ctx, 
 			     union smb_fsinfo *fsinfo)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
 	int i;
-	struct cli_session *session = req?req->session:NULL;
+	struct smbcli_session *session = req?req->session:NULL;
 
 	if (fsinfo->generic.level == RAW_QFS_DSKATTR) {
 		return smb_raw_dskattr_recv(req, fsinfo);
@@ -190,7 +190,7 @@ NTSTATUS smb_raw_fsinfo_recv(struct cli_request *req,
 	case RAW_QFS_VOLUME:
 		QFS_CHECK_MIN_SIZE(5);
 		fsinfo->volume.out.serial_number = IVAL(blob.data, 0);
-		cli_blob_pull_string(session, mem_ctx, &blob, 
+		smbcli_blob_pull_string(session, mem_ctx, &blob, 
 				     &fsinfo->volume.out.volume_name,
 				     4, 5, STR_LEN8BIT | STR_NOALIGN);
 		break;		
@@ -198,9 +198,9 @@ NTSTATUS smb_raw_fsinfo_recv(struct cli_request *req,
 	case RAW_QFS_VOLUME_INFO:
 	case RAW_QFS_VOLUME_INFORMATION:
 		QFS_CHECK_MIN_SIZE(18);
-		fsinfo->volume_info.out.create_time   = cli_pull_nttime(blob.data, 0);
+		fsinfo->volume_info.out.create_time   = smbcli_pull_nttime(blob.data, 0);
 		fsinfo->volume_info.out.serial_number = IVAL(blob.data, 8);
-		cli_blob_pull_string(session, mem_ctx, &blob, 
+		smbcli_blob_pull_string(session, mem_ctx, &blob, 
 				     &fsinfo->volume_info.out.volume_name,
 				     12, 18, STR_UNICODE);
 		break;		
@@ -226,7 +226,7 @@ NTSTATUS smb_raw_fsinfo_recv(struct cli_request *req,
 		QFS_CHECK_MIN_SIZE(12);
 		fsinfo->attribute_info.out.fs_attr   =                 IVAL(blob.data, 0);
 		fsinfo->attribute_info.out.max_file_component_length = IVAL(blob.data, 4);
-		cli_blob_pull_string(session, mem_ctx, &blob, 
+		smbcli_blob_pull_string(session, mem_ctx, &blob, 
 				     &fsinfo->attribute_info.out.fs_type,
 				     8, 12, STR_UNICODE);
 		break;		
@@ -274,10 +274,10 @@ failed:
 /****************************************************************************
  Query FSInfo raw interface (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_fsinfo(struct cli_tree *tree, 
+NTSTATUS smb_raw_fsinfo(struct smbcli_tree *tree, 
 			TALLOC_CTX *mem_ctx, 
 			union smb_fsinfo *fsinfo)
 {
-	struct cli_request *req = smb_raw_fsinfo_send(tree, mem_ctx, fsinfo);
+	struct smbcli_request *req = smb_raw_fsinfo_send(tree, mem_ctx, fsinfo);
 	return smb_raw_fsinfo_recv(req, mem_ctx, fsinfo);
 }

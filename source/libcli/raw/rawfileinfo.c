@@ -36,7 +36,7 @@
 /****************************************************************************
  Handle qfileinfo/qpathinfo trans2 backend.
 ****************************************************************************/
-static NTSTATUS smb_raw_info_backend(struct cli_session *session,
+static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 				     TALLOC_CTX *mem_ctx,
 				     union smb_fileinfo *parms, 
 				     DATA_BLOB *blob)
@@ -95,10 +95,10 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 		if (blob->length != 36) {
 			FINFO_CHECK_SIZE(40);
 		}
-		parms->basic_info.out.create_time = cli_pull_nttime(blob->data, 0);
-		parms->basic_info.out.access_time = cli_pull_nttime(blob->data, 8);
-		parms->basic_info.out.write_time =  cli_pull_nttime(blob->data, 16);
-		parms->basic_info.out.change_time = cli_pull_nttime(blob->data, 24);
+		parms->basic_info.out.create_time = smbcli_pull_nttime(blob->data, 0);
+		parms->basic_info.out.access_time = smbcli_pull_nttime(blob->data, 8);
+		parms->basic_info.out.write_time =  smbcli_pull_nttime(blob->data, 16);
+		parms->basic_info.out.change_time = smbcli_pull_nttime(blob->data, 24);
 		parms->basic_info.out.attrib = 	               IVAL(blob->data, 32);
 		return NT_STATUS_OK;
 
@@ -121,17 +121,17 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
 		FINFO_CHECK_MIN_SIZE(4);
-		cli_blob_pull_string(session, mem_ctx, blob, 
+		smbcli_blob_pull_string(session, mem_ctx, blob, 
 				     &parms->name_info.out.fname, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
 		FINFO_CHECK_MIN_SIZE(72);
-		parms->all_info.out.create_time =           cli_pull_nttime(blob->data, 0);
-		parms->all_info.out.access_time =           cli_pull_nttime(blob->data, 8);
-		parms->all_info.out.write_time =            cli_pull_nttime(blob->data, 16);
-		parms->all_info.out.change_time =           cli_pull_nttime(blob->data, 24);
+		parms->all_info.out.create_time =           smbcli_pull_nttime(blob->data, 0);
+		parms->all_info.out.access_time =           smbcli_pull_nttime(blob->data, 8);
+		parms->all_info.out.write_time =            smbcli_pull_nttime(blob->data, 16);
+		parms->all_info.out.change_time =           smbcli_pull_nttime(blob->data, 24);
 		parms->all_info.out.attrib =                IVAL(blob->data, 32);
 		parms->all_info.out.alloc_size =            BVAL(blob->data, 40);
 		parms->all_info.out.size =                  BVAL(blob->data, 48);
@@ -139,14 +139,14 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 		parms->all_info.out.delete_pending =        CVAL(blob->data, 60);
 		parms->all_info.out.directory =             CVAL(blob->data, 61);
 		parms->all_info.out.ea_size =               IVAL(blob->data, 64);
-		cli_blob_pull_string(session, mem_ctx, blob,
+		smbcli_blob_pull_string(session, mem_ctx, blob,
 				     &parms->all_info.out.fname, 68, 72, STR_UNICODE);
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 		FINFO_CHECK_MIN_SIZE(4);
-		cli_blob_pull_string(session, mem_ctx, blob, 
+		smbcli_blob_pull_string(session, mem_ctx, blob, 
 				     &parms->alt_name_info.out.fname, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
 
@@ -166,7 +166,7 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 			}
 			parms->stream_info.out.streams[n].size =       BVAL(blob->data, ofs +  8);
 			parms->stream_info.out.streams[n].alloc_size = BVAL(blob->data, ofs + 16);
-			cli_blob_pull_string(session, mem_ctx, blob, 
+			smbcli_blob_pull_string(session, mem_ctx, blob, 
 					     &parms->stream_info.out.streams[n].stream_name, 
 					     ofs+4, ofs+24, STR_UNICODE);
 			parms->stream_info.out.num_streams++;
@@ -218,9 +218,9 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 		FINFO_CHECK_SIZE(100);
 		parms->unix_basic_info.out.end_of_file        =            BVAL(blob->data,  0);
 		parms->unix_basic_info.out.num_bytes          =            BVAL(blob->data,  8);
-		parms->unix_basic_info.out.status_change_time = cli_pull_nttime(blob->data, 16);
-		parms->unix_basic_info.out.access_time        = cli_pull_nttime(blob->data, 24);
-		parms->unix_basic_info.out.change_time        = cli_pull_nttime(blob->data, 32);
+		parms->unix_basic_info.out.status_change_time = smbcli_pull_nttime(blob->data, 16);
+		parms->unix_basic_info.out.access_time        = smbcli_pull_nttime(blob->data, 24);
+		parms->unix_basic_info.out.change_time        = smbcli_pull_nttime(blob->data, 32);
 		parms->unix_basic_info.out.uid                =            BVAL(blob->data, 40);
 		parms->unix_basic_info.out.gid                =            BVAL(blob->data, 48);
 		parms->unix_basic_info.out.file_type          =            IVAL(blob->data, 52);
@@ -232,16 +232,16 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_UNIX_LINK:
-		cli_blob_pull_string(session, mem_ctx, blob, 
+		smbcli_blob_pull_string(session, mem_ctx, blob, 
 				     &parms->unix_link_info.out.link_dest, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
 		
 	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:		
 		FINFO_CHECK_SIZE(56);
-		parms->network_open_information.out.create_time = cli_pull_nttime(blob->data,  0);
-		parms->network_open_information.out.access_time = cli_pull_nttime(blob->data,  8);
-		parms->network_open_information.out.write_time =  cli_pull_nttime(blob->data, 16);
-		parms->network_open_information.out.change_time = cli_pull_nttime(blob->data, 24);
+		parms->network_open_information.out.create_time = smbcli_pull_nttime(blob->data,  0);
+		parms->network_open_information.out.access_time = smbcli_pull_nttime(blob->data,  8);
+		parms->network_open_information.out.write_time =  smbcli_pull_nttime(blob->data, 16);
+		parms->network_open_information.out.change_time = smbcli_pull_nttime(blob->data, 24);
 		parms->network_open_information.out.alloc_size =             BVAL(blob->data, 32);
 		parms->network_open_information.out.size = 	             BVAL(blob->data, 40);
 		parms->network_open_information.out.attrib = 	             IVAL(blob->data, 48);
@@ -260,12 +260,12 @@ static NTSTATUS smb_raw_info_backend(struct cli_session *session,
 /****************************************************************************
  Very raw query file info - returns param/data blobs - (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_fileinfo_blob_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tree,
 						      uint16_t fnum, uint16_t info_level)
 {
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_QFILEINFO;
-	struct cli_request *req;
+	struct smbcli_request *req;
 	TALLOC_CTX *mem_ctx = talloc_init("raw_fileinfo");
 	
 	tp.in.max_setup = 0;
@@ -297,7 +297,7 @@ static struct cli_request *smb_raw_fileinfo_blob_send(struct cli_tree *tree,
 /****************************************************************************
  Very raw query file info - returns param/data blobs - (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_fileinfo_blob_recv(struct cli_request *req,
+static NTSTATUS smb_raw_fileinfo_blob_recv(struct smbcli_request *req,
 					   TALLOC_CTX *mem_ctx,
 					   DATA_BLOB *blob)
 {
@@ -312,13 +312,13 @@ static NTSTATUS smb_raw_fileinfo_blob_recv(struct cli_request *req,
 /****************************************************************************
  Very raw query path info - returns param/data blobs (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_pathinfo_blob_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tree,
 						      const char *fname,
 						      uint16_t info_level)
 {
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_QPATHINFO;
-	struct cli_request *req;
+	struct smbcli_request *req;
 	TALLOC_CTX *mem_ctx = talloc_init("raw_pathinfo");
 
 	tp.in.max_setup = 0;
@@ -338,7 +338,7 @@ static struct cli_request *smb_raw_pathinfo_blob_send(struct cli_tree *tree,
 
 	SSVAL(tp.in.params.data, 0, info_level);
 	SIVAL(tp.in.params.data, 2, 0);
-	cli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
+	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
 			       fname, STR_TERMINATE);
 	
 	req = smb_raw_trans2_send(tree, &tp);
@@ -351,18 +351,18 @@ static struct cli_request *smb_raw_pathinfo_blob_send(struct cli_tree *tree,
 /****************************************************************************
  send a SMBgetatr (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_getattr_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_getattr_send(struct smbcli_tree *tree,
 						union smb_fileinfo *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	
-	req = cli_request_setup(tree, SMBgetatr, 0, 0);
+	req = smbcli_request_setup(tree, SMBgetatr, 0, 0);
 	if (!req) return NULL;
 
-	cli_req_append_ascii4(req, parms->getattr.in.fname, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->getattr.in.fname, STR_TERMINATE);
 	
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -372,39 +372,39 @@ static struct cli_request *smb_raw_getattr_send(struct cli_tree *tree,
 /****************************************************************************
  send a SMBgetatr (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_getattr_recv(struct cli_request *req,
+static NTSTATUS smb_raw_getattr_recv(struct smbcli_request *req,
 				     union smb_fileinfo *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
-	CLI_CHECK_WCT(req, 10);
+	SMBCLI_CHECK_WCT(req, 10);
 	parms->getattr.out.attrib =     SVAL(req->in.vwv, VWV(0));
 	parms->getattr.out.write_time = raw_pull_dos_date3(req->transport,
 							   req->in.vwv + VWV(1));
 	parms->getattr.out.size =       IVAL(req->in.vwv, VWV(3));
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /****************************************************************************
  Handle SMBgetattrE (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_getattrE_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_getattrE_send(struct smbcli_tree *tree,
 						 union smb_fileinfo *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	
-	req = cli_request_setup(tree, SMBgetattrE, 1, 0);
+	req = smbcli_request_setup(tree, SMBgetattrE, 1, 0);
 	if (!req) return NULL;
 	
 	SSVAL(req->out.vwv, VWV(0), parms->getattre.in.fnum);
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -414,15 +414,15 @@ static struct cli_request *smb_raw_getattrE_send(struct cli_tree *tree,
 /****************************************************************************
  Handle SMBgetattrE (async send)
 ****************************************************************************/
-static NTSTATUS smb_raw_getattrE_recv(struct cli_request *req,
+static NTSTATUS smb_raw_getattrE_recv(struct smbcli_request *req,
 				      union smb_fileinfo *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 	
-	CLI_CHECK_WCT(req, 11);
+	SMBCLI_CHECK_WCT(req, 11);
 	parms->getattre.out.create_time =   raw_pull_dos_date2(req->transport,
 							       req->in.vwv + VWV(0));
 	parms->getattre.out.access_time =   raw_pull_dos_date2(req->transport,
@@ -434,14 +434,14 @@ static NTSTATUS smb_raw_getattrE_recv(struct cli_request *req,
 	parms->getattre.out.attrib =        SVAL(req->in.vwv,             VWV(10));
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 
 /****************************************************************************
  Query file info (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_fileinfo_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 					  union smb_fileinfo *parms)
 {
 	/* pass off the non-trans2 level to specialised functions */
@@ -460,13 +460,13 @@ struct cli_request *smb_raw_fileinfo_send(struct cli_tree *tree,
 /****************************************************************************
  Query file info (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_fileinfo_recv(struct cli_request *req,
+NTSTATUS smb_raw_fileinfo_recv(struct smbcli_request *req,
 			       TALLOC_CTX *mem_ctx,
 			       union smb_fileinfo *parms)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
-	struct cli_session *session = req?req->session:NULL;
+	struct smbcli_session *session = req?req->session:NULL;
 
 	if (parms->generic.level == RAW_FILEINFO_GETATTRE) {
 		return smb_raw_getattrE_recv(req, parms);
@@ -486,18 +486,18 @@ NTSTATUS smb_raw_fileinfo_recv(struct cli_request *req,
 /****************************************************************************
  Query file info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_fileinfo(struct cli_tree *tree,
+NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
 			  TALLOC_CTX *mem_ctx,
 			  union smb_fileinfo *parms)
 {
-	struct cli_request *req = smb_raw_fileinfo_send(tree, parms);
+	struct smbcli_request *req = smb_raw_fileinfo_send(tree, parms);
 	return smb_raw_fileinfo_recv(req, mem_ctx, parms);
 }
 
 /****************************************************************************
  Query path info (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_pathinfo_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 					  union smb_fileinfo *parms)
 {
 	if (parms->generic.level == RAW_FILEINFO_GETATTR) {
@@ -514,7 +514,7 @@ struct cli_request *smb_raw_pathinfo_send(struct cli_tree *tree,
 /****************************************************************************
  Query path info (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_pathinfo_recv(struct cli_request *req,
+NTSTATUS smb_raw_pathinfo_recv(struct smbcli_request *req,
 			       TALLOC_CTX *mem_ctx,
 			       union smb_fileinfo *parms)
 {
@@ -525,10 +525,10 @@ NTSTATUS smb_raw_pathinfo_recv(struct cli_request *req,
 /****************************************************************************
  Query path info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_pathinfo(struct cli_tree *tree,
+NTSTATUS smb_raw_pathinfo(struct smbcli_tree *tree,
 			  TALLOC_CTX *mem_ctx,
 			  union smb_fileinfo *parms)
 {
-	struct cli_request *req = smb_raw_pathinfo_send(tree, parms);
+	struct smbcli_request *req = smb_raw_pathinfo_send(tree, parms);
 	return smb_raw_pathinfo_recv(req, mem_ctx, parms);
 }
