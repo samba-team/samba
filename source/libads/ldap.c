@@ -680,4 +680,22 @@ ADS_STATUS ads_trusted_domains(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	return ADS_SUCCESS;
 }
 
+/* find the domain sid for our domain */
+ADS_STATUS ads_domain_sid(ADS_STRUCT *ads, DOM_SID *sid)
+{
+	const char *attrs[] = {"objectSid", NULL};
+	void *res;
+	ADS_STATUS rc;
+
+	rc = ads_do_search(ads, ads->bind_path, LDAP_SCOPE_BASE, "(objectclass=*)", 
+			   attrs, &res);
+	if (!ADS_ERR_OK(rc)) return rc;
+	if (!ads_pull_sid(ads, res, "objectSid", sid)) {
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
+	ads_msgfree(ads, res);
+	
+	return ADS_SUCCESS;
+}
+
 #endif
