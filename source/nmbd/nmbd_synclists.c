@@ -234,6 +234,8 @@ static void complete_sync(struct sync_record *s)
 	int count=0;
 
 	f = fopen(s->fname,"r");
+
+	if (!f) return;
 	
 	while (!feof(f)) {
 		

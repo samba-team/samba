@@ -1569,6 +1569,9 @@ void wins_write_database(BOOL background)
   if((fp = fopen(fnamenew,"w")) == NULL)
   {
     DEBUG(0,("wins_write_database: Can't open %s. Error was %s\n", fnamenew, strerror(errno)));
+    if (background) {
+	    _exit(0);
+    }
     return;
   }
 
