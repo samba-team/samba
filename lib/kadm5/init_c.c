@@ -283,7 +283,6 @@ kadm5_c_init_with_context(krb5_context context,
     kadm5_client_context *ctx;
     krb5_principal server;
     krb5_ccache cc;
-    krb5_error *error;
     int s;
     struct sockaddr_in sin;
     struct hostent *hp;
