@@ -102,20 +102,9 @@
 #include <roken.h>
 #include <getarg.h>
 
-#define KERBEROS
-
 #ifdef KRB4
 #include <krb.h>
 #include <prot.h>
-#else
-#if 0 /* ??? */
-/* Portable file locking */
-#define k_flock(fd, operation) flock((fd), (operation))
-#define   K_LOCK_SH   LOCK_SH         /* Shared lock */
-#define   K_LOCK_EX   LOCK_EX         /* Exclusive lock */
-#define   K_LOCK_NB   LOCK_NB         /* Don't block when locking */
-#define   K_LOCK_UN   LOCK_UN         /* Unlock */
-#endif
 #endif
 #ifdef KRB5
 #include <krb5.h>
