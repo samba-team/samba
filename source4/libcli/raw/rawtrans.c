@@ -64,7 +64,6 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 	parms->out.params.data = NULL;
 
 	if (!cli_request_receive(req)) {
-		req->status = NT_STATUS_UNSUCCESSFUL;
 		return cli_request_destroy(req);
 	}
 	
