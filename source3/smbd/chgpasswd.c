@@ -472,6 +472,10 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 
 	struct passwd *pass;
 
+	if (!name) {
+		DEBUG(1, ("NULL username specfied to chgpasswd()!\n"));
+	}
+
 	DEBUG(3, ("Password change for user: %s\n", name));
 
 #if DEBUG_PASSWORD
