@@ -5,7 +5,6 @@ include $(top_srcdir)/Makefile.am.common
 CLEANFILES		= print_version.h
 
 noinst_LTLIBRARIES	= libvers.la
-libvers_la_LDFLAGS	= -static
 
 build_HEADERZ		= vers.h
 
