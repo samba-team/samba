@@ -140,9 +140,10 @@ int x_fclose(XFILE *f)
 }
 
 /* simulate fwrite() */
-int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
+size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 {
-	int ret, total=0;
+	ssize_t ret;
+	size_t total=0;
 
 	/* we might be writing unbuffered */
 	if (f->buftype == X_IONBF || 
@@ -154,7 +155,7 @@ int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 
 
 	while (total < size*nmemb) {
-		int n = f->bufsize - f->bufused;
+		size_t n = f->bufsize - f->bufused;
 		n = MIN(n, (size*nmemb)-total);
 
 		if (n == 0) {
