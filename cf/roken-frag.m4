@@ -309,6 +309,7 @@ AC_BROKEN([					\
 	initgroups				\
 	innetgr					\
 	iruserok				\
+	localtime_r				\
 	lstat					\
 	memmove					\
 	mkstemp					\

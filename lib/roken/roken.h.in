@@ -634,4 +634,9 @@ const char *getprogname(void);
 void set_progname(char *argv0);
 const char *get_progname(void);
 
+#ifndef HAVE_LOCALTIME_R
+struct tm *
+localtime_r(const time_t *timer, struct tm *result);
+#endif
+
 ROKEN_CPP_END
