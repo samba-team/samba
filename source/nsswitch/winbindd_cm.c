@@ -143,10 +143,22 @@ static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	struct in_addr *ip_list = NULL;
 	int count, i;
 
-	if (!get_dc_list(False, domain, &ip_list, &count) && 
-	    !get_dc_list(True, domain, &ip_list, &count)) {
-		DEBUG(3, ("Could not look up dc's for domain %s\n", domain));
-		return False;
+	if (!get_dc_list(domain, &ip_list, &count)) {
+		struct in_addr pdc_ip;
+		
+		if (!get_pdc_ip(domain, &pdc_ip)) {
+			DEBUG(3, ("Could not look up any DCs for domain %s\n", 
+				  domain));
+			return False;
+		}
+
+		ip_list = (struct in_addr *)malloc(sizeof(struct in_addr));
+
+		if (!ip_list)
+			return False;
+
+		ip_list[0] = pdc_ip;
+		count = 1;
 	}
 
 	/* Pick a nice close server */

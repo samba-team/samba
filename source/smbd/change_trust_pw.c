@@ -105,12 +105,11 @@ account password for domain %s.\n", domain));
        * We have been asked to dynamcially determine the IP addresses of the PDC.
        */
 
-      struct in_addr *ip_list = NULL;
-      int count = 0;
-      int i;
+      struct in_addr pdc_ip;
+      fstring dc_name;
 
       /* Use the PDC *only* for this. */
-      if(!get_dc_list(True, domain, &ip_list, &count))
+      if(!get_pdc_ip(domain, &pdc_ip))
         continue;
 
       /*
@@ -118,17 +117,11 @@ account password for domain %s.\n", domain));
        * address used as a string.
        */
 
-      for(i = 0; i < count; i++) {
-        fstring dc_name;
-        if(!lookup_dc_name(global_myname, domain, &ip_list[i], dc_name))
+        if(!lookup_dc_name(global_myname, domain, &pdc_ip, dc_name))
           continue;
         if(NT_STATUS_IS_OK(res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash)))
           break;
-      }
-
-      SAFE_FREE(ip_list);
-
     } else {
 	    res = modify_trust_password( domain, remote_machine,
 					 old_trust_passwd_hash);
