@@ -104,7 +104,7 @@ static BOOL test_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -221,7 +221,7 @@ static BOOL test_writex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -397,7 +397,7 @@ static BOOL test_writeunlock(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;
@@ -534,7 +534,7 @@ static BOOL test_writeclose(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	uint_t seed = time(NULL);
 	union smb_fileinfo finfo;
 
-	buf = talloc_zero(mem_ctx, maxsize);
+	buf = talloc_zero_size(mem_ctx, maxsize);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return False;

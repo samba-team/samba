@@ -858,7 +858,7 @@ int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 	struct ldb_wrap *sam_ctx = ctx;
 	struct ldb_val val;
 	int i;
-	val.data = talloc_array(mem_ctx, 16, count, __location__);
+	val.data = talloc_array_size(mem_ctx, 16, count);
 	val.length = count*16;
 	if (!val.data) {
 		return -1;

@@ -283,7 +283,7 @@ ssize_t pvfs_stream_write(struct pvfs_state *pvfs,
 		blob = data_blob(NULL, 0);
 	}
 	if (count+offset > blob.length) {
-		blob.data = talloc_realloc(blob.data, blob.data, count+offset);
+		blob.data = talloc_realloc(blob.data, blob.data, uint8_t, count+offset);
 		if (blob.data == NULL) {
 			errno = ENOMEM;
 			return -1;
@@ -339,7 +339,7 @@ NTSTATUS pvfs_stream_truncate(struct pvfs_state *pvfs,
 	if (length <= blob.length) {
 		blob.length = length;
 	} else if (length > blob.length) {
-		blob.data = talloc_realloc(blob.data, blob.data, length);
+		blob.data = talloc_realloc(blob.data, blob.data, uint8_t, length);
 		if (blob.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

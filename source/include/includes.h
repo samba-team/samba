@@ -154,6 +154,7 @@ extern int errno;
 /* Lists, trees, caching, database... */
 #include "version.h"
 #include "xfile.h"
+#define TALLOC_DEPRECATED 1
 #include "lib/talloc/talloc.h"
 #include "nt_status.h"
 #include "structs.h"

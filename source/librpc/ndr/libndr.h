@@ -239,7 +239,7 @@ enum ndr_err_code {
 
 
 #define NDR_ALLOC_N_SIZE(ndr, s, n, elsize) do { \
-	(s) = talloc_array(ndr, elsize, n, __location__); \
+	(s) = talloc_array_size(ndr, elsize, n); \
 	if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %u * %u failed\n", n, elsize); \
 } while (0)
 

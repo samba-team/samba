@@ -960,9 +960,9 @@ static BOOL test_many_dirs(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		smbcli_close(cli->tree, fnum);
 	}
 
-	file  = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
-	file2 = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
-	file3 = talloc_zero_array_p(mem_ctx, union smb_search_data, num_dirs);
+	file  = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
+	file2 = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
+	file3 = talloc_zero_array(mem_ctx, union smb_search_data, num_dirs);
 
 	printf("Search first on %d dirs\n", num_dirs);
 

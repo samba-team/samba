@@ -51,7 +51,8 @@ again:
 	}
 	if (ret == -1 && errno == ERANGE) {
 		estimated_size *= 2;
-		blob->data = talloc_realloc(mem_ctx, blob->data, estimated_size);
+		blob->data = talloc_realloc(mem_ctx, blob->data, 
+					    uint8_t, estimated_size);
 		if (blob->data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}

@@ -82,6 +82,7 @@ static void rap_cli_push_paramdesc(struct rap_call *call, char desc)
 
 	call->paramdesc = talloc_realloc(call->mem_ctx,
 					 call->paramdesc,
+					 uint8_t,
 					 len+2);
 	call->paramdesc[len] = desc;
 	call->paramdesc[len+1] = '\0';
@@ -151,7 +152,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	if ( string_offset + len + 1 >  ndr->data_size )
 		return NT_STATUS_INVALID_PARAMETER;
 
-	*dest = talloc_zero(mem_ctx, len+1);
+	*dest = talloc_zero_size(mem_ctx, len+1);
 	pull_ascii(*dest, p, len+1, len, 0);
 
 	return NT_STATUS_OK;

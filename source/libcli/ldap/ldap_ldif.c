@@ -52,7 +52,7 @@ static char *next_chunk(TALLOC_CTX *mem_ctx,
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
-			c2 = talloc_realloc(mem_ctx, chunk, alloc_size);
+			c2 = talloc_realloc(mem_ctx, chunk, char, alloc_size);
 			if (!c2) {
 				errno = ENOMEM;
 				return NULL;

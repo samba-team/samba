@@ -108,7 +108,8 @@ static NTSTATUS receive_smb_request(struct smbsrv_connection *smb_conn, struct t
 		/* when we have a full NBT header, then allocate the packet */
 		if (req->in.size == NBT_HDR_SIZE) {
 			len = smb_len(req->in.buffer) + NBT_HDR_SIZE;
-			req->in.buffer = talloc_realloc(req, req->in.buffer, len);
+			req->in.buffer = talloc_realloc(req, req->in.buffer, 
+							uint8_t, len);
 			if (req->in.buffer == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}

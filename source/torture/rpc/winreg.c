@@ -367,7 +367,7 @@ static BOOL test_QueryMultipleValues(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.num_values = 1;
 	r.in.buffer_size = r.out.buffer_size = talloc_p(mem_ctx, uint32);
 	*r.in.buffer_size = 0x20;
-	r.in.buffer = r.out.buffer = talloc_zero_array_p(mem_ctx, uint8, *r.in.buffer_size);
+	r.in.buffer = r.out.buffer = talloc_zero_array(mem_ctx, uint8, *r.in.buffer_size);
 
 	status = dcerpc_winreg_QueryMultipleValues(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
