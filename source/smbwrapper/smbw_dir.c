@@ -106,6 +106,8 @@ static void smbw_share_add(const char *share, uint32 type, const char *comment)
 {
 	struct file_info finfo;
 
+	if (strcmp(share,"IPC$") == 0) return;
+
 	ZERO_STRUCT(finfo);
 
 	pstrcpy(finfo.name, share);
