@@ -179,6 +179,7 @@ typedef struct
 	char *szTemplateHomedir;
 	char *szTemplateShell;
 	char *szWinbindSeparator;
+        char *szPrinterAdmin;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -323,7 +324,6 @@ typedef struct
 	char *force_group;
 	char *readlist;
 	char *writelist;
-	char *printer_admin;
 	char *volume;
 	char *fstype;
 	char *szVfsObjectFile;
@@ -438,7 +438,6 @@ static service sDefault = {
 	NULL,			/* force group */
 	NULL,			/* readlist */
 	NULL,			/* writelist */
-	NULL,			/* printer admin */
 	NULL,			/* volume */
 	NULL,			/* fstype */
 	NULL,			/* vfs object */
@@ -707,7 +706,7 @@ static struct parm_struct parm_table[] = {
 	{"admin users", P_STRING, P_LOCAL, &sDefault.szAdminUsers, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"read list", P_STRING, P_LOCAL, &sDefault.readlist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
 	{"write list", P_STRING, P_LOCAL, &sDefault.writelist, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
-	{"printer admin", P_STRING, P_LOCAL, &sDefault.printer_admin, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE},
+	{"printer admin", P_STRING, P_GLOBAL, &Globals.szPrinterAdmin, NULL, NULL, FLAG_GLOBAL},
 	{"force user", P_STRING, P_LOCAL, &sDefault.force_user, NULL, NULL, FLAG_SHARE},
 	{"force group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, FLAG_SHARE},
 	{"group", P_STRING, P_LOCAL, &sDefault.force_group, NULL, NULL, 0},
@@ -1476,6 +1475,7 @@ FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter);
 FN_GLOBAL_STRING(lp_ldap_root, &Globals.szLdapRoot);
 FN_GLOBAL_STRING(lp_ldap_rootpasswd, &Globals.szLdapRootPassword);
 #endif /* WITH_LDAP */
+FN_GLOBAL_STRING(lp_printer_admin, &Globals.szPrinterAdmin);
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion);
@@ -1596,7 +1596,6 @@ FN_LOCAL_STRING(lp_force_user, force_user)
 FN_LOCAL_STRING(lp_force_group, force_group)
 FN_LOCAL_STRING(lp_readlist, readlist)
 FN_LOCAL_STRING(lp_writelist, writelist)
-FN_LOCAL_STRING(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 static FN_LOCAL_STRING(lp_volume, volume)

@@ -796,7 +796,7 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
 			}
-			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
+			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin())) {
 				return NT_STATUS_NO_PROBLEMO;
 			} 
 			else {

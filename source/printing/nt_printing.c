@@ -3684,6 +3684,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 	BOOL result;
 	char *pname;
 	extern struct current_user current_user;
+        user_struct *us;
 	
 	/* If user is NULL then use the current_user structure */
 
@@ -3691,7 +3692,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Always printer admins to do anything */
 
-        if (user->conn->printer_admin)
+        if ((us = get_valid_user_struct(user->vuid)) && us->printer_admin)
                 return True;
 
 	/* Get printer name */

@@ -588,7 +588,6 @@ typedef struct connection_struct
 	BOOL ipc;
 	BOOL read_only;
 	BOOL admin_user;
-        BOOL printer_admin;
 	char *dirpath;
 	char *connectpath;
 	char *origpath;
@@ -1726,6 +1725,7 @@ typedef struct user_struct
 	gid_t *groups;
 
 	NT_USER_TOKEN *nt_user_token;
+        BOOL printer_admin;
 
 	/* per-user authentication information on NT RPCs */
 	/* lkclXXXX - THIS SHOULD NOT BE HERE! */

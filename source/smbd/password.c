@@ -303,6 +303,9 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name,
 	vuser->n_groups = 0;
 	vuser->groups  = NULL;
 
+        vuser->printer_admin = 
+                user_in_list(unix_name, lp_printer_admin()) || (uid == 0);
+
 	/* Find all the groups this uid is in and store them. 
 		Used by become_user() */
 	initialise_groups(unix_name, uid, gid);

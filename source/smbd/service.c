@@ -346,15 +346,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		conn->admin_user = False;
 	}
     
-        /* Check for printer administrator */
-
-        if (lp_print_ok(snum) && 
-            (user_in_list(user, lp_printer_admin(snum)) ||
-             conn->admin_user))
-                conn->printer_admin = True;
-        else
-                conn->printer_admin = False;
-
 	conn->force_user = force;
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
