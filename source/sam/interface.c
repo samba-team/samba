@@ -940,7 +940,7 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	}
 		
 	if (backend_entry->domain_name == NULL) {
-		DEBUG(10,("make_backend_entry: no domain was specified for sam module %s. Useing default domain %s\n",
+		DEBUG(10,("make_backend_entry: no domain was specified for sam module %s. Using default domain %s\n",
 			backend_entry->module_name, lp_workgroup()));
 		backend_entry->domain_name = smb_xstrdup(lp_workgroup());
 	}
@@ -955,7 +955,7 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
 	if (!secrets_fetch_domain_sid(backend_entry->domain_name, backend_entry->domain_sid)) {
 		DEBUG(2,("make_backend_entry: There is no SID stored for domain %s. Creating a new one.\n",
 			backend_entry->domain_name));		
-		/* FIXME */
+		DEBUG(0, ("FIXME in %s:%d\n", __FILE__, __LINE__));
 		ZERO_STRUCTP(backend_entry->domain_sid);
 	}
 	
@@ -1024,8 +1024,8 @@ static NTSTATUS sam_context_check_default_backends(SAM_CONTEXT *context)
 	ntstatus = sam_get_methods_by_sid(context, &methods, &global_sid_Builtin);
 
 	if (NT_STATUS_EQUAL(ntstatus, NT_STATUS_NO_SUCH_DOMAIN)) {
-		DEBUG(4,("There was no backend specified for domain %s; using %s\n",
-			lp_workgroup(), SAM_DEFAULT_BACKEND));
+		DEBUG(4,("There was no backend specified for domain %s(%s); using %s\n",
+			lp_workgroup(), sid_string_static(global_sam_sid), SAM_DEFAULT_BACKEND));
 
 		SAM_ASSERT(global_sam_sid);
 
@@ -1111,7 +1111,7 @@ NTSTATUS make_sam_context_list(SAM_CONTEXT **context, char **sam_backends_param)
 	while (sam_backends_param[nBackends])
 		nBackends++;
 
-	DEBUG(6,("There are %d domains listed with there backends\n", nBackends));
+	DEBUG(6,("There are %d domains listed with their backends\n", nBackends));
 
 	if ((backends = (SAM_BACKEND_ENTRY *)malloc(sizeof(*backends)*nBackends)) == NULL) {
 		DEBUG(0,("make_sam_context_list: failed to allocate backends\n"));
