@@ -108,7 +108,7 @@ const char *cli_errstr(struct cli_state *cli)
 				break;
 		        case READ_BAD_SIG:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,
-					"Server packet had invalid SMB signiture!");
+					"Server packet had invalid SMB signature!");
 				break;
 		        default:
 				slprintf(cli_error_message, sizeof(cli_error_message) - 1,

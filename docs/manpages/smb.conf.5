@@ -500,6 +500,14 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIclient lanman auth\fR
+
+.TP
+\(bu
+\fIclient ntlmv2 auth\fR
+
+.TP
+\(bu
 \fIclient use spnego\fR
 
 .TP
@@ -516,7 +524,7 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIdebug level\fR
+\fIdebuglevel\fR
 
 .TP
 \(bu
@@ -589,6 +597,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fIdos charset\fR
+
+.TP
+\(bu
+\fIenable rid algorithm\fR
 
 .TP
 \(bu
@@ -772,11 +784,11 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fImangling stack\fR
+\fImangled stack\fR
 
 .TP
 \(bu
-\fImangling prefix\fR
+\fImangle prefix\fR
 
 .TP
 \(bu
@@ -865,10 +877,6 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fInis homedir\fR
-
-.TP
-\(bu
-\fInon unix account range\fR
 
 .TP
 \(bu
@@ -1060,10 +1068,6 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIstat cache size\fR
-
-.TP
-\(bu
 \fIstrip dot\fR
 
 .TP
@@ -1077,6 +1081,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fItemplate homedir\fR
+
+.TP
+\(bu
+\fItemplate primary group\fR
 
 .TP
 \(bu
@@ -1148,6 +1156,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIwinbind enable local accounts\fR
+
+.TP
+\(bu
 \fIwinbind enum groups\fR
 
 .TP
@@ -1164,11 +1176,15 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
+\fIwinbind trusted domains only\fR
+
+.TP
+\(bu
 \fIwinbind uid\fR
 
 .TP
 \(bu
-\fIwinbind used default domain\fR
+\fIwinbind use default domain\fR
 
 .TP
 \(bu
@@ -1176,7 +1192,7 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIwins partner\fR
+\fIwins partners\fR
 
 .TP
 \(bu
@@ -1580,6 +1596,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 .TP
 \(bu
 \fIprint ok\fR
+
+.TP
+\(bu
+\fIprofile acls\fR
 
 .TP
 \(bu
@@ -2084,8 +2104,42 @@ Example: \fBchange share command = /usr/local/bin/addshare\fR
 
 
 .TP
+client lanman auth (G)
+This parameter determines whether or not \fBsmbclient\fR(8) and other samba client tools will attempt to authenticate itself to servers using the weaker LANMAN password hash\&. If disabled, only server which support NT password hashes (e\&.g\&. Windows NT/2000, Samba, etc\&.\&.\&. but not Windows 95/98) will be able to be connected from the Samba client\&.
+
+
+The LANMAN encrypted response is easily broken, due to it's case-insensitive nature, and the choice of algorithm\&. Clients without Windows 95/98 servers are advised to disable this option\&.
+
+
+Disabling this option will also disable the \fBclient plaintext auth\fR option
+
+
+Likewise, if the \fBclient ntlmv2 auth\fR parameter is enabled, then only NTLMv2 logins will be attempted\&. Not all servers support NTLMv2, and most will require special configuration to us it\&.
+
+
+Default : \fBclient lanman auth = yes\fR
+
+
+.TP
+client ntlmv2 auth (G)
+This parameter determines whether or not \fBsmbclient\fR(8) will attempt to authenticate itself to servers using the NTLMv2 encrypted password response\&.
+
+
+If enabled, only an NTLMv2 and LMv2 response (both much more secure than earlier versions) will be sent\&. Many servers (including NT4 < SP4, Win9x and Samba 2\&.2) are not compatible with NTLMv2\&.
+
+
+If disabled, an NTLM response (and possibly a LANMAN response) will be sent by the client, depending on the value of \fBclient lanman auth\fR\&.
+
+
+Note that some sites (particularly those following 'best practice' security polices) only allow NTLMv2 responses, and not the weaker LM or NTLM\&.
+
+
+Default : \fBclient ntlmv2 auth = no\fR
+
+
+.TP
 client use spnego (G)
-This variable controls controls whether samba clients will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000 servers to agree upon an authentication mechanism\&. SPNEGO client support with Sign and Seal is currently broken, so you might want to turn this option off when doing joins to Windows 2003 domains\&.
+This variable controls controls whether samba clients will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000 servers to agree upon an authentication mechanism\&.
 
 
 Default: \fBclient use spnego = yes\fR
@@ -2222,7 +2276,7 @@ Default: \fBdebug hires timestamp = no\fR
 
 
 .TP
-debug level (G)
+debuglevel (G)
 Synonym for \fI log level\fR\&.
 
 
@@ -2658,6 +2712,14 @@ Under DOS and Windows, if a user can write to a file they can change the timesta
 
 
 Default: \fBdos filetimes = no\fR
+
+
+.TP
+enable rid algorithm (G)
+This option is used to control whether or not smbd in Samba 3\&.0 should fallback to the algorithm used by Samba 2\&.2 to generate user and group RIDs\&. The longterm development goal is to remove the algorithmic mappings of RIDs altogether, but this has proved to be difficult\&. This parameter is mainly provided so that developers can turn the algorithm on and off and see what breaks\&. This parameter should not be disabled by non-developers because certain features in Samba will fail to work without it\&.
+
+
+Default: \fBenable rid algorithm = <yes>\fR
 
 
 .TP
@@ -3947,7 +4009,7 @@ Default: \fBmangled names = yes\fR
 
 
 .TP
-mangling stack (G)
+mangled stack (G)
 This parameter controls the number of mangled names that should be cached in the Samba server \fBsmbd\fR(8)\&.
 
 
@@ -3967,7 +4029,7 @@ Example: \fBmangled stack = 100\fR
 
 
 .TP
-mangling prefix (G)
+mangle prefix (G)
 controls the number of prefix characters from the original name used when generating the mangled names\&. A larger value will give a weaker hash and therefore more name collisions\&. The minimum value is 1 and the maximum value is 6\&.
 
 
@@ -4449,19 +4511,6 @@ Note that for this option to work there must be a working NIS system and the Sam
 
 
 Default: \fBnis homedir = no\fR
-
-
-.TP
-non unix account range (G)
-The non unix account range parameter specifies the range of 'user ids' that are allocated by the various 'non unix account' passdb backends\&. These backends allow the storage of passwords for users who don't exist in /etc/passwd\&. This is most often used for machine account creation\&. This range of ids should have no existing local or NIS users within it as strange conflicts can occur otherwise\&.
-
-
-These userids never appear on the system and Samba will never 'become' these users\&. They are used only to ensure that the algorithmic RID mapping does not conflict with normal users\&.
-
-Default: \fBnon unix account range = <empty string>\fR
-
-
-Example: \fBnon unix account range = 10000-20000\fR
 
 
 .TP
@@ -5145,6 +5194,14 @@ Default :\fBprivate dir = ${prefix}/private\fR
 
 
 .TP
+profile acls (S)
+This boolean parameter controls whether \fBsmbd\fR(8) This boolean parameter was added to fix the problems that people have been having with storing user profiles on Samba shares from Windows 2000 or Windows XP clients\&. New versions of Windows 2000 or Windows XP service packs do security ACL checking on the owner and ability to write of the profile directory stored on a local workstation when copied from a Samba share\&. When not in domain mode with winbindd then the security info copied onto the local workstation has no meaning to the logged in user (SID) on that workstation so the profile storing fails\&. Adding this parameter onto a share used for profile storage changes two things about the returned Windows ACL\&. Firstly it changes the owner and group owner of all reported files and directories to be BUILTIN\\\\Administrators, BUILTIN\\\\Users respectively (SIDs S-1-5-32-544, S-1-5-32-545)\&. Secondly it adds an ACE entry of "Full Control" to the SID BUILTIN\\\\Users to every returned ACL\&. This will allow any Windows 2000 or XP workstation user to access the profile\&. Note that if you have multiple users logging on to a workstation then in order to prevent them from being able to access each others profiles you must remove the "Bypass traverse checking" advanced user right\&. This will prevent access to other users profile directories as the top level profile directory (named after the user) is created by the workstation profile code and has an ACL restricting entry to the directory tree to the owning user\&.
+
+
+Default: \fBprofile acls = no\fR
+
+
+.TP
 protocol (G)
 Synonym for \fImax protocol\fR\&.
 
@@ -5510,11 +5567,9 @@ See also the \fIpassword server\fR parameter and the \fIencrypted passwords\fR p
 In this mode Samba will try to validate the username/password by passing it to another SMB server, such as an NT box\&. If this fails it will revert to \fBsecurity = user\fR\&. It expects the \fIencrypted passwords\fR parameter to be set to \fByes\fR, unless the remote server does not support them\&. However note that if encrypted passwords have been negotiated then Samba cannot revert back to checking the UNIX password file, it must have a valid \fIsmbpasswd\fR file to check users against\&. See the chapter about the User Database in the Samba HOWTO Collection for details on how to set this up\&.
 
 
-\fBNote\fR this mode of operation has significant pitfalls, due to the fact that is activly initiates a man-in-the-middle attack on the remote SMB server\&. In particular, this mode of operation can cause significant resource consuption on the PDC, as it must maintain an active connection for the duration of the user's session\&. Furthermore, if this connection is lost, there is no way to reestablish it, and futher authenticaions to the Samba server may fail\&. (From a single client, till it disconnects)\&.
+This mode of operation has significant pitfalls, due to the fact that is activly initiates a man-in-the-middle attack on the remote SMB server\&. In particular, this mode of operation can cause significant resource consuption on the PDC, as it must maintain an active connection for the duration of the user's session\&. Furthermore, if this connection is lost, there is no way to reestablish it, and futher authenticaions to the Samba server may fail\&. (From a single client, till it disconnects)\&.
 
-
-\fBNote\fR that from the client's point of view \fBsecurity = server\fR is the same as \fBsecurity = user\fR\&. It only affects how the server deals with the authentication, it does not in any way affect what the client sees\&.
-
+From the client's point of view \fBsecurity = server\fR is the same as \fBsecurity = user\fR\&. It only affects how the server deals with the authentication, it does not in any way affect what the client sees\&.
 
 \fBNote\fR that the name of the resource being requested is \fBnot\fR sent to the server until after the server has successfully authenticated the client\&. This is why guest shares don't work in user level security without allowing the server to automatically map unknown users into the \fIguest account\fR\&. See the \fImap to guest\fR parameter for details on doing this\&.
 
@@ -5523,6 +5578,21 @@ See also the section NOTE ABOUT USERNAME/PASSWORD VALIDATION\&.
 
 
 See also the \fIpassword server\fR parameter and the \fIencrypted passwords\fR parameter\&.
+
+
+\fBSECURITY = ADS\fR
+
+
+In this mode, Samba will act as a domain member in an ADS realm\&. To operate in this mode, the machine running Samba will need to have Kerberos installed and configured and Samba will need to be joined to the ADS realm using the net utility\&.
+
+
+Note that this mode does NOT make Samba operate as a Active Directory Domain Controller\&.
+
+
+Read the chapter about Domain Membership in the HOWTO for details\&.
+
+
+See also the \fIads server \fR parameter, the \fIrealm \fR paramter and the \fIencrypted passwords\fR parameter\&.
 
 
 Default: \fBsecurity = USER\fR
@@ -5836,14 +5906,6 @@ Default: \fBstat cache = yes\fR
 
 
 .TP
-stat cache size (G)
-This parameter determines the number of entries in the \fIstat cache\fR\&. You should never need to change this parameter\&.
-
-
-Default: \fBstat cache size = 50\fR
-
-
-.TP
 strict allocate (S)
 This is a boolean that controls the handling of disk space allocation in the server\&. When this is set to \fByes\fR the server will change from UNIX behaviour of not committing real disk storage blocks when a file is extended to the Windows behaviour of actually forcing the disk system to allocate real storage blocks when a file is created or extended to be a given size\&. In UNIX terminology this means that Samba will stop creating sparse files\&. This can be slow on some systems\&.
 
@@ -5926,6 +5988,14 @@ When filling out the user information for a Windows NT user, the \fBwinbindd\fR(
 
 
 Default: \fBtemplate homedir = /home/%D/%U\fR
+
+
+.TP
+template primary group (G)
+This option defines the default primary group for each user created by \fBwinbindd\fR(8)'s local account management functions (similar to the 'add user script')\&.
+
+
+Default: \fBtemplate primary group = nobody\fR
 
 
 .TP
@@ -6343,6 +6413,14 @@ Default: \fBwinbind cache type = 15\fR
 
 
 .TP
+winbind enable local accounts (G)
+This parameter controls whether or not winbindd will act as a stand in replacement for the various account management hooks in smb\&.conf (e\&.g\&. 'add user script')\&. If enabled, winbindd will support the creation of local users and groups as another source of UNIX account information available via getpwnam() or getgrgid(), etc\&.\&.\&.
+
+
+Default: \fBwinbind enable local accounts = yes\fR
+
+
+.TP
 winbind enum groups (G)
 On large installations using \fBwinbindd\fR(8) it may be necessary to suppress the enumeration of groups through the \fBsetgrent()\fR, \fBgetgrent()\fR and \fBendgrent()\fR group of system calls\&. If the \fIwinbind enum groups\fR parameter is \fBno\fR, calls to the \fBgetgrent()\fR system call will not return any data\&.
 
@@ -6393,6 +6471,14 @@ Example: \fBwinbind separator = +\fR
 
 
 .TP
+winbind trusted domains only (G)
+This parameter is designed to allow Samba servers that are members of a Samba controlled domain to use UNIX accounts distributed vi NIS, rsync, or LDAP as the uid's for winbindd users in the hosts primary domain\&. Therefore, the user 'SAMBA\\user1' would be mapped to the account 'user1' in /etc/passwd instead of allocating a new uid for him or her\&.
+
+
+Default: \fBwinbind trusted domains only = <no>\fR
+
+
+.TP
 winbind uid (G)
 This parameter is now an alias for \fBidmap uid\fR
 
@@ -6407,7 +6493,7 @@ Example: \fBwinbind uid = 10000-20000\fR
 
 
 .TP
-winbind used default domain (G)
+winbind use default domain (G)
 This parameter specifies whether the \fBwinbindd\fR(8) daemon should operate on users without domain component in their username\&. Users without a domain component are treated as is part of the winbindd server's own domain\&. While this does not benifit Windows users, it makes SSH, FTP and e-mail function in a way much closer to the way they would in a native unix system\&.
 
 
@@ -6442,7 +6528,7 @@ An example script that calls the BIND dynamic DNS update program \fBnsupdate\fR 
 
 
 .TP
-wins partner (G)
+wins partners (G)
 A space separated list of partners' IP addresses for WINS replication\&. WINS partners are always defined as push/pull partners as defining only one way WINS replication is unreliable\&. WINS replication is currently experimental and unreliable between samba servers\&.
 
 

@@ -1,5 +1,5 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>winbindd</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="winbindd.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>winbindd &#8212; Name Service Switch daemon for resolving names 
-	from NT servers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">winbindd</tt>  [-F] [-S] [-i] [-B] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This program is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">winbindd</b> is a daemon that provides 
+	from NT servers</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">winbindd</tt>  [-F] [-S] [-i] [-Y] [-d &lt;debug level&gt;] [-s &lt;smb config file&gt;] [-n]</p></div></div><div xmlns:ns1="" class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This program is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">winbindd</b> is a daemon that provides 
 	a service for the Name Service Switch capability that is present 
 	in most modern C libraries.  The Name Service Switch allows user 
 	and system information to be obtained from different databases 
@@ -26,12 +26,12 @@
 		the <tt class="filename">passwd(5)</tt> file and used by 
 		<b class="command">getpwent(3)</b> functions. </p></dd><dt><span class="term">group</span></dt><dd><p>Group information traditionally stored in 
 		the <tt class="filename">group(5)</tt> file and used by 		
-		<b class="command">getgrent(3)</b> functions. </p></dd></dl></div><p>For example, the following simple configuration in the
+		<b class="command">getgrent(3)</b> functions. </p></dd></dl></div><ns1:p>For example, the following simple configuration in the
 	<tt class="filename">/etc/nsswitch.conf</tt> file can be used to initially 
 	resolve user and group information from <tt class="filename">/etc/passwd
 	</tt> and <tt class="filename">/etc/group</tt> and then from the 
 	Windows NT server.
-</p><pre class="programlisting">
+</ns1:p><pre class="programlisting">
 passwd:         files winbind
 group:          files winbind
 </pre><p>The following simple configuration in the
@@ -88,11 +88,10 @@ never removed by the client.
 		slower. The results will however be more accurate, since 
 		results from the cache might not be up-to-date. This 
 		might also temporarily hang winbindd if the DC doesn't respond.
-		</p></dd><dt><span class="term">-B</span></dt><dd><p>Dual daemon mode. This means winbindd will run 
-		as 2 threads. The first will answer all requests from the cache, 
-		thus making responses to clients faster. The other will 
-		update the cache for the query that the first has just responded. 
-		Advantage of this is that responses stay accurate and are faster.
+		</p></dd><dt><span class="term">-Y</span></dt><dd><p>Single daemon mode. This means winbindd will run 
+		as a single process (the mode of operation in Samba 2.2).  Winbindd's 
+		default behavior is to launch a child process that is responsible for 
+		updating expired cache entries.
 		</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>NAME AND ID RESOLUTION</h2><p>Users and groups on a Windows NT server are assigned 
 	a relative id (rid) which is unique for the domain when the 
 	user or group is created.  To convert the Windows NT user or group 
@@ -119,16 +118,16 @@ never removed by the client.
 		<i class="parameter"><tt>winbind enum groups</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATEHOMEDIR" target="_top">
 		<i class="parameter"><tt>template homedir</tt></i></a></p></li><li><p><a href="smb.conf.5.html#TEMPLATESHELL" target="_top">
 		<i class="parameter"><tt>template shell</tt></i></a></p></li><li><p><a href="smb.conf.5.html#WINBINDUSEDEFAULTDOMAIN" target="_top">
-		<i class="parameter"><tt>winbind use default domain</tt></i></a></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
+		<i class="parameter"><tt>winbind use default domain</tt></i></a></p></li></ul></div></div><div xmlns:ns2="" class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
-	following setup. This was tested on a RedHat 6.2 Linux box. </p><p>In <tt class="filename">/etc/nsswitch.conf</tt> put the 
+	following setup. This was tested on a RedHat 6.2 Linux box. </p><ns2:p>In <tt class="filename">/etc/nsswitch.conf</tt> put the 
 	following:
-</p><pre class="programlisting">
+</ns2:p><pre class="programlisting">
 passwd:     files winbind
 group:      files winbind
-</pre><p>In <tt class="filename">/etc/pam.d/*</tt> replace the <i class="parameter"><tt>
+</pre><ns2:p>In <tt class="filename">/etc/pam.d/*</tt> replace the <i class="parameter"><tt>
 	auth</tt></i> lines with something like this:
-</p><pre class="programlisting">
+</ns2:p><pre class="programlisting">
 auth       required	/lib/security/pam_securetty.so
 auth       required	/lib/security/pam_nologin.so
 auth       sufficient	/lib/security/pam_winbind.so
@@ -144,9 +143,9 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	made from <tt class="filename">/lib/libnss_winbind.so</tt> to
 	<tt class="filename">/lib/libnss_winbind.so.2</tt>.  If you are using an
 	older version of glibc then the target of the link should be
-	<tt class="filename">/lib/libnss_winbind.so.1</tt>.</p><p>Finally, setup a <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> containing directives like the 
+	<tt class="filename">/lib/libnss_winbind.so.1</tt>.</p><ns2:p>Finally, setup a <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> containing directives like the 
 	following:
-</p><pre class="programlisting">
+</ns2:p><pre class="programlisting">
 [global]
 	winbind separator = +
         winbind cache time = 10
