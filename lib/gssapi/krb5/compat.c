@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -77,6 +77,10 @@ check_compat(OM_uint32 *minor_status, gss_name_t name,
     return 0;
 }
 
+/*
+ * ctx->ctx_id_mutex is assumed to be locked
+ */
+
 OM_uint32
 _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
 {
@@ -86,16 +90,12 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
     if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
 	ret = check_compat(minor_status, ctx->target, 
 			   "broken_des3_mic", &use_compat, TRUE);
-	if (ret) {
-	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	if (ret)
 	    return ret;
-	}
 	ret = check_compat(minor_status, ctx->target, 
 			   "correct_des3_mic", &use_compat, FALSE);
-	if (ret) {
-	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	if (ret)
 	    return ret;
-	}
 
 	if (use_compat)
 	    ctx->more_flags |= COMPAT_OLD_DES3;
