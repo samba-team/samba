@@ -860,7 +860,7 @@ BOOL init_drv_info_3_members (DRIVER_INFO_3 *info, char *args)
 	{
 		info->dependentfiles[i] = (uint16)str2[i];
 	}
-	info->dependentfiles[len+1] = '\0';
+	info->dependentfiles[len] = '\0';
 
 	return True;
 }
