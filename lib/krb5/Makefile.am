@@ -56,6 +56,7 @@ libkrb5_a_SOURCES = \
 	net_write.c \
 	padata.c \
 	principal.c \
+	prog_setup.c \
 	prompter_posix.c \
 	rd_cred.c \
 	rd_error.c \
