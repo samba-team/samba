@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -55,6 +55,7 @@ typedef struct sl_cmd SL_cmd;
 void sl_help (SL_cmd *, int argc, char **argv);
 int  sl_loop (SL_cmd *, char *prompt);
 int  sl_command (SL_cmd *cmds, int argc, char **argv);
+int sl_make_argv(char*, int*, char***);
 
 
 #endif /* _SL_H */
