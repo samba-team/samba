@@ -834,6 +834,8 @@ static BOOL api_samr_lookup_names( uint16 vuid, prs_struct *data, prs_struct *rd
 {
 	SAMR_Q_LOOKUP_NAMES q_u;
 
+	memset(&q_u, '\0', sizeof(q_u));
+
 	/* grab the samr lookup names */
 	if(!samr_io_q_lookup_names("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_lookup_names: failed to unmarshall SAMR_Q_LOOKUP_NAMES.\n"));

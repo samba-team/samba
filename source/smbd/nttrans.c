@@ -2021,7 +2021,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   char *params= *ppparams;
   char *data = *ppdata;
   prs_struct pd;
-  SEC_DESC *psd;
+  SEC_DESC *psd = NULL;
   uint32 total_data_count = (uint32)IVAL(inbuf, smb_nts_TotalDataCount);
   uid_t user;
   gid_t grp;
