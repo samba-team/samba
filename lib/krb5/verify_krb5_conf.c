@@ -465,6 +465,11 @@ struct entry kdcdefaults_entries[] = {
     { NULL }
 };
 
+struct entry capaths_entries[] = {
+    { "", krb5_config_list, all_strings },
+    { NULL }
+};
+
 struct entry toplevel_sections[] = {
     { "libdefaults" , krb5_config_list, libdefaults_entries },
     { "realms", krb5_config_list, realms_foobar },
@@ -474,6 +479,7 @@ struct entry toplevel_sections[] = {
     { "kadmin", krb5_config_list, kadmin_entries },
     { "appdefaults", krb5_config_list, appdefaults_entries },
     { "gssapi", krb5_config_list, NULL },
+    { "capaths", krb5_config_list, capaths_entries },
     /* MIT stuff */
     { "kdcdefaults", krb5_config_list, kdcdefaults_entries },
     { NULL }
