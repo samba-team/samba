@@ -294,6 +294,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL valid_nt_password = False;
   pstring user;
   BOOL guest=False;
+  BOOL computer_id=False;
 
   *smb_apasswd = 0;
   
@@ -349,6 +350,15 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
 
+  /* If name ends in $ then I think it's asking about whether a */
+  /* computer with that name (minus the $) has access. For now */
+  /* say yes to everything ending in $. */
+  if (user[strlen(user) - 1] == '$') {
+    computer_id = True;
+    user[strlen(user) - 1] = '\0';
+  }
+
+
   if (!*user)
     strcpy(user,lp_guestaccount(-1));
 
@@ -380,7 +390,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	} 
       if (!valid_nt_password && !guest && !password_ok(user,smb_apasswd,smb_apasslen,NULL,False))
 	{
-	  if (lp_security() >= SEC_USER) {
+	  if (!computer_id && lp_security() >= SEC_USER) {
 #if (GUEST_SESSSETUP == 0)
 	    return(ERROR(ERRSRV,ERRbadpw));
 #endif
@@ -444,7 +454,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   CVAL(outbuf,smb_vwv0) = smb_com2;
   SSVAL(outbuf,smb_vwv1,(chain_size+outsize)-4);
 
-  if (guest)
+  if (guest && !computer_id)
     SSVAL(outbuf,smb_vwv2,1);
 
   /* register the name and uid as being validated, so further connections
@@ -979,6 +989,10 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   int size=0,fmode=0,mtime=0,rmode=0;
   struct stat sbuf;
   int smb_action = 0;
+
+  /* If it's an IPC, pass off the pipe handler. */
+  if (IS_IPC(cnum))
+    return reply_open_pipe_and_X(inbuf,outbuf,length,bufsize);
 
   /* XXXX we need to handle passed times, sattr and flags */
 

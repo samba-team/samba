@@ -1584,7 +1584,7 @@ static int sig_cld()
     }
   depth++;
 
-  BlockSignals(True);
+  BlockSignals(True,SIGCLD);
   DEBUG(5,("got SIGCLD\n"));
 
 #ifdef USE_WAITPID
@@ -1610,7 +1610,7 @@ static int sig_cld()
   while (wait3(WAIT3_CAST1 NULL, WNOHANG, WAIT3_CAST2 NULL) > 0);
 #endif
   depth--;
-  BlockSignals(False);
+  BlockSignals(False,SIGCLD);
   return 0;
 }
 #endif
@@ -1791,13 +1791,13 @@ this prevents zombie child processes
 ****************************************************************************/
 static int sig_hup()
 {
-  BlockSignals(True);
+  BlockSignals(True,SIGHUP);
   DEBUG(0,("Got SIGHUP\n"));
   reload_services(False);
 #ifndef DONT_REINSTALL_SIG
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
-  BlockSignals(False);
+  BlockSignals(False,SIGHUP);
   return(0);
 }
 
@@ -3011,7 +3011,7 @@ struct smb_message_struct
    {SMBunlink,"SMBunlink",reply_unlink,AS_USER | NEED_WRITE},
    {SMBread,"SMBread",reply_read,AS_USER},
    {SMBwrite,"SMBwrite",reply_write,AS_USER},
-   {SMBclose,"SMBclose",reply_close,AS_USER},
+   {SMBclose,"SMBclose",reply_close,AS_USER | CAN_IPC},
    {SMBmkdir,"SMBmkdir",reply_mkdir,AS_USER | NEED_WRITE},
    {SMBrmdir,"SMBrmdir",reply_rmdir,AS_USER | NEED_WRITE},
    {SMBdskattr,"SMBdskattr",reply_dskattr,AS_USER},
@@ -3054,7 +3054,7 @@ struct smb_message_struct
    {SMBcopy,"SMBcopy",reply_copy,AS_USER | NEED_WRITE},
    {SMBmove,"SMBmove",NULL,AS_USER | NEED_WRITE},
    
-   {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER},
+   {SMBopenX,"SMBopenX",reply_open_and_X,AS_USER | CAN_IPC},
    {SMBreadX,"SMBreadX",reply_read_and_X,AS_USER},
    {SMBwriteX,"SMBwriteX",reply_write_and_X,AS_USER},
    {SMBlockingX,"SMBlockingX",reply_lockingX,AS_USER},
@@ -3456,7 +3456,7 @@ static void process(void)
 
 	  /* clean the share modes every 5 minutes */
 	  if (!(counter%SHARE_MODES_CLEAN))
-	    clean_share_files();
+	    clean_share_modes();
 
 	  /* automatic timeout if all connections are closed */      
 	  if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) {
@@ -3744,6 +3744,11 @@ static void usage(char *pname)
   if (!open_sockets(is_daemon,port))
     exit(1);
 
+#ifdef FAST_SHARE_MODES
+  if (!start_share_mode_mgmt())
+    exit(1);
+#endif
+
   /* possibly reload the services file. */
   reload_services(True);
 
@@ -3757,6 +3762,10 @@ static void usage(char *pname)
 
   process();
   close_sockets();
+
+#ifdef FAST_SHARE_MODES
+  stop_share_mode_mgmt();
+#endif
 
   exit_server("normal exit");
   return(0);

@@ -183,7 +183,7 @@
 #endif
 #endif
 
-#if USE_MMAP
+#if defined(USE_MMAP) || defined(FAST_SHARE_MODES)
 #include <sys/mman.h>
 #endif
 
@@ -223,7 +223,7 @@ Here come some platform specific sections
 #define USE_SETSID
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
-#define USE_SIGBLOCK
+#define USE_SIGPROCMASK
 #if 0
 /* SETFS disabled until we can check on some bug reports */
 #if _LINUX_C_LIB_VERSION_MAJOR >= 5
@@ -259,7 +259,7 @@ typedef unsigned short mode_t;
 #endif
 #define REPLACE_GETPASS
 #define BSD_TERMIO
-#define USE_SIGBLOCK
+#define USE_SIGPROCMASK
 #endif
 
 
@@ -293,7 +293,7 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_GETCWD
 #define USE_SETSID
 #define REPLACE_GETPASS
-#define USE_SIGBLOCK
+#define USE_SIGPROCMASK
 #endif
 
 

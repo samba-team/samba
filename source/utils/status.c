@@ -17,6 +17,11 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+   Revision History:
+
+   12 aug 96: Erik.Devriendt@te6.siemens.be
+   added support for shared memory implementation of share mode locking
 */
 
 /*
@@ -43,15 +48,24 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 {
   FILE *f;
   pstring fname;
-  int uid, c, n;
+  int uid, c;
   static pstring servicesf = CONFIGFILE;
   extern char *optarg;
   int verbose = 0;
-  void *dir;
-  char *s;
   BOOL firstopen=True;
   BOOL processes_only=False;
   int last_pid=0;
+#ifdef FAST_SHARE_MODES
+  pstring shmem_file_name;
+  share_mode_record *scanner_p;
+  share_mode_record *prev_p;
+  int bytes_free, bytes_used, bytes_overhead, bytes_total;
+#else
+  int n;
+  void *dir;
+  char *s;
+#endif
+
 
   TimeInit();
   setup_logging(argv[0],True);
@@ -151,42 +165,99 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
 
   printf("\n");
 
-  dir = opendir(lp_lockdir());
-  if (!dir) return(0);
-  while ((s=readdirname(dir))) {
-    char buf[16];
-    int pid,mode;
-    time_t t;
-    int fd;
-    pstring lname;
-    int dev,inode;
+#ifdef FAST_SHARE_MODES
+  /*******************************************************************
+  initialize the shared memory for share_mode management 
+  ******************************************************************/
 
-    if (sscanf(s,"share.%d.%d",&dev,&inode)!=2) continue;
+   
+  strcpy(shmem_file_name,lp_lockdir());
+  trim_string(shmem_file_name,"","/");
+  if (!*shmem_file_name) exit(-1);
+  strcat(shmem_file_name, "/SHARE_MEM_FILE");
+  if(!shm_open(shmem_file_name, SHMEM_SIZE)) exit(-1);
+  
+  if(!shm_lock())
+  {
+     shm_close();
+     exit (-1);
+  }
 
-    strcpy(lname,lp_lockdir());
-    trim_string(lname,NULL,"/");
-    strcat(lname,"/");
-    strcat(lname,s);
-
-    fd = open(lname,O_RDONLY,0);
-    if (fd < 0) continue;
-    if (read(fd,buf,16) != 16) continue;
-    n = read(fd,fname,sizeof(fname));
-    fname[MAX(n,0)]=0;
-    close(fd);
-
-    t = IVAL(buf,0);
-    mode = IVAL(buf,4);
-    pid = IVAL(buf,8);
-
-    if ( !Ucrit_checkPid(pid) )             /* added by OH */
-        continue;
-
-    if (IVAL(buf,12) != LOCKING_VERSION || !process_exists(pid)) {
-      if (unlink(lname)==0)
-        printf("Deleted stale share file %s\n",s);
-      continue;
-    }
+  scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+  prev_p = scanner_p;
+  while(scanner_p)
+  {
+     int pid,mode;
+     time_t t;
+     
+     pid = scanner_p->pid;
+     
+     if ( !Ucrit_checkPid(pid) )
+     {
+	prev_p = scanner_p ;
+	scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+	continue;
+     }
+     
+     if( (scanner_p->locking_version != LOCKING_VERSION) || !process_exists(pid))
+     {
+	DEBUG(2,("Deleting stale share mode record"));
+	if(prev_p == scanner_p)
+	{
+	   shm_set_userdef_off(scanner_p->next_offset);
+	   shm_free(shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)shm_offset2addr(shm_get_userdef_off());
+           prev_p = scanner_p;
+	}
+	else
+	{
+	   prev_p->next_offset = scanner_p->next_offset;
+  	   shm_free(shm_addr2offset(scanner_p));
+           scanner_p = (share_mode_record *)shm_offset2addr(prev_p->next_offset);
+	}
+	continue;
+     }
+     t = scanner_p->time;
+     mode = scanner_p->share_mode;
+     strcpy(fname, scanner_p->file_name);
+#else
+     dir = opendir(lp_lockdir());
+     if (!dir) return(0);
+     while ((s=readdirname(dir))) {
+       char buf[16];
+       int pid,mode;
+       time_t t;
+       int fd;
+       pstring lname;
+       int dev,inode;
+       
+       if (sscanf(s,"share.%d.%d",&dev,&inode)!=2) continue;
+       
+       strcpy(lname,lp_lockdir());
+       trim_string(lname,NULL,"/");
+       strcat(lname,"/");
+       strcat(lname,s);
+       
+       fd = open(lname,O_RDONLY,0);
+       if (fd < 0) continue;
+       if (read(fd,buf,16) != 16) continue;
+       n = read(fd,fname,sizeof(fname));
+       fname[MAX(n,0)]=0;
+       close(fd);
+       
+       t = IVAL(buf,0);
+       mode = IVAL(buf,4);
+       pid = IVAL(buf,8);
+       
+       if ( !Ucrit_checkPid(pid) )             /* added by OH */
+	 continue;
+       
+       if (IVAL(buf,12) != LOCKING_VERSION || !process_exists(pid)) {
+	 if (unlink(lname)==0)
+	   printf("Deleted stale share file %s\n",s);
+	 continue;
+       }
+#endif
 
     fname[sizeof(fname)-1] = 0;
 
@@ -214,11 +285,37 @@ unsigned int   Ucrit_IsActive = 0;                    /* added by OH */
       case 2: printf("RDWR   "); break;
       }
     printf(" %s   %s",fname,asctime(LocalTime(&t)));
-  }
+
+#ifdef FAST_SHARE_MODES
+     prev_p = scanner_p ;
+     scanner_p = (share_mode_record *)shm_offset2addr(scanner_p->next_offset);
+  } /* end while */
+
+  shm_get_usage(&bytes_free, &bytes_used, &bytes_overhead);
+  bytes_total = bytes_free + bytes_used + bytes_overhead;
+  shm_unlock();
+
+  /*******************************************************************
+  deinitialize the shared memory for share_mode management 
+  ******************************************************************/
+  shm_close();
+
+#else
+  } /* end while */
   closedir(dir);
 
+#endif
   if (firstopen)
     printf("No locked files\n");
+#ifdef FAST_SHARE_MODES
+  printf("\nShare mode memory usage (bytes):\n");
+  printf("   %d(%d%%) free + %d(%d%%) used + %d(%d%%) overhead = %d(100%%) total\n",
+	 bytes_free, (bytes_free * 100)/bytes_total,
+	 bytes_used, (bytes_used * 100)/bytes_total,
+	 bytes_overhead, (bytes_overhead * 100)/bytes_total,
+	 bytes_total);
+  
+#endif
 
   return (0);
 }

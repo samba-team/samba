@@ -59,10 +59,20 @@ extern fstring local_machine;
 #define SNLEN 15		/* service name length */
 #define QNLEN 12		/* queue name maximum length */
 
-#define MAJOR_VERSION 2
+#define MAJOR_VERSION 4
 #define MINOR_VERSION 0
 
 extern int Client;
+
+static BOOL api_Unsupported(int cnum,int uid, char *param,char *data,
+			    int mdrcnt,int mprcnt,
+			    char **rdata,char **rparam,
+			    int *rdata_len,int *rparam_len);
+static BOOL api_TooSmall(int cnum,int uid, char *param,char *data,
+			 int mdrcnt,int mprcnt,
+			 char **rdata,char **rparam,
+			 int *rdata_len,int *rparam_len);
+
 
 static int CopyExpanded(int cnum, int snum, char** dst, char* src, int* n)
 {
@@ -1906,7 +1916,8 @@ static BOOL api_RNetUserGetInfo(int cnum,int uid, char *param,char *data,
       p2 = skip_string(p2,1);
     }
     if (uLevel == 11) {         /* modelled after NTAS 3.51 reply */
-      SSVAL(p,34,USER_PRIV_USER); /* user privilege */
+      SSVAL(p,34,
+	    Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER); 
       SIVAL(p,36,0);		/* auth flags */
       SIVALS(p,40,-1);		/* password age */
       SIVAL(p,44,PTR_DIFF(p2,p)); /* home dir */
@@ -1941,7 +1952,8 @@ static BOOL api_RNetUserGetInfo(int cnum,int uid, char *param,char *data,
     if (uLevel == 1 || uLevel == 2) {
       memset(p+22,' ',16);	/* password */
       SIVALS(p,38,-1);		/* password age */
-      SSVAL(p,42,USER_PRIV_ADMIN); /* user privilege */
+      SSVAL(p,42,
+	    Connections[cnum].admin_user?USER_PRIV_ADMIN:USER_PRIV_USER);
       SIVAL(p,44,PTR_DIFF(p2,*rdata)); /* home dir */
       strcpy(p2,"\\\\%L\\HOMES");
       standard_sub_basic(p2);
@@ -2577,6 +2589,92 @@ static BOOL api_WPrintPortEnum(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
+
+struct
+{
+  char * name;
+  char * pipename;
+  int subcommand;
+  BOOL (*fn) ();
+} api_fd_commands [] =
+  {
+    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
+    { "TransactNmPipe",	"lsarpc",	0x26,	api_LsarpcTNP },
+    { NULL,		NULL,		-1,	api_Unsupported }
+  };
+
+/****************************************************************************
+  handle remote api calls delivered to a named pipe already opened.
+  ****************************************************************************/
+static int api_fd_reply(int cnum,int uid,char *outbuf,
+		 	uint16 *setup,char *data,char *params,
+		 	int suwcnt,int tdscnt,int tpscnt,int mdrcnt,int mprcnt)
+{
+  char *rdata = NULL;
+  char *rparam = NULL;
+  int rdata_len = 0;
+  int rparam_len = 0;
+  BOOL reply=False;
+  int i;
+  int fd;
+  int subcommand;
+  
+  /* First find out the name of this file. */
+  if (suwcnt != 2)
+    {
+      DEBUG(0,("Unexpected named pipe transaction.\n"));
+      return(-1);
+    }
+  
+  /* Get the file handle and hence the file name. */
+  fd = setup[1];
+  subcommand = setup[0];
+  
+  DEBUG(3,("Got API command %d on pipe %s ",subcommand,Files[fd].name));
+  DEBUG(3,("(tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
+	   tdscnt,tpscnt,mdrcnt,mprcnt));
+  
+  for (i=0;api_fd_commands[i].name;i++)
+    if (strequal(api_fd_commands[i].pipename, Files[fd].name) &&
+	api_fd_commands[i].subcommand == subcommand &&
+	api_fd_commands[i].fn)
+      {
+	DEBUG(3,("Doing %s\n",api_fd_commands[i].name));
+	break;
+      }
+  
+  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
+  rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
+  
+  reply = api_fd_commands[i].fn(cnum,uid,params,data,mdrcnt,mprcnt,
+			        &rdata,&rparam,&rdata_len,&rparam_len);
+  
+  if (rdata_len > mdrcnt ||
+      rparam_len > mprcnt)
+    {
+      reply = api_TooSmall(cnum,uid,params,data,mdrcnt,mprcnt,
+			   &rdata,&rparam,&rdata_len,&rparam_len);
+    }
+  
+  
+  /* if we get False back then it's actually unsupported */
+  if (!reply)
+    api_Unsupported(cnum,uid,params,data,mdrcnt,mprcnt,
+		    &rdata,&rparam,&rdata_len,&rparam_len);
+  
+  /* now send the reply */
+  send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0);
+  
+  if (rdata)
+    free(rdata);
+  if (rparam)
+    free(rparam);
+  
+  return(-1);
+}
+
+
+
 /****************************************************************************
   the buffer was too small
   ****************************************************************************/
@@ -2726,6 +2824,10 @@ static int named_pipe(int cnum,int uid, char *outbuf,char *name,
 
   if (strequal(name,"LANMAN"))
     return(api_reply(cnum,uid,outbuf,data,params,tdscnt,tpscnt,mdrcnt,mprcnt));
+
+if (strlen(name) < 1)
+  return(api_fd_reply(cnum,uid,outbuf,setup,data,params,suwcnt,tdscnt,tpscnt,mdrcnt,mprcnt));
+
 
   DEBUG(3,("named pipe command on <%s> 0x%X setup1=%d\n",
 	   name,(int)setup[0],(int)setup[1]));
