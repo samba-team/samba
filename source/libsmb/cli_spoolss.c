@@ -99,8 +99,8 @@ uint32 cli_spoolss_open_printer_ex(struct cli_state *cli, char *printername,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -149,8 +149,8 @@ uint32 cli_spoolss_closeprinter(struct cli_state *cli, POLICY_HND *pol)
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -191,7 +191,7 @@ static void init_buffer(NEW_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 	buffer->ptr = (size != 0);
 	buffer->size = size;
 	buffer->string_at_end = size;
-	prs_init(&buffer->prs, size, 4, ctx, MARSHALL);
+	prs_init(&buffer->prs, size, ctx, MARSHALL);
 	buffer->struct_start = prs_offset(&buffer->prs);
 }
 
@@ -330,8 +330,8 @@ uint32 cli_spoolss_enum_printers(struct cli_state *cli, uint32 flags,
 
 		init_buffer(&buffer, needed, cli->mem_ctx);
 
-		prs_init(&qbuf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 		make_spoolss_q_enumprinters(&q, flags, "", level, &buffer, 
 					    needed);
@@ -407,8 +407,8 @@ uint32 cli_spoolss_enum_ports(struct cli_state *cli, uint32 level,
 
 		init_buffer(&buffer, needed, cli->mem_ctx);
 
-		prs_init(&qbuf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 		make_spoolss_q_enumports(&q, "", level, &buffer, needed);
 
@@ -479,8 +479,8 @@ uint32 cli_spoolss_getprinter(struct cli_state *cli, POLICY_HND *pol,
 
 		init_buffer(&buffer, needed, cli->mem_ctx);
 
-		prs_init(&qbuf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 		make_spoolss_q_getprinter(&q, pol, level, &buffer, 
 					  needed);
