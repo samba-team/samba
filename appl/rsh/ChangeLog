@@ -1,3 +1,7 @@
+1999-04-11  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c: new option --forwardable. use print_version
+	
 Sat Apr 10 17:10:55 1999  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c (setup_copier): use `socketpair' instead of `pipe'.  Some
