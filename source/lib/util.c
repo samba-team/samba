@@ -2400,6 +2400,7 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 #if HAVE_FCNTL_LOCK
   SMB_STRUCT_FLOCK lock;
   int ret;
+
 #if defined(LARGE_SMB_OFF_T)
   /*
    * In the 64 bit locking case we store the original
@@ -2409,40 +2410,6 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   SMB_OFF_T orig_offset = offset;
   SMB_OFF_T orig_count = count;
 #endif /* LARGE_SMB_OFF_T */
-
-  if(lp_ole_locking_compat()) {
-    SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<2);
-
-    /* make sure the count is reasonable, we might kill the lockd otherwise */
-    count &= ~mask;
-
-    /* the offset is often strange - remove 2 of its bits if either of
-       the top two bits are set. Shift the top ones by two bits. This
-       still allows OLE2 apps to operate, but should stop lockd from
-       dieing */
-    if ((offset & mask) != 0)
-      offset = (offset & ~mask) | (((offset & mask) >> 2) & mask2);
-  } else {
-    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
-    SMB_OFF_T mask = (mask2<<1);
-    SMB_OFF_T neg_mask = ~mask;
-
-    /* interpret negative counts as large numbers */
-    if (count < 0)
-      count &= ~mask;
-
-    /* no negative offsets */
-    if(offset < 0)
-      offset &= ~mask;
-
-    /* count + offset must be in range */
-    while ((offset < 0 || (offset + count < 0)) && mask)
-    {
-      offset &= ~mask;
-      mask = ((mask >> 1) & neg_mask);
-    }
-  }
 
   DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
 
