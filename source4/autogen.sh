@@ -47,13 +47,16 @@ if [ "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0" ]; then
 	exit 1
 fi
 
-
+echo "$0: running script/mkversion.sh"
+./script/mkversion.sh || exit 1
 
 echo "$0: running $AUTOHEADER"
 $AUTOHEADER || exit 1
 
 echo "$0: running $AUTOCONF"
 $AUTOCONF || exit 1
+
+rm -rf autom4te.cache autom4te-2.53.cache
 
 echo "Now run ./configure and then make."
 exit 0

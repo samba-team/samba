@@ -66,7 +66,7 @@ static void popt_common_callback(poptContext con,
 		break;
 
 	case 'V':
-		printf( "Version %s\n", SAMBA_VERSION );
+		printf( "Version %s\n", SAMBA_VERSION_STRING );
 		exit(0);
 		break;
 
