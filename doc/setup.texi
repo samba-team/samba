@@ -831,7 +831,7 @@ Now consider adding indexes to the database to speed up the access.
 
 @subsection Troubleshooting guide
 
-https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide
+@url{https://sec.miljovern.no/bin/view/Info/TroubleshootingGuide}
 
 
 @node Using Samba LDAP password database, , Using LDAP to store the database, Setting up a realm
