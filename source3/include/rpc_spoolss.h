@@ -177,7 +177,7 @@
 #define JOB_WRITE	STANDARD_RIGHTS_WRITE|JOB_ACCESS_ADMINISTER
 #define JOB_EXECUTE	STANDARD_RIGHTS_EXECUTE|JOB_ACCESS_ADMINISTER
 
-#define PRINTER_HND_SIZE 20
+#define POLICY_HND_SIZE 20
 
 #define ONE_VALUE 01
 #define TWO_VALUE 02
@@ -498,13 +498,6 @@ typedef struct s_buffer
 } BUFFER;
 
 
-/* PRINTER_HND */
-typedef struct printer_policy_info
-{
-  uint8 data[PRINTER_HND_SIZE]; /* printer handle */
-
-} PRINTER_HND;
-
 /* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
 typedef struct spool_q_open_printer_ex
 {
@@ -532,14 +525,14 @@ typedef struct spool_q_open_printer_ex
 /* SPOOL_Q_OPEN_PRINTER_EX reply to an open printer */ 
 typedef struct spool_r_open_printer_ex
 {	
-	PRINTER_HND handle; /* handle used along all transactions (20*uint8) */
+	POLICY_HND handle; /* handle used along all transactions (20*uint8) */
 	uint32 status;
 
 } SPOOL_R_OPEN_PRINTER_EX;
 
 typedef struct spool_q_getprinterdata
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	UNISTR2     valuename;
 	uint32      size;
 } SPOOL_Q_GETPRINTERDATA;
@@ -556,18 +549,18 @@ typedef struct spool_r_getprinterdata
 
 typedef struct spool_q_closeprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 } SPOOL_Q_CLOSEPRINTER;
 
 typedef struct spool_r_closeprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 status;
 } SPOOL_R_CLOSEPRINTER;
 
 typedef struct spool_q_startpageprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 } SPOOL_Q_STARTPAGEPRINTER;
 
 typedef struct spool_r_startpageprinter
@@ -577,7 +570,7 @@ typedef struct spool_r_startpageprinter
 
 typedef struct spool_q_endpageprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 } SPOOL_Q_ENDPAGEPRINTER;
 
 typedef struct spool_r_endpageprinter
@@ -609,7 +602,7 @@ typedef struct spool_doc_info_container
 
 typedef struct spool_q_startdocprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	DOC_INFO_CONTAINER doc_info_container;
 } SPOOL_Q_STARTDOCPRINTER;
 
@@ -621,7 +614,7 @@ typedef struct spool_r_startdocprinter
 
 typedef struct spool_q_enddocprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 } SPOOL_Q_ENDDOCPRINTER;
 
 typedef struct spool_r_enddocprinter
@@ -631,7 +624,7 @@ typedef struct spool_r_enddocprinter
 
 typedef struct spool_q_writeprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 buffer_size;
 	uint8 *buffer;
 	uint32 buffer_size2;
@@ -695,7 +688,7 @@ typedef struct spool_notify_info
 /* RemoteFindFirstPrinterChangeNotificationEx query struct */
 typedef struct spoolss_q_rffpcnex
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 flags;
 	uint32 options;
 	UNISTR2 localmachine;
@@ -711,7 +704,7 @@ typedef struct spool_r_rffpcnex
 /* Remote Find Next Printer Change Notify Ex */
 typedef struct spool_q_rfnpcnex
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 change;
 	SPOOL_NOTIFY_OPTION option;
 } SPOOL_Q_RFNPCNEX;
@@ -725,7 +718,7 @@ typedef struct spool_r_rfnpcnex
 /* Find Close Printer Notify */
 typedef struct spool_q_fcpn
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 } SPOOL_Q_FCPN;
 
 typedef struct spool_r_fcpn
@@ -828,7 +821,7 @@ typedef struct spool_r_enumprinters
 
 typedef struct spool_q_getprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	uint8* buffer;
 	uint32 offered;
@@ -837,7 +830,7 @@ typedef struct spool_q_getprinter
 
 typedef struct spool_r_getprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	
 	uint32 offered;
@@ -862,7 +855,7 @@ struct s_notify_info_data_table
 
 typedef struct spool_q_getprinterdriver2
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	UNISTR2 architecture;
 	uint32 level;
 	BUFFER buffer;
@@ -922,7 +915,7 @@ typedef struct add_jobinfo_1
 
 typedef struct spool_q_addjob
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
@@ -997,7 +990,7 @@ typedef struct s_job_info_2
 
 typedef struct spool_q_enumjobs
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 firstjob;
 	uint32 numofjobs;
 	uint32 level;
@@ -1020,7 +1013,7 @@ typedef struct spool_r_enumjobs
 
 typedef struct spool_q_schedulejob
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 jobid;
 } SPOOL_Q_SCHEDULEJOB;
 
@@ -1071,7 +1064,7 @@ typedef struct spool_r_enumports
 
 typedef struct spool_q_setjob
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 jobid;
 	uint32 level;
 	union {
@@ -1122,7 +1115,7 @@ typedef struct spool_form_1
 
 typedef struct spool_q_enumforms
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	BUFFER buffer;
 	uint32 buf_size;
@@ -1234,7 +1227,7 @@ typedef struct spool_user_level
 
 typedef struct spool_q_setprinter
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
 
@@ -1287,7 +1280,7 @@ typedef struct spool_q_addprinterex
 
 typedef struct spool_r_addprinterex
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 status;
 } SPOOL_R_ADDPRINTEREX;
 
@@ -1397,7 +1390,7 @@ typedef struct spool_r_enumprintmonitors
 
 typedef struct spool_q_enumprinterdata
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 index;
 	uint32 valuesize;
 	uint32 datasize;
@@ -1417,7 +1410,7 @@ typedef struct spool_r_enumprinterdata
 
 typedef struct spool_q_setprinterdata
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	UNISTR2 value;
 	uint32 type;
 	uint32 max_len;
@@ -1446,7 +1439,7 @@ typedef struct _form
 
 typedef struct spool_q_addform
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 level;
 	uint32 level2;
 	FORM form;
@@ -1459,7 +1452,7 @@ typedef struct spool_r_addform
 
 typedef struct spool_q_setform
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	UNISTR2 name;
 	uint32 level;
 	uint32 level2;
@@ -1473,7 +1466,7 @@ typedef struct spool_r_setform
 
 typedef struct spool_q_getjob
 {
-	PRINTER_HND handle;
+	POLICY_HND handle;
 	uint32 jobid;
 	uint32 level;
 	BUFFER buffer;

@@ -34,33 +34,21 @@ extern int DEBUGLEVEL;
 
 extern FILE* out_hnd;
 
-extern struct cli_state *smb_cli;
 extern struct user_credentials *usr_creds;
-extern int smb_tidx;
 
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
-				const char* srv_name,
+BOOL msrpc_spoolss_enum_printers( const char* srv_name,
 				uint32 level,
 				uint32 *num,
 				void ***ctr,
 				PRINT_INFO_FN(fn))
 {
-	uint16 nt_pipe_fnum;
 	BOOL res = True;
 
-	/* open SPOOLSS session. */
-	res = cli_nt_session_open(cli, PIPE_SPOOLSS, &nt_pipe_fnum);
-
-	res = res ? spoolss_enum_printers(cli, nt_pipe_fnum, 
-	                        0x40, srv_name, level, num, ctr) : False;
-
-	/* close the session */
-	cli_nt_session_close(cli, nt_pipe_fnum);
-
-	if (res && fn != NULL)
+	if (spoolss_enum_printers( 0x40, srv_name, level, num, ctr) &&
+	    fn != NULL)
 	{
 		fn(srv_name, level, *num, *ctr);
 	}
@@ -87,10 +75,10 @@ void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[])
 
 	fstring srv_name;
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, smb_cli->desthost);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	if (msrpc_spoolss_enum_printers(smb_cli, srv_name, level, &num, &ctr,
+	if (msrpc_spoolss_enum_printers(srv_name, level, &num, &ctr,
 	                         spool_print_info_ctr))
 	{
 		DEBUG(5,("cmd_spoolss_enum_printer: query succeeded\n"));
@@ -108,8 +96,8 @@ nt spoolss query
 ****************************************************************************/
 void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[])
 {
-	uint16 nt_pipe_fnum;
 	fstring srv_name;
+	fstring station;
 	char *printer_name;
 	PRINTER_HND hnd;
 
@@ -123,28 +111,30 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 
 	printer_name = argv[1];
 
+	fstrcpy(station, "\\\\");
+	fstrcat(station, info->myhostname);
+	strupper(station);
+
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+	if (!strnequal("\\\\", printer_name, 2))
+	{
+		fstrcat(srv_name, "\\");
+		fstrcat(srv_name, printer_name);
+		printer_name = srv_name;
+	}
+
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, srv_name, usr_creds->user_name));
+		printer_name, station, usr_creds->user_name));
 
-	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open SPOOLSS session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
-
-	res = res ? spoolss_open_printer_ex(smb_cli, nt_pipe_fnum, 
-	                        printer_name,
+	res = res ? spoolss_open_printer_ex( printer_name,
 	                        0, 0, 0,
-	                        srv_name, usr_creds->user_name,
+	                        station, usr_creds->user_name,
 	                        &hnd) : False;
 
-	res = res ? spoolss_closeprinter(smb_cli, nt_pipe_fnum, &hnd) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? spoolss_closeprinter(&hnd) : False;
 
 	if (res)
 	{
@@ -160,16 +150,13 @@ void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[
 /****************************************************************************
 nt spoolss query
 ****************************************************************************/
-BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
-				const char* srv_name,
-				const char* user_name,
-				const char* printer_name,
+BOOL msrpc_spoolss_enum_jobs( const char* printer_name,
+				const char* station, const char* user_name, 
 				uint32 level,
 				uint32 *num,
 				void ***ctr,
 				JOB_INFO_FN(fn))
 {
-	uint16 nt_pipe_fnum;
 	PRINTER_HND hnd;
 	uint32 buf_size = 0x0;
 	uint32 status = 0x0;
@@ -178,51 +165,41 @@ BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
 	BOOL res1 = True;
 
 	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, srv_name, user_name));
+		printer_name, station, user_name));
 
-	DEBUG(5, ("cmd_spoolss_open_printer_ex: smb_cli->fd:%d\n", smb_cli->fd));
-
-	/* open SPOOLSS session. */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SPOOLSS, &nt_pipe_fnum) : False;
-
-	res = res ? spoolss_open_printer_ex(smb_cli, nt_pipe_fnum, 
-	                        printer_name,
+	res = res ? spoolss_open_printer_ex( printer_name,
 	                        0, 0, 0,
-	                        srv_name, user_name,
+	                        station, user_name,
 	                        &hnd) : False;
 
 	if (status == 0x0)
 	{
-		status = spoolss_enum_jobs(smb_cli, nt_pipe_fnum, 
-				&hnd,
+		status = spoolss_enum_jobs( &hnd,
 	                        0, 1000, level, &buf_size,
 	                        num, ctr);
 	}
 
 	if (status == ERROR_INSUFFICIENT_BUFFER)
 	{
-		status = spoolss_enum_jobs(smb_cli, nt_pipe_fnum, 
-				&hnd,
+		status = spoolss_enum_jobs( &hnd,
 	                        0, 1000, level, &buf_size,
 	                        num, ctr);
 	}
 
 	res1 = (status == 0x0);
 
-	res = res ? spoolss_closeprinter(smb_cli, nt_pipe_fnum, &hnd) : False;
-
-	/* close the session */
-	cli_nt_session_close(smb_cli, nt_pipe_fnum);
+	res = res ? spoolss_closeprinter(&hnd) : False;
 
 	if (res1 && fn != NULL)
 	{
-		fn(srv_name, printer_name, level, *num, *ctr);
+		fn(printer_name, station, level, *num, *ctr);
 	}
 
 	return res1;
 }
 
-static void spool_job_info_ctr(const char* srv_name, const char* printer_name,
+static void spool_job_info_ctr( const char* printer_name,
+				const char* station,
 				uint32 level,
 				uint32 num, void *const *const ctr)
 {
@@ -237,6 +214,7 @@ nt spoolss query
 void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 {
 	fstring srv_name;
+	fstring station;
 	char *printer_name;
 
 	void **ctr = NULL;
@@ -251,15 +229,26 @@ void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[])
 
 	printer_name = argv[1];
 
+	fstrcpy(station, "\\\\");
+	fstrcat(station, info->myhostname);
+	strupper(station);
+
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-	DEBUG(4,("spoolopen - printer: %s server: %s user: %s\n",
-		printer_name, srv_name, usr_creds->user_name));
+	if (!strnequal("\\\\", printer_name, 2))
+	{
+		fstrcat(srv_name, "\\");
+		fstrcat(srv_name, printer_name);
+		printer_name = srv_name;
+	}
 
-	if (msrpc_spoolss_enum_jobs(smb_cli,
-				srv_name, usr_creds->user_name, printer_name,
+	DEBUG(4,("spoolopen - printer: %s station: %s user: %s\n",
+		printer_name, station, usr_creds->user_name));
+
+	if (msrpc_spoolss_enum_jobs( printer_name, station,
+	                        usr_creds->user_name,
 				level, &num, &ctr,
 				spool_job_info_ctr))
 	{

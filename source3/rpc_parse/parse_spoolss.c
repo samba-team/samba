@@ -76,9 +76,9 @@ BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
 }
 
 /*******************************************************************
-reads or writes an PRINTER_HND structure.
+reads or writes an POLICY_HND structure.
 ********************************************************************/  
-static BOOL smb_io_prt_hnd(char *desc, PRINTER_HND *hnd, prs_struct *ps, int depth)
+static BOOL smb_io_prt_hnd(char *desc, POLICY_HND *hnd, prs_struct *ps, int depth)
 {
 	if (hnd == NULL) return False;
 
@@ -87,7 +87,7 @@ static BOOL smb_io_prt_hnd(char *desc, PRINTER_HND *hnd, prs_struct *ps, int dep
  
 	prs_align(ps);
         
-	prs_uint8s (False, "data", ps, depth, hnd->data, PRINTER_HND_SIZE);
+	prs_uint8s (False, "data", ps, depth, hnd->data, POLICY_HND_SIZE);
 
 	return True;
 }
@@ -505,7 +505,7 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
  * make a structure.
  ********************************************************************/
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
-				PRINTER_HND *handle,
+				POLICY_HND *handle,
 				char *valuename,
 				uint32 size)
 {
@@ -574,7 +574,7 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 /*******************************************************************
  * make a structure.
  ********************************************************************/
-BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, PRINTER_HND *hnd)
+BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd)
 {
 	if (q_u == NULL) return False;
 
@@ -2321,7 +2321,7 @@ static BOOL spoolss_io_read_buffer8(char *desc, prs_struct *ps, uint8 **buffer, 
  * called from spoolss_getprinter (srv_spoolss.c)
  ********************************************************************/
 BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u,
-				PRINTER_HND *hnd,
+				POLICY_HND *hnd,
 				uint32 level,
 				uint32 buf_size)
 {
@@ -2691,7 +2691,7 @@ BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, in
 
 /*******************************************************************
 ********************************************************************/  
-BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const PRINTER_HND *hnd,
+BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
 				uint32 firstjob,
 				uint32 numofjobs,
 				uint32 level,
