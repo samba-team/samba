@@ -6243,3 +6243,57 @@ BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, pr
 
 	return True;
 }
+
+
+/*******************************************************************
+ * read a structure.
+ * called from spoolss_q_setprinterdataex (srv_spoolss.c)
+ ********************************************************************/  
+
+BOOL spoolss_io_q_enumprinterkey(char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->key, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("size", ps, depth, &q_u->size))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ * called from spoolss_q_setprinterdataex (srv_spoolss.c)
+ ********************************************************************/  
+
+BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!smb_io_buffer5("", &r_u->keys, ps, depth))
+		return False;
+	
+	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+

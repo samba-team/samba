@@ -1536,8 +1536,13 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 			driver->datafile,
 			driver->configfile,
 			driver->helpfile,
+#if 0 	/* JERRY */
 			driver->monitorname,
 			driver->defaultdatatype);
+#else
+			"",
+			"RAW");
+#endif
 
 	if (driver->dependentfiles) {
 		for (i=0; *driver->dependentfiles[i]; i++) {
@@ -2506,7 +2511,8 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int len = 0;
+	int 		len = 0,
+			devmode_length = 0;
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 		
@@ -2556,6 +2562,18 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
+#if 0
+	/*
+	 * We don't want to generate a default device mode (which is why this code is commented out).  
+	 * Better to have the printer initiailized by the client.	  --jerry
+	 */
+	if (!info.devmode)
+	{
+		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
+			printername));
+		info.devmode = construct_nt_devicemode(printername);
+	}
+#endif
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
 	/* This will get the current RPC talloc context, but we should be

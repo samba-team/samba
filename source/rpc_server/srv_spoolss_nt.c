@@ -1319,7 +1319,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	DEBUG(4,("_spoolss_getprinterdata\n"));
 	
 	if (!Printer) {
-		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
+		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
 			return WERR_NOMEM;
 		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
@@ -1347,9 +1347,8 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	
 	if (*needed > *out_size)
 		return WERR_STATUS_MORE_ENTRIES;
-	else {
+	else 
 		return WERR_OK;
-    }
 }
 
 /***************************************************************************
@@ -3919,6 +3918,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	case 6:
 		return getprinterdriver2_level6(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
 	}
+
 	return WERR_UNKNOWN_LEVEL;
 }
 
@@ -6039,7 +6039,12 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
 
-#if 0
+	/* 
+	 * I have reenabled this section since the MSDN documentation specifically
+	 * that if the value and data lengths are 0, we shoudl return the maximum required 
+	 * size for any parameter of the parameter.   --jerry
+	 */
+#if 1
 		/*
 		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
 		 * if this parameter size doesn't exist.
@@ -6188,7 +6193,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
-
 
 	/* Check if we are making any changes or not.  Return true if
 	   nothing is actually changing.  This is not needed anymore but
@@ -6787,18 +6791,84 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 
 WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
 {
-        fstring key;
+	POLICY_HND	*handle = &q_u->handle;
+	uint32 		in_size = q_u->size;
+	uint32 		*type = &r_u->type;
+	uint32 		*out_size = &r_u->size;
+	uint8 		**data = &r_u->data;
+	uint32 		*needed = &r_u->needed;
 
-        /* From MSDN documentation of GetPrinterDataEx: pass request to
-           GetPrinterData if key is "PrinterDriverData" */
+	fstring 	key, value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	BOOL 		found = False;
+
+	DEBUG(4,("_spoolss_getprinterdataex\n"));
 
         unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
+        unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
 
-        if (strcmp(key, "PrinterDriverData") == 0)
-                DEBUG(10, ("pass me to getprinterdata\n"));
-        
-        return WERR_INVALID_PARAM;
+
+	*out_size=in_size;
+
+	/* in case of problem, return some default values */
+	*needed=0;
+	*type=0;
+
+		
+	if (!Printer) {
+		if((*data=(uint8 *)talloc_zero(p->mem_ctx, 4*sizeof(uint8))) == NULL)
+			return WERR_NOMEM;
+		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
 	}
+
+		
+	/* Is the handle to a printer or to the server? */
+
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
+	{
+		DEBUG(10,("_spoolss_getprinterdatex: Not implemented for server handles yet\n"));
+		return WERR_INVALID_PARAM;
+	}
+	else
+	{
+	        /* 
+		 * From MSDN documentation of GetPrinterDataEx: pass request
+		 * to GetPrinterData if key is "PrinterDriverData". This is 
+		 * the only key we really support. Other keys to implement:
+		 * (a) DsDriver
+		 * (b) DsSpooler
+		 * (c) PnPData
+		 */
+	   
+		if (strcmp(key, "PrinterDriverData") != 0)
+			return WERR_INVALID_PARAM;
+
+		DEBUG(10, ("_spoolss_getprinterdataex: pass me to getprinterdata\n"));
+		found = getprinterdata_printer(p, p->mem_ctx, handle, value, 
+			type, data, needed, *out_size);
+		
+	}
+	 
+	if (!found) {
+		DEBUG(5, ("value not found, allocating %d\n", *out_size));
+		
+		/* reply this param doesn't exist */
+		if (*out_size) {
+			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
+				return WERR_NOMEM;
+		} else {
+			*data = NULL;
+		}
+
+		return WERR_INVALID_PARAM;
+	}
+	
+	if (*needed > *out_size)
+		return WERR_MORE_DATA;
+	else
+		return WERR_OK;
+}
 
 /********************************************************************
  * spoolss_setprinterdata
@@ -6807,6 +6877,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
 {
         fstring key;
+
+	DEBUG(4,("_spoolss_setprinterdataex\n"));
 
         /* From MSDN documentation of SetPrinterDataEx: pass request to
            SetPrinterData if key is "PrinterDriverData" */
@@ -6818,3 +6890,116 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
         return WERR_INVALID_PARAM;
 }
+
+/********************************************************************
+ * spoolss_enumprinterkey
+ ********************************************************************/
+
+/* constants for EnumPrinterKey() */
+#define ENUMERATED_KEY_SIZE	19
+
+WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u)
+{
+	fstring key;
+	uint16  enumkeys[ENUMERATED_KEY_SIZE+1];
+	char*   ptr = NULL;
+	int     i;
+	char 	*PrinterKey = "PrinterDriverData";
+
+	DEBUG(4,("_spoolss_enumprinterkey\n"));
+
+	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+
+	/* 
+	 * we only support enumating all keys (key == "")
+	 * Of course, the only key we support is the "PrinterDriverData" 
+	 * key
+	 */	
+	if (strlen(key) == 0)
+	{
+		r_u->needed = ENUMERATED_KEY_SIZE *2;
+		if (q_u->size < r_u->needed)
+			return WERR_MORE_DATA;
+	
+		ptr = PrinterKey;
+		for (i=0; i<ENUMERATED_KEY_SIZE-2; i++)
+		{
+			enumkeys[i] = (uint16)(*ptr);
+			ptr++;
+		}
+	
+		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, ENUMERATED_KEY_SIZE, enumkeys))
+			return WERR_BADFILE;
+			
+		return WERR_OK;
+	}
+	
+	/* The "PrinterDriverData" key should have no subkeys */
+	if (strcmp(key, PrinterKey) == 0)
+	{
+		r_u-> needed = 2;
+		if (q_u->size < r_u->needed)
+			return WERR_MORE_DATA;
+		enumkeys[0] = 0x0;
+		if (!make_spoolss_buffer5(p->mem_ctx, &r_u->keys, 1, enumkeys))
+			return WERR_BADFILE;
+			
+		return WERR_OK;
+	}
+	
+
+	/* The return value for an unknown key is documented in MSDN
+	   EnumPrinterKey description */
+        return WERR_BADFILE;
+}
+
+/********************************************************************
+ * spoolss_enumprinterdataex
+ ********************************************************************/
+
+WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u)
+{
+#if 0	/* UNDER DEVELOPMENT */
+	POLICY_HND	*handle = &q_u->handle;
+	uint32 		in_size = q_u->size;
+	uint32 		*type = &r_u->type;
+	uint32 		*out_size = &r_u->size;
+	uint8 		**data = &r_u->data;
+	uint32 		*needed = &r_u->needed;
+
+	fstring 	key, value;
+	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
+	BOOL 		found = False;
+
+	DEBUG(4,("_spoolss_enumprinterdataex\n"));
+
+	if (!Printer) {
+		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+
+
+		
+        /* 
+	 * From MSDN documentation of EnumPrinterDataEx: pass request
+	 * to EnumPrinterData if key is "PrinterDriverData". This is 
+	 * the only key we really support. 
+	 *		 *
+	 * See _spoolss_getprinterdataex() for details
+	 */
+   
+	if (strcmp(key, "PrinterDriverData") != 0)
+		return WERR_INVALID_PARAM;
+		
+	DEBUG(10, ("_spoolss_enumprinterdataex: pass me to enumprinterdata\n"));
+		
+	
+	if (*needed > *out_size)
+		return WERR_MORE_DATA;
+	else
+		return WERR_OK;
+#else
+	return WERR_OK;
+#endif
+}
+
