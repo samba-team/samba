@@ -49,7 +49,12 @@ use Sys::Hostname;
 
 my $notlocal = 'not SU';
 my @local_realms = ( "SU.SE" );
-my @local_networks_re = ( "130.237" );
+my @local_networks_re = 
+    ( 
+      "130\.237",
+      "193\.11\.3[0-9]\.",
+      "130.242.128"
+      );
 
 my $as_req = 0;
 my %as_req_addr;
@@ -90,7 +95,7 @@ my $restarts = 0;
 my $v4_req = 0;
 my %v4_req_addr;
 my %v4_req_addr_nonlocal;
-my $v4_cross;
+my $v4_cross = 0;
 my %v4_cross_realm;
 my $referrals = 0;
 my %referral_princ;
@@ -102,6 +107,10 @@ my $http_non_kdc = 0;
 my %http_non_kdc_addr;
 my $tcp_conn_timeout = 0;
 my %tcp_conn_timeout_addr;
+my $failed_processing = 0;
+my %failed_processing_addr;
+my $connection_closed = 0;
+my %connection_closed_addr;
 my $pa_failed = 0;
 my %pa_failed_princ;
 my %pa_failed_addr;
@@ -135,7 +144,7 @@ if ($v4_cross > 0) {
 }
 print "\n";
 
-print "\tNumber of failed lookups: $no_such_princ\n\n";
+print "\tNumber of failed lookups: $no_such_princ\n";
 if ($no_such_princ > 0) {
 	print "\tTop ten IP addresses failing to find principal:\n";
 	topten(\%no_such_princ_addr);
@@ -158,6 +167,20 @@ print "\tTimeout waiting on TCP requests: ", $tcp_conn_timeout,"\n";
 if ($tcp_conn_timeout > 0) {
 	print "\tTop ten TCP timeout request clients\n";
 	topten(\%tcp_conn_timeout_addr);
+}
+print "\n";
+
+print "\tFailed processing requests: ", $failed_processing,"\n";
+if ($failed_processing > 0) {
+	print "\tTop ten failed processing request clients\n";
+	topten(\%failed_processing_addr);
+}
+print "\n";
+
+print "\tConnection closed requests: ", $connection_closed,"\n";
+if ($connection_closed > 0) {
+	print "\tTop ten connection closed request clients\n";
+	topten(\%connection_closed_addr);
 }
 print "\n";
 
@@ -374,6 +397,12 @@ sub process_line {
 	} elsif (/TCP-connection from IPv[46]:([0-9\.:a-fA-F]+) expired after [0-9]+ bytes/) {
 		$tcp_conn_timeout++;
 		$tcp_conn_timeout_addr{$1}++;
+	} elsif (/Failed processing [0-9]+ byte request from IPv[46]:([0-9\.:a-fA-F]+)/) {
+		$failed_processing++;
+		$failed_processing_addr{$1}++;
+	} elsif (/connection closed before end of data after [0-9]+ bytes from IPv[46]:([0-9\.:a-fA-F]+)/) {
+		$connection_closed++;
+		$connection_closed_addr{$1}++;
 	} elsif (/HTTP request from IPv[46]:([0-9\.:a-fA-F]+) is non KDC request/) {
 		$http_non_kdc++;
 		$http_non_kdc_addr{$1}++;
@@ -401,8 +430,14 @@ sub process_line {
 			$princ_uses_des{$last_principal}++;
 		}
 
+	} elsif (/Failed to decrypt PA-DATA -- (.+)$/) {
+		$pa_failed++;
+		$pa_failed_princ{$last_principal}++;
+		$pa_failed_addr{$last_addr}++;
+
 	} elsif (/krb_rd_req: Incorrect network address/) {
 	} elsif (/krb_rd_req: Ticket expired \(krb_rd_req\)/) {
+	} elsif (/Ticket expired \(.*\)/) {
 	} elsif (/krb_rd_req: Can't decode authenticator \(krb_rd_req\)/) {
 	} elsif (/Request from wrong address/) {
 		# XXX
@@ -412,10 +447,6 @@ sub process_line {
 		# XXX
 	} elsif (/No PA-ENC-TIMESTAMP --/) {
 		# XXX
-	} elsif (/Failed to decrypt PA-DATA -- (.+)$/) {
-		$pa_failed++;
-		$pa_failed_princ{$last_principal}++;
-		$pa_failed_addr{$last_addr}++;
 	} elsif (/Looking for pa-data --/) {
 		# XXX
 	} elsif (/Pre-authentication succeded -- (.+)$/) {
