@@ -34,7 +34,7 @@ sub _generate_subsystems($)
 	my $CTX = shift;
 
 	#
-	# loop over all binaries
+	# loop over all subsystems
 	#
 	foreach my $key (sort keys %{$CTX->{DEPEND}{SUBSYSTEMS}}) {
 		my $NAME = $CTX->{INPUT}{SUBSYSTEMS}{$key}{NAME};
@@ -57,7 +57,7 @@ sub _generate_shared_modules($)
 	my $CTX = shift;
 
 	#
-	# loop over all binaries
+	# loop over all shared modules
 	#
 	foreach my $key (sort keys %{$CTX->{DEPEND}{SHARED_MODULES}}) {
 		my $NAME = $CTX->{INPUT}{MODULES}{$key}{NAME};
