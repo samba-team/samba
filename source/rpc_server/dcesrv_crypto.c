@@ -71,7 +71,7 @@ NTSTATUS dcesrv_crypto_update(struct dcesrv_auth *auth,
 			      TALLOC_CTX *out_mem_ctx, 
 			      const DATA_BLOB in, DATA_BLOB *out) 
 {
-	AUTH_NTLMSSP_STATE *ntlmssp = auth->crypto_state;
+	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
 
 	return ntlmssp_update(ntlmssp->ntlmssp_state, out_mem_ctx, in, out);
 }
@@ -83,7 +83,7 @@ NTSTATUS dcesrv_crypto_update(struct dcesrv_auth *auth,
 NTSTATUS dcesrv_crypto_seal(struct dcesrv_auth *auth, 
 			    TALLOC_CTX *sig_mem_ctx, uint8_t *data, size_t length, DATA_BLOB *sig)
 {
-	AUTH_NTLMSSP_STATE *ntlmssp = auth->crypto_state;
+	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
 
 	return ntlmssp_seal_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
 }
@@ -94,7 +94,7 @@ NTSTATUS dcesrv_crypto_seal(struct dcesrv_auth *auth,
 NTSTATUS dcesrv_crypto_sign(struct dcesrv_auth *auth, 
 			    TALLOC_CTX *sig_mem_ctx, const uint8_t *data, size_t length, DATA_BLOB *sig) 
 {
-	AUTH_NTLMSSP_STATE *ntlmssp = auth->crypto_state;
+	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
 
 	return ntlmssp_sign_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
 }
@@ -105,7 +105,7 @@ NTSTATUS dcesrv_crypto_sign(struct dcesrv_auth *auth,
 NTSTATUS dcesrv_crypto_check_sig(struct dcesrv_auth *auth, 
 				 TALLOC_CTX *sig_mem_ctx, const uint8_t *data, size_t length, const DATA_BLOB *sig)
 {
-	AUTH_NTLMSSP_STATE *ntlmssp = auth->crypto_state;
+	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
 
 	return ntlmssp_check_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
 }
@@ -116,7 +116,7 @@ NTSTATUS dcesrv_crypto_check_sig(struct dcesrv_auth *auth,
 NTSTATUS dcesrv_crypto_unseal(struct dcesrv_auth *auth, 
 			       TALLOC_CTX *sig_mem_ctx, uint8_t *data, size_t length, DATA_BLOB *sig)
 {
-	AUTH_NTLMSSP_STATE *ntlmssp = auth->crypto_state;
+	struct auth_ntlmssp_state *ntlmssp = auth->crypto_state;
 
 	return ntlmssp_unseal_packet(ntlmssp->ntlmssp_state, sig_mem_ctx, data, length, sig);
 }

@@ -30,7 +30,8 @@
 
 static const uint8_t *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_ntlmssp_state *auth_ntlmssp_state = ntlmssp_state->auth_context;
+
 	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(auth_ntlmssp_state->auth_context);
 }
 
@@ -41,10 +42,9 @@ static const uint8_t *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntl
  */
 static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
-	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
+	struct auth_ntlmssp_state *auth_ntlmssp_state = ntlmssp_state->auth_context;
 
-	return auth_context->challenge_may_be_modified;
+	return auth_ntlmssp_state->auth_context->challenge_may_be_modified;
 }
 
 /**
@@ -53,7 +53,7 @@ static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
  */
 static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_ntlmssp_state *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	struct auth_context *auth_context = auth_ntlmssp_state->auth_context;
 
 	SMB_ASSERT(challenge->length == 8);
@@ -77,7 +77,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
 
 static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
-	AUTH_NTLMSSP_STATE *auth_ntlmssp_state = ntlmssp_state->auth_context;
+	struct auth_ntlmssp_state *auth_ntlmssp_state = ntlmssp_state->auth_context;
 	auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
 
@@ -130,7 +130,7 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	return nt_status;
 }
 
-NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
+NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
@@ -166,7 +166,7 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 	return NT_STATUS_OK;
 }
 
-void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
+void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
 
@@ -195,7 +195,7 @@ void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-NTSTATUS auth_ntlmssp_update(AUTH_NTLMSSP_STATE *auth_ntlmssp_state, 
+NTSTATUS auth_ntlmssp_update(struct auth_ntlmssp_state *auth_ntlmssp_state, 
 			     TALLOC_CTX *out_mem_ctx,
 			     const DATA_BLOB in, DATA_BLOB *out) 
 {

@@ -27,7 +27,7 @@
 #define SRV_SIGN "session key to server-to-client signing key magic constant"
 #define SRV_SEAL "session key to server-to-client sealing key magic constant"
 
-static void NTLMSSPcalc_ap( uint8_t *hash, uint8_t *data, int len)
+static void NTLMSSPcalc_ap(uint8_t *hash, uint8_t *data, int len)
 {
     uint8_t index_i = hash[256];
     uint8_t index_j = hash[257];
@@ -93,10 +93,6 @@ static void calc_hash(uint8_t hash[258], const char *key, size_t key_len)
  * claiming to be the correct output of NTLM2 signature generation.
  *
  */
-
-
-
-
 static void calc_ntlmv2_hash(uint8_t hash[258], uint8_t subkey[16],
 			     DATA_BLOB session_key, 
 			     const char *constant)
@@ -116,7 +112,7 @@ enum ntlmssp_direction {
 	NTLMSSP_RECEIVE
 };
 
-static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
+static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_state,
 					      TALLOC_CTX *sig_mem_ctx, 
 					      const uint8_t *data, size_t length, 
 					      enum ntlmssp_direction direction,
@@ -172,7 +168,7 @@ static NTSTATUS ntlmssp_make_packet_signature(NTLMSSP_STATE *ntlmssp_state,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_sign_packet(struct ntlmssp_state *ntlmssp_state,
 			     TALLOC_CTX *sig_mem_ctx, 
 			     const uint8_t *data, size_t length, 
 			     DATA_BLOB *sig) 
@@ -197,7 +193,7 @@ NTSTATUS ntlmssp_sign_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_check_packet(struct ntlmssp_state *ntlmssp_state,
 			      TALLOC_CTX *sig_mem_ctx, 
 			      const uint8_t *data, size_t length, 
 			      const DATA_BLOB *sig) 
@@ -263,7 +259,7 @@ NTSTATUS ntlmssp_check_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_seal_packet(struct ntlmssp_state *ntlmssp_state,
 			     TALLOC_CTX *sig_mem_ctx, 
 			     uint8_t *data, size_t length,
 			     DATA_BLOB *sig)
@@ -333,7 +329,7 @@ NTSTATUS ntlmssp_seal_packet(NTLMSSP_STATE *ntlmssp_state,
  *
  */
 
-NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 			       TALLOC_CTX *sig_mem_ctx, 
 			       uint8_t *data, size_t length,
 			       DATA_BLOB *sig)
@@ -363,7 +359,7 @@ NTSTATUS ntlmssp_unseal_packet(NTLMSSP_STATE *ntlmssp_state,
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_sign_init(NTLMSSP_STATE *ntlmssp_state)
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 {
 	uint8_t p24[24];
 	ZERO_STRUCT(p24);
