@@ -333,6 +333,8 @@ static NTSTATUS ldapsam_delete_entry(struct ldapsam_privates *ldap_state,
 
 /* New Interface is being implemented here */
 
+#if 0	/* JERRY - not uesed anymore */
+
 /**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
 *********************************************************************/
@@ -385,6 +387,7 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	return True;
 }
 
+#endif
 
 /**********************************************************************
 Initialize SAM_ACCOUNT from an LDAP query
@@ -532,6 +535,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	}
 
 
+#if 0	/* JERRY -- not used anymore */
 	/* 
 	 * If so configured, try and get the values from LDAP 
 	 */
@@ -550,6 +554,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			}
 		}
 	}
+#endif
 
 	if (!smbldap_get_single_attribute(ldap_state->smbldap_state->ldap_struct, entry, 
 		get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_PWD_LAST_SET), temp)) 
