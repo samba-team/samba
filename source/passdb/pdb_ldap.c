@@ -1281,7 +1281,7 @@ static BOOL ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (entry)
 	{
 		if (!init_sam_from_ldap(ldap_state, user, ldap_struct, entry)) {
-			DEBUG(0,("ldapsam_getsampwnam: init_sam_from_ldap failed!\n"));
+			DEBUG(1,("ldapsam_getsampwnam: init_sam_from_ldap failed!\n"));
 			ldap_msgfree(result);
 			ldap_unbind(ldap_struct);
 			return False;
@@ -1325,7 +1325,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 
 	if (ldap_count_entries(ldap_struct, result) < 1)
 	{
-		DEBUG(0,
+		DEBUG(4,
 		      ("We don't find this rid [%i] count=%d\n", rid,
 		       ldap_count_entries(ldap_struct, result)));
 		ldap_unbind(ldap_struct);
@@ -1336,7 +1336,7 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 	if (entry)
 	{
 		if (!init_sam_from_ldap(ldap_state, user, ldap_struct, entry)) {
-			DEBUG(0,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
+			DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
 			ldap_msgfree(result);
 			ldap_unbind(ldap_struct);
 			return False;
