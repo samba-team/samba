@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -87,7 +87,7 @@ loop (int s, int errsock)
 	init_ivecs(1);
 #endif
 
-    if (s >= FD_SETSIZE || errsock >= FD_SETSIZE)
+    if (s >= FD_SETSIZE || (errsock != -1 && errsock >= FD_SETSIZE))
 	errx (1, "fd too large");
     
     FD_ZERO(&real_readset);
