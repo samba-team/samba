@@ -25,7 +25,7 @@
 
 static fstring host, workgroup, share, password, username, myname;
 static int max_protocol = PROTOCOL_NT1;
-static char *sockops="";
+static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
 
 
@@ -59,8 +59,8 @@ static BOOL open_connection(struct cli_state *c)
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
-		cli_shutdown(c);
 		printf("%s rejected the session\n",host);
+		cli_shutdown(c);
 		return False;
 	}
 
@@ -74,8 +74,8 @@ static BOOL open_connection(struct cli_state *c)
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
-		cli_shutdown(c);
 		printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(c));
+		cli_shutdown(c);
 		return False;
 	}
 
@@ -210,24 +210,6 @@ static BOOL rw_torture(struct cli_state *c)
 	return True;
 }
 
-static void usage(void)
-{
-	printf("Usage: smbtorture //server/share <options>\n");
-
-	printf("\t-U user%%pass\n");
-	printf("\t-N numprocs\n");
-	printf("\t-n my_netbios_name\n");
-	printf("\t-W workgroup\n");
-	printf("\t-o num_operations\n");
-	printf("\t-O socket_options\n");
-	printf("\t-m maximum protocol\n");
-	printf("\n");
-
-	exit(1);
-}
-
-
-
 static void run_torture(void)
 {
 	static struct cli_state cli;
@@ -242,6 +224,80 @@ static void run_torture(void)
 		close_connection(&cli);
 	}
 }
+
+
+/* run a test that simulates an approximate netbench client load */
+static void run_netbench(int size1, int size2, int prob1)
+{
+	struct cli_state cli;
+	int fnum, i;
+	int pid = getpid();
+	size_t size;
+	char buf[8192];
+	fstring fname;
+	int tries=4;
+
+	while (1) {
+		memset(&cli, 0, sizeof(cli));
+		if (open_connection(&cli)) break;
+		if (tries-- == 0) {
+			printf("pid %d failed to start\n", pid);
+			return;
+		}
+	}
+
+	printf("pid %d OK\n", pid);
+
+	cli_sockopt(&cli, sockops);
+
+	for (i=0;i<numops;i++) {
+		slprintf(fname, sizeof(fname) - 1, "\\nb%d.doc", pid);
+
+		fnum = cli_open(&cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_ALL);
+		if (fnum == -1) {
+			printf("open failed (%s)\n", cli_errstr(&cli));
+			break;
+		}
+
+		size = 0;
+		while (size < 256*1024) {
+			int s;
+			if (((unsigned)random()) % 100 > prob1) {
+				s = size2;
+			} else {
+				s = size1;
+			}
+
+			if (cli_smbwrite(&cli, fnum, buf, size, s) != s) {
+				printf("write failed (%s)\n", cli_errstr(&cli));
+				break;
+			}
+			size += s;
+		}
+		cli_close(&cli, fnum);
+		cli_unlink(&cli, fname);
+		printf("."); fflush(stdout);
+	}
+
+	close_connection(&cli);
+
+	printf("\npid %d done\n", pid);
+}
+
+
+/* run a test that simulates an approximate netbench w9X client load */
+static void run_nbw95(void)
+{
+	run_netbench(4096, 0, 100);
+}
+
+/* run a test that simulates an approximate netbench wNT client load */
+static void run_nbwnt(void)
+{
+	run_netbench(4296, 0, 67);
+}
+
+
 
 /*
   This test checks for two things:
@@ -664,8 +720,6 @@ static void run_maxfidtest(void)
 	int retries=4;
 	int n = numops;
 
-	srandom(getpid());
-
 	while (!open_connection(&cli) && retries--) msleep(random() % 2000);
 
 	if (retries <= 0) {
@@ -983,6 +1037,8 @@ static struct {
 	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
 	{"TORTURE",run_torture,    FLAG_MULTIPROC},
 	{"RANDOMIPC", run_randomipc, 0},
+	{"NBW95",  run_nbw95, FLAG_MULTIPROC},
+	{"NBWNT",  run_nbwnt, FLAG_MULTIPROC},
 	{NULL, NULL, 0}};
 
 
@@ -1013,6 +1069,35 @@ static void run_test(char *name)
 }
 
 
+static void usage(void)
+{
+	int i;
+
+	printf("Usage: smbtorture //server/share <options> TEST1 TEST2 ...\n");
+
+	printf("\t-U user%%pass\n");
+	printf("\t-N numprocs\n");
+	printf("\t-n my_netbios_name\n");
+	printf("\t-W workgroup\n");
+	printf("\t-o num_operations\n");
+	printf("\t-O socket_options\n");
+	printf("\t-m maximum protocol\n");
+	printf("\n\n");
+
+	printf("tests are:");
+	for (i=0;torture_ops[i].name;i++) {
+		printf(" %s", torture_ops[i].name);
+	}
+	printf("\n");
+
+	printf("default test is ALL\n");
+	
+	exit(1);
+}
+
+
+
+
 
 /****************************************************************************
   main program
@@ -1027,6 +1112,8 @@ static void run_test(char *name)
 	extern FILE *dbf;
 
 	dbf = stdout;
+
+	setbuffer(stdout, NULL, 0);
 
 	charset_initialise();
 
