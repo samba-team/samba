@@ -62,12 +62,33 @@ if samba is using one.
 if the name is already in samba's database, then it is re-registered,
 otherwise it is simply registered.
 
-if samba registers its name with another WINS server, then the function
-response_name_reg() is responsible for updating samba's name database
-to reflect the claim or otherwise of the name.
+if the name is being registered in a WINS capacity (the subnet to which
+the name should be added is the WINS pseudo-subnet) then we add the entry
+immediately if samba is a WINS server. it uses name_register_work()
+because if the name is being added as part of becoming a master browser,
+we want to carry on that process. if the name is registered with another
+WINS server, we must wait for an answer from that WINS server. either
+name_register_work() or name_unregister_work() will be called as a result.
 
-expire_netbios_response_entries() is responsible for taking further action
-if no response to the registration is received.
+if the name is being registered on a local subnet, then it is
+broadcast. an explicit rejection from another host will result
+in name_unregister_work() being called. no response will, after
+retrying, result in name_register_work() being called.
+
+what ever method is used, the name will either be registered
+or rejected, and what ever process was taking place (becoming
+a master browser for example) will carry on.
+
+expire_netbios_response_entries() is responsible for taking further
+action if no response to the registration is received. 
+
+note that there may be a large number of function calls on the
+stack if become_master() is called and samba is configured as
+a WINS server. the loop will be:
+
+become_master(), add_my_name_entry(), name_register_work() and
+back to become_master() with the new value of the workgroup
+'state'.
 
 
 /*************************************************************************
@@ -78,9 +99,22 @@ this function is responsible for removing a NetBIOS name. if the name
 being removed is registered on a local subnet, a name release should be
 broadcast on the local subnet.
 
-if samba has registered the name with a WINS server, it must send a 
-name release to the WINS server it is using. once it receives a reply,
-it can proceed (see response_name_rel())
+if the name is being released in a WINS capacity (the subnet to
+which the name should be added is the WINS pseudo-subnet) then we
+remove the entry immediately if samba is a WINS server. it uses
+name_unregister_work() because if the name is being added as part of
+becoming a master browser, we want to terminate that process. if the
+name is released from another WINS server, we must wait for an
+answer from that WINS server. name_unregister_work() will 
+definitely be called as a result, because at present we ignore
+negative responses for a name release from a WINS server.
+
+if the name is being releasedd on a local subnet, then it is
+broadcast. name_unregister_work() will definitely be called
+because we ignore negative name releases at present.
+
+what ever method is used, the name will be released. (NOT TRUE!
+see response_name_release())
 
 expire_netbios_response_entries() is responsible for taking further action
 if no response to the name release is received.

@@ -180,10 +180,17 @@ if it is samba's workgroup, and it's a local interface, samba
 detects that it can participate in an election on that interface
 and potentially become a master browser or domain master.
 
-if it's a remote subnet or not one of samba's workgroups, then
-samba will force an election (which it is not obliged to do) and
-will remove that workgroup and the servers contained in it from
-its records. maybe this functionality isn't a good idea.
+if it's a local subnet and not one of samba's workgroups, then
+samba will force an election (which it is not obliged to do).
+remove_workgroup() will be expected to remove all references
+to this workgroup and the servers in it from the database.
+
+if it's a remote subnet and not one of samba's workgroups then
+no election is forced, and remove_workgroup() will be expected
+to remove all server entries from this workgroup _except_ those
+added from the lmhosts file. if there are entries added from
+the lmhosts file, then the workgroup entry will remain,
+otherwise it too will be removed.
 
 
 /*************************************************************************

@@ -113,15 +113,18 @@ static void dead_netbios_entry(struct subnet_record *d,
 		   wanted the unique name and tell them that they can have it
 		 */
 
-		add_netbios_entry(d, n->name.name, n->name.name_type,
-							n->nb_flags, GET_TTL(0), REGISTER,
-							n->reply_to_ip, False, True);
+		add_name_respond(d,n->fd, n->response_id ,&n->name,
+						n->nb_flags, GET_TTL(0),
+						n->reply_to_ip, False, n->reply_to_ip);
 
-		send_name_response(n->fd, n->response_id, NMB_REG,
-						True, True,
-						&n->name, n->nb_flags, GET_TTL(0), n->reply_to_ip);
-		break;
+	  if (!n->bcast)
+	  {
+		 DEBUG(1,("WINS server did not respond to name registration!\n"));
+         /* XXXX whoops. we have problems. must deal with this */
+	  }
+      break;
 	}
+
 	case NAME_REGISTER:
 	{
 	  /* if no response received, and we are using a broadcast registration
@@ -141,14 +144,13 @@ static void dead_netbios_entry(struct subnet_record *d,
 	  }
 	  else
 	  {
-		/* XXXX oops. this is where i wish this code could retry DGRAM
-		   packets. we directed a name registration at a WINS server, and
-		   received no response. rfc1001.txt states that after retrying,
+		/* received no response. rfc1001.txt states that after retrying,
 		   we should assume the WINS server is dead, and fall back to
-		   broadcasting. */
+		   broadcasting (see bits about M nodes: can't find any right
+           now) */
 		
-		 DEBUG(1,("WINS server did not respond to name registration!\n"));
-         /* XXXX whoops. we have problems. must deal with this */
+		DEBUG(1,("WINS server did not respond to name registration!\n"));
+        /* XXXX whoops. we have problems. must deal with this */
 	  }
 	  break;
 	}

@@ -26,13 +26,15 @@ server, in which case, samba should redirect the query to another WINS
 server).
 
 the WINS pseudo-subnet NetBIOS database contains all NetBIOS names
-registered with samba in its capacity as a WINS server.
+that are not 'special browser' type names (regarding this i am a
+_bit_ confused :-). names of type 0x01, 0x1d and 0x1e i consider to
+be 'special browser' names. at the moment. maybe.
 
-the type of search to be initiated is determined. if the packet
-received is a point-to-point (unicast), then the WINS database
-is included in the search.
+the type of search to be initiated is determined. if the NetBIOS name
+type is a non-special-browser name, then the WINS database is included
+in the search.
 
-if the search is not in the WINS database, then we need to find the
+if the name is not a special browser name, then we need to find the
 right subnet that the query came from. this is done using
 find_req_subnet(). this also has the benefit of stopping any queries
 from subnets that samba does not know about.
@@ -100,7 +102,8 @@ database as appropriate.
 if the name is not found, then it is added to the NetBIOS name database,
 using add_netbios_entry(), which may choose not to add the name (not
 that this affects the registration of the name on the network in any way).
-it will only add non-SELF names to the WINS database.
+it will only add names to the WINS database, and even then it will only
+add non-special-browser type names.
 
 if the name is found, then samba must decide whether to accept the name
 or not. a group name is always added. for unique names, further checks
@@ -116,51 +119,18 @@ someone else. a check needs to be carried out with the owner in case
 they still wish to keep this name. a detailed discussion of what action
 to take is in rfc1001.txt 15.2.2.2 and 15.2.2.3.
 
-#if 0
-
 samba currently implements non-secured WINS, whereupon the responsibility
 for checking the name is passed on to the host doing the registration.
 rfc1001.txt refers to this as an END-NODE CHALLENGE REGISTRATION RESPONSE.
 (samba itself cannot yet cope with receiving such responses if it
 registers its names with another WINS server). 
 
-#else
-
-samba currently implements secured WINS, whereupon it is samba's
-responsibility to check the unique name before allowing it to be
-registered by the new owner.
-
-as checking the unique name may take some time, samba must send a Wait
-Acknowledge packet to the host that wishes to claim the name. a
-NAME_REGISTER_CHALLENGE 'state' is then initiated, which will result
-in a name query being issued to the current owner.
-
-if we receive a negative response or no response, the host wishing
-to claim the name is informed that they can have it. if we receive
-a positive response, this host is informed that it cannot have it.
-
-#endif
-
 having decided what kind of response to send (if any - acceptance of
-name registrations by broadcast is implicit), samba will send a
+name registrations by broadcast is implicit), samba will send either a
 positive or negative NAME REGISTRATION RESPONSE, or an END-NODE CHALLENGE
-REGISTRATION RESPONSE or a WAIT ACKNOWLEDGEMENT to the host that
-initially sent the registration.
-
+REGISTRATION RESPONSE to the host that initially sent the registration.
 
 whew.
-
-
-/*************************************************************************
-  send_name_response()
-  *************************************************************************/
-
-this function is responsible for sending out a positive or a negative
-registration response or release, or an end-node challenge registration
-response.
-
-it is called from reply_name_release(), reply_name_reg(),
-dead_netbios_entry() and response_name_query_register().
 
 
 /*************************************************************************
@@ -186,4 +156,31 @@ we deal with it as a WINS server and must reply (pos / neg).
 at present, the criteria for removing a name have yet to be
 developed / experimented with. at present, the only flags that
 are checked are the NetBIOS flags.
+
+
+/*************************************************************************
+  send_name_response()
+  *************************************************************************/
+
+this function is a wrap around reply_netbios_packet(). it sends
+a response to a name registration or release packet, minimising
+the function parameters needed to do this.
+
+if the function is called with the parameter 'success' set to
+True, then a positive response (to the registration or release)
+is made (see rfc1002.txt 4.2.5 and 4.2.10). if this parameter
+is False, then a negative response is issued (see rfc1002.txt
+4.2.6 and 4.2.11)
+
+if the function is called with a registration code, and the
+parameter 'recurse' is False, then an End-Node Challenge
+Registration response is issued (see rfc1002.txt 4.2.7)
+
+note: this function could also easily be used for name conflict
+demand (see rfc1002.txt 4.2.8).
+
+note: End-Node Challenge Registration response is only sent in
+non-secured NetBIOS Name Server implementations. samba now
+implements secured NetBIOS Name Server functionality (see
+rfc1001.txt 15.1.6).
 

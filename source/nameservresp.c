@@ -46,7 +46,8 @@ extern struct in_addr ipzero;
   response for a reg release received. samba has asked a WINS server if it
   could release a name.
   **************************************************************************/
-void response_name_release(struct subnet_record *d, struct packet_struct *p)
+static void response_name_release(struct subnet_record *d,
+								struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
   char *name = nmb->question.question_name.name;
@@ -55,33 +56,42 @@ void response_name_release(struct subnet_record *d, struct packet_struct *p)
   DEBUG(4,("response name release received\n"));
   
   if (nmb->header.rcode == 0 && nmb->answers->rdata)
-    {
-      /* IMPORTANT: see expire_netbios_response_entries() */
+  {
+    /* IMPORTANT: see expire_netbios_response_entries() */
 
-      struct in_addr found_ip;
-      putip((char*)&found_ip,&nmb->answers->rdata[2]);
+    struct in_addr found_ip;
+    putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
-      if (ismyip(found_ip))
-      {
-	    remove_netbios_name(d,name,type,SELF,found_ip);
-	  }
-    }
-  else
+    /* NOTE: we only release our own names at present */
+    if (ismyip(found_ip))
     {
-      DEBUG(2,("name release for %s rejected!\n",
+      name_unregister_work(d,name,type);
+    }
+    else
+    {
+      DEBUG(2,("name release for different ip! %s %s\n",
+                  inet_ntoa(found_ip),
+                  namestr(&nmb->question.question_name)));
+    }
+  }
+  else
+  {
+    DEBUG(2,("name release for %s rejected!\n",
 	       namestr(&nmb->question.question_name)));
 
-		/* XXXX do we honestly care if our name release was rejected? 
-           only if samba is issuing the release on behalf of some out-of-sync
-           server. if it's one of samba's SELF names, we don't care. */
-    }
+    /* XXXX PANIC! what to do if it's one of samba's own names? */
+
+    /* XXXX do we honestly care if our name release was rejected? 
+       only if samba is issuing the release on behalf of some out-of-sync
+       server. if it's one of samba's SELF names, we don't care. */
+  }
 }
 
 
 /****************************************************************************
 response for a reg request received
 **************************************************************************/
-void response_name_reg(struct subnet_record *d, struct packet_struct *p)
+static void response_name_reg(struct subnet_record *d, struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
   char *name = nmb->question.question_name.name;
@@ -92,25 +102,22 @@ void response_name_reg(struct subnet_record *d, struct packet_struct *p)
   
   if (nmb->header.rcode == 0 && nmb->answers->rdata)
   {
-      /* IMPORTANT: see expire_netbios_response_entries() */
+    /* IMPORTANT: see expire_netbios_response_entries() */
 
-      int nb_flags = nmb->answers->rdata[0];
-      int ttl = nmb->answers->ttl;
-      struct in_addr found_ip;
+    int nb_flags = nmb->answers->rdata[0];
+    int ttl = nmb->answers->ttl;
+    struct in_addr found_ip;
 
-      putip((char*)&found_ip,&nmb->answers->rdata[2]);
+    putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
-      name_register_work(d,name,type,nb_flags,ttl,found_ip,bcast);
+    name_register_work(d,name,type,nb_flags,ttl,found_ip,bcast);
   }
   else
   {
     DEBUG(1,("name registration for %s rejected!\n",
 	       namestr(&nmb->question.question_name)));
 
-	/* XXXX oh dear. we have problems. must deal with our name having
-       been rejected: e.g if it was our GROUP(1d) name, we must unbecome
-       a master browser. */
-	
+	/* oh dear. we have problems. possibly unbecome a master browser. */
     name_unregister_work(d,name,type);
   }
 }
@@ -332,14 +339,9 @@ static void response_name_query_register(struct nmb_packet *nmb,
 	}
 
 	/* register the old or the new owners' ip */
-	add_netbios_entry(d, ans_name->name, ans_name->name_type,
-								n->nb_flags,GET_TTL(0),REGISTER,
-								register_ip,False,True);
-
-	/* reply yes or no to the host that requested the name */
-	send_name_response(n->fd, n->response_id, NMB_REG,
-				new_owner, True,
-				&n->name, n->nb_flags, GET_TTL(0), n->reply_to_ip);
+	add_name_respond(d, n->fd, n->response_id,&n->name,n->nb_flags,
+					GET_TTL(0), register_ip,
+					new_owner, n->reply_to_ip);
 }
 
 

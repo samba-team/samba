@@ -357,16 +357,18 @@ void add_my_names(void);
 void remove_my_names();
 void refresh_my_names(time_t t);
 void query_refresh_names(void);
-void reply_name_release(struct packet_struct *p);
+void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
+				struct nmb_name *name,
+				int nb_flags, int ttl, struct in_addr register_ip,
+				BOOL new_owner, struct in_addr reply_to_ip);
 void send_name_response(int fd,
 				int name_trn_id, int opcode, BOOL success, BOOL recurse,
 				struct nmb_name *reply_name, int nb_flags, int ttl,
 				struct in_addr ip);
+void reply_name_release(struct packet_struct *p);
 void reply_name_reg(struct packet_struct *p);
 void reply_name_status(struct packet_struct *p);
 void reply_name_query(struct packet_struct *p);
-void response_name_release(struct subnet_record *d, struct packet_struct *p);
-void response_name_reg(struct subnet_record *d, struct packet_struct *p);
 void response_netbios_packet(struct packet_struct *p);
 void reset_server(char *name, int state, struct in_addr ip);
 void tell_become_backup(void);

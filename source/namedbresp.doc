@@ -22,7 +22,7 @@ the response to come from.
 this function is responsible for creating a response record, which will
 be queued awaiting a response.
 
-the number of retries is set to 4, and the retry period set to 1 second.
+the number of retries is set to 3, and the retry period set to 1 second.
 if no response is received, then the packet is re-transmitted, which is
 why so much information is stored in the response record.
 

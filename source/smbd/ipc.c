@@ -1013,7 +1013,7 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
   int counted=0,total=0;
   int i;
   fstring domain;
-  BOOL domains;
+  BOOL domains = False;
   BOOL domain_request;
   BOOL local_request = servertype & SV_TYPE_LOCAL_LIST_ONLY;
 
