@@ -192,10 +192,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 	       * Save off some of the connected server
 	       * info.
 	       */
-	      char *p = smb_buf(cli->inbuf);
-	      p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
-	      p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
-	      p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
+	      char *q = smb_buf(cli->inbuf);
+	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
+	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
+	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
       }
 
       fstrcpy(cli->user_name, user);
