@@ -113,7 +113,13 @@ struct nbt_name_socket {
 				const char *, int );
 		void *private;
 	} incoming;
-	   
+
+	/* what to do with unexpected replies */
+	struct {
+		void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *, 
+				const char *, int );
+		void *private;
+	} unexpected;
 };
 
 
@@ -161,6 +167,7 @@ struct nbt_name_register {
 		uint16_t nb_flags;
 		BOOL register_demand;
 		BOOL broadcast;
+		BOOL multi_homed;
 		uint32_t ttl;
 		int timeout; /* in seconds */
 		int retries;
@@ -184,9 +191,10 @@ struct nbt_name_register_bcast {
 	} in;
 };
 
-/* wins name refresh with multiple wins servers to try and multiple
+
+/* wins name register with multiple wins servers to try and multiple
    addresses to register */
-struct nbt_name_refresh_wins {
+struct nbt_name_register_wins {
 	struct {
 		struct nbt_name name;
 		const char **wins_servers;
@@ -199,6 +207,7 @@ struct nbt_name_refresh_wins {
 		uint8_t rcode;
 	} out;
 };
+
 
 
 /* a name refresh request */
@@ -220,3 +229,21 @@ struct nbt_name_refresh {
 		uint8_t rcode;
 	} out;
 };
+
+/* wins name refresh with multiple wins servers to try and multiple
+   addresses to register */
+struct nbt_name_refresh_wins {
+	struct {
+		struct nbt_name name;
+		const char **wins_servers;
+		const char **addresses;
+		uint16_t nb_flags;
+		uint32_t ttl;
+	} in;
+	struct {
+		const char *wins_server;
+		uint8_t rcode;
+	} out;
+};
+
+
