@@ -171,8 +171,7 @@ sub need_wire_pointer($)
 sub need_buffers_section($)
 {
 	my $e = shift;
-	if ((is_scalar_type($e->{TYPE}) || util::has_property($e, "subcontext")) &&
-	    $e->{POINTERS} == 0 && 
+	if (!can_contain_deferred($e) &&
 	    !util::array_size($e)) {
 		return 0;
 	}
@@ -405,6 +404,26 @@ sub align_type
 
 	my $tmp = $typefamily{$dt->{TYPE}}->{ALIGN}->($dt);
 	return $tmp;
+}
+
+#####################################################################
+# see if a type contains any deferred data 
+sub can_contain_deferred
+{
+	my $e = shift;
+
+	return 1 if ($e->{POINTERS});
+	return 0 if (is_scalar_type($e->{TYPE}));
+	return 0 if (util::has_property($e, "subcontext"));
+	return 1 unless (typelist::hasType($e->{TYPE})); # assume the worst
+
+	my $type = typelist::getType($e->{TYPE});
+
+	foreach my $x (@{$type->{DATA}->{ELEMENTS}}) {
+		return 1 if (can_contain_deferred ($x));
+	}
+	
+	return 0;
 }
 
 #####################################################################
