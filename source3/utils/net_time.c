@@ -25,7 +25,7 @@
 /*
   return the time on a server. This does not require any authentication
 */
-static time_t cli_servertime(const char *host, struct in_addr *ip)
+static time_t cli_servertime(const char *host, struct in_addr *ip, int *zone)
 {
 	struct nmb_name calling, called;
 	time_t ret = 0;
@@ -57,6 +57,7 @@ static time_t cli_servertime(const char *host, struct in_addr *ip)
 	}
 
 	ret = cli->servertime;
+	if (zone) *zone = cli->serverzone;
 
 done:
 	if (cli) cli_shutdown(cli);
@@ -64,12 +65,12 @@ done:
 }
 
 /* find the servers time on the opt_host host */
-static time_t nettime(void)
+static time_t nettime(int *zone)
 {
 	extern BOOL opt_have_ip;
 	extern struct in_addr opt_dest_ip;
 	extern char *opt_host; 
-	return cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL);
+	return cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, zone);
 }
 
 /* return a time as a string ready to be passed to date -u */
@@ -92,6 +93,7 @@ int net_time_usage(int argc, const char **argv)
 "net time\n\tdisplays time on a server\n\n"\
 "net time system\n\tdisplays time on a server in a format ready for /bin/date\n\n"\
 "net time set\n\truns /bin/date -u with the time from the server\n\n"\
+"net time zone\n\tdisplays the timezone in hours from GMT on the remote computer\n\n"\
 "\n");
 	general_rap_usage(argc, argv);
 	return -1;
@@ -100,7 +102,7 @@ int net_time_usage(int argc, const char **argv)
 /* try to set the system clock using /bin/date */
 static int net_time_set(int argc, const char **argv)
 {
-	time_t t = nettime();
+	time_t t = nettime(NULL);
 	char *cmd;
 
 	if (t == 0) return -1;
@@ -118,11 +120,32 @@ static int net_time_set(int argc, const char **argv)
 /* display the time on a remote box in a format ready for /bin/date */
 static int net_time_system(int argc, const char **argv)
 {
-	time_t t = nettime();
+	time_t t = nettime(NULL);
 
 	if (t == 0) return -1;
 
 	printf("%s\n", systime(t));
+
+	return 0;
+}
+
+/* display the time on a remote box in a format ready for /bin/date */
+static int net_time_zone(int argc, const char **argv)
+{
+	int zone = 0;
+	time_t t;
+
+	t = nettime(&zone);
+
+	if (t == 0) return -1;
+
+	zone /= 60;
+
+	if (zone % 60 == 0) {
+		printf("%+d\n", -zone / 60);
+	} else {
+		printf("%+.1f\n", ((double)-zone) / 60);
+	}
 
 	return 0;
 }
@@ -137,6 +160,7 @@ int net_time(int argc, const char **argv)
 	struct functable func[] = {
 		{"SYSTEM", net_time_system},
 		{"SET", net_time_set},
+		{"ZONE", net_time_zone},
 		{NULL, NULL}
 	};
 
@@ -150,7 +174,7 @@ int net_time(int argc, const char **argv)
 	}
 
 	/* default - print the time */
-	t = cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL);
+	t = cli_servertime(opt_host, opt_have_ip? &opt_dest_ip : NULL, NULL);
 	if (t == 0) return -1;
 
 	d_printf("%s", ctime(&t));
