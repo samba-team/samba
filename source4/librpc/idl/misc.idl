@@ -62,7 +62,7 @@ interface misc
 	} ULONG8;
 
 	/* this is also used in samr and netlogon */
-	typedef [public] struct {
+	typedef [public, flag(NDR_PAHEX)] struct {
 		uint32 units_per_week;
 		[size_is(1260), length_is(units_per_week/8)] uint8 *bitmap;
 	} samr_LogonHours;
