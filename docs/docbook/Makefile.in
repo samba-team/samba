@@ -51,6 +51,10 @@ SGMLMANSRC=manpages/findsmb.1.sgml manpages/smbclient.1.sgml \
 	manpages/wbinfo.1.sgml manpages/smbcacls.1.sgml \
 	manpages/smbsh.1.sgml manpages/winbindd.8.sgml
 
+HOWTOSRC=howto/DOMAIN_MEMBER.sgml howto/NT_Security.sgml howto/samba-pdc-howto.sgml
+FAQSRC=faq/samba-pdc-faq.sgml
+
+
 
 ######################################################################
 # Make instructions
@@ -59,9 +63,27 @@ all: man
 
 man: $(MANPAGES)
 
-faq: 
+FAQ: $(FAQSRC)
+	@echo Building SAMBA PDC FAQ...
+	@(for i in $?; do \
+	   htmlfile=`basename $$i | sed "s/\.sgml/\.html/g"`; \
+	   echo "Making $$htmlfile"; \
+	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
+	      -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
+	   cat /tmp/jade.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/jade.log; \
+	done)
 
-howto:
+HOWTO: $(HOWTOSRC)
+	@echo Building HOWTO pages...
+	@(for i in $?; do \
+	   htmlfile=`basename $$i | sed "s/\.sgml/\.html/g"`; \
+	   echo "Making $$htmlfile"; \
+	   $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl \
+	      -f /tmp/jade.log $$i > ../htmldocs/$$htmlfile; \
+	   cat /tmp/jade.log | grep -v DTDDECL; \
+	   /bin/rm -f /tmp/jade.log; \
+	done)
 
 proj-doc: 
 	@(cd projdoc; $(JADE) -t sgml -V nochunks -d  $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl samba-doc.sgml > ../samba-doc.html)
@@ -70,7 +92,7 @@ proj-doc:
 
 
 ## generate all HTML man pages
-html-all: $(SGMLMANSRC)
+man-html-all: $(SGMLMANSRC)
 	@echo Building HTML formatted man pages...
 	@(for i in $?; do \
 	   htmlfile=`basename $$i | sed "s/\.sgml/\.html/g"`; \
