@@ -82,7 +82,7 @@ BOOL debug_parse_levels(char *params_str);
 void debug_message(int msg_type, pid_t src, void *buf, size_t len);
 void debug_message_send(pid_t pid, int level);
 void setup_logging(char *pname, BOOL interactive);
-void reopen_logs( void );
+BOOL reopen_logs( void );
 void force_check_log_size( void );
 BOOL need_to_check_log_size( void );
 void check_log_size( void );
