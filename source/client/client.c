@@ -307,6 +307,27 @@ struct cli_state* cli_cm_current( void )
 /****************************************************************************
 ****************************************************************************/
 
+static void cli_cm_shutdown( void )
+{
+
+	struct client_connection *p, *x;
+
+	for ( p=connections; p; ) {
+		cli_shutdown( p->cli );
+		x = p;
+		p = p->next;
+
+		SAFE_FREE( x );
+	}
+
+	connections = NULL;
+
+	return;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 const char* cli_cm_get_mntpath( struct cli_state *pcli )
 {
 	struct client_connection *p;
@@ -1212,9 +1233,17 @@ static int cmd_mget(void)
 
 static BOOL do_mkdir(char *name)
 {
-	if (!cli_mkdir(cli, name)) {
+	struct cli_state *targetcli;
+	pstring targetname;
+	
+	if ( !cli_resolve_path( cli, name, &targetcli, targetname ) ) {
+		d_printf("mkdir %s: %s\n", name, cli_errstr(cli));
+		return False;
+	}
+
+	if (!cli_mkdir(targetcli, targetname)) {
 		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli),name);
+			 cli_errstr(targetcli),name);
 		return(False);
 	}
 
@@ -1244,7 +1273,7 @@ static BOOL do_altname(char *name)
 
 static int cmd_quit(void)
 {
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1443,7 +1472,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	}
 
 	if (f == x_stdin) {
-		cli_shutdown(cli);
+		cli_cm_shutdown();
 		exit(0);
 	}
 	
@@ -1833,6 +1862,8 @@ static int cmd_open(void)
 {
 	pstring mask;
 	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
 	
 	pstrcpy(mask,cur_dir);
 	
@@ -1842,7 +1873,12 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_nt_create(cli, mask, FILE_READ_DATA);
+	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+		d_printf("open %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	cli_nt_create(targetcli, targetname, FILE_READ_DATA);
 
 	return 0;
 }
@@ -1856,6 +1892,8 @@ static int cmd_rmdir(void)
 {
 	pstring mask;
 	pstring buf;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	pstrcpy(mask,cur_dir);
 	
@@ -1865,9 +1903,14 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_rmdir(cli, mask)) {
+	if ( !cli_resolve_path( cli, mask, &targetcli, targetname ) ) {
+		d_printf("rmdir %s: %s\n", mask, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_rmdir(targetcli, targetname)) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask);
+			 cli_errstr(targetcli),mask);
 	}
 	
 	return 0;
@@ -1881,12 +1924,9 @@ static int cmd_link(void)
 {
 	pstring oldname,newname;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(oldname,cur_dir);
 	pstrcpy(newname,cur_dir);
   
@@ -1899,8 +1939,18 @@ static int cmd_link(void)
 	pstrcat(oldname,buf);
 	pstrcat(newname,buf2);
 
-	if (!cli_unix_hardlink(cli, oldname, newname)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), newname, oldname);
+	if ( !cli_resolve_path( cli, oldname, &targetcli, targetname ) ) {
+		d_printf("link %s: %s\n", oldname, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_hardlink(targetcli, targetname, newname)) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(targetcli), newname, oldname);
 		return 1;
 	}  
 
@@ -1950,12 +2000,9 @@ static int cmd_chmod(void)
 	pstring src;
 	mode_t mode;
 	pstring buf, buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
@@ -1967,9 +2014,19 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (!cli_unix_chmod(cli, src, mode)) {
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("chmod %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_chmod(targetcli, targetname, mode)) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli), src, (unsigned int)mode);
+			cli_errstr(targetcli), src, (unsigned int)mode);
 		return 1;
 	} 
 
@@ -2093,13 +2150,29 @@ static int cmd_getfacl(void)
 	uint16 num_file_acls = 0;
 	uint16 num_dir_acls = 0;
 	uint16 i;
+	struct cli_state *targetcli;
+	pstring targetname;
  
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
+		d_printf("stat file\n");
 		return 1;
 	}
 
-	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
+	pstrcat(src,name);
+	
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_extensions_version(targetcli, &major, &minor, &caplow, &caphigh)) {
 		d_printf("Can't get UNIX CIFS version from server.\n");
 		return 1;
 	}
@@ -2109,24 +2182,16 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	pstrcpy(src,cur_dir);
-	
-	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
-		d_printf("stat file\n");
-		return 1;
-	}
 
-	pstrcat(src,name);
-
-	if (!cli_unix_stat(cli, src, &sbuf)) {
+	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
 		d_printf("%s getfacl doing a stat on file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
-	if (!cli_unix_getfacl(cli, src, &rb_size, &retbuf)) {
+	if (!cli_unix_getfacl(targetcli, targetname, &rb_size, &retbuf)) {
 		d_printf("%s getfacl file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
@@ -2244,6 +2309,8 @@ static int cmd_stat(void)
 	pstring src, name;
 	fstring mode_str;
 	SMB_STRUCT_STAT sbuf;
+	struct cli_state *targetcli;
+	pstring targetname;
  
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
 		d_printf("Server doesn't support UNIX CIFS calls.\n");
@@ -2259,9 +2326,15 @@ static int cmd_stat(void)
 
 	pstrcat(src,name);
 
-	if (!cli_unix_stat(cli, src, &sbuf)) {
+	
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!cli_unix_stat(targetcli, targetname, &sbuf)) {
 		d_printf("%s stat file %s\n",
-			cli_errstr(cli), src);
+			cli_errstr(targetcli), src);
 		return 1;
 	} 
 
@@ -2314,12 +2387,9 @@ static int cmd_chown(void)
 	uid_t uid;
 	gid_t gid;
 	pstring buf, buf2, buf3;
+	struct cli_state *targetcli;
+	pstring targetname;
   
-	if (!SERVER_HAS_UNIX_CIFS(cli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	pstrcpy(src,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
@@ -2333,9 +2403,20 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (!cli_unix_chown(cli, src, uid, gid)) {
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("chown %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_unix_chown(targetcli, targetname, uid, gid)) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli), src, (int)uid, (int)gid);
+			cli_errstr(targetcli), src, (int)uid, (int)gid);
 		return 1;
 	} 
 
@@ -2379,6 +2460,8 @@ static int cmd_hardlink(void)
 {
 	pstring src,dest;
 	pstring buf,buf2;
+	struct cli_state *targetcli;
+	pstring targetname;
   
 	pstrcpy(src,cur_dir);
 	pstrcpy(dest,cur_dir);
@@ -2392,8 +2475,18 @@ static int cmd_hardlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_nt_hardlink(cli, src, dest)) {
-		d_printf("%s doing an NT hard link of files\n",cli_errstr(cli));
+	if ( !cli_resolve_path( cli, src, &targetcli, targetname ) ) {
+		d_printf("hardlink %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+	
+	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+	
+	if (!cli_nt_hardlink(targetcli, targetname, dest)) {
+		d_printf("%s doing an NT hard link of files\n",cli_errstr(targetcli));
 		return 1;
 	}
 	
@@ -3286,7 +3379,7 @@ static int process(char *base_directory)
 		process_stdin();
 	}
   
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	return rc;
 }
 
@@ -3307,7 +3400,7 @@ static int do_host_query(char *query_host)
 		/* Workgroups simply don't make sense over anything
 		   else but port 139... */
 
-		cli_shutdown(cli);
+		cli_cm_shutdown();
 		port = 139;
 		cli = cli_cm_connect(query_host, "IPC$", True);
 	}
@@ -3319,7 +3412,7 @@ static int do_host_query(char *query_host)
 
 	list_servers(lp_workgroup());
 
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 	
 	return(0);
 }
@@ -3345,7 +3438,7 @@ static int do_tar_op(char *base_directory)
 	
 	ret=process_tar();
 
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 
 	return(ret);
 }
@@ -3379,12 +3472,12 @@ static int do_message_op(void)
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		cli_shutdown(cli);
+		cli_cm_shutdown();
 		return 1;
 	}
 
 	send_message();
-	cli_shutdown(cli);
+	cli_cm_shutdown();
 
 	return 0;
 }
