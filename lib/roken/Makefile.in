@@ -21,7 +21,7 @@ prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-PICFLAGS = @PICFLAGS@
+PICFLAGS = # @PICFLAGS@
  
 LIBNAME = libroken
 #LIBEXT = @LIBEXT@ Always build archive library and don't install!
