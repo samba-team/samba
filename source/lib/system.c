@@ -434,8 +434,11 @@ BOOL set_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_process_capability: cap_set_proc failed. Error was %s\n",
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }
@@ -468,8 +471,11 @@ BOOL set_inherited_process_capability( uint32 cap_flag, BOOL enable )
     if (cap_set_proc(cap) == -1) {
       DEBUG(0,("set_inherited_process_capability: cap_set_proc failed. Error was %s\n", 
             strerror(errno)));
+      cap_free(cap);
       return False;
     }
+
+    cap_free(cap);
 
     DEBUG(10,("set_inherited_process_capability: Set KERNEL_OPLOCK_CAPABILITY.\n"));
   }

@@ -95,7 +95,7 @@ static void close_filestruct(files_struct *fsp)
  magic scripts are not run.
 ****************************************************************************/
 
-int close_file(files_struct *fsp, BOOL normal_close)
+static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
 	SMB_DEV_T dev = fsp->fd_ptr->dev;
 	SMB_INO_T inode = fsp->fd_ptr->inode;
@@ -177,7 +177,7 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
  Close a directory opened by an NT SMB call. 
 ****************************************************************************/
   
-void close_directory(files_struct *fsp, BOOL normal_close)
+static int close_directory(files_struct *fsp, BOOL normal_close)
 {
 	remove_pending_change_notify_requests_by_fid(fsp);
 
@@ -209,4 +209,35 @@ void close_directory(files_struct *fsp, BOOL normal_close)
 		string_free(&fsp->fsp_name);
 	
 	file_free(fsp);
+
+	return 0;
+}
+
+/****************************************************************************
+ Close a file opened with null permissions in order to read permissions.
+****************************************************************************/
+
+static int close_statfile(files_struct *fsp, BOOL normal_close)
+{
+	close_filestruct(fsp);
+	
+	if (fsp->fsp_name)
+		string_free(&fsp->fsp_name);
+	
+	file_free(fsp);
+
+	return 0;
+}
+
+/****************************************************************************
+ Close a directory opened by an NT SMB call. 
+****************************************************************************/
+  
+int close_file(files_struct *fsp, BOOL normal_close)
+{
+	if(fsp->is_directory)
+		return close_directory(fsp, normal_close);
+	else if(fsp->stat_open)
+		return close_statfile(fsp, normal_close);
+	return close_normal_file(fsp, normal_close);
 }

@@ -2305,7 +2305,6 @@ BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL overri
 /*The following definitions come from  smbd/close.c  */
 
 int close_file(files_struct *fsp, BOOL normal_close);
-void close_directory(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  smbd/conn.c  */
 
@@ -2461,6 +2460,8 @@ void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
 uint16 fd_attempt_close(file_fd_struct *fd_ptr, int *err_ret);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
+int open_file_stat(files_struct *fsp,connection_struct *conn,
+		   char *fname, int smb_ofun, SMB_STRUCT_STAT *pst, int *action);
 int open_directory(files_struct *fsp,connection_struct *conn,
 		   char *fname, int smb_ofun, mode_t unixmode, int *action);
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op);

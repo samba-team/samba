@@ -186,10 +186,7 @@ void file_close_conn(connection_struct *conn)
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
-			if (fsp->is_directory)
-				close_directory(fsp,False); 
-			else                  
-				close_file(fsp,False); 
+			close_file(fsp,False); 
 		}
 	}
 }
@@ -242,10 +239,7 @@ void file_close_user(int vuid)
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((fsp->vuid == vuid) && fsp->open) {
-			if(!fsp->is_directory)
-				close_file(fsp,False);
-			else
-				close_directory(fsp,False);
+			close_file(fsp,False);
 		}
 	}
 }

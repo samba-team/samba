@@ -359,9 +359,12 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( char *fname, uint32 desired_access, uint32 share_access, uint32 file_attributes)
+static int map_share_mode( BOOL *pstat_open_only, char *fname,
+							uint32 desired_access, uint32 share_access, uint32 file_attributes)
 {
   int smb_open_mode = -1;
+
+  *pstat_open_only = False;
 
   switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
   case FILE_READ_DATA:
@@ -394,6 +397,9 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
    */
 
   if (smb_open_mode == -1) {
+	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
+		*pstat_open_only = True;
+
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
                               FILE_EXECUTE|FILE_READ_ATTRIBUTES|
                               FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
@@ -573,6 +579,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
+	BOOL stat_open_only = False;
 
 	/* 
 	 * We need to construct the open_and_X ofun value from the
@@ -632,20 +639,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
       get_filename(&fname[dir_name_len], inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
-#if 0
-      StrnCpy(&fname[dir_name_len], smb_buf(inbuf),fname_len);
-      fname[dir_name_len+fname_len] = '\0';
-#endif
 
     } else {
       
       get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
                    smb_buflen(inbuf),fname_len);
-
-#if 0
-	  StrnCpy(fname,smb_buf(inbuf),fname_len);
-      fname[fname_len] = '\0';
-#endif
     }
 	
 	/* If it's an IPC, use the pipe handler. */
@@ -686,11 +684,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
      * desired access and the share access.
 	 */
 	
-	if((smb_open_mode = map_share_mode(fname, desired_access, 
+	if((smb_open_mode = map_share_mode(&stat_open_only, fname, desired_access, 
 					   share_access, 
-					   file_attributes)) == -1) {
+					   file_attributes)) == -1)
 		return(ERROR(ERRDOS,ERRbadaccess));
-	}
+
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
 
 	/*
 	 * Ordinary file or directory.
@@ -724,9 +724,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	unixmode = unix_mode(conn,smb_attr | aARCH);
     
-	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
 	 */
@@ -762,12 +759,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * our client. JRA.  */
 
 		open_file_shared(fsp,conn,fname,smb_open_mode,
-				 smb_ofun,unixmode,
-				 oplock_request,&rmode,&smb_action);
+				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
 
 		if (!fsp->open) { 
-			/* We cheat here. The only case we
-			 * care about is a directory rename,
+			/* We cheat here. There are two cases we
+			 * care about. One is a directory rename,
 			 * where the NT client will attempt to
 			 * open the source directory for
 			 * DELETE access. Note that when the
@@ -780,7 +776,10 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			 * will generate an EISDIR error, so
 			 * we can catch this here and open a
 			 * pseudo handle that is flagged as a
-			 * directory. JRA.  */
+			 * directory. The second is an open
+			 * for a permissions read only, which
+			 * we handle in the open_file_stat case. JRA.
+			 */
 
 			if(errno == EISDIR) {
 				oplock_request = 0;
@@ -792,7 +791,25 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					restore_case_semantics(file_attributes);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
+			} else if (errno == EACCES && stat_open_only) {
+
+				/*
+				 * We couldn't open normally and all we want
+				 * are the permissions. Try and do a stat open.
+				 */
+
+				oplock_request = 0;
+
+				open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+
+				if(!fsp->open) {
+					file_free(fsp);
+					restore_case_semantics(file_attributes);
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+
 			} else {
+
 				if((errno == ENOENT) && bad_path) {
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadpath;
@@ -809,12 +826,12 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		
 	if(fsp->is_directory) {
 		if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
-			close_directory(fsp,True);
+			close_file(fsp,True);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+		if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -918,6 +935,7 @@ static int call_nt_transact_create(connection_struct *conn,
   BOOL bad_path = False;
   files_struct *fsp = NULL;
   char *p = NULL;
+  BOOL stat_open_only = False;
 
   /* 
    * We need to construct the open_and_X ofun value from the
@@ -992,6 +1010,19 @@ static int call_nt_transact_create(connection_struct *conn,
       return ret;
     smb_action = FILE_WAS_OPENED;
   } else {
+
+    /*
+     * Now contruct the smb_open_mode value from the desired access
+     * and the share access.
+     */
+
+    if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
+                                        share_access, file_attributes)) == -1)
+      return(ERROR(ERRDOS,ERRbadaccess));
+
+    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
     /*
      * Check if POSIX semantics are wanted.
      */
@@ -1020,17 +1051,6 @@ static int call_nt_transact_create(connection_struct *conn,
   
     unixmode = unix_mode(conn,smb_attr | aARCH);
     
-    oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-    oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
-
-    /*
-     * Now contruct the smb_open_mode value from the desired access
-     * and the share access.
-     */
-
-    if((smb_open_mode = map_share_mode( fname, desired_access, share_access, file_attributes)) == -1)
-      return(ERROR(ERRDOS,ERRbadaccess));
-
     /*
      * If it's a request for a directory open, deal with it separately.
      */
@@ -1049,8 +1069,16 @@ static int call_nt_transact_create(connection_struct *conn,
 
       if(!fsp->open) {
         file_free(fsp);
+        restore_case_semantics(file_attributes);
         return(UNIXERROR(ERRDOS,ERRnoaccess));
       }
+
+      if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
+        close_file(fsp,True);
+        restore_case_semantics(file_attributes);
+        return(ERROR(ERRDOS,ERRnoaccess));
+      }
+
     } else {
 
       /*
@@ -1061,18 +1089,38 @@ static int call_nt_transact_create(connection_struct *conn,
                        oplock_request,&rmode,&smb_action);
 
       if (!fsp->open) { 
-        if((errno == ENOENT) && bad_path) {
-          unix_ERR_class = ERRDOS;
-          unix_ERR_code = ERRbadpath;
-        }
-        file_free(fsp);
 
-        restore_case_semantics(file_attributes);
+		if(errno == EACCES && stat_open_only) {
 
-        return(UNIXERROR(ERRDOS,ERRnoaccess));
+			/*
+			 * We couldn't open normally and all we want
+			 * are the permissions. Try and do a stat open.
+			 */
+
+			oplock_request = 0;
+
+			open_file_stat(fsp,conn,fname,smb_open_mode,&sbuf,&smb_action);
+
+			if(!fsp->open) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} else {
+
+			if((errno == ENOENT) && bad_path) {
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRbadpath;
+			}
+			file_free(fsp);
+
+			restore_case_semantics(file_attributes);
+
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
       } 
   
-      if (sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (!fsp->stat_open && sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
         close_file(fsp,False);
 
         restore_case_semantics(file_attributes);
@@ -1663,7 +1711,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     sid_copy( &group_sid, &global_sid_World);
   } else {
 
-    if(fsp->is_directory) {
+    if(fsp->is_directory || fsp->fd_ptr == NULL) {
       if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
         return 0;
       }
@@ -2027,7 +2075,6 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
   gid_t grp;
   mode_t perms;
   SMB_STRUCT_STAT sbuf;
-  int res;
   files_struct *fsp = NULL;
 
   if(!lp_nt_acl_support())
@@ -2100,7 +2147,15 @@ security descriptor.\n"));
     perms |= lp_force_dir_mode(SNUM(conn));
 
   } else {
-    if(sys_fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+
+    int ret;
+
+    if(fsp->fd_ptr == NULL)
+      ret = dos_stat(fsp->fsp_name, &sbuf);
+    else
+      ret = sys_fstat(fsp->fd_ptr->fd,&sbuf);
+
+    if(ret != 0) {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
 

@@ -47,15 +47,15 @@ unsigned int smb_echo_count = 0;
 /****************************************************************************
 report a possible attack via the password buffer overflow bug
 ****************************************************************************/
+
 static void overflow_attack(int len)
 {
-        if( DEBUGLVL( 0 ) )
-          {
-	  dbgtext( "ERROR: Invalid password length %d.\n", len );
-	  dbgtext( "Your machine may be under attack by someone " );
-          dbgtext( "attempting to exploit an old bug.\n" );
-	  dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
-          }
+	if( DEBUGLVL( 0 ) ) {
+		dbgtext( "ERROR: Invalid password length %d.\n", len );
+		dbgtext( "Your machine may be under attack by someone " );
+		dbgtext( "attempting to exploit an old bug.\n" );
+		dbgtext( "Attack was from IP = %s.\n", client_addr(Client) );
+	}
 	exit_server("possible attack");
 }
 
@@ -63,6 +63,7 @@ static void overflow_attack(int len)
 /****************************************************************************
   reply to an special message 
 ****************************************************************************/
+
 int reply_special(char *inbuf,char *outbuf)
 {
 	int outsize = 4;
@@ -153,11 +154,11 @@ int reply_special(char *inbuf,char *outbuf)
 /*******************************************************************
 work out what error to give to a failed connection
 ********************************************************************/
+
 static int connection_error(char *inbuf,char *outbuf,int ecode)
 {
-	if (ecode == ERRnoipc) {
+	if (ecode == ERRnoipc)
 		return(ERROR(ERRDOS,ERRnoipc));
-	}
 
 	return(ERROR(ERRSRV,ecode));
 }
@@ -1949,6 +1950,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 /****************************************************************************
    reply to a readbraw (core+ protocol)
 ****************************************************************************/
+
 int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_size, int dum_buffsize)
 {
   size_t maxcount,mincount;
@@ -1983,6 +1985,8 @@ int reply_readbraw(connection_struct *conn, char *inbuf, char *outbuf, int dum_s
 	  transfer_file(0,Client,(SMB_OFF_T)0,header,4,0);
 	  return(-1);
   }
+
+  CHECK_FSP(fsp,conn);
 
   startpos = IVAL(inbuf,smb_vwv1);
   if(CVAL(inbuf,smb_wct) == 10) {
@@ -2671,13 +2675,13 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		err = fsp->wbmpx_ptr->wr_error;
 	}
 
-	if(fsp->is_directory) {
+	if(fsp->is_directory || fsp->stat_open) {
 		/*
-		 * Special case - close NT SMB directory
+		 * Special case - close NT SMB directory or stat file
 		 * handle.
 		 */
-		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
-		close_directory(fsp,True);
+		DEBUG(3,("close %s fnum=%d\n", fsp->is_directory ? "directory" : "stat file open", fsp->fnum));
+		close_file(fsp,True);
 	} else {
 		/*
 		 * Close ordinary file.
@@ -2700,7 +2704,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		set_filetime(conn, fsp->fsp_name,mtime);
 
 		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fd_ptr->fd, fsp->fnum,
+			 fsp->fd_ptr ? fsp->fd_ptr->fd : -1, fsp->fnum,
 			 conn->num_files_open));
  
 		/*

@@ -546,6 +546,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->granted_oplock = False;
     fsp->sent_oplock_break = False;
     fsp->is_directory = False;
+    fsp->stat_open = False;
     fsp->directory_delete_on_close = False;
     fsp->conn = conn;
     /*
@@ -1054,6 +1055,70 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
   if (share_locked && lp_share_modes(SNUM(conn)))
     unlock_share_entry( conn, dev, inode, token);
+}
+
+/****************************************************************************
+ Open a file for permissions read only. Return a pseudo file entry
+ with the 'stat_open' flag set and a fd_ptr of NULL.
+****************************************************************************/
+
+int open_file_stat(files_struct *fsp,connection_struct *conn,
+		   char *fname, int smb_ofun, SMB_STRUCT_STAT *pst, int *action)
+{
+	extern struct current_user current_user;
+
+	if(dos_stat(fname, pst) < 0) {
+		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n",
+			 fname, strerror(errno) ));
+		return -1;
+	}
+
+	if(S_ISDIR(pst->st_mode)) {
+		DEBUG(0,("open_file_stat: %s is a directory !\n", fname ));
+		return -1;
+	}
+
+	*action = FILE_WAS_OPENED;
+	
+	DEBUG(5,("open_file_stat: opening file %s as a stat entry\n", fname));
+
+	/*
+	 * Setup the files_struct for it.
+	 */
+	
+	fsp->fd_ptr = NULL;
+	conn->num_files_open++;
+	fsp->mode = 0;
+	GetTimeOfDay(&fsp->open_time);
+	fsp->vuid = current_user.vuid;
+	fsp->size = 0;
+	fsp->pos = -1;
+	fsp->open = True;
+	fsp->mmap_ptr = NULL;
+	fsp->mmap_size = 0;
+	fsp->can_lock = False;
+	fsp->can_read = False;
+	fsp->can_write = False;
+	fsp->share_mode = 0;
+	fsp->print_file = False;
+	fsp->modified = False;
+	fsp->granted_oplock = False;
+	fsp->sent_oplock_break = False;
+	fsp->is_directory = False;
+	fsp->stat_open = True;
+	fsp->directory_delete_on_close = False;
+	fsp->conn = conn;
+	/*
+	 * Note that the file name here is the *untranslated* name
+	 * ie. it is still in the DOS codepage sent from the client.
+	 * All use of this filename will pass though the sys_xxxx
+	 * functions which will do the dos_to_unix translation before
+	 * mapping into a UNIX filename. JRA.
+	 */
+	string_set(&fsp->fsp_name,fname);
+	fsp->wbmpx_ptr = NULL;
+
+	return 0;
 }
 
 /****************************************************************************

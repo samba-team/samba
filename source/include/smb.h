@@ -633,6 +633,7 @@ typedef struct files_struct
 	BOOL sent_oplock_break;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
+	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
 
@@ -908,7 +909,10 @@ struct bitmap {
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR(ERRDOS,ERRbadfid))
+                               return(ERROR(ERRDOS,ERRbadfid)); \
+                            else if((fsp)->fd_ptr == NULL) \
+                               return(ERROR(ERRDOS,ERRbadaccess))
+
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
                                return(ERROR(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \

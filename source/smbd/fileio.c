@@ -144,7 +144,7 @@ sync a file
 void sync_file(connection_struct *conn, files_struct *fsp)
 {
 #ifdef HAVE_FSYNC
-    if(lp_strict_sync(SNUM(conn)))
+    if(lp_strict_sync(SNUM(conn)) && fsp->fd_ptr != NULL)
       fsync(fsp->fd_ptr->fd);
 #endif
 }
