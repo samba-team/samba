@@ -45,25 +45,11 @@ void free_response(struct winbindd_response *response)
 
 void init_request(struct winbindd_request *request, int request_type)
 {
-        static char *domain_env;
-        static BOOL initialised;
-
 	request->length = sizeof(struct winbindd_request);
 
 	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();
-	request->domain[0] = '\0';
 
-	if (!initialised) {
-		initialised = True;
-		domain_env = getenv(WINBINDD_DOMAIN_ENV);
-	}
-
-	if (domain_env) {
-		strncpy(request->domain, domain_env,
-			sizeof(request->domain) - 1);
-		request->domain[sizeof(request->domain) - 1] = '\0';
-	}
 }
 
 /* Initialise a response structure */
