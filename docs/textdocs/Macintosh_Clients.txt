@@ -1,5 +1,5 @@
 !==
-!== Macintosh_Clients.txt for Samba release TNG-prealpha 29 Mar 2000
+!== Macintosh_Clients.txt for Samba release TNG-prealpha 30 Mar 2000
 !==
 > Are there any Macintosh clients for Samba?
 

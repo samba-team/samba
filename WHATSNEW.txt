@@ -1,4 +1,4 @@
-          WHATS NEW IN Samba (The Next Generation) 1.4
+          WHATS NEW IN Samba (The Next Generation) 1.5
           ============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,

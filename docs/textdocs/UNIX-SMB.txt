@@ -1,5 +1,5 @@
 !==
-!== UNIX-SMB.txt for Samba release TNG-prealpha 29 Mar 2000
+!== UNIX-SMB.txt for Samba release TNG-prealpha 30 Mar 2000
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		April 1995
