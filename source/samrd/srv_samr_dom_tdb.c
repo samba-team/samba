@@ -142,37 +142,61 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	safe_strcat(als, ".als.tdb", sizeof(als)-1);
 
 	become_root(True);
-	usr_tdb = tdb_open(passdb_path(usr), 0, 0, O_RDWR | O_CREAT, 0600);
-#if 0
-	if (sid_equal(sid, &global_sam_sid))
+	if (sid_equal(sid, &global_sid_S_1_5_20))
 	{
-		grp_tdb = tdb_open(passdb_path(grp),0,0,O_RDWR|O_CREAT, 0600);
 		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR|O_CREAT, 0600);
 	}
-#endif
-	unbecome_root(True);
-
-	if (usr_tdb == NULL)
-	{
-		close_policy_hnd(get_global_hnd_cache(), domain_pol);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-#if 0
 	if (sid_equal(sid, &global_sam_sid))
 	{
-		if (grp_tdb == NULL || als_tdb == NULL)
+
+		usr_tdb = tdb_open(passdb_path(usr),0,0,O_RDWR|O_CREAT, 0600);
+#if 0
+		grp_tdb = tdb_open(passdb_path(grp),0,0,O_RDWR|O_CREAT, 0600);
+		als_tdb = tdb_open(passdb_path(als),0,0,O_RDWR|O_CREAT, 0600);
+#endif
+	}
+	unbecome_root(True);
+
+	if (sid_equal(sid, &global_sid_S_1_5_20))
+	{
+		if (als_tdb == NULL)
 		{
+			tdb_close(usr_tdb);
+			tdb_close(grp_tdb);
+			tdb_close(als_tdb);
 			close_policy_hnd(get_global_hnd_cache(), domain_pol);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
+	if (sid_equal(sid, &global_sam_sid))
+	{
+		if (usr_tdb == NULL)
+		{
+			tdb_close(usr_tdb);
+			tdb_close(grp_tdb);
+			tdb_close(als_tdb);
+			close_policy_hnd(get_global_hnd_cache(), domain_pol);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+#if 0
+		if (grp_tdb == NULL || als_tdb == NULL)
+		{
+			tdb_close(usr_tdb);
+			tdb_close(grp_tdb);
+			tdb_close(als_tdb);
+			close_policy_hnd(get_global_hnd_cache(), domain_pol);
+			return NT_STATUS_ACCESS_DENIED;
+		}
 #endif
+	}
 
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_tdbdomsid(get_global_hnd_cache(), domain_pol,
 	                   usr_tdb, grp_tdb, als_tdb, sid))
 	{
+		tdb_close(usr_tdb);
+		tdb_close(grp_tdb);
+		tdb_close(als_tdb);
 		close_policy_hnd(get_global_hnd_cache(), domain_pol);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -182,40 +206,74 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 	return 0x0;
 }
 
-/*******************************************************************
-makes a SAM_ENTRY / UNISTR2* structure.
-********************************************************************/
-static void make_samr_dom_users(SAM_ENTRY **sam, UNISTR2 **uni_acct_name,
-		uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+typedef struct sam_data_info
 {
-	uint32 i;
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_name;
+	uint32 num_sam_entries;
+	uint32 start_idx;
+	uint32 current_idx;;
 
-	*sam = NULL;
-	*uni_acct_name = NULL;
+} SAM_DATA;
 
-	if (num_sam_entries == 0)
+/******************************************************************
+makes a SAMR_R_ENUM_USERS structure.
+********************************************************************/
+static int tdb_user_traverse(TDB_CONTEXT *tdb,
+				TDB_DATA kbuf,
+				TDB_DATA dbuf,
+				void *state)
+{
+	prs_struct ps;
+	SAM_USER_INFO_21 usr;
+	SAM_DATA *data = (SAM_DATA*)state;
+	uint32 num_sam_entries = data->num_sam_entries + 1;
+	SAM_ENTRY *sam;
+	UNISTR2 *str;
+
+	DEBUG(5,("tdb_user_traverse: idx: %d %d\n",
+					data->current_idx,
+					num_sam_entries));
+
+	dump_data_pw("usr:\n", dbuf.dptr, dbuf.dsize);
+	dump_data_pw("rid:\n", kbuf.dptr, kbuf.dsize);
+
+	/* skip first requested items */
+	if (data->current_idx < data->start_idx)
 	{
-		return;
+		data->current_idx++;
+		return 0x0;
 	}
 
-	(*sam) = (SAM_ENTRY*)Realloc(NULL, num_sam_entries * sizeof((*sam)[0]));
-	(*uni_acct_name) = (UNISTR2*)Realloc(NULL, num_sam_entries * sizeof((*uni_acct_name)[0]));
+	data->sam = (SAM_ENTRY*)Realloc(data->sam,
+	                    num_sam_entries * sizeof(data->sam[0]));
+	data->uni_name = (UNISTR2*)Realloc(data->uni_name,
+	                    num_sam_entries * sizeof(data->uni_name[0]));
 
-	if ((*sam) == NULL || (*uni_acct_name) == NULL)
+	if (data->sam == NULL || data->uni_name == NULL)
 	{
-		DEBUG(0,("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
-		return;
+		DEBUG(0,("NULL pointers in tdb_user_traverse\n"));
+		return -1;
 	}
 
-	for (i = 0; i < num_sam_entries; i++)
-	{
-		make_sam_entry(&((*sam)[i]),
-			       pass[i].uni_user_name.uni_str_len,
-			       pass[i].user_rid);
+	sam = &data->sam[data->num_sam_entries];
+	str = &data->uni_name[data->num_sam_entries];
 
-		copy_unistr2(&((*uni_acct_name)[i]), &(pass[i].uni_user_name));
+	ZERO_STRUCTP(sam);
+	ZERO_STRUCTP(str);
+
+	prs_create(&ps, dbuf.dptr, dbuf.dsize, 4, True);
+
+	if (sam_io_user_info21("usr", &usr, &ps, 0))
+	{
+		sam->rid = usr.user_rid;
+		copy_unistr2(str, &usr.uni_user_name);
+		make_uni_hdr(&sam->hdr_name, str->uni_str_len);
+
+		data->num_sam_entries++;
 	}
+
+	return 0x0;
 }
 
 /*******************************************************************
@@ -227,32 +285,27 @@ uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx,
 				UNISTR2 **uni_acct_name,
 				uint32 *num_sam_users)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int total_entries;
-	BOOL ret;
+	TDB_CONTEXT *sam_tdb = NULL;
+	SAM_DATA state;
 
-	/* find the policy handle.  open a policy on it. */
-	if (find_policy_by_hnd(get_global_hnd_cache(), pol) == -1)
+	/* find the domain sid associated with the policy handle */
+	if (!get_tdbdomsid(get_global_hnd_cache(), pol, &sam_tdb,
+					NULL, NULL, NULL))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_enum_dom_users: %d\n", __LINE__));
+	DEBUG(5,("samr_reply_enum_users:\n"));
 
-	become_root(True);
-	ret = get_sampwd_entries(pass, (*start_idx), &total_entries,
-	                   num_sam_users,
-	                   MAX_SAM_ENTRIES, acb_mask);
-	unbecome_root(True);
-	if (!ret)
-	{
-		return NT_STATUS_ACCESS_DENIED;
-	}
+	ZERO_STRUCT(state);
 
-	(*start_idx) += (*num_sam_users);
-	make_samr_dom_users(sam, uni_acct_name, (*num_sam_users), pass);
+	state.start_idx = (*start_idx);
+	tdb_traverse(sam_tdb, tdb_user_traverse, (void*)&state);
 
-	DEBUG(5,("samr_enum_dom_users: %d\n", __LINE__));
+	(*sam) = state.sam;
+	(*uni_acct_name) = state.uni_name;
+	(*start_idx) += state.num_sam_entries;
+	(*num_sam_users) = state.num_sam_entries;
 
 	return 0x0;
 }

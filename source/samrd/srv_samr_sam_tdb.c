@@ -33,6 +33,8 @@ typedef struct sam_data_info
 	SAM_ENTRY *sam;
 	UNISTR2 *uni_name;
 	uint32 num_sam_entries;
+	uint32 start_idx;
+	uint32 current_idx;;
 
 } SAM_DATA;
 
@@ -44,17 +46,25 @@ static int tdb_domain_traverse(TDB_CONTEXT *tdb,
 				TDB_DATA dbuf,
 				void *state)
 {
-	DOM_SID sid;
-	uint32 rid;
+	prs_struct key;
 	UNISTR2 *str;
 	SAM_DATA *data = (SAM_DATA*)state;
 	uint32 num_sam_entries = data->num_sam_entries + 1;
 	SAM_ENTRY *sam;
 
-	DEBUG(5,("tdb_domain_traverse: %d\n", num_sam_entries));
+	DEBUG(5,("tdb_domain_traverse: idx: %d %d\n",
+					data->current_idx,
+					num_sam_entries));
 
 	dump_data_pw("sid:\n"   , dbuf.dptr, dbuf.dsize);
 	dump_data_pw("domain:\n", kbuf.dptr, kbuf.dsize);
+
+	/* skip first requested items */
+	if (data->current_idx < data->start_idx)
+	{
+		data->current_idx++;
+		return 0x0;
+	}
 
 	data->sam = (SAM_ENTRY*)Realloc(data->sam,
 	                    num_sam_entries * sizeof(data->sam[0]));
@@ -73,17 +83,15 @@ static int tdb_domain_traverse(TDB_CONTEXT *tdb,
 	ZERO_STRUCTP(sam);
 	ZERO_STRUCTP(str);
 
-	memcpy(&sid, dbuf.dptr, sizeof(sid));
-	copy_unistr2(str, (const UNISTR2*)kbuf.dptr);
+	prs_create(&key, kbuf.dptr, kbuf.dsize, 4, True);
 
-	if (sid_split_rid(&sid, &rid))
+	if (smb_io_unistr2("dom", str, True, &key, 0))
 	{
-		sam->rid = rid;
+		sam->rid = 0x0;
+		make_uni_hdr(&sam->hdr_name, str->uni_str_len);
+
+		data->num_sam_entries++;
 	}
-
-	data->num_sam_entries++;
-
-	make_uni_hdr(&sam->hdr_name, str->uni_str_len);
 
 	return 0x0;
 }
@@ -110,6 +118,7 @@ uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx,
 
 	ZERO_STRUCT(state);
 
+	state.start_idx = (*start_idx);
 	tdb_traverse(sam_tdb, tdb_domain_traverse, (void*)&state);
 
 	(*sam) = state.sam;

@@ -4248,6 +4248,11 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 				uint32 ace_perms,
 				const DOM_SID *sid,
 				POLICY_HND *domain_pol);
+uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx, 
+				uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
 uint32 _samr_enum_dom_users(  const POLICY_HND *pol, uint32 *start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size,
 				SAM_ENTRY **sam,
