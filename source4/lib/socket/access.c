@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "system/network.h"
+#include "system/iconv.h"
 
 #define	FAIL		(-1)
 #define ALLONES  ((uint32_t)0xFFFFFFFF)

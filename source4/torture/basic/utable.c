@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "system/iconv.h"
 
 BOOL torture_utable(void)
 {
