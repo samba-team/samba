@@ -194,6 +194,7 @@ sigALRM(int sig)
 #endif
 #endif
 
+#ifndef HAVE_SETITIMER
 static void
 des_not_rand_data(unsigned char *data, int size)
 {
@@ -204,6 +205,7 @@ des_not_rand_data(unsigned char *data, int size)
   for(i = 0; i < size; ++i)
     data[i] ^= random() % 0x100;
 }
+#endif
 
 #if !defined(WIN32) && !defined(__EMX__) && !defined(__OS2__) && !defined(__CYGWIN32__)
 
