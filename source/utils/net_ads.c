@@ -1252,6 +1252,203 @@ int net_ads_help(int argc, const char **argv)
 	return net_run_function(argc, argv, func, net_ads_usage);
 }
 
+static int net_ads_test(int argc, const char **argv)
+{
+	struct ldap_connection *conn;
+	struct ldap_message *msg;
+
+	if (argc != 1) {
+		d_printf("usage: net ads test url\n");
+		return -1;
+	}
+
+	conn = new_ldap_connection();
+
+	if (conn == NULL) {
+		d_printf("Could not get ldap_connection\n");
+		return -1;
+	}
+
+	if (!ldap_set_simple_creds(conn, "cn=admin,dc=samba,dc=org", "secret")) {
+		d_printf("Could not set creds\n");
+		return -1;
+	}
+
+	if (!ldap_setup_connection(conn, argv[0])) {
+		d_printf("Could not setup connection\n");
+		return -1;
+	}
+
+	msg = new_ldap_message();
+
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = "dc=samba,dc=org";
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_SUB;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = False;
+	msg->r.SearchRequest.filter = "(&(objectclass=*)(|(uid=vl)(uid=jl)(uid=mayer)))";
+	msg->r.SearchRequest.num_attributes = 4;
+
+	{
+		static const char *attrs[] =  { "objectclass", "uid",
+						"uidnumber", "gidnumber"};
+		msg->r.SearchRequest.attributes = attrs;
+	}
+
+	if (!ldap_send_msg(conn, msg)) {
+		d_printf("Could not send msg\n");
+		return -1;
+	}
+
+	while (True) {
+
+		destroy_ldap_message(msg);
+		msg = new_ldap_message();
+
+		if (!ldap_receive_msg(conn, msg)) {
+			d_printf("Could not receive message\n");
+			return -1;
+		}
+
+		if (msg->type == LDAP_TAG_SearchResultEntry) {
+			struct ldap_SearchResEntry *r = &msg->r.SearchResultEntry;
+			int i;
+			d_printf("dn: %s\n", r->dn);
+			for (i=0; i<r->num_attributes; i++) {
+				int j;
+				d_printf(" %s\n", r->attributes[i].name);
+				for (j=0; j<r->attributes[i].num_values; j++) {
+					d_printf("  %s\n", r->attributes[i].values[j]);
+				}
+			}
+			continue;
+		}
+
+		if (msg->type == LDAP_TAG_SearchResultDone) {
+			d_printf("Search Finished\n");
+			break;
+		}
+	}
+
+#if 0
+	{
+		struct ldap_mod mods[2];
+		const char *values[] = { "/bin/tcsh" };
+
+		mods[0].type = LDAP_MOD_REPLACE;
+		mods[0].attribute = "loginShell";
+		mods[0].num_values = 1;
+		mods[0].values = values;
+
+		mods[1].type = LDAP_MOD_DELETE;
+		mods[1].attribute = "telephoneNumber";
+		mods[1].num_values = 0;
+
+		msg->type = LDAP_TAG_ModifyRequest;
+		msg->r.ModifyRequest.dn = "cn=kuhlmann,dc=samba,dc=org";
+		msg->r.ModifyRequest.num_mods = 2;
+		msg->r.ModifyRequest.mods = mods;
+
+		if (!ldap_transaction(conn, msg, msg)) {
+			d_printf("Could not modify\n");
+			return -1;
+		}
+	}
+
+#endif
+
+#if 0
+	{
+		struct ldap_attribute attribs[2];
+		const char *class[] = { "organizationalUnit" };
+		const char *ou[] = { "team" };
+
+		attribs[0].name = "objectClass";
+		attribs[0].num_values = 1;
+		attribs[0].values = class;
+
+		attribs[1].name = "ou";
+		attribs[1].num_values = 1;
+		attribs[1].values = ou;
+
+		msg->type = LDAP_TAG_AddRequest;
+		msg->r.AddRequest.dn = "ou=team,dc=samba,dc=org";
+		msg->r.AddRequest.num_attributes = 2;
+		msg->r.AddRequest.attributes = attribs;
+
+		if (!ldap_transaction(conn, msg, msg)) {
+			d_printf("Could not add\n");
+		}
+	}
+
+	msg->type = LDAP_TAG_DelRequest;
+	msg->r.DelRequest.dn = "ou=team,dc=samba,dc=org";
+
+	if (!ldap_transaction(conn, msg, msg)) {
+		d_printf("Could not delete\n");
+		return -1;
+	}
+
+	msg->type = LDAP_TAG_ModifyDNRequest;
+	msg->r.ModifyDNRequest.dn = "uid=vl,dc=samba,dc=org";
+	msg->r.ModifyDNRequest.newrdn = "uid=vl";
+	msg->r.ModifyDNRequest.deleteolddn = False;
+	msg->r.ModifyDNRequest.newsuperior = "ou=samba team,dc=samba,dc=org";
+
+	if (!ldap_transaction(conn, msg, msg)) {
+		d_printf("Could not modrdn\n");
+		return -1;
+	}
+#endif
+
+	msg->type = LDAP_TAG_AbandonRequest;
+	msg->messageid = 12345;
+
+	if (!ldap_send_msg(conn, msg)) {
+		d_printf("Could not send abandon msg\n");
+	}
+
+	msg->type = LDAP_TAG_CompareRequest;
+	msg->r.CompareRequest.dn = "cn=mayer,dc=samba,dc=org";
+	msg->r.CompareRequest.attribute = "uidNumber";
+	msg->r.CompareRequest.value = "2001";
+
+	if (!ldap_transaction(conn, msg, msg)) {
+		d_printf("Could not modrdn\n");
+		return -1;
+	}
+
+	{
+		ASN1_DATA pwdchg;
+		const char *dn = "cn=mayer,dc=samba,dc=org";
+		const char *newpw = "bla";
+
+		ZERO_STRUCT(pwdchg);
+		asn1_push_tag(&pwdchg, ASN1_SEQUENCE(0));
+		asn1_push_tag(&pwdchg, ASN1_CONTEXT_SIMPLE(0));
+		asn1_write(&pwdchg, dn, strlen(dn));
+		asn1_pop_tag(&pwdchg);
+		asn1_push_tag(&pwdchg, ASN1_CONTEXT_SIMPLE(2));
+		asn1_write(&pwdchg, newpw, strlen(newpw));
+		asn1_pop_tag(&pwdchg);
+		asn1_pop_tag(&pwdchg);
+
+		msg->type = LDAP_TAG_ExtendedRequest;
+		msg->r.ExtendedRequest.oid = "1.3.6.1.4.1.4203.1.11.1";
+		msg->r.ExtendedRequest.value.data = pwdchg.data;
+		msg->r.ExtendedRequest.value.length = pwdchg.length;
+
+		if (!ldap_transaction(conn, msg, msg)) {
+			d_printf("Could not change pwd\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 int net_ads(int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -1269,6 +1466,7 @@ int net_ads(int argc, const char **argv)
 		{"DN", net_ads_dn},
 		{"WORKGROUP", net_ads_workgroup},
 		{"LOOKUP", net_ads_lookup},
+		{"TEST", net_ads_test},
 		{"HELP", net_ads_help},
 		{NULL, NULL}
 	};

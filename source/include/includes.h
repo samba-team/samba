@@ -891,6 +891,8 @@ struct smb_ldap_privates;
 #include "smbldap.h"
 #include "modconf.h"
 
+#include "smb_ldap.h"
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

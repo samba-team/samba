@@ -166,7 +166,7 @@ TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o tdb/tdbback.o
 
-SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
+SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@ lib/smb_ldap.o
 
 VERSION_OBJ = lib/version.o
 
@@ -210,7 +210,7 @@ LIB_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o \
-	  lib/genparser.o lib/genparser_samba.o
+	  lib/genparser.o lib/genparser_samba.o libsmb/asn1.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
@@ -246,7 +246,7 @@ LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o libsmb/ntlm_ch
 	libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
-	     libsmb/clikrb5.o libsmb/clispnego.o libsmb/asn1.o \
+	     libsmb/clikrb5.o libsmb/clispnego.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
@@ -694,7 +694,7 @@ TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 NTLM_AUTH_OBJ1 = utils/ntlm_auth.o utils/ntlm_auth_diagnostics.o 
 
 NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
-		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
+		libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ0) \
 		$(DOSERR_OBJ)

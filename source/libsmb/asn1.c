@@ -216,19 +216,27 @@ BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 	return True;
 }
 
+/* Peek into an ASN1 buffer, not advancing the pointer */
+BOOL asn1_peek(ASN1_DATA *data, void *p, int len)
+{
+	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len)
+		return False;
+
+	if (data->ofs + len > data->length)
+		return False;
+
+	memcpy(p, data->data + data->ofs, len);
+	return True;
+}
+
 /* read from a ASN1 buffer, advancing the buffer pointer */
 BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 {
-	if (len < 0 || data->ofs + len < data->ofs || data->ofs + len < len) {
+	if (!asn1_peek(data, p, len)) {
 		data->has_error = True;
 		return False;
 	}
 
-	if (data->ofs + len > data->length) {
-		data->has_error = True;
-		return False;
-	}
-	memcpy(p, data->data + data->ofs, len);
 	data->ofs += len;
 	return True;
 }
@@ -237,6 +245,21 @@ BOOL asn1_read(ASN1_DATA *data, void *p, int len)
 BOOL asn1_read_uint8(ASN1_DATA *data, uint8 *v)
 {
 	return asn1_read(data, v, 1);
+}
+
+BOOL asn1_peek_uint8(ASN1_DATA *data, uint8 *v)
+{
+	return asn1_peek(data, v, 1);
+}
+
+BOOL asn1_peek_tag(ASN1_DATA *data, uint8 tag)
+{
+	uint8 b;
+
+	if (!asn1_peek(data, &b, sizeof(b)))
+		return False;
+
+	return (b == tag);
 }
 
 /* start reading a nested asn1 structure */
@@ -282,6 +305,65 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 	return !data->has_error;
 }
 
+static BOOL read_one_uint8(int sock, uint8 *result, ASN1_DATA *data)
+{
+	if (read(sock, result, 1) != 1)
+		return False;
+
+	return asn1_write(data, result, 1);
+}
+
+/* Read a complete ASN sequence (ie LDAP result) from a socket */
+BOOL asn1_read_sequence(int sock, ASN1_DATA *data)
+{
+	uint8 b;
+	size_t len;
+	char *buf;
+
+	ZERO_STRUCTP(data);
+
+	if (!read_one_uint8(sock, &b, data))
+		return False;
+
+	if (b != 0x30) {
+		data->has_error = True;
+		return False;
+	}
+
+	if (!read_one_uint8(sock, &b, data))
+		return False;
+
+	if (b & 0x80) {
+		int n = b & 0x7f;
+		if (!read_one_uint8(sock, &b, data))
+			return False;
+		len = b;
+		while (n > 1) {
+			if (!read_one_uint8(sock, &b, data))
+				return False;
+			len = (len<<8) | b;
+			n--;
+		}
+	} else {
+		len = b;
+	}
+
+	buf = malloc(len);
+	if (buf == NULL)
+		return False;
+
+	if (read_data(sock, buf, len) != len)
+		return False;
+
+	if (!asn1_write(data, buf, len))
+		return False;
+
+	free(buf);
+
+	data->ofs = 0;
+	
+	return True;
+}
 
 /* stop reading a tag */
 BOOL asn1_end_tag(ASN1_DATA *data)
@@ -415,6 +497,20 @@ BOOL asn1_read_Integer(ASN1_DATA *data, int *i)
 	}
 	return asn1_end_tag(data);	
 	
+}
+
+/* read an interger */
+BOOL asn1_read_enumerated(ASN1_DATA *data, int *v)
+{
+	*v = 0;
+	
+	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return False;
+	while (asn1_tag_remaining(data)>0) {
+		uint8 b;
+		asn1_read_uint8(data, &b);
+		*v = (*v << 8) + b;
+	}
+	return asn1_end_tag(data);	
 }
 
 /* check a enumarted value is correct */
