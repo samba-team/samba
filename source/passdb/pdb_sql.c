@@ -204,7 +204,7 @@ char *sql_account_query_select(const char *data, BOOL update, enum sql_search_fi
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s WHERE %s = '%s'",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
