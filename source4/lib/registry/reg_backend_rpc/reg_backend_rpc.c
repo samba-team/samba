@@ -226,9 +226,10 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	struct rpc_key_data *mykeydata = parent->backend_data;
 	WERROR error;
 	struct winreg_EnumValue r;
-	uint32 type, len1, len2 = 0;
-	struct EnumValueIn buf_name, buf_val;
+	uint32 type, len1, zero = 0;
 	NTSTATUS status;
+	uint8_t buf8;
+	uint16_t buf16;
 	
 	if(mykeydata->num_values == -1) {
 		error = rpc_query_key(parent);
@@ -239,19 +240,13 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 	
 	r.in.handle = &mykeydata->pol;
 	r.in.enum_index = n;
-	r.in.name_in.len = 0;
-	r.in.name_in.max_len = mykeydata->max_valnamelen * 2;
-	buf_name.max_len = mykeydata->max_valnamelen;
-	buf_name.offset = 0;
-	buf_name.len = 0;
-	r.in.name_in.buffer = &buf_name;
+	r.in.name_in.length = 0;
+	r.in.name_in.size = mykeydata->max_valnamelen * 2;
+	r.in.name_in.name = &buf16;
 	r.in.type = &type;
-	buf_val.max_len = mykeydata->max_valdatalen;
-	buf_val.offset = 0;
-	buf_val.len = 0;
-	r.in.value_in = &buf_val;
-	r.in.value_len1 = &len1;
-	r.in.value_len2 = &len2;
+	r.in.value = &buf8;
+	r.in.length = &zero;
+	r.in.size = &len1;
 	r.out.type = &type;
 
 	
@@ -261,13 +256,14 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx, struct registry_key *p
 		return WERR_GENERAL_FAILURE;
 	}
 	
-	if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
+	if(NT_STATUS_IS_OK(status) && 
+	   W_ERROR_IS_OK(r.out.result) && r.out.length) {
 		*value = talloc_p(mem_ctx, struct registry_value);
 		(*value)->parent = parent;
 		(*value)->name = talloc_strdup(mem_ctx, r.out.name_out.name);
 		(*value)->data_type = type;
-		(*value)->data_len = r.out.value_out->buffer.length;
-		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value_out->buffer.data, r.out.value_out->buffer.length);
+		(*value)->data_len = *r.out.length;
+		(*value)->data_blk = talloc_memdup(mem_ctx, r.out.value, *r.out.length);
 		return WERR_OK;
 	}
 	
