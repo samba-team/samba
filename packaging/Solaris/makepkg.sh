@@ -44,24 +44,33 @@ add_dynamic_entries()
 
   # Add the binaries, docs and SWAT files
 
+  echo "#\n# libraries\n#"
+  echo f none /lib/nss_winbind.so.1=source/nsswitch/libnss_winbind.so 0755 root other
+  echo f none /lib/security/pam_winbind.so=source/nsswitch/pam_winbind.so 0755 root other
+
+  echo "#\n# libsmbclient\n#"
+  echo f none /usr/local/include/libsmbclient.h=source/include/libsmbclient.h 0755 root other
+  echo f none /usr/local/lib/libsmbclient.so=source/bin/libsmbclient.so 0755 root other
+  echo f none /usr/local/lib/libsmbclient.a=source/bin/libsmbclient.a 0755 root other
+
+  chmod 644 $DISTR_BASE/source/bin/libsmbclient.*
+
   echo "#\n# Binaries \n#"
   cd $DISTR_BASE/source/bin
   for binfile in *
   do
-    if [ -f $binfile ]; then
+    if [ -f $binfile -a -x $binfile ]; then
       echo f none samba/bin/$binfile=source/bin/$binfile 0755 root other
     fi
   done
 
+  chmod 755 $DISTR_BASE/source/bin/libsmbclient.*
+
   # Add the scripts to bin/
   echo "#\n# Scripts \n#"
-  cd $DISTR_BASE/source/script
-  for shfile in *
-  do
-    if [ -f $shfile ]; then
- 	echo f none samba/bin/$shfile=source/script/$shfile 0755 root other
-    fi
-  done
+  echo f none samba/bin/findsmb=source/script/findsmb 755 root other
+  echo f none samba/bin/smbtar=source/script/smbtar 755 root other
+  echo f none samba/bin/smbadduser=source/script/smbadduser 755 root other
 
   # Add the Registry files
   echo "#\n# Registry files \n#"
@@ -190,6 +199,6 @@ cp prototype.master prototype
 pkgmk -o -d /tmp -b $DISTR_BASE -f prototype
 if [ $? = 0 ]
 then
-	pkgtrans /tmp samba.pkg samba
+	pkgtrans /tmp samba-$VERSION.pkg samba
 fi
 echo The samba package is in /tmp
