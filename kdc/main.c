@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -88,9 +88,11 @@ main(int argc, char **argv)
 	sigemptyset(&sa.sa_mask);
 
 	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
     }
 #else
     signal(SIGINT, sigterm);
+    signal(SIGTERM, sigterm);
 #endif
     loop();
     krb5_free_context(context);
