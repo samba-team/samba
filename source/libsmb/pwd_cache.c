@@ -73,54 +73,67 @@ void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key)
 /****************************************************************************
 compares two passwords.  hmm, not as trivial as expected.  hmm.
 ****************************************************************************/
-BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
+BOOL pwd_compare(const struct pwd_info *_pwd1, const struct pwd_info *_pwd2)
 {
-	pwd_deobfuscate(pwd1);
-	pwd_deobfuscate(pwd2);
-	if (pwd1->cleartext && pwd2->cleartext)
+	struct pwd_info pwd1;
+	struct pwd_info pwd2;
+
+	memcpy(&pwd1, _pwd1, sizeof(pwd1));
+	memcpy(&pwd2, _pwd2, sizeof(pwd2));
+
+	pwd_deobfuscate(&pwd1);
+	pwd_deobfuscate(&pwd2);
+
+	if (pwd1.cleartext && pwd2.cleartext)
 	{
-		if (strequal(pwd1->password, pwd2->password))
+		if (strequal(pwd1.password, pwd2.password))
 		{
-			pwd_obfuscate(pwd1);
-			pwd_obfuscate(pwd2);
+			ZERO_STRUCT(pwd1);
+			ZERO_STRUCT(pwd2);
+
 			return True;
 		}
 	}
-	if (pwd1->null_pwd && pwd2->null_pwd)
+	if (pwd1.null_pwd && pwd2.null_pwd)
 	{
-		pwd_obfuscate(pwd1);
-		pwd_obfuscate(pwd2);
+		ZERO_STRUCT(pwd1);
+		ZERO_STRUCT(pwd2);
+
 		return True;
 	}
 
-	if (!pwd1->null_pwd  && !pwd2->null_pwd &&
-	    !pwd1->cleartext && !pwd2->cleartext)
+	if (!pwd1.null_pwd  && !pwd2.null_pwd &&
+	    !pwd1.cleartext && !pwd2.cleartext)
 	{
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: nt#\n"));
-		dump_data(100, pwd1->smb_nt_pwd, 16);
-		dump_data(100, pwd2->smb_nt_pwd, 16);
+		dump_data(100, pwd1.smb_nt_pwd, 16);
+		dump_data(100, pwd2.smb_nt_pwd, 16);
 #endif
-		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
+		if (memcmp(pwd1.smb_nt_pwd, pwd2.smb_nt_pwd, 16) == 0)
 		{
-			pwd_obfuscate(pwd1);
-			pwd_obfuscate(pwd2);
+			ZERO_STRUCT(pwd1);
+			ZERO_STRUCT(pwd2);
+
 			return True;
 		}
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: lm#\n"));
-		dump_data(100, pwd1->smb_lm_pwd, 16);
-		dump_data(100, pwd2->smb_lm_pwd, 16);
+		dump_data(100, pwd1.smb_lm_pwd, 16);
+		dump_data(100, pwd2.smb_lm_pwd, 16);
 #endif
-		if (memcmp(pwd1->smb_lm_pwd, pwd2->smb_lm_pwd, 16) == 0)
+		if (memcmp(pwd1.smb_lm_pwd, pwd2.smb_lm_pwd, 16) == 0)
 		{
-			pwd_obfuscate(pwd1);
-			pwd_obfuscate(pwd2);
+			ZERO_STRUCT(pwd1);
+			ZERO_STRUCT(pwd2);
+
 			return True;
 		}
 	}
-	pwd_obfuscate(pwd1);
-	pwd_obfuscate(pwd2);
+
+	ZERO_STRUCT(pwd1);
+	ZERO_STRUCT(pwd2);
+
 	return False;
 }
 

@@ -135,7 +135,7 @@ BOOL reload_services(BOOL test)
 
 	setup_logging(argv[0],False);
 	fstrcpy(pipe_name, "NETLOGON");
-	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, pipe_name);
+	slprintf(debugf, sizeof(debugf), "%s/log.%s", LOGFILEBASE, "netlogon");
 
 	return msrpc_main(argc, argv);
 }

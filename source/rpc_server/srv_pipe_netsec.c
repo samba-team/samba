@@ -237,6 +237,7 @@ static BOOL api_netsec(rpcsrv_struct *l, uint32 msg_type)
 	switch (msg_type)
 	{
 		case 0x3:
+		case 0x13:
 		{
 			netsec_auth_struct *a;
 			a = (netsec_auth_struct *)l->auth_info;

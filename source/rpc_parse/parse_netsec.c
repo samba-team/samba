@@ -165,8 +165,8 @@ BOOL smb_io_rpc_auth_netsec_chk(char *desc, RPC_AUTH_NETSEC_CHK *chk, prs_struct
 	depth++;
 
 	prs_uint8s(False, "sig  ", ps, depth, chk->sig  , sizeof(chk->sig  ));
-	prs_uint8s(False, "data1", ps, depth, chk->data1, sizeof(chk->data1));
 	prs_uint8s(False, "data3", ps, depth, chk->data3, sizeof(chk->data3));
+	prs_uint8s(False, "data1", ps, depth, chk->data1, sizeof(chk->data1));
 	prs_uint8s(False, "data8", ps, depth, chk->data8, sizeof(chk->data8));
 
 	return True;
