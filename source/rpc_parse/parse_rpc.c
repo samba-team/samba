@@ -494,6 +494,26 @@ BOOL smb_io_rpc_hdr_resp(char *desc, RPC_HDR_RESP *rpc, prs_struct *ps, int dept
 }
 
 /*******************************************************************
+ Reads or writes an RPC_HDR_FAULT structure.
+********************************************************************/
+
+BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)
+{
+	if (rpc == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
+	depth++;
+
+	if(!prs_uint32("status  ", ps, depth, &rpc->status))
+		return False;
+	if(!prs_uint32("reserved", ps, depth, &rpc->reserved))
+		return False;
+
+    return True;
+}
+
+/*******************************************************************
  Init an RPC_HDR_AUTHA structure.
 ********************************************************************/
 
