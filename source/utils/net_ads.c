@@ -121,24 +121,54 @@ retry:
 	return ads;
 }
 
+static void usergrp_display(char *field, void **values, void *data_area)
+{
+	char **disp_fields = (char **) data_area;
+
+	if (!field) { /* must be end of record */
+		if (disp_fields[1])
+			printf("%-21.21s %-50.50s\n", 
+			       disp_fields[0], disp_fields[1]);
+		else
+			printf("%s\n", disp_fields[0]);
+		SAFE_FREE(disp_fields[0]);
+		SAFE_FREE(disp_fields[1]);
+		return;
+	}
+	if (StrCaseCmp(field, "sAMAccountName") == 0) {
+		disp_fields[0] = strdup(((struct berval *) values[0])->bv_val);
+	}
+	if (StrCaseCmp(field, "description") == 0)
+		disp_fields[1] = strdup(((struct berval *) values[0])->bv_val);
+}
+
 static int net_ads_user(int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
+	const char *shortattrs[] = {"sAMAccountName", NULL};
+	const char *longattrs[] = {"sAMAccountName", "description", NULL};
+	extern int opt_long_list_entries;
+	char *disp_fields[2] = {NULL, NULL};
 	
 	if (!(ads = ads_startup())) return -1;
 
-	rc = ads_do_search_all(ads, ads->bind_path, 
-			       LDAP_SCOPE_SUBTREE, 
-			       "(objectclass=user)", attrs, &res);
+	rc = ads_do_search_all(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
+			       "(objectclass=user)", opt_long_list_entries ?
+			       longattrs : shortattrs, &res);
 
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_search: %s\n", ads_errstr(rc));
 		return -1;
 	}
-	ads_dump(ads, res);
+	
+	if (opt_long_list_entries)
+		d_printf("\nUser name             Comment"\
+			 "\n-----------------------------\n");
+	ads_process_results(ads, res, usergrp_display, disp_fields);
+	ads_msgfree(ads, res);
+
 	ads_destroy(&ads);
 	return 0;
 }
@@ -148,19 +178,28 @@ static int net_ads_group(int argc, const char **argv)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	void *res;
-	const char *attrs[] = {"sAMAccountName", "name", "objectSid", NULL};
+	const char *shortattrs[] = {"sAMAccountName", NULL};
+	const char *longattrs[] = {"sAMAccountName", "description", NULL};
+	extern int opt_long_list_entries;
+	char *disp_fields[2] = {NULL, NULL};
 
 	if (!(ads = ads_startup())) return -1;
 
-	rc = ads_do_search_all(ads, ads->bind_path, 
-			       LDAP_SCOPE_SUBTREE, 
-			       "(objectclass=group)", attrs, &res);
+	rc = ads_do_search_all(ads, ads->bind_path, LDAP_SCOPE_SUBTREE, 
+			       "(objectclass=group)", opt_long_list_entries ?
+			       longattrs : shortattrs, &res);
+
 	if (!ADS_ERR_OK(rc)) {
 		d_printf("ads_search: %s\n", ads_errstr(rc));
 		return -1;
 	}
 
-	ads_dump(ads, res);
+	if (opt_long_list_entries)
+		d_printf("\nGroup name            Comment"\
+			 "\n-----------------------------\n");
+	ads_process_results(ads, res, usergrp_display, disp_fields);
+	ads_msgfree(ads, res);
+
 	ads_destroy(&ads);
 	return 0;
 }
@@ -353,10 +392,7 @@ static int net_ads_printer_info(int argc, const char **argv)
 	}
 
 	ads_dump(ads, res);
-	/* I wanted to do this ads_msgfree, but it coredumps...why? 
-	   the ads_dump routine doesn't free it, or does it partially
-	   free it as it walks through the result?
-	ads_msgfree(ads, res); */
+	ads_msgfree(ads, res);
 
 	return 0;
 }
