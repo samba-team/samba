@@ -310,7 +310,9 @@ krb5_get_in_tkt(krb5_context context,
 	krb5_data_free(&resp);
 	if (ret2 == 0) {
 	    /* XXX */
-	    fprintf (stderr, "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
+	    if (error.e_text)
+		fprintf (stderr,
+			 "get_in_tkt: KRB_ERROR: %s\n", *(error.e_text));
 	    return error.error_code;
 	}
 	return ret;
