@@ -199,9 +199,6 @@ typedef struct nt_user_token {
 	struct dom_sid **user_sids;
 } NT_USER_TOKEN;
 
-#define NT_HASH_LEN 16
-#define LM_HASH_LEN 16
-
 /* the basic packet size, assuming no words or bytes. Does not include the NBT header */
 #define MIN_SMB_SIZE 35
 
