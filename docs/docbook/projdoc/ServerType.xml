@@ -11,13 +11,80 @@
 This chapter provides information regarding the types of server that Samba may be
 configured to be. A Microsoft network administrator who wishes to migrate to or to
 use Samba will want to know what within a Samba context, terms familiar to MS Windows
-adminstrator mean.
+adminstrator mean. This means that it is essential also to define how critical security
+contexts function BEFORE we get into the details of how to configure the server itself.
 </para>
 
 <para>
-The chapter also provides an overview of the security modes of which Samba is capable
+The chapter provides an overview of the security modes of which Samba is capable
 and how these relate to MS Windows servers and clients.
 </para>
+
+<para>
+Firstly we should recognise the question so often asked, "Why would I want to use Samba?"
+So, in those chapters where the answer may be important you will see a section that highlights
+features and benefits. These may be for or against Samba.
+</para>
+
+<sect1>
+<title>Samba Features and Benefits</title>
+
+<para>
+Two men were walking down a dusty road, when one suddenly kicked up a small red stone. It
+hurt his toe and lodged in his sandle. He took the stone out and cursed it with a passion
+and fury fitting his anguish. The other looked at the stone and said, that is a garnet - I
+can turn that into a precious gem and some day it will make a princess very happy!
+</para>
+
+<para>
+The moral of this tale: Two men, two very different perspectives regarding the same stone.
+Like it or not, Samba is like that stone. Treated the right way and it can bring great
+pleasure, but if you are forced upon it and have no time for it's secrets then it can be
+a source of discomfort.
+</para>
+
+<para>
+Samba started out as a project that sought to provide interoperability for MS Windows 3.x
+clients with a Unix server. It has grown up a lot since it's humble beginnings and now provides
+features and functionality fit for large scale deployment. It also has some warts. In sections
+like this one we will tell of both.
+</para>
+
+<para>
+So now, what features are covered in this chapter?
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+
+	<listitem><para>
+	X
+	</para></listitem>
+</itemizedlist>
+
+</sect1>
 
 <sect1>
 <title>Server Types</title>
@@ -174,92 +241,6 @@ with share mode security servers. You are strongly discouraged from use of this 
 </sect2>
 
 <sect2>
-<title>Server Level Security</title>
-
-<para>
-Now to review <emphasis>server level</emphasis> security. In server level security the samba
-server reports to the client that it is in user level security. The client then does a 
-<emphasis>session setup</emphasis> as described earlier. The samba server takes the
-username/password that the client sends and attempts to login to the
-<emphasis>password server</emphasis> by sending exactly the same username/password that
-it got from the client. If that server is in user level security and accepts the password
-then samba accepts the clients connection. This allows the samba server to use another SMB
-server as the <emphasis>password server</emphasis>.
-</para>
-
-<para>
-You should also note that at the very start of all this, where the server tells the client
-what security level it is in, it also tells the client if it supports encryption. If it
-does then it supplies the client with a random cryptkey. The client will then send all
-passwords in encrypted form. Samba supports this type of encryption by default.
-</para>
-
-<para>
-The parameter <emphasis>security = server</emphasis> means that Samba reports to clients that
-it is running in <emphasis>user mode</emphasis> but actually passes off all authentication
-requests to another <emphasis>user mode</emphasis> server. This requires an additional
-parameter <emphasis>password server</emphasis> that points to the real authentication server.
-That real authentication server can be another Samba server or can be a Windows NT server,
-the later natively capable of encrypted password support.
-</para>
-
-<note><para>
-When Samba is running in <emphasis>server level</emphasis> security it is essential that
-the parameter <emphasis>password server</emphasis> is set to the precise netbios machine
-name of the target authentication server. Samba can NOT determine this from NetBIOS name
-lookups because the choice of the target authentication server arbitrary and can not
-be determined from a domain name. In essence a samba server that is in
-<emphasis>server level</emphasis> security is operating in what used to be known as
-workgroup mode.
-</para></note>
-
-<note><para>
-<emphasis>Server level</emphasis> security is incompatible with what is known as
-<emphasis>schannel</emphasis> or <emphasis>sign and seal</emphasis> protocols. This means that
-if you want to use <emphasis>server</emphasis> level security you must disable the use of
-<emphasis>sign and seal</emphasis> on all machines on your network.
-</para></note>
-
-<sect3>
-<title>Example Configuration</title>
-<para><emphasis>
-Using MS Windows NT as an authentication server
-</emphasis></para>
-
-<para>
-This method involves the additions of the following parameters in the &smb.conf; file:
-</para>
-
-<para><programlisting>
-        encrypt passwords = Yes
-        security = server
-        password server = "NetBIOS_name_of_a_DC"
-</programlisting></para>
-
-
-<para>
-There are two ways of identifying whether or not a username and password pair was valid
-or not. One uses the reply information provided as part of the authentication messaging
-process, the other uses just an error code.
-</para>
-
-<para>
-The down-side of this mode of configuration is the fact that for security reasons Samba
-will send the password server a bogus username and a bogus password and if the remote
-server fails to reject the username and password pair then an alternative mode of
-identification of validation is used. Where a site uses password lock out after a
-certain number of failed authentication attempts this will result in user lockouts.
-</para>
-
-<para>
-Use of this mode of authentication does require there to be a standard Unix account
-for the user, this account can be blocked to prevent logons by other than MS Windows clients.
-</para>
-
-</sect3>
-</sect2>
-
-<sect2>
 <title>Domain Level Security</title>
 
 <para>
@@ -367,6 +348,107 @@ regarding this configuration option.
 
 </sect3>
 </sect2>
+
+<sect2>
+<title>Server Level Security</title>
+
+<para>
+Server level security is a left over from the time when Samba was not capable of acting
+as a domain member server. It is highly recommended NOT to use this feature. Server level
+security has many draw backs. The draw backs include:
+</para>
+
+<itemizedlist>
+	<listitem><para>Potential Account Lockout on MS Windows NT4/200x password servers</para></listitem>
+	<listitem><para>Lack of assurance that the password server is the one specified</para></listitem>
+	<listitem><para>Does not work with Winbind, particularly needed when storing profiles remotely</para></listitem>
+	<listitem><para>This mode may open connections to the password server, and keep them open for extended periods.</para></listitem>
+	<listitem><para>Security on the samba server breaks badly when the remote password server suddenly shuts down</para></listitem>
+	<listitem><para>With this mode there is NO security account in the domain that the password server belongs to for the samba server.</para></listitem>
+</itemizedlist>
+
+<para>
+In server level security the samba server reports to the client that it is in user level
+security. The client then does a <emphasis>session setup</emphasis> as described earlier.
+The samba server takes the username/password that the client sends and attempts to login to the
+<emphasis>password server</emphasis> by sending exactly the same username/password that
+it got from the client. If that server is in user level security and accepts the password
+then samba accepts the clients connection. This allows the samba server to use another SMB
+server as the <emphasis>password server</emphasis>.
+</para>
+
+<para>
+You should also note that at the very start of all this, where the server tells the client
+what security level it is in, it also tells the client if it supports encryption. If it
+does then it supplies the client with a random cryptkey. The client will then send all
+passwords in encrypted form. Samba supports this type of encryption by default.
+</para>
+
+<para>
+The parameter <emphasis>security = server</emphasis> means that Samba reports to clients that
+it is running in <emphasis>user mode</emphasis> but actually passes off all authentication
+requests to another <emphasis>user mode</emphasis> server. This requires an additional
+parameter <emphasis>password server</emphasis> that points to the real authentication server.
+That real authentication server can be another Samba server or can be a Windows NT server,
+the later natively capable of encrypted password support.
+</para>
+
+<note><para>
+When Samba is running in <emphasis>server level</emphasis> security it is essential that
+the parameter <emphasis>password server</emphasis> is set to the precise netbios machine
+name of the target authentication server. Samba can NOT determine this from NetBIOS name
+lookups because the choice of the target authentication server arbitrary and can not
+be determined from a domain name. In essence a samba server that is in
+<emphasis>server level</emphasis> security is operating in what used to be known as
+workgroup mode.
+</para></note>
+
+<note><para>
+<emphasis>Server level</emphasis> security is incompatible with what is known as
+<emphasis>schannel</emphasis> or <emphasis>sign and seal</emphasis> protocols. This means that
+if you want to use <emphasis>server</emphasis> level security you must disable the use of
+<emphasis>sign and seal</emphasis> on all machines on your network.
+</para></note>
+
+<sect3>
+<title>Example Configuration</title>
+<para><emphasis>
+Using MS Windows NT as an authentication server
+</emphasis></para>
+
+<para>
+This method involves the additions of the following parameters in the &smb.conf; file:
+</para>
+
+<para><programlisting>
+        encrypt passwords = Yes
+        security = server
+        password server = "NetBIOS_name_of_a_DC"
+</programlisting></para>
+
+
+<para>
+There are two ways of identifying whether or not a username and password pair was valid
+or not. One uses the reply information provided as part of the authentication messaging
+process, the other uses just an error code.
+</para>
+
+<para>
+The down-side of this mode of configuration is the fact that for security reasons Samba
+will send the password server a bogus username and a bogus password and if the remote
+server fails to reject the username and password pair then an alternative mode of
+identification of validation is used. Where a site uses password lock out after a
+certain number of failed authentication attempts this will result in user lockouts.
+</para>
+
+<para>
+Use of this mode of authentication does require there to be a standard Unix account
+for the user, this account can be blocked to prevent logons by other than MS Windows clients.
+</para>
+
+</sect3>
+</sect2>
+
 </sect1>
 
 <sect1>
