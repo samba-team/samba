@@ -159,7 +159,7 @@ struct dcinfo
 
 	fstring remote_machine;  /* Machine name we've authenticated. */
 
-	BOOL challange_sent;
+	BOOL challenge_sent;
 	BOOL got_session_key;
 	BOOL authenticated;
 

@@ -242,7 +242,7 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 
 	memset((char *)p->dc.sess_key, '\0', sizeof(p->dc.sess_key));
 
-	p->dc.challange_sent = True;
+	p->dc.challenge_sent = True;
 	/* set up the LSA REQUEST CHALLENGE response */
 	init_net_r_req_chal(r_u, &p->dc.srv_chal, status);
 	
@@ -274,7 +274,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
-	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
 
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
@@ -336,7 +336,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
-	if (p->dc.challange_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
+	if (p->dc.challenge_sent && get_md4pw((char *)p->dc.md4pw, mach_acct)) {
 		
 		/* from client / server challenges and md4 password, generate sess key */
 		cred_session_key(&p->dc.clnt_chal, &p->dc.srv_chal,
