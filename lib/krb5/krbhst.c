@@ -239,6 +239,26 @@ krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host,
 }
 
 /*
+ * create a getaddrinfo `hints' based on 
+ */
+
+static void
+make_hints(struct addrinfo *hints, int proto)
+{
+    memset(hints, 0, sizeof(*hints));
+    hints->ai_family = AF_UNSPEC;
+    switch(proto) {
+    case KRB5_KRBHST_UDP :
+	hints->ai_socktype = SOCK_DGRAM;
+	break;
+    case KRB5_KRBHST_HTTP :
+    case KRB5_KRBHST_TCP :
+	hints->ai_socktype = SOCK_STREAM;
+	break;
+    }
+}
+
+/*
  * return an `struct addrinfo *' in `ai' corresponding to the information
  * in `host'.  free:ing is handled by krb5_krbhst_free.
  */
@@ -252,17 +272,7 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
     int ret;
 
     if (host->ai == NULL) {
-	memset (&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	switch(host->proto) {
-	case KRB5_KRBHST_UDP :
-	    hints.ai_socktype = SOCK_DGRAM;
-	    break;
-	case KRB5_KRBHST_HTTP :
-	case KRB5_KRBHST_TCP :
-	    hints.ai_socktype = SOCK_STREAM;
-	    break;
-	}
+	make_hints(&hints, host->proto);
 	snprintf (portstr, sizeof(portstr), "%d", host->port);
 	ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
 	if (ret)
@@ -317,12 +327,22 @@ config_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
     krb5_config_free_strings(hostlist);
 }
 
-static void
+/*
+ * as a fallback, look for `serv_string.kd->realm' (typically
+ * kerberos.REALM, kerberos-1.REALM, ...
+ * `def_port' is the default port for the service, and `proto' the 
+ * protocol
+ */
+
+static krb5_error_code
 fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd, 
-		   const char *serv_string, int def_port)
+		   const char *serv_string, int def_port, int proto)
 {
     char *host;
-    struct dns_reply *r;
+    int ret;
+    struct addrinfo *ai;
+    struct addrinfo hints;
+    char portstr[NI_MAXSERV];
 
     if(kd->fallback_count == 0)
 	asprintf(&host, "%s.%s.", serv_string, kd->realm);
@@ -330,18 +350,34 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	asprintf(&host, "%s-%d.%s.", 
 		 serv_string, kd->fallback_count, kd->realm);	    
 
-    r = dns_lookup(host, "A");
-    if(r == NULL)
-	r = dns_lookup(host, "CNAME");
-    if(r == NULL) {
+    if (host == NULL)
+	return ENOMEM;
+    
+    make_hints(&hints, proto);
+    snprintf(portstr, sizeof(portstr), "%d", def_port);
+    ret = getaddrinfo(host, portstr, &hints, &ai);
+    if (ret) {
 	/* no more hosts, so we're done here */
 	free(host);
 	kd->flags |= KD_FALLBACK;
     } else {
-	host[strlen(host) - 1] = '\0';
-	append_host_string(context, kd, host, def_port);
+	struct krb5_krbhst_info *hi;
+
+	hi = calloc(1, sizeof(*hi) + strlen(host));
+	if(hi == NULL) {
+	    free(host);
+	    return ENOMEM;
+	}
+
+	hi->proto = proto;
+	hi->port  = hi->def_port = def_port;
+	hi->ai    = ai;
+	strcpy(hi->hostname, host);
+	free(host);
+	append_host_hostinfo(kd, hi);
 	kd->fallback_count++;
     }
+    return 0;
 }
 
 static krb5_error_code
@@ -349,6 +385,7 @@ kdc_get_next(krb5_context context,
 	     struct krb5_krbhst_data *kd,
 	     krb5_krbhst_info **host)
 {
+    krb5_error_code ret;
     int port = ntohs(krb5_getportbyname (context, "kerberos", "udp", 88));
 
     if((kd->flags & KD_CONFIG) == 0) {
@@ -384,7 +421,10 @@ kdc_get_next(krb5_context context,
     }
 
     while((kd->flags & KD_FALLBACK) == 0) {
-	fallback_get_hosts(context, kd, "kerberos", port);
+	ret = fallback_get_hosts(context, kd, "kerberos",
+				 port, KRB5_KRBHST_UDP);
+	if(ret)
+	    return ret;
 	if(get_next(kd, host))
 	    return 0;
     }
@@ -397,6 +437,7 @@ admin_get_next(krb5_context context,
 	       struct krb5_krbhst_data *kd,
 	       krb5_krbhst_info **host)
 {
+    krb5_error_code ret;
     int port = ntohs(krb5_getportbyname (context, "kerberos-adm", "tcp", 749));
 
     if((kd->flags & KD_CONFIG) == 0) {
@@ -420,7 +461,10 @@ admin_get_next(krb5_context context,
 
     if (krbhst_empty(kd)
 	&& (kd->flags & KD_FALLBACK) == 0) {
-	fallback_get_hosts(context, kd, "kerberos", port);
+	ret = fallback_get_hosts(context, kd, "kerberos",
+				 port, KRB5_KRBHST_UDP);
+	if(ret)
+	    return ret;
 	kd->flags |= KD_FALLBACK;
 	if(get_next(kd, host))
 	    return 0;
