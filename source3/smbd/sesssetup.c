@@ -213,7 +213,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 send a security blob via a session setup reply
 ****************************************************************************/
 static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob, NTSTATUS errcode)
+				 DATA_BLOB blob, NTSTATUS nt_status)
 {
 	char *p;
 
@@ -222,60 +222,65 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
 	   that we aren't finished yet */
 
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(errcode));
+	nt_status = nt_status_squash(nt_status);
+	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
 	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
 	SSVAL(outbuf, smb_vwv3, blob.length);
 	p = smb_buf(outbuf);
 	memcpy(p, blob.data, blob.length);
-	p += blob.length;
-	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-	set_message_end(outbuf,p);
+
+	add_signature(outbuf);
 	
 	return send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
-send an NTLMSSP blob via a session setup reply, wrapped in SPNEGO
-****************************************************************************/
-static BOOL reply_spnego_ntlmssp_blob(connection_struct *conn, char *outbuf,
-					 DATA_BLOB *ntlmssp_blob, NTSTATUS errcode) 
+ send a session setup reply, wrapped in SPNEGO.
+ get vuid and check first.
+ end the NTLMSSP exchange context if we are OK/complete fail
+***************************************************************************/
+static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
+				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
+				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
 	DATA_BLOB response;
-        response = spnego_gen_auth_response(ntlmssp_blob);
-	reply_sesssetup_blob(conn, outbuf, response, errcode);
+	struct auth_serversupplied_info *server_info;
+	server_info = (*auth_ntlmssp_state)->server_info;
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		nt_status = do_map_to_guest(nt_status, 
+					    &server_info, 
+					    (*auth_ntlmssp_state)->ntlmssp_state->user, 
+					    (*auth_ntlmssp_state)->ntlmssp_state->domain);
+	}
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		int sess_vuid;
+		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user /* check this for weird */);
+		
+		if (sess_vuid == -1) {
+			nt_status = NT_STATUS_LOGON_FAILURE;
+		} else {
+			
+			set_message(outbuf,4,0,True);
+			SSVAL(outbuf, smb_vwv3, 0);
+			
+			if ((*auth_ntlmssp_state)->server_info->guest) {
+				SSVAL(outbuf,smb_vwv2,1);
+			}
+			
+			SSVAL(outbuf,smb_uid,sess_vuid);
+		}
+	}
+
+        response = spnego_gen_auth_response(ntlmssp_blob, nt_status);
+	reply_sesssetup_blob(conn, outbuf, response, nt_status);
 	data_blob_free(&response);
-	return True;
-}
 
-/****************************************************************************
- send an OK via a session setup reply, wrapped in SPNEGO.
- get vuid and check first.
-****************************************************************************/
-static BOOL reply_spnego_ntlmssp_ok(connection_struct *conn, char *outbuf,
-				    AUTH_NTLMSSP_STATE *auth_ntlmssp_state) 
-{
-	int sess_vuid;
-	DATA_BLOB null_blob = data_blob(NULL, 0);
-
-	sess_vuid = register_vuid(auth_ntlmssp_state->server_info, auth_ntlmssp_state->ntlmssp_state->user /* check this for weird */);
-
-	if (sess_vuid == -1) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		auth_ntlmssp_end(&global_ntlmssp_state);
 	}
 
-	set_message(outbuf,4,0,True);
-	SSVAL(outbuf, smb_vwv3, 0);
-
-	if (auth_ntlmssp_state->server_info->guest) {
-		SSVAL(outbuf,smb_vwv2,1);
-	}
-
-	add_signature(outbuf);
- 
-	SSVAL(outbuf,smb_uid,sess_vuid);
-	reply_spnego_ntlmssp_blob(conn, outbuf, &null_blob, NT_STATUS_OK);
 	return True;
 }
 
@@ -291,7 +296,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	char *OIDs[ASN1_MAX_OIDS];
 	DATA_BLOB secblob;
 	int i;
-	DATA_BLOB chal, spnego_chal;
+	DATA_BLOB chal;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
 
@@ -333,41 +338,13 @@ static int reply_spnego_negotiate(connection_struct *conn,
 
 	data_blob_free(&secblob);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest(nt_status, 
-					    &global_ntlmssp_state->server_info, 
-					    global_ntlmssp_state->ntlmssp_state->user, 
-					    global_ntlmssp_state->ntlmssp_state->domain);
-	}
-	
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		if (!spnego_gen_challenge(&spnego_chal, &chal, NULL)) {
-			DEBUG(3,("Failed to generate challenge\n"));
-			data_blob_free(&chal);
-			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-		}
-
-		/* now tell the client to send the auth packet */
-		reply_sesssetup_blob(conn, outbuf, spnego_chal, nt_status);
+	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+			     &chal, nt_status);
 		
-		data_blob_free(&chal);
-		data_blob_free(&spnego_chal);
+	data_blob_free(&chal);
 
-		/* and tell smbd that we have already replied to this packet */
-		return -1;
-
-	} else if (NT_STATUS_IS_OK(nt_status)) {
-		reply_spnego_ntlmssp_ok(conn, outbuf, 
-						 global_ntlmssp_state);
-		auth_ntlmssp_end(&global_ntlmssp_state);
-
-		/* and tell smbd that we have already replied to this packet */
-		return -1;
-	} 
-
-	auth_ntlmssp_end(&global_ntlmssp_state);
-
-	return ERROR_NT(nt_status_squash(nt_status));
+	/* already replied */
+	return -1;
 }
 
 	
@@ -389,58 +366,17 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	}
 
 	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
-					auth, &auth_reply);
+					  auth, &auth_reply);
 
 	data_blob_free(&auth);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		reply_spnego_ntlmssp_ok(conn, outbuf, 
-					global_ntlmssp_state);
-		auth_ntlmssp_end(&global_ntlmssp_state);
-		data_blob_free(&auth_reply);
-
-	} else { /* !NT_STATUS_IS_OK(nt_status) */
-		auth_ntlmssp_end(&global_ntlmssp_state);
-		return ERROR_NT(nt_status_squash(nt_status));
-	}
+	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+			     &auth_reply, nt_status);
+		
+	data_blob_free(&auth_reply);
 
 	/* and tell smbd that we have already replied to this packet */
 	return -1;
-}
-
-
-/****************************************************************************
-reply to a session setup spnego anonymous packet
-****************************************************************************/
-static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *outbuf,
-				  int length, int bufsize)
-{
-	int sess_vuid;
-	auth_serversupplied_info *server_info = NULL;
-	NTSTATUS nt_status;
-
-	nt_status = check_guest_password(&server_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ERROR_NT(nt_status_squash(nt_status));
-	}
-
-	sess_vuid = register_vuid(server_info, lp_guestaccount());
-
-	free_server_info(&server_info);
-  
-	if (sess_vuid == -1) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	set_message(outbuf,4,0,True);
-	SSVAL(outbuf, smb_vwv3, 0);
-	add_signature(outbuf);
- 
-	SSVAL(outbuf,smb_uid,sess_vuid);
-	SSVAL(inbuf,smb_uid,sess_vuid);
-	
-	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
 
@@ -454,6 +390,7 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	uint8 *p;
 	DATA_BLOB blob1;
 	int ret;
+	size_t bufrem;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -464,12 +401,13 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 	p = (uint8 *)smb_buf(inbuf);
 
 	if (SVAL(inbuf, smb_vwv7) == 0) {
-		/* an anonymous request */
-		return reply_spnego_anonymous(conn, inbuf, outbuf, length, bufsize);
+		/* an invalid request */
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+	bufrem = smb_bufrem(inbuf, p);
 	/* pull the spnego blob */
-	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
+	blob1 = data_blob(p, MIN(bufrem, SVAL(inbuf, smb_vwv7)));
 
 #if 0
 	file_save("negotiate.dat", blob1.data, blob1.length);

@@ -275,10 +275,6 @@ NTSTATUS ntlmssp_auth(NTLMSSP_STATE *ntlmssp_state,
 
 	nt_status = ntlmssp_state->check_password(ntlmssp_state);
 	
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-
 	*reply = data_blob(NULL, 0);
 
 	return nt_status;
