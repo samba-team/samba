@@ -146,8 +146,10 @@ mcc_close(krb5_context context,
     if (--m->refcnt != 0)
 	return 0;
 
-    if (MISDEAD(m))
+    if (MISDEAD(m)) {
+	free (m->name);
 	krb5_data_free(&id->data);
+    }
 
     return 0;
 }
@@ -185,13 +187,6 @@ mcc_destroy(krb5_context context,
 	}
 	m->creds = NULL;
     }
-
-    if (--m->refcnt != 0)
-	return 0;
-
-    free (m->name);
-    krb5_data_free(&id->data);
-
     return 0;
 }
 
