@@ -1050,15 +1050,12 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		printf("Credential chaining failed\n");
 	}
 
-	password = generate_random_str(mem_ctx, 8);
-	E_md4hash(password, r.in.new_password.data);
-
-	creds_des_encrypt(&creds, &r.in.new_password);
-
-	/* by changing the machine password twice we test the credentials
-	   chaining fully */
+	/* by changing the machine password twice we test the
+	   credentials chaining fully, and we verify that the server
+	   allows the password to be set to the same value twice in a
+	   row (match win2k3) */
 	printf("Testing a second ServerPasswordSet on machine account\n");
-	printf("Changing machine account password to '%s'\n", password);
+	printf("Changing machine account password to '%s' (same as pervsious run)\n", password);
 
 	creds_client_authenticator(&creds, &r.in.credential);
 

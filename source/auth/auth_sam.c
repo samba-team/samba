@@ -183,13 +183,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	uint_t ret_domain;
 
 	const char *domain_dn;
+	const char *domain_sid;
 
 	NTSTATUS nt_status;
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
 	uint8 *lm_pwd, *nt_pwd;
-
-	struct dom_sid *domain_sid;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
 			       "userAccountControl",
@@ -228,28 +227,27 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
-	domain_sid = dom_sid_parse_talloc(mem_ctx, samdb_result_string(msgs[0], "objectSid", NULL));
+	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	sid_split_rid(domain_sid, NULL);
-
 	/* find the domain's DN */
 	ret_domain = samdb_search(sam_ctx, mem_ctx, NULL, &msgs_domain, domain_attrs,
 			   "(&(objectSid=%s)(objectclass=domain))", 
-			   dom_sid_string(mem_ctx, domain_sid));
+			   domain_sid);
 
 	if (ret_domain == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
-			 dom_sid_string(mem_ctx, domain_sid)));
+			 domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ret_domain > 1) {
-		DEBUG(1,("Found %d records matching domain [%s]\n", ret_domain, dom_sid_string(mem_ctx, domain_sid)));
+		DEBUG(1,("Found %d records matching domain [%s]\n", 
+			 ret_domain, domain_sid));
 		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
