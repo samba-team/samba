@@ -1756,6 +1756,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 {
 	uint32 sec_offset;
 	prs_struct *ps=&buffer->prs;
+	int i = 0;
 
 	prs_debug(ps, depth, desc, "new_smb_io_printer_info_2");
 	depth++;	
@@ -1790,7 +1791,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!new_smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
-	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, NULL, &sec_offset))
+	if (!prs_uint32_pre("secdesc_ptr ", ps, depth, &i, &sec_offset))
 		return False;
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
@@ -1810,7 +1811,7 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
 		return False;
 
-	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps) : 0 ))
+	if (!prs_uint32_post("secdesc_ptr", ps, depth, &i, sec_offset, info->secdesc ? prs_offset(ps) : 0 ))
 		return False;
 
 	if (!sec_io_desc("secdesc", &info->secdesc, ps, depth)) 
@@ -1834,6 +1835,32 @@ BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *i
 	if (!prs_uint32("flags", ps, depth, &info->flags))
 		return False;
 	if (!sec_io_desc("sec_desc", &info->secdesc, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Parse a PRINTER_INFO_3 structure.
+********************************************************************/  
+BOOL new_smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!new_smb_io_relstr("port_name", buffer, depth, &info->port_name))
+		return False;
+	if (!new_smb_io_relstr("monitor_name", buffer, depth, &info->monitor_name))
+		return False;
+	if (!new_smb_io_relstr("description", buffer, depth, &info->description))
+		return False;
+	if (!prs_uint32("port_type", ps, depth, &info->port_type))
+		return False;
+	if (!prs_uint32("reserved", ps, depth, &info->reserved))
 		return False;
 
 	return True;
@@ -2772,6 +2799,23 @@ BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u, uint32 flags,
 	
 	q_u->servername_ptr = (servername != NULL) ? 1 : 0;
 	init_unistr2(&(q_u->servername), servername, strlen(servername));
+
+	q_u->level=level;
+	q_u->buffer=buffer;
+	q_u->offered=offered;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+BOOL make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u, 
+				fstring servername, uint32 level, 
+				NEW_BUFFER *buffer, uint32 offered)
+{
+	q_u->name_ptr = (servername != NULL) ? 1 : 0;
+	init_buf_unistr2(&q_u->name, &q_u->name_ptr, servername);
 
 	q_u->level=level;
 	q_u->buffer=buffer;
@@ -4240,11 +4284,9 @@ BOOL make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u,
                                 fstring servername, fstring env_name, uint32 level,
                                 NEW_BUFFER *buffer, uint32 offered)
 {
-        q_u->name_ptr = (servername != NULL) ? 1 : 0;
-        init_unistr2(&(q_u->name), servername, strlen(servername));
+	init_buf_unistr2(&q_u->name, &q_u->name_ptr, servername);
 
-        q_u->environment_ptr = (env_name != NULL) ? 1 : 0;
-        init_unistr2(&(q_u->environment), env_name, strlen(env_name));
+	init_buf_unistr2(&q_u->environment, &q_u->environment_ptr, env_name);
 
         q_u->level=level;
         q_u->buffer=buffer;
