@@ -1,0 +1,172 @@
+#!/usr/bin/make -f
+# Made with the iad of dh_make, by Craig Small
+# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
+# Also some stuff taken from debmake scripts, by Cristopt Lameter.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+BVARS = BASEDIR=/usr \
+		LIBDIR=/etc/samba \
+		SMB_PASSWD_FILE=/etc/samba/smbpasswd \
+		SMBLOGFILE=/var/log/smb NMBLOGFILE=/var/log/nmb \
+		LOCKDIR=/var/samba \
+		SWATDIR=/usr/share/samba/swat
+
+DESTDIR=`pwd`/debian/tmp
+SWATDIR=`pwd`/debian/swat
+
+IVARS = BASEDIR=$(DESTDIR)/usr \
+		BINDIR=$(DESTDIR)/usr/bin \
+		SBINDIR=$(DESTDIR)/usr/sbin \
+		MANDIR=$(DESTDIR)/usr/share/man \
+		LIBDIR=$(DESTDIR)/etc/samba \
+		VARDIR=$(DESTDIR)/var/samba \
+		SWATDIR=$(SWATDIR)/usr/share/samba/swat
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+	# Compile the Samba package first
+	[ -f source/Makefile ] || (cd source && ./configure --prefix=/usr --exec-prefix=/usr --with-netatalk --with-smbmount --with-smbwrapper)
+	$(MAKE) -C source $(BVARS) all smbtorture rpctorture debug2html
+
+	# Now compile the old smbfs package
+	$(MAKE) -C source/smbfs-2.0.x
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp install-stamp
+
+	# Clean first the Samba package
+#	-$(MAKE) -C source realclean
+	-$(MAKE) -C source distclean
+#	-$(MAKE) -C source clean
+	rm -f source/bin/{rpctorture,smbtorture,debug2html}
+
+	# Now clean the old smbfs-2.0.x package
+	-$(MAKE) -C source/smbfs-2.0.x clean
+
+	dh_clean
+
+install: install-stamp
+install-stamp: build-stamp
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/tmp.
+	$(MAKE) -C source install $(IVARS)
+
+	# Install other stuff not installed by "make install"
+	install -m 0755 source/script/mksmbpasswd.sh $(DESTDIR)/usr/sbin/mksmbpasswd
+	install -m 0755 source/bin/smbtorture $(DESTDIR)/usr/bin/
+	install -m 0755 debian/sambaconfig $(DESTDIR)/usr/sbin/
+	install -m 0755 source/smbadduser $(DESTDIR)/usr/sbin/
+
+	# Install man pages for files without man pages in the upstream dist.
+	install -m 0644 debian/sambaconfig.8 $(DESTDIR)/usr/share/man/man8/sambaconfig.8
+	install -m 0644 debian/addtosmbpass.8 $(DESTDIR)/usr/share/man/man8/addtosmbpass.8
+	install -m 0644 debian/mksmbpasswd.8 $(DESTDIR)/usr/share/man/man8/mksmbpasswd.8
+
+	# Delete unwanted stuff leftover from "make install"
+
+	# smbrun is not longer needed by smbd, so delete its man page
+	rm $(DESTDIR)/usr/share/man/man1/smbrun.1
+
+	# We need to rename the SMB mount utilities so they don't have the same
+	#	names as the files in the smbfs package.
+	mv $(DESTDIR)/usr/bin/smbmount $(DESTDIR)/usr/bin/smbmount-2.2.x
+	mv $(DESTDIR)/usr/bin/smbumount $(DESTDIR)/usr/bin/smbumount-2.2.x
+	mv $(DESTDIR)/usr/share/man/man8/smbmount.8 $(DESTDIR)/usr/share/man/man8/smbmount-2.2.x.8
+	mv $(DESTDIR)/usr/share/man/man8/smbumount.8 $(DESTDIR)/usr/share/man/man8/smbumount-2.2.x.8
+
+	# These files are not part of the main samba package, move to where they
+	#	belong...
+	mv $(DESTDIR)/usr/bin/smbwrapper.so debian/smbwrapper/usr/share/samba/
+
+	# The smbmnt, smbmount-2.2.x and smbumount-2.2.x binaries must 
+	#	be setuid-root.
+	chmod u+s $(DESTDIR)/usr/bin/smbmnt $(DESTDIR)/usr/bin/smbmount-2.2.x $(DESTDIR)/usr/bin/smbumount-2.2.x
+
+	# Install samba-common's conffiles
+	cp debian/smb.conf $(DESTDIR)/etc/samba/
+
+
+	# OK, now it's time to install the smbfs-2.0.2 files
+	$(MAKE) -C source/smbfs-2.0.x install $(IVARS)
+
+	# Rename the old smbfs utilities to more convenient names
+	mv $(DESTDIR)/usr/bin/smbmount $(DESTDIR)/usr/bin/smbmount-2.0.x
+	mv $(DESTDIR)/usr/bin/smbumount $(DESTDIR)/usr/bin/smbumount-2.0.x
+	mv $(DESTDIR)/usr/share/man/man8/smbmount.8 $(DESTDIR)/usr/share/man/man8/smbmount-2.0.x.8
+	mv $(DESTDIR)/usr/share/man/man8/smbumount.8 $(DESTDIR)/usr/share/man/man8/smbumount-2.0.x.8
+
+	# Now install the smbmount and smbumount wrappers
+	install debian/smbmount.sh $(DESTDIR)/usr/bin/smbmount
+	install debian/smbumount.sh $(DESTDIR)/usr/bin/smbumount
+
+	# Install some docs. that go in "unusual" places
+	cp README-smbmount debian/smbfs/usr/share/doc/smbfs/2.2.x/
+	cp source/smbfs-2.0.x/{FAQ,README,smbfs-2.0.2.lsm,Changes} debian/smbfs/usr/share/doc/smbfs/2.0.x/
+
+	dh_movefiles
+	touch install-stamp
+
+# Build architecture-independent files here.
+binary-indep: build install
+#	dh_testversion
+	dh_testdir -i
+	dh_testroot -i
+	dh_installdocs -i -A docs/textdocs/DIAGNOSIS.txt
+	dh_installexamples -i
+#	dh_installmenu -i
+#	dh_installemacsen -i
+#	dh_installinit -i
+#	dh_installcron -i
+#	dh_installmanpages -i
+	dh_undocumented
+	dh_installchangelogs -i 
+	dh_compress -i
+#	dh_suidregister -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+#	dh_testversion
+	dh_testdir -a
+	dh_testroot -a
+	dh_installdocs -a -A docs/textdocs/DIAGNOSIS.txt
+	dh_installexamples -a
+#	dh_installmenu -a
+#	dh_installemacsen -a
+	dh_installinit -a
+	dh_installcron -a
+#	dh_installmanpages -a
+	dh_undocumented
+	dh_installchangelogs -a 
+	dh_strip -a
+	dh_compress -a
+	dh_suidregister -a
+	dh_fixperms -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+#	dh_makeshlibs -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+source diff:                                                                  
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary

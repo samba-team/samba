@@ -1,0 +1,111 @@
+Source: samba
+Section: net
+Priority: optional
+Maintainer: Eloy A. Paris <peloy@debian.org>
+Standards-Version: 2.4.0.0
+
+Package: samba
+Architecture: any
+Depends: samba-common (= ${Source-Version}), ${shlibs:Depends}
+Replaces: samba-common (<= 2.0.5a-2)
+Suggests: samba-doc
+Description: A LanManager like file and printer server for Unix.
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains all the components necessary to turn your
+ Debian GNU/Linux box into a powerful file and printer server.
+ .
+ As of Samba 2.0.0, the Samba Debian packages consist of the following:
+ .
+ samba - A LanManager like file and printer server for Unix.
+ samba-common - Samba common files used by both the server and the client.
+ smbclient - A LanManager like simple client for Unix.
+ swat - Samba Web Administration Tool
+ samba-doc - Samba documentation.
+ smbfsx - Mount and umount commands for the smbfs and kernels > 2.1.70.
+ smbwrapper - A shared library that provides SMB client services
+
+Package: samba-common
+Architecture: any
+Depends: ${shlibs:Depends}
+Replaces: samba (<= 2.0.5a-2)
+Description: Samba common files used by both the server and the client.
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains the common files that are used by both the server
+ (provided in the samba package) and the client (provided in the smbclient
+ package).
+
+Package: smbclient
+Architecture: any
+Depends: samba-common (= ${Source-Version}), ${shlibs:Depends}
+Description: A LanManager like simple client for Unix.
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains the client components of the Samba suite.
+
+Package: swat
+Architecture: any
+Depends: samba, ${shlibs:Depends}
+Description: Samba Web Administration Tool
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains the components of the Samba suite that are needed
+ for Web administration fo the Samba server.
+
+Package: samba-doc
+Architecture: all
+Description: Samba documentation.
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains all the documentation that comes in the original
+ tarball.
+
+Package: smbfs
+Section: otherosfs
+Priority: optional
+Architecture: any
+Depends: netbase (>= 2.02), samba-common (= ${Source-Version}), ${shlibs:Depends}
+Replaces: smbfsx
+Conflicts: smbfsx
+Description: Mount and umount commands for the smbfs (2.0.x and 2.1.x kernels)
+ Smbfs is a filesystem which understands the SMB protocol.
+ This is the protocol Windows for Workgroups, Windows NT or
+ Lan Manager use to talk to each other. It was inspired by
+ samba, the program by Andrew Tridgell that turns any unix
+ site into a file server for DOS or Windows clients.
+ .
+ Starting with the Debian Samba packages version 2.0.4b-2, the old smbfs
+ utilities for 2.0.x and the new smbfs utilities for 2.2.x kernels have been
+ merged in a single package called smbfs. A wrapper script called smbmount.sh
+ identifies the version of the kernel running and calls the correct binary.
+
+Package: smbwrapper
+Section: otherosfs
+Priority: optional
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: A shared library that provides SMB client services
+ The Samba software suite is a collection of programs that
+ implements the SMB protocol for unix systems, allowing you to serve
+ files and printers to Windows, NT, OS/2 and DOS clients. This protocol
+ is sometimes also referred to as the LanManager or Netbios protocol.
+ .
+ This package contains prelodable shared library that provides SMB client 
+ services for existing executables. Using this you can simulate a smb
+ filesystem.

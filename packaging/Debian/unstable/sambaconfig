@@ -1,0 +1,130 @@
+#!/bin/sh
+#
+#	Written by Eloy A. Paris <peloy@debian.org> for Debian GNU/Linux.
+#
+
+PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+DEBIAN_CONFIG=/etc/samba/debian_config
+
+NMBDPID=/var/state/samba/nmbd.pid
+SMBDPID=/var/state/samba/smbd.pid
+
+if [ ! -f $DEBIAN_CONFIG ]; then
+	echo "The file $DEBIAN_CONFIG does not exist! There is something wrong"
+	echo "with the installation of Samba on this system. Please re-install"
+	echo "Samba."
+	exit 1
+fi
+
+# Read current Samba configuration
+. $DEBIAN_CONFIG
+
+reload=1
+
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		--run-from-inetd)
+			run_from_inetd=1
+			shift
+		;;
+
+		--run-as-daemons)
+			run_from_inetd=0
+			shift
+		;;
+		--no-reload)
+			reload=0
+			shift
+		;;
+
+		*)
+			echo "Usage: $0 [--run-from-inetd|--run-as-daemons] [no-reload]" >&2
+			exit 1
+		;;
+	esac
+done
+
+# Make sure there are no Samba daemons (nmbd or smbd) running
+#
+
+if [ "$run_mode" = "from_inetd" ]; then
+	# Samba is running from inetd - need to disable inetd before
+	#	killing the daemons.
+	update-inetd --disable netbios-ssn
+	update-inetd --disable netbios-ns
+	start-stop-daemon --stop --oknodo --user root --name nmbd --quiet --pidfile $NMBDPID
+	start-stop-daemon --stop --oknodo --user root --name smbd --quiet --pidfile $SMBDPID
+else
+	# Samba is running as daemons
+	/etc/init.d/samba stop
+fi
+
+if [ "x$run_from_inetd" = "x" ]
+then
+	echo "Run Samba as daemons or from inetd?"
+	echo -n "Press 'D' for to run as daemons or 'I' to run from inetd: [I] "
+
+	read mode
+	test -n "$mode" || mode="I"
+
+	case "$mode" in
+		[Dd]*)
+			run_from_inetd=0
+		;;
+
+		*)
+			run_from_inetd=1
+		;;
+	esac
+fi
+
+if [ "$run_from_inetd" = 1 ]; then
+	echo "Samba will run from inetd. Run sambaconfig to reconfigure."
+	echo ""
+	update-inetd --enable netbios-ssn
+	update-inetd --enable netbios-ns
+	run_mode="from_inetd"
+else
+	echo "Samba will run as daemons. Run sambaconfig to reconfigure."
+	echo ""
+	update-inetd --disable netbios-ssn
+	update-inetd --disable netbios-ns
+	run_mode="as_daemons"
+fi
+
+# Rebuild Debian configuration file (only thing that could have
+#	changed so far is the variable called "run_mode".
+
+# Start the Samba daemons (take care of whether the user used the --no-reload
+#	option and how Samba is running: from inetd or as daemons)
+echo "config_version=$config_version" > $DEBIAN_CONFIG
+echo "run_mode=$run_mode" >> $DEBIAN_CONFIG
+echo "smbpasswd_created=$smbpasswd_created" >> $DEBIAN_CONFIG
+
+if [ "$reload" = 0 ]; then
+	echo "Samba will not start (--no-reload parameter provided). Please note"
+	echo "that if you configured Samba to run from inetd, the Samba daemons"
+	echo "will start automatically when there is traffic in the NetBIOS ports"
+elif [ "$run_from_inetd" = 1 ]; then
+	echo "The --no-reload parameter was not provided so I assume you want"
+	echo "to have the Samba daemons started. Since you are running from inetd"
+	echo "the Samba daemosn will start automatically when there is traffic"
+	echo "in the NetBIOS ports."
+else
+	echo -n "The --no-reload parameter was not provided, start Samba now? [Y/n] "
+	read yn
+	test -n "$yn" || yn="Y"
+
+	case "$yn" in
+		[Nn]*)
+			echo "Not started; to start later, do: /etc/init.d/samba start"
+			echo -n "Press [ENTER] "
+			read line
+		;;
+
+		*)
+			/etc/init.d/samba start
+		;;
+	esac
+fi

@@ -1,0 +1,11 @@
+sbin
+usr/bin
+usr/sbin
+var/log/samba
+var/state/samba
+etc/samba
+etc/pam.d
+usr/share
+usr/share/samba
+lib/security
+usr/lib/cups/backend
