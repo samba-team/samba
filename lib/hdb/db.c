@@ -47,6 +47,12 @@ DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
     d->close(d);
+    return 0;
+}
+
+static krb5_error_code
+DB_destroy(krb5_context context, HDB *db)
+{
     free(db->name);
     free(db);
     return 0;
@@ -250,20 +256,32 @@ DB__del(krb5_context context, HDB *db, krb5_data key)
     return 0;
 }
 
-krb5_error_code
-hdb_db_open(krb5_context context, HDB **db, 
-	    const char *filename, int flags, mode_t mode)
+static krb5_error_code
+DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
 {
-    DB *d;
     char *fn;
-    asprintf(&fn, "%s.db", filename);
-    d = dbopen(fn, flags, mode, DB_BTREE, NULL);
+
+    asprintf(&fn, "%s.db", db->name);
+    db->db = dbopen(fn, flags, mode, DB_BTREE, NULL);
     free(fn);
-    if(d == NULL)
+    if(db->db == NULL)
 	return errno;
+    return 0;
+}
+
+krb5_error_code
+hdb_db_create(krb5_context context, HDB **db, 
+	      const char *filename)
+{
     *db = malloc(sizeof(**db));
-    (*db)->db = d;
+    if (*db == NULL)
+	return ENOMEM;
+
+    (*db)->db = NULL;
     (*db)->name = strdup(filename);
+    (*db)->master_key_set = 0;
+    (*db)->openp = 0;
+    (*db)->open  = DB_open;
     (*db)->close = DB_close;
     (*db)->fetch = _hdb_fetch;
     (*db)->store = _hdb_store;
@@ -276,8 +294,8 @@ hdb_db_open(krb5_context context, HDB **db,
     (*db)->_get = DB__get;
     (*db)->_put = DB__put;
     (*db)->_del = DB__del;
+    (*db)->destroy = DB_destroy;
     return 0;
 }
-
 
 #endif

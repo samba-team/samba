@@ -47,6 +47,12 @@ NDBM_close(krb5_context context, HDB *db)
 {
     DBM *d = (DBM*)db->db;
     dbm_close(d);
+    return 0;
+}
+
+static krb5_error_code
+NDBM_destroy(krb5_context context, HDB *db)
+{
     free(db->name);
     free(db);
     return 0;
@@ -209,18 +215,28 @@ NDBM__del(krb5_context context, HDB *db, krb5_data key)
     return 0;
 }
 
+static krb5_error_code
+NDBM_open(krb5_context context, HDB *db, int flags, mode_t mode)
+{
+    db->db = dbm_open((char*)db->name, flags, mode);
+    if(db->db == NULL)
+	return errno;
+    return 0;
+}
 
 krb5_error_code
-hdb_ndbm_open(krb5_context context, HDB **db, 
-	      const char *filename, int flags, mode_t mode)
+hdb_ndbm_create(krb5_context context, HDB **db, 
+		const char *filename)
 {
-    DBM *d;
-    d = dbm_open((char*)filename, flags, mode);
-    if(d == NULL)
-	return errno;
     *db = malloc(sizeof(**db));
-    (*db)->db = d;
+    if (*db == NULL)
+	return ENOMEM;
+
+    (*db)->db = NULL;
     (*db)->name = strdup(filename);
+    (*db)->master_key_set = 0;
+    (*db)->openp = 0;
+    (*db)->open = NDBM_open;
     (*db)->close = NDBM_close;
     (*db)->fetch = _hdb_fetch;
     (*db)->store = _hdb_store;
@@ -233,6 +249,7 @@ hdb_ndbm_open(krb5_context context, HDB **db,
     (*db)->_get = NDBM__get;
     (*db)->_put = NDBM__put;
     (*db)->_del = NDBM__del;
+    (*db)->destroy = NDBM_destroy;
     return 0;
 }
 
