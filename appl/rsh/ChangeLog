@@ -1,3 +1,14 @@
+2002-02-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* rshd.c: make this build without krb5; also use the addrinfo
+	interface to mini_inetd, and set the keepalive option if requested
+
+	* rsh.c: make this build without krb5
+
+	* rsh_locl.h: make this build without krb5
+
+	* common.c: make this build without krb5
+
 2001-11-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* rshd.c: make the syslog messages somewhat more informative
