@@ -141,7 +141,7 @@ void initiate_netbios_packet(uint16 *id,
   
   make_nmb_name(&nmb->question.question_name,name,name_type,scope);
   
-  nmb->question.question_type = 0x20;
+  nmb->question.question_type = quest_type == NMB_STATUS ? 0x21 : 0x20;
   nmb->question.question_class = 0x1;
   
   if (quest_type == NMB_REG ||
