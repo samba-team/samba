@@ -136,15 +136,16 @@ static BOOL net_io_netinfo_1(const char *desc, NETLOGON_INFO_1 *info, prs_struct
 static void init_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
 				uint32 tc_status, const char *trusted_dc_name)
 {
+	int len_dc_name = strlen(trusted_dc_name);
 	info->flags      = flags;
 	info->pdc_status = pdc_status;
 	info->ptr_trusted_dc_name = 1;
 	info->tc_status  = tc_status;
 
 	if (trusted_dc_name != NULL)
-		init_unistr2(&info->uni_trusted_dc_name, trusted_dc_name);
+		init_unistr2(&info->uni_trusted_dc_name, trusted_dc_name, len_dc_name+1);
 	else
-		init_unistr2(&info->uni_trusted_dc_name, "");
+		init_unistr2(&info->uni_trusted_dc_name, "", 1);
 }
 
 /*******************************************************************
@@ -229,7 +230,7 @@ void init_net_q_logon_ctrl2(NET_Q_LOGON_CTRL2 *q_l, const char *srv_name,
 	q_l->query_level = query_level;
 	q_l->switch_value  = 0x01;
 
-	init_unistr2(&q_l->uni_server_name, srv_name);
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
 }
 
 /*******************************************************************
@@ -359,7 +360,7 @@ void init_net_q_logon_ctrl(NET_Q_LOGON_CTRL *q_l, const char *srv_name,
 	q_l->function_code = 0x01; /* ??? */
 	q_l->query_level = query_level;
 
-	init_unistr2(&q_l->uni_server_name, srv_name);
+	init_unistr2(&q_l->uni_server_name, srv_name, strlen(srv_name) + 1);
 }
 
 /*******************************************************************
@@ -446,7 +447,7 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 		fstring domain_name;
 		fstrcpy(domain_name, dom_name);
 		strupper(domain_name);
-		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name);
+		init_unistr2(&r_t->uni_trust_dom_name[i], domain_name, strlen(domain_name)+1);
 		/* the use of UNISTR2 here is non-standard. */
 		r_t->uni_trust_dom_name[i].undoc = 0x1;
 	}
@@ -538,8 +539,8 @@ void init_q_req_chal(NET_Q_REQ_CHAL *q_c,
 
 	q_c->undoc_buffer = 1; /* don't know what this buffer is */
 
-	init_unistr2(&q_c->uni_logon_srv, logon_srv );
-	init_unistr2(&q_c->uni_logon_clnt, logon_clnt);
+	init_unistr2(&q_c->uni_logon_srv, logon_srv , strlen(logon_srv )+1);
+	init_unistr2(&q_c->uni_logon_clnt, logon_clnt, strlen(logon_clnt)+1);
 
 	memcpy(q_c->clnt_chal.data, clnt_chal->data, sizeof(clnt_chal->data));
 
@@ -957,9 +958,9 @@ void init_id_info1(NET_ID_INFO_1 *id, const char *domain_name,
 	init_owf_info(&id->lm_owf, lm_cypher);
 	init_owf_info(&id->nt_owf, nt_cypher);
 
-	init_unistr2(&id->uni_domain_name, domain_name);
-	init_unistr2(&id->uni_user_name, user_name);
-	init_unistr2(&id->uni_wksta_name, wksta_name);
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 }
 
 /*******************************************************************
@@ -1069,9 +1070,9 @@ void init_id_info2(NET_ID_INFO_2 * id, const char *domain_name,
 	init_str_hdr(&id->hdr_nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len, (nt_chal_resp != NULL) ? 1 : 0);
 	init_str_hdr(&id->hdr_lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len, (lm_chal_resp != NULL) ? 1 : 0);
 
-	init_unistr2(&id->uni_domain_name, domain_name);
-	init_unistr2(&id->uni_user_name, user_name);
-	init_unistr2(&id->uni_wksta_name, wksta_name);
+	init_unistr2(&id->uni_domain_name, domain_name, len_domain_name);
+	init_unistr2(&id->uni_user_name, user_name, len_user_name);
+	init_unistr2(&id->uni_wksta_name, wksta_name, len_wksta_name);
 
 	init_string2(&id->nt_chal_resp, (const char *)nt_chal_resp, nt_chal_resp_len, nt_chal_resp_len);
 	init_string2(&id->lm_chal_resp, (const char *)lm_chal_resp, lm_chal_resp_len, lm_chal_resp_len);
@@ -1351,12 +1352,12 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	usr->num_other_sids = num_other_sids;
 	usr->buffer_other_sids = (num_other_sids != 0) ? 1 : 0; 
 	
-	init_unistr2(&usr->uni_user_name, user_name);
-	init_unistr2(&usr->uni_full_name, full_name);
-	init_unistr2(&usr->uni_logon_script, logon_script);
-	init_unistr2(&usr->uni_profile_path, profile_path);
-	init_unistr2(&usr->uni_home_dir, home_dir);
-	init_unistr2(&usr->uni_dir_drive, dir_drive);
+	init_unistr2(&usr->uni_user_name, user_name, len_user_name);
+	init_unistr2(&usr->uni_full_name, full_name, len_full_name);
+	init_unistr2(&usr->uni_logon_script, logon_script, len_logon_script);
+	init_unistr2(&usr->uni_profile_path, profile_path, len_profile_path);
+	init_unistr2(&usr->uni_home_dir, home_dir, len_home_dir);
+	init_unistr2(&usr->uni_dir_drive, dir_drive, len_dir_drive);
 
 	usr->num_groups2 = num_groups;
 
@@ -1367,8 +1368,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 	for (i = 0; i < num_groups; i++) 
 		usr->gids[i] = gids[i];	
 		
-	init_unistr2(&usr->uni_logon_srv, logon_srv);
-	init_unistr2(&usr->uni_logon_dom, logon_dom);
+	init_unistr2(&usr->uni_logon_srv, logon_srv, len_logon_srv);
+	init_unistr2(&usr->uni_logon_dom, logon_dom, len_logon_dom);
 
 	init_dom_sid2(&usr->dom_sid, dom_sid);
 	/* "other" sids are set up above */
@@ -1664,8 +1665,8 @@ BOOL init_net_q_sam_sync(NET_Q_SAM_SYNC * q_s, const char *srv_name,
 {
 	DEBUG(5, ("init_q_sam_sync\n"));
 
-	init_unistr2(&q_s->uni_srv_name, srv_name);
-	init_unistr2(&q_s->uni_cli_name, cli_name);
+	init_unistr2(&q_s->uni_srv_name, srv_name, strlen(srv_name) + 1);
+	init_unistr2(&q_s->uni_cli_name, cli_name, strlen(cli_name) + 1);
 
         if (cli_creds)
                 memcpy(&q_s->cli_creds, cli_creds, sizeof(q_s->cli_creds));
@@ -2841,8 +2842,8 @@ BOOL init_net_q_sam_deltas(NET_Q_SAM_DELTAS *q_s, const char *srv_name,
 {
 	DEBUG(5, ("init_net_q_sam_deltas\n"));
 
-	init_unistr2(&q_s->uni_srv_name, srv_name);
-	init_unistr2(&q_s->uni_cli_name, cli_name);
+	init_unistr2(&q_s->uni_srv_name, srv_name, strlen(srv_name) + 1);
+	init_unistr2(&q_s->uni_cli_name, cli_name, strlen(cli_name) + 1);
 
 	memcpy(&q_s->cli_creds, cli_creds, sizeof(q_s->cli_creds));
 	memset(&q_s->ret_creds, 0, sizeof(q_s->ret_creds));

@@ -666,7 +666,7 @@ static void notify_string(struct spoolss_notify_msg *msg,
 	
 	/* The length of the message includes the trailing \0 */
 
-	init_unistr2(&unistr, msg->notify.data);
+	init_unistr2(&unistr, msg->notify.data, msg->len);
 
 	data->notify_data.data.length = msg->len * 2;
 	data->notify_data.data.string = (uint16 *)talloc(mem_ctx, msg->len * 2);
