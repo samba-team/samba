@@ -115,8 +115,8 @@ int main(int argc, char **argv)
 	cell = strdup(buf);
     }
 #endif
-    if(argv[optind])
-	password = argv[optind];
+    if(argv[0])
+	password = argv[0];
     if(password == NULL){
 	des_read_pw_string(buf, sizeof(buf), "Password: ", 0);
 	password = buf;
