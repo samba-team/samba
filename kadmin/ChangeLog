@@ -1,3 +1,7 @@
+2001-08-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kadmin.c: print help message on bad options
+
 2001-07-31  Assar Westerlund  <assar@sics.se>
 
 	* add-random-users.c (main): handle --version
