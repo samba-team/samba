@@ -703,6 +703,13 @@ int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key)
 	tdb_off rec_ptr;
 	struct list_struct rec;
 	
+        if (tdb == NULL) {
+#ifdef TDB_DEBUG
+            printf("tdb_exists() called with null context\n");
+#endif
+            return 0;
+        }
+
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
