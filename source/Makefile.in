@@ -112,7 +112,8 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/util_str.o lib/util_unistr.o \
 		lib/util_file.o mem_man/mem_man.o \
 		lib/util_sock.o lib/unix_sec_ctxt.o \
-		lib/util_array.o
+		lib/util_array.o \
+		lib/util_hnd.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -126,7 +127,6 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
 
 RPC_SERVER_OBJ = \
 		rpc_server/srv_lsa.o \
-		rpc_server/srv_lsa_hnd.o \
 		rpc_server/srv_netlog.o \
 		rpc_server/srv_pipe_hnd.o \
 		rpc_server/srv_reg.o \

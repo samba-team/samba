@@ -526,6 +526,23 @@ char *fgets_slash(char *s2,int maxlen,FILE *f);
 BOOL file_modified(const char *filename, time_t *lastmodified);
 void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
 
+/*The following definitions come from  lib/util_hnd.c  */
+
+BOOL init_policy_hnd(int num_pol_hnds);
+BOOL open_policy_hnd(POLICY_HND *hnd);
+int find_policy_by_hnd(POLICY_HND *hnd);
+BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
+BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
+BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
+uint32 get_policy_samr_rid(POLICY_HND *hnd);
+BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
+BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
+				void (*free_fn)(struct cli_state *, uint16));
+BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum);
+BOOL close_policy_hnd(POLICY_HND *hnd);
+
 /*The following definitions come from  lib/util_pwdb.c  */
 
 uint32 lookup_wk_group_name(const char *group_name, const char *domain,
@@ -3499,23 +3516,6 @@ uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
 BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
-
-/*The following definitions come from  rpc_server/srv_lsa_hnd.c  */
-
-void init_policy_hnd(int num_pol_hnds);
-BOOL open_policy_hnd(POLICY_HND *hnd);
-int find_policy_by_hnd(POLICY_HND *hnd);
-BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
-BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
-BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-uint32 get_policy_samr_rid(POLICY_HND *hnd);
-BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
-				void (*free_fn)(struct cli_state *, uint16));
-BOOL get_policy_cli_state(POLICY_HND *hnd, struct cli_state **cli, uint16 *fnum);
-BOOL close_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 

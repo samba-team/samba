@@ -101,12 +101,11 @@ static void create_pol_hnd(POLICY_HND *hnd)
 /****************************************************************************
   initialise policy handle states...
 ****************************************************************************/
-void init_policy_hnd(int num_pol_hnds)
+BOOL init_policy_hnd(int num_pol_hnds)
 {
 	bmap = bitmap_allocate(num_pol_hnds);
-	if (!bmap) {
-		exit_server("out of memory in init_policy_hnd\n");
-	}
+	
+	return bmap != NULL;
 }
 
 /****************************************************************************
