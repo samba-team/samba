@@ -53,11 +53,13 @@ static SL_cmd commands[] = {
     { "delete",		del_entry, "delete principal", 	"" },
     { "ext_keytab",	ext_keytab, "ext_keytab principal", "" },
     { "exit",		exit_kdb_edit, "exit", "" },
+    { "database",	set_db, "database [database]", "" },
+    { "db" },
     { NULL,		NULL, NULL,			NULL }
 };
 
 krb5_context context;
-char *database = HDB_DEFAULT_DB;
+char database[256] = HDB_DEFAULT_DB;
 
 int
 help(int argc, char **argv)
@@ -70,6 +72,22 @@ int
 exit_kdb_edit (int argc, char **argv)
 {
     return 1;
+}
+
+int
+set_db(int argc, char **argv)
+{
+    switch(argc){
+    case 1:
+	strcpy(database, HDB_DEFAULT_DB);
+	break;
+    case 2:
+	strcpy(database, argv[1]);
+	break;
+    default:
+	fprintf(stderr, "Usage: database [database]\n");
+    }
+    return 0;
 }
 
 int
