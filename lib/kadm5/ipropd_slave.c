@@ -163,7 +163,7 @@ receive_loop (krb5_context context,
 	op = tmp;
 	krb5_ret_int32 (sp, &len);
 	if (vers <= server_context->log_context.version)
-	    krb5_storage_seek(sp, len, SEEK_CUR);
+	    krb5_storage_seek(sp, len + 8, SEEK_CUR);
     } while(vers <= server_context->log_context.version);
 
     left  = krb5_storage_seek (sp, -16, SEEK_CUR);
