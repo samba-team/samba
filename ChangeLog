@@ -1,3 +1,7 @@
+Wed Oct 15 22:47:31 1997  Assar Westerlund  <assar@sics.se>
+
+	* kuser/klist.c: print year as YYYY iff verbose
+
 Mon Oct 13 17:18:57 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* Release 0.0j
