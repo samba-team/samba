@@ -135,4 +135,6 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 int simple_execvp(const char*, char *const[]);
 int simple_execlp(const char*, ...);
 
+void print_version(const char *);
+
 #endif /* __ROKEN_COMMON_H__ */
