@@ -202,12 +202,12 @@ static BOOL is_mangled_component(const char *name)
 
 	M_DEBUG(0,("is_mangled_component %s ?\n", name));
 
-	/* the best distinguishing characteristic is the ~ */
-	if (name[6] != '~') return False;
-
 	/* check the length */
 	len = strlen(name);
 	if (len > 12 || len < 8) return False;
+
+	/* the best distinguishing characteristic is the ~ */
+	if (len > 7 && name[6] != '~') return False;
 
 	/* check extension */
 	if (len > 8) {
