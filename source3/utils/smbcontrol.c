@@ -193,7 +193,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 			return False;
 		}
 	} else if (strequal(dest,"self")) {
-		pid = getpid();
+		pid = sys_getpid();
 	} else {
 		pid = atoi(dest);
 		if (pid == 0) {

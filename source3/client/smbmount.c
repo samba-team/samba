@@ -145,7 +145,7 @@ static struct cli_state *do_connection(char *the_service)
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) != smb_port) ||
 	    !cli_connect(c, server_n, &ip)) {
-		DEBUG(0,("%d: Connection to %s failed\n", getpid(), server_n));
+		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {
 			cli_shutdown(c);
 		}
@@ -158,7 +158,7 @@ static struct cli_state *do_connection(char *the_service)
 	if (!cli_session_request(c, &calling, &called)) {
 		char *p;
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
-			 getpid(), called.name, cli_errstr(c)));
+			 sys_getpid(), called.name, cli_errstr(c)));
 		cli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
@@ -171,10 +171,10 @@ static struct cli_state *do_connection(char *the_service)
 		return NULL;
 	}
 
-	DEBUG(4,("%d: session request ok\n", getpid()));
+	DEBUG(4,("%d: session request ok\n", sys_getpid()));
 
 	if (!cli_negprot(c)) {
-		DEBUG(0,("%d: protocol negotiation failed\n", getpid()));
+		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -200,24 +200,24 @@ static struct cli_state *do_connection(char *the_service)
 		if (password[0] || !username[0] ||
 				!cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
 			DEBUG(0,("%d: session setup failed: %s\n",
-				getpid(), cli_errstr(c)));
+				sys_getpid(), cli_errstr(c)));
 			cli_shutdown(c);
 			return NULL;
 		}
 		DEBUG(0,("Anonymous login successful\n"));
 	}
 
-	DEBUG(4,("%d: session setup ok\n", getpid()));
+	DEBUG(4,("%d: session setup ok\n", sys_getpid()));
 
 	if (!cli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
-			 getpid(), cli_errstr(c)));
+			 sys_getpid(), cli_errstr(c)));
 		cli_shutdown(c);
 		return NULL;
 	}
 
-	DEBUG(4,("%d: tconx ok\n", getpid()));
+	DEBUG(4,("%d: tconx ok\n", sys_getpid()));
 
 	got_pass = True;
 
@@ -247,12 +247,12 @@ static void smb_umount(char *mount_point)
 	*/
         if (umount(mount_point) != 0) {
                 DEBUG(0,("%d: Could not umount %s: %s\n",
-			 getpid(), mount_point, strerror(errno)));
+			 sys_getpid(), mount_point, strerror(errno)));
                 return;
         }
 
         if ((fd = open(MOUNTED"~", O_RDWR|O_CREAT|O_EXCL, 0600)) == -1) {
-                DEBUG(0,("%d: Can't get "MOUNTED"~ lock file", getpid()));
+                DEBUG(0,("%d: Can't get "MOUNTED"~ lock file", sys_getpid()));
                 return;
         }
 
@@ -260,7 +260,7 @@ static void smb_umount(char *mount_point)
 	
         if ((mtab = setmntent(MOUNTED, "r")) == NULL) {
                 DEBUG(0,("%d: Can't open " MOUNTED ": %s\n",
-			 getpid(), strerror(errno)));
+			 sys_getpid(), strerror(errno)));
                 return;
         }
 
@@ -268,7 +268,7 @@ static void smb_umount(char *mount_point)
 
         if ((new_mtab = setmntent(MOUNTED_TMP, "w")) == NULL) {
                 DEBUG(0,("%d: Can't open " MOUNTED_TMP ": %s\n",
-			 getpid(), strerror(errno)));
+			 sys_getpid(), strerror(errno)));
                 endmntent(mtab);
                 return;
         }
@@ -283,7 +283,7 @@ static void smb_umount(char *mount_point)
 
         if (fchmod (fileno (new_mtab), S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) < 0) {
                 DEBUG(0,("%d: Error changing mode of %s: %s\n",
-			 getpid(), MOUNTED_TMP, strerror(errno)));
+			 sys_getpid(), MOUNTED_TMP, strerror(errno)));
                 return;
         }
 
@@ -291,12 +291,12 @@ static void smb_umount(char *mount_point)
 
         if (rename(MOUNTED_TMP, MOUNTED) < 0) {
                 DEBUG(0,("%d: Cannot rename %s to %s: %s\n",
-			 getpid(), MOUNTED, MOUNTED_TMP, strerror(errno)));
+			 sys_getpid(), MOUNTED, MOUNTED_TMP, strerror(errno)));
                 return;
         }
 
         if (unlink(MOUNTED"~") == -1) {
-                DEBUG(0,("%d: Can't remove "MOUNTED"~", getpid()));
+                DEBUG(0,("%d: Can't remove "MOUNTED"~", sys_getpid()));
                 return;
         }
 }
@@ -319,7 +319,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 	while (1) {
 		if ((fd = open(mount_point, O_RDONLY)) < 0) {
 			DEBUG(0,("mount.smbfs[%d]: can't open %s\n",
-				 getpid(), mount_point));
+				 sys_getpid(), mount_point));
 			break;
 		}
 
@@ -339,7 +339,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		res = ioctl(fd, SMB_IOC_NEWCONN, &conn_options);
 		if (res != 0) {
 			DEBUG(0,("mount.smbfs[%d]: ioctl failed, res=%d\n",
-				 getpid(), res));
+				 sys_getpid(), res));
 			close(fd);
 			break;
 		}
@@ -381,7 +381,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 			setup_logging("mount.smbfs", False);
 			append_log = True;
 			reopen_logs();
-			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, getpid()));
+			DEBUG(0, ("mount.smbfs: entering daemon mode for service %s, pid=%d\n", the_service, sys_getpid()));
 
 			closed = 1;
 		}
@@ -391,13 +391,13 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 		while (!c) {
 			CatchSignal(SIGUSR1, &usr1_handler);
 			pause();
-			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", getpid()));
+			DEBUG(2,("mount.smbfs[%d]: got signal, getting new socket\n", sys_getpid()));
 			c = do_connection(the_service);
 		}
 	}
 
 	smb_umount(mount_point);
-	DEBUG(2,("mount.smbfs[%d]: exit\n", getpid()));
+	DEBUG(2,("mount.smbfs[%d]: exit\n", sys_getpid()));
 	exit(1);
 }
 

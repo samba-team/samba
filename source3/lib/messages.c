@@ -335,7 +335,7 @@ void message_dispatch(void)
 		if (!n_handled) {
 			DEBUG(5,("message_dispatch: warning: no handlers registed for "
 				 "msg_type %d in pid%d\n",
-				 msg_type, getpid()));
+				 msg_type, sys_getpid()));
 		}
 		SAFE_FREE(buf);
 	}

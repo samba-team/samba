@@ -293,7 +293,7 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 	fstring keystr;
 	TDB_DATA key;
 	TDB_DATA data;
-	pid_t updating_pid = getpid();
+	pid_t updating_pid = sys_getpid();
 
 	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", printer_name);
     	key.dptr = keystr;
