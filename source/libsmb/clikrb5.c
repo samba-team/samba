@@ -442,8 +442,6 @@ failed:
 	krb5_error_code err;
 	BOOL ret = False;
 
-	memset(session_key, 0, 16);
-
 	if (remote)
 		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
 	else
