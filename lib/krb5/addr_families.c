@@ -394,7 +394,8 @@ krb5_anyaddr (int af,
 }
 
 krb5_error_code
-krb5_print_address (const krb5_address *addr, char *str, int len, int *ret_len)
+krb5_print_address (const krb5_address *addr, 
+		    char *str, size_t len, size_t *ret_len)
 {
     struct addr_operations *a = find_atype(addr->addr_type);
 
