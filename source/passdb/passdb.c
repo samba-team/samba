@@ -308,6 +308,10 @@ struct smb_passwd *pwdb_smb_map_names(struct smb_passwd *smb)
 
 	if (!sid_front_equal(&global_sam_sid, &gmep.sid))
 	{
+		fstring sid_str;
+		sid_to_string(sid_str, &gmep.sid);
+		DEBUG(0,("UNIX User %s Primary Group is in the wrong domain! %s\n",
+		          smb->unix_name, sid_str));
 		return NULL;
 	}
 
