@@ -996,9 +996,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 		case 0x1:
 		case 0x2:
 		case 0x4:
-			if (enum_context!=0 && info->disp_info.user_dbloaded==False)
-				return NT_STATUS_UNSUCCESSFUL;
-	
 			become_root();		
 			r_u->status=load_sampwd_entries(info, acb_mask);
 			unbecome_root();
@@ -1009,9 +1006,6 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 			break;
 		case 0x3:
 		case 0x5:
-			if (enum_context!=0 && info->disp_info.group_dbloaded==False)
-				return NT_STATUS_UNSUCCESSFUL;
-
 			r_u->status = load_group_domain_entries(info, &info->sid);
 			if (NT_STATUS_IS_ERR(r_u->status))
 				return r_u->status;
