@@ -43,7 +43,7 @@ RCSID("$Id$");
 static void
 set_funcs(kadm5_server_context *c)
 {
-#define SET(C, F) (C)->funcs.F = kadm5 ## _s_ ## F
+#define SET(C, F) (C)->funcs.F = kadm5_s_ ## F
     SET(c, chpass_principal);
     SET(c, chpass_principal);
     SET(c, create_principal);
@@ -58,6 +58,118 @@ set_funcs(kadm5_server_context *c)
     SET(c, rename_principal);
 }
 
+struct database_spec {
+    char *dbpath;
+    char *logfile;
+    char *mkeyfile;
+    char *aclfile;
+};
+
+static void
+set_field(krb5_context context, krb5_config_binding *binding, 
+	  const char *dbname, const char *name, const char *ext, 
+	  char **variable)
+{
+    const char *p;
+    p = krb5_config_get_string(context, binding, name, NULL);
+    if(p)
+	*variable = strdup(p);
+    else {
+	p = strrchr(dbname, '.');
+	if(p == NULL)
+	    asprintf(variable, "%s.%s", dbname, ext);
+	else
+	    asprintf(variable, "%.*s.%s", (int)(p - dbname), dbname, ext);
+    }
+}
+
+static void
+set_socket_name(const char *dbname, struct sockaddr_un *un)
+{
+    const char *p;
+    memset(un, 0, sizeof(*un));
+    un->sun_family = AF_UNIX;
+    p = strrchr(dbname, '.');
+    if(p == NULL)
+	snprintf(un->sun_path, sizeof(un->sun_path), "%s.signal", 
+		 dbname);
+    else
+	snprintf(un->sun_path, sizeof(un->sun_path), "%.*s.signal", 
+		 (int)(p - dbname), dbname);
+}
+
+static void
+set_config(kadm5_server_context *ctx,
+	   krb5_config_binding *binding)
+{
+    const char *p;
+    if(ctx->config.dbname == NULL) {
+	p = krb5_config_get_string(ctx->context, binding, "dbname", NULL);
+	if(p)
+	    ctx->config.dbname = strdup(p);
+	else
+	    ctx->config.dbname = strdup(HDB_DEFAULT_DB);
+    }
+    if(ctx->log_context.log_file == NULL)
+	set_field(ctx->context, binding, ctx->config.dbname, 
+		  "log_file", "log", &ctx->log_context.log_file);
+    set_socket_name(ctx->config.dbname, &ctx->log_context.socket_name);
+    if(ctx->config.acl_file == NULL)
+	set_field(ctx->context, binding, ctx->config.dbname, 
+		  "acl_file", "acl", &ctx->config.acl_file);
+    /* XXX calling a file a `stash file' isn't very clever */
+    if(ctx->config.stash_file == NULL)
+	set_field(ctx->context, binding, ctx->config.dbname, 
+		  "mkey_file", "mkey", &ctx->config.stash_file);
+}
+
+static kadm5_ret_t
+find_db_spec(kadm5_server_context *ctx)
+{
+    krb5_config_binding *top_binding = NULL;
+    krb5_config_binding *db_binding;
+    krb5_config_binding *default_binding = NULL;
+    krb5_context context = ctx->context;
+
+    while((db_binding = krb5_config_get_next(context, NULL, &top_binding, 
+					     krb5_config_list, 
+					     "kdc", 
+					     "database",
+					     NULL))) {
+	const char *p;
+	p = krb5_config_get_string(context, db_binding, "realm", NULL);
+	if(p == NULL) {
+	    if(default_binding) {
+		krb5_warnx(context, "WARNING: more than one realm-less "
+			   "database specification");
+		krb5_warnx(context, "WARNING: using the first encountered");
+	    } else
+		default_binding = db_binding;
+	    continue;
+	}
+	if(strcmp(ctx->config.realm, p) != 0)
+	    continue;
+	
+	set_config(ctx, db_binding);
+	return 0;
+    }
+    if(default_binding)
+	set_config(ctx, default_binding);
+    else {
+	ctx->config.dbname = strdup(HDB_DEFAULT_DB);
+	ctx->config.acl_file = HDB_DB_DIR "/kadmind.acl";
+	ctx->config.stash_file = HDB_DB_DIR "/m-key";
+	ctx->log_context.log_file = HDB_DB_DIR "/log";
+	memset(&ctx->log_context.socket_name, 0, 
+	       sizeof(ctx->log_context.socket_name));
+	ctx->log_context.socket_name.sun_family = AF_UNIX;
+	strlcpy(ctx->log_context.socket_name.sun_path, 
+		KADM5_LOG_SIGNAL, 
+		sizeof(ctx->log_context.socket_name.sun_path));
+    }
+    return 0;
+}
+
 kadm5_ret_t
 _kadm5_s_init_context(kadm5_server_context **ctx, 
 		      kadm5_config_params *params,
@@ -70,48 +182,37 @@ _kadm5_s_init_context(kadm5_server_context **ctx,
     set_funcs(*ctx);
     (*ctx)->context = context;
     initialize_kadm5_error_table_r(&context->et_list);
-#if 0
 #define is_set(M) (params->mask & KADM5_CONFIG_ ## M)
     if(is_set(REALM))
-	ctx->config.realm = strdup(params->realm);
+	(*ctx)->config.realm = strdup(params->realm);
     else
-	krb5_get_default_realm(ctx->context, &ctx->config.realm);
-    if(is_set(PROFILE)) 
-	ctx->config.params = strdup(params->profile);
-    
-    if(is_set(KADMIND_PORT))
-	ctx->config.kadmind_port = params->kadmind_port;
-    else
-	ctx->config.kadmind_port = 749;
-    if(is_set(ADMIN_SERVER))
-	ctx->config.admin_server = strdup(params->admin_server);
+	krb5_get_default_realm(context, &(*ctx)->config.realm);
     if(is_set(DBNAME))
-	ctx->config.dbname = strdup(params->dbname);
-    if(is_set(ADBNAME))
-	ctx->config.adbname = strdup(params->adbname);
-    if(is_set(ADB_LOCKFILE))
-	ctx->config.adb_lockfile = strdup(params->adb_lockfile);
+	(*ctx)->config.dbname = strdup(params->dbname);
     if(is_set(ACL_FILE))
-	ctx->config.acl_file = strdup(params->acl_file);
-    if(is_set(DICT_FILE))
-	ctx->config.dict_file = strdup(params->dict_file);
-    if(is_set(ADMIN_KEYTAB))
-	ctx->config.admin_keytab = strdup(params->admin_keytab);
-    if(is_set(MKEY_FROM_KEYBOARD))
-	ctx->config.mkey_from_keyboard = params->mkey_from_keyboard;
+	(*ctx)->config.acl_file = strdup(params->acl_file);
     if(is_set(STASH_FILE))
-	ctx->config.stash_file = strdup(params->stash_file);
-    if(is_set(MKEY_NAME))
-	ctx->config.mkey_name = strdup(params->mkey_name);
+	(*ctx)->config.stash_file = strdup(params->stash_file);
     
-    krb5_enctype enctype;
-    krb5_deltat max_life;
-    krb5_deltat max_rlife;
-    krb5_timestamp expiration;
-    krb5_flags flags;
-    krb5_key_salt_tuple *keysalts;
-    krb5_int32 num_keysalts;
-#endif    
+    find_db_spec(*ctx);
+    
+    /* PROFILE can't be specified for now */
+    /* KADMIND_PORT is supposed to be used on the server also, 
+       but this doesn't make sense */
+    /* ADMIN_SERVER is client only */
+    /* ADNAME is not used at all (as far as I can tell) */
+    /* ADB_LOCKFILE ditto */
+    /* DICT_FILE */
+    /* ADMIN_KEYTAB */
+    /* MKEY_FROM_KEYBOARD is not supported */
+    /* MKEY_NAME neither */
+    /* ENCTYPE */
+    /* MAX_LIFE */
+    /* MAX_RLIFE */
+    /* EXPIRATION */
+    /* FLAGS */
+    /* ENCTYPES */
+
     return 0;
 }
 
