@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,15 @@
 
 #define IPROP_NAME "iprop"
 
-enum iprop_cmd { I_HAVE = 1, FOR_YOU = 2 };
+#define IPROP_SERVICE "iprop"
+
+#define IPROP_PORT 2121
+
+enum iprop_cmd { I_HAVE = 1,
+		 FOR_YOU = 2,
+		 TELL_YOU_EVERYTHING = 3,
+		 ONE_PRINC = 4,
+		 NOW_YOU_HAVE = 5
+};
 
 #endif /* __IPROP_H__ */
