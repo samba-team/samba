@@ -188,7 +188,8 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 	int i;
 	int ret;
 	const char *target = tree->u.simple.value.data;
-	static int list_union(struct dn_list *, const struct dn_list *);
+	static int list_union(struct ldb_context *, 
+			      struct dn_list *, const struct dn_list *);
 
 	list->count = 0;
 	list->dn = NULL;
@@ -214,7 +215,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 						*list = list2;
 						ret = 1;
 					} else {
-						list_union(list, &list2);
+						list_union(ldb, list, &list2);
 						dn_list_free(ldb, &list2);
 					}
 				}
