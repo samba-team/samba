@@ -800,6 +800,8 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 
 	if (pull->offset != pull->data_size) {
 		DEBUG(0,("Warning! %d unread bytes\n", pull->data_size - pull->offset));
+		status = NT_STATUS_INFO_LENGTH_MISMATCH;
+		goto failed;
 	}
 
 failed:
