@@ -226,7 +226,9 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 		return NT_STATUS_OK;
 	}
 
-	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+	if (!enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	info->disp_info.num_group_account=group_entries;
 
@@ -688,8 +690,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		struct sys_grent *grp;
 		struct passwd *pw;
 		gid_t winbind_gid_low, winbind_gid_high;
-	
-		lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
+		BOOL winbind_groups_exist = lp_winbind_gid(&winbind_gid_low, &winbind_gid_high);
 
 		/* local aliases */
 		/* we return the UNIX groups here.  This seems to be the right */
@@ -719,24 +720,15 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 				continue;
 
 			/* Don't return winbind groups as they are not local! */
-			if ((grp->gr_gid >= winbind_gid_low)&&(grp->gr_gid <= winbind_gid_high)) {
+			if (winbind_groups_exist && (grp->gr_gid >= winbind_gid_low)&&(grp->gr_gid <= winbind_gid_high)) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, not local.\n", smap.nt_name ));
 				continue;
 			}
 
 			/* Don't return user private groups... */
-			
-			/* 
-			 *  We used to do a Get_Pwnam() here, but this has been
-			 * trimmed back to the common case for private groups
-			 * to save lookups and to use the _alloc interface.
-			 *
-			 * This also matches the group mapping code
-			 */
 
-			if ((pw = getpwnam_alloc(smap.nt_name)) != 0) {
+			if ((pw = Get_Pwnam(smap.nt_name)) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
-				passwd_free(&pw);
 				continue;			
 			}
 
