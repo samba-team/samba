@@ -369,7 +369,7 @@ unsigned int bswap32(unsigned int);
 #endif
 
 #ifndef HAVE_BSWAP16
-unsiged short bswap16(unsigned short);
+unsigned short bswap16(unsigned short);
 #endif
 
 #ifndef HAVE_FLOCK
