@@ -43,3 +43,27 @@ NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr,
 	NDR_CHECK(ndr_push_bytes(ndr, r->data, 20));
 	return NT_STATUS_OK;
 }
+
+
+/*
+  push a buffer of bytes
+*/
+NTSTATUS ndr_push_uint8_buf(struct ndr_push *ndr, int ndr_flags,
+			    struct uint8_buf *buf)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, buf->size));
+	NDR_CHECK(ndr_push_bytes(ndr, buf->data, buf->size));
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a buffer of bytes
+*/
+NTSTATUS ndr_pull_uint8_buf(struct ndr_pull *ndr, int ndr_flags, 
+			    struct uint8_buf *buf)
+{
+	NDR_CHECK(ndr_pull_uint32(ndr, &buf->size));
+	NDR_ALLOC_SIZE(ndr, buf->data, buf->size);
+	NDR_CHECK(ndr_pull_bytes(ndr, buf->data, buf->size));
+	return NT_STATUS_OK;
+}

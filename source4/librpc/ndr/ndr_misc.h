@@ -24,3 +24,9 @@
 struct policy_handle {
 	char data[20];
 };
+
+/* A buffer of uint8s */
+struct uint8_buf {
+	uint32 size;
+	uint8 *data;
+};
