@@ -23,6 +23,12 @@ extern pstring myhostname;
 extern pstring global_myname;
 extern int DEBUGLEVEL;
 
+/*
+ * Next two lines needed for SunOS and don't
+ * hurt anything else...
+ */
+extern char *optarg;
+extern int optind;
 
 /*********************************************************
 a strdup with exit
@@ -254,12 +260,6 @@ handle password changing for root
 *************************************************************/
 static int process_root(int argc, char *argv[])
 {
-	/*
-	 * Next two lines needed for SunOS and don't
-	 * hurt anything else...
-	 */
-	extern char *optarg;
-	extern int optind;
 	struct passwd  *pwd;
 	int ch;
 	BOOL joining_domain = False;
@@ -449,12 +449,6 @@ handle password changing for non-root
 *************************************************************/
 static int process_nonroot(int argc, char *argv[])
 {
-	/*
-	 * Next two lines needed for SunOS and don't
-	 * hurt anything else...
-	 */
-    extern char *optarg;
-    extern int optind;
 	struct passwd  *pwd = NULL;
 	int ch;
 	BOOL stdin_passwd_get = False;

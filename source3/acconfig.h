@@ -48,6 +48,7 @@
 #undef HAVE_NETMASK_IFREQ
 #undef HAVE_NETMASK_AIX
 #undef HAVE_CRYPT
+#undef HAVE_PUTPRPWNAM
 #undef WITH_MMAP
 #undef WITH_SYSLOG
 #undef WITH_SSL

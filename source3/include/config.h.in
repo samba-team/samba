@@ -105,6 +105,7 @@
 #undef HAVE_NETMASK_IFREQ
 #undef HAVE_NETMASK_AIX
 #undef HAVE_CRYPT
+#undef HAVE_PUTPRPWNAM
 #undef WITH_MMAP
 #undef WITH_SYSLOG
 #undef WITH_SSL
@@ -630,6 +631,9 @@
 /* Define if you have the <net/if.h> header file.  */
 #undef HAVE_NET_IF_H
 
+/* Define if you have the <net/route.h> header file.  */
+#undef HAVE_NET_ROUTE_H
+
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
@@ -647,6 +651,9 @@
 
 /* Define if you have the <rpc/auth.h> header file.  */
 #undef HAVE_RPC_AUTH_H
+
+/* Define if you have the <rpc/clnt.h> header file.  */
+#undef HAVE_RPC_CLNT_H
 
 /* Define if you have the <rpc/rpc.h> header file.  */
 #undef HAVE_RPC_RPC_H
