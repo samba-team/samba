@@ -355,8 +355,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 	pkt.u.bind_ack.ctx_list[0].result = result;
 	pkt.u.bind_ack.ctx_list[0].reason = reason;
-	GUID_from_string(uuid, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
-	pkt.u.bind_ack.ctx_list[0].syntax.major_version = if_version;
+	GUID_from_string(NDR_GUID, &pkt.u.bind_ack.ctx_list[0].syntax.uuid);
+	pkt.u.bind_ack.ctx_list[0].syntax.major_version = NDR_GUID_VERSION;
 	pkt.u.bind_ack.ctx_list[0].syntax.minor_version = 0;
 	pkt.u.bind_ack.auth_info = data_blob(NULL, 0);
 
