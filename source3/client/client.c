@@ -2499,7 +2499,13 @@ static int do_message_op(void)
 		usage(pname);
 		exit(1);
 	}
-  
+
+	/* FIXME: At the moment, if the user should happen to give the
+	 * options ahead of the service name (in standard Unix
+	 * fashion) then smbclient just spits out the usage message
+	 * with no explanation of what in particular was wrong.  Is
+	 * there any reason we can't just parse out the service name
+	 * and password after running getopt?? -- mbp */
 	if (*argv[1] != '-') {
 		pstrcpy(service,argv[1]);  
 		/* Convert any '/' characters in the service name to '\' characters */
