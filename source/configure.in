@@ -1854,7 +1854,8 @@ AC_ARG_WITH(nisplus-home,
 AC_MSG_CHECKING(whether to use SSL)
 AC_ARG_WITH(ssl,
 [  --with-ssl              Include SSL support (default=no)
-  --with-sslinc=DIR       Where the SSL includes are (defaults to /usr/local/ssl)],
+  --with-sslinc=DIR          Where the SSL includes are (defaults to /usr/local/ssl/include)
+  --with-ssllib=DIR          Where the SSL libraries are (defaults to /usr/local/ssl/lib)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1868,31 +1869,43 @@ AC_ARG_WITH(ssl,
 	yes|no)
 	  echo "configure: warning: --with-sslinc called without argument - will use default" 1>&w
 	  CFLAGS="-I/usr/local/ssl/include $CFLAGS"
-	  LIBS="-lssl -lcrypto $LIBS"
-	  LDFLAGS="=L/usr/local/ssl/lib $LDFLAGS"
-	  AC_DEFINE(SSL_DIR, "/usr/local/ssl")
 	;;
         * )
           CFLAGS="-I${withval} $CFLAGS"
-	  LIBS="-lssl -lcrypto $LIBS"
-  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
-	  AC_DEFINE_UNQUOTED(SSL_DIR, "${withval}", Used for determining the compile time options)
 	;;
 	esac
 
     else
 
 	CFLAGS="-I/usr/local/ssl/include $CFLAGS"   
-	LIBS="-lssl -lcrypto $LIBS"
-	LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
-	AC_DEFINE(SSL_DIR, "/usr/local/ssl")
 
     fi
-    
-    if test ! -d ${withval}; then
-      echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2
-      exit 1
-    fi 
+
+    if test "${with_ssllib+set}" = set; then
+
+	withval="$with_ssllib"
+	case "$withval" in
+	yes|no)
+	  echo "configure: warning: --with-ssllib called without argument - will use default" 1>&w
+	  LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+	;;
+        * )
+  	  LDFLAGS="-L${withval}/lib $LDFLAGS"
+	;;
+	esac
+
+    else
+
+	LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+
+    fi
+
+    LIBS="-lssl -lcrypto $LIBS"
+
+#    if test ! -d ${withval}; then
+#      echo "configure: error: called with --with-ssl, but ssl base directory ${withval} does not exist or is not a directory. Aborting config" 1>&2
+#      exit 1
+#    fi 
 
     CFLAGS="-DHAVE_CRYPT_DECL $CFLAGS"  # Damn, SSLeay defines its own
 
