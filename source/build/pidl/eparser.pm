@@ -592,8 +592,8 @@ sub RewriteC($$$)
 	s/(ndr_pull_([^\)]*?)\(
 	   ndr,\ 
 	   (NDR_[^,]*?),\ 
-	   ([^\(].*?)\);)
-	    /ndr_pull_$2(ndr, $3, get_subtree(tree, \"$2\", ndr, ett_$2), $4);
+	   (&?r->(in|out|)\.?([^\(].*?))\);)
+	    /ndr_pull_$2(ndr, $3, get_subtree(tree, \"$6\", ndr, ett_$2), $4);
 	/smgx;
 
 	# Add proto_tree parameter to pull function prototypes, e.g
