@@ -1,3 +1,7 @@
+Wed Jul  2 23:12:56 1997  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: Set WFLAGS if using gcc
+
 Wed Jul  2 17:47:03 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/asn1/der_put.c (der_put_int): Return size correctly.
