@@ -97,7 +97,7 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		/*
 		 * The line we have should be of the form :-
 		 * 
-		 * username:uid:domainrid1,domainrid2..:aliasrid1,aliasrid2..:
+		 * username:uid:domainrid1,domainrid2..:aliassid1,aliassid2..:
 		 */
 
 		/*
@@ -125,24 +125,6 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		/* Skip the ':' */
 		p++;
 
-		if (grp_rids != NULL && num_grps != NULL)
-		{
-			int i;
-			p = get_numlist(p, grp_rids, num_grps);
-			if (p == NULL)
-			{
-				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
-				return NULL;
-			}
-			for (i = 0; i < (*num_grps); i++)
-			{
-				(*grp_rids)[i] = pwdb_gid_to_group_rid((*grp_rids)[i]);
-			}
-		}
-
-		/* Skip the ':' */
-		p++;
-
 		if (als_rids != NULL && num_alss != NULL)
 		{
 			int i;
@@ -155,6 +137,24 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 			for (i = 0; i < (*num_alss); i++)
 			{
 				(*als_rids)[i] = pwdb_gid_to_alias_rid((*als_rids)[i]);
+			}
+		}
+
+		/* Skip the ':' */
+		p++;
+
+		if (grp_rids != NULL && num_grps != NULL)
+		{
+			int i;
+			p = get_numlist(p, grp_rids, num_grps);
+			if (p == NULL)
+			{
+				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
+				return NULL;
+			}
+			for (i = 0; i < (*num_grps); i++)
+			{
+				(*grp_rids)[i] = pwdb_gid_to_group_rid((*grp_rids)[i]);
 			}
 		}
 
