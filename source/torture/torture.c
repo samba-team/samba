@@ -4215,6 +4215,9 @@ static struct {
 	/* crypto testers */
 	{"CRYPT-NTLMSSP", torture_ntlmssp_self_check, 0},
 
+	/* ldap testers */
+	{"LDAP-BASIC", torture_ldap_basic, 0},
+
 	{NULL, NULL, 0}};
 
 
