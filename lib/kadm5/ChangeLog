@@ -1,3 +1,7 @@
+2001-07-12  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: add required library dependencies
+
 2001-07-03  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (libkadm5clnt_la_LDFLAGS): set version to 6:2:2
