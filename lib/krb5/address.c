@@ -63,6 +63,7 @@ krb5_copy_address(krb5_context context,
 		  krb5_address *outaddr)
 {
     copy_HostAddress(inaddr, outaddr);
+    return 0;
 }
 
 krb5_error_code
