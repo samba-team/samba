@@ -52,7 +52,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	do {
 		/* Get sam handle */
 
-		if ( !NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)) )
+		if ( !NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd)) )
 			return result;
 
 		/* Get domain handle */
@@ -162,7 +162,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	retry = 0;
 	do {
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd)))
 			return result;
 
 		status = cli_samr_open_domain(hnd->cli, mem_ctx,
@@ -227,7 +227,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 
 	retry = 0;
 	do {
-		if ( !NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)) )
+		if ( !NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd)) )
 			return result;
 
 		result = cli_samr_open_domain( hnd->cli, mem_ctx, &hnd->pol, 
@@ -299,7 +299,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 	retry = 0;
 	do {
-		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain->name, &hnd))) {
+		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain, &hnd))) {
 			return result;
 		}
         
@@ -339,7 +339,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 
 	retry = 0;
 	do {
-		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain, &hnd)))
 			return result;
         
 		result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
@@ -408,7 +408,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	do {
 		/* Get sam handle; if we fail here there is no hope */
 		
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd))) 
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd))) 
 			goto done;
 			
 		/* Get domain handle */
@@ -509,7 +509,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	do {
 		/* Get sam handle; if we fail here there is no hope */
 		
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd))) 		
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd))) 		
 			goto done;
 
 		/* Get domain handle */
@@ -597,7 +597,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	retry = 0;
 	do {
 	        /* Get sam handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd)))
 			goto done;
 
 		/* Get domain handle */
@@ -875,7 +875,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 		}
 #endif /* HAVE_LDAP */
 	        /* Get sam handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain, &hnd)))
 			goto done;
 
 		/* Get domain handle */
@@ -931,7 +931,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	retry = 0;
 	do {
-		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(lp_workgroup(), &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(find_our_domain(), &hnd)))
 			goto done;
 
 		result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
@@ -960,7 +960,7 @@ static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
 	retry = 0;
 	do {
 		/* Get lsa handle */
-		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain->name, &hnd)))
+		if (!NT_STATUS_IS_OK(result = cm_get_lsa_handle(domain, &hnd)))
 			goto done;
 
 		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
