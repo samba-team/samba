@@ -143,9 +143,9 @@ proto (int sock, const char *hostname, const char *service)
 
 	authz = ticket->ticket.authorization_data;
 	for (i = 0; i < authz->len; i++) {
-	    printf("\ttype %d, length %d\n",
+	    printf("\ttype %d, length %lu\n",
 		   authz->val[i].ad_type,
-		   authz->val[i].ad_data.length);
+		   (unsigned long)authz->val[i].ad_data.length);
 	}
     }
 
