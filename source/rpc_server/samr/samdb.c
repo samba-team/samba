@@ -524,7 +524,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			int num_nt;
 			num_nt = samdb_result_hashes(mem_ctx, msg, "ntPwdHash", &ntPwdHash);
 			if (num_nt == 0) {
-				nt_pwd = NULL;
+				*nt_pwd = NULL;
 			} else if (num_nt > 1) {
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			} else {
