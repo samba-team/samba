@@ -64,16 +64,25 @@ struct lsa_OpenPolicy2 {
 
 };
 
+struct lsa_SidPtr {
+	struct dom_sid2 *sid;
+};
+
+struct lsa_SidArray {
+	uint32 num_sids;
+	struct lsa_SidPtr *sids;
+};
+
 struct lsa_EnumSids {
 	struct {
 		struct policy_handle *handle;
-		uint32 start_at;
+		uint32 resume_handle;
 		uint32 num_entries;
 	} in;
 
 	struct {
-		uint32 num_entries;
-		struct dom_sid **sids;
+		uint32 resume_handle;
+		struct lsa_SidArray *sids;
 		NTSTATUS result;
 	} out;
 

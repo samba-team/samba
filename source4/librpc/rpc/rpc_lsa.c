@@ -118,17 +118,17 @@ done:
 NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 			     TALLOC_CTX *mem_ctx,
 			     struct policy_handle *handle,
-			     uint32 resume_handle,
-			     uint32 *num_entries,
-			     struct dom_sid ***sids)
+			     uint32 *resume_handle,
+			     uint32 num_entries,
+			     struct lsa_SidArray *sids)
 {
 	struct lsa_EnumSids r;
 	NTSTATUS status;
 
 	/* fill the .in side of the call */
 	r.in.handle = handle;
-	r.in.start_at = 0;
-	r.in.num_entries = *num_entries;
+	r.in.resume_handle = *resume_handle;
+	r.in.num_entries = num_entries;
 
 	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_ENUM_ACCOUNTS, mem_ctx,
@@ -140,8 +140,8 @@ NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 	}
 	
 	/* and extract the .out parameters */
-	*num_entries = r.out.num_entries;
-	*sids = r.out.sids;
+	*resume_handle = r.out.resume_handle;
+	*sids = *r.out.sids;
 	status = r.out.result;
 
 done:

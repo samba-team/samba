@@ -243,6 +243,32 @@ NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 }
 
 /*
+  pull a comformant, variable ucs2 string from the wire into a C string
+*/
+NTSTATUS ndr_pull_unistr(struct ndr_pull *ndr, const char **s)
+{
+	char *ws, *as=NULL;
+	uint32 len1, ofs, len2;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &len1));
+	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
+	NDR_CHECK(ndr_pull_uint32(ndr, &len2));
+	if (len2 > len1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	NDR_ALLOC_N(ndr, ws, (len1+1)*2);
+	NDR_CHECK(ndr_pull_bytes(ndr, ws, len1*2));
+	SSVAL(ws, len1*2, 0);
+	SSVAL(ws, len2*2, 0);
+	pull_ucs2_talloc(ndr->mem_ctx, &as, (const smb_ucs2_t *)ws);
+	if (!as) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*s = as;
+	return NT_STATUS_OK;
+}
+
+/*
   push a 4 byte offset pointer, remembering where we are so we can later fill
   in the correct value
 */
