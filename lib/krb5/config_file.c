@@ -151,25 +151,17 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
 	      char **error_message)
 {
     krb5_config_binding *tmp;
-    char *p1;
+    char *p1, *p2;
     int ret = 0;
 
     p1 = p;
-    while (*p && !isspace((unsigned char)*p))
+    while (*p && *p != '=' && !isspace((unsigned char)*p))
 	++p;
     if (*p == '\0') {
 	*error_message = "no =";
 	return -1;
     }
-    *p = '\0';
-    tmp = malloc(sizeof(*tmp));
-    if (tmp == NULL) {
-	*error_message = "out of memory";
-	return -1;
-    }
-    tmp->name = strdup(p1);
-    tmp->next = NULL;
-    ++p;
+    p2 = p;
     while (isspace((unsigned char)*p))
 	++p;
     if (*p != '=') {
@@ -179,6 +171,14 @@ parse_binding(FILE *f, unsigned *lineno, char *p,
     ++p;
     while(isspace((unsigned char)*p))
 	++p;
+    tmp = malloc(sizeof(*tmp));
+    if (tmp == NULL) {
+	*error_message = "out of memory";
+	return -1;
+    }
+    *p2 = '\0';
+    tmp->name = strdup(p1);
+    tmp->next = NULL;
     if (*p == '{') {
 	tmp->type = krb5_config_list;
 	tmp->u.list = NULL;
@@ -219,13 +219,13 @@ krb5_config_parse_file_debug (const char *fname,
 
     s = NULL;
     b = NULL;
+    *lineno = 0;
     f = fopen (fname, "r");
     if (f == NULL) {
 	*error_message = "cannot open file";
 	return -1;
     }
     *res = NULL;
-    *lineno = 0;
     while (fgets(buf, sizeof(buf), f) != NULL) {
 	char *p;
 
