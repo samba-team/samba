@@ -27,14 +27,22 @@ doit(char *principal, int mod)
 	    fprintf(stderr, "Entry not found in database\n");
 	    return;
 	}else{
-	    krb5_data *realm;
+	    krb5_realm *realm;
 	    
 	    realm = krb5_princ_realm(context, ent.principal);
+#ifdef USE_ASN1_PRINCIPAL
+	    krb5_build_principal(context, &def.principal, 
+				 strlen(*realm),
+				 *realm,
+				 "default",
+				 NULL);
+#else
 	    krb5_build_principal(context, &def.principal, 
 				 realm->length,
 				 realm->data,
 				 "default",
 				 NULL);
+#endif
 	    if(db->fetch(context, db, &def)){
 		/* XXX */
 	    }
@@ -83,11 +91,23 @@ doit(char *principal, int mod)
 	ent.kvno++;
     }
     ent.last_change = time(NULL);
-    krb5_build_principal(context, &ent.changed_by, 
-			 krb5_princ_realm(context, ent.principal)->length,
-			 krb5_princ_realm(context, ent.principal)->data,
-			 "kadmin",
-			 NULL);
+    {
+	krb5_realm *realm = krb5_princ_realm(context, ent.principal);
+	
+#ifdef USE_ASN1_PRINCIPAL
+	krb5_build_principal(context, &ent.changed_by,
+			     strlen(*realm),
+			     *realm,
+			     "kadmin",
+			     NULL);
+#else
+	krb5_build_principal(context, &ent.changed_by, 
+			     krb5_princ_realm(context, ent.principal)->length,
+			     krb5_princ_realm(context, ent.principal)->data,
+			     "kadmin",
+			     NULL);
+#endif
+    }
     err = db->store(context, db, &ent);
     if(err == -1){
 	perror("dbput");
