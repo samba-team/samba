@@ -1794,67 +1794,6 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 }
 
 /****************************************************************************
-****************************************************************************/
-uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
-{
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
-	TDB_DATA kbuf;
-	pstring key;
-	int i;
-	line[0] = '\0';
-
-	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, "WIN40", 0, model);
-	DEBUG(10,("driver key: [%s]\n", key));
-	
-	kbuf.dptr = key;
-	kbuf.dsize = strlen(key)+1;
-	if (!tdb_exists(tdb_drivers, kbuf))
-		return False;
-
-	ZERO_STRUCT(info3);
-	get_a_printer_driver_3(&info3, model, "Windows 4.0", 0);
-	
-	DEBUGADD(10,("info3->name            [%s]\n", info3->name));
-	DEBUGADD(10,("info3->datafile        [%s]\n", info3->datafile));
-	DEBUGADD(10,("info3->helpfile        [%s]\n", info3->helpfile));
-	DEBUGADD(10,("info3->monitorname     [%s]\n", info3->monitorname));
-	DEBUGADD(10,("info3->defaultdatatype [%s]\n", info3->defaultdatatype));
-	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
-		DEBUGADD(10,("info3->dependentfiles  [%s]\n", info3->dependentfiles[i]));
-	}
-	DEBUGADD(10,("info3->environment     [%s]\n", info3->environment));
-	DEBUGADD(10,("info3->driverpath      [%s]\n", info3->driverpath));
-	DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
-
-	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
-	trim_string(info3->driverpath, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->driverpath);
-	pstrcat(line, ":");
-	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->datafile);
-	pstrcat(line, ":");
-	trim_string(info3->helpfile, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->helpfile);
-	pstrcat(line, ":");
-	trim_string(info3->monitorname, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->monitorname);
-	pstrcat(line, ":");
-	pstrcat(line, "RAW");                /*info3->defaultdatatype);*/
-	pstrcat(line, ":");
-
-	for (i=0; info3->dependentfiles && *info3->dependentfiles[i]; i++) {
-		if (i)
-			pstrcat(line, ",");               /* don't end in a "," */
-		trim_string(info3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
-		pstrcat(line, info3->dependentfiles[i]);
-	}
-	
-	SAFE_FREE(info3);
-
-	return True;	
-}
-
-/****************************************************************************
  Debugging function, dump at level 6 the struct in the logs.
 ****************************************************************************/
 
@@ -2839,7 +2778,6 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 		 get_called_name(), sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
-	fstrcpy(info.drivername, lp_printerdriver(snum));
 
 	/* by setting the driver name to an empty string, a local NT admin
 	   can now run the **local** APW to install a local printer driver
