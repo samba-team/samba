@@ -40,6 +40,7 @@
 #define ERRnofids 4 /* Too many open files */
 #define ERRnoaccess 5 /* Access denied */
 #define ERRbadfid 6 /* Invalid fid */
+#define ERRbadmcb 7 /* Memory control blocks destroyed. */
 #define ERRnomem 8 /* Out of memory */
 #define ERRbadmem 9 /* Invalid memory block address */
 #define ERRbadenv 10 /* Invalid environment */
