@@ -325,6 +325,9 @@ if test "$ac_cv_header_netinfo_ni_h" = yes -a "$enable_netinfo" = yes; then
                [Define if you want to use Netinfo instead of krb5.conf.])
 fi
 
+dnl export symbols
+rk_WIN32_EXPORT(BUILD_KRB5_LIB, KRB5_LIB_FUNCTION)
+
 dnl Checks for libraries.
 
 AC_FIND_FUNC_NO_LIBS(logwtmp, util)
