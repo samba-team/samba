@@ -52,8 +52,12 @@ static BOOL cli_receive_smb(struct cli_state *cli)
 	
 	if (ret && cli->use_oplocks) {
 		/* it might be an oplock break request */
-		if (CVAL(cli->inbuf,smb_com) == SMBlockingX) {
+		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
+		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
+		    SVAL(cli->inbuf,smb_vwv7) == 0) {
 			cli_process_oplock(cli);
+			/* try to prevent loops */
+			CVAL(cli->inbuf,smb_com) = 0xFF;
 			goto again;
 		}
 	}
@@ -124,6 +128,12 @@ static void cli_process_oplock(struct cli_state *cli)
 	cli->outbuf = buf;
 
 	fnum = SVAL(cli->inbuf,smb_vwv2);
+
+	/* damn, we really need to keep a record of open files so we
+	   can detect a oplock break and a close crossing on the
+	   wire. for now this swallows the errors */
+	if (fnum == 0) return;
+
         memset(buf,'\0',smb_size);
         set_message(buf,8,0,True);
 
