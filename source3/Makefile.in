@@ -640,7 +640,7 @@ bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 
 bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) @BUILD_POPT@
 
 bin/smbgroupedit: $(SMBGROUPEDIT_OBJ) bin/.dummy
 	@echo Linking $@
