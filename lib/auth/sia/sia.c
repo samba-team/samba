@@ -255,7 +255,7 @@ common_auth(sia_collect_func_t *collect,
 	toinst = "";
 	if(entity->authtype == SIA_A_SUAUTH){
 	    uid_t ouid;
-#ifdef SIAENTITY_HAS_OUID
+#ifdef HAVE_SIAENTITY_OUID
 	    ouid = entity->ouid;
 #else
 	    ouid = getuid();
