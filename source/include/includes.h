@@ -803,6 +803,11 @@ struct functable {
 
 #include "nsswitch/nss.h"
 
+/* forward declaration from printing.h to get around 
+   header file dependencies */
+
+struct printjob;
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
