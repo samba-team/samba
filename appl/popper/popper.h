@@ -173,32 +173,6 @@ typedef enum {                              /*  POP processing states */
                                                 bad happened */
 } state;
 
-typedef struct {                                /*  State information for 
-                                                    each POP command */
-    state       ValidCurrentState;              /*  The operating state of 
-                                                    the command */
-    char   *    command;                        /*  The POP command */
-    int         min_parms;                      /*  Minimum number of parms 
-                                                    for the command */
-    int         max_parms;                      /*  Maximum number of parms 
-                                                    for the command */
-    int         (*function) ();                 /*  The function that process 
-                                                    the command */
-    state       result[2];                      /*  The resulting state after 
-                                                    command processing */
-#define success_state   result[0]               /*  State when a command 
-                                                    succeeds */
-} state_table;
-
-typedef struct {                                /*  Table of extensions */
-    char   *    subcommand;                     /*  The POP XTND subcommand */
-    int         min_parms;                      /*  Minimum number of parms for
-                                                    the subcommand */
-    int         max_parms;                      /*  Maximum number of parms for
-                                                    the subcommand */
-    int         (*function) ();                 /*  The function that processes 
-                                                    the subcommand */
-} xtnd_table;
 
 typedef struct {                                /*  Message information */
     int         number;                         /*  Message number relative to 
@@ -263,6 +237,33 @@ typedef struct  {                               /*  POP parameter block */
     int			permit_passwd;          /*  allow cleartext pwd? */
 #endif
 } POP;
+
+typedef struct {                                /*  State information for 
+                                                    each POP command */
+    state       ValidCurrentState;              /*  The operating state of 
+                                                    the command */
+    char   *    command;                        /*  The POP command */
+    int         min_parms;                      /*  Minimum number of parms 
+                                                    for the command */
+    int         max_parms;                      /*  Maximum number of parms 
+                                                    for the command */
+    int         (*function) ();                 /*  The function that process 
+                                                    the command */
+    state       result[2];                      /*  The resulting state after 
+                                                    command processing */
+#define success_state   result[0]               /*  State when a command 
+                                                    succeeds */
+} state_table;
+
+typedef struct {                                /*  Table of extensions */
+    char   *    subcommand;                     /*  The POP XTND subcommand */
+    int         min_parms;                      /*  Minimum number of parms for
+                                                    the subcommand */
+    int         max_parms;                      /*  Maximum number of parms for
+                                                    the subcommand */
+    int         (*function) ();                 /*  The function that processes 
+                                                    the subcommand */
+} xtnd_table;
 
 int pop_dele(POP *p);
 int pop_dropcopy(POP *p, struct passwd *pwp);

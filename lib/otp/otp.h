@@ -81,7 +81,7 @@ int otp_challenge (OtpContext *ctx, char *user, char *str, size_t len);
 int otp_verify_user (OtpContext *ctx, char *passwd);
 int otp_verify_user_1 (OtpContext *ctx, char *passwd);
 
-void *otp_db_open ();
+void *otp_db_open (void);
 void otp_db_close (void *);
 int otp_put (void *, OtpContext *ctx);
 int otp_get (void *, OtpContext *ctx);

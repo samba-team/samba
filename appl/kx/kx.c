@@ -193,13 +193,13 @@ connect_host (char *host, des_cblock *key, des_key_schedule schedule,
 	  return -1;
      }
      sscanf (tmp, "%u", &display_num);
-     if (krb_net_read (s, xauthfile, sizeof(xauthfile)) != sizeof(xauthfile)) {
+     if (krb_net_read (s, xauthfile, xauthfile_size) != xauthfile_size) {
 	  fprintf (stderr, "%s: read: %s\n", prog,
 		   strerror(errno));
 	  return -1;
      }
 
-     memcpy(key, &cred.session, sizeof(des_cblock));
+     memcpy(key, cred.session, sizeof(des_cblock));
      return s;
 }
 
@@ -376,7 +376,7 @@ doit (char *host, int passivep, int debugp, int tcpp)
 				      tcpp ? &rendez_vous2 : NULL);
 	  if (display_num < 0)
 	       return 1;
-	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
+	  strncpy(xauthfile, tempnam("/tmp", NULL), xauthfile_size);
 	  if (create_and_write_cookie (xauthfile, cookie, cookie_len))
 	      return 1;
 

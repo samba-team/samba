@@ -43,7 +43,7 @@ RCSID("$Id$");
 char *prog;
 
 static void
-usage ()
+usage (void)
 {
   fprintf(stderr,
 	  "Usage: %s [-h] [-r] [-s] [-n count] [-f alg] num seed\n",

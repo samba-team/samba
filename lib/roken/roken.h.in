@@ -43,8 +43,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
 #include "protos.h"
 
@@ -81,6 +85,10 @@ int getdtablesize(void);
 typedef RETSIGTYPE (*SigAction)(/* int??? */);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
+#endif
+
+#ifndef SIG_ERR
+#define SIG_ERR ((RETSIGTYPE (*)())-1)
 #endif
 
 #if !defined(HAVE_STRERROR) && !defined(strerror)

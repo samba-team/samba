@@ -241,7 +241,7 @@ static void talk(int force_erase);
 static unsigned long look(void);
 
 static int
-zrefresh()
+zrefresh(void)
 {
   switch (fork()) {
   case -1:

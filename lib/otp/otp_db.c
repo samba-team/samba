@@ -44,7 +44,7 @@ RCSID("$Id$");
 #include "otp_locl.h"
 
 void *
-otp_db_open ()
+otp_db_open (void)
 {
   int lock;
 

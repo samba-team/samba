@@ -370,7 +370,7 @@ main(int argc, char **argv)
 	}
 #ifdef IP_TOS
 	tos = IPTOS_LOWDELAY;
-	if (setsockopt(0, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
+	if (setsockopt(0, IPPROTO_IP, IP_TOS, (void *)&tos, sizeof(int)) < 0)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
 	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
@@ -383,14 +383,14 @@ main(int argc, char **argv)
 	/*	(void) freopen(_PATH_DEVNULL, "w", stderr); */
 	signal(SIGPIPE, lostconn);
 	signal(SIGCHLD, SIG_IGN);
-	if ((int)signal(SIGURG, myoob) < 0)
+	if (signal(SIGURG, myoob) == SIG_ERR)
 	    syslog(LOG_ERR, "signal: %m");
 
 	auth_init();
 
 	/* Try to handle urgent data inline */
 #ifdef SO_OOBINLINE
-	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (char *)&on,
+	if (setsockopt(0, SOL_SOCKET, SO_OOBINLINE, (void *)&on,
 		       sizeof(on)) < 0)
 		syslog(LOG_ERR, "setsockopt: %m");
 #endif
@@ -822,7 +822,7 @@ set_buffer_size(int fd, int read)
     size_t size = 1048576;
     while(size >= 131072 && 
 	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
-		     (char*)&size, sizeof(size)) < 0)
+		     (void *)&size, sizeof(size)) < 0)
 	size /= 2;
 #endif
 }
@@ -1056,7 +1056,7 @@ getdatasock(char *mode)
 	if (s < 0)
 		goto bad;
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-	    (char *) &on, sizeof(on)) < 0)
+	    (void *) &on, sizeof(on)) < 0)
 		goto bad;
 	/* anchor socket to avoid multi-homing problems */
 	data_source.sin_family = AF_INET;
@@ -1072,7 +1072,7 @@ getdatasock(char *mode)
 	(void) seteuid((uid_t)pw->pw_uid);
 #ifdef IP_TOS
 	on = IPTOS_THROUGHPUT;
-	if (setsockopt(s, IPPROTO_IP, IP_TOS, (char *)&on, sizeof(int)) < 0)
+	if (setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&on, sizeof(int)) < 0)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
 	return (fdopen(s, mode));
@@ -1113,7 +1113,7 @@ dataconn(char *name, off_t size, char *mode)
 		pdata = s;
 #ifdef IP_TOS
 		tos = IPTOS_THROUGHPUT;
-		(void) setsockopt(s, IPPROTO_IP, IP_TOS, (char *)&tos,
+		(void) setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
 		    sizeof(int));
 #endif
 		reply(150, "Opening %s mode data connection for '%s'%s.",

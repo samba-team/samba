@@ -41,9 +41,15 @@
 RCSID("$Id$");
 #endif
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_NETINET_IN_h
 #include <netinet/in.h>
+#endif
 
 #include <errno.h>
 #include <stdio.h>
@@ -54,6 +60,7 @@ RCSID("$Id$");
 #include "base64.h"
 #include "extern.h"
 #include "auth.h"
+#include "krb4.h"
 
 #include <roken.h>
 

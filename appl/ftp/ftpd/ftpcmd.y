@@ -660,8 +660,6 @@ cmd
 rcmd
 	: RNFR check_login_no_guest SP pathname CRLF
 		{
-			char *renamefrom();
-
 			restart_point = (off_t) 0;
 			if ($2 && $4) {
 				fromname = renamefrom($4);
@@ -699,8 +697,6 @@ host_port
 	: NUMBER COMMA NUMBER COMMA NUMBER COMMA NUMBER COMMA
 		NUMBER COMMA NUMBER
 		{
-			char *a;
-
 			data_dest.sin_family = AF_INET;
 			data_dest.sin_port = htons($9 * 256 + $11);
 			data_dest.sin_addr.s_addr = 

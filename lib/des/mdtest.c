@@ -48,7 +48,7 @@ RCSID("$Id$");
 #include <sha.h>
 
 int
-md4_tests ()
+md4_tests (void)
 {
   struct test {
     char *str;
@@ -90,7 +90,7 @@ md4_tests ()
 }
 
 int
-md5_tests ()
+md5_tests (void)
 {
   struct test {
     char *str;
@@ -124,7 +124,7 @@ md5_tests ()
 }
 
 int
-sha_tests ()
+sha_tests (void)
 {
   struct test {
     char *str;
@@ -158,7 +158,7 @@ sha_tests ()
 }
 
 int
-main ()
+main (void)
 {
   return md4_tests() + md5_tests() + sha_tests();
 }

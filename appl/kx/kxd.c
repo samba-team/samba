@@ -71,7 +71,7 @@ fatal (int fd, char *s)
 }
 
 static void
-cleanup()
+cleanup(void)
 {
     if(xauthfile[0])
 	unlink(xauthfile);
@@ -202,7 +202,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
  */
 
 static int
-check_user_console ()
+check_user_console (void)
 {
      struct stat sb;
 
@@ -320,7 +320,7 @@ doit(int sock, int tcpp)
 }
 
 static void
-usage ()
+usage (void)
 {
      fprintf (stderr, "Usage: %s [-i] [-t]\n", prog);
      exit (1);

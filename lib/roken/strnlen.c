@@ -41,6 +41,8 @@
 RCSID("$Id$");
 #endif
 
+#include "roken.h"
+
 int
 strnlen(char *s, int len)
 {
