@@ -277,11 +277,11 @@ main(int argc, char **argv)
 		 "/tmp/ftp_%u", (unsigned)getpid());
 	krb_set_tkt_string(tkfile);
 #endif
-#if defined(KRB4) && defined(KRB5)
-	if(k_hasafs())
-	    k_setpag();
-#endif
     }
+#if defined(KRB4) || defined(KRB5)
+    if(k_hasafs())
+	k_setpag();
+#endif
 
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
