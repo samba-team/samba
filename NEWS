@@ -1,3 +1,8 @@
+Changes in release 0.1d:
+
+ * Support krb5-realm.DOMAIN in DNS
+ * bug fixes
+
 Changes in release 0.1c:
 
  * fix ASN.1 encoding of signed integers
