@@ -1562,16 +1562,21 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		/* this is what NT returns */
 		return WERR_INVALID_ENVIRONMENT;
 	}
+	
+	/* if they said "Windows NT x86", then try for version 2 & 3 */
+	
+	if ( version == 2 )
+		version = DRIVER_ANY_VERSION;
 		
 	ZERO_STRUCT(info);
+	
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	
-
-	if (printer_driver_in_use(arch, driver))
+	if (printer_driver_in_use(info.info_3))
 		return WERR_PRINTER_DRIVER_IN_USE;
 
-	return delete_printer_driver(info.info_3);
+	return delete_printer_driver(info.info_3, False);
 }
 
 /********************************************************************
@@ -1584,6 +1589,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	fstring				arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	int				version;
+	uint32				flags = q_u->delete_flags;
 	
 	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
 	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
@@ -1594,18 +1600,25 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		return WERR_INVALID_ENVIRONMENT;
 	}
 	
-	if (q_u->delete_flags & DPD_DELETE_SPECIFIC_VERSION)
+	if ( flags & DPD_DELETE_SPECIFIC_VERSION )
 		version = q_u->version;
+	else if ( version == 2 )
+		/* if they said "Windows NT x86", then try for version 2 & 3 */
+		version = DRIVER_ANY_VERSION;
 		
 	ZERO_STRUCT(info);
-	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
-		return WERR_UNKNOWN_PRINTER_DRIVER;
 	
+	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) 
+		return WERR_UNKNOWN_PRINTER_DRIVER;
 
-	if (printer_driver_in_use(arch, driver))
+	if ( printer_driver_in_use(info.info_3) )
 		return WERR_PRINTER_DRIVER_IN_USE;
+	
+	if ( printer_driver_files_in_use(info.info_3) )
+		/* no idea of the correct error here */
+		return WERR_ACCESS_DENIED;
 
-	return delete_printer_driver(info.info_3);
+	return delete_printer_driver(info.info_3, True);
 }
 
 
@@ -5869,8 +5882,6 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 {
 	POLICY_HND *handle = &q_u->handle;
 	uint32 jobid = q_u->jobid;
-/*	uint32 level = q_u->level; - notused. */
-/*	JOB_INFO *ctr = &q_u->ctr; - notused. */
 	uint32 command = q_u->command;
 
 	struct current_user user;
@@ -5928,9 +5939,7 @@ static WERROR enumprinterdrivers_level1(fstring servername, fstring architecture
 
 	*returned=0;
 
-#define MAX_VERSION 4
-
-	for (version=0; version<MAX_VERSION; version++) {
+	for (version=0; version<DRIVER_MAX_VERSION; version++) {
 		list=NULL;
 		ndrivers=get_ntdrivers(&list, architecture, version);
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
@@ -6009,9 +6018,7 @@ static WERROR enumprinterdrivers_level2(fstring servername, fstring architecture
 
 	*returned=0;
 
-#define MAX_VERSION 4
-
-	for (version=0; version<MAX_VERSION; version++) {
+	for (version=0; version<DRIVER_MAX_VERSION; version++) {
 		list=NULL;
 		ndrivers=get_ntdrivers(&list, architecture, version);
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
@@ -6091,9 +6098,7 @@ static WERROR enumprinterdrivers_level3(fstring servername, fstring architecture
 
 	*returned=0;
 
-#define MAX_VERSION 4
-
-	for (version=0; version<MAX_VERSION; version++) {
+	for (version=0; version<DRIVER_MAX_VERSION; version++) {
 		list=NULL;
 		ndrivers=get_ntdrivers(&list, architecture, version);
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
