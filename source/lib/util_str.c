@@ -1334,7 +1334,7 @@ char *strstr_m(const char *src, const char *findstr)
 
 	/* for correctness */
 	if (!findstr[0]) {
-		return src;
+		return (char*)src;
 	}
 
 	/* Samba does single character findstr calls a *lot*. */

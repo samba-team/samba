@@ -95,7 +95,12 @@ PRIVS privs[] = {
 	{SE_END,			"",					""}
 };
 
-typedef struct priv_sid_list {
+typedef struct {
+	int count;
+	DOM_SID *list;
+} SID_LIST;
+
+typedef struct {
 	SE_PRIV privilege;
 	SID_LIST sids;
 } PRIV_SID_LIST;

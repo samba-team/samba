@@ -281,10 +281,6 @@ typedef struct sid_info
 
 } DOM_SID;
 
-typedef struct sid_list {
-	uint32 count;
-	DOM_SID *list;
-} SID_LIST;
 
 /*
  * The complete list of SIDS belonging to this user.
