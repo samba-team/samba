@@ -523,49 +523,7 @@ AC_GROK_TYPES([int8_t int16_t int32_t int64_t \
 	u_int8_t u_int16_t u_int32_t u_int64_t \
 	uint8_t uint16_t uint32_t uint64_t])
 
-dnl
-dnl crypto functions tests
-dnl
-
-AC_CHECK_HEADERS([				\
-	openssl/md4.h				\
-	openssl/md5.h				\
-	openssl/sha.h				\
-	openssl/des.h				\
-	openssl/rc4.h				\
-])
-
-AC_FIND_FUNC_NO_LIBS2(MD4_Init, crypto des, [], [], [], [$test_LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(MD5_Init, crypto des, [], [], [], [$test_LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(SHA1_Init, crypto des, [], [], [], [$test_LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(des_cbc_encrypt, crypto des, [], [], [], [$test_LIB_krb4])
-AC_FIND_FUNC_NO_LIBS2(RC4, crypto des, [], [], [], [$test_LIB_krb4])
-if test "$ac_cv_func_des_cbc_encrypt" = "yes" -a \
-"$ac_cv_func_MD4_Init"  = "yes" -a \
-"$ac_cv_func_MD5_Init"  = "yes" -a \
-"$ac_cv_func_SHA1_Init" = "yes" -a \
-"$ac_cv_func_RC4" = "yes"; then
-  DIR_des=''
-  LIB_des=''
-  if test "$krb4_libdir" != "" -a "$ac_cv_funclib_des_cbc_encrypt" = "-ldes"; then
-    LIB_des="-R $krb4_libdir -L$krb4_libdir"
-  fi
-  LIB_des="$LIB_des $ac_cv_funclib_MD4_Init"
-  LIB_des_a="$LIB_des"
-  LIB_des_so="$LIB_des"
-  LIB_des_appl="$LIB_des"
-else
-  DIR_des='des'
-  LIB_des='$(top_builddir)/lib/des/libdes.la'
-  LIB_des_a='$(top_builddir)/lib/des/.libs/libdes.a'
-  LIB_des_so='$(top_builddir)/lib/des/.libs/libdes.so'
-  LIB_des_appl="-ldes"
-fi
-AC_SUBST(DIR_des)
-AC_SUBST(LIB_des)
-AC_SUBST(LIB_des_a)
-AC_SUBST(LIB_des_so)
-AC_SUBST(LIB_des_appl)
+KRB_CRYPTO
 
 KRB_READLINE
 

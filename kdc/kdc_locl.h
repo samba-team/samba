@@ -113,7 +113,7 @@ krb5_error_code do_kaserver (unsigned char*, size_t, krb5_data*, const char*,
 			     struct sockaddr_in*);
 #endif
 
-#ifdef HAVE_OPENSSL_DES_H
+#ifdef HAVE_OPENSSL
 #define des_new_random_key des_random_key
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -131,7 +131,7 @@ struct hostent  *gethostbyname(const char *);
 #include "security.h"
 
 /* des_read_pw_string */
-#ifdef HAVE_OPENSSL_DES_H
+#ifdef HAVE_OPENSSL
 #include <openssl/des.h>
 #else
 #include <des.h>

@@ -421,7 +421,7 @@ create_and_write_cookie (char *xauthfile,
      auth.name_length = strlen(auth.name);
      auth.data_length = cookie_sz;
      auth.data = (char*)cookie;
-#ifdef HAVE_OPENSSL_DES_H
+#ifdef HAVE_OPENSSL
      krb5_generate_random_block (cookie, cookie_sz);
 #else
      des_rand_data (cookie, cookie_sz);

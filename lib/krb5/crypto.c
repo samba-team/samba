@@ -2655,7 +2655,7 @@ krb5_decrypt_EncryptedData(krb5_context context,
  *                                                          *
  ************************************************************/
 
-#ifdef HAVE_OPENSSL_DES_H
+#ifdef HAVE_OPENSSL
 #include <openssl/rand.h>
 
 /* From openssl/crypto/rand/rand_lcl.h */
