@@ -225,9 +225,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 		p++;		/* Go past ':' */
 		if (!isdigit(*p)) {
 			DEBUG(0, ("get_smbpwd_entry: malformed password entry (uid not number)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return NULL;
+			continue;
 		}
 
 		uidval = atoi((char *) p);
@@ -240,9 +238,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 		if (*p != ':')
 		{
 			DEBUG(0, ("get_smbpwd_entry: malformed password entry (no : after uid)\n"));
-			fclose(fp);
-			pw_file_unlock(lockfd);
-			return NULL;
+			continue;
 		}
 
 		if (name != NULL)

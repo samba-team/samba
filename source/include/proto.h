@@ -743,6 +743,7 @@ void write_browse_list(time_t t, BOOL force_write);
 BOOL create_subnets();
 BOOL we_are_a_wins_client();
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
+struct subnet_record *get_next_subnet_maybe_unicast_or_wins_server(struct subnet_record *subrec);
 
 /*The following definitions come from  nmbd_winsproxy.c  */
 
@@ -1485,6 +1486,7 @@ void reset_globals_after_fork();
 char *client_name(void);
 char *client_addr(void);
 char *automount_server(char *user_name);
+char *automount_path(char *user_name);
 void standard_sub_basic(char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 int PutUniCode(char *dst,char *src);

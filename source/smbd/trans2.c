@@ -977,7 +977,7 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
        * Add volume serial number - hash of a combination of
        * the called hostname and the service name.
        */
-      SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ str_checksum(local_machine) );
+      SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
       SCVAL(pdata,l2_vol_cch,volname_len);
       StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
       DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_ctime, volname_len,
@@ -1002,7 +1002,7 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
        * Add volume serial number - hash of a combination of
        * the called hostname and the service name.
        */
-      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ str_checksum(local_machine) );
+      SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ (str_checksum(local_machine)<<16) );
       SIVAL(pdata,12,2*strlen(vname));
       PutUniCode(pdata+18,vname);      
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", strlen(vname),
