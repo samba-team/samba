@@ -74,3 +74,20 @@ NTSTATUS pull_spoolss_JobInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 	}
 	return NT_STATUS_OK;
 }
+
+NTSTATUS pull_spoolss_DriverInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
+				      uint32 level, uint32 count,
+				      union spoolss_DriverInfo **info)
+{
+	int i;
+	struct ndr_pull *ndr;
+	ndr = ndr_pull_init_blob(blob, mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	NDR_ALLOC_N(ndr, *info, count);
+	for (i=0;i<count;i++) {
+		NDR_CHECK(ndr_pull_spoolss_DriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));
+	}
+	return NT_STATUS_OK;
+}
