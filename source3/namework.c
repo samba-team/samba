@@ -263,16 +263,6 @@ static void process_localnet_announce(struct packet_struct *p,uint16 command,cha
      disabling it */
   tell_become_backup();
 #endif
-
-#if 0 /* JRA TEST - I Think this code should not be here */
-  /* get the local_only browse list from the local master and add it 
-     to ours. */
-  if (command == ANN_LocalMasterAnnouncement)
-  {
-    add_browser_entry(serv_name,dgram->dest_name.name_type,
-		      work->work_group,30,p->ip,True);
-  }
-#endif /* END JRA TEST */
 }
 
 /*******************************************************************

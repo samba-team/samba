@@ -237,13 +237,15 @@ uint16 register_vuid(int uid,int gid, char *name,BOOL guest)
   vuser->real_name = Realloc(vuser->real_name, 15);
   strcpy(vuser->real_name, "<Full Name>\0");
   if (lp_unix_realname()) {
-    pwfile=getpwnam(vuser->name);
-    DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
-    real_name_len = strcspn(pwfile->pw_gecos, ",");
-    DEBUG(3, ("Real name length: %d\n", real_name_len));
-    vuser->real_name = (char *)Realloc(vuser->real_name, real_name_len+1);
-    strncpy(vuser->real_name, pwfile->pw_gecos, real_name_len);
-    vuser->real_name[real_name_len]='\0';
+    if((pwfile=getpwnam(vuser->name))!= NULL)
+      {
+      DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->name,pwfile->pw_gecos));
+      real_name_len = strcspn(pwfile->pw_gecos, ",");
+      DEBUG(3, ("Real name length: %d\n", real_name_len));
+      vuser->real_name = (char *)Realloc(vuser->real_name, real_name_len+1);
+      strncpy(vuser->real_name, pwfile->pw_gecos, real_name_len);
+      vuser->real_name[real_name_len]='\0';
+      }
   }
 
   return (uint16)((num_validated_users - 1) + VUID_OFFSET);
