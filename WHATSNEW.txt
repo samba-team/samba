@@ -1,8 +1,129 @@
-              WHAT'S NEW IN Samba 2.2.4  - 2nd May 2002
-              =========================================
+              WHAT'S NEW IN Samba 2.2.5  - 18th June 2002
+              ===========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
+
+There have been several fixes and internal enhancements which include:
+
+* Several compile fixes for Solaris and HP-UX
+* More printing fixes for Windows NT/2k/XP clients
+* Enhanced VFS recycle bin
+* New internal signal handling semantics relating to directory change
+  notification and oplocks
+
+New/Changed parameters in 2.2.5
+--------------------------------
+
+For more information on these parameters, see the man pages for
+smb.conf(5).
+
+Added/changed parameters
+------------------------
+
+* block size = <INTEGER>
+* force unknown acl user = <boolean>
+* mangling method = [hash|hash2]
+
+
+Deprecated Parameters
+---------------------
+
+The following parameters have been marked as deprecated and will be
+removed in Samba 3.0
+
+* strip dot
+* status
+
+
+Removed Parameters
+------------------
+
+  none
+
+
+Changes in 2.2.5
+----------------
+
+See the cvs log for SAMBA_2_2 for more details
+
+1)  Removal of many compiler warnings, incorrect Makefile dependencies,
+    and bad autoconf tests on various platforms--Solaris & HP-UX 10.20
+    being the predominantly reported platforms
+2)  Fixed winbindd crash bug on the IBM s390 running Linux
+3)  Inclusion of enhanced Linux quota support
+4)  Correctly link against Sun LDAP libraries on Solaris 8 (even
+    through there is no apparent SSL support there)
+5)  POSIX conformance patches
+6)  Include new configure --enable-cups option (can also be disabled even
+    if CUPS libraries are installed on the system)
+7)  Set reasonable default for the "passwd program" parameter using an
+    autoconf test
+8)  Added --with-winbind-auth for enabling winbindd_pam_auth_crap() code
+9)  fixed bug to prevent root account from being deleted by the
+    "delete user script"
+10) Inclusion of autoconf script for building VFS modules
+11) Add new extensions to the VFS recycle bin library (see
+    examples/VFS/recycle/README for details)
+12) Include findsmb perl script as part of the "make install" process
+13) Return correct error code for EnumPrinters(PRINTER_ENUM_RMOTE, InfoLevel1)
+    to fix a bug where printers appear at the workgroup level in the Windows
+    NT/2k APW browse list
+14) Added support to nmblookup to return NMB flags (See nmblookup(8) for details)
+15) Fix length bug that caused password changes form Windows NT/2k clients to
+    occasionally fail
+16) Correct false password expiration when using --with-ldapsam caused by missing
+    attributes in the directory
+17) added -S option to smbpasswd for storing the SID from a domain controller
+    as the local machine SID in secrets.tdb.  See the smbpasswd(8) man page for details.
+18) Various fixes for UNIX CIFS extensions
+19) Fix CIDR notation in "hosts allow/deny"
+20) Change semantics of an idle connection--no open files and no open handles;
+    We can idle a connection if there are only open named pipes.  Fixes scalability
+    problem on Samba print servers and NT/2k clients.
+21) Fix germam umlaut problem when returning ACL entries
+22) Return NT_STATUS_OBJECT_NAME_NOT_FOUND not NT_STATUS_NO_SUCH_FILE for ENOENT.
+    This fixes the bug of running the MS access.exe binary and database files
+    from a Samba share documented in the 2.2.4 release
+23) Corrected signal handling relating to
+24) Fix bug in unix_to_nt_time() that appeared on files dated close to Daylight
+    Savings time
+25) Corrected alignment bug in spoolss parsing code which caused Win2k/XP clients
+    not to be able to view printer properties from a Samba host
+26) Correct spoolss parsing bug affecting printing from ACT! 2000 running on
+    Windows 2k/XP clients
+27) Fixed incorrect error check in mod_share_entry()
+28) Allow %S in dfs root paths
+29) Correct bug regarding the use of 'wbinfo -A'
+30) Fix bug in libnss_wins.so on RedHat 7.3 systems
+31) Store the key for a name to sid cache entry in upper case rather than
+    whatever case the request was made in.  This gets rid of duplicate
+    cache entries.
+32) Fix bug causing the pid stored in winbindd's pid file to be the wrong
+    id
+33) Enhanced the error reporting of wbinfo
+34) Parameterize block size on disk size return
+35) Added new parameter to allow incoming ACLs to have owner and group forced
+    to the currently logged in user. This fixes the XCOPY /O problem
+36) Fixed bug in local_change_password() caused by reusing a struct passwd*
+    pointer
+37) Change default value for "ldap port" to 389 if "ldap ssl = no"
+38) Updated HOWTO's, manpages, and general documentation....
+39) Allow root as well as domain admins to open an LDAP connection
+40) Fixed veto files bug with ".*"
+41) Fixed unitialized variable bug in smbpasswd that was causing a random IP address
+    to be used in the connection when joinnig a domain
+42) Fix for joining a domain with a netbios name of 15 characters and pre-creating
+    the account on the DC
+43) Added links to new documentation to SWAT welcome page
+
+
+              =========================================
+
+Older releases notes for 2.2.x distributions follow
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.4 follow :
 
 There have been several fixes and internal enhancements which include:
 
@@ -39,10 +160,10 @@ Added/changed parameters
 * winbind use default domain
 
 
-Depreciated parameters
-----------------------
+Deprecated parameters
+---------------------
 
-The following parameters have been marked as depreciated
+The following parameters have been marked as deprecated
 and will be removed in Samba 3.0
 
 * postscript
@@ -131,24 +252,6 @@ See the cvs log for SAMBA_2_2 for more details
 58) many small documentation updates
 59) removed many compiler warnings
 
-
-
-Known Bugs
-----------
-
-* Under certain conditions when serving the MS Access 2000
-  executable file and an Access database from a Samba share,
-  it is possible to experience data corruption.  This bug does not
-  occur when the database is served from a Samba file share
-  but the Access *.exe is stored on the client's local file system.
-  The exact reason for this bug is unknown at this time.
-
-              =========================================
-
-
-
-
-Older release notes for Samba 2.2.x follow.
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.3a follow :
