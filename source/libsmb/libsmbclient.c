@@ -29,31 +29,31 @@
  */
 
 struct smbc_server {
-  struct smbc_server *next, *prev;
-  struct cli_state cli;
-  dev_t dev;
-  char *server_name;
-  char *share_name;
-  char *workgroup;
-  char *username;
-  BOOL no_pathinfo2;
+	struct smbc_server *next, *prev;
+	struct cli_state cli;
+	dev_t dev;
+	char *server_name;
+	char *share_name;
+	char *workgroup;
+	char *username;
+	BOOL no_pathinfo2;
 };
 
 /* Keep directory entries in a list */
 struct smbc_dir_list {
-  struct smbc_dir_list *next;
-  struct smbc_dirent *dirent;
+	struct smbc_dir_list *next;
+	struct smbc_dirent *dirent;
 };
 
 struct smbc_file {
-  int cli_fd; 
-  int smbc_fd;
-  char *fname;
-  off_t offset;
-  struct smbc_server *srv;
-  BOOL file;
-  struct smbc_dir_list *dir_list, *dir_end, *dir_next;
-  int dir_type, dir_error;
+	int cli_fd; 
+	int smbc_fd;
+	char *fname;
+	off_t offset;
+	struct smbc_server *srv;
+	BOOL file;
+	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
+	int dir_type, dir_error;
 };
 
 int smbc_fstatdir(int fd, struct stat *st); /* Forward decl */
@@ -146,7 +146,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 		username[0] = passwd[0] = domain[0] = 0;
 
 		if (strchr(u, ';')) {
-
+      
 			next_token(&u, domain, ";", sizeof(fstring));
 
 		}
@@ -265,18 +265,18 @@ struct smbc_server *smbc_server(char *server, char *share,
 	}
 
 	/* 
-   * Pick up the auth info here, once we know we need to connect
-   * But only if we do not have a username and password ...
-   */
+	 * Pick up the auth info here, once we know we need to connect
+	 * But only if we do not have a username and password ...
+	 */
 
 	if (!username[0] || !password[0])
 		smbc_auth_fn(server, share, workgroup, sizeof(fstring),
 			     username, sizeof(fstring), password, sizeof(fstring));
 
 	/* 
-   * However, smbc_auth_fn may have picked up info relating to an 
-   * existing connection, so try for an existing connection again ...
-   */
+	 * However, smbc_auth_fn may have picked up info relating to an 
+	 * existing connection, so try for an existing connection again ...
+	 */
 
 	for (srv=smbc_srvs;srv;srv=srv->next) {
 		if (strcmp(server,srv->server_name)==0 &&
@@ -293,9 +293,11 @@ struct smbc_server *smbc_server(char *server, char *share,
   
 	if ((p=strchr(server_n,'#')) && 
 	    (strcmp(p+1,"1D")==0 || strcmp(p+1,"01")==0)) {
+    
 		fstrcpy(group, server_n);
 		p = strchr(group,'#');
 		*p = 0;
+		
 	}
 
 	DEBUG(4,(" -> server_n=[%s] server=[%s]\n", server_n, server));
@@ -341,7 +343,6 @@ struct smbc_server *smbc_server(char *server, char *share,
 	}
 
 	DEBUG(4,(" session setup ok\n"));
-	DEBUG(1,(" share is %s\n", share));
 
 	if (!cli_send_tconX(&c, share, "?????",
 			    password, strlen(password)+1)) {
