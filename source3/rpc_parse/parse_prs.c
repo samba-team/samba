@@ -1101,9 +1101,12 @@ BOOL prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		/* the test of the value of *ptr helps to catch the circumstance
 		   where we have an emtpty (non-existent) string in the buffer */
-		for ( ptr = (uint16 *)q; *ptr && (alloc_len <= max_len); alloc_len++)
+		for ( ptr = (uint16 *)q; *ptr++ && (alloc_len <= max_len); alloc_len++)
 			/* do nothing */ 
 			;
+
+		if (alloc_len < max_len)
+			alloc_len += 1;
 
 		/* should we allocate anything at all? */
 		str->buffer = (uint16 *)prs_alloc_mem(ps,alloc_len * sizeof(uint16));
