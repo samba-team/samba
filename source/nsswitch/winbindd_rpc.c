@@ -510,7 +510,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 /* find the sequence number for a domain */
 
-#ifdef HORRIBLE_LDAP_NATIVE_MODE_HACK
+#ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 #include <ldap.h>
 
 int get_ldap_seq(const char *server, uint32 *seq)
@@ -553,7 +553,7 @@ int get_ldap_seq(const char *server, uint32 *seq)
 		ldap_unbind(ldp);
 	return ret;
 }
-#endif /* HORRIBLE_LDAP_NATIVE_MODE_HACK */
+#endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
@@ -577,14 +577,14 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
 		goto done;
 
-#ifdef HORRIBLE_LDAP_NATIVE_MODE_HACK
+#ifdef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 	{
 		if (get_ldap_seq( inet_ntoa(hnd->cli->dest_ip), seq) == 0) {
 			result = NT_STATUS_OK;
 			goto done;
 		}
 	}
-#endif /* HORRIBLE_LDAP_NATIVE_MODE_HACK */
+#endif /* WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK */
 
 	/* Get domain handle */
 

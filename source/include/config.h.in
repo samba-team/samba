@@ -280,6 +280,7 @@
 #endif
 
 #undef WITH_WINBIND_AUTH_CRAP
+#undef WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

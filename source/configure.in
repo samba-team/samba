@@ -2791,6 +2791,7 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 			AC_MSG_RESULT(no)
 	                ;;
 	  esac ],
+	  AC_MSG_RESULT(no)
 	)
 
 # Check for FreeBSD problem with getgroups
@@ -2812,6 +2813,27 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
 		;;
 	esac
+
+# Check for Horrible winbindd ldap hack.
+
+	AC_MSG_CHECKING(whether to enable winbind ldap hack)
+	AC_ARG_WITH(winbind-ldap-hack,
+	[  --with-winbind-ldap-hack   Enable winbindd_ldap_hack() functionality (default no)],
+	[ 
+	  case "$withval" in
+		yes)
+			AC_DEFINE(WITH_HORRIBLE_LDAP_NATIVE_MODE_HACK)
+			LIBS="$LIBS -lldap";
+			AC_MSG_RESULT(yes)
+			;;
+	        no)
+			AC_MSG_RESULT(no)
+	                ;;
+	  esac ],
+	  AC_MSG_RESULT(no)
+	)
+
+
 else
         AC_MSG_RESULT(no$winbind_no_reason)
 
