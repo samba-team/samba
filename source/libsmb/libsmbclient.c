@@ -79,7 +79,7 @@ static pstring smbc_user;
  * We accept smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]]
  * 
  * smb://       means show all the workgroups
- * smb://name/  means, if name<1D> exists, list servers in workgroup,
+ * smb://name/  means, if name<1D> or name<1B> exists, list servers in workgroup,
  *              else, if name<20> exists, list all shares for server ...
  */
 
@@ -1614,8 +1614,11 @@ int smbc_opendir(const char *fname)
 		}
 
 		/* We have server and share and path empty ... so list the workgroups */
+                /* first try to get the LMB for our workgroup, and if that fails,     */
+                /* try the DMB                                                        */
 
-		if (!resolve_name(lp_workgroup(), &rem_ip, 0x1d)) {
+		if (!(resolve_name(lp_workgroup(), &rem_ip, 0x1d) ||
+                      resolve_name(lp_workgroup(), &rem_ip, 0x1b))) {
       
 			errno = EINVAL;  /* Something wrong with smb.conf? */
 			return -1;
@@ -1628,7 +1631,7 @@ int smbc_opendir(const char *fname)
 
 		if (!name_status_find("*", 0, 0, rem_ip, server)) {
 
-			DEBUG(0,("Could not get the name of local master browser for server %s\n", server));
+			DEBUG(0,("Could not get the name of local/domain master browser for server %s\n", server));
 			errno = EINVAL;
 			return -1;
 
@@ -1683,11 +1686,12 @@ int smbc_opendir(const char *fname)
 	
 			}
 
-			/* Check to see if <server><1D> translates, or <server><20> translates */
+			/* Check to see if <server><1D>, <server><1B>, or <server><20> translates */
 			/* However, we check to see if <server> is an IP address first */
 
 			if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
-			    resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+			    (resolve_name(server, &rem_ip, 0x1d) ||   /* Found LMB */
+                                    resolve_name(server, &rem_ip, 0x1b) )) { /* Found DMB */
 				pstring buserver;
 
 				smbc_file_table[slot]->dir_type = SMBC_SERVER;
@@ -1699,7 +1703,7 @@ int smbc_opendir(const char *fname)
 
 				if (!name_status_find("*", 0, 0, rem_ip, buserver)) {
 
-					DEBUG(0, ("Could not get name of local master browser for server %s\n", server));
+					DEBUG(0, ("Could not get name of local/domain master browser for server %s\n", server));
 					errno = EPERM;  /* FIXME, is this correct */
 					return -1;
 
