@@ -488,8 +488,12 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 						break;
 					}
 					if (!strcmp(oldEntries[i], ktprinc)) {
+						krb5_free_unparsed_name(context, ktprinc);
 						break;
 					}
+				}
+				if (i == found) {
+					krb5_free_unparsed_name(context, ktprinc);
 				}
 			}
 			krb5_free_keytab_entry_contents(context, &kt_entry);

@@ -1003,7 +1003,7 @@ ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 
 uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 {
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 	uint32 kvno = (uint32)-1;      /* -1 indicates a failure */
 	char *filter;
 	const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
@@ -1018,12 +1018,14 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	SAFE_FREE(filter);
 	if (!ADS_ERR_OK(ret) && ads_count_replies(ads, res)) {
 		DEBUG(1,("ads_get_kvno: Computer Account For %s not found.\n", machine_name));
+		ads_msgfree(ads, res);
 		return kvno;
 	}
 
 	dn_string = ads_get_dn(ads, res);
 	if (!dn_string) {
 		DEBUG(0,("ads_get_kvno: out of memory.\n"));
+		ads_msgfree(ads, res);
 		return kvno;
 	}
 	DEBUG(5,("ads_get_kvno: Using: %s\n", dn_string));
@@ -1040,11 +1042,13 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 	if (!ads_pull_uint32(ads, res, "msDS-KeyVersionNumber", &kvno)) {
 		DEBUG(3,("ads_get_kvno: Error Determining KVNO!\n"));
 		DEBUG(3,("ads_get_kvno: Windows 2000 does not support KVNO's, so this may be normal.\n"));
+		ads_msgfree(ads, res);
 		return kvno;
 	}
 
 	/* Success */
 	DEBUG(5,("ads_get_kvno: Looked Up KVNO of: %d\n", kvno));
+	ads_msgfree(ads, res);
 	return kvno;
 }
 
@@ -1058,7 +1062,7 @@ uint32 ads_get_kvno(ADS_STRUCT *ads, const char *machine_name)
 ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machine_name)
 {
 	TALLOC_CTX *ctx;
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 	ADS_MODLIST mods;
 	const char *servicePrincipalName[1] = {NULL};
 	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
@@ -1068,28 +1072,33 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Host Account for %s not found... skipping operation.\n", machine_name));
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Service Principals for %s have NOT been cleared.\n", machine_name));
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	DEBUG(5,("ads_clear_service_principal_names: Host account for %s found\n", machine_name));
 	ctx = talloc_init("ads_clear_service_principal_names");
 	if (!ctx) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	if (!(mods = ads_init_mods(ctx))) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	ret = ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_clear_service_principal_names: Error creating strlist.\n"));
+		ads_msgfree(ads, res);
 		talloc_destroy(ctx);
 		return ret;
 	}
 	dn_string = ads_get_dn(ads, res);
 	if (!dn_string) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	ret = ads_gen_mod(ads, dn_string, mods);
@@ -1097,10 +1106,12 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_clear_service_principal_names: Error: Updating Service Principals for machine %s in LDAP\n",
 			machine_name));
+		ads_msgfree(ads, res);
 		talloc_destroy(ctx);
 		return ret;
 	}
 
+	ads_msgfree(ads, res);
 	talloc_destroy(ctx);
 	return ret;
 }
@@ -1118,7 +1129,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 {
 	ADS_STATUS ret;
 	TALLOC_CTX *ctx;
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 	char *host_spn, *host_upn, *psp1, *psp2;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
@@ -1131,21 +1142,25 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 			machine_name));
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Service Principal '%s/%s@%s' has NOT been added.\n",
 			spn, machine_name, ads->config.realm));
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
 	DEBUG(1,("ads_add_service_principal_name: Host account for %s found\n", machine_name));
 	if (!(ctx = talloc_init("ads_add_service_principal_name"))) {
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
 	name_to_fqdn(my_fqdn, machine_name);
 	if (!(host_spn = talloc_asprintf(ctx, "HOST/%s", my_fqdn))) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 	if (!(host_upn = talloc_asprintf(ctx, "%s@%s", host_spn, ads->config.realm))) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 
@@ -1163,28 +1178,33 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 
 	if (!(mods = ads_init_mods(ctx))) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	ret = ads_add_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ret;
 	}
 	dn_string = ads_get_dn(ads, res);
 	if (!dn_string) {
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	ret = ads_gen_mod(ads, ads_get_dn(ads, res), mods);
+	ret = ads_gen_mod(ads, dn_string, mods);
 	ads_memfree(ads,dn_string);
 	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: Error: Updating Service Principals in LDAP\n"));
 		talloc_destroy(ctx);
+		ads_msgfree(ads, res);
 		return ret;
 	}
 
 	talloc_destroy(ctx);
+	ads_msgfree(ads, res);
 	return ret;
 }
 
@@ -1212,7 +1232,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 	unsigned acct_control;
 	unsigned exists=0;
 	fstring my_fqdn;
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 
 	if (!(ctx = talloc_init("ads_add_machine_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -1318,6 +1338,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *machine_name
 		}
 	}
 done:
+	ads_msgfree(ads, res);
 	talloc_destroy(ctx);
 	return ret;
 }
@@ -1542,7 +1563,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 			  uint32 account_type, const char *org_unit)
 {
 	ADS_STATUS status;
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 	char *machine;
 
 	/* machine name must be lowercase */
@@ -1577,6 +1598,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 	}
 
 	SAFE_FREE(machine);
+	ads_msgfree(ads, res);
 
 	return status;
 }

@@ -420,11 +420,12 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 failed:
 
 	if ( context ) {
-#if 0 	/* JERRY -- disabled since it causes heimdal 0.6.1rc3 to die 
-	   SuSE 9.1 Pro */
+/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
+ JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
+          SuSE 9.1 Pro 
+*/
 		if (ccdef)
 			krb5_cc_close(context, ccdef);
-#endif
 		if (auth_context)
 			krb5_auth_con_free(context, auth_context);
 		krb5_free_context(context);
