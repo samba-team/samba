@@ -28,7 +28,7 @@
  * Define this to get the real SMBCFILE and SMBCSRV structures 
  */
 #define _SMBC_INTERNAL
-#include "libsmbclient.h"
+#include "../include/libsmbclient.h"
 
 struct smbc_compat_fdlist {
 	SMBCFILE * file;
