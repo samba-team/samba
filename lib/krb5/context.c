@@ -334,6 +334,10 @@ static krb5_error_code
 default_etypes(krb5_context context, krb5_enctype **etype)
 {
     krb5_enctype p[] = {
+#ifdef ENABLE_AES
+	ETYPE_AES256_CTS_HMAC_SHA1_96,
+	ETYPE_AES128_CTS_HMAC_SHA1_96,
+#endif
 	ETYPE_DES3_CBC_SHA1,
 	ETYPE_DES3_CBC_MD5,
 	ETYPE_ARCFOUR_HMAC_MD5,
