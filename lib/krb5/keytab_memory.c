@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -73,7 +73,7 @@ mkt_get_name(krb5_context context,
 	     char *name, 
 	     size_t namesize)
 {
-    strncpy(name, "", namesize);
+    strlcpy(name, "", namesize);
     return 0;
 }
 
