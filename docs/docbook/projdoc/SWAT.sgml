@@ -29,11 +29,11 @@ will be lost from the smb.conf file. Additionally, the parameters will be writte
 internal ordering.
 </para>
 
-<para><note>
+<note><para>
 So before using SWAT please be warned - SWAT will completely replace your smb.conf with
 a fully optimised file that has been stripped of all comments you might have placed there
 and only non-default settings will be written to the file.
-</note></para>
+</para></note>
 
 <para>
 SWAT should be installed to run via the network super daemon. Depending on which system
