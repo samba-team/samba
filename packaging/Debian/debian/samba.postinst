@@ -195,7 +195,7 @@ if test "$1" = configure && dpkg --compare-versions "$2" lt 2.0.0final-2 && [ -f
 
 The format of the smbpasswd file (which is used only if you are using
 encrypted passwords) is different in Samba 2.0.0 and above. I will
-covert it to the new format.
+convert it to the new format.
 
 EOF
 

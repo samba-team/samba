@@ -6,3 +6,5 @@ usr/bin/smbmnt
 usr/share/man/man8/smbmount.8
 usr/share/man/man8/smbumount.8
 usr/share/man/man8/smbmnt.8
+usr/share/man/man8/mount.smb.8
+usr/share/man/man8/mount.smbfs.8

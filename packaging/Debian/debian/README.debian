@@ -1,30 +1,30 @@
-samba for DEBIAN
+Samba for Debian
 ----------------
 
-This package was built by me (Eloy Paris <peloy@debian.org>) based on work
-from Bruce Perens <Bruce@Pixar.com>, Andrew Howell <andrew@it.com.au>,
-Klee Dienes <klee@debian.org> and Michael Meskes <meskes@topsystem.de>,
-all previous maintainers of the packages samba and sambades (now merged 
-together - see below).
-
-Password encryption is now supported in the standard samba package
-(>= 1.9.18alpha12-1). This has been possible because Samba 1.9.18
-and later does not depend on the DES encryption libraries. This makes
-package sambades (part of the non-us section) obsolete.
-
-Also, there are no more export restrictions with this version of Samba.
+This package was built by Eloy Paris <peloy@debian.org> and Steve
+Langasek <vorlon@debian.org>, current maintainers of the Samba packages
+for Debian, based on work from Bruce Perens <Bruce@Pixar.com>, Andrew
+Howell <andrew@it.com.au>, Klee Dienes <klee@debian.org> and Michael
+Meskes <meskes@topsystem.de>, all previous maintainers of the packages
+samba and sambades (now merged together - see below).
 
 As of Samba 2.0.6-1, the Debian version of Samba is compiled with
 Pluggable Authentication Modules (PAM) support. PAM support was 
 discontinued during the libc5 -> libc6 migration process and I never
-brought it back until 2.0.6-1. I don't use PAM myself so let me know
-if you find any problems.
+brought it back until 2.0.6-1.
 
-Since Samba 2.0.5a-3, the smbfs utilities included in the smbfs package
-can now handle kernels > 2.0.x so there is no need to have two smbfs
-packages.
+The smbfs package does not support the 2.0.x Linux kernels anymore.
+This has been the case since the very first packages of the CVS sources
+that eventually became Samba 2.2. To use the smbfs package you need to
+run a 2.2.x kernel or later.
 
-As of Samba 2.0.5a-5, the Samba sources produce the following binary packages:
+Starting with the Debian packages for Samba 2.2, the Samba log files (for
+nmbd and smbd) have been moved to a new location: /var/log/samba/. The
+files also have new names: log.nmbd and log.smbd. The old files
+(/var/log/{nmb,smb} were moved to the new location.
+
+As of Samba 2.2.2-11, the Samba sources produce the following binary
+packages:
 
 samba: A LanManager like file and printer server for Unix.
 samba-common: Samba common files used by both the server and the client.
@@ -33,9 +33,14 @@ swat: Samba Web Administration Tool
 samba-doc: Samba documentation.
 smbfs: Mount and umount commands for the smbfs (works with 2.2.x and
 	above kernels, not with 2.0.x kernels.)
+libpam-smbpass: pluggable authentication module for SMB password
+	database.
+libsmbclient: Shared library that allows applications to talk to SMB servers.
+libsmbclient-dev: libsmbclient shared libraries.
+
 
 Please note that the package smbwrapper (a shared library that provides
-SMB client services that  existed between Samba 2.0.0-1 and Samba-2.0.5a-4
+SMB client services that existed between Samba 2.0.0-1 and Samba-2.0.5a-4
 does not exist any more. The reason is that starting with Samba 2.0.6-1, that
 code does not even compile, and the upstream author (Andrew Tridgell)
 recommended to disable the compilation of smbwrapper until some issues
@@ -61,7 +66,6 @@ section).
 Please note that NT domain PDC support is far from complete and is still 
 experimental.
 
-Your comments are welcome.
-
-
-Eloy A. Paris <peloy@debian.org>, Sunday March 18, 2001.
+Eloy A. Paris <peloy@debian.org>
+Steve Langasek <vorlon@debian.org>
+January 14, 2002

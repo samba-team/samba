@@ -2,21 +2,41 @@ Building Samba Packages for Debian GNU/Linux
 --------------------------------------------
 
 If you want to build Samba packages for Debian and you just want to use
-upstream sources, i.e. no patches from the official Samba Debian packages,
-follow these instructions:
+upstream sources, i.e. you don't want to wait for us to put official
+packages out, or you want packages for a Debian version for which we
+don't provide deb's, or you don't want to use official packages, or
+you want to add --this-cool-switch to configure, or whatever, follow
+these instructions:
 
+0) Make sure you have the following packages installed:
+   debhelper
+   libpam0g-dev
+   libreadline4-dev
+   libcupsys2-dev
+   + the minimum Debian development stuff (dpkg-dev, libc6-dev, etc.)
+   Note: libcupsys2-dev is not available for Potato. It's safe
+   to not install it if you don't need CUPS support.
 1) cd samba[-<version>]
-2) ln -s packaging/Debian/<dist> debian
+2) cp -a packaging/Debian/debian/ debian
+  It's important that you copy instead of symlink because the build
+  tools in Potato have a problem that prevents the build to work with
+  a symlink.
 3) dch -i
-     - Edit the changelog and make sure the version is right. For example,
-	   for Samba 2.2.2, the version number should be 2.2.2-0.1 (use
-	   a number less than 1 like 0.1, 0.2, etc. so there is no conflict
-	   with future upgrades to the official Debian packages.)
-4) debian/rules binary
+  - Edit the changelog and make sure the version is right. For example,
+  for Samba 2.2.3, the version number should be 2.2.3-0.1 (use
+  a number less than 1 like 0.1, 0.2, etc. so there is no conflict
+  with future upgrades to the official Debian packages.)
+4) Run 'debian/rules binary'.
+  - It is better that you prefix the above command with 'fakeroot'.
+    If you have problems you might try building as root.
 5) That's it. Your new packages should be in ../. Install with dpkg.
 
-Please e-mail Eloy Paris <peloy@debian.org> with comments and/or
-suggestions.
+Please e-mail samba@packages.debian.org with comments, question or
+usggestions. Please talk to us and not to the Samba Team. They have
+better things to do and know nothing about the Debian packaging system.
 
-Eloy A. Paris <peloy@debian.org> Fri Oct 12 15:06:46 EDT 2001
+Eloy A. Paris <peloy@debian.org>
+Steve Langasek <vorlon@debian.org>
+
+Sat Feb  2 00:44:42 CET 2002
 

@@ -34,11 +34,23 @@ IVARS = BASEDIR=$(DESTDIR)/usr \
 		MANDIR=$(DESTDIR)/usr/share/man \
 		LIBDIR=$(DESTDIR)/etc/samba \
 		VARDIR=$(DESTDIR)/var/state/samba \
+		INCLUDEDIR=$(DESTDIR)/usr/include \
 		SWATDIR=$(SWATDIR)/usr/share/samba/swat \
 		SAMBABOOK=$(SAMBABOOK)/usr/share/samba/swat/using_samba \
 		CODEPAGEDIR=$(DESTDIR)/usr/share/samba/codepages
 
-configure: configure-stamp
+patch: patch-stamp
+patch-stamp:
+	dh_testdir
+	if [ ! -f patch-stamp ]; then debian/scripts/patch-source; fi
+	touch patch-stamp
+
+unpatch:
+	dh_testdir
+	if [ -f patch-stamp ]; then debian/scripts/unpatch-source; fi
+	rm -f patch-stamp
+
+configure: patch-stamp configure-stamp
 configure-stamp:
 	dh_testdir
 
@@ -60,21 +72,38 @@ configure-stamp:
 	fi
 
 #	[ -f source/Makefile ] || (cd source && ./configure --with-fhs --prefix=/usr --exec-prefix=/usr --with-netatalk --with-smbmount --with-pam --with-syslog --with-sambabook --with-utmp)
-	[ -f source/Makefile ] || (cd source && ./configure --host=$(DEB_HOST_GNU_TYPE)-gnu --build=$(DEB_BUILD_GNU_TYPE)-gnu --with-fhs --prefix=/usr --sysconfdir=/etc --with-privatedir=/etc/samba --with-lockdir=/var/state/samba --localstatedir=/var --with-netatalk --with-smbmount --with-pam --with-syslog --with-sambabook --with-utmp --with-readline --with-pam_smbpass)
+	[ -f source/Makefile ] || (cd source && ./configure \
+		--host=$(DEB_HOST_GNU_TYPE) \
+		--build=$(DEB_BUILD_GNU_TYPE) \
+		--with-fhs \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--with-privatedir=/etc/samba \
+		--with-lockdir=/var/state/samba \
+		--localstatedir=/var \
+		--with-netatalk \
+		--with-smbmount \
+		--with-pam \
+		--with-syslog \
+		--with-sambabook \
+		--with-utmp \
+		--with-readline \
+		--with-pam_smbpass \
+		--with-libsmbclient)
 
 	touch configure-stamp
 
-build: configure-stamp build-stamp
+build: patch-stamp configure-stamp build-stamp
 build-stamp:
 	dh_testdir
 
 	# Compile the Samba package first
 #	$(MAKE) -C source $(BVARS) all smbtorture rpctorture debug2html
-	$(MAKE) -C source all smbtorture
+	$(MAKE) -C source all
 
 	touch build-stamp
 
-clean:
+clean: unpatch
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
@@ -83,9 +112,10 @@ clean:
 #	-$(MAKE) -C source realclean
 #	-$(MAKE) -C source clean
 	-$(MAKE) -C source distclean
-	rm -f source/bin/rpctorture
-	rm -f source/bin/smbtorture
-	rm -f source/bin/debug2html
+
+	# Delete stuff left after a build that is not deleted by 'make clean'
+	rm -f source/bin/wbinfo source/bin/winbindd source/bin/rpctorture \
+		source/bin/debug2html
 
 	dh_clean
 
@@ -99,11 +129,26 @@ install: build
 	# Add here commands to install the package into debian/tmp.
 	$(MAKE) -C source install $(IVARS)
 
+	# libsmbclient is installed in usr/bin/. Move to usr/lib/.
+	mv $(DESTDIR)/usr/bin/libsmbclient.so $(DESTDIR)/usr/lib/libsmbclient.so.0.1
+	mv $(DESTDIR)/usr/bin/libsmbclient.a $(DESTDIR)/usr/lib/
+
+	# This is to comply with policy (the symlink that ldconfig would 
+	#	produce must exist in the package).
+	/sbin/ldconfig -n $(DESTDIR)/usr/lib/
+
+	# libsmbclient include file is not installed by standard
+	#	'make install' - do it manually.
+	$(MAKE) -C source installclientlib $(IVARS)
+
 	# Install other stuff not installed by "make install"
 	install -m 0755 debian/mksmbpasswd.awk $(DESTDIR)/usr/sbin/mksmbpasswd
-	install -m 0755 source/bin/smbtorture $(DESTDIR)/usr/bin/
 	install -m 0755 debian/sambaconfig $(DESTDIR)/usr/sbin/
 	install -m 0755 source/bin/pam_smbpass.so $(DESTDIR)/lib/security/
+
+	# This is only temporary, while we create new packages for winbind and friends
+	install -m 0644 source/nsswitch/libnss_winbind.so $(DESTDIR)/lib/libnss_winbind.so.2
+	install -m 0644 source/nsswitch/pam_winbind.so $(DESTDIR)/lib/security/
 
 	# Create the symlink that will allow us to do "mount -t smbfs ...".
 	#	Create also a symlink that will allow "mount -t smb ..." to
@@ -111,6 +156,8 @@ install: build
 	#	will be moved by dh_movefiles to the smbfs package later on.
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smbfs
 	ln -s /usr/bin/smbmount $(DESTDIR)/sbin/mount.smb
+	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smb.8
+	ln -s smbmount.8 $(DESTDIR)/usr/share/man/man8/mount.smbfs.8
 
 	# For CUPS to support printing to samba printers, it's necessary
 	#	to make the following symlink (according to
@@ -131,16 +178,9 @@ install: build
 
 	# Delete unwanted stuff leftover from "make install"
 
-	# smbrun is not longer needed by smbd, so delete its man page
-	rm $(DESTDIR)/usr/share/man/man1/smbrun.1
-
 	# The smbwrapper package is not being generated anymore, so we must
 	#	delete the related man pages.
 	rm $(DESTDIR)/usr/share/man/man1/smbsh.1
-
-	# These files are not part of the main samba package, move to where they
-	#	belong...
-	#mv $(DESTDIR)/usr/bin/smbwrapper.so debian/smbwrapper/usr/share/samba/
 
 	# Install samba-common's conffiles - they'll get moved later to their
 	#	correct place by dh_movefiles.
@@ -161,8 +201,9 @@ binary-indep: build install
 	dh_testdir
 	dh_testroot
 #	dh_installdebconf
-	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build
-	dh_installexamples
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build docs/README* docs/Samba-HOWTO-Collection.pdf
+	# dh_installexamples is not available in Debian Potato...
+	[ -x /usr/bin/dh_installexamples ] && dh_installexamples
 #	dh_installmenu
 #	dh_installemacsen
 #	dh_installpam
@@ -190,10 +231,12 @@ binary-arch: build install
 	dh_testdir
 	dh_testroot
 #	dh_installdebconf
-	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build
-	dh_installexamples
+	dh_installdocs -A docs/textdocs/DIAGNOSIS.txt debian/README.build docs/README* docs/Samba-HOWTO-Collection.pdf
+	# dh_installexamples is not available in Debian Potato...
+	[ -x /usr/bin/dh_installexamples ] && dh_installexamples
 #	dh_installmenu
-	dh_installlogrotate
+	# dh_installlogrotate is not available in Debian Potato...
+	if [ -x /usr/bin/dh_installlogrotate ]; then dh_installlogrotate; else mkdir debian/samba/etc/logrotate.d; cp debian/samba.logrotate debian/samba/etc/logrotate.d/samba; fi
 #	dh_installemacsen
 #	dh_installpam
 	dh_installinit
@@ -208,9 +251,11 @@ binary-arch: build install
 	dh_fixperms
 
 	# You may want to make some executables suid here.
-	# The smbmnt, smbmount and smbumount binaries must be setuid-root.
+	# The smbmnt and smbumount binaries should be setuid-root. This
+	#	has security implications because these programs haven't had
+	#	a thorough security audit. smbmount _does not_ have to have
+	#	the setuid bit set. In fact, it is a security hole.
 	chmod u+s debian/smbfs/usr/bin/smbmnt
-	chmod u+s debian/smbfs/usr/bin/smbmount
 	chmod u+s debian/smbfs/usr/bin/smbumount
 
 	# Set some reasonable default perms for the samba logdir.

@@ -2,6 +2,7 @@ Source: samba
 Section: net
 Priority: optional
 Maintainer: Eloy A. Paris <peloy@debian.org>
+Uploaders: Steve Langasek <vorlon@debian.org>
 Build-Depends: debhelper (>=2.0.103), libpam0g-dev, libreadline4-dev, libcupsys2-dev
 Standards-Version: 3.1.1
 
@@ -14,19 +15,22 @@ Description: A LanManager like file and printer server for Unix.
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
  files and printers to Windows, NT, OS/2 and DOS clients. This protocol
- is sometimes also referred to as the LanManager or Netbios protocol.
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
  .
  This package contains all the components necessary to turn your
  Debian GNU/Linux box into a powerful file and printer server.
  .
- As of Samba 2.0.6-1, the Samba Debian packages consist of the following:
+ As of Samba 2.2.1a-3, the Samba Debian packages consist of the following:
  .
- samba - A LanManager like file and printer server for Unix.
- samba-common - Samba common files used by both the server and the client.
- smbclient - A LanManager like simple client for Unix.
- swat - Samba Web Administration Tool
- samba-doc - Samba documentation.
- smbfs - Mount and umount commands for the smbfs (kernels 2.0.x and above).
+  samba - A LanManager like file and printer server for Unix.
+  samba-common - Samba common files used by both the server and the client.
+  smbclient - A LanManager like simple client for Unix.
+  swat - Samba Web Administration Tool
+  samba-doc - Samba documentation.
+  smbfs - Mount and umount commands for the smbfs (kernels 2.0.x and above).
+  libpam-smbpass - pluggable authentication module for SMB password database
+  libsmbclient - Shared library that allows applications to talk to SMB servers
+  libsmbclient-dev - libsmbclient shared libraries
 
 Package: samba-common
 Architecture: any
@@ -36,7 +40,7 @@ Description: Samba common files used by both the server and the client.
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
  files and printers to Windows, NT, OS/2 and DOS clients. This protocol
- is sometimes also referred to as the LanManager or Netbios protocol.
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
  .
  This package contains the common files that are used by both the server
  (provided in the samba package) and the client (provided in the smbclient
@@ -45,13 +49,14 @@ Description: Samba common files used by both the server and the client.
 Package: smbclient
 Architecture: any
 Depends: samba-common (= ${Source-Version}), ${shlibs:Depends}
+Replaces: samba (<= 2.2.2-5)
 Provides: samba-client
 Suggests: smbfs
 Description: A LanManager like simple client for Unix.
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
  files and printers to Windows, NT, OS/2 and DOS clients. This protocol
- is sometimes also referred to as the LanManager or Netbios protocol.
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
  .
  This package contains some client components of the Samba suite. In
  particular it includes the command line utilities smbclient, smbtar,
@@ -66,7 +71,7 @@ Description: Samba Web Administration Tool
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
  files and printers to Windows, NT, OS/2 and DOS clients. This protocol
- is sometimes also referred to as the LanManager or Netbios protocol.
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
  .
  This package contains the components of the Samba suite that are needed
  for Web administration of the Samba server.
@@ -78,7 +83,7 @@ Description: Samba documentation.
  The Samba software suite is a collection of programs that
  implements the SMB protocol for unix systems, allowing you to serve
  files and printers to Windows, NT, OS/2 and DOS clients. This protocol
- is sometimes also referred to as the LanManager or Netbios protocol.
+ is sometimes also referred to as the LanManager or NetBIOS protocol.
  .
  This package contains all the documentation that comes in the original
  tarball.
@@ -94,11 +99,11 @@ Conflicts: smbfsx, suidmanager (<< 0.50)
 Description: mount and umount commands for the smbfs (for kernels >= than 2.2.x)
  Smbfs is a filesystem which understands the SMB protocol.
  This is the protocol Windows for Workgroups, Windows NT or
- Lan Manager use to talk to each other. It was inspired by
+ LAN Manager use to talk to each other. It was inspired by
  samba, the program by Andrew Tridgell that turns any unix
  site into a file server for DOS or Windows clients.
  .
- If you want to use command-line utilites like smbclient, smbtar
+ If you want to use command-line utilities like smbclient, smbtar
  and/or smbspool just need to install the smbclient package.
  .
  Starting with the Debian Samba packages version 2.2.0-1, the old smbfs
@@ -119,3 +124,28 @@ Description: pluggable authentication module for SMB password database
  sync with unix passwords.  Unlike other solutions, it does this without
  requiring users to change their existing passwords or login to Samba using
  cleartext passwords.
+
+Package: libsmbclient
+Section: libs
+Priority: extra
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Shared library that allows applications to talk to SMB servers
+ libsmbclient allows to write applications that use the SMB protocol.
+ This gives applications the ability to talk to Microsoft Windows servers
+ and Unix servers running Samba.
+ .
+ This package contains the libsmbclient shared library.
+
+Package: libsmbclient-dev
+Section: devel
+Priority: extra
+Architecture: any
+Depends: libsmbclient (= ${Source-Version}), ${shlibs:Depends}
+Description: libsmbclient static libraries and headers
+ libsmbclient allows to write applications that use the SMB protocol.
+ This gives applications the ability to talk to Microsoft Windows servers
+ and Unix servers running Samba.
+ .
+ This package contains the libsmbclient static libraries and headers
+ needed to build applications that use SMB services.

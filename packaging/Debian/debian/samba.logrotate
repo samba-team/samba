@@ -2,6 +2,9 @@
 	weekly
 	missingok
 	rotate 7
+	postrotate
+		killall -q -HUP smbd || true
+	endscript
 	compress
 	notifempty
 }
@@ -10,6 +13,9 @@
 	weekly
 	missingok
 	rotate 7
+	postrotate
+		killall -q -HUP nmbd || true
+	endscript
 	compress
 	notifempty
 }
