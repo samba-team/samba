@@ -46,10 +46,14 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 		case ID_USERID:
 			request.data.uid = id.uid;
 			operation = WINBINDD_UID_TO_SID;
+			DEBUG(10,("db_get_sid_from_id: asking winbindd uid %u -> sid\n",
+				(unsigned int)id.uid ));
 			break;
 		case ID_GROUPID:
 			request.data.gid = id.gid;
 			operation = WINBINDD_GID_TO_SID;
+			DEBUG(10,("db_get_sid_from_id: asking winbindd gid %u -> sid\n",
+				(unsigned int)id.gid ));
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
@@ -58,6 +62,7 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	/* Make The Request */
 	result = winbindd_request(operation, &request, &response);
 	if (result == NSS_STATUS_SUCCESS) {
+		DEBUG(10,("db_get_sid_from_id: winbindd replied ok (%s)\n", response.data.sid.sid ));
 		if (!string_to_sid(sid, response.data.sid.sid)) {
 			return NT_STATUS_INVALID_SID;
 		}
@@ -65,6 +70,8 @@ static NTSTATUS db_get_sid_from_id(DOM_SID *sid, unid_t id, int id_type)
 	} else {
 		sid_copy(sid, &global_sid_NULL);
 	}
+
+	DEBUG(10,("db_get_sid_from_id: winbindd lookup fail\n"));
 
 	return NT_STATUS_UNSUCCESSFUL;
 }
@@ -86,19 +93,23 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
+ 	sid_to_string(sid_str, sid);
+ 	fstrcpy(request.data.sid, sid_str);
+
 	switch (*id_type & ID_TYPEMASK) {
 		case ID_USERID:
 			operation = WINBINDD_SID_TO_UID;
+			DEBUG(10,("db_get_id_from_sid: asking winbindd %s -> uid\n",
+				sid_str ));
 			break;
 		case ID_GROUPID:
 			operation = WINBINDD_SID_TO_GID;
+			DEBUG(10,("db_get_id_from_sid: asking winbindd %s -> gid\n",
+				sid_str ));
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
 	}
-
- 	sid_to_string(sid_str, sid);
- 	fstrcpy(request.data.sid, sid_str);
 
 	/* Make The Request */
 	result = winbindd_request(operation, &request, &response);
@@ -106,11 +117,15 @@ static NTSTATUS db_get_id_from_sid(unid_t *id, int *id_type, const DOM_SID *sid)
 	if (result == NSS_STATUS_SUCCESS) {
 		if (operation == WINBINDD_SID_TO_UID) {
 			(*id).uid = response.data.uid;
+			DEBUG(10,("db_get_id_from_sid: winbindd replied ok (%u)\n", response.data.uid));
 		} else {
 			(*id).gid = response.data.gid;
+			DEBUG(10,("db_get_id_from_sid: winbindd replied ok (%u)\n", response.data.gid ));
 		}
 		return NT_STATUS_OK;
 	}
+
+	DEBUG(10,("db_get_id_from_sid: winbindd lookup fail\n"));
 
 	return NT_STATUS_UNSUCCESSFUL;
 }	
@@ -149,4 +164,3 @@ NTSTATUS idmap_winbind_init(void)
 {
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "winbind", &winbind_methods);
 }
-
