@@ -51,36 +51,39 @@ like this one we will tell of both.
 </para>
 
 <para>
-So now, what features are covered in this chapter?
+So now, what are the benefits of features mentioned in this chapter?
 </para>
 
 <itemizedlist>
 	<listitem><para>
-	X
+	Samba-3 can replace an MS Windows NT4 Domain Controller
 	</para></listitem>
 
 	<listitem><para>
-	X
+	Samba-3 offers excellent interoperability with MS Windows NT4
+	style domains as well as natively with Microsoft Active
+	Directory domains.
 	</para></listitem>
 
 	<listitem><para>
-	X
+	Samba-3 permits full NT4 style Interdomain Trusts
 	</para></listitem>
 
 	<listitem><para>
-	X
+	Samba has security modes that permit more flexible
+	authentication than is possible with MS Windows NT4 Domain Controllers.
 	</para></listitem>
 
 	<listitem><para>
-	X
+	Samba-3 permits use of multiple account database backends
 	</para></listitem>
 
 	<listitem><para>
-	X
-	</para></listitem>
-
-	<listitem><para>
-	X
+	The account (password) database backends can be distributed
+	and replicated using multiple methods. This gives Samba-3
+	greater flexibility than MS Windows NT4 and in many cases a
+	significantly higher utility than Active Directory domains
+	with MS Windows 200x.
 	</para></listitem>
 </itemizedlist>
 
@@ -282,7 +285,7 @@ security domain. This is done as follows:
         the Server Manager add a machine account for the Samba server.
         </para></listitem>
 
-        <listitem><para>Next, on the Linux system execute:</para>
+        <listitem><para>Next, on the Unix/Linux system execute:</para>
 	<para><programlisting>
         <command>smbpasswd -r PDC_NAME -j DOMAIN_NAME</command> (samba 2.x)
 
