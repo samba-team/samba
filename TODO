@@ -58,6 +58,12 @@ anonymous credentials not implemented
 gss_acquire_cred(GSS_C_BOTH) with a keytab only, gss_add_cred,
 gss_release_cred renders the output_cred_handle broken.
 
+cache delegation credentials to avoid hitting the kdc ?  require time
+stampless tickets, and was supported in the recv'ing end with 0.6.1.
+
+flag to look at ok-to-delegate even if GSS_C_DELEG_FLAG was set
+(limited to some target domains).
+
 ** lib/hdb
 
 ** lib/kadm5
@@ -67,6 +73,8 @@ add policies?
 fix to use rpc?
 
 ** lib/krb5
+
+iv for aes
 
 the replay cache is, in its current state, not very useful
 
