@@ -273,10 +273,8 @@ static BOOL create_netsec_bind_req(struct cli_connection *con,
 	{
 		return False;
 	}
-	if (!cli_get_con_sesskey(con, a->sess_key))
-	{
-		return False;
-	}
+
+	memcpy(a->sess_key, usr->sess_key, sizeof(a->sess_key));
 
 	if (!cli_conn_set_auth_info(con, (void*)a))
 	{

@@ -443,6 +443,8 @@ uint32 samr_enum_dom_aliases(  POLICY_HND *pol,
 		SAMR_R_ENUM_DOM_ALIASES r_e;
 		BOOL p;
 
+		ZERO_STRUCT(r_e);
+
 		samr_io_r_enum_dom_aliases("", &r_e, &rdata, 0);
 
 		p = rdata.offset != 0;
@@ -666,8 +668,8 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 		if (p)
 		{
 			memcpy(connect_pol, &r_o.connect_pol, sizeof(r_o.connect_pol));
-			valid_pol = register_policy_hnd(connect_pol) &&
-			            set_policy_con(connect_pol, con,
+			valid_pol = register_policy_hnd(get_global_hnd_cache(), connect_pol) &&
+			            set_policy_con(get_global_hnd_cache(), connect_pol, con,
 			                                 cli_connection_unlink);
 		}
 	}
@@ -2367,7 +2369,7 @@ BOOL samr_close(  POLICY_HND *hnd)
 	prs_free_data(&data   );
 	prs_free_data(&rdata  );
 
-	close_policy_hnd(hnd);
+	close_policy_hnd(get_global_hnd_cache(), hnd);
 
 	return valid_close;
 }

@@ -1817,7 +1817,18 @@ typedef struct netsec_creds
 	fstring domain;
 	fstring myname;
 
+	uchar sess_key[16]; /* NETLOGON session key */
+
 } netsec_creds;
+
+struct policy;
+struct bitmap;
+
+typedef struct policy_cache
+{
+	struct policy *Policy;
+	struct bitmap *bmap;
+} policy_cache;
 
 #include "client.h"
 #include "rpcclient.h"

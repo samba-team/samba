@@ -776,8 +776,6 @@ int main(int argc, char **argv)
 {	
 	static pstring servicesf = CONFIGFILE;
 
-	init_policy_hnd(64);
-
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);

@@ -322,10 +322,6 @@ static void init_structs(void)
 #if 0
 	conn_init();
 #endif
-	if (!init_policy_hnd(MAX_SERVER_POLICY_HANDLES)) 
-	{
-		exit_server("could not allocate policy handles\n");
-	}
 }
 
 /****************************************************************************

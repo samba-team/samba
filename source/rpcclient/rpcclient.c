@@ -1880,8 +1880,6 @@ void readline_init(void)
 	out_hnd = stdout;
 	fstrcpy(debugf, argv[0]);
 
-	init_policy_hnd(64);
-
 	pstrcpy(usr.ntc.domain, "");
 	pstrcpy(usr.ntc.user_name, "");
 

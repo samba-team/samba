@@ -41,7 +41,7 @@ static void reg_reply_close(REG_Q_CLOSE *q_r,
 	bzero(r_u.pol.data, POL_HND_SIZE);
 
 	/* close the policy handle */
-	if (close_policy_hnd(&(q_r->pol)))
+	if (close_policy_hnd(get_global_hnd_cache(), &(q_r->pol)))
 	{
 		r_u.status = 0;
 	}
@@ -84,7 +84,7 @@ static void reg_reply_open(REG_Q_OPEN_HKLM *q_r,
 
 	r_u.status = 0x0;
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_u.status == 0x0 && !open_policy_hnd(&(r_u.pol)))
+	if (r_u.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &(r_u.pol)))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -126,12 +126,12 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 
 	DEBUG(5,("reg_open_entry: %d\n", __LINE__));
 
-	if (status == 0 && find_policy_by_hnd(&(q_u->pol)) == -1)
+	if (status == 0 && find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1)
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (status == 0x0 && !open_policy_hnd(&pol))
+	if (status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &pol))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -149,7 +149,7 @@ static void reg_reply_open_entry(REG_Q_OPEN_ENTRY *q_u,
 		}
 	}
 
-	if (status == 0x0 && !set_policy_reg_name(&pol, name))
+	if (status == 0x0 && !set_policy_reg_name(get_global_hnd_cache(), &pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_TOO_MANY_SECRETS; /* ha ha very droll */
 	}
@@ -195,7 +195,7 @@ static void reg_reply_info(REG_Q_INFO *q_u,
 
 	DEBUG(5,("reg_info: %d\n", __LINE__));
 
-	if (status == 0x0 && !get_policy_reg_name(&q_u->pol, name))
+	if (status == 0x0 && !get_policy_reg_name(get_global_hnd_cache(), &q_u->pol, name))
 	{
 		status = 0xC000000 | NT_STATUS_INVALID_HANDLE;
 	}

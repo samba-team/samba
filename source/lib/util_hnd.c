@@ -63,7 +63,7 @@ struct con_info
 	void (*free_con)(struct cli_connection*);
 };
 
-static struct policy
+struct policy
 {
 	struct policy *next, *prev;
 	int pnum;
@@ -78,11 +78,21 @@ static struct policy
 		struct con_info *con;
 
 	} dev;
+};
 
-} *Policy;
+/****************************************************************************
+  i hate this.  a global policy handle cache.  yuk.
+****************************************************************************/
+struct policy_cache *get_global_hnd_cache(void)
+{
+	static struct policy_cache *cache = NULL;
 
-static struct bitmap *bmap = NULL;
-
+	if (cache == NULL)
+	{
+		cache = init_policy_cache(1024);
+	}
+	return cache;
+}
 
 /****************************************************************************
   create a unique policy handle
@@ -108,25 +118,38 @@ static void create_pol_hnd(POLICY_HND *hnd)
 /****************************************************************************
   initialise policy handle states...
 ****************************************************************************/
-BOOL init_policy_hnd(int num_pol_hnds)
+struct policy_cache *init_policy_cache(int num_pol_hnds)
 {
-	bmap = bitmap_allocate(num_pol_hnds);
-	
-	return bmap != NULL;
+	struct policy_cache *cache = malloc(sizeof(struct policy_cache));
+	if (cache != NULL)
+	{
+		cache->bmap = bitmap_allocate(num_pol_hnds);
+		cache->Policy = NULL;
+	}
+	return cache;
+}
+
+/****************************************************************************
+ free policy handle states...
+****************************************************************************/
+void free_policy_cache(struct policy_cache *cache)
+{
+	free(cache);
 }
 
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL register_policy_hnd(POLICY_HND *hnd)
+BOOL register_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd)
 {
 	int i;
 	struct policy *p;
 
-	i = bitmap_find(bmap, 1);
+	i = bitmap_find(cache->bmap, 1);
 
 	if (i == -1) {
-		DEBUG(0,("ERROR: out of Policy Handles!\n"));
+		DEBUG(0,("ERROR: out of cache->Policy Handles!\n"));
 		return False;
 	}
 
@@ -144,9 +167,9 @@ BOOL register_policy_hnd(POLICY_HND *hnd)
 
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 
-	bitmap_set(bmap, i);
+	bitmap_set(cache->bmap, i);
 
-	DLIST_ADD(Policy, p);
+	DLIST_ADD(cache->Policy, p);
 	
 	DEBUG(4,("Opened policy hnd[%x] ", i));
 	dump_data(4, (char *)hnd->data, sizeof(hnd->data));
@@ -157,20 +180,22 @@ BOOL register_policy_hnd(POLICY_HND *hnd)
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_policy_hnd(POLICY_HND *hnd)
+BOOL open_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd)
 {
 	create_pol_hnd(hnd);
-	return register_policy_hnd(hnd);
+	return register_policy_hnd(cache, hnd);
 }
 
 /****************************************************************************
   find policy by handle
 ****************************************************************************/
-static struct policy *find_policy(const POLICY_HND *hnd)
+static struct policy *find_policy(struct policy_cache *cache,
+				const POLICY_HND *hnd)
 {
 	struct policy *p;
 
-	for (p=Policy;p;p=p->next) {
+	for (p=cache->Policy;p;p=p->next) {
 		if (memcmp(&p->pol_hnd, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found policy hnd[%x] ", p->pnum));
 			dump_data(4, (const char *)hnd->data,
@@ -179,7 +204,7 @@ static struct policy *find_policy(const POLICY_HND *hnd)
 		}
 	}
 
-	DEBUG(4,("Policy not found: "));
+	DEBUG(4,("cache->Policy not found: "));
 	dump_data(4, (const char *)hnd->data, sizeof(hnd->data));
 
 	return NULL;
@@ -188,9 +213,10 @@ static struct policy *find_policy(const POLICY_HND *hnd)
 /****************************************************************************
   find policy index by handle
 ****************************************************************************/
-int find_policy_by_hnd(const POLICY_HND *hnd)
+int find_policy_by_hnd(struct policy_cache *cache,
+				const POLICY_HND *hnd)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	return p?p->pnum:-1;
 }
@@ -198,9 +224,10 @@ int find_policy_by_hnd(const POLICY_HND *hnd)
 /****************************************************************************
   set samr rid
 ****************************************************************************/
-BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
+BOOL set_policy_samr_rid(struct policy_cache *cache,
+				POLICY_HND *hnd, uint32 rid)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -227,9 +254,10 @@ BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid)
 /****************************************************************************
   set samr pol status.  absolutely no idea what this is.
 ****************************************************************************/
-BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
+BOOL set_policy_samr_pol_status(struct policy_cache *cache,
+				POLICY_HND *hnd, uint32 pol_status)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -257,10 +285,11 @@ BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status)
 /****************************************************************************
   set samr sid
 ****************************************************************************/
-BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
+BOOL set_policy_samr_sid(struct policy_cache *cache,
+				POLICY_HND *hnd, DOM_SID *sid)
 {
 	pstring sidstr;
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open) {
 		DEBUG(3,("Setting policy sid=%s pnum=%x\n",
@@ -287,9 +316,10 @@ BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 /****************************************************************************
   get samr sid
 ****************************************************************************/
-BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
+BOOL get_policy_samr_sid(struct policy_cache *cache,
+				POLICY_HND *hnd, DOM_SID *sid)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p != NULL && p->open)
 	{
@@ -308,9 +338,10 @@ BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid)
 /****************************************************************************
   get samr rid
 ****************************************************************************/
-uint32 get_policy_samr_rid(POLICY_HND *hnd)
+uint32 get_policy_samr_rid(struct policy_cache *cache,
+				POLICY_HND *hnd)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open) {
 		uint32 rid = p->dev.samr->rid;
@@ -327,9 +358,10 @@ uint32 get_policy_samr_rid(POLICY_HND *hnd)
 /****************************************************************************
   get svc name 
 ****************************************************************************/
-BOOL get_policy_svc_name(POLICY_HND *hnd, fstring name)
+BOOL get_policy_svc_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -348,9 +380,10 @@ BOOL get_policy_svc_name(POLICY_HND *hnd, fstring name)
 /****************************************************************************
   set svc name 
 ****************************************************************************/
-BOOL set_policy_svc_name(POLICY_HND *hnd, fstring name)
+BOOL set_policy_svc_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -377,9 +410,10 @@ BOOL set_policy_svc_name(POLICY_HND *hnd, fstring name)
 /****************************************************************************
   set reg name 
 ****************************************************************************/
-BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name)
+BOOL set_policy_reg_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -406,9 +440,10 @@ BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name)
 /****************************************************************************
   get reg name 
 ****************************************************************************/
-BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name)
+BOOL get_policy_reg_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -427,10 +462,11 @@ BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name)
 /****************************************************************************
   set con state
 ****************************************************************************/
-BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
+BOOL set_policy_con(struct policy_cache *cache,
+				POLICY_HND *hnd, struct cli_connection *con,
 				void (*free_fn)(struct cli_connection *))
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
@@ -458,9 +494,10 @@ BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
 /****************************************************************************
   get con state
 ****************************************************************************/
-BOOL get_policy_con(const POLICY_HND *hnd, struct cli_connection **con)
+BOOL get_policy_con(struct policy_cache *cache,
+				const POLICY_HND *hnd, struct cli_connection **con)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (p != NULL && p->open)
 	{
@@ -481,9 +518,10 @@ BOOL get_policy_con(const POLICY_HND *hnd, struct cli_connection **con)
 /****************************************************************************
   close an lsa policy
 ****************************************************************************/
-BOOL close_policy_hnd(POLICY_HND *hnd)
+BOOL close_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd)
 {
-	struct policy *p = find_policy(hnd);
+	struct policy *p = find_policy(cache, hnd);
 
 	if (!p)
 	{
@@ -493,9 +531,9 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 
 	DEBUG(3,("Closed policy name pnum=%x\n",  p->pnum));
 
-	DLIST_REMOVE(Policy, p);
+	DLIST_REMOVE(cache->Policy, p);
 
-	bitmap_clear(bmap, p->pnum);
+	bitmap_clear(cache->bmap, p->pnum);
 
 	switch (p->type)
 	{

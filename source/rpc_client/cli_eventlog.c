@@ -70,8 +70,8 @@ BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd)
 		{
 			/*copy handle */
 			memcpy(hnd->data, r.pol.data, sizeof(hnd->data));
-			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_con(hnd, con, 
+			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
+			            set_policy_con(get_global_hnd_cache(), hnd, con, 
 			                                 cli_connection_unlink);
 		}
 	}
@@ -120,7 +120,7 @@ BOOL event_close( POLICY_HND *hnd)
 	prs_free_data(&rbuf);
 	prs_free_data(&buf );
 
-	close_policy_hnd(hnd);
+	close_policy_hnd(get_global_hnd_cache(), hnd);
 
 	return p;
 }

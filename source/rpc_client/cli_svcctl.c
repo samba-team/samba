@@ -87,8 +87,8 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = True;
-			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_con(hnd, con, 
+			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
+			            set_policy_con(get_global_hnd_cache(), hnd, con, 
 			                                 cli_connection_unlink);
 		}
 	}
@@ -156,8 +156,8 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_con(hnd, con, NULL);
+			valid_pol = register_policy_hnd(get_global_hnd_cache(), hnd) &&
+			            set_policy_con(get_global_hnd_cache(), hnd, con, NULL);
 		}
 	}
 
@@ -519,7 +519,7 @@ BOOL svc_close(POLICY_HND *hnd)
 		}
 	}
 
-	close_policy_hnd(hnd);
+	close_policy_hnd(get_global_hnd_cache(), hnd);
 
 	prs_free_data(&rbuf);
 	prs_free_data(&buf );

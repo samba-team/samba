@@ -90,9 +90,7 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 	    IS_BITS_CLR_ALL(neg_flags, 0x40000000))
 	{
 		/* netlogon secure channel was required, and not negotiated */
-		{
-			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
-		}
+		return NT_STATUS_ACCESS_DENIED | 0xC0000000;
 	}
 
 	if (ret == 0x0 && IS_BITS_SET_ALL(neg_flags, 0x40000000))
@@ -101,8 +99,17 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 		struct cli_connection *con = NULL;
 		struct netsec_creds creds;
 
+#if 1
+		if (!cli_connection_getsrv(srv_name, PIPE_NETLOGON, &con))
+		{
+			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		}
+		cli_connection_unlink(con);
+#endif
+
 		safe_strcpy(creds.domain, domain    , sizeof(creds.myname)-1);
 		safe_strcpy(creds.myname, myhostname, sizeof(creds.myname)-1);
+		memcpy(creds.sess_key, sess_key, sizeof(creds.sess_key));
 		
 		if (!cli_connection_init_auth(srv_name, PIPE_NETLOGON, &con,
 		                            &cli_netsec_fns,

@@ -613,23 +613,40 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 
 /*The following definitions come from  lib/util_hnd.c  */
 
-BOOL init_policy_hnd(int num_pol_hnds);
-BOOL register_policy_hnd(POLICY_HND *hnd);
-BOOL open_policy_hnd(POLICY_HND *hnd);
-int find_policy_by_hnd(const POLICY_HND *hnd);
-BOOL set_policy_samr_rid(POLICY_HND *hnd, uint32 rid);
-BOOL set_policy_samr_pol_status(POLICY_HND *hnd, uint32 pol_status);
-BOOL set_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
-uint32 get_policy_samr_rid(POLICY_HND *hnd);
-BOOL get_policy_svc_name(POLICY_HND *hnd, fstring name);
-BOOL set_policy_svc_name(POLICY_HND *hnd, fstring name);
-BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
+struct policy_cache *get_global_hnd_cache(void);
+struct policy_cache *init_policy_cache(int num_pol_hnds);
+void free_policy_cache(struct policy_cache *cache);
+BOOL register_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd);
+BOOL open_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd);
+int find_policy_by_hnd(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL set_policy_samr_rid(struct policy_cache *cache,
+				POLICY_HND *hnd, uint32 rid);
+BOOL set_policy_samr_pol_status(struct policy_cache *cache,
+				POLICY_HND *hnd, uint32 pol_status);
+BOOL set_policy_samr_sid(struct policy_cache *cache,
+				POLICY_HND *hnd, DOM_SID *sid);
+BOOL get_policy_samr_sid(struct policy_cache *cache,
+				POLICY_HND *hnd, DOM_SID *sid);
+uint32 get_policy_samr_rid(struct policy_cache *cache,
+				POLICY_HND *hnd);
+BOOL get_policy_svc_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name);
+BOOL set_policy_svc_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name);
+BOOL set_policy_reg_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name);
+BOOL get_policy_reg_name(struct policy_cache *cache,
+				POLICY_HND *hnd, fstring name);
+BOOL set_policy_con(struct policy_cache *cache,
+				POLICY_HND *hnd, struct cli_connection *con,
 				void (*free_fn)(struct cli_connection *));
-BOOL get_policy_con(const POLICY_HND *hnd, struct cli_connection **con);
-BOOL close_policy_hnd(POLICY_HND *hnd);
+BOOL get_policy_con(struct policy_cache *cache,
+				const POLICY_HND *hnd, struct cli_connection **con);
+BOOL close_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_pwdb.c  */
 

@@ -101,8 +101,8 @@ BOOL reg_connect( const char* srv_name,
 
 	if (res)
 	{
-		if (!register_policy_hnd(reg_hnd) ||
-		    !set_policy_con(reg_hnd, con, 
+		if (!register_policy_hnd(get_global_hnd_cache(), reg_hnd) ||
+		    !set_policy_con(get_global_hnd_cache(), reg_hnd, con, 
 						 cli_connection_unlink))
 		{
 			cli_connection_unlink(con);
@@ -1137,7 +1137,7 @@ BOOL reg_close( POLICY_HND *hnd)
 	prs_free_data(&rbuf);
 	prs_free_data(&buf );
 
-	close_policy_hnd(hnd);
+	close_policy_hnd(get_global_hnd_cache(), hnd);
 
 	return valid_close;
 }

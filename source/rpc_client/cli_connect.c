@@ -359,10 +359,14 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 				struct cli_connection **con)
 {
 	int i;
+	struct cli_connection *auth_con = NULL;
+
 	if (con_list == NULL || num_cons == 0)
 	{
 		return False;
 	}
+
+	(*con) = NULL;
 
 	for (i = 0; i < num_cons; i++)
 	{
@@ -370,11 +374,22 @@ BOOL cli_connection_getsrv(const char* srv_name, const char* pipe_name,
 		    strequal(con_list[i]->srv_name , srv_name ) &&
 		    strequal(con_list[i]->pipe_name, pipe_name))
 		{
+			extern cli_auth_fns cli_noauth_fns;
 			(*con) = con_list[i];
-			return True;
+			/* authenticated connections take priority. HACK! */
+			if ((*con)->auth != &cli_noauth_fns)
+			{
+				auth_con = (*con);
+			}
 		}
 	}
-	return False;
+
+	if (auth_con != NULL)
+	{
+		(*con) = auth_con;
+	}
+
+	return (*con) != NULL;
 }
 
 /****************************************************************************
@@ -382,7 +397,7 @@ obtain client state
 ****************************************************************************/
 BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con)
 {
-	return get_policy_con(pol, con);
+	return get_policy_con(get_global_hnd_cache(), pol, con);
 }
 
 /****************************************************************************
@@ -397,7 +412,8 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 		return False;
 	}
 
-	return register_policy_hnd(to) && set_policy_con(to, con, NULL);
+	return register_policy_hnd(get_global_hnd_cache(), to) &&
+	       set_policy_con(get_global_hnd_cache(), to, con, NULL);
 }
 
 /****************************************************************************

@@ -47,7 +47,7 @@ static void lsa_reply_open_policy2(prs_struct *rdata)
 	r_o.status = 0x0;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(&r_o.pol))
+	if (!open_policy_hnd(get_global_hnd_cache(), &r_o.pol))
 	{
 		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -70,7 +70,7 @@ static void lsa_reply_open_policy(prs_struct *rdata)
 	r_o.status = 0x0;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(&r_o.pol))
+	if (!open_policy_hnd(get_global_hnd_cache(), &r_o.pol))
 	{
 		r_o.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -131,7 +131,7 @@ static void lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
 	ZERO_STRUCT(r_q);
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (r_q.status == 0x0 && !open_policy_hnd(&q_q->pol))
+	if (r_q.status == 0x0 && !open_policy_hnd(get_global_hnd_cache(), &q_q->pol))
 	{
 		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -627,13 +627,13 @@ static void api_lsa_close( rpcsrv_struct *p, prs_struct *data,
 	r_c.status = 0x0;
 
 	/* find the connection policy handle. */
-	if (r_c.status == 0x0 && (find_policy_by_hnd(&(q_c.pol)) == -1))
+	if (r_c.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_c.pol)) == -1))
 	{
 		r_c.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 	if (r_c.status == 0x0)
 	{
-		close_policy_hnd(&(q_c.pol));
+		close_policy_hnd(get_global_hnd_cache(), &(q_c.pol));
 	}
 
 	/* store the response in the SMB stream */
