@@ -226,9 +226,9 @@ static uint32 cmd_help(struct client_info *info, int argc, char *argv[])
 	int i = 0;
 
 	/* get help on a specific command */
-	if (argc > 0)
+	if (argc > 1)
 	{
-		if ((i = process_tok(argv[1])) >= 0)
+		if ((i = process_tok(argv[0])) >= 0)
 		{
 			fprintf(out_hnd, "HELP %s:\n\t%s\n\n",
 				commands[i]->name, commands[i]->description);
@@ -333,7 +333,7 @@ static uint32 do_command(struct client_info *info, char *line)
 	i = process_tok(cmd_argv[0]);
 	if (i >= 0)
 	{
-		int argc = ((int)cmd_argc)-1;
+		int argc = ((int)cmd_argc);
 		char **argv = cmd_argv;
 		optind = 0;
 
