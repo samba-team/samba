@@ -1,3 +1,15 @@
+Changes in release 0.4e
+
+ * improve libcrypto and database autoconf tests
+
+ * do not care about salting of server principals when serving v4 requests
+
+ * some improvements to gssapi library
+
+ * portability fixes
+
+ * bug fixes
+
 Changes in release 0.4d
 
  * fix some problems when using libcrypto from openssl
