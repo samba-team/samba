@@ -328,7 +328,7 @@ smb_print(struct cli_state *cli,	/* I - SMB connection */
   * Open the printer device...
   */
 
-  if ((fnum = cli_open(cli, title, O_WRONLY | O_CREAT | O_TRUNC, DENY_NONE)) == -1)
+  if ((fnum = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE)) == -1)
   {
     fprintf(stderr, "ERROR: %s opening remote file %s\n",
             cli_errstr(cli), title);
