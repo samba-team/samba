@@ -212,7 +212,8 @@ static const char *share_type[] = {
   "IPC"
 };
 
-/* End of weild 'strings at top of file' section */
+/* End of weird 'strings at top of file' section */
+
 static int general_rap_usage(int argc, const char **argv)
 {
 

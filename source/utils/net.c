@@ -49,7 +49,6 @@
 /* be used (if possible).                                              */
 /***********************************************************************/
 
-#define PASSWORD_PROMPT		"Password: "
 #define YES_STRING              "Yes"
 #define NO_STRING               "No"
 
@@ -105,85 +104,27 @@ connect to \\server\ipc$
 static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *server_name)
 {
 	struct cli_state *c;
-	struct nmb_name called, calling;
-	struct in_addr ip;
-	fstring sharename;
+	NTSTATUS nt_status;
 
-	make_nmb_name(&calling, opt_requester_name, 0x0);
-	make_nmb_name(&called , server_name, 0x20);
-	
-again:
-	ip = *server_ip;
-	
-	DEBUG(3,("Connecting to host=%s share=%s\n\n", 
-		 server_name, "IPC$"));
-	
-	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || cli_set_port(c, opt_port) != opt_port ||
-	    !cli_connect(c, server_name, &ip)) {
-		DEBUG(1,("Connection to %s failed\n", server_name));
-		return NULL;
-	}
-	
-	c->protocol = PROTOCOL_NT1;
-	
-	if (!cli_session_request(c, &calling, &called)) {
-		char *p;
-		DEBUG(1,("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c)));
-		cli_shutdown(c);
-		if ((p=strchr(called.name, '.'))) {
-			*p = 0;
-			goto again;
-		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
-			goto again;
-		}
-		return NULL;
-	}
-	
-	DEBUG(4,(" session request ok\n"));
-	
-	if (!cli_negprot(c)) {
-		DEBUG(1,("protocol negotiation failed\n"));
-		cli_shutdown(c);
-		return NULL;
-	}
-	
 	if (!got_pass) {
-		char *pass = getpass(PASSWORD_PROMPT);
+		char *pass = getpass("Password:");
 		if (pass) {
 			opt_password = strdup(pass);
 		}
 	}
 	
-	if (!cli_session_setup(c, opt_user_name, 
-			       opt_password, strlen(opt_password),
-			       opt_password, strlen(opt_password),
-			       opt_workgroup)) {
-		/*  try again with a null username */
-		if (!cli_session_setup(c, "", "", 0, "", 0, opt_workgroup)) { 
-			DEBUG(1,("session setup failed: %s\n", cli_errstr(c)));
-			cli_shutdown(c);
-			return NULL;
-		}
-		DEBUG(3,("Anonymous login successful\n"));
-	}
+	nt_status = cli_full_connection(&c, opt_requester_name, server_name, 
+					server_ip, opt_port,
+					"IPC$", "IPC",  
+					opt_user_name, opt_workgroup,
+					opt_password, strlen(opt_password));
 	
-	snprintf(sharename, sizeof(sharename), "\\\\%s\\IPC$", server_name);
-
-	DEBUG(4,(" session setup ok\n"));
-	if (!cli_send_tconX(c, sharename, "?????",
-			    opt_password, strlen(opt_password)+1)) {
-		DEBUG(1,("tree connect failed: %s\n", cli_errstr(c)));
-		cli_shutdown(c);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return c;
+	} else {
+		DEBUG(1,("Cannot connect to server.  Error was %s\n", get_nt_error_msg(nt_status)));
 		return NULL;
 	}
-	
-	DEBUG(4,(" tconx ok\n"));
-	
-	return c;
 }
 
 struct cli_state *net_make_ipc_connection(unsigned flags)
@@ -199,7 +140,7 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	} else if (server_name) {
 		/* resolve the IP address */
 		if (!resolve_name(server_name, &server_ip, 0x20))  {
-			DEBUG(1,("Unable to resolve domain browser via name lookup\n"));
+			DEBUG(1,("Unable to resolve server name\n"));
 			return NULL;
 		}
 	} else if (flags & NET_FLAGS_DMB) {
@@ -251,7 +192,7 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	cli = connect_to_ipc(&server_ip, server_name);
 	if(!cli) {
 		d_printf("\nUnable to connect to target server\n");
-		return False;
+		return NULL;
 	}
 	return cli;
 }
