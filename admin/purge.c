@@ -147,15 +147,15 @@ kt_purge(int argc, char **argv)
 	return 1;
     }
 
-    if (verbose_flag)
-	fprintf (stderr, "Using keytab %s\n", keytab_string);
-	
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
 	goto out;
     }
 
+    if (verbose_flag)
+	fprintf (stderr, "Using keytab %s\n", keytab_string);
+	
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0) {
 	add_entry (entry.principal, entry.vno, &head);
 	krb5_kt_free_entry(context, &entry);

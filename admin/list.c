@@ -77,13 +77,14 @@ do_list(const char *keytab_string)
 	return 0;
     }
 
-    printf ("%s:\n\n", keytab_string);
-	
     ret = krb5_kt_start_seq_get(context, keytab, &cursor);
     if(ret){
 	krb5_warn(context, ret, "krb5_kt_start_seq_get %s", keytab_string);
 	goto out;
     }
+
+    printf ("%s:\n\n", keytab_string);
+	
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
 #define CHECK_MAX(F) if(max_##F < strlen(kp->F)) max_##F = strlen(kp->F)
 

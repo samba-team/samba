@@ -67,14 +67,14 @@ kt_copy_int (const char *from, const char *to)
 	return 1;
     }
 
-    if (verbose_flag)
-	fprintf(stderr, "copying %s to %s\n", from, to);
-
     ret = krb5_kt_start_seq_get (context, src_keytab, &cursor);
     if (ret) {
 	krb5_warn (context, ret, "krb5_kt_start_seq_get %s", keytab_string);
 	goto out;
     }
+
+    if (verbose_flag)
+	fprintf(stderr, "copying %s to %s\n", from, to);
 
     while((ret = krb5_kt_next_entry(context, src_keytab,
 				    &entry, &cursor)) == 0) {
