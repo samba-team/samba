@@ -175,6 +175,7 @@ typedef struct
 	char *szAddShareCommand;
 	char *szChangeShareCommand;
 	char *szDeleteShareCommand;
+	char *szManglingMethod;
 	int max_log_size;
 	int mangled_stack;
 	int max_xmit;
@@ -920,6 +921,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
 	{"strip dot", P_BOOL, P_GLOBAL, &Globals.bStripDot, NULL, NULL, FLAG_DEPRECATED },
+	{"mangling method", P_STRING, P_GLOBAL, &Globals.szManglingMethod, NULL, NULL, 0},
 	
 	{"character set", P_STRING, P_GLOBAL, &Globals.szCharacterSet, handle_character_set, NULL, 0},
 	{"mangled stack", P_INTEGER, P_GLOBAL, &Globals.mangled_stack, NULL, NULL, 0},
@@ -1256,6 +1258,10 @@ static void init_globals(void)
 #else
 	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
 #endif
+
+	/* use the old 'hash' method by default */
+	string_set(&Globals.szManglingMethod, "hash");
+
 	/*
 	 * Allow the default PASSWD_CHAT to be overridden in local.h.
 	 */
@@ -1582,6 +1588,7 @@ FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
+FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 
 #ifdef WITH_SSL
 FN_GLOBAL_INTEGER(lp_ssl_version, &Globals.sslVersion)

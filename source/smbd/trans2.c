@@ -505,7 +505,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
 			got_match = mask_match(fname, mask, case_sensitive);
 
-		if(!got_match && !is_8_3(fname, False)) {
+		if(!got_match && !mangle_is_8_3(fname, False)) {
 
 			/*
 			 * It turns out that NT matches wildcards against
@@ -516,7 +516,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
 			pstring newname;
 			pstrcpy( newname, fname);
-			name_map_mangle( newname, True, False, SNUM(conn));
+			mangle_map( newname, True, False, SNUM(conn));
 			if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
 				got_match = mask_match(newname, mask, case_sensitive);
 		}
@@ -586,7 +586,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		}
 	}
 
-	name_map_mangle(fname,False,True,SNUM(conn));
+	mangle_map(fname,False,True,SNUM(conn));
 
 	p = pdata;
 	nameptr = p;
@@ -663,7 +663,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			break;
 
 		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-			was_8_3 = is_8_3(fname, True);
+			was_8_3 = mangle_is_8_3(fname, True);
 			len = 94+strlen(fname);
 			len = (len + 3) & ~3;
 			SIVAL(p,0,len); p += 4;
@@ -680,7 +680,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SIVAL(p,0,0); p += 4;
 			if (!was_8_3) {
 				fstrcpy(p+2,fname);
-				if(!name_map_mangle(p+2,True,True,SNUM(conn)))
+				if(!mangle_map(p+2,True,True,SNUM(conn)))
 					(p+2)[12] = 0; 
 				strupper(p+2);
 				SSVAL(p, 0, strlen(p+2));
@@ -1046,8 +1046,8 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!is_8_3( mask, False))
-		name_map_mangle(mask, True, True, SNUM(conn));
+	if(!mangle_is_8_3( mask, False))
+		mangle_map(mask, True, True, SNUM(conn));
 
 	return(-1);
 }
@@ -1209,7 +1209,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			 */
 
 			if(dname != NULL)
-				name_map_mangle( dname, False, True, SNUM(conn));
+				mangle_map( dname, False, True, SNUM(conn));
 
 			if(dname && strcsequal( resume_name, dname)) {
 				SeekDir(dirptr, current_pos+1);
@@ -1235,7 +1235,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 				 */
 
 				if(dname != NULL)
-					name_map_mangle( dname, False, True, SNUM(conn));
+					mangle_map( dname, False, True, SNUM(conn));
 
 				if(dname && strcsequal( resume_name, dname)) {
 					SeekDir(dirptr, current_pos+1);
@@ -1816,8 +1816,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		pstring short_name;
 		pstrcpy(short_name,p);
 		/* Mangle if not already 8.3 */
-		if(!is_8_3(short_name, True)) {
-			if(!name_map_mangle(short_name,True,True,SNUM(conn)))
+		if(!mangle_is_8_3(short_name, True)) {
+			if(!mangle_map(short_name,True,True,SNUM(conn)))
 				*short_name = '\0';
 		}
 		strupper(short_name);

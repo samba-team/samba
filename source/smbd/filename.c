@@ -53,21 +53,17 @@ static BOOL fname_equal(char *name1, char *name2)
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
+
 static BOOL mangled_equal(char *name1, char *name2, int snum)
 {
-  pstring tmpname;
+	pstring tmpname;
 
-  if (is_8_3(name2, True))
-    return(False);
+	if (mangle_is_8_3(name2, True))
+		return False;
 
-  pstrcpy(tmpname,name2);
-#if 1
-  mangle_name_83(tmpname);
-#else
-  name_map_mangle(tmpname,True,False,snum);
-#endif
-
-  return(strequal(name1,tmpname));
+	pstrcpy(tmpname,name2);
+	return mangle_map(tmpname,True,False,snum) &&
+		strequal(name1,tmpname);
 }
 
 
@@ -166,7 +162,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   }
 
   if (!case_sensitive && 
-      (!case_preserve || (is_8_3(name, False) && !short_case_preserve)))
+      (!case_preserve || (mangle_is_8_3(name, False) && !short_case_preserve)))
     strnorm(name);
 
   /*
@@ -208,7 +204,7 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * sensitive then searching won't help.
    */
 
-  if (case_sensitive && !is_mangled(name) && !use_mangled_map)
+  if (case_sensitive && !mangle_is_mangled(name) && !use_mangled_map)
     return(False);
 
   name_has_wildcard = ms_has_wild(start);
@@ -218,15 +214,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
    * just a component. JRA.
    */
 
-  if(is_mangled(start))
+  if(mangle_is_mangled(start))
     component_was_mangled = True;
-
-#if 0
-  /* Keep Andrew's conservative code around, just in case. JRA. */
-  /* this is an extremely conservative test for mangled names. */
-  if (strchr(start,magic_char))
-    component_was_mangled = True;
-#endif
 
   /* 
    * Now we need to recursively match the name against the real 
@@ -325,8 +314,8 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
            * base of the filename.
            */
 
-          if (is_mangled(start)) {
-            check_mangled_cache( start );
+          if (mangle_is_mangled(start)) {
+            mangle_check_cache( start );
           }
 
           DEBUG(5,("New file %s\n",start));
@@ -447,7 +436,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
   BOOL mangled;
   pstring name2;
 
-  mangled = is_mangled(name);
+  mangled = mangle_is_mangled(name);
 
   /* handle null paths */
   if (*path == 0)
@@ -466,7 +455,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
    * (JRA).
    */
   if (mangled)
-    mangled = !check_mangled_cache( name );
+    mangled = !mangle_check_cache( name );
 
   /* open the directory */
   if (!(cur_dir = OpenDir(conn, path, True))) {
@@ -483,7 +472,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
        * dname here is the unmangled name.
        */
       pstrcpy(name2,dname);
-      if (!name_map_mangle(name2,False,True,SNUM(conn)))
+      if (!mangle_map(name2,False,True,SNUM(conn)))
         continue;
 
       /*

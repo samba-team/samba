@@ -1945,6 +1945,7 @@ int lp_ldap_ssl(void);
 char *lp_add_share_cmd(void);
 char *lp_change_share_cmd(void);
 char *lp_delete_share_cmd(void);
+char *lp_mangling_method(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -4427,12 +4428,23 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
 /* The following definitions come from smbd/mangle.c  */
 
-BOOL is_mangled( char *s );
-BOOL is_8_3( char *fname, BOOL check_case );
-void reset_mangled_cache( void );
-BOOL check_mangled_cache( char *s );
-void mangle_name_83( char *s);
-BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum);
+void mangle_reset_cache(void);
+BOOL mangle_is_mangled(const char *s);
+BOOL mangle_is_8_3(const char *fname, BOOL check_case);
+BOOL mangle_check_cache(char *s);
+BOOL mangle_map(char *OutName, BOOL need83, BOOL cache83, int snum);
+
+/* The following definitions come from smbd/mangle_hash2.c  */
+
+struct mangle_fns *mangle_hash2_init(void);
+
+/* The following definitions come from smbd/mangle_hash.c  */
+
+struct mangle_fns *mangle_hash_init(void);
+
+/* The following definitions come from smbd/mangle_map.c  */
+
+void mangle_map_filename(char *fname, int snum);
 
 /* The following definitions come from smbd/message.c  */
 

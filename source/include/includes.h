@@ -688,6 +688,8 @@ extern int errno;
 
 #include "popt.h"
 
+#include "mangle.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
