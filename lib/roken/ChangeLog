@@ -1,3 +1,8 @@
+Fri Jul 24 21:56:02 1998  Assar Westerlund  <assar@sics.se>
+
+	* simple_exec.c (simple_execvp): loop around waitpid when errno ==
+ 	EINTR
+
 Wed Jul 22 21:38:35 1998  Assar Westerlund  <assar@sics.se>
 
 	* simple_exec.c (simple_execlp): initialize `argv'
