@@ -43,7 +43,7 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		return NULL;
 	
 	if (server[0] != '\\' || server[1] != '\\') {
-		PyErr_SetString(spoolss_error, "bad server name");
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
 		return NULL;
 	}
 
@@ -259,7 +259,7 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 		return NULL;
 
 	if (server[0] != '\\' || server[1] != '\\') {
-		PyErr_SetString(spoolss_error, "bad server name");
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
 		return NULL;
 	}
 
@@ -340,7 +340,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		    &info, &creds))
 		return NULL;
 	
-	if (server[0] == '\\' && server[1] == '\\')
+	if (server[0] == '\\' || server[1] == '\\')
 		server += 2;
 
 	if (creds && creds != Py_None && !PyDict_Check(creds)) {
