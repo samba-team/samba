@@ -235,7 +235,7 @@ parse_timet (const char *resp, krb5_timestamp *value, int *mask, int bit)
  * allow the user to edit the time in `value'
  */
 
-static int
+int
 edit_timet (const char *prompt, krb5_timestamp *value, int *mask, int bit)
 {
     char buf[1024], resp[1024];
