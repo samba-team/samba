@@ -1,3 +1,10 @@
+2000-01-08  Assar Westerlund  <assar@sics.se>
+
+	* ftp/ftp.c (hookup): handle ai_canonname being set in any of the
+	addresses returnedby getaddrinfo.  glibc apparently returns the
+	reverse lookup of every address in ai_canonname.
+	* ftp/ruserpass.c (guess_domain): dito
+
 1999-12-21  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c: don't use sa_len as a parameter, it's defined on
