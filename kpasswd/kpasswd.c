@@ -409,7 +409,7 @@ change_password (krb5_context context,
     if (i == 5)
 	errx (1, "Did not manage to contact kdc");
 
-    krb5_free_creds (context, &cred_out);
+    krb5_free_creds_contents (context, &cred_out);
 
     ret = process_reply (context,
 			 auth_context,
