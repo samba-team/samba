@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "14 April 2001" "" ""
+.TH "SMB.CONF" "5" "19 April 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -927,9 +927,6 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIunix password sync\fR
-.TP 0.2i
-\(bu
-\fIunix realname\fR
 .TP 0.2i
 \(bu
 \fIupdate encrypted\fR
@@ -6248,14 +6245,6 @@ See also \fIpasswd
 program\fR, \fI passwd chat\fR.
 
 Default: \fBunix password sync = no\fR
-.TP
-\fBunix realname (G)\fR
-This boolean parameter when set causes samba 
-to supply the real name field from the unix password file to 
-the client. This is useful for setting up mail clients and WWW 
-browsers on systems used by more than one person.
-
-Default: \fBunix realname = yes\fR
 .TP
 \fBupdate encrypted (G)\fR
 This boolean parameter allows a user logging 

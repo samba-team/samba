@@ -728,7 +728,6 @@
 		<listitem><para><link linkend="TIMESTAMPLOGS"><parameter>timestamp logs</parameter></link></para></listitem>
 		<listitem><para><link linkend="TOTALPRINTJOBS"><parameter>total print jobs</parameter></link></para></listitem>
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
-		<listitem><para><link linkend="UNIXREALNAME"><parameter>unix realname</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
@@ -7054,19 +7053,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="UNIXREALNAME">unix realname (G)</term>
-		<listitem><para>This boolean parameter when set causes samba 
-		to supply the real name field from the unix password file to 
-		the client. This is useful for setting up mail clients and WWW 
-		browsers on systems used by more than one person.</para>
-
-		<para>Default: <command>unix realname = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-	
-	
 		<varlistentry>
 		<term><anchor id="UPDATEENCRYPTED">update encrypted (G)</term>
 		<listitem><para>This boolean parameter allows a user logging 
