@@ -13,6 +13,10 @@ EOF
 exit 1;
 fi
 
+if [ -z "$VALGRIND" ]; then
+    export MALLOC_CHECK_=2
+fi
+
 server="$1"
 username="$2"
 password="$3"
@@ -40,7 +44,7 @@ for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
      esac
    for t in $tests; do
     echo Testing $t on $transport with $bindoptions
-    testit bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    testit $VALGRIND bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
    done
  done
 done
