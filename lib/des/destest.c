@@ -211,7 +211,7 @@ s2k(char *password, const char *salt, char akey[8])
 
     DES_string_to_key(pw, &k);
     if (memcmp(akey, &k, 8) != 0)
-	warnx("key wrong for %s", pw);
+	errx(1, "key wrong for %s", pw);
     free(pw);
 }
 
