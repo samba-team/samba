@@ -1759,7 +1759,8 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 			  driver.defaultdatatype);
 
 	i=0;
-	while (len < dbuf.dsize) {
+	while (len < dbuf.dsize) 
+	{
 		fstring *tddfs;
 
 		tddfs = (fstring *)Realloc(driver.dependentfiles,
@@ -1774,13 +1775,15 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 				  &driver.dependentfiles[i]);
 		i++;
 	}
+	
 	if (driver.dependentfiles != NULL)
 		fstrcpy(driver.dependentfiles[i], "");
 
 	SAFE_FREE(dbuf.dptr);
 
-	if (len != dbuf.dsize) {
-			SAFE_FREE(driver.dependentfiles);
+	if (len != dbuf.dsize) 
+	{
+		SAFE_FREE(driver.dependentfiles);
 
 		return get_a_printer_driver_3_default(info_ptr, drivername, arch);
 	}
@@ -3034,15 +3037,17 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	TDB_DATA                kbuf, dbuf;
 	NT_PRINTER_INFO_LEVEL_2 info;
 
+
+	ZERO_STRUCT(info);
+
 	/*
 	 * Delete any printer data 'values' already set. When called for driver
 	 * replace, there will generally be some, but during an add printer, there
 	 * should not be any (if there are delete them).
 	 */
+	 
 	delete_all_printer_data( info_ptr );
-
-	ZERO_STRUCT(info);
-
+	
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
 
 	kbuf.dptr = key;
@@ -3057,16 +3062,18 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 		free_nt_devicemode(&info_ptr->devmode);
 		return False;
 	}
-
+	
 	/*
 	 * Get the saved DEVMODE..
 	 */
+	 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
 	 * The saved DEVMODE contains the devicename from the printer used during
 	 * the initialization save. Change it to reflect the new printer.
 	 */
+	 
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
@@ -3082,44 +3089,18 @@ static BOOL set_driver_init_2( NT_PRINTER_INFO_LEVEL_2 *info_ptr )
 	 * --jerry
 	 */
 
-#if 1	/* JERRY */
 
-	/* 
-	 * 	Bind the saved DEVMODE to the new the printer.
-	 */
+	/* Bind the saved DEVMODE to the new the printer */
+	 
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
-#else
-	/* copy the entire devmode if we currently don't have one */
 
-	if (!info_ptr->devmode) {
-		DEBUG(10,("set_driver_init_2: Current Devmode is NULL.  Copying entire Device Mode\n"));
-		info_ptr->devmode = info.devmode;
-	}
-	else {
-		/* only set the necessary fields */
-
-		DEBUG(10,("set_driver_init_2: Setting driverversion [0x%x] and private data [0x%x]\n",
-			info.devmode->driverversion, info.devmode->driverextra));
-
-		info_ptr->devmode->driverversion = info.devmode->driverversion;
-
-		SAFE_FREE(info_ptr->devmode->private);
-		info_ptr->devmode->private = NULL;
-
-		if (info.devmode->driverversion)
-			info_ptr->devmode->private = memdup(info.devmode->private, info.devmode->driverversion);
-
-		free_nt_devicemode(&info.devmode);
-	}
-#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));
 
-	/* 
-	 * Add the printer data 'values' to the new printer
-	 */
+	/* Add the printer data 'values' to the new printer */
+	 
 	len += unpack_values( &info_ptr->data, dbuf.dptr+len, dbuf.dsize-len );
 	
 
@@ -3142,7 +3123,7 @@ BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 	switch (level)
 	{
 		case 2:
-			result=set_driver_init_2(printer->info_2);
+			result = set_driver_init_2(printer->info_2);
 			break;
 			
 		default:
