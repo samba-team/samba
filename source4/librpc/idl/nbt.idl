@@ -103,8 +103,12 @@ interface nbt
 	typedef struct {
 		nb_flags nb_flags;
 		uint32   ipaddr;
-	} nbt_rdata_netbios;
+	} nbt_rdata_address;
 
+	typedef struct {
+		uint16 length;
+		nbt_rdata_address addresses[length/6];
+	} nbt_rdata_netbios;
 
 	typedef struct {
 		uint8 unit_id[6];
@@ -135,14 +139,16 @@ interface nbt
 		nb_flags  nb_flags;
 	} nbt_status_name;
 
-	typedef struct {
+	typedef [gensize] struct {
+		[value(ndr_size_nbt_rdata_status(r, ndr->flags)-2)] uint16 length;
 		uint8 num_names;
 		nbt_status_name names[num_names];
 		nbt_statistics  statistics;
 	} nbt_rdata_status;
 
 	typedef struct {
-		[flag(NDR_REMAINING)] DATA_BLOB data;
+		uint16 length;
+		uint8  data[length];
 	} nbt_rdata_data;
 
 	typedef [nodiscriminant] union {
@@ -156,7 +162,7 @@ interface nbt
 		nbt_qtype  rr_type;
 		nbt_qclass rr_class;
 		uint32     ttl;
-		[subcontext(2),switch_is(rr_type)] nbt_rdata rdata;
+		[switch_is(rr_type)] nbt_rdata rdata;
 	} nbt_res_rec;
 
 	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
