@@ -4,8 +4,11 @@
 .Dt KRB5_OPENLOG 3
 .Os HEIMDAL
 .Sh NAME
+.Nm krb5_initlog ,
 .Nm krb5_openlog ,
 .Nm krb5_closelog ,
+.Nm krb5_addlog_dest ,
+.Nm krb5_addlog_func ,
 .Nm krb5_log ,
 .Nm krb5_vlog ,
 .Nm krb5_log_msg ,
@@ -13,8 +16,21 @@
 .Nd Heimdal logging functions
 .Sh SYNOPSIS
 .Fd #include <krb5.h>
+.Ft "typedef void (*krb5_log_log_func_t)(const char *time, const char *message, void *data);"
+
+.Ft "typedef void (*krb5_log_close_func_t)(void *data);"
+
+.Ft krb5_error_code
+.Fn krb5_addlog_dest "krb5_context context" "krb5_log_facility *facility" "const char *destination"
+
+.Ft krb5_error_code
+.Fn krb5_addlog_func "krb5_context context" "krb5_log_facility *facility" "int min" "int max" "krb5_log_log_func_t log" "krb5_log_close_func_t close" "void *data"
+
 .Ft krb5_error_code
 .Fn krb5_closelog "krb5_context context" "krb5_log_facility *facility"
+
+.Ft krb5_error_code
+.Fn krb5_initlog "krb5_context context" "const char *program" "krb5_log_facility **facility"
 
 .Ft krb5_error_code
 .Fn krb5_log "krb5_context context" "krb5_log_facility *facility" "int level" "const char *format" "..."
@@ -77,6 +93,45 @@ The
 is a standard 
 .Fn printf
 style format string (but see the BUGS section).
+.Pp
+
+If you want better control of where things gets logged, you can instead of using 
+.Fn krb5_openlog
+call 
+.Fn krb5_initlog ,
+which just initializes a facility, but doesn't define any actual logging
+destinations. You can then add destinations with the
+.Fn krb5_addlog_dest
+and
+.Fn krb5_addlog_func 
+functions.  The first of these takes a string specifying a logging
+destination, and adds this to the facility. If you want to do some
+non-standard logging you can use the
+.Fn krb5_addlog_func
+function, which takes a function to use when logging.
+The 
+.Fa log
+function is called for each message with
+.Fa time
+being a string specifying the current time, and
+.Fa message
+the message to log. 
+.Fa close
+is called when the facility is closed. You can pass application specific data in the 
+.Fa data 
+parameter. The
+.Fa min
+and 
+.Fa max
+parameter are the same as in a destination (defined below). To specify a
+max of infinity, pass -1.
+.Pp
+.Fn krb5_openlog
+calls 
+.Fn krb5_initlog
+and then calls 
+.Fn krb5_addlog_dest
+for each destination found.
 
 .Ss Destinations
 
@@ -162,8 +217,6 @@ thread-safe, depending on the implementation of
 .Fn openlog ,
 and
 .Fn syslog .
-.Pp
-It should be possible to pass a list of destinations to
 .Fn krb5_openlog .
 .Sh SEE ALSO
 .Xr syslog 3 ,
