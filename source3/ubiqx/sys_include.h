@@ -32,7 +32,20 @@
  * ========================================================================== **
  */
 
+#ifndef _INCLUDES_H
+
+/* Block the inclusion of some Samba headers so that ubiqx types won't be
+ * used before the headers that define them.  These headers are not needed
+ * in the ubiqx modules anyway.
+ */
+#define _NAMESERV_H_
+#define _PROTO_H_
+
+/* The main Samba system-adaptive header file.
+ */
 #include "../includes.h"
+
+#endif /* _INCLUDES_H */
 
 /* ================================ The End ================================= */
 #endif /* SYS_INCLUDE_H */
