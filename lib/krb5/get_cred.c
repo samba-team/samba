@@ -199,7 +199,7 @@ get_krbtgt(krb5_context context,
     if(ret)
 	return ret;
     ret = krb5_get_credentials(context,
-			       0, /* CACHE_ONLY */
+			       KRB5_GC_CACHED,
 			       id,
 			       &tmp_cred,
 			       cred);
@@ -272,20 +272,31 @@ get_cred_kdc(krb5_context context, krb5_ccache id, krb5_kdc_flags flags,
     unsigned char buf[1024];
     krb5_keyblock *subkey = NULL;
     size_t len;
+    Ticket second_ticket;
     
     krb5_generate_random_block(&nonce, sizeof(nonce));
     nonce &= 0xffffffff;
     
+    if(flags.b.enc_tkt_in_skey){
+	ret = decode_Ticket(in_creds->second_ticket.data, 
+			    in_creds->second_ticket.length, 
+			    &second_ticket, &len);
+	if(ret)
+	    return ret;
+    }
+
     ret = init_tgs_req (context,
 			id,
 			addresses,
 			flags,
-			NULL,
+			flags.b.enc_tkt_in_skey ? &second_ticket : NULL,
 			in_creds,
 			krbtgt,
 			nonce,
 			&subkey, 
 			&req);
+    if(flags.b.enc_tkt_in_skey)
+	free_Ticket(&second_ticket);
     if (ret)
 	goto out;
 
@@ -410,14 +421,14 @@ get_cred(server)
 	*/
 
 krb5_error_code
-krb5_get_credentials(krb5_context context,
-		     krb5_flags options,
-		     krb5_ccache ccache,
-		     krb5_creds *in_creds,
-		     krb5_creds **out_creds)
+krb5_get_credentials_with_flags(krb5_context context,
+				krb5_flags options,
+				krb5_kdc_flags flags,
+				krb5_ccache ccache,
+				krb5_creds *in_creds,
+				krb5_creds **out_creds)
 {
     krb5_error_code ret;
-    krb5_kdc_flags flags;
     krb5_creds *tgt;
     *out_creds = calloc(1, sizeof(**out_creds));
     ret = krb5_cc_retrieve_cred(context, ccache, 0, in_creds, *out_creds);
@@ -427,6 +438,10 @@ krb5_get_credentials(krb5_context context,
 	free(*out_creds);
 	return ret;
     }
+    if(options & KRB5_GC_CACHED)
+	return KRB5_CC_NOTFOUND;
+    if(options & KRB5_GC_USER_USER)
+	flags.b.enc_tkt_in_skey = 1;
     memset(*out_creds, 0, sizeof(**out_creds));
     {
 	krb5_creds tmp_creds;
@@ -448,14 +463,14 @@ krb5_get_credentials(krb5_context context,
 	    krb5_free_principal(context, tmp_creds.client);
 	    return ret;
 	}
-	flags.i = options; /* XXX */
 	{
 	    krb5_creds tgts;
+	    /* XXX try krb5_cc_retrieve_cred first? */
 	    ret = krb5_cc_retrieve_cred_any_realm(context, ccache, 0, 
 						  &tmp_creds, &tgts);
 	    if(ret == 0){
 		ret = get_cred_kdc_la(context, ccache, flags, 
-				   in_creds, &tgts, out_creds);
+				      in_creds, &tgts, out_creds);
 		krb5_free_creds_contents(context, &tgts);
 		krb5_free_principal(context, tmp_creds.server);
 		krb5_free_principal(context, tmp_creds.client);
@@ -479,6 +494,7 @@ krb5_get_credentials(krb5_context context,
 	    ret = krb5_free_creds_contents(context, tgt);
 	    if(ret) return ret;
 	    free(tgt);
+	    /* XXX which kdc-flags should be used here? */
 	    ret = krb5_get_credentials(context, 0, ccache, &tmp_creds, &tgt);
 	    if(ret) return ret;
 	    tgt_inst = tgt->server->name.name_string.val[1];
@@ -494,4 +510,17 @@ krb5_get_credentials(krb5_context context,
 	    return ret;
 	return krb5_cc_store_cred (context, ccache, *out_creds);
     }
+}
+
+krb5_error_code
+krb5_get_credentials(krb5_context context,
+		     krb5_flags options,
+		     krb5_ccache ccache,
+		     krb5_creds *in_creds,
+		     krb5_creds **out_creds)
+{
+    krb5_kdc_flags flags;
+    flags.i = 0;
+    return krb5_get_credentials_with_flags(context, options, flags,
+					   ccache, in_creds, out_creds);
 }
