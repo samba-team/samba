@@ -601,8 +601,8 @@ linkend="winbindcfg">the next example</link>, was modified to include the necess
 
 <para>
 Enter the following command to make the Samba server join the 
-PDC domain, where <replaceable>DOMAIN</replaceable> is the name of 
-your Windows domain and <replaceable>Administrator</replaceable> is 
+PDC domain, where <replaceable>PDC</replaceable> is the name of 
+your PDC and <replaceable>Administrator</replaceable> is 
 a domain user who has administrative privileges in the domain.
 </para>
 	
@@ -610,7 +610,6 @@ a domain user who has administrative privileges in the domain.
 <para>
 &rootprompt;<userinput>/usr/local/samba/bin/net rpc join -S PDC -U Administrator</userinput>
 </para>
-
 
 <para>
 The proper response to the command should be: <quote>Joined the domain 
