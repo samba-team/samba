@@ -40,7 +40,10 @@
 
 #define CREATE_ACCESS_READ      READ_CONTROL_ACCESS
 
-
+/*We should test for this in configure ... */
+#ifndef ENOTSUP
+#define ENOTSUP EOPNOTSUPP
+#endif
 
 /*
  * Functions exported by libsmb_cache.c that we need here
