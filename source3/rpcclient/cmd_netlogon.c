@@ -273,12 +273,14 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         int logon_type = NET_LOGON_TYPE;
         char *username, *password;
 	uint32 neg_flags = 0x000001ff;
+	int auth_level = 2;
 
         /* Check arguments */
 
-        if (argc < 3 || argc > 4) {
+        if (argc < 3 || argc > 6) {
                 fprintf(stderr, "Usage: samlogon <username> <password> "
-                        "[logon_type]\n");
+                        "[logon_type] [neg flags] [auth level (2 or 3)]\n"
+			"neg flags being 0x000001ff or 0x6007ffff\n");
                 return NT_STATUS_OK;
         }
 
@@ -287,6 +289,12 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 
         if (argc == 4)
                 sscanf(argv[3], "%i", &logon_type);
+
+	if (argc == 5)
+                sscanf(argv[4], "%i", &neg_flags);
+
+	if (argc == 6)
+                sscanf(argv[5], "%i", &auth_level);
 
         /* Authenticate ourselves with the domain controller */
 
@@ -300,7 +308,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 		goto done;
 	}        
 
-        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
+        result = cli_nt_setup_creds(cli, get_sec_chan(), trust_passwd, &neg_flags, auth_level);
 
         if (!NT_STATUS_IS_OK(result)) {
                 fprintf(stderr, "Error initialising session creds\n");
