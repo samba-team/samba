@@ -1316,6 +1316,8 @@ BOOL get_dc_list(const char *domain, struct in_addr **ip_list, int *count, int *
 				
 		}
 				
+		SAFE_FREE(auto_ip_list);
+
 		/* need to remove duplicates in the list if we have 
 		   any explicit password servers */
 		   
