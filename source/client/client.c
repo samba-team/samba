@@ -39,6 +39,7 @@ static pstring username;
 static pstring password;
 static BOOL use_kerberos;
 static BOOL got_pass;
+static BOOL grepable=False;
 static char *cmdstr = NULL;
 
 static int io_bufsize = 64512;
@@ -2001,8 +2002,12 @@ static void browse_fn(const char *name, uint32 m,
 	/* FIXME: If the remote machine returns non-ascii characters
 	   in any of these fields, they can corrupt the output.  We
 	   should remove them. */
-	d_printf("\t%-15.15s%-10.10s%s\n",
-               name,typestr,comment);
+	if (!grepable) {
+		d_printf("\t%-15.15s%-10.10s%s\n",
+               		name,typestr,comment);
+	} else {
+		d_printf ("%s|%s|%s\n",typestr,name,comment);
+	}
 }
 
 /****************************************************************************
@@ -2012,9 +2017,10 @@ static void browse_fn(const char *name, uint32 m,
 static BOOL browse_host(BOOL sort)
 {
 	int ret;
-
-        d_printf("\n\tSharename      Type      Comment\n");
-        d_printf("\t---------      ----      -------\n");
+	if (!grepable) {
+	        d_printf("\n\tSharename      Type      Comment\n");
+	        d_printf("\t---------      ----      -------\n");
+	}
 
 	if((ret = cli_RNetShareEnum(cli, browse_fn, NULL)) == -1)
 		d_printf("Error returning browse list: %s\n", cli_errstr(cli));
@@ -2029,27 +2035,37 @@ static BOOL browse_host(BOOL sort)
 static void server_fn(const char *name, uint32 m, 
                       const char *comment, void *state)
 {
-        d_printf("\t%-16.16s     %s\n", name, comment);
+	
+	if (!grepable){
+		d_printf("\t%-16.16s     %s\n", name, comment);
+	} else {
+		d_printf("%s|%s|%s\n",(char *)state, name, comment);
+	}
 }
 
 /****************************************************************************
  Try and browse available connections on a host.
 ****************************************************************************/
 
-static BOOL list_servers(char *wk_grp)
+static BOOL list_servers(const char *wk_grp)
 {
 	if (!cli->server_domain)
 		return False;
-	
-        d_printf("\n\tServer               Comment\n");
-        d_printf("\t---------            -------\n");
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn, NULL);
+	if (!grepable) {
+        	d_printf("\n\tServer               Comment\n");
+        	d_printf("\t---------            -------\n");
+	};
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, server_fn,
+			  "Server");
 
-        d_printf("\n\tWorkgroup            Master\n");
-        d_printf("\t---------            -------\n");
+	if (!grepable) {
+	        d_printf("\n\tWorkgroup            Master\n");
+	        d_printf("\t---------            -------\n");
+	}; 
 
-	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM, server_fn, NULL);
+	cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
+			  server_fn, "Workgroup");
 	return True;
 }
 
@@ -2794,6 +2810,7 @@ static void remember_query_host(const char *arg,
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
 		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
+		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -2886,6 +2903,9 @@ static void remember_query_host(const char *arg,
 			break;
 		case 'D':
 			fstrcpy(base_directory,poptGetOptArg(pc));
+			break;
+		case 'g':
+			grepable=True;
 			break;
 		}
 	}
