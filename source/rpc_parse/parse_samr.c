@@ -934,7 +934,6 @@ static void init_sam_entry1(SAM_ENTRY1 * sam, uint32 user_idx,
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
 	sam->acb_info = acb_info;
-	sam->pad = 0;
 
 	init_uni_hdr(&sam->hdr_acct_name, len_sam_name);
 	init_uni_hdr(&sam->hdr_user_name, len_sam_full);
@@ -964,7 +963,8 @@ static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
 		return False;
 	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
 		return False;
-	if(!prs_uint16("pad      ", ps, depth, &sam->pad))
+
+	if(!prs_align(ps))
 		return False;
 
 	if (!smb_io_unihdr("hdr_acct_name", &sam->hdr_acct_name, ps, depth))
@@ -1013,7 +1013,6 @@ static void init_sam_entry2(SAM_ENTRY2 * sam, uint32 user_idx,
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
 	sam->acb_info = acb_info;
-	sam->pad = 0;
 
 	init_uni_hdr(&sam->hdr_srv_name, len_sam_name);
 	init_uni_hdr(&sam->hdr_srv_desc, len_sam_desc);
@@ -1042,7 +1041,8 @@ static BOOL sam_io_sam_entry2(char *desc, SAM_ENTRY2 * sam,
 		return False;
 	if(!prs_uint16("acb_info ", ps, depth, &sam->acb_info))
 		return False;
-	if(!prs_uint16("pad      ", ps, depth, &sam->pad))
+
+	if(!prs_align(ps))
 		return False;
 
 	if(!smb_io_unihdr("unihdr", &sam->hdr_srv_name, ps, depth))	/* account name unicode string header */
@@ -1436,61 +1436,52 @@ BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
 	uint32 len_sam_name, len_sam_full, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(10, ("init_sam_dispinfo_1: num_entries: %d\n", num_entries));
 
-	DEBUG(5, ("init_sam_dispinfo_1: max_entries: %d max_dsize: 0x%x\n",
-		  max_entries, max_data_size));
-
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	sam->sam=(SAM_ENTRY1 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY1));
+	sam->sam=(SAM_ENTRY1 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY1));
 	if (!sam->sam)
 		return NT_STATUS_NO_MEMORY;
 
-	sam->str=(SAM_STR1 *)talloc(ctx, max_entries*sizeof(SAM_STR1));
+	sam->str=(SAM_STR1 *)talloc(ctx, num_entries*sizeof(SAM_STR1));
 	if (!sam->str)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		DEBUG(5, ("init_sam_dispinfo_1: entry: %d\n",i));
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
-		len_sam_full = pass[i].uni_full_name.uni_str_len;
-		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+	for (i = 0; i < num_entries ; i++) {
+		DEBUG(11, ("init_sam_dispinfo_1: entry: %d\n",i));
+		
+		pwd=disp_user_info[i+start_idx].sam;
+		
+		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_full = strlen(pdb_get_fullname(pwd));
+		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
 
 		init_sam_entry1(&sam->sam[i], start_idx + i + 1,
 				len_sam_name, len_sam_full, len_sam_desc,
-				pass[i].user_rid, pass[i].acb_info);
+				pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
 
 		ZERO_STRUCTP(&sam->str[i].uni_acct_name);
 		ZERO_STRUCTP(&sam->str[i].uni_full_name);
 		ZERO_STRUCTP(&sam->str[i].uni_acct_desc);
 
-		copy_unistr2(&sam->str[i].uni_acct_name, &pass[i].uni_user_name);
-		copy_unistr2(&sam->str[i].uni_full_name, &pass[i].uni_full_name);
-		copy_unistr2(&sam->str[i].uni_acct_desc, &pass[i].uni_acct_desc);
-
-		dsize += sizeof(SAM_ENTRY1);
-		dsize += len_sam_name + len_sam_full + len_sam_desc;
+		init_unistr2(&sam->str[i].uni_acct_name, pdb_get_username(pwd),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_full_name, pdb_get_fullname(pwd),  len_sam_full);
+		init_unistr2(&sam->str[i].uni_acct_desc, pdb_get_acct_desc(pwd), len_sam_desc);
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1548,54 +1539,46 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
 	uint32 len_sam_name, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_2\n"));
-
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(10, ("init_sam_dispinfo_2: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY2))))
+	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY2))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR2 *)talloc(ctx, max_entries*sizeof(SAM_STR2))))
+	if (!(sam->str=(SAM_STR2 *)talloc(ctx, num_entries*sizeof(SAM_STR2))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
-		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
+		pwd=disp_user_info[i+start_idx].sam;
+
+		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
 	  
 		init_sam_entry2(&sam->sam[i], start_idx + i + 1,
 			  len_sam_name, len_sam_desc,
-			  pass[i].user_rid, pass[i].acb_info);
+			  pdb_get_user_rid(pwd), pdb_get_acct_ctrl(pwd));
 	  
 		ZERO_STRUCTP(&sam->str[i].uni_srv_name);
 		ZERO_STRUCTP(&sam->str[i].uni_srv_desc);
 
-		copy_unistr2(&sam->str[i].uni_srv_name, &pass[i].uni_user_name);
-		copy_unistr2(&sam->str[i].uni_srv_desc, &pass[i].uni_acct_desc);
-	  
-		dsize += sizeof(SAM_ENTRY2);
-		dsize += len_sam_name + len_sam_desc;
+		init_unistr2(&sam->str[i].uni_srv_name, pdb_get_username(pwd),  len_sam_name);
+		init_unistr2(&sam->str[i].uni_srv_desc, pdb_get_acct_desc(pwd), len_sam_desc);
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1655,35 +1638,33 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 inits a SAM_DISPINFO_3 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp)
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
 {
 	uint32 len_sam_name, len_sam_desc;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_3\n"));
-
+	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_3: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY3))))
+	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY3))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR3 *)talloc(ctx, max_entries*sizeof(SAM_STR3))))
+	if (!(sam->str=(SAM_STR3 *)talloc(ctx, num_entries*sizeof(SAM_STR3))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
+		grp=disp_group_info[i+start_idx].grp;
+
 		len_sam_name = strlen(grp[i].name);
 		len_sam_desc = strlen(grp[i].comment);
 
@@ -1691,14 +1672,7 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_e
 	  
 		init_unistr2(&sam->str[i].uni_grp_name, grp[i].name, len_sam_name);
 		init_unistr2(&sam->str[i].uni_grp_desc, grp[i].comment, len_sam_desc);
-	  
-		dsize += sizeof(SAM_ENTRY3);
-		dsize += (len_sam_name + len_sam_desc) * 2;
-		dsize += 14;
 	}
-
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1758,50 +1732,40 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 inits a SAM_DISPINFO_4 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_USER_INFO *disp_user_info)
 {
-	fstring sam_name;
 	uint32 len_sam_name;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_4\n"));
-
+	SAM_ACCOUNT *pwd = NULL;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_4: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY4))))
+	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY4))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR4 *)talloc(ctx, max_entries*sizeof(SAM_STR4))))
+	if (!(sam->str=(SAM_STR4 *)talloc(ctx, num_entries*sizeof(SAM_STR4))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
-		len_sam_name = pass[i].uni_user_name.uni_str_len;
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
+		pwd=disp_user_info[i+start_idx].sam;
+
+		len_sam_name = strlen(pdb_get_username(pwd));
 	  
 		init_sam_entry4(&sam->sam[i], start_idx + i + 1, len_sam_name);
 
-		unistr2_to_ascii(sam_name, &pass[i].uni_user_name, sizeof(sam_name));
-		init_string2(&sam->str[i].acct_name, sam_name, len_sam_name+1, len_sam_name);
-	  
-		dsize += sizeof(SAM_ENTRY4);
-		dsize += len_sam_name;
+		init_string2(&sam->str[i].acct_name, pdb_get_username(pwd), len_sam_name+1, len_sam_name);
 	}
 	
-	*num_entries = i;
-	*data_size = dsize;
-
 	return NT_STATUS_OK;
 }
 
@@ -1859,46 +1823,38 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 inits a SAM_DISPINFO_5 structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
-			 uint32 *data_size, uint32 start_idx,
-			 DOMAIN_GRP * grp)
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_entries,
+			 uint32 start_idx, DISP_GROUP_INFO *disp_group_info)
 {
 	uint32 len_sam_name;
-	uint32 max_entries, max_data_size;
-	uint32 dsize = 0;
 	uint32 i;
 
-	DEBUG(5, ("init_sam_dispinfo_5\n"));
-
+	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
-	max_entries = *num_entries;
-	max_data_size = *data_size;
+	DEBUG(5, ("init_sam_dispinfo_5: num_entries: %d\n", num_entries));
 
-	if (max_entries==0)
+	if (num_entries==0)
 		return NT_STATUS_OK;
 
-	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY5))))
+	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, num_entries*sizeof(SAM_ENTRY5))))
 		return NT_STATUS_NO_MEMORY;
 
-	if (!(sam->str=(SAM_STR5 *)talloc(ctx, max_entries*sizeof(SAM_STR5))))
+	if (!(sam->str=(SAM_STR5 *)talloc(ctx, num_entries*sizeof(SAM_STR5))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(sam->sam);
 	ZERO_STRUCTP(sam->str);
 
-	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++) {
+	for (i = 0; i < num_entries; i++) {
+		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
+		grp=disp_group_info[i+start_idx].grp;
+
 		len_sam_name = strlen(grp[i].name);
 	  
 		init_sam_entry5(&sam->sam[i], start_idx + i + 1, len_sam_name);
 		init_string2(&sam->str[i].grp_name, grp[i].name, len_sam_name+1, len_sam_name);
-	  
-		dsize += sizeof(SAM_ENTRY5);
-		dsize += len_sam_name;
 	}
-	
-	*num_entries = i;
-	*data_size = dsize;
 
 	return NT_STATUS_OK;
 }
@@ -1948,8 +1904,6 @@ static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 * sam,
 		if(!smb_io_string2("grp_name", &sam->str[i].grp_name,
 			     sam->sam[i].hdr_grp_name.buffer, ps, depth))
 			return False;
-		if(!prs_align(ps))
-			return False;
 	}
 
 	return True;
@@ -1960,16 +1914,13 @@ inits a SAMR_R_QUERY_DISPINFO structure.
 ********************************************************************/
 
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
-				uint32 num_entries, uint32 data_size,
+				uint32 num_entries, uint32 total_size, uint32 data_size,
 				uint16 switch_level, SAM_DISPINFO_CTR * ctr,
 				NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_dispinfo: level %d\n", switch_level));
 
-	if (switch_level==4)
-		r_u->total_size = 0;	/* not calculated */
-	else
-		r_u->total_size = data_size;	/* not calculated */
+	r_u->total_size = total_size;
 
 	r_u->data_size = data_size;
 

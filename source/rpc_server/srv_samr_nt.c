@@ -38,10 +38,22 @@ extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
 extern rid_name builtin_alias_rids[];
 
+
+typedef struct _disp_info {
+	BOOL user_dbloaded;
+	BOOL group_dbloaded;
+	uint32 num_account;
+	uint32 total_size;
+	uint32 last_enum;
+	DISP_USER_INFO *disp_user_info;
+	DISP_GROUP_INFO *disp_group_info;
+} DISP_INFO;
+
 struct samr_info {
-    /* for use by the \PIPE\samr policy */
-    DOM_SID sid;
-    uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
+	/* for use by the \PIPE\samr policy */
+	DOM_SID sid;
+	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
+	DISP_INFO disp_info;
 };
 
 /*******************************************************************
@@ -50,6 +62,24 @@ struct samr_info {
 
 static void free_samr_info(void *ptr)
 {
+	int i;
+
+	struct samr_info *info=(struct samr_info *) ptr;
+
+	if (info->disp_info.group_dbloaded) {
+		for (i=0; i<info->disp_info.num_account; i++)
+			SAFE_FREE(info->disp_info.disp_group_info[i].grp);
+
+		SAFE_FREE(info->disp_info.disp_group_info);
+	}
+
+	if (info->disp_info.user_dbloaded){
+		for (i=0; i<info->disp_info.num_account; i++)
+			SAFE_FREE(info->disp_info.disp_user_info[i].sam);
+
+		SAFE_FREE(info->disp_info.disp_user_info);
+	}
+	
 	SAFE_FREE(ptr);
 }
 
@@ -78,6 +108,137 @@ static void samr_clear_sam_passwd(SAM_ACCOUNT *sam_pass)
 	if (sam_pass->lm_pw) memset(sam_pass->lm_pw, '\0', 16);
 	if (sam_pass->nt_pw) memset(sam_pass->nt_pw, '\0', 16);
 }
+
+
+static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
+{
+	SAM_ACCOUNT *pwd = NULL;
+	DISP_USER_INFO *pwd_array = NULL;
+
+	DEBUG(10,("load_sampwd_entries\n"));
+
+	/* if the snapshoot is already loaded, return */
+	if (info->disp_info.user_dbloaded==True) {
+		DEBUG(10,("load_sampwd_entries: already in memory\n"));
+		return NT_STATUS_OK;
+	}
+
+	if (!pdb_setsampwent(False)) {
+		DEBUG(0, ("get_sampwd_entries: Unable to open passdb.\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	for (pdb_init_sam(&pwd); pdb_getsampwent(pwd) == True; pwd=NULL, pdb_init_sam(&pwd) ) {
+		
+		uint32 len_sam_name, len_sam_full, len_sam_desc;
+
+		if (acb_mask != 0 && !(pwd->acct_ctrl & acb_mask)) {
+			pdb_free_sam(&pwd);
+			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
+			continue;
+		}
+		DEBUG(0,("load_sampwd_entries: entry: %d\n", info->disp_info.num_account));
+
+		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
+		if (info->disp_info.num_account % MAX_SAM_ENTRIES == 0) {
+		
+			DEBUG(0,("load_sampwd_entries: allocating more memory\n"));
+		
+		
+			pwd_array=(DISP_USER_INFO *)Realloc(info->disp_info.disp_user_info, 
+			                  (info->disp_info.num_account+MAX_SAM_ENTRIES)*sizeof(DISP_USER_INFO));
+
+			if (pwd_array==NULL)
+				return NT_STATUS_NO_MEMORY;
+
+			info->disp_info.disp_user_info=pwd_array;
+		}
+	
+		/* link the SAM_ACCOUNT to the array */
+		info->disp_info.disp_user_info[info->disp_info.num_account].sam=pwd;
+
+		/* calculate the size needed to store the data */
+		len_sam_name = strlen(pdb_get_username(pwd));
+		len_sam_full = strlen(pdb_get_fullname(pwd));
+		len_sam_desc = strlen(pdb_get_acct_desc(pwd));
+
+		info->disp_info.disp_user_info[info->disp_info.num_account].size=len_sam_name+
+		                                                                           len_sam_full+
+											   len_sam_desc;
+		/* keep the total size up to date too */
+		info->disp_info.total_size+=info->disp_info.disp_user_info[info->disp_info.num_account].size;
+	
+		/* 
+		 * note: the size calculated are smaller than the size sent on the wire
+		 * we add the SAM_ENTRY_x size later
+		 */
+		DEBUG(0,("load_sampwd_entries: entry: %d size: %d total: %d\n", info->disp_info.num_account, info->disp_info.disp_user_info[info->disp_info.num_account].size,info->disp_info.total_size));
+
+		info->disp_info.num_account++;	
+	}
+
+	pdb_endsampwent();
+
+	/* the snapshoot is in memory, we're ready to enumerate fast */
+
+	info->disp_info.user_dbloaded=True;
+	info->disp_info.last_enum=0;
+
+	DEBUG(10,("load_sampwd_entries: done\n"));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
+{
+	GROUP_MAP *map=NULL;
+	DISP_GROUP_INFO *grp_array = NULL;
+	uint32 group_entries = 0;
+	uint32 i;
+
+	DEBUG(10,("load_group_domain_entries\n"));
+
+	/* if the snapshoot is already loaded, return */
+	if (info->disp_info.group_dbloaded==True) {
+		DEBUG(10,("load_group_domain_entries: already in memory\n"));
+		return NT_STATUS_OK;
+	}
+
+	enum_group_mapping(SID_NAME_DOM_GRP, &map, (int *)&group_entries, ENUM_ONLY_MAPPED, MAPPING_WITHOUT_PRIV);
+
+	info->disp_info.num_account=group_entries;
+
+	grp_array=(DISP_GROUP_INFO *)malloc(info->disp_info.num_account*sizeof(DISP_GROUP_INFO));
+
+	if (group_entries!=0 && grp_array==NULL) {
+		SAFE_FREE(map);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	info->disp_info.disp_group_info=grp_array;
+
+	for (i=0; i<group_entries; i++) {
+	
+		grp_array[i].grp=(DOMAIN_GRP *)malloc(sizeof(DOMAIN_GRP));
+	
+		fstrcpy(grp_array[i].grp->name, map[i].nt_name);
+		fstrcpy(grp_array[i].grp->comment, map[i].comment);
+		sid_split_rid(&map[i].sid, &grp_array[i].grp->rid);
+		grp_array[i].grp->attr=SID_NAME_DOM_GRP;
+	}
+
+	SAFE_FREE(map);
+
+	/* the snapshoot is in memory, we're ready to enumerate fast */
+
+	info->disp_info.group_dbloaded=True;
+	info->disp_info.last_enum=0;
+
+	DEBUG(10,("load_group_domain_entries: done\n"));
+
+	return NT_STATUS_OK;
+}
+
 
 /*******************************************************************
   This next function should be replaced with something that
@@ -1022,91 +1183,147 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 /*******************************************************************
  samr_reply_query_dispinfo
  ********************************************************************/
-
 NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	DOMAIN_GRP *grps=NULL;
-	uint16 acb_mask = ACB_NORMAL;
-	uint32 num_entries = 0;
-	int orig_num_entries = 0;
-	int total_entries = 0;
-	uint32 data_size = 0;
-	DOM_SID sid;
-	NTSTATUS disp_ret;
+	struct samr_info *info = NULL;
+	uint32 struct_size=0;
+	uint16 acb_mask;
+	
+	uint32 max_entries=q_u->max_entries;
+	uint32 enum_context=q_u->start_idx;
+	uint32 max_size=q_u->max_size;
+
 	SAM_DISPINFO_CTR *ctr;
+	uint32 temp_size=0, total_data_size=0;
+	uint32 i;
+	NTSTATUS disp_ret;
 
 	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
-
 	r_u->status = NT_STATUS_OK;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid))
+	/* find the policy handle.  open a policy on it. */
+	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* decide how many entries to get depending on the max_entries
-	   and max_size passed by client */
+	/*
+	 * calculate how many entries we will return.
+	 * based on 
+	 * - the number of entries the client asked
+	 * - our limit on that
+	 * - the starting point (enumeration context)
+	 * - the buffer size the client will accept
+	 */
 
-	DEBUG(5, ("samr_reply_query_dispinfo: max_entries before %d\n", q_u->max_entries));
-
-	if(q_u->max_entries > MAX_SAM_ENTRIES)
-		q_u->max_entries = MAX_SAM_ENTRIES;
-
-	DEBUG(5, ("samr_reply_query_dispinfo: max_entries after %d\n", q_u->max_entries));
+	/*
+	 * We are a lot more like W2K. Instead of reading the SAM
+	 * each time to find the records we need to send back,
+	 * we read it once and link that copy to the sam handle.
+	 * For large user list (over the MAX_SAM_ENTRIES)
+	 * it's a definitive win.
+	 * second point to notice: between enumerations
+	 * our sam is now the same as it's a snapshoot.
+	 * third point: got rid of the static SAM_USER_21 struct
+	 * no more intermediate.
+	 * con: it uses much more memory, as a full copy is stored
+	 * in memory.
+	 *
+	 * If you want to change it, think twice and think
+	 * of the second point , that's really important.
+	 *
+	 * JFM, 12/20/2001
+	 */
 
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
-	case 0x2:
-		acb_mask = ACB_WSTRUST;
-		/* Fall through */
-	case 0x1:
-	case 0x4:
-		become_root();
-#if 0
-		r_u->status = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
-						MAX_SAM_ENTRIES, acb_mask);
-#endif
-#if 0
-	/*
-	 * Which should we use here ? JRA.
-	 */
-		r_u->status = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
-						MAX_SAM_ENTRIES, acb_mask);
-#endif
-#if 1
-		r_u->status = jf_get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
-						MAX_SAM_ENTRIES, acb_mask);
-#endif
-		unbecome_root();
-		if (NT_STATUS_IS_ERR(r_u->status)) {
-			DEBUG(5, ("get_sampwd_entries: failed\n"));
-			return r_u->status;
-		}
-		break;
-	case 0x3:
-	case 0x5:
-		r_u->status = get_group_domain_entries(p->mem_ctx, &grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
-		if (NT_STATUS_IS_ERR(r_u->status))
-			return r_u->status;
-		break;
-	default:
-		DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n", (unsigned int)q_u->switch_level ));
-		return NT_STATUS_INVALID_INFO_CLASS;
+		case 0x1:
+			acb_mask = ACB_NORMAL;
+			struct_size=0x20;
+			break;
+		case 0x2:
+			acb_mask = ACB_WSTRUST;
+			struct_size=0x20;
+			break;
+		case 0x3:
+			struct_size=0x20;
+			break;
+		case 0x4:
+			acb_mask = ACB_NORMAL;
+			struct_size=0x20;
+			break;
+		case 0x5:
+			struct_size=0x20;
+			break;
+		default:
+			DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n", (unsigned int)q_u->switch_level ));
+			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	orig_num_entries = num_entries;
+	/* Get what we need from the password database */
+	switch (q_u->switch_level) {
+		case 0x1:
+		case 0x2:
+		case 0x4:
+			if (enum_context!=0 && info->disp_info.user_dbloaded==False)
+				return NT_STATUS_UNSUCCESSFUL;
+	
+			become_root();		
+			r_u->status=load_sampwd_entries(info, acb_mask);
+			unbecome_root();
+			if (NT_STATUS_IS_ERR(r_u->status)) {
+				DEBUG(5, ("_samr_query_dispinfo: load_sampwd_entries failed\n"));
+				return r_u->status;
+			}
+			break;
+		case 0x3:
+		case 0x5:
+			if (enum_context!=0 && info->disp_info.group_dbloaded==False)
+				return NT_STATUS_UNSUCCESSFUL;
 
-	if (num_entries > q_u->max_entries)
-		num_entries = q_u->max_entries;
-
-	if (num_entries > MAX_SAM_ENTRIES) {
-		num_entries = MAX_SAM_ENTRIES;
-		DEBUG(5, ("limiting number of entries to %d\n", num_entries));
+			r_u->status = load_group_domain_entries(info, &info->sid);
+			if (NT_STATUS_IS_ERR(r_u->status))
+				return r_u->status;
+			break;
+		default:
+			DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n", (unsigned int)q_u->switch_level ));
+			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	/* Ensure password info is never given out here. PARANOIA... JRA */
-	samr_clear_passwd_fields(pass, num_entries);
+	/* first limit the number of entries we will return */
+	if(max_entries > MAX_SAM_ENTRIES) {
+		DEBUG(5, ("samr_reply_query_dispinfo: client requested %d entries, limiting to %d\n", max_entries, MAX_SAM_ENTRIES));
+		max_entries = MAX_SAM_ENTRIES;
+	}
 
-	data_size = q_u->max_size;
+	if (enum_context > info->disp_info.num_account) {
+		DEBUG(5, ("samr_reply_query_dispinfo: enumeration handle over total entries\n"));
+		return NT_STATUS_OK;
+	}
+
+
+	/* verify we won't overflow */
+	if (max_entries > info->disp_info.num_account-enum_context) {
+		max_entries = info->disp_info.num_account-enum_context;
+		DEBUG(5, ("samr_reply_query_dispinfo: only %d entries to return\n", max_entries));
+	}
+
+
+	/* calculate the size */
+	if (q_u->switch_level==3 || q_u->switch_level==5) 
+	for (i=enum_context; (i<enum_context+max_entries) && (temp_size<max_size); i++) {
+		/*temp_size+=info->disp_info.disp_group_info[i].size * 2;*/
+		temp_size+=struct_size;
+	}
+	
+	else
+	for (i=enum_context; (i<enum_context+max_entries) && (temp_size<max_size); i++) {
+		/*temp_size+=info->disp_info.disp_user_info[i].size * 2;*/
+		temp_size+=struct_size;
+	}
+
+	if (i<enum_context+max_entries) {
+		max_entries=i-enum_context;
+		DEBUG(5, ("samr_reply_query_dispinfo: buffer size limits to only %d entries\n", max_entries));
+	}
 
 	if (!(ctr = (SAM_DISPINFO_CTR *)talloc_zero(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
 		return NT_STATUS_NO_MEMORY;
@@ -1116,64 +1333,71 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 	/* Now create reply structure */
 	switch (q_u->switch_level) {
 	case 0x1:
-		if (num_entries) {
-			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
+		if (max_entries) {
+			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_1))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, max_entries, enum_context, info->disp_info.disp_user_info);
 		if (NT_STATUS_IS_ERR(disp_ret))
 			return disp_ret;
 		break;
 	case 0x2:
-		if (num_entries) {
-			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
+		if (max_entries) {
+			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_2))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, max_entries, enum_context, info->disp_info.disp_user_info);
 		if (NT_STATUS_IS_ERR(disp_ret))
 			return disp_ret;
 		break;
 	case 0x3:
-		if (num_entries) {
-			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
+		if (max_entries) {
+			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_3))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, max_entries, enum_context, info->disp_info.disp_group_info);
 		if (NT_STATUS_IS_ERR(disp_ret))
 			return disp_ret;
 		break;
 	case 0x4:
-		if (num_entries) {
-			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
+		if (max_entries) {
+			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_4))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, max_entries, enum_context, info->disp_info.disp_user_info);
 		if (NT_STATUS_IS_ERR(disp_ret))
 			return disp_ret;
 		break;
 	case 0x5:
-		if (num_entries) {
-			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
+		if (max_entries) {
+			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_5))))
 				return NT_STATUS_NO_MEMORY;
 		}
-		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, max_entries, enum_context, info->disp_info.disp_group_info);
 		if (NT_STATUS_IS_ERR(disp_ret))
 			return disp_ret;
 		break;
+
 	default:
 		ctr->sam.info = NULL;
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
+	/* calculate the total size */
+	/*total_data_size=info->disp_info.total_size+(info->disp_info.num_account*struct_size);*/
+	total_data_size=info->disp_info.num_account*struct_size;
+
+	if (enum_context+max_entries < info->disp_info.num_account)
+		r_u->status = STATUS_MORE_ENTRIES;
+
 	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
-	if (num_entries < orig_num_entries)
-		return STATUS_MORE_ENTRIES;
-
-	init_samr_r_query_dispinfo(r_u, num_entries, data_size, q_u->switch_level, ctr, r_u->status);
+	init_samr_r_query_dispinfo(r_u, max_entries, total_data_size, temp_size, q_u->switch_level, ctr, r_u->status);
 
 	return r_u->status;
+
 }
+
 
 /*******************************************************************
  samr_reply_query_aliasinfo
