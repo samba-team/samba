@@ -40,7 +40,7 @@ RCSID("$Id$");
  */
 
 void
-_kadm5_free_keys (kadm5_server_context *context,
+_kadm5_free_keys (krb5_context context,
 		  int len, Key *keys)
 {
     int i;
@@ -53,7 +53,7 @@ _kadm5_free_keys (kadm5_server_context *context,
 	    free(keys[i].salt);
 	    keys[i].salt = NULL;
 	}
-	krb5_free_keyblock_contents(context->context, &keys[i].key);
+	krb5_free_keyblock_contents(context, &keys[i].key);
     }
     free (keys);
 }
