@@ -600,6 +600,13 @@ showlayout:
 	\@echo \"  piddir:  \$(PIDDIR)\"
 	\@echo \"  lockdir:  \$(LOCKDIR)\"
 
+showflags:
+	\@echo \"Samba will be compiled with flags:\"
+	\@echo \"  CC_FLAGS = \$(CC_FLAGS)\"
+	\@echo \"  LD_FLAGS = \$(LD_FLAGS)\"
+	\@echo \"  STLD_FLAGS = \$(STLD_FLAGS)\"
+	\@echo \"  SHLD_FLAGS = \$(SHLD_FLAGS)\"
+
 SBIN_PROGS = bin/smbd
 
 BIN_PROGS = bin/smbclient \\
