@@ -2495,6 +2495,43 @@ BOOL cli_establish_connection(struct cli_state *cli,
 }
 
 
+/****************************************************************************
+  cancel a print job
+  ****************************************************************************/
+int cli_printjob_del(struct cli_state *cli, int job)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt, ret = -1;
+	pstring param;
+
+	bzero(param,sizeof(param));
+
+	p = param;
+	SSVAL(p,0,81);		/* DosPrintJobDel() */
+	p += 2;
+	pstrcpy(p,"W");
+	p = skip_string(p,1);
+	pstrcpy(p,"");
+	p = skip_string(p,1);
+	SSVAL(p,0,job);     
+	p += 2;
+	
+	if (cli_api(cli, 
+		    param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
+		    NULL, 0, CLI_BUFFER_SIZE,            /* data, length, maxlen */
+		    &rparam, &rprcnt,                /* return params, length */
+		    &rdata, &rdrcnt)) {               /* return data, length */
+		ret = SVAL(rparam,0);
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return ret;
+}
+
 
 /****************************************************************************
 call fn() on each entry in a print queue

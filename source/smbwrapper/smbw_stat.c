@@ -100,9 +100,13 @@ int smbw_stat_printjob(struct smbw_server *srv,char *path,
 	fstrcpy(printjob.name, path);
 	cli_print_queue(&srv->cli, smbw_printjob_stat);
 
-	*size = printjob.size;
-	*m_time = printjob.t;
-	return 0;
+	if (size) {
+		*size = printjob.size;
+	}
+	if (m_time) {
+		*m_time = printjob.t;
+	}
+	return printjob.id;
 }
 
 

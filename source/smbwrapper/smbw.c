@@ -756,7 +756,15 @@ int smbw_unlink(const char *fname)
 		goto failed;
 	}
 
-	if (!cli_unlink(&srv->cli, path)) {
+	if (strncmp(srv->cli.dev, "LPT", 3) == 0) {
+		int job = smbw_stat_printjob(srv, path, NULL, NULL);
+		if (job == -1) {
+			goto failed;
+		}
+		if (cli_printjob_del(&srv->cli, job) != 0) {
+			goto failed;
+		}
+	} else if (!cli_unlink(&srv->cli, path)) {
 		errno = smbw_errno(&srv->cli);
 		goto failed;
 	}
