@@ -221,15 +221,77 @@ static BOOL wcache_server_down(struct winbindd_domain *domain)
 	return (domain->sequence_number == DOM_SEQUENCE_NONE);
 }
 
+static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
+{
+	TDB_DATA data;
+	fstring key;
+	uint32 time_diff;
+	
+	if (!wcache->tdb) 
+		return NT_STATUS_UNSUCCESSFUL;
+		
+	snprintf( key, sizeof(key), "SEQNUM/%s", domain->name );
+	
+	data = tdb_fetch_by_string( wcache->tdb, key );
+	if ( !data.dptr || data.dsize!=8 )
+		return NT_STATUS_UNSUCCESSFUL;
+	
+	domain->sequence_number = IVAL(data.dptr, 0);
+	domain->last_seq_check  = IVAL(data.dptr, 4);
+	
+	/* have we expired? */
+	
+	time_diff = now - domain->last_seq_check;
+	if ( time_diff > lp_winbind_cache_time() )
+		return NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("fetch_cache_seqnum: success [%s][%u @ %u]\n", 
+		domain->name, domain->sequence_number, 
+		(uint32)domain->last_seq_check));
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS store_cache_seqnum( struct winbindd_domain *domain )
+{
+	TDB_DATA data, key;
+	fstring key_str;
+	char buf[8];
+	
+	if (!wcache->tdb) 
+		return NT_STATUS_UNSUCCESSFUL;
+		
+	snprintf( key_str, sizeof(key_str), "SEQNUM/%s", domain->name );
+	key.dptr = key_str;
+	key.dsize = strlen(key_str)+1;
+	
+	SIVAL(buf, 0, domain->sequence_number);
+	SIVAL(buf, 4, domain->last_seq_check);
+	data.dptr = buf;
+	data.dsize = 8;
+	
+	if ( tdb_store( wcache->tdb, key, data, TDB_REPLACE) == -1 )
+		return NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("store_cache_seqnum: success [%s][%u @ %u]\n", 
+		domain->name, domain->sequence_number, 
+		(uint32)domain->last_seq_check));
+	
+	return NT_STATUS_OK;
+}
+
+
 
 /*
   refresh the domain sequence number. If force is True
   then always refresh it, no matter how recently we fetched it
 */
+
 static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 {
 	NTSTATUS status;
 	unsigned time_diff;
+	time_t t = time(NULL);
 	unsigned cache_time = lp_winbind_cache_time();
 
 	/* trying to reconnect is expensive, don't do it too often */
@@ -237,20 +299,36 @@ static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
 		cache_time *= 8;
 	}
 
-	time_diff = time(NULL) - domain->last_seq_check;
+	time_diff = t - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
 	if (!force && (time_diff < cache_time)) {
 		return;
 	}
+	
+	/* try to get the sequence number from the tdb cache first */
+	/* this will update the timestamp as well */
+	
+	status = fetch_cache_seqnum( domain, t );
+	if ( NT_STATUS_IS_OK(status) )
+		goto done;	
 
 	status = wcache->backend->sequence_number(domain, &domain->sequence_number);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		domain->sequence_number = DOM_SEQUENCE_NONE;
 	}
-
+	
 	domain->last_seq_check = time(NULL);
+	
+	/* save the new sequence number ni the cache */
+	store_cache_seqnum( domain );
+
+done:
+	DEBUG(10, ("refresh_sequence_number: seq number is now %d\n", 
+		   domain->sequence_number));
+
+	return;
 }
 
 /*
@@ -540,7 +618,7 @@ do_query:
 	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_entries);
@@ -613,7 +691,7 @@ do_query:
 	status = cache->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_entries);
@@ -684,7 +762,7 @@ do_query:
 	status = cache->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_entries);
@@ -782,7 +860,7 @@ do_query:
 	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	wcache_save_sid_to_name(domain, status, sid, *name, *type);
 	wcache_save_name_to_sid(domain, status, *name, sid, *type);
 
@@ -824,7 +902,7 @@ do_query:
 	status = cache->backend->query_user(domain, mem_ctx, user_sid, info);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	wcache_save_user(domain, status, info);
 
 	return status;
@@ -873,7 +951,7 @@ do_query:
 	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_sid, num_groups, user_gids);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_groups);
@@ -942,7 +1020,7 @@ do_query:
 						 sid_mem, names, name_types);
 
 	/* and save it */
-	refresh_sequence_number(domain, True);
+	refresh_sequence_number(domain, False);
 	centry = centry_start(domain, status);
 	if (!centry) goto skip_save;
 	centry_put_uint32(centry, *num_names);
