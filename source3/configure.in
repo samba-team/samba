@@ -2962,6 +2962,64 @@ if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
 fi
 fi
 
+
+dictpath="/usr/lib/cracklib_dict"
+
+###############################################
+# test for where we get FaciestCheck from
+AC_MSG_CHECKING(where to use cracklib from (default=$dictpath))
+AC_ARG_WITH(cracklib,
+[  --with-cracklib[=DIR]     Look for cracklib dictionary in this location ],
+[  case "$withval" in
+  yes)
+    AC_MSG_RESULT(${dictpath})
+    ;;
+  no)
+    AC_MSG_RESULT(no)
+      dictpath=""
+    ;;
+  *)
+      dictpath="$withval"
+    AC_MSG_RESULT(${dictpath})
+    ;;
+  esac ],
+  dictpath=""
+  AC_MSG_RESULT(no)
+)
+
+if test x$dictpath != x""; then
+     AC_SEARCH_LIBS(FascistCheck, [crack],
+                    [test "$ac_cv_search_crack" = "none required" || samba_cv_found_crack="yes"
+                    AC_DEFINE(HAVE_CRACK,1,[Whether the system has the FaciestCheck function from cracklib])])
+
+     crack_saved_libs=$LIBS;
+
+     if test x$samba_cv_found_crack=x"yes"; then
+        AC_SEARCH_LIBS(CRACKLIB_DICTPATH, [crypt],
+            AC_DEFINE(HAVE_CRACKLIB_DICTPATH, 1, [Whether we have given a CRACKLIB_DICTPATH in our headers])
+        )
+
+	AC_DEFINE_UNQUOTED(SAMBA_CRACKLIB_DICTPATH, "$dictpath", [Where the cracklib dictionay is])
+        AC_MSG_CHECKING(Whether we have a working cracklib)
+        AC_TRY_RUN([
+		#include "${srcdir-.}/tests/crack.c"],
+              AC_MSG_RESULT(yes)
+              AC_DEFINE(HAVE_WORKING_CRACKLIB,1,[Whether we have a working cracklib])
+	      AUTH_LIBS="-lcrack $AUTH_LIBS",
+
+              AC_MSG_RESULT(no)
+	      AC_MSG_WARN(cracklib exists - but does not function correctly),
+
+              AC_MSG_RESULT(no)
+	      AC_MSG_WARN(cannot test-run when cross-compiling)
+	      )
+    else
+        AC_MSG_CHECKING(Whether we have cracklib)
+        AC_MSG_RESULT(no)
+    fi
+    LIBS=$crack_saved_libs
+fi
+
 ########################################################################################
 ##
 ## TESTS FOR SAM BACKENDS.  KEEP THESE GROUPED TOGETHER
