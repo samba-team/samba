@@ -866,6 +866,9 @@
 /* Define if you have the <utime.h> header file.  */
 #undef HAVE_UTIME_H
 
+/* Define if you have the cups library (-lcups).  */
+#undef HAVE_LIBCUPS
+
 /* Define if you have the dl library (-ldl).  */
 #undef HAVE_LIBDL
 

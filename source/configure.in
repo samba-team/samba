@@ -220,6 +220,9 @@ AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 
+# we need libcups for CUPS support...
+AC_CHECK_LIB(cups,httpConnect)
+
 # we need libdl for PAM and the new VFS code
 AC_CHECK_LIB(dl,main)
 

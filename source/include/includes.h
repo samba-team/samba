@@ -681,7 +681,10 @@ extern int errno;
 #endif
 
 #ifndef DEFAULT_PRINTING
-#ifdef SYSV
+#ifdef HAVE_LIBCUPS
+#define DEFAULT_PRINTING PRINT_CUPS
+#define PRINTCAP_NAME "cups"
+#elif defined(SYSV)
 #define DEFAULT_PRINTING PRINT_SYSV
 #define PRINTCAP_NAME "lpstat"
 #else
