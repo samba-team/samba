@@ -223,21 +223,25 @@ BOOL torture_rpc_oxidresolve(void)
 
 	mem_ctx = talloc_init("torture_rpc_oxidresolve");
 
-	status = torture_rpc_connection(&premact, 
+	status = torture_rpc_connection(mem_ctx, 
+					&premact, 
 					DCERPC_IREMOTEACTIVATION_NAME, 
 					DCERPC_IREMOTEACTIVATION_UUID, 
 					DCERPC_IREMOTEACTIVATION_VERSION);								
 			
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_IOXIDRESOLVER_NAME, 
 					DCERPC_IOXIDRESOLVER_UUID, 
 					DCERPC_IOXIDRESOLVER_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -263,8 +267,6 @@ BOOL torture_rpc_oxidresolve(void)
 		ret = False;
 
 	talloc_free(mem_ctx);
-
-    torture_rpc_close(p);
 
 	return ret;
 }

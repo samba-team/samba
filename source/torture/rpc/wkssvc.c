@@ -93,11 +93,13 @@ BOOL torture_rpc_wkssvc(void)
 
 	mem_ctx = talloc_init("torture_rpc_wkssvc");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_WKSSVC_NAME,
 					DCERPC_WKSSVC_UUID,
 					DCERPC_WKSSVC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -110,8 +112,6 @@ BOOL torture_rpc_wkssvc(void)
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

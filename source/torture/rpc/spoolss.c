@@ -732,7 +732,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 				       DCERPC_SPOOLSS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to create bind on secondary connection\n");
-		dcerpc_pipe_close(p2);
+		talloc_free(p2);
 
                 return False;
         }
@@ -748,7 +748,7 @@ static BOOL test_SecondaryClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 		ret = False;
 	}
 
-	dcerpc_pipe_close(p2);
+	talloc_free(p2);
 
 	return ret;
 }
@@ -1165,15 +1165,17 @@ BOOL torture_rpc_spoolss(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
-	status = torture_rpc_connection(&p, 
+	mem_ctx = talloc_init("torture_rpc_spoolss");
+
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_SPOOLSS_NAME,
 					DCERPC_SPOOLSS_UUID,
 					DCERPC_SPOOLSS_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
-
-	mem_ctx = talloc_init("torture_rpc_spoolss");
 
 	ret &= test_OpenPrinter_badnames(p, mem_ctx);
 
@@ -1186,8 +1188,6 @@ BOOL torture_rpc_spoolss(void)
 	ret &= test_EnumPrinterDrivers(p, mem_ctx);
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

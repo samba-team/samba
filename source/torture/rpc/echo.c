@@ -398,13 +398,14 @@ static BOOL test_doublepointer(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 BOOL torture_rpc_echo(void)
 {
 	NTSTATUS status;
-    struct dcerpc_pipe *p;
+	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("torture_rpc_echo");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_RPCECHO_NAME,
 					DCERPC_RPCECHO_UUID,
 					DCERPC_RPCECHO_VERSION);
@@ -427,6 +428,5 @@ BOOL torture_rpc_echo(void)
 	
 	talloc_free(mem_ctx);
 
-    torture_rpc_close(p);
 	return ret;
 }

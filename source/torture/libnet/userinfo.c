@@ -220,7 +220,8 @@ BOOL torture_userinfo(void)
 	mem_ctx = talloc_init("test_userinfo");
 	binding = lp_parm_string(-1, "torture", "binding");
 
-	status = torture_rpc_connection(&p,
+	status = torture_rpc_connection(mem_ctx, 
+					&p,
 					DCERPC_SAMR_NAME,
 					DCERPC_SAMR_UUID,
 					DCERPC_SAMR_VERSION);
@@ -259,7 +260,6 @@ BOOL torture_userinfo(void)
 	}
 done:
 	talloc_free(mem_ctx);
-	torture_rpc_close(p);
 
 	return ret;
 }

@@ -3,6 +3,7 @@
 
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Tim Potter 2001
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,12 +23,14 @@
 #include "includes.h"
 #include "system/filesys.h"
 
+/* Create a new credentials structure, on the specified TALLOC_CTX */
+struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
+{
+	return talloc_zero(mem_ctx, struct cli_credentials);
+}
+
 const char *cli_credentials_get_username(struct cli_credentials *cred)
 {
-	if (cred == NULL) {
-		return NULL;
-	}
-
 	if (cred->username_obtained == CRED_CALLBACK) {
 		cred->username = cred->username_cb(cred);
 		cred->username_obtained = CRED_SPECIFIED;
@@ -49,10 +52,6 @@ BOOL cli_credentials_set_username(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_password(struct cli_credentials *cred)
 {
-	if (cred == NULL) {
-		return NULL;
-	}
-	
 	if (cred->password_obtained == CRED_CALLBACK) {
 		cred->password = cred->password_cb(cred);
 		cred->password_obtained = CRED_SPECIFIED;
@@ -74,10 +73,6 @@ BOOL cli_credentials_set_password(struct cli_credentials *cred, const char *val,
 
 const char *cli_credentials_get_domain(struct cli_credentials *cred)
 {
-	if (cred == NULL) {
-		return NULL;
-	}
-
 	if (cred->domain_obtained == CRED_CALLBACK) {
 		cred->domain = cred->domain_cb(cred);
 		cred->domain_obtained = CRED_SPECIFIED;
@@ -264,23 +259,20 @@ void cli_credentials_parse_string(struct cli_credentials *credentials, const cha
 	char *uname, *p;
 
 	uname = talloc_strdup(credentials, data); 
-	cli_credentials_set_username(credentials, uname, obtained);
-
-	if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
+	if ((p = strchr_m(uname,'%'))) {
 		*p = 0;
-		cli_credentials_set_domain(credentials, uname, obtained);
-		credentials->username = uname = p+1;
+		cli_credentials_set_password(credentials, p+1, obtained);
 	}
 
 	if ((p = strchr_m(uname,'@'))) {
 		*p = 0;
 		cli_credentials_set_realm(credentials, p+1, obtained);
-	}
-
-	if ((p = strchr_m(uname,'%'))) {
+	} else if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
 		*p = 0;
-		cli_credentials_set_password(credentials, p+1, obtained);
+		cli_credentials_set_domain(credentials, uname, obtained);
+		uname = p+1;
 	}
+	cli_credentials_set_username(credentials, uname, obtained);
 }
 
 void cli_credentials_guess(struct cli_credentials *cred)
@@ -319,11 +311,18 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	}
 }
 
+/* Fill in a credentails structure as anonymous */
+void cli_credentials_set_anonymous(struct cli_credentials *cred) 
+{
+	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
+	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
+}
+
 BOOL cli_credentials_is_anonymous(struct cli_credentials *credentials)
 {
 	const char *username = cli_credentials_get_username(credentials);
 
-	if (!username || !username[0]) 
+	if (!username[0]) 
 		return True;
 
 	return False;

@@ -97,7 +97,8 @@ static NTSTATUS libnet_rpc_connect_standard(struct libnet_context *ctx, TALLOC_C
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s",
 					r->standard.in.server_name);
 
-	status = dcerpc_pipe_connect(&r->standard.out.dcerpc_pipe,
+	status = dcerpc_pipe_connect(mem_ctx, 
+				     &r->standard.out.dcerpc_pipe,
 				     binding,
 				     r->standard.in.dcerpc_iface_uuid,
 				     r->standard.in.dcerpc_iface_version,

@@ -173,7 +173,8 @@ BOOL torture_rpc_dfs(void)
 
 	mem_ctx = talloc_init("torture_rpc_dfs");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_NETDFS_NAME,
 					DCERPC_NETDFS_UUID,
 					DCERPC_NETDFS_VERSION);
@@ -196,8 +197,6 @@ BOOL torture_rpc_dfs(void)
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

@@ -2552,7 +2552,7 @@ static BOOL browse_host(const char *query_host)
 
 	binding = talloc_asprintf(mem_ctx, "ncacn_np:%s", query_host);
 
-	status = dcerpc_pipe_connect(&p, binding, 
+	status = dcerpc_pipe_connect(mem_ctx, &p, binding, 
 				     DCERPC_SRVSVC_UUID, 
 				     DCERPC_SRVSVC_VERSION,
 				     cmdline_credentials);
@@ -2562,7 +2562,6 @@ static BOOL browse_host(const char *query_host)
 		talloc_free(mem_ctx);
 		return False;
 	}
-	talloc_steal(mem_ctx, p);
 
 	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
 	r.in.level = 1;

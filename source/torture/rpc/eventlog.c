@@ -155,15 +155,18 @@ BOOL torture_rpc_eventlog(void)
 
 	mem_ctx = talloc_init("torture_rpc_atsvc");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_EVENTLOG_NAME, 
 					DCERPC_EVENTLOG_UUID, 
 					DCERPC_EVENTLOG_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
 	if (!test_OpenEventLog(p, mem_ctx, &handle)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -174,8 +177,6 @@ BOOL torture_rpc_eventlog(void)
 	test_CloseEventLog(p, mem_ctx, &handle);
 
 	talloc_free(mem_ctx);
-
-    torture_rpc_close(p);
 
 	return ret;
 }

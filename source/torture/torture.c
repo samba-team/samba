@@ -120,7 +120,8 @@ BOOL torture_close_connection(struct smbcli_state *c)
 }
 
 /* open a rpc connection to the chosen binding string */
-NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
+NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
+				struct dcerpc_pipe **p, 
 				const char *pipe_name,
 				const char *pipe_uuid, 
 				uint32_t pipe_version)
@@ -133,14 +134,16 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_connect(p, binding, pipe_uuid, pipe_version,
-					 cmdline_credentials);
+	status = dcerpc_pipe_connect(parent_ctx, 
+				     p, binding, pipe_uuid, pipe_version,
+				     cmdline_credentials);
  
         return status;
 }
 
 /* open a rpc connection to a specific transport */
-NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p, 
+NTSTATUS torture_rpc_connection_transport(TALLOC_CTX *parent_ctx, 
+					  struct dcerpc_pipe **p, 
 					  const char *pipe_name,
 					  const char *pipe_uuid, 
 					  uint32_t pipe_version,
@@ -149,10 +152,11 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
         NTSTATUS status;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding *b;
-	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_connection_smb");
+	TALLOC_CTX *mem_ctx = talloc_named(parent_ctx, 0, "torture_rpc_connection_smb");
 
 	if (!binding) {
 		printf("You must specify a ncacn binding string\n");
+		talloc_free(mem_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -165,20 +169,17 @@ NTSTATUS torture_rpc_connection_transport(struct dcerpc_pipe **p,
 
 	b->transport = transport;
 
-	status = dcerpc_pipe_connect_b(p, b, pipe_uuid, pipe_version,
+	status = dcerpc_pipe_connect_b(mem_ctx, p, b, pipe_uuid, pipe_version,
 								   cmdline_credentials);
 					   
- 
+	if (NT_STATUS_IS_OK(status)) {
+		*p = talloc_reference(parent_ctx, *p);
+	} else {
+		*p = NULL;
+	}
+	talloc_free(mem_ctx);
         return status;
 }
-
-/* close a rpc connection to a named pipe */
-NTSTATUS torture_rpc_close(struct dcerpc_pipe *p)
-{
-	dcerpc_pipe_close(p);
-	return NT_STATUS_OK;
-}
-
 
 /* check if the server produced the expected error code */
 BOOL check_error(const char *location, struct smbcli_state *c, 
@@ -2636,7 +2637,7 @@ static BOOL is_binding_string(const char *binding_string)
 #endif
 
 	pc = poptGetContext("smbtorture", argc, (const char **) argv, long_options, 
-				POPT_CONTEXT_KEEP_FIRST);
+			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<binding>|<unc> TEST1 TEST2 ...");
 

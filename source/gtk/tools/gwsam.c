@@ -128,7 +128,7 @@ static void connect_sam(void)
 
 	mem_ctx = talloc_init("gwsam_connect");
 	/* If connected, get list of jobs */
-	status = dcerpc_pipe_connect_b(&sam_pipe,
+	status = dcerpc_pipe_connect_b(mem_ctx, &sam_pipe,
 				       gtk_rpc_binding_dialog_get_binding(d, mem_ctx),
 				       DCERPC_SAMR_UUID, DCERPC_SAMR_VERSION,
 				       gtk_rpc_binding_dialog_get_credentials(d)
@@ -159,6 +159,8 @@ static void connect_sam(void)
 	gtk_widget_set_sensitive (mnu_disconnect, TRUE);
 	gtk_window_set_title (GTK_WINDOW (mainwin), talloc_asprintf(mem_ctx, "User Manager - Connected to %s", gtk_rpc_binding_dialog_get_host(d)));
 	gtk_widget_destroy(GTK_WIDGET(d));
+
+	sam_pipe = talloc_reference(talloc_autofree_context(), sam_pipe);
 	talloc_free(mem_ctx);
 
 }
@@ -176,7 +178,8 @@ static void on_disconnect_activate (GtkMenuItem *menuitem, gpointer user_data)
 
 static void on_quit_activate (GtkMenuItem *menuitem, gpointer user_data)
 {
-	if(sam_pipe)dcerpc_pipe_close(sam_pipe);
+	talloc_free(sam_pipe);
+
 	gtk_main_quit();
 }
 

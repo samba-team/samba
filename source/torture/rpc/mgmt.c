@@ -177,7 +177,7 @@ BOOL torture_rpc_mgmt(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	const struct dcerpc_interface_list *l;
@@ -192,24 +192,29 @@ BOOL torture_rpc_mgmt(void)
 	
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		printf("Failed to parse binding '%s'\n", binding);
 		return False;
 	}
 
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
+		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_mgmt loop context");
+		
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {
+			talloc_free(loop_ctx);
 			continue;
 		}
 
 		printf("\nTesting pipe '%s'\n", l->table->name);
 
 		if (b->transport == NCACN_IP_TCP) {
-			status = dcerpc_epm_map_binding(mem_ctx, b, 
-							 l->table->uuid,
-							 l->table->if_version);
+			status = dcerpc_epm_map_binding(loop_ctx, b, 
+							l->table->uuid,
+							l->table->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(loop_ctx);
 				printf("Failed to map port for uuid %s\n", l->table->uuid);
 				continue;
 			}
@@ -217,38 +222,39 @@ BOOL torture_rpc_mgmt(void)
 			b->endpoint = talloc_strdup(b, l->table->name);
 		}
 
-		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
+		lp_set_cmdline("torture:binding", dcerpc_binding_string(loop_ctx, b));
 
-		status = torture_rpc_connection(&p, 
+		status = torture_rpc_connection(loop_ctx, 
+						&p, 
 						l->table->name,
 						DCERPC_MGMT_UUID,
 						DCERPC_MGMT_VERSION);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(loop_ctx);
 			ret = False;
 			continue;
 		}
 	
-		if (!test_is_server_listening(p, mem_ctx)) {
+		if (!test_is_server_listening(p, loop_ctx)) {
 			ret = False;
 		}
 
-		if (!test_stop_server_listening(p, mem_ctx)) {
+		if (!test_stop_server_listening(p, loop_ctx)) {
 			ret = False;
 		}
 
-		if (!test_inq_stats(p, mem_ctx)) {
+		if (!test_inq_stats(p, loop_ctx)) {
 			ret = False;
 		}
 
-		if (!test_inq_princ_name(p, mem_ctx)) {
+		if (!test_inq_princ_name(p, loop_ctx)) {
 			ret = False;
 		}
 
-		if (!test_inq_if_ids(p, mem_ctx)) {
+		if (!test_inq_if_ids(p, loop_ctx)) {
 			ret = False;
 		}
 
-		torture_rpc_close(p);
 	}
 
 	return ret;

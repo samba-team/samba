@@ -81,7 +81,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 	TALLOC_CTX *mem_ctx = talloc_init("dcom_connect");
 
 	if (server == NULL) { 
-		return dcerpc_pipe_connect(p, "ncalrpc", 
+		return dcerpc_pipe_connect(ctx, p, "ncalrpc", 
 					   DCERPC_IREMOTEACTIVATION_UUID, 
 					   DCERPC_IREMOTEACTIVATION_VERSION,
 					   ctx->dcom->credentials);
@@ -89,7 +89,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 
 	/* Allow server name to contain a binding string */
 	if (NT_STATUS_IS_OK(dcerpc_parse_binding(mem_ctx, server, &bd))) {
-		status = dcerpc_pipe_connect_b(p, bd, 
+		status = dcerpc_pipe_connect_b(ctx, p, bd, 
 					       DCERPC_IREMOTEACTIVATION_UUID, 
 					       DCERPC_IREMOTEACTIVATION_VERSION, 
 						   ctx->dcom->credentials);
@@ -106,7 +106,7 @@ static NTSTATUS dcom_connect_host(struct com_context *ctx, struct dcerpc_pipe **
 			return NT_STATUS_NO_MEMORY;
 		}
 		
-		status = dcerpc_pipe_connect(p, binding, 
+		status = dcerpc_pipe_connect(ctx, p, binding, 
 					     DCERPC_IREMOTEACTIVATION_UUID, 
 					     DCERPC_IREMOTEACTIVATION_VERSION, 
 						 ctx->dcom->credentials);
@@ -301,9 +301,9 @@ NTSTATUS dcom_get_pipe (struct IUnknown *iface, struct dcerpc_pipe **pp)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
-			status = dcerpc_pipe_connect_b(&p, binding, 
+			status = dcerpc_pipe_connect_b(NULL, &p, binding, 
 						       uuid, 0.0, 
-							   iface->ctx->dcom->credentials);
+						       iface->ctx->dcom->credentials);
 		}
 		talloc_free(binding);
 		i++;

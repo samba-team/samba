@@ -95,7 +95,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 
 	gtk_rpc_binding_dialog->mem_ctx = talloc_init("gtk_rcp_binding_dialog");
 
-	gtk_rpc_binding_dialog->credentials = talloc(gtk_rpc_binding_dialog->mem_ctx, struct cli_credentials);
+	gtk_rpc_binding_dialog->credentials = cli_credentials_init(gtk_rpc_binding_dialog->mem_ctx);
 
 	cli_credentials_guess(gtk_rpc_binding_dialog->credentials);
 	

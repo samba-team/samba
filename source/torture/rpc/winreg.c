@@ -760,7 +760,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 BOOL torture_rpc_winreg(void)
 {
         NTSTATUS status;
-       struct dcerpc_pipe *p;
+	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	winreg_open_fn *open_fns[] = { test_OpenHKLM, test_OpenHKU,
@@ -769,12 +769,14 @@ BOOL torture_rpc_winreg(void)
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx, 
+					&p, 
 					DCERPC_WINREG_NAME, 
 					DCERPC_WINREG_UUID, 
 					DCERPC_WINREG_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -793,8 +795,6 @@ BOOL torture_rpc_winreg(void)
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

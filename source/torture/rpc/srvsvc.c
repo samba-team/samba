@@ -720,11 +720,13 @@ BOOL torture_rpc_srvsvc(void)
 
 	mem_ctx = talloc_init("torture_rpc_srvsvc");
 
-	status = torture_rpc_connection(&p,
+	status = torture_rpc_connection(mem_ctx, 
+					&p,
 					DCERPC_SRVSVC_NAME,
 					DCERPC_SRVSVC_UUID,
 					DCERPC_SRVSVC_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -773,8 +775,6 @@ BOOL torture_rpc_srvsvc(void)
 	}
 
 	talloc_free(mem_ctx);
-
-        torture_rpc_close(p);
 
 	return ret;
 }

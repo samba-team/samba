@@ -188,7 +188,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	mem_ctx = talloc_init("connect");
 	bs = gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx);
 
-	status = dcerpc_pipe_connect(&epmapper_pipe, bs, 
+	status = dcerpc_pipe_connect(talloc_autofree_context(), &epmapper_pipe, bs, 
 				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
 				     cmdline_credentials);
 

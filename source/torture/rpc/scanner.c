@@ -39,7 +39,8 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 
 	uuid = GUID_string(mem_ctx, &id->uuid);
 
-	status = torture_rpc_connection(&p, iface->name,
+	status = torture_rpc_connection(mem_ctx, 
+					&p, iface->name,
 					uuid, id->if_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to '%s' on '%s' - %s\n", 
@@ -80,7 +81,7 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	}
 
 done:
-	torture_rpc_close(p);
+	talloc_free(p);
 	return True;
 }
 
@@ -132,7 +133,7 @@ BOOL torture_rpc_scanner(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx, *loop_ctx;
 	BOOL ret = True;
 	const struct dcerpc_interface_list *l;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
@@ -141,20 +142,24 @@ BOOL torture_rpc_scanner(void)
 	mem_ctx = talloc_init("torture_rpc_scanner");
 
 	if (!binding) {
+		talloc_free(mem_ctx);
 		printf("You must supply a ncacn binding string\n");
 		return False;
 	}
 	
 	status = dcerpc_parse_binding(mem_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		printf("Failed to parse binding '%s'\n", binding);
 		return False;
 	}
 
 	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
+		loop_ctx = talloc_named(mem_ctx, 0, "torture_rpc_scanner loop context");
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {
+			talloc_free(loop_ctx);
 			continue;
 		}
 
@@ -165,6 +170,7 @@ BOOL torture_rpc_scanner(void)
 							 l->table->uuid,
 							 l->table->if_version);
 			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(loop_ctx);
 				printf("Failed to map port for uuid %s\n", l->table->uuid);
 				continue;
 			}
@@ -174,11 +180,13 @@ BOOL torture_rpc_scanner(void)
 
 		lp_set_cmdline("torture:binding", dcerpc_binding_string(mem_ctx, b));
 
-		status = torture_rpc_connection(&p, 
+		status = torture_rpc_connection(loop_ctx, 
+						&p, 
 						l->table->name,
 						DCERPC_MGMT_UUID,
 						DCERPC_MGMT_VERSION);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(loop_ctx);
 			ret = False;
 			continue;
 		}
@@ -186,8 +194,6 @@ BOOL torture_rpc_scanner(void)
 		if (!test_inq_if_ids(p, mem_ctx, l->table)) {
 			ret = False;
 		}
-
-		torture_rpc_close(p);
 	}
 
 	return ret;

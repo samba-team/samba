@@ -95,19 +95,21 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 BOOL torture_rpc_remact(void)
 {
-     NTSTATUS status;
-     struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 
 	mem_ctx = talloc_init("torture_rpc_remact");
 
-	status = torture_rpc_connection(&p, 
+	status = torture_rpc_connection(mem_ctx,
+					&p, 
 					DCERPC_IREMOTEACTIVATION_NAME,
 					DCERPC_IREMOTEACTIVATION_UUID, 
 					DCERPC_IREMOTEACTIVATION_VERSION);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
 		return False;
 	}
 
@@ -115,8 +117,6 @@ BOOL torture_rpc_remact(void)
 		ret = False;
 
 	talloc_free(mem_ctx);
-
-    torture_rpc_close(p);
 
 	return ret;
 }
