@@ -11,12 +11,33 @@ owner = root
 group = sys
 flags = 
 
+FILE:SambaDOC:SHARED:doc/samba.desktop:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/share/meta/doc/NetworkDoc/WinConnect/samba.desktop
+
 FILE:SambaDOC:SHARED:doc/index.html:
 mode  = 0644
 owner = root
 group = sys
 flags = 
 exportPath = /usr/share/doc/samba/help/index.html
+
+FILE:SambaDOC:SHARED:doc/osr5config.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/share/doc/samba/help/osr5config.html
+
+FILE:SambaDOC:SHARED:doc/callogo.gif:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/share/doc/samba/help/callogo.gif
 
 DIR:SambaDOC:SHARED:usr/lib:
 mode  = 0755
@@ -97,13 +118,6 @@ owner = root
 group = sys
 flags = 
 exportPath = /usr/man/man.1/smbcontrol.1
-
-FILE:SambaDOC:SHARED:usr/lib/samba/man/man.1/smbrun.1:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/man/man.1/smbrun.1
 
 FILE:SambaDOC:SHARED:usr/lib/samba/man/man.1/smbsh.1:
 mode  = 0644

@@ -8,8 +8,8 @@
 # do the initial configuration as well, and this script will become
 # unnecessary.
 
-CONF_SRC=/usr/lib/samba/lib/smb.conf.default
-CONF=/usr/lib/samba/lib/smb.conf
+CONF_SRC=/etc/samba.d/smb.conf.default
+CONF=/etc/samba.d/smb.conf
 
 # getyn: ask a question, return value indicates response
 

@@ -12,7 +12,7 @@ CFLAGS="-O3 -I/usr/local/include -L/usr/local/lib"
 CXX="g++"
 CXXFLAGS="-O3 -I/usr/local/include/stl -I/usr/local/include -L/usr/local/lib"
 RANLIB=true
-MAKE=/usr/local/bin/make
+MAKE=/usr/gnu/bin/make
 if [ "$V" = "echo" ]
 then
     echo "exporting the following shell variables:"
@@ -32,15 +32,15 @@ then
     echo "rm -f mout-1 mout-2 mout-3 mout-4"
     echo "make all 2>&1 | tee mout-1"
     echo "make smbfilter smbtorture debug2html 2>&1 | tee mout-2"
-    echo "make bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3"
-    echo "make masktest locktest locktest2 2>&1 | tee mout-3"
+    echo "make bin/smbspool smbwrapper bin/smbsh bin/wbinfo 2>&1 | tee mout-3"
+    echo "make masktest locktest locktest2 2>&1 | tee mout-4"
 else
     cd ../../../source
     rm -f mout-1 mout-2 mout-3 mout-4
     make all 2>&1 | tee mout-1
     make smbfilter smbtorture debug2html 2>&1 | tee mout-2
-    make bin/smbspool smbwrapper bin/wbinfo 2>&1 | tee mout-3
-    make masktest locktest locktest2 2>&1 | tee mout-3
+    make bin/smbspool smbwrapper bin/smbsh bin/wbinfo 2>&1 | tee mout-3
+    make masktest locktest locktest2 2>&1 | tee mout-4
 fi
 #
 # Not building :

@@ -29,6 +29,30 @@ owner = root
 group = sys
 flags = 
 
+DIR:Control:SHARED:cntl/packages/Samba:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:Control:SHARED:cntl/packages/Samba/ccs:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+DIR:Control:SHARED:cntl/packages/SambaSWAT:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:Control:SHARED:cntl/packages/SambaSWAT/ccs:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
 DIR:Control:SHARED:cntl/packages/SambaDOC:
 mode  = 0755
 owner = root
@@ -505,6 +529,13 @@ group = sys
 flags = 
 exportPath = /etc/samba.d/smbusers
 
+FILE:Samba:CLIENT:etc/samba.d/lmhosts:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /etc/samba.d/lmhosts
+
 DIR:Samba:CLIENT:usr/lib/samba/var:
 mode  = 0755
 owner = root
@@ -517,10 +548,20 @@ owner = root
 group = sys
 flags = 
 exportPath = /var/log/samba.d
+exportPath = /usr/lib/samba/var/log
 
 DIR:Samba:CLIENT:usr/lib/samba/var/locks:
+mode  = 1777
+owner = root
+group = sys
+flags = 
+exportPath = /var/locks/samba.d
+exportPath = /usr/lib/samba/var/locks
+
+DIR:Samba:CLIENT:usr/lib/samba/var/spool:
 mode  = 0755
 owner = root
 group = sys
 flags = 
-exportPath = /var/locks/samba
+exportPath = /var/spool/samba
+exportPath = /usr/lib/samba/var/spool
