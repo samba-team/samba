@@ -17,6 +17,11 @@ construction.  The following VFS modules are given:
 		connect/disconnect, directory opens/create/remove,
 		file open/close/rename/unlink/chmod.
 
+	block/
+
+		A directory containing a sample module by Ronald Kuetemeier
+		<ronald@kuetemeier.com> to block named symbolic link following.
+
 The libtool program, available from your favourite GNU software
 archive, is required to compile these programs.
 
