@@ -53,7 +53,7 @@ change(void *server_handle,
     if(ret)
 	return ret;
     ret = context->db->hdb_fetch(context->context, context->db, 
-				 0, &ent);
+				 HDB_F_DECRYPT, &ent);
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
 
@@ -73,8 +73,11 @@ change(void *server_handle,
 			       keys, num_keys);
     _kadm5_free_keys (server_handle, num_keys, keys);
 
-    if (cmp == 0)
+    if (cmp == 0) {
+	krb5_set_error_string(context->context, "Password reuse forbidden");
+	ret = KADM5_PASS_REUSE;
 	goto out2;
+    }
 
     ret = _kadm5_set_modifier(context, &ent);
     if(ret)
