@@ -384,7 +384,7 @@ static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn,
 	
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
-static NTSTATUS cm_open_connection(const char *domain, const iont pipe_index,
+static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			       struct winbindd_cm_conn *new_conn)
 {
 	struct failed_connection_cache *fcc;
