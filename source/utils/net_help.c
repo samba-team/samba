@@ -99,6 +99,8 @@ int net_help_group(int argc, const char **argv)
 	d_printf("\nnet [<method>] group ADD <name> [-C comment] [-c container]"\
 		 " [misc. options] [targets]\n\tCreate specified group\n");
 	d_printf("\nnet rpc group MEMBERS <name>\n\tList Group Members\n\n");
+	d_printf("\nnet rpc group ADDMEM <group> <member>\n\tAdd Group Members\n\n");
+	d_printf("\nnet rpc group DELMEM <group> <member>\n\tDelete Group Members\n\n");
 	net_common_methods_usage(argc, argv);
 	net_common_flags_usage(argc, argv);
 	d_printf("\t-C or --comment=<comment>\tdescriptive comment (for add only)\n");

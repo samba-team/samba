@@ -1761,11 +1761,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 		}
 
 	} else {
-		if (tar_type=='c' && (dry_run || strcmp(argv[Optind], "/dev/null")==0)) {
-			if (!dry_run) {
-				DEBUG(0,("Output is /dev/null, assuming dry_run\n"));
-				dry_run = True;
-			}
+		if (tar_type=='c' && dry_run) {
 			tarhandle=-1;
 		} else if ((tar_type=='x' && (tarhandle = sys_open(argv[Optind], O_RDONLY, 0)) == -1)
 					|| (tar_type=='c' && (tarhandle=sys_creat(argv[Optind], 0644)) < 0)) {

@@ -2666,9 +2666,10 @@ static BOOL run_oplock2(int dummy)
 
 	sleep(2);
 
-	/* Ensure cli1 processes the break. */
+	/* Ensure cli1 processes the break. Empty file should always return 0
+	 * bytes.  */
 
-	if (cli_read(cli1, fnum1, buf, 0, 4) != 4) {
+	if (cli_read(cli1, fnum1, buf, 0, 4) != 0) {
 		printf("read on fnum1 failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -4138,7 +4139,7 @@ static BOOL run_openattrtest(int dummy)
 	return correct;
 }
 
-static void list_fn(file_info *finfo, const char *name, void *state)
+static void list_fn(const char *mnt, file_info *finfo, const char *name, void *state)
 {
 	
 }
@@ -4198,7 +4199,7 @@ static BOOL run_dirtest(int dummy)
 	return correct;
 }
 
-static void del_fn(file_info *finfo, const char *mask, void *state)
+static void del_fn(const char *mnt, file_info *finfo, const char *mask, void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
 	fstring fname;

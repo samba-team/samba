@@ -143,7 +143,7 @@ static int interpret_long_filename(struct cli_state *cli,
 ****************************************************************************/
 
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 #if 0
 	int max_matches = 1366; /* Match W2k - was 512. */
@@ -191,7 +191,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			setup = TRANSACT2_FINDFIRST;
 			SSVAL(param,0,attribute); /* attribute */
 			SSVAL(param,2,max_matches); /* max count */
-			SSVAL(param,4,4+2);	/* resume required + close on end */
+			SSVAL(param,4,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			SSVAL(param,6,info_level); 
 			SIVAL(param,8,0);
 			p = param+12;
@@ -203,7 +203,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,2,max_matches); /* max count */
 			SSVAL(param,4,info_level); 
 			SIVAL(param,6,0); /* ff_resume_key */
-			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
+			/* NB. *DON'T* use continue here. If you do it seems that W2K and bretheren
+			   can miss filenames. Use last filename continue instead. JRA */
+			SSVAL(param,4,(FLAG_TRANS2_FIND_REQUIRE_RESUME|FLAG_TRANS2_FIND_CLOSE_IF_END));	/* resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, sizeof(param)-12, 
 					 STR_TERMINATE);
@@ -268,24 +270,6 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = rdata;
 
 		/* we might need the lastname for continuations */
-		if (ff_lastname > 0) {
-			switch(info_level) {
-				case 260:
-					clistr_pull(cli, mask, p+ff_lastname,
-						    sizeof(mask), 
-						    data_len-ff_lastname,
-						    STR_TERMINATE);
-					break;
-				case 1:
-					clistr_pull(cli, mask, p+ff_lastname+1,
-						    sizeof(mask), 
-						    -1,
-						    STR_TERMINATE);
-					break;
-				}
-		} else {
-			pstrcpy(mask,"");
-		}
  
 		/* and add them to the dirlist pool */
 		tdl = SMB_REALLOC(dirlist,dirlist_len + data_len);
@@ -299,9 +283,17 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
-		for (p2=p,i=0;i<(ff_searchcount-1);i++)
-			p2 += interpret_long_filename(cli,info_level,p2,NULL);
+		for (p2=p,i=0;i<(ff_searchcount-1);i++) {
+			p2 += interpret_long_filename(cli,info_level,p2,&finfo);
+		}
 		SSVAL(p2,0,data_len - PTR_DIFF(p2,p));
+
+		/* we might need the lastname for continuations */
+		if (ff_lastname > 0) {
+			pstrcpy(mask, finfo.name);
+		} else {
+			pstrcpy(mask,"");
+		}
 
 		/* grab the data for later use */
 		memcpy(dirlist+dirlist_len,p,data_len);
@@ -322,8 +314,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	for (p=dirlist,i=0;i<total_received;i++) {
+		const char *mnt = cli_cm_get_mntpoint( cli );
+		
 		p += interpret_long_filename(cli,info_level,p,&finfo);
-		fn(&finfo, Mask, state);
+		
+		fn( mnt,&finfo, Mask, state );
 	}
 
 	/* free up the dirlist buffer */
@@ -365,7 +360,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 ****************************************************************************/
 
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
-		 void (*fn)(file_info *, const char *, void *), void *state)
+		 void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 	char *p;
 	int received = 0;
@@ -472,7 +467,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
 		p += interpret_short_filename(cli, p,&finfo);
-		fn(&finfo, Mask, state);
+		fn("\\", &finfo, Mask, state);
 	}
 
 	SAFE_FREE(dirlist);
@@ -485,7 +480,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 ****************************************************************************/
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *, void *), void *state)
+	     void (*fn)(const char *, file_info *, const char *, void *), void *state)
 {
 	if (cli->protocol <= PROTOCOL_LANMAN1)
 		return cli_list_old(cli, Mask, attribute, fn, state);

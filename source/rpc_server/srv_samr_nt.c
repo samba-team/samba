@@ -2335,6 +2335,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	
 	/* implicit call to getpwnam() next.  we have a valid SID coming out of this call */
 
+	flush_pwnam_cache();
 	nt_status = pdb_init_sam_new(&sam_pass, account, new_rid);
 
 	/* this code is order such that we have no unnecessary retuns 
@@ -3805,6 +3806,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	all_string_sub(del_script, "%u", unix_user, sizeof(del_script));
 	ret = smbrun(del_script,NULL);
+	flush_pwnam_cache();
 	DEBUG(ret ? 0 : 3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
 
 	return ret;

@@ -129,7 +129,7 @@ void pcap_cache_reload(void)
 	}
 #endif
 
-#ifdef SYSV
+#if defined(SYSV) || defined(HPUX)
 	if (strequal(pcap_name, "lpstat")) {
 		pcap_reloaded = sysv_cache_reload();
 		goto done;

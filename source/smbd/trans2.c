@@ -33,11 +33,28 @@ extern struct current_user current_user;
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
 /********************************************************************
+ Roundup a value to the nearest allocation roundup size boundary.
+ Only do this for Windows clients.
+********************************************************************/
+
+SMB_BIG_UINT smb_roundup(connection_struct *conn, SMB_BIG_UINT val)
+{
+	SMB_BIG_UINT rval = lp_allocation_roundup_size(SNUM(conn));
+
+	/* Only roundup for Windows clients. */
+	enum remote_arch_types ra_type = get_remote_arch();
+	if (rval && (ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+		val = SMB_ROUNDUP(val,rval);
+	}
+	return val;
+}
+
+/********************************************************************
  Given a stat buffer return the allocated size on disk, taking into
  account sparse files.
 ********************************************************************/
 
-SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+SMB_BIG_UINT get_allocation_size(connection_struct *conn, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
 
@@ -50,7 +67,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
 
-	return ret;
+	return smb_roundup(conn, ret);
 }
 
 /****************************************************************************
@@ -794,7 +811,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
 				 BOOL *out_of_space, BOOL *got_exact_match,
-				 int *last_name_off)
+				 int *last_entry_off)
 {
 	const char *dname;
 	BOOL found = False;
@@ -811,6 +828,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	uint32 len;
 	time_t mdate=0, adate=0, cdate=0;
 	char *nameptr;
+	char *last_entry_ptr;
 	BOOL was_8_3;
 	int nt_extmode; /* Used for NT connections instead of mode */
 	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
@@ -919,7 +937,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			}
 
 			file_size = get_file_size(sbuf);
-			allocation_size = get_allocation_size(NULL,&sbuf);
+			allocation_size = get_allocation_size(conn,NULL,&sbuf);
 			mdate = sbuf.st_mtime;
 			adate = sbuf.st_atime;
 			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
@@ -947,7 +965,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 	mangle_map(fname,False,True,SNUM(conn));
 
 	p = pdata;
-	nameptr = p;
+	last_entry_ptr = p;
 
 	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
@@ -1215,7 +1233,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,get_file_size(sbuf));             /* File size 64 Bit */
 			p+= 8;
 
-			SOFF_T(p,0,get_allocation_size(NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(p,0,get_allocation_size(conn,NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
 			put_long_date(p,sbuf.st_ctime);       /* Inode change Time 64 Bit */
@@ -1277,8 +1295,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 		return False; /* Not finished - just out of space */
 	}
 
-	/* Setup the last_filename pointer, as an offset from base_data */
-	*last_name_off = PTR_DIFF(nameptr,base_data);
+	/* Setup the last entry pointer, as an offset from base_data */
+	*last_entry_off = PTR_DIFF(last_entry_ptr,base_data);
 	/* Advance the data pointer to the next slot */
 	*ppdata = p;
 
@@ -1310,7 +1328,7 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 	pstring directory;
 	pstring mask;
 	char *p;
-	int last_name_off=0;
+	int last_entry_off=0;
 	int dptr_num = -1;
 	int numentries = 0;
 	int i;
@@ -1360,7 +1378,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		return ERROR_NT(ntstatus);
 	}
 
-	RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
 	unix_convert(directory,conn,0,&bad_path,&sbuf);
 	if (bad_path) {
@@ -1437,7 +1455,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
 					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-					&last_name_off);
+					&last_entry_off);
 		}
 
 		if (finished && out_of_space)
@@ -1482,7 +1500,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	SSVAL(params,2,numentries);
 	SSVAL(params,4,finished);
 	SSVAL(params,6,0); /* Never an EA error */
-	SSVAL(params,8,last_name_off);
+	SSVAL(params,8,last_entry_off);
 
 	send_trans2_replies( outbuf, bufsize, params, 10, pdata, PTR_DIFF(p,pdata));
 
@@ -1537,7 +1555,7 @@ static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbu
 	char *p;
 	uint16 dirtype;
 	int numentries = 0;
-	int i, last_name_off=0;
+	int i, last_entry_off=0;
 	BOOL finished = False;
 	BOOL dont_descend = False;
 	BOOL out_of_space = False;
@@ -1674,7 +1692,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
 						&p,pdata,space_remaining, &out_of_space, &got_exact_match,
-						&last_name_off);
+						&last_entry_off);
 		}
 
 		if (finished && out_of_space)
@@ -1706,7 +1724,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 	SSVAL(params,0,numentries);
 	SSVAL(params,2,finished);
 	SSVAL(params,4,0); /* Never an EA error */
-	SSVAL(params,6,last_name_off);
+	SSVAL(params,6,last_entry_off);
 
 	send_trans2_replies( outbuf, bufsize, params, 8, pdata, PTR_DIFF(p,pdata));
 
@@ -2422,7 +2440,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	fullpathname = fname;
 	file_size = get_file_size(sbuf);
-	allocation_size = get_allocation_size(fsp,&sbuf);
+	allocation_size = get_allocation_size(conn,fsp,&sbuf);
 	if (mode & aDIR) {
 		/* This is necessary, as otherwise the desktop.ini file in
 		 * this folder is ignored */
@@ -2451,9 +2469,18 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-	if (fsp && fsp->pending_modtime) {
-		/* the pending modtime overrides the current modtime */
-		sbuf.st_mtime = fsp->pending_modtime;
+	if (fsp) {
+		if (fsp->pending_modtime) {
+			/* the pending modtime overrides the current modtime */
+			sbuf.st_mtime = fsp->pending_modtime;
+		}
+	} else {
+		/* Do we have this path open ? */
+		files_struct *fsp1 = file_find_di_first(sbuf.st_dev, sbuf.st_ino);
+		if (fsp1 && fsp1->pending_modtime) {
+			/* the pending modtime overrides the current modtime */
+			sbuf.st_mtime = fsp1->pending_modtime;
+		}
 	}
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
@@ -2768,7 +2795,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			SOFF_T(pdata,0,get_file_size(sbuf));             /* File size 64 Bit */
 			pdata += 8;
 
-			SOFF_T(pdata,0,get_allocation_size(fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
+			SOFF_T(pdata,0,get_allocation_size(conn,fsp,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			pdata += 8;
 
 			put_long_date(pdata,sbuf.st_ctime);       /* Creation Time 64 Bit */
@@ -3305,9 +3332,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 				tvs.modtime = write_time;
 			}
 			/* Prefer a defined time to an undefined one. */
-			if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
-				tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
-					? changed_time : write_time);
+			if (null_mtime(tvs.modtime)) {
+				tvs.modtime = null_mtime(write_time) ? changed_time : write_time;
+			}
 
 			/* attributes */
 			dosmode = IVAL(pdata,32);
@@ -3332,6 +3359,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 #endif /* LARGE_SMB_OFF_T */
 			DEBUG(10,("call_trans2setfilepathinfo: Set file allocation info for file %s to %.0f\n",
 					fname, (double)allocation_size ));
+
+			if (allocation_size) {
+				allocation_size = smb_roundup(conn, allocation_size);
+			}
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
@@ -3783,11 +3814,13 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (tvs.actime == (time_t)0 || tvs.actime == (time_t)-1)
+	if (null_mtime(tvs.actime)) {
 		tvs.actime = sbuf.st_atime;
+	}
 
-	if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
+	if (null_mtime(tvs.modtime)) {
 		tvs.modtime = sbuf.st_mtime;
+	}
 
 	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
@@ -3819,30 +3852,6 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * Try and set the times, size and mode of this file -
 	 * if they are different from the current values
 	 */
-	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
-		if(fsp != NULL) {
-			/*
-			 * This was a setfileinfo on an open file.
-			 * NT does this a lot. We also need to 
-			 * set the time here, as it can be read by 
-			 * FindFirst/FindNext and with the patch for bug #2045
-			 * in smbd/fileio.c it ensures that this timestamp is
-			 * kept sticky even after a write. We save the request
-			 * away and will set it on file close and after a write. JRA.
-			 */
-
-			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
-				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
-				fsp->pending_modtime = tvs.modtime;
-			}
-
-			DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
-
-			if(file_utime(conn, fname, &tvs)!=0) {
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-		}
-	}
 
 	/* check the mode isn't different, before changing it */
 	if ((dosmode != 0) && (dosmode != dos_mode(conn, fname, &sbuf))) {
@@ -3855,6 +3864,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		}
 	}
 
+	/* Now the size. */
 	if (size != get_file_size(sbuf)) {
 
 		int ret;
@@ -3893,6 +3903,34 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		if (ret == -1)
 			return (UNIXERROR(ERRHRD,ERRdiskfull));
+	}
+
+	/*
+	 * Finally the times.
+	 */
+	if (sbuf.st_mtime != tvs.modtime || sbuf.st_atime != tvs.actime) {
+		if(fsp != NULL) {
+			/*
+			 * This was a setfileinfo on an open file.
+			 * NT does this a lot. We also need to 
+			 * set the time here, as it can be read by 
+			 * FindFirst/FindNext and with the patch for bug #2045
+			 * in smbd/fileio.c it ensures that this timestamp is
+			 * kept sticky even after a write. We save the request
+			 * away and will set it on file close and after a write. JRA.
+			 */
+
+			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
+				DEBUG(10,("call_trans2setfilepathinfo: setting pending modtime to %s\n", ctime(&tvs.modtime) ));
+				fsp_set_pending_modtime(fsp, tvs.modtime);
+			}
+
+		}
+		DEBUG(10,("call_trans2setfilepathinfo: setting utimes to modified values.\n"));
+
+		if(file_utime(conn, fname, &tvs)!=0) {
+			return(UNIXERROR(ERRDOS,ERRnoaccess));
+		}
 	}
 
 	SSVAL(params,0,0);

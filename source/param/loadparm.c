@@ -424,6 +424,7 @@ typedef struct
 	BOOL bMap_acl_inherit;
 	BOOL bAfs_Share;
 	BOOL bEASupport;
+	int iallocation_roundup_size;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -549,6 +550,7 @@ static service sDefault = {
 	False,			/* bMap_acl_inherit */
 	False,			/* bAfs_Share */
 	False,			/* bEASupport */
+	SMB_ROUNDUP_ALLOCATION_SIZE,		/* iallocation_roundup_size */
 	
 	NULL,			/* Parametric options */
 
@@ -893,6 +895,7 @@ static struct parm_struct parm_table[] = {
 
 	{N_("Protocol Options"), P_SEP, P_SEPARATOR}, 
 
+	{"allocation roundup size", P_INTEGER, P_LOCAL, &sDefault.iallocation_roundup_size, NULL, NULL, FLAG_ADVANCED}, 
 	{"smb ports", P_STRING, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED}, 
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
@@ -953,7 +956,7 @@ static struct parm_struct parm_table[] = {
 	{"use mmap", P_BOOL, P_GLOBAL, &Globals.bUseMmap, NULL, NULL, FLAG_ADVANCED}, 
 	{"use sendfile", P_BOOL, P_LOCAL, &sDefault.bUseSendfile, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"hostname lookups", P_BOOL, P_GLOBAL, &Globals.bHostnameLookups, NULL, NULL, FLAG_ADVANCED}, 
-	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
+	{"write cache size", P_INTEGER, P_LOCAL, &sDefault.iWriteCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_DEPRECATED}, 
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED}, 
 
@@ -1236,9 +1239,9 @@ static void init_printer_values(service *pService)
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
 #else
-			string_set(&pService->szLpqcommand, "/usr/bin/lpstat -o '%p'");
-			string_set(&pService->szLprmcommand, "/usr/bin/cancel '%p-%j'");
-			string_set(&pService->szPrintcommand, "/usr/bin/lp -d '%p' %s; rm %s");
+			string_set(&pService->szLpqcommand, "/usr/bin/lpq -P'%p'");
+			string_set(&pService->szLprmcommand, "/usr/bin/lprm -P'%p' %j");
+			string_set(&pService->szPrintcommand, "/usr/bin/lpr -P'%p' %s; rm %s");
 			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
 			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
 			string_set(&pService->szQueuepausecommand, "/usr/bin/disable '%p'");
@@ -1931,6 +1934,7 @@ FN_LOCAL_INTEGER(lp_oplock_contention_limit, iOplockContentionLimit)
 FN_LOCAL_INTEGER(lp_csc_policy, iCSCPolicy)
 FN_LOCAL_INTEGER(lp_write_cache_size, iWriteCacheSize)
 FN_LOCAL_INTEGER(lp_block_size, iBlock_size)
+FN_LOCAL_INTEGER(lp_allocation_roundup_size, iallocation_roundup_size);
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_INTEGER(lp_algorithmic_rid_base, &Globals.AlgorithmicRidBase)

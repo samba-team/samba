@@ -1820,6 +1820,9 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	architecture = get_short_archi(arch);
+
+	if ( !architecture )
+		return WERR_UNKNOWN_PRINTER_DRIVER;
 	
 	/* Windows 4.0 (i.e. win9x) should always use a version of 0 */
 	
@@ -4333,34 +4336,70 @@ BOOL printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 )
 	int snum;
 	int n_services = lp_numservices();
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	BOOL in_use = False;
 
 	if ( !info_3 ) 
 		return False;
 
-	DEBUG(5,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
+	DEBUG(10,("printer_driver_in_use: Beginning search through ntprinters.tdb...\n"));
 	
 	/* loop through the printers.tdb and check for the drivername */
 	
-	for (snum=0; snum<n_services; snum++) {
+	for (snum=0; snum<n_services && !in_use; snum++) {
 		if ( !(lp_snum_ok(snum) && lp_print_ok(snum) ) )
 			continue;
 		
 		if ( !W_ERROR_IS_OK(get_a_printer(NULL, &printer, 2, lp_servicename(snum))) )
 			continue;
 		
-		if ( !StrCaseCmp(info_3->name, printer->info_2->drivername) ) {
-			free_a_printer( &printer, 2 );
-			return True;
-		}
+		if ( strequal(info_3->name, printer->info_2->drivername) ) 
+			in_use = True;
 		
 		free_a_printer( &printer, 2 );
 	}
 	
-	DEBUG(5,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
+	DEBUG(10,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
+	
+	if ( in_use ) {
+		NT_PRINTER_DRIVER_INFO_LEVEL d;
+		WERROR werr;
+		
+		DEBUG(5,("printer_driver_in_use: driver \"%s\" is currently in use\n", info_3->name));
+		
+		/* we can still remove the driver if there is one of 
+		   "Windows NT x86" version 2 or 3 left */
+		   
+		if ( !strequal( "Windows NT x86", info_3->environment ) ) {
+			werr = get_a_printer_driver( &d, 3, info_3->name, "Windows NT x86", DRIVER_ANY_VERSION );			
+		}
+		else {
+			switch ( info_3->cversion ) {
+			case 2:
+				werr = get_a_printer_driver( &d, 3, info_3->name, "Windows NT x86", 3 );
+				break;
+			case 3:	
+				werr = get_a_printer_driver( &d, 3, info_3->name, "Windows NT x86", 2 );
+				break;
+			default:
+				DEBUG(0,("printer_driver_in_use: ERROR! unknown driver version (%d)\n", 
+					info_3->cversion));
+				werr = WERR_UNKNOWN_PRINTER_DRIVER;
+				break;
+			}
+		}
+
+		/* now check the error code */
+				
+		if ( W_ERROR_IS_OK(werr) ) {
+			/* it's ok to remove the driver, we have other architctures left */
+			in_use = False;
+			free_a_printer_driver( d, 3 );
+		}
+	}
 	
 	/* report that the driver is not in use by default */
 	
-	return False;
+	return in_use;
 }
 
 

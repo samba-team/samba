@@ -2051,6 +2051,54 @@ NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Remove foreign SID */
+
+NTSTATUS cli_samr_remove_sid_foreign_domain(struct cli_state *cli, 
+					    TALLOC_CTX *mem_ctx, 
+					    POLICY_HND *user_pol,
+					    DOM_SID *sid)
+{
+	prs_struct qbuf, rbuf;
+	SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN q;
+	SAMR_R_REMOVE_SID_FOREIGN_DOMAIN r;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_remove_sid_foreign_domain\n"));
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_samr_q_remove_sid_foreign_domain(&q, user_pol, sid);
+
+	if (!samr_io_q_remove_sid_foreign_domain("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_SAMR, SAMR_REMOVE_SID_FOREIGN_DOMAIN, &qbuf, &rbuf)) {
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!samr_io_r_remove_sid_foreign_domain("", &r, &rbuf, 0)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	result = r.status;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /* Query user security object */
 
 NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,

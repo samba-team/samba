@@ -491,9 +491,18 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadshare;
 		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
-
 		return False;
 	}
+
+#if 0
+	/* Bluarc test may need this ... needs further investigation. */
+	if (deny_mode == DENY_ALL || old_deny_mode == DENY_ALL) {
+		unix_ERR_class = ERRDOS;
+		unix_ERR_code = ERRbadshare;
+		unix_ERR_ntstatus = NT_STATUS_SHARING_VIOLATION;
+		return False;
+	}
+#endif
 
 	/*
 	 * If desired_access doesn't contain READ_DATA,WRITE_DATA,APPEND_DATA or EXECUTE
@@ -502,7 +511,7 @@ existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsign
 
 	if ( !(desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
 		!(share->desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ) {
-		DEBUG(5,("check_share_mode: Allowing open on file %s as desired access (0x%x) doesn't conflict with\
+		DEBUG(5,("check_share_mode: Allowing open on file %s as desired access (0x%x) doesn't conflict with \
 existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsigned int)share->desired_access ));
 		return True;
 	}

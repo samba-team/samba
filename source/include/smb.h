@@ -404,7 +404,9 @@ typedef struct files_struct {
 	struct timeval open_time;
 	int share_mode;
 	uint32 desired_access;
+	BOOL pending_modtime_owner;
 	time_t pending_modtime;
+	time_t last_write_time;
 	int oplock_type;
 	int sent_oplock_break;
 	unsigned long file_id;
@@ -1121,8 +1123,11 @@ struct bitmap {
 #define FILE_ATTRIBUTE_NORMAL		0x080L
 #define FILE_ATTRIBUTE_TEMPORARY	0x100L
 #define FILE_ATTRIBUTE_SPARSE		0x200L
+#define FILE_ATTRIBUTE_REPARSE_POINT    0x400L
 #define FILE_ATTRIBUTE_COMPRESSED	0x800L
+#define FILE_ATTRIBUTE_OFFLINE          0x1000L
 #define FILE_ATTRIBUTE_NONINDEXED	0x2000L
+#define FILE_ATTRIBUTE_ENCRYPTED        0x4000L
 #define SAMBA_ATTRIBUTES_MASK		0x7F
 
 /* Flags - combined with attributes. */
