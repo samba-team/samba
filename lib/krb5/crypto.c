@@ -92,6 +92,8 @@ struct key_type {
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
     krb5_error_code (*get_params)(krb5_context, const krb5_data *,
 				  void **, krb5_data *);
+    krb5_error_code (*set_params)(krb5_context, void *, const krb5_data *,
+				  krb5_data *);
 };
 
 struct checksum_type {
@@ -886,6 +888,18 @@ struct key_type keytype_aes128 = {
     AES_salt
 };
 
+struct key_type keytype_aes192 = {
+    KEYTYPE_AES192,
+    "aes-192",
+    192,
+    24,
+    24,
+    sizeof(struct krb5_aes_schedule),
+    NULL,
+    AES_schedule,
+    AES_salt
+};
+
 struct key_type keytype_aes256 = {
     KEYTYPE_AES256,
     "aes-256",
@@ -932,8 +946,10 @@ struct key_type *keytypes[] = {
     &keytype_des3,
 #ifdef ENABLE_AES
     &keytype_aes128,
+    &keytype_aes192,
     &keytype_aes256,
 #endif /* ENABLE_AES */
+    &keytype_rc2,
     &keytype_arcfour
 };
 
@@ -2436,6 +2452,33 @@ AES_CTS_encrypt(krb5_context context,
 
     return 0;
 }
+
+static krb5_error_code 
+AES_CBC_encrypt(krb5_context context,
+                struct key_data *key, 
+                void *data,
+                size_t len,  
+                krb5_boolean encrypt, 
+                int usage,
+                void *ivec)
+{
+    struct krb5_aes_schedule *aeskey = key->schedule->data;
+    char local_ivec[AES_BLOCK_SIZE];
+    AES_KEY *k;
+
+    if (encrypt)
+	k = &aeskey->ekey;
+    else
+	k = &aeskey->dkey;
+
+    if(ivec == NULL) {
+        ivec = &local_ivec;
+        memset(local_ivec, 0, sizeof(local_ivec));
+    }
+    AES_cbc_encrypt(data, data, len, k, ivec, encrypt);
+    return 0;
+}
+
 #endif /* ENABLE_AES */
 
 /*
@@ -2774,6 +2817,42 @@ static struct encryption_type enctype_aes256_cts_hmac_sha1 = {
     F_DERIVED,
     AES_CTS_encrypt,
 };
+static struct encryption_type enctype_aes128_cbc_none = {
+    ETYPE_AES128_CBC_NONE,
+    "aes128-cbc-none",
+    16,
+    16,
+    16,
+    &keytype_aes128,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    AES_CBC_encrypt,
+};
+static struct encryption_type enctype_aes192_cbc_none = {
+    ETYPE_AES192_CBC_NONE,
+    "aes192-cbc-none",
+    16,
+    16,
+    16,
+    &keytype_aes192,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    AES_CBC_encrypt,
+};
+static struct encryption_type enctype_aes256_cbc_none = {
+    ETYPE_AES256_CBC_NONE,
+    "aes256-cbc-none",
+    16,
+    16,
+    16,
+    &keytype_aes256,
+    &checksum_none,
+    NULL,
+    F_PSEUDO,
+    AES_CBC_encrypt,
+};
 #endif /* ENABLE_AES */
 static struct encryption_type enctype_des_cbc_none = {
     ETYPE_DES_CBC_NONE,
@@ -2849,6 +2928,9 @@ static struct encryption_type *etypes[] = {
 #ifdef ENABLE_AES
     &enctype_aes128_cts_hmac_sha1,
     &enctype_aes256_cts_hmac_sha1,
+    &enctype_aes128_cbc_none,
+    &enctype_aes192_cbc_none,
+    &enctype_aes256_cbc_none,
 #endif
     &enctype_des_cbc_none,
     &enctype_des_cfb64_none,
@@ -3865,14 +3947,14 @@ krb5_crypto_destroy(krb5_context context,
 
 krb5_error_code
 krb5_crypto_get_params(krb5_context context,
-		       krb5_crypto crypto,
+		       const krb5_crypto crypto,
 		       const krb5_data *params,
 		       krb5_data *ivec)
 {
-    krb5_error_code (*sp)(krb5_context, const krb5_data *, 
-			  void **, krb5_data *);
-    sp = crypto->et->keytype->get_params;
-    if (sp == NULL) {
+    krb5_error_code (*gp)(krb5_context, const krb5_data *,void **,krb5_data *);
+
+    gp = crypto->et->keytype->get_params;
+    if (gp == NULL) {
 	size_t size;
 	if (ivec == NULL)
 	    return 0;
@@ -3880,12 +3962,44 @@ krb5_crypto_get_params(krb5_context context,
     }
     if (crypto->params) {
 	krb5_set_error_string(context,
+			      "krb5_crypto_get_params called "
+			      "more than once");
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+    return (*gp)(context, params, &crypto->params, ivec);
+}
+
+krb5_error_code
+krb5_crypto_set_params(krb5_context context,
+		       const krb5_crypto crypto,
+		       const krb5_data *ivec,
+		       krb5_data *params)
+{
+    krb5_error_code (*sp)(krb5_context, void *,const krb5_data *,krb5_data *);
+    krb5_error_code ret;
+
+    sp = crypto->et->keytype->set_params;
+    if (sp == NULL) {
+	size_t size;
+	if (ivec == NULL)
+	    return 0;
+	ASN1_MALLOC_ENCODE(CBCParameter, params->data, params->length,
+			   ivec, &size, ret);
+	if (ret)
+	    return ret;
+	if (size != params->length)
+	    krb5_abortx(context, "Internal asn1 encoder failure");
+	return 0;
+    }
+    if (crypto->params) {
+	krb5_set_error_string(context,
 			      "krb5_crypto_set_params called "
 			      "more than once");
 	return KRB5_PROG_ETYPE_NOSUPP;
     }
-    return (*sp)(context, params, &crypto->params, ivec);
+    return (*sp)(context, crypto->params, ivec, params);
 }
+
 
 krb5_error_code
 krb5_crypto_getblocksize(krb5_context context,
