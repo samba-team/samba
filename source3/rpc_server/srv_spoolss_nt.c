@@ -1917,9 +1917,7 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	init_unistr(&printer->datatype, ntprinter->info_2->datatype);		/* datatype */	
 	init_unistr(&printer->parameters, ntprinter->info_2->parameters);	/* parameters (of print processor) */	
 
-	printer->attributes =   PRINTER_ATTRIBUTE_SHARED   \
-	                      | PRINTER_ATTRIBUTE_LOCAL  \
-			      | PRINTER_ATTRIBUTE_RAW_ONLY ;			/* attributes */
+	printer->attributes = ntprinter->info_2->attributes;
 
 	printer->priority = ntprinter->info_2->priority;				/* priority */	
 	printer->defaultpriority = ntprinter->info_2->default_priority;		/* default priority */
