@@ -27,6 +27,7 @@
 struct client_connection {
 	struct client_connection *prev, *next;
 	struct cli_state *cli;
+	pstring mount;
 };
 
 /* global state....globals reek! */
@@ -166,6 +167,54 @@ static struct cli_state *do_connect( const char *server, const char *share,
 	return c;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static void cli_cm_set_mntpoint( struct cli_state *c, const char *mnt )
+{
+	struct client_connection *p;
+	int i;
+	pstring path;
+	char *ppath;
+
+	for ( p=connections,i=0; p; p=p->next,i++ ) {
+		if ( strequal(p->cli->desthost, c->desthost) && strequal(p->cli->share, c->share) )
+			break;
+	}
+	
+	if ( p ) {
+		pstrcpy( p->mount, mnt );
+		dos_clean_name( p->mount );
+
+#if 0 
+		/* strip any leading '\\' */
+		ppath = path;
+		if ( *ppath == '\\' )
+			ppath++;
+		pstrcpy( p->mount, ppath );		
+#endif
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
+
+const char * cli_cm_get_mntpoint( struct cli_state *c )
+{
+	struct client_connection *p;
+	int i;
+
+	for ( p=connections,i=0; p; p=p->next,i++ ) {
+		if ( strequal(p->cli->desthost, c->desthost) && strequal(p->cli->share, c->share) )
+			break;
+	}
+	
+	if ( p )
+		return p->mount;
+		
+	return NULL;
+}
+
 /********************************************************************
  Add a new connection to the list
 ********************************************************************/
@@ -185,6 +234,8 @@ static struct cli_state* cli_cm_connect( const char *server, const char *share,
 	}
 
 	DLIST_ADD( connections, node );
+
+	cli_cm_set_mntpoint( node->cli, "" );
 
 	return node->cli;
 
@@ -585,6 +636,8 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 			
 		return False;
 	}
+	
+	cli_cm_set_mntpoint( *targetcli, cleanpath );
 
 	/* check for another dfs refeerrali, note that we are not 
 	   checking for loops here */
