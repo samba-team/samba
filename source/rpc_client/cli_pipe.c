@@ -1268,7 +1268,8 @@ BOOL cli_nt_session_open(struct cli_state *cli, const int pipe_idx)
 	/******************* bind request on pipe *****************/
 
 	if (!rpc_pipe_bind(cli, pipe_idx, global_myname_dos())) {
-		DEBUG(2,("cli_nt_session_open: rpc bind failed\n"));
+		DEBUG(2,("cli_nt_session_open: rpc bind to %s failed\n",
+			 get_pipe_name_from_index(pipe_idx)));
 		cli_close(cli, cli->nt_pipe_fnum);
 		return False;
 	}
