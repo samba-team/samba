@@ -209,7 +209,6 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 			list->dn[list->count] = 
 				talloc_strdup(list->dn, (char *)el->values[j].data);
 			if (!list->dn[list->count]) {
-				talloc_free(list);
 				return -1;
 			}
 			list->count++;
@@ -309,7 +308,6 @@ static int list_intersect(struct ldb_context *ldb,
 
 	if (list->count == 0 || list2->count == 0) {
 		/* 0 & X == 0 */
-		talloc_free(list);
 		return 0;
 	}
 
@@ -320,7 +318,6 @@ static int list_intersect(struct ldb_context *ldb,
 
 	list3->dn = talloc_array(list3, char *, list->count);
 	if (!list3->dn) {
-		talloc_free(list);
 		talloc_free(list3);
 		return -1;
 	}
@@ -359,13 +356,11 @@ static int list_union(struct ldb_context *ldb,
 
 	if (list->count == 0 && list2->count == 0) {
 		/* 0 | 0 == 0 */
-		talloc_free(list);
 		return 0;
 	}
 
 	d = talloc_realloc(list, list->dn, char *, list->count + list2->count);
 	if (!d) {
-		talloc_free(list);
 		return -1;
 	}
 	list->dn = d;
@@ -375,7 +370,6 @@ static int list_union(struct ldb_context *ldb,
 			      sizeof(char *), (comparison_fn_t)strcmp) == -1) {
 			list->dn[list->count] = talloc_strdup(list->dn, list2->dn[i]);
 			if (!list->dn[list->count]) {
-				talloc_free(list);
 				return -1;
 			}
 			list->count++;
@@ -453,7 +447,6 @@ static int ltdb_index_dn_or(struct ldb_module *module,
 	}
 
 	if (list->count == 0) {
-		talloc_free(list);
 		return 0;
 	}
 
