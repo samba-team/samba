@@ -2094,9 +2094,9 @@ list_file(const char *file)
 	pdata = -1;
     } else {
 #ifdef HAVE_LS_A
-	char *cmd = "/bin/ls -lA";
+	char *cmd = "/bin/ls -lA %s";
 #else
-	char *cmd = "/bin/ls -la";
+	char *cmd = "/bin/ls -la %s";
 #endif
 	retrieve(cmd, file);
     }
