@@ -620,34 +620,50 @@ enum {AFAIL,AREAD,AWRITE,AALL};
 /*******************************************************************
 reproduce the share mode access table
 ********************************************************************/
-
 static int access_table(int new_deny,int old_deny,int old_mode,
 			pid_t share_pid,char *fname)
 {
   if (new_deny == DENY_ALL || old_deny == DENY_ALL) return(AFAIL);
 
-  if (new_deny == DENY_DOS || old_deny == DENY_DOS) {
-    pid_t pid = getpid();
-    if (old_deny == new_deny && share_pid == pid) 
-	return(AALL);    
+  if (old_deny == DENY_DOS || new_deny == DENY_DOS || 
+      old_deny == DENY_FCB || new_deny == DENY_FCB) {
+	  if ((fname = strrchr(fname,'.'))) {
+		  if (strequal(fname,".com") ||
+		      strequal(fname,".dll") ||
+		      strequal(fname,".exe") ||
+		      strequal(fname,".sym")) {
+			  if (old_deny == DENY_FCB || new_deny == DENY_FCB) {
+				  return AFAIL;
+			  }
+			  if (old_deny == DENY_DOS) {
+				  if (new_deny == DENY_READ && 
+				      (old_mode == DOS_OPEN_RDONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  if (new_deny == DENY_WRITE && 
+				      (old_mode == DOS_OPEN_WRONLY || 
+				       old_mode == DOS_OPEN_RDWR)) {
+					  return AFAIL;
+				  }
+				  return AALL;
+			  }
+			  if (old_deny == DENY_NONE) return AALL;
+			  if (old_deny == DENY_READ) return AWRITE;
+			  if (old_deny == DENY_WRITE) return AREAD;
+		  }
+	  }
+	  /* it isn't a exe, dll, sym or com file */
+	  {
+		  pid_t pid = getpid();
+		  if (old_deny == new_deny && share_pid == pid) 
+			  return(AALL);    
 
-    /* the new smbpub.zip spec says that if the file extension is
-       .com, .dll, .exe or .sym then allow the open. I will force
-       it to read-only as this seems sensible although the spec is
-       a little unclear on this. */
-    if ((fname = strrchr(fname,'.'))) {
-      if (strequal(fname,".com") ||
-	  strequal(fname,".dll") ||
-	  strequal(fname,".exe") ||
-	  strequal(fname,".sym"))
-	return(AALL);
-    }
-
-    if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
-    if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
-
-
-    return(AFAIL);
+		  if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
+		  if (old_mode == DOS_OPEN_RDONLY) return(AREAD);
+		  
+		  return(AFAIL);
+	  }
   }
 
   switch (new_deny) 
@@ -847,9 +863,6 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
     errno = EINVAL;
     return;
   }
-
-  if (deny_mode == DENY_FCB)
-    deny_mode = DENY_DOS;
 
   if (lp_share_modes(SNUM(conn))) 
   {
@@ -1338,7 +1351,8 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
          * if we can too.
          */
 
-        if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || (share_entry->pid != pid))
+        if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || 
+	    (share_entry->pid != pid))
           goto free_and_exit;
 
       } /* end for */
