@@ -99,41 +99,61 @@ _krb5_krb_life_to_time(int start, int life_)
 }
 
 /*
+ * Get the name of the krb4 credentials cache, will use `tkfile' as
+ * the name if that is passed in. `cc' must be free()ed by caller,
+ */
+
+static krb5_error_code
+get_krb4_cc_name(const char *tkfile, char **cc)
+{
+
+    *cc = NULL;
+    if(tkfile == NULL) {
+	char *path;
+	if(!issuid()) {
+	    path = getenv("KRBTKFILE");
+	    if (path)
+		*cc = strdup(path);
+	}
+	if(*cc == NULL)
+	    if (asprintf(cc, "%s%u", TKT_ROOT, (unsigned)getuid()) < 0)
+		return errno;
+    } else {
+	*cc = strdup(tkfile);
+	if (*cc == NULL)
+	    return ENOMEM;
+    }
+    return 0;
+}
+
+/*
  * Write a Kerberos 4 ticket file
  */
 
 #define KRB5_TF_LCK_RETRY_COUNT 50
 #define KRB5_TF_LCK_RETRY 1
 
-#ifndef TKT_ROOT
-#define TKT_ROOT "/tmp/tkt"
-#endif
-
 static krb5_error_code
 write_v4_cc(krb5_context context, const char *tkfile, 
 	    krb5_storage *sp, int append)
 {
-    char static_path[1024], *path = NULL;
     krb5_error_code ret;
     struct stat sb;
     krb5_data data;
+    char *path;
     int fd, i;
 
-    if (tkfile == NULL) {
-	if (!issuid())
-	    path = getenv("KRBTKFILE");
-	if (path == NULL) {
-	    snprintf(static_path, sizeof(static_path),
-		     "%s%u", TKT_ROOT, (unsigned)getuid());
-	    path = static_path;
-	}
-    } else {
-	strlcpy(static_path, tkfile, sizeof(static_path));
-	path = static_path;
+    ret = get_krb4_cc_name(tkfile, &path);
+    if (ret) {
+	krb5_set_error_string(context, 
+			      "krb5_krb_tf_setup: failed getting "
+			      "the krb4 credentials cache name"); 
+	return ret;
     }
 
     fd = open(path, O_WRONLY|O_CREAT, 0600);
     if (fd < 0) {
+	free(path);
 	krb5_set_error_string(context, 
 			      "krb5_krb_tf_setup: error opening file %s", 
 			      path);
@@ -141,6 +161,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
     }
 
     if (fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
+	free(path);
 	close(fd);
 	krb5_set_error_string(context, 
 			      "krb5_krb_tf_setup: tktfile %s is not a file",
@@ -155,6 +176,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
 	    break;
     }
     if (i == KRB5_TF_LCK_RETRY_COUNT) {
+	free(path);
 	close(fd);
 	krb5_set_error_string(context,
 			      "krb5_krb_tf_setup: failed to lock %s",
@@ -166,6 +188,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
 	ret = ftruncate(fd, 0);
 	if (ret < 0) {
 	    flock(fd, LOCK_UN);
+	    free(path);
 	    close(fd);
 	    krb5_set_error_string(context,
 				  "krb5_krb_tf_setup: failed to truncate %s",
@@ -176,6 +199,8 @@ write_v4_cc(krb5_context context, const char *tkfile,
     ret = lseek(fd, 0L, SEEK_END);
     if (ret < 0) {
 	ret = errno;
+	flock(fd, LOCK_UN);
+	free(path);
 	close(fd);
 	return ret;
     }
@@ -189,6 +214,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
     krb5_free_data_contents(context, &data);
 
     flock(fd, LOCK_UN);
+    free(path);
     close(fd);
 
     return 0;
@@ -264,6 +290,32 @@ _krb5_krb_tf_setup(krb5_context context,
 
     return ret;
 }
+
+krb5_error_code
+_krb5_krb_dest_tkt(krb5_context context, const char *tkfile)
+{
+    krb5_error_code ret;
+    char *path;
+
+    ret = get_krb4_cc_name(tkfile, &path);
+    if (ret) {
+	krb5_set_error_string(context, 
+			      "krb5_krb_tf_setup: failed getting "
+			      "the krb4 credentials cache name"); 
+	return ret;
+    }
+
+    if (unlink(path) < 0) {
+	ret = errno;
+	krb5_set_error_string(context, 
+			      "krb5_krb_dest_tkt failed removing the cache "
+			      "with error %s", strerror(ret));
+    }
+    free(path);
+
+    return ret;
+}
+
 
 /* Convert the v5 credentials in `in_cred' to v4-dito in `v4creds'.
  * This is done by sending them to the 524 function in the KDC.  If
