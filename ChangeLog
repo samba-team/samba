@@ -1,3 +1,27 @@
+1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* appl/test/uu_client.c: use client_doit
+	* appl/test/test_locl.h (client_doit): add prototype
+	* appl/test/tcp_client.c: use client_doit
+	* appl/test/nt_gss_client.c: use client_doit
+	* appl/test/gssapi_client.c: use client_doit
+	* appl/test/common.c (client_doit): move identical code here and
+	start using getaddrinfo
+
+	* appl/kf/kf.c (doit): rewrite to use getaddrinfo
+	* kdc/hprop.c: re-write to use getaddrinfo
+	* lib/krb5/principal.c (krb5_sname_to_principal): use getaddrinfo
+	* lib/krb5/expand_hostname.c (krb5_expand_hostname): use
+	getaddrinfo
+	* lib/krb5/changepw.c: re-write to use getaddrinfo
+	* lib/krb5/addr_families.c (krb5_parse_address): use getaddrinfo
+
+1999-12-03  Assar Westerlund  <assar@sics.se>
+
+	* configure.in (BROKEN): check for freeaddrinfo, getaddrinfo,
+	getnameinfo, gai_strerror
+	(socklen_t): check for
+
 1999-11-23  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/crypto.c (ARCFOUR_string_to_key): change order of bytes

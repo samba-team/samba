@@ -1,3 +1,9 @@
+1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c: use getnameinfo
+	* telnet/commands.c: re-write to using getaddrinfo.  disable
+	source-routing for the moment, it doesn't seem to be used anyways.
+	
 1999-09-16  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c: revert 1.54, get_default_username should DTRT

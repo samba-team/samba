@@ -2,6 +2,11 @@
 
 	* fcrypt.c (crypt_md5): add trailing $
 	
+1999-11-13  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (include_HEADERS): add rc4.h
+	(libdes_la_SOURCES): add rc4_skey.c
+
 1999-10-28  Assar Westerlund  <assar@sics.se>
 
 	* md5crypt_test.c: change the test case.  apparently we should not

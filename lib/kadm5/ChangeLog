@@ -1,3 +1,8 @@
+1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* init_c.c: re-write to use getaddrinfo
+	* Makefile.am (install-build-headers): add dependency
+	
 1999-11-25  Assar Westerlund  <assar@sics.se>
 
 	* modify_s.c (kadm5_s_modify_principal): support key_data

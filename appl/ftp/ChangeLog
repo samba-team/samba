@@ -1,3 +1,8 @@
+1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* ftp/ruserpass.c (guess_domain): re-write to use getaddrinfo
+	* ftp/ftp.c (hookup): re-write to use getaddrinfo
+	
 1999-11-30  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (getdatasock): make sure to keep the port-number of

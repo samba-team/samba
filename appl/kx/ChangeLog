@@ -1,3 +1,9 @@
+1999-12-04  Assar Westerlund  <assar@sics.se>
+
+	* kx.c (connect_host): use getaddrinfo
+	* common.c (find_auth_cookie, match_local_auth): re-write to use
+	getaddrinfo
+
 1999-11-27  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (recv_conn): better errors when getting unrecognized data
