@@ -1632,6 +1632,7 @@ int lp_oplock_contention_limit(int );
 int lp_write_cache_size(int );
 char lp_magicchar(int );
 int lp_winbind_cache_time(void);
+BOOL lp_hide_local_users(void);
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);

@@ -33,8 +33,6 @@ extern int DEBUGLEVEL;
  */
 
 extern DOM_SID global_sam_sid;
-extern pstring global_myname;
-extern fstring global_myworkgroup;
 
 struct passdb_ops *pdb_ops;
 
@@ -438,8 +436,18 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 			if(!next_token(&p, name, NULL, sizeof(fstring)))
 				fstrcpy(name, "Guest");
 		} else {
-			uid_t uid = pdb_user_rid_to_uid(rid);
-			struct passwd *pass = sys_getpwuid(uid);
+			uid_t uid;
+			struct passwd *pass;
+			
+			/*
+			 * Don't try to convert the rid to a name if 
+			 * running in appliance mode
+			 */
+			if (lp_hide_local_users())
+				return False;
+			
+			uid = pdb_user_rid_to_uid(rid);
+			pass = sys_getpwuid(uid);
 
 			*psid_name_use = SID_NAME_USER;
 
@@ -458,8 +466,19 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		}
 
 	} else {
-		gid_t gid = pdb_user_rid_to_gid(rid);
-		struct group *gr = getgrgid(gid);
+		gid_t gid;
+		struct group *gr; 
+
+		/* 
+		 * Don't try to convert the rid to a name if running
+		 * in appliance mode
+		 */
+		
+		if (lp_hide_local_users()) 
+			return False;
+		
+		gid = pdb_user_rid_to_gid(rid);
+		gr = getgrgid(gid);
 
 		*psid_name_use = SID_NAME_ALIAS;
 
@@ -492,9 +511,6 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 
 	sid_copy(&local_sid, &global_sam_sid);
 
-	if(!strequal(global_myname, domain) && !strequal(global_myworkgroup, domain))
-		return False;
-
 	/*
 	 * Special case for MACHINE\Everyone. Map to the world_sid.
 	 */
@@ -505,6 +521,12 @@ BOOL local_lookup_name(char *domain, char *user, DOM_SID *psid, enum SID_NAME_US
 		*psid_name_use = SID_NAME_ALIAS;
 		return True;
 	}
+
+	/* 
+	 * Don't lookup local unix users if running in appliance mode
+	 */
+	if (lp_hide_local_users()) 
+		return False;
 
 	(void)map_username(user);
 

@@ -210,6 +210,10 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 	(*num_entries) = 0;
 	(*total_entries) = 0;
 
+	/* Skip all this stuff if we're in appliance mode */
+
+	if (lp_hide_local_users()) goto done;
+
 	if (pw_buf == NULL) return False;
 
 	if (current_idx == 0) {
@@ -340,6 +344,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		mapped_idx = 0;
 	}
 
+done:
 	return (*num_entries) > 0;
 }
 
@@ -759,14 +764,16 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	if (strequal(sid_str, "S-1-5-32"))
 	{
 		char *name;
-		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
+		while (!lp_hide_local_users() &&
+		       num_entries < MAX_SAM_ENTRIES && 
+		       ((name = builtin_alias_rids[num_entries].name) != NULL))
 		{
 			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
 			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
 			num_entries++;
 		}
 	}
-	else if (strequal(sid_str, sam_sid_str))
+	else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users())
 	{
 		char *name;
 		char *sep;
