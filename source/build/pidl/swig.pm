@@ -122,7 +122,7 @@ sub XToPython($$)
 	    # Non-scalar type, no pointer
 	    $result .= DebugElement($e);
 	} elsif ($e->{POINTERS} == 1) {
-	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(mem_ctx, $obj);\n";
+	    $result .= "\ts->$prefix$e->{NAME} = $e->{TYPE}_from_python(mem_ctx, obj);\n";
 	} else {
 	    # Non-scalar type, multiple pointers
 	    $result .= DebugElement($e);
@@ -172,10 +172,9 @@ sub ParseFunction($)
 
     # Input typemap
 
-    $res .= "%typemap(in) struct $fn->{NAME} * (struct $fn->{NAME} temp) {\n";
+    $res .= "%typemap(in) struct $fn->{NAME} * {\n";
     $res .= "\tTALLOC_CTX *mem_ctx = talloc_init(\"typemap(int) $fn->{NAME}\");\n\n";
-    $res .= "\t$fn->{NAME}_from_python(mem_ctx, &temp, \$input);\n";
-    $res .= "\t\$1 = &temp;\n";
+    $res .= "\t\$1 = $fn->{NAME}_from_python(mem_ctx, \$input);\n";
     $res .= "}\n\n";
 
     # Output typemap
@@ -190,9 +189,7 @@ sub ParseFunction($)
     $res .= "\t\treturn NULL;\n";
     $res .= "\t}\n";
     $res .= "\n";
-    $res .= "\tdict = PyDict_New();\n";
-
-    $res .= "\t$fn->{NAME}_to_python(mem_ctx, dict, \$1);\n";
+    $res .= "\tdict = $fn->{NAME}_to_python(mem_ctx, \$1);\n";
 
     $res .= "\tresultobj = dict;\n";
     $res .= "}\n\n";
