@@ -53,7 +53,6 @@ static char *afs_cell;
 #ifdef KRB4
 static char *realm;
 static int v4_db;
-static char *local_realm=NULL;
 
 #ifdef KASERVER_DB
 static int kaspecials_flag;
@@ -61,6 +60,8 @@ static int ka_db;
 static int ka_use_null_salt;
 #endif
 #endif
+
+static char *local_realm=NULL;
 
 static int
 open_socket(krb5_context context, const char *hostname, const char *port)
