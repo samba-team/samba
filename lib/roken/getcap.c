@@ -40,7 +40,6 @@
 #include <config.h>
 #endif
 #include "roken.h"
-#include <sys/cdefs.h>
 RCSID("$Id$");
 
 #include <sys/types.h>
@@ -68,11 +67,23 @@ static size_t	 topreclen;	/* toprec length */
 static char	*toprec;	/* Additional record specified by cgetset() */
 static int	 gottoprec;	/* Flag indicating retrieval of toprecord */
 
-static int	cdbget __P((DB *, char **, const char *));
-static int 	getent __P((char **, size_t *, char **, int, const char *, int, char *));
-static int	nfcmp __P((char *, char *));
+static int	cdbget (DB *, char **, const char *);
+static int 	getent (char **, size_t *, char **, int, const char *, int, char *);
+static int	nfcmp (char *, char *);
 
 
+int cgetset(const char *ent);
+char *cgetcap(char *buf, const char *cap, int type);
+int cgetent(char **buf, char **db_array, const char *name);
+int cgetmatch(const char *buf, const char *name);
+int cgetclose(void);
+#if 0
+int cgetfirst(char **buf, char **db_array);
+int cgetnext(char **bp, char **db_array);
+#endif
+int cgetstr(char *buf, const char *cap, char **str);
+int cgetustr(char *buf, const char *cap, char **str);
+int cgetnum(char *buf, const char *cap, long *num);
 /*
  * Cgetset() allows the addition of a user specified buffer to be added
  * to the database array, in effect "pushing" the buffer on top of the
@@ -654,12 +665,14 @@ cgetmatch(const char *buf, const char *name)
     }
 }
 
+#if 0
 int
 cgetfirst(char **buf, char **db_array)
 {
     (void)cgetclose();
     return (cgetnext(buf, db_array));
 }
+#endif
 
 static FILE *pfp;
 static int slash;
@@ -678,6 +691,7 @@ cgetclose(void)
     return(0);
 }
 
+#if 0
 /*
  * Cgetnext() gets either the first or next entry in the logical database 
  * specified by db_array.  It returns 0 upon completion of the database, 1
@@ -800,6 +814,7 @@ cgetnext(char **bp, char **db_array)
     }
     /* NOTREACHED */
 }
+#endif
 
 /*
  * Cgetstr retrieves the value of the string capability cap from the
