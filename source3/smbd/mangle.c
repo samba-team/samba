@@ -1500,14 +1500,13 @@ BOOL is_8_3(char *fname, BOOL check_case)
 	}
 	s2 = s1 + u2len;
 	dos_to_ucs2(u2, fname, u2len);
-	
 
 	if (!mangle_get_prefix(u2, &pref, &ext)) goto done;
 	plen = strlen_w(pref);
 	if (plen < 1 || plen > 8) goto done;
 	if (ext)
 		if (strlen_w(ext) > 3) goto done;
-	
+
 	DEBUG(10,("pref len = %d, ext len = %d\n", pref?strlen_w(pref):0, ext?strlen_w(ext):0));
 
 	ucs2_to_dos(s1, u2, u2len);
@@ -1515,7 +1514,7 @@ BOOL is_8_3(char *fname, BOOL check_case)
 	
 	if (strncmp(s1, s2, u2len)) goto done;
 	else ret = True;
-	
+
 done:
 	SAFE_FREE(u2);
 	SAFE_FREE(s1);
@@ -1536,7 +1535,7 @@ BOOL check_mangled_cache(char *s)
 	smb_ucs2_t *u2, *res;
 	size_t slen, u2len;
 	BOOL ret = False;
-	
+
 	DEBUG(10,("check_mangled_cache: I'm so ugly, please remove me!\n"));
 	DEBUG(10,("check_mangled_cache: testing -> [%s]\n", s));
 
@@ -1551,7 +1550,7 @@ BOOL check_mangled_cache(char *s)
 		return ret;
 	}
 	dos_to_ucs2(u2, s, u2len);
-	
+
 	res = unmangle(u2);
 	if (res)
 	{
@@ -1570,7 +1569,7 @@ void mangle_name_83(char *s)
 	smb_ucs2_t *u2, *res;
 	size_t slen, u2len;
 	BOOL ret = False;
-	
+
 	DEBUG(10,("mangle_name_83: I'm so ugly, please remove me!\n"));
 	DEBUG(10,("mangle_name_83: testing -> [%s]\n", s));
 
@@ -1585,7 +1584,7 @@ void mangle_name_83(char *s)
 		return;
 	}
 	dos_to_ucs2(u2, s, u2len);
-	
+
 	res = _mangle(u2);
 	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
 	DEBUG(10,("mangle_name_83: returning -> [%s]\n", res));
@@ -1597,10 +1596,11 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	DEBUG(10,("name_map_mangle: I'm so ugly, please remove me!\n"));
 
-	/* if (!need83) return True; */
-	if (is_8_3(OutName, True)) return True;
+	if (!need83) return True;
+	/* if (is_8_3(OutName, True)) return True; */
 	/* Warning: we should check for invalid chars in file name and mangle
 	   if invalid chars found --simo*/
+
 	mangle_name_83(OutName);
 	return True;
 }
@@ -1665,7 +1665,7 @@ void mangle_test_code(void)
 
 	/* unmangle every */
 	printf("Unmangle test 1:\n");
-	
+
 	unmangle_test (LONG, NULL);
 	unmangle_test (LONG, EXT1);
 	unmangle_test (LONG, EXT2);
@@ -1696,7 +1696,7 @@ void mangle_test_code(void)
 
 	/* mangle every */
 	printf("Mangle test\n");
-	
+
 	mangle_test (LONG, NULL);
 	mangle_test (LONG, EXT1);
 	mangle_test (LONG, EXT2);
@@ -1727,7 +1727,7 @@ void mangle_test_code(void)
 
 	/* unmangle again every */
 	printf("Unmangle test 2:\n");
-	
+
 	unmangle_test (LONG, NULL);
 	unmangle_test (LONG, EXT1);
 	unmangle_test (LONG, EXT2);
