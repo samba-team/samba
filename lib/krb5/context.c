@@ -45,7 +45,7 @@ krb5_init_context(krb5_context *context)
 {
     krb5_context p;
     int val;
-    char *config_file;
+    char *config_file = NULL;
 
     ALLOC(p, 1);
     if(!p)
@@ -53,7 +53,8 @@ krb5_init_context(krb5_context *context)
     memset(p, 0, sizeof(krb5_context_data));
     krb5_init_ets(p);
     p->cc_ops = NULL;
-    config_file = getenv("KRB5_CONFIG");
+    if(getuid() != geteuid())
+	config_file = getenv("KRB5_CONFIG");
     if (config_file != NULL)
 	krb5_config_parse_file (config_file, &p->cf);
     else
