@@ -210,7 +210,7 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 	result = PyList_New(num_sids);
 
 	for (i = 0; i < num_sids; i++) {
-		PyObject *name_obj, *obj;
+		PyObject *obj;
 
 		obj = Py_BuildValue("{sssssi}", "username", names[i],
 				    "domain", domains[i], "name_type", 
@@ -222,17 +222,60 @@ static PyObject *lsa_lookup_sids(PyObject *self, PyObject *args,
 	return result;
 }
 
+static PyObject *lsa_enum_trust_dom(PyObject *self, PyObject *args)
+{
+	lsa_policy_hnd_object *hnd = (lsa_policy_hnd_object *)self;
+	NTSTATUS ntstatus;
+	uint32 enum_ctx = 0, num_domains, i;
+	char **domain_names;
+	DOM_SID *domain_sids;
+	PyObject *result;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+	
+	ntstatus = cli_lsa_enum_trust_dom(hnd->cli, hnd->mem_ctx,
+					  &hnd->pol, &enum_ctx,
+					  &num_domains, &domain_names,
+					  &domain_sids);
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(lsa_ntstatus, py_ntstatus_tuple(ntstatus));
+		return NULL;
+	}
+
+	result = PyList_New(num_domains);
+
+	for (i = 0; i < num_domains; i++) {
+		fstring sid_str;
+
+		sid_to_string(sid_str, &domain_sids[i]);
+		PyList_SetItem(
+			result, i, 
+			Py_BuildValue("(ss)", domain_names[i], sid_str));
+	}
+
+	return result;
+}
+
 /*
  * Method dispatch tables
  */
 
 static PyMethodDef lsa_hnd_methods[] = {
 
+	/* SIDs<->names */
+
 	{ "lookup_sids", lsa_lookup_sids, METH_VARARGS | METH_KEYWORDS,
 	  "Convert sids to names." },
 
 	{ "lookup_names", lsa_lookup_names, METH_VARARGS | METH_KEYWORDS,
 	  "Convert names to sids." },
+
+	/* Trusted domains */
+
+	{ "enum_trusted_domains", lsa_enum_trust_dom, METH_VARARGS, 
+	  "Enumerate trusted domains." },
 
 	{ NULL }
 };
