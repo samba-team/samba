@@ -634,6 +634,7 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 	/* Also the place to keep the 'password' no matter what
 	   crazy struct it started in... */
 	fstrcpy(this_crypted, pass->pw_passwd);
+	fstrcpy(this_salt, pass->pw_passwd);
 
 #ifdef HAVE_GETSPNAM
 	{
@@ -645,8 +646,10 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 		   perhaps for IPC password changing requests */
 
 		spass = getspnam(pass->pw_name);
-		if (spass && spass->sp_pwdp)
+		if (spass && spass->sp_pwdp) {
 			fstrcpy(this_crypted, spass->sp_pwdp);
+			fstrcpy(this_salt, spass->sp_pwdp);
+		}
 	}
 #elif defined(IA_UINFO)
 	{
@@ -703,9 +706,6 @@ NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *pas
 		}
 	}
 #endif
-
-	/* extract relevant info */
-	fstrcpy(this_salt, pass->pw_passwd);
 
 #if defined(HAVE_TRUNCATED_SALT)
 	/* crypt on some platforms (HPUX in particular)
