@@ -154,17 +154,6 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
         return False;
     }
 
-    fprintf(stderr, "*** looking up name %s in domain %s\n", name,
-            domain->name);
-
-    {
-        fstring sid_str;
-
-        sid_to_string(sid_str, &domain->sid);
-        fprintf(stderr, "*** sid for domain %s is %s\n", domain->name,
-                sid_str);
-    }
-
     /* Open handles */
 
     if (!open_lsa_handle(domain)) return False;
@@ -174,8 +163,6 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
     res = domain->lsa_handle_open ? 
         lsa_lookup_names(&domain->lsa_handle, num_names, (char **)&name,
                          &sids, &types, &num_sids) : False;
-
-    if (!res) fprintf(stderr, "*** lookup FAILED\n");
 
     /* Return rid and type if lookup successful */
 
