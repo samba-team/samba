@@ -154,9 +154,7 @@ BOOL is_trusted_domain(const char* dom_name)
 	 * Query the trustdom_cache updated periodically. The only
 	 * way for domain member server.
 	 */
-	if (trustdom_cache_enable() &&
-		trustdom_cache_fetch(dom_name, &trustdom_sid)) {
-		trustdom_cache_shutdown();
+	if (trustdom_cache_fetch(dom_name, &trustdom_sid)) {
 		return True;
 	}
 
