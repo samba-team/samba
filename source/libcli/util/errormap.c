@@ -1497,7 +1497,7 @@ struct unix_error_map {
 const struct unix_error_map unix_nt_errmap[] = {
 	{ EAGAIN,       STATUS_MORE_ENTRIES },
 	{ EINTR,        STATUS_MORE_ENTRIES },
-	{ EINPROGRESS,  STATUS_MORE_ENTRIES },
+	{ EINPROGRESS,  NT_STATUS_MORE_PROCESSING_REQUIRED },
 	{ EPERM,        NT_STATUS_ACCESS_DENIED },
 	{ EACCES,       NT_STATUS_ACCESS_DENIED },
 	{ ENOENT,       NT_STATUS_OBJECT_NAME_NOT_FOUND },

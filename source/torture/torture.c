@@ -62,8 +62,6 @@ static struct smbcli_state *open_nbt_connection(void)
 		return cli;
 	}
 
-	cli->transport->socket->timeout = 120000; /* set a really long timeout (2 minutes) */
-
 	if (!smbcli_transport_establish(cli, &calling, &called)) {
 		/*
 		 * Well, that failed, try *SMBSERVER ... 
@@ -111,7 +109,6 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 
 	(*c)->transport->options.use_oplocks = use_oplocks;
 	(*c)->transport->options.use_level2_oplocks = use_level_II_oplocks;
-	(*c)->transport->socket->timeout = 120000;
 
 	return True;
 }
