@@ -6,6 +6,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Marc Jacobsen			    1999.
+ *  Copyright (C) Jean François Micouleau      1998-2001.
  *	
  * 	Split into interface and implementation modules by, 
  *

@@ -7,6 +7,7 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Marc Jacobsen			    1999.
  *  Copyright (C) Jeremy Allison                    2001.
+ *  Copyright (C) Jean François Micouleau      1998-2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -147,7 +148,6 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask)
 			DEBUG(5,(" acb_mask %x reject\n", acb_mask));
 			continue;
 		}
-		DEBUG(11,("load_sampwd_entries: entry: %d\n", info->disp_info.num_account));
 
 		/* Realloc some memory for the array of ptr to the SAM_ACCOUNT structs */
 		if (info->disp_info.num_account % MAX_SAM_ENTRIES == 0) {
