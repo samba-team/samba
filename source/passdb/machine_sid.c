@@ -1,8 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Password and authentication handling
-   Copyright (C) Jeremy Allison 		1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
+   Copyright (C) Jeremy Allison 		1996-2002
+   Copyright (C) Andrew Tridgell		2002
    Copyright (C) Gerald (Jerry) Carter		2000
       
    This program is free software; you can redistribute it and/or modify
@@ -64,46 +64,106 @@ static void generate_random_sid(DOM_SID *sid)
 		sid->sub_auths[sid->num_auths++] = IVAL(raw_sid_data, i*4);
 }
 
+static BOOL read_sam_sid(void)
+{
+	extern pstring global_myname;
+	extern fstring global_myworkgroup;
+}
+
 /****************************************************************************
  Generate the global machine sid.
 ****************************************************************************/
+
 BOOL pdb_generate_sam_sid(void)
 {
 	char *fname = NULL;
 	char *domain_name;
 	extern pstring global_myname;
 	extern fstring global_myworkgroup;
+	BOOL is_dc = False;
 
 	generate_wellknown_sids();
 
-	/* the local SAMR sid is based on the workgroup only when we are a DC */
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
-		domain_name = global_myworkgroup;
+		is_dc = True;
 		break;
 	default:
-		domain_name = global_myname;
+		is_dc = False;
 		break;
 	}
 
-	if (secrets_fetch_domain_sid(domain_name, &global_sam_sid)) {
+	if (secrets_fetch_domain_sid(global_myname, &global_sam_sid)) {
+		DOM_SID domain_sid;
+
+		/* We got our sid. If not a pdc/bdc, we're done. */
+		if (!is_dc)
+			return True;
+
+		if (!secrets_fetch_domain_sid(global_myworkgroup, &domain_sid)) {
+
+			/* No domain sid and we're a pdc/bdc. Store it */
+
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Can't store domain SID as a pdc/bdc.\n"));
+				return False;
+			}
+			return True;
+		}
+
+		if (!sid_equal(&domain_sid, &global_sam_sid)) {
+
+			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
+
+			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
+				return False;
+			}
+			return True;
+		}
+
 		return True;
+		
 	}
 
 	/* check for an old MACHINE.SID file for backwards compatibility */
 	asprintf(&fname, "%s/MACHINE.SID", lp_private_dir());
+
 	if (read_sid_from_file(fname, &global_sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */
-		if (secrets_store_domain_sid(domain_name, &global_sam_sid)) {
-			unlink(fname);
+		if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
+			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
+			SAFE_FREE(fname);
+			return False;
 		}
-		return True;
+		unlink(fname);
+		if (is_dc) {
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
+				SAFE_FREE(fname);
+				return False;
+			}
+		}
 	}
+
+	SAFE_FREE(fname);
 
 	/* we don't have the SID in secrets.tdb, we will need to
            generate one and save it */
 	generate_random_sid(&global_sam_sid);
 
-	return secrets_store_domain_sid(domain_name, &global_sam_sid);
+	if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
+		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
+		return False;
+	}
+	if (is_dc) {
+		if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
+			return False;
+		}
+	}
+
+	return True;
 }   
