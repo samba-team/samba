@@ -43,14 +43,14 @@ krb5_rd_rep(krb5_context context,
       return ret;
   if ((*repl)->ctime != auth_context->authenticator->ctime ||
       (*repl)->cusec != auth_context->authenticator->cusec) {
+#if 0
     printf("KRB5KRB_AP_ERR_MUT_FAIL\n");
     printf ("(%u, %lu) != (%u, %lu)\n",
 	    (*repl)->ctime, (*repl)->cusec,
 	    auth_context->authenticator->ctime,
 	    auth_context->authenticator->cusec);
-#if 0				/* Something wrong with the coding??? */
+#endif				/* Something wrong with the coding??? */
     return KRB5KRB_AP_ERR_MUT_FAIL;
-#endif
   }
   if ((*repl)->seq_number)
     auth_context->remote_seqnumber = *((*repl)->seq_number);
