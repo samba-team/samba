@@ -241,8 +241,9 @@ AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/stream.h)
 AC_CHECK_HEADERS(sys/stropts.h sys/strtty.h sys/str_tty.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/sysctl.h sys/time.h sys/timeb.h sys/times.h)
 AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
-AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
-AC_CHECK_HEADERS(termios.h time.h tmpdir.h udb.h unistd.h util.h utmp.h utmpx.h)
+AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h term.h termio.h)
+AC_CHECK_HEADERS(termios.h time.h tmpdir.h udb.h unistd.h util.h)
+AC_CHECK_HEADERS(utmp.h utmpx.h)
 
 AM_CONDITIONAL(have_err_h, test "$ac_cv_header_err_h" = yes)
 AM_CONDITIONAL(have_fnmatch_h, test "$ac_cv_header_fnmatch_h" = yes)
@@ -410,6 +411,13 @@ AC_NEED_PROTO([
 inet_aton)
 
 AC_FIND_FUNC_NO_LIBS(crypt, crypt)dnl
+
+dnl
+dnl libroken references crypt
+dnl
+
+LIB_roken='$(top_builddir)/lib/roken/libroken.la $(LIB_crypt)'
+AC_SUBST(LIB_roken)dnl
 
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
 ac_cv_func_realloc_broken=no
