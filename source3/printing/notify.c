@@ -278,7 +278,7 @@ in notify_queue\n", msg->type, msg->field, msg->printer));
 		return;
 	}
 	copy_notify2_msg(pnqueue->msg, msg);
-	gettimeofday(&pnqueue->tv, NULL);
+	GetTimeOfDay(&pnqueue->tv);
 	pnqueue->buf = NULL;
 	pnqueue->buflen = 0;
 
