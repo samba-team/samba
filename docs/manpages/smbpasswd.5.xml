@@ -23,7 +23,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>This tool is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>smbpasswd is the Samba encrypted password file. It contains 

@@ -17,14 +17,14 @@
 </refnamediv>
 
 <refsynopsisdiv>
-	<para><filename>lmhosts</filename> is the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para><filename>lmhosts</filename> is the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> NetBIOS name to IP address mapping file.</para> 
 </refsynopsisdiv>
 
 <refsect1>
 	<title>DESCRIPTION</title>
 	
-	<para>This file is part of the <citerefentry><refentrytitle>Samba</refentrytitle>
+	<para>This file is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para><filename>lmhosts</filename> is the <emphasis>Samba
