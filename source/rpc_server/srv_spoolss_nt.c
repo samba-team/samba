@@ -28,6 +28,8 @@
 
 #include "includes.h"
 
+/* #define EMULATE_WIN2K_HACK	1 */
+
 #ifndef MAX_OPEN_PRINTER_EXS
 #define MAX_OPEN_PRINTER_EXS 50
 #endif

@@ -2360,13 +2360,6 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!prs_uint32("averageppm", ps, depth, &info->averageppm))
 		return False;
 
-#if 0 /* JFMTEST */
-	if (!prs_uint32_post("secdesc_ptr", ps, depth, NULL, sec_offset, info->secdesc ? prs_offset(ps)-buffer->struct_start : 0 ))
-		return False;
-
-	if (!sec_io_desc("secdesc", &info->secdesc, ps, depth)) 
-		return False;
-#endif
 	return True;
 }
 
