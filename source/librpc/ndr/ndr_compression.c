@@ -50,7 +50,7 @@ static NTSTATUS ndr_pull_compression_zlib(struct ndr_pull *subndr,
 	zs.next_out = outbuf.data;
 	zs.avail_out = outbuf.length;
 
-	ret = inflateInit2(&zs, 15);
+	ret = inflateInit2(&zs, -15);
 	if (ret != Z_OK) {
 		return ndr_pull_error(subndr, NDR_ERR_COMPRESSION, "Bad ZLIB (PULL) inflateInit2 error %d", 
 				      ret);
