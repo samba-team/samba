@@ -958,7 +958,6 @@ struct cli_state *server_cryptkey(void)
 	struct cli_state *cli;
 	fstring desthost;
 	struct in_addr dest_ip;
-	extern fstring local_machine;
 	char *p;
     BOOL connected_ok = False;
 
@@ -1224,13 +1223,11 @@ BOOL domain_client_validate( char *user, char *domain,
   unsigned char trust_passwd[16];
   fstring remote_machine;
   char *p;
-  struct in_addr dest_ip;
   NET_ID_INFO_CTR ctr;
   NET_USER_INFO_3 info3;
   struct cli_state cli;
   uint32 smb_uid_low;
   BOOL connected_ok = False;
-  struct nmb_name calling, called;
 
   if(user_exists != NULL)
     *user_exists = True; /* Only set false on a very specific error. */
@@ -1312,7 +1309,6 @@ BOOL domain_client_validate( char *user, char *domain,
        */
 
       struct in_addr *ip_list = NULL;
-      fstring ip_str;
       int count = 0;
       int i;
 
