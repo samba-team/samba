@@ -800,6 +800,8 @@ static NTSTATUS check_oem_password(const char *user,
 
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
+	*hnd = NULL;
+
 	pdb_init_sam(&sampass);
 
 	become_root();
@@ -816,8 +818,6 @@ static NTSTATUS check_oem_password(const char *user,
 		*/
 	}
 
-	*hnd = sampass;
-	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	
 	if (acct_ctrl & ACB_DISABLED) {
@@ -888,16 +888,14 @@ static NTSTATUS check_oem_password(const char *user,
 
 	nt_lm_owf_gen(new_passwd, new_ntp16, new_p16);
 
-	if (!nt_pass_set)
-	{
+	if (!nt_pass_set) {
 		/*
 		 * Now use new_p16 as the key to see if the old
 		 * password matches.
 		 */
 		D_P16(new_p16, lmhash, unenc_old_pw);
 
-		if (memcmp(lanman_pw, unenc_old_pw, 16))
-		{
+		if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 			pdb_free_sam(&sampass);
 			return NT_STATUS_WRONG_PASSWORD;
@@ -907,7 +905,7 @@ static NTSTATUS check_oem_password(const char *user,
 		DEBUG(100,
 		      ("check_oem_password: password %s ok\n", new_passwd));
 #endif
-		pdb_free_sam(&sampass);
+		*hnd = sampass;
 		return NT_STATUS_OK;
 	}
 
@@ -918,15 +916,13 @@ static NTSTATUS check_oem_password(const char *user,
 	D_P16(new_ntp16, lmhash, unenc_old_pw);
 	D_P16(new_ntp16, nthash, unenc_old_ntpw);
 
-	if (memcmp(lanman_pw, unenc_old_pw, 16))
-	{
+	if (memcmp(lanman_pw, unenc_old_pw, 16)) {
 		DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 		pdb_free_sam(&sampass);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	if (memcmp(nt_pw, unenc_old_ntpw, 16))
-	{
+	if (memcmp(nt_pw, unenc_old_ntpw, 16)) {
 		DEBUG(0,("check_oem_password: old nt password doesn't match.\n"));
 		pdb_free_sam(&sampass);
 		return NT_STATUS_WRONG_PASSWORD;
@@ -935,7 +931,7 @@ static NTSTATUS check_oem_password(const char *user,
 	DEBUG(100, ("check_oem_password: password %s ok\n", new_passwd));
 #endif
 
-	pdb_free_sam(&sampass);
+	*hnd = sampass;
 	return NT_STATUS_OK;
 }
 
@@ -1008,6 +1004,3 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	
 	return NT_STATUS_OK;
 }
-
-
-
