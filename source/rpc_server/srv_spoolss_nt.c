@@ -579,6 +579,17 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 		return ERROR_ACCESS_DENIED;
 	}
 		
+	/* Disallow MS AddPrinterWizard if access rights are insufficient OR
+	   if parameter disables it. The client tries an OpenPrinterEx with
+	   SERVER_ALL_ACCESS(0xf0003), which we force to fail. It then tries
+	   OpenPrinterEx with SERVER_READ(0x20002) which we allow. This lets
+	   it see any printers there, but does not show the MSAPW */
+	if (handle_is_printserver(handle) &&
+		printer_default->access_required != (SERVER_READ) &&
+		!lp_ms_add_printer_wizard() ) {
+		return ERROR_ACCESS_DENIED;
+	}
+
 	return NT_STATUS_NO_PROBLEMO;
 }
 

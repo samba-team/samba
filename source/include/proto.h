@@ -1370,6 +1370,7 @@ BOOL lp_ssl_enabled(void);
 BOOL lp_ssl_reqClientCert(void);
 BOOL lp_ssl_reqServerCert(void);
 BOOL lp_ssl_compatibility(void);
+BOOL lp_ms_add_printer_wizard(void);
 BOOL lp_dns_proxy(void);
 BOOL lp_wins_support(void);
 BOOL lp_we_are_a_wins_server(void);
