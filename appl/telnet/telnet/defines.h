@@ -53,3 +53,8 @@
 #define	MODE_COMMAND_LINE(m)	((m)==-1)
 
 #define	CONTROL(x)	((x)&0x1f)		/* CTRL(x) is not portable */
+
+
+/* XXX extra mode bits, these should be synced with <arpa/telnet.h> */
+
+#define MODE_OUT8	0x8000 /* binary mode sans -opost */
