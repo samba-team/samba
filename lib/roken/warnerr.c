@@ -43,15 +43,19 @@ RCSID("$Id$");
 
 #include "err.h"
 
+#ifndef HAVE___PROGNAME
+const char *__progname;
+#endif
+
 void
 warnerr(int doexit, int eval, int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;
-#ifdef HAVE___PROGNAME
-    fprintf(stderr, "%s", __progname);
-    if(fmt != NULL || doerrno)
-	fprintf(stderr, ": ");
-#endif
+    if(__progname != NULL){
+	fprintf(stderr, "%s", __progname);
+	if(fmt != NULL || doerrno)
+	    fprintf(stderr, ": ");
+    }
     if (fmt != NULL){
 	vfprintf(stderr, fmt, ap);
 	if(doerrno)
