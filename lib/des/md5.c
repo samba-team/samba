@@ -271,12 +271,25 @@ md5_finito (struct md5 *m, void *res)
   memcpy (zeros + dstart, &len, sizeof(len));
   md5_update (m, zeros, dstart + 8);
   {
+      int i;
+      u_char *r = (u_char *)res;
+
+      for (i = 0; i < 4; ++i) {
+	  r[4*i]   = m->counter[i] & 0xFF;
+	  r[4*i+1] = (m->counter[i] >> 8) & 0xFF;
+	  r[4*i+2] = (m->counter[i] >> 16) & 0xFF;
+	  r[4*i+3] = (m->counter[i] >> 24) & 0xFF;
+      }
+  }
+#if 0
+  {
     int i;
     u_int32_t *r = (u_int32_t *)res;
 
     for (i = 0; i < 4; ++i)
       r[i] = swap_u_int32_t (m->counter[i]);
   }
+#endif
 }
 
 /*
