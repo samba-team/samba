@@ -113,7 +113,7 @@ extern BOOL case_mangle;    /* If true, all chars in 8.3 should be same case. */
 char magic_char = '~';
 
 
-#if 1
+#if 0
 
 
 
@@ -999,7 +999,7 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#if 0
+#if 1
 
 #define MANGLE_TDB_VERSION		"20010927"
 #define MANGLE_TDB_FILE_NAME		"mangle.tdb"
@@ -1451,6 +1451,10 @@ BOOL is_mangled(char *s)
 	size_t u2len;
 	BOOL ret = False;
 	
+	DEBUG(10,("is_mangled: testing -> [%s]\n", s));
+	
+	if (!s || !*s) return False;
+	
 	u2len = (strlen(s) + 1) * sizeof(smb_ucs2_t);
 	u2 = (smb_ucs2_t *)malloc(u2len);
 	if (!u2)
@@ -1459,11 +1463,12 @@ BOOL is_mangled(char *s)
 		return ret;
 	}
 	dos_to_ucs2(u2, s, u2len);
-	
+
 	res = unmangle(u2);
 	if (res) ret = True;
 	SAFE_FREE(res);
 	SAFE_FREE(u2);
+	DEBUG(10,("is_mangled: returning -> %s\n", ret?"True":"False"));
 	return ret;
 }
 
@@ -1471,8 +1476,14 @@ BOOL is_8_3(char *fname, BOOL check_case)
 {
 	smb_ucs2_t *u2, *pref = 0, *ext = 0;
 	char *s1 = 0, *s2;
-	size_t u2len;
+	size_t u2len, plen;
 	BOOL ret = False;
+
+	DEBUG(10,("is_8_3: testing -> [%s]\n", fname));
+	
+	if (!fname || !*fname) return False;
+
+	if (strcmp(fname, ".") == 0 || strcmp(fname, "..") == 0) return True;
 
 	u2len = (strlen(fname) + 1) * sizeof(smb_ucs2_t);
 	u2 = (smb_ucs2_t *)malloc(u2len);
@@ -1492,7 +1503,12 @@ BOOL is_8_3(char *fname, BOOL check_case)
 	
 
 	if (!mangle_get_prefix(u2, &pref, &ext)) goto done;
-	if (strlen_w(pref) > 8) goto done;
+	plen = strlen_w(pref);
+	if (plen < 1 || plen > 8) goto done;
+	if (ext)
+		if (strlen_w(ext) > 3) goto done;
+	
+	DEBUG(10,("pref len = %d, ext len = %d\n", pref?strlen_w(pref):0, ext?strlen_w(ext):0));
 
 	ucs2_to_dos(s1, u2, u2len);
 	ucs2_to_dos83(s2, u2, u2len);
@@ -1505,6 +1521,9 @@ done:
 	SAFE_FREE(s1);
 	SAFE_FREE(pref);
 	SAFE_FREE(ext);
+
+	DEBUG(10,("is_8_3: returning -> %s\n", ret?"True":"False"));
+	return ret;	
 }
 
 void reset_mangled_cache(void)
@@ -1519,6 +1538,9 @@ BOOL check_mangled_cache(char *s)
 	BOOL ret = False;
 	
 	DEBUG(10,("check_mangled_cache: I'm so ugly, please remove me!\n"));
+	DEBUG(10,("check_mangled_cache: testing -> [%s]\n", s));
+
+	if (!s || !*s) return False;
 
 	slen = strlen(s);
 	u2len = (slen + 1) * sizeof(smb_ucs2_t);
@@ -1533,11 +1555,13 @@ BOOL check_mangled_cache(char *s)
 	res = unmangle(u2);
 	if (res)
 	{
-		ucs2_to_dos (s, res, slen); /* ugly, but must be done this way */
+		ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
+		DEBUG(10,("check_mangled_cache: returning -> [%s]\n", s));
 		ret = True;
 	}
 	SAFE_FREE(res);
 	SAFE_FREE(u2);
+	DEBUG(10,("check_mangled_cache: returning -> %s\n", ret?"True":"False"));
 	return ret;
 }
 
@@ -1548,7 +1572,10 @@ void mangle_name_83(char *s)
 	BOOL ret = False;
 	
 	DEBUG(10,("mangle_name_83: I'm so ugly, please remove me!\n"));
+	DEBUG(10,("mangle_name_83: testing -> [%s]\n", s));
 
+	if (!s || !*s) return;
+	
 	slen = strlen(s);
 	u2len = (slen + 1) * sizeof(smb_ucs2_t);
 	u2 = (smb_ucs2_t *)malloc(u2len);
@@ -1560,7 +1587,8 @@ void mangle_name_83(char *s)
 	dos_to_ucs2(u2, s, u2len);
 	
 	res = _mangle(u2);
-	if (res) ucs2_to_dos (s, res, slen); /* ugly, but must be done this way */
+	if (res) ucs2_to_dos (s, res, 13); /* ugly, but must be done this way */
+	DEBUG(10,("mangle_name_83: returning -> [%s]\n", res));
 	SAFE_FREE(res);
 	SAFE_FREE(u2);
 }
@@ -1569,6 +1597,10 @@ BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83, int snum)
 {
 	DEBUG(10,("name_map_mangle: I'm so ugly, please remove me!\n"));
 
+	/* if (!need83) return True; */
+	if (is_8_3(OutName, True)) return True;
+	/* Warning: we should check for invalid chars in file name and mangle
+	   if invalid chars found --simo*/
 	mangle_name_83(OutName);
 	return True;
 }
