@@ -562,7 +562,19 @@ main (int argc, char **argv)
     set_progname (argv[0]);
     krb5_openlog (context, "kpasswdd", &log_facility);
 
-    signal (SIGINT, sigterm);
+#ifdef HAVE_SIGACTION
+    {
+	struct sigaction sa;
+
+	sa.sa_flags = 0;
+	sa.sa_handler = sigterm;
+	sigemptyset(&sa.sa_mask);
+
+	sigaction(SIGINT, &sa, NULL);
+    }
+#else
+    signal(SIGINT, sigterm);
+#endif
 
     return doit (krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
 }
