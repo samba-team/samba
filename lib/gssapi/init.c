@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,11 +43,6 @@ RCSID("$Id$");
 void
 gssapi_krb5_init (void)
 {
-  static int donep = 0;
-
-  if (donep)
-    return;
-
-  krb5_init_context (&gssapi_krb5_context);
-  donep = 1;
+    if(gssapi_krb5_context == NULL)
+	krb5_init_context (&gssapi_krb5_context);
 }
