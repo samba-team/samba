@@ -260,11 +260,6 @@ The &smb.conf; parameter that sets Share Level security is:
 <smbconfoption><name>security</name><value>share</value></smbconfoption>
 </smbconfblock></para>
 
-<para>
-There are reports that recent MS Windows clients do not like to work
-with share mode security servers. You are strongly discouraged from using Share Level security.
-</para>
-
 </sect3>
 </sect2>
 
