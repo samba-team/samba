@@ -33,6 +33,7 @@
 struct connect_record crec;
 extern int DEBUGLEVEL;
 extern FILE *dbf;
+extern pstring myhostname;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 int            Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
     return(1);
   }
 
-  while ((c = getopt(argc, argv, "pdsu:")) != EOF) {
+  while ((c = getopt(argc, argv, "pds:u:")) != EOF) {
     switch (c) {
     case 'd':
       verbose = 1;
@@ -89,12 +90,12 @@ int main(int argc, char *argv[])
     }
   }
 
-
-
   if (!lp_load(servicesf,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
     return (-1);
   }
+
+  get_myname(myhostname, NULL);
 
   if (verbose) {
     printf("using configfile = %s\n", servicesf);
@@ -112,6 +113,9 @@ int main(int argc, char *argv[])
     if (!lp_status(-1))
       printf("You need to have status=yes in your smb config file\n");
     return(0);
+  }
+  else if (verbose) {
+    printf("Opened status file %s\n", fname);
   }
 
   uid = getuid();
