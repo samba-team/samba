@@ -38,7 +38,7 @@ static struct smb_conn_opt conn_options;
 #endif
 
 /* Uncomment this to allow debug the smbmount daemon */
-/* #define SMBFS_DEBUG 1 */
+#define SMBFS_DEBUG 1
 
 pstring cur_dir = "\\";
 pstring cd_path = "";
