@@ -449,7 +449,7 @@ void make_sam_entry1(SAM_ENTRY1 *sam, uint32 user_idx,
 {
 	if (sam == NULL) return;
 
-	DEBUG(5,("make_sam_entry2: %d\n", __LINE__));
+	DEBUG(5,("make_sam_entry1: %d\n", __LINE__));
 
 	sam->user_idx = user_idx;
 	sam->rid_user = rid_user;
@@ -468,7 +468,7 @@ void sam_io_sam_entry1(char *desc,  SAM_ENTRY1 *sam, prs_struct *ps, int depth)
 {
 	if (sam == NULL) return;
 
-	prs_debug(ps, depth, desc, "sam_io_sam_entry2");
+	prs_debug(ps, depth, desc, "sam_io_sam_entry1");
 	depth++;
 
 	prs_align(ps);
