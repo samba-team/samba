@@ -28,7 +28,7 @@
   send a SMB trans or trans2 request
   ****************************************************************************/
 BOOL cli_send_trans(struct cli_state *cli, int trans, 
-		    char *name, int pipe_name_len, 
+		    char *pipe_name, 
 		    int fid, int flags,
 		    uint16 *setup, int lsetup, int msetup,
 		    char *param, int lparam, int mparam,
@@ -39,6 +39,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	int tot_data=0,tot_param=0;
 	char *outdata,*outparam;
 	char *p;
+	int pipe_name_len=0;
 
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
@@ -49,7 +50,13 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
-	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? pipe_name_len+1 : 3);
+	if (pipe_name) {
+		pipe_name_len = clistr_push_size(cli, smb_buf(cli->outbuf), 
+						 pipe_name, -1, 
+						 CLISTR_TERMINATE);
+	}
+
+	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? pipe_name_len : 3);
 	outdata = outparam+this_lparam;
 
 	/* primary request */
@@ -69,7 +76,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 		SSVAL(cli->outbuf,smb_setup+i*2,setup[i]);
 	p = smb_buf(cli->outbuf);
 	if (trans==SMBtrans) {
-		memcpy(p,name, pipe_name_len + 1);  /* name[] */
+		clistr_push(cli, p, pipe_name, -1, CLISTR_TERMINATE);
 	} else {
 		*p++ = 0;  /* put in a null smb_name */
 		*p++ = 'D'; *p++ = ' ';	/* observed in OS/2 */

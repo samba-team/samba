@@ -205,7 +205,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
 
 		if (!cli_send_trans(cli, SMBtrans2, 
-				    NULL, 0,                /* Name, length */
+				    NULL,                   /* Name */
 				    -1, 0,                  /* fid, flags */
 				    &setup, 1, 0,           /* setup, length, max */
 				    param, param_len, 10,   /* param, length, max */

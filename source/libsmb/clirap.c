@@ -27,18 +27,15 @@
 /****************************************************************************
 Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
-BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
+BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, 
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
                   char *data, uint32 data_count, uint32 max_data_count,
                   char **rparam, uint32 *rparam_count,
                   char **rdata, uint32 *rdata_count)
 {
-  if (pipe_name_len == 0)
-    pipe_name_len = strlen(pipe_name);
-
   cli_send_trans(cli, SMBtrans, 
-                 pipe_name, pipe_name_len,
+                 pipe_name, 
                  0,0,                         /* fid, flags */
                  setup, setup_count, max_setup_count,
                  params, param_count, max_param_count,
@@ -59,8 +56,8 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rdata, int *rdrcnt)
 {
   cli_send_trans(cli,SMBtrans,
-                 PIPE_LANMAN,strlen(PIPE_LANMAN), /* Name, length */
-                 0,0,                             /* fid, flags */
+                 PIPE_LANMAN,             /* Name */
+                 0,0,                     /* fid, flags */
                  NULL,0,0,                /* Setup, length, max */
                  param, prcnt, mprcnt,    /* Params, length, max */
                  data, drcnt, mdrcnt      /* Data, length, max */ 
@@ -385,7 +382,7 @@ BOOL cli_oem_change_password(struct cli_state *cli, const char *user, const char
   data_len = 532;
     
   if (cli_send_trans(cli,SMBtrans,
-                    PIPE_LANMAN,strlen(PIPE_LANMAN),      /* name, length */
+                    PIPE_LANMAN,                          /* name */
                     0,0,                                  /* fid, flags */
                     NULL,0,0,                             /* setup, length, max */
                     param,param_len,2,                    /* param, length, max */
@@ -437,7 +434,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 
 	do {
 		ret = (cli_send_trans(cli, SMBtrans2, 
-				      NULL, 0,        /* Name, length */
+				      NULL,           /* Name */
 				      -1, 0,          /* fid, flags */
 				      &setup, 1, 0,   /* setup, length, max */
 				      param, param_len, 10, /* param, length, max */
@@ -510,7 +507,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
     unix_to_dos(&param[6],True);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                      /* name, length */
+                            NULL,                         /* name */
                             -1, 0,                        /* fid, flags */
                             &setup, 1, 0,                 /* setup, length, max */
                             param, param_len, 10,         /* param, length, max */
@@ -582,7 +579,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
 
 	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                        /* name, length */
+                            NULL,                           /* name */
                             -1, 0,                          /* fid, flags */
                             &setup, 1, 0,                   /* setup, length, max */
                             param, param_len, 2,            /* param, length, max */

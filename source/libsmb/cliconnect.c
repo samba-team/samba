@@ -123,10 +123,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	if (cli->protocol < PROTOCOL_NT1)
 	{
-		set_message(cli->outbuf,10,
-			    clistr_align(cli, 1) + 
-			    clistr_push_size(cli, user, -1, CLISTR_TERMINATE|CLISTR_CONVERT) + 
-			    passlen,True);
+		set_message(cli->outbuf,10, 0, True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
 
@@ -137,10 +134,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		p = smb_buf(cli->outbuf);
-		p += clistr_align(cli, PTR_DIFF(p,cli->outbuf));
 		memcpy(p,pword,passlen);
 		p += passlen;
-		clistr_push(cli, p, user, -1, CLISTR_CONVERT|CLISTR_UPPER|CLISTR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, CLISTR_CONVERT|CLISTR_UPPER|CLISTR_TERMINATE);
+		set_message(cli->outbuf,10,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 	else
 	{
@@ -157,7 +154,6 @@ BOOL cli_session_setup(struct cli_state *cli,
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
 		SSVAL(cli->outbuf,smb_vwv11,CAP_NT_SMBS|(cli->use_level_II_oplocks ? CAP_LEVEL_II_OPLOCKS : 0));
 		p = smb_buf(cli->outbuf);
-		p += clistr_align(cli, PTR_DIFF(p,cli->outbuf));
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpword,ntpasslen); 
@@ -188,7 +184,6 @@ BOOL cli_session_setup(struct cli_state *cli,
 	       * info.
 	       */
 	      char *p = smb_buf(cli->inbuf);
-	      p += clistr_align(cli, PTR_DIFF(p,cli->outbuf));
 	      p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
 	      p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
 	      p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
@@ -262,11 +257,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	unix_to_dos(fullshare, True);
 	strupper(fullshare);
 
-	set_message(cli->outbuf,4,
-		    clistr_push_size(cli, fullshare, -1, CLISTR_TERMINATE | CLISTR_CONVERT) +
-		    passlen + 
-		    1+strlen(dev),
-		    True);
+	set_message(cli->outbuf,4, 0, True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 

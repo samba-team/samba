@@ -47,6 +47,11 @@ int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int 
 		dest_len = sizeof(pstring);
 	}
 
+	if (clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+		dest++;
+		dest_len--;
+	}
+
 	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
@@ -77,12 +82,18 @@ return the length that a string would occupy when copied with clistr_push()
   CLISTR_TERMINATE means include the null termination
   CLISTR_CONVERT   means convert from unix to dos codepage
   CLISTR_UPPER     means uppercase in the destination
+note that dest is only used for alignment purposes. No data is written.
 ****************************************************************************/
-int clistr_push_size(struct cli_state *cli, char *src, int dest_len, int flags)
+int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len, int flags)
 {
 	int len = strlen(src);
 	if (flags & CLISTR_TERMINATE) len++;
 	if (cli_use_unicode && (cli->capabilities & CAP_UNICODE)) len *= 2;
+
+	if (clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+		len++;
+	}
+
 	return len;
 }
 
@@ -102,6 +113,11 @@ int clistr_pull(struct cli_state *cli, char *dest, void *src, int dest_len, int 
 
 	if (dest_len == -1) {
 		dest_len = sizeof(pstring);
+	}
+
+	if (clistr_align(cli, PTR_DIFF(cli->inbuf, src))) {
+		src++;
+		if (src_len > 0) src_len--;
 	}
 
 	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
@@ -143,6 +159,11 @@ if src_len is -1 then assume the source is null terminated
 ****************************************************************************/
 int clistr_pull_size(struct cli_state *cli, void *src, int src_len)
 {
+	if (clistr_align(cli, PTR_DIFF(cli->inbuf, src))) {
+		src++;
+		if (src_len > 0) src_len--;
+	}
+
 	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
 		return strlen(src);
 	}	
