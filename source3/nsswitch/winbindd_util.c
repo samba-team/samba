@@ -72,12 +72,12 @@ BOOL get_domain_info(void)
 	int i;
         fstring level5_dom;
         BOOL rv = False;
-        TALLOC_CTX *mem_ctx = NULL;
+        TALLOC_CTX *mem_ctx;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
 
         if (!(mem_ctx = talloc_init()))
-                goto done;
+                return False;
 
 	/* Add our workgroup - keep handle to look up trusted domains */
 
@@ -113,8 +113,7 @@ BOOL get_domain_info(void)
         rv = True;	
 
  done:
-        if (mem_ctx)
-                talloc_destroy(mem_ctx);
+        talloc_destroy(mem_ctx);
 
         return rv;
 }
@@ -131,7 +130,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
         CLI_POLICY_HND *hnd;
         NTSTATUS result;
         BOOL rv = False;
-        TALLOC_CTX *mem_ctx = NULL;
+        TALLOC_CTX *mem_ctx;
         
         DEBUG(1, ("looking up sid for domain %s\n", domain_name));
         
@@ -180,8 +179,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
         rv = False;             /* An error occured with a trusted domain */
 
  done:
-        if (mem_ctx)
-                talloc_destroy(mem_ctx);
+        talloc_destroy(mem_ctx);
 
         return rv;
 }
@@ -196,7 +194,7 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
         uint32 *types = NULL;
         CLI_POLICY_HND *hnd;
         NTSTATUS result;
-        TALLOC_CTX *mem_ctx = NULL;
+        TALLOC_CTX *mem_ctx;
         BOOL rv = False;
         
         /* Don't bother with machine accounts */
@@ -234,8 +232,7 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
         rv = NT_STATUS_IS_OK(result);
 
  done:
-        if (mem_ctx)
-                talloc_destroy(mem_ctx);
+        talloc_destroy(mem_ctx);
         
         return rv;
 }
@@ -256,7 +253,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
         /* Lookup name */
 
         if (!(mem_ctx = talloc_init()))
-                goto done;
+                return False;
         
         if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
                 goto done;
@@ -283,8 +280,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
         rv = NT_STATUS_IS_OK(result);
         
  done:
-        if (mem_ctx)
-                talloc_destroy(mem_ctx);
+        talloc_destroy(mem_ctx);
 
         return rv;
 }
@@ -294,16 +290,23 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
 BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, uint32 user_rid, 
                               SAM_USERINFO_CTR **user_info)
 {
+        TALLOC_CTX *mem_ctx;
         CLI_POLICY_HND *hnd;
         uint16 info_level = 0x15;
-        NTSTATUS result;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        if (!(mem_ctx = talloc_init()))
+                return False;
 
         if (!(hnd = cm_get_sam_user_handle(domain->name, &domain->sid, 
                                            user_rid)))
-                return False;
+                goto done;
 
-        result = cli_samr_query_userinfo(hnd->cli, hnd->cli->mem_ctx,
-                                         &hnd->pol, info_level, user_info);
+        result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &hnd->pol, 
+                                         info_level, user_info);
+
+ done:
+        talloc_destroy(mem_ctx);
 
         return NT_STATUS_IS_OK(result);
 }                                   
@@ -314,16 +317,22 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 				uint32 user_rid, uint32 *num_groups,
 				DOM_GID **user_groups)
 {
+        TALLOC_CTX *mem_ctx;
 	CLI_POLICY_HND *hnd;
-	NTSTATUS result;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+        if (!(mem_ctx = talloc_init()))
+                return False;
 
         if (!(hnd = cm_get_sam_user_handle(domain->name, &domain->sid,
                                            user_rid)))
-                return False;
+                goto done;
 
-        result = cli_samr_query_usergroups(hnd->cli, hnd->cli->mem_ctx,
-                                           &hnd->pol, num_groups,
-                                           user_groups);
+        result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &hnd->pol, 
+                                           num_groups, user_groups);
+
+ done:
+        talloc_destroy(mem_ctx);
 
         return NT_STATUS_IS_OK(result);
 }
@@ -331,40 +340,39 @@ BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
 /* Lookup group membership given a rid.   */
 
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
+                              TALLOC_CTX *mem_ctx,
                               uint32 group_rid, uint32 *num_names, 
                               uint32 **rid_mem, char ***names, 
                               uint32 **name_types)
 {
         CLI_POLICY_HND *group_hnd, *dom_hnd;
-        NTSTATUS result;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
 
         if (!(group_hnd = cm_get_sam_group_handle(domain->name, &domain->sid,
                                                   group_rid)))
-                return False;
+                goto done;
 
         /* Get group membership.  This is a list of rids. */
 
-        result = cli_samr_query_groupmem(group_hnd->cli, 
-                                         group_hnd->cli->mem_ctx,
+        result = cli_samr_query_groupmem(group_hnd->cli, mem_ctx,
                                          &group_hnd->pol, num_names, rid_mem,
                                          name_types);
 
         if (!NT_STATUS_IS_OK(result))
-                return NT_STATUS_IS_OK(result);
+                goto done;
 
         /* Convert list of rids into list of names.  Do this in bunches of
            ~1000 to avoid crashing NT4.  It looks like there is a buffer
            overflow or something like that lurking around somewhere. */
 
         if (!(dom_hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
-                return False;
+                goto done;
 
 #define MAX_LOOKUP_RIDS 900
 
-        *names = talloc(dom_hnd->cli->mem_ctx, *num_names * sizeof(char *));
-        *name_types = talloc(dom_hnd->cli->mem_ctx, *num_names * 
-                             sizeof(uint32));
+        *names = talloc(mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc(mem_ctx, *num_names * sizeof(uint32));
 
         for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
                 int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
@@ -374,8 +382,7 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 
                 /* Lookup a chunk of rids */
 
-                result = cli_samr_lookup_rids(dom_hnd->cli, 
-                                              dom_hnd->cli->mem_ctx,
+                result = cli_samr_lookup_rids(dom_hnd->cli, mem_ctx,
                                               &dom_hnd->pol, 1000, /* flags */
                                               num_lookup_rids,
                                               &(*rid_mem)[i],
@@ -383,7 +390,7 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
                                               &tmp_names, &tmp_types);
 
                 if (!NT_STATUS_IS_OK(result))
-                        return False;
+                        goto done;
 
                 /* Copy result into array.  The talloc system will take
                    care of freeing the temporary arrays later on. */
@@ -399,6 +406,7 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 
         *num_names = total_names;
 
+ done:
         return NT_STATUS_IS_OK(result);
 }
 
@@ -461,6 +469,8 @@ void free_getent_state(struct getent_state *state)
         SAFE_FREE(state->sam_entries);
         DLIST_REMOVE(state, state);
         next = temp->next;
+
+        talloc_destroy(temp->mem_ctx);
 
         SAFE_FREE(temp);
         temp = next;
@@ -531,6 +541,7 @@ BOOL winbindd_param_init(void)
    application. */
 
 NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
+                                 TALLOC_CTX *mem_ctx,
 				 uint32 *start_ndx, uint16 info_level, 
 				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
@@ -538,16 +549,14 @@ NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
         if (!(hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
-                return result;
+                goto done;
 
-        result = cli_samr_query_dispinfo(hnd->cli, hnd->cli->mem_ctx,
+        result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
                                          &hnd->pol, start_ndx, info_level,
                                          num_entries, 0xffff, ctr);
 
-        if (!NT_STATUS_IS_OK(result))
-                return result;
-
-        return NT_STATUS_OK;
+ done:
+        return result;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */

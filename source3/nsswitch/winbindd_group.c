@@ -52,9 +52,11 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	int buf_len, buf_ndx, i;
 	char **names = NULL, *buf;
 	BOOL result = False;
-	
-	if (!num_gr_mem || !gr_mem || !gr_mem_len) return False;
-	
+        TALLOC_CTX *mem_ctx;
+
+        if (!(mem_ctx = talloc_init()))
+                return False;
+
 	/* Initialise group membership information */
 	
 	DEBUG(10, ("fill_grent_mem(): group %s rid 0x%x\n",
@@ -65,28 +67,27 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	if (group_name_type != SID_NAME_DOM_GRP) {
 		DEBUG(1, ("fill_grent_mem(): rid %d in domain %s isn't a "
 			  "domain group\n", group_rid, domain->name));
-		return False;
+                goto done;
 	}
 
 	/* Lookup group members */
 
-	if (!winbindd_lookup_groupmem(domain, group_rid, &num_names, 
+	if (!winbindd_lookup_groupmem(domain, mem_ctx, group_rid, &num_names, 
 				      &rid_mem, &names, &name_types)) {
 
 		DEBUG(1, ("fill_grent_mem(): could not lookup membership "
 			  "for group rid %d in domain %s\n", 
 			  group_rid, domain->name));
 
-		return False;
+		goto done;
 	}
 
 	DEBUG(10, ("fill_grent_mem(): looked up %d names\n", num_names));
 
 	if (DEBUGLEVEL >= 10) {
-		for (i = 0; i < num_names; i++) {
+		for (i = 0; i < num_names; i++)
 			DEBUG(10, ("\t%20s %x %d\n", names[i], rid_mem[i],
 				   name_types[i]));
-		}
 	}
 
 	/* Add members to list */
@@ -103,7 +104,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 			
 		the_name = names[i];
 
-		DEBUG(10, ("fill_grent_mem(): processing name %s\n", the_name));
+		DEBUG(10, ("fill_grent_mem(): processing name %s\n", 
+                           the_name));
 
 		/* Only add domain users */
 
@@ -151,7 +153,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		if (!(buf = malloc(buf_len))) {
 			DEBUG(1, ("fill_grent_mem(): out of memory\n"));
 			result = False;
-			goto cleanup;
+			goto done;
 		}
 		memset(buf, 0, buf_len);
 		goto again;
@@ -169,14 +171,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 
 	result = True;
 
- cleanup:
-	
-	/* Free memory allocated in winbindd_lookup_groupmem() */
-	
-	SAFE_FREE(name_types);
-	SAFE_FREE(rid_mem);
-	
-	free_char_array(num_names, names);
+done:
+        talloc_destroy(mem_ctx);
 	
 	DEBUG(10, ("fill_grent_mem(): returning %d\n", result));
 
@@ -413,9 +409,11 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		
 		ZERO_STRUCTP(domain_state);
 		
+		domain_state->domain = tmp;
+                domain_state->mem_ctx = talloc_init();
+
 		/* Add to list of open domains */
 		
-		domain_state->domain = tmp;
 		DLIST_ADD(state->getgrent_state, domain_state);
 	}
 	
@@ -475,7 +473,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
                         break;
 
                 status = cli_samr_enum_dom_groups(
-                        hnd->cli, hnd->cli->mem_ctx, &hnd->pol,
+                        hnd->cli, ent->mem_ctx, &hnd->pol,
                         &ent->grp_query_start_ndx,
                         0x8000, /* buffer size? */
                         (struct acct_info **) &sam_grp_entries, &num_entries);
@@ -764,6 +762,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		ZERO_STRUCT(groups);
 		groups.domain = domain;
+                groups.mem_ctx = talloc_init();
 
 		/* 
 		 * iterate through all groups 
@@ -798,7 +797,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		/* skip remainder of loop if we idn;t retrieve any groups */
 		
 		if (num_domain_entries == 0) 
-			continue;
+			goto next_group;
 
 		/* setup the groups struct to contain all the groups 
 		   retrieved for this domain */
@@ -820,6 +819,7 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			DEBUG(0,("winbindd_list_groups: failed to enlarge "
                                  "buffer!\n"));
 			SAFE_FREE(extra_data);
+                        talloc_destroy(groups.mem_ctx);
 			return WINBINDD_ERROR;
 		} else
 			extra_data = ted;
@@ -845,6 +845,9 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 			extra_data[extra_data_len++] = ',';
 		}
+
+        next_group:
+                talloc_destroy(groups.mem_ctx);
 	}
 
 	/* Assign extra_data fields in response structure */

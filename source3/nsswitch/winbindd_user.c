@@ -33,9 +33,8 @@ static BOOL winbindd_fill_pwent(char *domain_name, char *name,
 	fstring name_domain, name_user;
 	pstring homedir;
 	
-	if (!pw || !name) {
+	if (!pw || !name)
 		return False;
-	}
 	
 	/* Resolve the uid number */
 	
@@ -112,9 +111,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	/* Reject names that don't have a domain - i.e name_domain contains 
 	   the entire name. */
  
-	if (strequal(name_domain, "")) {
+	if (strequal(name_domain, ""))
 		return WINBINDD_ERROR;
-	}
 	
         if ((domain = find_domain_from_name(name_domain)) == NULL) {
                 DEBUG(5, ("No such domain: %s\n", name_domain));
@@ -124,9 +122,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	/* Check for cached user entry */
 
 	if (winbindd_fetch_user_cache_entry(domain, name_user,
-					    &state->response.data.pw)) {
+					    &state->response.data.pw))
 		return WINBINDD_OK;
-	}
 	
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
 	
@@ -189,9 +186,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	/* Bug out if the uid isn't in the winbind range */
 
 	if ((state->request.data.uid < server_state.uid_low ) ||
-	    (state->request.data.uid > server_state.uid_high)) {
+	    (state->request.data.uid > server_state.uid_high))
 		return WINBINDD_ERROR;
-	}
 
 	DEBUG(3, ("[%5d]: getpwuid %d\n", state->pid, 
 		  state->request.data.uid));
@@ -209,9 +205,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	if (winbindd_fetch_uid_cache_entry(domain, 
 					   state->request.data.uid,
-					   &state->response.data.pw)) {
+					   &state->response.data.pw))
 		return WINBINDD_OK;
-	}
 	
 	/* Get name and name type from rid */
 
@@ -223,13 +218,13 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 		
 		sid_to_string(temp, &user_sid);
 		DEBUG(1, ("Could not lookup sid %s\n", temp));
+
 		return WINBINDD_ERROR;
 	}
 	
-	if (strcmp("\\", lp_winbind_separator())) {
+	if (strcmp("\\", lp_winbind_separator()))
 		string_sub(user_name, "\\", lp_winbind_separator(), 
 			   sizeof(fstring));
-	}
 
 	/* Get some user info */
 	
@@ -253,9 +248,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	/* Fill in password structure */
 
 	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, group_rid,
-				 gecos_name, &state->response.data.pw)) {
+				 gecos_name, &state->response.data.pw))
 		return WINBINDD_ERROR;
-	}
 	
 	winbindd_store_uid_cache_entry(domain, state->request.data.uid,
 				       &state->response.data.pw);
@@ -306,7 +300,9 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
                         return WINBINDD_ERROR;
                 
                 ZERO_STRUCTP(domain_state);
+
                 domain_state->domain = tmp;
+                domain_state->mem_ctx = talloc_init();
 
                 /* Add to list of open domains */
                 
@@ -383,7 +379,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 					
 		num_entries = 0;
 
-		status = winbindd_query_dispinfo(ent->domain, 
+		status = winbindd_query_dispinfo(ent->domain, ent->mem_ctx,
 						 &ent->dispinfo_ndx, 1,
 						 &num_entries, &ctr);
 		
@@ -572,8 +568,13 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
+        TALLOC_CTX *mem_ctx;
+        enum winbindd_result rv = WINBINDD_ERROR;
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
+
+        if (!(mem_ctx = talloc_init()))
+                return WINBINDD_ERROR;
 
 	/* Enumerate over trusted domains */
 
@@ -587,22 +588,20 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		   variable */ 
 
 		if ((strcmp(state->request.domain, "") != 0) &&
-		    !check_domain_env(state->request.domain, domain->name)) {
+		    !check_domain_env(state->request.domain, domain->name))
 			continue;
-		}
 
 		/* Query display info */
 
 		do {
 			int i;
 
-			status = winbindd_query_dispinfo(domain, &start_ndx, 
-							 1, &num_entries, 
-							 &ctr);
+			status = winbindd_query_dispinfo(
+                                domain, mem_ctx, &start_ndx, 
+                                1, &num_entries, &ctr);
 
-			if (num_entries == 0) {
+			if (num_entries == 0)
 				continue;
-			}
 
 			/* Allocate some memory for extra data */
 
@@ -614,9 +613,9 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			if (!ted) {
 				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
 				SAFE_FREE(extra_data);
-				return WINBINDD_ERROR;
-			}
-			else extra_data = ted;
+                                goto done;
+			} else 
+                                extra_data = ted;
 			
 			/* Pack user list into extra data fields */
 			
@@ -657,5 +656,10 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	/* No domains responded but that's still OK so don't return an
 	   error. */
 
-	return WINBINDD_OK;
+	rv = WINBINDD_OK;
+
+ done:
+        talloc_destroy(mem_ctx);
+
+        return rv;
 }
