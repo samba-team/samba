@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -40,7 +40,7 @@ RCSID("$Id$");
  */
 
 static krb5_boolean
-match_exact(void *data, const char *appl_version)
+match_exact(const void *data, const char *appl_version)
 {
     return strcmp(data, appl_version) == 0;
 }
@@ -49,7 +49,7 @@ krb5_error_code
 krb5_recvauth(krb5_context context,
 	      krb5_auth_context *auth_context,
 	      krb5_pointer p_fd,
-	      char *appl_version,
+	      const char *appl_version,
 	      krb5_principal server,
 	      int32_t flags,
 	      krb5_keytab keytab,
@@ -65,9 +65,9 @@ krb5_error_code
 krb5_recvauth_match_version(krb5_context context,
 			    krb5_auth_context *auth_context,
 			    krb5_pointer p_fd,
-			    krb5_boolean (*match_appl_version)(void *, 
+			    krb5_boolean (*match_appl_version)(const void *, 
 							       const char*),
-			    void *match_data,
+			    const void *match_data,
 			    krb5_principal server,
 			    int32_t flags,
 			    krb5_keytab keytab,
