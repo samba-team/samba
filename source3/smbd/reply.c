@@ -2751,7 +2751,7 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	 * We can only use CHECK_FSP if we know it's not a directory.
 	 */
 
-	if(!fsp || !fsp->open || (fsp->conn != conn))
+	if(!fsp || (fsp->conn != conn))
 		return(ERROR(ERRDOS,ERRbadfid));
 
 	if(HAS_CACHED_ERROR(fsp)) {

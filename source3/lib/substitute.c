@@ -200,7 +200,6 @@ void standard_sub_basic(char *str)
 static void standard_sub_advanced(int snum, char *user, char *connectpath, gid_t gid, char *str)
 {
 	char *p, *s, *home;
-	fstring pidstr;
 	struct passwd *pass;
 
 	for (s=str; (p=strchr(s, '%'));s=p) {

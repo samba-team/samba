@@ -201,9 +201,9 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  lib/substitute.c  */
 
+void standard_sub_basic(char *str);
 void standard_sub_conn(connection_struct *conn, char *str);
 void standard_sub_snum(int snum, char *str);
-void standard_sub_basic(char *str);
 void standard_sub_vuser(char *str, user_struct *vuser);
 void standard_sub_vsnum(char *str, user_struct *vuser, int snum);
 
@@ -355,6 +355,7 @@ void *memdup(void *p, size_t size);
 char *myhostname(void);
 char *lock_path(char *name);
 char *parent_dirname(const char *path);
+int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6);
 
 /*The following definitions come from  lib/util_array.c  */
 
@@ -1173,7 +1174,7 @@ void wins_write_database(BOOL background);
 /*The following definitions come from  nmbd/nmbd_workgroupdb.c  */
 
 struct work_record *find_workgroup_on_subnet(struct subnet_record *subrec, 
-                                             fstring name);
+                                             const char *name);
 struct work_record *create_workgroup_on_subnet(struct subnet_record *subrec,
                                                fstring name, int ttl);
 void update_workgroup_ttl(struct work_record *work, int ttl);
@@ -1579,6 +1580,11 @@ int cups_printername_ok(char *name);
 void sysv_printer_fn(void (*fn)(char *, char *));
 int sysv_printername_ok(char *name);
 
+/*The following definitions come from  printing/printfsp.c  */
+
+files_struct *print_fsp_open(connection_struct *conn,char *jobname);
+void print_fsp_end(files_struct *fsp);
+
 /*The following definitions come from  printing/printing.c  */
 
 BOOL print_backend_init(void);
@@ -1601,8 +1607,6 @@ int print_queue_snum(char *qname);
 BOOL print_queue_pause(int snum);
 BOOL print_queue_resume(int snum);
 BOOL print_queue_purge(int snum);
-files_struct *print_fsp_open(connection_struct *conn,char *jobname);
-void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -3019,6 +3023,7 @@ void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
 files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+files_struct *file_find_fsp(files_struct *orig_fsp);
 files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);

@@ -1708,7 +1708,7 @@ static int call_nt_transact_notify_change(connection_struct *conn,
   if(!fsp)
     return(ERROR(ERRDOS,ERRbadfid));
 
-  if((!fsp->open) || (!fsp->is_directory) || (conn != fsp->conn))
+  if((!fsp->is_directory) || (conn != fsp->conn))
     return(ERROR(ERRDOS,ERRbadfid));
 
   /*

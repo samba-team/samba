@@ -72,8 +72,8 @@ void close_filestruct(files_struct *fsp)
     
     flush_write_cache(fsp, CLOSE_FLUSH);
 
-	fsp->open = False;
 	fsp->is_directory = False; 
+	fsp->stat_open = False; 
     
 	conn->num_files_open--;
 	if(fsp->wbmpx_ptr) {  
