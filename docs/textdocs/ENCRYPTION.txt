@@ -1,5 +1,5 @@
 !==
-!== ENCRYPTION.txt for Samba release 2.0.3 28 Feb 1999
+!== ENCRYPTION.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.org>
 Updated:	April 19, 1999

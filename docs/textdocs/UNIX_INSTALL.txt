@@ -1,5 +1,5 @@
 !==
-!== UNIX_INSTALL.txt for Samba release 2.0.3 28 Feb 1999
+!== UNIX_INSTALL.txt for Samba release 2.0.4 18 May 1999
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.org>
 Date:		Unknown
