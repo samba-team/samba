@@ -292,11 +292,15 @@ BOOL creds_server_check(const struct creds_CredentialState *creds,
 }
 
 NTSTATUS creds_server_step_check(struct creds_CredentialState *creds,
-			     struct netr_Authenticator *received_authenticator,
-			     struct netr_Authenticator *return_authenticator) 
+				 struct netr_Authenticator *received_authenticator,
+				 struct netr_Authenticator *return_authenticator) 
 {
 	if (!received_authenticator || !return_authenticator) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!creds) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* TODO: this may allow the a replay attack on a non-signed
