@@ -1,3 +1,9 @@
+Thu Nov 26 17:09:47 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* resolve.c: some cleanup
+
+	* resolve.h: add T_NAPTR
+
 Sun Nov 22 10:23:07 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set
