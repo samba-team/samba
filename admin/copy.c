@@ -144,7 +144,6 @@ kt_copy (int argc, char **argv)
     int i = 0;
 
     args[i++].value = &help_flag;
-    args[i++].value = &verbose_flag;
 
     if(getarg(args, num_args, argc, argv, &optind)) {
 	arg_printusage(args, num_args, "ktutil copy",
