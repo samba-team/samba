@@ -496,7 +496,8 @@ krb5_get_in_tkt(krb5_context context,
 krb5_error_code
 krb5_get_in_tkt_with_password (krb5_context context,
 			       krb5_flags options,
-			       krb5_address *const *addrs,
+			       krb5_addresses *addrs,
+/*			       krb5_address *const *addrs,*/
 			       const krb5_enctype *etypes,
 			       const krb5_preauthtype *pre_auth_types,
 			       const char *password,
