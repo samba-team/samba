@@ -888,6 +888,9 @@ krb5_sname_to_principal (krb5_context context,
 	if (error == 0) {
 	    host = strdup (res->ai_canonname);
 	    freeaddrinfo (res);
+	} else if (res->ai_canonname == NULL) {
+	    freeaddrinfo (res);
+	    host = strdup (hostname);
 	} else {
 	    host = strdup (hostname);
 	}
