@@ -47,6 +47,7 @@ DB_close(krb5_context context, HDB *db)
 {
     DB *d = (DB*)db->db;
     d->close(d);
+    free(db->name);
     free(db);
     return 0;
 }

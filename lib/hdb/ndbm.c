@@ -47,6 +47,7 @@ NDBM_close(krb5_context context, HDB *db)
 {
     DBM *d = (DBM*)db->db;
     dbm_close(d);
+    free(db->name);
     free(db);
     return 0;
 }
