@@ -42,10 +42,16 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 		    &creds, &arch))
 		return NULL;
 	
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(spoolss_error, "bad server name");
+		return NULL;
+	}
+
+	server += 2;
+
 	/* Call rpc function */
 	
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -246,10 +252,16 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 		    &arch, &PyDict_Type, &creds))
 		return NULL;
 
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(spoolss_error, "bad server name");
+		return NULL;
+	}
+
+	server += 2;
+
 	/* Call rpc function */
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -304,8 +316,8 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	uint32 level;
 	PyObject *info, *result = NULL, *creds = NULL;
 	WERROR werror;
-	TALLOC_CTX *mem_ctx;
-	struct cli_state *cli;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct cli_state *cli = NULL;
 	PRINTER_DRIVER_CTR ctr;
 	union {
 		DRIVER_INFO_3 driver_3;
@@ -325,8 +337,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
-	if (!(cli = open_pipe_creds(
-		      server, creds, cli_spoolss_initialise, &errstr))) {
+	if (!(cli = open_pipe_creds(server, creds, PIPE_SPOOLSS, &errstr))) {
 		PyErr_SetString(spoolss_error, errstr);
 		free(errstr);
 		goto done;
@@ -334,7 +345,7 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 
 	if (!get_level_value(info, &level)) {
 		PyErr_SetString(spoolss_error, "invalid info level");
-		return NULL;
+		goto done;
 	}
 
 	if (level != 3) {
@@ -371,8 +382,11 @@ PyObject *spoolss_addprinterdriver(PyObject *self, PyObject *args,
 	result = Py_None;
 
 done:
-	cli_shutdown(cli);
-	talloc_destroy(mem_ctx);
+	if (cli)
+		cli_shutdown(cli);
+
+	if (mem_ctx)
+		talloc_destroy(mem_ctx);
 	
 	return result;
 	
