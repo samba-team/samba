@@ -916,9 +916,13 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 	}
 
 	if (pull->offset != pull->data_size) {
-		DEBUG(0,("Warning! %d unread bytes\n", pull->data_size - pull->offset));
-		status = NT_STATUS_INFO_LENGTH_MISMATCH;
-		goto failed;
+		DEBUG(0,("Warning! ignoring %d unread bytes in rpc packet!\n", 
+			 pull->data_size - pull->offset));
+		/* we used return NT_STATUS_INFO_LENGTH_MISMATCH here,
+		   but it turns out that early versions of NT
+		   (specifically NT3.1) add junk onto the end of rpc
+		   packets, so if we want to interoperate at all with
+		   those versions then we need to ignore this error */
 	}
 
 failed:
