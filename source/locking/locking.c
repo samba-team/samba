@@ -722,6 +722,7 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
 {
   pstring fname;
   int fd;
+  ret = True;
 
   *ptok = (share_lock_token)-1;
 
@@ -759,6 +760,14 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
       fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0666);
 #endif /* SECURE_SHARE_MODES */
 
+      if(fd < 0)
+      {
+        DEBUG(0,("ERROR lock_share_entry: failed to open share file %s. Error was %s\n",
+                  fname, strerror(errno)));
+        ret = False;
+        break;
+      }
+
        /* At this point we have an open fd to the share mode file. 
          Lock the first byte exclusively to signify a lock. */
       if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
@@ -766,7 +775,8 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
         DEBUG(0,("ERROR lock_share_entry: fcntl_lock on file %s failed with %s\n",
                   fname, strerror(errno)));   
         close(fd);
-        return False;
+        ret = False;
+        break;
       }
 
       /* 
@@ -784,12 +794,18 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
         gotlock = True;
     } while(!gotlock);
 
+    /*
+     * We have to come here if any of the above calls fail
+     * as we don't want to return and leave ourselves running
+     * as root !
+     */
+
     umask(old_umask);
     if(!become_user(cnum,Connections[cnum].vuid))
     {
       DEBUG(0,("lock_share_entry: Can't become connected user!\n"));
       close(fd);
-      return False;
+      ret = False;
     }
     /* We need to change directory back to the connection root. */
     if (ChDir(Connections[cnum].connectpath) != 0)
@@ -797,12 +813,12 @@ BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok
       DEBUG(0,("lock_share_entry: Can't change directory to %s (%s)\n",
               Connections[cnum].connectpath, strerror(errno)));
       close(fd);
-      return False;  
+      ret = False;  
     }
   }
 
   *ptok = (share_lock_token)fd;
-  return True;
+  return ret;
 }
 
 /*******************************************************************
