@@ -1,0 +1,127 @@
+mailto(samba-bugs@samba.anu.edu.au) 
+
+manpage(smbpasswd)(5)(23 Oct 1998)(Samba)(SAMBA)
+
+label(NAME)
+manpagename(smbpasswd)(The Samba encrypted password file)
+
+label(SYNOPSIS)
+manpagesynopsis() 
+
+smbpasswd is the bf(Samba) encrypted password file.
+
+label(DESCRIPTION)
+manpagedescription()
+
+This file is part of the bf(Samba) suite.
+
+smbpasswd is the bf(Samba) encrypted password file. It contains
+the username, unix user id and the SMB hashed passwords of the
+user, as well as account flag information and the time the password
+was last changed. This file format has been evolving with Samba
+and has had several different formats in the past.
+
+label(FILEFORMAT)
+manpagesection(FILE FORMAT)
+
+The format of the smbpasswd file used by Samba 2.0 is very similar to
+the familiar unix bf(passwd (5)) file. It is an ASCII file containing
+one line for each user. Each field within each line is separated from
+the next by a colon. Any entry beginning with # is ignored. The
+smbpasswd file contains the following information for each user:
+
+startit()
+
+label(name)
+dit(bf(name)) nl() nl()
+
+	This is the user name. It must be a name that already exists
+	in the standard UNIX passwd file.
+
+label(uid)
+dit(bf(uid)) nl() nl()
+
+	This is the UNIX uid. It must match the uid field for the same
+	user entry in the standard UNIX passwd file.
+
+label(LanmanPasswordHash)
+dit(bf(Lanman Password Hash)) nl() nl()
+
+	This is the em(LANMAN) hash of the users password, encoded as 32 hex
+	digits. The em(LANMAN) hash is created by DES encrypting a well known
+	string with the users password as the DES key. This is the same
+	password used by Windows 95/98 machines. Note that this password hash
+	is regarded as weak as it is vulnerable to dictionary attacks and if
+	two users choose the same password this entry will be identical (ie.
+	the password is not em("salted") as the UNIX password is). If the
+	user has a null password this field will contain the characters
+	tt("NO PASSWORD") as the start of the hex string. If the hex string
+	is equal to 32 tt('X') characters then the users account is marked as
+	em(disabled) and the user will not be able to log onto the Samba
+	server.
+
+	em(WARNING !!). Note that, due to the challenge-response nature of the
+	SMB/CIFS authentication protocol, anyone with a knowledge of this
+	password hash will be able to impersonate the user of the network.
+	For this reason these hashes are known as em("plain text equivalent")
+	and must em(NOT) be made available to anyone but the root user. To
+	protect these passwords the bf(smbpasswd) file is placed in a
+	directory with read and traverse access only to the root user and the
+	bf(smbpasswd) file itself must be set to be read/write only by root,
+	with no other access.
+
+label(NTPasswordHash)
+dit(bf(NT Password Hash)) nl() nl()
+
+	This is the em(Windows NT) hash of the users password, encoded as 32
+	hex digits. The em(Windows NT) hash is created by taking the users
+	password as represented in 16-bit, little-endian UNICODE and then
+	applying the em(MD4) (internet rfc1321) hashing algorithm to it.
+
+	This password hash is considered more secure than the link(bf(Lanman
+	Password Hash))(LanmanPasswordHash) as it preserves the case of the
+	password and uses a much higher quality hashing algorithm. However, it
+	is still the case that if two users choose the same password this
+	entry will be identical (ie. the password is not em("salted") as the
+	UNIX password is).
+
+	em(WARNING !!). Note that, due to the challenge-response nature of the
+	SMB/CIFS authentication protocol, anyone with a knowledge of this
+	password hash will be able to impersonate the user of the network.
+	For this reason these hashes are known as em("plain text equivalent")
+	and must em(NOT) be made available to anyone but the root user. To
+	protect these passwords the bf(smbpasswd) file is placed in a
+	directory with read and traverse access only to the root user and the
+	bf(smbpasswd) file itself must be set to be read/write only by root,
+	with no other access.
+
+enddit()
+
+label(VERSION)
+manpagesection(VERSION)
+
+This man page is correct for version 2.0 of the Samba suite.
+
+label(SEEALSO)
+manpageseealso()
+
+url(bf(smbpasswd (8)))(smbpasswd.8.html), url(bf(samba
+(7)))(samba.7.html), and the Internet RFC1321 for details on the MD4
+algorithm.
+
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2.0 release by Jeremy
+Allison, email(samba-bugs@samba.anu.edu.au).
+
+See url(bf(samba (7)))(samba.7.html) to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc.
