@@ -1,5 +1,7 @@
 2004-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/hdb/hdb-ldap.c: use macro for HDB * -> LDAP *
+	
 	* kuser/kinit.c: when running kinit with a subprocess, fetch new
 	tickets after half the tickets lifetime
 	
