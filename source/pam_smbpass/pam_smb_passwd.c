@@ -298,8 +298,8 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 	    uid_t uid;
 	    
             /* password updated */
-		if (NT_STATUS_IS_ERR(sid_to_uid(sampass, &uid))) {
-			_log_err( LOG_NOTICE "Unable to get uid for user %s",
+		if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sampass), &uid))) {
+			_log_err( LOG_NOTICE, "Unable to get uid for user %s",
 				pdb_get_username(sampass));
 			_log_err( LOG_NOTICE, "password for (%s) changed by (%s/%d)",
 				user, uidtoname(getuid()), getuid());

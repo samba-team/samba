@@ -399,7 +399,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                       service ? service : "**unknown**", name);
                     new->count = 1;
                 }
-		if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sampass, &(new->id), &type)))) {
+		if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sampass), &(new->id)))) {
                     _log_err(LOG_NOTICE,
                       "failed auth request by %s for service %s as %s",
                       uidtoname(getuid()),
