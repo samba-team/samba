@@ -374,10 +374,6 @@ To enable this feature:
 	</para></listitem>
 
 	<listitem><para>
-	Set the correct locale value for <smbconfoption><name>display charset</name></smbconfoption>.
-	</para></listitem>
-
-	<listitem><para>
 	Set your browsers language setting.
 	</para></listitem>
 </itemizedlist>
@@ -398,7 +394,7 @@ msgid "Set Default"
 msgstr "Imposta Default"
 </screen>
 and so on. If you find a mistake or create a new <command>msg</command> file, please email it
-to us so we will include this in the next release of Samba.
+to us so we will include this in the next release of Samba. The <command>msg</command> file should be encoded in UTF-8.
 </para>
 
 </para>
@@ -609,23 +605,6 @@ servers.
 </para>
 
 </sect2>
-</sect1>
-
-<sect1>
-<title>SWAT View Page Displays Incorrectly</title>
-
-<para>
-When <parameter>display charset</parameter> and <parameter>dos charset</parameter> parameters
-are different, the view page will not display correctly. Currently the 
-<parameter>display charset</parameter> parameter must use the same encoding as that
-in which the msg file has been encoded. In Japanese this means that <parameter>display
-charset</parameter> must be set to <parameter>CP932</parameter>.
-</para>
-
-<para>
-Setting <parameter>unix charset = EUCJP-MS</parameter> will cause this problem to occur.
-</para>
-
 </sect1>
 
 </chapter>
