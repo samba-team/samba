@@ -158,7 +158,7 @@ void session_yield(user_struct *vuser)
 {
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
-	struct in_addr client_ip;
+	struct in_addr *client_ip;
 	TDB_DATA key;
 
 	if (!tdb) return;
@@ -177,14 +177,14 @@ void session_yield(user_struct *vuser)
 
 	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
 
-	inet_pton(AF_INET, sessionid.ip_addr, &client_ip);
+	client_ip = interpret_addr2(sessionid.ip_addr);
 
 	SAFE_FREE(dbuf.dptr);
 
 #if WITH_UTMP	
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
-			       &client_ip,
+			       client_ip,
 			       sessionid.id_str, sessionid.id_num);
 	}
 #endif
