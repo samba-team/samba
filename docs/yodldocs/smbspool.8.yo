@@ -1,4 +1,4 @@
-mailto(samba-bugs@samba.org) 
+mailto(samba@samba.org) 
 
 manpage(smbspool htmlcommand((1)))(1)(11 October 1999)(Samba)(SAMBA)
 
@@ -82,7 +82,7 @@ manpageauthor()
 smbspool was written by Michael Sweet at Easy Software Products.
 
 The original Samba software and related utilities were created by
-Andrew Tridgell samba-bugs@samba.org. Samba is now developed
+Andrew Tridgell samba@samba.org. Samba is now developed
 by the Samba Team as an Open Source project similar to the way the
 Linux kernel is developed.
 
