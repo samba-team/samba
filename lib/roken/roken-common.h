@@ -274,7 +274,7 @@ ssize_t ROKEN_LIB_FUNCTION ewrite (int fd, const void *buf, size_t nbytes);
 
 struct hostent;
 
-char *
+const char *
 hostent_find_fqdn (const struct hostent *he);
 
 void
