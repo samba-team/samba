@@ -44,26 +44,20 @@ void gtk_select_domain_dialog_init (GtkSelectDomainDialog *select_domain_dialog)
 	gtk_window_set_title (GTK_WINDOW (select_domain_dialog), "Select Domain");
 
 	dialog_vbox1 = GTK_DIALOG (select_domain_dialog)->vbox;
-	gtk_widget_show (dialog_vbox1);
 
 	hbox1 = gtk_hbox_new (FALSE, 0);
-	gtk_widget_show (hbox1);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), hbox1, TRUE, TRUE, 0);
 
 	label1 = gtk_label_new ("Domain:");
-	gtk_widget_show (label1);
 	gtk_box_pack_start (GTK_BOX (hbox1), label1, FALSE, FALSE, 0);
 
 	select_domain_dialog->entry_domain = gtk_entry_new ();
-	gtk_widget_show (select_domain_dialog->entry_domain);
 	gtk_box_pack_start (GTK_BOX (hbox1), select_domain_dialog->entry_domain, TRUE, TRUE, 0);
 
 	scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow1);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox1), scrolledwindow1, TRUE, TRUE, 0);
 
 	select_domain_dialog->list_domains = gtk_tree_view_new ();
-	gtk_widget_show (select_domain_dialog->list_domains);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow1), select_domain_dialog->list_domains);
 
 	curcol = gtk_tree_view_column_new ();
@@ -78,17 +72,15 @@ void gtk_select_domain_dialog_init (GtkSelectDomainDialog *select_domain_dialog)
 	g_object_unref(select_domain_dialog->store_domains);
 
 	dialog_action_area1 = GTK_DIALOG (select_domain_dialog)->action_area;
-	gtk_widget_show (dialog_action_area1);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area1), GTK_BUTTONBOX_END);
 
 	cancelbutton1 = gtk_button_new_from_stock ("gtk-cancel");
-	gtk_widget_show (cancelbutton1);
 	gtk_dialog_add_action_widget (GTK_DIALOG (select_domain_dialog), cancelbutton1, GTK_RESPONSE_CANCEL);
 	GTK_WIDGET_SET_FLAGS (cancelbutton1, GTK_CAN_DEFAULT);
 
 	okbutton1 = gtk_button_new_from_stock ("gtk-ok");
-	gtk_widget_show (okbutton1);
 	gtk_dialog_add_action_widget (GTK_DIALOG (select_domain_dialog), okbutton1, GTK_RESPONSE_OK);
+	gtk_widget_show_all(dialog_vbox1);
 	GTK_WIDGET_SET_FLAGS (okbutton1, GTK_CAN_DEFAULT);
 }
 
@@ -203,26 +195,20 @@ void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
 	gtk_window_set_title (GTK_WINDOW (select_host_dialog), "Select Host");
 
 	dialog_vbox2 = GTK_DIALOG (select_host_dialog)->vbox;
-	gtk_widget_show (dialog_vbox2);
 
 	hbox2 = gtk_hbox_new (FALSE, 0);
-	gtk_widget_show (hbox2);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox2), hbox2, TRUE, TRUE, 0);
 
 	label2 = gtk_label_new ("Host");
-	gtk_widget_show (label2);
 	gtk_box_pack_start (GTK_BOX (hbox2), label2, FALSE, FALSE, 0);
 
 	select_host_dialog->entry_host = gtk_entry_new ();
-	gtk_widget_show (select_host_dialog->entry_host);
 	gtk_box_pack_start (GTK_BOX (hbox2), select_host_dialog->entry_host, TRUE, TRUE, 0);
 
 	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow2);
 	gtk_box_pack_start (GTK_BOX (dialog_vbox2), scrolledwindow2, TRUE, TRUE, 0);
 
 	select_host_dialog->tree_host = gtk_tree_view_new ();
-	gtk_widget_show (select_host_dialog->tree_host);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow2), select_host_dialog->tree_host);
 
 	select_host_dialog->store_host = gtk_tree_store_new(1, G_TYPE_STRING);
@@ -230,16 +216,14 @@ void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
 	g_object_unref(select_host_dialog->store_host); 
 
 	dialog_action_area2 = GTK_DIALOG (select_host_dialog)->action_area;
-	gtk_widget_show (dialog_action_area2);
 	gtk_button_box_set_layout (GTK_BUTTON_BOX (dialog_action_area2), GTK_BUTTONBOX_END);
 
 	cancelbutton2 = gtk_button_new_from_stock ("gtk-cancel");
-	gtk_widget_show (cancelbutton2);
 	gtk_dialog_add_action_widget (GTK_DIALOG (select_host_dialog), cancelbutton2, GTK_RESPONSE_CANCEL);
 	GTK_WIDGET_SET_FLAGS (cancelbutton2, GTK_CAN_DEFAULT);
 
 	okbutton2 = gtk_button_new_from_stock ("gtk-ok");
-	gtk_widget_show (okbutton2);
+	gtk_widget_show_all (dialog_vbox2);
 	gtk_dialog_add_action_widget (GTK_DIALOG (select_host_dialog), okbutton2, GTK_RESPONSE_OK);
 	GTK_WIDGET_SET_FLAGS (okbutton2, GTK_CAN_DEFAULT);
 }

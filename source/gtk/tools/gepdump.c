@@ -22,6 +22,14 @@
 #include "includes.h"
 #include "gtk/common/gtk-smb.h"
 
+/* 
+ * Show: 
+ *  - RPC statistics
+ *  - Available interfaces
+ *   - Per interface: available endpoints
+ *   - Per interface auth details
+ */
+
 static GtkWidget *mainwin;
 static GtkWidget *entry_binding;
 static GtkTreeStore *store_eps;
@@ -171,6 +179,7 @@ static GtkWidget* create_mainwindow (void)
 {
   GtkWidget *mainwindow;
   GtkWidget *vbox1;
+  GtkWidget *vbox2;
   GtkWidget *menubar1;
   GtkWidget *menuitem1;
   GtkWidget *menuitem1_menu;
@@ -180,10 +189,12 @@ static GtkWidget* create_mainwindow (void)
   GtkWidget *about1;
   GtkWidget *handlebox1;
   GtkWidget *hbox1;
+  GtkWidget *hbox2;
   GtkWidget *label1;
   GtkWidget *btn_select_target;
   GtkWidget *btn_dump;
   GtkWidget *scrolledwindow1;
+  GtkWidget *frame1;
   GtkWidget *tree_eps;
   GtkTreeViewColumn *curcol;
   GtkCellRenderer *renderer;
@@ -211,49 +222,42 @@ static GtkWidget* create_mainwindow (void)
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
 
   quit1 = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
-  gtk_widget_show (quit1);
   gtk_container_add (GTK_CONTAINER (menuitem1_menu), quit1);
 
   menuitem4 = gtk_menu_item_new_with_mnemonic ("_Help");
-  gtk_widget_show (menuitem4);
   gtk_container_add (GTK_CONTAINER (menubar1), menuitem4);
 
   menuitem4_menu = gtk_menu_new ();
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem4), menuitem4_menu);
 
   about1 = gtk_menu_item_new_with_mnemonic ("_About");
-  gtk_widget_show (about1);
   gtk_container_add (GTK_CONTAINER (menuitem4_menu), about1);
 
   handlebox1 = gtk_handle_box_new ();
-  gtk_widget_show (handlebox1);
   gtk_box_pack_start (GTK_BOX (vbox1), handlebox1, FALSE, TRUE, 0);
 
   hbox1 = gtk_hbox_new (FALSE, 0);
-  gtk_widget_show (hbox1);
   gtk_container_add (GTK_CONTAINER (handlebox1), hbox1);
 
   label1 = gtk_label_new ("Location:");
-  gtk_widget_show (label1);
   gtk_box_pack_start (GTK_BOX (hbox1), label1, FALSE, FALSE, 0);
 
   entry_binding = gtk_entry_new ();
   gtk_entry_set_text(GTK_ENTRY(entry_binding), "ncalrpc:");
-  gtk_widget_show (entry_binding);
   gtk_box_pack_start (GTK_BOX (hbox1), entry_binding, FALSE, FALSE, 0);
 
   btn_select_target = gtk_button_new_with_mnemonic ("_Select Target");
-  gtk_widget_show (btn_select_target);
   gtk_box_pack_start (GTK_BOX (hbox1), btn_select_target, FALSE, FALSE, 0);
 
   btn_dump = gtk_button_new_with_mnemonic ("_Dump");
-  gtk_widget_show (btn_dump);
   gtk_box_pack_start (GTK_BOX (hbox1), btn_dump, FALSE, FALSE, 0);
 
-  scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-  gtk_widget_show (scrolledwindow1);
-  gtk_box_pack_start (GTK_BOX (vbox1), scrolledwindow1, TRUE, TRUE, 0);
+  hbox2 = gtk_hbox_new (FALSE, 0);
+  gtk_container_add (GTK_CONTAINER (vbox1), hbox2);
 
+  scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
+  gtk_box_pack_start (GTK_BOX(hbox2), scrolledwindow1, TRUE, TRUE, 0);
+  
   tree_eps = gtk_tree_view_new ();
 
   curcol = gtk_tree_view_column_new ();
@@ -277,11 +281,21 @@ static GtkWidget* create_mainwindow (void)
   gtk_tree_view_set_model(GTK_TREE_VIEW(tree_eps), GTK_TREE_MODEL(store_eps));
   g_object_unref(store_eps);
   
-  gtk_widget_show (tree_eps);
   gtk_container_add (GTK_CONTAINER (scrolledwindow1), tree_eps);
 
+  vbox2 = gtk_vbox_new (FALSE, 0);
+  gtk_container_add (GTK_CONTAINER (hbox2), vbox2);
+
+  frame1 = gtk_frame_new("Interface");
+  gtk_container_add (GTK_CONTAINER(vbox2), frame1);
+
+  frame1 = gtk_frame_new("Statistics");
+  gtk_container_add (GTK_CONTAINER(vbox2), frame1);
+
+  frame1 = gtk_frame_new("Authentication");
+  gtk_container_add (GTK_CONTAINER(vbox2), frame1);
+
   statusbar = gtk_statusbar_new ();
-  gtk_widget_show (statusbar);
   gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
 
   g_signal_connect ((gpointer) quit1, "activate",
@@ -310,7 +324,7 @@ static GtkWidget* create_mainwindow (void)
     load_interfaces();
     setup_logging("gepdump", True);
 	mainwin = create_mainwindow();
-	gtk_widget_show(mainwin);
+	gtk_widget_show_all(mainwin);
 	gtk_main();
 	return 0;
 }

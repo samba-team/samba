@@ -265,45 +265,36 @@ create_mainwindow (void)
 	gtk_window_set_title (GTK_WINDOW (mainwin), "User Manager");
 
 	vbox1 = gtk_vbox_new (FALSE, 0);
-	gtk_widget_show (vbox1);
 	gtk_container_add (GTK_CONTAINER (mainwin), vbox1);
 
 	menubar = gtk_menu_bar_new ();
-	gtk_widget_show (menubar);
 	gtk_box_pack_start (GTK_BOX (vbox1), menubar, FALSE, FALSE, 0);
 
 	menuitem1 = gtk_menu_item_new_with_mnemonic ("_File");
-	gtk_widget_show (menuitem1);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem1);
 
 	menuitem1_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
 
 	mnu_connect = gtk_menu_item_new_with_mnemonic ("_Connect");
-	gtk_widget_show (mnu_connect);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), mnu_connect);
 
 	mnu_disconnect = gtk_menu_item_new_with_mnemonic ("_Disconnect");
-	gtk_widget_show (mnu_disconnect);
 	gtk_widget_set_sensitive (mnu_disconnect, FALSE);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), mnu_disconnect);
 
 	seldomain = gtk_menu_item_new_with_mnemonic("_Select Domain");
-	gtk_widget_show(seldomain);
 	gtk_widget_set_sensitive (seldomain, FALSE);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), seldomain);
 
 	separatormenuitem1 = gtk_separator_menu_item_new ();
-	gtk_widget_show (separatormenuitem1);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), separatormenuitem1);
 	gtk_widget_set_sensitive (separatormenuitem1, FALSE);
 
 	quit = gtk_image_menu_item_new_from_stock ("gtk-quit", accel_group);
-	gtk_widget_show (quit);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), quit);
 
 	menuitem1 = gtk_menu_item_new_with_mnemonic ("_User");
-	gtk_widget_show (menuitem1);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem1);
 	gtk_widget_set_sensitive (menuitem1, FALSE);
 
@@ -311,13 +302,11 @@ create_mainwindow (void)
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem1), menuitem1_menu);
 
 	new1 = gtk_image_menu_item_new_from_stock ("gtk-new", accel_group);
-	gtk_widget_show (new1);
 	gtk_container_add (GTK_CONTAINER (menuitem1_menu), new1);
 
 
 
 	policies = gtk_menu_item_new_with_mnemonic ("_Policies");
-	gtk_widget_show (policies);
 	gtk_container_add (GTK_CONTAINER (menubar), policies);
 	gtk_widget_set_sensitive (policies, FALSE);
 
@@ -325,71 +314,56 @@ create_mainwindow (void)
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (policies), policies_menu);
 
 	account = gtk_menu_item_new_with_mnemonic ("_Account...");
-	gtk_widget_show (account);
 	gtk_container_add (GTK_CONTAINER (policies_menu), account);
 
 	user_rights = gtk_menu_item_new_with_mnemonic ("_User Rights...");
-	gtk_widget_show (user_rights);
 	gtk_container_add (GTK_CONTAINER (policies_menu), user_rights);
 
 	audit = gtk_menu_item_new_with_mnemonic ("A_udit...");
-	gtk_widget_show (audit);
 	gtk_container_add (GTK_CONTAINER (policies_menu), audit);
 
 	separator1 = gtk_separator_menu_item_new ();
-	gtk_widget_show (separator1);
 	gtk_container_add (GTK_CONTAINER (policies_menu), separator1);
 	gtk_widget_set_sensitive (separator1, FALSE);
 
 	trust_relations = gtk_menu_item_new_with_mnemonic ("_Trust relations");
-	gtk_widget_show (trust_relations);
 	gtk_container_add (GTK_CONTAINER (policies_menu), trust_relations);
 
 	menuitem3 = gtk_menu_item_new_with_mnemonic ("_View");
-	gtk_widget_show (menuitem3);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem3);
 
 	menuitem3_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem3), menuitem3_menu);
 
 	refresh = gtk_image_menu_item_new_from_stock ("gtk-refresh", accel_group);
-	gtk_widget_show (refresh);
 	gtk_container_add (GTK_CONTAINER (menuitem3_menu), refresh);
 	gtk_widget_set_sensitive (refresh, FALSE);
 
 	menuitem4 = gtk_menu_item_new_with_mnemonic ("_Help");
-	gtk_widget_show (menuitem4);
 	gtk_container_add (GTK_CONTAINER (menubar), menuitem4);
 
 	menuitem4_menu = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem4), menuitem4_menu);
 
 	about = gtk_menu_item_new_with_mnemonic ("_About");
-	gtk_widget_show (about);
 	gtk_container_add (GTK_CONTAINER (menuitem4_menu), about);
 
 	vpaned = gtk_vpaned_new ();
-	gtk_widget_show (vpaned);
 	gtk_box_pack_start (GTK_BOX (vbox1), vpaned, TRUE, TRUE, 0);
 
 	scrolledwindow1 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow1);
 	gtk_paned_pack1 (GTK_PANED (vpaned), scrolledwindow1, FALSE, TRUE);
 
 	user_list = gtk_tree_view_new ();
-	gtk_widget_show (user_list);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow1), user_list);
 
 	scrolledwindow2 = gtk_scrolled_window_new (NULL, NULL);
-	gtk_widget_show (scrolledwindow2);
 	gtk_paned_pack2 (GTK_PANED (vpaned), scrolledwindow2, TRUE, TRUE);
 
 	group_list = gtk_tree_view_new ();
-	gtk_widget_show (group_list);
 	gtk_container_add (GTK_CONTAINER (scrolledwindow2), group_list);
 
 	statusbar = gtk_statusbar_new ();
-	gtk_widget_show (statusbar);
 	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
 
 	g_signal_connect ((gpointer) new1, "activate",
@@ -442,7 +416,7 @@ create_mainwindow (void)
 	gtk_init(&argc, &argv);
 	mainwin = create_mainwindow();
 	connect_sam();
-	gtk_widget_show(mainwin);
+	gtk_widget_show_all(mainwin);
 	gtk_main();
 
 	return 0;
