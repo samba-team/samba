@@ -1,3 +1,8 @@
+2002-02-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/context.c (krb5_get_err_text): protect against NULL
+	context
+
 2002-02-11  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin/ktutil.c: no need to use the "modify" keytab anymore
