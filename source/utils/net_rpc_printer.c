@@ -369,13 +369,14 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 
 	while (is_file) {
 
-		int n = cli_read(cli_share_src, fnum_src, data, nread + start, 
+		int n, ret;
+		n = cli_read(cli_share_src, fnum_src, data, nread + start, 
 				read_size);
 
 		if (n <= 0)
 			break;
 
-		int ret = cli_write(cli_share_dst, fnum_dst, 0, data, 
+		ret = cli_write(cli_share_dst, fnum_dst, 0, data, 
 			nread + start, n);
 
                 if (n != ret) {
