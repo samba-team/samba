@@ -1946,7 +1946,7 @@ static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	struct samr_CryptPassword *pwbuf = r->in.password;
 	void *sam_ctx;
 	const char *user_dn, *domain_dn;
-	int ret;
+	int ret, i;
 	struct ldb_message **res, mod;
 	const char * const attrs[] = { "objectSid", "lmPwdHash", NULL };
 	const char *domain_sid;
@@ -2025,6 +2025,11 @@ static NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, 
 	if (!NT_STATUS_IS_OK(status)) {
 		samdb_close(sam_ctx);
 		return status;
+	}
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<mod.num_elements;i++) {
+		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/* modify the samdb record */
