@@ -29,6 +29,7 @@
 #include <sys/filio.h>
 #endif
 #include <des.h>
+#include <md5.h>
 
 #include <krb5.h>
 #include <krb5_err.h>
