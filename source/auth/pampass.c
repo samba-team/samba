@@ -350,10 +350,16 @@ static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, 
 /*
  * PAM Externally accessible Session handler
  */
+
 BOOL smb_pam_session(BOOL flag, const char *in_user, char *tty, char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	char * user;
+
+	/* Ignore PAM if told to. */
+
+	if (!lp_obey_pam_restrictions())
+		return True;
 
 	user = strdup(in_user);
 	if ( user == NULL ) {
@@ -382,6 +388,11 @@ BOOL smb_pam_accountcheck(char * user)
 	PAM_username = user;
 	PAM_password = NULL;
 
+	/* Ignore PAM if told to. */
+
+	if (!lp_obey_pam_restrictions())
+		return True;
+
 	if( smb_pam_start(&pamh, user, NULL)) {
 		if ( smb_pam_account(pamh, user, NULL, False)) {
 			return( smb_pam_end(pamh));
@@ -400,6 +411,12 @@ BOOL smb_pam_passcheck(char * user, char * password)
 
 	PAM_username = user;
 	PAM_password = password;
+
+	/*
+	 * Note we can't ignore PAM here as this is the only
+	 * way of doing auths on plaintext passwords when
+	 * compiled --with-pam.
+	 */
 
 	if( smb_pam_start(&pamh, user, NULL)) {
 		if ( smb_pam_auth(pamh, user, password)) {
