@@ -537,6 +537,17 @@ out_free:
 
 	setlinebuf(stdout);
 
+	/* the following functions are part of the Samba debugging
+	   facilities.  See lib/debug.c */
+	setup_logging("rpcclient", interactive);
+	if (!interactive) 
+		reopen_logs();
+	
+	/* Load smb.conf file */
+
+	if (!lp_load(dyn_CONFIGFILE,True,False,False))
+		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
+
 	/* Parse options */
 
 	pc = poptGetContext("rpcclient", argc, (const char **) argv,
@@ -570,17 +581,6 @@ out_free:
 	}
 
 	poptFreeContext(pc);
-
-	/* the following functions are part of the Samba debugging
-	   facilities.  See lib/debug.c */
-	setup_logging("rpcclient", interactive);
-	if (!interactive) 
-		reopen_logs();
-	
-	/* Load smb.conf file */
-
-	if (!lp_load(dyn_CONFIGFILE,True,False,False))
-		fprintf(stderr, "Can't load %s\n", dyn_CONFIGFILE);
 
 	load_interfaces();
 
