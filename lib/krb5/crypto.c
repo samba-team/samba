@@ -94,8 +94,8 @@ struct key_type {
     void (*random_to_key)(krb5_context, krb5_keyblock*, const void*, size_t);
     krb5_error_code (*get_params)(krb5_context, const krb5_data *,
 				  void **, krb5_data *);
-    krb5_error_code (*set_params)(krb5_context, void *, const krb5_data *,
-				  krb5_data *);
+    krb5_error_code (*set_params)(krb5_context, const void *,
+				  const krb5_data *, krb5_data *);
 };
 
 struct checksum_type {
@@ -800,6 +800,48 @@ rc2_get_params(krb5_context context,
     return ret;
 }
 
+static krb5_error_code
+rc2_set_params(krb5_context context,
+	       const void *params,
+	       const krb5_data *ivec,
+	       krb5_data *data)
+{
+    RC2CBCParameter rc2params;
+    const struct _RC2_params *p = params;
+    int maximum_effective_key = 128;
+    krb5_error_code ret;
+    size_t size;
+
+    memset(&rc2params, 0, sizeof(rc2params));
+
+    if (p)
+	maximum_effective_key = p->maximum_effective_key;
+
+    /* XXX */
+    switch(maximum_effective_key) {
+    case 40:
+	rc2params.rc2ParameterVersion = 160;
+	break;
+    case 64:
+	rc2params.rc2ParameterVersion = 120;
+	break;
+    case 128:
+	rc2params.rc2ParameterVersion = 58;
+	break;
+    }
+    ret = copy_octet_string(ivec, &rc2params.iv);
+    if (ret)
+	return ret;
+
+    ASN1_MALLOC_ENCODE(RC2CBCParameter, data->data, data->length,
+		       &rc2params, &size, ret);
+    if (ret == 0 && size != data->length)
+	krb5_abortx(context, "Internal asn1 encoder failure");
+    free_RC2CBCParameter(&rc2params);
+
+    return ret;
+}
+
 static void
 rc2_schedule(krb5_context context,
 	     struct key_data *kd,
@@ -939,7 +981,8 @@ struct key_type keytype_rc2 = {
     rc2_schedule,
     NULL, /* XXX salt */
     NULL,
-    rc2_get_params
+    rc2_get_params,
+    rc2_set_params
 };
 
 struct key_type *keytypes[] = {
@@ -4051,7 +4094,8 @@ krb5_crypto_set_params(krb5_context context,
 		       const krb5_data *ivec,
 		       krb5_data *params)
 {
-    krb5_error_code (*sp)(krb5_context, void *,const krb5_data *,krb5_data *);
+    krb5_error_code (*sp)(krb5_context, const void *,
+			  const krb5_data *, krb5_data *);
     krb5_error_code ret;
 
     sp = crypto->et->keytype->set_params;
