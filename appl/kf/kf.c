@@ -117,7 +117,6 @@ proto (int sock, const char *hostname, const char *service)
     struct sockaddr_in remote, local;
     int addrlen;
     krb5_address remote_addr, local_addr;
-    krb5_context context;
     krb5_auth_context auth_context;
     krb5_error_code status;
     krb5_principal server;
