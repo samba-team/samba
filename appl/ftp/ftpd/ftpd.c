@@ -731,7 +731,7 @@ show_issue(int code)
     if(f){
 	while(fgets(buf, sizeof(buf), f)){
 	    buf[strcspn(buf, "\r\n")] = '\0';
-	    lreply(code, buf, strlen(buf));
+	    lreply(code, "%s", buf);
 	}
 	fclose(f);
     }
