@@ -416,8 +416,10 @@ common_init(krb5_context context,
     if((kd = calloc(1, sizeof(*kd))) == NULL)
 	return NULL;
 
-    if((kd->realm = strdup(realm)) == NULL)
+    if((kd->realm = strdup(realm)) == NULL) {
+	free(kd);
 	return NULL;
+    }
 
     kd->end = kd->index = &kd->hosts;
     return kd;
@@ -579,28 +581,3 @@ krb5_free_krbhst (krb5_context context,
     free (hostlist);
     return 0;
 }
-
-
-#define TEST
-#ifdef TEST
-int main(int argc, char **argv)
-{
-    int i;
-    krb5_context context;
-    krb5_init_context (&context);
-    
-    for(i = 1; i < argc; i++) {
-	krb5_krbhst_handle handle;
-	char host[MAXHOSTNAMELEN];
-	krb5_krbhst_init(context, argv[i], KRB5_KRBHST_KDC, &handle);
-	while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0)
-	    printf("%s\n", host);
-	krb5_krbhst_reset(context, handle);
-	printf("----\n");
-	while(krb5_krbhst_next_as_string(context, handle, host, sizeof(host)) == 0)
-	    printf("%s\n", host);
-	krb5_krbhst_free(context, handle);
-    }
-    return 0;
-}
-#endif
