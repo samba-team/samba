@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -112,27 +112,26 @@ static int verbose_flag;
 static int mutual_flag = 1;
 static int delegate_flag;
 static char *port_str = "http";
-static char *service = "HTTP";
-static char *gss_mech = "SPNEGO";
+static char *gss_service = "HTTP";
 
-static struct getargs args[] = {
+static struct getargs http_args[] = {
     { "verbose", 'v', arg_flag, &verbose_flag, "verbose logging", },
     { "port", 'p', arg_string, &port_str, "port to connect to", "port" },
     { "delegate", 0, arg_flag, &delegate_flag, "gssapi delegate credential" },
-    { "gss-service", 's', arg_string, &service, "gssapi service to use",
+    { "gss-service", 's', arg_string, &gss_service, "gssapi service to use",
       "service" },
-    { "mech", 'm', arg_string, &gss_mech, "gssapi mech to use", "mech" },
+    { "mech", 'm', arg_string, &mech, "gssapi mech to use", "mech" },
     { "mutual", 0, arg_negative_flag, &mutual_flag, "no gssapi mutual auth" },
     { "help", 'h', arg_flag, &help_flag },
     { "version", 0, arg_flag, &version_flag }
 };
 
-static int num_args = sizeof(args) / sizeof(args[0]);
+static int num_http_args = sizeof(http_args) / sizeof(http_args[0]);
 
 static void
 usage(int code)
 {
-    arg_printusage(args, num_args, NULL, "host [page]");
+    arg_printusage(http_args, num_http_args, NULL, "host [page]");
     exit(code);
 }
 
@@ -290,10 +289,12 @@ main(int argc, char **argv)
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
     gss_name_t server = GSS_C_NO_NAME;
     int optind = 0;
-    gss_OID mech;
+    gss_OID mech_oid;
     OM_uint32 flags;
 
-    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    setprogname(argv[0]);
+
+    if(getarg(http_args, num_http_args, argc, argv, &optind))
 	usage(1);
 
     if (help_flag)
@@ -307,7 +308,7 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-    mech = select_mech(gss_mech);
+    mech_oid = select_mech(mech);
 
     if (argc != 1 && argc != 2)
 	errx(1, "usage: %s host [page]", getprogname());
@@ -358,7 +359,7 @@ main(int argc, char **argv)
 		
 		if (server == GSS_C_NO_NAME) {
 		    char *name;
-		    asprintf(&name, "%s@%s", service, host);
+		    asprintf(&name, "%s@%s", gss_service, host);
 		    input_token.length = strlen(name);
 		    input_token.value = name;
 
@@ -399,7 +400,7 @@ main(int argc, char **argv)
 					 GSS_C_NO_CREDENTIAL,
 					 &context_hdl,
 					 server,
-					 mech,
+					 mech_oid,
 					 flags,
 					 0,
 					 GSS_C_NO_CHANNEL_BINDINGS,
@@ -419,7 +420,7 @@ main(int argc, char **argv)
 
 		    gssapi_done = 1;
 
-		    printf("Negotiate done: %s\n", gss_mech);
+		    printf("Negotiate done: %s\n", mech);
 
 		    maj_stat = gss_inquire_context(&min_stat,
 						   context_hdl,
