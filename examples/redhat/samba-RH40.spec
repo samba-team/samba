@@ -1,10 +1,10 @@
 Summary: SMB client and server
 Name: samba
-Version: 1.9.17a1
+Version: RH303-1.9.17a3
 Release: 1
 Copyright: GPL
 Group: Networking
-Source: ftp://samba.anu.edu.au/pub/samba/samba-1.9.17a1.tar.gz
+Source: ftp://samba.anu.edu.au/pub/samba/samba-latest.tar.gz
 Patch: samba-make.patch
 Patch2: samba-axp.patch
 Packager: John H Terpstra [Samba-Team] <jht@aquasoft.com.au>
@@ -37,43 +37,32 @@ cd source
 cd ..
 for i in nmblookup smbclient smbpasswd smbrun smbstatus testparm testprns
 do
-install -m755 -s source/$i /usr/bin
-%attr(-,0,0) /usr/bin/$i
+install -m755 -s -g0 -o0 source/$i /usr/bin
 done
 
 for i in addtosmbpass mksmbpasswd.sh smbtar 
 do
-install -m755 source/$i /usr/bin
-%attr(-,0,0) /usr/bin/$i
+install -m755 -g0 -o0 source/$i /usr/bin
 done
 
 for i in smbd nmbd
 do
-install -m755 -s source/$i /usr/sbin
-%attr(-,0,0) /usr/bin/$i
+install -m755 -s -g0 -o0 source/$i /usr/sbin
 done
 
 for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1
 do
-install -m644 docs/$i /usr/man/man1
-%attr(-,0,0) /usr/bin/$i
+install -m644 -g0 -o0 docs/$i /usr/man/man1
 done
 
-install -m644 docs/smb.conf.5 /usr/man/man5
-%attr(-,0,0) /usr/man/man5/smb.conf.5
-install -m644 docs/samba.7 /usr/man/man7
-%attr(-,0,0) /usr/man/man7/samba.7
-install -m644 docs/smbd.8 /usr/man/man8
-%attr(-,0,0) /usr/man/man8/smbd.8
-install -m644 docs/nmbd.8 /usr/man/man8
-%attr(-,0,0) /usr/man/man8/nmbd.8
-install -m644 examples/simple/smb.conf /etc/smb.conf.sampl
-install -m644 examples/redhat/smb.conf /etc/smb.conf
-%attr(-,0,0) /etc/smb.conf
-install -m644 examples/printing/smbprint /usr/bin
-%attr(-,0,0) /usr/bin/smbprint
-install -m755 examples/redhat/smb.init /etc/rc.d/init.d/smb
-%attr(-,0,0) /etc/rc.d/init.d/smb
+install -m644 -g0 -o0 docs/smb.conf.5 /usr/man/man5
+install -m644 -g0 -o0 docs/samba.7 /usr/man/man7
+install -m644 -g0 -o0 docs/smbd.8 /usr/man/man8
+install -m644 -g0 -o0 docs/nmbd.8 /usr/man/man8
+install -m644 -g0 -o0 examples/simple/smb.conf /etc/smb.conf.sampl
+install -m644 -g0 -o0 examples/redhat/smb.conf /etc/smb.conf
+install -m644 -g0 -o0 examples/redhat/smbprint /usr/bin
+install -m755 -g0 -o0 examples/redhat/smb.init /etc/rc.d/init.d/smb
 ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc3.d/S91smb
 ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc0.d/K35smb
 ln -sf /etc/rc.d/init.d/smb /etc/rc.d/rc6.d/K35smb
@@ -82,8 +71,7 @@ mkdir -p /home/samba
 mkdir -p /var/lock/samba
 chown root.nobody /home/samba
 chmod 775 /home/samba
-install -m 644 examples/redhat/samba.log /etc/logrotate.d/samba
-%attr(-,0,0) /etc/logrotate.d/samba
+install -m 644 -g0 -o0 examples/redhat/samba.log /etc/logrotate.d/samba
 
 %post
 /sbin/pamconfig --add --service=samba --password=none --sesslist=none
