@@ -1,8 +1,6 @@
-1999-04-28  Assar Westerlund  <assar@hella.pdc.kth.se>
+Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.1e
-
-Wed Apr 28 00:21:17 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/mcache.c (mcc_get_next): get the current cursor
  	correctly
