@@ -180,8 +180,6 @@ static BOOL leave_domain_bdc(TALLOC_CTX *mem_ctx)
 	struct samr_DeleteUser d;
 	NTSTATUS status;
 
-	return True;
-
 	d.in.handle = &join.acct_handle;
 	d.out.handle = &join.acct_handle;
 
@@ -1065,6 +1063,11 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	}
 
 	join.machine_password = password;
+
+	if (!test_SetupCredentials(p, mem_ctx, &creds)) {
+		printf("ServerPasswordSet failed to actually change the password\n");
+		return False;
+	}
 
 	return True;
 }
