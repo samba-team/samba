@@ -790,6 +790,11 @@ pass(char *passwd)
 #endif
 		else if((auth_level & AUTH_OTP) == 0) {
 #ifdef KRB4
+
+#ifndef KRB_VERIFY_SECURE
+#define KRB_VERIFY_SECURE 1
+#endif
+
 		    char realm[REALM_SZ];
 		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
 			rval = krb_verify_user(pw->pw_name,
