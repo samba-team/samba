@@ -61,12 +61,12 @@ static void ncacn_np_shutdown(struct ncacn_np *cli)
 BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 				   const char *srv_name,
 				   const struct ntuser_creds *ntc,
-				   const char *pipe_name, BOOL redir,
+				   const char *pipe_name, 
 				   BOOL reuse)
 {
 	BOOL new_smb_conn;
-	cli->smb = cli_net_use_add(srv_name, ntc, redir, reuse,
-				   &new_smb_conn);
+	cli->smb = cli_net_use_add(srv_name, ntc, 
+				   True, &new_smb_conn);
 	if (cli->smb == NULL)
 	{
 		return False;
@@ -331,12 +331,10 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 				  const vuser_key * key,
 				  const char *srv_name,
 				  const struct ntuser_creds *ntc,
-				  BOOL redir,
 				  BOOL reuse, BOOL *is_new_connection)
 {
 	struct ncacn_np_use *cli;
-	DEBUG(10, ("ncacn_np_use_add: %s redir: %s\n", pipe_name,
-		   BOOLSTR(redir)));
+	DEBUG(10, ("ncacn_np_use_add: %s\n", pipe_name));
 
 	(*is_new_connection) = False;
 	cli = ncacn_np_find(srv_name, pipe_name, key, ntc, reuse);
@@ -362,10 +360,9 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 	(*is_new_connection) = True;
 
 	cli = ncacn_np_use_get(pipe_name, key);
-	cli->cli->redirect = redir;
 
 	if (!ncacn_np_establish_connection
-	    (cli->cli, srv_name, ntc, pipe_name, redir, True))
+	    (cli->cli, srv_name, ntc, pipe_name, True))
 	{
 		DEBUG(0, ("ncacn_np_use_add: connection failed\n"));
 		cli->cli = NULL;

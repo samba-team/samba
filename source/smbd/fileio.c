@@ -96,6 +96,11 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
   ssize_t ret=0,readret;
 
+  /* you can't read from print files */
+  if (fsp->print_file) {
+	  return -1;
+  }
+
   /*
    * Serve from write cache if we can.
    */
@@ -153,6 +158,10 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
   write_cache *wcp = fsp->wcp;
   ssize_t total_written = 0;
   int write_path = -1; 
+
+  if (fsp->print_file) {
+	  return print_job_write(fsp->print_jobid, data, n);
+  }
 
   if (!fsp->can_write) {
     errno = EPERM;
@@ -561,7 +570,7 @@ void delete_write_cache(files_struct *fsp)
  Setup the write cache structure.
 ****************************************************************************/
 
-static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T filesize)
+static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 {
   ssize_t alloc_size = lp_write_cache_size(SNUM(fsp->conn));
   write_cache *wcp;
@@ -576,7 +585,7 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T filesize)
     return False;
   }
 
-  wcp->file_size = filesize;
+  wcp->file_size = file_size;
   wcp->offset = 0;
   wcp->alloc_size = alloc_size;
   wcp->data_size = 0;
@@ -597,11 +606,11 @@ static BOOL setup_write_cache(files_struct *fsp, SMB_OFF_T filesize)
  Cope with a size change.
 ****************************************************************************/
 
-void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T filesize)
+void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size)
 {
   if(fsp->wcp) {
     flush_write_cache(fsp, SIZECHANGE_FLUSH);
-    fsp->wcp->file_size = filesize;
+    fsp->wcp->file_size = file_size;
   }
 }
 

@@ -426,6 +426,14 @@ void become_root(BOOL save_dir);
 void unbecome_root(BOOL restore_dir);
 const vuser_key *get_sec_ctx(void);
 
+/*The following definitions come from  lib/substitute.c  */
+
+void standard_sub_basic(char *str);
+void standard_sub_advanced(int snum, const user_struct *vuser, char *user, char *connectpath, gid_t gid, char *str);
+void standard_sub(connection_struct *conn, const user_struct *vuser, char *str);
+void standard_sub_snum(int snum, char *str);
+void standard_sub_vuser(const user_struct * vuser, char *str);
+
 /*The following definitions come from  lib/surs.c  */
 
 BOOL surs_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id, BOOL create);
@@ -467,7 +475,6 @@ SMB_OFF_T sys_ftell(FILE *fp);
 int sys_creat(const char *path, mode_t mode);
 int sys_open(const char *path, int oflag, mode_t mode);
 FILE *sys_fopen(const char *path, const char *type);
-void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd, SMB_OFF_T offset);
 SMB_STRUCT_DIRENT *sys_readdir(DIR *dirp);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
@@ -492,8 +499,8 @@ DIR *wsys_opendir(const smb_ucs2_t *wfname);
 smb_ucs2_t *wsys_getwd(smb_ucs2_t *s);
 int wsys_chown(const smb_ucs2_t *wfname, uid_t uid, gid_t gid);
 int wsys_chroot(const smb_ucs2_t *wfname);
-FILE *sys_popen(const char *command, const char *mode, BOOL paranoid);
-int sys_pclose( FILE *fp);
+int sys_popen(const char *command);
+int sys_pclose(int fd);
 
 /*The following definitions come from  lib/talloc.c  */
 
@@ -531,6 +538,13 @@ char *ufc_crypt(char *key,char *salt);
 
 struct passwd *hashed_getpwnam(const char *name);
 char *uidtoname(uid_t uid);
+int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
+		   gid_t ** p_groups);
+BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
+void free_unix_grps(int ngroups, struct group *p_groups);
+char *gidtoname(gid_t gid);
+BOOL nametouid(const char *name, uid_t * uid);
+BOOL nametogid(const char *name, gid_t * gid);
 char *get_unixhome_dir(char *user);
 BOOL map_username(char *user);
 const struct passwd *Get_Pwnam(char *user,BOOL allow_change);
@@ -570,27 +584,17 @@ BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
-BOOL Memcpy(void *to, const void *from, size_t size);
 void *Realloc(void *p, size_t size);
+BOOL Memcpy(void *to, const void *from, size_t size);
 void safe_free(void *p);
 BOOL get_myname(char *my_name, struct in_addr *ip);
 int interpret_protocol(char *str, int def);
 uint32 interpret_addr(char *str);
 struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
-void standard_sub_basic(char *str);
-void standard_sub_vuser(const user_struct * vuser, char *str);
-void standard_sub(connection_struct * conn, user_struct * vuser, char *str);
 BOOL same_net(struct in_addr ip1, struct in_addr ip2, struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(pid_t pid);
-int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
-		   gid_t ** p_groups);
-BOOL get_unix_grps(int *p_ngroups, struct group **p_groups);
-void free_unix_grps(int ngroups, struct group *p_groups);
-char *gidtoname(gid_t gid);
-BOOL nametogid(const char *name, gid_t * gid);
-BOOL nametouid(const char *name, uid_t * uid);
 void smb_panic(char *why);
 char *readdirname(DIR * p);
 BOOL is_in_path(char *name, name_compare_entry * namelist);
@@ -611,7 +615,6 @@ void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
-char *get_trusted_serverlist(const char *domain);
 uint16 pwdb_acct_ctrl_from_ad(NTDS_USER_FLAG_ENUM adac);
 char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length);
 uint16 pwdb_decode_acct_ctrl(const char *p);
@@ -664,6 +667,11 @@ SMB_BIG_UINT get_lock_count(char *data, int data_offset,
 SMB_BIG_UINT get_lock_offset(char *data, int data_offset,
 			     BOOL large_file_format, BOOL *err);
 BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+BOOL file_modified(const char *filename, time_t *lastmodified);
+void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
+SMB_OFF_T get_file_size(char *file_name);
+void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth);
+void endfilepw_race_condition_avoid(void *vp, int *lock_depth);
 void *startfileent(char *pfile, char *s_readbuf, int bufsize,
 				int *file_lock_depth, BOOL update);
 void endfileent(void *vp, int *file_lock_depth);
@@ -671,11 +679,12 @@ SMB_BIG_UINT getfilepwpos(void *vp);
 BOOL setfilepwpos(void *vp, SMB_BIG_UINT tok);
 int getfileline(void *vp, char *linebuf, int linebuf_size);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
-BOOL file_modified(const char *filename, time_t *lastmodified);
-void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified);
-SMB_OFF_T get_file_size(char *file_name);
-void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth);
-void endfilepw_race_condition_avoid(void *vp, int *lock_depth);
+char *file_pload(char *syscmd, size_t *size);
+char *file_load(char *fname, size_t *size);
+char **file_lines_load(char *fname, int *numlines);
+char **file_lines_pload(char *syscmd, int *numlines);
+void file_lines_free(char **lines);
+void file_lines_slashcont(char **lines);
 
 /*The following definitions come from  lib/util_hnd.c  */
 
@@ -967,6 +976,15 @@ BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
 BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
 BOOL vuid_init_db(void);
 
+/*The following definitions come from  libsmb/clidomain.c  */
+
+char *get_trusted_serverlist(const char *domain);
+BOOL cli_connect_servers_auth(struct cli_state *cli,
+				char *p,
+				const struct ntuser_creds *usr);
+BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
+BOOL get_any_dc_name(const char *domain, char *srv_name);
+
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
@@ -992,7 +1010,7 @@ BOOL cli_api(struct cli_state *cli,
 	     char **rparam, int *rprcnt,
 	     char **rdata, int *rdrcnt);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
+int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, const char *));
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(const char *, uint32, const char *));
 BOOL cli_session_setup_x(struct cli_state *cli, 
@@ -1017,8 +1035,9 @@ int cli_nt_create(struct cli_state *cli, const char *fname);
 int cli_open(struct cli_state *cli, const char *fname,
 				int flags, int share_mode);
 BOOL cli_close(struct cli_state *cli, int fnum);
-BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
+BOOL cli_lock(struct cli_state *cli, int fnum, 
+	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type);
+BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len);
 size_t cli_read_one(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size);
 size_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size, BOOL overlap);
 ssize_t cli_write(struct cli_state *cli,
@@ -1051,7 +1070,6 @@ BOOL cli_session_request(struct cli_state *cli,
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip);
 void cli_init_creds(struct cli_state *cli, const struct ntuser_creds *usr);
 struct cli_state *cli_initialise(struct cli_state *cli);
-void cli_close_socket(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
@@ -1062,14 +1080,6 @@ BOOL cli_establish_connection(struct cli_state *cli,
 				struct nmb_name *calling, struct nmb_name *called,
 				char *service, char *service_type,
 				BOOL do_shutdown, BOOL do_tcon);
-BOOL cli_connect_auth(struct cli_state *cli,
-				const char* desthost,
-				struct in_addr *dest_ip,
-				const struct ntuser_creds *usr);
-BOOL cli_connect_servers_auth(struct cli_state *cli,
-				char *p,
-				const struct ntuser_creds *usr);
-BOOL cli_connect_serverlist(struct cli_state *cli, char *p);
 int cli_printjob_del(struct cli_state *cli, int job);
 int cli_print_queue(struct cli_state *cli, 
 		    void (*fn)(struct print_job_info *));
@@ -1079,7 +1089,6 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp);
 BOOL cli_message_end(struct cli_state *cli, int grp);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
-BOOL get_any_dc_name(const char *domain, char *srv_name);
 
 /*The following definitions come from  libsmb/credentials.c  */
 
@@ -2333,6 +2342,10 @@ struct passgrp_ops *unix_initialise_password_grp(void);
 /*The following definitions come from  passdb/smbpassnt5ldap.c  */
 
 
+/*The following definitions come from  printing/load.c  */
+
+void load_printers(void);
+
 /*The following definitions come from  printing/lpq_parse.c  */
 
 BOOL parse_lpq_entry(int snum,char *line,
@@ -2380,22 +2393,28 @@ int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing/printing.c  */
 
-void lpq_reset(int snum);
-void print_file(connection_struct *conn, const vuser_key *key,
-				int snum, files_struct *file);
-int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
-				print_queue_struct **queue,
-		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,const vuser_key *key,
-				int snum,int jobid);
-void status_printjob(connection_struct *conn,const vuser_key *key,
-				int snum,int jobid,int status);
-int printjob_encode(int snum, int job);
-void printjob_decode(int jobid, int *snum, int *job);
-uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
-				int snum,int status);
-void load_printers(void);
-void print_open_file(files_struct *fsp,connection_struct *conn,char *fname);
+BOOL print_backend_init(void);
+BOOL print_job_exists(int jobid);
+int print_job_snum(int jobid);
+int print_job_fd(int jobid);
+char *print_job_fname(int jobid);
+BOOL print_job_set_place(int jobid, int place);
+BOOL print_job_set_name(int jobid, char *name);
+BOOL print_job_delete(int jobid);
+BOOL print_job_pause(int jobid);
+BOOL print_job_resume(int jobid);
+int print_job_write(int jobid, const char *buf, int size);
+int print_job_start(int snum, char *jobname);
+BOOL print_job_end(int jobid);
+int print_queue_status(int snum, 
+		       print_queue_struct **queue,
+		       print_status_struct *status);
+int print_queue_snum(char *qname);
+BOOL print_queue_pause(int snum);
+BOOL print_queue_resume(int snum);
+BOOL print_queue_purge(int snum);
+void print_fsp_open(files_struct *fsp,connection_struct *conn,char *jobname);
+void print_fsp_end(files_struct *fsp);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -2859,7 +2878,7 @@ void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char *srv_name,
 				  const struct ntuser_creds *usr_creds,
-				  BOOL redir, BOOL reuse, BOOL *is_new);
+				  BOOL reuse, BOOL *is_new);
 BOOL cli_net_use_del(const char *srv_name,
 		     const struct ntuser_creds *usr_creds,
 		     BOOL force_close, BOOL *connection_closed);
@@ -3105,7 +3124,7 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 				   const char *srv_name,
 				   const struct ntuser_creds *ntc,
-				   const char *pipe_name, BOOL redir,
+				   const char *pipe_name, 
 				   BOOL reuse);
 void init_ncacn_np_use(void);
 void free_ncacn_np_use(void);
@@ -3115,7 +3134,6 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 				  const vuser_key * key,
 				  const char *srv_name,
 				  const struct ntuser_creds *ntc,
-				  BOOL redir,
 				  BOOL reuse, BOOL *is_new_connection);
 BOOL ncacn_np_use_del(const char *pipe_name,
 		      const vuser_key * key,
@@ -3128,7 +3146,7 @@ void init_ncalrpc_use(void);
 void free_ncalrpc_use(void);
 struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 				      const vuser_key * key,
-				      BOOL redir, BOOL reuse, BOOL *is_new);
+				      BOOL reuse, BOOL *is_new);
 BOOL ncalrpc_l_use_del(const char *pipe_name,
 		       const vuser_key * key,
 		       BOOL force_close, BOOL *connection_closed);
@@ -5754,7 +5772,7 @@ BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n);
 ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n);
 void delete_write_cache(files_struct *fsp);
-void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T filesize);
+void set_filelen_write_cache(files_struct *fsp, SMB_OFF_T file_size);
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 void sys_fsync_file(connection_struct *conn, files_struct *fsp);
 
@@ -6376,6 +6394,8 @@ int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_get_int(TDB_CONTEXT *tdb, char *keystr);
+int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v);
 
 /*The following definitions come from  utils/rpctorture.c  */
 

@@ -155,8 +155,8 @@ LIB_OBJ =	lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 		lib/pidfile.o lib/replace.o \
 		lib/signal.o lib/getopt.o lib/slprintf.o \
 		lib/system.o lib/doscalls.o \
-		lib/time.o lib/ufc.o lib/util.o lib/genrand.o \
-		lib/username.o \
+		lib/time.o lib/ufc.o lib/util.o lib/substitute.o \
+		lib/genrand.o lib/username.o \
 		lib/access.o lib/smbrun.o \
 		lib/bitmap.o lib/util_sid.o lib/snprintf.o \
 		lib/util_str.o lib/util_unistr.o lib/util_wunistr.o \
@@ -178,7 +178,7 @@ LIBSAMBA_OBJ = $(PARAM_OBJ) $(LIB_OBJ)
 
 LIBNMB_OBJ = libsmb/namequery.o libsmb/nmblib.o libsmb/unexpected.o
 
-LIBSMB_OBJ = libsmb/clientgen.o \
+LIBSMB_OBJ = libsmb/clientgen.o libsmb/clidomain.o \
 	libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
 	libsmb/smberr.o libsmb/credentials.o \
 	libsmb/pwd_cache.o  lib/util_hnd.o \
@@ -275,7 +275,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		smbd/service.o smbd/error.o smbd/vfs.o smbd/vfs-wrap.o \
 		smbd/challenge.o  lib/util_pwdb.o smbd/afsticket.o
 
-PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o \
+PRINTING_OBJ = printing/load.o printing/pcap.o printing/print_svid.o printing/printing.o \
 		printing/lpq_parse.o printing/print_cups.o
 
 MSDFS_OBJ = msdfs/msdfs.o msdfs/msdfs_tdb.o msdfs/parse_dfs_map.o

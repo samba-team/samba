@@ -51,7 +51,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   lock.l_len = 1;
   lock.l_pid = 0;
 
-  alarm(5);
+  alarm(waitsecs);
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
   CatchSignal(SIGALRM, SIGNAL_CAST SIG_DFL);
@@ -392,6 +392,211 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 #endif
 }
 
+/****************************************************************************
+checks if a file has changed since last read
+****************************************************************************/
+BOOL file_modified(const char *filename, time_t *lastmodified)
+{
+	SMB_STRUCT_STAT st;
+
+	if (sys_stat(filename, &st) != 0)
+	{
+		DEBUG(0, ("file_changed: Unable to stat file %s. Error was %s\n",
+			  filename, strerror(errno) ));
+		return False;
+	}
+
+	if(st.st_mtime <= *lastmodified)
+	{
+		DEBUG(20, ("file_modified: %s not modified\n", filename));
+		return False;
+	}
+
+	DEBUG(20, ("file_modified: %s modified\n", filename));
+	*lastmodified = st.st_mtime;
+	return True;
+}
+
+/***************************************************************************
+opens a file if modified otherwise returns NULL
+***************************************************************************/
+void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified)
+{
+	FILE *f;
+
+	if (!file_modified(filename, lastmodified))
+	{
+		return NULL;
+	}
+
+	if( (f = fopen(filename, mode)) == NULL)
+	{
+		DEBUG(0, ("open_file_if_modified: can't open file %s. Error was %s\n",
+			  filename, strerror(errno)));
+		return NULL;
+	}
+
+	return (void *)f;
+}
+
+/*******************************************************************
+returns the size in bytes of the named file
+********************************************************************/
+SMB_OFF_T get_file_size(char *file_name)
+{
+	SMB_STRUCT_STAT buf;
+	buf.st_size = 0;
+	if (sys_stat(file_name, &buf) != 0)
+		return (SMB_OFF_T) - 1;
+	return (buf.st_size);
+}
+
+/***************************************************************
+ Internal fn to enumerate the smbpasswd list. Returns a void pointer
+ to ensure no modification outside this module. Checks for atomic
+ rename of smbpasswd file on update or create once the lock has
+ been granted to prevent race conditions. JRA.
+****************************************************************/
+
+void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth)
+{
+  FILE *fp = NULL;
+  const char *open_mode = NULL;
+  int race_loop = 0;
+  int lock_type;
+
+  if (!*pfile) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: No SMB password file set\n"));
+    return (NULL);
+  }
+
+  switch(type) {
+  case PWF_READ:
+    open_mode = "rb";
+    lock_type = F_RDLCK;
+    break;
+  case PWF_UPDATE:
+    open_mode = "r+b";
+    lock_type = F_WRLCK;
+    break;
+  case PWF_CREATE:
+    /*
+     * Ensure atomic file creation.
+     */
+    {
+      int i, fd = -1;
+
+      for(i = 0; i < 5; i++) {
+        if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1)
+          break;
+        sys_usleep(200); /* Spin, spin... */
+      }
+      if(fd == -1) {
+        DEBUG(0,("startfilepw_race_condition_avoid: too many race conditions creating file %s\n", pfile));
+        return NULL;
+      }
+      close(fd);
+      open_mode = "r+b";
+      lock_type = F_WRLCK;
+      break;
+    }
+  }
+
+  for(race_loop = 0; race_loop < 5; race_loop++) {
+    DEBUG(10, ("startfilepw_race_condition_avoid: opening file %s\n", pfile));
+
+    if((fp = sys_fopen(pfile, open_mode)) == NULL) {
+      DEBUG(0, ("startfilepw_race_condition_avoid: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
+      return NULL;
+    }
+
+    if (!file_lock(fileno(fp), lock_type, 5, lock_depth)) {
+      DEBUG(0, ("startfilepw_race_condition_avoid: unable to lock file %s. Error was %s\n", pfile, strerror(errno) ));
+      fclose(fp);
+      return NULL;
+    }
+
+    /*
+     * Only check for replacement races on update or create.
+     * For read we don't mind if the data is one record out of date.
+     */
+
+    if(type == PWF_READ) {
+      break;
+    } else {
+      SMB_STRUCT_STAT sbuf1, sbuf2;
+
+      /*
+       * Avoid the potential race condition between the open and the lock
+       * by doing a stat on the filename and an fstat on the fd. If the
+       * two inodes differ then someone did a rename between the open and
+       * the lock. Back off and try the open again. Only do this 5 times to
+       * prevent infinate loops. JRA.
+       */
+
+      if (sys_stat(pfile,&sbuf1) != 0) {
+        DEBUG(0, ("startfilepw_race_condition_avoid: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
+        file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return NULL;
+      }
+
+      if (sys_fstat(fileno(fp),&sbuf2) != 0) {
+        DEBUG(0, ("startfilepw_race_condition_avoid: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
+        file_unlock(fileno(fp), lock_depth);
+        fclose(fp);
+        return NULL;
+      }
+
+      if( sbuf1.st_ino == sbuf2.st_ino) {
+        /* No race. */
+        break;
+      }
+
+      /*
+       * Race occurred - back off and try again...
+       */
+
+      file_unlock(fileno(fp), lock_depth);
+      fclose(fp);
+    }
+  }
+
+  if(race_loop == 5) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: too many race conditions opening file %s\n", pfile));
+    return NULL;
+  }
+
+  /* Set a buffer to do more efficient reads */
+  setvbuf(fp, (char *)NULL, _IOFBF, 1024);
+
+  /* Make sure it is only rw by the owner */
+  if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
+    DEBUG(0, ("startfilepw_race_condition_avoid: failed to set 0600 permissions on password file %s. \
+Error was %s\n.", pfile, strerror(errno) ));
+    file_unlock(fileno(fp), lock_depth);
+    fclose(fp);
+    return NULL;
+  }
+
+  /* We have a lock on the file. */
+  return (void *)fp;
+}
+
+
+/***************************************************************
+ End enumeration of the smbpasswd list.
+****************************************************************/
+
+void endfilepw_race_condition_avoid(void *vp, int *lock_depth)
+{
+  FILE *fp = (FILE *)vp;
+
+  file_unlock(fileno(fp), lock_depth);
+  fclose(fp);
+  DEBUG(7, ("endfilepw_race_condition_avoid: closed password file.\n"));
+}
+
 /***************************************************************
  locks a file for enumeration / modification.
  update to be set = True if modification is required.
@@ -603,208 +808,174 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   return(s);
 }
 
+
 /****************************************************************************
-checks if a file has changed since last read
+load from a pipe into memory
 ****************************************************************************/
-BOOL file_modified(const char *filename, time_t *lastmodified)
+char *file_pload(char *syscmd, size_t *size)
 {
-	SMB_STRUCT_STAT st;
+	int fd, n;
+	char *p;
+	pstring buf;
+	size_t total;
+	
+	fd = sys_popen(syscmd);
+	if (fd == -1) return NULL;
 
-	if (sys_stat(filename, &st) != 0)
-	{
-		DEBUG(0, ("file_changed: Unable to stat file %s. Error was %s\n",
-			  filename, strerror(errno) ));
-		return False;
+	p = NULL;
+	total = 0;
+
+	while ((n = read(fd, buf, sizeof(buf))) > 0) {
+		p = Realloc(p, total + n + 1);
+		if (!p) {
+			close(fd);
+			return NULL;
+		}
+		memcpy(p+total, buf, n);
+		total += n;
 	}
+	p[total] = 0;
 
-	if(st.st_mtime <= *lastmodified)
-	{
-		DEBUG(20, ("file_modified: %s not modified\n", filename));
-		return False;
-	}
+	sys_pclose(fd);
 
-	DEBUG(20, ("file_modified: %s modified\n", filename));
-	*lastmodified = st.st_mtime;
-	return True;
+	if (size) *size = total;
+
+	return p;
 }
 
-/***************************************************************************
-opens a file if modified otherwise returns NULL
-***************************************************************************/
-void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified)
-{
-	FILE *f;
 
-	if (!file_modified(filename, lastmodified))
-	{
+/****************************************************************************
+load a file into memory
+****************************************************************************/
+char *file_load(char *fname, size_t *size)
+{
+	int fd;
+	SMB_STRUCT_STAT sbuf;
+	char *p;
+
+	if (!fname || !*fname) return NULL;
+	
+	fd = open(fname,O_RDONLY);
+	if (fd == -1) return NULL;
+
+	if (sys_fstat(fd, &sbuf) != 0) return NULL;
+
+	if (sbuf.st_size == 0) return NULL;
+
+	p = (char *)malloc(sbuf.st_size+1);
+	if (!p) return NULL;
+
+	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
+		free(p);
 		return NULL;
 	}
+	p[sbuf.st_size] = 0;
 
-	if( (f = fopen(filename, mode)) == NULL)
-	{
-		DEBUG(0, ("open_file_if_modified: can't open file %s. Error was %s\n",
-			  filename, strerror(errno)));
-		return NULL;
+	close(fd);
+
+	if (size) *size = sbuf.st_size;
+
+	return p;
+}
+
+
+/****************************************************************************
+parse a buffer into lines
+****************************************************************************/
+static char **file_lines_parse(char *p, size_t size, int *numlines)
+{
+	int i;
+	char *s, **ret;
+
+	if (!p) return NULL;
+
+	for (s = p, i=0; s < p+size; s++) {
+		if (s[0] == '\n') i++;
 	}
 
-	return (void *)f;
+	ret = (char **)malloc(sizeof(ret[0])*(i+2));
+	if (!ret) {
+		free(p);
+		return NULL;
+	}	
+	memset(ret, 0, sizeof(ret[0])*(i+2));
+	if (numlines) *numlines = i;
+
+	ret[0] = p;
+	for (s = p, i=0; s < p+size; s++) {
+		if (s[0] == '\n') {
+			s[0] = 0;
+			i++;
+			ret[i] = s+1;
+		}
+		if (s[0] == '\r') s[0] = 0;
+	}
+
+	return ret;
 }
 
-/*******************************************************************
-returns the size in bytes of the named file
-********************************************************************/
-SMB_OFF_T get_file_size(char *file_name)
+
+/****************************************************************************
+load a file into memory and return an array of pointers to lines in the file
+must be freed with file_lines_free()
+****************************************************************************/
+char **file_lines_load(char *fname, int *numlines)
 {
-	SMB_STRUCT_STAT buf;
-	buf.st_size = 0;
-	if (sys_stat(file_name, &buf) != 0)
-		return (SMB_OFF_T) - 1;
-	return (buf.st_size);
+	char *p;
+	size_t size;
+
+	p = file_load(fname, &size);
+	if (!p) return NULL;
+
+	return file_lines_parse(p, size, numlines);
 }
 
-/***************************************************************
- Internal fn to enumerate the smbpasswd list. Returns a void pointer
- to ensure no modification outside this module. Checks for atomic
- rename of smbpasswd file on update or create once the lock has
- been granted to prevent race conditions. JRA.
-****************************************************************/
 
-void *startfilepw_race_condition_avoid(const char *pfile, enum pwf_access_type type, int *lock_depth)
+/****************************************************************************
+load a pipe into memory and return an array of pointers to lines in the data
+must be freed with file_lines_free()
+****************************************************************************/
+char **file_lines_pload(char *syscmd, int *numlines)
 {
-  FILE *fp = NULL;
-  const char *open_mode = NULL;
-  int race_loop = 0;
-  int lock_type;
+	char *p;
+	size_t size;
 
-  if (!*pfile) {
-    DEBUG(0, ("startfilepw_race_condition_avoid: No SMB password file set\n"));
-    return (NULL);
-  }
+	p = file_pload(syscmd, &size);
+	if (!p) return NULL;
 
-  switch(type) {
-  case PWF_READ:
-    open_mode = "rb";
-    lock_type = F_RDLCK;
-    break;
-  case PWF_UPDATE:
-    open_mode = "r+b";
-    lock_type = F_WRLCK;
-    break;
-  case PWF_CREATE:
-    /*
-     * Ensure atomic file creation.
-     */
-    {
-      int i, fd = -1;
-
-      for(i = 0; i < 5; i++) {
-        if((fd = sys_open(pfile, O_CREAT|O_TRUNC|O_EXCL|O_RDWR, 0600))!=-1)
-          break;
-        sys_usleep(200); /* Spin, spin... */
-      }
-      if(fd == -1) {
-        DEBUG(0,("startfilepw_race_condition_avoid: too many race conditions creating file %s\n", pfile));
-        return NULL;
-      }
-      close(fd);
-      open_mode = "r+b";
-      lock_type = F_WRLCK;
-      break;
-    }
-  }
-
-  for(race_loop = 0; race_loop < 5; race_loop++) {
-    DEBUG(10, ("startfilepw_race_condition_avoid: opening file %s\n", pfile));
-
-    if((fp = sys_fopen(pfile, open_mode)) == NULL) {
-      DEBUG(0, ("startfilepw_race_condition_avoid: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
-      return NULL;
-    }
-
-    if (!file_lock(fileno(fp), lock_type, 5, lock_depth)) {
-      DEBUG(0, ("startfilepw_race_condition_avoid: unable to lock file %s. Error was %s\n", pfile, strerror(errno) ));
-      fclose(fp);
-      return NULL;
-    }
-
-    /*
-     * Only check for replacement races on update or create.
-     * For read we don't mind if the data is one record out of date.
-     */
-
-    if(type == PWF_READ) {
-      break;
-    } else {
-      SMB_STRUCT_STAT sbuf1, sbuf2;
-
-      /*
-       * Avoid the potential race condition between the open and the lock
-       * by doing a stat on the filename and an fstat on the fd. If the
-       * two inodes differ then someone did a rename between the open and
-       * the lock. Back off and try the open again. Only do this 5 times to
-       * prevent infinate loops. JRA.
-       */
-
-      if (sys_stat(pfile,&sbuf1) != 0) {
-        DEBUG(0, ("startfilepw_race_condition_avoid: unable to stat file %s. Error was %s\n", pfile, strerror(errno)));
-        file_unlock(fileno(fp), lock_depth);
-        fclose(fp);
-        return NULL;
-      }
-
-      if (sys_fstat(fileno(fp),&sbuf2) != 0) {
-        DEBUG(0, ("startfilepw_race_condition_avoid: unable to fstat file %s. Error was %s\n", pfile, strerror(errno)));
-        file_unlock(fileno(fp), lock_depth);
-        fclose(fp);
-        return NULL;
-      }
-
-      if( sbuf1.st_ino == sbuf2.st_ino) {
-        /* No race. */
-        break;
-      }
-
-      /*
-       * Race occurred - back off and try again...
-       */
-
-      file_unlock(fileno(fp), lock_depth);
-      fclose(fp);
-    }
-  }
-
-  if(race_loop == 5) {
-    DEBUG(0, ("startfilepw_race_condition_avoid: too many race conditions opening file %s\n", pfile));
-    return NULL;
-  }
-
-  /* Set a buffer to do more efficient reads */
-  setvbuf(fp, (char *)NULL, _IOFBF, 1024);
-
-  /* Make sure it is only rw by the owner */
-  if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
-    DEBUG(0, ("startfilepw_race_condition_avoid: failed to set 0600 permissions on password file %s. \
-Error was %s\n.", pfile, strerror(errno) ));
-    file_unlock(fileno(fp), lock_depth);
-    fclose(fp);
-    return NULL;
-  }
-
-  /* We have a lock on the file. */
-  return (void *)fp;
+	return file_lines_parse(p, size, numlines);
 }
 
-
-/***************************************************************
- End enumeration of the smbpasswd list.
-****************************************************************/
-
-void endfilepw_race_condition_avoid(void *vp, int *lock_depth)
+/****************************************************************************
+free lines loaded with file_lines_load
+****************************************************************************/
+void file_lines_free(char **lines)
 {
-  FILE *fp = (FILE *)vp;
-
-  file_unlock(fileno(fp), lock_depth);
-  fclose(fp);
-  DEBUG(7, ("endfilepw_race_condition_avoid: closed password file.\n"));
+	if (!lines) return;
+	free(lines[0]);
+	free(lines);
 }
 
+
+/****************************************************************************
+take a lislist of lines and modify them to produce a list where \ continues
+a line
+****************************************************************************/
+void file_lines_slashcont(char **lines)
+{
+	int i, j;
+
+	for (i=0; lines[i];) {
+		int len = strlen(lines[i]);
+		if (lines[i][len-1] == '\\') {
+			lines[i][len-1] = ' ';
+			if (lines[i+1]) {
+				char *p = &lines[i][len];
+				while (p < lines[i+1]) *p++ = ' ';
+				for (j = i+1; lines[j]; j++) lines[j] = lines[j+1];
+			}
+		} else {
+			i++;
+		}
+	}
+}

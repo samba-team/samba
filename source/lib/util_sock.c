@@ -183,10 +183,10 @@ void set_socket_options(int fd, char *options)
 					int on = socket_options[i].value;
 					ret =
 						setsockopt(fd,
-							   socket_options
-							   [i].level,
-							   socket_options
-							   [i].option,
+							   socket_options[i].
+							   level,
+							   socket_options[i].
+							   option,
 							   (char *)&on,
 							   sizeof(int));
 				}
@@ -241,8 +241,8 @@ ssize_t read_udp_socket(int fd, char *buf, size_t len)
 	int socklen;
 
 	socklen = sizeof(sock);
-	memset((char *)&sock, 0, socklen);
-	ZERO_STRUCT(lastip);
+	memset((char *)&sock, '\0', socklen);
+	memset((char *)&lastip, '\0', sizeof(lastip));
 	ret =
 		(ssize_t) recvfrom(fd, buf, len, 0, (struct sockaddr *)&sock,
 				   &socklen);
@@ -907,7 +907,7 @@ BOOL send_one_packet(char *buf, int len, struct in_addr ip, int port,
 	}
 
 	/* set the address and port */
-	ZERO_STRUCT(sock_out);
+	memset((char *)&sock_out, '\0', sizeof(sock_out));
 	putip((char *)&sock_out.sin_addr, (char *)&ip);
 	sock_out.sin_port = htons(port);
 	sock_out.sin_family = AF_INET;
@@ -958,7 +958,7 @@ int open_socket_in(int type, int port, int dlevel, uint32 socket_addr,
 		return -1;
 	}
 
-	ZERO_STRUCT(sock);
+	memset((char *)&sock, '\0', sizeof(sock));
 	memcpy((char *)&sock.sin_addr, (char *)hp->h_addr, hp->h_length);
 
 #ifdef HAVE_SOCK_SIN_LEN
@@ -1046,7 +1046,7 @@ int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 	if (type != SOCK_STREAM)
 		return (res);
 
-	ZERO_STRUCT(sock_out);
+	memset((char *)&sock_out, '\0', sizeof(sock_out));
 	putip((char *)&sock_out.sin_addr, (char *)addr);
 
 	sock_out.sin_port = htons(port);
@@ -1089,7 +1089,7 @@ int open_socket_out(int type, struct in_addr *addr, int port, int timeout)
 
 	if (ret < 0)
 	{
-		DEBUG(3, ("error connecting to %s:%d (%s)\n",
+		DEBUG(1, ("error connecting to %s:%d (%s)\n",
 			  inet_ntoa(*addr), port, strerror(errno)));
 		close(res);
 		return -1;
@@ -1216,8 +1216,7 @@ char *get_socket_name(int fd)
 
 	fstrcpy(addr_buf, p);
 
-	if (inet_aton(p, &addr) == 0)
-		return name_buf;
+	addr = *interpret_addr2(p);
 
 	/* Look up the remote host name. */
 	if (

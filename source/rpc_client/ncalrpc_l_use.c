@@ -186,7 +186,7 @@ init client state
 ****************************************************************************/
 struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 				      const vuser_key * key,
-				      BOOL redir, BOOL reuse, BOOL *is_new)
+				      BOOL reuse, BOOL *is_new)
 {
 	struct ncalrpc_use *cli;
 
@@ -209,7 +209,7 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 	}
 
 	/* reuse an existing connection requested, and one was not found */
-	if (key != NULL && reuse && !redir)
+	if (key != NULL && reuse)
 	{
 		return False;
 	}
@@ -219,7 +219,6 @@ struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 	 */
 
 	cli = ncalrpc_use_get(pipe_name, key);
-	cli->cli->redirect = redir;
 
 	/*
 	 * connect

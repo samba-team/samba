@@ -775,6 +775,10 @@ static void usage(char *pname)
 	if(!pwdb_initialise(True))
 		exit(1);
 
+	if (!print_backend_init()) {
+		exit(1);
+	}
+
 	/* possibly reload the services file. */
 	reload_services(True);
 	

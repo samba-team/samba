@@ -425,7 +425,8 @@ typedef struct local_grp_member_info
 	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
 	fstring name;		/* matches with sid: must be of the form "DOMAIN\account" */
 
-} LOCAL_GRP_MEMBER;
+}
+LOCAL_GRP_MEMBER;
 
 /* enumerate these to get list of local groups */
 
@@ -436,7 +437,8 @@ typedef struct local_grp_info
 	fstring comment;
 	uint32 rid;		/* alias rid */
 
-} LOCAL_GRP;
+}
+LOCAL_GRP;
 
 /*** query a domain group, get a list of these: shows who is in that group ***/
 
@@ -493,7 +495,8 @@ typedef struct
 	int32 wr_error;		/* Cached errors */
 	BOOL wr_mode;		/* write through mode) */
 	BOOL wr_discard;	/* discard all further data */
-} write_bmpx_struct;
+}
+write_bmpx_struct;
 
 typedef struct write_cache
 {
@@ -502,7 +505,8 @@ typedef struct write_cache
 	size_t alloc_size;
 	size_t data_size;
 	char *data;
-} write_cache;
+}
+write_cache;
 
 typedef struct files_struct
 {
@@ -510,6 +514,7 @@ typedef struct files_struct
 	int fnum;
 	struct connection_struct *conn;
 	int fd;
+	int print_jobid;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	BOOL delete_on_close;
@@ -535,7 +540,8 @@ typedef struct files_struct
 	BOOL directory_delete_on_close;
 	BOOL stat_open;
 	char *fsp_name;
-} files_struct;
+}
+files_struct;
 
 /*
  * Structure used to keep directory state information around.
@@ -559,14 +565,12 @@ typedef struct
 {
 	char *name;
 	BOOL is_wild;
-} name_compare_entry;
+}
+name_compare_entry;
 
 /* Include VFS stuff */
 
 #include "vfs.h"
-
-
-#include "vagent.h"
 
 typedef struct connection_struct
 {
@@ -670,9 +674,10 @@ typedef struct _print_queue_struct
 	int status;
 	int priority;
 	time_t time;
-	char user[30];
-	char file[100];
-} print_queue_struct;
+	fstring user;
+	fstring file;
+}
+print_queue_struct;
 
 enum
 { LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR };
@@ -681,7 +686,8 @@ typedef struct
 {
 	fstring message;
 	int status;
-} print_status_struct;
+}
+print_status_struct;
 
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct
@@ -1067,7 +1073,8 @@ struct parm_struct
 		int ivalue;
 		char *svalue;
 		char cvalue;
-	} def;
+	}
+	def;
 };
 
 struct bitmap
@@ -1504,6 +1511,16 @@ int slprintf(char *str, int n, char *format, ...)
 	;
 #else
 int slprintf();
+#endif
+
+#ifdef HAVE_STDARG_H
+int fdprintf(int fd, char *format, ...)
+#ifdef __GNUC__
+	__attribute__ ((format(printf, 2, 3)))
+#endif
+	;
+#else
+int fdprintf();
 #endif
 
 #ifdef WITH_DFS
@@ -1943,7 +1960,6 @@ struct msrpc_local
 #endif
 
 	int fd;
-	BOOL redirect;
 	BOOL initialised;
 	char *inbuf;
 	char *outbuf;
@@ -1954,7 +1970,6 @@ struct ncacn_np
 	fstring pipe_name;
 	struct cli_state *smb;
 	uint16 fnum;
-	BOOL redirect;
 	BOOL initialised;
 };
 

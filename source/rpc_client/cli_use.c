@@ -220,7 +220,7 @@ init client state
 ****************************************************************************/
 struct cli_state *cli_net_use_add(const char *srv_name,
 				  const struct ntuser_creds *usr_creds,
-				  BOOL redir, BOOL reuse, BOOL *is_new)
+				  BOOL reuse, BOOL *is_new)
 {
 	struct nmb_name calling;
 	struct nmb_name called;
@@ -244,7 +244,7 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 	}
 
 	/* reuse an existing connection requested, and one was not found */
-	if (usr_creds != NULL && reuse && !redir)
+	if (usr_creds != NULL && reuse)
 	{
 		return False;
 	}
@@ -254,7 +254,6 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 	 */
 
 	cli = cli_use_get(srv_name, usr_creds);
-	cli->cli->redirect = redir;
 
 	if (resolve_srv_name(srv_name, dest_host, &ip))
 	{

@@ -457,7 +457,7 @@ void init_cli_use(void);
 void free_cli_use(void);
 struct cli_state *cli_net_use_add(const char *srv_name,
 				  const struct ntuser_creds *usr_creds,
-				  BOOL redir, BOOL reuse, BOOL *is_new);
+				  BOOL reuse, BOOL *is_new);
 BOOL cli_net_use_del(const char *srv_name,
 		     const struct ntuser_creds *usr_creds,
 		     BOOL force_close, BOOL *connection_closed);
@@ -703,7 +703,7 @@ BOOL msrpc_sam_query_userinfo(const char* srv_name, const DOM_SID *sid,
 BOOL ncacn_np_establish_connection(struct ncacn_np *cli,
 				   const char *srv_name,
 				   const struct ntuser_creds *ntc,
-				   const char *pipe_name, BOOL redir,
+				   const char *pipe_name, 
 				   BOOL reuse);
 void init_ncacn_np_use(void);
 void free_ncacn_np_use(void);
@@ -713,7 +713,6 @@ struct ncacn_np *ncacn_np_use_add(const char *pipe_name,
 				  const vuser_key * key,
 				  const char *srv_name,
 				  const struct ntuser_creds *ntc,
-				  BOOL redir,
 				  BOOL reuse, BOOL *is_new_connection);
 BOOL ncacn_np_use_del(const char *pipe_name,
 		      const vuser_key * key,
@@ -726,7 +725,7 @@ void init_ncalrpc_use(void);
 void free_ncalrpc_use(void);
 struct msrpc_local *ncalrpc_l_use_add(const char *pipe_name,
 				      const vuser_key * key,
-				      BOOL redir, BOOL reuse, BOOL *is_new);
+				      BOOL reuse, BOOL *is_new);
 BOOL ncalrpc_l_use_del(const char *pipe_name,
 		       const vuser_key * key,
 		       BOOL force_close, BOOL *connection_closed);

@@ -413,7 +413,7 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 	     ignored */
 	  *Access = DOS_OPEN_WRONLY;
 	  *action = FILE_WAS_CREATED;
-	  print_open_file(fsp, conn, fname);
+	  print_fsp_open(fsp, conn, fname);
 	  return;
   }
 

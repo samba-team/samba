@@ -747,5 +747,3 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 #endif /* USE_RENEWABLE_AFS_TICKET */
 	conn_free(conn);
 }
-
-

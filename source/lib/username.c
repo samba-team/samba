@@ -305,6 +305,193 @@ char *uidtoname(uid_t uid)
 }
 
 /****************************************************************************
+Setup the groups a user belongs to.
+****************************************************************************/
+int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
+		   gid_t ** p_groups)
+{
+	int i, ngroups;
+	gid_t grp = 0;
+	gid_t *groups = NULL;
+
+	if (-1 == initgroups(user, gid))
+	{
+		DEBUG(0, ("Unable to initgroups!\n"));
+		if (getuid() == 0)
+		{
+			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
+			{
+				DEBUG(0,
+				      ("This is probably a problem with the account %s\n",
+				       user));
+			}
+		}
+		return -1;
+	}
+
+	ngroups = sys_getgroups(0, &grp);
+	if (ngroups <= 0)
+	{
+		ngroups = 32;
+	}
+
+	if ((groups = (gid_t *) malloc(sizeof(gid_t) * ngroups)) == NULL)
+	{
+		DEBUG(0, ("get_unixgroups malloc fail !\n"));
+		return -1;
+	}
+
+	ngroups = sys_getgroups(ngroups, groups);
+
+	(*p_ngroups) = ngroups;
+	(*p_groups) = groups;
+
+	DEBUG(3, ("%s is in %d groups: ", user, ngroups));
+	for (i = 0; i < ngroups; i++)
+	{
+		DEBUG(3, ("%s%d", (i ? ", " : ""), (int)groups[i]));
+	}
+	DEBUG(3, ("\n"));
+
+	return 0;
+}
+
+/****************************************************************************
+get all unix groups.  copying group members is hideous on memory, so it's
+NOT done here.  however, names of unix groups _are_ string-allocated so
+free_unix_grps() must be called.
+****************************************************************************/
+BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
+{
+	struct group *grp;
+
+	DEBUG(10, ("get_unix_grps\n"));
+
+	if (p_ngroups == NULL || p_groups == NULL)
+	{
+		return False;
+	}
+
+	(*p_ngroups) = 0;
+	(*p_groups) = NULL;
+
+	setgrent();
+
+	while ((grp = getgrent()) != NULL)
+	{
+		struct group *copy_grp;
+
+
+		(*p_groups) =
+			(struct group *)Realloc((*p_groups),
+						(size_t) ((*p_ngroups) +
+							  1) *
+						sizeof(struct group));
+		if ((*p_groups) == NULL)
+		{
+			(*p_ngroups) = 0;
+			endgrent();
+
+			return False;
+		}
+
+		copy_grp = &(*p_groups)[*p_ngroups];
+		memcpy(copy_grp, grp, sizeof(*grp));
+		copy_grp->gr_name = strdup(copy_grp->gr_name);
+		copy_grp->gr_mem = NULL;
+
+		(*p_ngroups)++;
+	}
+
+	endgrent();
+
+	DEBUG(10, ("get_unix_grps: %d groups\n", (*p_ngroups)));
+	return True;
+}
+
+/****************************************************************************
+free memory associated with unix groups.
+****************************************************************************/
+void free_unix_grps(int ngroups, struct group *p_groups)
+{
+	int i;
+
+	if (p_groups == NULL)
+	{
+		return;
+	}
+
+	for (i = 0; i < ngroups; i++)
+	{
+		if (p_groups[i].gr_name != NULL)
+		{
+			free(p_groups[i].gr_name);
+		}
+	}
+
+	free(p_groups);
+}
+
+/*******************************************************************
+turn a gid into a group name
+********************************************************************/
+
+char *gidtoname(gid_t gid)
+{
+	static char name[40];
+	struct group *grp = getgrgid(gid);
+	if (grp)
+		return (grp->gr_name);
+	slprintf(name, sizeof(name) - 1, "%d", (int)gid);
+	return (name);
+}
+
+/*******************************************************************
+turn a user name into a uid
+********************************************************************/
+BOOL nametouid(const char *name, uid_t * uid)
+{
+	const struct passwd *pass = Get_Pwnam(name, False);
+	if (pass)
+	{
+		*uid = pass->pw_uid;
+		return True;
+	}
+	else if (isdigit(name[0]))
+	{
+		*uid = (uid_t) get_number(name);
+		return True;
+	}
+	else
+	{
+		return False;
+	}
+}
+
+/*******************************************************************
+turn a group name into a gid
+********************************************************************/
+
+BOOL nametogid(const char *name, gid_t * gid)
+{
+	struct group *grp = getgrnam(name);
+	if (grp)
+	{
+		*gid = grp->gr_gid;
+		return True;
+	}
+	else if (isdigit(name[0]))
+	{
+		*gid = (gid_t) get_number(name);
+		return True;
+	}
+	else
+	{
+		return False;
+	}
+}
+
+/****************************************************************************
 get a users home directory.
 ****************************************************************************/
 char *get_unixhome_dir(char *user)
@@ -323,7 +510,7 @@ char *get_unixhome_dir(char *user)
 
 
 /*******************************************************************
-map a username from a dos name to a unix name by looking in the username
+ Map a username from a dos name to a unix name by looking in the username
 map. Note that this modifies the name in place.
 This is the main function that should be called *once* on
 any incoming or new username - in order to canonicalize the name.
@@ -449,8 +636,9 @@ static struct passwd *_Get_Pwnam(char *s)
 	return ret;
 }
 
+
 /****************************************************************************
-a wrapper for getpwnam() that tries with all lower and all upper case 
+ A wrapper for getpwnam() that tries with all lower and all upper case 
 if the initial name fails. Also tried with first letter capitalised
 Note that this can change user!  Function returns const to emphasise
 the fact that most of the members of the struct passwd * returned are
@@ -474,33 +662,39 @@ const struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   }
 
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   strlower(user);
   ret = _Get_Pwnam(user);
-  if (ret)  return(ret);
+  if (ret)
+    return(ret);
 
   strupper(user);
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
-  /* try with first letter capitalised */
+  /* Try with first letter capitalised. */
   if (strlen(user) > 1)
     strlower(user+1);  
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   /* try with last letter capitalised */
   strlower(user);
   last_char = strlen(user)-1;
   user[last_char] = toupper(user[last_char]);
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
-  /* try all combinations up to usernamelevel */
+  /* Try all combinations up to usernamelevel. */
   strlower(user);
   ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   if (allow_change)
     fstrcpy(user,user2);
@@ -509,8 +703,9 @@ const struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 }
 
 /****************************************************************************
-check if a user is in a netgroup user list
+ Check if a user is in a netgroup user list.
 ****************************************************************************/
+
 static BOOL user_in_netgroup_list(char *user,char *ngname)
 {
 #ifdef HAVE_NETGROUP
@@ -518,12 +713,9 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
   if (mydomain == NULL)
     yp_get_default_domain(&mydomain);
 
-  if(mydomain == NULL)
-  {
+  if(mydomain == NULL) {
     DEBUG(5,("Unable to get default yp domain\n"));
-  }
-  else
-  {
+  } else {
     DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
           user, mydomain, ngname));
     DEBUG(5,("innetgr is %s\n",
@@ -538,34 +730,35 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
 }
 
 /****************************************************************************
-check if a user is in a UNIX user list
+ Check if a user is in a UNIX user list.
 ****************************************************************************/
 static BOOL user_in_group_list(char *user,char *gname)
 {
-#ifdef HAVE_GETGRNAM 
+#ifdef HAVE_GETGRENT
   struct group *gptr;
   char **member;  
   const struct passwd *pass = Get_Pwnam(user,False);
 
-  if (pass)
-  { 
+	if (pass) { 
     gptr = getgrgid(pass->pw_gid);
     if (gptr && strequal(gptr->gr_name,gname))
       return(True); 
   } 
 
-  gptr = (struct group *)getgrnam(gname);
-
-  if (gptr)
-  {
+	while ((gptr = (struct group *)getgrent())) {
+		if (!strequal(gptr->gr_name,gname))
+			continue;
     member = gptr->gr_mem;
-    while (member && *member)
-    {
-      if (strequal(*member,user))
+		while (member && *member) {
+			if (strequal(*member,user)) {
+				endgrent();
         return(True);
+			}
       member++;
     }
   }
+
+	endgrent();
 #endif /* HAVE_GETGRNAM */
   return False;
 }	      
@@ -608,8 +801,7 @@ BOOL user_in_list(char *user,char *list)
   pstring tok;
   char *p=list;
 
-  while (next_token(&p,tok,LIST_SEP, sizeof(tok)))
-  {
+  while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
     /*
      * Check raw username.
      */
@@ -621,8 +813,7 @@ BOOL user_in_list(char *user,char *list)
      * of UNIX and netgroups has been specified.
      */
 
-    if(*tok == '@')
-    {
+    if(*tok == '@') {
       /*
        * Old behaviour. Check netgroup list
        * followed by UNIX list.
@@ -631,11 +822,9 @@ BOOL user_in_list(char *user,char *list)
         return True;
       if(user_in_group_list(user,&tok[1]))
         return True;
-    }
-    else if (*tok == '+')
-    {
-      if(tok[1] == '&')
-      {
+    } else if (*tok == '+') {
+
+      if(tok[1] == '&') {
         /*
          * Search UNIX list followed by netgroup.
          */
@@ -643,20 +832,19 @@ BOOL user_in_list(char *user,char *list)
           return True;
         if(user_in_netgroup_list(user,&tok[2]))
           return True;
-      }
-      else
-      {
+
+      } else {
+
         /*
          * Just search UNIX list.
          */
         if(user_in_group_list(user,&tok[1]))
           return True;
       }
-    }
-    else if (*tok == '&')
-    {
-      if(tok[1] == '&')
-      {
+
+    } else if (*tok == '&') {
+
+      if(tok[1] == '+') {
         /*
          * Search netgroup list followed by UNIX list.
          */
@@ -664,9 +852,7 @@ BOOL user_in_list(char *user,char *list)
           return True;
         if(user_in_group_list(user,&tok[2]))
           return True;
-      }
-      else
-      {
+      } else {
         /*
          * Just search netgroup list.
          */
@@ -680,15 +866,15 @@ BOOL user_in_list(char *user,char *list)
 
 /* The functions below have been taken from password.c and slightly modified */
 /****************************************************************************
-apply a function to upper/lower case combinations
+ Apply a function to upper/lower case combinations
 of a string and return true if one of them returns true.
-try all combinations with N uppercase letters.
+ Try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
 static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
 {
-  int len = strlen(s);
+  ssize_t len = (ssize_t)strlen(s);
   int i;
   struct passwd *ret;
 
@@ -699,24 +885,23 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
   if (N <= 0 || offset >= len)
     return(fn(s));
 
-
-  for (i=offset;i<(len-(N-1));i++)
-
-    {
+  for (i=offset;i<(len-(N-1));i++) {
       char c = s[i];
-      if (!islower(c)) continue;
+    if (!islower(c))
+      continue;
       s[i] = toupper(c);
       ret = uname_string_combinations2(s,i+1,fn,N-1);
-      if(ret) return(ret);
+    if(ret)
+      return(ret);
       s[i] = c;
     }
   return(NULL);
 }
 
 /****************************************************************************
-apply a function to upper/lower case combinations
+ Apply a function to upper/lower case combinations
 of a string and return true if one of them returns true.
-try all combinations with up to N uppercase letters.
+ Try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
@@ -725,10 +910,10 @@ static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(c
   int n;
   struct passwd *ret;
 
-  for (n=1;n<=N;n++)
-  {
+  for (n=1;n<=N;n++) {
     ret = uname_string_combinations2(s,0,fn,n);
-    if(ret) return(ret);
+    if(ret)
+      return(ret);
   }
   return(NULL);
 }

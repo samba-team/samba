@@ -42,7 +42,9 @@ static BOOL parse_form_entry(char *line, nt_forms_struct *buf)
 	char *tok[MAXTOK];
 	int count = 0;
 
-	tok[count] = strtok(line,":");
+	tok[0] = strtok(line,":");
+
+	if (!tok[0]) return False;
 	
 	/* strip the comment lines */
 	if (tok[0][0]=='#') return (False);	
@@ -53,7 +55,7 @@ static BOOL parse_form_entry(char *line, nt_forms_struct *buf)
 		count++;
 	}
 
-	DEBUG(106,("Found [%d] tokens\n", count));
+	if (count < MAXTOK-1) return False;
 
 	StrnCpy(buf->name,tok[NAMETOK],sizeof(buf->name)-1);
 	buf->flag=atoi(tok[FLAGTOK]);
@@ -72,23 +74,22 @@ get a form struct list
 ****************************************************************************/
 int get_ntforms(nt_forms_struct **list)
 {
-	FILE *f;
-	pstring line;
+	char **lines;
 	char *lp_forms = lp_nt_forms();
 	int total=0;
 	int grandtotal=0;
-	*line=0;
-
-	f = sys_fopen(lp_forms,"r");
-	if (!f)
-	{
+	int i;
+	
+	lines = file_lines_load(lp_forms, NULL);
+	if (!lines) {
 		return(0);
 	}
 
-	while ( fgets(line, sizeof(pstring), f) )
-	{
-		DEBUG(105,("%s\n",line));
-		
+	*list = NULL;
+
+	for (i=0; lines[i]; i++) {
+		char *line = lines[i];
+
 		*list = Realloc(*list, sizeof(nt_forms_struct)*(total+1));
 		if (! *list)
 		{
@@ -102,9 +103,8 @@ int get_ntforms(nt_forms_struct **list)
 		}
 		grandtotal++;
 	}    
-	fclose(f);
 
-	DEBUG(104,("%d info lines on %d\n",total, grandtotal));
+	file_lines_free(lines);
 
 	return(total);
 }
@@ -114,8 +114,8 @@ write a form struct list
 ****************************************************************************/
 int write_ntforms(nt_forms_struct **list, int number)
 {
-       FILE *f;
        pstring line;
+       int fd;
        char *file = lp_nt_forms();
        int total=0;
        int i;
@@ -124,7 +124,8 @@ int write_ntforms(nt_forms_struct **list, int number)
 
        DEBUG(106,("write_ntforms\n"));
 
-       if((f = sys_fopen(file, "w")) == NULL)
+       unlink(file);
+       if((fd = sys_open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1)
        {
 	       DEBUG(0, ("write_ntforms: Cannot create forms file [%s]. Error was %s\n", file, strerror(errno) ));
 	       return(0);
@@ -133,14 +134,14 @@ int write_ntforms(nt_forms_struct **list, int number)
        for (i=0; i<number;i++)
        {
 
-	       fprintf(f,"%s:%d:%d:%d:%d:%d:%d:%d\n", (*list)[i].name,
-		       (*list)[i].flag, (*list)[i].width, (*list)[i].length,
-		       (*list)[i].left, (*list)[i].top, (*list)[i].right, (*list)[i].bottom);
+	       fdprintf(fd,"%s:%d:%d:%d:%d:%d:%d:%d\n", (*list)[i].name,
+			(*list)[i].flag, (*list)[i].width, (*list)[i].length,
+			(*list)[i].left, (*list)[i].top, (*list)[i].right, (*list)[i].bottom);
 
 	       DEBUGADD(107,("adding entry [%s]\n", (*list)[i].name));
        }
 
-       fclose(f);
+       close(fd);
        DEBUGADD(106,("closing file\n"));
        return(total);
 }
@@ -314,7 +315,7 @@ void get_short_archi(char *short_archi, char *long_archi)
 ****************************************************************************/
 static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
-	FILE *f;
+	int fd;
 	pstring file;
 	fstring architecture;
 	fstring driver_name;
@@ -337,8 +338,9 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 		
 	slprintf(file, sizeof(file)-1, "%s/NTdriver_%s_%s",
 	         lp_nt_drivers_file(), architecture, driver_name);
-		
-	if((f = sys_fopen(file, "w")) == NULL)
+
+	unlink(file);
+	if((fd = sys_open(file, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) == -1)
 	{
 		DEBUG(0, ("add_a_printer_driver_3: Cannot create driver file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
@@ -354,15 +356,15 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	 */
 	driver->cversion=2;
 	
-	fprintf(f, "version:         %d\n", driver->cversion);
-	fprintf(f, "name:            %s\n", driver->name);
-	fprintf(f, "environment:     %s\n", driver->environment);
-	fprintf(f, "driverpath:      %s\n", driver->driverpath);
-	fprintf(f, "datafile:        %s\n", driver->datafile);
-	fprintf(f, "configfile:      %s\n", driver->configfile);
-	fprintf(f, "helpfile:        %s\n", driver->helpfile);
-	fprintf(f, "monitorname:     %s\n", driver->monitorname);
-	fprintf(f, "defaultdatatype: %s\n", driver->defaultdatatype);
+	fdprintf(fd, "version:         %d\n", driver->cversion);
+	fdprintf(fd, "name:            %s\n", driver->name);
+	fdprintf(fd, "environment:     %s\n", driver->environment);
+	fdprintf(fd, "driverpath:      %s\n", driver->driverpath);
+	fdprintf(fd, "datafile:        %s\n", driver->datafile);
+	fdprintf(fd, "configfile:      %s\n", driver->configfile);
+	fdprintf(fd, "helpfile:        %s\n", driver->helpfile);
+	fdprintf(fd, "monitorname:     %s\n", driver->monitorname);
+	fdprintf(fd, "defaultdatatype: %s\n", driver->defaultdatatype);
 
 	/* and the dependants files */
 	
@@ -370,11 +372,11 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	
 	while ( **dependentfiles != '\0' )
 	{
-		fprintf(f, "dependentfile:   %s\n", *dependentfiles);
+		fdprintf(fd, "dependentfile:   %s\n", *dependentfiles);
 		dependentfiles++;
 	}
 	
-	fclose(f);	
+	close(fd);	
 	return(0);
 }
 
@@ -382,12 +384,13 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 ****************************************************************************/
 static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
 {
-	FILE *f = NULL;
+	char **lines;
+	int lcount;
 	pstring file;
 	fstring driver_name;
 	fstring architecture;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info = NULL;
-	char *line = NULL;
+	char *line;
 	fstring p;
 	char *v;
 	int i=0;
@@ -405,9 +408,10 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		
 	slprintf(file, sizeof(file)-1, "%s/NTdriver_%s_%s",
 	         lp_nt_drivers_file(), architecture, driver_name);
-			
-	if((f = sys_fopen(file, "r")) == NULL)
-	{
+
+	lines = file_lines_load(file, NULL);
+
+	if (!lines) {
 		DEBUG(2, ("get_a_printer_driver_3: Cannot open printer driver file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
@@ -422,9 +426,8 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	if((line=(char *)malloc(4096*sizeof(char))) == NULL)
 		goto err;
 	
-	while ( fgets(line, 4095, f) )
-	{
-
+	for (lcount=0; lines[lcount]; lcount++) {
+		line = lines[lcount];
 		v=strncpyn(p, line, sizeof(p), ':');
 		if (v==NULL)
 		{
@@ -479,9 +482,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 		}
 	}
 	
-	free(line);
-	
-	fclose(f);
+	file_lines_free(lines);
 	
 	dependentfiles=(char **)Realloc(dependentfiles, sizeof(char *)*(i+1));
 	dependentfiles[i]=(char *)malloc( sizeof(char) );
@@ -495,10 +496,8 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
   err:
 
-	if(f)
-		fclose(f);
-	if(line)
-		free(line);
+	if (lines)
+		file_lines_free(lines);
 	if(info)
 		free(info);
 
@@ -565,57 +564,57 @@ static uint32 dump_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 
 
 /****************************************************************************
 ****************************************************************************/
-static void add_a_devicemode(NT_DEVICEMODE *nt_devmode, FILE *f)
+static void add_a_devicemode(NT_DEVICEMODE *nt_devmode, int fd)
 {
 	int i;
 	
-	fprintf(f, "formname: %s\n",      nt_devmode->formname);
-	fprintf(f, "specversion: %d\n",   nt_devmode->specversion);
-	fprintf(f, "driverversion: %d\n", nt_devmode->driverversion);
-	fprintf(f, "size: %d\n",          nt_devmode->size);
-	fprintf(f, "driverextra: %d\n",   nt_devmode->driverextra);
-	fprintf(f, "fields: %d\n",        nt_devmode->fields);
-	fprintf(f, "orientation: %d\n",   nt_devmode->orientation);
-	fprintf(f, "papersize: %d\n",     nt_devmode->papersize);
-	fprintf(f, "paperlength: %d\n",   nt_devmode->paperlength);
-	fprintf(f, "paperwidth: %d\n",    nt_devmode->paperwidth);
-	fprintf(f, "scale: %d\n",         nt_devmode->scale);
-	fprintf(f, "copies: %d\n",        nt_devmode->copies);
-	fprintf(f, "defaultsource: %d\n", nt_devmode->defaultsource);
-	fprintf(f, "printquality: %d\n",  nt_devmode->printquality);
-	fprintf(f, "color: %d\n",         nt_devmode->color);
-	fprintf(f, "duplex: %d\n",        nt_devmode->duplex);
-	fprintf(f, "yresolution: %d\n",   nt_devmode->yresolution);
-	fprintf(f, "ttoption: %d\n",      nt_devmode->ttoption);
-	fprintf(f, "collate: %d\n",       nt_devmode->collate);
-	fprintf(f, "icmmethod: %d\n",     nt_devmode->icmmethod);
-	fprintf(f, "icmintent: %d\n",     nt_devmode->icmintent);
-	fprintf(f, "mediatype: %d\n",     nt_devmode->mediatype);
-	fprintf(f, "dithertype: %d\n",    nt_devmode->dithertype);
+	fdprintf(fd, "formname: %s\n",      nt_devmode->formname);
+	fdprintf(fd, "specversion: %d\n",   nt_devmode->specversion);
+	fdprintf(fd, "driverversion: %d\n", nt_devmode->driverversion);
+	fdprintf(fd, "size: %d\n",          nt_devmode->size);
+	fdprintf(fd, "driverextra: %d\n",   nt_devmode->driverextra);
+	fdprintf(fd, "fields: %d\n",        nt_devmode->fields);
+	fdprintf(fd, "orientation: %d\n",   nt_devmode->orientation);
+	fdprintf(fd, "papersize: %d\n",     nt_devmode->papersize);
+	fdprintf(fd, "paperlength: %d\n",   nt_devmode->paperlength);
+	fdprintf(fd, "paperwidth: %d\n",    nt_devmode->paperwidth);
+	fdprintf(fd, "scale: %d\n",         nt_devmode->scale);
+	fdprintf(fd, "copies: %d\n",        nt_devmode->copies);
+	fdprintf(fd, "defaultsource: %d\n", nt_devmode->defaultsource);
+	fdprintf(fd, "printquality: %d\n",  nt_devmode->printquality);
+	fdprintf(fd, "color: %d\n",         nt_devmode->color);
+	fdprintf(fd, "duplex: %d\n",        nt_devmode->duplex);
+	fdprintf(fd, "yresolution: %d\n",   nt_devmode->yresolution);
+	fdprintf(fd, "ttoption: %d\n",      nt_devmode->ttoption);
+	fdprintf(fd, "collate: %d\n",       nt_devmode->collate);
+	fdprintf(fd, "icmmethod: %d\n",     nt_devmode->icmmethod);
+	fdprintf(fd, "icmintent: %d\n",     nt_devmode->icmintent);
+	fdprintf(fd, "mediatype: %d\n",     nt_devmode->mediatype);
+	fdprintf(fd, "dithertype: %d\n",    nt_devmode->dithertype);
 	
 	if (nt_devmode->private != NULL)
 	{
-		fprintf(f, "private: ");		
+		fdprintf(fd, "private: ");		
 		for (i=0; i<nt_devmode->driverextra; i++)
-			fprintf(f, "%02X", nt_devmode->private[i]);
-		fprintf(f, "\n");	
+			fdprintf(fd, "%02X", nt_devmode->private[i]);
+		fdprintf(fd, "\n");	
 	}
 }
 
 /****************************************************************************
 ****************************************************************************/
-static void save_specifics(NT_PRINTER_PARAM *param, FILE *f)
+static void save_specifics(NT_PRINTER_PARAM *param, int fd)
 {
 	int i;
 	
 	while (param != NULL)
 	{
-		fprintf(f, "specific: %s#%d#%d#", param->value, param->type, param->data_len);
+		fdprintf(fd, "specific: %s#%d#%d#", param->value, param->type, param->data_len);
 		
 		for (i=0; i<param->data_len; i++)
-			fprintf(f, "%02X", param->data[i]);
+			fdprintf(fd, "%02X", param->data[i]);
 		
-		fprintf(f, "\n");
+		fdprintf(fd, "\n");
 	
 		param=param->next;	
 	}
@@ -625,7 +624,7 @@ static void save_specifics(NT_PRINTER_PARAM *param, FILE *f)
 ****************************************************************************/
 static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 {
-	FILE *f;
+	int fd;
 	pstring file;
 	fstring printer_name;
 	NT_DEVICEMODE *nt_devmode;
@@ -652,23 +651,24 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	/* each name is really defining an *unique* printer model */
 	/* I don't want to mangle the name to find it back when enumerating */
 	
-	if((f = sys_fopen(file, "w")) == NULL)
+	unlink(file);
+	if((fd = sys_open(file, O_WRONLY|O_CREAT|O_EXCL, 0644)) == -1)
 	{
 		DEBUG(0, ("add_a_printer_2: Cannot create printer file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
 
-	fprintf(f, "attributes: %d\n", info->attributes);
-	fprintf(f, "priority: %d\n", info->priority);
-	fprintf(f, "default_priority: %d\n", info->default_priority);
-	fprintf(f, "starttime: %d\n", info->starttime);
-	fprintf(f, "untiltime: %d\n", info->untiltime);
-	fprintf(f, "status: %d\n", info->status);
-	fprintf(f, "cjobs: %d\n", info->cjobs);
-	fprintf(f, "averageppm: %d\n", info->averageppm);
-	fprintf(f, "changeid: %d\n", info->changeid);
-	fprintf(f, "c_setprinter: %d\n", info->c_setprinter);
-	fprintf(f, "setuptime: %d\n", (int)info->setuptime);
+	fdprintf(fd, "attributes: %d\n", info->attributes);
+	fdprintf(fd, "priority: %d\n", info->priority);
+	fdprintf(fd, "default_priority: %d\n", info->default_priority);
+	fdprintf(fd, "starttime: %d\n", info->starttime);
+	fdprintf(fd, "untiltime: %d\n", info->untiltime);
+	fdprintf(fd, "status: %d\n", info->status);
+	fdprintf(fd, "cjobs: %d\n", info->cjobs);
+	fdprintf(fd, "averageppm: %d\n", info->averageppm);
+	fdprintf(fd, "changeid: %d\n", info->changeid);
+	fdprintf(fd, "c_setprinter: %d\n", info->c_setprinter);
+	fdprintf(fd, "setuptime: %d\n", (int)info->setuptime);
 
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -686,31 +686,31 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 		info->servername[0]='\0';
 	}
 
-	fprintf(f, "servername: %s\n", info->servername);
-	fprintf(f, "printername: %s\n", info->printername);
-	fprintf(f, "sharename: %s\n", info->sharename);
-	fprintf(f, "portname: %s\n", info->portname);
-	fprintf(f, "drivername: %s\n", info->drivername);
-	fprintf(f, "location: %s\n", info->location);
-	fprintf(f, "sepfile: %s\n", info->sepfile);
-	fprintf(f, "printprocessor: %s\n", info->printprocessor);
-	fprintf(f, "datatype: %s\n", info->datatype);
-	fprintf(f, "parameters: %s\n", info->parameters);
+	fdprintf(fd, "servername: %s\n", info->servername);
+	fdprintf(fd, "printername: %s\n", info->printername);
+	fdprintf(fd, "sharename: %s\n", info->sharename);
+	fdprintf(fd, "portname: %s\n", info->portname);
+	fdprintf(fd, "drivername: %s\n", info->drivername);
+	fdprintf(fd, "location: %s\n", info->location);
+	fdprintf(fd, "sepfile: %s\n", info->sepfile);
+	fdprintf(fd, "printprocessor: %s\n", info->printprocessor);
+	fdprintf(fd, "datatype: %s\n", info->datatype);
+	fdprintf(fd, "parameters: %s\n", info->parameters);
 
 	/* store the devmode and the private part if it exist */
 	nt_devmode=info->devmode;
 	if (nt_devmode!=NULL)
 	{
-		add_a_devicemode(nt_devmode, f);
+		add_a_devicemode(nt_devmode, fd);
 	}
 	
 	/* and store the specific parameters */
 	if (info->specific != NULL)
 	{
-		save_specifics(info->specific, f);
+		save_specifics(info->specific, fd);
 	}
 	
-	fclose(f);
+	close(fd);
 	
 	return (0);	
 }
@@ -898,15 +898,15 @@ static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr)
 ****************************************************************************/
 static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharename)
 {
-	FILE *f = NULL;
 	pstring file;
 	fstring printer_name;
 	NT_PRINTER_INFO_LEVEL_2 *info = NULL;
 	NT_DEVICEMODE *nt_devmode = NULL;
 	NT_PRINTER_PARAM *param = NULL;
-	char *line = NULL;
 	fstring p;
 	char *v = NULL;
+	char **lines;
+	int i;
 		
 	/*
 	 * the sharename argument is the SAMBA sharename
@@ -915,9 +915,9 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		
 	slprintf(file, sizeof(file)-1, "%s/NTprinter_%s",
 	         lp_nt_drivers_file(), printer_name);
-	
-	if((f = sys_fopen(file, "r")) == NULL)
-	{
+
+	lines = file_lines_load(file,NULL);
+	if(lines == NULL) {
 		DEBUG(2, ("get_a_printer_2: Cannot open printer file [%s]. Error was %s\n", file, strerror(errno) ));
 		return(2);
 	}
@@ -936,11 +936,10 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	
 	info->devmode=nt_devmode;
 
-	if((line=(char *)malloc(4096*sizeof(char))) == NULL)
-		goto err;
-	
-	while ( fgets(line, 4095, f) )
-	{
+	for (i=0; lines[i]; i++) {
+		char *line = lines[i];
+
+		if (!*line) continue;
 
 		v=strncpyn(p, line, sizeof(p), ':');
 		if (v==NULL)
@@ -1126,8 +1125,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 		}
 		
 	}
-	fclose(f);
-	free(line);
+	file_lines_free(lines);
 	
 	*info_ptr=info;
 	
@@ -1135,12 +1133,10 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
   err:
 
-	if(f)
-		fclose(f);
+	if(lines)
+		file_lines_free(lines);
 	if(info)
 		free_nt_printer_info_level_2(&info);
-	if(line)
-		free(line);
 	return(2);
 }
 

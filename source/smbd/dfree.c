@@ -203,24 +203,22 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 	(*dfree) = (*dsize) = 0;
 	(*bsize) = 512;
 
-
 	/*
 	 * If external disk calculation specified, use it.
 	 */
 
 	dfree_command = lp_dfree_command();
 	if (dfree_command && *dfree_command) {
-		pstring line;
 		char *p;
-		FILE *pp;
+		char **lines;
+		pstring syscmd;
 
-		slprintf (line, sizeof(pstring) - 1, "%s %s", dfree_command, path);
-		DEBUG (3, ("disk_free: Running command %s\n", line));
+		slprintf(syscmd, sizeof(syscmd), "%s %s", dfree_command, path);
+		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
 
-		pp = sys_popen(line, "r", False);
-		if (pp) {
-			fgets(line, sizeof(pstring), pp);
-			line[sizeof(pstring)-1] = '\0';
+		lines = file_lines_pload(syscmd, NULL);
+		if (lines) {
+			char *line = lines[0];
 			if (strlen(line) > 0)
 				line[strlen(line)-1] = '\0';
 
@@ -237,7 +235,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 				*bsize = (SMB_BIG_UINT)strtoul(p, NULL, 10);
 			else
 				*bsize = 1024;
-			sys_pclose (pp);
+			file_lines_free(lines);
 			DEBUG (3, ("Parsed output of dfree, dsize=%u, dfree=%u, bsize=%u\n",
 				(unsigned int)*dsize, (unsigned int)*dfree, (unsigned int)*bsize));
 
@@ -247,7 +245,7 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 				*dfree = 1024;
 		} else {
 			DEBUG (0, ("disk_free: sys_popen() failed for command %s. Error was : %s\n",
-				line, strerror(errno) ));
+				syscmd, strerror(errno) ));
 			fsusage(path, dfree, dsize);
 		}
 	} else

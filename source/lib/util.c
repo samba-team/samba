@@ -84,14 +84,8 @@ BOOL use_mangled_map = False;
 BOOL short_case_preserve;
 BOOL case_mangle;
 
-fstring remote_machine = "";
-fstring local_machine = "";
-fstring remote_arch = "UNKNOWN";
 static enum remote_arch_types ra_type = RA_UNKNOWN;
-fstring remote_proto = "UNKNOWN";
 pstring user_socket_options = DEFAULT_SOCKET_OPTIONS;
-
-pstring sesssetup_user = "";
 
 pstring global_myname = "";
 fstring global_myworkgroup = "";
@@ -99,6 +93,7 @@ char **my_netbios_names;
 
 char *daynames[] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 char *daynames_short[] = { "M", "Tu", "W", "Th", "F", "Sa", "Su" };
+static char *filename_dos(char *path, char *buf);
 
 /*************************************************************
  initialise password databases, domain names, domain sid.
@@ -241,8 +236,9 @@ char *get_numlist(char *p, uint32 **num, int *count)
 	return p;
 }
 
+
 /*******************************************************************
-  check if a file exists
+  check if a file exists - call vfs_file_exist for samba files
 ********************************************************************/
 BOOL file_exist(char *fname, SMB_STRUCT_STAT * sbuf)
 {
@@ -621,22 +617,6 @@ static void expand_one(char *Mask, int len)
 		pstrcpy(Mask, tmp);
 	}
 }
-
-/****************************************************************************
-parse out a filename from a path name. Assumes dos style filenames.
-****************************************************************************/
-static char *filename_dos(char *path, char *buf)
-{
-	char *p = strrchr(path, '\\');
-
-	if (!p)
-		pstrcpy(buf, path);
-	else
-		pstrcpy(buf, p + 1);
-
-	return (buf);
-}
-
 
 /****************************************************************************
 expand a wildcard expression, replacing *s with ?s
@@ -1662,22 +1642,20 @@ this is a version of setbuffer() for those machines that only have setvbuf
 
 /****************************************************************************
 parse out a filename from a path name. Assumes dos style filenames.
- ****************************************************************************/
-BOOL Memcpy(void *to, const void *from, size_t size)
+****************************************************************************/
+static char *filename_dos(char *path, char *buf)
 {
-	if (to == NULL)
-	{
-		return False;
-	}
-	if (from == NULL)
-	{
-		memset(to, 0, size);
-		return False;
-	}
+	char *p = strrchr(path, '\\');
 
-	memcpy(to, from, size);
-	return True;
+	if (!p)
+		pstrcpy(buf, path);
+	else
+		pstrcpy(buf, p + 1);
+
+	return (buf);
 }
+
+
 
 /****************************************************************************
 expand a pointer to be a particular size
@@ -1707,6 +1685,25 @@ void *Realloc(void *p, size_t size)
 	return (ret);
 }
 
+/****************************************************************************
+ protected memcpy that deals with NULL parameters.
+ ****************************************************************************/
+BOOL Memcpy(void *to, const void *from, size_t size)
+{
+	if (to == NULL)
+	{
+		return False;
+	}
+	if (from == NULL)
+	{
+		memset(to, 0, size);
+		return False;
+	}
+
+	memcpy(to, from, size);
+	return True;
+}
+
 
 /****************************************************************************
 free memory, checks for NULL
@@ -1731,7 +1728,7 @@ BOOL get_myname(char *my_name, struct in_addr *ip)
 	*hostname = 0;
 
 	/* get my host name */
-	if (gethostname(hostname, MAXHOSTNAMELEN) == -1)
+	if (gethostname(hostname, sizeof(hostname)) == -1)
 	{
 		DEBUG(0, ("gethostname failed\n"));
 		return False;
@@ -1743,6 +1740,8 @@ BOOL get_myname(char *my_name, struct in_addr *ip)
 		DEBUG(0, ("Get_Hostbyname: Unknown host %s\n", hostname));
 		return False;
 	}
+	/* Ensure null termination. */
+	hostname[sizeof(hostname) - 1] = '\0';
 
 	if (my_name)
 	{
@@ -1928,20 +1927,20 @@ static char *automount_lookup(char *user_name)
 				if (object->zo_data.zo_type == ENTRY_OBJ)
 				{
 					entry =
-						&object->zo_data.objdata_u.
-						en_data;
+						&object->zo_data.
+						objdata_u.en_data;
 					DEBUG(5,
 					      ("NIS+ entry type: %s\n",
 					       entry->en_type));
 					DEBUG(3,
 					      ("NIS+ result: %s\n",
-					       entry->en_cols.en_cols_val[1].
-					       ec_value.ec_value_val));
+					       entry->en_cols.
+					       en_cols_val[1].ec_value.
+					       ec_value_val));
 
 					pstrcpy(last_value,
-						entry->en_cols.
-						en_cols_val[1].ec_value.
-						ec_value_val);
+						entry->en_cols.en_cols_val[1].
+						ec_value.ec_value_val);
 					pstring_sub(last_value, "&",
 						    user_name);
 					fstrcpy(last_key, user_name);
@@ -2008,291 +2007,6 @@ static char *automount_lookup(char *user_name)
 }
 #endif /* WITH_NISPLUS_HOME */
 #endif
-
-/*******************************************************************
- Patch from jkf@soton.ac.uk
- This is Luke's original function with the NIS lookup code
- moved out to a separate function.
-*******************************************************************/
-static char *automount_server(char *user_name)
-{
-	static pstring server_name;
-
-	/* use the local machine name as the default */
-	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	pstrcpy(server_name, local_machine);
-
-#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-
-	if (lp_nis_home_map())
-	{
-		int home_server_len;
-		char *automount_value = automount_lookup(user_name);
-		home_server_len = strcspn(automount_value, ":");
-		DEBUG(5,
-		      ("NIS lookup succeeded.  Home server length: %d\n",
-		       home_server_len));
-		if (home_server_len > sizeof(pstring))
-		{
-			home_server_len = sizeof(pstring);
-		}
-		strncpy(server_name, automount_value, home_server_len);
-		server_name[home_server_len] = '\0';
-	}
-#endif
-
-	DEBUG(4, ("Home server: %s\n", server_name));
-
-	return server_name;
-}
-
-/*******************************************************************
- Patch from jkf@soton.ac.uk
- Added this to implement %p (NIS auto-map version of %H)
-*******************************************************************/
-static char *automount_path(char *user_name)
-{
-	static pstring server_path;
-
-	/* use the passwd entry as the default */
-	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
-	/* pstrcpy() copes with get_unixhome_dir() returning NULL */
-	pstrcpy(server_path, get_unixhome_dir(user_name));
-
-#if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
-
-	if (lp_nis_home_map())
-	{
-		char *home_path_start;
-		char *automount_value = automount_lookup(user_name);
-		home_path_start = strchr(automount_value, ':');
-		if (home_path_start != NULL)
-		{
-			DEBUG(5, ("NIS lookup succeeded.  Home path is: %s\n",
-				  home_path_start ? (home_path_start +
-						     1) : ""));
-			pstrcpy(server_path, home_path_start + 1);
-		}
-	}
-#endif
-
-	DEBUG(4, ("Home server path: %s\n", server_path));
-
-	return server_path;
-}
-
-
-/*******************************************************************
-sub strings with useful parameters
-Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
-Paul Rippin <pr3245@nopc.eurostat.cec.be>
-********************************************************************/
-void standard_sub_basic(char *str)
-{
-	char *s, *p;
-	char pidstr[10];
-
-	for (s = str; s && *s && (p = strchr(s, '%')); s = p)
-	{
-		switch (*(p + 1))
-		{
-			case 'I':
-				pstring_sub(p, "%I", client_addr());
-				break;
-			case 'L':
-				pstring_sub(p, "%L", local_machine);
-				break;
-			case 'M':
-				pstring_sub(p, "%M", client_name());
-				break;
-			case 'R':
-				pstring_sub(p, "%R", remote_proto);
-				break;
-			case 'T':
-				pstring_sub(p, "%T", timestring(False));
-				break;
-			case 'a':
-				pstring_sub(p, "%a", remote_arch);
-				break;
-			case 'd':
-			{
-				slprintf(pidstr, sizeof(pidstr) - 1, "%d",
-					 (int)getpid());
-				pstring_sub(p, "%d", pidstr);
-				break;
-			}
-			case 'h':
-				pstring_sub(p, "%h", myhostname());
-				break;
-			case 'm':
-				pstring_sub(p, "%m", remote_machine);
-				break;
-			case 'v':
-				pstring_sub(p, "%v", VERSION);
-				break;
-			case '$':	/* Expand environment variables */
-			{
-				/* Contributed by Branko Cibej <branko.cibej@hermes.si> */
-				fstring envname;
-				char *envval;
-				char *q, *r;
-				int copylen;
-
-				if (*(p + 2) != '(')
-				{
-					p += 2;
-					break;
-				}
-				if ((q = strchr(p, ')')) == NULL)
-				{
-					DEBUG(0,
-					      ("standard_sub_basic: Unterminated environment \
-					variable [%s]\n",
-					       p));
-					p += 2;
-					break;
-				}
-
-				r = p + 3;
-				copylen = MIN((q - r), (sizeof(envname) - 1));
-				strncpy(envname, r, copylen);
-				envname[copylen] = '\0';
-
-				if ((envval = getenv(envname)) == NULL)
-				{
-					DEBUG(0,
-					      ("standard_sub_basic: Environment variable [%s] not set\n",
-					       envname));
-					p += 2;
-					break;
-				}
-
-				copylen =
-					MIN((q + 1 - p),
-					    (sizeof(envname) - 1));
-				strncpy(envname, p, copylen);
-				envname[copylen] = '\0';
-				pstring_sub(p, envname, envval);
-				break;
-			}
-			case '\0':
-				p++;
-				break;	/* don't run off end if last character is % */
-			default:
-				p += 2;
-				break;
-		}
-	}
-	return;
-}
-
-/*******************************************************************
-user-specific sub strings with useful parameters
-********************************************************************/
-void standard_sub_vuser(const user_struct * vuser, char *str)
-{
-	char *s, *p;
-
-	for (s = str; vuser != NULL && s && *s && (p = strchr(s, '%')); s = p)
-	{
-		switch (*(p + 1))
-		{
-			case 'G':
-			{
-				const struct passwd *pass;
-				if ((pass = Get_Pwnam(vuser->name, False)) !=
-				    NULL)
-				{
-					pstring_sub(p, "%G",
-						    gidtoname(pass->pw_gid));
-				}
-				else
-				{
-					p += 2;
-				}
-				break;
-			}
-			case 'N':
-				pstring_sub(p, "%N",
-					    automount_server(vuser->name));
-				break;
-			case 'U':
-				pstring_sub(p, "%U", vuser->requested_name);
-				break;
-			case '\0':
-				p++;
-				break;	/* don't run off end if last character is % */
-			default:
-				p += 2;
-				break;
-		}
-	}
-	standard_sub_basic(str);
-	return;
-}
-
-
-/****************************************************************************
-do some standard substitutions in a string
-****************************************************************************/
-void standard_sub(connection_struct * conn, user_struct * vuser, char *str)
-{
-	char *p, *s, *home;
-
-	for (s = str; conn != NULL && (p = strchr(s, '%')); s = p)
-	{
-		switch (*(p + 1))
-		{
-			case 'H':
-				if ((home = get_unixhome_dir(conn->user)) !=
-				    NULL)
-				{
-					pstring_sub(p, "%H", home);
-				}
-				else
-				{
-					p += 2;
-				}
-				break;
-
-				/* Patch from jkf@soton.ac.uk Left the %N (NIS
-				 * server name) in standard_sub_basic as it is
-				 * a feature for logon servers, hence uses the
-				 * username.  The %p (NIS server path) code is
-				 * here as it is used instead of the default
-				 * "path =" string in [homes] and so needs the
-				 * service name, not the username.  */
-			case 'p':
-				pstring_sub(p, "%p",
-					    automount_path(lp_servicename
-							   (SNUM(conn))));
-				break;
-			case 'P':
-				pstring_sub(p, "%P", conn->connectpath);
-				break;
-			case 'S':
-				pstring_sub(p, "%S",
-					    lp_servicename(SNUM(conn)));
-					break;
-			case 'g':
-				pstring_sub(p, "%g", gidtoname(conn->gid));
-				break;
-			case 'u':
-				pstring_sub(p, "%u", conn->user);
-				break;
-
-			case '\0':
-				p++;
-				break;	/* don't run off the end of the string */
-			default:
-				p += 2;
-				break;
-		}
-	}
-
-	standard_sub_vuser(vuser, str);
-}
-
 
 
 /*******************************************************************
@@ -2379,194 +2093,6 @@ check if a process exists. Does this work on all unixes?
 BOOL process_exists(pid_t pid)
 {
 	return (kill(pid, 0) == 0 || errno != ESRCH);
-}
-
-
-/****************************************************************************
-Setup the groups a user belongs to.
-****************************************************************************/
-int get_unixgroups(const char *user, uid_t uid, gid_t gid, int *p_ngroups,
-		   gid_t ** p_groups)
-{
-	int i, ngroups;
-	gid_t grp = 0;
-	gid_t *groups = NULL;
-
-	if (-1 == initgroups(user, gid))
-	{
-		DEBUG(0, ("Unable to initgroups!\n"));
-		if (getuid() == 0)
-		{
-			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
-			{
-				DEBUG(0,
-				      ("This is probably a problem with the account %s\n",
-				       user));
-			}
-		}
-		return -1;
-	}
-
-	ngroups = sys_getgroups(0, &grp);
-	if (ngroups <= 0)
-	{
-		ngroups = 32;
-	}
-
-	if ((groups = (gid_t *) malloc(sizeof(gid_t) * ngroups)) == NULL)
-	{
-		DEBUG(0, ("get_unixgroups malloc fail !\n"));
-		return -1;
-	}
-
-	ngroups = sys_getgroups(ngroups, groups);
-
-	(*p_ngroups) = ngroups;
-	(*p_groups) = groups;
-
-	DEBUG(3, ("%s is in %d groups: ", user, ngroups));
-	for (i = 0; i < ngroups; i++)
-	{
-		DEBUG(3, ("%s%d", (i ? ", " : ""), (int)groups[i]));
-	}
-	DEBUG(3, ("\n"));
-
-	return 0;
-}
-
-/****************************************************************************
-get all unix groups.  copying group members is hideous on memory, so it's
-NOT done here.  however, names of unix groups _are_ string-allocated so
-free_unix_grps() must be called.
-****************************************************************************/
-BOOL get_unix_grps(int *p_ngroups, struct group **p_groups)
-{
-	struct group *grp;
-
-	DEBUG(10, ("get_unix_grps\n"));
-
-	if (p_ngroups == NULL || p_groups == NULL)
-	{
-		return False;
-	}
-
-	(*p_ngroups) = 0;
-	(*p_groups) = NULL;
-
-	setgrent();
-
-	while ((grp = getgrent()) != NULL)
-	{
-		struct group *copy_grp;
-
-
-		(*p_groups) =
-			(struct group *)Realloc((*p_groups),
-						(size_t) ((*p_ngroups) +
-							  1) *
-						sizeof(struct group));
-		if ((*p_groups) == NULL)
-		{
-			(*p_ngroups) = 0;
-			endgrent();
-
-			return False;
-		}
-
-		copy_grp = &(*p_groups)[*p_ngroups];
-		memcpy(copy_grp, grp, sizeof(*grp));
-		copy_grp->gr_name = strdup(copy_grp->gr_name);
-		copy_grp->gr_mem = NULL;
-
-		(*p_ngroups)++;
-	}
-
-	endgrent();
-
-	DEBUG(10, ("get_unix_grps: %d groups\n", (*p_ngroups)));
-	return True;
-}
-
-/****************************************************************************
-free memory associated with unix groups.
-****************************************************************************/
-void free_unix_grps(int ngroups, struct group *p_groups)
-{
-	int i;
-
-	if (p_groups == NULL)
-	{
-		return;
-	}
-
-	for (i = 0; i < ngroups; i++)
-	{
-		if (p_groups[i].gr_name != NULL)
-		{
-			free(p_groups[i].gr_name);
-		}
-	}
-
-	free(p_groups);
-}
-
-/*******************************************************************
-turn a gid into a group name
-********************************************************************/
-
-char *gidtoname(gid_t gid)
-{
-	static char name[40];
-	struct group *grp = getgrgid(gid);
-	if (grp)
-		return (grp->gr_name);
-	slprintf(name, sizeof(name) - 1, "%d", (int)gid);
-	return (name);
-}
-
-/*******************************************************************
-turn a group name into a gid
-********************************************************************/
-
-BOOL nametogid(const char *name, gid_t * gid)
-{
-	struct group *grp = getgrnam(name);
-	if (grp)
-	{
-		*gid = grp->gr_gid;
-		return True;
-	}
-	else if (isdigit(name[0]))
-	{
-		*gid = (gid_t) get_number(name);
-		return True;
-	}
-	else
-	{
-		return False;
-	}
-}
-
-/*******************************************************************
-turn a user name into a uid
-********************************************************************/
-BOOL nametouid(const char *name, uid_t * uid)
-{
-	const struct passwd *pass = Get_Pwnam(name, False);
-	if (pass)
-	{
-		*uid = pass->pw_uid;
-		return True;
-	}
-	else if (isdigit(name[0]))
-	{
-		*uid = (uid_t) get_number(name);
-		return True;
-	}
-	else
-	{
-		return False;
-	}
 }
 
 /*******************************************************************
@@ -2822,6 +2348,7 @@ set the horrid remote_arch string based on an enum.
 ********************************************************************/
 void set_remote_arch(enum remote_arch_types type)
 {
+	extern fstring remote_arch;
 	ra_type = type;
 	switch (type)
 	{
@@ -3188,42 +2715,6 @@ BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name)
 	DEBUG(10, ("reg_split_key: name %s\n", key_name));
 
 	return True;
-}
-
-char *get_trusted_serverlist(const char *domain)
-{
-	pstring tmp;
-	static pstring srv_list;
-	char *trusted_list = lp_trusted_domains();
-
-	if (domain == NULL ||
-	    strequal(domain, "") || strequal(lp_workgroup(), domain))
-	{
-		pstrcpy(srv_list, lp_passwordserver());
-		DEBUG(10, ("local domain server list: %s\n", srv_list));
-		return srv_list;
-	}
-
-	if (!next_token(&trusted_list, tmp, NULL, sizeof(tmp)))
-	{
-		return NULL;
-	}
-
-	do
-	{
-		fstring trust_dom;
-		split_at_first_component(tmp, trust_dom, '=', srv_list);
-
-		if (strequal(domain, trust_dom))
-		{
-			DEBUG(10, ("trusted: %s\n", srv_list));
-			return srv_list;
-		}
-
-	}
-	while (next_token(NULL, tmp, NULL, sizeof(tmp)));
-
-	return NULL;
 }
 
 /**********************************************************

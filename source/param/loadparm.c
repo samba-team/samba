@@ -1190,11 +1190,20 @@ static void init_locals(void)
     {
     case PRINT_BSD:
     case PRINT_AIX:
+      string_set(&sDefault.szLpqcommand,"lpq -P%p");
+      string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
+      string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      break;
+
     case PRINT_LPRNG:
     case PRINT_PLP:
       string_set(&sDefault.szLpqcommand,"lpq -P%p");
       string_set(&sDefault.szLprmcommand,"lprm -P%p %j");
       string_set(&sDefault.szPrintcommand,"lpr -r -P%p %s");
+      string_set(&sDefault.szQueuepausecommand, "lpc stop %p");
+      string_set(&sDefault.szQueueresumecommand, "lpc start %p");
+      string_set(&sDefault.szLppausecommand, "lpc hold %p %j");
+      string_set(&sDefault.szLpresumecommand, "lpc release %p %j");
       break;
 
     case PRINT_CUPS:
@@ -2121,19 +2130,15 @@ static BOOL handle_netbios_name(char *pszParmValue,char **ptr)
  Do the work of sourcing in environment variable/value pairs.
 ***************************************************************************/
 
-static BOOL source_env(FILE *fenv)
+static BOOL source_env(char **lines)
 {
-	pstring line;
 	char *varval;
 	size_t len;
+	int i;
 	char *p;
-    
-	while (!feof(fenv)) {
-		if (fgets(line, sizeof(line), fenv) == NULL)
-			break;
 
-		if(feof(fenv))
-			break;
+	for (i=0; lines[i]; i++) {
+		char *line = lines[i];
 
 		if((len = strlen(line)) == 0)
 			continue;
@@ -2144,7 +2149,7 @@ static BOOL source_env(FILE *fenv)
 		if ((varval=malloc(len+1)) == NULL) {
 			DEBUG(0,("source_env: Not enough memory!\n"));
 			return(False);
-    }
+		}
 
 		DEBUG(4,("source_env: Adding to environment: %s\n", line));
 		strncpy(varval, line, len);
@@ -2155,7 +2160,7 @@ static BOOL source_env(FILE *fenv)
 			DEBUG(4,("source_env: missing '=': %s\n", line));
 			continue;
 		}
-    
+
 		if (putenv(varval)) {
 			DEBUG(0,("source_env: Failed to put environment variable %s\n", varval ));
 			continue;
@@ -2164,11 +2169,11 @@ static BOOL source_env(FILE *fenv)
 		*p='\0';
 		p++;
 		DEBUG(4,("source_env: getting var %s = %s\n", line, getenv(line)));
-    }
+	}
 
 	DEBUG(4,("source_env: returning successfully\n"));
 	return(True);
-    }
+}
 
 /***************************************************************************
  Handle the source environment operation
@@ -2178,8 +2183,8 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 {
 	pstring fname;
 	char *p = fname;
-	FILE *env;
 	BOOL result;
+	char **lines;
 
 	pstrcpy(fname,pszParmValue);
 
@@ -2194,47 +2199,19 @@ static BOOL handle_source_env(char *pszParmValue,char **ptr)
 	 */
 
 	if (*p == '|') {
-
-		DEBUG(4, ("handle_source_env: source env from pipe\n"));
-		p++;
-
-		if ((env = sys_popen(p, "r", True)) == NULL) {
-			DEBUG(0,("handle_source_env: Failed to popen %s. Error was %s\n", p, strerror(errno) ));
-			return(False);
-    }
-
-		DEBUG(4, ("handle_source_env: calling source_env()\n"));
-		result = source_env(env);
-		sys_pclose(env);
-
+		lines = file_lines_pload(p+1, NULL);
 	} else {
-
-		SMB_STRUCT_STAT st;
-
-		DEBUG(4, ("handle_source_env: source env from file %s\n", fname));
-		if ((env = sys_fopen(fname, "r")) == NULL) {
-			DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
-			return(False);
+		lines = file_lines_load(fname, NULL);
 	}
-	
-		/*
-		 * Ensure this file is owned by root and not writable by world.
-		 */
-		if(sys_fstat(fileno(env), &st) != 0) {
-			DEBUG(0,("handle_source_env: Failed to stat file %s, Error was %s\n", fname, strerror(errno) ));
-			fclose(env);
-			return False;
-	}
-	
-		if((st.st_uid != (uid_t)0) || (st.st_mode & S_IWOTH)) {
-			DEBUG(0,("handle_source_env: unsafe to source env file %s. Not owned by root or world writable\n", fname ));
-			fclose(env);
-			return False;
-    }
 
-		result=source_env(env);
-		fclose(env);
+	if (!lines) {
+		DEBUG(0,("handle_source_env: Failed to open file %s, Error was %s\n", fname, strerror(errno) ));
+		return(False);
 	}
+
+	result=source_env(lines);
+	file_lines_free(lines);
+
 	return(result);
 }
 
@@ -3065,7 +3042,7 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
 {
   pstring n2;
   BOOL bRetval;
- 
+
   add_to_file_list(pszFname);
 
   bRetval = False;

@@ -1308,3 +1308,37 @@ int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key)
 
 	return tdb_unlock(tdb, BUCKET(tdb_hash(&key)));
 }
+
+
+/* these two utility functions provide convent routines for storing
+   simple string/value pairs in a tdb. They also serve as examples
+ */
+
+/* fetch a value by string key, return -1 if not found */
+int tdb_get_int(TDB_CONTEXT *tdb, char *keystr)
+{
+	TDB_DATA key, data;
+	int ret;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr || data.dsize != sizeof(int)) return -1;
+	
+	memcpy(&ret, data.dptr, sizeof(int));
+	free(data.dptr);
+	return ret;
+}
+
+/* store a value by string key, return 0 on success, -1 on failure */
+int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
+{
+	TDB_DATA key, data;
+
+	key.dptr = keystr;
+	key.dsize = strlen(keystr);
+	data.dptr = (void *)&v;
+	data.dsize = sizeof(int);
+
+	return tdb_store(tdb, key, data, TDB_REPLACE);
+}

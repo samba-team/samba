@@ -404,6 +404,7 @@ int reply_ioctl(connection_struct * conn,
 	uint32 ioctl_code = (device << 16) + function;
 	int replysize, outsize;
 	char *p;
+	files_struct *fsp = file_fsp(inbuf, smb_vwv0);
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
 
@@ -425,7 +426,7 @@ int reply_ioctl(connection_struct * conn,
 	switch (ioctl_code)
 	{
 		case IOCTL_QUERY_JOB_INFO:
-			SSVAL(p, 0, 1);	/* Job number */
+			SSVAL(p, 0, fsp->print_jobid);	/* Job number */
 			StrnCpy(p + 2, global_myname, 15);	/* Our NetBIOS name */
 			StrnCpy(p + 18, lp_servicename(SNUM(conn)), 13);	/* Service name */
 			break;
@@ -478,6 +479,24 @@ static int session_trust_account(connection_struct * conn,
 
 	SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 	return ERROR(0, status);
+}
+
+/****************************************************************************
+ Return a bad password error configured for the correct client type.
+****************************************************************************/
+
+static int bad_password_error(char *inbuf, char *outbuf)
+{
+	enum remote_arch_types ra_type = get_remote_arch();
+
+	if (((ra_type == RA_WINNT) || (ra_type == RA_WIN2K)) &&
+	    (global_client_caps & (CAP_NT_SMBS | CAP_STATUS32)))
+	{
+		SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		return (ERROR(0, 0xc0000000 | NT_STATUS_LOGON_FAILURE));
+	}
+
+	return (ERROR(ERRSRV, ERRbadpw));
 }
 
 /****************************************************************************
@@ -744,14 +763,26 @@ user %s attempted down-level SMB connection\n",
 			if (lp_security() >= SEC_USER)
 			{
 				if (lp_map_to_guest() == NEVER_MAP_TO_GUEST)
-					return (ERROR(ERRSRV, ERRbadpw));
+				{
+					DEBUG(1,
+					      ("Rejecting user '%s': authentication failed\n",
+					       user));
+					return bad_password_error(inbuf,
+								  outbuf);
+				}
 
 				if (lp_map_to_guest() ==
 				    MAP_TO_GUEST_ON_BAD_USER)
 				{
 					if (Get_Pwnam(user, True))
-						return (ERROR
-							(ERRSRV, ERRbadpw));
+					{
+						DEBUG(1,
+						      ("Rejecting user '%s': bad password\n",
+						       user));
+						return
+							bad_password_error
+							(inbuf, outbuf);
+					}
 				}
 
 				/*
@@ -822,7 +853,7 @@ user %s attempted down-level SMB connection\n",
 			DEBUG(1,
 			      ("Username %s is invalid on this system\n",
 			       user));
-			return (ERROR(ERRSRV, ERRbadpw));
+			return bad_password_error(inbuf, outbuf);
 		}
 		gid = pw->pw_gid;
 		uid = pw->pw_uid;
@@ -3077,7 +3108,7 @@ int reply_printopen(connection_struct * conn,
 		return (ERROR(ERRSRV, ERRnofids));
 
 	/* Open for exclusive use, write only. */
-	print_open_file(fsp, conn, "dos.prn");
+	print_fsp_open(fsp, conn, "dos.prn");
 
 	if (!fsp->open)
 	{
@@ -3135,10 +3166,6 @@ int reply_printqueue(connection_struct * conn,
 	int outsize = set_message(outbuf, 2, 3, True);
 	int max_count = SVAL(inbuf, smb_vwv0);
 	int start_index = SVAL(inbuf, smb_vwv1);
-	uint16 vuid = SVAL(inbuf, smb_uid);
-	vuser_key key;
-	key.pid = conn != NULL ? conn->smbd_pid : getpid();
-	key.vuid = vuid;
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
@@ -3158,8 +3185,7 @@ int reply_printqueue(connection_struct * conn,
 	{
 		print_queue_struct *queue = NULL;
 		char *p = smb_buf(outbuf) + 3;
-		int count =
-			get_printqueue(SNUM(conn), conn, &key, &queue, NULL);
+		int count = print_queue_status(SNUM(conn), &queue, NULL);
 		int num_to_get = ABS(max_count);
 		int first =
 			(max_count >
@@ -3177,8 +3203,7 @@ int reply_printqueue(connection_struct * conn,
 			put_dos_date2(p, 0, queue[i].time);
 			CVAL(p, 4) =
 				(queue[i].status == LPQ_PRINTING ? 2 : 3);
-			SSVAL(p, 5,
-			      printjob_encode(SNUM(conn), queue[i].job));
+			SSVAL(p, 5, queue[i].job);
 			SIVAL(p, 7, queue[i].size);
 			CVAL(p, 11) = 0;
 			StrnCpy(p + 12, queue[i].user, 16);
@@ -4183,6 +4208,7 @@ int reply_setdir(connection_struct * conn, char *inbuf, char *outbuf,
 /****************************************************************************
   reply to a lockingX request
 ****************************************************************************/
+
 int reply_lockingX(connection_struct * conn, char *inbuf, char *outbuf,
 		   int length, int bufsize)
 {

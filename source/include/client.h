@@ -97,8 +97,7 @@ struct cli_state
 	size_t nt_cli_chal_len;
 
 	BOOL use_ntlmv2;
-	BOOL redirect;
-	BOOL reuse;
+	BOOL use_oplocks;
 
 	uint32 sesskey;
 	int serverzone;

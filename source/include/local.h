@@ -118,11 +118,6 @@
 /* the size of the uid cache used to reduce valid user checks */
 #define UID_CACHE_SIZE 4
 
-/* if mmap is enabled, then this is the maximum size of file to use
-   the mmap code on. We don't want to mmap huge files as virtual
-   address spaces are limited */
-#define MAX_MMAP_SIZE (100*0x100000)
-
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */
 #define DEFAULT_SMBD_TIMEOUT (60*60*24*7)

@@ -142,7 +142,7 @@ enum netbios_reply_type_code { NMB_QUERY, NMB_STATUS, NMB_REG, NMB_REG_REFRESH,
 enum name_source {LMHOSTS_NAME, REGISTER_NAME, SELF_NAME, DNS_NAME, 
                   DNSFAIL_NAME, PERMANENT_NAME, WINS_PROXY_NAME};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
-enum packet_type {NMB_PACKET, DGRAM_PACKET };
+enum packet_type {NMB_PACKET, DGRAM_PACKET};
 
 enum master_state
 {
@@ -549,11 +549,6 @@ struct packet_struct
 /* what is the maximum period between name refreshes. Note that this only
    affects non-permanent self names (in seconds) */
 #define MAX_REFRESH_TIME (60*20)
-
-/* Types of machine we can announce as. */
-#define ANNOUNCE_AS_NT 1
-#define ANNOUNCE_AS_WIN95 2
-#define ANNOUNCE_AS_WFW 3
 
 /* Macro's to enumerate subnets either with or without
    the UNICAST subnet. */

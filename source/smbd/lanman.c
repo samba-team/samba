@@ -59,20 +59,16 @@ extern fstring global_sam_name;
 #define ACCESS_CREATE 0x04
 
 #define SHPWLEN 8		/* share password length */
-#define NNLEN 12		/* 8.3 net name length */
-#define SNLEN 15		/* service name length */
-#define QNLEN 12		/* queue name maximum length */
 
-extern int Client;
-extern int smb_read_error;
+static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
+			    int mdrcnt,int mprcnt,
+			    char **rdata,char **rparam,
+			    int *rdata_len,int *rparam_len);
+static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
+			 int mdrcnt,int mprcnt,
+			 char **rdata,char **rparam,
+			 int *rdata_len,int *rparam_len);
 
-static BOOL api_Unsupported(connection_struct * conn, uint16 vuid,
-			    char *param, char *data, int mdrcnt, int mprcnt,
-			    char **rdata, char **rparam, int *rdata_len,
-			    int *rparam_len);
-static BOOL api_TooSmall(connection_struct * conn, uint16 vuid, char *param,
-			 char *data, int mdrcnt, int mprcnt, char **rdata,
-			 char **rparam, int *rdata_len, int *rparam_len);
 
 static size_t CopyUnistr2(char **p2, const UNISTR2 *uni_str, int *n)
 {
@@ -101,8 +97,7 @@ static size_t CopyUnistr2Ptr(const char *base,
 static int CopyAndAdvance(char **dst, char *src, int *n)
 {
 	int l;
-	if (!src || !dst || !n || !(*dst))
-		return (0);
+  if (!src || !dst || !n || !(*dst)) return(0);
 	StrnCpy(*dst, src, *n - 1);
 	l = strlen(*dst) + 1;
 	(*dst) += l;
@@ -110,17 +105,23 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 	return l;
 }
 
-static char *Expand(connection_struct * conn, const vuser_key * key, int snum,
-		    char *s)
+static int StrlenExpanded(connection_struct *conn, int snum, char* s)
 {
-	user_struct *vuser;
+	pstring buf;
+	if (!s) return(0);
+	StrnCpy(buf,s,sizeof(buf)/2);
+	pstring_sub(buf,"%S",lp_servicename(snum));
+	standard_sub_conn(conn,buf);
+	return strlen(buf) + 1;
+}
+
+static char* Expand(connection_struct *conn, int snum, char* s)
+{
 	static pstring buf;
-	if (!s)
-		return (NULL);
+	if (!s) return(NULL);
 	StrnCpy(buf, s, sizeof(buf) / 2);
 	pstring_sub(buf, "%S", lp_servicename(snum));
-	vuser = get_valid_user_struct(key);
-	standard_sub(conn, vuser, buf);
+	standard_sub_conn(conn,buf);
 	return &buf[0];
 }
 
@@ -132,8 +133,7 @@ static BOOL prefix_ok(char *str, char *prefix)
 	return (strncmp(str, prefix, strlen(prefix)) == 0);
 }
 
-struct pack_desc
-{
+struct pack_desc {
 	char *format;		/* formatstring for structure */
 	char *subformat;	/* subformat for structure */
 	char *base;		/* baseaddress of buffer */
@@ -151,12 +151,9 @@ struct pack_desc
 static int get_counter(char **p)
 {
 	int i, n;
-	if (!p || !(*p))
-		return (1);
-	if (!isdigit((int)**p))
-		return 1;
-	for (n = 0;;)
-	{
+  if (!p || !(*p)) return(1);
+  if (!isdigit((int)**p)) return 1;
+  for (n = 0;;) {
 		i = **p;
 		if (isdigit(i))
 			n = 10 * n + (i - '0');
@@ -169,13 +166,13 @@ static int get_counter(char **p)
 static int getlen(char *p)
 {
 	int n = 0;
-	if (!p)
-		return (0);
-	while (*p)
-	{
-		switch (*p++)
-		{
+  if (!p) return(0);
+  while (*p) {
+    switch( *p++ ) {
 			case 'W':	/* word (2 byte) */
+				n += 2;
+				break;
+			case 'K':	/* status word? (2 byte) */
 				n += 2;
 				break;
 			case 'N':	/* count of substructures (word) at end */
@@ -203,19 +200,16 @@ static BOOL init_package(struct pack_desc *p, int count, int subcount)
 	int n = p->buflen;
 	int i;
 
-	if (!p->format || !p->base)
-		return (False);
+  if (!p->format || !p->base) return(False);
 
 	i = count * getlen(p->format);
-	if (p->subformat)
-		i += subcount * getlen(p->subformat);
+  if (p->subformat) i += subcount * getlen(p->subformat);
 	p->structbuf = p->base;
 	p->neededlen = 0;
 	p->usedlen = 0;
 	p->subcount = 0;
 	p->curpos = p->format;
-	if (i > n)
-	{
+  if (i > n) {
 		p->neededlen = i;
 		i = n = 0;
 		p->errcode = ERRmoredata;
@@ -251,12 +245,10 @@ static int package(va_alist)
 	p = va_arg(args, struct pack_desc *);
 #endif
 
-	if (!*p->curpos)
-	{
+  if (!*p->curpos) {
 		if (!p->subcount)
 			p->curpos = p->format;
-		else
-		{
+    else {
 			p->curpos = p->subformat;
 			p->subcount--;
 		}
@@ -267,39 +259,37 @@ static int package(va_alist)
 #endif
 	stringneeded = -1;
 
-	if (!p->curpos)
-	{
+  if (!p->curpos) {
 		va_end(args);
 		return (0);
 	}
 
-	switch (*p->curpos++)
-	{
+  switch( *p->curpos++ ) {
 		case 'W':	/* word (2 byte) */
 			needed = 2;
 			temp = va_arg(args, int);
-			if (p->buflen >= needed)
-				SSVAL(p->structbuf, 0, temp);
+    if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
+			break;
+		case 'K':	/* status word? (2 byte) */
+			needed = 2;
+			temp = va_arg(args, int);
+    if (p->buflen >= needed) SSVAL(p->structbuf,0,temp);
 			break;
 		case 'N':	/* count of substructures (word) at end */
 			needed = 2;
 			p->subcount = va_arg(args, int);
-			if (p->buflen >= needed)
-				SSVAL(p->structbuf, 0, p->subcount);
+    if (p->buflen >= needed) SSVAL(p->structbuf,0,p->subcount);
 			break;
 		case 'D':	/* double word (4 byte) */
 			needed = 4;
 			temp = va_arg(args, int);
-			if (p->buflen >= needed)
-				SIVAL(p->structbuf, 0, temp);
+    if (p->buflen >= needed) SIVAL(p->structbuf,0,temp);
 			break;
 		case 'B':	/* byte (with optional counter) */
 			needed = get_counter(&p->curpos);
 			{
 				char *s = va_arg(args, char *);
-				if (p->buflen >= needed)
-					StrnCpy(p->structbuf, s ? s : "",
-						needed - 1);
+      if (p->buflen >= needed) StrnCpy(p->structbuf,s?s:"",needed-1);
 			}
 			break;
 		case 'z':	/* offset to zero terminated string (4 byte) */
@@ -319,28 +309,20 @@ static int package(va_alist)
 			break;
 	}
 	va_end(args);
-	if (stringneeded >= 0)
-	{
+  if (stringneeded >= 0) {
 		needed = 4;
-		if (p->buflen >= needed)
-		{
+    if (p->buflen >= needed) {
 			stringused = stringneeded;
-			if (stringused > p->stringlen)
-			{
+      if (stringused > p->stringlen) {
 				stringused = (is_string ? p->stringlen : 0);
-				if (p->errcode == NERR_Success)
-					p->errcode = ERRmoredata;
+	if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
 			}
 			if (!stringused)
 				SIVAL(p->structbuf, 0, 0);
-			else
-			{
-				SIVAL(p->structbuf, 0,
-				      PTR_DIFF(p->stringbuf, p->base));
-				memcpy(p->stringbuf, str ? str : "",
-				       stringused);
-				if (is_string)
-					p->stringbuf[stringused - 1] = '\0';
+      else {
+	SIVAL(p->structbuf,0,PTR_DIFF(p->stringbuf,p->base));
+	memcpy(p->stringbuf,str?str:"",stringused);
+	if (is_string) p->stringbuf[stringused-1] = '\0';
 				p->stringbuf += stringused;
 				p->stringlen -= stringused;
 				p->usedlen += stringused;
@@ -349,16 +331,13 @@ static int package(va_alist)
 		p->neededlen += stringneeded;
 	}
 	p->neededlen += needed;
-	if (p->buflen >= needed)
-	{
+  if (p->buflen >= needed) {
 		p->structbuf += needed;
 		p->buflen -= needed;
 		p->usedlen += needed;
 	}
-	else
-	{
-		if (p->errcode == NERR_Success)
-			p->errcode = ERRmoredata;
+  else {
+    if (p->errcode == NERR_Success) p->errcode = ERRmoredata;
 	}
 	return 1;
 }
@@ -400,8 +379,7 @@ static int check_printq_info(struct pack_desc *desc,
 			     int uLevel, char *id1, char *id2)
 {
 	desc->subformat = NULL;
-	switch (uLevel)
-	{
+  switch( uLevel ) {
 		case 0:
 			desc->format = "B13";
 			break;
@@ -422,18 +400,58 @@ static int check_printq_info(struct pack_desc *desc,
 		case 5:
 			desc->format = "z";
 			break;
+		case 51:
+			desc->format = "K";
+			break;
 		case 52:
 			desc->format = "WzzzzzzzzN";
 			desc->subformat = "z";
 			break;
-		default:
-			return False;
+  default: return False;
 	}
-	if (strcmp(desc->format, id1) != 0)
-		return False;
-	if (desc->subformat && strcmp(desc->subformat, id2) != 0)
-		return False;
+  if (strcmp(desc->format,id1) != 0) return False;
+  if (desc->subformat && strcmp(desc->subformat,id2) != 0) return False;
 	return True;
+}
+
+
+#define JOB_STATUS_QUEUED 0
+#define JOB_STATUS_PAUSED 1
+#define JOB_STATUS_SPOOLING 2
+#define JOB_STATUS_PRINTING 3
+#define JOB_STATUS_PRINTED 4
+
+#define QUEUE_STATUS_PAUSED 1
+#define QUEUE_STATUS_ERROR 2
+
+/* turn a print job status into a on the wire status 
+*/
+static int printj_status(int v)
+{
+	switch (v) {
+		case LPQ_QUEUED:
+			return JOB_STATUS_QUEUED;
+		case LPQ_PAUSED:
+			return JOB_STATUS_PAUSED;
+		case LPQ_SPOOLING:
+			return JOB_STATUS_SPOOLING;
+		case LPQ_PRINTING:
+			return JOB_STATUS_PRINTING;
+	}
+	return 0;
+}
+
+/* turn a print queue status into a on the wire status 
+*/
+static int printq_status(int v)
+{
+	switch (v) {
+		case LPQ_QUEUED:
+			return 0;
+		case LPQ_PAUSED:
+			return QUEUE_STATUS_PAUSED;
+	}
+	return QUEUE_STATUS_ERROR;
 }
 
 static void fill_printjob_info(connection_struct * conn, int snum, int uLevel,
@@ -445,33 +463,30 @@ static void fill_printjob_info(connection_struct * conn, int snum, int uLevel,
 	/* the client expects localtime */
 	t -= TimeDiff(t);
 
-	PACKI(desc, "W", printjob_encode(snum, queue->job));	/* uJobId */
-	if (uLevel == 1)
-	{
+	PACKI(desc, "W", queue->job);	/* uJobId */
+  if (uLevel == 1) {
 		PACKS(desc, "B21", queue->user);	/* szUserName */
 		PACKS(desc, "B", "");	/* pad */
 		PACKS(desc, "B16", "");	/* szNotifyName */
 		PACKS(desc, "B10", "PM_Q_RAW");	/* szDataType */
 		PACKS(desc, "z", "");	/* pszParms */
 		PACKI(desc, "W", n + 1);	/* uPosition */
-		PACKI(desc, "W", queue->status);	/* fsStatus */
+		PACKI(desc, "W", printj_status(queue->status));	/* fsStatus */
 		PACKS(desc, "z", "");	/* pszStatus */
 		PACKI(desc, "D", t);	/* ulSubmitted */
 		PACKI(desc, "D", queue->size);	/* ulSize */
 		PACKS(desc, "z", queue->file);	/* pszComment */
 	}
-	if (uLevel == 2 || uLevel == 3)
-	{
+  if (uLevel == 2 || uLevel == 3) {
 		PACKI(desc, "W", queue->priority);	/* uPriority */
 		PACKS(desc, "z", queue->user);	/* pszUserName */
 		PACKI(desc, "W", n + 1);	/* uPosition */
-		PACKI(desc, "W", queue->status);	/* fsStatus */
+		PACKI(desc, "W", printj_status(queue->status));	/* fsStatus */
 		PACKI(desc, "D", t);	/* ulSubmitted */
 		PACKI(desc, "D", queue->size);	/* ulSize */
 		PACKS(desc, "z", "Samba");	/* pszComment */
 		PACKS(desc, "z", queue->file);	/* pszDocument */
-		if (uLevel == 3)
-		{
+    if (uLevel == 3) {
 			PACKS(desc, "z", "");	/* pszNotifyName */
 			PACKS(desc, "z", "PM_Q_RAW");	/* pszDataType */
 			PACKS(desc, "z", "");	/* pszParms */
@@ -486,174 +501,69 @@ static void fill_printjob_info(connection_struct * conn, int snum, int uLevel,
 	}
 }
 
-static void fill_printq_info(connection_struct * conn, const vuser_key * key,
-			     int snum, int uLevel, struct pack_desc *desc,
-			     int count, print_queue_struct * queue,
+
+static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
+				struct pack_desc* desc,
+				int count, print_queue_struct* queue,
 			     print_status_struct * status)
 {
-	switch (uLevel)
-	{
-		case 1:
-		case 2:
-			PACKS(desc, "B13", SERVICE(snum));
-			break;
-		case 3:
-		case 4:
-		case 5:
-			PACKS(desc, "z",
-			      Expand(conn, key, snum, SERVICE(snum)));
-			break;
-	}
-
-	if (uLevel == 1 || uLevel == 2)
-	{
-		PACKS(desc, "B", "");	/* alignment */
-		PACKI(desc, "W", 5);	/* priority */
-		PACKI(desc, "W", 0);	/* start time */
-		PACKI(desc, "W", 0);	/* until time */
-		PACKS(desc, "z", "");	/* pSepFile */
-		PACKS(desc, "z", "lpd");	/* pPrProc */
-		PACKS(desc, "z", SERVICE(snum));	/* pDestinations */
-		PACKS(desc, "z", "");	/* pParms */
-		if (snum < 0)
-		{
-			PACKS(desc, "z", "UNKNOWN PRINTER");
-			PACKI(desc, "W", LPSTAT_ERROR);
-		}
-		else if (!status || !status->message[0])
-		{
-			PACKS(desc, "z",
-			      Expand(conn, key, snum, lp_comment(snum)));
-			PACKI(desc, "W", LPSTAT_OK);	/* status */
-		}
-		else
-		{
-			PACKS(desc, "z", status->message);
-			PACKI(desc, "W", status->status);	/* status */
-		}
-		PACKI(desc, (uLevel == 1 ? "W" : "N"), count);
-	}
-	if (uLevel == 3 || uLevel == 4)
-	{
-		PACKI(desc, "W", 5);	/* uPriority */
-		PACKI(desc, "W", 0);	/* uStarttime */
-		PACKI(desc, "W", 0);	/* uUntiltime */
-		PACKI(desc, "W", 5);	/* pad1 */
-		PACKS(desc, "z", "");	/* pszSepFile */
-		PACKS(desc, "z", "WinPrint");	/* pszPrProc */
-		PACKS(desc, "z", "");	/* pszParms */
-		if (!status || !status->message[0])
-		{
-			PACKS(desc, "z", Expand(conn, key, snum, lp_comment(snum)));	/* pszComment */
-			PACKI(desc, "W", LPSTAT_OK);	/* fsStatus */
-		}
-		else
-		{
-			PACKS(desc, "z", status->message);	/* pszComment */
-			PACKI(desc, "W", status->status);	/* fsStatus */
-		}
-		PACKI(desc, (uLevel == 3 ? "W" : "N"), count);	/* cJobs */
-		PACKS(desc, "z", SERVICE(snum));	/* pszPrinters */
-		PACKS(desc, "z", lp_printerdriver(snum));	/* pszDriverName */
-		PackDriverData(desc);	/* pDriverData */
-	}
-	if (uLevel == 2 || uLevel == 4)
-	{
-		int i;
-		for (i = 0; i < count; i++)
-			fill_printjob_info(conn, snum, uLevel == 2 ? 1 : 2,
-					   desc, &queue[i], i);
-	}
-
-	if (uLevel == 52)
-	{
 		int i, ok = 0;
 		pstring tok, driver, datafile, langmon, helpfile, datatype;
-		char *p, *q;
-		FILE *f;
-		pstring fname;
+	char *p;
+	char **lines, *line;
 
-		pstrcpy(fname, lp_driverfile());
-		f = sys_fopen(fname, "r");
-		if (!f)
-		{
-			DEBUG(3,
-			      ("fill_printq_info: Can't open %s - %s\n",
-			       fname, strerror(errno)));
+	lines = file_lines_load(lp_driverfile(), NULL);
+	if (!lines) {
+		DEBUG(3, ("fill_printq_info: Can't open %s - %s\n",
+			  lp_driverfile(), strerror(errno)));
 			desc->errcode = NERR_notsupported;
 			return;
 		}
 
-		if ((p = (char *)malloc(8192 * sizeof(char))) == NULL)
-		{
-			DEBUG(0, ("fill_printq_info: malloc fail !\n"));
-			desc->errcode = NERR_notsupported;
-			fclose(f);
-			return;
-		}
-
-		memset(p, 0, 8192 * sizeof(char));
-		q = p;
-
-		/* lookup the long printer driver name in the file description */
-		while (f && !feof(f) && !ok)
-		{
-			p = q;	/* reset string pointer */
-			fgets(p, 8191, f);
-			p[strlen(p) - 1] = '\0';
+	/* lookup the long printer driver name in the file
+	   description */
+	for (i=0;lines[i] && !ok;i++) {
+		p = lines[i];
 			if (next_token(&p, tok, ":", sizeof(tok)) &&
 			    (strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-			    (!strncmp(tok, lp_printerdriver(snum),
-				      strlen(lp_printerdriver(snum)))))
+		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum)))))
 				ok = 1;
 		}
-		fclose(f);
+	line = strdup(p);
+	p = line;
+	file_lines_free(lines);
 
 		/* driver file name */
-		if (ok && !next_token(&p, driver, ":", sizeof(driver)))
-			ok = 0;
+	if (ok && !next_token(&p,driver,":",sizeof(driver))) ok = 0;
 		/* data file name */
-		if (ok && !next_token(&p, datafile, ":", sizeof(datafile)))
-			ok = 0;
+	if (ok && !next_token(&p,datafile,":",sizeof(datafile))) ok = 0;
 		/*
-		 * for the next tokens - which may be empty - I have to check for empty
-		 * tokens first because the next_token function will skip all empty
-		 * token fields 
-		 */
-		if (ok)
-		{
+	 * for the next tokens - which may be empty - I have
+	 * to check for empty tokens first because the
+	 * next_token function will skip all empty token
+	 * fields */
+	if (ok) {
 			/* help file */
-			if (*p == ':')
-			{
+		if (*p == ':') {
 				*helpfile = '\0';
 				p++;
-			}
-			else
-				if (!next_token
-				    (&p, helpfile, ":",
-				     sizeof(helpfile))) ok = 0;
+		} else if (!next_token(&p,helpfile,":",sizeof(helpfile))) ok = 0;
 		}
 
-		if (ok)
-		{
+	if (ok) {
 			/* language monitor */
-			if (*p == ':')
-			{
+		if (*p == ':') {
 				*langmon = '\0';
 				p++;
-			}
-			else
-				if (!next_token
-				    (&p, langmon, ":", sizeof(langmon))) ok =
-					0;
+		} else if (!next_token(&p,langmon,":",sizeof(langmon)))
+			ok = 0;
 		}
 
 		/* default data type */
 		if (ok && !next_token(&p, datatype, ":", sizeof(datatype)))
 			ok = 0;
 
-		if (ok)
-		{
+	if (ok) {
 			PACKI(desc, "W", 0x0400);	/* don't know */
 			PACKS(desc, "z", lp_printerdriver(snum));	/* long printer name */
 			PACKS(desc, "z", driver);	/* Driverfile Name */
@@ -669,27 +579,97 @@ static void fill_printq_info(connection_struct * conn, const vuser_key * key,
 			DEBUG(3, ("Data Type:%s:\n", datatype));
 			DEBUG(3, ("Help File:%s:\n", helpfile));
 			PACKI(desc, "N", count);	/* number of files to copy */
-			for (i = 0; i < count; i++)
-			{
-				/* no need to check return value here - it was already tested in
-				 * get_printerdrivernumber
-				 */
+		for (i=0;i<count;i++) {
+			/* no need to check return value here
+			 * - it was already tested in
+			 * get_printerdrivernumber */
 				next_token(&p, tok, ",", sizeof(tok));
 				PACKS(desc, "z", tok);	/* driver files to copy */
 				DEBUG(3, ("file:%s:\n", tok));
 			}
 
-			DEBUG(3,
-			      ("fill_printq_info on <%s> gave %d entries\n",
+		DEBUG(3, ("fill_printq_info on <%s> gave %d entries\n",
 			       SERVICE(snum), count));
-		}
-		else
-		{
-			DEBUG(3,
-			      ("fill_printq_info: Can't supply driver files\n"));
+	} else {
+		DEBUG(3, ("fill_printq_info: Can't supply driver files\n"));
 			desc->errcode = NERR_notsupported;
 		}
-		free(q);
+	free(line);
+}
+
+
+static void fill_printq_info(connection_struct * conn, int snum, int uLevel,
+			     struct pack_desc *desc,
+			     int count, print_queue_struct * queue,
+			     print_status_struct * status)
+{
+	switch (uLevel) {
+		case 1:
+		case 2:
+			PACKS(desc, "B13", SERVICE(snum));
+			break;
+		case 3:
+		case 4:
+		case 5:
+			PACKS(desc, "z", Expand(conn, snum, SERVICE(snum)));
+			break;
+		case 51:
+			PACKI(desc, "K", printq_status(status->status));
+			break;
+	}
+
+	if (uLevel == 1 || uLevel == 2) {
+		PACKS(desc, "B", "");	/* alignment */
+		PACKI(desc, "W", 5);	/* priority */
+		PACKI(desc, "W", 0);	/* start time */
+		PACKI(desc, "W", 0);	/* until time */
+		PACKS(desc, "z", "");	/* pSepFile */
+		PACKS(desc, "z", "lpd");	/* pPrProc */
+		PACKS(desc, "z", SERVICE(snum));	/* pDestinations */
+		PACKS(desc, "z", "");	/* pParms */
+		if (snum < 0) {
+			PACKS(desc, "z", "UNKNOWN PRINTER");
+			PACKI(desc, "W", LPSTAT_ERROR);
+		}
+		else if (!status || !status->message[0]) {
+			PACKS(desc,"z",Expand(conn,snum,lp_comment(snum)));
+			PACKI(desc, "W", LPSTAT_OK);	/* status */
+		} else {
+			PACKS(desc, "z", status->message);
+			PACKI(desc, "W", printq_status(status->status));	/* status */
+		}
+		PACKI(desc, (uLevel == 1 ? "W" : "N"), count);
+	}
+
+	if (uLevel == 3 || uLevel == 4) {
+		PACKI(desc, "W", 5);	/* uPriority */
+		PACKI(desc, "W", 0);	/* uStarttime */
+		PACKI(desc, "W", 0);	/* uUntiltime */
+		PACKI(desc, "W", 5);	/* pad1 */
+		PACKS(desc, "z", "");	/* pszSepFile */
+		PACKS(desc, "z", "WinPrint");	/* pszPrProc */
+		PACKS(desc, "z", "");	/* pszParms */
+		if (!status || !status->message[0]) {
+			PACKS(desc, "z", Expand(conn, snum, lp_comment(snum)));	/* pszComment */
+			PACKI(desc, "W", LPSTAT_OK);	/* fsStatus */
+		} else {
+			PACKS(desc, "z", status->message);	/* pszComment */
+			PACKI(desc, "W", printq_status(status->status));	/* fsStatus */
+		}
+		PACKI(desc, (uLevel == 3 ? "W" : "N"), count);	/* cJobs */
+		PACKS(desc, "z", SERVICE(snum));	/* pszPrinters */
+		PACKS(desc, "z", lp_printerdriver(snum));	/* pszDriverName */
+		PackDriverData(desc);	/* pDriverData */
+	}
+
+	if (uLevel == 2 || uLevel == 4) {
+		int i;
+		for (i = 0; i < count; i++)
+			fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
+	}
+
+	if (uLevel==52) {
+		fill_printq_info_52(conn, snum, uLevel, desc, count, queue, status);
 	}
 }
 
@@ -698,52 +678,32 @@ static int get_printerdrivernumber(int snum)
 {
 	int i = 0, ok = 0;
 	pstring tok;
-	char *p, *q;
-	FILE *f;
-	pstring fname;
+	char *p;
+	char **lines, *line;
 
-	pstrcpy(fname, lp_driverfile());
-
-	DEBUG(4, ("In get_printerdrivernumber: %s\n", fname));
-	f = sys_fopen(fname, "r");
-	if (!f)
-	{
-		DEBUG(3,
-		      ("get_printerdrivernumber: Can't open %s - %s\n", fname,
-		       strerror(errno)));
+	lines = file_lines_load(lp_driverfile(), NULL);
+	if (!lines) {
+		DEBUG(3, ("get_printerdrivernumber: Can't open %s - %s\n",
+			  lp_driverfile(), strerror(errno)));
 		return (0);
 	}
 
-	if ((p = (char *)malloc(8192 * sizeof(char))) == NULL)
-	{
-		DEBUG(3, ("get_printerdrivernumber: malloc fail !\n"));
-		fclose(f);
-		return 0;
-	}
-
-	q = p;			/* need it to free memory because p change ! */
-
 	/* lookup the long printer driver name in the file description */
-	while (!feof(f) && !ok)
-	{
-		p = q;		/* reset string pointer */
-		fgets(p, 8191, f);
+	for (i=0;lines[i] && !ok; i++) {
+		p = lines[i];
 		if (next_token(&p, tok, ":", sizeof(tok)) &&
-		    (!strncmp
-		     (tok, lp_printerdriver(snum),
-		      strlen(lp_printerdriver(snum)))))
+		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
 			ok = 1;
 	}
-	fclose(f);
+	line = strdup(p);
+	p = line;
+	file_lines_free(lines);
 
-	if (ok)
-	{
+	if (ok) {
 		/* skip 5 fields */
 		i = 5;
-		while (*p && i)
-		{
-			if (*p++ == ':')
-				i--;
+		while (*p && i) {
+			if (*p++ == ':') i--;
 		}
 		if (!*p || i)
 			return (0);
@@ -752,7 +712,7 @@ static int get_printerdrivernumber(int snum)
 		while (next_token(&p, tok, ",", sizeof(tok)))
 			i++;
 	}
-	free(q);
+	free(line);
 
 	return (i);
 }
@@ -775,26 +735,21 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
 
-	VUSER_KEY;
-
-	ZERO_STRUCT(status);
-	ZERO_STRUCT(desc);
+  memset((char *)&status,'\0',sizeof(status));
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	p = skip_string(p, 1);
 	uLevel = SVAL(p, 0);
 	str3 = p + 4;
 
 	/* remove any trailing username */
-	if ((p = strchr(QueueName, '%')))
-		*p = 0;
+  if ((p = strchr(QueueName,'%'))) *p = 0;
 
 	DEBUG(3, ("PrintQueue uLevel=%d name=%s\n", uLevel, QueueName));
 
-	/* check it's a supported variant */
-	if (!prefix_ok(str1, "zWrLh"))
-		return False;
-	if (!check_printq_info(&desc, uLevel, str2, str3))
-	{
+  /* check it's a supported varient */
+  if (!prefix_ok(str1,"zWrLh")) return False;
+  if (!check_printq_info(&desc,uLevel,str2,str3)) {
 		/*
 		 * Patch from Scott Moomaw <scott@bridgewater.edu>
 		 * to return the 'invalid info level' error if an
@@ -810,43 +765,31 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 	}
 
 	snum = lp_servicenumber(QueueName);
-	if (snum < 0 && pcap_printername_ok(QueueName, NULL))
-	{
+  if (snum < 0 && pcap_printername_ok(QueueName,NULL)) {
 		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0)
-		{
+    if (pnum >= 0) {
 			lp_add_printer(QueueName, pnum);
 			snum = lp_servicenumber(QueueName);
 		}
 	}
 
-	if (snum < 0 || !VALID_SNUM(snum))
-		return (False);
+  if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-	if (uLevel == 52)
-	{
+  if (uLevel==52) {
 		count = get_printerdrivernumber(snum);
-		DEBUG(3,
-		      ("api_DosPrintQGetInfo: Driver files count: %d\n",
-		       count));
-	}
-	else
-	{
-		count = get_printqueue(snum, conn, &key, &queue, &status);
+	  DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
+  } else {
+		count = print_queue_status(snum, &queue, &status);
 	}
 
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
-	if (init_package(&desc, 1, count))
-	{
+  if (init_package(&desc,1,count)) {
 		desc.subcount = count;
-		fill_printq_info(conn, &key, snum, uLevel, &desc, count,
-				 queue, &status);
-	}
-	else if (uLevel == 0)
-	{
+	  fill_printq_info(conn,snum,uLevel,&desc,count,queue,&status);
+  } else if(uLevel == 0) {
+		fill_printq_info(conn, snum, uLevel, &desc, count, queue,
 	}
 
 	*rdata_len = desc.usedlen;
@@ -859,8 +802,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 
 	DEBUG(4, ("printqgetinfo: errorcode %d\n", desc.errcode));
 
-	if (queue)
-		free(queue);
+  if (queue) free(queue);
 
 	return (True);
 }
@@ -869,10 +811,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct * conn,
 /****************************************************************************
   view list of all print jobs on all queues
   ****************************************************************************/
-static BOOL api_DosPrintQEnum(connection_struct * conn, uint16 vuid,
-			      char *param, char *data, int mdrcnt, int mprcnt,
-			      char **rdata, char **rparam, int *rdata_len,
-			      int *rparam_len)
+static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param, char* data,
+ 			      int mdrcnt, int mprcnt,
+ 			      char **rdata, char** rparam,
+ 			      int *rdata_len, int *rparam_len)
 {
 	char *param_format = param + 2;
 	char *output_format1 = skip_string(param_format, 1);
@@ -886,16 +828,13 @@ static BOOL api_DosPrintQEnum(connection_struct * conn, uint16 vuid,
 	print_status_struct *status = NULL;
 	int *subcntarr = NULL;
 	int queuecnt, subcnt = 0, succnt = 0;
-	VUSER_KEY;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	DEBUG(3, ("DosPrintQEnum uLevel=%d\n", uLevel));
 
-	if (!prefix_ok(param_format, "WrLeh"))
-		return False;
-	if (!check_printq_info(&desc, uLevel, output_format1, output_format2))
-	{
+  if (!prefix_ok(param_format,"WrLeh")) return False;
+  if (!check_printq_info(&desc,uLevel,output_format1,output_format2)) {
 		/*
 		 * Patch from Scott Moomaw <scott@bridgewater.edu>
 		 * to return the 'invalid info level' error if an
@@ -914,72 +853,46 @@ static BOOL api_DosPrintQEnum(connection_struct * conn, uint16 vuid,
 	for (i = 0; i < services; i++)
 		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
 			queuecnt++;
-	if (uLevel > 0)
-	{
-		if (
-		    (queue =
-		     (print_queue_struct **) malloc(queuecnt *
-						    sizeof(print_queue_struct
-							   *))) == NULL)
-		{
+  if (uLevel > 0) {
+    if((queue = (print_queue_struct**)malloc(queuecnt*sizeof(print_queue_struct*))) == NULL) {
 			DEBUG(0, ("api_DosPrintQEnum: malloc fail !\n"));
 			return False;
 		}
 		memset(queue, 0, queuecnt * sizeof(print_queue_struct *));
-		if (
-		    (status =
-		     (print_status_struct *) malloc(queuecnt *
-						    sizeof
-						    (print_status_struct))) ==
-		    NULL)
-		{
+    if((status = (print_status_struct*)malloc(queuecnt*sizeof(print_status_struct))) == NULL) {
 			DEBUG(0, ("api_DosPrintQEnum: malloc fail !\n"));
 			return False;
 		}
 		memset(status, 0, queuecnt * sizeof(print_status_struct));
-		if ((subcntarr = (int *)malloc(queuecnt * sizeof(int))) ==
-		    NULL)
-		{
+    if((subcntarr = (int*)malloc(queuecnt*sizeof(int))) == NULL) {
 			DEBUG(0, ("api_DosPrintQEnum: malloc fail !\n"));
 			return False;
 		}
 		subcnt = 0;
 		n = 0;
 		for (i = 0; i < services; i++)
-			if (lp_snum_ok(i) && lp_print_ok(i)
-			    && lp_browseable(i))
-			{
-				subcntarr[n] =
-					get_printqueue(i, conn, &key,
-						       &queue[n], &status[n]);
+      if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
+ 	subcntarr[n] = print_queue_status(i, &queue[n],&status[n]);
 				subcnt += subcntarr[n];
 				n++;
 			}
 	}
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 
-	if (init_package(&desc, queuecnt, subcnt))
-	{
+  if (init_package(&desc,queuecnt,subcnt)) {
 		n = 0;
 		succnt = 0;
 		for (i = 0; i < services; i++)
-			if (lp_snum_ok(i) && lp_print_ok(i)
-			    && lp_browseable(i))
-			{
-				fill_printq_info(conn, &key, i, uLevel, &desc,
-						 subcntarr[n], queue[n],
-						 &status[n]);
+      if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
+	fill_printq_info(conn,i,uLevel,&desc,subcntarr[n],queue[n],&status[n]);
 				n++;
-				if (desc.errcode == NERR_Success)
-					succnt = n;
+	if (desc.errcode == NERR_Success) succnt = n;
 			}
 	}
 
-	if (subcntarr)
-		free(subcntarr);
+  if (subcntarr) free(subcntarr);
 
 	*rdata_len = desc.usedlen;
 	*rparam_len = 8;
@@ -989,16 +902,12 @@ static BOOL api_DosPrintQEnum(connection_struct * conn, uint16 vuid,
 	SSVAL(*rparam, 4, succnt);
 	SSVAL(*rparam, 6, queuecnt);
 
-	for (i = 0; i < queuecnt; i++)
-	{
-		if (queue && queue[i])
-			free(queue[i]);
+  for (i = 0; i < queuecnt; i++) {
+    if (queue && queue[i]) free(queue[i]);
 	}
 
-	if (queue)
-		free(queue);
-	if (status)
-		free(status);
+  if (queue) free(queue);
+  if (status) free(status);
 
 	return True;
 }
@@ -1008,15 +917,12 @@ static BOOL api_DosPrintQEnum(connection_struct * conn, uint16 vuid,
   ****************************************************************************/
 static BOOL check_server_info(int uLevel, char *id)
 {
-	switch (uLevel)
-	{
+  switch( uLevel ) {
 		case 0:
-			if (strcmp(id, "B16") != 0)
-				return False;
+    if (strcmp(id,"B16") != 0) return False;
 			break;
 		case 1:
-			if (strcmp(id, "B16BBDz") != 0)
-				return False;
+    if (strcmp(id,"B16BBDz") != 0) return False;
 			break;
 		default:
 			return False;
@@ -1039,75 +945,55 @@ struct srv_info_struct
   number of entries
   ******************************************************************/
 static int get_server_info(uint32 servertype,
-			   struct srv_info_struct **servers, char *domain)
+			   struct srv_info_struct **servers,
+			   char *domain)
 {
-	FILE *f;
-	pstring fname;
 	int count = 0;
 	int alloced = 0;
-	pstring line;
+	char **lines;
 	BOOL local_list_only;
+	int i;
 
-	pstrcpy(fname, lp_lockdir());
-	trim_string(fname, NULL, "/");
-	pstrcat(fname, "/");
-	pstrcat(fname, SERVER_LIST);
-
-	f = sys_fopen(fname, "r");
-
-	if (!f)
-	{
-		DEBUG(4, ("Can't open %s - %s\n", fname, strerror(errno)));
+	lines = file_lines_load(lock_path(SERVER_LIST), NULL);
+  if (!lines) {
+    DEBUG(4,("Can't open %s - %s\n",lock_path(SERVER_LIST),strerror(errno)));
 		return (0);
 	}
 
 	/* request for everything is code for request all servers */
 	if (servertype == SV_TYPE_ALL)
-		servertype &=
-			~(SV_TYPE_DOMAIN_ENUM | SV_TYPE_LOCAL_LIST_ONLY);
+	servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
 
 	local_list_only = (servertype & SV_TYPE_LOCAL_LIST_ONLY);
 
 	DEBUG(4, ("Servertype search: %8x\n", servertype));
 
-	while (!feof(f))
-	{
+  for (i=0;lines[i];i++) {
 		fstring stype;
 		struct srv_info_struct *s;
-		char *ptr = line;
+		char *ptr = lines[i];
 		BOOL ok = True;
-		*ptr = 0;
 
-		fgets(line, sizeof(line) - 1, f);
-		if (!*line)
-			continue;
+    if (!*ptr) continue;
 
-		if (count == alloced)
-		{
+    if (count == alloced) {
 			alloced += 10;
-			(*servers) = (struct srv_info_struct *)Realloc
-				(*servers, sizeof(**servers) * alloced);
-			if (!(*servers))
-				return (0);
-			memset((char *)((*servers) + count), 0,
-			       sizeof(**servers) * (alloced - count));
+      (*servers) = (struct srv_info_struct *)
+	Realloc(*servers,sizeof(**servers)*alloced);
+      if (!(*servers)) return(0);
+      memset((char *)((*servers)+count),'\0',sizeof(**servers)*(alloced-count));
 		}
 		s = &(*servers)[count];
 
-		if (!next_token(&ptr, s->name, NULL, sizeof(s->name)))
-			continue;
-		if (!next_token(&ptr, stype, NULL, sizeof(stype)))
-			continue;
-		if (!next_token(&ptr, s->comment, NULL, sizeof(s->comment)))
-			continue;
-		if (!next_token(&ptr, s->domain, NULL, sizeof(s->domain)))
-		{
+    if (!next_token(&ptr,s->name   , NULL, sizeof(s->name))) continue;
+    if (!next_token(&ptr,stype     , NULL, sizeof(stype))) continue;
+    if (!next_token(&ptr,s->comment, NULL, sizeof(s->comment))) continue;
+    if (!next_token(&ptr,s->domain , NULL, sizeof(s->domain))) {
 			/* this allows us to cope with an old nmbd */
 			pstrcpy(s->domain, global_myworkgroup);
 		}
 
-		if (sscanf(stype, "%X", &s->type) != 1)
-		{
+    if (sscanf(stype,"%X",&s->type) != 1) { 
 			DEBUG(4, ("r:host file "));
 			ok = False;
 		}
@@ -1115,16 +1001,13 @@ static int get_server_info(uint32 servertype,
 		/* Filter the servers/domains we return based on what was asked for. */
 
 		/* Check to see if we are being asked for a local list only. */
-		if (local_list_only
-		    && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0))
-		{
+	if(local_list_only && ((s->type & SV_TYPE_LOCAL_LIST_ONLY) == 0)) {
 			DEBUG(4, ("r: local list only"));
 			ok = False;
 		}
 
 		/* doesn't match up: don't want it */
-		if (!(servertype & s->type))
-		{
+    if (!(servertype & s->type)) { 
 			DEBUG(4, ("r:serv type "));
 			ok = False;
 		}
@@ -1136,8 +1019,7 @@ static int get_server_info(uint32 servertype,
 			ok = False;
 		}
 
-		if (!strequal(domain, s->domain)
-		    && !(servertype & SV_TYPE_DOMAIN_ENUM))
+    if (!strequal(domain, s->domain) && !(servertype & SV_TYPE_DOMAIN_ENUM))
 		{
 			ok = False;
 		}
@@ -1160,7 +1042,7 @@ static int get_server_info(uint32 servertype,
 		}
 	}
 
-	fclose(f);
+	file_lines_free(lines);
 	return (count);
 }
 
@@ -1178,16 +1060,10 @@ static int fill_srv_info(struct srv_info_struct *service,
 	int l2;
 	int len;
 
-	switch (uLevel)
-	{
-		case 0:
-			struct_len = 16;
-			break;
-		case 1:
-			struct_len = 26;
-			break;
-		default:
-			return -1;
+  switch (uLevel) {
+  case 0: struct_len = 16; break;
+  case 1: struct_len = 26; break;
+  default: return -1;
 	}
 
 	if (!buf)
@@ -1200,17 +1076,14 @@ static int fill_srv_info(struct srv_info_struct *service,
 				break;
 		}
 
-		if (buflen)
-			*buflen = struct_len;
-		if (stringspace)
-			*stringspace = len;
+      if (buflen) *buflen = struct_len;
+      if (stringspace) *stringspace = len;
 		return struct_len + len;
 	}
 
 	len = struct_len;
 	p = *buf;
-	if (*buflen < struct_len)
-		return -1;
+  if (*buflen < struct_len) return -1;
 	if (stringbuf)
 	{
 		p2 = *stringbuf;
@@ -1221,8 +1094,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 		p2 = p + struct_len;
 		l2 = *buflen - struct_len;
 	}
-	if (!baseaddr)
-		baseaddr = p;
+  if (!baseaddr) baseaddr = p;
 
 	switch (uLevel)
 	{
@@ -1263,10 +1135,9 @@ static BOOL srv_comp(struct srv_info_struct *s1, struct srv_info_struct *s2)
   view list of servers available (or possibly domains). The info is
   extracted from lists saved by nmbd on the local host
   ****************************************************************************/
-static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
-			       char *param, char *data, int mdrcnt,
-			       int mprcnt, char **rdata, char **rparam,
-			       int *rdata_len, int *rparam_len)
+static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param, char *data,
+			       int mdrcnt, int mprcnt, char **rdata, 
+			       char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
@@ -1289,8 +1160,7 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 	   known servers. */
 
 	if (servertype == SV_TYPE_ALL)
-		servertype &=
-			~(SV_TYPE_DOMAIN_ENUM | SV_TYPE_LOCAL_LIST_ONLY);
+    servertype &= ~(SV_TYPE_DOMAIN_ENUM|SV_TYPE_LOCAL_LIST_ONLY);
 
 	/* If someone sets SV_TYPE_LOCAL_LIST_ONLY but hasn't set
 	   any other bit (they may just set this bit on it's own) they 
@@ -1298,8 +1168,7 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 	   set on its own so set the requested servers to be 
 	   ALL - DOMAIN_ENUM. */
 
-	if ((servertype & SV_TYPE_LOCAL_LIST_ONLY)
-	    && !(servertype & SV_TYPE_DOMAIN_ENUM))
+  if ((servertype & SV_TYPE_LOCAL_LIST_ONLY) && !(servertype & SV_TYPE_DOMAIN_ENUM)) 
 		servertype = SV_TYPE_ALL & ~(SV_TYPE_DOMAIN_ENUM);
 
 	domain_request = ((servertype & SV_TYPE_DOMAIN_ENUM) != 0);
@@ -1307,21 +1176,16 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 
 	p += 8;
 
-	if (!prefix_ok(str1, "WrLehD"))
-		return False;
-	if (!check_server_info(uLevel, str2))
-		return False;
+  if (!prefix_ok(str1,"WrLehD")) return False;
+  if (!check_server_info(uLevel,str2)) return False;
 
 	DEBUG(4, ("server request level: %s %8x ", str2, servertype));
 	DEBUG(4, ("domains_req:%s ", BOOLSTR(domain_request)));
 	DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
 
-	if (strcmp(str1, "WrLehDz") == 0)
-	{
+  if (strcmp(str1, "WrLehDz") == 0) {
 		StrnCpy(domain, p, sizeof(fstring) - 1);
-	}
-	else
-	{
+  } else {
 		StrnCpy(domain, global_myworkgroup, sizeof(fstring) - 1);
 	}
 
@@ -1339,24 +1203,17 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 		for (i = 0; i < total; i++)
 		{
 			struct srv_info_struct *s = &servers[i];
-			if (lastname && strequal(lastname, s->name))
-				continue;
+      if (lastname && strequal(lastname,s->name)) continue;
 			lastname = s->name;
-			data_len +=
-				fill_srv_info(s, uLevel, 0, &f_len, 0, &s_len,
-					      0);
-			DEBUG(4,
-			      ("fill_srv_info %20s %8x %25s %15s\n", s->name,
-			       s->type, s->comment, s->domain));
+      data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
+      DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+	       s->name, s->type, s->comment, s->domain));
 
-			if (data_len <= buf_len)
-			{
+      if (data_len <= buf_len) {
 				counted++;
 				fixed_len += f_len;
 				string_len += s_len;
-			}
-			else
-			{
+      } else {
 				missed++;
 			}
 		}
@@ -1364,7 +1221,7 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 
 	*rdata_len = fixed_len + string_len;
 	*rdata = REALLOC(*rdata, *rdata_len);
-	memset(*rdata, 0, *rdata_len);
+	memset(*rdata, '\0', *rdata_len);
 
 	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
 	p = *rdata;
@@ -1377,14 +1234,11 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 		for (i = 0; i < total && count2; i++)
 		{
 			struct srv_info_struct *s = &servers[i];
-			if (lastname && strequal(lastname, s->name))
-				continue;
+	if (lastname && strequal(lastname,s->name)) continue;
 			lastname = s->name;
-			fill_srv_info(s, uLevel, &p, &f_len, &p2, &s_len,
-				      *rdata);
-			DEBUG(4,
-			      ("fill_srv_info %20s %8x %25s %15s\n", s->name,
-			       s->type, s->comment, s->domain));
+	fill_srv_info(s,uLevel,&p,&f_len,&p2,&s_len,*rdata);
+	DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
+		 s->name, s->type, s->comment, s->domain));
 			count2--;
 		}
 	}
@@ -1396,8 +1250,7 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 	SSVAL(*rparam, 4, counted);
 	SSVAL(*rparam, 6, counted + missed);
 
-	if (servers)
-		free(servers);
+  if (servers) free(servers);
 
 	DEBUG(3, ("NetServerEnum domain = %s uLevel=%d counted=%d total=%d\n",
 		  domain, uLevel, counted, counted + missed));
@@ -1408,10 +1261,9 @@ static BOOL api_RNetServerEnum(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   command 0x34 - suspected of being a "Lookup Names" stub api
   ****************************************************************************/
-static BOOL api_RNetGroupGetUsers(connection_struct * conn, uint16 vuid,
-				  char *param, char *data, int mdrcnt,
-				  int mprcnt, char **rdata, char **rparam,
-				  int *rdata_len, int *rparam_len)
+static BOOL api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid, char *param, char *data,
+			       int mdrcnt, int mprcnt, char **rdata, 
+			       char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
@@ -1424,11 +1276,9 @@ static BOOL api_RNetGroupGetUsers(connection_struct * conn, uint16 vuid,
 	DEBUG(5, ("RNetGroupGetUsers: %s %s %s %d %d\n",
 		  str1, str2, p, uLevel, buf_len));
 
-	if (!prefix_ok(str1, "zWrLeh"))
-		return False;
+  if (!prefix_ok(str1,"zWrLeh")) return False;
 
 	*rdata_len = 0;
-	*rdata = NULL;
 
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam, *rparam_len);
@@ -1446,26 +1296,20 @@ static BOOL api_RNetGroupGetUsers(connection_struct * conn, uint16 vuid,
   ****************************************************************************/
 static BOOL check_share_info(int uLevel, char *id)
 {
-	switch (uLevel)
-	{
+  switch( uLevel ) {
 		case 0:
-			if (strcmp(id, "B13") != 0)
-				return False;
+    if (strcmp(id,"B13") != 0) return False;
 			break;
 		case 1:
-			if (strcmp(id, "B13BWz") != 0)
-				return False;
+    if (strcmp(id,"B13BWz") != 0) return False;
 			break;
 		case 2:
-			if (strcmp(id, "B13BWzWWWzB9B") != 0)
-				return False;
+    if (strcmp(id,"B13BWzWWWzB9B") != 0) return False;
 			break;
 		case 91:
-			if (strcmp(id, "B13BWzWWWzB9BB9BWzWWzWW") != 0)
-				return False;
+    if (strcmp(id,"B13BWzWWWzB9BB9BWzWWzWW") != 0) return False;
 			break;
-		default:
-			return False;
+  default: return False;
 	}
 	return True;
 }
@@ -1481,22 +1325,12 @@ static int fill_share_info( const SHARE_INFO_2 * sh2,
 	int l2;
 	int len;
 
-	switch (uLevel)
-	{
-		case 0:
-			struct_len = 13;
-			break;
-		case 1:
-			struct_len = 20;
-			break;
-		case 2:
-			struct_len = 40;
-			break;
-		case 91:
-			struct_len = 68;
-			break;
-		default:
-			return -1;
+  switch( uLevel ) {
+  case 0: struct_len = 13; break;
+  case 1: struct_len = 20; break;
+  case 2: struct_len = 40; break;
+  case 91: struct_len = 68; break;
+  default: return -1;
 	}
 
 
@@ -1516,8 +1350,7 @@ static int fill_share_info( const SHARE_INFO_2 * sh2,
 
 	len = struct_len;
 	p = *buf;
-	if ((*buflen) < struct_len)
-		return -1;
+  if ((*buflen) < struct_len) return -1;
 	if (stringbuf)
 	{
 		p2 = *stringbuf;
@@ -1528,8 +1361,7 @@ static int fill_share_info( const SHARE_INFO_2 * sh2,
 		p2 = p + struct_len;
 		l2 = (*buflen) - struct_len;
 	}
-	if (!baseaddr)
-		baseaddr = p;
+  if (!baseaddr) baseaddr = p;
 
 	unistr2_to_ascii(p, &sh2->info2_str.uni_netname, 13 - 1);
 
@@ -1580,9 +1412,9 @@ static int fill_share_info( const SHARE_INFO_2 * sh2,
 	return len;
 }
 
-static BOOL api_RNetShareGetInfo(connection_struct * conn, uint16 vuid,
-				 char *param, char *data, int mdrcnt,
-				 int mprcnt, char **rdata, char **rparam,
+static BOOL api_RNetShareGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
 				 int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -1592,14 +1424,11 @@ static BOOL api_RNetShareGetInfo(connection_struct * conn, uint16 vuid,
 	int uLevel = SVAL(p, 0);
 	SHARE_INFO_CTR ctr;
 	uint32 status;
-	VUSER_KEY;
 
 	/* check it's a supported variant */
-	if (!prefix_ok(str1, "zWrLh"))
-		return False;
-	if (!check_share_info(uLevel, str2))
-		return False;
 
+  if (!prefix_ok(str1,"zWrLh")) return False;
+  if (!check_share_info(uLevel,str2)) return False;
 	ZERO_STRUCT(ctr);
 	status = srv_net_srv_share_get_info("\\\\.", netname, 2, &ctr);
 
@@ -1631,10 +1460,10 @@ static BOOL api_RNetShareGetInfo(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   view list of shares available
   ****************************************************************************/
-static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
-			      char *param, char *data, int mdrcnt, int mprcnt,
-			      char **rdata, char **rparam, int *rdata_len,
-			      int *rparam_len)
+static BOOL api_RNetShareEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+  			      int mdrcnt,int mprcnt,
+  			      char **rdata,char **rparam,
+  			      int *rdata_len,int *rparam_len)
 {
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
@@ -1651,7 +1480,6 @@ static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
 	SRV_SHARE_INFO_CTR ctr;
 	ENUM_HND hnd;
 
-	VUSER_KEY;
 
 	ZERO_STRUCT(ctr);
 
@@ -1721,8 +1549,8 @@ static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
 	SSVAL(*rparam, 6, total);
 
 	DEBUG(3, ("RNetShareEnum gave %d entries of %d (%d %d %d %d)\n",
-		  counted, total, uLevel, buf_len, *rdata_len, mdrcnt));
-
+ 	   counted,total,uLevel,
+  	   buf_len,*rdata_len,mdrcnt));
 	srv_free_srv_share_ctr(&ctr);
 
 	return (True);
@@ -1733,10 +1561,10 @@ static BOOL api_RNetShareEnum(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   get the time of day info
   ****************************************************************************/
-static BOOL api_NetRemoteTOD(connection_struct * conn, uint16 vuid,
-			     char *param, char *data, int mdrcnt, int mprcnt,
-			     char **rdata, char **rparam, int *rdata_len,
-			     int *rparam_len)
+static BOOL api_NetRemoteTOD(connection_struct *conn,uint16 vuid, char *param,char *data,
+			     int mdrcnt,int mprcnt,
+			     char **rdata,char **rparam,
+			     int *rdata_len,int *rparam_len)
 {
 	TIME_OF_DAY_INFO tod;
 	char *p;
@@ -1838,9 +1666,9 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
 			SSVAL(*rparam, 0, NERR_Success);
 		}
 	}
+  memset((char *)pass1,'\0',sizeof(fstring));
+  memset((char *)pass2,'\0',sizeof(fstring));	 
 	ZERO_STRUCT(pwbuf);
-	ZERO_STRUCT(pass1);
-	ZERO_STRUCT(pass2);
 
 	return (True);
 }
@@ -1849,9 +1677,9 @@ static BOOL api_SetUserPassword(connection_struct * conn, uint16 vuid,
   Set the user password (SamOEM version - gets plaintext).
 ****************************************************************************/
 
-static BOOL api_SamOEMChangePassword(connection_struct * conn, uint16 vuid,
-				     char *param, char *data, int mdrcnt,
-				     int mprcnt, char **rdata, char **rparam,
+static BOOL api_SamOEMChangePassword(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				     int *rdata_len, int *rparam_len)
 {
 	fstring user;
@@ -1866,20 +1694,14 @@ static BOOL api_SamOEMChangePassword(connection_struct * conn, uint16 vuid,
 	/*
 	 * Check the parameter definition is correct.
 	 */
-	if (!strequal(param + 2, "zsT"))
-	{
-		DEBUG(0,
-		      ("api_SamOEMChangePassword: Invalid parameter string %s\n",
-		       param + 2));
+  if(!strequal(param + 2, "zsT")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid parameter string %s\n", param + 2));
 		return False;
 	}
 	p = skip_string(p, 1);
 
-	if (!strequal(p, "B516B16"))
-	{
-		DEBUG(0,
-		      ("api_SamOEMChangePassword: Invalid data parameter string %s\n",
-		       p));
+  if(!strequal(p, "B516B16")) {
+    DEBUG(0,("api_SamOEMChangePassword: Invalid data parameter string %s\n", p));
 		return False;
 	}
 	p = skip_string(p, 1);
@@ -1904,20 +1726,18 @@ static BOOL api_SamOEMChangePassword(connection_struct * conn, uint16 vuid,
   delete a print job
   Form: <W> <> 
   ****************************************************************************/
-static BOOL api_RDosPrintJobDel(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				int *rdata_len, int *rparam_len)
 {
 	int function = SVAL(param, 0);
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
 	char *p = skip_string(str2, 1);
-	int jobid, snum;
-	int i, count;
-	VUSER_KEY;
+	int jobid, errcode;
 
-	printjob_decode(SVAL(p, 0), &snum, &jobid);
+	jobid = SVAL(p, 0);
 
 	/* check it's a supported variant */
 	if (!(strcsequal(str1, "W") && strcsequal(str2, "")))
@@ -1925,57 +1745,29 @@ static BOOL api_RDosPrintJobDel(connection_struct * conn, uint16 vuid,
 
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam, *rparam_len);
-
 	*rdata_len = 0;
 
-	SSVAL(*rparam, 0, NERR_Success);
+	if (!print_job_exists(jobid)) {
+		errcode = NERR_JobNotFound;
+		goto out;
+	}
 
-	if (snum >= 0 && VALID_SNUM(snum))
-	{
-		print_queue_struct *queue = NULL;
-		lpq_reset(snum);
-		count = get_printqueue(snum, conn, &key, &queue, NULL);
+	errcode = NERR_notsupported;
 
-		for (i = 0; i < count; i++)
-			if ((queue[i].job & 0xFF) == jobid)
-			{
-				switch (function)
-				{
+	switch (function) {
 					case 81:	/* delete */
-						DEBUG(3,
-						      ("Deleting queue entry %d\n",
-						       queue[i].job));
-						del_printqueue(conn, &key,
-							       snum,
-							       queue[i].job);
+		if (print_job_delete(jobid)) errcode = NERR_Success;
 						break;
 					case 82:	/* pause */
+		if (print_job_pause(jobid)) errcode = NERR_Success;
+			break;
 					case 83:	/* resume */
-						DEBUG(3,
-						      ("%s queue entry %d\n",
-						       (function ==
-							82 ? "pausing" :
-							"resuming"),
-						       queue[i].job));
-						status_printjob(conn, &key,
-								snum,
-								queue[i].job,
-								(function ==
-								 82 ?
-								 LPQ_PAUSED :
-								 LPQ_QUEUED));
-						break;
-				}
+		if (print_job_resume(jobid)) errcode = NERR_Success;
 				break;
 			}
 
-		if (i == count)
-			SSVAL(*rparam, 0, NERR_JobNotFound);
-
-		if (queue)
-			free(queue);
-	}
-
+      out:
+	SSVAL(*rparam, 0, errcode);
 	SSVAL(*rparam, 2, 0);	/* converter word */
 
 	return (True);
@@ -1984,17 +1776,17 @@ static BOOL api_RDosPrintJobDel(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   Purge a print queue - or pause or resume it.
   ****************************************************************************/
-static BOOL api_WPrintQueuePurge(connection_struct * conn, uint16 vuid,
-				 char *param, char *data, int mdrcnt,
-				 int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintQueuePurge(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
 				 int *rdata_len, int *rparam_len)
 {
 	int function = SVAL(param, 0);
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
 	char *QueueName = skip_string(str2, 1);
+	int errcode = NERR_notsupported;
 	int snum;
-	VUSER_KEY;
 
 	/* check it's a supported variant */
 	if (!(strcsequal(str1, "z") && strcsequal(str2, "")))
@@ -2002,62 +1794,30 @@ static BOOL api_WPrintQueuePurge(connection_struct * conn, uint16 vuid,
 
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam, *rparam_len);
-
 	*rdata_len = 0;
 
-	SSVAL(*rparam, 0, NERR_Success);
-	SSVAL(*rparam, 2, 0);	/* converter word */
+	snum = print_queue_snum(QueueName);
 
-	snum = lp_servicenumber(QueueName);
-	if (snum < 0 && pcap_printername_ok(QueueName, NULL))
-	{
-		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0)
-		{
-			lp_add_printer(QueueName, pnum);
-			snum = lp_servicenumber(QueueName);
-		}
+	if (snum == -1) {
+		errcode = NERR_JobNotFound;
+		goto out;
 	}
 
-	if (snum >= 0 && VALID_SNUM(snum))
-	{
-		lpq_reset(snum);
-
-		switch (function)
-		{
+	switch (function) {
 			case 74:	/* Pause queue */
+		if (print_queue_pause(snum)) errcode = NERR_Success;
+			break;
 			case 75:	/* Resume queue */
-			{
-				status_printqueue(conn, &key, snum,
-						  (function ==
-						   74 ? LPSTAT_STOPPED :
-						   LPSTAT_OK));
-				DEBUG(3,
-				      ("Print queue %s, queue=%s\n",
-				       (function == 74 ? "pause" : "resume"),
-				       QueueName));
+		if (print_queue_resume(snum)) errcode = NERR_Success;
 				break;
-			}
 			case 103:	/* Purge */
-			{
-				print_queue_struct *queue = NULL;
-				int i, count;
-				count =
-					get_printqueue(snum, conn, &key,
-						       &queue, NULL);
-				for (i = 0; i < count; i++)
-					del_printqueue(conn, &key, snum,
-						       queue[i].job);
-
-				if (queue)
-					free(queue);
-				DEBUG(3,
-				      ("Print queue purge, queue=%s\n",
-				       QueueName));
+		if (print_queue_purge(snum)) errcode = NERR_Success;
 				break;
 			}
-		}
-	}
+
+      out:
+	SSVAL(*rparam, 0, errcode);
+	SSVAL(*rparam, 2, 0);	/* converter word */
 
 	return (True);
 }
@@ -2070,50 +1830,36 @@ static BOOL api_WPrintQueuePurge(connection_struct * conn, uint16 vuid,
   Form: <WWsTP> <WWzWWDDzzzzzzzzzzlz> 
   or   <WWsTP> <WB21BB16B10zWWzDDz> 
 ****************************************************************************/
-static int check_printjob_info(struct pack_desc *desc, int uLevel, char *id)
+static int check_printjob_info(struct pack_desc* desc,
+			       int uLevel, char* id)
 {
 	desc->subformat = NULL;
-	switch (uLevel)
-	{
-		case 0:
-			desc->format = "W";
-			break;
-		case 1:
-			desc->format = "WB21BB16B10zWWzDDz";
-			break;
-		case 2:
-			desc->format = "WWzWWDDzz";
-			break;
-		case 3:
-			desc->format = "WWzWWDDzzzzzzzzzzlz";
-			break;
-		default:
-			return False;
+	switch( uLevel ) {
+	case 0: desc->format = "W"; break;
+	case 1: desc->format = "WB21BB16B10zWWzDDz"; break;
+	case 2: desc->format = "WWzWWDDzz"; break;
+	case 3: desc->format = "WWzWWDDzzzzzzzzzzlz"; break;
+	default: return False;
 	}
-	if (strcmp(desc->format, id) != 0)
-		return False;
+	if (strcmp(desc->format,id) != 0) return False;
 	return True;
 }
 
-static BOOL api_PrintJobInfo(connection_struct * conn, uint16 vuid,
-			     char *param, char *data, int mdrcnt, int mprcnt,
-			     char **rdata, char **rparam, int *rdata_len,
-			     int *rparam_len)
+static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,char *data,
+  			     int mdrcnt,int mprcnt,
+  			     char **rdata,char **rparam,
+  			     int *rdata_len,int *rparam_len)
 {
 	struct pack_desc desc;
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
 	char *p = skip_string(str2, 1);
-	int jobid, snum;
+	int jobid;
 	int uLevel = SVAL(p, 2);
-	int function = SVAL(p, 4);	/* what is this ?? */
-	int i;
-	char *s = data;
-	files_struct *fsp;
-	VUSER_KEY;
+	int function = SVAL(p, 4);
+	int place, errcode;
 
-	printjob_decode(SVAL(p, 0), &snum, &jobid);
-
+	jobid = SVAL(p, 0);
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam, *rparam_len);
 
@@ -2124,108 +1870,36 @@ static BOOL api_PrintJobInfo(connection_struct * conn, uint16 vuid,
 	    (!check_printjob_info(&desc, uLevel, str2)))
 		return (False);
 
-	switch (function)
-	{
-		case 0x6:	/* change job place in the queue, 
-				   data gives the new place */
-			if (snum >= 0 && VALID_SNUM(snum))
-			{
-				print_queue_struct *queue = NULL;
-				int count;
+	if (!print_job_exists(jobid)) {
+		errcode = NERR_JobNotFound;
+		goto out;
+	}
 
-				lpq_reset(snum);
-				count =
-					get_printqueue(snum, conn, &key,
-						       &queue, NULL);
-				for (i = 0; i < count; i++)	/* find job */
-					if ((queue[i].job & 0xFF) == jobid)
-						break;
+	errcode = NERR_notsupported;
 
-				if (i == count)
-				{
-					desc.errcode = NERR_JobNotFound;
-					if (queue)
-						free(queue);
-				}
-				else
-				{
-					desc.errcode = NERR_Success;
-					i++;
-#if 0
-					{
-						int place = SVAL(data, 0);
-						/* we currently have no way of
-						   doing this. Can any unix do it? */
-						if (i <
-						    place) /* move down */ ;
-						else if (i > place)	/* move up */
-							;
-					}
-#endif
-					desc.errcode = NERR_notsupported;	/* not yet 
-										   supported */
-					if (queue)
-						free(queue);
-				}
-			}
-			else
-			{
-				desc.errcode = NERR_JobNotFound;
+	switch (function) {
+		case 0x6:
+			/* change job place in the queue, 
+			   data gives the new place */
+			place = SVAL(data, 0);
+		if (print_job_set_place(jobid, place)) {
+				errcode = NERR_Success;
 			}
 			break;
 
-		case 0xb:	/* change print job name, data gives the name */
-			/* jobid, snum should be zero */
-			if (isalpha((int)*s))
-			{
-				pstring name;
-				int l = 0;
-				while (l < 64 && *s)
-				{
-					if (issafe(*s))
-						name[l++] = *s;
-					s++;
+		case 0xb:
+			/* change print job name, data gives the name */
+		if (print_job_set_name(jobid, data)) {
+				errcode = NERR_Success;
 				}
-				name[l] = 0;
-
-				DEBUG(3,
-				      ("Setting print name to %s\n", name));
-
-				fsp = file_find_print();
-
-				if (fsp)
-				{
-					pstring zfrom, zto;
-					connection_struct *fconn = fsp->conn;
-					unbecome_user();
-
-					if (!become_user(fconn, vuid) ||
-					    !become_service(fconn, True))
 						break;
 
-					pstrcpy(zfrom,
-						dos_to_unix(fsp->fsp_name,
-							    False));
-					pstrcpy(zto,
-						dos_to_unix(name, False));
-
-					if (fsp->conn->
-					    vfs_ops.rename(zfrom, zto) == 0)
-					{
-						string_set(&fsp->fsp_name,
-							   name);
-					}
-					break;
-				}
-			}
-			desc.errcode = NERR_Success;
-			break;
-
-		default:	/* not implemented */
+		default:
 			return False;
 	}
 
-	SSVALS(*rparam, 0, desc.errcode);
+      out:
+	SSVALS(*rparam, 0, errcode);
 	SSVAL(*rparam, 2, 0);	/* converter word */
 
 	return (True);
@@ -2235,9 +1909,9 @@ static BOOL api_PrintJobInfo(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_RNetServerGetInfo(connection_struct * conn, uint16 vuid,
-				  char *param, char *data, int mdrcnt,
-				  int mprcnt, char **rdata, char **rparam,
+static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				  int mdrcnt,int mprcnt,
+				  char **rdata,char **rparam,
 				  int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -2248,54 +1922,39 @@ static BOOL api_RNetServerGetInfo(connection_struct * conn, uint16 vuid,
 	int struct_len;
 	SRV_INFO_CTR ctr;
 	SRV_INFO_102 *sv102 = &ctr.srv.sv102;
-	VUSER_KEY;
 
 	DEBUG(4, ("NetServerGetInfo level %d\n", uLevel));
 
-	/* check it's a supported variant */
-	if (!prefix_ok(str1, "WrLh"))
-		return False;
-
-	switch (uLevel)
-	{
+  /* check it's a supported varient */
+  if (!prefix_ok(str1,"WrLh")) return False;
+  switch( uLevel ) {
 		case 0:
-			if (strcmp(str2, "B16") != 0)
-				return False;
+    if (strcmp(str2,"B16") != 0) return False;
 			struct_len = 16;
 			break;
 		case 1:
-			if (strcmp(str2, "B16BBDz") != 0)
-				return False;
+    if (strcmp(str2,"B16BBDz") != 0) return False;
 			struct_len = 26;
 			break;
 		case 2:
-			if (strcmp
-			    (str2,
-			     "B16BBDzDDDWWzWWWWWWWBB21zWWWWWWWWWWWWWWWWWWWWWWz")
-			    != 0)
-				return False;
+    if (strcmp(str2,"B16BBDzDDDWWzWWWWWWWBB21zWWWWWWWWWWWWWWWWWWWWWWz")
+	!= 0) return False;
 			struct_len = 134;
 			break;
 		case 3:
-			if (strcmp
-			    (str2,
-			     "B16BBDzDDDWWzWWWWWWWBB21zWWWWWWWWWWWWWWWWWWWWWWzDWz")
-			    != 0)
-				return False;
+    if (strcmp(str2,"B16BBDzDDDWWzWWWWWWWBB21zWWWWWWWWWWWWWWWWWWWWWWzDWz")
+	!= 0) return False;
 			struct_len = 144;
 			break;
 		case 20:
-			if (strcmp(str2, "DN") != 0)
-				return False;
+    if (strcmp(str2,"DN") != 0) return False;
 			struct_len = 6;
 			break;
 		case 50:
-			if (strcmp(str2, "B16BBDzWWzzz") != 0)
-				return False;
+    if (strcmp(str2,"B16BBDzWWzzz") != 0) return False;
 			struct_len = 42;
 			break;
-		default:
-			return False;
+  default: return False;
 	}
 
 	if (uLevel > 1)
@@ -2359,12 +2018,11 @@ static BOOL api_RNetServerGetInfo(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   get info about the server
   ****************************************************************************/
-static BOOL api_NetWkstaGetInfo(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+static BOOL api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				int *rdata_len, int *rparam_len)
 {
-
 	char *str1 = param + 2;
 	char *str2 = skip_string(str1, 1);
 	char *p = skip_string(str2, 1);
@@ -2492,7 +2150,8 @@ Name            Value   Description
 AF_OP_PRINT     0       Print operator
 
 
-Leach, Naik                                        [Page 28]
+Leach, Naik                                        [Page 28]
+
 
 
 INTERNET-DRAFT   CIFS Remote Admin Protocol     January 10, 1997
@@ -2554,7 +2213,8 @@ AF_OP_ACCOUNTS  3       Accounts operator
 
 
 
-Leach, Naik                                        [Page 29]
+Leach, Naik                                        [Page 29]
+
 
 
 INTERNET-DRAFT   CIFS Remote Admin Protocol     January 10, 1997
@@ -2609,9 +2269,9 @@ There is no auxilliary data in the response.
 #define AF_OP_ACCOUNTS  3
 
 
-static BOOL api_RNetUserGetInfo(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+static BOOL api_RNetUserGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -2818,9 +2478,9 @@ static BOOL api_RNetUserGetInfo(connection_struct * conn, uint16 vuid,
 /*******************************************************************
   get groups that a user is a member of
   ******************************************************************/
-static BOOL api_NetUserGetGroups(connection_struct * conn, uint16 vuid,
-				 char *param, char *data, int mdrcnt,
-				 int mprcnt, char **rdata, char **rparam,
+static BOOL api_NetUserGetGroups(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
 				 int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -2834,19 +2494,13 @@ static BOOL api_NetUserGetGroups(connection_struct * conn, uint16 vuid,
 	*rparam_len = 8;
 	*rparam = REALLOC(*rparam, *rparam_len);
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "zWrLeh") != 0)
-		return False;
-	switch (uLevel)
-	{
-		case 0:
-			p2 = "B21";
-			break;
-		default:
-			return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"zWrLeh") != 0) return False;
+  switch( uLevel ) {
+  case 0: p2 = "B21"; break;
+  default: return False;
 	}
-	if (strcmp(p2, str2) != 0)
-		return False;
+  if (strcmp(p2,str2) != 0) return False;
 
 	*rdata_len = mdrcnt + 1024;
 	*rdata = REALLOC(*rdata, *rdata_len);
@@ -2857,18 +2511,10 @@ static BOOL api_NetUserGetGroups(connection_struct * conn, uint16 vuid,
 	p = *rdata;
 
 	/* XXXX we need a real SAM database some day */
-	pstrcpy(p, "Users");
-	p += 21;
-	count++;
-	pstrcpy(p, "Domain Users");
-	p += 21;
-	count++;
-	pstrcpy(p, "Guests");
-	p += 21;
-	count++;
-	pstrcpy(p, "Domain Guests");
-	p += 21;
-	count++;
+  pstrcpy(p,"Users"); p += 21; count++;
+  pstrcpy(p,"Domain Users"); p += 21; count++;
+  pstrcpy(p,"Guests"); p += 21; count++;
+  pstrcpy(p,"Domain Guests"); p += 21; count++;
 
 	*rdata_len = PTR_DIFF(p, *rdata);
 
@@ -2879,9 +2525,9 @@ static BOOL api_NetUserGetGroups(connection_struct * conn, uint16 vuid,
 }
 
 
-static BOOL api_WWkstaUserLogon(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -2902,17 +2548,14 @@ static BOOL api_WWkstaUserLogon(connection_struct * conn, uint16 vuid,
 	uLevel = SVAL(p, 0);
 	name = p + 2;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	DEBUG(3, ("WWkstaUserLogon uLevel=%d name=%s\n", uLevel, name));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "OOWb54WrLh") != 0)
-		return False;
-	if (uLevel != 1 || strcmp(str2, "WB21BWDWWDDDDDDDzzzD") != 0)
-		return False;
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  /* check it's a supported varient */
+  if (strcmp(str1,"OOWb54WrLh") != 0) return False;
+  if (uLevel != 1 || strcmp(str2,"WB21BWDWWDDDDDDDzzzD") != 0) return False;
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 	desc.subformat = NULL;
@@ -2976,9 +2619,9 @@ static BOOL api_WWkstaUserLogon(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   api_WAccessGetUserPerms
   ****************************************************************************/
-static BOOL api_WAccessGetUserPerms(connection_struct * conn, uint16 vuid,
-				    char *param, char *data, int mdrcnt,
-				    int mprcnt, char **rdata, char **rparam,
+static BOOL api_WAccessGetUserPerms(connection_struct *conn,uint16 vuid, char *param,char *data,
+				    int mdrcnt,int mprcnt,
+				    char **rdata,char **rparam,
 				    int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -2986,14 +2629,11 @@ static BOOL api_WAccessGetUserPerms(connection_struct * conn, uint16 vuid,
 	char *user = skip_string(str2, 1);
 	char *resource = skip_string(user, 1);
 
-	DEBUG(3,
-	      ("WAccessGetUserPerms user=%s resource=%s\n", user, resource));
+  DEBUG(3,("WAccessGetUserPerms user=%s resource=%s\n",user,resource));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "zzh") != 0)
-		return False;
-	if (strcmp(str2, "") != 0)
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"zzh") != 0) return False;
+  if (strcmp(str2,"") != 0) return False;
 
 	*rparam_len = 6;
 	*rparam = REALLOC(*rparam, *rparam_len);
@@ -3007,9 +2647,9 @@ static BOOL api_WAccessGetUserPerms(connection_struct * conn, uint16 vuid,
 /****************************************************************************
   api_WPrintJobEnumerate
   ****************************************************************************/
-static BOOL api_WPrintJobGetInfo(connection_struct * conn, uint16 vuid,
-				 char *param, char *data, int mdrcnt,
-				 int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
 				 int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3023,49 +2663,36 @@ static BOOL api_WPrintJobGetInfo(connection_struct * conn, uint16 vuid,
 	struct pack_desc desc;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
-	VUSER_KEY;
 
 	uLevel = SVAL(p, 2);
 
-	ZERO_STRUCT(desc);
-	ZERO_STRUCT(status);
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
-	DEBUG(3,
-	      ("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n", uLevel,
-	       SVAL(p, 0)));
+  DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "WWrLh") != 0)
-		return False;
-	if (!check_printjob_info(&desc, uLevel, str2))
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"WWrLh") != 0) return False;
+  if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-	printjob_decode(SVAL(p, 0), &snum, &job);
+	job = SVAL(p, 0);
 
-	if (snum < 0 || !VALID_SNUM(snum))
-		return (False);
+  if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-	count = get_printqueue(snum, conn, &key, &queue, &status);
-	for (i = 0; i < count; i++)
-	{
-		if ((queue[i].job & 0xFF) == job)
-			break;
+	count = print_queue_status(snum, &queue, &status);
+  for (i = 0; i < count; i++) {
+    if (queue[i].job == job) break;
 	}
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 
-	if (init_package(&desc, 1, 0))
-	{
-		if (i < count)
-		{
-			fill_printjob_info(conn, snum, uLevel, &desc,
-					   &queue[i], i);
+  if (init_package(&desc,1,0)) {
+    if (i < count) {
+      fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
 			*rdata_len = desc.usedlen;
 		}
-		else
-		{
+    else {
 			desc.errcode = NERR_JobNotFound;
 			*rdata_len = 0;
 		}
@@ -3077,16 +2704,15 @@ static BOOL api_WPrintJobGetInfo(connection_struct * conn, uint16 vuid,
 	SSVAL(*rparam, 2, 0);
 	SSVAL(*rparam, 4, desc.neededlen);
 
-	if (queue)
-		free(queue);
+  if (queue) free(queue);
 
 	DEBUG(4, ("WPrintJobGetInfo: errorcode %d\n", desc.errcode));
 	return (True);
 }
 
-static BOOL api_WPrintJobEnumerate(connection_struct * conn, uint16 vuid,
-				   char *param, char *data, int mdrcnt,
-				   int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *param,char *data,
+				   int mdrcnt,int mprcnt,
+				   char **rdata,char **rparam,
 				   int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3100,53 +2726,41 @@ static BOOL api_WPrintJobEnumerate(connection_struct * conn, uint16 vuid,
 	struct pack_desc desc;
 	print_queue_struct *queue = NULL;
 	print_status_struct status;
-	VUSER_KEY;
 
-	ZERO_STRUCT(desc);
-	ZERO_STRUCT(status);
+  memset((char *)&desc,'\0',sizeof(desc));
+  memset((char *)&status,'\0',sizeof(status));
 
 	p = skip_string(p, 1);
 	uLevel = SVAL(p, 0);
 
 	DEBUG(3, ("WPrintJobEnumerate uLevel=%d name=%s\n", uLevel, name));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "zWrLeh") != 0)
-		return False;
-	if (uLevel > 2)
-		return False;	/* defined only for uLevel 0,1,2 */
-	if (!check_printjob_info(&desc, uLevel, str2))
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"zWrLeh") != 0) return False;
+  if (uLevel > 2) return False;	/* defined only for uLevel 0,1,2 */
+  if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
 	snum = lp_servicenumber(name);
-	if (snum < 0 && pcap_printername_ok(name, NULL))
-	{
+  if (snum < 0 && pcap_printername_ok(name,NULL)) {
 		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0)
-		{
+    if (pnum >= 0) {
 			lp_add_printer(name, pnum);
 			snum = lp_servicenumber(name);
 		}
 	}
 
-	if (snum < 0 || !VALID_SNUM(snum))
-		return (False);
+  if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
-	count = get_printqueue(snum, conn, &key, &queue, &status);
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+	count = print_queue_status(snum, &queue, &status);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 
-	if (init_package(&desc, count, 0))
-	{
+  if (init_package(&desc,count,0)) {
 		succnt = 0;
-		for (i = 0; i < count; i++)
-		{
-			fill_printjob_info(conn, snum, uLevel, &desc,
-					   &queue[i], i);
-			if (desc.errcode == NERR_Success)
-				succnt = i + 1;
+    for (i = 0; i < count; i++) {
+      fill_printjob_info(conn,snum,uLevel,&desc,&queue[i],i);
+      if (desc.errcode == NERR_Success) succnt = i+1;
 		}
 	}
 
@@ -3159,50 +2773,37 @@ static BOOL api_WPrintJobEnumerate(connection_struct * conn, uint16 vuid,
 	SSVAL(*rparam, 4, succnt);
 	SSVAL(*rparam, 6, count);
 
-	if (queue)
-		free(queue);
+  if (queue) free(queue);
 
 	DEBUG(4, ("WPrintJobEnumerate: errorcode %d\n", desc.errcode));
 	return (True);
 }
 
-static int check_printdest_info(struct pack_desc *desc, int uLevel, char *id)
+static int check_printdest_info(struct pack_desc* desc,
+				int uLevel, char* id)
 {
 	desc->subformat = NULL;
-	switch (uLevel)
-	{
-		case 0:
-			desc->format = "B9";
-			break;
-		case 1:
-			desc->format = "B9B21WWzW";
-			break;
-		case 2:
-			desc->format = "z";
-			break;
-		case 3:
-			desc->format = "zzzWWzzzWW";
-			break;
-		default:
-			return False;
+  switch( uLevel ) {
+  case 0: desc->format = "B9"; break;
+  case 1: desc->format = "B9B21WWzW"; break;
+  case 2: desc->format = "z"; break;
+  case 3: desc->format = "zzzWWzzzWW"; break;
+  default: return False;
 	}
-	if (strcmp(desc->format, id) != 0)
-		return False;
+  if (strcmp(desc->format,id) != 0) return False;
 	return True;
 }
 
-static void fill_printdest_info(connection_struct * conn, int snum,
-				int uLevel, struct pack_desc *desc)
+static void fill_printdest_info(connection_struct *conn, int snum, int uLevel,
+				struct pack_desc* desc)
 {
 	char buf[100];
 	strncpy(buf, SERVICE(snum), sizeof(buf) - 1);
 	buf[sizeof(buf) - 1] = 0;
 	strupper(buf);
-	if (uLevel <= 1)
-	{
+  if (uLevel <= 1) {
 		PACKS(desc, "B9", buf);	/* szName */
-		if (uLevel == 1)
-		{
+    if (uLevel == 1) {
 			PACKS(desc, "B21", "");	/* szUserName */
 			PACKI(desc, "W", 0);	/* uJobId */
 			PACKI(desc, "W", 0);	/* fsStatus */
@@ -3210,11 +2811,9 @@ static void fill_printdest_info(connection_struct * conn, int snum,
 			PACKI(desc, "W", 0);	/* time */
 		}
 	}
-	if (uLevel == 2 || uLevel == 3)
-	{
+  if (uLevel == 2 || uLevel == 3) {
 		PACKS(desc, "z", buf);	/* pszPrinterName */
-		if (uLevel == 3)
-		{
+    if (uLevel == 3) {
 			PACKS(desc, "z", "");	/* pszUserName */
 			PACKS(desc, "z", "");	/* pszLogAddr */
 			PACKI(desc, "W", 0);	/* uJobId */
@@ -3228,9 +2827,9 @@ static void fill_printdest_info(connection_struct * conn, int snum,
 	}
 }
 
-static BOOL api_WPrintDestGetInfo(connection_struct * conn, uint16 vuid,
-				  char *param, char *data, int mdrcnt,
-				  int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *param,char *data,
+				  int mdrcnt,int mprcnt,
+				  char **rdata,char **rparam,
 				  int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3241,46 +2840,36 @@ static BOOL api_WPrintDestGetInfo(connection_struct * conn, uint16 vuid,
 	struct pack_desc desc;
 	int snum;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	p = skip_string(p, 1);
 	uLevel = SVAL(p, 0);
 
-	DEBUG(3,
-	      ("WPrintDestGetInfo uLevel=%d PrinterName=%s\n", uLevel,
-	       PrinterName));
+  DEBUG(3,("WPrintDestGetInfo uLevel=%d PrinterName=%s\n",uLevel,PrinterName));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "zWrLh") != 0)
-		return False;
-	if (!check_printdest_info(&desc, uLevel, str2))
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"zWrLh") != 0) return False;
+  if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
 	snum = lp_servicenumber(PrinterName);
-	if (snum < 0 && pcap_printername_ok(PrinterName, NULL))
-	{
+  if (snum < 0 && pcap_printername_ok(PrinterName,NULL)) {
 		int pnum = lp_servicenumber(PRINTERS_NAME);
-		if (pnum >= 0)
-		{
+    if (pnum >= 0) {
 			lp_add_printer(PrinterName, pnum);
 			snum = lp_servicenumber(PrinterName);
 		}
 	}
 
-	if (snum < 0)
-	{
+  if (snum < 0) {
 		*rdata_len = 0;
 		desc.errcode = NERR_DestNotFound;
 		desc.neededlen = 0;
 	}
-	else
-	{
-		if (mdrcnt > 0)
-			*rdata = REALLOC(*rdata, mdrcnt);
+  else {
+    if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 		desc.base = *rdata;
 		desc.buflen = mdrcnt;
-		if (init_package(&desc, 1, 0))
-		{
+    if (init_package(&desc,1,0)) {
 			fill_printdest_info(conn, snum, uLevel, &desc);
 		}
 		*rdata_len = desc.usedlen;
@@ -3296,9 +2885,9 @@ static BOOL api_WPrintDestGetInfo(connection_struct * conn, uint16 vuid,
 	return (True);
 }
 
-static BOOL api_WPrintDestEnum(connection_struct * conn, uint16 vuid,
-			       char *param, char *data, int mdrcnt,
-			       int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+			       int mdrcnt,int mprcnt,
+			       char **rdata,char **rparam,
 			       int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3310,40 +2899,32 @@ static BOOL api_WPrintDestEnum(connection_struct * conn, uint16 vuid,
 	struct pack_desc desc;
 	int services = lp_numservices();
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	uLevel = SVAL(p, 0);
 
 	DEBUG(3, ("WPrintDestEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "WrLeh") != 0)
-		return False;
-	if (!check_printdest_info(&desc, uLevel, str2))
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"WrLeh") != 0) return False;
+  if (!check_printdest_info(&desc,uLevel,str2)) return False;
 
 	queuecnt = 0;
 	for (i = 0; i < services; i++)
 		if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i))
 			queuecnt++;
 
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
-	if (init_package(&desc, queuecnt, 0))
-	{
+  if (init_package(&desc,queuecnt,0)) {    
 		succnt = 0;
 		n = 0;
-		for (i = 0; i < services; i++)
-		{
-			if (lp_snum_ok(i) && lp_print_ok(i)
-			    && lp_browseable(i))
-			{
+    for (i = 0; i < services; i++) {
+      if (lp_snum_ok(i) && lp_print_ok(i) && lp_browseable(i)) {
 				fill_printdest_info(conn, i, uLevel, &desc);
 				n++;
-				if (desc.errcode == NERR_Success)
-					succnt = n;
+	if (desc.errcode == NERR_Success) succnt = n;
 			}
 		}
 	}
@@ -3361,9 +2942,9 @@ static BOOL api_WPrintDestEnum(connection_struct * conn, uint16 vuid,
 	return (True);
 }
 
-static BOOL api_WPrintDriverEnum(connection_struct * conn, uint16 vuid,
-				 char *param, char *data, int mdrcnt,
-				 int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+				 int mdrcnt,int mprcnt,
+				 char **rdata,char **rparam,
 				 int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3373,24 +2954,20 @@ static BOOL api_WPrintDriverEnum(connection_struct * conn, uint16 vuid,
 	int succnt;
 	struct pack_desc desc;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	uLevel = SVAL(p, 0);
 
 	DEBUG(3, ("WPrintDriverEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "WrLeh") != 0)
-		return False;
-	if (uLevel != 0 || strcmp(str2, "B41") != 0)
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"WrLeh") != 0) return False;
+  if (uLevel != 0 || strcmp(str2,"B41") != 0) return False;
 
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
-	if (init_package(&desc, 1, 0))
-	{
+  if (init_package(&desc,1,0)) {
 		PACKS(&desc, "B41", "NULL");
 	}
 
@@ -3409,9 +2986,9 @@ static BOOL api_WPrintDriverEnum(connection_struct * conn, uint16 vuid,
 	return (True);
 }
 
-static BOOL api_WPrintQProcEnum(connection_struct * conn, uint16 vuid,
-				char *param, char *data, int mdrcnt,
-				int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+				int mdrcnt,int mprcnt,
+				char **rdata,char **rparam,
 				int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3421,25 +2998,21 @@ static BOOL api_WPrintQProcEnum(connection_struct * conn, uint16 vuid,
 	int succnt;
 	struct pack_desc desc;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	uLevel = SVAL(p, 0);
 
 	DEBUG(3, ("WPrintQProcEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "WrLeh") != 0)
-		return False;
-	if (uLevel != 0 || strcmp(str2, "B13") != 0)
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"WrLeh") != 0) return False;
+  if (uLevel != 0 || strcmp(str2,"B13") != 0) return False;
 
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 	desc.format = str2;
-	if (init_package(&desc, 1, 0))
-	{
+  if (init_package(&desc,1,0)) {
 		PACKS(&desc, "B13", "lpd");
 	}
 
@@ -3458,9 +3031,9 @@ static BOOL api_WPrintQProcEnum(connection_struct * conn, uint16 vuid,
 	return (True);
 }
 
-static BOOL api_WPrintPortEnum(connection_struct * conn, uint16 vuid,
-			       char *param, char *data, int mdrcnt,
-			       int mprcnt, char **rdata, char **rparam,
+static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,char *data,
+			       int mdrcnt,int mprcnt,
+			       char **rdata,char **rparam,
 			       int *rdata_len, int *rparam_len)
 {
 	char *str1 = param + 2;
@@ -3470,26 +3043,22 @@ static BOOL api_WPrintPortEnum(connection_struct * conn, uint16 vuid,
 	int succnt;
 	struct pack_desc desc;
 
-	ZERO_STRUCT(desc);
+  memset((char *)&desc,'\0',sizeof(desc));
 
 	uLevel = SVAL(p, 0);
 
 	DEBUG(3, ("WPrintPortEnum uLevel=%d\n", uLevel));
 
-	/* check it's a supported variant */
-	if (strcmp(str1, "WrLeh") != 0)
-		return False;
-	if (uLevel != 0 || strcmp(str2, "B9") != 0)
-		return False;
+  /* check it's a supported varient */
+  if (strcmp(str1,"WrLeh") != 0) return False;
+  if (uLevel != 0 || strcmp(str2,"B9") != 0) return False;
 
-	if (mdrcnt > 0)
-		*rdata = REALLOC(*rdata, mdrcnt);
-	ZERO_STRUCT(desc);
+  if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
+  memset((char *)&desc,'\0',sizeof(desc));
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
 	desc.format = str2;
-	if (init_package(&desc, 1, 0))
-	{
+  if (init_package(&desc,1,0)) {
 		PACKS(&desc, "B13", "lp0");
 	}
 
@@ -3512,9 +3081,11 @@ static BOOL api_WPrintPortEnum(connection_struct * conn, uint16 vuid,
 /****************************************************************************
  The buffer was too small
   ****************************************************************************/
-static BOOL api_TooSmall(connection_struct * conn, uint16 vuid, char *param,
-			 char *data, int mdrcnt, int mprcnt, char **rdata,
-			 char **rparam, int *rdata_len, int *rparam_len)
+
+static BOOL api_TooSmall(connection_struct *conn,uint16 vuid, char *param,char *data,
+			 int mdrcnt,int mprcnt,
+			 char **rdata,char **rparam,
+			 int *rdata_len,int *rparam_len)
 {
 	*rparam_len = MIN(*rparam_len, mprcnt);
 	*rparam = REALLOC(*rparam, *rparam_len);
@@ -3532,10 +3103,11 @@ static BOOL api_TooSmall(connection_struct * conn, uint16 vuid, char *param,
 /****************************************************************************
  The request is not supported
   ****************************************************************************/
-static BOOL api_Unsupported(connection_struct * conn, uint16 vuid,
-			    char *param, char *data, int mdrcnt, int mprcnt,
-			    char **rdata, char **rparam, int *rdata_len,
-			    int *rparam_len)
+
+static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
+			    int mdrcnt,int mprcnt,
+			    char **rdata,char **rparam,
+			    int *rdata_len,int *rparam_len)
 {
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam, *rparam_len);
@@ -3560,98 +3132,37 @@ struct
 	BOOL (*fn) (connection_struct *, uint16, char *, char *,
 		    int, int, char **, char **, int *, int *);
 	int flags;
-} api_commands[] =
-{
-	{
-	"RNetShareEnum", 0, api_RNetShareEnum, 0}
-	,
-	{
-	"RNetShareGetInfo", 1, api_RNetShareGetInfo, 0}
-	,
-	{
-	"RNetServerGetInfo", 13, api_RNetServerGetInfo, 0}
-	,
-	{
-	"RNetGroupGetUsers", 52, api_RNetGroupGetUsers, 0}
-	,
-	{
-	"RNetUserGetInfo", 56, api_RNetUserGetInfo, 0}
-	,
-	{
-	"NetUserGetGroups", 59, api_NetUserGetGroups, 0}
-	,
-	{
-	"NetWkstaGetInfo", 63, api_NetWkstaGetInfo, 0}
-	,
-	{
-	"DosPrintQEnum", 69, api_DosPrintQEnum, 0}
-	,
-	{
-	"DosPrintQGetInfo", 70, api_DosPrintQGetInfo, 0}
-	,
-	{
-	"WPrintQueuePause", 74, api_WPrintQueuePurge, 0}
-	,
-	{
-	"WPrintQueueResume", 75, api_WPrintQueuePurge, 0}
-	,
-	{
-	"WPrintJobEnumerate", 76, api_WPrintJobEnumerate, 0}
-	,
-	{
-	"WPrintJobGetInfo", 77, api_WPrintJobGetInfo, 0}
-	,
-	{
-	"RDosPrintJobDel", 81, api_RDosPrintJobDel, 0}
-	,
-	{
-	"RDosPrintJobPause", 82, api_RDosPrintJobDel, 0}
-	,
-	{
-	"RDosPrintJobResume", 83, api_RDosPrintJobDel, 0}
-	,
-	{
-	"WPrintDestEnum", 84, api_WPrintDestEnum, 0}
-	,
-	{
-	"WPrintDestGetInfo", 85, api_WPrintDestGetInfo, 0}
-	,
-	{
-	"NetRemoteTOD", 91, api_NetRemoteTOD, 0}
-	,
-	{
-	"WPrintQueuePurge", 103, api_WPrintQueuePurge, 0}
-	,
-	{
-	"NetServerEnum", 104, api_RNetServerEnum, 0}
-	,
-	{
-	"WAccessGetUserPerms", 105, api_WAccessGetUserPerms, 0}
-	,
-	{
-	"SetUserPassword", 115, api_SetUserPassword, 0}
-	,
-	{
-	"WWkstaUserLogon", 132, api_WWkstaUserLogon, 0}
-	,
-	{
-	"PrintJobInfo", 147, api_PrintJobInfo, 0}
-	,
-	{
-	"WPrintDriverEnum", 205, api_WPrintDriverEnum, 0}
-	,
-	{
-	"WPrintQProcEnum", 206, api_WPrintQProcEnum, 0}
-	,
-	{
-	"WPrintPortEnum", 207, api_WPrintPortEnum, 0}
-	,
-	{
-	"SamOEMChangePassword", 214, api_SamOEMChangePassword, 0}
-	,
-	{
-	NULL, -1, api_Unsupported, 0}
-};
+} api_commands[] = {
+  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
+  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
+  {"RNetGroupGetUsers", 52,	api_RNetGroupGetUsers,0},
+  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  74, api_WPrintQueuePurge,0},
+  {"WPrintQueueResume", 75, api_WPrintQueuePurge,0},
+  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	103,	api_WPrintQueuePurge,0},
+  {"NetServerEnum",	104,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	115,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword", 214, api_SamOEMChangePassword,0},
+  {NULL,		-1,	api_Unsupported,0}};
 
 
 /****************************************************************************
@@ -3670,35 +3181,35 @@ int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
 	BOOL reply = False;
 	int i;
 
-	if (params == 0)
-	{
+  if (!params) {
 		DEBUG(0, ("ERROR: NULL params in api_reply()\n"));
 		return 0;
 	}
 
 	api_command = SVAL(params, 0);
 
-	DEBUG(3,
-	      ("Got API command %d of form <%s> <%s> (tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
-	       api_command, params + 2, skip_string(params + 2, 1), tdscnt,
-	       tpscnt, mdrcnt, mprcnt));
+  DEBUG(3,("Got API command %d of form <%s> <%s> (tdscnt=%d,tpscnt=%d,mdrcnt=%d,mprcnt=%d)\n",
+	   api_command,
+	   params+2,
+	   skip_string(params+2,1),
+	   tdscnt,tpscnt,mdrcnt,mprcnt));
 
-	for (i = 0; api_commands[i].name; i++)
-		if (api_commands[i].id == api_command && api_commands[i].fn)
-		{
+  for (i=0;api_commands[i].name;i++) {
+    if (api_commands[i].id == api_command && api_commands[i].fn) {
 			DEBUG(3, ("Doing %s\n", api_commands[i].name));
 			break;
 		}
+  }
 
 	rdata = (char *)malloc(1024);
 	if (rdata)
-		memset(rdata, 0, 1024);
+    memset(rdata,'\0',1024);
+
 	rparam = (char *)malloc(1024);
 	if (rparam)
-		memset(rparam, 0, 1024);
+    memset(rparam,'\0',1024);
 
-	if (!rdata || !rparam)
-	{
+  if(!rdata || !rparam) {
 		DEBUG(0, ("api_reply: malloc fail !\n"));
 		return -1;
 	}
@@ -3707,13 +3218,11 @@ int api_reply(connection_struct * conn, uint16 vuid, char *outbuf, char *data,
 				   &rdata, &rparam, &rdata_len, &rparam_len);
 
 
-	if (rdata_len > mdrcnt || rparam_len > mprcnt)
-	{
+  if (rdata_len > mdrcnt ||
+      rparam_len > mprcnt) {
 		reply = api_TooSmall(conn, vuid, params, data, mdrcnt, mprcnt,
-				     &rdata, &rparam, &rdata_len,
-				     &rparam_len);
+			   &rdata,&rparam,&rdata_len,&rparam_len);
 	}
-
 
 	/* if we get False back then it's actually unsupported */
 	if (!reply)
