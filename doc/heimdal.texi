@@ -212,11 +212,26 @@ to the following restrictions:
 
 @menu
 * Introduction::                
-* Tutorial::                    
+* Building and Installing::     
+* Setting up a realm::          
+* Kerberos 4 issues::           
+
+ --- The Detailed Node Listing ---
+
+Building and Installing
+
+* Finishing the installation::  
+
+Kerberos 4 issues
+
+* Principal conversion issues::  
+* Converting a version 4 database::  
 @end menu
 
 @include intro.texi
-@include tut.texi
+@include install.texi
+@include setup.texi
+@include kerberos4.texi
 
 @c @shortcontents
 @c @contents

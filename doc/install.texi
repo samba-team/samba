@@ -1,0 +1,61 @@
+@node Building and Installing, Setting up a realm, Introduction, Top
+@comment  node-name,  next,  previous,  up
+@chapter Building and Installing
+
+Heimdal uses GNU Autoconf to configure for specific hosts, and GNU
+Automake to manage makefiles. If this is new to you, the short
+instruction is to run the @code{configure} script in the top level
+directory, and when that finishes @code{make}.
+
+You will need a compiler that supports a ``loose'' ANSI C mode, such as
+@code{gcc}. To build the server side you will need either NDBM or
+Berkeley DB. If you have neither, parts of the code will not build
+(specifically libraries and programs that deals with databases). It
+should be possible to build all clients even without a working db
+library, but make will need some help (such as with the @samp{-k} flag).
+
+When everything is built, you can install by doing @kbd{make
+install}. The default location for installation is @file{/usr/heimdal},
+but this can be changed by running @code{configure} with
+@samp{--prefix=/some/other/place}.
+
+If you need to change the default behavior, configure understands the
+following options:
+
+@table @asis
+@item @kbd{--without-berkeley-db}
+DB is preferred before NDBM, but if you for some reason want to use NDBM
+instead, you can use this option.
+@item @kbd{--with-krb4=@file{dir}}
+Gives the location of Kerberos 4 libraries and headers. This enables
+Kerberos 4 support in some programs, like telnet and the KDC. If you
+keep libraries and headers in different places, you can instead give the
+path to each with the @kbd{--with-krb4-lib=@file{dir}}, and
+@kbd{--with-krb4-include=@file{dir}} options.
+@item @kbd{--enable-kaserver}
+Enables experimental kaserver support. This is the protocol used by
+``KDC'' in AFS. Requires Kerberos 4 support.
+@item @kbd{--with-readline=@file{dir}}
+Gives the path for the GNU Readline library, which will be used in some
+programs. If no readline library is found, the (simpler) editline
+library will be used instead.
+@end table
+
+@menu
+* Finishing the installation::  
+@end menu
+
+@node Finishing the installation,  , Building and Installing, Building and Installing
+@section Loose threads
+
+The 
+@pindex rsh
+@code{rsh} program in this distribution presently isn't usable with
+non-kerberised @code{rshd}s. It should not be installed set-uid to root.
+
+@pindex login
+The @code{telnetd} daemon will try to use the @code{login} found in the
+@file{/usr/athena/bin} directory. If you don't have a working login
+program there (it should grok the @samp{-f} flag), you can either start
+telnetd with the @samp{-L} flag, or edit the definition of @code{BINDIR}
+in @file{telnetd.h}.

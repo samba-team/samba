@@ -1,4 +1,4 @@
-@node Introduction, Tutorial, Top, Top
+@node Introduction, Building and Installing, Top, Top
 @comment  node-name,  next,  previous,  up
 @chapter Introduction
 

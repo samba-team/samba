@@ -1,0 +1,113 @@
+@node Setting up a realm, Kerberos 4 issues, Building and Installing, Top
+@chapter Setting up a realm
+
+A
+@cindex realm
+realm is an administrative domain.  Kerberos realms usually consists of
+an Internet domain name in uppercase. Call your realm the same as your
+Internet domain name if you do not have strong reasons for not doing so.
+It will make life easier for you and everyone else.
+
+To setup a realm you will first have to create a configuration file:
+@file{/etc/krb5.conf}. The @file{krb5.conf} file can contain many
+configuration options, some which are described here.
+
+The confguration file is a hierarchial structure consisting of sections,
+each containing a list of bindings (either variable assignments or
+subsections). A section starts with @samp{[section-name]}.  A binding
+consists of a left hand side, an equal (@samp{=}) and a right hand
+side. The left hand side tag must be separated from the equal with some
+whitespace. Subsections has a @samp{@{} as the first non-whitespace
+character after the equal. All other bindings are treated as variable
+assignments. The value of a variable extends to the end of the line.
+
+@example
+[section1]
+        a-subsection = @{
+                var = value1
+                other-var = value with @{@}
+                sub-sub-section = @{ 
+                        var = 123
+                @}
+        @}
+        var = some other value
+[section2]
+        var = yet another value
+@end example
+
+To denote entries in the config file, the names of sections and bindings
+will be given separated with slashes (@samp{/}). The @samp{other-var}
+variable will thus be @samp{section1/a-subsection/other-var}.
+
+For in-depth information about the contents of the config file, refer to
+the @file{krb5.conf} manual page. Some of the more important sections
+are briefly described here. The @samp{libdefaults} section contains a
+list of library configuration parameters, such as the default realm and
+the timeout for kdc responses. The @samp{realms} section contains
+information about specific realms, such as where they hide their
+KDC. This section serves the same purpose as the Kerberos 4
+@file{krb.conf} file, but can contain more information. Finally the
+@samp{domain_realm} section contains a list of mappings from domains to
+realms, equivalent to the Kerberos 4 @file{krb.realms} file.
+
+To continue with the realm setup, you will have to create a config file,
+with contents similar to the following.
+
+@example
+[libdefaults]
+        default_realm = MY.REALM
+[realms]
+        MY.REALM = @{
+                kdc = my.kdc
+        @}
+[domain_realm]
+.my.domain = MY.REALM
+
+@end example
+
+If you use a realm name equal to your domain name, you can omit the
+@samp{libdefaults}, and @samp{domain_realm}, sections.
+
+The database library will look for the database in @file{/var/heimdal},
+so you should probably create that directory.
+
+To initialise the database use the @code{kdb_edit} program. First issue
+a @kbd{init MY.REALM} command. This will create the database and insert
+default principals for that realm. You can have more than one realm in
+one database, so @samp{init} does not destroy any old database.
+
+Before creating the database, @samp{init} will ask you some questions
+about default and max ticket lifes. The default values should be fine.
+
+After creating the database you should probably add yourself. You do
+this with the @samp{ank} command. It takes as argument the name of a
+principal. The principal should contain a realm, so if you haven't setup
+a default realm, you will need to explicitly include the realm.
+
+@example
+# kdb_edit
+kdb_edit> init MY.REALM
+Realm max ticket life: [infinite] 
+Realm max renewable ticket life: [infinite] 
+Default ticket life: [1 day] 
+Default renewable ticket life: [7 days] 
+kdb_edit> ank me
+Max ticket life [1 day]: 
+Max renewable ticket [7 days]: 
+Password:
+Verifying password - Password:
+@end example
+
+Now start the KDC and try getting a ticket.
+
+@example
+# kdc &
+# kinit me
+me@@MY.REALMS's Password:
+# klist
+Credentials cache: /tmp/krb5cc_3008
+        Principal: me@@MY.REALM
+
+  Issued           Expires          Principal
+Aug 25 07:25:55  Aug 25 17:25:55  krbtgt/MY.REALM@@MY.REALM
+@end example
