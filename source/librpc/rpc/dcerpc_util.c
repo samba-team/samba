@@ -403,27 +403,30 @@ const char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bindi
 		s = talloc_asprintf_append(s, "%s", b->host);
 	}
 
-	if ((!b->options || !b->options[0]) && !b->flags) {
+	if (!b->endpoint && !b->options && !b->flags) {
 		return s;
 	}
 
 	s = talloc_asprintf_append(s, "[");
 
+	if (b->endpoint) {
+		s = talloc_asprintf_append(s, "%s", b->endpoint);
+	}
+
 	/* this is a *really* inefficent way of dealing with strings,
 	   but this is rarely called and the strings are always short,
 	   so I don't care */
 	for (i=0;b->options && b->options[i];i++) {
-		s = talloc_asprintf_append(s, "%s,", b->options[i]);
+		s = talloc_asprintf_append(s, ",%s", b->options[i]);
 		if (!s) return NULL;
 	}
 	for (i=0;i<ARRAY_SIZE(ncacn_options);i++) {
 		if (b->flags & ncacn_options[i].flag) {
-			s = talloc_asprintf_append(s, "%s,", ncacn_options[i].name);
+			s = talloc_asprintf_append(s, ",%s", ncacn_options[i].name);
 			if (!s) return NULL;
 		}
 	}
 
-	s[strlen(s)-1] = 0;
 	s = talloc_asprintf_append(s, "]");
 
 	return s;
@@ -499,12 +502,14 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 
 	b->options = NULL;
 	b->flags = 0;
+	b->endpoint = NULL;
 
 	if (!options) {
 		return NT_STATUS_OK;
 	}
 
 	comma_count = count_chars(options, ',');
+
 	b->options = talloc_array_p(mem_ctx, const char *, comma_count+2);
 	if (!b->options) {
 		return NT_STATUS_NO_MEMORY;
@@ -520,6 +525,14 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 	b->options[i] = options;
 	b->options[i+1] = NULL;
 
+	/* Endpoint is first option */
+	b->endpoint = b->options[0];
+	if (strlen(b->endpoint) == 0) b->endpoint = NULL;
+
+	for (i=0;b->options[i];i++) {
+		b->options[i] = b->options[i+1];
+	}
+
 	/* some options are pre-parsed for convenience */
 	for (i=0;b->options[i];i++) {
 		for (j=0;j<ARRAY_SIZE(ncacn_options);j++) {
@@ -534,6 +547,9 @@ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_
 			}
 		}
 	}
+
+	if (b->options[0] == NULL)
+		b->options = NULL;
 	
 	return NT_STATUS_OK;
 }
@@ -571,12 +587,15 @@ static const char *floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		return NULL;
 
 	case EPM_PROTOCOL_SMB:
+		if (strlen(floor->rhs.smb.unc) == 0) return NULL;
 		return talloc_strdup(mem_ctx, floor->rhs.smb.unc);
 
 	case EPM_PROTOCOL_PIPE:
+		if (strlen(floor->rhs.pipe.path) == 0) return NULL;
 		return talloc_strdup(mem_ctx, floor->rhs.pipe.path);
 
 	case EPM_PROTOCOL_NETBIOS:
+		if (strlen(floor->rhs.netbios.name) == 0) return NULL;
 		return talloc_strdup(mem_ctx, floor->rhs.netbios.name);
 
 	case EPM_PROTOCOL_NCALRPC:
@@ -592,6 +611,7 @@ static const char *floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *flo
 		return talloc_strdup(mem_ctx, floor->rhs.streettalk.streettalk);
 		
 	case EPM_PROTOCOL_UNIX_DS:
+		if (strlen(floor->rhs.unix_ds.path) == 0) return NULL;
 		return talloc_strdup(mem_ctx, floor->rhs.unix_ds.path);
 		
 	case EPM_PROTOCOL_NULL:
@@ -749,15 +769,14 @@ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, struct epm_tower *tower,
 
 	/* Ignore floor 1, it contains the NDR version info */
 	
-	binding->options = talloc_array_p(mem_ctx, const char *, 2);
+	binding->options = NULL;
 
 	/* Set endpoint */
 	if (tower->num_floors >= 4) {
-		binding->options[0] = floor_get_rhs_data(mem_ctx, &tower->floors[3]);
+		binding->endpoint = floor_get_rhs_data(mem_ctx, &tower->floors[3]);
 	} else {
-		binding->options[0] = NULL;
+		binding->endpoint = NULL;
 	}
-	binding->options[1] = NULL;
 
 	/* Set network address */
 	if (tower->num_floors >= 5) {
@@ -813,8 +832,8 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 	}
 
 	/* The 4th floor contains the endpoint */
-	if (num_protocols >= 2 && binding->options && binding->options[0]) {
-		status = floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->options[0]);
+	if (num_protocols >= 2 && binding->endpoint) {
+		status = floor_set_rhs_data(mem_ctx, &tower->floors[3], binding->endpoint);
 		if (NT_STATUS_IS_ERR(status)) {
 			return status;
 		}
@@ -827,6 +846,95 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *
 			return status;
 		}
 	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dcerpc_epm_map(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
+				 const char *uuid, uint_t version)
+{
+	struct dcerpc_pipe *p;
+	NTSTATUS status;
+	struct epm_Map r;
+	struct policy_handle handle;
+	struct GUID guid;
+	struct epm_twr_t twr, *twr_r;
+	struct dcerpc_binding epmapper_binding;
+
+
+	if (!strcmp(uuid, DCERPC_EPMAPPER_UUID)) {
+		switch(binding->transport) {
+			case NCACN_IP_TCP: binding->endpoint = "135"/*FIXME*/; return NT_STATUS_OK;
+			case NCALRPC: binding->endpoint = EPMAPPER_IDENTIFIER; return NT_STATUS_OK;
+			default: return NT_STATUS_NOT_SUPPORTED;
+		}
+	}
+	
+
+	ZERO_STRUCT(epmapper_binding);
+	epmapper_binding.transport = binding->transport;
+	epmapper_binding.host = binding->host;
+	epmapper_binding.options = NULL;
+	epmapper_binding.flags = 0;
+	epmapper_binding.endpoint = NULL;
+	
+	status = dcerpc_pipe_connect_b(&p,
+					&epmapper_binding,
+				   DCERPC_EPMAPPER_UUID,
+				   DCERPC_EPMAPPER_VERSION,
+				   NULL, NULL, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ZERO_STRUCT(handle);
+	ZERO_STRUCT(guid);
+
+	status = GUID_from_string(uuid, &binding->object);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	binding->object_version = version;
+
+	status = dcerpc_binding_build_tower(p, binding, &twr.tower);
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* with some nice pretty paper around it of course */
+	r.in.object = &guid;
+	r.in.map_tower = &twr;
+	r.in.entry_handle = &handle;
+	r.in.max_towers = 1;
+	r.out.entry_handle = &handle;
+
+	status = dcerpc_epm_Map(p, p, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_pipe_close(p);
+		return status;
+	}
+	if (r.out.result != 0 || r.out.num_towers != 1) {
+		dcerpc_pipe_close(p);
+		return NT_STATUS_PORT_UNREACHABLE;
+	}
+
+	twr_r = r.out.towers[0].twr;
+	if (!twr_r) {
+		dcerpc_pipe_close(p);
+		return NT_STATUS_PORT_UNREACHABLE;
+	}
+
+	if (twr_r->tower.num_floors != twr.tower.num_floors ||
+	    twr_r->tower.floors[3].lhs.protocol != twr.tower.floors[3].lhs.protocol) {
+		dcerpc_pipe_close(p);
+		return NT_STATUS_PORT_UNREACHABLE;
+	}
+
+	binding->endpoint = floor_get_rhs_data(mem_ctx, &twr_r->tower.floors[3]);
+
+	dcerpc_pipe_close(p);
 
 	return NT_STATUS_OK;
 }
@@ -848,7 +956,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	const char *pipe_name;
 	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_pipe_connect_ncacn_np");
 	
-	if (!binding->options || !binding->options[0] || !strlen(binding->options[0])) {
+	if (!binding->endpoint) {
 		const struct dcerpc_interface_table *table = idl_iface_by_uuid(pipe_uuid);
 		struct dcerpc_binding default_binding;
 		int i;
@@ -864,13 +972,13 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
 			if (NT_STATUS_IS_OK(status) && default_binding.transport == NCACN_NP) {
-				pipe_name = default_binding.options[0];	
+				pipe_name = default_binding.endpoint;	
 				break;
 				
 			}
 		}
 	} else {
-		pipe_name = binding->options[0];
+		pipe_name = binding->endpoint;
 	}
 
 	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
@@ -952,30 +1060,24 @@ static NTSTATUS dcerpc_pipe_connect_ncalrpc(struct dcerpc_pipe **p,
 						 const char *password)
 {
 	NTSTATUS status;
-	const char *identifier = NULL;
 	TALLOC_CTX *mem_ctx = talloc_init("dcerpc_pipe_connect_ncalrpc");
 
-	if (binding->options) {
-		identifier = binding->options[0];
-	}
-
 	/* Look up identifier using the epmapper */
-	if (!identifier) {
-		status = dcerpc_epm_map_ncalrpc(mem_ctx, pipe_uuid, pipe_version,
-						 &identifier);
+	if (!binding->endpoint) {
+		status = dcerpc_epm_map(mem_ctx, binding, pipe_uuid, pipe_version);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP NCALRPC identifier for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
 			talloc_destroy(mem_ctx);
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/TCP identifier %s\n", identifier));
+		DEBUG(1,("Mapped to DCERPC/TCP identifier %s\n", binding->endpoint));
 	}
 
-	status = dcerpc_pipe_open_pipe(p, identifier);
+	status = dcerpc_pipe_open_pipe(p, binding->endpoint);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open ncalrpc pipe '%s'\n", identifier));
+		DEBUG(0,("Failed to open ncalrpc pipe '%s'\n", binding->endpoint));
 		talloc_destroy(mem_ctx);
    		return status;
     }
@@ -1021,14 +1123,14 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_unix_stream(struct dcerpc_pipe **p,
 {
 	NTSTATUS status;
 
-	if (!binding->options || !binding->options[0]) {
+	if (!binding->endpoint) {
 		DEBUG(0, ("Path to unix socket not specified\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_open_unix_stream(p, binding->options[0]);
+	status = dcerpc_pipe_open_unix_stream(p, binding->endpoint);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to open unix socket %s\n", binding->options[0]));
+		DEBUG(0,("Failed to open unix socket %s\n", binding->endpoint));
                 return status;
     }
 
@@ -1069,22 +1171,20 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 {
 	NTSTATUS status;
 	uint32_t port = 0;
+	TALLOC_CTX *mem_ctx = talloc_init("connect_ncacn_ip_tcp");
 
-	if (binding->options && binding->options[0] && strlen(binding->options[0])) {
-		port = atoi(binding->options[0]);
-	}
-
-	if (port == 0) {
-		status = dcerpc_epm_map_tcp_port(binding->host, 
-						 pipe_uuid, pipe_version,
-						 &port);
+	if (!binding->endpoint) {
+		status = dcerpc_epm_map(mem_ctx, binding, 
+						 pipe_uuid, pipe_version);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Failed to map DCERPC/TCP port for '%s' - %s\n", 
 				 pipe_uuid, nt_errstr(status)));
 			return status;
 		}
-		DEBUG(1,("Mapped to DCERPC/TCP port %u\n", port));
+		DEBUG(1,("Mapped to DCERPC/TCP port %s\n", binding->endpoint));
 	}
+
+	port = atoi(binding->endpoint);
 
 	status = dcerpc_pipe_open_tcp(p, binding->host, port, AF_UNSPEC);
 	if (!NT_STATUS_IS_OK(status)) {

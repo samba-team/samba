@@ -148,6 +148,7 @@ struct dcerpc_binding {
 	struct GUID object;
 	int object_version;
 	const char *host;
+	const char *endpoint;
 	const char **options;
 	uint32_t flags;
 };
