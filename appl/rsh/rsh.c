@@ -568,13 +568,6 @@ doit_broken (int argc,
     af = addr->sa_family = hostent->h_addrtype;
     socket_set_address_and_port (addr, hostent->h_addr_list[0], port);
 
-#if 0
-    memset (&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port   = port;
-    addr.sin_addr   = *((struct in_addr *)hostent->h_addr_list[0]);
-#endif
-
     if (connect(priv_socket1, addr, socket_sockaddr_size(addr)) < 0) {
 	char **h;
 
@@ -677,13 +670,6 @@ doit (const char *hostname,
 
 	addr->sa_family = af;
 	socket_set_address_and_port (addr, *h, port);
-
-#if 0
-	memset (&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port   = port;
-	addr.sin_addr   = **h;
-#endif
 
 	s = socket (af, SOCK_STREAM, 0);
 	if (s < 0)
