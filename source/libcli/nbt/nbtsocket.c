@@ -390,6 +390,10 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(nbt_name_packet, request);		
+	}
+
 	status = ndr_push_struct_blob(&req->encoded, req, request, 
 				      (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NT_STATUS_IS_OK(status)) {

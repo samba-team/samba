@@ -24,6 +24,16 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
+
+void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct ipv4_addr *_ip)
+{
+	struct ipv4_addr ip;
+
+	ip.addr = htonl(_ip->addr);
+
+	ndr->print(ndr, "%-25s: %s", name, sys_inet_ntoa(ip));
+}
 
 /*
   build a GUID from a string
