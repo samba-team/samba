@@ -27,15 +27,15 @@ static TDB_CONTEXT *tdb;
 static char *current_lang;
 
 
-/* load a po file into the tdb */
-static BOOL load_po(const char *po_file)
+/* load a msg file into the tdb */
+static BOOL load_msg(const char *msg_file)
 {
 	char **lines;
 	int num_lines, i;
 	char *msgid, *msgstr;
 	TDB_DATA key, data;
 
-	lines = file_lines_load(po_file, &num_lines);
+	lines = file_lines_load(msg_file, &num_lines);
 
 	if (!lines) {
 		return False;
@@ -45,12 +45,14 @@ static BOOL load_po(const char *po_file)
 
 	/* wipe the db */
 	tdb_traverse(tdb, (tdb_traverse_func) tdb_delete, NULL);
+
+	msgid = NULL;
 	
 	for (i=0;i<num_lines;i++) {
 		if (strncmp(lines[i], "msgid \"", 7) == 0) {
 			msgid = lines[i] + 7;
 		}
-		if (strncmp(lines[i], "msgstr \"", 8) == 0) {
+		if (msgid && strncmp(lines[i], "msgstr \"", 8) == 0) {
 			msgstr = lines[i] + 8;
 			trim_string(msgid, NULL, "\"");
 			trim_string(msgstr, NULL, "\"");
@@ -62,6 +64,7 @@ static BOOL load_po(const char *po_file)
 			data.dptr = msgstr;
 			data.dsize = strlen(msgstr)+1;
 			tdb_store(tdb, key, data, 0);
+			msgid = NULL;
 		}
 	}
 
@@ -93,7 +96,7 @@ static char *get_lang(void)
 BOOL lang_tdb_init(const char *lang)
 {
 	char *path = NULL;
-	char *po_path = NULL;
+	char *msg_path = NULL;
 	struct stat st;
 	static int initialised;
 	time_t loadtime;
@@ -119,10 +122,10 @@ BOOL lang_tdb_init(const char *lang)
 	/* if no lang then we don't translate */
 	if (!lang) return True;
 
-	asprintf(&po_path, "%s.po", lib_path(lang));
-	if (stat(po_path, &st) != 0) {
-		/* the po file isn't available */
-		free(po_path);
+	asprintf(&msg_path, "%s.msg", lib_path(lang));
+	if (stat(msg_path, &st) != 0) {
+		/* the msg file isn't available */
+		free(msg_path);
 		return False;
 	}
 	
@@ -133,7 +136,7 @@ BOOL lang_tdb_init(const char *lang)
 	if (!tdb) {
 		tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDONLY, 0);
 		free(path);
-		free(po_path);
+		free(msg_path);
 		if (!tdb) return False;
 		current_lang = strdup(lang);
 		return True;
@@ -144,10 +147,10 @@ BOOL lang_tdb_init(const char *lang)
 	loadtime = tdb_fetch_int(tdb, "/LOADTIME/");
 
 	if (loadtime == -1 || loadtime < st.st_mtime) {
-		load_po(po_path);
+		load_msg(msg_path);
 		tdb_store_int(tdb, "/LOADTIME/", (int)time(NULL));
 	}
-	free(po_path);
+	free(msg_path);
 
 	current_lang = strdup(lang);
 
