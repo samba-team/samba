@@ -111,7 +111,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 	  memset(b, 0, l+TBLOCK+100);
 	  fixtarname(b, aname, l+1);
 	  i = strlen(b)+1;
-	  dotarbuf(f, b, TBLOCK*((i+(TBLOCK-1)/TBLOCK)));
+	  dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
 	  free(b);
   }
 
