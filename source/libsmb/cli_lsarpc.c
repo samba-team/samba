@@ -25,7 +25,8 @@
 
 #include "includes.h"
 
-/** @defgroup rpc_client RPC Client
+/** @defgroup lsa LSA rpc client routines
+ *  @ingroup rpc_client
  *
  * @{
  **/
@@ -37,16 +38,22 @@
  * security authority", which is half of a password database.
  **/
 
-/** Opens a SMB connection to the lsa pipe
+/** Opens a SMB connection and connects to the LSARPC pipe.
  *
- * @param system_name NETBIOS name of the machine to connect to. */
+ * @param cli Uninitialised client handle.
+ * @param system_name NETBIOS name of the machine to connect to.
+ * @param creds User credentials to connect as.
+ * @returns Initialised client handle.
+ */
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds)
 {
-        return cli_pipe_initialise(cli, system_name, PIPE_LSASS, creds);
+        return cli_pipe_initialise(cli, system_name, PIPE_LSARPC, creds);
 }
 
-/** Open a LSA policy handle */
+/** Open a LSA policy handle
+ *
+ * @param cli Handle on an initialised SMB connection */
 
 NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
@@ -546,12 +553,8 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	/* For some undocumented reason this function sometimes returns
-	   0x8000001a (NT_STATUS_UNABLE_TO_FREE_VM) so we ignore it and
-	   pretend everything is OK. */
-
 	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_UNABLE_TO_FREE_VM)) {
+	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NO_MORE_ENTRIES)) {
 
 		/* An actual error ocured */
 

@@ -25,6 +25,17 @@
 /* error code stuff - put together by Merik Karman
    merik@blackadder.dsh.oz.au */
 
+
+/* There is a big list of error codes and their meanings at:
+
+   http://msdn.microsoft.com/library/default.asp?url=/library/en-us/debug/errlist_7oz7.asp
+
+   and if you don't like MSDN try:
+
+   http://www.siris.gr/computers/library/error.htm
+
+*/
+
 typedef const struct
 {
   char *name;
@@ -64,6 +75,7 @@ err_code_struct dos_msgs[] = {
   {"ERRnotconnected",ERRnotconnected,"No process on other end of pipe."},
   {"ERRmoredata",ERRmoredata,"There is more data to be returned."},
   {"ERRinvgroup",2455,"Invalid workgroup (try the -W option)"},
+  {"ERRlogonfailure",ERRlogonfailure,"Logon failure"},
   {NULL,-1,NULL}};
 
 /* Server Error Messages */
