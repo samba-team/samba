@@ -37,19 +37,17 @@ static BOOL showall;
 #define LOCK_PCT 45
 #define UNLOCK_PCT 45
 
-enum op_type {OP_lock=0, OP_unlock, OP_reopen};
-
 struct preset {
 	int r1, r2;
 	int conn, f;
 	int start, len;
 	int rw;
 } preset[] = {
-{86, 37, 0, 1, 29, 41, WRITE_LOCK},
+{86, 37, 0, 1, 0, 29+41, WRITE_LOCK},
 {46, 21, 0, 1, 55, 7, READ_LOCK},
 {51, 35, 0, 0, 79, 2, WRITE_LOCK},
-{69, 97, 0, 1, },
-{35, 27, 1, 1, 31, 45, READ_LOCK},
+{69, 97, 0, 1, 0, 0, 0},
+{35, 27, 1, 1, 1, 31+45, READ_LOCK},
 	};
 
 /* each server has two connections open to it. Each connection has two file
@@ -157,7 +155,6 @@ static void test_locks(struct cli_state *cli[2][2])
 				printf("%5d r1=%d r2=%d reopen conn=%d f=%d\n",
 				       n, r1, r2, conn, f);
 			}
-			if (ret1 != ret2) return;
 		}
 		if (n % 100 == 0) {
 			printf("%d\n", n);
