@@ -65,6 +65,132 @@ set_salt_padata (METHOD_DATA **m, Salt *salt)
     }
 }
 
+static PA_DATA*
+find_padata(KDC_REQ *req, int *start, int type)
+{
+    while(*start < req->padata->len){
+	(*start)++;
+	if(req->padata->val[*start - 1].padata_type == type)
+	    return &req->padata->val[*start - 1];
+    }
+    return NULL;
+}
+
+static krb5_error_code
+find_etype(hdb_entry *princ, unsigned *etypes, unsigned len, 
+	   Key **key, int *index)
+{
+    int i;
+    krb5_error_code ret = -1;
+    for(i = 0; i < len && ret != 0; i++)
+	ret = hdb_etype2key(context, princ, etypes[i], key);
+    if(index) *index = i;
+    return ret;
+}
+
+static krb5_error_code
+find_keys(hdb_entry *client, hdb_entry *server, 
+	  Key **ckey, krb5_enctype *cetype,
+	  Key **skey, krb5_enctype *setype, krb5_keytype *sess_ktype,
+	  unsigned *etypes, unsigned num_etypes)
+{
+    int i;
+    krb5_error_code ret;
+    if(client){
+	/* find client key */
+	ret = find_etype(client, etypes, num_etypes, ckey, &i);
+	if(ret){
+	    kdc_log(0, "Client has no support for etypes");
+	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	}
+	*cetype = etypes[i];
+    }
+
+    if(server){
+	/* find sesion key type */
+	ret = find_etype(server, etypes, num_etypes, skey, NULL);
+	if(ret){
+	    kdc_log(0, "Server has no support for etypes");
+	    return KRB5KDC_ERR_ETYPE_NOSUPP;
+	}
+	*sess_ktype = (*skey)->key.keytype;
+    }
+    if(server){
+	/* find server key */
+	*skey = NULL;
+#define is_better(x, y) ((x) > (y))
+	for(i = 0; i < server->keys.len; i++){
+	    if(*skey == NULL || is_better(server->keys.val[i].key.keytype, 
+					  (*skey)->key.keytype))
+		*skey = &server->keys.val[i];
+	}
+	if(*skey == NULL){
+	    kdc_log(0, "No key found for server");
+	    return KRB5KDC_ERR_NULL_KEY;
+	}
+	ret = krb5_keytype_to_etype(context, (*skey)->key.keytype, setype);
+	if(ret)
+	    return ret;
+    }
+    return 0;
+}
+
+static krb5_error_code
+encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
+	     krb5_enctype setype, int skvno, EncryptionKey *skey,
+	     krb5_enctype cetype, int ckvno, EncryptionKey *ckey,
+	     krb5_data *reply)
+{
+    unsigned char buf[8192]; /* XXX The data could be indefinite */
+    size_t len;
+    krb5_error_code ret;
+
+    ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et, &len);
+    if(ret) {
+	kdc_log(0, "Failed to encode ticket: %s", 
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
+    
+    krb5_encrypt_EncryptedData(context, 
+			       buf + sizeof(buf) - len,
+			       len,
+			       setype,
+			       skvno,
+			       skey,
+			       &rep->ticket.enc_part);
+    
+    if(rep->msg_type == krb_as_rep)
+	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
+				  ek, &len);
+    else
+	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
+				   ek, &len);
+    if(ret) {
+	kdc_log(0, "Failed to encode KDC-REP: %s", 
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
+    krb5_encrypt_EncryptedData(context,
+			       buf + sizeof(buf) - len,
+			       len,
+			       cetype,
+			       ckvno,
+			       ckey,
+			       &rep->enc_part);
+	
+    if(rep->msg_type == krb_as_rep)
+	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep, &len);
+    else
+	ret = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep, &len);
+    if(ret) {
+	kdc_log(0, "Failed to encode KDC-REP: %s", 
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
+    krb5_data_copy(reply, buf + sizeof(buf) - len, len);
+}
+
 krb5_error_code
 as_rep(KDC_REQ *req, 
        krb5_data *reply,
@@ -128,6 +254,19 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
+    if(!client->flags.client){
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Principal may not act as client -- %s", 
+		client_name);
+	goto out;
+    }
+
+    if (client->flags.invalid) {
+	ret = KRB5KDC_ERR_POLICY;
+	kdc_log(0, "Client (%s) has invalid bit set", client_name);
+	goto out;
+    }
+
     server = db_fetch(server_princ);
 
     if(server == NULL){
@@ -148,12 +287,6 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
-    if(!client->flags.client){
-	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Principal may not act as client -- %s", 
-		client_name);
-	goto out;
-    }
     if(!server->flags.server){
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(0, "Principal (%s) may not act as server -- %s", 
@@ -161,15 +294,15 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
-    if (client->flags.invalid) {
-	ret = KRB5KDC_ERR_POLICY;
-	kdc_log(0, "Client (%s) has invalid bit set", client_name);
-	goto out;
-    }
-
     if (server->flags.invalid) {
 	ret = KRB5KDC_ERR_POLICY;
 	kdc_log(0, "Server (%s) has invalid bit set", server_name);
+	goto out;
+    }
+
+    if (server->pw_end && *server->pw_end < kdc_time) {
+	ret = KRB5KDC_ERR_KEY_EXPIRED;
+	kdc_log(0, "Servers key has expired", server_name);
 	goto out;
     }
 
@@ -184,97 +317,77 @@ as_rep(KDC_REQ *req,
     memset(&ek, 0, sizeof(ek));
 
     if(req->padata){
-	int i;
+	int i = 0;
 	PA_DATA *pa;
 	int found_pa = 0;
 	kdc_log(5, "Looking for pa-data -- %s", client_name);
-	for(i = 0; i < req->padata->len; i++){
-	    PA_DATA *pa = &req->padata->val[i];
-	    if(pa->padata_type == pa_enc_timestamp){
-		krb5_data ts_data;
-		PA_ENC_TS_ENC p;
-		time_t patime;
-		size_t len;
-		EncryptedData enc_data;
-		Key *pa_key;
-		
-		kdc_log(5, "Found pa-enc-timestamp -- %s", 
+	while((pa = find_padata(req, &i, pa_enc_timestamp))){
+	    krb5_data ts_data;
+	    PA_ENC_TS_ENC p;
+	    time_t patime;
+	    size_t len;
+	    EncryptedData enc_data;
+	    Key *pa_key;
+	    
+	    found_pa = 1;
+	    
+	    ret = decode_EncryptedData(pa->padata_value.data,
+				       pa->padata_value.length,
+				       &enc_data,
+				       &len);
+	    if (ret) {
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		kdc_log(5, "Failed to decode PA-DATA -- %s", 
 			client_name);
-		found_pa = 1;
-		
-		ret = decode_EncryptedData(pa->padata_value.data,
-					   pa->padata_value.length,
-					   &enc_data,
-					   &len);
-		if (ret) {
-		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    kdc_log(5, "Failed to decode PA-DATA -- %s", 
-			    client_name);
-		    goto out;
-		}
-
-		ret = hdb_etype2key(context, client, enc_data.etype, &pa_key);
-		if(ret){
-		    e_text = "No key matches pa-data";
-		    ret = KRB5KDC_ERR_PREAUTH_FAILED;
-		    kdc_log(5, "No client key matching pa-data -- %s", 
-			    client_name);
-		    free_EncryptedData(&enc_data);
-		    continue;
-		}
-
-		ret = krb5_decrypt (context,
-				    enc_data.cipher.data,
-				    enc_data.cipher.length,
-				    enc_data.etype,
-				    &pa_key->key,
-				    &ts_data);
-		free_EncryptedData(&enc_data);
-		if(ret){
-		    e_text = "Failed to decrypt PA-DATA";
-		    kdc_log (5, "Failed to decrypt PA-DATA -- %s",
-			     client_name);
-		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    continue;
-		}
-		ret = decode_PA_ENC_TS_ENC(ts_data.data,
-					   ts_data.length,
-					   &p,
-					   &len);
-		krb5_data_free(&ts_data);
-		if(ret){
-		    e_text = "Failed to decode PA-ENC-TS-ENC";
-		    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
-		    kdc_log (5, "Failed to decode PA-ENC-TS_ENC -- %s",
-			     client_name);
-		    continue;
-		}
-		patime = p.patimestamp;
-		free_PA_ENC_TS_ENC(&p);
-		if (abs(kdc_time - p.patimestamp) > context->max_skew) {
-		    ret = KRB5KDC_ERR_PREAUTH_FAILED;
-		    krb5_mk_error (context,
-				   ret,
-				   "Too large time skew",
-				   NULL,
-				   client_princ,
-				   server_princ,
-				   0,
-				   reply);
-		    kdc_log(0, "Too large time skew -- %s", 
-			    client_name);
-		    goto out2;
-		}
-		et.flags.pre_authent = 1;
-		kdc_log(2, "Pre-authentication succeded -- %s", 
-			client_name);
-		break;
-	    } else {
-		kdc_log(5, "Found pa-data of type %d -- %s", 
-			pa->padata_type, client_name);
+		goto out;
 	    }
+	    
+	    ret = hdb_etype2key(context, client, enc_data.etype, &pa_key);
+	    if(ret){
+		e_text = "No key matches pa-data";
+		ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		kdc_log(5, "No client key matching pa-data -- %s", 
+			client_name);
+		free_EncryptedData(&enc_data);
+		continue;
+	    }
+	    
+	    ret = krb5_decrypt_EncryptedData (context,
+					      &enc_data,
+					      &pa_key->key,
+					      &ts_data);
+	    free_EncryptedData(&enc_data);
+	    if(ret){
+		e_text = "Failed to decrypt PA-DATA";
+		kdc_log (5, "Failed to decrypt PA-DATA -- %s",
+			 client_name);
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		continue;
+	    }
+	    ret = decode_PA_ENC_TS_ENC(ts_data.data,
+				       ts_data.length,
+				       &p,
+				       &len);
+	    krb5_data_free(&ts_data);
+	    if(ret){
+		e_text = "Failed to decode PA-ENC-TS-ENC";
+		ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+		kdc_log (5, "Failed to decode PA-ENC-TS_ENC -- %s",
+			 client_name);
+		continue;
+	    }
+	    patime = p.patimestamp;
+	    free_PA_ENC_TS_ENC(&p);
+	    if (abs(kdc_time - p.patimestamp) > context->max_skew) {
+		ret = KRB5KDC_ERR_PREAUTH_FAILED;
+		e_text = "Too large time skew";
+		kdc_log(0, "Too large time skew -- %s", client_name);
+		goto out;
+	    }
+	    et.flags.pre_authent = 1;
+	    kdc_log(2, "Pre-authentication succeded -- %s", client_name);
+	    break;
 	}
-	/* XXX */
 	if(found_pa == 0 && require_preauth)
 	    goto use_pa;
 	/* We come here if we found a pa-enc-timestamp, but if there
@@ -285,6 +398,7 @@ as_rep(KDC_REQ *req,
 	    goto out;
 	}
     }else if (require_preauth || client->flags.require_preauth) {
+	/* XXX check server->flags.require_preauth? */
 	METHOD_DATA method_data;
 	PA_DATA pa_data;
 	u_char buf[16];
@@ -320,46 +434,13 @@ as_rep(KDC_REQ *req,
 	goto out2;
     }
 
-    /* find client key */
-    for(i = 0; i < b->etype.len; i++){
-	ret = hdb_etype2key(context, client, b->etype.val[i], &ckey);
-	if(ret == 0)
-	    break;
-    }
-    if(ret){
-	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
-	kdc_log(0, "No support for etypes -- %s", client_name);
-	goto out;
-    }
-    cetype = b->etype.val[i];
 
-    /* find sesion key type */
-    for(i = 0; i < b->etype.len; i++){
-	ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
-	if(ret == 0)
-	    break;
-    }
-    if(ret){
-	ret = KRB5KDC_ERR_ETYPE_NOSUPP;
-	kdc_log(0, "No support for etypes -- %s", client_name);
-	goto out;
-    }
-    sess_ktype = skey->key.keytype;
-    /* find server key */
-    skey = NULL;
-#define is_better(x, y) ((x) > (y))
-    for(i = 0; i < server->keys.len; i++){
-	if(skey == NULL || is_better(server->keys.val[i].key.keytype, 
-				     skey->key.keytype))
-	    skey = &server->keys.val[i];
-    }
-    if(skey == NULL){
-	ret = KRB5KDC_ERR_NULL_KEY;
-	kdc_log(0, "No key found for server");
-	goto out;
-    }
-    ret = krb5_keytype_to_etype(context, skey->key.keytype, &setype);
 
+    ret = find_keys(client, server, &ckey, &cetype, &skey, &setype, 
+		    &sess_ktype, b->etype.val, b->etype.len);
+    if(ret)
+	goto out;
+	
     {
 	char *cet, *set, *skt;
 	krb5_etype_to_string(context, cetype, &cet);
@@ -386,7 +467,15 @@ as_rep(KDC_REQ *req,
     copy_Realm(&b->realm, &rep.ticket.realm);
     copy_PrincipalName(b->sname, &rep.ticket.sname);
 
-    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey){
+    {
+	char str[128];
+	unparse_flags(KDCOptions2int(f), KDCOptions_units, str, sizeof(str));
+	if(*str)
+	    kdc_log(2, "Requested flags: %s", str);
+    }
+    
+    if(f.renew || f.validate || f.proxy || f.forwarded || f.enc_tkt_in_skey || 
+       f.request_anonymous){
 	ret = KRB5KDC_ERR_BADOPTION;
 	kdc_log(0, "Bad KDC options -- %s", client_name);
 	goto out;
@@ -430,8 +519,6 @@ as_rep(KDC_REQ *req,
 	    start = *et.starttime = *req->req_body.from;
 	    et.flags.invalid = 1;
 	    et.flags.postdated = 1; /* XXX ??? */
-	    kdc_log(2, "Postdated ticket requested -- %s", 
-		    client_name);
 	}
 	fix_time(&b->till);
 	t = *b->till;
@@ -478,7 +565,7 @@ as_rep(KDC_REQ *req,
 
     /* The MIT ASN.1 library (obviously) doesn't tell lengths encoded
      * as 0 and as 0x80 (meaning indefinite length) apart, and is thus
-     * incapable to correctly decode vectors of zero length.
+     * incapable of correctly decoding SEQUENCE OF's of zero length.
      *
      * To fix this, always send at least one no-op last_req
      *
@@ -521,14 +608,12 @@ as_rep(KDC_REQ *req,
     if (et.starttime) {
 	ALLOC(ek.starttime);
 	*ek.starttime = *et.starttime;
-    } else
-	ek.starttime = et.starttime;
+    }
     ek.endtime = et.endtime;
     if (et.renew_till) {
 	ALLOC(ek.renew_till);
 	*ek.renew_till = *et.renew_till;
-    } else
-	ek.renew_till = et.renew_till;
+    }
     copy_Realm(&rep.ticket.realm, &ek.srealm);
     copy_PrincipalName(&rep.ticket.sname, &ek.sname);
     if(et.caddr){
@@ -536,51 +621,12 @@ as_rep(KDC_REQ *req,
 	copy_HostAddresses(et.caddr, ek.caddr);
     }
 
-    {
-	unsigned char buf[8192]; /* XXX The data could be indefinite */
-	size_t len;
-
-	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), 
-				   &et, &len);
-	free_EncTicketPart(&et);
-	if(ret) {
-	    kdc_log(0, "Failed to encode ticket -- %s", client);
-	    goto out;
-	}
-	
-	krb5_encrypt_EncryptedData(context, 
-				   buf + sizeof(buf) - len,
-				   len,
-				   setype,
-				   server->kvno,
-				   &skey->key,
-				   &rep.ticket.enc_part);
-	
-	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
-				  &ek, &len);
-	free_EncKDCRepPart(&ek);
-	if(ret) {
-	    kdc_log(0, "Failed to encode KDC-REP -- %s", client_name);
-	    goto out;
-	}
-	krb5_encrypt_EncryptedData(context,
-				   buf + sizeof(buf) - len,
-				   len,
-				   cetype,
-				   client->kvno,
-				   &ckey->key,
-				   &rep.enc_part);
-	set_salt_padata (&rep.padata, ckey->salt);
-	
-	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
-	free_AS_REP(&rep);
-	if(ret) {
-	    kdc_log(0, "Failed to encode AS-REP -- %s", client_name);
-	    goto out;
-	}
-	
-	krb5_data_copy(reply, buf + sizeof(buf) - len, len);
-    }
+    set_salt_padata (&rep.padata, ckey->salt);
+    ret = encode_reply(&rep, &et, &ek, setype, server->kvno, &skey->key,
+		       cetype, client->kvno, &ckey->key, reply);
+    free_EncTicketPart(&et);
+    free_EncKDCRepPart(&ek);
+    free_AS_REP(&rep);
 out:
     if(ret){
 	krb5_mk_error(context,
@@ -711,7 +757,11 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 	et->endtime = *et->starttime + old_life;
     }	    
     
-    /* check for excess flags */
+    /* checks for excess flags */
+    if(f.request_anonymous){
+	kdc_log(0, "Request for anonymous ticket");
+	return KRB5KDC_ERR_BADOPTION;
+    }
     return 0;
 }
 
@@ -790,35 +840,14 @@ tgs_make_reply(KDC_REQ_BODY *b,
     EncryptionKey *ekey;
     krb5_keytype sess_ktype;
     
-    /* Find appropriate key */
-    for(i = 0; i < b->etype.len; i++){
-	ret = hdb_etype2key(context, server, b->etype.val[i], &skey);
-	if(ret == 0)
-	    break;
-    }
-	
-    if(ret){
-	kdc_log(0, "Failed to find requested etype");
-	return KRB5KDC_ERR_ETYPE_NOSUPP;
-    }
-    sess_ktype = skey->key.keytype;
-    
-    skey = NULL;
+    ret = find_keys(NULL, server, NULL, NULL, &skey, &setype, 
+		    &sess_ktype, b->etype.val, b->etype.len);
+    if(ret)
+	return ret;
     if(adtkt)
 	ekey = &adtkt->key;
-    else{
-	for(i = 0; i < server->keys.len; i++){
-	    if(skey == NULL || is_better(server->keys.val[i].key.keytype, 
-					 skey->key.keytype))
-		skey = &server->keys.val[i];
-	}
-	if(skey == NULL){
-	    ret = KRB5KDC_ERR_NULL_KEY;
-	    kdc_log(0, "No key found for server");
-	    goto out;
-	}
+    else
 	ekey = &skey->key;
-    }
     ret = krb5_keytype_to_etype(context, ekey->keytype, &setype);
     
     memset(&rep, 0, sizeof(rep));
@@ -924,69 +953,29 @@ tgs_make_reply(KDC_REQ_BODY *b,
     ek.renew_till = et.renew_till;
     ek.srealm = rep.ticket.realm;
     ek.sname = rep.ticket.sname;
-
 	    
-    {
-	unsigned char buf[8192]; /* XXX The data could be indefinite */
-	size_t len;
-	ret = encode_EncTicketPart(buf + sizeof(buf) - 1, 
-				   sizeof(buf), &et, &len);
-	if(ret){
-	    kdc_log(0, "Failed to encode EncTicketPart: %s", 
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-	krb5_encrypt_EncryptedData(context, buf + sizeof(buf) - len, len,
-				   setype,
-				   adtkt ? 0 : server->kvno,
-				   ekey,
-				   &rep.ticket.enc_part);
-	
-	ret = encode_EncTGSRepPart(buf + sizeof(buf) - 1, 
-				   sizeof(buf), &ek, &len);
-	if(ret){
-	    kdc_log(0, "Failed to encode EncTicketPart: %s", 
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-	
-	/* It is somewhat unclear where the etype in the following
-	   encryption should come from. What we have is a session
-	   key in the passed tgt, and a list of preferred etypes
-	   *for the new ticket*. Should we pick the best possible
-	   etype, given the keytype in the tgt, or should we look
-	   at the etype list here as well?  What if the tgt
-	   session key is DES3 and we want a ticket with a (say)
-	   CAST session key. Should the DES3 etype be added to the
-	   etype list, even if we don't want a session key with
-	   DES3? */
-		
-		
-	krb5_encrypt_EncryptedData(context,
-				   buf + sizeof(buf) - len, len,
-				   cetype,
-				   0, 
-				   &tgt->key,
-				   &rep.enc_part);
-	
-	ret = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), &rep, &len);
-	if(ret){
-	    kdc_log(0, "Failed to encode TGS-REP: %s", 
-		    krb5_get_err_text(context, ret));
-	    goto out;
-	}
-	krb5_data_copy(reply, buf + sizeof(buf) - len, len);
-    out:
-	free_TGS_REP(&rep);
-	free_TransitedEncoding(&et.transited);
-	if(et.starttime)
-	    free(et.starttime);
-	if(et.renew_till)
-	    free(et.renew_till);
-	free_LastReq(&ek.last_req);
-	memset(et.key.keyvalue.data, 0, et.key.keyvalue.length);
-	free_EncryptionKey(&et.key);
-    }
+    /* It is somewhat unclear where the etype in the following
+       encryption should come from. What we have is a session
+       key in the passed tgt, and a list of preferred etypes
+       *for the new ticket*. Should we pick the best possible
+       etype, given the keytype in the tgt, or should we look
+       at the etype list here as well?  What if the tgt
+       session key is DES3 and we want a ticket with a (say)
+       CAST session key. Should the DES3 etype be added to the
+       etype list, even if we don't want a session key with
+       DES3? */
+    ret = encode_reply(&rep, &et, &ek, setype, adtkt ? 0 : server->kvno, ekey,
+		       cetype, 0, &tgt->key, reply);
+out:
+    free_TGS_REP(&rep);
+    free_TransitedEncoding(&et.transited);
+    if(et.starttime)
+	free(et.starttime);
+    if(et.renew_till)
+	free(et.renew_till);
+    free_LastReq(&ek.last_req);
+    memset(et.key.keyvalue.data, 0, et.key.keyvalue.length);
+    free_EncryptionKey(&et.key);
     return ret;
 }
 
@@ -1162,6 +1151,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 	TransitedEncoding tr;
 	int loop = 0;
 	EncTicketPart adtkt;
+	char opt_str[128];
 
 	s = b->sname;
 	r = b->realm;
@@ -1207,7 +1197,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 	krb5_unparse_name(context, sp, &spn);	
 	principalname2krb5_principal(&cp, tgt->cname, tgt->crealm);
 	krb5_unparse_name(context, cp, &cpn);
-	kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
+	unparse_flags (KDCOptions2int(b->kdc_options), KDCOptions_units,
+		       opt_str, sizeof(opt_str));
+	if(*opt_str)
+	    kdc_log(0, "TGS-REQ %s from %s for %s [%s]", 
+		    cpn, from, spn, opt_str);
+	else
+	    kdc_log(0, "TGS-REQ %s from %s for %s", cpn, from, spn);
     server_lookup:
 	server = db_fetch(sp);
     
@@ -1296,6 +1292,7 @@ out2:
     }
     return ret;
 }
+
 
 krb5_error_code
 tgs_rep(KDC_REQ *req, 
