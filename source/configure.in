@@ -210,7 +210,7 @@ case "$host_os" in
 	;;
 esac
 AC_CHECK_HEADERS(shadow.h netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
-AC_CHECK_HEADERS(sys/security.h security/pam_appl.h)
+AC_CHECK_HEADERS(nss.h sys/security.h security/pam_appl.h)
 AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)

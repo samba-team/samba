@@ -741,6 +741,9 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <nss.h> header file.  */
+#undef HAVE_NSS_H
+
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
 
