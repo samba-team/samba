@@ -1,3 +1,10 @@
+2003-06-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/Makefile.am, krb5_get_in_cred.3, krb5.3:
+	add manpage for: krb5_get_in_cred, krb5_get_in_tkt,
+	krb5_get_in_tkt_with_keytab, krb5_get_in_tkt_with_password,
+	krb5_get_in_tkt_with_skey
+
 2003-05-28  Assar Westerlund  <assar@kth.se>
 
 	* lib/krb5/heim_threads.h: Fix unlock/destroy macros for the
@@ -11,6 +18,8 @@
 
 2003-05-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5_c_make_checksum.3: some more mdoc fixes
+	
 	* lib/hdb/hdb-ldap.c (LDAP__connect): bind sasl "EXTERNAL" to ldap
 	connection
 	(LDAP_store): remove superfluous argument to asprintf
