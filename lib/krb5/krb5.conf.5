@@ -193,6 +193,9 @@ to the database are perfomed.
 Points to the server where all the password changes are perfomed.
 If there is no such entry, the kpasswd port on the admin_server host
 will be tried.
+.It Li krb524_server = Va Host[:port]
+Points to the server that does 524 conversions.  If it is not
+mentioned, the krb524 port on the kdcs will be tried.
 .It Li v4_instance_convert
 .It Li v4_name_convert
 .It Li default_domain
