@@ -370,8 +370,14 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	/* lies!  nt and lm passwords are _not_ the same: don't care */
-	pdb_set_lanman_passwd (sampass, pwd);
-	pdb_set_nt_passwd     (sampass, pwd);
+	if (!pdb_set_lanman_passwd (sampass, pwd)) {
+		pdb_free_sam(sampass);
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (!pdb_set_nt_passwd(sampass, pwd)) {
+		pdb_free_sam(sampass);
+		return NT_STATUS_NO_MEMORY;
+	}
 	pdb_set_acct_ctrl     (sampass, ACB_WSTRUST);
  
 	become_root();

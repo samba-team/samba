@@ -138,8 +138,14 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	pdb_set_acct_desc    (sampass, acct_desc_len?acct_desc:NULL);
 	pdb_set_workstations (sampass, workstations_len?workstations:NULL);
 	pdb_set_munged_dial  (sampass, munged_dial_len?munged_dial:NULL);
-	pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL);
-	pdb_set_nt_passwd    (sampass, ntpwlen?nt_pw_ptr:NULL);
+	if (!pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL)) {
+		ret = False;
+		goto done;
+	}
+	if (!pdb_set_nt_passwd(sampass, ntpwlen?nt_pw_ptr:NULL)) {
+		ret = False;
+		goto done;
+	}
 
 	/*pdb_set_uid(sampass, uid);
 	pdb_set_gid(sampass, gid);*/

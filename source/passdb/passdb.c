@@ -891,7 +891,10 @@ account without a valid local system user.\n", user_name);
 		} else {
 			/* set the passwords here.  if we get to here it means
 			   we have a valid, active account */
-			pdb_set_plaintext_passwd (sam_pass, new_passwd);
+			if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
+				pdb_free_sam(sam_pass);
+				return False;
+			}
 		}
 
 		if (pdb_add_sam_account(sam_pass)) {
@@ -917,15 +920,24 @@ account without a valid local system user.\n", user_name);
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
 	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if(pdb_get_lanman_passwd(sam_pass) == NULL) {
-			pdb_set_plaintext_passwd (sam_pass, new_passwd);
+			if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
+				pdb_free_sam(sam_pass);
+				return False;
+			}
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
 		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
-		pdb_set_lanman_passwd (sam_pass, NULL);
-		pdb_set_nt_passwd     (sam_pass, NULL);
+		if (!pdb_set_lanman_passwd (sam_pass, NULL)) {
+			pdb_free_sam(sam_pass);
+			return False;
+		}
+		if (!pdb_set_nt_passwd(sam_pass, NULL)) {
+			pdb_free_sam(sam_pass);
+			return False;
+		}
 	} else {
 		/*
 		 * If we're dealing with setting a completely empty user account
@@ -939,7 +951,10 @@ account without a valid local system user.\n", user_name);
 		if ((pdb_get_lanman_passwd(sam_pass)==NULL) && (pdb_get_acct_ctrl(sam_pass)&ACB_DISABLED))
 			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_PWNOTREQ));
-		pdb_set_plaintext_passwd (sam_pass, new_passwd);
+		if (!pdb_set_plaintext_passwd (sam_pass, new_passwd)) {
+			pdb_free_sam(sam_pass);
+			return False;	
+		}
 	}
 	
 	if(local_flags & LOCAL_DELETE_USER) {
@@ -1529,9 +1544,15 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !pwd)
+	if (!sampass)
 		return False;
 	
+	if (!pwd) {
+		/* Allow setting to NULL */
+		SAFE_FREE(sampass->nt_pw);
+		return True;
+	}
+
 	if (sampass->nt_pw!=NULL)
 		DEBUG(4,("pdb_set_nt_passwd: NT hash non NULL overwritting ?\n"));
 	else
@@ -1551,8 +1572,14 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !pwd)
+	if (!sampass)
 		return False;
+
+	if (!pwd) {
+		/* Allow setting to NULL */
+		SAFE_FREE(sampass->lm_pw);
+		return True;
+	}
 	
 	if (sampass->lm_pw!=NULL)
 		DEBUG(4,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));

@@ -362,7 +362,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 		pdb_get_username(pw_buf)));
       return False;
     } 
-    pdb_set_lanman_passwd(pw_buf, smbpwd);
+    if (!pdb_set_lanman_passwd(pw_buf, smbpwd))
+		return False;
   }
   
   /* Check the NT password column. */
@@ -377,7 +378,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 		pdb_get_uid(pw_buf)));
       return False;
     }
-    pdb_set_nt_passwd(pw_buf, smbntpwd);
+    if (!pdb_set_nt_passwd(pw_buf, smbntpwd))
+		return False;
   }
   
   pdb_set_unknown_3(pw_buf, 0xffffff); /* don't know */

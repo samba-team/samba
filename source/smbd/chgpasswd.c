@@ -582,7 +582,10 @@ BOOL check_lanman_password(char *user, uchar * pass1,
 		uchar no_pw[14];
 		memset(no_pw, '\0', 14);
 		E_P16(no_pw, null_pw);
-		pdb_set_lanman_passwd (sampass, null_pw);
+		if (!pdb_set_lanman_passwd(sampass, null_pw)) {
+			pdb_free_sam(sampass);
+			return False;
+		}
 	}
 	else if (lanman_pw == NULL) {
 		DEBUG(0, ("check_lanman_password: no lanman password !\n"));
@@ -642,7 +645,8 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 		uchar no_pw[14];
 		memset(no_pw, '\0', 14);
 		E_P16(no_pw, null_pw);
-		pdb_set_lanman_passwd(sampass, null_pw);
+		if (!pdb_set_lanman_passwd(sampass, null_pw))
+			return False;
 	}
 	else if (pwd == NULL) {
 		DEBUG(0,("change_lanman_password: no lanman password !\n"));
@@ -652,7 +656,8 @@ BOOL change_lanman_password(SAM_ACCOUNT *sampass, uchar * pass1,
 	/* Get the new lanman hash. */
 	D_P16(pwd, pass2, unenc_new_pw);
 
-	pdb_set_lanman_passwd(sampass, unenc_new_pw);
+	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw))
+		return False;
 	pdb_set_nt_passwd    (sampass, NULL);	/* We lose the NT hash. Sorry. */
 
 	/* Now flush the sam_passwd struct to persistent storage */
@@ -756,9 +761,11 @@ BOOL check_oem_password(char *user,
 
 	/* check for null passwords */
 	if (lanman_pw == NULL) {
-		if (acct_ctrl & ACB_PWNOTREQ)
-			pdb_set_lanman_passwd(sampass, null_pw);
-		else {
+		if (acct_ctrl & ACB_PWNOTREQ) {
+			if (!pdb_set_lanman_passwd(sampass, null_pw)) {
+				return False;
+			}
+		} else {
 			DEBUG(0,("check_oem_password: no lanman password !\n"));
 			return False;
 		}
@@ -865,14 +872,16 @@ BOOL check_oem_password(char *user,
 BOOL change_oem_password(SAM_ACCOUNT *hnd, char *new_passwd,
 			 BOOL override)
 {
-	int ret;
+	BOOL ret;
 	uchar new_nt_p16[16];
 	uchar new_p16[16];
 
 	nt_lm_owf_gen(new_passwd, new_nt_p16, new_p16);
 
-	pdb_set_lanman_passwd (hnd, new_p16);
-	pdb_set_nt_passwd     (hnd, new_nt_p16);
+	if (!pdb_set_lanman_passwd (hnd, new_p16))
+		return False;
+	if (!pdb_set_nt_passwd(hnd, new_nt_p16))
+		return False;
 
 	/* Now write it into the file. */
 	become_root();

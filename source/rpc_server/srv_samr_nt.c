@@ -2206,8 +2206,14 @@ static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 		return False;
 	}
  
-	pdb_set_lanman_passwd (pwd, id12->lm_pwd);
-	pdb_set_nt_passwd     (pwd, id12->nt_pwd);
+	if (!pdb_set_lanman_passwd (pwd, id12->lm_pwd)) {
+		pdb_free_sam(pwd);
+		return False;
+	}
+	if (!pdb_set_nt_passwd(pwd, id12->nt_pwd)) {
+		pdb_free_sam(pwd);
+		return False;
+	}
  
 	if(!pdb_update_sam_account(pwd, True)) {
 		pdb_free_sam(pwd);
@@ -2305,8 +2311,14 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 		return False;
  	}
   
-	pdb_set_lanman_passwd (new_pwd, lm_hash);
-	pdb_set_nt_passwd     (new_pwd, nt_hash);
+	if (!pdb_set_lanman_passwd (new_pwd, lm_hash)) {
+		pdb_free_sam(new_pwd);
+		return False;
+	}
+	if (!pdb_set_nt_passwd(new_pwd, nt_hash)) {
+		pdb_free_sam(new_pwd);
+		return False;
+	}
  
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
@@ -2363,8 +2375,14 @@ static BOOL set_user_info_pw(char *pass, uint32 rid)
 		return False;
  	}
 
-	pdb_set_lanman_passwd (pwd, lm_hash);
-	pdb_set_nt_passwd     (pwd, nt_hash);
+	if (!pdb_set_lanman_passwd (pwd, lm_hash)) {
+		pdb_free_sam(pwd);
+		return False;
+	}
+	if (!pdb_set_nt_passwd(pwd, nt_hash)) {
+		pdb_free_sam(pwd);
+		return False;
+	}
  
 	/* if it's a trust account, don't update /etc/passwd */
 	if ( ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||

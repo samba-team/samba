@@ -1210,8 +1210,14 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	pdb_set_group_rid(sam_pass, pdb_gid_to_group_rid(pwfile->pw_gid)); 
 	
 	pdb_set_username (sam_pass, pw_buf->smb_name);
-	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
-	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
+	if (!pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd)) {
+		if (pw_buf->smb_nt_passwd)
+			return False;
+	}
+	if (!pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd)) {
+		if (pw_buf->smb_passwd)
+			return False;
+	}
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
