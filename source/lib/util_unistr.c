@@ -258,24 +258,6 @@ static int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
 
 
 /*******************************************************************
-wide strstr()
-********************************************************************/
-const smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
-{
-	const smb_ucs2_t *r;
-	size_t inslen;
-
-	if (!s || !*s || !ins || !*ins) return NULL;
-	inslen = strlen_w(ins);
-	r = s;
-	while ((r = strchr_w(r, *ins))) {
-		if (strncmp_w(r, ins, inslen) == 0) return r;
-		r++;
-	}
-	return NULL;
-}
-
-/*******************************************************************
  Convert a string to lower case.
  return True if any char is converted
 ********************************************************************/
@@ -319,25 +301,6 @@ int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 	while (*b && toupper_w(*a) == toupper_w(*b)) { a++; b++; }
 	return (tolower_w(*a) - tolower_w(*b));
 }
-
-/*******************************************************************
-copy a string with max len
-********************************************************************/
-
-smb_ucs2_t *strncpy_w(smb_ucs2_t *dest, const smb_ucs2_t *src, const size_t max)
-{
-	size_t len;
-	
-	if (!dest || !src) return NULL;
-	
-	for (len = 0; (src[len] != 0) && (len < max); len++)
-		dest[len] = src[len];
-	while (len < max)
-		dest[len++] = 0;
-	
-	return dest;
-}
-
 
 /*******************************************************************
 replace any occurence of oldc with newc in unicode string
