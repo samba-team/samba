@@ -651,10 +651,17 @@ deadpeer(int sig)
 	longjmp(peerdied, -1);
 }
 
+int intr_happened = 0;
+int intr_waiting = 0;
+
     /* ARGSUSED */
 static RETSIGTYPE
 intr(int sig)
 {
+    if (intr_waiting) {
+	intr_happened = 1;
+	return;
+    }
     if (localchars) {
 	intp();
 	return;

@@ -70,6 +70,7 @@ int
 	netdata,	/* Print out network data flow */
 	crlf,		/* Should '\r' be mapped to <CR><LF> (or <CR><NUL>)? */
 	telnetport,
+        wantencryption = 0,
 	SYNCHing,	/* we are in TELNET SYNCH mode */
 	flushout,	/* flush output */
 	autoflush = 0,	/* flush output when interrupting? */
@@ -83,6 +84,8 @@ int
 	globalmode;
 
 char *prompt = 0;
+
+int scheduler_lockout_tty = 0;
 
 cc_t escape;
 cc_t rlogin;
@@ -1957,7 +1960,7 @@ telsnd()
  */
 
 
-static int
+    int
 Scheduler(int block) /* should we block in the select ? */
 {
 		/* One wants to be a bit careful about setting returnValue
@@ -1988,6 +1991,10 @@ Scheduler(int block) /* should we block in the select ? */
 
     /* If we have seen a signal recently, reset things */
 
+    if (scheduler_lockout_tty) {
+        ttyin = ttyout = 0;
+    }
+
     /* Call to system code to process rings */
 
     returnValue = process_rings(netin, netout, netex, ttyin, ttyout, !block);
@@ -2010,6 +2017,8 @@ Scheduler(int block) /* should we block in the select ? */
 void
 my_telnet(char *user)
 {
+    int printed_encrypt = 0;
+    
     sys_telnet_init();
 
 #if	defined(AUTHENTICATION) || defined(ENCRYPTION)
@@ -2047,6 +2056,64 @@ my_telnet(char *user)
 	if (binary)
 	    tel_enter_binary(binary);
     }
+
+#ifdef ENCRYPTION
+    /*
+     * Note: we assume a tie to the authentication option here.  This
+     * is necessary so that authentication fails, we don't spin
+     * forever. 
+     */
+    if (wantencryption) {
+	extern int auth_has_failed;
+	time_t timeout = time(0) + 60;
+
+	send_do(TELOPT_ENCRYPT, 1);
+	send_will(TELOPT_ENCRYPT, 1);
+	while (1) {
+	    if (my_want_state_is_wont(TELOPT_AUTHENTICATION)) {
+		printf("\nServer refused to negotiate authentication,\n");
+		printf("which is required for encryption.\n");
+		Exit(1);
+	    }
+	    if (auth_has_failed) {
+		printf("\nAuthentication negotation has failed,\n");
+		printf("which is required for encryption.\n");
+		Exit(1);
+	    }
+	    if (my_want_state_is_dont(TELOPT_ENCRYPT) ||
+		my_want_state_is_wont(TELOPT_ENCRYPT)) {
+		printf("\nServer refused to negotiate encryption.\n");
+		Exit(1);
+	    }
+	    if (encrypt_is_encrypting())
+		break;
+	    if (time(0) > timeout) {
+		printf("\nEncryption could not be enabled.\n");
+		Exit(1);
+	    }
+	    if (printed_encrypt == 0) {
+		    printed_encrypt = 1;
+		    printf("Waiting for encryption to be negotiated...\n");
+		    /*
+		     * Turn on MODE_TRAPSIG and then turn off localchars 
+		     * so that ^C will cause telnet to exit.
+		     */
+		    TerminalNewMode(getconnmode()|MODE_TRAPSIG);
+		    intr_waiting = 1;
+	    }
+	    if (intr_happened) {
+		    printf("\nUser interrupt.\n");
+		    Exit(1);
+	    }
+	    telnet_spin();
+	}
+	if (printed_encrypt) {
+		printf("done.\n");
+		intr_waiting = 0;
+		setconnmode(0);
+	}
+    }
+#endif
 
     for (;;) {
 	int schedValue;

@@ -126,6 +126,7 @@ krb5_init(void)
         "libdefaults", "encrypt", NULL)) {
           encrypt_auto(1);
           decrypt_auto(1); 
+	  wantencryption = 1;
           EncryptVerbose(1);
         }
 #endif
@@ -295,6 +296,7 @@ main(int argc, char **argv)
 #ifdef	ENCRYPTION
 			encrypt_auto(1);
 			decrypt_auto(1);
+			wantencryption = 1;
 			EncryptVerbose(1);
 #else
 			fprintf(stderr,

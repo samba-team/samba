@@ -138,6 +138,10 @@
 #include <netinet/ip.h>
 #endif
 #ifdef HAVE_ARPA_INET_H
+#ifdef _AIX
+struct sockaddr_dl; /* AIX fun */
+struct ether_addr;
+#endif
 #include <arpa/inet.h>
 #endif
 
