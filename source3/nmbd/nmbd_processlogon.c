@@ -38,11 +38,28 @@ struct sam_database_info {
 };
 
 /****************************************************************************
-Handle a sam/uas change notification
+Send a message to smbd to do a sam delta sync
 **************************************************************************/
-static void handle_sam_uas_change(int db_count, 
-                                  struct sam_database_info *db_info)
+static void send_repl_message(uint32 low_serial)
 {
+        TDB_CONTEXT *tdb;
+
+        tdb = tdb_open_log(lock_path("connections.tdb"), 0,
+                           USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+
+        if (!tdb) {
+                DEBUG(3, ("send_repl_message(): failed to open connections "
+                          "database\n"));
+                return;
+        }
+
+        DEBUG(3, ("sending replication message, serial = 0x%04x\n", 
+                  low_serial));
+        
+        message_send_all(tdb, MSG_SMB_SAM_REPL, &low_serial,
+                         sizeof(low_serial), False);
+
+        tdb_close(tdb);
 }
 
 /****************************************************************************
@@ -292,16 +309,19 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       break;
     }
 
-    /* Announce change to UAS or SAM */
+    /* Announce change to UAS or SAM.  Send by the domain controller when a
+       replication event is required. */
 
   case SAM_UAS_CHANGE: {
           struct sam_database_info *db_info;
           char *q = buf + 2;
           int i, db_count;
+          uint32 low_serial;
           
           /* Header */
           
-          q += 4;                   /* Low serial number */
+          low_serial = IVAL(q, 0); q += 4;     /* Low serial number */
+
           q += 4;                   /* Date/time */
           q += 4;                   /* Pulse */
           q += 4;                   /* Random */
@@ -315,7 +335,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
           
           /* Database info */
           
-          db_count = IVAL(q, 0); q += 2;
+          db_count = SVAL(q, 0); q += 2;
           
           db_info = (struct sam_database_info *)
                   malloc(sizeof(struct sam_database_info) * db_count);
@@ -347,8 +367,14 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
           q += 2;               /* LMNT token (0xff) */
           q += 2;               /* LM20 token (0xff) */
 
-          handle_sam_uas_change(db_count, db_info);
-          free(db_info);
+          free(db_info);        /* Not sure whether we need to do anything
+                                   useful with these */
+
+          /* Send message to smbd */
+
+          send_repl_message(low_serial);
+
+          break;
   }
 
     default:
