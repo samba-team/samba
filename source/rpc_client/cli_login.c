@@ -92,11 +92,17 @@ uint32 cli_nt_setup_creds( const char* srv_name,
 
 		safe_strcpy(creds.domain, domain    , sizeof(creds.myname)-1);
 		safe_strcpy(creds.myname, myhostname, sizeof(creds.myname)-1);
+		memcpy(creds.sess_key, sess_key, sizeof(creds.sess_key));
 		
 		if (!cli_connection_init_auth(srv_name, PIPE_NETLOGON, &con,
 		                            &cli_netsec_fns,
 		                            (void*)&creds))
 		{
+			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
+		}
+		if (!cli_con_set_creds(srv_name, sess_key, &clnt_cred))
+		{
+			cli_connection_free(con);
 			return NT_STATUS_ACCESS_DENIED | 0xC0000000;
 		}
 	}

@@ -58,7 +58,8 @@ BOOL synchronise_passdb(void)
 		return False;
 	}
 
-	ret = net_sam_sync(lp_passwordserver(), global_myname, trust_acct,
+	ret = net_sam_sync(lp_passwordserver(), lp_workgroup(),
+	                  global_myname, trust_acct,
 	                  trust_passwd,
 	                  hdr_deltas, deltas, &num);
 
