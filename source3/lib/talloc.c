@@ -371,10 +371,19 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 	for (it = list_head; it; it = it->next_ctx) {
 		size_t bytes;
 		int n_chunks;
+		fstring what;
+		
 		n_pools++;
+		
 		talloc_get_allocation(it, &bytes, &n_chunks);
+
+		if (it->name)
+			fstrcpy(what, it->name);
+		else
+			slprintf(what, sizeof what, "@%p", it);
+		
 		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
-					   it->name,
+					   what,
 					   (unsigned) n_chunks,
 					   (unsigned) bytes);
 		total_bytes += bytes;
