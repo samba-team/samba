@@ -3356,7 +3356,7 @@ void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
 	DEBUG(5, ("init_samr_r_query_aliasinfo\n"));
 
 	r_u->ptr = (status == 0x0 && ctr != NULL) ? 1 : 0;
-	r_u->ctr = ctr;
+	r_u->ctr = *ctr;
 	r_u->status = status;
 }
 
@@ -3380,7 +3380,7 @@ BOOL samr_io_r_query_aliasinfo(char *desc, SAMR_R_QUERY_ALIASINFO * r_u,
 		return False;
 
 	if (r_u->ptr != 0) {
-		if(!samr_alias_info_ctr("ctr", r_u->ctr, ps, depth))
+		if(!samr_alias_info_ctr("ctr", &r_u->ctr, ps, depth))
 			return False;
 	}
 
@@ -3400,7 +3400,7 @@ void init_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO * q_u,
 	DEBUG(5, ("init_samr_q_set_aliasinfo\n"));
 
 	q_u->alias_pol = *hnd;
-	q_u->ctr = ctr;
+	q_u->ctr = *ctr;
 }
 
 /*******************************************************************
@@ -3421,7 +3421,7 @@ BOOL samr_io_q_set_aliasinfo(char *desc, SAMR_Q_SET_ALIASINFO * q_u,
 
 	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
 		return False;
-	if(!samr_alias_info_ctr("ctr", q_u->ctr, ps, depth))
+	if(!samr_alias_info_ctr("ctr", &q_u->ctr, ps, depth))
 		return False;
 
 	return True;

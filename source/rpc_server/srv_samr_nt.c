@@ -497,40 +497,41 @@ uint32 _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QU
 }
 
 /*******************************************************************
-makes a SAM_ENTRY / UNISTR2* structure.
+makes a SAM_ENTRY / UNISTR2* structure from a user list.
 ********************************************************************/
 
-static void make_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_acct_name_pp,
+static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_name_pp,
                 uint32 num_sam_entries, SAM_USER_INFO_21 *pass)
 {
 	uint32 i;
 	SAM_ENTRY *sam;
-	UNISTR2 *uni_acct_name;
+	UNISTR2 *uni_name;
 
 	*sam_pp = NULL;
-	*uni_acct_name_pp = NULL;
+	*uni_name_pp = NULL;
 
 	if (num_sam_entries == 0)
 		return;
 
 	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
 
-	uni_acct_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
 
-	if (sam == NULL || uni_acct_name == NULL) {
+	if (sam == NULL || uni_name == NULL) {
 		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
 		return;
 	}
 
 	for (i = 0; i < num_sam_entries; i++) {
-		int len = pass[i].uni_user_name.uni_str_len/2; /* JRA - I think this should be non-unicode len. It's not in the TNG code */
+		/* JRA - I think this should be non-unicode len. It's not in the TNG code. */
+		int len = pass[i].uni_user_name.uni_str_len/2;
 
 		init_sam_entry(&sam[i], len, pass[i].user_rid);
-		copy_unistr2(&uni_acct_name[i], &pass[i].uni_user_name);
+		copy_unistr2(&uni_name[i], &pass[i].uni_user_name);
 	}
 
 	*sam_pp = sam;
-	*uni_acct_name_pp = uni_acct_name;
+	*uni_name_pp = uni_name;
 }
 
 /*******************************************************************
@@ -573,13 +574,53 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 	 * value (again I think this is wrong).
 	 */
 
-	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_acct_name, num_entries, pass);
+	make_user_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_acct_name, num_entries, pass);
 
 	init_samr_r_enum_dom_users(r_u, q_u->start_idx + num_entries, num_entries);
 
 	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+/*******************************************************************
+makes a SAM_ENTRY / UNISTR2* structure from a group list.
+********************************************************************/
+
+static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR2 **uni_name_pp,
+                uint32 num_sam_entries, DOMAIN_GRP *grp)
+{
+	uint32 i;
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_name;
+
+	*sam_pp = NULL;
+	*uni_name_pp = NULL;
+
+	if (num_sam_entries == 0)
+		return;
+
+	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+
+	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+
+	if (sam == NULL || uni_name == NULL) {
+		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
+		return;
+	}
+
+	for (i = 0; i < num_sam_entries; i++) {
+		/*
+		 * JRA. I think this should include the null. TNG does not.
+		 */
+		int len = strlen(grp[i].name)+1;
+
+		init_sam_entry(&sam[i], len, grp[i].rid);
+		init_unistr2(&uni_name[i], grp[i].name, len);
+	}
+
+	*sam_pp = sam;
+	*uni_name_pp = uni_name;
 }
 
 /*******************************************************************
@@ -590,7 +631,7 @@ uint32 _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u, SAMR_R_
 
 uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
 {
-	SAM_USER_INFO_21 pass;
+	DOMAIN_GRP grp;
 	int num_entries;
 	char *dummy_group = "Domain Admins";
 	
@@ -603,11 +644,11 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
 
 	num_entries = 1;
-	ZERO_STRUCT(pass);
-	init_unistr2(&pass.uni_user_name, dummy_group, strlen(dummy_group)+1);
-	pass.user_rid = DOMAIN_GROUP_RID_ADMINS;
+	ZERO_STRUCT(grp);
+	fstrcpy(grp.name, dummy_group);
+	grp.rid = DOMAIN_GROUP_RID_ADMINS;
 
-	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &pass);
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &grp);
 
 	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
 
@@ -617,43 +658,37 @@ uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_
 }
 
 /*******************************************************************
- samr_reply_enum_dom_aliases
+ Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
+static BOOL get_group_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+							  uint32 *p_num_entries, uint32 max_entries)
 {
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries = 0;
-	DOM_SID sid;
 	fstring sid_str;
 	fstring sam_sid_str;
-	uint32 start_idx = q_u->start_idx;
-	struct group *grp;
-	
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	uint32 num_entries = 0;
 
-	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
-		return NT_STATUS_INVALID_HANDLE;
-
-	sid_to_string(sid_str, &sid);
+	sid_to_string(sid_str, sid);
 	sid_to_string(sam_sid_str, &global_sam_sid);
 
-	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
+	*p_num_entries = 0;
 
 	/* well-known aliases */
 	if (strequal(sid_str, "S-1-5-32")) {
 		char *name;
 		while (!lp_hide_local_users() &&
-				num_entries < MAX_SAM_ENTRIES && 
+				num_entries < max_entries && 
 				((name = builtin_alias_rids[num_entries].name) != NULL)) {
-			init_unistr2(&pass[num_entries].uni_user_name, name, strlen(name)+1);
-			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
+
+			fstrcpy(d_grp[num_entries].name, name);
+			d_grp[num_entries].rid = builtin_alias_rids[num_entries].rid;
+
 			num_entries++;
 		}
 	} else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users()) {
 		char *name;
 		char *sep;
+		struct group *grp;
 
 		sep = lp_winbind_separator();
 
@@ -663,7 +698,7 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
                 /* groups in the same situation.                               */
 		setgrent();
 
-		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL)) {
+		while (num_entries < max_entries && ((grp = getgrent()) != NULL)) {
 			int i;
 			uint32 trid;
 			name = grp->gr_name;
@@ -675,7 +710,7 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 
 			trid = pdb_gid_to_group_rid(grp->gr_gid);
 			for( i = 0; i < num_entries; i++)
-				if ( pass[i].user_rid == trid ) break;
+				if ( d_grp[i].rid == trid ) break;
 
 			if ( i < num_entries )
 				continue; /* rid was there, dup! */
@@ -690,15 +725,43 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 				continue;
 			}
 
-			init_unistr2(&pass[num_entries].uni_user_name, name, strlen(name)+1);
-			pass[num_entries].user_rid = trid;
+			fstrcpy(d_grp[num_entries].name, name);
+			d_grp[num_entries].rid = trid;
 			num_entries++;
 		}
 
 		endgrent();
 	}
-		
-	make_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, pass);
+
+	*p_num_entries = num_entries;
+
+	return True;
+}
+
+/*******************************************************************
+ samr_reply_enum_dom_aliases
+ ********************************************************************/
+
+uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
+{
+	DOMAIN_GRP grp[MAX_SAM_ENTRIES];
+	int num_entries = 0;
+	fstring sid_str;
+	DOM_SID sid;
+	
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	/* find the policy handle.  open a policy on it. */
+	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_to_string(sid_str, &sid);
+	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
+
+	if (!get_group_entries(grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
+		return NT_STATUS_ACCESS_DENIED;
+
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
 
 	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx, num_entries);
 
@@ -713,22 +776,21 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 
 uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_QUERY_DISPINFO *r_u)
 {
-    SAM_INFO_CTR ctr;
-    SAM_INFO_1 info1;
-    SAM_INFO_2 info2;
-    SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	DOMAIN_GRP grps[MAX_SAM_ENTRIES];
+	uint16 acb_mask = ACB_NORMAL;
     int num_entries = 0;
+    int orig_num_entries = 0;
     int total_entries = 0;
-    BOOL got_pwds;
-    uint16 switch_level = 0;
-    uint32 retsize;
+    uint32 data_size = 0;
+	DOM_SID sid;
+	BOOL ret;
+
+	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
-    DEBUG(5,("_samr_query_dispinfo: %d\n", __LINE__));
-
-    /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+	if (!get_lsa_policy_samr_sid(&q_u->domain_pol, &sid))
         return NT_STATUS_INVALID_HANDLE;
 
     /* decide how many entries to get depending on the max_entries
@@ -737,57 +799,77 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
     if(q_u->max_entries > MAX_SAM_ENTRIES)
         q_u->max_entries = MAX_SAM_ENTRIES;
 
-    retsize = (q_u->max_entries * (sizeof(SAM_ENTRY1)+sizeof(SAM_STR1))) + 3*sizeof(uint32);
+	/* Get what we need from the password database */
+	switch (q_u->switch_level) {
+	case 0x2:
+		acb_mask = ACB_WSTRUST;
+		/* Fall through */
+	case 0x1:
+	case 0x4:
+		become_root();
+		ret = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries,
+						MAX_SAM_ENTRIES, acb_mask);
+		unbecome_root();
+		if (!ret) {
+			DEBUG(5, ("get_sampwd_entries: failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		break;
+	case 0x3:
+	case 0x5:
+		ret = get_group_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+		if (!ret)
+			return NT_STATUS_ACCESS_DENIED;
+		break;
+	default:
+		DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n", (unsigned int)q_u->switch_level ));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
-    if(retsize > q_u->max_size) {
-        /* determine max_entries based on max_size */
-        q_u->max_entries = (q_u->max_size - 3*sizeof(uint32)) / (sizeof(SAM_ENTRY1)+sizeof(SAM_STR1));
-        q_u->max_entries = (q_u->max_entries>0?q_u->max_entries:1);
-    }
 
-    DEBUG(10,("_samr_query_dispinfo: Setting q_u->max_entries to %u\n",q_u->max_entries));
+	if (num_entries > q_u->max_entries)
+		num_entries = q_u->max_entries;
 
-    become_root();
-    got_pwds = get_passwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, q_u->max_entries, 0);
-    unbecome_root();
+	if (num_entries > MAX_SAM_ENTRIES) {
+		num_entries = MAX_SAM_ENTRIES;
+		DEBUG(5, ("limiting number of entries to %d\n", num_entries));
+	}
 
-    /* more left - set resume handle */
-    if(total_entries > num_entries)
-        r_u->status = 0x105;
+	data_size = q_u->max_size;
+	orig_num_entries = num_entries;
 
-    switch (q_u->switch_level) {
-        case 0x1:
+	/* Now create reply structure */
+	switch (q_u->switch_level) {
+	case 0x1:
+		r_u->ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx, sizeof(SAM_DISPINFO_1));
+		init_sam_dispinfo_1(r_u->ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
+		break;
+	case 0x2:
+		r_u->ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_2));
+		init_sam_dispinfo_2(r_u->ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
+		break;
+	case 0x3:
+		r_u->ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_3));
+		init_sam_dispinfo_3(r_u->ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
+		break;
+	case 0x4:
+		r_u->ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_4));
+		init_sam_dispinfo_4(r_u->ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
+		break;
+	case 0x5:
+		r_u->ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_5));
+		init_sam_dispinfo_5(r_u->ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
+		break;
+	default:
+		r_u->ctr->sam.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
-            /* query disp info is for users */
-            ZERO_STRUCT (info1);
-            switch_level = 0x1;
-            init_sam_info_1(&info1, ACB_NORMAL, q_u->start_idx, num_entries, pass);  
+	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
 
-            ctr.sam.info1 = &info1;
-
-            break;
-
-        case 0x2:
-
-            /* query disp info is for servers */
-            ZERO_STRUCT (info2);
-            switch_level = 0x2;
-            init_sam_info_2(&info2, ACB_WSTRUST, q_u->start_idx, num_entries, pass);
-
-            ctr.sam.info2 = &info2;
-
-            break;
-
-    }
-
-    /* more left - set resume handle */
-    if(total_entries > num_entries)
-        r_u->status = 0x105;
-
-    if (r_u->status == 0 || r_u->status == 0x105)
-        init_samr_r_query_dispinfo(r_u, switch_level, &ctr, r_u->status);
-
-    DEBUG(5,("samr_query_dispinfo: %d\n", __LINE__));
+	if (num_entries < orig_num_entries) {
+		return STATUS_MORE_ENTRIES;
+	}
 
     return r_u->status;
 }
@@ -803,22 +885,31 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
     enum SID_NAME_USE type;
     uint32 alias_rid;
 
-    r_u->status = 0;
+    r_u->status = NT_STATUS_NOPROBLEMO;
 
     DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
     /* find the policy handle.  open a policy on it. */
-    if (find_lsa_policy_by_hnd(&q_u->pol) == -1))
+    if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
         return NT_STATUS_INVALID_HANDLE;
+
+	switch (q_u->switch_level) {
+	case 3:
+		ctr->switch_value1 = 3;
+		make_samr_alias_info3(&ctr->alias.info3, "<fake account description>");
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
 
     alias_rid = get_lsa_policy_samr_rid(&q_u->pol);
     if(alias_rid == 0xffffffff)
-        r_u->status = NT_STATUS_NO_SUCH_ALIAS;
+		return NT_STATUS_NO_SUCH_ALIAS;
 
     if(!local_lookup_rid(alias_rid, alias, &type))
-        r_u->status = NT_STATUS_NO_SUCH_ALIAS;
+        return NT_STATUS_NO_SUCH_ALIAS;
 
-    init_samr_r_query_aliasinfo(&r_u, q_u->switch_level, alias, alias_desc);
+    init_samr_r_query_aliasinfo(r_u, q_u->switch_level, alias, alias_desc);
 
     DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
