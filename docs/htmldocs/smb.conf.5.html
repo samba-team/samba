@@ -499,6 +499,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#readsize"><strong>read size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#remoteannounce"><strong>remote announce</strong></a>
 <p><br><li > <a href="smb.conf.5.html#remotebrowsesync"><strong>remote browse sync</strong></a>
+<p><br><li > <a href="smb.conf.5.html#restrictanonymous"><strong>restrict anonymous</strong></a>
 <p><br><li > <a href="smb.conf.5.html#root"><strong>root</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootdir"><strong>root dir</strong></a>
 <p><br><li > <a href="smb.conf.5.html#rootdirectory"><strong>root directory</strong></a>
@@ -3428,6 +3429,32 @@ master on it's segment.
 <code>	remote browse sync = &lt;empty string&gt;</code>
 <p><br><strong>Example:</strong>
 <code>	remote browse sync = 192.168.2.255 192.168.4.255</code>
+<p><br><a name="restrictanonymous"></a>
+<li><strong><strong>restrict anonymous (G)</strong></strong>
+<p><br>This is a boolean parameter.  If it is true, then anonymous access
+to the server will be restricted, namely in the case where the server
+is expecting the client to send a username, but it doesn't.  Setting
+it to true will force these anonymous connections to be denied, and
+the client will be required to always supply a username and password
+when connecting. Use of this parameter is only recommened for homogenous 
+NT client environments.
+<p><br>This parameter makes the use of macro expansions that rely
+on the username (%U, %G, etc) consistant.  NT 4.0 likes to use
+anonymous connections when refreshing the share list, and this
+is a way to work around that.
+<p><br>When restrict anonymous is true, all anonymous connections are denied
+no matter what they are for.  This can effect the ability of a machine
+to access the samba Primary Domain Controller to revalidate it's machine
+account after someone else has logged on the client interactively.  The
+NT client will display a message saying that the machine's account in 
+the domain doesn't exist or the password is bad.  The best way to deal 
+with this is to reboot NT client machines between interactive logons, 
+using "Shutdown and Restart", rather than "Close all programs and logon 
+as a different user".
+<p><br><strong>Default:</strong>
+<code>     restrict anonymous = false</code>
+<p><br><strong>Example:</strong>
+<code>     restrict anonymous = true</code>
 <p><br><a name="revalidate"></a>
 <li><strong><strong>revalidate (S)</strong></strong>
 <p><br>Note that this option only works with

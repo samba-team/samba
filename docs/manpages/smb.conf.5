@@ -785,6 +785,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBremote browse sync\fP
 .IP 
 .IP o 
+\fBrestrict anonymous\fP
+.IP 
+.IP o 
 \fBroot\fP
 .IP 
 .IP o 
@@ -4894,6 +4897,37 @@ master on it\'s segment\&.
 .IP 
 \fBExample:\fP
 \f(CW	remote browse sync = 192\&.168\&.2\&.255 192\&.168\&.4\&.255\fP
+.IP 
+.IP "\fBrestrict anonymous (G)\fP" 
+.IP 
+This is a boolean parameter\&.  If it is true, then anonymous access
+to the server will be restricted, namely in the case where the server
+is expecting the client to send a username, but it doesn\'t\&.  Setting
+it to true will force these anonymous connections to be denied, and
+the client will be required to always supply a username and password
+when connecting\&. Use of this parameter is only recommened for homogenous 
+NT client environments\&.
+.IP 
+This parameter makes the use of macro expansions that rely
+on the username (%U, %G, etc) consistant\&.  NT 4\&.0 likes to use
+anonymous connections when refreshing the share list, and this
+is a way to work around that\&.
+.IP 
+When restrict anonymous is true, all anonymous connections are denied
+no matter what they are for\&.  This can effect the ability of a machine
+to access the samba Primary Domain Controller to revalidate it\'s machine
+account after someone else has logged on the client interactively\&.  The
+NT client will display a message saying that the machine\'s account in 
+the domain doesn\'t exist or the password is bad\&.  The best way to deal 
+with this is to reboot NT client machines between interactive logons, 
+using "Shutdown and Restart", rather than "Close all programs and logon 
+as a different user"\&.
+.IP 
+\fBDefault:\fP
+\f(CW     restrict anonymous = false\fP
+.IP 
+\fBExample:\fP
+\f(CW     restrict anonymous = true\fP
 .IP 
 .IP "\fBrevalidate (S)\fP" 
 .IP 

@@ -612,16 +612,14 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if (Protocol < PROTOCOL_NT1) {
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     if (smb_apasslen > MAX_PASS_LEN)
-    {
-	    overflow_attack(smb_apasslen);
-    }
+      overflow_attack(smb_apasslen);
 
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
     pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
 
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
-	    smb_apasslen = strlen(smb_apasswd);
+      smb_apasslen = strlen(smb_apasswd);
     }
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
@@ -636,8 +634,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
        circumstances.
      */
     
-    if(ra_type == RA_WINNT || ra_type == RA_WIN95)
-    {
+    if(ra_type == RA_WINNT || ra_type == RA_WIN95) {
       if(global_client_caps & (CAP_NT_SMBS | CAP_STATUS32))
         set_remote_arch( RA_WINNT);
       else
@@ -648,7 +645,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       doencrypt = False;
 
     if (passlen1 > MAX_PASS_LEN) {
-	    overflow_attack(passlen1);
+      overflow_attack(passlen1);
     }
 
     passlen1 = MIN(passlen1, MAX_PASS_LEN);
@@ -671,6 +668,26 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
         passlen2 = 0;
     }
 
+    if (lp_restrict_anonymous()) {
+      /* there seems to be no reason behind the differences in MS clients formatting
+       * various info like the domain, NativeOS, and NativeLanMan fields. Win95
+       * in particular seems to have an extra null byte between the username and the
+       * domain, or the password length calculation is wrong, which throws off the
+       * string extraction routines below.  This makes the value of domain be the
+       * empty string, which fails the restrict anonymous check further down.
+       * This compensates for that, and allows browsing to work in mixed NT and
+       * win95 environments even when restrict anonymous is true. AAB
+       */
+      dump_data(100, p, 0x70);
+      DEBUG(9, ("passlen1=%d, passlen2=%d\n", passlen1, passlen2));
+      if (ra_type == RA_WIN95 && !passlen1 && !passlen2 && p[0] == 0 && p[1] == 0) {
+        DEBUG(0, ("restrict anonymous parameter used in a win95 environment!\n"));
+        DEBUG(0, ("client is win95 and broken passlen1 offset -- attempting fix\n"));
+        DEBUG(0, ("if win95 cilents are having difficulty browsing, you will be unable to use restrict anonymous\n"));
+        passlen1 = 1;
+      }
+    }
+
     if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
@@ -689,8 +706,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
       /* wfwg sometimes uses a space instead of a null */
       if (strequal(smb_apasswd," ")) {
-	smb_apasslen = 0;
-	*smb_apasswd = 0;
+        smb_apasslen = 0;
+        *smb_apasswd = 0;
       }
     }
     
@@ -708,16 +725,29 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   /* If name ends in $ then I think it's asking about whether a */
   /* computer with that name (minus the $) has access. For now */
   /* say yes to everything ending in $. */
-  if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24))
-  {
+
+  if (*user && (user[strlen(user) - 1] == '$') && (smb_apasslen == 24) && (smb_ntpasslen == 24)) {
     return session_trust_account(conn, inbuf, outbuf, user, 
                                  smb_apasswd, smb_apasslen,
                                  smb_ntpasswd, smb_ntpasslen);
   }
 
+  if (done_sesssetup && lp_restrict_anonymous()) {
+    /* tests show that even if browsing is done over already validated connections
+     * without a username and password the domain is still provided, which it
+     * wouldn't be if it was a purely anonymous connection.  So, in order to
+     * restrict anonymous, we only deny connections that have no session
+     * information.  If a domain has been provided, then it's not a purely
+     * anonymous connection. AAB
+     */
+    if (!*user && !*smb_apasswd && !*domain) {
+      DEBUG(0, ("restrict anonymous is True and anonymous connection attempted. Denying access.\n"));
+      return(ERROR(ERRDOS,ERRnoaccess));
+    }
+  }
+
   /* If no username is sent use the guest account */
-  if (!*user)
-  {
+  if (!*user) {
     pstrcpy(user,lp_guestaccount(-1));
     /* If no user and no password then set guest flag. */
     if( *smb_apasswd == 0)
