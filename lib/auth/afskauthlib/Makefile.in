@@ -71,9 +71,6 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-TAGS: $(SOURCES)
-	etags $(SOURCES)
-
 $(OBJECTS): ../../../config.h
 
 $(LIB): $(OBJECTS)
