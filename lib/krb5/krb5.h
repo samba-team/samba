@@ -122,12 +122,6 @@ enum {
 typedef HostAddress krb5_address;
 
 typedef HostAddresses krb5_addresses;
-#if 0
-typedef struct krb5_addresses {
-    int number;
-    krb5_address *addrs;
-} krb5_addresses;
-#endif
 
 typedef enum krb5_keytype { 
     KEYTYPE_NULL = 0,
@@ -262,19 +256,6 @@ typedef struct krb5_ticket {
     krb5_principal server;
 } krb5_ticket;
 
-#if 0
-
-typedef struct krb5_authenticator_data{
-    int vno;
-    krb5_principal cname;
-    int cusec;
-    krb5_time ctime;
-    int *seq_number;
-    Checksum *cksum;
-} krb5_authenticator_data;
-
-#endif
-
 typedef Authenticator krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;
@@ -290,9 +271,9 @@ typedef struct krb5_keytab_data {
 typedef struct krb5_keytab_data *krb5_keytab;
 
 typedef struct krb5_keytab_entry {
-  krb5_principal principal;
-  krb5_kvno vno;
-  krb5_keyblock keyblock;
+    krb5_principal principal;
+    krb5_kvno vno;
+    krb5_keyblock keyblock;
 } krb5_keytab_entry;
 
 typedef struct krb5_storage{
@@ -309,37 +290,37 @@ typedef struct krb5_kt_cursor {
 } krb5_kt_cursor;
 
 enum {
-  KRB5_AUTH_CONTEXT_DO_TIME      = 1,
-  KRB5_AUTH_CONTEXT_RET_TIME     = 2,
-  KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
-  KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8
+    KRB5_AUTH_CONTEXT_DO_TIME      = 1,
+    KRB5_AUTH_CONTEXT_RET_TIME     = 2,
+    KRB5_AUTH_CONTEXT_DO_SEQUENCE  = 4,
+    KRB5_AUTH_CONTEXT_RET_SEQUENCE = 8
 };
 
 typedef struct krb5_auth_context_data{
-  int32_t flags;
-  krb5_cksumtype cksumtype;
-  krb5_enctype enctype;
+    int32_t flags;
+    krb5_cksumtype cksumtype;
+    krb5_enctype enctype;
 
-  krb5_address *local_address;
-  krb5_address *remote_address;
-  krb5_keyblock key;
-  krb5_keyblock local_subkey;
-  krb5_keyblock remote_subkey;
+    krb5_address *local_address;
+    krb5_address *remote_address;
+    krb5_keyblock key;
+    krb5_keyblock local_subkey;
+    krb5_keyblock remote_subkey;
 
-  int32_t local_seqnumber;
-  int32_t remote_seqnumber;
+    int32_t local_seqnumber;
+    int32_t remote_seqnumber;
 
-  krb5_authenticator authenticator;
+    krb5_authenticator authenticator;
   
-  krb5_pointer i_vector;
+    krb5_pointer i_vector;
   
-  krb5_rcache rcache;
+    krb5_rcache rcache;
   
 }krb5_auth_context_data, *krb5_auth_context;
 
 typedef struct {
-  KDC_REP part1;
-  EncKDCRepPart part2;
+    KDC_REP part1;
+    EncKDCRepPart part2;
 } krb5_kdc_rep;
 
 extern char *heimdal_version, *heimdal_long_version;
@@ -388,8 +369,6 @@ typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
 					     krb5_const_pointer decrypt_arg,
 					     krb5_kdc_rep *dec_rep);
 
-struct credentials;
-
 
 typedef struct _krb5_get_init_creds_opt {
     krb5_flags flags;
@@ -403,8 +382,8 @@ typedef struct _krb5_get_init_creds_opt {
 #if 0 /* this is the MIT-way */
     krb5_address **address_list;
 #endif
-	/* XXX the next three should not be used, as they may be
-	removed later */
+    /* XXX the next three should not be used, as they may be
+       removed later */
     krb5_preauthtype *preauth_list;
     int preauth_list_length;
     krb5_data *salt;
@@ -436,6 +415,8 @@ extern krb5_cc_ops krb5_mcc_ops;
 #define KRB5_KPASSWD_SOFTERROR	0
 
 #define KPASSWD_PORT 464
+
+struct credentials; /* this is to keep the compiler happy */
 
 #include <krb5-protos.h>
 
