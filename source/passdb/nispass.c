@@ -71,17 +71,18 @@ static int gotalarm;
 #define NPF_NTPWD         7
 #define NPF_LOGON_T       8
 #define NPF_LOGOFF_T      9
-#define NPF_PWDLSET_T     10
-#define NPF_PWDLCHG_T     11
-#define NPF_PWDMCHG_T     12
-#define NPF_FULL_NAME     13
-#define NPF_HOME_DIR      14
-#define NPF_DIR_DRIVE     15
-#define NPF_LOGON_SCRIPT  16
-#define NPF_PROFILE_PATH  17
-#define NPF_ACCT_DESC     18
-#define NPF_WORKSTATIONS  19
-#define NPF_HOURS         20
+#define NPF_KICK_T        10
+#define NPF_PWDLSET_T     11
+#define NPF_PWDLCHG_T     12
+#define NPF_PWDMCHG_T     13
+#define NPF_FULL_NAME     14
+#define NPF_HOME_DIR      15
+#define NPF_DIR_DRIVE     16
+#define NPF_LOGON_SCRIPT  17
+#define NPF_PROFILE_PATH  18
+#define NPF_ACCT_DESC     19
+#define NPF_WORKSTATIONS  20
+#define NPF_HOURS         21
 
 /***************************************************************
  Signal function to tell us we timed out.
@@ -194,6 +195,23 @@ static BOOL setnisppwpos(void *vp, unsigned long tok)
 	return False;
 }
 
+/*************************************************************************
+ sets a NIS+ attribute
+ *************************************************************************/
+static void set_single_attribute(nis_object *newobj, int col,
+				char *val, int len, int flags)
+{
+	if (newobj == NULL) return;
+
+	ENTRY_VAL(newobj, col) = val;
+	ENTRY_LEN(newobj, col) = strlen(len);
+
+	if (flags != 0)
+	{
+		newobj->EN_data.en_cols.en_cols_val[col].ec_flags = flags;
+	}
+}
+
 /************************************************************************
  Routine to add an entry to the nisplus passwd file.
 
@@ -202,10 +220,6 @@ static BOOL setnisppwpos(void *vp, unsigned long tok)
 *************************************************************************/
 static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 {
-	/* Static buffers we will return. */
-	static pstring  user_name;
-
-	BOOL            add_user = True;
 	char           *pfile;
 	char           *nisname;
 	nis_result	*nis_user;
@@ -213,11 +227,32 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	*tblresult = NULL, 
 	*addresult = NULL;
 	nis_object newobj, *obj, *user_obj;
-	char lmpwd[33], ntpwd[33];
+
+    fstring uid;
+	fstring user_rid;
+	fstring smb_grpid;
+	fstring group_rid;
+	fstring acb;
+		          
+	fstring logon_t;
+	fstring logoff_t;
+	fstring kick_t;
+	fstring pwdlset_t;
+	fstring pwdlchg_t;
+	fstring pwdmchg_t;
+
+	bzero(logon_t  , sizeof(logon_t  );
+	bzero(logoff_t , sizeof(logoff_t );
+	bzero(kick_t   , sizeof(kick_t   );
+	bzero(pwdlset_t, sizeof(pwdlset_t);
+	bzero(pwdlchg_t, sizeof(pwdlchg_t);
+	bzero(pwdmchg_t, sizeof(pwdmchg_t);
 
 	pfile = lp_smb_passwd_file();
 
-	nisname = make_nisname_from_name(user_name, "passwd.org_dir");
+#if 0
+	/* checks user in unix password database.  don't want to do that, here. */
+	nisname = make_nisname_from_name(newpwd->smb_name, "passwd.org_dir");
 
 	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
 
@@ -229,9 +264,12 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	}
 
 	user_obj = NIS_RES_OBJECT(nis_user);
+#endif
 
+	nisname = make_nisname_from_name(newpwd->smb_name, pfile);
+/*
 	make_nisname_from_name(ENTRY_VAL(user_obj,0), pfile);
-
+*/
 	result = nis_list(nisname, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
 	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND)
 	{
@@ -251,8 +289,8 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 		return False;
 	}
 
+#if 0
 	/* User not found. */
-
 	if (!add_user)
 	{
 		DEBUG(3, ("add_nisppwd_entry: User not found in NIS+ password db: %s\n",
@@ -261,6 +299,8 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 		nis_freeresult(nis_user);
 		return False;
 	}
+
+#endif
 
 	tblresult = nis_lookup(pfile, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP );
 	if (tblresult->status != NIS_SUCCESS)
@@ -285,6 +325,54 @@ static BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
 	newobj.zo_data.objdata_u.en_data.en_type = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_type;
 	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
 	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
+
+/*
+	time_t logon_time;            /* logon time */
+	time_t logoff_time;           /* logoff time */
+	time_t kickoff_time;          /* kickoff time */
+	time_t pass_last_set_time;    /* password last set time */
+	time_t pass_can_change_time;  /* password can change time */
+	time_t pass_must_change_time; /* password must change time */
+
+	slprintf(uid, sizeof(uid), "%u", newpwd->smb_userid);
+	slprintf(user_rid, sizeof(user_rid), "0x%x", newpwd->user_rid);
+	slprintf(smb_grpid, sizeof(smb_grpid), "%u", newpwd->smb_grpid);
+	slprintf(group_rid, sizeof(group_rid), "0x%x", newpwd->group_rid);
+
+	unsigned char *smb_passwd; /* Null if no password */
+	unsigned char *smb_nt_passwd; /* Null if no password */
+
+	uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
+	uint32 unknown_3; /* 0x00ff ffff */
+
+	uint16 logon_divs; /* 168 - number of hours in a week */
+	uint32 hours_len; /* normally 21 bytes */
+	uint8 hours[MAX_HOURS_LEN];
+*/
+
+	set_single_attribute(&new_obj, NPF_NAME          , newpwd->smb_name     , strlen(newpwd->smb_name)             , 0);
+	set_single_attribute(&new_obj, NPF_UID           , uid                  , strlen(uid)                          , 0);
+	set_single_attribute(&new_obj, NPF_USER_RID      , user_rid             , strlen(user_rid)                     , 0);
+	set_single_attribute(&new_obj, NPF_SMB_GRPID     , smb_grpid            , strlen(smb_grpid)                    , 0);
+	set_single_attribute(&new_obj, NPF_GROUP_RID     , group_rid            , strlen(group_rid)                    , 0);
+	set_single_attribute(&new_obj, NPF_ACB           , acb                  , strlen(acb)                          , 0);
+	set_single_attribute(&new_obj, NPF_LMPWD         , newpwd->smb_passwd   , newpwd->smb_passwd   != NULL ? 16 : 0, EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_NTPWD         , newpwd->smb_ntpasswd , newpwd->smb_ntpasswd != NULL ? 16 : 0, EN_CRYPT);
+	set_single_attribute(&new_obj, NPF_LOGON_T       , logon_t              , strlen(logon_t)                      , 0);
+	set_single_attribute(&new_obj, NPF_LOGOFF_T      , logoff_t             , strlen(logoff_t)                     , 0);
+	set_single_attribute(&new_obj, NPF_KICK_T        , kick_t               , strlen(kick_t)                       , 0);
+	set_single_attribute(&new_obj, NPF_PWDLSET_T     , pwdlset_t            , strlen(pwdlset_t)                    , 0);
+	set_single_attribute(&new_obj, NPF_PWDLCHG_T     , pwdlchg_t            , strlen(pwdlchg_t)                    , 0);
+	set_single_attribute(&new_obj, NPF_PWDMCHG_T     , pwdmchg_t            , strlen(pwdmchg_t)                    , 0);
+	set_single_attribute(&new_obj, NPF_FULL_NAME     , newpwd->full_name    , strlen(newpwd->full_name)            , 0);
+	set_single_attribute(&new_obj, NPF_HOME_DIR      , newpwd->home_dir     , strlen(newpwd->home_dir)             , 0);
+	set_single_attribute(&new_obj, NPF_DIR_DRIVE     , newpwd->dir_drive    , strlen(newpwd->dir_drive)            , 0);
+	set_single_attribute(&new_obj, NPF_LOGON_SCRIPT  , newpwd->logon_script , strlen(newpwd->logon_script)         , 0);
+	set_single_attribute(&new_obj, NPF_PROFILE_PATH  , newpwd->profile_path , strlen(newpwd->profile_path)         , 0);
+	set_single_attribute(&new_obj, NPF_ACCT_DESC     , newpwd->acct_desc    , strlen(newpwd->acct_desc)            , 0);
+	set_single_attribute(&new_obj, NPF_WORKSTATIONS  , newpwd->workstations , strlen(newpwd->workstations)         , 0);
+	set_single_attribute(&new_obj, NPF_HOURS         , newpwd->hours        , newpwd->hours_len                    , 0);
+
 
 	ENTRY_VAL(&newobj, 0) = ENTRY_VAL(user_obj, 0);
 	ENTRY_LEN(&newobj, 0) = ENTRY_LEN(user_obj, 0);
