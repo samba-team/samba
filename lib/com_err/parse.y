@@ -123,7 +123,7 @@ statement	: INDEX NUMBER
 		    ec->next = NULL;
 		    ec->number = number;
 		    if(prefix && *prefix != '\0') {
-			asprintf (&ec->name, "%s%s", ec->name, $2);
+			asprintf (&ec->name, "%s%s", prefix, $2);
 			free($2);
 		    } else
 			ec->name = $2;
