@@ -675,6 +675,19 @@ void standard_sub_conn(connection_struct *conn, char *str, size_t len)
 			conn->gid, current_user_info.smb_name, str, len);
 }
 
+char *talloc_sub_conn(TALLOC_CTX *mem_ctx, connection_struct *conn, char *str)
+{
+	return talloc_sub_advanced(mem_ctx, SNUM(conn), conn->user,
+			conn->connectpath, conn->gid,
+			current_user_info.smb_name, str);
+}
+
+char *alloc_sub_conn(connection_struct *conn, char *str)
+{
+	return alloc_sub_advanced(SNUM(conn), conn->user, conn->connectpath,
+			conn->gid, current_user_info.smb_name, str);
+}
+
 /****************************************************************************
  Like standard_sub but by snum.
 ****************************************************************************/
