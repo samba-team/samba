@@ -851,8 +851,9 @@ int smbc_unlink(const char *fname)
       return -1;
 
     }
-    if (cli_printjob_del(&srv->cli, job) != 0) {
+    if ((err = cli_printjob_del(&srv->cli, job)) != 0) {
 
+    
       return -1;
 
     }
@@ -2102,6 +2103,7 @@ off_t smbc_telldir(int fd)
 
 int smbc_lseekdir(int fd, off_t offset, int whence)
 {
+  struct smbc_file *fe;
 
   if (!smbc_initialized) {
 
@@ -2116,6 +2118,24 @@ int smbc_lseekdir(int fd, off_t offset, int whence)
     return -1;
 
   }
+
+  fe = smbc_file_table[fd - smbc_start_fd];
+
+  if (!fe) {
+
+    errno = EBADF;
+    return -1;
+
+  }
+
+  if (fe->file != False) { /* FIXME, should be dir, perhaps */
+
+    errno = ENOTDIR;
+    return -1;
+
+  }
+
+  /* Now, check what we were passed and see if it is OK ... */
 
   return ENOSYS;  /* Not implemented so far ... */
 
@@ -2309,6 +2329,7 @@ int smbc_unlink_print_job(const char *fname, int id)
   struct smbc_server *srv;
   fstring server, share, user, password;
   pstring path;
+  int err;
 
   if (!smbc_initialized) {
 
@@ -2338,10 +2359,14 @@ int smbc_unlink_print_job(const char *fname, int id)
 
   }
 
-  if (cli_printjob_del(&srv->cli, id) < 0) {
+  if ((err = cli_printjob_del(&srv->cli, id)) != 0) {
 
-    errno = smbc_errno(&srv->cli);
+    if (err < 0)
+      errno = smbc_errno(&srv->cli);
+    else if (err == ERRnosuchprintjob)
+      errno = EINVAL;
     return -1;
+
 
   }
 
