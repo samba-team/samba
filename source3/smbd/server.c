@@ -444,35 +444,14 @@ void exit_server(char *reason)
 /****************************************************************************
   initialise connect, service and file structs
 ****************************************************************************/
-static void init_structs(void )
+static void init_structs(void)
 {
 	get_myname(myhostname,NULL);
 
-	/*
-	 * Set the machine NETBIOS name if not already
-	 * set from the config file.
-	 */
-
-	if (!*global_myname) {
-		char *p;
-		fstrcpy( global_myname, myhostname );
-		p = strchr( global_myname, '.' );
-		if (p) 
-			*p = 0;
-	}
-
-	strupper( global_myname );
-
 	conn_init();
-
 	file_init();
-
-	/* for RPC pipes */
-	init_rpc_pipe_hnd();
-
-	/* for LSA handles */
-	init_lsa_policy_hnd();
-
+	init_rpc_pipe_hnd(); /* for RPC pipes */
+	init_lsa_policy_hnd(); /* for LSA handles */
 	init_dptrs();
 }
 
@@ -635,11 +614,21 @@ static void usage(char *pname)
 		exit(1);
 	}
 
+	init_structs();
+	
 	if (!reload_services(False))
 		return(-1);	
 
-	init_structs();
-	
+	/*
+	 * Set the machine NETBIOS name if not already
+	 * set from the config file.
+	 */
+	if (!*global_myname)
+	{
+		fstrcpy(global_myname, dns_to_netbios_name(myhostname));
+	}
+	strupper(global_myname);
+
 #ifdef WITH_SSL
 	{
 		extern BOOL sslEnabled;
