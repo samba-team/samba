@@ -2181,6 +2181,22 @@ AC_ARG_WITH(afs,
   AC_MSG_RESULT(no)
 )
 
+####################################################
+# check for Linux-specific AFS fake-kaserver support
+AC_MSG_CHECKING(whether to use AFS fake-kaserver)
+AC_ARG_WITH(fake-kaserver,
+[  --with-fake-kaserver    Include AFS fake-kaserver support (default=no) ],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_FAKE_KASERVER,1,[Whether to include AFS fake-kaserver support])
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for the DFS clear-text auth system

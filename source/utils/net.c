@@ -462,6 +462,50 @@ static int net_getdomainsid(int argc, const char **argv)
 	return 0;
 }
 
+#ifdef WITH_FAKE_KASERVER
+
+int net_afskey_usage(int argc, const char **argv)
+{
+	d_printf("  net afskey filename\n"
+		 "\tImports a OpenAFS KeyFile into our secrets.tdb\n\n");
+	return -1;
+}
+
+static int net_afskey(int argc, const char **argv)
+{
+	int fd;
+	struct afs_keyfile keyfile;
+
+	if (argc != 1) {
+		d_printf("usage: 'net afskey <keyfile>'\n");
+		return -1;
+	}
+
+	if (!secrets_init()) {
+		d_printf("Could not open secrets.tdb\n");
+		return -1;
+	}
+
+	if ((fd = open(argv[0], O_RDONLY, 0)) < 0) {
+		d_printf("Could not open %s\n", argv[0]);
+		return -1;
+	}
+
+	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
+		d_printf("Could not read keyfile\n");
+		return -1;
+	}
+
+	if (!secrets_store_afs_keyfile(afs_cell(), &keyfile)) {
+		d_printf("Could not write keyfile to secrets.tdb\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+#endif /* WITH_FAKE_KASERVER */
+
 static uint32 get_maxrid(void)
 {
 	SAM_ACCOUNT *pwd = NULL;
@@ -572,6 +616,9 @@ static struct functable net_func[] = {
 	{"GETDOMAINSID", net_getdomainsid},
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
+#ifdef WITH_FAKE_KASERVER
+	{"AFSKEY", net_afskey},
+#endif
 
 	{"HELP", net_help},
 	{NULL, NULL}

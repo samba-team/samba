@@ -196,6 +196,9 @@ int net_help(int argc, const char **argv)
 		{"PASSWORD", net_rap_password_usage},
 		{"TIME", net_time_usage},
 		{"LOOKUP", net_lookup_usage},
+#ifdef WITH_FAKE_KASERVER
+		{"AFSKEY", net_afskey_usage},
+#endif
 
 		{"HELP", help_usage},
 		{NULL, NULL}};
