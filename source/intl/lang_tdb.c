@@ -58,6 +58,8 @@ static BOOL load_msg(const char *msg_file)
 			if (*msgstr == 0) {
 				msgstr = msgid;
 			}
+			all_string_sub(msgid, "\\n", "\n", 0);
+			all_string_sub(msgstr, "\\n", "\n", 0);
 			key.dptr = msgid;
 			key.dsize = strlen(msgid)+1;
 			data.dptr = msgstr;
