@@ -18,7 +18,6 @@ if test $# -lt 1; then
 fi
 host=$1
 title="${title}${host}"
-shift
 bindir=%bindir%
 pdc_trams=`dirname $0`
 PATH=$pdc_trams:$bindir:$PATH
