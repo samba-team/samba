@@ -169,6 +169,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
 
+char *nt_errstr(NTSTATUS nt_code);
+
 /* Some typemaps for easier access to resume handles.  Really this can
    also be done using the uint32 carray functions, but it's a bit of a
    hassle.  TODO: Fix memory leak here. */
@@ -228,6 +230,7 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
    them all by hand. */
 
 %array_functions(struct samr_SamEntry, samr_SamEntry_array);
+%array_functions(union samr_ConnectInfo, samr_ConnectInfo_array);
 
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/security.i"
