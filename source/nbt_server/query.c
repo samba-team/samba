@@ -129,5 +129,5 @@ void nbtd_request_query(struct nbt_name_socket *nbtsock,
 
 	nbtd_name_query_reply(nbtsock, packet, src_address, src_port,
 			      &iname->name, iname->ttl, iname->nb_flags, 
-			      nbtd_address_list(iface->nbtsrv, packet));
+			      nbtd_address_list(iface, packet));
 }
