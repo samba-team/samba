@@ -179,24 +179,26 @@ static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_
 /*******************************************************************
 reads or writes an NOTIFY OPTION TYPE structure.
 ********************************************************************/  
-static BOOL smb_io_notify_option_type(char *desc,
-                               SPOOL_NOTIFY_OPTION_TYPE *type,
-                               prs_struct *ps, int depth)
+static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr;
-
 	prs_debug(ps, depth, desc, "smb_io_notify_option_type");
 	depth++;
  
-	prs_align(ps);
+	if (!prs_align(ps))
+		return False;
 
-	prs_uint16("type", ps, depth, &(type->type));
-	prs_uint16("reserved0", ps, depth, &(type->reserved0));
-	prs_uint32("reserved1", ps, depth, &(type->reserved1));
-	prs_uint32("reserved2", ps, depth, &(type->reserved2));
-	prs_uint32("count", ps, depth, &(type->count));
-	prs_uint32("useless ptr", ps, depth, &useless_ptr);
-
+	if(!prs_uint16("type", ps, depth, &type->type))
+		return False;
+	if(!prs_uint16("reserved0", ps, depth, &type->reserved0))
+		return False;
+	if(!prs_uint32("reserved1", ps, depth, &type->reserved1))
+		return False;
+	if(!prs_uint32("reserved2", ps, depth, &type->reserved2))
+		return False;
+	if(!prs_uint32("count", ps, depth, &type->count))
+		return False;
+	if(!prs_uint32("fields_ptr", ps, depth, &type->fields_ptr))
+		return False;
 
 	return True;
 }
@@ -204,79 +206,97 @@ static BOOL smb_io_notify_option_type(char *desc,
 /*******************************************************************
 reads or writes an NOTIFY OPTION TYPE DATA.
 ********************************************************************/  
-static BOOL smb_io_notify_option_type_data(char *desc,
-                                    SPOOL_NOTIFY_OPTION_TYPE *type,
-                                    prs_struct *ps, int depth)
+static BOOL smb_io_notify_option_type_data(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
-	uint32 count;
 	int i;
 
 	prs_debug(ps, depth, desc, "smb_io_notify_option_type_data");
 	depth++;
  
-	prs_align(ps);
+ 	/* if there are no fields just return */
+	if (type->fields_ptr==0)
+		return True;
 
-	prs_uint32("count", ps, depth, &count);
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("count2", ps, depth, &type->count2))
+		return False;
 	
-	if (count != type->count)
-	{
-		DEBUG(4,("What a mess, count was %x now is %x !\n",type->count,count));
-		type->count=count;
-	}
-	for(i=0;i<count;i++)
-	{
-		/* read the option type struct */
-		prs_uint16("fields",ps,depth,&(type->fields[i]));
-	}
+	if (type->count2 != type->count)
+		DEBUG(4,("What a mess, count was %x now is %x !\n", type->count, type->count2));
 
+	/* parse the option type data */
+	for(i=0;i<type->count2;i++)
+		if(!prs_uint16("fields",ps,depth,&(type->fields[i])))
+			return False;
 	return True;
 }
 
 /*******************************************************************
 reads or writes an NOTIFY OPTION structure.
 ********************************************************************/  
-static BOOL smb_io_notify_option(char *desc, SPOOL_NOTIFY_OPTION *option,
-                          prs_struct *ps, int depth)
-{
-	uint32 useless_ptr;
+static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_CTR *ctr , prs_struct *ps, int depth)
+{		
 	int i;
-
-	prs_debug(ps, depth, desc, "smb_io_notify_option");
+	
+	prs_debug(ps, depth, desc, "smb_io_notify_option_type_ctr");
 	depth++;
  
-	prs_align(ps);
+	if(!prs_uint32("count", ps, depth, &ctr->count))
+		return False;
 
-	/* memory pointer to the struct */
-	prs_uint32("useless ptr", ps, depth, &useless_ptr);
+	/* reading */
+	if (UNMARSHALLING(ps))
+		ctr->type=(SPOOL_NOTIFY_OPTION_TYPE *)malloc(ctr->count*sizeof(SPOOL_NOTIFY_OPTION_TYPE));
+		
+	/* the option type struct */
+	for(i=0;i<ctr->count;i++)
+		if(!smb_io_notify_option_type("", &(ctr->type[i]) , ps, depth))
+			return False;
+
+	/* the type associated with the option type struct */
+	for(i=0;i<ctr->count;i++)
+		if(!smb_io_notify_option_type_data("", &(ctr->type[i]) , ps, depth))
+			return False;
 	
-	prs_uint32("version",     ps, depth, &(option->version));
-	prs_uint32("reserved",    ps, depth, &(option->reserved));
-	prs_uint32("count",       ps, depth, &(option->count));
-	prs_uint32("useless ptr", ps, depth, &useless_ptr);
-	prs_uint32("count",       ps, depth, &(option->count));
-
-	/* read the option type struct */
-	for(i=0;i<option->count;i++)
-	{
-		smb_io_notify_option_type("",&(option->type[i]) ,ps, depth);
-	}
-
-	/* now read the type associated with the option type struct */
-	for(i=0;i<option->count;i++)
-	{
-		smb_io_notify_option_type_data("",&(option->type[i]) ,ps, depth);
-	}
-	
-
 	return True;
 }
 
+/*******************************************************************
+reads or writes an NOTIFY OPTION structure.
+********************************************************************/  
+static BOOL smb_io_notify_option(char *desc, SPOOL_NOTIFY_OPTION *option, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_notify_option");
+	depth++;
+ 	
+	if(!prs_uint32("version", ps, depth, &option->version))
+		return False;
+	if(!prs_uint32("flags", ps, depth, &option->flags))
+		return False;
+	if(!prs_uint32("count", ps, depth, &option->count))
+		return False;
+	if(!prs_uint32("option_type_ptr", ps, depth, &option->option_type_ptr))
+		return False;
+	
+	/* marshalling or unmarshalling, that would work */	
+	if (option->option_type_ptr!=0) {
+		if(!smb_io_notify_option_type_ctr("", &option->ctr ,ps, depth))
+			return False;
+	}
+	else {
+		option->ctr.type=NULL;
+		option->ctr.count=0;
+	}
+	
+	return True;
+}
 
 /*******************************************************************
 reads or writes an NOTIFY INFO DATA structure.
 ********************************************************************/  
-static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
-                             prs_struct *ps, int depth)
+static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=0xADDE0FF0;
 
@@ -354,19 +374,16 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 /*******************************************************************
 reads or writes an NOTIFY INFO structure.
 ********************************************************************/  
-static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info,
-                        prs_struct *ps, int depth)
+static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr=0x0001;
 	int i;
 
-	info->version=0x02;
 	prs_debug(ps, depth, desc, "smb_io_notify_info");
 	depth++;
  
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	prs_uint32("pointer", ps, depth, &useless_ptr);
 	prs_uint32("count", ps, depth, &(info->count));
 	prs_uint32("version", ps, depth, &(info->version));
 	prs_uint32("flags", ps, depth, &(info->flags));
@@ -380,8 +397,7 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info,
 	/* now do the strings at the end of the stream */	
 	for (i=0;i<info->count;i++)
 	{
-		smb_io_notify_info_data_strings(desc, &(info->data[i]),
-		                                ps, depth);
+		smb_io_notify_info_data_strings(desc, &(info->data[i]), ps, depth);
 	}
 
 	return True;
@@ -614,49 +630,6 @@ static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_stru
 	if (!prs_uint32("access_required", ps, depth, &pd->access_required))
 		return False;
 
-	return True;
-}
-
-/*******************************************************************
- * make a structure.
- ********************************************************************/
-BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u, 
-		const char *printername,
-		uint32 cbbuf, uint32 devmod, uint32 des_access,
-		const char *station,
-		const char *username)
-{
-	int len_name = printername != NULL ? strlen(printername) : 0;
-	int len_sta  = station     != NULL ? strlen(station    ) : 0;
-	int len_user = username    != NULL ? strlen(username   ) : 0;
-
-	if (q_u == NULL) return False;
-
-	DEBUG(5,("make_spoolss_io_q_open_printer_ex\n"));
-
-	q_u->printername_ptr = 1;
-	init_unistr2(&(q_u->printername), printername, len_name);
-
-/*
-	q_u->unknown0 = 0x0;
-	q_u->cbbuf = cbbuf;
-	q_u->devmod = devmod;
-	q_u->access_required = des_access;
-*/
-/*	q_u->unknown1 = 0x1;
-	q_u->unknown2 = 0x1;
-	q_u->unknown3 = 0x149f7d8;
-	q_u->unknown4 = 0x1c;
-	q_u->unknown5 = 0x00b94dd0;
-	q_u->unknown6 = 0x0149f5cc;
-	q_u->unknown7 = 0x00000565;
-	q_u->unknown8  = 0x2;
-	q_u->unknown9 = 0x0;
-	q_u->unknown10 = 0x0;
-
-	init_unistr2(&(q_u->station), station, len_sta);
-	init_unistr2(&(q_u->username), username, len_user);
-*/
 	return True;
 }
 
@@ -1026,29 +999,43 @@ BOOL spoolss_io_r_writeprinter(char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct
  * read a structure.
  * called from spoolss_q_rffpcnex (srv_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u,
-                           prs_struct *ps, int depth)
+BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, int depth)
 {
-	uint32 useless_ptr;
-
 	prs_debug(ps, depth, desc, "spoolss_io_q_rffpcnex");
 	depth++;
-	prs_align(ps);
 
-	smb_io_prt_hnd("printer handle",&(q_u->handle),ps,depth);
-	prs_uint32("flags",       ps, depth, &(q_u->flags));
-	prs_uint32("options",     ps, depth, &(q_u->options));
-	prs_uint32("useless ptr", ps, depth, &useless_ptr);
-	/*prs_align(ps);*/
+	if(!prs_align(ps))
+		return False;
 
-	smb_io_unistr2("", &(q_u->localmachine), True, ps, depth);	
+	if(!smb_io_prt_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+	if(!prs_uint32("flags", ps, depth, &q_u->flags))
+		return False;
+	if(!prs_uint32("options", ps, depth, &q_u->options))
+		return False;
+	if(!prs_uint32("localmachine_ptr", ps, depth, &q_u->localmachine_ptr))
+		return False;
+	if(!smb_io_unistr2("localmachine", &q_u->localmachine, q_u->localmachine_ptr, ps, depth))
+		return False;
 
-	prs_align(ps);
-	prs_uint32("printerlocal", ps, depth, &(q_u->printerlocal));
+	if(!prs_align(ps))
+		return False;
+		
+	if(!prs_uint32("printerlocal", ps, depth, &q_u->printerlocal))
+		return False;
 
-	smb_io_notify_option("notify option", &(q_u->option), ps, depth);
-
-
+	if(!prs_uint32("option_ptr", ps, depth, &q_u->option_ptr))
+		return False;
+	
+	if (q_u->option_ptr!=0) {
+	
+		if (UNMARSHALLING(ps))
+			q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	
+		if(!smb_io_notify_option("notify option", q_u->option, ps, depth))
+			return False;
+	}
+	
 	return True;
 }
 
@@ -1056,13 +1043,13 @@ BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u,
  * write a structure.
  * called from spoolss_r_rffpcnex (srv_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u, 
-                           prs_struct *ps, int depth)
+BOOL spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_rffpcnex");
 	depth++;
 
-	prs_uint32("status", ps, depth, &(r_u->status));
+	if(!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
 
 	return True;
 }
@@ -1071,20 +1058,31 @@ BOOL spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u,
  * read a structure.
  * called from spoolss_q_rfnpcnex (srv_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u,
-                           prs_struct *ps, int depth)
+BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, int depth)
 {
-
 	prs_debug(ps, depth, desc, "spoolss_io_q_rfnpcnex");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-	smb_io_prt_hnd("printer handle",&(q_u->handle),ps,depth);
+	if(!smb_io_prt_hnd("printer handle",&q_u->handle,ps,depth))
+		return False;
 
-	prs_uint32("change", ps, depth, &(q_u->change));
+	if(!prs_uint32("change", ps, depth, &q_u->change))
+		return False;
 	
-	smb_io_notify_option("notify option",&(q_u->option),ps,depth);
+	if(!prs_uint32("option_ptr", ps, depth, &q_u->option_ptr))
+		return False;
+	
+	if (q_u->option_ptr!=0) {
+	
+		if (UNMARSHALLING(ps))
+			q_u->option=(SPOOL_NOTIFY_OPTION *)malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	
+		if(!smb_io_notify_option("notify option", q_u->option, ps, depth))
+			return False;
+	}
 
 	return True;
 }
@@ -1093,18 +1091,24 @@ BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u,
  * write a structure.
  * called from spoolss_r_rfnpcnex (srv_spoolss.c)
  ********************************************************************/
-BOOL spoolss_io_r_rfnpcnex(char *desc, 
-                           SPOOL_R_RFNPCNEX *r_u, 
-                           prs_struct *ps, int depth)
+BOOL spoolss_io_r_rfnpcnex(char *desc, SPOOL_R_RFNPCNEX *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_rfnpcnex");
 	depth++;
 
-	prs_align(ps);
+	if(!prs_align(ps))
+		return False;
+		
+	if (!prs_uint32("info_ptr", ps, depth, &r_u->info_ptr))
+		return False;
 
-	smb_io_notify_info("notify info",&(r_u->info),ps,depth);		
-	prs_align(ps);
-	prs_uint32("status", ps, depth, &r_u->status);
+	if(!smb_io_notify_info("notify info", &r_u->info ,ps,depth))
+		return False;
+	
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("status", ps, depth, &r_u->status))
+		return False;
 
 	return True;
 }
@@ -2499,44 +2503,6 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, 
 	return True;		
 }
 
-/*
-	UNISTR **dependentfiles;
-	int j=0;
-	dependentfiles=info3->dependentfiles;
-	while ( dependentfiles[j] != NULL )
-	{
-		free(dependentfiles[j]);
-		j++;
-	}
-	free(dependentfiles);
-
-	free(info3);
-*/
-
-/*******************************************************************
- * make a structure.
- ********************************************************************/
-BOOL make_spoolss_q_enumprinters(SPOOL_Q_ENUMPRINTERS *q_u,
-				uint32 flags,
-				const char* servername,
-				uint32 level,
-				uint32 size)
-{
-	size_t len_name = servername != NULL ? strlen(servername) : 0;
-
-	DEBUG(5,("make_spoolss_q_enumprinters.  size: %d\n", size));
-
-	q_u->flags = flags;
-
-	init_unistr2(&q_u->servername, servername, len_name);
-
-	q_u->level = level;
-	/*make_spoolss_buffer(&q_u->buffer, size);*/
-/*	q_u->buf_size = size;*/
-
-	return True;
-}
-
 /*******************************************************************
  * read a structure.
  * called from spoolss_enumprinters (srv_spoolss.c)
@@ -2628,26 +2594,6 @@ BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps
 		return False;
 
 	return True;		
-}
-
-/*******************************************************************
- * make a structure.
- * called from spoolss_getprinter (srv_spoolss.c)
- ********************************************************************/
-BOOL make_spoolss_q_getprinter(SPOOL_Q_GETPRINTER *q_u,
-				POLICY_HND *hnd,
-				uint32 level,
-				uint32 buf_size)
-{
-	if (q_u == NULL) return False;
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	
-	q_u->level = level;
-	q_u->buffer = (uint8 *)Realloc(NULL, (buf_size) * sizeof(uint8) );
-	q_u->offered = buf_size;
-
-	return True;
 }
 
 /*******************************************************************
