@@ -1,3 +1,7 @@
+2000-04-11  Assar Westerlund  <assar@sics.se>
+
+	* ftp/ftp.c (login): initialize tmp before calling fgets
+
 2000-04-02  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ls.c: rename all st_mtime variables to avoid conflict with
