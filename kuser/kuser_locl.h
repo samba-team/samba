@@ -68,6 +68,7 @@
 #include <arpa/inet.h>
 #endif
 #include <roken.h>
+#include <getarg.h>
 #include <krb5.h>
 
 #endif /* __KUSER_LOCL_H__ */
