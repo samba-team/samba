@@ -335,8 +335,8 @@ struct cli_state {
   uint16 nt_pipe_fnum;               /* Pipe handle. */
   unsigned char sess_key[16];        /* Current session key. */
   DOM_CRED clnt_cred;                /* Client credential. */
-  fstring mach_acct;
-  fstring srv_name;
+  fstring mach_acct;                 /* MYNAME$. */
+  fstring srv_name_slash;            /* \\remote server. */
 };
 
 
@@ -1070,11 +1070,7 @@ char *Strstr(char *s, char *p);
 enum protocol_types {PROTOCOL_NONE,PROTOCOL_CORE,PROTOCOL_COREPLUS,PROTOCOL_LANMAN1,PROTOCOL_LANMAN2,PROTOCOL_NT1};
 
 /* security levels */
-#ifdef DOMAIN_CLIENT
 enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER,SEC_DOMAIN};
-#else /* DOMAIN_CLIENT */
-enum security_types {SEC_SHARE,SEC_USER,SEC_SERVER};
-#endif /* DOMAIN_CLIENT */
 
 /* printing types */
 enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,

@@ -499,9 +499,8 @@ void net_io_r_auth_2(char *desc,  NET_R_AUTH_2 *r_a, prs_struct *ps, int depth)
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char sess_key[16],
-		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
-		DOM_CRED *cred, char nt_cypher[16])
+void make_q_srv_pwset(NET_Q_SRV_PWSET *q_s, char *logon_srv, char *acct_name, 
+                uint16 sec_chan, char *comp_name, DOM_CRED *cred, char nt_cypher[16])
 {
 	if (q_s == NULL || cred == NULL) return;
 
@@ -748,7 +747,7 @@ void make_id_info2(NET_ID_INFO_2 *id, char *domain_name,
 }
 
 /*******************************************************************
-reads or writes an NET_ID_INFO_1 structure.
+reads or writes an NET_ID_INFO_2 structure.
 ********************************************************************/
 void net_io_id_info2(char *desc,  NET_ID_INFO_2 *id, prs_struct *ps, int depth)
 {

@@ -527,6 +527,8 @@ char *get_nt_error_msg(uint32 nt_code)
 
 	strcpy(msg, "Unknown NT error");
 
+        nt_code &= 0xFFFF;
+
 	while (nt_errs[idx].nt_errstr != NULL)
 	{
 		if (nt_errs[idx].nt_errcode == nt_code)
@@ -536,6 +538,6 @@ char *get_nt_error_msg(uint32 nt_code)
 		}
 		idx++;
 	}
-	return NULL;
+	return msg;
 }
 

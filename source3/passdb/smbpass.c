@@ -1072,8 +1072,6 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   return True;
 }
 
-#ifdef DOMAIN_CLIENT
-
 static int mach_passwd_lock_depth;
 
 /************************************************************************
@@ -1250,4 +1248,3 @@ machine account is now invalid. Please recreate. Error was %s.\n", strerror(errn
   fflush(fp);
   return True;
 }
-#endif /* DOMAIN_CLIENT */

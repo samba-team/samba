@@ -301,6 +301,9 @@ typedef struct id_info_1
 
 } NET_ID_INFO_1;
 
+#define INTERACTIVE_LOGON_TYPE 1
+#define NET_LOGON_TYPE 2
+
 /* NET_ID_INFO_CTR */
 typedef struct net_id_info_ctr_info
 {

@@ -383,14 +383,14 @@ static void api_net_srv_pwset( int uid,
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
-		pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
-									q_a.clnt_id.login.uni_acct_name.uni_str_len));
+                pstrcpy(mach_acct, unistrn2(q_a.clnt_id.login.uni_acct_name.buffer,
+                        q_a.clnt_id.login.uni_acct_name.uni_str_len));
 
-		DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
+                DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
-		become_root(True);
-		smb_pass = getsmbpwnam(mach_acct);
-		unbecome_root(True);
+                become_root(True);
+                smb_pass = getsmbpwnam(mach_acct);
+                unbecome_root(True);
 
 		if (smb_pass != NULL)
 		{
@@ -402,7 +402,7 @@ static void api_net_srv_pwset( int uid,
                     DEBUG(100,("%02X ", q_a.pwd[i]));
                   DEBUG(100,("\n"));
 
-                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key);
+                  cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 1);
 
                   /* lies!  nt and lm passwords are _not_ the same: don't care */
                   smb_pass->smb_passwd    = pwd;
@@ -515,13 +515,13 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				user_struct *vuser)
 {
 	DEBUG(5,("net_login_network: lm_len: %d nt_len: %d\n",
-		id2->lm_chal_resp.str_str_len, 
-		id2->nt_chal_resp.str_str_len));
+		id2->hdr_lm_chal_resp.str_str_len, 
+		id2->hdr_nt_chal_resp.str_str_len));
 
 	/* JRA. Check the NT password first if it exists - this is a higher quality 
            password, if it exists and it doesn't match - fail. */
 
-	if (id2->nt_chal_resp.str_str_len == 24 && 
+	if (id2->hdr_nt_chal_resp.str_str_len == 24 && 
 		smb_pass->smb_nt_passwd != NULL)
 	{
 		if(smb_password_check(id2->nt_chal_resp.buffer,
@@ -540,7 +540,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 	   not do, for various security-hole reasons).
 	 */
 
-	if (id2->lm_chal_resp.str_str_len == 24 &&
+	if (id2->hdr_lm_chal_resp.str_str_len == 24 &&
 		smb_password_check(id2->lm_chal_resp.buffer,
 		                   smb_pass->smb_passwd,
 		                   id2->lm_chal))

@@ -75,67 +75,45 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   return True;
 }
 
-#if 0
 /****************************************************************************
- server password set
+ Set machine password.
  ****************************************************************************/
 
-BOOL do_nt_srv_pwset(struct cli_state *cli, 
-                     uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-                     char *new_mach_pwd,
-                     char *dest_host, char *mach_acct, char *myhostname)
+BOOL cli_nt_srv_pwset(struct cli_state *cli, unsigned char *new_hashof_mach_pwd)
 {
-  DOM_CRED cred;
-  char nt_cypher[16];
-  uint8 mode = 1;
-  char nt_owf_new_mach_pwd[16];
+  unsigned char processed_new_pwd[16];
+
+  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
 #ifdef DEBUG_PASSWORD
-  DEBUG(100,("generating nt owf from new machine pwd: %s\n", new_mach_pwd));
-#endif
-  nt_owf_gen(new_mach_pwd, nt_owf_new_mach_pwd);
-
-#ifdef DEBUG_PASSWORD
-  dump_data(6, nt_owf_new_mach_pwd, 16);
+  dump_data(6, new_hashof_mach_pwd, 16);
 #endif
 
-  if (!obfuscate_pwd(nt_cypher, nt_owf_new_mach_pwd, mode))
-  {
-    DEBUG(5,("do_nt_srv_pwset: encrypt mach pwd failed\n"));
-    return False;
-  }
-	
-  clnt_cred->timestamp.time = time(NULL);
-
-  memcpy(&cred, clnt_cred, sizeof(cred));
-
-  /* calculate credentials */
-  cred_create(sess_key, &(clnt_cred->challenge),
-              cred.timestamp, &(cred.challenge));
+  /* Process the new password. */
+  cred_hash3( processed_new_pwd, new_hashof_mach_pwd, cli->sess_key, 0);
 
   /* send client srv_pwset challenge */
-  return do_net_srv_pwset(cli, fnum, sess_key, clnt_cred,
-                          dest_host, mach_acct, 2, myhostname,
-                          &cred, rtn_cred, nt_cypher);
+  return cli_net_srv_pwset(cli, processed_new_pwd);
 }
 
 /****************************************************************************
- make interactive sam login info
+NT login - interactive.
+*NEVER* use this code. This method of doing a logon (sending the cleartext
+password equivalents, protected by the session key) is inherently insecure
+given the current design of the NT Domain system. JRA.
  ****************************************************************************/
 
-void make_nt_login_interactive(NET_ID_INFO_CTR *ctr,
-                               uchar sess_key[16],
-                               char *domain, char *myhostname,
-                               uint32 smb_userid, char *username)
+BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+                              uint32 smb_userid_low, char *password,
+                              NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
-  /****************** SAM Info Preparation *******************/
+  unsigned char lm_owf_user_pwd[16];
+  unsigned char nt_owf_user_pwd[16];
+  BOOL ret;
 
-  char *smb_user_passwd = getpass("Enter NT Login Password:");
+  DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
-  char lm_owf_user_pwd[16];
-  char nt_owf_user_pwd[16];
-
-  nt_lm_owf_gen(smb_user_passwd, nt_owf_user_pwd, lm_owf_user_pwd);
+  nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
 #ifdef DEBUG_PASSWORD
 
@@ -147,18 +125,35 @@ void make_nt_login_interactive(NET_ID_INFO_CTR *ctr,
 
 #endif
 
-  /* indicate an "interactive" login */
-  ctr->switch_value = 1;
+  DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
 
-  /* this is used in both the SAM Logon and the SAM Logoff */
-  make_id_info1(&ctr->auth.id1, domain, 0,
-                smb_userid, 0, username, myhostname,
-                sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
+  /* indicate a "network" login */
+  ctr->switch_value = INTERACTIVE_LOGON_TYPE;
+
+  /* Create the structure needed for SAM logon. */
+  make_id_info1(&ctr->auth.id1, domain, 0, 
+                smb_userid_low, 0,
+                username, global_myname,
+                cli->sess_key, lm_owf_user_pwd, nt_owf_user_pwd);
+
+  /* Ensure we overwrite all the plaintext password
+     equivalents. */
+  memset(lm_owf_user_pwd, '\0', sizeof(lm_owf_user_pwd));
+  memset(nt_owf_user_pwd, '\0', sizeof(nt_owf_user_pwd));
+
+  /* Send client sam-logon request - update credentials on success. */
+  ret = cli_net_sam_logon(cli, ctr, user_info3);
+
+  memset(ctr->auth.id1.lm_owf.data, '\0', sizeof(lm_owf_user_pwd));
+  memset(ctr->auth.id1.nt_owf.data, '\0', sizeof(nt_owf_user_pwd));
+
+  return ret;
 }
-#endif
 
 /****************************************************************************
-NT login.
+NT login - network.
+*ALWAYS* use this call to validate a user as it does not expose plaintext
+password equivalents over the network. JRA.
 ****************************************************************************/
 
 BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
