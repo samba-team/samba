@@ -1,7 +1,19 @@
+2004-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* set_keys.c (_kadm5_generate_key_set): since arcfour-hmac-md5 is
+	without salting, some people tries to add the string
+	"arcfour-hmac-md5" when they really should have used
+	"arcfour-hmac-md5:pw-salt", help them and add glue for that
+	
 2004-08-18  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ipropd_slave.c: add --detach
 
+2004-07-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ad.c: use new tsasl interface remove debug printf add upn to
+	computer-accounts
+	
 2004-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ad.c: implement kadm5_ad_init_with_password_ctx set more error
