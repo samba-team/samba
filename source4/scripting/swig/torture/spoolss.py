@@ -6,10 +6,16 @@ def test_EnumPrinters(pipe):
     r['flags'] = 0x02
     r['server'] = None
     r['level'] = 1
-    r['buffer'] = 392 * '\x00'
-    r['buf_size'] = 392
+    r['buffer'] = None
+    r['buf_size'] = 0
 
     result = dcerpc.spoolss_EnumPrinters(pipe, r)
+
+    if result['result'] == dcerpc.WERR_INSUFFICIENT_BUFFER:
+        r['buffer'] = result['buf_size'] * '\x00'
+        r['buf_size'] = result['buf_size']
+
+        result = dcerpc.spoolss_EnumPrinters(pipe, r)
 
     print dcerpc.unmarshall_spoolss_PrinterInfo1(result['buffer'])
 
