@@ -1588,7 +1588,7 @@ int ipstr_list_parse(const char* ipstr_list, struct ip_service **ip_list)
 	
 	count = count_chars(ipstr_list, IPSTR_LIST_CHAR) + 1;
 	if ( (*ip_list = (struct ip_service*)malloc(count * sizeof(struct ip_service))) == NULL ) {
-		DEBUG(0,("ipstr_list_parse: malloc failed for %l entries\n", count));
+		DEBUG(0,("ipstr_list_parse: malloc failed for %lu entries\n", (unsigned long)count));
 		return 0;
 	}
 	

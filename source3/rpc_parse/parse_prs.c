@@ -1473,7 +1473,7 @@ void netsec_encode(struct netsec_auth_struct *a, int auth_flags,
 {
 	uchar digest_final[16];
 
-	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%l\n", a->seq_num, data_len));
+	DEBUG(10,("SCHANNEL: netsec_encode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
 	RSIVAL(verf->seq_num, 0, a->seq_num);
@@ -1544,7 +1544,7 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		break;
 	}
 
-	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%l\n", a->seq_num, data_len));
+	DEBUG(10,("SCHANNEL: netsec_decode seq_num=%d data_len=%lu\n", a->seq_num, (unsigned long)data_len));
 	dump_data_pw("a->sess_key:\n", a->sess_key, sizeof(a->sess_key));
 
 	dump_data_pw("seq_num:\n", seq_num, sizeof(seq_num));
