@@ -1,3 +1,8 @@
+2005-01-05  Luke Howard  <lukeh@padl.com>
+
+	* lib/asn1/k5.asn1: add authorization data types for enctype
+	negotiation implementation
+
 2005-01-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/changepw.c (change_password_loop): on failing to find a
