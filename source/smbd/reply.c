@@ -1311,43 +1311,6 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     fstrcpy(mask, dptr_wcard(dptr_num));
   }
 
-  /* turn strings of spaces into a . */  
-  {
-    trim_string(mask,NULL," ");
-    if ((p = strrchr(mask,' ')))
-    {
-      fstring ext;
-      fstrcpy(ext,p+1);
-      *p = 0;
-      trim_string(mask,NULL," ");
-      if (ext[0]) {
-	      pstrcat(mask,".");
-	      pstrcat(mask,ext);
-      }
-    }
-  }
-
-  {
-    int skip;
-    p = mask;
-    while(*p)
-    {
-      if((skip = get_character_len( *p )) != 0 )
-      {
-        p += skip;
-      }
-      else
-      {
-        if (*p != '?' && *p != '*' && !isdoschar(*p))
-        {
-          DEBUG(5,("Invalid char [%c] in search mask?\n",*p));
-          *p = '?';
-        }
-        p++;
-      }
-    }
-  }
-
   if (can_open)
   {
     p = smb_buf(outbuf) + 3;
