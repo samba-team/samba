@@ -612,7 +612,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 			memcpy(state->response.data.auth.user_session_key, info3.user_sess_key, sizeof(state->response.data.auth.user_session_key) /* 16 */);
 		}
 		if (state->request.flags & WBFLAG_PAM_LMKEY) {
-			memcpy(state->response.data.auth.first_8_lm_hash, info3.padding, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
+			memcpy(state->response.data.auth.first_8_lm_hash, info3.lm_sess_key, sizeof(state->response.data.auth.first_8_lm_hash) /* 8 */);
 		}
 	}
 
