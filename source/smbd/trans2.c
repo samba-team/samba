@@ -2051,7 +2051,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			if(!S_ISLNK(sbuf.st_mode))
 				return(UNIXERROR(ERRSRV,ERRbadlink));
 #else
-			return(UNIXERROR(ERRDOS,ErrNotALink));
+			return(UNIXERROR(ERRDOS,ERRbadlink));
 #endif
 			len = conn->vfs_ops.readlink(conn,dos_to_unix(fullpathname,False), buffer, sizeof(pstring)-1);     /* read link */
 			if (len == -1)
