@@ -270,3 +270,97 @@ void torture_leave_domain(void *join_ctx)
 
 	talloc_free(join);
 }
+
+
+struct test_join_ads_dc {
+	struct test_join *join;
+};
+
+void *torture_join_domain_ads_dc(const char *machine_name, 
+			  const char *domain,
+			  const char **machine_password)
+{
+	struct test_join_ads_dc *join;
+
+	join = talloc_p(NULL, struct test_join_ads_dc);
+	if (join == NULL) {
+		return NULL;
+	}
+
+	join->join = torture_join_domain(machine_name, domain,
+					ACB_SVRTRUST,
+					machine_password);
+
+	if (!join->join) {
+		return NULL;
+	}
+
+	/* do netlogon DrsEnumerateDomainTrusts */
+
+	/* modify userAccountControl from 4096 to 532480 */
+	
+	/* modify RDN to OU=Domain Controllers and skip the $ from server name */
+
+	/* ask objectVersion of Schema Partition */
+
+	/* ask rIDManagerReferenz of the Domain Partition */
+
+	/* ask fsMORoleOwner of the RID-Manager$ object
+	 * returns CN=NTDS Settings,CN=<DC>,CN=Servers,CN=Default-First-Site-Name, ...
+	 */
+
+	/* ask for dnsHostName of CN=<DC>,CN=Servers,CN=Default-First-Site-Name, ... */
+
+	/* ask for objectGUID of CN=NTDS Settings,CN=<DC>,CN=Servers,CN=Default-First-Site-Name, ... */
+
+	/* ask for * of CN=Default-First-Site-Name, ... */
+
+	/* search (&(|(objectClass=user)(objectClass=computer))(sAMAccountName=<machine_name>$)) in Domain Partition 
+	 * attributes : distinguishedName, userAccountControl
+	 */
+
+	/* ask * for CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name,... 
+	 * should fail with noSuchObject
+	 */
+
+	/* add CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name,... 
+	 *
+	 * objectClass = server
+	 * systemFlags = 50000000
+	 * serverReferenz = CN=<machine_name>,OU=Domain Controllers,...
+	 */
+
+	/* ask for * of CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+	 * should fail with noSuchObject
+	 */
+
+	/* search for (ncname=<domain_nc>) in CN=Partitions,CN=Configuration,... 
+	 * attributes: ncName, dnsRoot
+	 */
+
+	/* modify add CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name,...
+	 * serverReferenz = CN=<machine_name>,OU=Domain Controllers,...
+	 * should fail with attributeOrValueExists
+	 */
+
+	/* modify replace CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name,...
+	 * serverReferenz = CN=<machine_name>,OU=Domain Controllers,...
+	 */
+
+	/* DsReplicaAdd to create the CN=NTDS Settings,CN=<machine_name>,CN=Servers,CN=Default-First-Site-Name, ...
+	 * needs to be tested
+	 */
+
+	return join;
+}
+		
+void torture_leave_domain_ads_dc(void *join_ctx)
+{
+	struct test_join_ads_dc *join = join_ctx;
+
+	if (join->join) {
+		torture_leave_domain(join->join);
+	}
+
+	talloc_free(join);
+}
