@@ -99,15 +99,9 @@ open_socket(krb5_context context, const char *hostname, const char *port)
     return -1;
 }
 
-struct prop_data{
-    krb5_context context;
-    krb5_auth_context auth_context;
-    int sock;
-};
-
 int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
 
-static krb5_error_code
+krb5_error_code
 v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
     krb5_error_code ret;
@@ -404,7 +398,7 @@ struct getargs args[] = {
       "heimdal"
 #if 0
       "|mit-dump"
-#endif      
+#endif
 #ifdef KRB4
       "|krb4-db|krb4-dump"
 #ifdef KASERVER_DB
@@ -542,6 +536,11 @@ iterate (krb5_context context,
     }
 #endif
 #endif /* KRB4 */
+#if 0
+    case HPROP_MIT_DUMP:
+	mit_prop_dump(pd, database);
+	break;
+#endif
     case HPROP_HEIMDAL: {
 	krb5_error_code ret = hdb_foreach(context, db, HDB_F_DECRYPT,
 					  v5_prop, pd);
@@ -747,8 +746,11 @@ main(int argc, char **argv)
 	    realm = realm_buf;
 	}
     }
+#endif
 
-    if(type == HPROP_KRB4_DB) {
+    switch(type) {
+#ifdef KRB4
+    case HPROP_KRB4_DB: {
 	int e = kerb_db_set_name (database);
 	if(e)
 	    krb5_errx(context, 1, "kerb_db_set_name: %s",
@@ -757,24 +759,34 @@ main(int argc, char **argv)
 	if(e)
 	    krb5_errx(context, 1, "kdb_get_master_key: %s",
 		      krb_get_err_text(e));
-    } else if(type == HPROP_KRB4_DUMP) {
+	break;
+    }
+    case HPROP_KRB4_DUMP:
 	/* nothing to do */
-    } else
+	break;
 #ifdef KASERVER_DB
-	if (type == HPROP_KASERVER) {
-	    if (database == NULL)
-		database = DEFAULT_DATABASE;
-	} else
+    case HPROP_KASERVER:
+	if (database == NULL)
+	    database = DEFAULT_DATABASE;
+	break;
 #endif
 #endif /* KRB4 */
-	    {
-		ret = hdb_create (context, &db, database);
-		if(ret)
-		    krb5_err(context, 1, ret, "hdb_create: %s", database);
-		ret = db->open(context, db, O_RDONLY, 0);
-		if(ret)
-		    krb5_err(context, 1, ret, "db->open");
-	    }
+#if 0
+    case HPROP_MIT_DUMP:
+	break;
+#endif
+    case HPROP_HEIMDAL:
+	ret = hdb_create (context, &db, database);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_create: %s", database);
+	ret = db->open(context, db, O_RDONLY, 0);
+	if(ret)
+	    krb5_err(context, 1, ret, "db->open");
+	break;
+    default:
+	krb5_errx(context, 1, "unknown dump type `%d'", type);
+	break;
+    }
 
     if (to_stdout)
 	dump_database (context, type, database, afs_cell, db);
