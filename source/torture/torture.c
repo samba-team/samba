@@ -424,7 +424,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 
 static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 {
-	char *lockfname = "\\torture.lck";
+	char *lockfname = "\\torture2.lck";
 	int fnum1;
 	int fnum2;
 	int i;
@@ -2989,6 +2989,7 @@ static struct {
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
+	{"UTABLE", torture_utable, 0},
 	{NULL, NULL, 0}};
 
 

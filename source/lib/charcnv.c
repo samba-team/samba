@@ -100,7 +100,6 @@ size_t convert_string(charset_t from, charset_t to,
 	smb_iconv_t descriptor;
 
 	if (srclen == -1) srclen = strlen(src)+1;
-	if (destlen == -1) destlen = strlen(dest)+1;
 
 	if (!initialised) {
 		initialised = 1;

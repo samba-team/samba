@@ -320,7 +320,7 @@ UMOUNT_OBJ = client/smbumount.o \
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
-SMBTORTURE_OBJ = torture/torture.o torture/nbio.o torture/scanner.o \
+SMBTORTURE_OBJ = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o \
 	$(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
