@@ -93,7 +93,7 @@ void smbw_init(void)
 
 	if ((p=smbw_getshared("PREFIX"))) {
 		slprintf(smbw_prefix,sizeof(fstring)-1, "/%s/", p);
-		string_sub(smbw_prefix,"//", "/");
+		string_sub(smbw_prefix,"//", "/", 0);
 		DEBUG(2,("SMBW_PREFIX is %s\n", smbw_prefix));
 	}
 

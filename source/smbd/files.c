@@ -38,13 +38,7 @@ static files_struct *chain_fsp = NULL;
 /* a fsp to use to save when breaking an oplock. */
 static files_struct *oplock_save_chain_fsp = NULL;
 
-/*
- * Indirection for file fd's. Needed as POSIX locking
- * is based on file/process, not fd/process.
- */
-static file_fd_struct *FileFd;
-
-static int files_used, fd_ptr_used;
+static int files_used;
 
 /****************************************************************************
   find first available file slot
@@ -90,6 +84,7 @@ files_struct *file_new(void )
 	if (!fsp) return NULL;
 
 	ZERO_STRUCTP(fsp);
+	fsp->fd = -1;
 
 	first_file = (i+1) % real_max_open_files;
 
@@ -107,72 +102,6 @@ files_struct *file_new(void )
 	chain_fsp = fsp;
 	
 	return fsp;
-}
-
-
-
-/****************************************************************************
-fd support routines - attempt to find an already open file by dev
-and inode - increments the ref_count of the returned file_fd_struct *.
-****************************************************************************/
-file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf)
-{
-	file_fd_struct *fd_ptr;
-
-	if(!sbuf) return NULL;
-
-	for (fd_ptr=FileFd;fd_ptr;fd_ptr=fd_ptr->next) {
-		if ((fd_ptr->ref_count > 0) &&
-		    (sbuf->st_dev == fd_ptr->dev) &&
-		    (sbuf->st_ino == fd_ptr->inode)) {
-			fd_ptr->ref_count++;
-
-			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %.0f, ref_count = %d\n",
-				 (unsigned int)fd_ptr->dev, (double)fd_ptr->inode, 
-				 fd_ptr->ref_count));
-
-			return fd_ptr;
-		}
-	}
-
-	return NULL;
-}
-
-
-
-/****************************************************************************
-fd support routines - attempt to find a empty slot in the FileFd array.
-Increments the ref_count of the returned entry.
-****************************************************************************/
-file_fd_struct *fd_get_new(void)
-{
-	extern struct current_user current_user;
-	file_fd_struct *fd_ptr;
-
-	fd_ptr = (file_fd_struct *)malloc(sizeof(*fd_ptr));
-	if (!fd_ptr) {
-          DEBUG(0,("ERROR! malloc fail for file_fd struct.\n"));
-          return NULL;
-	}
-	
-	ZERO_STRUCTP(fd_ptr);
-	
-	fd_ptr->dev = (SMB_DEV_T)-1;
-	fd_ptr->inode = (SMB_INO_T)-1;
-	fd_ptr->fd = -1;
-	fd_ptr->fd_readonly = -1;
-	fd_ptr->fd_writeonly = -1;
-	fd_ptr->real_open_flags = -1;
-	fd_add_to_uid_cache(fd_ptr, (uid_t)current_user.uid);
-	fd_ptr->ref_count++;
-
-	fd_ptr_used++;
-
-	DLIST_ADD(FileFd, fd_ptr);
-
-	DEBUG(5,("allocated fd_ptr structure (%d used)\n", fd_ptr_used));
-
-	return fd_ptr;
 }
 
 
@@ -257,9 +186,9 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
-			fsp->fd_ptr != NULL &&
-		    fsp->fd_ptr->dev == dev && 
-		    fsp->fd_ptr->inode == inode &&
+			fsp->fd != -1 &&
+		    fsp->dev == dev && 
+		    fsp->inode == inode &&
 		    (tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True ) &&
 		    (tval ? (fsp->open_time.tv_usec == tval->tv_usec) : True )) {
 			if (count > 10) {
@@ -282,9 +211,9 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode)
 
     for (fsp=Files;fsp;fsp=fsp->next) {
         if (fsp->open &&
-			fsp->fd_ptr != NULL &&
-            fsp->fd_ptr->dev == dev &&
-            fsp->fd_ptr->inode == inode )
+	    fsp->fd != -1 &&
+            fsp->dev == dev &&
+            fsp->inode == inode )
             return fsp;
     }
 
@@ -301,9 +230,9 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 
     for (fsp = start_fsp->next;fsp;fsp=fsp->next) {
         if (fsp->open &&
-			fsp->fd_ptr != NULL &&
-            fsp->fd_ptr->dev == start_fsp->fd_ptr->dev &&
-            fsp->fd_ptr->inode == start_fsp->fd_ptr->inode )
+	    fsp->fd != -1 &&
+            fsp->dev == start_fsp->dev &&
+            fsp->inode == start_fsp->inode )
             return fsp;
     }
 
@@ -334,28 +263,10 @@ void file_sync_all(connection_struct *conn)
 
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
-		if (fsp->open && (conn == fsp->conn) && (fsp->fd_ptr != NULL)) {
-			conn->vfs_ops.fsync(fsp->fd_ptr->fd);
+		if (fsp->open && (conn == fsp->conn) && (fsp->fd != -1)) {
+			conn->vfs_ops.fsync(fsp->fd);
 		}
 	}
-}
-
-
-/****************************************************************************
-free up a fd_ptr
-****************************************************************************/
-void fd_ptr_free(file_fd_struct *fd_ptr)
-{
-	DLIST_REMOVE(FileFd, fd_ptr);
-
-	fd_ptr_used--;
-
-	DEBUG(5,("freed fd_ptr structure (%d used)\n", fd_ptr_used));
-
-	/* paranoia */
-	ZERO_STRUCTP(fd_ptr);
-
-	free(fd_ptr);
 }
 
 
@@ -367,10 +278,6 @@ void file_free(files_struct *fsp)
 	DLIST_REMOVE(Files, fsp);
 
 	string_free(&fsp->fsp_name);
-
-	if ((fsp->fd_ptr != NULL) && fsp->fd_ptr->ref_count == 0) {
-		fd_ptr_free(fsp->fd_ptr);
-	}
 
 	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
 	files_used--;

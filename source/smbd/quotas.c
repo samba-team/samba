@@ -363,11 +363,6 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 #endif
   }
 
-  /* If softlimit is zero, set it equal to hardlimit.
-   */
-  
-  if (D.dqb_bsoftlimit==0)
-    D.dqb_bsoftlimit = D.dqb_bhardlimit;
 
   /* Use softlimit to determine disk space. A user exceeding the quota is told
    * that there's no space left. Writes might actually work for a bit if the
@@ -436,12 +431,6 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
       else
          return (False);  
   }
-
-  /* If softlimit is zero, set it equal to hardlimit.
-   */
-
-  if (D.dqb_bsoftlimit==0)
-    D.dqb_bsoftlimit = D.dqb_bhardlimit;
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
 
@@ -673,13 +662,6 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 	}
       else return(False);
     }
-
-  /* If softlimit is zero, set it equal to hardlimit.
-   */
-
-  if (D.dqb_bsoftlimit==0)
-    D.dqb_bsoftlimit = D.dqb_bhardlimit;
-
   if (D.dqb_bsoftlimit==0)
     return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
@@ -790,12 +772,6 @@ BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_B
     DEBUG(5,("disk_quotas ioctl (VxFS) failed. Error = %s\n", strerror(errno) ));
     return(False);
   }
-
-  /* If softlimit is zero, set it equal to hardlimit.
-   */
-
-  if (D.dqb_bsoftlimit==0)
-    D.dqb_bsoftlimit = D.dqb_bhardlimit;
 
   /* Use softlimit to determine disk space. A user exceeding the quota is told
    * that there's no space left. Writes might actually work for a bit if the

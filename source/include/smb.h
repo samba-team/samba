@@ -504,33 +504,15 @@ typedef struct write_cache
 	char *data;
 } write_cache;
 
-/*
- * Structure used to indirect fd's from the files_struct.
- * Needed as POSIX locking is based on file and process, not
- * file descriptor and process.
- */
-
-typedef struct file_fd_struct
-{
-	struct file_fd_struct *next, *prev;
-	uint16 ref_count;
-	uint16 uid_cache_count;
-	uid_t uid_users_cache[10];
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	int fd;
-	int fd_readonly;
-	int fd_writeonly;
-	int real_open_flags;
-	BOOL delete_on_close;
-} file_fd_struct;
-
 typedef struct files_struct
 {
 	struct files_struct *next, *prev;
 	int fnum;
 	struct connection_struct *conn;
-	file_fd_struct *fd_ptr;
+	int fd;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	BOOL delete_on_close;
 	SMB_OFF_T pos;
 	SMB_OFF_T size;
 	mode_t mode;
@@ -632,6 +614,39 @@ typedef struct connection_struct
 
 } connection_struct;
 
+typedef struct
+{
+	uint32 pid;
+	uint16 vuid;
+
+}
+vuser_key;
+
+struct current_user
+{
+	connection_struct *conn;
+	vuser_key key;
+	uid_t uid;
+	gid_t gid;
+	int ngroups;
+	gid_t *groups;
+};
+
+/*
+ * Reasons for cache flush.
+ */
+
+#define NUM_FLUSH_REASONS 8	/* Keep this in sync with the enum below. */
+enum flush_reason_enum
+{ SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
+	OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH
+};
+
+/* Defines for the sent_oplock_break field above. */
+#define NO_BREAK_SENT 0
+#define EXCLUSIVE_BREAK_SENT 1
+#define LEVEL_II_BREAK_SENT 2
+
 /* Domain controller authentication protocol info */
 struct dcinfo
 {
@@ -643,7 +658,6 @@ struct dcinfo
 	uchar sess_key[8];	/* Session key */
 	uchar md4pw[16];	/* md4(machine password) */
 };
-
 
 enum
 { LPQ_QUEUED, LPQ_PAUSED, LPQ_SPOOLING, LPQ_PRINTING };
@@ -1852,14 +1866,6 @@ extern int chain_size;
 
 #include "nt_printing.h"
 
-typedef struct
-{
-	uint32 pid;
-	uint16 vuid;
-
-}
-vuser_key;
-
 struct use_info
 {
 	BOOL connected;
@@ -1869,52 +1875,6 @@ struct use_info
 	char *domain;
 };
 
-#include "ntdomain.h"
-
-typedef struct
-{
-	uid_t uid;		/* uid of a validated user */
-	gid_t gid;		/* gid of a validated user */
-
-	fstring requested_name;	/* user name from the client */
-	fstring name;		/* unix user name of a validated user */
-	fstring real_name;	/* to store real name from password file - simeon */
-	BOOL guest;
-
-	/* following groups stuff added by ih */
-	/* This groups info is needed for when we become_user() for this uid */
-	int n_groups;
-	gid_t *groups;
-
-	NET_USER_INFO_3 usr;
-
-} user_struct;
-
-struct current_user
-{
-	connection_struct *conn;
-	vuser_key key;
-	uid_t uid;
-	gid_t gid;
-	int ngroups;
-	gid_t *groups;
-};
-
-/*
- * Reasons for cache flush.
- */
-
-#define NUM_FLUSH_REASONS 8	/* Keep this in sync with the enum below. */
-enum flush_reason_enum
-{ SEEK_FLUSH, READ_FLUSH, WRITE_FLUSH, READRAW_FLUSH,
-	OPLOCK_RELEASE_FLUSH, CLOSE_FLUSH, SYNC_FLUSH, SIZECHANGE_FLUSH
-};
-
-/* Defines for the sent_oplock_break field above. */
-#define NO_BREAK_SENT 0
-#define EXCLUSIVE_BREAK_SENT 1
-#define LEVEL_II_BREAK_SENT 2
-
 /* A netbios name structure. */
 struct nmb_name
 {
@@ -1923,39 +1883,6 @@ struct nmb_name
 	unsigned int name_type;
 };
 
-
-#include "dfs.h"
-
-/*
- * Size of new password account encoding string. DO NOT CHANGE.
- */
-
-#define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
-
-/*
-   Do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password
-
-   You have 3 choices in the setting of map_to_guest:
-
-   "NEVER_MAP_TO_GUEST" means session setups with an invalid password
-   are rejected. This is the default.
-
-   "MAP_TO_GUEST_ON_BAD_USER" means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   "MAP_TO_GUEST_ON_BAD_PASSWORD" means session setups with an invalid password
-   are treated as a guest login
-
-   Note that map_to_guest only has an effect in user or server
-   level security.
-*/
-
-#define NEVER_MAP_TO_GUEST 0
-#define MAP_TO_GUEST_ON_BAD_USER 1
-#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
 /* associate bit field or enumeration field with a string */
 struct field_info
@@ -2009,8 +1936,6 @@ typedef struct subst_creds
 	fstring remote_machine;
 
 } CREDS_SUBST;
-
-#include "rpc_creds.h"
 
 struct ntdom_info
 {
@@ -2071,8 +1996,63 @@ typedef struct policy_cache
 }
 policy_cache;
 
-#include "client.h"
+#include "ntdomain.h"
+
+typedef struct
+{
+	uid_t uid;		/* uid of a validated user */
+	gid_t gid;		/* gid of a validated user */
+
+	fstring requested_name;	/* user name from the client */
+	fstring name;		/* unix user name of a validated user */
+	fstring real_name;	/* to store real name from password file - simeon */
+	BOOL guest;
+
+	/* following groups stuff added by ih */
+	/* This groups info is needed for when we become_user() for this uid */
+	int n_groups;
+	gid_t *groups;
+
+	NET_USER_INFO_3 usr;
+
+} user_struct;
+
 #include "rpcclient.h"
+#include "rpc_creds.h"
+
+#include "client.h"
+
+
+/*
+ * Size of new password account encoding string. DO NOT CHANGE.
+ */
+
+#define NEW_PW_FORMAT_SPACE_PADDED_LEN 14
+
+/*
+   Do you want session setups at user level security with a invalid
+   password to be rejected or allowed in as guest? WinNT rejects them
+   but it can be a pain as it means "net view" needs to use a password
+
+   You have 3 choices in the setting of map_to_guest:
+
+   "NEVER_MAP_TO_GUEST" means session setups with an invalid password
+   are rejected. This is the default.
+
+   "MAP_TO_GUEST_ON_BAD_USER" means session setups with an invalid password
+   are rejected, unless the username does not exist, in which case it
+   is treated as a guest login
+
+   "MAP_TO_GUEST_ON_BAD_PASSWORD" means session setups with an invalid password
+   are treated as a guest login
+
+   Note that map_to_guest only has an effect in user or server
+   level security.
+*/
+
+#define NEVER_MAP_TO_GUEST 0
+#define MAP_TO_GUEST_ON_BAD_USER 1
+#define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
 #endif /* _SMB_H */
 

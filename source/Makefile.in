@@ -269,7 +269,7 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 		lib/set_uid.o smbd/dfree.o smbd/dir.o smbd/password.o \
 		smbd/conn.o smbd/fileio.o \
 		smbd/ipc.o smbd/lanman.o smbd/mangle.o smbd/negprot.o \
-		smbd/message.o smbd/nttrans.o smbd/pipes.o smbd/predict.o \
+		smbd/message.o smbd/nttrans.o smbd/pipes.o \
 		smbd/$(QUOTAOBJS) smbd/reply.o smbd/ssl.o smbd/trans2.o \
 		smbd/uid.o smbd/dosmode.o smbd/filename.o smbd/open.o \
 		smbd/close.o smbd/blocking.o smbd/process.o smbd/oplock.o \

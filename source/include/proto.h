@@ -768,6 +768,8 @@ BOOL is_a_socket(int fd);
 void set_socket_options(int fd, char *options);
 void close_sockets(void);
 ssize_t write_socket(int fd, char *buf, size_t len);
+int write_data_outstanding(int fd, unsigned int time_out);
+int read_data_outstanding(int fd, unsigned int time_out);
 ssize_t read_udp_socket(int fd, char *buf, size_t len);
 ssize_t read_with_timeout(int fd, char *buf, size_t mincnt, size_t maxcnt,
 			  unsigned int time_out);
@@ -1275,6 +1277,8 @@ BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode);
 BOOL unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
+BOOL lock_share_entry_fsp(files_struct *fsp);
+BOOL unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
@@ -2318,6 +2322,7 @@ void printjob_decode(int jobid, int *snum, int *job);
 uint32 status_printqueue(connection_struct *conn,const vuser_key *key,
 				int snum,int status);
 void load_printers(void);
+void print_open_file(files_struct *fsp,connection_struct *conn,char *fname);
 
 /*The following definitions come from  profile/profile.c  */
 
@@ -2877,7 +2882,7 @@ BOOL api_netlog_rpc(rpcsrv_struct * p);
 BOOL readwrite_pipe(pipes_struct * p, char *data, int len,
 		    char **rdata, int *rlen, BOOL *pipe_outstanding);
 ssize_t write_pipe(pipes_struct * p, char *data, size_t n);
-int read_pipe(pipes_struct * p, char *data, int n);
+int read_pipe(pipes_struct * p, char *data, int min_len, int max_len);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -3715,8 +3720,6 @@ BOOL chgpasswd(const char *name, char *oldpass, char *newpass, BOOL as_root);
 BOOL pass_oem_change(const char *user,
 		     const uchar * lmdata, const uchar * lmhash,
 		     const uchar * ntdata, const uchar * nthash);
-BOOL change_oem_password(struct smb_passwd *smbpw, UNISTR2 * new_passwd,
-			 BOOL unicode, BOOL override);
 BOOL update_smbpassword_file(const char *user, const char *password);
 
 /*The following definitions come from  smbd/close.c  */
@@ -3808,8 +3811,6 @@ BOOL reset_stat_cache( void );
 /*The following definitions come from  smbd/files.c  */
 
 files_struct *file_new(void );
-file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf);
-file_fd_struct *fd_get_new(void);
 void file_close_conn(connection_struct *conn);
 void file_init(void);
 void file_close_user(int vuid);
@@ -3818,7 +3819,6 @@ files_struct *file_find_di_first(SMB_DEV_T dev, SMB_INO_T inode);
 files_struct *file_find_di_next(files_struct *start_fsp);
 files_struct *file_find_print(void);
 void file_sync_all(connection_struct *conn);
-void fd_ptr_free(file_fd_struct *fd_ptr);
 void file_free(files_struct *fsp);
 files_struct *file_fsp(char *buf, int where);
 void file_chain_reset(void);
@@ -3889,8 +3889,7 @@ int reply_nttrans(connection_struct *conn,
 
 /*The following definitions come from  smbd/open.c  */
 
-void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u);
-uint16 fd_attempt_close(files_struct *fsp, int *err_ret);
+void fd_close(files_struct *fsp, int *err_ret);
 void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int share_mode,int ofun,
 		      mode_t mode,int oplock_request, int *Access,int *action);
 int open_file_stat(files_struct *fsp,connection_struct *conn,
@@ -3938,12 +3937,6 @@ int reply_pipe_write(char *inbuf, char *outbuf, int length, int bufsize);
 int reply_pipe_write_and_X(char *inbuf, char *outbuf, int length, int bufsize);
 int reply_pipe_read_and_X(char *inbuf, char *outbuf, int length, int bufsize);
 int reply_pipe_close(connection_struct * conn, char *inbuf, char *outbuf);
-
-/*The following definitions come from  smbd/predict.c  */
-
-ssize_t read_predict(files_struct *fsp, int fd,SMB_OFF_T offset,char *buf,char **ptr,size_t num);
-void do_read_prediction(connection_struct *conn);
-void invalidate_read_prediction(int fd);
 
 /*The following definitions come from  smbd/process.c  */
 

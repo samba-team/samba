@@ -30,273 +30,30 @@ extern BOOL global_client_failed_oplock_break;
 /****************************************************************************
 fd support routines - attempt to do a dos_open
 ****************************************************************************/
-static int fd_attempt_open(struct connection_struct *conn, char *fname, 
+static int fd_open(struct connection_struct *conn, char *fname, 
 			   int flags, mode_t mode)
 {
   int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 
   /* Fix for files ending in '.' */
   if((fd == -1) && (errno == ENOENT) &&
-     (strchr(fname,'.')==NULL))
-    {
+	   (strchr(fname,'.')==NULL)) {
       pstrcat(fname,".");
       fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
     }
 
-#if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
-  if ((fd == -1) && (errno == ENAMETOOLONG))
-    {
-      int max_len;
-      char *p = strrchr(fname, '/');
-
-      if (p == fname)   /* name is "/xxx" */
-        {
-          max_len = pathconf("/", _PC_NAME_MAX);
-          p++;
-        }
-      else if ((p == NULL) || (p == fname))
-        {
-          p = fname;
-          max_len = pathconf(".", _PC_NAME_MAX);
-        }
-      else
-        {
-          *p = '\0';
-          max_len = pathconf(fname, _PC_NAME_MAX);
-          *p = '/';
-          p++;
-        }
-      if (strlen(p) > max_len)
-        {
-          char tmp = p[max_len];
-
-          p[max_len] = '\0';
-          if ((fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode)) == -1)
-            p[max_len] = tmp;
-        }
-    }
-#endif
   return fd;
 }
 
 /****************************************************************************
-Cache a uid_t currently with this file open. This is an optimization only
-used when multiple sessionsetup's have been done to one smbd.
+close the file associated with a fsp
 ****************************************************************************/
-
-void fd_add_to_uid_cache(file_fd_struct *fd_ptr, uid_t u)
+void fd_close(files_struct *fsp, int *err_ret)
 {
-  if(fd_ptr->uid_cache_count >= sizeof(fd_ptr->uid_users_cache)/sizeof(uid_t))
-    return;
-  fd_ptr->uid_users_cache[fd_ptr->uid_cache_count++] = u;
-}
-
-/****************************************************************************
-Remove a uid_t that currently has this file open. This is an optimization only
-used when multiple sessionsetup's have been done to one smbd.
-****************************************************************************/
-
-static void fd_remove_from_uid_cache(file_fd_struct *fd_ptr, uid_t u)
-{
-  int i;
-  for(i = 0; i < fd_ptr->uid_cache_count; i++)
-    if(fd_ptr->uid_users_cache[i] == u) {
-      if(i < (fd_ptr->uid_cache_count-1))
-        memmove((char *)&fd_ptr->uid_users_cache[i], (char *)&fd_ptr->uid_users_cache[i+1],
-               sizeof(uid_t)*(fd_ptr->uid_cache_count-1-i) );
-      fd_ptr->uid_cache_count--;
-    }
-  return;
-}
-
-/****************************************************************************
-Check if a uid_t that currently has this file open is present. This is an
-optimization only used when multiple sessionsetup's have been done to one smbd.
-****************************************************************************/
-
-static BOOL fd_is_in_uid_cache(file_fd_struct *fd_ptr, uid_t u)
-{
-  int i;
-  for(i = 0; i < fd_ptr->uid_cache_count; i++)
-    if(fd_ptr->uid_users_cache[i] == u)
-      return True;
-  return False;
-}
-
-/****************************************************************************
-fd support routines - attempt to re-open an already open fd as O_RDWR.
-Save the already open fd (we cannot close due to POSIX file locking braindamage.
-****************************************************************************/
-
-static void fd_attempt_reopen(char *fname, mode_t mode, files_struct *fsp)
-{
-  int fd = fsp->conn->vfs_ops.open(dos_to_unix(fname, False), O_RDWR, mode);
-  file_fd_struct *fd_ptr = fsp->fd_ptr;
-
-  if(fd == -1)
-    return;
-
-  if(fd_ptr->real_open_flags == O_RDONLY)
-    fd_ptr->fd_readonly = fd_ptr->fd;
-  if(fd_ptr->real_open_flags == O_WRONLY)
-    fd_ptr->fd_writeonly = fd_ptr->fd;
-
-  fd_ptr->fd = fd;
-  fd_ptr->real_open_flags = O_RDWR;
-}
-
-/****************************************************************************
-fd support routines - attempt to close the file referenced by this fd.
-Decrements the ref_count and returns it.
-****************************************************************************/
-uint16 fd_attempt_close(files_struct *fsp, int *err_ret)
-{
-  extern struct current_user current_user;
-  file_fd_struct *fd_ptr;
-  uint16 ret_ref;
-
-  *err_ret = 0;
-
-  if ((fsp == NULL) || (fsp->fd_ptr == NULL)) {
-      return 0;
+	fsp->conn->vfs_ops.close(fsp->fd);
+	fsp->fd = -1;
   }
 
-  fd_ptr = fsp->fd_ptr;
-  ret_ref = fd_ptr->ref_count;
-
-  DEBUG(3,("fd_attempt_close fd = %d, dev = %x, inode = %.0f, open_flags = %d, ref_count = %d.\n",
-          fd_ptr->fd, (unsigned int)fd_ptr->dev, (double)fd_ptr->inode,
-          fd_ptr->real_open_flags,
-          fd_ptr->ref_count));
-
-  SMB_ASSERT(fd_ptr->ref_count != 0);
-
-  fd_ptr->ref_count--;
-  ret_ref = fd_ptr->ref_count;
-
-  if(fd_ptr->ref_count == 0) {
-
-    if(fd_ptr->fd != -1) {
-      if(fsp->conn->vfs_ops.close(fd_ptr->fd) < 0)
-        *err_ret = errno;
-	}
-
-    if(fd_ptr->fd_readonly != -1) {
-      if(fsp->conn->vfs_ops.close(fd_ptr->fd_readonly) < 0) {
-        if(*err_ret == 0)
-          *err_ret = errno;
-      }
-	}
-
-    if(fd_ptr->fd_writeonly != -1) {
-      if(fsp->conn->vfs_ops.close(fd_ptr->fd_writeonly) < 0) {
-        if(*err_ret == 0)
-          *err_ret = errno;
-      }
-	}
-
-    /*
-     * Delete this fd_ptr.
-     */
-    fd_ptr_free(fd_ptr);
-  } else {
-    fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
-  }
-
-  return ret_ref;
-}
-
-/****************************************************************************
-fd support routines - check that current user has permissions
-to open this file. Used when uid not found in optimization cache.
-This is really ugly code, as due to POSIX locking braindamage we must
-fork and then attempt to open the file, and return success or failure
-via an exit code.
-****************************************************************************/
-static BOOL check_access_allowed_for_current_user(struct connection_struct
-						  *conn, char *fname, 
-						  int accmode )
-{
-  pid_t child_pid;
-
-  /*
-   * We need to temporarily stop CatchChild from eating 
-   * SIGCLD signals as it also eats the exit status code. JRA.
-   */
-
-  CatchChildLeaveStatus();
-
-  if((child_pid = fork()) < 0) {
-    DEBUG(0,("check_access_allowed_for_current_user: fork failed.\n"));
-    CatchChild();
-    return False;
-  }
-
-  if(child_pid) {
-    /*
-     * Parent.
-     */
-    pid_t wpid;
-    int status_code;
-
-    while ((wpid = sys_waitpid(child_pid, &status_code, 0)) < 0) {
-      if(errno == EINTR) {
-        errno = 0;
-        continue;
-      }
-      DEBUG(0,("check_access_allowed_for_current_user: The process \
-is no longer waiting ! Error = %s\n", strerror(errno) ));
-      CatchChild();
-      return(False);
-    }
-
-	/*
-	 * Go back to ignoring children.
-	 */
-	CatchChild();
-
-    if (child_pid != wpid) {
-      DEBUG(0,("check_access_allowed_for_current_user: We were waiting for the wrong process ID\n"));
-      return(False);
-    }
-#if defined(WIFEXITED) && defined(WEXITSTATUS)
-    if (WIFEXITED(status_code) == 0) {
-      DEBUG(0,("check_access_allowed_for_current_user: The process exited while we were waiting\n"));
-      return(False);
-    }
-    if (WEXITSTATUS(status_code) != 0) {
-      DEBUG(9,("check_access_allowed_for_current_user: The status of the process exiting was %d. Returning access denied.\n", status_code));
-      return(False);
-    }
-#else /* defined(WIFEXITED) && defined(WEXITSTATUS) */
-    if(status_code != 0) {
-      DEBUG(9,("check_access_allowed_for_current_user: The status of the process exiting was %d. Returning access denied.\n", status_code));
-      return(False);
-    }
-#endif /* defined(WIFEXITED) && defined(WEXITSTATUS) */
-
-    /*
-     * Success - the child could open the file.
-     */
-    DEBUG(9,("check_access_allowed_for_current_user: The status of the process exiting was %d. Returning access allowed.\n", status_code));
-    return True;
-  } else {
-    /*
-     * Child.
-     */
-    int fd;
-    DEBUG(9,("check_access_allowed_for_current_user: Child - attempting to open %s with mode %d.\n", fname, accmode ));
-    if((fd = fd_attempt_open(conn, fname, accmode, 0)) < 0) {
-      /* Access denied. */
-      _exit(EACCES);
-    }
-    conn->vfs_ops.close(fd);
-    DEBUG(9,("check_access_allowed_for_current_user: Child - returning ok.\n"));
-    _exit(0);
-  }
-
-  return False;
-}
 
 /****************************************************************************
 check a filename for the pipe string
@@ -320,16 +77,15 @@ open a file
 ****************************************************************************/
 
 static void open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,int flags,mode_t mode, SMB_STRUCT_STAT *sbuf)
+		      char *fname1,int flags,mode_t mode)
 {
   extern struct current_user current_user;
   pstring fname;
-  SMB_STRUCT_STAT statbuf;
-  file_fd_struct *fd_ptr;
   int accmode = (flags & O_ACCMODE);
+	SMB_STRUCT_STAT sbuf;
 
   fsp->open = False;
-  fsp->fd_ptr = 0;
+	fsp->fd = 0;
   fsp->oplock_type = NO_OPLOCK;
   errno = EPERM;
 
@@ -347,7 +103,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
    * JRA.
    */
 
-  if (!CAN_WRITE(conn) && !conn->printer) {
+	if (!CAN_WRITE(conn)) {
     /* It's a read-only share - fail if we wanted to write. */
     if(accmode != O_RDONLY) {
       DEBUG(3,("Permission denied opening %s\n",fname));
@@ -362,190 +118,22 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     }
   }
 
-  /* this handles a bug in Win95 - it doesn't say to create the file when it 
-     should */
-  if (conn->printer) {
-	  flags |= (O_CREAT|O_EXCL);
-  }
-
-/*
-  if (flags == O_WRONLY)
-    DEBUG(3,("Bug in client? Set O_WRONLY without O_CREAT\n"));
-*/
-
-  /*
-   * Ensure we have a valid struct stat so we can search the
-   * open fd table.
-   */
-  if(sbuf == 0) {
-    if(conn->vfs_ops.stat(dos_to_unix(fname,False), &statbuf) < 0) {
-      if(errno != ENOENT) {
-        DEBUG(3,("Error doing stat on file %s (%s)\n",
-                 fname,strerror(errno)));
-
-        check_for_pipe(fname);
-        return;
-      }
-      sbuf = 0;
-    } else {
-      sbuf = &statbuf;
-    }
-  }
-
-  /*
-   * Check to see if we have this file already
-   * open. If we do, just use the already open fd and increment the
-   * reference count (fd_get_already_open increments the ref_count).
-   */
-  if((fd_ptr = fd_get_already_open(sbuf))!= 0) {
-    /*
-     * File was already open.
-     */
-
-    /* 
-     * Check it wasn't open for exclusive use.
-     */
-    if((flags & O_CREAT) && (flags & O_EXCL)) {
-      fd_ptr->ref_count--;
-      errno = EEXIST;
-      return;
-    }
-
-    /*
-     * Ensure that the user attempting to open
-     * this file has permissions to do so, if
-     * the user who originally opened the file wasn't
-     * the same as the current user.
-     */
-
-    if(!fd_is_in_uid_cache(fd_ptr, (uid_t)current_user.uid)) {
-      if(!check_access_allowed_for_current_user(conn, fname, accmode )) {
-        /* Error - permission denied. */
-        DEBUG(3,("Permission denied opening file %s (flags=%d, accmode = %d)\n",
-              fname, flags, accmode));
-        /* Ensure the ref_count is decremented. */
-        fd_ptr->ref_count--;
-        fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
-        errno = EACCES;
-        return;
-      }
-    }
-
-    fd_add_to_uid_cache(fd_ptr, (uid_t)current_user.uid);
-
-    /* 
-     * If not opened O_RDWR try
-     * and do that here - a chmod may have been done
-     * between the last open and now. 
-     */
-    if(fd_ptr->real_open_flags != O_RDWR)
-      fd_attempt_reopen(fname, mode, fsp);
-
-    /*
-     * Ensure that if we wanted write access
-     * it has been opened for write, and if we wanted read it
-     * was open for read. 
-     */
-    if(((accmode == O_WRONLY) && (fd_ptr->real_open_flags == O_RDONLY)) ||
-       ((accmode == O_RDONLY) && (fd_ptr->real_open_flags == O_WRONLY)) ||
-       ((accmode == O_RDWR) && (fd_ptr->real_open_flags != O_RDWR))) {
-      DEBUG(3,("Error opening (already open for flags=%d) file %s (%s) (flags=%d)\n",
-               fd_ptr->real_open_flags, fname,strerror(EACCES),flags));
-      check_for_pipe(fname);
-      fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
-      fd_ptr->ref_count--;
-      return;
-    }
-
-  } else {
-    int open_flags;
-    /* We need to allocate a new file_fd_struct (this increments the
-       ref_count). */
-    if((fd_ptr = fd_get_new()) == 0)
-      return;
-    /*
-     * Whatever the requested flags, attempt read/write access,
-     * as we don't know what flags future file opens may require.
-     * If this fails, try again with the required flags. 
-     * Even if we open read/write when only read access was 
-     * requested the setting of the can_write flag in
-     * the file_struct will protect us from errant
-     * write requests. We never need to worry about O_APPEND
-     * as this is not set anywhere in Samba.
-     */
-    fd_ptr->real_open_flags = O_RDWR;
-    /* Set the flags as needed without the read/write modes. */
-    open_flags = flags & ~(O_RDWR|O_WRONLY|O_RDONLY);
-    fd_ptr->fd = fd_attempt_open(conn, fname, open_flags|O_RDWR, mode);
-    /*
-     * On some systems opening a file for R/W access on a read only
-     * filesystems sets errno to EROFS.
-     */
-#ifdef EROFS
-    if((fd_ptr->fd == -1) && ((errno == EACCES) || (errno == EROFS))) {
-#else /* No EROFS */
-    if((fd_ptr->fd == -1) && (errno == EACCES)) {
-#endif /* EROFS */
-      if(accmode != O_RDWR) {
-        fd_ptr->fd = fd_attempt_open(conn, fname, open_flags|accmode, mode);
-        fd_ptr->real_open_flags = accmode;
-      }
-    }
-  }
-
-  if ((fd_ptr->fd >=0) && 
-      conn->printer && lp_minprintspace(SNUM(conn))) {
-    pstring dname;
-    SMB_BIG_UINT dum1,dum2,dum3;
-    char *p;
-    pstrcpy(dname,fname);
-    p = strrchr(dname,'/');
-    if (p) *p = 0;
-    if (conn->vfs_ops.disk_free(dos_to_unix(dname,False),False,&dum1,&dum2,&dum3) < 
-	(SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
-      int err;
-      if(fd_attempt_close(fsp, &err) == 0)
-        conn->vfs_ops.unlink(dos_to_unix(fname, False));
-      fsp->fd_ptr = 0;
-      errno = ENOSPC;
-      return;
-    }
-  }
+	/* actually do the open */
+	fsp->fd = fd_open(conn, fname, flags, mode);
     
-  if (fd_ptr->fd < 0)
-  {
-    int err;
+    	if (fsp->fd == -1)  {
     DEBUG(3,("Error opening file %s (%s) (flags=%d)\n",
       fname,strerror(errno),flags));
-    /* Ensure the ref_count is decremented. */
-    fd_attempt_close(fsp,&err);
     check_for_pipe(fname);
     return;
   }
 
-  if (fd_ptr->fd >= 0)
-  {
-    if(sbuf == 0) {
-      /* Do the fstat */
-      if(conn->vfs_ops.fstat(fd_ptr->fd, &statbuf) == -1) {
-	  int err;
-        /* Error - backout !! */
-        DEBUG(3,("Error doing fstat on fd %d, file %s (%s)\n",
-                 fd_ptr->fd, fname,strerror(errno)));
-        /* Ensure the ref_count is decremented. */
-        fd_attempt_close(fsp,&err);
-        return;
-      }
-      sbuf = &statbuf;
-    }
+	conn->vfs_ops.fstat(fsp->fd, &sbuf);
 
-    /* Set the correct entries in fd_ptr. */
-    fd_ptr->dev = sbuf->st_dev;
-    fd_ptr->inode = sbuf->st_ino;
-
-    fsp->fd_ptr = fd_ptr;
     conn->num_files_open++;
-    fsp->mode = sbuf->st_mode;
+	fsp->mode = sbuf.st_mode;
+	fsp->inode = sbuf.st_ino;
+	fsp->dev = sbuf.st_dev;
     GetTimeOfDay(&fsp->open_time);
     fsp->vuid = current_user.key.vuid;
     fsp->size = 0;
@@ -555,7 +143,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->can_read = ((flags & O_WRONLY)==0);
     fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
     fsp->share_mode = 0;
-    fsp->print_file = conn->printer;
+	fsp->print_file = False;
     fsp->modified = False;
     fsp->oplock_type = NO_OPLOCK;
     fsp->sent_oplock_break = NO_BREAK_SENT;
@@ -574,24 +162,10 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     fsp->wbmpx_ptr = NULL;      
     fsp->wcp = NULL; /* Write cache pointer. */
 
-    /*
-     * If the printer is marked as postscript output a leading
-     * file identifier to ensure the file is treated as a raw
-     * postscript file.
-     * This has a similar effect as CtrlD=0 in WIN.INI file.
-     * tim@fsg.com 09/06/94
-     */
-    if (fsp->print_file && lp_postscript(SNUM(conn)) && fsp->can_write) {
-	    DEBUG(3,("Writing postscript line\n"));
-	    conn->vfs_ops.write(fsp->fd_ptr->fd,"%!\n",3);
-    }
-      
     DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
 	     *sesssetup_user ? sesssetup_user : conn->user,fsp->fsp_name,
 	     BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 	     conn->num_files_open));
-
-  }
 }
 
 /****************************************************************************
@@ -611,8 +185,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 			/* If share modes are in force for this connection we
 			   have the share entry locked. Unlock it before closing. */
 			if (*share_locked && lp_share_modes(SNUM(conn)))
-				unlock_share_entry( conn, fsp->fd_ptr->dev, 
-						    fsp->fd_ptr->inode);
+				unlock_share_entry_fsp(fsp);
 			close_file(fsp,False);   
 			/* Share mode no longer locked. */
 			*share_locked = False;
@@ -620,7 +193,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 			unix_ERR_class = ERRDOS;
 		  unix_ERR_code = ERRlock;
 		} else {
-			sys_ftruncate(fsp->fd_ptr->fd,0); 
+			sys_ftruncate(fsp->fd,0); 
 		}
 	}
 }
@@ -814,11 +387,23 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   int oplock_contention_count = 0;
   BOOL all_current_opens_are_level_II = False;
   fsp->open = False;
-  fsp->fd_ptr = 0;
+  fsp->fd = -1;
+
+  if (conn->printer) {
+	  /* printers are handled completely differently. Most of the passed parameters are
+	     ignored */
+	  *Access = DOS_OPEN_WRONLY;
+	  *action = FILE_WAS_CREATED;
+	  print_open_file(fsp, conn, fname);
+	  return;
+  }
 
   DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
         fname, share_mode, ofun, (int)mode,  oplock_request ));
 
+  if (!check_name(fname,conn)) {
+	  return;
+  } 
 
   /* ignore any oplock requests if oplocks are disabled */
   if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break) {
@@ -1011,11 +596,10 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,(int)mode));
 
-  open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
-  if (!fsp->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 
-  {
+  open_file(fsp,conn,fname,flags|(flags2&~(O_TRUNC)),mode);
+  if (!fsp->open && flags==O_RDWR && errno != ENOENT && fcbopen) {
     flags = O_RDONLY;
-    open_file(fsp,conn,fname,flags,mode,file_existed ? &sbuf : 0 );
+	  open_file(fsp,conn,fname,flags,mode);
   }
 
   if (fsp->open) 
@@ -1025,9 +609,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
     if((share_locked == False) && lp_share_modes(SNUM(conn)))
     {
       /* We created the file - thus we must now lock the share entry before creating it. */
-      dev = fsp->fd_ptr->dev;
-      inode = fsp->fd_ptr->inode;
-      lock_share_entry(conn, dev, inode);
+      lock_share_entry_fsp(fsp);
       share_locked = True;
     }
 
@@ -1090,12 +672,12 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
   }
 
   if (share_locked && lp_share_modes(SNUM(conn)))
-    unlock_share_entry( conn, dev, inode);
+    unlock_share_entry_fsp(fsp);
 }
 
 /****************************************************************************
  Open a file for permissions read only. Return a pseudo file entry
- with the 'stat_open' flag set and a fd_ptr of NULL.
+ with the 'stat_open' flag set 
 ****************************************************************************/
 
 int open_file_stat(files_struct *fsp,connection_struct *conn,
@@ -1122,7 +704,7 @@ int open_file_stat(files_struct *fsp,connection_struct *conn,
 	 * Setup the files_struct for it.
 	 */
 	
-	fsp->fd_ptr = NULL;
+	fsp->fd = -1;
 	conn->num_files_open++;
 	fsp->mode = 0;
 	GetTimeOfDay(&fsp->open_time);
@@ -1235,7 +817,7 @@ int open_directory(files_struct *fsp,connection_struct *conn,
 	 * Setup the files_struct for it.
 	 */
 	
-	fsp->fd_ptr = NULL;
+	fsp->fd = -1;
 	conn->num_files_open++;
 	fsp->mode = 0;
 	GetTimeOfDay(&fsp->open_time);

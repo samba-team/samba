@@ -37,7 +37,7 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
   if (fsp->print_file && lp_postscript(fsp->conn->service))
     offset = 3;
 
-  seek_ret = fsp->conn->vfs_ops.lseek(fsp->fd_ptr->fd,pos+offset,SEEK_SET);
+  seek_ret = fsp->conn->vfs_ops.lseek(fsp->fd,pos+offset,SEEK_SET);
 
   /*
    * We want to maintain the fiction that we can seek
@@ -96,16 +96,6 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
   ssize_t ret=0,readret;
 
-#if USE_READ_PREDICTION
-  if (!fsp->can_write) {
-    ret = read_predict(fsp->fd_ptr->fd,pos,data,NULL,n);
-
-    data += ret;
-    n -= ret;
-    pos += ret;
-  }
-#endif
-
   /*
    * Serve from write cache if we can.
    */
@@ -120,7 +110,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
   }
   
   if (n > 0) {
-    readret = fsp->conn->vfs_ops.read(fsp->fd_ptr->fd,data,n);
+    readret = fsp->conn->vfs_ops.read(fsp->fd,data,n);
     if (readret > 0) ret += readret;
   }
 
@@ -151,7 +141,7 @@ static ssize_t real_write_file(files_struct *fsp,char *data,SMB_OFF_T pos, size_
   if ((pos != -1) && (seek_file(fsp,pos) == -1))
     return -1;
 
-  return write_data(fsp->fd_ptr->fd,data,n);
+  return write_data(fsp->fd,data,n);
 }
 
 /****************************************************************************
@@ -173,7 +163,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
     SMB_STRUCT_STAT st;
     fsp->modified = True;
 
-    if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&st) == 0) {
+    if (fsp->conn->vfs_ops.fstat(fsp->fd,&st) == 0) {
       int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
       if (MAP_ARCHIVE(fsp->conn) && !IS_DOS_ARCHIVE(dosmode)) {	
         file_chmod(fsp->conn,fsp->fsp_name,dosmode | aARCH,&st);
@@ -205,19 +195,17 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
    */
 
   if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
-    SMB_DEV_T dev = fsp->fd_ptr->dev;
-    SMB_INO_T inode = fsp->fd_ptr->inode;
     share_mode_entry *share_list = NULL;
     pid_t pid = getpid();
     int token = -1;
     int num_share_modes = 0;
     int i;
 
-    if (lock_share_entry(fsp->conn, dev, inode) == False) {
+    if (lock_share_entry_fsp(fsp) == False) {
       DEBUG(0,("write_file: failed to lock share mode entry for file %s.\n", fsp->fsp_name ));
     }
 
-    num_share_modes = get_share_modes(fsp->conn, dev, inode, &share_list);
+    num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
 
     for(i = 0; i < num_share_modes; i++) {
       share_mode_entry *share_entry = &share_list[i];
@@ -247,7 +235,7 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
        */
 
       if (pid == share_entry->pid) {
-        files_struct *new_fsp = file_find_dit(dev, inode, &share_entry->time);
+        files_struct *new_fsp = file_find_dit(fsp->dev, fsp->inode, &share_entry->time);
 
         /* Paranoia check... */
         if(new_fsp == NULL) {
@@ -263,12 +251,12 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
          * message.
          */
 
-        request_oplock_break(share_entry, dev, inode);
+        request_oplock_break(share_entry, fsp->dev, fsp->inode);
       }
     }
  
     free((char *)share_list);
-    unlock_share_entry(fsp->conn, dev, inode);
+    unlock_share_entry_fsp(fsp);
   }
 
   /* Paranoia check... */
@@ -300,7 +288,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
   }
 
   DEBUG(9,("write_file(fd=%d pos=%d size=%d) wofs=%d wsize=%d\n",
-       fsp->fd_ptr->fd, (int)pos, (int)n, (int)wcp->offset, (int)wcp->data_size));
+	   fsp->fd, (int)pos, (int)n, (int)wcp->offset, (int)wcp->data_size));
 
   /* 
    * If we have active cache and it isn't contiguous then we flush.
@@ -427,7 +415,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
       wcp->file_size = wcp->offset + wcp->data_size;
 
 #if 0
-      if (set_filelen(fsp->fd_ptr->fd, wcp->file_size) == -1) {
+      if (set_filelen(fsp->fd, wcp->file_size) == -1) {
         DEBUG(0,("write_file: error %s in setting file to length %.0f\n",
           strerror(errno), (double)wcp->file_size ));
         return -1;
@@ -466,7 +454,7 @@ nonop=%u allocated=%u active=%u direct=%u perfect=%u readhits=%u\n",
        */
 
       DEBUG(9,("write_file: non cacheable write : fd = %d, pos = %.0f, len = %u, current cache pos = %.0f \
-len = %u\n",fsp->fd_ptr->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size ));
+len = %u\n",fsp->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size ));
 
       /*
        * Update the file size if needed.
@@ -501,7 +489,7 @@ len = %u\n",fsp->fd_ptr->fd, (double)pos, (unsigned int)n, (double)wcp->offset, 
 
       DEBUG(3,("WRITE_FLUSH:%d: due to noncontinuous write: fd = %d, size = %.0f, pos = %.0f, \
 n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
-             write_path, fsp->fd_ptr->fd, (double)wcp->file_size, (double)pos, (unsigned int)n,
+             write_path, fsp->fd, (double)wcp->file_size, (double)pos, (unsigned int)n,
              (double)wcp->offset, (unsigned int)wcp->data_size ));
 
       flush_write_cache(fsp, WRITE_FLUSH);
@@ -637,7 +625,7 @@ ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
   flush_reasons[(int)reason]++;
 
   DEBUG(9,("flushing write cache: fd = %d, off=%.0f, size=%u\n",
-       fsp->fd_ptr->fd, (double)wcp->offset, (unsigned int)data_size));
+	   fsp->fd, (double)wcp->offset, (unsigned int)data_size));
 
   if(data_size == wcp->alloc_size)
     num_perfect_writes++;
@@ -651,8 +639,8 @@ sync a file
 
 void sys_fsync_file(connection_struct *conn, files_struct *fsp)
 {
-    if(lp_strict_sync(SNUM(conn)) && fsp->fd_ptr != NULL) {
+    if(lp_strict_sync(SNUM(conn)) && fsp->fd != -1) {
       flush_write_cache(fsp, SYNC_FLUSH);
-      conn->vfs_ops.fsync(fsp->fd_ptr->fd);
+      conn->vfs_ops.fsync(fsp->fd);
     }
 }

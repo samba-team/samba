@@ -92,10 +92,7 @@ static void close_filestruct(files_struct *fsp)
 
 static int close_normal_file(files_struct *fsp, BOOL normal_close)
 {
-	SMB_DEV_T dev = fsp->fd_ptr->dev;
-	SMB_INO_T inode = fsp->fd_ptr->inode;
-	BOOL last_reference = False;
-	BOOL delete_on_close = fsp->fd_ptr->delete_on_close;
+	BOOL delete_on_close = fsp->delete_on_close;
 	connection_struct *conn = fsp->conn;
 	int err = 0;
 
@@ -103,12 +100,8 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	close_filestruct(fsp);
 
-#if USE_READ_PREDICTION
-	invalidate_read_prediction(fsp->fd_ptr->fd);
-#endif
-
 	if (lp_share_modes(SNUM(conn))) {
-		lock_share_entry(conn, dev, inode);
+		lock_share_entry_fsp(fsp);
 		del_share_mode(fsp);
 	}
 
@@ -117,13 +110,10 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 
 	locking_close_file(fsp);
 
-	if(fd_attempt_close(fsp, &err) == 0)
-		last_reference = True;
-
-        fsp->fd_ptr = NULL;
-
 	if (lp_share_modes(SNUM(conn)))
-		unlock_share_entry(conn, dev, inode);
+		unlock_share_entry_fsp(fsp);
+
+	fd_close(fsp, &err);
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)
@@ -144,7 +134,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-    if (normal_close && last_reference && delete_on_close) {
+    if (normal_close && delete_on_close) {
         DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
 	    fsp->fsp_name));
 		if(fsp->conn->vfs_ops.unlink(dos_to_unix(fsp->fsp_name, False)) != 0) {
