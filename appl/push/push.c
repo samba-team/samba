@@ -413,9 +413,11 @@ doit(int s,
 		    rem -= p - beg + 2;
 		    beg = p + 2;
 		} else {
-		    if(state == XDELE)
+		    if(state == XDELE) {
 			state = DELE;
-		    else
+			rem -= p - beg + 2;
+			beg = p + 2;
+		    } else
 			errx (1, "Bad response: %.*s", (int)(p - beg), beg);
 		}
 	    }
