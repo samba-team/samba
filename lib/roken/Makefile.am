@@ -55,6 +55,8 @@ libroken_la_SOURCES =		\
 	parse_units.c		\
 	resolve.c		\
 	roken_gethostby.c	\
+	rtbl.c			\
+	rtbl.h			\
 	signal.c		\
 	simple_exec.c		\
 	snprintf.c		\
@@ -109,8 +111,6 @@ EXTRA_libroken_la_SOURCES =	\
 	rcmd.c			\
 	readv.c			\
 	recvmsg.c		\
-	rtbl.c			\
-	rtbl.h			\
 	sendmsg.c		\
 	setegid.c		\
 	setenv.c		\
