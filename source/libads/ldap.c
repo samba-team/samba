@@ -709,7 +709,16 @@ char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 
 	utf8_dn = ldap_get_dn(ads->ld, msg);
 
-	pull_utf8_allocate((void **) &unix_dn, utf8_dn);
+	if (!utf8_dn) {
+		DEBUG (5, ("ads_get_dn: ldap_get_dn failed\n"));
+		return NULL;
+	}
+
+	if (pull_utf8_allocate((void **) &unix_dn, utf8_dn) == (size_t)-1) {
+		DEBUG(0,("ads_get_dn: string conversion failure utf8 [%s]\n",
+			utf8_dn ));
+		return NULL;
+	}
 	ldap_memfree(utf8_dn);
 	return unix_dn;
 }
