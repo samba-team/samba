@@ -776,7 +776,7 @@ ssize_t read_from_pipe(pipes_struct *p, char *data, size_t n)
 	 */
 
 	if(n > MAX_PDU_FRAG_LEN) {
-		DEBUG(0,("read_from_pipe: loo large read (%u) requested on pipe %s. We can \
+		DEBUG(0,("read_from_pipe: too large read (%u) requested on pipe %s. We can \
 only service %d sized reads.\n", (unsigned int)n, p->name, MAX_PDU_FRAG_LEN ));
 		return -1;
 	}
