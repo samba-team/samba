@@ -22,6 +22,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/* Since the SPOOLSS rpc routines are basically DOS 16-bit calls wrapped
+   up, all the errors returned are DOS errors, not NT status codes. */
+
 #include "includes.h"
 
 extern int DEBUGLEVEL;
@@ -273,12 +276,12 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 
 	if (!Printer) {
 		DEBUG(0,("delete_printer_handle: Invalid handle (%s)\n", OUR_HANDLE(hnd)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (del_a_printer(Printer->dev.handlename) != 0) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->dev.handlename));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	/* Check calling user has permission to delete printer.  Note that
@@ -288,7 +291,7 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 
 	if (!print_access_check(NULL, -1, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("printer delete denied by security descriptor\n"));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	if (*lp_deleteprinter_cmd()) {
@@ -306,7 +309,7 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		DEBUG(10,("Running [%s]\n", command));
 		ret = smbrun(command, NULL);
 		if (ret != 0) {
-			return ERROR_INVALID_HANDLE; /* What to return here? */
+			return ERRbadfid; /* What to return here? */
 		}
 		DEBUGADD(10,("returned [%d]\n", ret));
 
@@ -315,12 +318,12 @@ static uint32 delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 
 		if ( ( i = lp_servicenumber( Printer->dev.handlename ) ) >= 0 ) {
 			lp_killservice( i );
-			return ERROR_SUCCESS;
+			return ERRsuccess;
 		} else
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 	}
 
-	return ERROR_SUCCESS;
+	return ERRsuccess;
 }	
 
 /****************************************************************************
@@ -707,7 +710,7 @@ static BOOL srv_spoolss_sendnotify(pipes_struct *p, POLICY_HND *handle)
 uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
 #if 0
-	uint32 result = NT_STATUS_NO_PROBLEMO;
+	uint32 result = ERRsuccess;
 #endif
 
 	UNISTR2 *printername = NULL;
@@ -724,7 +727,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		printername = &q_u->printername;
 
 	if (printername == NULL)
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
@@ -733,7 +736,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	DEBUGADD(3,("checking name: %s\n",name));
 
 	if (!open_printer_hnd(p, handle, name))
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 	
 /*
 	if (printer_default->datatype_ptr != NULL)
@@ -747,7 +750,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	
 	if (!set_printer_hnd_accesstype(p, handle, printer_default->access_required)) {
 		close_printer_handle(p, handle);
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 		
 	/*
@@ -777,7 +780,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	if (handle_is_printserver(p, handle)) {
 		if (printer_default->access_required == 0) {
-			return NT_STATUS_NO_PROBLEMO;
+			return ERRsuccess;
 		}
 		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
@@ -786,14 +789,14 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
-				return ERROR_ACCESS_DENIED;
+				return ERRnoaccess;
 			}
 			else if (user.uid == 0 || user_in_list(uidtoname(user.uid), lp_printer_admin(snum))) {
-				return NT_STATUS_NO_PROBLEMO;
+				return ERRsuccess;
 			} 
 			else {
 				close_printer_handle(p, handle);
-				return ERROR_ACCESS_DENIED;
+				return ERRnoaccess;
 			}
 		}
 	}
@@ -803,7 +806,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		   doesn't have print permission.  */
 
 		if (!get_printer_snum(p, handle, &snum))
-			return ERROR_INVALID_HANDLE;
+			return ERRbadfid;
 
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)
@@ -812,7 +815,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 		}
 
 		/*
@@ -891,7 +894,7 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 #endif
 	}
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -1009,7 +1012,7 @@ static uint32 _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handl
 	
 	if (!Printer) {
 		DEBUG(0,("_spoolss_enddocprinter_internal: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 	
 	Printer->document_started=False;
@@ -1035,9 +1038,9 @@ uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	if (!close_printer_handle(p, handle))
-		return ERROR_INVALID_HANDLE;	
+		return ERRbadfid;	
 		
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -1059,7 +1062,7 @@ uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL
 
 	result = delete_printer_handle(p, handle);
 
-	if (result == ERROR_SUCCESS) {
+	if (result == ERRsuccess) {
 		srv_spoolss_sendnotify(p, handle);
 	}
 		
@@ -1121,20 +1124,20 @@ uint32 _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	/* check that we have a valid driver name first */
 	if ((version=get_version_id(arch)) == -1) {
 		/* this is what NT returns */
-		return ERROR_INVALID_ENVIRONMENT;
+		return ERRinvalidenvironment;
 	}
 		
 	ZERO_STRUCT(info);
 	if (get_a_printer_driver (&info, 3, driver, arch, version) != 0) {
 		/* this is what NT returns */
-		return ERROR_UNKNOWN_PRINTER_DRIVER;
+		return ERRunknownprinterdriver;
 	}
 	
 
 	if (printer_driver_in_use(arch, driver))
 	{
 		/* this is what NT returns */
-		return ERROR_PRINTER_DRIVER_IN_USE;
+		return ERRprinterdriverinuse;
 	}
 
 	return delete_printer_driver(info.info_3);	 
@@ -1310,9 +1313,9 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 	
 	if (!Printer) {
 		if((*data=(uint8 *)malloc(4*sizeof(uint8))) == NULL)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 		DEBUG(0,("_spoolss_getprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
@@ -1327,18 +1330,18 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		/* reply this param doesn't exist */
 		if (*out_size) {
 			if((*data=(uint8 *)talloc_zero(p->mem_ctx, *out_size*sizeof(uint8))) == NULL)
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 		} else {
 			*data = NULL;
 		}
 
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 	}
 	
 	if (*needed > *out_size)
-		return ERROR_MORE_DATA;
+		return ERRmoredata;
 	else {
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
     }
 }
 
@@ -1400,7 +1403,7 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_rffpcnex: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	Printer->notify.flags=flags;
@@ -1420,7 +1423,7 @@ uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 					&Printer->notify.client_hnd))
 		Printer->notify.client_connected=True;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /*******************************************************************
@@ -2375,7 +2378,7 @@ static uint32 printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	}
 	*/
 	
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /*******************************************************************
@@ -2458,7 +2461,7 @@ static uint32 printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 		info->data[i].id, info->data[i].size, info->data[i].enc_type));
 	}
 	*/
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -2473,7 +2476,7 @@ uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 	SPOOL_NOTIFY_INFO *info = &r_u->info;
 
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
-	uint32 result = ERROR_INVALID_HANDLE;
+	uint32 result = ERRbadfid;
 
 	/* we always have a NOTIFY_INFO struct */
 	r_u->info_ptr=0x1;
@@ -2899,7 +2902,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 			if (construct_printer_info_1(flags, &current_prt, snum)) {
 				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_1))) == NULL) {
 					*returned=0;
-					return ERROR_NOT_ENOUGH_MEMORY;
+					return ERRnomem;
 				}
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_1\n", *returned));		
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_1));
@@ -2913,7 +2916,7 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 		(*needed) += spoolss_size_printer_info_1(&printers[i]);
 
 	if (!alloc_buffer_size(buffer, *needed))
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 
 	/* fill the buffer with the structures */
 	for (i=0; i<*returned; i++)
@@ -2924,10 +2927,10 @@ static BOOL enum_all_printers_info_1(uint32 flags, NEW_BUFFER *buffer, uint32 of
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /********************************************************************
@@ -2955,7 +2958,7 @@ static BOOL enum_all_printers_info_1_name(fstring name, NEW_BUFFER *buffer, uint
 		return enum_all_printers_info_1(PRINTER_ENUM_ICON8, buffer, offered, needed, returned);
 	}
 	else
-		return ERROR_INVALID_NAME;
+		return ERRinvalidname;
 }
 
 /********************************************************************
@@ -2977,7 +2980,7 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 	 */
 	
 	if((printer=(PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	*returned=1;
 	
@@ -2995,7 +2998,7 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(printer);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3006,10 +3009,10 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /********************************************************************
@@ -3043,7 +3046,7 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 				
 			if (construct_printer_info_2(&current_prt, snum)) {
 				if((printers=Realloc(printers, (*returned +1)*sizeof(PRINTER_INFO_2))) == NULL)
-					return ERROR_NOT_ENOUGH_MEMORY;
+					return ERRnomem;
 				DEBUG(4,("ReAlloced memory for [%d] PRINTER_INFO_2\n", *returned));		
 				memcpy(&printers[*returned], &current_prt, sizeof(PRINTER_INFO_2));
 				(*returned)++;
@@ -3060,7 +3063,7 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 			free_devmode(printers[i].devmode);
 		}
 		safe_free(printers);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3075,10 +3078,10 @@ static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /********************************************************************
@@ -3102,7 +3105,7 @@ static uint32 enumprinters_level1( uint32 flags, fstring name,
 	if (flags & PRINTER_ENUM_NETWORK)
 		return enum_all_printers_info_1_network(buffer, offered, needed, returned);
 
-	return NT_STATUS_NO_PROBLEMO; /* NT4sp5 does that */
+	return ERRsuccess; /* NT4sp5 does that */
 }
 
 /********************************************************************
@@ -3128,13 +3131,13 @@ static uint32 enumprinters_level2( uint32 flags, fstring servername,
 		if (strequal(servername, temp))
 			return enum_all_printers_info_2(buffer, offered, needed, returned);
 		else
-			return ERROR_INVALID_NAME;
+			return ERRinvalidname;
 	}
 
 	if (flags & PRINTER_ENUM_REMOTE)
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3145,7 +3148,7 @@ static uint32 enumprinters_level5( uint32 flags, fstring servername,
 			         uint32 *needed, uint32 *returned)
 {
 /*	return enum_all_printers_info_5(buffer, offered, needed, returned);*/
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3201,7 +3204,7 @@ uint32 _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	case 3:
 	case 4:
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -3212,7 +3215,7 @@ static uint32 getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	PRINTER_INFO_0 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_0*)malloc(sizeof(PRINTER_INFO_0))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	construct_printer_info_0(printer, snum);
 	
@@ -3221,7 +3224,7 @@ static uint32 getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(printer);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3231,10 +3234,10 @@ static uint32 getprinter_level_0(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	safe_free(printer);
 
 	if (*needed > offered) {
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return ERRsuccess;	
 }
 
 /****************************************************************************
@@ -3244,7 +3247,7 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	PRINTER_INFO_1 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_1*)malloc(sizeof(PRINTER_INFO_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	construct_printer_info_1(PRINTER_ENUM_ICON8, printer, snum);
 	
@@ -3253,7 +3256,7 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(printer);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3263,10 +3266,10 @@ static uint32 getprinter_level_1(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	safe_free(printer);
 
 	if (*needed > offered) {
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return ERRsuccess;	
 }
 
 /****************************************************************************
@@ -3276,7 +3279,7 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	PRINTER_INFO_2 *printer=NULL;
 
 	if((printer=(PRINTER_INFO_2*)malloc(sizeof(PRINTER_INFO_2)))==NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	
 	construct_printer_info_2(printer, snum);
 	
@@ -3285,23 +3288,23 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_info_2(printer);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
 	if (!smb_io_printer_info_2("", buffer, printer, 0)) {
 		free_printer_info_2(printer);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 	
 	/* clear memory */
 	free_printer_info_2(printer);
 
 	if (*needed > offered) {
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return ERRsuccess;	
 }
 
 /****************************************************************************
@@ -3311,14 +3314,14 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	PRINTER_INFO_3 *printer=NULL;
 
 	if (!construct_printer_info_3(&printer, snum))
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_3(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_info_3(printer);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3328,10 +3331,10 @@ static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	free_printer_info_3(printer);
 	
 	if (*needed > offered) {
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;	
+		return ERRsuccess;	
 }
 
 /****************************************************************************
@@ -3354,7 +3357,7 @@ uint32 _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	*needed=0;
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	switch (level) {
 	case 0:
@@ -3366,7 +3369,7 @@ uint32 _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	case 3:		
 		return getprinter_level_3(snum, buffer, offered, needed);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }	
 		
@@ -3389,16 +3392,16 @@ static uint32 construct_printer_driver_info_1(DRIVER_INFO_1 *info, int snum, fst
 	ZERO_STRUCT(driver);
 
 	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 
 	if (get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version) != 0)
-		return ERROR_UNKNOWN_PRINTER_DRIVER;
+		return ERRunknownprinterdriver;
 
 	fill_printer_driver_info_1(info, driver, servername, architecture);
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3447,16 +3450,16 @@ static uint32 construct_printer_driver_info_2(DRIVER_INFO_2 *info, int snum, fst
 	ZERO_STRUCT(driver);
 
 	if (!get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 
 	if (!get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version) != 0)
-		return ERROR_UNKNOWN_PRINTER_DRIVER;
+		return ERRunknownprinterdriver;
 
 	fill_printer_driver_info_2(info, driver, servername);
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3559,20 +3562,20 @@ static uint32 construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, fst
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
 	DEBUG(8,("construct_printer_driver_info_3: status: %d\n", status));
 	if (status != 0)
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
 	DEBUG(8,("construct_printer_driver_info_3: status: %d\n", status));
 	if (status != 0) {
 		free_a_printer(&printer,2);
-		return ERROR_UNKNOWN_PRINTER_DRIVER;
+		return ERRunknownprinterdriver;
 	}
 
 	fill_printer_driver_info_3(info, driver, servername);
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3653,7 +3656,7 @@ static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 	status=get_a_printer(&printer, 2, lp_servicename(snum) );
 	DEBUG(8,("construct_printer_driver_info_6: status: %d\n", status));
 	if (status != 0)
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);	
 	DEBUG(8,("construct_printer_driver_info_6: status: %d\n", status));
@@ -3664,7 +3667,7 @@ static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 
 		if (version < 3) {
 			free_a_printer(&printer,2);
-			return ERROR_UNKNOWN_PRINTER_DRIVER;
+			return ERRunknownprinterdriver;
 		}
 
 		/* Yes - try again with a WinNT driver. */
@@ -3673,7 +3676,7 @@ static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 		DEBUG(8,("construct_printer_driver_info_6: status: %d\n", status));
 		if (status != 0) {
 			free_a_printer(&printer,2);
-			return ERROR_UNKNOWN_PRINTER_DRIVER;
+			return ERRunknownprinterdriver;
 		}
 	}
 
@@ -3681,7 +3684,7 @@ static uint32 construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum, fst
 
 	free_a_printer(&printer,2);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -3709,10 +3712,10 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 	uint32 status;
 	
 	if((info=(DRIVER_INFO_1 *)malloc(sizeof(DRIVER_INFO_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	
 	status=construct_printer_driver_info_1(info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != ERRsuccess) {
 		safe_free(info);
 		return status;
 	}
@@ -3722,7 +3725,7 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3732,9 +3735,9 @@ static uint32 getprinterdriver2_level1(fstring servername, fstring architecture,
 	safe_free(info);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -3745,10 +3748,10 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 	uint32 status;
 	
 	if((info=(DRIVER_INFO_2 *)malloc(sizeof(DRIVER_INFO_2))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	
 	status=construct_printer_driver_info_2(info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != ERRsuccess) {
 		safe_free(info);
 		return status;
 	}
@@ -3758,7 +3761,7 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3768,9 +3771,9 @@ static uint32 getprinterdriver2_level2(fstring servername, fstring architecture,
 	safe_free(info);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -3783,7 +3786,7 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	ZERO_STRUCT(info);
 
 	status=construct_printer_driver_info_3(&info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != ERRsuccess) {
 		return status;
 	}
 
@@ -3792,7 +3795,7 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_driver_info_3(&info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3801,9 +3804,9 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	free_printer_driver_info_3(&info);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -3816,7 +3819,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	ZERO_STRUCT(info);
 
 	status=construct_printer_driver_info_6(&info, snum, servername, architecture, version);
-	if (status != NT_STATUS_NO_PROBLEMO) {
+	if (status != ERRsuccess) {
 		return status;
 	}
 
@@ -3825,7 +3828,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_driver_info_6(&info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -3834,9 +3837,9 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	free_printer_driver_info_6(&info);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -3873,7 +3876,7 @@ uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	switch (level) {
 	case 1:
@@ -3885,7 +3888,7 @@ uint32 _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	case 6:
 		return getprinterdriver2_level6(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -3904,7 +3907,7 @@ uint32 _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u,
 	}
 
 	DEBUG(3,("Error in startpageprinter printer handle\n"));
-	return ERROR_INVALID_HANDLE;
+	return ERRbadfid;
 }
 
 /****************************************************************************
@@ -3918,12 +3921,12 @@ uint32 _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPO
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_endpageprinter: Invalid handle (%s).\n",OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 	
 	Printer->page_started=False;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /********************************************************************
@@ -3948,7 +3951,7 @@ uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_startdocprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	get_current_user(&user, p);
@@ -3969,13 +3972,13 @@ uint32 _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 		unistr2_to_ascii(datatype, &info_1->datatype, sizeof(datatype));
 		if (strcmp(datatype, "RAW") != 0) {
 			(*jobid)=0;
-			return ERROR_INVALID_DATATYPE;
+			return ERRinvaliddatatype;
 		}		
 	}		
 	
 	/* get the share number of the printer */
 	if (!get_printer_snum(p, handle, &snum)) {
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
@@ -4023,7 +4026,7 @@ uint32 _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 	if (!Printer) {
 		DEBUG(0,("_spoolss_writeprinter: Invalid handle (%s)\n",OUR_HANDLE(handle)));
 		r_u->buffer_written = q_u->buffer_size2;
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	(*buffer_written) = print_job_write(Printer->jobid, (char *)buffer, buffer_size);
@@ -4043,18 +4046,18 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 			      pipes_struct *p)
 {
 	struct current_user user;
-	int snum, errcode = ERROR_INVALID_FUNCTION;
+	int snum, errcode = ERRbadfunc;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	get_current_user(&user, p);
 
 	if (!Printer) {
 		DEBUG(0,("control_printer: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
@@ -4074,7 +4077,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 		}
 		break;
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 
 	return errcode;
@@ -4110,7 +4113,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 		DEBUG(0,("update_printer_sec: Invalid handle (%s)\n",
 			 OUR_HANDLE(handle)));
 
-		result = ERROR_INVALID_HANDLE;
+		result = ERRbadfid;
 		goto done;
 	}
 
@@ -4160,7 +4163,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	new_secdesc_ctr = sec_desc_merge(p->mem_ctx, secdesc_ctr, old_secdesc_ctr);
 
 	if (sec_desc_equal(new_secdesc_ctr->sec, old_secdesc_ctr->sec)) {
-		result = NT_STATUS_NO_PROBLEMO;
+		result = ERRsuccess;
 		goto done;
 	}
 
@@ -4174,7 +4177,7 @@ static uint32 update_printer_sec(POLICY_HND *handle, uint32 level,
 	   information. */
 
 	if (!print_access_check(&user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		result = ERROR_ACCESS_DENIED;
+		result = ERRnoaccess;
 		goto done;
 	}
 
@@ -4520,28 +4523,28 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	DEBUG(8,("update_printer\n"));
 	
-	result = NT_STATUS_NO_PROBLEMO;
+	result = ERRsuccess;
 
 	if (level!=2) {
 		DEBUG(0,("Send a mail to samba@samba.org\n"));
 		DEBUGADD(0,("with the following message: update_printer: level!=2\n"));
-		result = ERROR_INVALID_LEVEL;
+		result = ERRunknownlevel;
 		goto done;
 	}
 
 	if (!Printer) {
-		result = ERROR_INVALID_HANDLE;
+		result = ERRbadfid;
 		goto done;
 	}
 
 	if (!get_printer_snum(p, handle, &snum)) {
-		result = ERROR_INVALID_HANDLE;
+		result = ERRbadfid;
 		goto done;
 	}
 
 	if((get_a_printer(&printer, 2, lp_servicename(snum)) != 0) ||
 	   (get_a_printer(&old_printer, 2, lp_servicename(snum)) != 0)) {
-		result = ERROR_INVALID_HANDLE;
+		result = ERRbadfid;
 		goto done;
 	}
 
@@ -4562,7 +4565,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		DEBUGADD(8,("Converting the devicemode struct\n"));
 		if (!convert_devicemode(printer->info_2->printername, devmode,
 				&printer->info_2->devmode)) {
-			result =  ERROR_NOT_ENOUGH_MEMORY;
+			result =  ERRnomem;
 			goto done;
 		}
 	}
@@ -4570,7 +4573,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	/* Do sanity check on the requested changes for Samba */
 
 	if (!check_printer_ok(printer->info_2, snum)) {
-		result = ERROR_INVALID_PARAMETER;
+		result = ERRinvalidparam;
 		goto done;
 	}
 
@@ -4580,7 +4583,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (nt_printer_info_level_equal(printer, old_printer)) {
 		DEBUG(3, ("printer info has not changed\n"));
-		result = NT_STATUS_NO_PROBLEMO;
+		result = ERRsuccess;
 		goto done;
 	}
 
@@ -4589,7 +4592,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("printer property change denied by security "
 			  "descriptor\n"));
-		result = ERROR_ACCESS_DENIED;
+		result = ERRnoaccess;
 		goto done;
 	}
 
@@ -4597,7 +4600,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (*lp_addprinter_cmd() )
 		if ( !add_printer_hook(printer) ) {
-			result = ERROR_ACCESS_DENIED;
+			result = ERRnoaccess;
 			goto done;
 		}
 	
@@ -4605,7 +4608,7 @@ static uint32 update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 
 	if (add_a_printer(*printer, 2)!=0) {
 		/* I don't really know what to return here !!! */
-		result = ERROR_ACCESS_DENIED;
+		result = ERRnoaccess;
 		goto done;
 	}
 
@@ -4634,7 +4637,7 @@ uint32 _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 	
 	if (!Printer) {
 		DEBUG(0,("_spoolss_setprinter: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	/* check the level */	
@@ -4647,7 +4650,7 @@ uint32 _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);
 		default:
-			return ERROR_INVALID_LEVEL;
+			return ERRunknownlevel;
 	}
 }
 
@@ -4662,7 +4665,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 	
 	if (!Printer) {
 		DEBUG(0,("_spoolss_fcpn: Invalid handle (%s)\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (Printer->notify.client_connected==True)
@@ -4676,7 +4679,7 @@ uint32 _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
 		free_spool_notify_option(&Printer->notify.option);
 	Printer->notify.client_connected=False;
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -4688,7 +4691,7 @@ uint32 _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 
 	r_u->needed = 0;
-	return ERROR_INVALID_PARAMETER; /* this is what a NT server
+	return ERRinvalidparam; /* this is what a NT server
                                            returns for AddJob. AddJob
                                            must fail on non-local
                                            printers */
@@ -4785,7 +4788,7 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 	if (info==NULL) {
 		safe_free(queue);
 		*returned=0;
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 	
 	for (i=0; i<*returned; i++)
@@ -4799,7 +4802,7 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -4811,10 +4814,10 @@ static uint32 enumjobs_level1(print_queue_struct *queue, int snum,
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -4831,12 +4834,12 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 	info=(JOB_INFO_2 *)malloc(*returned*sizeof(JOB_INFO_2));
 	if (info==NULL) {
 		*returned=0;
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0) {
 		*returned = 0;
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 		
 	for (i=0; i<*returned; i++)
@@ -4851,7 +4854,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the structures */
@@ -4866,10 +4869,10 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -4903,14 +4906,14 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	*returned=0;
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	*returned = print_queue_status(snum, &queue, &prt_status);
 	DEBUGADD(4,("count:[%d], status:[%d], [%s]\n", *returned, prt_status.status, prt_status.message));
 
 	if (*returned == 0) {
 		safe_free(queue);
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 	}
 
 	switch (level) {
@@ -4921,7 +4924,7 @@ uint32 _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	default:
 		safe_free(queue);
 		*returned=0;
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -4946,16 +4949,16 @@ uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 
 	struct current_user user;
 	print_status_struct prt_status;
-	int snum, errcode = ERROR_INVALID_FUNCTION;
+	int snum, errcode = ERRbadfunc;
 		
 	memset(&prt_status, 0, sizeof(prt_status));
 
 	if (!get_printer_snum(p, handle, &snum)) {
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (!print_job_exists(jobid)) {
-		return ERROR_INVALID_PRINTER_NAME;
+		return ERRinvalidprintername;
 	}
 
 	get_current_user(&user, p);	
@@ -4979,7 +4982,7 @@ uint32 _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 		}
 		break;
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 
 	return errcode;
@@ -5008,12 +5011,12 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
 
 		if(ndrivers == -1)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 
 		if(ndrivers != 0) {
 			if((driver_info_1=(DRIVER_INFO_1 *)Realloc(driver_info_1, (*returned+ndrivers) * sizeof(DRIVER_INFO_1))) == NULL) {
 				safe_free(list);
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 			}
 		}
 
@@ -5041,7 +5044,7 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(driver_info_1);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the driver structures */
@@ -5054,10 +5057,10 @@ static uint32 enumprinterdrivers_level1(fstring servername, fstring architecture
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5083,12 +5086,12 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
 
 		if(ndrivers == -1)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 
 		if(ndrivers != 0) {
 			if((driver_info_2=(DRIVER_INFO_2 *)Realloc(driver_info_2, (*returned+ndrivers) * sizeof(DRIVER_INFO_2))) == NULL) {
 				safe_free(list);
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 			}
 		}
 		
@@ -5117,7 +5120,7 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(driver_info_2);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the form structures */
@@ -5130,10 +5133,10 @@ static uint32 enumprinterdrivers_level2(fstring servername, fstring architecture
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5159,12 +5162,12 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 		DEBUGADD(4,("we have:[%d] drivers in environment [%s] and version [%d]\n", ndrivers, architecture, version));
 
 		if(ndrivers == -1)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 
 		if(ndrivers != 0) {
 			if((driver_info_3=(DRIVER_INFO_3 *)Realloc(driver_info_3, (*returned+ndrivers) * sizeof(DRIVER_INFO_3))) == NULL) {
 				safe_free(list);
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 			}
 		}
 
@@ -5193,7 +5196,7 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(driver_info_3);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	
 	/* fill the buffer with the driver structures */
@@ -5209,10 +5212,10 @@ static uint32 enumprinterdrivers_level3(fstring servername, fstring architecture
 	
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5254,7 +5257,7 @@ uint32 _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	default:
 		*returned=0;
 		safe_free(list);
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -5306,13 +5309,13 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	DEBUGADD(5,("Number of user forms [%d]\n",     *numofforms));
 	*numofforms += numbuiltinforms;
 
-	if (*numofforms == 0) return ERROR_NO_MORE_ITEMS;
+	if (*numofforms == 0) return ERRnomoreitems;
 
 	switch (level) {
 	case 1:
 		if ((forms_1=(FORM_1 *)malloc(*numofforms * sizeof(FORM_1))) == NULL) {
 			*numofforms=0;
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 		}
 
 		/* construct the list of form structures */
@@ -5344,7 +5347,7 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 		
 		if (!alloc_buffer_size(buffer, buffer_size)){
 			safe_free(forms_1);
-			return ERROR_INSUFFICIENT_BUFFER;
+			return ERRinsufficientbuffer;
 		}
 
 		/* fill the buffer with the form structures */
@@ -5361,15 +5364,15 @@ uint32 _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 
 		if (*needed > offered) {
 			*numofforms=0;
-			return ERROR_INSUFFICIENT_BUFFER;
+			return ERRinsufficientbuffer;
 		}
 		else
-			return NT_STATUS_NO_PROBLEMO;
+			return ERRsuccess;
 			
 	default:
 		safe_free(list);
 		safe_free(builtinlist);
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 
 }
@@ -5410,7 +5413,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
 
 		if (numofforms == 0)
-			return ERROR_INVALID_HANDLE;
+			return ERRbadfid;
 	}
 
 	switch (level) {
@@ -5433,7 +5436,7 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 			
 			safe_free(list);
 			if (i == numofforms) {
-				return ERROR_INVALID_HANDLE;
+				return ERRbadfid;
 			}
 		}
 		/* check the required size. */
@@ -5441,22 +5444,22 @@ uint32 _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		*needed=spoolss_size_form_1(&form_1);
 		
 		if (!alloc_buffer_size(buffer, buffer_size)){
-			return ERROR_INSUFFICIENT_BUFFER;
+			return ERRinsufficientbuffer;
 		}
 
 		if (*needed > offered) {
-			return ERROR_INSUFFICIENT_BUFFER;
+			return ERRinsufficientbuffer;
 		}
 
 		/* fill the buffer with the form structures */
 		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
 		smb_io_form_1("", buffer, &form_1, 0);
 
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 			
 	default:
 		safe_free(list);
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -5504,7 +5507,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 			if (fd != -1)
 				close(fd);
 			/* Is this the best error to return here? */
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 		}
 
 		numlines = 0;
@@ -5514,9 +5517,9 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 		if(numlines) {
 			if((ports=(PORT_INFO_1 *)malloc( numlines * sizeof(PORT_INFO_1) )) == NULL) {
-				DEBUG(10,("Returning ERROR_NOT_ENOUGH_MEMORY [%x]\n", ERROR_NOT_ENOUGH_MEMORY));
+				DEBUG(10,("Returning ERRnomem [%x]\n", ERRnomem));
 				file_lines_free(qlines);
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 			}
 
 			for (i=0; i<numlines; i++) {
@@ -5533,7 +5536,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		*returned = 1; /* Sole Samba port returned. */
 
 		if((ports=(PORT_INFO_1 *)malloc( sizeof(PORT_INFO_1) )) == NULL)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 	
 		DEBUG(10,("enumports_level_1: port name %s\n", SAMBA_PRINTER_PORT_NAME));
 
@@ -5548,7 +5551,7 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(ports);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the ports structures */
@@ -5561,10 +5564,10 @@ static uint32 enumports_level_1(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5602,7 +5605,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 			if (fd != -1)
 				close(fd);
 			/* Is this the best error to return here? */
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 		}
 
 		numlines = 0;
@@ -5612,9 +5615,9 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 		if(numlines) {
 			if((ports=(PORT_INFO_2 *)malloc( numlines * sizeof(PORT_INFO_2) )) == NULL) {
-				DEBUG(10,("Returning ERROR_NOT_ENOUGH_MEMORY [%x]\n", ERROR_NOT_ENOUGH_MEMORY));
+				DEBUG(10,("Returning ERRnomem [%x]\n", ERRnomem));
 				file_lines_free(qlines);
-				return ERROR_NOT_ENOUGH_MEMORY;
+				return ERRnomem;
 			}
 
 			for (i=0; i<numlines; i++) {
@@ -5632,7 +5635,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		*returned = 1;
 
 		if((ports=(PORT_INFO_2 *)malloc( sizeof(PORT_INFO_2) )) == NULL)
-			return ERROR_NOT_ENOUGH_MEMORY;
+			return ERRnomem;
 	
 		DEBUG(10,("enumports_level_2: port name %s\n", SAMBA_PRINTER_PORT_NAME));
 
@@ -5647,7 +5650,7 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 		
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(ports);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	/* fill the buffer with the ports structures */
@@ -5660,10 +5663,10 @@ static uint32 enumports_level_2(NEW_BUFFER *buffer, uint32 offered, uint32 *need
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5694,7 +5697,7 @@ uint32 _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 	case 2:
 		return enumports_level_2(buffer, offered, needed, returned);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -5712,7 +5715,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 
 	ZERO_STRUCTP(printer);
@@ -5723,7 +5726,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	if (*lp_addprinter_cmd() )
 		if ( !add_printer_hook(printer) ) {
 			free_a_printer(&printer,2);
-			return ERROR_ACCESS_DENIED;
+			return ERRnoaccess;
 	}
 
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname,
@@ -5731,13 +5734,13 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	if ((snum = print_queue_snum(printer->info_2->sharename)) == -1) {
 		free_a_printer(&printer,2);
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	/* you must be a printer admin to add a new printer */
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		free_a_printer(&printer,2);
-		return ERROR_ACCESS_DENIED;		
+		return ERRnoaccess;		
 	}
 	
 	/*
@@ -5746,7 +5749,7 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 
 	if (!check_printer_ok(printer->info_2, snum)) {
 		free_a_printer(&printer,2);
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 	}
 
     /*
@@ -5759,21 +5762,21 @@ static uint32 spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	/* write the ASCII on disk */
 	if (add_a_printer(*printer, 2) != 0) {
 		free_a_printer(&printer,2);
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	if (!open_printer_hnd(p, handle, name)) {
 		/* Handle open failed - remove addition. */
 		del_a_printer(printer->info_2->sharename);
 		free_a_printer(&printer,2);
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	free_a_printer(&printer,2);
 
 	srv_spoolss_sendnotify(p, handle);
 
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5796,13 +5799,13 @@ uint32 _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_
 		case 1:
 			/* we don't handle yet */
 			/* but I know what to do ... */
-			return ERROR_INVALID_LEVEL;
+			return ERRunknownlevel;
 		case 2:
 			return spoolss_addprinterex_level_2(p, uni_srv_name, info,
 							    unk0, unk1, unk2, unk3,
 							    user_switch, user, handle);
 		default:
-			return ERROR_INVALID_LEVEL;
+			return ERRunknownlevel;
 	}
 }
 
@@ -5815,7 +5818,7 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	uint32 level = q_u->level;
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL *info = &q_u->info;
 
-	uint32 err = NT_STATUS_NO_PROBLEMO;
+	uint32 err = ERRsuccess;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
 	
@@ -5826,18 +5829,18 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	convert_printer_driver_info(info, &driver, level);
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	if ((err = clean_up_driver_struct(driver, level, &user)) != NT_STATUS_NO_PROBLEMO )
+	if ((err = clean_up_driver_struct(driver, level, &user)) != ERRsuccess )
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
 	if(!move_driver_to_download_area(driver, level, &user, &err)) {
 		if (err == 0)
-			err = ERROR_ACCESS_DENIED;
+			err = ERRnoaccess;
 		goto done;
 	}
 
 	if (add_a_printer_driver(driver, level)!=0) {
-		err = ERROR_ACCESS_DENIED;
+		err = ERRnoaccess;
 		goto done;
 	}
 
@@ -5865,10 +5868,10 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
 
 	if (get_short_archi(short_archi, long_archi)==False)
-		return ERROR_INVALID_ENVIRONMENT;
+		return ERRinvalidenvironment;
 
 	if((info=(DRIVER_DIRECTORY_1 *)malloc(sizeof(DRIVER_DIRECTORY_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	slprintf(path, sizeof(path)-1, "\\\\%s\\print$\\%s", global_myname, short_archi);
 
@@ -5880,7 +5883,7 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	smb_io_driverdir_1("", buffer, info, 0);
@@ -5888,9 +5891,9 @@ static uint32 getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	safe_free(info);
 	
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -5917,7 +5920,7 @@ uint32 _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 	case 1:
 		return getprinterdriverdir_level_1(name, uni_environment, buffer, offered, needed);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 	
@@ -5967,14 +5970,14 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_enumprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (!get_printer_snum(p,handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	
 	if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	/*
 	 * The NT machine wants to know the biggest size of value and data
@@ -5997,7 +6000,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
 			safe_free(data);
 			free_a_printer(&printer, 2);
-			return ERROR_NO_MORE_ITEMS;
+			return ERRnomoreitems;
 		}
 #endif
 
@@ -6028,7 +6031,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		if (param_index == 0) {
 			/* No parameters found. */
 			free_a_printer(&printer, 2);
-			return ERROR_NO_MORE_ITEMS;
+			return ERRnomoreitems;
 		}
 
 		/* the value is an UNICODE string but realvaluesize is the length in bytes including the leading 0 */
@@ -6038,7 +6041,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 		DEBUG(6,("final values: [%d], [%d]\n", *out_value_len, *out_data_len));
 
 		free_a_printer(&printer, 2);
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 	}
 	
 	/*
@@ -6049,7 +6052,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
 		safe_free(data);
 		free_a_printer(&printer, 2);
-		return ERROR_NO_MORE_ITEMS;
+		return ERRnomoreitems;
 	}
 
 	free_a_printer(&printer, 2);
@@ -6066,7 +6069,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	*out_max_value_len=(in_value_len/sizeof(uint16));
 	if((*out_value=(uint16 *)talloc_zero(p->mem_ctx,in_value_len*sizeof(uint8))) == NULL) {
 		safe_free(data);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 	
 	*out_value_len = (uint32)dos_PutUniCode((char *)*out_value, value, in_value_len, True);
@@ -6077,7 +6080,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	*out_max_data_len=in_data_len;
 	if((*data_out=(uint8 *)talloc_zero(p->mem_ctx, in_data_len*sizeof(uint8))) == NULL) {
 		safe_free(data);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 	
 	memcpy(*data_out, data, (size_t)data_len);
@@ -6085,7 +6088,7 @@ uint32 _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 
 	safe_free(data);
 	
-	return NT_STATUS_NO_PROBLEMO;
+	return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6111,15 +6114,15 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_setprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (!get_printer_snum(p,handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (status != 0x0)
-		return ERROR_INVALID_NAME;
+		return ERRinvalidname;
 
 	convert_specific_param(&param, value , type, data, real_len);
 
@@ -6137,7 +6140,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 			   old_param.data_len) == 0) {
 
 			DEBUG(3, ("setprinterdata hasn't changed\n"));
-			status = NT_STATUS_NO_PROBLEMO;
+			status = ERRsuccess;
 			goto done;
 		}
 	}
@@ -6147,7 +6150,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		status = ERROR_ACCESS_DENIED;
+		status = ERRnoaccess;
 		goto done;
 	}
 
@@ -6196,27 +6199,27 @@ uint32 _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	
 	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteprinterdata: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties "
 			  "change denied by existing security descriptor\n"));
-		return ERROR_ACCESS_DENIED;
+		return ERRnoaccess;
 	}
 
 	status = get_a_printer(&printer, 2, lp_servicename(snum));
 	if (status != 0x0)
-		return ERROR_INVALID_NAME;
+		return ERRinvalidname;
 
 	ZERO_STRUCTP(&param);
 	unistr2_to_ascii(param.value, value, sizeof(param.value)-1);
 
 	if(!unlink_specific_param_if_exist(printer->info_2, &param))
-		status = ERROR_INVALID_PARAMETER;
+		status = ERRinvalidparam;
 	else
 		status = mod_a_printer(*printer, 2);
 
@@ -6242,17 +6245,17 @@ uint32 _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 	}
 
 	count=get_ntforms(&list);
 	if(!add_a_form(&list, form, &count))
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	write_ntforms(&list, count);
 
 	safe_free(list);
@@ -6277,17 +6280,17 @@ uint32 _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_deleteform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 
 	/* can't delete if builtin */
 	if (get_a_builtin_ntform(form_name,&tmpForm)) {
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 	}
 
 	count = get_ntforms(&list);
 	if(!delete_a_form(&list, form_name, &count, &ret))
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 
 	safe_free(list);
 
@@ -6313,11 +6316,11 @@ uint32 _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 
 	if (!Printer) {
 		DEBUG(0,("_spoolss_setform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	}
 	/* can't set if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return ERROR_INVALID_PARAMETER;
+		return ERRinvalidparam;
 	}
 
 	count=get_ntforms(&list);
@@ -6337,7 +6340,7 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 	PRINTPROCESSOR_1 *info_1=NULL;
 	
 	if((info_1 = (PRINTPROCESSOR_1 *)malloc(sizeof(PRINTPROCESSOR_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	(*returned) = 0x1;
 	
@@ -6346,7 +6349,7 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 	*needed += spoolss_size_printprocessor_info_1(info_1);
 
 	if (!alloc_buffer_size(buffer, *needed))
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 
 	smb_io_printprocessor_info_1("", buffer, info_1, 0);
 
@@ -6354,10 +6357,10 @@ static uint32 enumprintprocessors_level_1(NEW_BUFFER *buffer, uint32 offered, ui
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6393,7 +6396,7 @@ uint32 _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 	case 1:
 		return enumprintprocessors_level_1(buffer, offered, needed, returned);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -6405,7 +6408,7 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 	PRINTPROCDATATYPE_1 *info_1=NULL;
 	
 	if((info_1 = (PRINTPROCDATATYPE_1 *)malloc(sizeof(PRINTPROCDATATYPE_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	(*returned) = 0x1;
 	
@@ -6414,7 +6417,7 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 	*needed += spoolss_size_printprocdatatype_info_1(info_1);
 
 	if (!alloc_buffer_size(buffer, *needed))
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 
 	smb_io_printprocdatatype_info_1("", buffer, info_1, 0);
 
@@ -6422,10 +6425,10 @@ static uint32 enumprintprocdatatypes_level_1(NEW_BUFFER *buffer, uint32 offered,
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6454,7 +6457,7 @@ uint32 _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 	case 1:
 		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -6467,7 +6470,7 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 	PRINTMONITOR_1 *info_1=NULL;
 	
 	if((info_1 = (PRINTMONITOR_1 *)malloc(sizeof(PRINTMONITOR_1))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	(*returned) = 0x1;
 	
@@ -6476,7 +6479,7 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 	*needed += spoolss_size_printmonitor_info_1(info_1);
 
 	if (!alloc_buffer_size(buffer, *needed))
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 
 	smb_io_printmonitor_info_1("", buffer, info_1, 0);
 
@@ -6484,10 +6487,10 @@ static uint32 enumprintmonitors_level_1(NEW_BUFFER *buffer, uint32 offered, uint
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6498,7 +6501,7 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 	PRINTMONITOR_2 *info_2=NULL;
 	
 	if((info_2 = (PRINTMONITOR_2 *)malloc(sizeof(PRINTMONITOR_2))) == NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 
 	(*returned) = 0x1;
 	
@@ -6509,7 +6512,7 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 	*needed += spoolss_size_printmonitor_info_2(info_2);
 
 	if (!alloc_buffer_size(buffer, *needed))
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 
 	smb_io_printmonitor_info_2("", buffer, info_2, 0);
 
@@ -6517,10 +6520,10 @@ static uint32 enumprintmonitors_level_2(NEW_BUFFER *buffer, uint32 offered, uint
 
 	if (*needed > offered) {
 		*returned=0;
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6557,7 +6560,7 @@ uint32 _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 	case 2:
 		return enumprintmonitors_level_2(buffer, offered, needed, returned);
 	default:
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
 
@@ -6573,7 +6576,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 	if (info_1 == NULL) {
 		safe_free(queue);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 		
 	for (i=0; i<count && found==False; i++) {
@@ -6585,7 +6588,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 		safe_free(queue);
 		safe_free(info_1);
 		/* I shoud reply something else ... I can't find the good one */
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 	}
 	
 	fill_job_info_1(info_1, &(queue[i-1]), i, snum);
@@ -6596,7 +6599,7 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info_1);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	smb_io_job_info_1("", buffer, info_1, 0);
@@ -6604,9 +6607,9 @@ static uint32 getjob_level_1(print_queue_struct *queue, int count, int snum, uin
 	safe_free(info_1);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 
@@ -6625,7 +6628,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	if (info_2 == NULL) {
 		safe_free(queue);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 
 	for (i=0; i<count && found==False; i++) {
@@ -6637,12 +6640,12 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		safe_free(queue);
 		safe_free(info_2);
 		/* I shoud reply something else ... I can't find the good one */
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 	}
 	
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0) {
 		safe_free(queue);
-		return ERROR_NOT_ENOUGH_MEMORY;
+		return ERRnomem;
 	}
 
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter);
@@ -6654,7 +6657,7 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 
 	if (!alloc_buffer_size(buffer, *needed)) {
 		safe_free(info_2);
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	}
 
 	smb_io_job_info_2("", buffer, info_2, 0);
@@ -6663,9 +6666,9 @@ static uint32 getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	free(info_2);
 
 	if (*needed > offered)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERRinsufficientbuffer;
 	else
-		return NT_STATUS_NO_PROBLEMO;
+		return ERRsuccess;
 }
 
 /****************************************************************************
@@ -6696,7 +6699,7 @@ uint32 _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	*needed=0;
 	
 	if (!get_printer_snum(p, handle, &snum))
-		return ERROR_INVALID_HANDLE;
+		return ERRbadfid;
 	
 	count = print_queue_status(snum, &queue, &prt_status);
 	
@@ -6710,6 +6713,6 @@ uint32 _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
 	default:
 		safe_free(queue);
-		return ERROR_INVALID_LEVEL;
+		return ERRunknownlevel;
 	}
 }
