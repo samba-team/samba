@@ -8,12 +8,10 @@ dnl AC_HAVE_DECLARATION(includes, variable)
 AC_DEFUN([AC_CHECK_DECLARATION], [
 AC_MSG_CHECKING([if $2 is properly declared])
 AC_CACHE_VAL(ac_cv_var_$2_declaration, [
-AC_TRY_COMPILE([$1
-extern struct { int foo; } $2;],
-[$2.foo = 1;],
-eval "ac_cv_var_$2_declaration=no",
-eval "ac_cv_var_$2_declaration=yes")
-])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[$1
+extern struct { int foo; } $2;]],[[$2.foo = 1;]])],
+[eval "ac_cv_var_$2_declaration=no"],
+[eval "ac_cv_var_$2_declaration=yes"])])
 
 define(foo, [HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION])
 

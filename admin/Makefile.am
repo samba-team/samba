@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_readline) $(INCLUDE_des)
+AM_CPPFLAGS += $(INCLUDE_readline) $(INCLUDE_des)
 
 man_MANS = ktutil.8
 

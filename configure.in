@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
 AC_PREREQ(2.53)
 test -z "$CFLAGS" && CFLAGS="-g"
-AC_INIT(Heimdal, 0.7pre, heimdal-bugs@pdc.kth.se)
+AC_INIT(Heimdal,0.7pre,heimdal-bugs@pdc.kth.se)
 AC_CONFIG_SRCDIR([kuser/kinit.c])
 AM_CONFIG_HEADER(include/config.h)
 
@@ -76,11 +76,11 @@ if test "$with_krb4" != "no"; then
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
-		[AC_TRY_COMPILE([#include <krb.h>],[
+		[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <krb.h>]], [[
 		char tmp[4];
-		krb_put_int(17, tmp, 4, sizeof(tmp));],
-		ac_cv_func_krb_put_int_four=yes,
-		ac_cv_func_krb_put_int_four=no)
+		krb_put_int(17, tmp, 4, sizeof(tmp));]])],
+		[ac_cv_func_krb_put_int_four=yes],
+		[ac_cv_func_krb_put_int_four=no])
 	])
 	if test "$ac_cv_func_krb_put_int_four" = yes; then
 		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1,
@@ -93,10 +93,10 @@ if test "$with_krb4" != "no"; then
 #endif
 ])
 	AC_CACHE_CHECK(for KRB_VERIFY_SECURE, ac_cv_func_krb_verify_secure,
-		[AC_TRY_COMPILE([#include <krb.h>],[
-		int x = KRB_VERIFY_SECURE],
-		ac_cv_func_krb_verify_secure=yes,
-		ac_cv_func_krb_verify_secure=no)
+		[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <krb.h>]], [[
+		int x = KRB_VERIFY_SECURE]])],
+		[ac_cv_func_krb_verify_secure=yes],
+		[ac_cv_func_krb_verify_secure=no])
 	])
 	if test "$ac_cv_func_krb_verify_secure" != yes; then
 		AC_DEFINE(KRB_VERIFY_SECURE, 1,
@@ -106,10 +106,10 @@ if test "$with_krb4" != "no"; then
 	fi
 	AC_CACHE_CHECK(for KRB_VERIFY_NOT_SECURE,
 		ac_cv_func_krb_verify_not_secure,
-		[AC_TRY_COMPILE([#include <krb.h>],[
-		int x = KRB_VERIFY_NOT_SECURE],
-		ac_cv_func_krb_verify_not_secure=yes,
-		ac_cv_func_krb_verify_not_secure=no)
+		[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <krb.h>]], [[
+		int x = KRB_VERIFY_NOT_SECURE]])],
+		[ac_cv_func_krb_verify_not_secure=yes],
+		[ac_cv_func_krb_verify_not_secure=no])
 	])
 	if test "$ac_cv_func_krb_verify_not_secure" != yes; then
 		AC_DEFINE(KRB_VERIFY_NOT_SECURE, 0,
@@ -130,11 +130,11 @@ if test "$with_krb4" != "no"; then
 #endif])
 	AC_CACHE_CHECK([for KRB_SENDAUTH_VERS],
 		ac_cv_func_krb_sendauth_vers,
-		[AC_TRY_COMPILE([#include <krb.h>
-			#include <prot.h>],[
-		char *x = KRB_SENDAUTH_VERS],
-		ac_cv_func_krb_sendauth_vers=yes,
-		ac_cv_func_krb_sendauth_vers=no)
+		[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <krb.h>
+			#include <prot.h>]], [[
+		char *x = KRB_SENDAUTH_VERS]])],
+		[ac_cv_func_krb_sendauth_vers=yes],
+		[ac_cv_func_krb_sendauth_vers=no])
 	])
 	if test "$ac_cv_func_krb_sendauth_vers" != yes; then
 		AC_DEFINE(KRB_SENDAUTH_VERS, ["AUTHV0.1"],
@@ -142,12 +142,12 @@ if test "$with_krb4" != "no"; then
 	fi
 	AC_CACHE_CHECK(for krb_mk_req with const arguments,
 		ac_cv_func_krb_mk_req_const,
-		[AC_TRY_COMPILE([#include <krb.h>
+		[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <krb.h>
 		int krb_mk_req(KTEXT a, const char *s, const char *i,
 			       const char *r, int32_t checksum)
-		{ return 17; }], [],
-		ac_cv_func_krb_mk_req_const=yes,
-		ac_cv_func_krb_mk_req_const=no)
+		{ return 17; }]], [[]])],
+		[ac_cv_func_krb_mk_req_const=yes],
+		[ac_cv_func_krb_mk_req_const=no])
 	])
 	if test "$ac_cv_func_krb_mk_req_const" = "yes"; then
 		AC_DEFINE(KRB_MK_REQ_CONST, 1,
