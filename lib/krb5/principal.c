@@ -851,12 +851,19 @@ krb5_sname_to_principal (krb5_context context,
     if(sname == NULL)
 	sname = "host";
     if(type == KRB5_NT_SRV_HST){
-	struct hostent *hp;
-	hp = roken_gethostbyname(hostname);
+	struct hostent *hp = NULL;
+	int error;
+
+#ifdef HAVE_IPV6
+	if (hp == NULL)
+	    hp = getipnodebyname (hostname, AF_INET6, 0, &error);
+#endif
+	if (hp == NULL)
+	    hp = getipnodebyname (hostname, AF_INET, 0, &error);
 	if(hp != NULL)
 	    hostname = hp->h_name;
     }
-    if(type == KRB5_NT_SRV_HST){
+    if(type == KRB5_NT_SRV_HST) {
 	host = strdup(hostname);
 	if(host == NULL){
 	    return ENOMEM;
