@@ -103,13 +103,13 @@ static void print_canon_ace(canon_ace *pace, int num)
 	fstring str;
 
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
-    dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
+	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
 	if (pace->owner_type == UID_ACE) {
-		struct passwd *pass = sys_getpwuid(pace->unix_ug.uid);
-		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, pass ? pass->pw_name : "UNKNOWN");
+		char *u_name = uidtoname(pace->unix_ug.uid);
+		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name);
 	} else if (pace->owner_type == GID_ACE) {
-		struct group *grp = getgrgid(pace->unix_ug.gid);
-		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, grp ? grp->gr_name : "UNKNOWN");
+		char *g_name = gidtoname(pace->unix_ug.gid);
+		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name);
 	} else
 		dbgtext( "other ");
 	switch (pace->type) {
@@ -925,26 +925,23 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
 	extern DOM_SID global_sid_World;
-	struct passwd *pass = NULL;
-	struct group *gptr = NULL;
+	fstring u_name;
+	fstring g_name;
 
 	/* "Everyone" always matches every uid. */
 
 	if (sid_equal(&group_ace->trustee, &global_sid_World))
 		return True;
 
-	if (!(pass = sys_getpwuid(uid_ace->unix_ug.uid)))
-		return False;
-
-	if (!(gptr = getgrgid(group_ace->unix_ug.gid)))
-		return False;
+	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
+	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
 
 	/*
 	 * Due to the winbind interfaces we need to do this via names,
 	 * not uids/gids.
 	 */
 
-	return user_in_group_list(pass->pw_name, gptr->gr_name );
+	return user_in_group_list(u_name, g_name );
 }
 
 /****************************************************************************
