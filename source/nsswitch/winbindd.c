@@ -3,7 +3,7 @@
 
    Winbind daemon for ntdom nss module
 
-   Copyright (C) by Tim Potter 2000, 2001
+   Copyright (C) by Tim Potter 2000-2002
    Copyright (C) Andrew Tridgell 2002
    
    This program is free software; you can redistribute it and/or modify
@@ -670,18 +670,22 @@ static void process_loop(void)
 /*
   these are split out from the main winbindd for use by the background daemon
  */
-int winbind_setup_common(void)
+BOOL winbind_setup_common(void)
 {
-	load_interfaces();
+  	load_interfaces();
 
 	if (!secrets_init()) {
 
 		DEBUG(0,("Could not initialize domain trust account secrets. Giving up\n"));
-		return 1;
-
+		return False;
 	}
 
 	namecache_enable();	/* Enable netbios namecache */
+
+	/* Check winbindd parameters are valid */
+
+	if (!winbindd_param_init())
+		return False;
 
 	/* Get list of domains we look up requests for.  This includes the
 	   domain which we are a member of as well as any trusted
@@ -693,11 +697,8 @@ int winbind_setup_common(void)
 
 	/* Winbind daemon initialisation */
 
-	if (!winbindd_param_init())
-		return 1;
-
 	if (!winbindd_idmap_init())
-		return 1;
+		return False;
 
 	/* Unblock all signals we are interested in as they may have been
 	   blocked by the parent process. */
@@ -720,7 +721,7 @@ int winbind_setup_common(void)
 	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
-	return 0;
+	return True;
 }
 
 
@@ -857,12 +858,12 @@ static void usage(void)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (opt_dual_daemon) {
-		do_dual_daemon();
+	if (!winbind_setup_common()) {
+		return 1;
 	}
 
-	if (winbind_setup_common() != 0) {
-		return 1;
+	if (opt_dual_daemon) {
+		do_dual_daemon();
 	}
 
 	/* Initialise messaging system */
