@@ -49,8 +49,8 @@ void hmac_md5_init_rfc2104(uchar*  key, int key_len, HMACMD5Context *ctx)
         /* start out by storing key in pads */
         ZERO_STRUCT(ctx->k_ipad);
         ZERO_STRUCT(ctx->k_opad);
-        bcopy( key, ctx->k_ipad, key_len);
-        bcopy( key, ctx->k_opad, key_len);
+        memcpy( ctx->k_ipad, key, key_len);
+        memcpy( ctx->k_opad, key, key_len);
 
         /* XOR key with ipad and opad values */
         for (i=0; i<64; i++)
@@ -80,12 +80,11 @@ void hmac_md5_init_limK_to_64(const uchar* key, int key_len,
         /* start out by storing key in pads */
         ZERO_STRUCT(ctx->k_ipad);
         ZERO_STRUCT(ctx->k_opad);
-        bcopy( key, ctx->k_ipad, key_len);
-        bcopy( key, ctx->k_opad, key_len);
+        memcpy( ctx->k_ipad, key, key_len);
+        memcpy( ctx->k_opad, key, key_len);
 
         /* XOR key with ipad and opad values */
-        for (i=0; i<64; i++)
-	{
+        for (i=0; i<64; i++) {
                 ctx->k_ipad[i] ^= 0x36;
                 ctx->k_opad[i] ^= 0x5c;
         }
