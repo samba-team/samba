@@ -1,3 +1,8 @@
+2003-03-19  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* gss_acquire_cred.3: document v1 interface (and that they are
+	obsolete)
+
 2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* gss_acquire_cred.3: list supported mechanism and nametypes
