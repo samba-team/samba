@@ -24,31 +24,13 @@
 #define GUMS_VERSION_MAJOR 0
 #define GUMS_VERSION_MINOR 1
 
-#define GUMS_OBJ_NORMAL_USER		1
-#define GUMS_OBJ_GROUP			2
-#define GUMS_OBJ_DOMAIN			3
+#define GUMS_OBJ_DOMAIN			1
+#define GUMS_OBJ_NORMAL_USER		2
+#define GUMS_OBJ_GROUP			3
 #define GUMS_OBJ_ALIAS			4
 #define GUMS_OBJ_WORKSTATION_TRUST	5
 #define GUMS_OBJ_SERVER_TRUST		6
 #define GUMS_OBJ_DOMAIN_TRUST		7
-
-typedef struct gums_object
-{
-	TALLOC_CTX *mem_ctx;
-
-	uint32 type;			/* Object Type */
-	uint32 version;			/* Object Version */
-	uint32 seq_num;			/* Object Sequence Number */
-
-	SEC_DESC *sec_desc;		/* Security Descriptor */
-
-	DOM_SID *sid;			/* Object Sid */
-	char *name;			/* Object Name */
-	char *description;		/* Object Description */
-
-	void *data;			/* Object Specific data */
-
-} GUMS_OBJECT;
 
 typedef struct gums_user
 {
@@ -90,6 +72,30 @@ typedef struct gums_group
 	DOM_SID *members;		/* SID array */
 
 } GUMS_GROUP;
+
+union gums_obj_p {
+	gums_user *user;
+	gums_group *group;
+	gums_group *alias;
+}
+
+typedef struct gums_object
+{
+	TALLOC_CTX *mem_ctx;
+
+	uint32 type;			/* Object Type */
+	uint32 version;			/* Object Version */
+	uint32 seq_num;			/* Object Sequence Number */
+
+	SEC_DESC *sec_desc;		/* Security Descriptor */
+
+	DOM_SID *sid;			/* Object Sid */
+	char *name;			/* Object Name */
+	char *description;		/* Object Description */
+
+	union gums_obj_p data;		/* Object Specific data */
+
+} GUMS_OBJECT;
 
 typedef struct gums_data_set
 {
