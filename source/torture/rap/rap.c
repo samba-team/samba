@@ -134,7 +134,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 {
 	uint16 string_offset;
 	uint16 ignore;
-	char *p;
+	const char *p;
 	size_t len;
 
 	NDR_CHECK(ndr_pull_uint16(ndr, &string_offset));
@@ -145,7 +145,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	if (string_offset+1 > ndr->data_size)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	p = ndr->data + string_offset;
+	p = (const char *)(ndr->data + string_offset);
 	len = strnlen(p, ndr->data_size-string_offset);
 
 	if ( string_offset + len + 1 >  ndr->data_size )
@@ -260,13 +260,13 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 		switch(r->in.level) {
 		case 0:
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
-					      r->out.info[i].info0.name, 13));
+					      (uint8_t *)r->out.info[i].info0.name, 13));
 			break;
 		case 1:
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
-					      r->out.info[i].info1.name, 13));
+					      (uint8_t *)r->out.info[i].info1.name, 13));
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
-					      &r->out.info[i].info1.pad, 1));
+					      (uint8_t *)&r->out.info[i].info1.pad, 1));
 			NDR_OK(ndr_pull_uint16(call->ndr_pull_data,
 					       &r->out.info[i].info1.type));
 			NDR_OK(rap_pull_string(mem_ctx, call->ndr_pull_data,
@@ -354,11 +354,11 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 		switch(r->in.level) {
 		case 0:
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
-					      r->out.info[i].info0.name, 16));
+					      (uint8_t *)r->out.info[i].info0.name, 16));
 			break;
 		case 1:
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
-					      r->out.info[i].info1.name, 16));
+					      (uint8_t *)r->out.info[i].info1.name, 16));
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
 					      &r->out.info[i].info1.version_major, 1));
 			NDR_OK(ndr_pull_bytes(call->ndr_pull_data,
