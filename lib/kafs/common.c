@@ -225,13 +225,13 @@ _kafs_afslog_all_local_cells(kafs_data *data, uid_t uid)
    the cell it is serving is living in another realm.
    */
 
-static krb5_error_code
+static int
 realm_of_cell(kafs_data *data, const char *cell, char **realm)
 {
     FILE *F;
     char buf[1024];
     char *p;
-    krb5_error_code ret = -1;
+    int ret = -1;
 
     if((F = fopen(_PATH_CELLSERVDB, "r"))){
 	while(fgets(buf, sizeof(buf), F)){

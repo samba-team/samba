@@ -59,7 +59,7 @@ get_cred(kafs_data *data, const char *name, const char *inst,
     return ret;
 }
 
-static krb5_error_code
+static int
 afslog_uid_int(kafs_data *data, const char *cell, uid_t uid)
 {
     int ret;
