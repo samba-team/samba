@@ -549,7 +549,7 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	if (keyname[0] == 0 || val_name[0] == 0)
+	if (keyname[0] == 0)
 	{
 		report(out_hnd, "invalid key name\n");
 		return;
@@ -605,7 +605,7 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 	res = res ? reg_connect(srv_name, keyname, parent_name, 
                                 SEC_RIGHTS_MAXIMUM_ALLOWED, &pol_con) : False;
 
-	if ((*val_name) != 0)
+	if ((*parent_name) != 0)
 	{
 		/* open an entry */
 		res3 = res  ? reg_open_entry(&pol_con, parent_name, 
@@ -957,7 +957,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
                                     SEC_RIGHTS_MAXIMUM_ALLOWED, &key_pol) : False;
 
 	/* query key sec info.  first call sets sec_buf_size. */
-	sec_buf_size = 0;
+	sec_buf_size = 1024;
 	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? reg_get_key_sec(&key_pol,
