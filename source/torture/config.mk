@@ -104,7 +104,8 @@ ADD_OBJ_FILES = \
 		torture/local/iconv.o \
 		torture/local/talloc.o \
 		torture/local/messaging.o \
-		torture/local/binding_string.o
+		torture/local/binding_string.o \
+		torture/local/idtree.o
 REQUIRED_SUBSYSTEMS = \
 		LIBSMB \
 		MESSAGING
