@@ -41,7 +41,8 @@ static void create_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, O_RDWR | O_CREAT | O_TRUNC, 0600);
+	tdb = tdb_open(tok, 0, TDB_CLEAR_IF_FIRST,
+		       O_RDWR | O_CREAT | O_TRUNC, 0600);
 }
 
 static void open_tdb(void)
@@ -52,7 +53,7 @@ static void open_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, O_RDWR, 0600);
+	tdb = tdb_open(tok, 0, 0, O_RDWR, 0600);
 }
 
 static void insert_tdb(void)

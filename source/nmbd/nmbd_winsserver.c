@@ -172,7 +172,6 @@ Load or create the WINS database.
 
 BOOL initialise_wins(void)
 {
-  pstring fname;
   time_t time_now = time(NULL);
   FILE *fp;
   pstring line;
@@ -182,15 +181,10 @@ BOOL initialise_wins(void)
 
   add_samba_names_to_subnet(wins_server_subnet);
 
-  pstrcpy(fname,lp_lockdir());
-  trim_string(fname,NULL,"/");
-  pstrcat(fname,"/");
-  pstrcat(fname,WINS_LIST);
-
-  if((fp = sys_fopen(fname,"r")) == NULL)
+  if((fp = sys_fopen(lock_path(WINS_LIST),"r")) == NULL)
   {
     DEBUG(2,("initialise_wins: Can't open wins database file %s. Error was %s\n",
-           fname, strerror(errno) ));
+           WINS_LIST, strerror(errno) ));
     return True;
   }
 

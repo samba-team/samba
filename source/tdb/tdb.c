@@ -44,6 +44,14 @@
 #define TDB_LEN_MULTIPLIER 10
 #define FREELIST_TOP (sizeof(struct tdb_header))
 
+#define LOCK_SET 1
+#define LOCK_CLEAR 0
+
+/* lock offsets */
+#define GLOBAL_LOCK 0
+#define ACTIVE_LOCK 4
+#define LIST_LOCK_BASE 1024
+
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
 
 /* the body of the database is made of one list_struct for the free space
@@ -85,7 +93,8 @@ static char *memdup(char *d, int size)
 
 /* a byte range locking function - return 0 on success
    this functions locks/unlocks 1 byte at the specified offset */
-static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, int set)
+static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, 
+		      int set, int rw_type, int lck_type)
 {
 #if NOLOCK
 	return 0;
@@ -94,13 +103,13 @@ static int tdb_brlock(TDB_CONTEXT *tdb, tdb_off offset, int set)
 
 	if (tdb->read_only) return -1;
 
-	fl.l_type = set?F_WRLCK:F_UNLCK;
+	fl.l_type = set==LOCK_SET?rw_type:F_UNLCK;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = offset;
 	fl.l_len = 1;
 	fl.l_pid = 0;
 
-	if (fcntl(tdb->fd, F_SETLKW, &fl) != 0) {
+	if (fcntl(tdb->fd, lck_type, &fl) != 0 && lck_type == F_SETLKW) {
 #if TDB_DEBUG
 		printf("lock %d failed at %d (%s)\n", 
 		       set, offset, strerror(errno));
@@ -121,7 +130,8 @@ static int tdb_lock(TDB_CONTEXT *tdb, int list)
 		return -1;
 	}
 	if (tdb->locked[list+1] == 0) {
-		if (tdb_brlock(tdb, 4*(list+1), 1) != 0) {
+		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, LOCK_SET, 
+			       F_WRLCK, F_SETLKW) != 0) {
 			return -1;
 		}
 	}
@@ -146,7 +156,8 @@ static int tdb_unlock(TDB_CONTEXT *tdb, int list)
 		return -1;
 	}
 	if (tdb->locked[list+1] == 1) {
-		if (tdb_brlock(tdb, 4*(list+1), 0) != 0) {
+		if (tdb_brlock(tdb, LIST_LOCK_BASE + 4*list, LOCK_CLEAR, 
+			       F_WRLCK, F_SETLKW) != 0) {
 			return -1;
 		}
 	}
@@ -263,6 +274,8 @@ static char *tdb_alloc_read(TDB_CONTEXT *tdb, tdb_off offset, tdb_len len)
 	char *buf;
 
 	buf = (char *)malloc(len);
+
+	if (!buf) return NULL;
 
 	if (tdb_read(tdb, offset, buf, len) == -1) {
 		free(buf);
@@ -1091,7 +1104,8 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 
    return is NULL on error
 */
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+		      int open_flags, mode_t mode)
 {
 	TDB_CONTEXT tdb, *ret;
 	struct stat st;
@@ -1100,21 +1114,36 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
 	tdb.name = NULL;
 	tdb.map_ptr = NULL;
 
-	if ((flags & O_ACCMODE) == O_WRONLY) goto fail;
+	if ((open_flags & O_ACCMODE) == O_WRONLY) goto fail;
 
 	if (hash_size == 0) hash_size = DEFAULT_HASH_SIZE;
 
 	memset(&tdb, 0, sizeof(tdb));
 
-	tdb.fd = open(name, flags, mode);
+	tdb.read_only = ((open_flags & O_ACCMODE) == O_RDONLY);
+
+	tdb.fd = open(name, open_flags, mode);
 	if (tdb.fd == -1) goto fail;
 
-	tdb_brlock(&tdb, 0, 1);
+	/* ensure there is only one process initialising at once */
+	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_SET, F_WRLCK, F_SETLKW);
+	
+	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
+		/* we need to zero the database if we are the only
+		   one with it open */
+		if (tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_SET, F_WRLCK, F_SETLK) == 0) {
+			ftruncate(tdb.fd, 0);
+			tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_CLEAR, F_WRLCK, F_SETLK);
+		}
+	}
+
+	/* leave this lock in place */
+	tdb_brlock(&tdb, ACTIVE_LOCK, LOCK_SET, F_RDLCK, F_SETLKW);
 
 	if (read(tdb.fd, &tdb.header, sizeof(tdb.header)) != sizeof(tdb.header) ||
 	    tdb.header.version != TDB_VERSION) {
 		/* its not a valid database - possibly initialise it */
-		if (!(flags & O_CREAT)) {
+		if (!(open_flags & O_CREAT)) {
 			goto fail;
 		}
 		if (tdb_new_database(&tdb, hash_size) == -1) goto fail;
@@ -1131,7 +1160,6 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
 				   sizeof(tdb.locked[0]));
 	if (!tdb.locked) goto fail;
 	tdb.map_size = st.st_size;
-	tdb.read_only = ((flags & O_ACCMODE) == O_RDONLY);
 #if HAVE_MMAP
 	tdb.map_ptr = (void *)mmap(NULL, st.st_size, 
 				  tdb.read_only? PROT_READ : PROT_READ|PROT_WRITE,
@@ -1148,11 +1176,10 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode)
 	       hash_size, tdb.map_size);
 #endif
 
-	tdb_brlock(&tdb, 0, 0);
+	tdb_brlock(&tdb, GLOBAL_LOCK, LOCK_CLEAR, F_WRLCK, F_SETLKW);
 	return ret;
 
  fail:
-	tdb_brlock(&tdb, 0, 0);
 	if (tdb.name) free(tdb.name);
 	if (tdb.fd != -1) close(tdb.fd);
 	if (tdb.map_ptr) munmap(tdb.map_ptr, tdb.map_size);

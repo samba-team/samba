@@ -180,11 +180,12 @@ static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf)
 int main(int argc, char *argv[])
 {
 	int i, seed=0;
-	int loops = 50000;
+	int loops = 10000;
 
 	unlink("test.gdbm");
 
-	db = tdb_open("test.db", 0, O_RDWR | O_CREAT | O_TRUNC, 0600);
+	db = tdb_open("test.db", 0, TDB_CLEAR_IF_FIRST, 
+		      O_RDWR | O_CREAT | O_TRUNC, 0600);
 	gdbm = gdbm_open("test.gdbm", 512, GDBM_WRITER|GDBM_NEWDB|GDBM_FAST, 
 			 0600, NULL);
 

@@ -44,16 +44,21 @@ typedef struct {
 	struct tdb_header header; /* a cached copy of the header */
 } TDB_CONTEXT;
 
+/* flags to tdb_store() */
 #define TDB_REPLACE 1
 #define TDB_INSERT 2
 
+/* flags for tdb_open() */
+#define TDB_CLEAR_IF_FIRST 1
+
 #if STANDALONE
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+		      int open_flags, mode_t mode);
 int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
 TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);

@@ -2428,7 +2428,6 @@ void conn_free(connection_struct *conn);
 /*The following definitions come from  smbd/connection.c  */
 
 BOOL yield_connection(connection_struct *conn,char *name,int max_connections);
-int delete_dead(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf);
 BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear);
 
 /*The following definitions come from  smbd/dfree.c  */
@@ -2856,7 +2855,8 @@ TDB_DATA tdb_firstkey(TDB_CONTEXT *tdb);
 TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_delete(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
-TDB_CONTEXT *tdb_open(char *name, int hash_size, int flags, mode_t mode);
+TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
+		      int open_flags, mode_t mode);
 int tdb_close(TDB_CONTEXT *tdb);
 int tdb_writelock(TDB_CONTEXT *tdb);
 int tdb_writeunlock(TDB_CONTEXT *tdb);

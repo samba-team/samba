@@ -261,11 +261,11 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 		case 's':
 			pstrcpy(servicesf, optarg);
 			break;
-		case 'u':                                       /* added by OH */
-			Ucrit_addUsername(optarg);                    /* added by OH */
+		case 'u':                                      
+			Ucrit_addUsername(optarg);             
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv); /* changed by OH */
+			fprintf(stderr, "Usage: %s [-P] [-d] [-L] [-p] [-S] [-s configfile] [-u username]\n", *argv);
 			return (-1);
 		}
 	}
@@ -283,7 +283,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf)
 		return profile_dump();
 	}
 	
-	tdb = tdb_open(lock_path("connections.tdb"), 0, O_RDONLY, 0);
+	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb) {
 		printf("connections.tdb not initialised\n");
 		if (!lp_status(-1))
