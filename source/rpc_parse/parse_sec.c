@@ -380,7 +380,7 @@ BOOL sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 
 	if (!sec_acl_equal(s1->dacl, s2->dacl) ||
 	    !sec_acl_equal(s1->sacl, s2->sacl)) {
-		DEBUG(10, ("sec_desc_equal(): dacl/dacl list not equal\n"));
+		DEBUG(10, ("sec_desc_equal(): dacl/sacl list not equal\n"));
 		return False;
 	}
 
