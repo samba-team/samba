@@ -2666,8 +2666,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   int ret;
 
   if(lp_ole_locking_compat()) {
-    SMB_OFF_T mask = ((SMB_OFF_T)0xC) << (SMB_OFF_T_BITS-4);
     SMB_OFF_T mask2= ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<2);
 
     /* make sure the count is reasonable, we might kill the lockd otherwise */
     count &= ~mask;
@@ -2679,7 +2679,8 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
     if ((offset & mask) != 0)
       offset = (offset & ~mask) | (((offset & mask) >> 2) & mask2);
   } else {
-    SMB_OFF_T mask = ((SMB_OFF_T)0x8) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<1);
     SMB_OFF_T neg_mask = ~mask;
 
     /* interpret negative counts as large numbers */
