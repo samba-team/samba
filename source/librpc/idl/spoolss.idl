@@ -55,7 +55,7 @@
 	} spoolss_PrinterInfo0;
 
 	typedef struct {
-	        uint16 devicename[32];
+	        string32 devicename;
 		uint16 specversion;
 		uint16 driverversion;
 		uint16 size;
@@ -74,7 +74,7 @@
 		uint16 yresolution;
 		uint16 ttoption;
 		uint16 collate;
-	        uint16 formname[32];
+	        string32 formname;
 		uint16 logpixels;
 		uint32 bitsperpel;
 		uint32 pelswidth;

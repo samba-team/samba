@@ -673,6 +673,22 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		*s = as;
 		break;
 
+	case LIBNDR_FLAG_STR_FIXLEN32:
+		len1 = 32;
+		NDR_PULL_NEED_BYTES(ndr, len1*byte_mul);
+		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
+					    ndr->data+ndr->offset, 
+					    len1*byte_mul,
+					    (void **)&as);
+		if (ret == -1) {
+			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
+					      "Bad character conversion");
+		}
+		NDR_CHECK(ndr_pull_advance(ndr, len1*byte_mul));
+		*s = as;
+		break;
+
+
 	default:
 		return ndr_pull_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%x\n",
 				      ndr->flags & LIBNDR_STRING_FLAGS);
@@ -805,6 +821,18 @@ NTSTATUS ndr_push_string(struct ndr_push *ndr, int ndr_flags, const char *s)
 					      "Bad character conversion");
 		}
 		ndr->offset += c_len*byte_mul;
+		break;
+
+	case LIBNDR_FLAG_STR_FIXLEN32:
+		NDR_PUSH_NEED_BYTES(ndr, byte_mul*32);
+		ret = convert_string(CH_UNIX, chset, 
+				     s, s_len + 1,
+				     ndr->data+ndr->offset, byte_mul*32);
+		if (ret == -1) {
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV, 
+					      "Bad character conversion");
+		}
+		ndr->offset += byte_mul*32;
 		break;
 
 	default:
