@@ -40,6 +40,12 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 		return;
 	}
 
+	/* see if its from one of our own interfaces - if so, then ignore it */
+	if (nbtd_self_packet(nbtsock, packet, src_address, src_port)) {
+		DEBUG(10,("Ignoring self packet from %s:%d\n", src_address, src_port));
+		return;
+	}
+
 	/* the request is to us in our role as a B node */
 	switch (packet->operation & NBT_OPCODE) {
 	case NBT_OPCODE_QUERY:
