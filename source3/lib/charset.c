@@ -209,7 +209,7 @@ static codepage_p load_client_codepage( int client_codepage )
 	   "%03d",
            client_codepage);
 
-  if(!file_exist(codepage_file_name,&st))
+  if(sys_stat(codepage_file_name,&st)!=0)
   {
     DEBUG(0,("load_client_codepage: filename %s does not exist.\n",
               codepage_file_name));
@@ -226,7 +226,7 @@ static codepage_p load_client_codepage( int client_codepage )
   if( size < CODEPAGE_HEADER_SIZE || size > (CODEPAGE_HEADER_SIZE + 4 * MAXCODEPAGELINES))
   {
     DEBUG(0,("load_client_codepage: file %s is an incorrect size for a \
-code page file.\n", codepage_file_name));
+code page file (size=%d).\n", codepage_file_name, (int)size));
     return NULL;
   }
 
