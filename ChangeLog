@@ -1,3 +1,9 @@
+1999-10-28  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/Makefile.am: bump version to 4:1:0
+
+	* kdc/config.c (configure): more careful with the port string
+
 1999-10-26  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2b
