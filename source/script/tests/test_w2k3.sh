@@ -36,6 +36,8 @@ testit() {
    rm -f test.$$;
 }
 
+OPTIONS="-U$username%$password -W $domain --option realm=$domain"
+
 for transport in ncacn_ip_tcp ncacn_np; do
  for bindoptions in padcheck connect sign seal spnego,sign spnego,seal validate bigendian; do
      case $transport in
@@ -44,14 +46,14 @@ for transport in ncacn_ip_tcp ncacn_np; do
      esac
    for t in $tests; do
     echo Testing $t on $transport with $bindoptions
-    testit bin/smbtorture $transport:"$server[$bindoptions]" -U"$username"%"$password" -W $domain $t "$*"
+    testit bin/smbtorture $transport:"$server[$bindoptions]" $OPTIONS $t "$*"
    done
  done
 done
 
 echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal
-testit bin/smbtorture ncacn_ip_tcp:"$server[seal]" -U"$username"%"$password" -W $domain RPC-DRSUAPI "$*"
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal]" $OPTIONS RPC-DRSUAPI "$*"
 echo Testing RPC-DRSUAPI on ncacn_ip_tcp with seal,bigendian
-testit bin/smbtorture ncacn_ip_tcp:"$server[seal,bigendian]" -U"$username"%"$password" -W $domain RPC-DRSUAPI "$*"
+testit bin/smbtorture ncacn_ip_tcp:"$server[seal,bigendian]" $OPTIONS RPC-DRSUAPI "$*"
 
 echo "ALL OK";
