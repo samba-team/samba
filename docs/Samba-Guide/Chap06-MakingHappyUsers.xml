@@ -206,6 +206,54 @@ clients is conservative and if followed will minimize problems - but it is not a
 	</para>
 
 <sect1>
+<title>Regarding LDAP Directories and Windows Computer Accounts</title>
+
+	<para>
+	Computer (machine) accounts can be placed where ever you like in an LDAP directory subject to some 
+	constraints that are described in this section.
+	</para>
+
+	<para>
+	The POSIX and SambaSAMAccount components of computer (machine) accounts are both used by Samba. 
+	i.e.: Machine  accounts are treated inside Samba in the same way that Windows NT4/200X treats 
+	them. A user account and a machine account are indistinquishable from each other, except that
+	the machine account ends in a '$' character, as do trust accounts.
+	</para>
+
+	<para>
+	The need for Windows user, group, machine, trust, etc. accounts to be tied to a valid UNIX uid
+	is a design decision that was made a long way back in the history of Samba development. It is 
+	unlikely that this decision will be reversed of changed during the remaining life of the 
+	Samba-3.x series. 
+	</para>
+
+	<para>
+	The resolution of a UID from the Windows SID is achieved within Samba through a mechanism that
+	must refer back to the host operating system on which Samba is running. The Name Service
+	Switcher (NSS) is the preferred mechanism that shields applications (like Samba) from the
+	need to know everything about every host OS it runs on.
+	</para>
+
+	<para>
+	Samba asks the host OS to provide a UID via the "passwd", "shadow" and "group" facilities
+	in the NSS control (configuration) file. What tool is used by the UNIX administrator is
+	up to him. It is not imposed by Samba. Samba provides winbindd together with its support
+	libraries as one method. It is possible to do this via LDAP - and for that Samba provides
+	the appropriate hooks so that all account entities can be located in an LDAP directory.
+	</para>
+
+	<para>
+	If the weapon of choice (as it is for LDAP) is to use the PADL nss_ldap utility it must
+	be configured so that computer accounts can be resolved to a POSIX/UNIX account UID. That
+	is fundamentally an LDAP design question.  The information provided on the Samba list and
+	in the documentation is directed at providing working examples only. The design
+	of an LDAP directory is a complex subject that is beyond the scope of this documentation.
+	</para>
+
+</sect1>
+
+
+<sect1>
 	<title>Introduction</title>
 
 	<para>
