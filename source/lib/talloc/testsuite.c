@@ -641,7 +641,7 @@ static BOOL test_type(void)
 		return False;
 	}
 	talloc_set_type(el1, struct el2);
-	if (talloc_get_type(el1, struct el2) != el1) {
+	if (talloc_get_type(el1, struct el2) != (struct el2 *)el1) {
 		printf("type set failed on el1 with el2\n");
 		return False;
 	}
