@@ -1,3 +1,17 @@
+2000-12-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/Makefile.am: always build keytab_krb4.c
+
+	* lib/krb5/context.c: always register the krb4 keytab functions
+
+	* lib/krb5/krb5.h: declare krb4_ftk_ops
+
+	* lib/krb5/keytab_krb4.c: We don't really need to include krb.h
+	here, since we only use the principal size macros, so define these
+	here. Theoretically someone could have a krb4 system where these
+	values are != 40, but this is unlikely, and
+	krb5_524_conv_principal also assume they are 40.
+
 2000-12-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/krb5.h: s/krb5_donot_reply/krb5_donot_replay/
