@@ -5423,8 +5423,6 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		<listitem><para>This option allows the administrator to chose which backends to retrieve and store passwords with. This allows (for example) both 
                 smbpasswd and tdbsam to be used without a recompile. 
                 Multiple backends can be specified, separated by spaces. The backends will be searched in the order they are specified. New users are always added to the first backend specified.
-                Experimental backends must still be selected
-                (eg --with-tdbsam) at configure time.
 		</para>
 
                 <para>This parameter is in two parts, the backend's name, and a 'location'
