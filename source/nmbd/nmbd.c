@@ -737,7 +737,7 @@ static void usage(char *pname)
           strupper(global_myname);
           break;
         case 'l':
-          slprintf(debugf,sizeof(debugf)-1, "%s.nmb",optarg);
+          slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", optarg);
           break;
         case 'a':
           append_log = True;
