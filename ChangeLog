@@ -1,3 +1,7 @@
+2000-05-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/keytab_keyfile.c: make this actually work
+
 2000-05-19  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/store_emem.c (emem_store): make it write-compatible
