@@ -1,0 +1,146 @@
+#!/bin/ksh
+#
+# invoke with -n as the first argument to get this script to tell
+# you what it would do without doing anything
+#
+
+V=
+[ "$1" = "-n" ] && V=echo
+
+PREFIX=/usr/local/samba
+HERE=`pwd`
+PKGDIR=packaging/Caldera/UnixWare
+
+BUILD_ROOT=${HERE}/dist
+BLDFIX=${BUILD_ROOT}/${PREFIX}
+$V rm -rf $BUILD_ROOT
+$V mkdir -p $BUILD_ROOT/etc/init.d
+$V mkdir -p ${BLDFIX}/bin
+$V mkdir -p ${BLDFIX}/sbin
+$V mkdir -p ${BLDFIX}/swat/using_samba/gifs
+$V mkdir -p ${BLDFIX}/swat/using_samba/figs
+$V mkdir -p ${BLDFIX}/swat/images
+$V mkdir -p ${BLDFIX}/swat/help
+$V mkdir -p ${BLDFIX}/swat/include
+$V mkdir -p ${BLDFIX}/man/man1
+$V mkdir -p ${BLDFIX}/man/man5
+$V mkdir -p ${BLDFIX}/man/man7
+$V mkdir -p ${BLDFIX}/man/man8
+$V mkdir -p ${BLDFIX}/var/locks
+$V mkdir -p ${BLDFIX}/lib/codepages/src
+
+# Copy into the dist tree the pkg data files
+for i in pkg/*
+do
+    [ -f $i ] && $V cp $i ${BUILD_ROOT}
+done
+
+cd ../../..
+
+# Install standard binary files
+for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
+      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
+      smbsh smbwrapper.so 
+do
+$V    install -m755 -s source/bin/$i ${BLDFIX}/bin
+done
+for i in mksmbpasswd.sh smbtar
+do
+$V    install -m755 source/script/$i ${BLDFIX}/bin
+done
+
+# Install secure binary files
+for i in smbd nmbd swat debug2html smbtorture smbfilter locktest2 masktest
+do
+$V    install -m755 -s source/bin/$i ${BLDFIX}/sbin
+done
+
+
+# Install level 1 man pages
+for i in *.1
+do
+$V    install -m644 docs/manpages/$i ${BLDFIX}/man/man1
+done
+
+# Install codepage source files
+for i in 437 737 775 850 852 861 866 932 936 949 950 1251
+do
+$V    install -m644 source/codepages/codepage_def.$i ${BLDFIX}/lib/codepages/src
+done
+for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+do
+$V    install -m644 source/codepages/CP$i.TXT ${BLDFIX}/lib/codepages/src
+done
+
+# Install SWAT helper files
+for i in swat/help/*.html docs/htmldocs/*.html
+do
+$V    install -m644 $i ${BLDFIX}/swat/help
+done
+for i in swat/images/*.gif
+do
+$V    install -m644 $i ${BLDFIX}/swat/images
+done
+for i in swat/include/*.html
+do
+$V    install -m644 $i ${BLDFIX}/swat/include
+done
+
+# This is the O'Reily Samba Book - on-line
+for i in docs/htmldocs/using_samba/*.html
+do
+$V    install -m644 $i ${BLDFIX}/swat/using_samba
+done
+for i in docs/htmldocs/using_samba/figs/*.gif
+do
+$V    install -m644 $i ${BLDFIX}/swat/using_samba/figs
+done
+for i in docs/htmldocs/using_samba/gifs/*.gif
+do
+$V    install -m644 $i ${BLDFIX}/swat/using_samba/gifs
+done
+
+# Install the miscellany
+$V install -m644 swat/README ${BLDFIX}/swat
+$V install -m644 docs/manpages/smb.conf.5 ${BLDFIX}/man/man5
+$V install -m644 docs/manpages/lmhosts.5 ${BLDFIX}/man/man5
+$V install -m644 docs/manpages/smbpasswd.5 ${BLDFIX}/man/man5
+$V install -m644 docs/manpages/samba.7 ${BLDFIX}/man/man7
+$V install -m644 docs/manpages/smbd.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/nmbd.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/smbpasswd.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/swat.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/smbmount.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/smbmnt.8 ${BLDFIX}/man/man8
+$V install -m644 docs/manpages/smbumount.8 ${BLDFIX}/man/man8
+$V install -m644 ${PKGDIR}/smb.conf ${BLDFIX}/lib/smb.conf
+$V install -m644 ${PKGDIR}/smbusers $BUILD_ROOT/etc/smbusers
+$V install -m755 ${PKGDIR}/smbprint ${BLDFIX}/bin
+$V install -m755 ${PKGDIR}/findsmb ${BLDFIX}/bin
+$V install -m755 ${PKGDIR}/smbadduser ${BLDFIX}/bin
+$V install -m755 ${PKGDIR}/smb.init $BUILD_ROOT/etc/init.d/samba
+
+# The following is now done in the postinstall script
+#
+# if [ "$V" = "echo" ]
+# then
+#    echo "echo 127.0.0.1 localhost > $BUILD_ROOT/etc/lmhosts"
+# else
+#    echo 127.0.0.1 localhost > $BUILD_ROOT/etc/lmhosts
+# fi
+#
+# Build codepage load files
+# $V cd ${BLDFIX}/lib/codepages
+# for i in 437 737 775 850 852 861 866 932 936 949 950 1251
+# do
+# $V ${PREFIX}/bin/make_smbcodepage c $i \
+#    ${BLDFIX}/lib/codepages/src/codepage_def.$i \
+#    ${BLDFIX}/lib/codepages/codepage.$i
+# done
+# for i in 437 737 850 852 861 866 932 936 949 950 \
+#          ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
+# do
+# $V ${PREFIX}/bin/make_unicodemap $i \
+#    ${BLDFIX}/lib/codepages/src/CP$i.TXT \
+#    ${BLDFIX}/lib/codepages/unicode_map.$i
+# done

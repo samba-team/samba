@@ -1,0 +1,73 @@
+#!/bin/ksh
+#
+# invoke with -n as the first argument to get this script to tell
+# you what it would do without doing anything
+#
+
+V=
+[ "$1" = "-n" ] && V=echo
+
+CC="gcc -I/usr/local/include -L/usr/local/lib"
+CFLAGS="-O3 -I/usr/local/include -L/usr/local/lib"
+CXX="g++"
+CXXFLAGS="-O3 -I/usr/local/include/stl -I/usr/local/include -L/usr/local/lib"
+RANLIB=true
+MAKE=/usr/local/bin/make
+PREFIX=/usr/local/samba
+if [ "$V" = "echo" ]
+then
+    echo "exporting the following shell variables:"
+    echo "CC=$CC"
+    echo "CXX=$CXX"
+    echo "RANLIB=$RANLIB"
+    echo "MAKE=$MAKE"
+    echo "CFLAGS=$CFLAGS"
+    echo "CXXFLAGS=$CXXFLAGS"
+    echo "PREFIX=$PREFIX"
+else
+    export CC CXX RANLIB MAKE CFLAGS CXXFLAGS PREFIX
+fi
+
+cd ../../../source
+[ -f mout-config ] && {
+    if [ "$V" = "echo" ]
+    then
+        echo "mv mout-config mout-config$$"
+    else
+        mv mout-config mout-config$$
+    fi
+}
+if [ "$V" = "echo" ]
+then
+    echo "./configure \
+	--prefix=${PREFIX} \
+	--with-profile \
+	--with-syslog \
+	--with-utmp \
+	--with-vfs \
+	--with-msdfs \
+	--with-netatalk \
+	--with-sambabook=${PREFIX}/swat/using_samba \
+        2>&1 | tee mout-config"
+else
+    ./configure \
+	--prefix=${PREFIX} \
+	--with-profile \
+	--with-syslog \
+	--with-utmp \
+	--with-vfs \
+	--with-msdfs \
+	--with-netatalk \
+	--with-sambabook=${PREFIX}/swat/using_samba \
+        2>&1 | tee mout-config
+fi
+
+cat >> include/config.h <<EOF
+#ifdef HAVE_LONGLONG
+#undef HAVE_LONGLONG
+#endif
+EOF
+
+sed -e "s/nobody/nouser/" include/local.h > /tmp/nouser$$
+cp /tmp/nouser$$ include/local.h
+rm -f /tmp/nouser$$

@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Remove /var/spool/samba and delete inetd entries for swat
+#
+
+SPOOL=/var/spool/samba
+SVCS=/etc/services
+INET=/etc/inetd.conf
+
+[ -d $SPOOL ] && {
+     rm -rf $SPOOL
+}
+
+grep swat $SVCS > /dev/null && {
+     B=`basename $SVCS`
+     T=$B$$
+     grep -v swat $SVCS > /tmp/$T
+     cp /tmp/$T $SVCS
+     rm -f /tmp/$T
+}
+
+grep swat $INET > /dev/null || {
+     B=`basename $INET`
+     T=$B$$
+     grep -v swat $INET > /tmp/$T
+     cp /tmp/$T $INET
+     rm -f /tmp/$T
+}
+
+kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
