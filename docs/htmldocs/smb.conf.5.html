@@ -1222,6 +1222,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>lanman auth</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >lm announce</I
 ></TT
 ></P
@@ -1402,6 +1411,15 @@ CLASS="PARAMETER"
 ><TT
 CLASS="PARAMETER"
 ><I
+>max protocol</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
 >max smbd processes</I
 ></TT
 ></P
@@ -1457,6 +1475,15 @@ CLASS="PARAMETER"
 CLASS="PARAMETER"
 ><I
 >min password length</I
+></TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="PARAMETER"
+><I
+>min protocol</I
 ></TT
 ></P
 ></LI
@@ -2239,7 +2266,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN725"
+NAME="AEN734"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3280,7 +3307,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1071"
+NAME="AEN1080"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -7962,6 +7989,24 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LANMANAUTH"
+></A
+>lanman auth (G)</DT
+><DD
+><P
+>This parameter determines whether or not smbd will
+		attempt to authentication users using the LANMAN password hash.
+		If disabled, only clients which support NT password hashes (e.g. Windows 
+		NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS 
+		network client) will be able to connect to the Samba host.</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>lanman auth = yes</B
+></P
+></DD
+><DT
+><A
 NAME="LEVEL2OPLOCKS"
 ></A
 >level2 oplocks (S)</DT
@@ -9815,6 +9860,90 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="MAXPROTOCOL"
+></A
+>max protocol (G)</DT
+><DD
+><P
+>The value of the parameter (a string) is the highest 
+		protocol level that will be supported by the server.</P
+><P
+>Possible values are :</P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>CORE</TT
+>: Earliest version. No 
+			concept of user names.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>COREPLUS</TT
+>: Slight improvements on 
+			CORE for efficiency.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>LANMAN1</TT
+>: First <I
+CLASS="EMPHASIS"
+>			modern</I
+> version of the protocol. Long filename
+			support.</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>LANMAN2</TT
+>: Updates to Lanman1 protocol.
+			</P
+></LI
+><LI
+><P
+><TT
+CLASS="CONSTANT"
+>NT1</TT
+>: Current up to date version of 
+			the protocol. Used by Windows NT. Known as CIFS.</P
+></LI
+></UL
+><P
+>Normally this option should not be set as the automatic 
+		negotiation phase in the SMB protocol takes care of choosing 
+		the appropriate protocol.</P
+><P
+>See also <A
+HREF="#MINPROTOCOL"
+><TT
+CLASS="PARAMETER"
+><I
+>min
+		protocol</I
+></TT
+></A
+></P
+><P
+>Default: <B
+CLASS="COMMAND"
+>max protocol = NT1</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>max protocol = LANMAN1</B
+></P
+></DD
+><DT
+><A
 NAME="MAXSMBDPROCESSES"
 ></A
 >max smbd processes (G)</DT
@@ -10154,6 +10283,56 @@ CLASS="COMMAND"
 CLASS="COMMAND"
 >min print space = 2000</B
 ></P
+></DD
+><DT
+><A
+NAME="MINPROTOCOL"
+></A
+>min protocol (G)</DT
+><DD
+><P
+>The value of the parameter (a string) is the 
+		lowest SMB protocol dialect than Samba will support.  Please refer
+		to the <A
+HREF="#MAXPROTOCOL"
+><TT
+CLASS="PARAMETER"
+><I
+>max protocol</I
+></TT
+></A
+>
+		parameter for a list of valid protocol names and a brief description
+		of each.  You may also wish to refer to the C source code in
+		<TT
+CLASS="FILENAME"
+>source/smbd/negprot.c</TT
+> for a listing of known protocol
+		dialects supported by clients.</P
+><P
+>If you are viewing this parameter as a security measure, you should
+		also refer to the <A
+HREF="#LANMANAUTH"
+><TT
+CLASS="PARAMETER"
+><I
+>lanman 
+		auth</I
+></TT
+></A
+> parameter.  Otherwise, you should never need 
+		to change this parameter.</P
+><P
+>Default : <B
+CLASS="COMMAND"
+>min protocol = CORE</B
+></P
+><P
+>Example : <B
+CLASS="COMMAND"
+>min protocol = NT1</B
+>  # disable DOS 
+		clients</P
 ></DD
 ><DT
 ><A
@@ -11187,7 +11366,10 @@ NAME="PASSWORDLEVEL"
 		with mixed-case passwords.  One offending client is Windows for 
 		Workgroups, which for some reason forces passwords to upper 
 		case when using the LANMAN1 protocol, but leaves them alone when 
-		using COREPLUS!</P
+		using COREPLUS!  Another problem child is the Windows 95/98
+		family of operating systems.  These clients upper case clear
+		text passwords even when NT LM 0.12 selected by the protocol
+		negotiation request/response.</P
 ><P
 >This parameter defines the maximum number of characters 
 		that may be upper case in passwords.</P
@@ -12035,11 +12217,11 @@ CLASS="COMMAND"
 ><P
 ><PRE
 CLASS="PROGRAMLISTING"
->print1|My Printer 1
-print2|My Printer 2
-print3|My Printer 3
-print4|My Printer 4
-print5|My Printer 5
+>		print1|My Printer 1
+		print2|My Printer 2
+		print3|My Printer 3
+		print4|My Printer 4
+		print5|My Printer 5
 		</PRE
 ></P
 ><P
@@ -12439,71 +12621,15 @@ NAME="PROTOCOL"
 >protocol (G)</DT
 ><DD
 ><P
->The value of the parameter (a string) is the highest 
-		protocol level that will be supported by the server.</P
-><P
->Possible values are :</P
-><P
-></P
-><UL
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->CORE</TT
->: Earliest version. No 
-			concept of user names.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->COREPLUS</TT
->: Slight improvements on 
-			CORE for efficiency.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->LANMAN1</TT
->: First <I
-CLASS="EMPHASIS"
->			modern</I
-> version of the protocol. Long filename
-			support.</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->LANMAN2</TT
->: Updates to Lanman1 protocol.
-			</P
-></LI
-><LI
-><P
-><TT
-CLASS="CONSTANT"
->NT1</TT
->: Current up to date version of 
-			the protocol. Used by Windows NT. Known as CIFS.</P
-></LI
-></UL
-><P
->Normally this option should not be set as the automatic 
-		negotiation phase in the SMB protocol takes care of choosing 
-		the appropriate protocol.</P
-><P
->Default: <B
-CLASS="COMMAND"
->protocol = NT1</B
-></P
-><P
->Example: <B
-CLASS="COMMAND"
->protocol = LANMAN1</B
-></P
+>Synonym for <A
+HREF="#MAXPROTOCOL"
+>		<TT
+CLASS="PARAMETER"
+><I
+>max protocol</I
+></TT
+></A
+>.</P
 ></DD
 ><DT
 ><A
@@ -16735,7 +16861,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5269"
+NAME="AEN5310"
 ></A
 ><H2
 >WARNINGS</H2
@@ -16765,7 +16891,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5275"
+NAME="AEN5316"
 ></A
 ><H2
 >VERSION</H2
@@ -16776,7 +16902,7 @@ NAME="AEN5275"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5278"
+NAME="AEN5319"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -16855,7 +16981,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5298"
+NAME="AEN5339"
 ></A
 ><H2
 >AUTHOR</H2

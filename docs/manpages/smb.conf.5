@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "07 March 2001" "" ""
+.TH "SMB.CONF" "5" "08 March 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -632,6 +632,9 @@ each parameter for details. Note that some are synonyms.
 \fIkernel oplocks\fR
 .TP 0.2i
 \(bu
+\fIlanman auth\fR
+.TP 0.2i
+\(bu
 \fIlm announce\fR
 .TP 0.2i
 \(bu
@@ -692,6 +695,9 @@ each parameter for details. Note that some are synonyms.
 \fImax open files\fR
 .TP 0.2i
 \(bu
+\fImax protocol\fR
+.TP 0.2i
+\(bu
 \fImax smbd processes\fR
 .TP 0.2i
 \(bu
@@ -711,6 +717,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fImin password length\fR
+.TP 0.2i
+\(bu
+\fImin protocol\fR
 .TP 0.2i
 \(bu
 \fImin wins ttl\fR
@@ -3093,6 +3102,15 @@ and \fIlevel2 oplocks
 
 Default: \fBkernel oplocks = yes\fR
 .TP
+\fBlanman auth (G)\fR
+This parameter determines whether or not smbd will
+attempt to authentication users using the LANMAN password hash.
+If disabled, only clients which support NT password hashes (e.g. Windows 
+NT/2000 clients, smbclient, etc... but not Windows 95/98 or the MS DOS 
+network client) will be able to connect to the Samba host.
+
+Default : \fBlanman auth = yes\fR
+.TP
 \fBlevel2 oplocks (S)\fR
 This parameter controls whether Samba supports
 level2 (read-only) oplocks on a share.
@@ -3862,6 +3880,48 @@ Default: \fBmax print jobs = 1000\fR
 
 Example: \fBmax print jobs = 5000\fR
 .TP
+\fBmax protocol (G)\fR
+The value of the parameter (a string) is the highest 
+protocol level that will be supported by the server.
+
+Possible values are :
+.RS
+.TP 0.2i
+\(bu
+CORE: Earliest version. No 
+concept of user names.
+.TP 0.2i
+\(bu
+COREPLUS: Slight improvements on 
+CORE for efficiency.
+.TP 0.2i
+\(bu
+LANMAN1: First \fB modern\fR version of the protocol. Long filename
+support.
+.TP 0.2i
+\(bu
+LANMAN2: Updates to Lanman1 protocol.
+.TP 0.2i
+\(bu
+NT1: Current up to date version of 
+the protocol. Used by Windows NT. Known as CIFS.
+.RE
+.PP
+Normally this option should not be set as the automatic 
+negotiation phase in the SMB protocol takes care of choosing 
+the appropriate protocol.
+.PP
+.PP
+See also \fImin
+protocol\fR
+.PP
+.PP
+Default: \fBmax protocol = NT1\fR
+.PP
+.PP
+Example: \fBmax protocol = LANMAN1\fR
+.PP
+.TP
 \fBmax smbd processes (G)\fR
 This parameter limits the maximum number of 
 \fBsmbd(8)\fR <URL:smbd.8.html>
@@ -4004,6 +4064,25 @@ See also the \fIprinting
 Default: \fBmin print space = 0\fR
 
 Example: \fBmin print space = 2000\fR
+.TP
+\fBmin protocol (G)\fR
+The value of the parameter (a string) is the 
+lowest SMB protocol dialect than Samba will support. Please refer
+to the \fImax protocol\fR
+parameter for a list of valid protocol names and a brief description
+of each. You may also wish to refer to the C source code in
+\fIsource/smbd/negprot.c\fR for a listing of known protocol
+dialects supported by clients.
+
+If you are viewing this parameter as a security measure, you should
+also refer to the \fIlanman 
+auth\fR parameter. Otherwise, you should never need 
+to change this parameter.
+
+Default : \fBmin protocol = CORE\fR
+
+Example : \fBmin protocol = NT1\fR # disable DOS 
+clients
 .TP
 \fBmin wins ttl (G)\fR
 This option tells nmbd(8) <URL:nmbd.8.html>
@@ -4399,7 +4478,10 @@ Some client/server combinations have difficulty
 with mixed-case passwords. One offending client is Windows for 
 Workgroups, which for some reason forces passwords to upper 
 case when using the LANMAN1 protocol, but leaves them alone when 
-using COREPLUS!
+using COREPLUS! Another problem child is the Windows 95/98
+family of operating systems. These clients upper case clear
+text passwords even when NT LM 0.12 selected by the protocol
+negotiation request/response.
 
 This parameter defines the maximum number of characters 
 that may be upper case in passwords.
@@ -4750,11 +4832,11 @@ A minimal printcap file would look something like this:
 
 .sp
 .nf
-print1|My Printer 1
-print2|My Printer 2
-print3|My Printer 3
-print4|My Printer 4
-print5|My Printer 5
+		print1|My Printer 1
+		print2|My Printer 2
+		print3|My Printer 3
+		print4|My Printer 4
+		print5|My Printer 5
 		
 .sp
 .fi
@@ -4902,42 +4984,7 @@ This option can be set on a per printer basis
 See also the discussion in the  [printers] section.
 .TP
 \fBprotocol (G)\fR
-The value of the parameter (a string) is the highest 
-protocol level that will be supported by the server.
-
-Possible values are :
-.RS
-.TP 0.2i
-\(bu
-CORE: Earliest version. No 
-concept of user names.
-.TP 0.2i
-\(bu
-COREPLUS: Slight improvements on 
-CORE for efficiency.
-.TP 0.2i
-\(bu
-LANMAN1: First \fB modern\fR version of the protocol. Long filename
-support.
-.TP 0.2i
-\(bu
-LANMAN2: Updates to Lanman1 protocol.
-.TP 0.2i
-\(bu
-NT1: Current up to date version of 
-the protocol. Used by Windows NT. Known as CIFS.
-.RE
-.PP
-Normally this option should not be set as the automatic 
-negotiation phase in the SMB protocol takes care of choosing 
-the appropriate protocol.
-.PP
-.PP
-Default: \fBprotocol = NT1\fR
-.PP
-.PP
-Example: \fBprotocol = LANMAN1\fR
-.PP
+Synonym for  \fImax protocol\fR.
 .TP
 \fBpublic (S)\fR
 Synonym for \fIguest 
