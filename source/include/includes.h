@@ -1168,6 +1168,10 @@ extern char *sys_errlist[];
 #include "kanji.h"
 #include "charset.h"
 
+#ifndef MAXCODEPAGELINES
+#define MAXCODEPAGELINES 256
+#endif
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 

@@ -267,7 +267,7 @@ BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname)
 #endif
 
 #ifdef AIX
-  if (strlocate(psz,"/qconfig") != NULL)
+  if (strlocate(psz,"/qconfig"))
      return(ScanQconfig(psz,pszPrintername));
 #endif
 
@@ -336,7 +336,7 @@ void pcap_printer_fn(void (*fn)())
 #endif
 
 #ifdef AIX
-  if (strlocate(psz,"/qconfig") != NULL)
+  if (strlocate(psz,"/qconfig"))
   {
   	ScanQconfig_fn(psz,fn);
      return;
