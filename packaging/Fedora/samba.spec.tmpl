@@ -154,8 +154,9 @@ ln -s ../..%{initdir}/smb  $RPM_BUILD_ROOT%{_sbindir}/samba
 install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 $RPM_SOURCE_DIR/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
-## mount.smbfs is installed by Samba's Makefile
-## ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
+## Samba's Makefile is breaking this currently.  Remove it and set our own
+/bin/rm -f $RPM_BUILD_ROOT/sbin/mount.smbfs
+ln -s ../usr/bin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT%{_sysconfdir}/samba/lmhosts
 
 # pam_smbpass
@@ -165,11 +166,11 @@ mv source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass.so
 # winbind
 mkdir -p $RPM_BUILD_ROOT/%{_lib}/security
 install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind.so
-mkdir -p $RPM_BUILD_ROOT%{_libdir}
 install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_lib}/libnss_winbind.so
-ln -sf /%{_lib}/libnss_winbind.so  $RPM_BUILD_ROOT%{_libdir}/libnss_winbind.so.2
 install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_lib}/libnss_wins.so
-ln -sf /%{_lib}/libnss_wins.so  $RPM_BUILD_ROOT%{_libdir}/libnss_wins.so.2
+( cd $RPM_BUILD_ROOT/%{_lib}; 
+  ln -sf libnss_winbind.so  libnss_winbind.so.2;
+  ln -sf libnss_wins.so  libnss_wins.so.2 )
 
 # libsmbclient
 
@@ -266,7 +267,6 @@ fi
 %{_mandir}/man1/smbstatus.1*
 %{_mandir}/man5/smbpasswd.5*
 %{_mandir}/man7/samba.7*
-%{_mandir}/man7/Samba.7*
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man8/pdbedit.8*
 %{_mandir}/man8/smbd.8*
@@ -303,6 +303,7 @@ fi
 %{_bindir}/smbmnt
 %{_bindir}/smbumount
 %{_bindir}/findsmb
+%{_bindir}/tdbdump
 %{_mandir}/man8/smbmnt.8*
 %{_mandir}/man8/smbmount.8*
 %{_mandir}/man8/smbumount.8*
@@ -328,8 +329,8 @@ fi
 
 %files common
 %defattr(-,root,root)
-/%{_lib}/libnss_wins.so.*
-/%{_lib}/libnss_winbind.so.*
+/%{_lib}/libnss_wins.so*
+/%{_lib}/libnss_winbind.so*
 /%{_lib}/security/pam_winbind.so
 %{_libdir}/libsmbclient.a
 %{_libdir}/libsmbclient.so
@@ -348,7 +349,6 @@ fi
 #%{_bindir}/vfstest
 %{_sbindir}/winbindd
 %dir /var/cache/samba
-%attr(750,root,root) %dir /var/cache/samba/winbindd_privileged
 %config(noreplace) %{_sysconfdir}/samba/smb.conf
 %config(noreplace) %{_sysconfdir}/samba/lmhosts
 %dir %{_datadir}/samba

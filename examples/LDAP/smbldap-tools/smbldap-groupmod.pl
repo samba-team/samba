@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# $Id: smbldap-groupmod.pl,v 1.1.8.5 2003/12/04 22:02:05 jerry Exp $
-#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #

@@ -28,7 +28,7 @@ RETVAL=0
 start() {
 	echo -n "Starting Winbind services: "
 	RETVAL=1
-	if [ "`grep -i 'idmap uid' /etc/samba/smb.conf | egrep -v [\#\;]`" -a "`grep -i 'idmap gid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
+	if [ "`grep -i -E '(idmap|winbind) uid' /etc/samba/smb.conf | egrep -v [\#\;]`" -a "`grep -i -E '(idmap|winbind) gid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
 		daemon winbindd
 		RETVAL=$?
 	else
