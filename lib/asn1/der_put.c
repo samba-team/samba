@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -264,6 +264,15 @@ encode_unsigned (unsigned char *p, size_t len, const unsigned *data,
     p -= l;
     len -= l;
     ret += l;
+    /* if first octet has msb set, we need to pad with a zero byte */
+    if(p[1] >= 128) {
+	if(len == 0)
+	    return ASN1_OVERFLOW;
+	*p-- = 0;
+	len--;
+	ret++;
+	l++;
+    }
     e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Integer, &l);
     if (e)
 	return e;

@@ -91,6 +91,43 @@ test_integer (void)
 }
 
 static int
+cmp_unsigned (void *a, void *b)
+{
+    return *(unsigned int*)b - *(unsigned int*)a;
+}
+
+static int
+test_unsigned (void)
+{
+    struct test_case tests[] = {
+	{NULL, 3, "\x02\x01\x00"},
+	{NULL, 3, "\x02\x01\x7f"},
+	{NULL, 4, "\x02\x02\x00\x80"},
+	{NULL, 4, "\x02\x02\x01\x00"},
+	{NULL, 4, "\x02\x02\x02\x00"},
+	{NULL, 5, "\x02\x03\x00\x80\x00"},
+	{NULL, 7, "\x02\x05\x00\x80\x00\x00\x00"},
+	{NULL, 6, "\x02\x04\x7f\xff\xff\xff"}
+    };
+
+    unsigned int values[] = {0, 127, 128, 256, 512, 32768, 
+			     0x80000000, 0x7fffffff};
+    int i;
+    int ntests = sizeof(tests) / sizeof(*tests);
+
+    for (i = 0; i < ntests; ++i) {
+	tests[i].val = &values[i];
+	asprintf (&tests[i].name, "unsigned %u", values[i]);
+    }
+
+    return generic_test (tests, ntests, sizeof(int),
+			 (generic_encode)encode_unsigned,
+			 (generic_length) length_unsigned,
+			 (generic_decode)decode_unsigned,
+			 cmp_unsigned);
+}
+
+static int
 cmp_octet_string (void *a, void *b)
 {
     octet_string *oa = (octet_string *)a;
@@ -189,6 +226,7 @@ main(int argc, char **argv)
     int ret = 0;
 
     ret += test_integer ();
+    ret += test_unsigned ();
     ret += test_octet_string ();
     ret += test_general_string ();
     ret += test_generalized_time ();
