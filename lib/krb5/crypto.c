@@ -2698,6 +2698,14 @@ krb5_enctype_valid(krb5_context context,
     return _find_enctype(etype) != NULL;
 }
 
+krb5_error_code
+krb5_cksumtype_valid(krb5_context context, 
+		     krb5_cksumtype ctype)
+{
+    return _find_checksum(ctype) != NULL;
+}
+
+
 /* if two enctypes have compatible keys */
 krb5_boolean
 krb5_enctypes_compatible_keys(krb5_context context,
