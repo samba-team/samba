@@ -638,8 +638,8 @@ CLASS="VARIABLELIST"
 ><P
 >the architecture of the remote
 		machine. Only some are recognized, and those may not be 
-		100% reliable. It currently recognizes Samba, WfWg, 
-		WinNT and Win95. Anything else will be known as 
+		100% reliable. It currently recognizes Samba, WfWg, Win95,
+		WinNT and Win2k. Anything else will be known as 
 		"UNKNOWN". If it gets it wrong then sending a level 
 		3 log to <A
 HREF="mailto:samba@samba.org"
@@ -14066,8 +14066,14 @@ CLASS="PARAMETER"
 		</I
 ></TT
 > will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server, the printer 
-		name is discussed below.</P
+		spool file name is generated automatically by the server.  The 
+		<TT
+CLASS="PARAMETER"
+><I
+>%J</I
+></TT
+> macro can be used to access the job 
+		name as transmitted by the client.</P
 ><P
 >The print command <EM
 >MUST</EM
@@ -19181,7 +19187,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6051"
+NAME="AEN6052"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19211,7 +19217,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6057"
+NAME="AEN6058"
 ></A
 ><H2
 >VERSION</H2
@@ -19222,7 +19228,7 @@ NAME="AEN6057"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6060"
+NAME="AEN6061"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19301,7 +19307,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6080"
+NAME="AEN6081"
 ></A
 ><H2
 >AUTHOR</H2

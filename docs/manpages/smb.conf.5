@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "11 November 2001" "" ""
+.TH "SMB.CONF" "5" "21 November 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -387,8 +387,8 @@ process.
 \fB%a\fR
 the architecture of the remote
 machine. Only some are recognized, and those may not be 
-100% reliable. It currently recognizes Samba, WfWg, 
-WinNT and Win95. Anything else will be known as 
+100% reliable. It currently recognizes Samba, WfWg, Win95,
+WinNT and Win2k. Anything else will be known as 
 "UNKNOWN". If it gets it wrong then sending a level 
 3 log to samba@samba.org
  <URL:mailto:samba@samba.org> should allow it to be fixed.
@@ -5173,8 +5173,9 @@ verbatim, with two exceptions: All occurrences of \fI%s
 \fRand \fI%f\fR will be replaced by the 
 appropriate spool file name, and all occurrences of \fI%p
 \fRwill be replaced by the appropriate printer name. The 
-spool file name is generated automatically by the server, the printer 
-name is discussed below.
+spool file name is generated automatically by the server. The 
+\fI%J\fR macro can be used to access the job 
+name as transmitted by the client.
 
 The print command \fBMUST\fR contain at least 
 one occurrence of \fI%s\fR or \fI%f

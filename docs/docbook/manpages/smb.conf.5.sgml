@@ -436,8 +436,8 @@
 		<term>%a</term>
 		<listitem><para>the architecture of the remote
 		machine. Only some are recognized, and those may not be 
-		100% reliable. It currently recognizes Samba, WfWg, 
-		WinNT and Win95. Anything else will be known as 
+		100% reliable. It currently recognizes Samba, WfWg, Win95,
+		WinNT and Win2k. Anything else will be known as 
 		"UNKNOWN". If it gets it wrong then sending a level 
 		3 log to <ulink url="mailto:samba@samba.org">samba@samba.org
 		</ulink> should allow it to be fixed.</para></listitem>
@@ -5660,8 +5660,9 @@
 		</parameter> and <parameter>%f</parameter> will be replaced by the 
 		appropriate spool file name, and all occurrences of <parameter>%p
 		</parameter> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server, the printer 
-		name is discussed below.</para>
+		spool file name is generated automatically by the server.  The 
+		<parameter>%J</parameter> macro can be used to access the job 
+		name as transmitted by the client.</para>
 
 		<para>The print command <emphasis>MUST</emphasis> contain at least 
 		one occurrence of <parameter>%s</parameter> or <parameter>%f
