@@ -151,7 +151,16 @@ set_address (EncTicketPart *et,
 	   single address; best guess is to use the address the
 	   connection came from */
 	
-	free_HostAddresses(et->caddr);
+	if (et->caddr != NULL) {
+	    free_HostAddresses(et->caddr);
+	} else {
+	    et->caddr = malloc (sizeof (*et->caddr));
+	    if (et->caddr == NULL) {
+		krb5_free_address(context, v4_addr);
+		free(v4_addr);
+		return ENOMEM;
+	    }
+	}
 	et->caddr->val = v4_addr;
 	et->caddr->len = 1;
     } else {
