@@ -1,3 +1,22 @@
+Sat Aug  9 00:47:28 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/otp: resurrected from krb4
+
+	* appl/push: new program for fetching mail with POP.
+
+	* appl/popper/popper.h: new include files.  new fields in `POP'
+
+	* appl/popper/pop_pass.c: Implement both v4 and v5.
+
+	* appl/popper/pop_init.c: Implement both v4 and v5.
+
+	* appl/popper/pop_debug.c: use getarg.  Talk both v4 and v5
+
+	* appl/popper: Popper from krb4.
+
+	* configure.in: check for inline and <netinet/tcp.h> generate
+ 	files in appl/popper, appl/push, and lib/otp
+
 Fri Aug  8 05:51:02 1997  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_cred.c: clean-up and try to free memory even when
