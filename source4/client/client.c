@@ -689,7 +689,7 @@ static int cmd_du(void)
 		else
 			pstrcat(mask,p);
 	} else {
-		pstrcat(mask,"*");
+		pstrcat(mask,"\\*");
 	}
 
 	do_list(mask, attribute, do_du, recurse, True);
