@@ -31,16 +31,19 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 			       struct smbsrv_request *req, uint16_t fnum)
 {
 	struct pvfs_file *f;
-	for (f=pvfs->open_files;f;f=f->next) {
-		if (f->fnum == fnum) {
-			if (req->session != f->session) {
-				DEBUG(2,("pvfs_find_fd: attempt to use wrong session for fnum %d\n", fnum));
-				return NULL;
-			}
-			return f;
-		}
+
+	f = idr_find(pvfs->idtree_fnum, fnum);
+	if (f == NULL) {
+		return NULL;
 	}
-	return NULL;
+
+	if (req->session != f->session) {
+		DEBUG(2,("pvfs_find_fd: attempt to use wrong session for fnum %d\n", 
+			 fnum));
+		return NULL;
+	}
+
+	return f;
 }
 
 /*
@@ -52,14 +55,15 @@ static int pvfs_fd_destructor(void *p)
 {
 	struct pvfs_file *f = p;
 
-	pvfs_lock_close_pending(f->pvfs, f);
-
-	brl_close(f->pvfs->brl_context, &f->locking_key, f->fnum);
+	pvfs_lock_close(f->pvfs, f);
 
 	if (f->fd != -1) {
 		close(f->fd);
 		f->fd = -1;
 	}
+
+	idr_remove(f->pvfs->idtree_fnum, f->fnum);
+
 	return 0;
 }
 
@@ -80,6 +84,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		dev_t device;
 		ino_t inode;
 	} lock_context;
+	int fnum;
 
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io, ntvfs);
@@ -147,6 +152,17 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		}
 	}
 
+	f = talloc_p(pvfs, struct pvfs_file);
+	if (f == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fnum = idr_get_new(pvfs->idtree_fnum, f, 0x10000);
+	if (fnum == -1) {
+		talloc_free(f);
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
 do_open:
 	fd = open(name->full_name, flags, 0644);
 	if (fd == -1) {
@@ -155,25 +171,20 @@ do_open:
 		return pvfs_map_errno(pvfs,errno);
 	}
 
-	f = talloc_p(pvfs, struct pvfs_file);
-	if (f == NULL) {
-		close(fd);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/* re-resolve the open fd */
 	status = pvfs_resolve_name_fd(pvfs, fd, name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	f->fnum = fd;
+	f->fnum = fnum;
 	f->fd = fd;
 	f->name = talloc_steal(f, name);
 	f->session = req->session;
 	f->smbpid = req->smbpid;
 	f->pvfs = pvfs;
 	f->pending_list = NULL;
+	f->lock_count = 0;
 
 	/* we must zero here to take account of padding */
 	ZERO_STRUCT(lock_context);
@@ -223,22 +234,16 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	pvfs_lock_close_pending(pvfs, f);
-
-	status = brl_close(pvfs->brl_context, &f->locking_key, f->fnum);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if (close(f->fd) != 0) {
 		status = pvfs_map_errno(pvfs, errno);
 	} else {
 		status = NT_STATUS_OK;
 	}
-
-	talloc_set_destructor(f, NULL);
+	f->fd = -1;
 
 	DLIST_REMOVE(pvfs->open_files, f);
+
+	/* the destructor takes care of the rest */
 	talloc_free(f);
 
 	return status;
@@ -257,7 +262,6 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 	for (f=pvfs->open_files;f;f=next) {
 		next = f->next;
 		if (f->session == req->session) {
-			talloc_set_destructor(f, NULL);
 			DLIST_REMOVE(pvfs->open_files, f);
 			talloc_free(f);
 		}
@@ -279,7 +283,6 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 	for (f=pvfs->open_files;f;f=next) {
 		next = f->next;
 		if (f->smbpid == req->smbpid) {
-			talloc_set_destructor(f, NULL);
 			DLIST_REMOVE(pvfs->open_files, f);
 			talloc_free(f);
 		}
