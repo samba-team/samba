@@ -24,7 +24,6 @@
 extern int DEBUGLEVEL;
 
 
-#if 0 /* NEED TO DO THIS TO GET A COMPILE - LUKE PLEASE CHECK THIS !!! */
 /*******************************************************************
 reads or writes an LSA_R_OPEN_POL structure.
 ********************************************************************/
@@ -298,7 +297,7 @@ char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int
 
 	q = align_offset(q, base, align);
     
-	q = smb_io_chal(io, &(r_s->srv_chal), q, base, align); /* server challenge */
+	q = smb_io_cred(io, &(r_s->srv_cred), q, base, align); /* server challenge */
 
 	RW_IVAL(io, q, r_s->status, 0); q += 4;
 
@@ -351,8 +350,8 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 	RW_IVAL(io, q, usr->buffer_dom_id, 0); q += 4; /* undocumented logon domain id pointer */
 	RW_PCVAL(io, q, usr->padding, 40); q += 40; /* unused padding bytes? */
 
-	RW_IVAL(io, q, usr->num_sids, 0); q += 4; /* 0 - num_sids */
-	RW_IVAL(io, q, usr->buffer_sids, 0); q += 4; /* NULL - undocumented pointer to SIDs. */
+	RW_IVAL(io, q, usr->num_other_sids, 0); q += 4; /* 0 - num_sids */
+	RW_IVAL(io, q, usr->buffer_other_sids, 0); q += 4; /* NULL - undocumented pointer to SIDs. */
 	
 	q = smb_io_unistr2(io, &(usr->uni_user_name)   , q, base, align); /* username unicode string */
 	q = smb_io_unistr2(io, &(usr->uni_full_name)   , q, base, align); /* user's full name unicode string */
@@ -370,9 +369,12 @@ char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int ali
 	q = smb_io_unistr2(io, &( usr->uni_logon_srv), q, base, align); /* logon server unicode string */
 	q = smb_io_unistr2(io, &( usr->uni_logon_dom), q, base, align); /* logon domain unicode string */
 
-	q = smb_io_dom_sid(io, &(usr->undoc_dom_sids[0]), q, base, align); /* undocumented - domain SIDs */
-	q = smb_io_dom_sid(io, &(usr->undoc_dom_sids[1]), q, base, align); /* undocumented - domain SIDs */
 	q = smb_io_dom_sid(io, &(usr->dom_sid), q, base, align);           /* domain SID */
+
+	for (i = 0; i < usr->num_other_sids; i++)
+	{
+		q = smb_io_dom_sid(io, &(usr->other_sids[i]), q, base, align); /* other domain SIDs */
+	}
 
 	return q;
 }
@@ -447,7 +449,6 @@ char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, i
 	return q;
 }
 
-#endif /* 0 LUKE PLEASE CHECK !! */
 #if 0
 /*******************************************************************
 reads or writes a structure.
@@ -463,5 +464,3 @@ reads or writes a structure.
 	return q;
 }
 #endif
-
-
