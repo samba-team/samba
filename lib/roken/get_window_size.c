@@ -49,12 +49,14 @@ RCSID("$Id$");
 #include <sys/types.h>
 #endif
 
+#if 0 /* Where were those needed? /confused */
 #ifdef HAVE_SYS_PROC_H
 #include <sys/proc.h>
 #endif
 
 #ifdef HAVE_SYS_TTY_H
 #include <sys/tty.h>
+#endif
 #endif
 
 #ifdef HAVE_TERMIOS_H
