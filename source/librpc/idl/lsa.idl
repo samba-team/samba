@@ -54,4 +54,40 @@
 		[out,ref]    lsa_SidArray *sids
 		);
 
+	typedef struct {
+		uint16 name_len;
+		uint16 name_size;
+		unistr *name;
+	} lsa_Name;
+
+	typedef struct {
+		uint16 sid_type;
+		lsa_Name name;
+		uint32 sid_index;
+	} lsa_TranslatedName;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TranslatedName *names;
+	} lsa_TransNameArray;
+
+	typedef struct {
+		lsa_Name name;
+		dom_sid2 *sid;
+	} lsa_TrustInformation;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] lsa_TrustInformation *domains;
+		uint32 max_count;
+	} lsa_RefDomainList;
+
+	NTSTATUS lsa_LookupSids (
+		[in,ref]     policy_handle *handle,
+		[in,ref]     lsa_SidArray *sids,
+		[out]        lsa_RefDomainList *domains,
+		[in,out,ref] lsa_TransNameArray *names,
+		[in]         uint16 level,
+		[in,out,ref] uint32 *count
+		);
 }

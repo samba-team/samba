@@ -144,6 +144,61 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, struct policy_handle *handle
 }
 
 
+static BOOL test_LookupSids(struct dcerpc_pipe *p, 
+			    TALLOC_CTX *mem_ctx, 
+			    struct policy_handle *handle,
+			    struct lsa_SidArray *sids)
+{
+	struct lsa_LookupSids r;
+	struct lsa_TransNameArray names;
+	uint32 count = sids->num_sids;
+	NTSTATUS status;
+	int i;
+
+	printf("\nTesting LookupSids\n");
+
+	names.count = 0;
+	names.names = NULL;
+
+	r.in.handle = handle;
+	r.in.sids = sids;
+	r.in.names = &names;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.out.count = &count;
+	r.out.names = &names;
+
+	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("LookupSids failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (r.out.domains) {
+		printf("lookup gave %d domains (max_count=%d)\n", 
+		       r.out.domains->count,
+		       r.out.domains->max_count);
+		for (i=0;i<r.out.domains->count;i++) {
+			printf("name='%s' sid=%s\n", 
+			       r.out.domains->domains[i].name.name,
+			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
+		}
+	}
+
+	printf("lookup gave %d names (names.count=%d)\n", count, names.count);
+	for (i=0;i<names.count;i++) {
+		printf("type=%d sid_index=%d name='%s'\n", 
+		       names.names[i].sid_type,
+		       names.names[i].sid_index,
+		       names.names[i].name.name);
+	}
+
+
+	printf("\n");
+
+	return True;
+}
+
 static BOOL test_EnumSids(struct dcerpc_pipe *p, 
 			  TALLOC_CTX *mem_ctx, 
 			  struct policy_handle *handle)
@@ -168,11 +223,15 @@ static BOOL test_EnumSids(struct dcerpc_pipe *p,
 		printf("%s\n", lsa_sid_string_talloc(mem_ctx, sids1.sids[i].sid));
 	}
 
+	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
+		return False;
+	}
+	
 	if (sids1.num_sids < 3) {
 		return True;
 	}
 	
-	printf("trying partial listing (asking for 1 at 2)\n");
+	printf("trying EnumSids partial listing (asking for 1 at 2)\n");
 	resume_handle = 2;
 	status = dcerpc_lsa_EnumSids(p, mem_ctx, handle, &resume_handle, 1, &sids2);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -258,3 +258,202 @@ NTSTATUS ndr_pull_lsa_EnumSids(struct ndr_pull *ndr, struct lsa_EnumSids *r)
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS ndr_push_lsa_Name(struct ndr_push *ndr, int ndr_flags, struct lsa_Name *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint16(ndr, r->name_len));
+	NDR_CHECK(ndr_push_uint16(ndr, r->name_size));
+	NDR_CHECK(ndr_push_ptr(ndr, r->name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_push_unistr(ndr, r->name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_Name(struct ndr_pull *ndr, int ndr_flags, struct lsa_Name *r)
+{
+	uint32 _ptr_name;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->name_len));
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->name_size));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_name));
+	if (_ptr_name) {
+		NDR_ALLOC(ndr, r->name);
+	} else {
+		r->name = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->name) {
+		NDR_CHECK(ndr_pull_unistr(ndr, &r->name));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags, struct lsa_TranslatedName *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint16(ndr, r->sid_type));
+	NDR_CHECK(ndr_push_lsa_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_push_uint32(ndr, r->sid_index));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_push_lsa_Name(ndr, ndr_flags, &r->name));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_TranslatedName(struct ndr_pull *ndr, int ndr_flags, struct lsa_TranslatedName *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, &r->sid_type));
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->sid_index));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_TransNameArray(struct ndr_push *ndr, int ndr_flags, struct lsa_TransNameArray *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->names));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->names) {
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->names, sizeof(r->names[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_TranslatedName));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int ndr_flags, struct lsa_TransNameArray *r)
+{
+	uint32 _ptr_names;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_names));
+	if (_ptr_names) {
+		NDR_ALLOC(ndr, r->names);
+	} else {
+		r->names = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->names) {
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->names, sizeof(r->names[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TranslatedName));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_TrustInformation(struct ndr_push *ndr, int ndr_flags, struct lsa_TrustInformation *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_lsa_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_push_ptr(ndr, r->sid));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_push_lsa_Name(ndr, ndr_flags, &r->name));
+	if (r->sid) {
+		NDR_CHECK(ndr_push_dom_sid2(ndr, r->sid));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_TrustInformation(struct ndr_pull *ndr, int ndr_flags, struct lsa_TrustInformation *r)
+{
+	uint32 _ptr_sid;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_lsa_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_sid));
+	if (_ptr_sid) {
+		NDR_ALLOC(ndr, r->sid);
+	} else {
+		r->sid = NULL;
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_lsa_Name(ndr, ndr_flags, &r->name));
+	if (r->sid) {
+		NDR_CHECK(ndr_pull_dom_sid2(ndr, r->sid));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_push_lsa_RefDomainList(struct ndr_push *ndr, int ndr_flags, struct lsa_RefDomainList *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_push_uint32(ndr, r->count));
+	NDR_CHECK(ndr_push_ptr(ndr, r->domains));
+	NDR_CHECK(ndr_push_uint32(ndr, r->max_count));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->domains) {
+		NDR_CHECK(ndr_push_array(ndr, ndr_flags, r->domains, sizeof(r->domains[0]), r->count, (ndr_push_flags_fn_t)ndr_push_lsa_TrustInformation));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int ndr_flags, struct lsa_RefDomainList *r)
+{
+	uint32 _ptr_domains;
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->count));
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domains));
+	if (_ptr_domains) {
+		NDR_ALLOC(ndr, r->domains);
+	} else {
+		r->domains = NULL;
+	}
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->max_count));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	if (r->domains) {
+		NDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)&r->domains, sizeof(r->domains[0]), r->count, (ndr_pull_flags_fn_t)ndr_pull_lsa_TrustInformation));
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_lsa_LookupSids(struct ndr_push *ndr, struct lsa_LookupSids *r)
+{
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_lsa_SidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
+	NDR_CHECK(ndr_push_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.names));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
+	NDR_CHECK(ndr_push_uint32(ndr, *r->in.count));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, struct lsa_LookupSids *r)
+{
+	uint32 _ptr_domains;
+	NDR_ALLOC(ndr, r->out.domains);
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_domains));
+	if (_ptr_domains) {
+		NDR_ALLOC(ndr, r->out.domains);
+	} else {
+		r->out.domains = NULL;
+	}
+	if (r->out.domains) {
+		NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+	}
+	NDR_CHECK(ndr_pull_lsa_TransNameArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.names));
+	NDR_CHECK(ndr_pull_uint32(ndr, r->out.count));
+	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
+
+	return NT_STATUS_OK;
+}
+
