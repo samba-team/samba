@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -141,6 +141,7 @@ verify_mic_des3
   int cmp;
   Checksum csum;
   char *tmp;
+  char ivec[8];
   
   p = token_buffer->value;
   ret = gssapi_krb5_verify_header (&p,
@@ -167,11 +168,15 @@ verify_mic_des3
   }
 
   /* verify sequence number */
+  if (context_handle->more_flags & COMPAT_OLD_DES3)
+      memset(ivec, 0, 8);
+  else
+      memcpy(ivec, p + 8, 8);
 
-  ret = krb5_decrypt (gssapi_krb5_context,
-		      crypto,
-		      KRB5_KU_USAGE_SEQ,
-		      p, 8, &seq_data);
+  ret = krb5_decrypt_ivec (gssapi_krb5_context,
+			   crypto,
+			   KRB5_KU_USAGE_SEQ,
+			   p, 8, &seq_data, ivec);
   if (ret) {
       gssapi_krb5_set_error_string ();
       krb5_crypto_destroy (gssapi_krb5_context, crypto);
