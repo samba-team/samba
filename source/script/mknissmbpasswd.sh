@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+# Copyright (C) 1998 Benny Holmgren
+#
 # Script to import smbpasswd file into the smbpasswd NIS+ table. Reads
 # from stdin the smbpasswd file.
 #
