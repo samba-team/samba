@@ -40,6 +40,10 @@
 #include <glob.h>
 #include <netdb.h>
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 extern int h_errno;
 
 #include "extern.h"

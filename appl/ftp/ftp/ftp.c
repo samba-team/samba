@@ -531,6 +531,49 @@ abortsend(int sig)
 
 #define HASHBYTES 1024
 
+
+static int
+copy_stream(FILE *from, FILE *to)
+{
+    char buf[BUFSIZ];
+    int n;
+    int bytes = 0;
+    struct stat st;
+
+    int werr;
+    
+    void *chunk;
+
+#ifdef HAVE_MMAP
+    if(fstat(fileno(from), &st) == 0 && S_ISREG(st.st_mode)){
+	chunk = mmap(0, st.st_size, PROT_READ, MAP_SHARED, fileno(from), 0);
+	if(chunk != NULL){
+	    sec_write(fileno(to), chunk, st.st_size);
+	    munmap(chunk, st.st_size);
+	    sec_fflush(to);
+	    return st.st_size;
+	}
+    }
+#endif
+
+    while((n = read(fileno(from), buf, sizeof(buf))) > 0){
+	werr = sec_write(fileno(to), buf, n);
+	if(werr < 0)
+	    break;
+	bytes += werr;
+    }
+    sec_fflush(to);
+    if(n < 0)
+	warn("local");
+
+    if(werr < 0){
+	if(errno != EPIPE)
+	    warn("netout");
+	bytes = -1;
+    }
+    return bytes;
+}
+
 void
 sendrequest(char *cmd, char *local, char *remote, int printnames)
 {
@@ -675,34 +718,8 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 
 	case TYPE_I:
 	case TYPE_L:
-		errno = d = 0;
-		while ((c = read(fileno(fin), buf, sizeof (buf))) > 0) {
-			bytes += c;
-			for (bufp = buf; c > 0; c -= d, bufp += d)
-			    if ((d = sec_write(fileno(dout), bufp, c)) <= 0)
-				break;
-			if (hash) {
-				while (bytes >= hashbytes) {
-					(void) putchar('#');
-					hashbytes += HASHBYTES;
-				}
-				(void) fflush(stdout);
-			}
-		}
-		sec_fflush(dout);
-		if (hash && bytes > 0) {
-			if (bytes < HASHBYTES)
-				(void) putchar('#');
-			(void) putchar('\n');
-			(void) fflush(stdout);
-		}
-		if (c < 0)
-			warn("local: %s", local);
-		if (d < 0) {
-			if (errno != EPIPE) 
-				warn("netout");
-			bytes = -1;
-		}
+		errno = d = c = 0;
+		bytes = copy_stream(fin, dout);
 		break;
 
 	case TYPE_A:
@@ -1185,19 +1202,21 @@ noport:
 	if (listen(data, 1) < 0)
 		warn("listen");
 	if (sendport) {
-		a = (char *)&data_addr.sin_addr;
-		p = (char *)&data_addr.sin_port;
-#define	UC(b)	(((int)b)&0xff)
-		result =
-		    command("PORT %d,%d,%d,%d,%d,%d",
-		      UC(a[0]), UC(a[1]), UC(a[2]), UC(a[3]),
-		      UC(p[0]), UC(p[1]));
-		if (result == ERROR && sendport == -1) {
-			sendport = 0;
-			tmpno = 1;
-			goto noport;
-		}
-		return (result != COMPLETE);
+	    unsigned int a = ntohl(data_addr.sin_addr.s_addr);
+	    unsigned int p = ntohs(data_addr.sin_port);
+	    result = command("PORT %d,%d,%d,%d,%d,%d", 
+			     (a >> 24) & 0xff,
+			     (a >> 16) & 0xff,
+			     (a >> 8) & 0xff,
+			     a & 0xff,
+			     (p >> 8) & 0xff,
+			     p & 0xff);
+	    if (result == ERROR && sendport == -1) {
+		sendport = 0;
+		tmpno = 1;
+		goto noport;
+	    }
+	    return (result != COMPLETE);
 	}
 	if (tmpno)
 		sendport = 1;
