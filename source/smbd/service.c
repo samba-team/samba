@@ -239,7 +239,7 @@ struct server_connection *server_setup_connection(struct event_context *ev, stru
 */
 void server_terminate_connection(struct server_connection *srv_conn, const char *reason)
 {
-	DEBUG(0,("server_terminate_connection\n"));
+	DEBUG(2,("server_terminate_connection\n"));
 	srv_conn->service->model_ops->terminate_connection(srv_conn, reason);
 }
 
