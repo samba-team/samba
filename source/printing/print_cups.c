@@ -177,6 +177,8 @@ BOOL cups_cache_reload(void)
 	*    requested-attributes
 	*/
 
+	request = ippNew();
+
 	request->request.op.operation_id = CUPS_GET_CLASSES;
 	request->request.op.request_id   = 1;
 
@@ -246,10 +248,6 @@ BOOL cups_cache_reload(void)
 	ret = True;
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -342,10 +340,6 @@ static int cups_job_delete(int snum, struct printjob *pjob)
 	}
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -438,10 +432,6 @@ static int cups_job_pause(int snum, struct printjob *pjob)
 	}
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -534,10 +524,6 @@ static int cups_job_resume(int snum, struct printjob *pjob)
 	}
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -668,10 +654,6 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 	/* else print_job_end will do it for us */
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -988,10 +970,6 @@ static int cups_queue_get(const char *printer_name,
 	*q = queue;
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -1086,10 +1064,6 @@ static int cups_queue_pause(int snum)
 	}
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
@@ -1184,10 +1158,6 @@ static int cups_queue_resume(int snum)
 	}
 
  out:
-
-	if (request)
-		ippDelete(request);
-
 	if (response)
 		ippDelete(response);
 
