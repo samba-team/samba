@@ -1695,7 +1695,7 @@ FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 #endif				/* WITH_LDAP */
- FN_LOCAL_STRING(lp_preexec, szPreExec)
+FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)
 FN_LOCAL_STRING(lp_rootpostexec, szRootPostExec)
