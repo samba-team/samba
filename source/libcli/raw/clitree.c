@@ -269,10 +269,13 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	tcon.tconx.in.path = service;
+	asprintf(&tcon.tconx.in.path, "\\\\%s\\%s", dest_host, service);
 	tcon.tconx.in.device = service_type;
 	
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
+
+	free(tcon.tconx.in.path);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_tree_close(tree);
 		talloc_destroy(mem_ctx);
