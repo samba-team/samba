@@ -2141,8 +2141,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 
 /*The following definitions come from  rpc_client/cli_wkssvc.c  */
 
-BOOL do_wks_query_info(struct cli_state *cli, uint16 fnum, 
-			char *server_name, uint32 switch_value,
+BOOL wks_query_info( char *srv_name, uint32 switch_value,
 			WKS_INFO_100 *wks100);
 
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */

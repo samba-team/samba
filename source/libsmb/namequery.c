@@ -589,10 +589,24 @@ static BOOL resolve_hosts(const char *name, struct in_addr *return_ip)
  or NetBIOS name. This uses the name switch in the
  smb.conf to determine the order of name resolution.
 *********************************************************/
-BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
+BOOL is_ip_address(const char *name)
 {
   int i;
-  BOOL pure_address = True;
+  for (i=0; name[i]; i++)
+    if (!(isdigit((int)name[i]) || name[i] == '.'))
+	return False;
+   
+  return True;
+}
+
+/********************************************************
+ Resolve a name into an IP address. Use this function if
+ the string is either an IP address, DNS or host name
+ or NetBIOS name. This uses the name switch in the
+ smb.conf to determine the order of name resolution.
+*********************************************************/
+BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
+{
   pstring name_resolve_list;
   fstring tok;
   char *ptr;
@@ -606,12 +620,8 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
     return True;
   }
    
-  for (i=0; pure_address && name[i]; i++)
-    if (!(isdigit((int)name[i]) || name[i] == '.'))
-      pure_address = False;
-   
   /* if it's in the form of an IP address then get the lib to interpret it */
-  if (pure_address) {
+  if (is_ip_address(name)) {
     return_ip->s_addr = inet_addr(name);
     return True;
   }
@@ -654,6 +664,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 				struct in_addr *ip)
 {
+	BOOL ret;
 	DEBUG(10,("resolve_srv_name: %s\n", srv_name));
 
 	if (srv_name == NULL || strequal("\\\\.", srv_name))
@@ -669,7 +680,14 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
 	}
 
 	fstrcpy(dest_host, &srv_name[2]);
-	return resolve_name(dest_host, ip, 0x20);
+	ret = resolve_name(dest_host, ip, 0x20);
+	
+	if (is_ip_address(dest_host))
+	{
+		fstrcpy(dest_host, "*SMBSERVER");
+	}
+	
+	return ret;
 }
 
 /********************************************************
