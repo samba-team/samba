@@ -27,3 +27,12 @@ struct creds_CredentialState {
 	struct netr_Credential client;
 	struct netr_Credential server;
 };
+
+
+/* for the timebeing, use the same neg flags as Samba3. */
+/* The 7 here seems to be required to get Win2k not to downgrade us
+   to NT4.  Actually, anything other than 1ff would seem to do... */
+#define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff
+
+#define NETLOGON_NEG_SCHANNEL    0x40000000
+

@@ -187,16 +187,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	NTSTATUS nt_status;
 	DATA_BLOB user_sess_key = data_blob(NULL, 0);
 	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
-	const uint8 *lm_pwd, *nt_pwd;
-	const char *unicodePwd;
-	struct samr_Hash lmPwdHash_u, ntPwdHash_u;
-	struct samr_Hash *lmPwdHash, *ntPwdHash;
-	uint_t num_lm, num_nt;
+	uint8 *lm_pwd, *nt_pwd;
 
 	struct dom_sid *domain_sid;
 
 	const char *attrs[] = {"unicodePwd", "lmPwdHash", "ntPwdHash", 
-			       "sAMAcctFlags", 
+			       "userAccountControl",
 			       "pwdLastSet",
 			       "accountExpires",
 			       "objectSid",
@@ -204,7 +200,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 			       NULL,
 	};
 
-	const char *domain_attrs[] =  {NULL};
+	const char *domain_attrs[] =  {"name"};
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -270,40 +266,9 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
-	unicodePwd = samdb_result_string(msgs[0], "unicodePwd", NULL);
-	
-	if (unicodePwd) {
-		BOOL lm_hash_ok;
-		/* compute the new nt and lm hashes */
-		lm_hash_ok = E_deshash(unicodePwd, lmPwdHash_u.hash);
-		E_md4hash(unicodePwd, ntPwdHash_u.hash);
-
-		if (lm_hash_ok) {
-			lm_pwd = lmPwdHash_u.hash;
-		} else {
-			lm_pwd = NULL;
-		}
-
-		nt_pwd = ntPwdHash_u.hash;
-		
-	} else {
-		num_lm = samdb_result_hashes(mem_ctx, msgs[0], "lmPwdHash", &lmPwdHash);
-		if (num_lm == 0) {
-			lm_pwd = NULL;
-		} else if (num_lm > 1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		} else {
-			lm_pwd = lmPwdHash[0].hash;
-		}
-		
-		num_nt = samdb_result_hashes(mem_ctx, msgs[0], "ntPwdHash", &ntPwdHash);
-		if (num_nt == 0) {
-			nt_pwd = NULL;
-		} else if (num_nt > 1) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		} else {
-			nt_pwd = ntPwdHash[0].hash;
-		}
+	if (!NT_STATUS_IS_OK(nt_status = samdb_result_passwords(mem_ctx, msgs[0], 
+								&lm_pwd, &nt_pwd))) {
+		return nt_status;
 	}
 
 	nt_status = sam_password_ok(auth_context, mem_ctx, 

@@ -330,9 +330,9 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static char *samr_rand_pass(TALLOC_CTX *mem_ctx)
 {
 	size_t len = 8 + (random() % 6);
-	char *s = generate_random_str(len);
+	char *s = generate_random_str(mem_ctx, len);
 	printf("Generated password '%s'\n", s);
-	return talloc_strdup(mem_ctx, s);
+	return s;
 }
 
 static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 

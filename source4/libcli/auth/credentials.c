@@ -4,6 +4,7 @@
    code to manipulate domain credentials
 
    Copyright (C) Andrew Tridgell 1997-2003
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -36,6 +37,10 @@ static void creds_init(struct creds_CredentialState *creds,
 	uint32 sum[2];
 	uint8 sum2[8];
 
+	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
+	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
+	dump_data_pw("Machine Pass", machine_password, 16);
+
 	sum[0] = IVAL(client_challenge->data, 0) + IVAL(server_challenge->data, 0);
 	sum[1] = IVAL(client_challenge->data, 4) + IVAL(server_challenge->data, 4);
 
@@ -43,8 +48,6 @@ static void creds_init(struct creds_CredentialState *creds,
 	SIVAL(sum2,4,sum[1]);
 
 	cred_hash1(creds->session_key, sum2, machine_password);
-
-	creds->sequence = time(NULL);
 
 	SIVAL(time_cred.data, 0, IVAL(client_challenge->data, 0));
 	SIVAL(time_cred.data, 4, IVAL(client_challenge->data, 4));
@@ -136,6 +139,7 @@ void creds_client_init(struct creds_CredentialState *creds,
 		       struct netr_Credential *initial_credential)
 {
 	creds_init(creds, client_challenge, server_challenge, machine_password);
+	creds->sequence = time(NULL);
 
 	*initial_credential = creds->client;
 }
@@ -146,7 +150,8 @@ void creds_client_init(struct creds_CredentialState *creds,
 BOOL creds_client_check(struct creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials)
 {
-	if (memcmp(received_credentials->data, creds->server.data, 8) != 0) {
+	if (!received_credentials || 
+	    memcmp(received_credentials->data, creds->server.data, 8) != 0) {
 		DEBUG(2,("credentials check failed\n"));
 		return False;
 	}
@@ -166,4 +171,39 @@ void creds_client_authenticator(struct creds_CredentialState *creds,
 	next->timestamp = creds->sequence;
 }
 
+
+/*****************************************************************
+The above functions are common to the client and server interface
+next comes the server specific functions
+******************************************************************/
+
+/*
+  initialise the credentials chain and return the first server
+  credentials
+*/
+void creds_server_init(struct creds_CredentialState *creds,
+		       const struct netr_Credential *client_challenge,
+		       const struct netr_Credential *server_challenge,
+		       const uint8 machine_password[16],
+		       struct netr_Credential *initial_credential)
+{
+	creds_init(creds, client_challenge, server_challenge, machine_password);
+
+	*initial_credential = creds->server;
+}
+
+/*
+  check that a credentials reply from a server is correct
+*/
+BOOL creds_server_check(const struct creds_CredentialState *creds,
+			const struct netr_Credential *received_credentials)
+{
+	if (memcmp(received_credentials->data, creds->client.data, 8) != 0) {
+		DEBUG(2,("credentials check failed\n"));
+		dump_data_pw("client creds", creds->client.data, 8);
+		dump_data_pw("calc   creds", received_credentials->data, 8);
+		return False;
+	}
+	return True;
+}
 

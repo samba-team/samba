@@ -269,15 +269,14 @@ BOOL check_password_quality(const char *s)
 
 static char c_list[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 
-char *generate_random_str(size_t len)
+char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len)
 {
-	static unsigned char retstr[256];
 	size_t i;
 
-	memset(retstr, '\0', sizeof(retstr));
+	char *retstr = talloc(mem_ctx, len + 1);
 
-	if (len > sizeof(retstr)-1)
-		len = sizeof(retstr) -1;
+	if (!retstr) 
+		return NULL;
 
 again:
 	generate_random_buffer(retstr, len, False);
@@ -292,5 +291,5 @@ again:
 		goto again;
 	}
 
-	return (char *)retstr;
+	return retstr;
 }
