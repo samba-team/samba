@@ -237,7 +237,7 @@ static BOOL is_mangled(struct pvfs_mangle_context *ctx, const char *name)
 	}
 	
 	/* and the last part ... */
-	return is_mangled_component(ctx, s,strlen(s));
+	return is_mangled_component(ctx, s, strlen(s));
 }
 
 
@@ -301,7 +301,8 @@ static BOOL is_8_3(struct pvfs_mangle_context *ctx,
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
 		/* note that we may allow wildcard petterns! */
-		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && name[i] != '.') {
+		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && 
+		    name[i] != '.') {
 			return False;
 		}
 	}
@@ -685,4 +686,14 @@ char *pvfs_mangled_lookup(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 BOOL pvfs_is_reserved_name(struct pvfs_state *pvfs, const char *name)
 {
 	return is_reserved_name(pvfs->mangle_ctx, name);
+}
+
+
+/*
+  see if a component of a filename could be a mangled name from our
+  mangling code
+*/
+BOOL pvfs_is_mangled_component(struct pvfs_state *pvfs, const char *name)
+{
+	return is_mangled_component(pvfs->mangle_ctx, name, strlen(name));
 }
