@@ -58,7 +58,7 @@ error_message (long code)
 int
 init_error_table(const char **msgs, long base, int count)
 {
-    initialize_error_table(&et_list, msgs, count, base);
+    initialize_error_table_r(&et_list, msgs, count, base);
     return 0;
 }
 
