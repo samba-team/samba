@@ -52,6 +52,7 @@
 #undef HAVE_SET_AUTH_PARAMETERS
 #undef WITH_MMAP
 #undef WITH_SYSLOG
+#undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
 #undef WITH_NISPLUS

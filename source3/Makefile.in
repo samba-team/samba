@@ -84,9 +84,10 @@ FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html @WRAP@ @WRAP32@
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
+PROGS3 = @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
-PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
+PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = script/smbtar script/addtosmbpass script/convert_smbpasswd
 
@@ -167,6 +168,8 @@ PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
 		passdb/smbpasschange.o passdb/mysqlpass.o \
 		lib/util_pwdb.o lib/domain_namemap.o lib/sids.o
 
+PROFILE_OBJ = profile/profile.o
+
 SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o smbd/conn.o smbd/fileio.o \
             smbd/ipc.o smbd/mangle.o smbd/negprot.o \
@@ -180,7 +183,7 @@ PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/printing.o
 SMBD_OBJ = $(SMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
            $(RPC_SERVER_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(LOCKING_OBJ) $(SAMPASSDB_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(PRINTING_OBJ) $(LIB_OBJ)
+		$(PRINTING_OBJ) $(PROFILE_OBJ) $(LIB_OBJ) 
 
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
@@ -216,7 +219,7 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
 
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
-             $(UBIQX_OBJ) $(LIB_OBJ)
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
