@@ -35,7 +35,7 @@ PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
 
 SOURCES_KX     = kx.c @XauWriteAuth_c@
 SOURCES_KXD    = kxd.c @XauWriteAuth_c@
-SOURCES_COMMON = common.c encdata.c
+SOURCES_COMMON = common.c # encdata.c
 
 OBJECTS_KX     = kx.o common.o encdata.o @XauWriteAuth_o@
 OBJECTS_KXD    = kxd.o common.o encdata.o @XauWriteAuth_o@
