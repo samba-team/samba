@@ -3590,7 +3590,7 @@ BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, 
 BOOL make_spoolss_q_enumprinters(
 	SPOOL_Q_ENUMPRINTERS *q_u, 
 	uint32 flags, 
-	fstring servername, 
+	char *servername, 
 	uint32 level, 
 	NEW_BUFFER *buffer, 
 	uint32 offered
