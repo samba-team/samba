@@ -1949,7 +1949,9 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 		s++; i++;
 	}
 
-	if (*s == '=') n -= 1;
+	if ((n > 0) && (*s == '=')) {
+		n -= 1;
+	}
 
 	/* fix up length */
 	decoded.length = n;
@@ -1962,9 +1964,15 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 void base64_decode_inplace(char *s)
 {
 	DATA_BLOB decoded = base64_decode_data_blob(s);
-	memcpy(s, decoded.data, decoded.length);
-	/* null terminate */
-	s[decoded.length] = '\0';
+
+	if ( decoded.length != 0 ) {
+		memcpy(s, decoded.data, decoded.length);
+
+		/* null terminate */
+		s[decoded.length] = '\0';
+	} else {
+		*s = '\0';
+	}
 
 	data_blob_free(&decoded);
 }
