@@ -665,6 +665,14 @@ uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 			status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
 		}
 
+		if (r_e.sam != NULL)
+		{
+			free(r_e.sam);
+		}
+		if (r_e.uni_grp_name != NULL)
+		{
+			free(r_e.uni_grp_name);
+		}
 	}
 
 	prs_mem_free(&data   );
@@ -752,6 +760,19 @@ uint32 samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 				          i, (*sam)[i].rid, (*sam)[i].acct_name));
 			}
 			(*start_idx) = r_e.next_idx;
+		}
+		else if (status == 0x0)
+		{
+			status = NT_STATUS_INVALID_PARAMETER | 0xC0000000;
+		}
+
+		if (r_e.sam != NULL)
+		{
+			free(r_e.sam);
+		}
+		if (r_e.uni_grp_name != NULL)
+		{
+			free(r_e.uni_grp_name);
 		}
 	}
 

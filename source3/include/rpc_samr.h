@@ -655,8 +655,8 @@ typedef struct r_samr_enum_dom_groups_info
 
 	uint32 num_entries3;
 
-	SAM_ENTRY sam[MAX_SAM_ENTRIES];
-	UNISTR2 uni_grp_name[MAX_SAM_ENTRIES];
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_grp_name;
 
 	uint32 num_entries4;
 
@@ -689,8 +689,8 @@ typedef struct r_samr_enum_dom_aliases_info
 
 	uint32 num_entries3;
 
-	SAM_ENTRY sam[MAX_SAM_ENTRIES];
-	UNISTR2 uni_grp_name[MAX_SAM_ENTRIES];
+	SAM_ENTRY *sam;
+	UNISTR2 *uni_grp_name;
 
 	uint32 num_entries4;
 

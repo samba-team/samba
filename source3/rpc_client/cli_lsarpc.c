@@ -123,12 +123,12 @@ BOOL lsa_open_policy2(struct cli_state *cli, uint16 fnum,
 	/* store the parameters */
 	if (sec_qos)
 	{
-		make_lsa_sec_qos(&qos, 2, 1, 0, 0x000f0fff);
+		make_lsa_sec_qos(&qos, 2, 1, 0, 0x02000000);
 		make_q_open_pol2(&q_o, server_name, 0, 0x02000000, &qos);
 	}
 	else
 	{
-		make_q_open_pol2(&q_o, server_name, 0, 0x1, NULL);
+		make_q_open_pol2(&q_o, server_name, 0, 0x02000000, NULL);
 	}
 
 	/* turn parameters into data stream */
