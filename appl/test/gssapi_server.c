@@ -47,6 +47,7 @@ process_it(int sock,
     gss_buffer_desc real_input_token, real_output_token;
     gss_buffer_t input_token = &real_input_token,
 	output_token = &real_output_token;
+    int conf_flag;
 
     maj_stat = gss_display_name (&min_stat,
 				 client_name,
@@ -87,13 +88,32 @@ process_it(int sock,
 			   context_hdl,
 			   input_token,
 			   output_token,
-			   NULL,
+			   &conf_flag,
 			   NULL);
     if(GSS_ERROR(maj_stat))
 	gss_err (1, min_stat, "gss_unwrap");
 
-    fprintf (stderr, "gss_unwrap: %.*s\n", (int)output_token->length,
-	    (char *)output_token->value);
+    fprintf (stderr, "gss_unwrap: %.*s %s\n", (int)output_token->length,
+	    (char *)output_token->value,
+	     conf_flag ? "CONF" : "INT");
+
+    gss_release_buffer (&min_stat, input_token);
+    gss_release_buffer (&min_stat, output_token);
+
+    read_token (sock, input_token);
+
+    maj_stat = gss_unwrap (&min_stat,
+			   context_hdl,
+			   input_token,
+			   output_token,
+			   &conf_flag,
+			   NULL);
+    if(GSS_ERROR(maj_stat))
+	gss_err (1, min_stat, "gss_unwrap");
+
+    fprintf (stderr, "gss_unwrap: %.*s %s\n", (int)output_token->length,
+	     (char *)output_token->value,
+	     conf_flag ? "CONF" : "INT");
 
     gss_release_buffer (&min_stat, input_token);
     gss_release_buffer (&min_stat, output_token);
