@@ -2326,18 +2326,19 @@ security descriptor.\n"));
 
     /*
      * Check to see if we need to change anything.
-     * Enforce limits on modified bits.
+     * Enforce limits on modified bits *only*. Don't enforce masks
+	 * on bits not changed by the user.
      */
 
     if(fsp->is_directory) {
 
-      perms &= lp_dir_security_mask(SNUM(conn));
-      perms |= lp_force_dir_security_mode(SNUM(conn));
+      perms &= (lp_dir_security_mask(SNUM(conn)) | sbuf.st_mode);
+      perms |= (lp_force_dir_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
 
     } else {
 
-      perms &= lp_security_mask(SNUM(conn)); 
-      perms |= lp_force_security_mode(SNUM(conn));
+      perms &= (lp_security_mask(SNUM(conn)) | sbuf.st_mode); 
+      perms |= (lp_force_security_mode(SNUM(conn)) & ( perms ^ sbuf.st_mode ));
 
     }
 
