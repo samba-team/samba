@@ -357,7 +357,7 @@ kadm_connect(kadm5_client_context *ctx)
 			server, AP_OPTS_MUTUAL_REQUIRED, 
 			NULL, NULL, cc, NULL, NULL, NULL);
     if(ret == 0) {
-	krb5_data params, enc_data;
+	krb5_data params;
 	ret = _kadm5_marshal_params(context, ctx->realm_params, &params);
 	
 	ret = krb5_write_priv_message(context, ctx->ac, &s, &params);
@@ -444,8 +444,14 @@ kadm5_c_init_with_context(krb5_context context,
     }
     
 
-    ctx->client_name = strdup(client_name);
-    ctx->service_name = strdup(service_name);
+    if (client_name != NULL)
+	ctx->client_name = strdup(client_name);
+    else
+	ctx->client_name = NULL;
+    if (service_name != NULL)
+	ctx->service_name = strdup(service_name);
+    else
+	ctx->service_name = NULL;
     ctx->prompter = prompter;
     ctx->keytab = keytab;
     ctx->ccache = ccache;
