@@ -13,33 +13,29 @@ OM_uint32 gss_wrap
            )
 {
   u_char *p;
-  size_t len;
   struct md5 md5;
   u_char hash[16];
   des_key_schedule schedule;
   des_cblock key;
   des_cblock zero;
-  size_t padlength;
   int i;
   int32_t seq_number;
+  size_t len, total_len, padlength;
 
   padlength = 8 - (input_message_buffer->length % 8);
+  len = input_message_buffer->length + 8 + padlength + 22;
+  gssapi_krb5_encap_length (len, &len, &total_len);
 
-  len = input_message_buffer->length + 8 + padlength + 28
-    + GSS_KRB5_MECHANISM->length;
-  output_message_buffer->length = len;
-  output_message_buffer->value  = malloc (len);
+  output_message_buffer->length = total_len;
+  output_message_buffer->value  = malloc (total_len);
   if (output_message_buffer->value == NULL)
     return GSS_S_FAILURE;
 
-  p = output_message_buffer->value;
-  memcpy (p, "\x60\x07\x06\x05", 4);
-  p += 4;
-  memcpy (p, GSS_KRB5_MECHANISM->elements, GSS_KRB5_MECHANISM->length);
-  p += GSS_KRB5_MECHANISM->length;
-  /* TOK_ID */
-  memcpy (p, "\x02\x01", 2);
-  p += 2;
+  p = gssapi_krb5_make_header(output_message_buffer->value,
+			      len,
+			      "\x02\x01");
+
+
   /* SGN_ALG */
   memcpy (p, "\x00\x00", 2);
   p += 2;
@@ -63,11 +59,15 @@ OM_uint32 gss_wrap
   /* checksum */
   md5_init (&md5);
   md5_update (&md5, p - 24, 8);
-  md5_update (&md5, p + 8, input_message_buffer->length + padlength);
+  md5_update (&md5, p, input_message_buffer->length + padlength + 8);
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
+#if 0
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+#endif
+  memcpy (&key, context_handle->auth_context->local_subkey.keyvalue.data,
 	  sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
@@ -90,7 +90,7 @@ OM_uint32 gss_wrap
 
   des_set_key (&key, schedule);
   des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
-		   schedule, (des_cblock *)(p + 16), DES_ENCRYPT);
+		   schedule, (des_cblock *)(p + 8), DES_ENCRYPT);
 
   krb5_auth_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
@@ -100,7 +100,11 @@ OM_uint32 gss_wrap
   p += 16;
 
   memset (&zero, 0, sizeof(zero));
+#if 0
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+#endif
+  memcpy (&key, context_handle->auth_context->local_subkey.keyvalue.data,
 	  sizeof(key));
   for (i = 0; i < sizeof(key); ++i)
     key[i] ^= 0xf0;

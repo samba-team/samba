@@ -11,27 +11,25 @@ OM_uint32 gss_get_mic
            )
 {
   u_char *p;
-  size_t len;
   struct md5 md5;
   u_char hash[16];
   des_key_schedule schedule;
   des_cblock key;
   des_cblock zero;
   int32_t seq_number;
+  size_t len, total_len;
 
-  len = 28 + GSS_KRB5_MECHANISM->length;
-  message_token->length = len;
-  message_token->value  = malloc (len);
+  gssapi_krb5_encap_length (22, &len, &total_len);
+
+  message_token->length = total_len;
+  message_token->value  = malloc (total_len);
   if (message_token->value == NULL)
     return GSS_S_FAILURE;
 
-  p = message_token->value;
-  memcpy (p, "\x60\x07\x06\x05", 4);
-  p += 4;
-  memcpy (p, GSS_KRB5_MECHANISM->elements, GSS_KRB5_MECHANISM->length);
-  p += GSS_KRB5_MECHANISM->length;
-  memcpy (p, "\x01\x01", 2);
-  p += 2;
+  p = gssapi_krb5_make_header(message_token->value,
+			      len,
+			      "\x01\x01");
+
   memcpy (p, "\x00\x00", 2);
   p += 2;
   memcpy (p, "\xff\xff\xff\xff", 4);
@@ -49,7 +47,11 @@ OM_uint32 gss_get_mic
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
+#if 0
   memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+#endif
+  memcpy (&key, context_handle->auth_context->local_subkey.keyvalue.data,
 	  sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
@@ -72,7 +74,7 @@ OM_uint32 gss_get_mic
 
   des_set_key (&key, schedule);
   des_cbc_encrypt ((des_cblock *)p, (des_cblock *)p, 8,
-		   schedule, (des_cblock *)(p + 16), DES_ENCRYPT);
+		   schedule, (des_cblock *)(p + 8), DES_ENCRYPT);
 
   krb5_auth_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
