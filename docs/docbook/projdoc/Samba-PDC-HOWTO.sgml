@@ -265,9 +265,8 @@ There are a couple of points to emphasize in the above configuration.
 <para>
 As Samba 2.2 does not offer a complete implementation of group mapping between 
 Windows NT groups and UNIX groups (this is really quite complicated to explain 
-in a short space), you should refer to the <ulink url="smb.conf.5.html#DOMAINADMINUSERS">domain 
-admin users</ulink> and <ulink url="smb.conf.5.html#DOMAINADMINGROUP">domain 
-admin group</ulink> smb.conf parameters for information of creating a Domain Admins 
+in a short space), you should refer to the <ulink url="smb.conf.5.html#DOMAINADMINGROUP">domain 
+admin group</ulink> smb.conf parameter for information of creating "Domain Admins"
 style accounts.
 </para>
 
@@ -334,8 +333,11 @@ based Samba server:
 </para>
 
 <para>
-<prompt>root# </prompt>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>
-machine_nickname</replaceable> -m -s /bin/false <replaceable>machine_name</replaceable>$
+<prompt>root# </prompt>/usr/sbin/useradd -g 100 -d /dev/null -c <replaceable>"machine 
+nickname"</replaceable> -s /bin/false <replaceable>machine_name</replaceable>$ 
+</para>
+<para>
+<prompt>root# </prompt>passwd -l <replaceable>machine_name</replaceable>$
 </para>
 
 <para>
@@ -410,7 +412,7 @@ add user script = /usr/sbin/useradd -d /dev/null -g 100 -s /bin/false -M %u
 In Samba 2.2.1, <emphasis>only the root account</emphasis> can be used to create
 machine accounts like this.  Therefore, it is required to create 
 an entry in smbpasswd for <emphasis>root</emphasis>.  The password 
-<emphasis>SHOULD</emphasis> be set to s different password that the 
+<emphasis>SHOULD</emphasis> be set to a different password that the 
 associated <filename>/etc/passwd</filename> entry for security reasons.
 </para>
 </sect2>
@@ -1415,7 +1417,7 @@ as are folders "Start Menu", "Desktop", "Programs" and "Nethood".
 These directories and their contents will be merged with the local
 versions stored in c:\windows\profiles\username on subsequent logins,
 taking the most recent from each.  You will need to use the [global]
-options "preserve case = yes", "short case preserve = yes" and
+options "preserve case = yes", "short preserve case = yes" and
 "case sensitive = no" in order to maintain capital letters in shortcuts
 in any of the profile folders.
 </para>

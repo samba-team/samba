@@ -877,7 +877,7 @@ the procedure for creating an account.
 </para>
 
 <para><programlisting>
-	# useradd -s /bin/bash -d /home/"userid" -m
+	# useradd -s /bin/bash -d /home/"userid" -m "userid"
 	# passwd "userid"
 	  Enter Password: &lt;pw&gt;
 	  
@@ -895,7 +895,7 @@ controller.  Refer to the Samba-PDC-HOWTO for more details.
 </para>
 
 <para><programlisting>
-	# useradd -a /bin/false -d /dev/null "machine_name"\$
+	# useradd -s /bin/false -d /dev/null "machine_name"\$
 	# passwd -l "machine_name"\$
 	# smbpasswd -a -m "machine_name"
 </programlisting></para>

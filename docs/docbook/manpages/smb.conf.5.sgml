@@ -92,7 +92,7 @@
 	<para>Sections other than guest services will require a password 
 	to access them. The client provides the username. As older clients 
 	only provide passwords and not usernames, you may specify a list 
-	of usernames to check against the password using the "user=" 
+	of usernames to check against the password using the "user =" 
 	option in the share definition. For modern clients such as 
 	Windows 95/98/ME/NT/2000, this should not be necessary.</para>
 
@@ -168,11 +168,11 @@
 		the user's home directory.</para></listitem>
 		</itemizedlist>
 
-		<para>If you decide to use a <emphasis>path=</emphasis> line 
+		<para>If you decide to use a <emphasis>path =</emphasis> line 
 		in your [homes] section then you may find it useful 
 		to use the %S macro. For example :</para>
 
-		<para><userinput>path=/data/pchome/%S</userinput></para>
+		<para><userinput>path = /data/pchome/%S</userinput></para>
 
 		<para>would be useful if you have different home directories 
 		for your PCs than for UNIX access.</para>
@@ -209,9 +209,9 @@
 		<para>Note that the <emphasis>browseable</emphasis> flag for 
 		auto home directories will be inherited from the global browseable 
 		flag, not the [homes] browseable flag. This is useful as 
-		it means setting browseable=no in the [homes] section 
-		will hide the [homes] share but make any auto home 
-		directories visible.</para>
+		it means setting <emphasis>browseable = no</emphasis> in
+		the [homes] section will hide the [homes] share but make
+		any auto home directories visible.</para>
 	</refsect2>
 	
 	<refsect2>
@@ -408,7 +408,7 @@
 		<listitem><para>the name of your NIS home directory server.  
 		This is obtained from your NIS auto.map entry.  If you have 
 		not compiled Samba with the <emphasis>--with-automount</emphasis> 
-		option then this value will be the same as %.</para>
+		option then this value will be the same as %L.</para>
 		</listitem>
 		</varlistentry>
 		
@@ -484,7 +484,7 @@
 	<variablelist>
 	
 	<varlistentry>
-		<term>mangle case= yes/no</term>
+		<term>mangle case = yes/no</term>
 		<listitem><para> controls if names that have characters that 
 		aren't of the "default" case are mangled. For example, 
 		if this is yes then a name like "Mail" would be mangled. 
@@ -565,9 +565,9 @@
 		<filename>smb.conf</filename> file for the service and the client 
 		has supplied a password, and that password matches (according to 
 		the UNIX system's password checking) with one of the usernames 
-		from the "user=" field then the connection is made as 
-		the username in the "user=" line. If one 
-		of the username in the "user=" list begins with a
+		from the "user =" field then the connection is made as 
+		the username in the "user =" line. If one 
+		of the username in the "user =" list begins with a
 		'@' then that name expands to a list of names in 
 		the group of the same name.</para></listitem>
 
@@ -586,9 +586,11 @@
 	each parameter for details.  Note that some are synonyms.</para>
 
 	<itemizedlist>
+		<listitem><para><link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
@@ -614,6 +616,7 @@
 		<listitem><para><link linkend="DELETESHARECOMMAND"><parameter>delete share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEUSERSCRIPT"><parameter>delete user script</parameter></link></para></listitem>
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINGUESTGROUP"><parameter>domain guest group</parameter></link></para></listitem>
@@ -633,6 +636,14 @@
 		<listitem><para><link linkend="KERNELOPLOCKS"><parameter>kernel oplocks</parameter></link></para></listitem>
 		<listitem><para><link linkend="LANMANAUTH"><parameter>lanman auth</parameter></link></para></listitem>
 		<listitem><para><link linkend="LARGEREADWRITE"><parameter>large readwrite</parameter></link></para></listitem>
+		
+		<listitem><para><link linkend="LDAPADMINDN"><parameter>ldap admin dn</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPFILTER"><parameter>ldap filter</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPPORT"><parameter>ldap port</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSERVER"><parameter>ldap server</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSSL"><parameter>ldap ssl</parameter></link></para></listitem>
+		<listitem><para><link linkend="LDAPSUFFIX"><parameter>ldap suffix</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="LMANNOUNCE"><parameter>lm announce</parameter></link></para></listitem>
 		<listitem><para><link linkend="LMINTERVAL"><parameter>lm interval</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOADPRINTERS"><parameter>load printers</parameter></link></para></listitem>
@@ -702,10 +713,12 @@
 		<listitem><para><link linkend="SECURITY"><parameter>security</parameter></link></para></listitem>
 		<listitem><para><link linkend="SERVERSTRING"><parameter>server string</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHOWADDPRINTERWIZARD"><parameter>show add printer wizard</parameter></link></para></listitem>
+		<listitem><para><link linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link></para></listitem>
 		<listitem><para><link linkend="SMBPASSWDFILE"><parameter>smb passwd file</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="SSL"><parameter>ssl</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCACERTDIR"><parameter>ssl CA certDir</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCACERTFILE"><parameter>ssl CA certFile</parameter></link></para></listitem>
@@ -713,6 +726,9 @@
 		<listitem><para><link linkend="SSLCLIENTCERT"><parameter>ssl client cert</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCLIENTKEY"><parameter>ssl client key</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLCOMPATIBILITY"><parameter>ssl compatibility</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLEGDSOCKET"><parameter>ssl egd socket</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLENTROPYBYTES"><parameter>ssl entropy bytes</parameter></link></para></listitem>
+		<listitem><para><link linkend="SSLENTROPYFILE"><parameter>ssl entropy file</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLHOSTS"><parameter>ssl hosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLHOSTSRESIGN"><parameter>ssl hosts resign</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLREQUIRECLIENTCERT"><parameter>ssl require clientcert</parameter></link></para></listitem>
@@ -720,6 +736,7 @@
 		<listitem><para><link linkend="SSLSERVERCERT"><parameter>ssl server cert</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLSERVERKEY"><parameter>ssl server key</parameter></link></para></listitem>
 		<listitem><para><link linkend="SSLVERSION"><parameter>ssl version</parameter></link></para></listitem>
+
 		<listitem><para><link linkend="STATCACHE"><parameter>stat cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATCACHESIZE"><parameter>stat cache size</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRIPDOT"><parameter>strip dot</parameter></link></para></listitem>
@@ -733,12 +750,16 @@
 		<listitem><para><link linkend="TOTALPRINTJOBS"><parameter>total print jobs</parameter></link></para></listitem>
 		<listitem><para><link linkend="UNIXPASSWORDSYNC"><parameter>unix password sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
+		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
+		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMPDIRECTORY"><parameter>utmp directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="VALIDCHARS"><parameter>valid chars</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDCACHETIME"><parameter>winbind cache time</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDENUMUSERS"><parameter>winbind enum users</parameter></link></para></listitem>
+		<listitem><para><link linkend="WINBINDENUMGROUPS"><parameter>winbind enum groups</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDGID"><parameter>winbind gid</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDSEPARATOR"><parameter>winbind separator</parameter></link></para></listitem>
 		<listitem><para><link linkend="WINBINDUID"><parameter>winbind uid</parameter></link></para></listitem>
@@ -854,16 +875,16 @@
 		<listitem><para><link linkend="ROOTPREEXECCLOSE"><parameter>root preexec close</parameter></link></para></listitem>
 		<listitem><para><link linkend="SECURITYMASK"><parameter>security mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="SETDIRECTORY"><parameter>set directory</parameter></link></para></listitem>
-		<listitem><para><link linkend="SHAREMODES"><parameter>share modes</parameter></link></para></listitem>
 		<listitem><para><link linkend="SHORTPRESERVECASE"><parameter>short preserve case</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATUS"><parameter>status</parameter></link></para></listitem>
+		<listitem><para><link linkend="STRICTALLOCATE"><parameter>strict allocate</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTLOCKING"><parameter>strict locking</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRICTSYNC"><parameter>strict sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="SYNCALWAYS"><parameter>sync always</parameter></link></para></listitem>
+		<listitem><para><link linkend="USECLIENTDRIVER"><parameter>use client driver</parameter></link></para></listitem>
 		<listitem><para><link linkend="USER"><parameter>user</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAME"><parameter>username</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERS"><parameter>users</parameter></link></para></listitem>
-		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
 		<listitem><para><link linkend="VALIDUSERS"><parameter>valid users</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOFILES"><parameter>veto files</parameter></link></para></listitem>
 		<listitem><para><link linkend="VETOOPLOCKFILES"><parameter>veto oplock files</parameter></link></para></listitem>
@@ -884,7 +905,22 @@
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
 	<variablelist>
-	
+
+		<varlistentry>
+		<term><anchor id="ABORTSHUTDOWNSCRIPT">abort shutdown script (G)</term>
+		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+		This a full path name to a script called by
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>  that
+		should stop a shutdown procedure issued by the <link 
+		linkend="SHUTDOWNSCRIPT"><parameter>shutdown script</parameter></link>.</para>
+		
+		<para>This command will be run as user.</para>
+
+		<para>Default: <emphasis>None</emphasis>.</para>
+		<para>Example: <command>abort shutdown script = /sbin/shutdown -c</command></para>
+		</listitem>
+		</varlistentry>
+
 
 		<varlistentry>
 		<term><anchor id="ADDPRINTERCOMMAND">add printer command (G)</term>
@@ -999,6 +1035,25 @@
 
 
 		<varlistentry>
+		<term><anchor id="ADDMACHINESCRIPT">add machine script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run by <ulink url="smbd.8.html">smbd(8)</ulink>  when a machine is added
+                to it's domain using the administrator username and password method. </para>
+
+		<para>This option is only required when using sam back-ends tied to the
+                Unix uid method of RID calculation such as smbpasswd.  This option is only
+                available in Samba 3.0.</para>
+
+		<para>Default: <command>add machine script = &lt;empty string&gt;
+		</command></para>	
+
+		<para>Example: <command>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
+                </command></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
 		<term><anchor id="ADDUSERSCRIPT">add user script (G)</term>
 		<listitem><para>This is the full pathname to a script that will 
 		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)
@@ -1013,8 +1068,8 @@
 		<emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.</para>
 
 		<para>In order to use this option, <ulink url="smbd.8.html">smbd</ulink> 
-		must be set to <parameter>security=server</parameter> or <parameter>
-		security=domain</parameter> and <parameter>add user script</parameter>
+		must be set to <parameter>security = server</parameter> or <parameter>
+		security = domain</parameter> and <parameter>add user script</parameter>
 		must be set to a full pathname for a script that will create a UNIX 
 		user given one argument of <parameter>%u</parameter>, which expands into 
 		the UNIX user name to create.</para>
@@ -1132,7 +1187,7 @@
 		is 4.2.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</para>
 
-		<para>Default: <command>announce version = 4.2</command></para>
+		<para>Default: <command>announce version = 4.5</command></para>
 
 		<para>Example: <command>announce version = 2.0</command></para>
 		</listitem>
@@ -1522,7 +1577,7 @@
 
 		
 		<varlistentry>
-		<term><anchor id="CODINGSYSTEM">codingsystem (G)</term>
+		<term><anchor id="CODINGSYSTEM">coding system (G)</term>
 		<listitem><para>This parameter is used to determine how incoming 
 		Shift-JIS Japanese characters are mapped from the incoming <link 
 		linkend="CLIENTCODEPAGE"><parameter>client code page</parameter>
@@ -1654,7 +1709,7 @@
 		<para>See also the <link linkend="FORCECREATEMODE"><parameter>force 
 		create mode</parameter></link> parameter for forcing particular mode 
 		bits to be set on created files. See also the <link linkend="DIRECTORYMODE">
-		<parameter>directory mode"</parameter></link> parameter for masking 
+		<parameter>directory mode</parameter></link> parameter for masking 
 		mode bits on created directories.  See also the <link linkend="INHERITPERMISSIONS">
 		<parameter>inherit permissions</parameter></link> parameter.</para>
 
@@ -1785,7 +1840,7 @@
 		<term><anchor id="DEFAULTCASE">default case (S)</term>
 		<listitem><para>See the section on <link linkend="NAMEMANGLINGSECT">
 		NAME MANGLING</link>. Also note the <link linkend="SHORTPRESERVECASE">
-		<parameter>short preserve case"</parameter></link> parameter.</para>
+		<parameter>short preserve case</parameter></link> parameter.</para>
 
 		<para>Default: <command>default case = lower</command></para>
 		</listitem>
@@ -1922,9 +1977,9 @@
 		</para>
 		
 		<para>
-		See also <link linkend="ADDSHARECOMMAND"><parameter>delete share
+		See also <link linkend="ADDSHARECOMMAND"><parameter>add share
 		command</parameter></link>, <link linkend="CHANGESHARECOMMAND"><parameter>change 
-		share</parameter></link>.
+		share command</parameter></link>.
 		</para>
 		
 		<para>Default: <emphasis>none</emphasis></para>
@@ -1953,17 +2008,17 @@
 		Windows NT user no longer exists.</para>
 		
 		<para>In order to use this option, <command>smbd</command> must be 
-		set to <parameter>security=domain</parameter> and <parameter>delete 
+		set to <parameter>security = domain</parameter> and <parameter>delete 
 		user script</parameter> must be set to a full pathname for a script 
 		that will delete a UNIX user given one argument of <parameter>%u
 		</parameter>, which expands into the UNIX user name to delete.
 		<emphasis>NOTE</emphasis> that this is different to the <link
 		linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link>
-		which will work with the <parameter>security=server</parameter> option 
-		as well as <parameter>security=domain</parameter>. The reason for this
+		which will work with the <parameter>security = server</parameter> option 
+		as well as <parameter>security = domain</parameter>. The reason for this
 		is only when Samba is a domain member does it get the information
 		on an attempted user logon that a user no longer exists. In the
-		<parameter>security=server</parameter> mode a missing user
+		<parameter>security = server</parameter> mode a missing user
 		is treated the same as an invalid password logon attempt. Deleting
 		the user in this circumstance would not be a good idea.</para>
 
@@ -1984,7 +2039,7 @@
 		UNIX users are dynamically deleted to match existing Windows NT 
 		accounts.</para>
 
-		<para>See also <link linkend="SECURITYEQUALSDOMAIN">security=domain</link>,
+		<para>See also <link linkend="SECURITYEQUALSDOMAIN">security = domain</link>,
 		<link linkend="PASSWORDSERVER"><parameter>password server</parameter>
 		</link>, <link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter>
 		</link>.</para>
@@ -2186,6 +2241,29 @@
 
 		<para>Default: <command>directory security mask = 0777</command></para>
 		<para>Example: <command>directory security mask = 0700</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="DISABLESPOOLSS">disable spoolss (G)</term>
+		<listitem><para>Enabling this parameter will disables Samba's support
+		for the SPOOLSS set of MS-RPC's and will yield identical behavior
+		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using
+		Lanman style printing commands. Windows 9x/ME will be uneffected by
+		the parameter. However, this will also disable the ability to upload
+		printer drivers to a Samba server via the Windows NT Add Printer
+		Wizard or by using the NT printer properties dialog window.  It will
+		also disable the capability of Windows NT/2000 clients to download
+		print drivers from the Samba host upon demand.
+		<emphasis>Be very careful about enabling this parameter.</emphasis>
+		</para>
+
+		<para>See also <link linkend="USECLIENTDRIVER">use client driver</link>
+		</para>
+ 
+		<para>Default : <command>disable spoolss = no</command></para>
 		</listitem>
 		</varlistentry>
 		
@@ -2411,7 +2489,7 @@
 		</filename></ulink> file (see the <ulink url="smbpasswd.8.html"><command>
 		smbpasswd(8)</command></ulink> program for information on how to set up 
  		and maintain this file), or set the <link
-		linkend="SECURITY">security=[server|domain]</link> parameter which 
+		linkend="SECURITY">security = [server|domain]</link> parameter which 
 		causes <command>smbd</command> to authenticate against another 
 		server.</para>
 		
@@ -2424,8 +2502,7 @@
 		<listitem><para>This option enables a couple of enhancements to 
 		cross-subnet browse propagation that have been added in Samba 
 		but which are not standard in Microsoft implementations.  
-		<emphasis>These enhancements are currently only available in
-		the HEAD Samba CVS tree (not Samba 2.2.x).</emphasis></para>
+		</para>
 
 		<para>The first enhancement to browse propagation consists of a regular
 		wildcard query to a Samba WINS server for all Domain Master Browsers,
@@ -2927,7 +3004,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="HIDEUNREADABLE">hide unreadable(G)</term>
+		<term><anchor id="HIDEUNREADABLE">hide unreadable (S)</term>
 		<listitem><para>This parameter prevents clients from seeing the
 		existance of files that cannot be read. Defaults to off.</para>
 
@@ -3226,7 +3303,7 @@
 		'+' and '&' may be used at the start of the name in either order 
 		so the value <parameter>+&amp;group</parameter> means check the 
 		UNIX group database, followed by the NIS netgroup database, and 
-		the value <parameter>&+group"</parameter> means check the NIS
+		the value <parameter>&+group</parameter> means check the NIS
 		netgroup database, followed by the UNIX group database (the 
 		same as the '@' prefix).</para>
 
@@ -3278,9 +3355,9 @@
 		SMB/CIFS, NFS and local file access (and is a <emphasis>very</emphasis> 
 		cool feature :-).</para>
 
-		<para>This parameter defaults to <constant>on</constant> on systems 
-		that have the support, and <constant>off</constant> on systems that 
-		don't. You should never need to touch this parameter.</para>
+		<para>This parameter defaults to <constant>on</constant>, but is translated
+		to a no-op on systems that no not have the necessary kernel support.
+		You should never need to touch this parameter.</para>
 
 		<para>See also the <link linkend="OPLOCKS"><parameter>oplocks</parameter>
 		</link> and <link linkend="LEVEL2OPLOCKS"><parameter>level2 oplocks
@@ -3310,7 +3387,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="LARGEREADWRITE">large readwrite(G)</term>
+		<term><anchor id="LARGEREADWRITE">large readwrite (G)</term>
 		<listitem><para>This parameter determines whether or not <ulink url="smbd.8.html">smbd</ulink>
 		supports the new 64k streaming read and write varient SMB requests introduced
 		with Windows 2000. Note that due to Windows 2000 client redirector bugs
@@ -3323,6 +3400,150 @@
 		<para>Default : <command>large readwrite = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPADMINDN">ldap admin dn (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+
+		<para>
+		The <parameter>ldap admin dn</parameter> defines the Distinguished 
+		Name (DN) name used by Samba to contact the <link linkend="LDAPSERVER">ldap
+		server</link> when retreiving user account information. The <parameter>ldap
+		admin dn</parameter> is used in conjunction with the admin dn password
+		stored in the <filename>private/secrets.tdb</filename> file.  See the
+		<ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> man
+		page for more information on how to accmplish this.
+		</para>
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPFILTER">ldap filter (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+
+		<para>
+		This parameter specifies the RFC 2254 compliant LDAP search filter.
+		The default is to match the login name with the <constant>uid</constant> 
+		attribute for all entries matching the <constant>sambaAccount</constant>		
+		objectclass.  Note that this filter should only return one entry.
+		</para>
+	
+		
+		<para>Default : <command>ldap filter = (&(uid=%u)(objectclass=sambaAccount))</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPPORT">ldap port (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This option is used to control the tcp port number used to contact
+		the <link linkend="LDAPSERVER"><parameter>ldap server</parameter></link>.
+		The default is to use the stand LDAP port 389.
+		</para>
+		
+		<para>Default : <command>ldap port = 389</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSERVER">ldap server (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This parameter should contains the FQDN of the ldap directory 
+		server which should be queried to locate user account information.
+		</para>
+		
+	
+		
+		<para>Default : <command>ldap server = localhost</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSSL">ldap ssl (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+		<para>
+		This option is used to define whether or not Samba should
+		use SSL when connecting to the <link linkend="LDAPSERVER"><parameter>ldap
+		server</parameter></link>.  This is <emphasis>NOT</emphasis> related to
+		Samba SSL support which is enabled by specifying the 
+		<command>--with-ssl</command> option to the <filename>configure</filename> 
+		script (see <link linkend="SSL"><parameter>ssl</parameter></link>).
+		</para>
+		
+		<para>
+		The <parameter>ldap ssl</parameter> can be set to one of three values:
+		(a) <command>on</command> - Always use SSL when contacting the 
+		<parameter>ldap	server</parameter>, (b) <command>off</command> -
+		Never use SSL when querying the directory, or (c) <command>start 
+		tls</command> - Use the LDAPv3 StartTLS extended operation 
+		(RFC2830) for communicating with the directory server.
+		</para>
+		
+		
+		<para>Default : <command>ldap ssl = off</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+
+		<varlistentry>
+		<term><anchor id="LDAPSUFFIX">ldap suffix (G)</term>
+		<listitem><para>This parameter is only available if Samba has been
+		configure to include the <command>--with-ldapsam</command> option
+		at compile time. This option should be considered experimental and
+		under active development.
+		</para>
+		
+	
+		
+		<para>Default : <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
 
 
 
@@ -3572,7 +3793,7 @@
 		<para>This tells Samba to return the above string, with 
 		substitutions made when a client requests the info, generally 
 		in a NetUserGetInfo request.  Win9X clients truncate the info to
-		\\server\share when a user does <command>net use /home"</command>
+		\\server\share when a user does <command>net use /home</command>
 		but use the whole string when dealing with profiles.</para>
 
 		<para>Note that in prior versions of Samba, the <link linkend="LOGONPATH">
@@ -3868,7 +4089,7 @@
 		<varlistentry>
 		<term><anchor id="MACHINEPASSWORDTIMEOUT">machine password timeout (G)</term>
 		<listitem><para>If a Samba server is a member of a Windows 
-		NT Domain (see the <link linkend="SECURITYEQUALSDOMAIN">security=domain</link>) 
+		NT Domain (see the <link linkend="SECURITYEQUALSDOMAIN">security = domain</link>) 
 		parameter) then periodically a running <ulink url="smbd.8.html">
 		smbd(8)</ulink> process will try and change the MACHINE ACCOUNT 
 		PASSWORD stored in the TDB called <filename>private/secrets.tdb
@@ -3878,7 +4099,7 @@
 
 		<para>See also <ulink url="smbpasswd.8.html"><command>smbpasswd(8)
 		</command></ulink>, and the <link linkend="SECURITYEQUALSDOMAIN">
-		security=domain</link>) parameter.</para>
+		security = domain</link>) parameter.</para>
 
 		<para>Default: <command>machine password timeout = 604800</command></para>
 		</listitem>
@@ -4129,7 +4350,7 @@
 		<varlistentry>
 		<term><anchor id="MAPTOGUEST">map to guest (G)</term>
 		<listitem><para>This parameter is only useful in <link linkend="SECURITY">
-		security</link> modes other than <parameter>security=share</parameter> 
+		security</link> modes other than <parameter>security = share</parameter> 
 		- i.e. <constant>user</constant>, <constant>server</constant>, 
 		and <constant>domain</constant>.</para>
 
@@ -4366,13 +4587,13 @@
 		<term><anchor id="MAXWINSTTL">max wins ttl (G)</term>
 		<listitem><para>This option tells <ulink url="nmbd.8.html">nmbd(8)
 		</ulink> when acting as a WINS server (<link linkend="WINSSUPPORT">
-		<parameter>wins support=yes</parameter></link>) what the maximum
+		<parameter>wins support = yes</parameter></link>) what the maximum
 		'time to live' of NetBIOS names that <command>nmbd</command> 
 		will grant will be (in seconds). You should never need to change this
 		parameter.  The default is 6 days (518400 seconds).</para>
 
 		<para>See also the <link linkend="MINWINSTTL"><parameter>min 
-		wins ttl"</parameter></link> parameter.</para>
+		wins ttl</parameter></link> parameter.</para>
 
 		<para>Default: <command>max wins ttl = 518400</command></para>
 		</listitem>
@@ -4949,11 +5170,11 @@
   		<listitem><para>With the addition of better PAM support in Samba 2.2, 
   		this parameter, it is possible to use PAM's password change control 
   		flag for Samba.  If enabled, then PAM will be used for password
- 		changes when requested by an SMB client insted of the program listed in 
+ 		changes when requested by an SMB client instead of the program listed in 
                 <link linkend="PASSWDPROGRAM"><parameter>passwd program</parameter></link>. 
                 It should be possible to enable this without changing your 
                 <link linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link>
-                paramater for most setups.
+                parameter for most setups.
   		</para>
 		
 		<para>Default: <command>pam password change = no</command></para>
@@ -4991,32 +5212,32 @@
 		<para>This chat sequence is often quite site specific, depending 
 		on what local methods are used for password control (such as NIS 
 		etc).</para>
+		<para>Note that this parameter only is only used if the <link 
+		linkend="UNIXPASSWORDSYNC"><parameter>unix 
+		password sync</parameter></link> parameter is set to <constant>yes</constant>. This 
+		sequence is then called <emphasis>AS ROOT</emphasis> when the SMB password 
+		in the smbpasswd file is being changed, without access to the old 
+		password cleartext. This means that root must be able to reset the user's password
+ 		without knowing the text of the previous password. In the presence of NIS/YP, 
+		this means that the <link linkend="PASSWDPROGRAM">passwd program</link> must be 
+		executed on the NIS master.
+		</para>
 
-		<para>The string can contain the macros <parameter>%o</parameter> 
-		and <parameter>%n</parameter> which are substituted for the old 
-		and new passwords respectively. It can also contain the standard 
+
+		<para>The string can contain the macro <parameter>%n</parameter> which is substituted 
+		for the new password.  The chat sequence can also contain the standard 
 		macros <constant>\n</constant>, <constant>\r</constant>, <constant>
-		\t</constant> and <constant>%s</constant> to give line-feed, 
-		carriage-return, tab and space.</para>
-
-		<para>The string can also contain a '*' which matches 
-		any sequence of characters.</para>
-
-		<para>Double quotes can be used to collect strings with spaces 
+		\t</constant> and <constant>\s</constant> to give line-feed, 
+		carriage-return, tab and space.  The chat sequence string can also contain 
+		a '*' which matches any sequence of characters.
+		Double quotes can be used to collect strings with spaces 
 		in them into a single string.</para>
 
 		<para>If the send string in any part of the chat sequence 
 		is a full stop ".",  then no string is sent. Similarly, 
 		if the expect string is a full stop then no string is expected.</para>
 
-		<para>Note that if the <link linkend="UNIXPASSWORDSYNC"><parameter>unix 
-		password sync</parameter></link> parameter is set to <constant>true</constant>, then this 
-		sequence is called <emphasis>AS ROOT</emphasis> when the SMB password 
-		in the smbpasswd file is being changed, without access to the old 
-		password cleartext. In this case the old password cleartext is set 
-		to "" (the empty string).</para>
-
-  		<para>Also, if the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
+  		<para>If the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
  		password change</parameter></link> parameter is set to true, the chat pairs
                 may be matched in any order, and sucess is determined by the PAM result, 
                 not any particular output. The \n macro is ignored for PAM conversions.
@@ -5212,14 +5433,14 @@
 			<command>smbd</command> makes a connection to a password server, 
 			and then the password server fails, no more users will be able 
 			to be authenticated from this <command>smbd</command>.  This is a 
-			restriction of the SMB/CIFS protocol when in <command>security=server
+			restriction of the SMB/CIFS protocol when in <command>security = server
 			</command> mode and cannot be fixed in Samba.</para></listitem>
 
 			<listitem><para>If you are using a Windows NT server as your 
 			password server then you will have to ensure that your users 
 			are able to login from the Samba server, as when in <command>
-			security=server</command>  mode the network logon will appear to 
-			come from there rather than from the user's workstation.</para></listitem>
+			security = server</command>  mode the network logon will appear to 
+			come from there rather than from the users workstation.</para></listitem>
 		</itemizedlist>
 
 		<para>See also the <link linkend="SECURITY"><parameter>security
@@ -5485,14 +5706,14 @@
 		the parameter varies depending on the setting of the <link linkend="PRINTING">
 		<parameter>printing</parameter></link> parameter.</para>
 
-		<para>Default: For <command>printing= BSD, AIX, QNX, LPRNG 
+		<para>Default: For <command>printing = BSD, AIX, QNX, LPRNG 
 		or PLP :</command></para>
 		<para><command>print command = lpr -r -P%p %s</command></para>
 
-		<para>For <command>printing= SYS or HPUX :</command></para>
+		<para>For <command>printing = SYS or HPUX :</command></para>
 		<para><command>print command = lp -c -d%p %s; rm %s</command></para>
 
-		<para>For <command>printing=SOFTQ :</command></para>
+		<para>For <command>printing = SOFTQ :</command></para>
 		<para><command>print command = lp -d%p -s %s; rm %s</command></para>
 
 		<para>Example: <command>print command = /usr/local/samba/bin/myprintscript
@@ -6188,7 +6409,7 @@
 		Windows NT.</para>
 
 		<para>The alternatives are <command>security = share</command>,
-		<command>security = server</command> or <command>security=domain
+		<command>security = server</command> or <command>security = domain
 		</command>.</para>
 
 		<para>In versions of Samba prior to 2..0, the default was 
@@ -6296,7 +6517,7 @@
 		</emphasis></para>
 
 		<para>This is the default security setting in Samba 2.2. 
-		With user-level security a client must first "log=on" with a 
+		With user-level security a client must first "log-on" with a 
 		valid username and password (which can be mapped using the <link
 		linkend="USERNAMEMAP"><parameter>username map</parameter></link> 
 		parameter). Encrypted passwords (see the <link linkend="ENCRYPTPASSWORDS">
@@ -6485,34 +6706,6 @@
 
 
 
-		<varlistentry>
-		<term><anchor id="SHAREMODES">share modes (S)</term>
-		<listitem><para>This enables or disables the honoring of 
-		the <parameter>share modes</parameter> during a file open. These 
-		modes are used by clients to gain exclusive read or write access 
-		to a file.</para>
-
-		<para>These open modes are not directly supported by UNIX, so
-		they are simulated using shared memory, or lock files if your 
-		UNIX doesn't support shared memory (almost all do).</para>
-
-		<para>The share modes that are enabled by this option are 
-		<constant>DENY_DOS</constant>, <constant>DENY_ALL</constant>,
-		<constant>DENY_READ</constant>, <constant>DENY_WRITE</constant>,
-		<constant>DENY_NONE</constant> and <constant>DENY_FCB</constant>.
-		</para>
-
-		<para>This option gives full share compatibility and enabled 
-		by default.</para>
-
-		<para>You should <emphasis>NEVER</emphasis> turn this parameter 
-		off as many Windows applications will break if you do so.</para>
-
-		<para>Default: <command>share modes = yes</command></para>
-		</listitem>
-		</varlistentry>
-
-
 
 		<varlistentry>
 		<term><anchor id="SHORTPRESERVECASE">short preserve case (S)</term>
@@ -6568,6 +6761,49 @@
 		</varlistentry>
 
 
+
+		<varlistentry>
+		<term><anchor id="SHUTDOWNSCRIPT">shutdown script (G)</term>
+		<listitem><para><emphasis>This parameter only exists in the HEAD cvs branch</emphasis>
+		This a full path name to a script called by
+		<ulink url="smbd.8.html"><command>smbd(8)</command></ulink> that
+		should start a shutdown procedure.</para>
+
+		<para>This command will be run as the user connected to the
+		server.</para>
+
+		<para>%m %t %r %f parameters are expanded</para>
+		<para><parameter>%m</parameter> will be substituted with the
+		shutdown message sent to the server.</para>
+		<para><parameter>%t</parameter> will be substituted with the
+		number of seconds to wait before effectively starting the
+		shutdown procedure.</para>
+		<para><parameter>%r</parameter> will be substituted with the
+		switch <emphasis>-r</emphasis>. It means reboot after shutdown
+		for NT.
+		</para>
+		<para><parameter>%f</parameter> will be substituted with the
+		switch <emphasis>-f</emphasis>. It means force the shutdown
+		even if applications do not respond for NT.</para>
+
+		<para>Default: <emphasis>None</emphasis>.</para>
+		<para>Example: <command>abort shutdown script = /usr/local/samba/sbin/shutdown %m %t %r %f</command></para>
+		<para>Shutdown script example:
+		<programlisting>
+		#!/bin/bash
+		
+		$time=0
+		let "time/60"
+		let "time++"
+
+		/sbin/shutdown $3 $4 +$time $1 &
+		</programlisting>
+		Shutdown does not return so we need to launch it in background.
+		</para>
+
+		<para>See also <link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link>.</para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
@@ -6652,8 +6888,8 @@
 		or disable the option, by default they will be enabled if you 
 		don't specify 1 or 0.</para>
 
-		<para>To specify an argument use the syntax SOME_OPTION=VALUE 
-		for example <command>SO_SNDBUF=8192</command>. Note that you must 
+		<para>To specify an argument use the syntax SOME_OPTION = VALUE 
+		for example <command>SO_SNDBUF = 8192</command>. Note that you must 
 		not have any spaces before or after the = sign.</para>
 
 		<para>If you are on a local network then a sensible option 
@@ -6690,7 +6926,7 @@
 		be formatted as the output of the standard Unix <command>env(1)
 		</command> command. This is of the form :</para>
 		<para>Example environment entry:</para>
-		<para><command>SAMBA_NETBIOS_NAME=myhostname</command></para>
+		<para><command>SAMBA_NETBIOS_NAME = myhostname</command></para>
 
 		<para>Default: <emphasis>No default value</emphasis></para>
 		<para>Examples: <command>source environment = |/etc/smb.conf.sh
@@ -6710,10 +6946,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This variable enables or disables the entire SSL mode. If 
 		it is set to <constant>no</constant>, the SSL-enabled Samba behaves 
 		exactly like the non-SSL Samba. If set to <constant>yes</constant>, 
@@ -6722,7 +6954,7 @@
 		<parameter>ssl hosts resign</parameter></link> whether an SSL 
 		connection will be required.</para>
 
-		<para>Default: <command>ssl=no</command></para>
+		<para>Default: <command>ssl = no</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -6734,10 +6966,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This variable defines where to look up the Certification
 		Authorities. The given directory should contain one file for 
@@ -6760,10 +6988,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This variable is a second way to define the trusted CAs. 
 		The certificates of the trusted CAs are collected in one big 
@@ -6788,10 +7012,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This variable defines the ciphers that should be offered 
 		during SSL negotiation. You should not set this variable unless 
 		you know what you are doing.</para>
@@ -6805,10 +7025,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>The certificate in this file is used by <ulink url="smbclient.1.html">
 		<command>smbclient(1)</command></ulink> if it exists. It's needed 
@@ -6828,10 +7044,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This is the private key for <ulink url="smbclient.1.html">
 		<command>smbclient(1)</command></ulink>. It's only needed if the 
 		client should have a certificate. </para>
@@ -6850,18 +7062,77 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
-		<para>This variable defines whether SSLeay should be configured 
+		<para>This variable defines whether OpenSSL should be configured 
 		for bug compatibility with other SSL implementations. This is 
 		probably not desirable because currently no clients with SSL 
-		implementations other than SSLeay exist.</para>
+		implementations other than OpenSSL exist.</para>
 
 		<para>Default: <command>ssl compatibility = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="SSLEGDSOCKET">ssl egd socket (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This option is used to define the location of the communiation socket of 
+		an EGD or PRNGD daemon, from which entropy can be retrieved. This option 
+		can be used instead of or together with the <link 
+		linkend="SSLENTROPYFILE"><parameter>ssl entropy file</parameter></link> 
+		directive. 255 bytes of entropy will be retrieved from the daemon.
+		</para>
+
+		<para>Default: <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="SSLENTROPYBYTES">ssl entropy bytes (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This parameter is used to define the number of bytes which should 
+		be read from the <link linkend="SSLENTROPYFILE"><parameter>ssl entropy 
+		file</parameter></link> If a -1 is specified, the entire file will
+		be read.
+		</para>
+
+		<para>Default: <command>ssl entropy bytes = 255</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
+		<term><anchor id="SSLENTROPYFILE">ssl entropy file (G)</term>
+		<listitem><para>This variable is part of SSL-enabled Samba. This 
+		is only available if the SSL libraries have been compiled on your 
+		system and the configure option <command>--with-ssl</command> was 
+		given at configure time.</para>
+		
+		<para>
+		This parameter is used to specify a file from which processes will 
+		read "random bytes" on startup.  In order to seed the internal pseudo 
+		random number generator, entropy must be provided. On system with a 
+		<filename>/dev/urandom</filename> device file, the processes
+		will retrieve its entropy from the kernel. On systems without kernel
+		entropy support, a file can be supplied that will be read on startup
+		and that will be used to seed the PRNG.
+		</para>
+
+		<para>Default: <emphasis>none</emphasis></para>
+		</listitem>
+		</varlistentry>
+
 		
 
 		<varlistentry>
@@ -6878,10 +7149,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>These two variables define whether Samba will go 
 		into SSL mode or not. If none of them is defined, Samba will 
@@ -6916,10 +7183,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>If this variable is set to <constant>yes</constant>, the 
 		server will not tolerate connections from clients that don't 
 		have a valid certificate. The directory/file given in <link
@@ -6948,10 +7211,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>If this variable is set to <constant>yes</constant>, the 
 		<ulink url="smbclient.1.html"><command>smbclient(1)</command>
 		</ulink> will request a certificate from the server. Same as 
@@ -6970,10 +7229,6 @@
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
 
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
-
 		<para>This is the file containing the server's certificate. 
 		The server <emphasis>must</emphasis> have a certificate. The 
 		file may also contain the server's private key. See later for 
@@ -6991,10 +7246,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This file contains the private key of the server. If 
 		this variable is not defined, the key is looked up in the 
@@ -7015,10 +7266,6 @@
 		is only available if the SSL libraries have been compiled on your 
 		system and the configure option <command>--with-ssl</command> was 
 		given at configure time.</para>
-
-		<para><emphasis>Note</emphasis> that for export control reasons 
-		this code is <emphasis>NOT</emphasis> enabled by default in any 
-		current binary version of Samba.</para>
 
 		<para>This enumeration variable defines the versions of the 
 		SSL protocol that will be used. <constant>ssl2or3</constant> allows 
@@ -7072,6 +7319,30 @@
 
 
 		
+		<varlistentry>
+		<term><anchor id="STRICTALLOCATE">strict allocate (S)</term>
+		<listitem><para>This is a boolean that controls the handling of 
+		disk space allocation in the server. When this is set to <constant>yes</constant> 
+		the server will change from UNIX behaviour of not committing real
+		disk storage blocks when a file is extended to the Windows behaviour
+		of actually forcing the disk system to allocate real storage blocks
+		when a file is created or extended to be a given size. In UNIX
+		terminology this means that Samba will stop creating sparse files.
+		This can be slow on some systems.</para>
+
+		<para>When strict allocate is <constant>no</constant> the server does sparse
+		disk block allocation when a file is extended.</para>
+
+		<para>Setting this to <constant>yes</constant> can help Samba return
+		out of quota messages on systems that are restricting the disk quota
+		of users.</para>
+
+		<para>Default: <command>strict allocate = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
+
 		<varlistentry>
 		<term><anchor id="STRICTLOCKING">strict locking (S)</term>
 		<listitem><para>This is a boolean that controls the handling of 
@@ -7184,10 +7455,7 @@
 
 		<varlistentry>
 		<term><anchor id="TEMPLATEHOMEDIR">template homedir (G)</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is 
-		only available in Samba 3.0.</para>
-
-		<para>When filling out the user information for a Windows NT 
+		<listitem><para>When filling out the user information for a Windows NT 
 		user, the <ulink url="winbindd.8.html">winbindd(8)</ulink> daemon 
 		uses this parameter to fill in the home directory for that user.  
 		If the string <parameter>%D</parameter> is present it is substituted 
@@ -7203,10 +7471,7 @@
 
 		<varlistentry>
 		<term><anchor id="TEMPLATESHELL">template shell (G)</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is 
-		only available in Samba 3.0.</para>
-
-		<para>When filling out the user information for a Windows NT 
+		<listitem><para>When filling out the user information for a Windows NT 
 		user, the <ulink url="winbindd.8.html">winbindd(8)</ulink> daemon 
 		uses this parameter to fill in the login shell for that user.</para>
 
@@ -7323,6 +7588,61 @@
   		<para>Default: <command>update encrypted = no</command></para>
 		</listitem>
 		</varlistentry>
+
+
+		<varlistentry>
+		<term><anchor id="USECLIENTDRIVER">use client driver (S)</term>
+		<listitem><para>This parameter applies only to Windows NT/2000
+		clients.  It has no affect on Windows 95/98/ME clients.  When 
+		serving a printer to Windows NT/2000 clients without first installing
+		a valid printer driver on the Samba host, the client will be required
+		to install a local printer driver.  From this point on, the client
+		will treat the print as a local printer and not a network printer 
+		connection.  This is much the same behavior that will occur
+		when <command>disable spoolss = yes</command>.  </para>
+
+		<para>The differentiating 
+		factor is that under normal circumstances, the NT/2000 client will 
+		attempt to open the network printer using MS-RPC.  The problem is that
+		because the client considers the printer to be local, it will attempt
+		to issue the OpenPrinterEx() call requesting access rights associated 
+		with the logged on user. If the user possesses local administator rights
+		but not root privilegde on the Samba host (often the case), the OpenPrinterEx()
+		call will fail.  The result is that the client will now display an "Access
+		Denied; Unable to connect" message in the printer queue window (even though
+		jobs may successfully be printed).  </para>
+
+		<para>If this parameter is enabled for a printer, then any attempt
+		to open the printer with the PRINTER_ACCESS_ADMINISTER right is mapped
+		to PRINTER_ACCESS_USE instead.  Thus allowing the OpenPrinterEx()
+		call to succeed.  <emphasis>This parameter MUST not be able enabled
+		on a print share which has valid print driver installed on the Samba 
+		server.</emphasis></para>
+
+		<para>See also <link linkend="DISABLESPOOLSS">disable spoolss</link>
+		</para>
+
+		<para>Default: <command>use client driver = no</command></para>
+		</listitem>
+		</varlistentry>
+	
+
+
+		<varlistentry>
+		<term><anchor id="USERMMAP">use mmap (G)</term>
+		<listitem><para>This global parameter determines if the tdb internals of Samba can
+		depend on mmap working correctly on the running system. Samba requires a coherent
+		mmap/read-write system memory cache. Currently only HPUX does not have such a
+		coherent cache, and so this parameter is set to <constant>false</constant> by
+		default on HPUX. On all other systems this parameter should be left alone. This
+		parameter is provided to help the Samba developers track down problems with
+		the tdb internal code.
+		</para>
+
+		<para>Default: <command>use mmap = yes</command></para>
+		</listitem>
+		</varlistentry>
+
 
 
 
@@ -7545,7 +7865,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="UTMP">utmp (S)</term>
+		<term><anchor id="UTMP">utmp (G)</term>
 		<listitem><para>This boolean parameter is only available if 
 		Samba has been configured and compiled  with the option <command>
 		--with-utmp</command>. If set to <constant>true</constant> then Samba will attempt
@@ -7684,13 +8004,14 @@
 		<para>Note that the <parameter>case sensitive</parameter> option 
 		is applicable in vetoing files.</para>
 		
-		<para>One feature of the veto files parameter that it is important 
-		to be aware of, is that if a directory contains nothing but files 
-		that match the veto files parameter (which means that Windows/DOS 
-		clients cannot ever see them) is deleted, the veto files within 
-		that directory <emphasis>are automatically deleted</emphasis> along 
-		with it, if the user has UNIX permissions to do so.</para>
- 
+		<para>One feature of the veto files parameter that it
+		is important to be aware of is Samba's behaviour when
+		trying to delete a directory. If a directory that is
+		to be deleted contains nothing but veto files this
+		deletion will <emphasis>fail</emphasis> unless you also set
+		the <parameter>delete veto files</parameter> parameter to
+		<parameter>yes</parameter>.</para>
+
 		<para>Setting this parameter will affect the performance 
 		of Samba, as it will be forced to check all files and directories 
 		for a match as they are scanned.</para>
@@ -7737,7 +8058,7 @@
 		the line (either in the [global] section or in the section for 
 		the particular NetBench share :</para>
 
-		<para>Example: <command>veto oplock files = /*;.SEM/
+		<para>Example: <command>veto oplock files = /*.SEM/
 		</command></para>
 		</listitem>
 		</varlistentry>
@@ -7806,10 +8127,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDCACHETIME">winbind cache time</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>This parameter specifies the number of seconds the
+		<listitem><para>This parameter specifies the number of seconds the
 		<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon will cache 
 		user and group information before querying a Windows NT server 
 		again.</para>
@@ -7819,14 +8137,52 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="WINBINDENUMUSERS">winbind enum
+		users</term> <listitem><para>On large installations using
+		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
+		necessary to suppress the enumeration of users through the
+		<command> setpwent()</command>,
+		<command>getpwent()</command> and
+		<command>endpwent()</command> group of system calls.  If
+		the <parameter>winbind enum users</parameter> parameter is
+		false, calls to the <command>getpwent</command> system call
+		will not return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off user
+		enumeration may cause some programs to behave oddly.  For
+		example, the finger program relies on having access to the
+		full user list when searching for matching
+		usernames. </para>
+
+		<para>Default: <command>winbind enum users = yes </command></para>
+		</listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term><anchor id="WINBINDENUMGROUPS">winbind enum
+		groups</term> <listitem><para>On large installations using
+		<ulink url="winbindd.8.html">winbindd(8)</ulink> it may be
+		necessary to suppress the enumeration of groups through the
+		<command> setgrent()</command>,
+		<command>getgrent()</command> and
+		<command>endgrent()</command> group of system calls.  If
+		the <parameter>winbind enum groups</parameter> parameter is
+		false, calls to the <command>getgrent()</command> system
+		call will not return any data. </para>
+
+		<para><emphasis>Warning:</emphasis> Turning off group
+		enumeration may cause some programs to behave oddly.
+		</para>
+
+		<para>Default: <command>winbind enum groups = yes </command>
+		</para></listitem>
+		</varlistentry>
 
 	
 		<varlistentry>
 		<term><anchor id="WINBINDGID">winbind gid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
+		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of group ids should have no 
 		existing local or NIS groups within it as strange conflicts can 
@@ -7842,10 +8198,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDSEPARATOR">winbind separator</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-
-		<para>This parameter allows an admin to define the character 
+		<listitem><para>This parameter allows an admin to define the character 
 		used when listing a username of the form of <replaceable>DOMAIN
 		</replaceable>\<replaceable>user</replaceable>.  This parameter 
 		is only applicable when using the <filename>pam_winbind.so</filename>
@@ -7862,10 +8215,7 @@
 
 		<varlistentry>
 		<term><anchor id="WINBINDUID">winbind uid</term>
-		<listitem><para><emphasis>NOTE:</emphasis> this parameter is only 
-		available in Samba 3.0.</para>
-		
-		<para>The winbind gid parameter specifies the range of group 
+		<listitem><para>The winbind gid parameter specifies the range of group 
 		ids that are allocated by the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink> daemon.  This range of ids should have no 
 		existing local or NIS users within it as strange conflicts can 
@@ -7988,7 +8338,7 @@
 		<listitem><para>This controls what workgroup your server will 
 		appear to be in when queried by clients. Note that this parameter 
 		also controls the Domain name used with the <link 
-		linkend="SECURITYEQUALSDOMAIN"><command>security=domain</command></link>
+		linkend="SECURITYEQUALSDOMAIN"><command>security = domain</command></link>
 		setting.</para>
 
 		<para>Default: <emphasis>set at compile time to WORKGROUP</emphasis></para>
