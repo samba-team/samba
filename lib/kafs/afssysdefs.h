@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -83,11 +83,12 @@
 #endif
 
 #if defined(__FreeBSD__)
-#ifdef __FreeBSD_version >= 500000
+#if __FreeBSD_version >= 500000
 #define AFS_SYSCALL 339
 #else
 #define AFS_SYSCALL 210
 #endif
+#endif /* __FreeBSD__ */
 
 #ifdef __OpenBSD__
 #define AFS_SYSCALL 208
