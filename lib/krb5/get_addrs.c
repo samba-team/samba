@@ -179,8 +179,10 @@ krb5_get_all_client_addrs (krb5_addresses *res)
  * Same as above, but with the fall-back to INADDR_ANY.
  */
 
+#if 0
 krb5_error_code
 krb5_get_all_server_addrs ()
 {
     return 0;
 }
+#endif
