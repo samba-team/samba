@@ -59,13 +59,39 @@ int
 main(int argc, char **argv)
 {
     krb5_context context;
-    des_cblock key;
     int c;
     set_progname(argv[0]);
     
     configure(argc, argv);
-    des_new_random_key(&key);
-    memset(&key, 0, sizeof(key));
+
+    if(keyfile){
+	FILE *f;
+	size_t len;
+	unsigned char buf[1024];
+	EncryptionKey key;
+	f = fopen(keyfile, "r");
+	if(f == NULL){
+	    kdc_log(0, "Failed to open master key file %s", 
+		    keyfile);
+	    exit(1);
+	}
+	len = fread(buf, 1, sizeof(buf), f);
+	fclose(f);
+	if(decode_EncryptionKey(buf, len, &key, &len)){
+	    kdc_log(0, "Failed to parse contents of master key file %s", 
+		    keyfile);
+	    exit(1);
+	}	    
+	set_master_key(&key);
+	memset(key.keyvalue.data, 0, key.keyvalue.length);
+	free_EncryptionKey(&key);
+    }else{
+	des_cblock key;
+	des_new_random_key(&key);
+	memset(&key, 0, sizeof(key));
+    }
+
+
     signal(SIGINT, sigterm);
     krb5_init_context(&context);
     loop(context);
