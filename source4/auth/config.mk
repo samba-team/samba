@@ -37,7 +37,6 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM AUTH
 [SUBSYSTEM::AUTH]
-INIT_FUNCTION = auth_init
 INIT_OBJ_FILES = \
 		auth/auth.o
 ADD_OBJ_FILES = \

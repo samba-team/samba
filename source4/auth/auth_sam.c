@@ -631,7 +631,7 @@ NTSTATUS auth_sam_init(void)
 
 	ops.name = "sam";
 	ops.init = auth_init_sam;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));
@@ -640,7 +640,7 @@ NTSTATUS auth_sam_init(void)
 
 	ops.name = "sam_ignoredomain";
 	ops.init = auth_init_sam_ignoredomain;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));

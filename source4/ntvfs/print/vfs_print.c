@@ -107,7 +107,7 @@ NTSTATUS ntvfs_print_init(void)
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register PRINT backend!\n"));

@@ -151,7 +151,7 @@ NTSTATUS auth_winbind_init(void)
 
 	ops.name = "winbind";
 	ops.init = auth_init_winbind;
-	ret = register_backend("auth", &ops);
+	ret = auth_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' auth backend!\n",
 			ops.name));

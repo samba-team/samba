@@ -66,7 +66,6 @@ ADD_OBJ_FILES = \
 		lib/select.o \
 		lib/pam_errors.o \
 		intl/lang_tdb.o \
-		lib/module.o \
 		lib/mutex.o \
 		lib/events.o \
 		lib/server_mutex.o \

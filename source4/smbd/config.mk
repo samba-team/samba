@@ -43,7 +43,6 @@ REQUIRED_SUBSYSTEMS = \
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
-INIT_FUNCTION = server_service_init
 INIT_OBJ_FILES = \
 		smbd/service.o
 REQUIRED_SUBSYSTEMS = \

@@ -75,14 +75,6 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 }
 
 
-static NTSTATUS register_dcom_class(const void *_c)
-{
-	const struct dcom_class *class = _c;
-	/* FIXME */
-
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
 NTSTATUS dcerpc_server_dcom_init(void)
 {
 	NTSTATUS status;
@@ -92,11 +84,6 @@ NTSTATUS dcerpc_server_dcom_init(void)
 	}
 
 	status = dcerpc_server_IRemoteActivation_init();
-	if (NT_STATUS_IS_ERR(status)) {
-		return status;
-	}
-
-	status = register_subsystem("dcom", register_dcom_class);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}

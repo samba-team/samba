@@ -37,6 +37,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start BINARY tdbtool
 [BINARY::tdbtool]
+ENABLE = NO
 OBJ_FILES= \
 		lib/tdb/tools/tdbtool.o
 REQUIRED_SUBSYSTEMS = \

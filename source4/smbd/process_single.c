@@ -111,7 +111,7 @@ NTSTATUS process_model_single_init(void)
 	ops.get_id			= single_get_id;
 
 	/* register ourselves with the PROCESS_MODEL subsystem. */
-	ret = register_backend("process_model", &ops);
+	ret = register_process_model(&ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register process_model 'single'!\n"));
 		return ret;

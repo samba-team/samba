@@ -411,7 +411,7 @@ static int num_backends;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.
 */
-static NTSTATUS auth_register(const void *_ops)
+NTSTATUS auth_register(const void *_ops)
 {
 	const struct auth_operations *ops = _ops;
 	struct auth_operations *new_ops;
@@ -475,24 +475,6 @@ const struct auth_critical_sizes *auth_interface_version(void)
 	};
 
 	return &critical_sizes;
-}
-
-/*
-  initialise the AUTH subsystem
-*/
-NTSTATUS auth_init(void)
-{
-	NTSTATUS status;
-	
-	status = register_subsystem("auth", auth_register); 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	auth_init_static_modules;
-	
-	DEBUG(3,("AUTH subsystem version %d initialised\n", AUTH_INTERFACE_VERSION));
-	return status;
 }
 
 NTSTATUS server_service_auth_init(void)

@@ -803,15 +803,15 @@ NTSTATUS ntvfs_unixuid_init(void)
 
 	/* we register under all 3 backend types, as we are not type specific */
 	ops.type = NTVFS_DISK;	
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
 	ops.type = NTVFS_PRINT;	
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 
 	ops.type = NTVFS_IPC;	
-	ret = register_backend("ntvfs", &ops);
+	ret = ntvfs_register(&ops);
 	if (!NT_STATUS_IS_OK(ret)) goto failed;
 	
 failed:
