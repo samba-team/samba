@@ -76,35 +76,33 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 static struct winbindd_domain *add_trusted_domain(char *domain_name,
                                                   DOM_SID *domain_sid)
 {
-        struct winbindd_domain *domain, *tmp;
+	struct winbindd_domain *domain, *tmp;
         
-        for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-                if (strcmp(domain_name, tmp->name) == 0) {
-                        DEBUG(3, ("domain %s already in domain list\n",
-                                  domain_name));
-                        return tmp;
-                }
-        }
+	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		if (strcmp(domain_name, tmp->name) == 0) {
+			DEBUG(3, ("domain %s already in domain list\n", domain_name));
+			return tmp;
+		}
+	}
         
-        DEBUG(1, ("adding domain %s\n", domain_name));
+	DEBUG(1, ("adding domain %s\n", domain_name));
         
-        /* Create new domain entry */
+	/* Create new domain entry */
         
-        if ((domain = (struct winbindd_domain *)
-             malloc(sizeof(*domain))) == NULL)
-                return NULL;
+	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
+		return NULL;
 
-        /* Fill in fields */
+	/* Fill in fields */
         
-        ZERO_STRUCTP(domain);
-        fstrcpy(domain->name, domain_name);
-        sid_copy(&domain->sid, domain_sid);
+	ZERO_STRUCTP(domain);
+	fstrcpy(domain->name, domain_name);
+	sid_copy(&domain->sid, domain_sid);
         
-        /* Link to domain list */
+	/* Link to domain list */
         
-        DLIST_ADD(domain_list, domain);
+	DLIST_ADD(domain_list, domain);
         
-        return domain;
+	return domain;
 }
 
 /* Look up global info for the winbind daemon */
@@ -168,21 +166,21 @@ BOOL get_domain_info(void)
 
 void free_domain_info(void)
 {
-        struct winbindd_domain *domain;
+	struct winbindd_domain *domain;
 
-        /* Free list of domains */
+	/* Free list of domains */
 
-        if (domain_list) {
-                struct winbindd_domain *next_domain;
+	if (domain_list) {
+		struct winbindd_domain *next_domain;
 
-                domain = domain_list;
+		domain = domain_list;
 
-                while(domain) {
-                        next_domain = domain->next;
-                        free(domain);
-                        domain = next_domain;
-                }
-        }
+		while(domain) {
+			next_domain = domain->next;
+			SAFE_FREE(domain);
+			domain = next_domain;
+		}
+	}
 }
 
 /* Connect to a domain controller using get_any_dc_name() to discover 
@@ -273,6 +271,9 @@ static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME
 	sid_to_string(sid_val.sid, sid);
 	sid_val.type = (int)type;
 
+	DEBUG(10,("store_sid_by_name_in_cache: storing cache entry %s -> SID %s\n",
+		name, sid_val.sid ));
+
 	winbindd_store_sid_cache_entry(domain, name, &sid_val);
 }
 
@@ -326,6 +327,9 @@ static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME
 	sid_to_string(sid_str, sid);
 	fstrcpy( name_val.name, name );
 	name_val.type = (int)type;
+
+	DEBUG(10,("store_name_by_sid_in_cache: storing cache entry SID %s -> %s\n",
+		sid_str, name_val.name ));
 
 	winbindd_store_name_cache_entry(domain, sid_str, &name_val);
 }
@@ -715,24 +719,24 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
 
 void free_getent_state(struct getent_state *state)
 {
-    struct getent_state *temp;
+	struct getent_state *temp;
 
-    /* Iterate over state list */
+	/* Iterate over state list */
 
-    temp = state;
+	temp = state;
 
-    while(temp != NULL) {
-        struct getent_state *next;
+	while(temp != NULL) {
+		struct getent_state *next;
 
-        /* Free sam entries then list entry */
+		/* Free sam entries then list entry */
 
-        SAFE_FREE(state->sam_entries);
-        DLIST_REMOVE(state, state);
-        next = temp->next;
+		SAFE_FREE(state->sam_entries);
+		DLIST_REMOVE(state, state);
+		next = temp->next;
 
-        SAFE_FREE(temp);
-        temp = next;
-    }
+		SAFE_FREE(temp);
+		temp = next;
+	}
 }
 
 /* Parse list of arguments to winbind uid or winbind gid parameters */

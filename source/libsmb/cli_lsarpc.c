@@ -255,36 +255,37 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_FILES_OPEN) &&
-	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
-		
+	if (!NT_STATUS_IS_OK(result) &&
+		NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_FILES_OPEN)) {
 		/* An actual error occured */
 
 		goto done;
 	}
 
-	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 
-	(*num_names) = r.names->num_entries;
-	
-	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * 
-					 r.names->num_entries))) {
+	if (r.mapped_count == 0) {
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
+
+	(*num_names) = r.mapped_count;
+	result = NT_STATUS_OK;
+
+	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * 
-				      r.names->num_entries))) {
+	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.mapped_count))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 		
-	for (i = 0; i < r.names->num_entries; i++) {
+	for (i = 0; i < r.mapped_count; i++) {
 		fstring name, dom_name, full_name;
 		uint32 dom_idx = t_names.name[i].domain_idx;
 
@@ -359,35 +360,36 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NONE_MAPPED)) {
-
+	if (!NT_STATUS_IS_OK(result)) {
 		/* An actual error occured */
 
 		goto done;
 	}
 
-	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 
-	(*num_sids) = r.num_entries;
+	if (r.mapped_count == 0) {
+		result = NT_STATUS_NONE_MAPPED;
+		goto done;
+	}
 
-	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
-					 r.num_entries)))) {
+	(*num_sids) = r.mapped_count;
+	result = NT_STATUS_OK;
+
+	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * r.mapped_count)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
-					  r.num_entries)))) {
+	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.mapped_count)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	for (i = 0; i < r.num_entries; i++) {
+	for (i = 0; i < r.mapped_count; i++) {
 		DOM_RID2 *t_rids = r.dom_rid;
 		uint32 dom_idx = t_rids[i].rid_idx;
 		uint32 dom_rid = t_rids[i].rid;
