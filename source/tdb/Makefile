@@ -3,7 +3,7 @@
 #
 
 CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DMMAP
-CC = insure
+CC = gcc
 PROGS = tdbtest tdbtool tdbtorture
 
 default: $(PROGS)
