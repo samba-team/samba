@@ -265,7 +265,7 @@ int lookup(nsd_file_t *rq)
    are the pointers passed in by the C library to the _nss_*_*
    functions. */
 
-static char *get_static(char **buffer, int *buflen, int len)
+static char *get_static(char **buffer, size_t *buflen, int len)
 {
 	char *result;
 
