@@ -450,10 +450,8 @@ typedef struct _Printer{
 	uint32 jobid; /* jobid in printing backend */
 	BOOL printer_type;
 	TALLOC_CTX *ctx;
-	union {
-	  	fstring handlename;
-		fstring printerservername;
-	} dev;
+	fstring servername;
+	fstring sharename;
 	uint32 type;
 	uint32 access_granted;
 	struct {
