@@ -100,10 +100,12 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
 
 	ret = read(fde->fd, blob.data, blob.length);
 	if (ret == 0 || (ret == -1 && errno != EINTR)) {
+		data_blob_free(&blob);
 		terminate_rpc_session(r, "eof on socket");
 		return;
 	}
 	if (ret == -1) {
+		data_blob_free(&blob);
 		return;
 	}
 
@@ -265,6 +267,8 @@ static void add_socket_rpc(struct event_context *events,
 					 r, e->endpoint_ops);
 		}
 	}
+
+	free(r);
 }
 
 /****************************************************************************
