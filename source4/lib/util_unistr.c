@@ -86,26 +86,9 @@ void load_case_tables(void)
 	}
 }
 
-/*
-  see if a ucs2 character can be mapped correctly to a dos character
-  and mapped back to the same character in ucs2
-*/
-static int check_dos_char(smb_ucs2_t c)
-{
-	char buf[10];
-	smb_ucs2_t c2 = 0;
-	int len1, len2;
-	len1 = convert_string(CH_UTF16, CH_DOS, &c, 2, buf, sizeof(buf));
-	if (len1 == 0) return 0;
-	len2 = convert_string(CH_DOS, CH_UTF16, buf, len1, &c2, 2);
-	if (len2 != 2) return 0;
-	return (c == c2);
-}
-
 /*******************************************************************
  Convert a wchar to upper case.
 ********************************************************************/
-
 smb_ucs2_t toupper_w(smb_ucs2_t val)
 {
 	return upcase_table[SVAL(&val,0)];
@@ -114,7 +97,6 @@ smb_ucs2_t toupper_w(smb_ucs2_t val)
 /*******************************************************************
  Convert a wchar to lower case.
 ********************************************************************/
-
 static smb_ucs2_t tolower_w( smb_ucs2_t val )
 {
 	return lowcase_table[SVAL(&val,0)];
