@@ -148,15 +148,17 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			fprintf(stderr,"MSG_PROFILE needs a parameter\n");
 			return(False);
 		}
-		if (strequal(params, "on")) {
-			v = 2;
-		} else if (strequal(params, "off")) {
+		if (strequal(params, "off")) {
 			v = 0;
 		} else if (strequal(params, "count")) {
 			v = 1;
+		} else if (strequal(params, "on")) {
+			v = 2;
+		} else if (strequal(params, "flush")) {
+			v = 3;
 		} else {
 		    fprintf(stderr,
-			"MSG_PROFILE parameter must be on, off, or count\n");
+			"MSG_PROFILE parameter must be off, count, on, or flush\n");
 		    return(False);
 		}
 		send_message(dest, MSG_PROFILE, &v, sizeof(int));

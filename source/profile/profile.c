@@ -31,7 +31,8 @@ extern int DEBUGLEVEL;
 static int shm_id;
 static BOOL read_only;
 
-struct profile_struct *profile_p;
+struct profile_header *profile_h;
+struct profile_stats *profile_p;
 
 BOOL do_profile_flag = False;
 BOOL do_profile_times = False;
@@ -48,17 +49,20 @@ void profile_message(int msg_type, pid_t src, void *buf, size_t len)
 
 	memcpy(&level, buf, sizeof(int));
 	switch (level) {
-	case 0:
+	case 0:		/* turn off profiling */
 		do_profile_flag = False;
 		do_profile_times = False;
 		break;
-	case 1:
+	case 1:		/* turn on counter profiling only */
 		do_profile_flag = True;
 		do_profile_times = False;
 		break;
-	case 2:
+	case 2:		/* turn on complete profiling */
 		do_profile_flag = True;
 		do_profile_times = True;
+		break;
+	case 3:		/* reset profile values */
+		memset((char *)profile_p, 0, sizeof(*profile_p));
 		break;
 	}
 	DEBUG(1,("Profile level set to %d from pid %d\n", level, (int)src));
@@ -81,7 +85,7 @@ BOOL profile_setup(BOOL rdonly)
 	   if we are running from inetd. Bad luck. */
 	if (shm_id == -1) {
 		if (read_only) return False;
-		shm_id = shmget(PROF_SHMEM_KEY, sizeof(*profile_p), 
+		shm_id = shmget(PROF_SHMEM_KEY, sizeof(*profile_h), 
 				IPC_CREAT | IPC_EXCL | IPC_PERMS);
 	}
 	
@@ -92,7 +96,7 @@ BOOL profile_setup(BOOL rdonly)
 	}   
 	
 	
-	profile_p = (struct profile_struct *)shmat(shm_id, 0, 
+	profile_h = (struct profile_header *)shmat(shm_id, 0, 
 						   read_only?SHM_RDONLY:0);
 	if ((long)profile_p == -1) {
 		DEBUG(0,("Can't attach to IPC area. Error was %s\n", 
@@ -112,9 +116,9 @@ BOOL profile_setup(BOOL rdonly)
 		return False;
 	}
 
-	if (shm_ds.shm_segsz != sizeof(*profile_p)) {
+	if (shm_ds.shm_segsz != sizeof(*profile_h)) {
 		DEBUG(0,("WARNING: profile size is %d (expected %d). Deleting\n",
-			 (int)shm_ds.shm_segsz, sizeof(*profile_p)));
+			 (int)shm_ds.shm_segsz, sizeof(*profile_h)));
 		if (shmctl(shm_id, IPC_RMID, &shm_ds) == 0) {
 			goto again;
 		} else {
@@ -123,12 +127,13 @@ BOOL profile_setup(BOOL rdonly)
 	}
 
 	if (!read_only && (shm_ds.shm_nattch == 1)) {
-		memset((char *)profile_p, 0, sizeof(*profile_p));
-		profile_p->prof_shm_magic = PROF_SHM_MAGIC;
-		profile_p->prof_shm_version = PROF_SHM_VERSION;
+		memset((char *)profile_h, 0, sizeof(*profile_h));
+		profile_h->prof_shm_magic = PROF_SHM_MAGIC;
+		profile_h->prof_shm_version = PROF_SHM_VERSION;
 		DEBUG(3,("Initialised profile area\n"));
 	}
 
+	profile_p = &profile_h->stats;
 	message_register(MSG_PROFILE, profile_message);
 	return True;
 }
