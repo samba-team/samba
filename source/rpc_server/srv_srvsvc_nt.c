@@ -2086,7 +2086,7 @@ WERROR _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 		int dinfo_size = MAX_SERVER_DISK_ENTRIES * sizeof(*dinfo);
 	  
 		if(!(dinfo =  talloc(ctx, dinfo_size))) {
-
+			return WERR_NOMEM;
 		}
 
 		r_u->disk_enum_ctr.disk_info = dinfo;
