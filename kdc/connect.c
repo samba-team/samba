@@ -625,11 +625,12 @@ loop(void)
 	    break;
 	default:
 	    for(i = 0; i < ndescr; i++)
-		if(d[i].s >= 0 && FD_ISSET(d[i].s, &fds))
+		if(d[i].s >= 0 && FD_ISSET(d[i].s, &fds)) {
 		    if(d[i].type == SOCK_DGRAM)
 			handle_udp(&d[i]);
 		    else if(d[i].type == SOCK_STREAM)
 			handle_tcp(d, i, min_free);
+		}
 	}
     }
     free (d);
