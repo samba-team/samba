@@ -27,7 +27,8 @@
  */
 /* version 1 - version from samba 3.0 - metze */
 /* version 2 - initial samba4 version - metze */
-#define AUTH_INTERFACE_VERSION 2
+/* version 3 - subsequent samba4 version - abartlet */
+#define AUTH_INTERFACE_VERSION 3
 
 /* AUTH_STR - string */
 typedef struct auth_str
@@ -36,34 +37,23 @@ typedef struct auth_str
 	char *str;
 } AUTH_STR;
 
-/* AUTH_UNISTR - unicode string or buffer */
-typedef struct auth_unistr
-{
-	int len;
-	uchar *unistr;
-} AUTH_UNISTR;
-
-#define AUTH_FLAG_NONE        0x000000
-#define AUTH_FLAG_PLAINTEXT   0x000001
-#define AUTH_FLAG_LM_RESP     0x000002
-#define AUTH_FLAG_NTLM_RESP   0x000004
-#define AUTH_FLAG_NTLMv2_RESP 0x000008
-
 typedef struct auth_usersupplied_info
 {
+	
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
+ 	DATA_BLOB lm_interactive_pwd;
+	DATA_BLOB nt_interactive_pwd;
  	DATA_BLOB plaintext_password;
 	
 	BOOL encrypted;
 	
-	uint32 auth_flags;
-
 	AUTH_STR           client_domain;          /* domain name string */
 	AUTH_STR           domain;               /* domain name after mapping */
 	AUTH_STR           internal_username;    /* username after mapping */
 	AUTH_STR           smb_name;        /* username before mapping */
 	AUTH_STR           wksta_name;           /* workstation name (netbios calling name) unicode string */
+	
 } auth_usersupplied_info;
 
 #define SAM_FILL_NAME  0x01
@@ -84,11 +74,9 @@ typedef struct auth_serversupplied_info
 	
 	NT_USER_TOKEN *ptok;
 	
-	uint8 session_key[16];
-	uint8 first_8_lm_hash[8];
-	DATA_BLOB nt_session_key;
+	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
-
+	
 	uint32 sam_fill_level;  /* How far is this structure filled? */
 	
 	SAM_ACCOUNT *sam_account;
@@ -126,7 +114,7 @@ typedef struct auth_methods
 			 void *my_private_data, 
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
-			 struct auth_serversupplied_info **server_info);
+			 auth_serversupplied_info **server_info);
 
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
@@ -140,7 +128,19 @@ typedef struct auth_methods
 
 	/* Function to send a keepalive message on the above structure */
 	void (*send_keepalive)(void **private_data);
+
 } auth_methods;
+
+typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
+
+struct auth_init_function_entry {
+	const char *name;
+	/* Function to create a member of the authmethods list */
+
+	auth_init_function init;
+
+	struct auth_init_function_entry *prev, *next;
+};
 
 typedef struct auth_ntlmssp_state
 {
@@ -172,4 +172,4 @@ struct auth_critical_sizes {
 	int sizeof_auth_unistr;
 };
 
-#endif /* _SAMBA_AUTH_H */
+#endif /* _SMBAUTH_H_ */
