@@ -57,7 +57,7 @@ enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK,
 #define u32 unsigned
 #endif
 
-typedef struct {
+typedef struct TDB_DATA {
 	char *dptr;
 	size_t dsize;
 } TDB_DATA;
