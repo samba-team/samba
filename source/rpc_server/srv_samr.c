@@ -772,8 +772,8 @@ static BOOL samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 
 	DEBUG(5,("samr_lookup_names: %d\n", __LINE__));
 
-	memset(&rid, '\0', sizeof(rid));
-	memset(&type, '\0', sizeof(type));
+	ZERO_ARRAY(rid);
+	ZERO_ARRAY(type);
 
 	if (!get_lsa_policy_samr_sid(&q_u->pol, &pol_sid)) {
         status = 0xC0000000 | NT_STATUS_OBJECT_TYPE_MISMATCH;

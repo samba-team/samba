@@ -414,7 +414,7 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata,
 
 	ZERO_STRUCT(r_l);
 	ZERO_STRUCT(ref);
-	ZERO_STRUCT(rids);
+	ZERO_ARRAY(rids);
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
