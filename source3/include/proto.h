@@ -1259,7 +1259,8 @@ BOOL change_trust_account_password( char *domain, char *remote_machine_list);
 
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted);
+BOOL cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
+BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name);
 void cli_nt_session_close(struct cli_state *cli);
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
@@ -1872,7 +1873,7 @@ void reset_chain_p(void);
 void init_rpc_pipe_hnd(void);
 pipes_struct *open_rpc_pipe_p(char *pipe_name, 
 			      connection_struct *conn, uint16 vuid);
-int write_pipe(pipes_struct *p, char *data, int n);
+ssize_t write_pipe(pipes_struct *p, char *data, size_t n);
 int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
 BOOL wait_rpc_pipe_hnd_state(pipes_struct *p, uint16 priority);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
@@ -2195,7 +2196,7 @@ void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass,
                      uchar lm_pass[24], uchar nt_pass[24]);
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
+BOOL password_ok(char *user, char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,uint16 vuid);
