@@ -32,8 +32,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
@@ -672,7 +670,7 @@ static BOOL api_samr_set_userinfo(pipes_struct *p)
 		DEBUG(0,("api_samr_set_userinfo: Unable to unmarshall SAMR_Q_SET_USERINFO.\n"));
 		/* Fix for W2K SP2 */
 		if (q_u.switch_value == 0x1a) {
-			setup_fault_pdu(p, 0x1c000006);
+			setup_fault_pdu(p, NT_STATUS(0x1c000006));
 			return True;
 		}
 		return False;

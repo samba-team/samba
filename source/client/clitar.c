@@ -69,7 +69,6 @@ typedef struct
 stack dir_stack = {NULL, 0}; /* Want an empty stack */
 
 #define SEPARATORS " \t\n\r"
-extern int DEBUGLEVEL;
 extern struct cli_state *cli;
 extern FILE *dbf;
 
@@ -195,7 +194,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
 	  i = strlen(b)+1;
 	  DEBUG(5, ("File name in tar file: %s, size=%d, \n", b, (int)strlen(b)));
 	  dotarbuf(f, b, TBLOCK*(((i-1)/TBLOCK)+1));
-	  free(b);
+	  SAFE_FREE(b);
   }
 
   /* use l + 1 to do the null too */
@@ -1229,7 +1228,7 @@ static void do_tarput(void)
 
     if (longfilename != NULL) {
 
-      free(finfo.name);   /* Free the space already allocated */
+      SAFE_FREE(finfo.name);   /* Free the space already allocated */
       finfo.name = longfilename;
       longfilename = NULL;
 
@@ -1455,7 +1454,7 @@ void cmd_tar(void)
 
   process_tar();
 
-  free(argl);
+  SAFE_FREE(argl);
 }
 
 /****************************************************************************
@@ -1472,7 +1471,7 @@ int process_tar(void)
 #else
     do_tarput();
 #endif
-    free(tarbuf);
+    SAFE_FREE(tarbuf);
     close(tarhandle);
     break;
   case 'r':
@@ -1522,7 +1521,7 @@ int process_tar(void)
     
     if (ntarf) dotareof(tarhandle);
     close(tarhandle);
-    free(tarbuf);
+    SAFE_FREE(tarbuf);
     
     DEBUG(0, ("tar: dumped %d files and directories\n", ntarf));
     DEBUG(0, ("Total bytes written: %.0f\n", (double)ttarf));
@@ -1532,9 +1531,9 @@ int process_tar(void)
   if (must_free_cliplist) {
     int i;
     for (i = 0; i < clipn; ++i) {
-      free(cliplist[i]);
+      SAFE_FREE(cliplist[i]);
     }
-    free(cliplist);
+    SAFE_FREE(cliplist);
     cliplist = NULL;
     clipn = 0;
     must_free_cliplist = False;
@@ -1654,16 +1653,16 @@ static int read_inclusion_file(char *filename)
   }
 
   if (inclusion_buffer) {
-    free(inclusion_buffer);
+    SAFE_FREE(inclusion_buffer);
   }
   if (error) {
     if (cliplist) {
       char **pp;
       /* We know cliplist is always null-terminated */
       for (pp = cliplist; *pp; ++pp) {
-        free(*pp);
+        SAFE_FREE(*pp);
       }
-      free(cliplist);
+      SAFE_FREE(cliplist);
       cliplist = NULL;
       must_free_cliplist = False;
     }

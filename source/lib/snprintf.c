@@ -94,6 +94,11 @@
 #define LLONG long
 #endif
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 
 		   va_list args);
 static void fmtstr(char *buffer, size_t *currlen, size_t maxlen,
@@ -333,6 +338,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				break;
 			case 's':
 				strvalue = va_arg (args, char *);
+				if (!strvalue) strvalue = "(NULL)";
 				if (max == -1) {
 					max = strlen(strvalue);
 				}
@@ -748,6 +754,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	(*currlen)++;
 }
 
+/* yes this really must be a ||. Don't muck with this (tridge) */
 #if !defined(HAVE_VSNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
  int vsnprintf (char *str, size_t count, const char *fmt, va_list args)
 {
@@ -755,7 +762,15 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 }
 #endif
 
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+/* yes this really must be a ||. Don't muck wiith this (tridge)
+ *
+ * The logic for these two is that we need our own definition if the
+ * OS *either* has no definition of *sprintf, or if it does have one
+ * that doesn't work properly according to the autoconf test.  Perhaps
+ * these should really be smb_snprintf to avoid conflicts with buggy
+ * linkers? -- mbp
+ */
+#if !defined(HAVE_SNPRINTF) || !defined(HAVE_C99_SNPRINTF)
  int snprintf(char *str,size_t count,const char *fmt,...)
 {
 	size_t ret;
@@ -793,6 +808,7 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	va_list ap;
 	int ret;
 	
+	*ptr = NULL;
 	va_start(ap, format);
 	ret = vasprintf(ptr, format, ap);
 	va_end(ap);
@@ -800,6 +816,20 @@ static void dopr_outch(char *buffer, size_t *currlen, size_t maxlen, char c)
 	return ret;
 }
 #endif
+
+#ifndef HAVE_VSYSLOG
+#ifdef HAVE_SYSLOG
+ void vsyslog (int facility_priority, char *format, va_list arglist)
+{
+	char *msg = NULL;
+	vasprintf(&msg, format, arglist);
+	if (!msg)
+		return;
+	syslog(facility_priority, "%s", msg);
+	SAFE_FREE(msg);
+}
+#endif /* HAVE_SYSLOG */
+#endif /* HAVE_VSYSLOG */
 
 #ifdef TEST_SNPRINTF
 

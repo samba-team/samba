@@ -92,9 +92,8 @@ static BOOL cacls_open_policy_hnd(void)
 		/* Some systems don't support SEC_RIGHTS_MAXIMUM_ALLOWED,
 		   but NT sends 0x2000000 so we might as well do it too. */
 
-		if (cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
-					GENERIC_EXECUTE_ACCESS, &pol)
-		    != NT_STATUS_OK) {
+		if (!NT_STATUS_IS_OK(cli_lsa_open_policy(&lsa_cli, lsa_cli.mem_ctx, True, 
+					GENERIC_EXECUTE_ACCESS, &pol))) {
 			return False;
 		}
 
@@ -118,8 +117,8 @@ static void SidToString(fstring str, DOM_SID *sid)
 	/* Ask LSA to convert the sid to a name */
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
-				&num_names) != NT_STATUS_OK ||
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_sids(&lsa_cli, lsa_cli.mem_ctx,  &pol, 1, sid, &names, &types, 
+				&num_names)) ||
 	    !names || !names[0]) {
 		return;
 	}
@@ -142,8 +141,8 @@ static BOOL StringToSid(DOM_SID *sid, char *str)
 	}
 
 	if (!cacls_open_policy_hnd() ||
-	    cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
-				 &num_sids) != NT_STATUS_OK) {
+	    !NT_STATUS_IS_OK(cli_lsa_lookup_names(&lsa_cli, lsa_cli.mem_ctx, &pol, 1, &str, &sids, &types, 
+				 &num_sids))) {
 		result = False;
 		goto done;
 	}
@@ -164,7 +163,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 	int do_print = 0;
 	uint32 got_mask;
 
-	SidToString(sidstr, &ace->sid);
+	SidToString(sidstr, &ace->trustee);
 
 	fprintf(f, "%s:", sidstr);
 
@@ -329,7 +328,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 	memcpy(aces, (*the_acl)->ace, (*the_acl)->num_aces * sizeof(SEC_ACE));
 	memcpy(aces+(*the_acl)->num_aces, ace, sizeof(SEC_ACE));
 	new = make_sec_acl(ctx,(*the_acl)->revision,1+(*the_acl)->num_aces, aces);
-	free(aces);
+	SAFE_FREE(aces);
 	(*the_acl) = new;
 	return True;
 }
@@ -392,8 +391,8 @@ static SEC_DESC *sec_desc_parse(char *str)
 	ret = make_sec_desc(ctx,revision, owner_sid, grp_sid, 
 			    NULL, dacl, &sd_size);
 
-	if (grp_sid) free(grp_sid);
-	if (owner_sid) free(owner_sid);
+	SAFE_FREE(grp_sid);
+	SAFE_FREE(owner_sid);
 
 	return ret;
 }
@@ -528,7 +527,7 @@ static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
 	if (sec_ace_equal(ace1, ace2)) return 0;
 	if (ace1->type != ace2->type) return ace2->type - ace1->type;
-	if (sid_compare(&ace1->sid, &ace2->sid)) return sid_compare(&ace1->sid, &ace2->sid);
+	if (sid_compare(&ace1->trustee, &ace2->trustee)) return sid_compare(&ace1->trustee, &ace2->trustee);
 	if (ace1->flags != ace2->flags) return ace1->flags - ace2->flags;
 	if (ace1->info.mask != ace2->info.mask) return ace1->info.mask - ace2->info.mask;
 	if (ace1->size != ace2->size) return ace1->size - ace2->size;
@@ -606,10 +605,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 					}
 					old->dacl->num_aces--;
 					if (old->dacl->num_aces == 0) {
-						free(old->dacl->ace);
-						old->dacl->ace=NULL;
-						free(old->dacl);
-						old->dacl = NULL;
+						SAFE_FREE(old->dacl->ace);
+						SAFE_FREE(old->dacl);
 						old->off_dacl = 0;
 					}
 					found = True;
@@ -630,8 +627,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			BOOL found = False;
 
 			for (j=0;old->dacl && j<old->dacl->num_aces;j++) {
-				if (sid_equal(&sd->dacl->ace[i].sid,
-					      &old->dacl->ace[j].sid)) {
+				if (sid_equal(&sd->dacl->ace[i].trustee,
+					      &old->dacl->ace[j].trustee)) {
 					old->dacl->ace[j] = sd->dacl->ace[i];
 					found = True;
 				}
@@ -640,7 +637,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 			if (!found) {
 				fstring str;
 
-				SidToString(str, &sd->dacl->ace[i].sid);
+				SidToString(str, &sd->dacl->ace[i].trustee);
 				printf("ACL for SID %s not found\n", str);
 			}
 		}
@@ -718,14 +715,12 @@ struct cli_state *connect_one(char *share)
 	    !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("Connection to %s failed\n", server_n));
 		cli_shutdown(c);
-		safe_free(c);
 		return NULL;
 	}
 
 	if (!cli_session_request(c, &calling, &called)) {
 		DEBUG(0,("session request to %s failed\n", called.name));
 		cli_shutdown(c);
-		safe_free(c);
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
@@ -738,7 +733,6 @@ struct cli_state *connect_one(char *share)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
-		safe_free(c);
 		return NULL;
 	}
 
@@ -755,7 +749,6 @@ struct cli_state *connect_one(char *share)
 			       lp_workgroup())) {
 		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		safe_free(c);
 		return NULL;
 	}
 
@@ -765,7 +758,6 @@ struct cli_state *connect_one(char *share)
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		safe_free(c);
 		return NULL;
 	}
 

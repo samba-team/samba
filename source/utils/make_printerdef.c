@@ -307,7 +307,7 @@ static char *find_desc(FILE *fichier,char *text)
     if (!strcmp(text,long_desc)) 
 	found=1;
   }
-  free(chaine);
+  SAFE_FREE(chaine);
   if (!found || !crap) return(NULL);
   while(*crap==' ') crap++;
   pstrcpy(short_desc,crap);

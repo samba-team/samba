@@ -19,8 +19,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int gotalarm;
 
 /***************************************************************
@@ -292,8 +290,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
       t = (char *)Realloc(s,maxlen);
       if (!t) {
         DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-        if (s)
-          free(s);
+        SAFE_FREE(s);
         return(NULL);
       } else
         s = t;
@@ -325,7 +322,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
 	  return(s);
 	case EOF:
 	  if (len <= 0 && !s2) 
-	    free(s);
+	    SAFE_FREE(s);
 	  return(len>0?s:NULL);
 	case ' ':
 	  if (start_of_line)
@@ -342,8 +339,7 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
         t = (char *)Realloc(s,maxlen);
         if (!t) {
           DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
-          if (s)
-            free(s);
+          SAFE_FREE(s);
           return(NULL);
         } else
           s = t;
@@ -374,8 +370,7 @@ char *file_pload(char *syscmd, size_t *size)
 		if (!tp) {
 			DEBUG(0,("file_pload: failed to exand buffer!\n"));
 			close(fd);
-			if (p)
-				free(p);
+			SAFE_FREE(p);
 			return NULL;
 		} else
 			p = tp;
@@ -406,7 +401,7 @@ char *fd_load(int fd, size_t *size)
 	if (!p) return NULL;
 
 	if (read(fd, p, sbuf.st_size) != sbuf.st_size) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 	p[sbuf.st_size] = 0;
@@ -453,7 +448,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert
 
 	ret = (char **)malloc(sizeof(ret[0])*(i+2));
 	if (!ret) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}	
 	memset(ret, 0, sizeof(ret[0])*(i+2));
@@ -533,8 +528,8 @@ free lines loaded with file_lines_load
 void file_lines_free(char **lines)
 {
 	if (!lines) return;
-	free(lines[0]);
-	free(lines);
+	SAFE_FREE(lines[0]);
+	SAFE_FREE(lines);
 }
 
 

@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
@@ -282,6 +280,40 @@ static BOOL api_net_logon_ctrl2(pipes_struct *p)
 	return True;
 }
 
+/*************************************************************************
+ api_net_logon_ctrl:
+ *************************************************************************/
+
+static BOOL api_net_logon_ctrl(pipes_struct *p)
+{
+	NET_Q_LOGON_CTRL q_u;
+	NET_R_LOGON_CTRL r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	DEBUG(6,("api_net_logon_ctrl: %d\n", __LINE__));
+
+	/* grab the lsa netlogon ctrl query... */
+	if(!net_io_q_logon_ctrl("", &q_u, data, 0)) {
+		DEBUG(0,("api_net_logon_ctrl: Failed to unmarshall NET_Q_LOGON_CTRL.\n"));
+		return False;
+	}
+
+	r_u.status = _net_logon_ctrl(p, &q_u, &r_u);
+
+	if(!net_io_r_logon_ctrl("", &r_u, rdata, 0)) {
+		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL2.\n"));
+		return False;
+	}
+
+	DEBUG(6,("api_net_logon_ctrl2: %d\n", __LINE__));
+
+	return True;
+}
+
 /*******************************************************************
  array of \PIPE\NETLOGON operations
  ********************************************************************/
@@ -295,6 +327,7 @@ static struct api_struct api_net_cmds [] =
 	{ "NET_SAMLOGOFF"     , NET_SAMLOGOFF     , api_net_sam_logoff     }, 
 	{ "NET_LOGON_CTRL2"   , NET_LOGON_CTRL2   , api_net_logon_ctrl2    }, 
 	{ "NET_TRUST_DOM_LIST", NET_TRUST_DOM_LIST, api_net_trust_dom_list },
+	{ "NET_LOGON_CTRL"    , NET_LOGON_CTRL    , api_net_logon_ctrl     },
 	{  NULL               , 0                 , NULL                   }
 };
 

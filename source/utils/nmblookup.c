@@ -24,9 +24,8 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern struct in_addr ipzero;
+extern BOOL AllowDebugChange;
 
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
@@ -113,7 +112,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 
 	printf("Looking up status of %s\n",inet_ntoa(ip));
 	make_nmb_name(&nname, name, type);
-	status = name_status_query(fd,&nname,ip, &count);
+	status = node_status_query(fd,&nname,ip, &count);
 	if (status) {
 		for (i=0;i<count;i++) {
 			fstrcpy(cleanname, status[i].name);
@@ -124,7 +123,7 @@ static void do_node_status(int fd, char *name, int type, struct in_addr ip)
 			       cleanname,status[i].type,
 			       node_status_flags(status[i].flags));
 		}
-		free(status);
+		SAFE_FREE(status);
 	}
 	printf("\n");
 }
@@ -197,9 +196,11 @@ int main(int argc,char *argv[])
   int i;
   static pstring servicesf = CONFIGFILE;
   BOOL lookup_by_ip = False;
-  int commandline_debuglevel = -2;
 
   DEBUGLEVEL = 1;
+  /* Prevent smb.conf setting from overridding */
+  AllowDebugChange = False;
+
   *lookup = 0;
 
   TimeInit();
@@ -241,7 +242,7 @@ int main(int argc,char *argv[])
 	recursion_desired = True;
 	break;
       case 'd':
-	commandline_debuglevel = DEBUGLEVEL = atoi(optarg);
+	DEBUGLEVEL = atoi(optarg);
 	break;
       case 's':
 	pstrcpy(servicesf, optarg);
@@ -269,14 +270,6 @@ int main(int argc,char *argv[])
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
-
-  /*
-   * Ensure we reset DEBUGLEVEL if someone specified it
-   * on the command line.
-   */
-
-  if(commandline_debuglevel != -2)
-    DEBUGLEVEL = commandline_debuglevel;
 
   load_interfaces();
   if (!open_sockets()) return(1);

@@ -27,9 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
 int ClientNMB       = -1;
@@ -56,8 +53,9 @@ time_t StartupTime = 0;
 extern struct in_addr ipzero;
 
 /**************************************************************************** **
-  catch a sigterm
+ Catch a sigterm.
  **************************************************************************** */
+
 static void sig_term(int sig)
 {
   BlockSignals(True,SIGTERM);
@@ -81,8 +79,9 @@ static void sig_term(int sig)
 } /* sig_term */
 
 /**************************************************************************** **
- catch a sighup
+ Catch a sighup.
  **************************************************************************** */
+
 static VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
@@ -101,16 +100,16 @@ static void sig_hup(int sig)
 
 } /* sig_hup */
 
-
 #if DUMP_CORE
 /**************************************************************************** **
- prepare to dump a core file - carefully!
+ Prepare to dump a core file - carefully!
  **************************************************************************** */
+
 static BOOL dump_core(void)
 {
   char *p;
   pstring dname;
-  pstrcpy( dname, debugf );
+  pstrcpy( dname, lp_logfile() );
   if ((p=strrchr(dname,'/')))
     *p=0;
   pstrcat( dname, "/corefiles" );
@@ -141,10 +140,10 @@ static BOOL dump_core(void)
 } /* dump_core */
 #endif
 
-
 /**************************************************************************** **
- possibly continue after a fault
+ Possibly continue after a fault.
  **************************************************************************** */
+
 static void fault_continue(void)
 {
 #if DUMP_CORE
@@ -153,8 +152,9 @@ static void fault_continue(void)
 } /* fault_continue */
 
 /**************************************************************************** **
- expire old names from the namelist and server list
+ Expire old names from the namelist and server list.
  **************************************************************************** */
+
 static void expire_names_and_servers(time_t t)
 {
   static time_t lastrun = 0;
@@ -182,10 +182,10 @@ static void expire_names_and_servers(time_t t)
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
 
-
 /************************************************************************** **
-reload the list of network interfaces
+ Reload the list of network interfaces.
  ************************************************************************** */
+
 static BOOL reload_interfaces(time_t t)
 {
 	static time_t lastt;
@@ -262,11 +262,10 @@ static BOOL reload_interfaces(time_t t)
 	return False;
 }
 
-
-
 /**************************************************************************** **
-  reload the services file
+ Reload the services file.
  **************************************************************************** */
+
 static BOOL reload_nmbd_services(BOOL test)
 {
   BOOL ret;
@@ -311,6 +310,7 @@ cannot be set in the smb.conf file. nmbd aborting.\n"));
 /**************************************************************************** **
  The main select loop.
  **************************************************************************** */
+
 static void process(void)
 {
   BOOL run_election;
@@ -509,10 +509,10 @@ static void process(void)
   }
 } /* process */
 
-
 /**************************************************************************** **
- open the socket communication
+ Open the socket communication.
  **************************************************************************** */
+
 static BOOL open_sockets(BOOL isdaemon, int port)
 {
   /* The sockets opened here will be used to receive broadcast
@@ -542,10 +542,10 @@ static BOOL open_sockets(BOOL isdaemon, int port)
   return( True );
 } /* open_sockets */
 
-
 /**************************************************************************** **
- initialise connect, service and file structs
+ Initialise connect, service and file structs.
  **************************************************************************** */
+
 static BOOL init_structs(void)
 {
   extern fstring local_machine;
@@ -628,15 +628,17 @@ static BOOL init_structs(void)
 } /* init_structs */
 
 /**************************************************************************** **
- usage on the program
+ Usage on the program.
  **************************************************************************** */
+
 static void usage(char *pname)
 {
 
-  printf( "Usage: %s [-DaohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
+  printf( "Usage: %s [-DaiohV] [-H lmhosts file] [-d debuglevel] [-l log basename]\n", pname );
   printf( "       [-n name] [-p port] [-s configuration file]\n" );
-  printf( "\t-D                    Become a daemon\n" );
+  printf( "\t-D                    Become a daemon (default)\n" );
   printf( "\t-a                    Append to log file (default)\n" );
+  printf( "\t-i                    Run interactive (not a daemon)\n" );
   printf( "\t-o                    Overwrite log file, don't append\n" );
   printf( "\t-h                    Print usage\n" );
   printf( "\t-V                    Print version\n" );
@@ -651,14 +653,17 @@ static void usage(char *pname)
 
 
 /**************************************************************************** **
- main program
+ Main program.
  **************************************************************************** */
+
  int main(int argc,char *argv[])
 {
   int opt;
   extern FILE *dbf;
   extern char *optarg;
   extern BOOL  append_log;
+  BOOL opt_interactive = False;
+  pstring logfile;
 
   append_log = True;  /* Default, override with '-o' option. */
 
@@ -672,8 +677,8 @@ static void usage(char *pname)
 
   TimeInit();
 
-  slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", LOGFILEBASE);
-  setup_logging( argv[0], False );
+  slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", LOGFILEBASE);
+  lp_set_logfile(logfile);
 
   charset_initialise();
 
@@ -710,7 +715,7 @@ static void usage(char *pname)
 #endif
 
   while( EOF != 
-         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dp:hSH:G:f:" )) )
+         (opt = getopt( argc, argv, "Vaos:T:I:C:bAB:N:Rn:l:d:Dip:hSH:G:f:" )) )
     {
       switch (opt)
         {
@@ -732,13 +737,17 @@ static void usage(char *pname)
           strupper(global_myname);
           break;
         case 'l':
-          slprintf(debugf, sizeof(debugf)-1, "%s/log.nmbd", optarg);
+          slprintf(logfile, sizeof(logfile)-1, "%s/log.nmbd", optarg);
+          lp_set_logfile(logfile);
           break;
         case 'a':
           append_log = True;
           break;
         case 'o':
           append_log = False;
+          break;
+        case 'i':
+          opt_interactive = True;
           break;
         case 'D':
           is_daemon = True;
@@ -768,10 +777,11 @@ static void usage(char *pname)
         }
     }
 
+  setup_logging( argv[0], opt_interactive );
   reopen_logs();
 
-  DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
-  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
+  DEBUG( 0, ( "Netbios nameserver version %s started.\n", VERSION ) );
+  DEBUGADD( 0, ( "Copyright Andrew Tridgell and the Samba Team 1994-2002\n" ) );
 
   if ( !reload_nmbd_services(False) )
     return(-1);
@@ -806,11 +816,20 @@ static void usage(char *pname)
     is_daemon = True;
   }
   
-  if (is_daemon)
+  if (is_daemon && !opt_interactive)
   {
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
   }
+
+#if HAVE_SETPGID
+  /*
+   * If we're interactive we want to set our own process group for 
+   * signal management.
+   */
+  if (opt_interactive)
+    setpgid( (pid_t)0, (pid_t)0 );
+#endif
 
 #ifndef SYNC_DNS
   /* Setup the async dns. We do it here so it doesn't have all the other
@@ -880,4 +899,3 @@ static void usage(char *pname)
     fclose(dbf);
   return(0);
 } /* main */
-

@@ -22,6 +22,10 @@
    Boston, MA  02111-1307, USA.   
 */
 
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
 #ifndef _WINBINDD_NTDOM_H
 #define _WINBINDD_NTDOM_H
 
@@ -55,13 +59,13 @@ enum winbindd_cmd {
 	/* PAM authenticate and password change */
 
 	WINBINDD_PAM_AUTH,
-        WINBINDD_PAM_AUTH_CRAP,
+	WINBINDD_PAM_AUTH_CRAP,
 	WINBINDD_PAM_CHAUTHTOK,
 
 	/* List various things */
 
-        WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
-        WINBINDD_LIST_GROUPS,        /* Ditto */
+	WINBINDD_LIST_USERS,         /* List w/o rid->id mapping */
+	WINBINDD_LIST_GROUPS,        /* Ditto */
 	WINBINDD_LIST_TRUSTDOM,
 
 	/* SID conversion */
@@ -69,7 +73,7 @@ enum winbindd_cmd {
 	WINBINDD_LOOKUPSID,
 	WINBINDD_LOOKUPNAME,
 
-	/* S*RS functions */
+	/* Lookup functions */
 
 	WINBINDD_SID_TO_UID,       
 	WINBINDD_SID_TO_GID,
@@ -79,6 +83,11 @@ enum winbindd_cmd {
 	/* Miscellaneous other stuff */
 
 	WINBINDD_CHECK_MACHACC,     /* Check machine account pw works */
+
+	/* WINS commands */
+
+	WINBINDD_WINS_BYIP,
+	WINBINDD_WINS_BYNAME,
 
 	/* Placeholder for end of cmd list */
 
@@ -117,7 +126,7 @@ struct winbindd_request {
 		fstring name;        /* lookupname */
 		uint32 num_entries;  /* getpwent, getgrent */
 	} data;
-        fstring domain;      /* {set,get,end}{pw,gr}ent() */
+	fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
 
 /* Response values */
@@ -163,11 +172,11 @@ struct winbindd_response {
 		} gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
-		struct {
+		struct winbindd_sid {
 			fstring sid;        /* lookupname, [ug]id_to_sid */
 			int type;
 		} sid;
-		struct {
+		struct winbindd_name {
 			fstring name;       /* lookupsid */
 			int type;
 		} name;

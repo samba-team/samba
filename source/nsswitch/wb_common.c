@@ -28,15 +28,25 @@
 
 /* Global variables.  These are effectively the client state information */
 
-static int established_socket = -1;           /* fd for winbindd socket */
+int winbindd_fd = -1;           /* fd for winbindd socket */
 static char *excluded_domain;
+
+/* Free a response structure */
+
+void free_response(struct winbindd_response *response)
+{
+	/* Free any allocated extra_data */
+
+	if (response)
+		SAFE_FREE(response->extra_data);
+}
 
 /*
   smbd needs to be able to exclude lookups for its own domain
 */
 void winbind_exclude_domain(const char *domain)
 {
-	if (excluded_domain) free(excluded_domain);
+	SAFE_FREE(excluded_domain);
 	excluded_domain = strdup(domain);
 }
 
@@ -77,15 +87,15 @@ void init_response(struct winbindd_response *response)
 
 void close_sock(void)
 {
-	if (established_socket != -1) {
-		close(established_socket);
-		established_socket = -1;
+	if (winbindd_fd != -1) {
+		close(winbindd_fd);
+		winbindd_fd = -1;
 	}
 }
 
 /* Connect to winbindd socket */
 
-static int open_pipe_sock(void)
+int winbind_open_pipe_sock(void)
 {
 	struct sockaddr_un sunaddr;
 	static pid_t our_pid;
@@ -93,15 +103,12 @@ static int open_pipe_sock(void)
 	pstring path;
 	
 	if (our_pid != getpid()) {
-		if (established_socket != -1) {
-			close(established_socket);
-		}
-		established_socket = -1;
+		close_sock();
 		our_pid = getpid();
 	}
 	
-	if (established_socket != -1) {
-		return established_socket;
+	if (winbindd_fd != -1) {
+		return winbindd_fd;
 	}
 	
 	/* Check permissions on unix socket directory */
@@ -147,18 +154,17 @@ static int open_pipe_sock(void)
 	
 	/* Connect to socket */
 	
-	if ((established_socket = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if ((winbindd_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		return -1;
 	}
 	
-	if (connect(established_socket, (struct sockaddr *)&sunaddr, 
+	if (connect(winbindd_fd, (struct sockaddr *)&sunaddr, 
 		    sizeof(sunaddr)) == -1) {
 		close_sock();
-		established_socket = -1;
 		return -1;
 	}
         
-	return established_socket;
+	return winbindd_fd;
 }
 
 /* Write data to winbindd socket with timeout */
@@ -171,7 +177,7 @@ int write_sock(void *buffer, int count)
 	
  restart:
 	
-	if (open_pipe_sock() == -1) {
+	if (winbind_open_pipe_sock() == -1) {
 		return -1;
 	}
 	
@@ -182,28 +188,26 @@ int write_sock(void *buffer, int count)
 	while(nwritten < count) {
 		struct timeval tv;
 		fd_set r_fds;
-		int selret;
 		
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling select(). */
 
 		FD_ZERO(&r_fds);
-		FD_SET(established_socket, &r_fds);
+		FD_SET(winbindd_fd, &r_fds);
 		ZERO_STRUCT(tv);
 		
-		if ((selret = select(established_socket + 1, &r_fds, 
-				     NULL, NULL, &tv)) == -1) {
+		if (select(winbindd_fd + 1, &r_fds, NULL, NULL, &tv) == -1) {
 			close_sock();
 			return -1;                   /* Select error */
 		}
 		
 		/* Write should be OK if fd not available for reading */
 		
-		if (!FD_ISSET(established_socket, &r_fds)) {
+		if (!FD_ISSET(winbindd_fd, &r_fds)) {
 			
 			/* Do the write */
 			
-			result = write(established_socket,
+			result = write(winbindd_fd,
 				       (char *)buffer + nwritten, 
 				       count - nwritten);
 			
@@ -239,7 +243,7 @@ static int read_sock(void *buffer, int count)
 	
 	while(nread < count) {
 		
-		result = read(established_socket, (char *)buffer + nread, 
+		result = read(winbindd_fd, (char *)buffer + nread, 
 			      count - nread);
 		
 		if ((result == -1) || (result == 0)) {
@@ -296,6 +300,7 @@ int read_reply(struct winbindd_response *response)
 		
 		if ((result2 = read_sock(response->extra_data, extra_data_len))
 		    == -1) {
+			free_response(response);
 			return -1;
 		}
 	}
@@ -305,26 +310,13 @@ int read_reply(struct winbindd_response *response)
 	return result1 + result2;
 }
 
-/* Free a response structure */
+/* 
+ * send simple types of requests 
+ */
 
-void free_response(struct winbindd_response *response)
-{
-	/* Free any allocated extra_data */
-
-	if (response && response->extra_data) {
-		free(response->extra_data);
-		response->extra_data = NULL;
-	}
-}
-
-/* Handle simple types of requests */
-
-NSS_STATUS winbindd_request(int req_type, 
-				 struct winbindd_request *request,
-				 struct winbindd_response *response)
+NSS_STATUS winbindd_send_request(int req_type, struct winbindd_request *request)
 {
 	struct winbindd_request lrequest;
-	struct winbindd_response lresponse;
 
 	/* Check for our tricky environment variable */
 
@@ -338,11 +330,6 @@ NSS_STATUS winbindd_request(int req_type,
 		return NSS_STATUS_NOTFOUND;
 	}
 
-	if (!response) {
-		ZERO_STRUCT(lresponse);
-		response = &lresponse;
-	}
-
 	if (!request) {
 		ZERO_STRUCT(lrequest);
 		request = &lrequest;
@@ -351,12 +338,29 @@ NSS_STATUS winbindd_request(int req_type,
 	/* Fill in request and send down pipe */
 
 	init_request(request, req_type);
-	init_response(response);
 	
 	if (write_sock(request, sizeof(*request)) == -1) {
 		return NSS_STATUS_UNAVAIL;
 	}
 	
+	return NSS_STATUS_SUCCESS;
+}
+
+/*
+ * Get results from winbindd request
+ */
+
+NSS_STATUS winbindd_get_response(struct winbindd_response *response)
+{
+	struct winbindd_response lresponse;
+
+	if (!response) {
+		ZERO_STRUCT(lresponse);
+		response = &lresponse;
+	}
+
+	init_response(response);
+
 	/* Wait for reply */
 	if (read_reply(response) == -1) {
 		return NSS_STATUS_UNAVAIL;
@@ -373,4 +377,18 @@ NSS_STATUS winbindd_request(int req_type,
 	}
 	
 	return NSS_STATUS_SUCCESS;
+}
+
+/* Handle simple types of requests */
+
+NSS_STATUS winbindd_request(int req_type, 
+				 struct winbindd_request *request,
+				 struct winbindd_response *response)
+{
+	NSS_STATUS status;
+
+	status = winbindd_send_request(req_type, request);
+	if (status != NSS_STATUS_SUCCESS) 
+		return(status);
+	return winbindd_get_response(response);
 }

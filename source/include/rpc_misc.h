@@ -348,5 +348,24 @@ typedef struct uint64_s
 	uint32 high;
 } UINT64_S;
 
+/* BUFHDR2 - another buffer header, with info level */
+typedef struct bufhdr2_info
+{
+	uint32 info_level;
+	uint32 length;		/* uint8 chars */
+	uint32 buffer;
+
+}
+BUFHDR2;
+
+/* BUFFER4 - simple length and buffer */
+typedef struct buffer4_info
+{
+	uint32 buf_len;
+	uint8 buffer[MAX_BUFFERLEN];
+
+}
+BUFFER4;
+
 
 #endif /* _RPC_MISC_H */

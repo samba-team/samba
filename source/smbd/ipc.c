@@ -28,7 +28,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int max_send;
 
 extern fstring local_machine;
@@ -108,7 +107,7 @@ void send_trans_reply(char *outbuf,
 			SCVAL(outbuf, smb_rcls, ERRDOS);
 		} else {
 			SIVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-			SIVAL(outbuf, smb_rcls, 0x80000000 | STATUS_BUFFER_OVERFLOW);
+			SIVAL(outbuf, smb_rcls, NT_STATUS_V(STATUS_BUFFER_OVERFLOW));
 		}
 	}
 
@@ -184,13 +183,13 @@ static BOOL api_rpc_trans_reply(char *outbuf, pipes_struct *p)
 	}
 
 	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply)) < 0) {
-		free(rdata);
+		SAFE_FREE(rdata);
 		return False;
 	}
 
 	send_trans_reply(outbuf, NULL, 0, rdata, data_len, p->out_data.current_pdu_len > data_len);
 
-	free(rdata);
+	SAFE_FREE(rdata);
 	return True;
 }
 
@@ -394,7 +393,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((data = (char *)malloc(tdscnt)) == NULL) {
 			DEBUG(0,("reply_trans: data malloc fail for %d bytes !\n", tdscnt));
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRDOS,ERRnomem));
+			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		memcpy(data,smb_base(inbuf)+dsoff,dscnt);
 	}
@@ -403,7 +402,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((params = (char *)malloc(tpscnt)) == NULL) {
 			DEBUG(0,("reply_trans: param malloc fail for %d bytes !\n", tpscnt));
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRDOS,ERRnomem));
+			return(ERROR_DOS(ERRDOS,ERRnomem));
 		} 
 		memcpy(params,smb_base(inbuf)+psoff,pscnt);
 	}
@@ -413,7 +412,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		if((setup = (uint16 *)malloc(suwcnt*sizeof(uint16))) == NULL) {
           DEBUG(0,("reply_trans: setup malloc fail for %d bytes !\n", (int)(suwcnt * sizeof(uint16))));
 		  END_PROFILE(SMBtrans);
-		  return(ERROR(ERRDOS,ERRnomem));
+		  return(ERROR_DOS(ERRDOS,ERRnomem));
         } 
 		for (i=0;i<suwcnt;i++)
 			setup[i] = SVAL(inbuf,smb_vwv14+i*SIZEOFWORD);
@@ -443,14 +442,11 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 				DEBUG(0,("reply_trans: %s in getting secondary trans response.\n",
 					 (smb_read_error == READ_ERROR) ? "error" : "timeout" ));
 			}
-			if (params)
-				free(params);
-			if (data)
-				free(data);
-			if (setup)
-				free(setup);
+			SAFE_FREE(params);
+			SAFE_FREE(data);
+			SAFE_FREE(setup);
 			END_PROFILE(SMBtrans);
-			return(ERROR(ERRSRV,ERRerror));
+			return(ERROR_DOS(ERRSRV,ERRerror));
 		}
 
 		show_msg(inbuf);
@@ -510,12 +506,9 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	}
 
 	
-	if (data)
-		free(data);
-	if (params)
-		free(params);
-	if (setup)
-		free(setup);
+	SAFE_FREE(data);
+	SAFE_FREE(params);
+	SAFE_FREE(setup);
 	
 	if (close_on_completion)
 		close_cnum(conn,vuid);
@@ -527,7 +520,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	
 	if (outsize == 0) {
 		END_PROFILE(SMBtrans);
-		return(ERROR(ERRSRV,ERRnosupport));
+		return(ERROR_DOS(ERRSRV,ERRnosupport));
 	}
 	
 	END_PROFILE(SMBtrans);

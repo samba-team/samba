@@ -49,7 +49,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct passdb_ops pdb_ops;
 
 #if ALLOW_CHANGE_PASSWORD
@@ -308,6 +307,12 @@ static int talktochild(int master, char *seq)
 			fstrcpy(issue, ".");
 
 		pwd_sub(issue);
+	}
+	if (!strequal(issue, ".")) {
+		/* we have one final issue to send */
+		fstrcpy(expected, ".");
+		if (!expect(master, issue, expected))
+			return False;
 	}
 
 	return (count > 0);
@@ -754,6 +759,7 @@ BOOL check_oem_password(char *user,
 
 	if (ret == False) {
 		DEBUG(0, ("check_oem_password: getsmbpwnam returned NULL\n"));
+		pdb_free_sam(sampass);
 		return False;
 	}
 

@@ -24,25 +24,23 @@
 #include "winbindd.h"
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
-   form DOMAIN/user into a domain and a user */
+   form DOMAIN\user into a domain and a user */
 
-static void parse_domain_user(char *domuser, fstring domain, fstring user)
+static BOOL wb_parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-        char *p;
-        char *sep = lp_winbind_separator();
-        if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
-        
-        fstrcpy(user, p+1);
-        fstrcpy(domain, domuser);
-        domain[PTR_DIFF(p, domuser)] = 0;
-        strupper(domain);
+	char *p;
+	char *sep = lp_winbind_separator();
+ 
+	p = strchr(domuser,*sep);
+ 
+	if (!p)
+		return False;
+ 
+	fstrcpy(user, p+1);
+	fstrcpy(domain, domuser);
+	domain[PTR_DIFF(p, domuser)] = 0;
+	strupper(domain);
+	return True;
 }
 
 /* Return a password structure from a username.  Specify whether cached data 
@@ -59,12 +57,8 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.auth.user, name_domain, 
-                          name_user);
-
-	/* don't allow the null domain */
-
-	if (strcmp(name_domain,"") == 0) 
+	if (!wb_parse_domain_user(state->request.data.auth.user, name_domain, 
+                          name_user))
 		return WINBINDD_ERROR;
 
 	passlen = strlen(state->request.data.auth.pass);
@@ -77,46 +71,106 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 					state->request.data.auth.pass,
 					passlen,
 					state->request.data.auth.pass,
-					passlen, &user_exists);
+					passlen, &user_exists, NULL);
 
 	return result ? WINBINDD_OK : WINBINDD_ERROR;
+}
+
+/* Challenge Response Authentication Protocol */
+
+enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state) 
+{
+	NTSTATUS result;
+	fstring name_domain, name_user;
+	unsigned char trust_passwd[16];
+	time_t last_change_time;
+        uint32 smb_uid_low;
+        NET_USER_INFO_3 info3;
+	NET_ID_INFO_CTR ctr;
+        struct cli_state *cli;
+
+	DEBUG(3, ("[%5d]: pam auth crap %s\n", state->pid,
+		  state->request.data.auth_crap.user));
+
+	/* Parse domain and username */
+
+	if (!wb_parse_domain_user(state->request.data.auth_crap.user, name_domain, 
+                          name_user))
+		return WINBINDD_ERROR;
+
+	/*
+	 * Get the machine account password for our primary domain
+	 */
+
+	if (!secrets_fetch_trust_account_password(
+                lp_workgroup(), trust_passwd, &last_change_time)) {
+		DEBUG(0, ("winbindd_pam_auth_crap: could not fetch trust account "
+                          "password for domain %s\n", lp_workgroup()));
+		return WINBINDD_ERROR;
+	}
+
+	/* We really don't care what LUID we give the user. */
+
+	generate_random_buffer( (unsigned char *)&smb_uid_low, 4, False);
+
+	ZERO_STRUCT(info3);
+
+        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+
+        if (!NT_STATUS_IS_OK(result)) {
+                DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
+                goto done;
+        }
+
+	result = cli_nt_login_network(cli, name_domain, name_user, smb_uid_low,
+			state->request.data.auth_crap.chal,
+			state->request.data.auth_crap.lm_resp,
+			state->request.data.auth_crap.nt_resp,
+			&ctr, &info3);
+
+        cli_shutdown(cli);
+
+ done:
+	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
 /* Change a user password */
 
 enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 {
-    char *oldpass, *newpass;
-    fstring domain, user;
-    uchar nt_oldhash[16];
-    uchar lm_oldhash[16];
+	char *oldpass, *newpass;
+	fstring domain, user;
+	uchar nt_oldhash[16];
+	uchar lm_oldhash[16];
 
-    DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
-	      state->request.data.chauthtok.user));
+	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
+		state->request.data.chauthtok.user));
 
-    /* Setup crap */
+	/* Setup crap */
 
-    if (state == NULL) return WINBINDD_ERROR;
+	if (state == NULL)
+		return WINBINDD_ERROR;
 
-    parse_domain_user(state->request.data.chauthtok.user, domain, user);
+	if (!wb_parse_domain_user(state->request.data.chauthtok.user, domain, user))
+		return WINBINDD_ERROR;
 
-    oldpass = state->request.data.chauthtok.oldpass;
-    newpass = state->request.data.chauthtok.newpass;
+	oldpass = state->request.data.chauthtok.oldpass;
+	newpass = state->request.data.chauthtok.newpass;
 
-    nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
+	nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
 
-    /* Change password */
+	/* Change password */
 
 #if 0
 
-    /* XXX */
+	/* XXX */
 
-    if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
-                               lm_oldhash, nt_oldhash, newpass)) {
-        DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
-        return WINBINDD_ERROR;
-    }
+	if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
+				lm_oldhash, nt_oldhash, newpass)) {
+		DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
+		return WINBINDD_ERROR;
+	}
 #endif
     
-    return WINBINDD_OK;
+	return WINBINDD_OK;
 }

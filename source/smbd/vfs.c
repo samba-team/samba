@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* Some structures to help us initialise the vfs operations table */
 
 struct vfs_syminfo {
@@ -74,6 +72,9 @@ struct vfs_ops default_vfs_ops = {
 	vfswrap_lock,
 	vfswrap_symlink,
 	vfswrap_readlink,
+	vfswrap_link,
+	vfswrap_mknod,
+	vfswrap_realpath,
 
 	vfswrap_fget_nt_acl,
 	vfswrap_get_nt_acl,
@@ -240,6 +241,12 @@ static BOOL vfs_init_custom(connection_struct *conn)
     if (conn->vfs_ops.readlink == NULL)
 		conn->vfs_ops.readlink = default_vfs_ops.readlink;
 
+    if (conn->vfs_ops.link == NULL)
+		conn->vfs_ops.link = default_vfs_ops.link;
+
+    if (conn->vfs_ops.mknod == NULL)
+		conn->vfs_ops.mknod = default_vfs_ops.mknod;
+
     if (conn->vfs_ops.fget_nt_acl == NULL)
 		conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
 
@@ -350,7 +357,25 @@ char *vfs_getwd(connection_struct *conn, char *unix_path)
 }
 
 /*******************************************************************
- Check if a vfs file exists.
+ Check if an object exists in the vfs.
+********************************************************************/
+
+BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+{
+	SMB_STRUCT_STAT st;
+
+	if (!sbuf)
+		sbuf = &st;
+
+	ZERO_STRUCTP(sbuf);
+
+	if (vfs_stat(conn,fname,sbuf) == -1)
+		return(False);
+	return True;
+}
+
+/*******************************************************************
+ Check if a file exists in the vfs.
 ********************************************************************/
 
 BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
@@ -362,9 +387,8 @@ BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
 
 	ZERO_STRUCTP(sbuf);
 
-	if (vfs_stat(conn,fname,sbuf) != 0)
-		return(False);
-
+	if (vfs_stat(conn,fname,sbuf) == -1)
+		return False;
 	return(S_ISREG(sbuf->st_mode));
 }
 
@@ -399,19 +423,21 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
-    ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
+	while (total < N) {
+		ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
 
-    if (ret == -1) return -1;
-    if (ret == 0) return total;
+		if (ret == -1)
+			return -1;
+		if (ret == 0)
+			return total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -424,11 +450,11 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
-	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	connection_struct *conn = fsp->conn;
+	struct vfs_ops *vfs_ops = &conn->vfs_ops;
+	SMB_OFF_T space_avail;
+	SMB_BIG_UINT bsize,dfree,dsize;
 
-	if (!lp_strict_allocate(SNUM(fsp->conn)))
-		return vfs_set_filelen(fsp, len);
-		
 	release_level_2_oplocks_on_change(fsp);
 
 	/*
@@ -450,47 +476,30 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
 				fsp->fsp_name, (double)st.st_size ));
 
+		flush_write_cache(fsp, SIZECHANGE_FLUSH);
 		if ((ret = vfs_ops->ftruncate(fsp, fsp->fd, len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
 	}
 
-	/* Grow - we need to write out the space.... */
-	{
-		static unsigned char zero_space[65536];
+	/* Grow - we need to test if we have enough space. */
 
-		SMB_OFF_T start_pos = st.st_size;
-		SMB_OFF_T len_to_write = len - st.st_size;
-		SMB_OFF_T retlen;
+	if (!lp_strict_allocate(SNUM(fsp->conn)))
+		return 0;
 
-		DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f\n",
-				fsp->fsp_name, (double)st.st_size ));
+	len -= st.st_size;
+	len /= 1024; /* Len is now number of 1k blocks needed. */
+	space_avail = (SMB_OFF_T)conn->vfs_ops.disk_free(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 
-		if ((retlen = vfs_ops->lseek(fsp, fsp->fd, start_pos, SEEK_SET)) != start_pos)
-			return -1;
+	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %lu, space avail = %lu\n",
+			fsp->fsp_name, (double)st.st_size, (unsigned long)len, (unsigned long)space_avail ));
 
-		while ( len_to_write > 0) {
-			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
-
-			retlen = vfs_ops->write(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
-			if (retlen <= 0) {
-				/* Write fail - return to original size. */
-				int save_errno = errno;
-				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
-				errno = save_errno;
-				DEBUG(10,("vfs_allocate_file_space: file %s, grow. write fail %s\n",
-					fsp->fsp_name, strerror(errno) ));
-				return -1;
-			}
-
-			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
-					fsp->fsp_name, (double)retlen ));
-
-			len_to_write -= retlen;
-		}
-		set_filelen_write_cache(fsp, len);
+	if (len > space_avail) {
+		errno = ENOSPC;
+		return -1;
 	}
+
 	return 0;
 }
 
@@ -505,6 +514,8 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	int ret;
 
 	release_level_2_oplocks_on_change(fsp);
+	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
+	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 	if ((ret = fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, len)) != -1)
 		set_filelen_write_cache(fsp, len);
 
@@ -696,7 +707,7 @@ static void array_promote(char *array,int elsize,int element)
 	memcpy(p,array + element * elsize, elsize);
 	memmove(array + elsize,array,elsize*element);
 	memcpy(array,p,elsize);
-	free(p);
+	SAFE_FREE(p);
 }
 
 /*******************************************************************

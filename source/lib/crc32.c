@@ -7,7 +7,6 @@
  */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 static unsigned long CRCTable[256] = 
 {

@@ -25,7 +25,7 @@
  * Needed for auto generation of proto.h.
  */
 
-BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
   (*bsize) = 512; /* This value should be ignored */
 

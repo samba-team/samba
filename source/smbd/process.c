@@ -21,7 +21,8 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
+/* To be removed.... JRA */
+#define SMB_ALIGNMENT 1
 
 struct timeval smb_last_time;
 
@@ -44,9 +45,6 @@ int max_recv = BUFFER_SIZE;
 extern int last_message;
 extern int global_oplock_break;
 extern userdom_struct current_user_info;
-extern char *last_inbuf;
-extern char *InBuffer;
-extern char *OutBuffer;
 extern int smb_read_error;
 extern VOLATILE sig_atomic_t reload_after_sighup;
 extern BOOL global_machine_password_needs_changing;
@@ -87,7 +85,7 @@ static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
   if(msg->msg_buf == NULL)
   {
     DEBUG(0,("push_message: malloc fail (2)\n"));
-    free((char *)msg);
+    SAFE_FREE(msg);
     return False;
   }
 
@@ -125,7 +123,7 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 
 	/* check for sighup processing */
 	if (reload_after_sighup) {
-		unbecome_user();
+		change_to_root_user();
 		DEBUG(1,("Reloading services after SIGHUP\n"));
 		reload_services(False);
 		reload_after_sighup = False;
@@ -180,8 +178,8 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 		memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
   
 		/* Free the message we just copied. */
-		free((char *)msg->msg_buf);
-		free((char *)msg);
+		SAFE_FREE(msg->msg_buf);
+		SAFE_FREE(msg);
 		
 		DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
 		return True;
@@ -199,7 +197,7 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	to.tv_sec = timeout / 1000;
 	to.tv_usec = (timeout % 1000) * 1000;
 
-	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,timeout>0?&to:NULL);
+	selrtn = sys_select(MAX(maxfd,smbd_server_fd())+1,&fds,NULL,NULL,timeout>0?&to:NULL);
 
 	/* if we get EINTR then maybe we have received an oplock
 	   signal - treat this as select returning 1. This is ugly, but
@@ -366,11 +364,11 @@ struct smb_message_struct
 /* 0x18 */ { NULL, NULL, 0 },
 /* 0x19 */ { NULL, NULL, 0 },
 /* 0x1a */ { "SMBreadbraw",reply_readbraw,AS_USER},
-/* 0x1b */ { "SMBreadBmpx",NULL,0},
+/* 0x1b */ { "SMBreadBmpx",reply_readbmpx,AS_USER},
 /* 0x1c */ { "SMBreadBs",NULL,0},
 /* 0x1d */ { "SMBwritebraw",reply_writebraw,AS_USER},
-/* 0x1e */ { "SMBwriteBmpx",NULL,0},
-/* 0x1f */ { "SMBwriteBs",NULL,0},
+/* 0x1e */ { "SMBwriteBmpx",reply_writebmpx,AS_USER},
+/* 0x1f */ { "SMBwriteBs",reply_writebs,AS_USER},
 /* 0x20 */ { "SMBwritec",NULL,0},
 /* 0x21 */ { NULL, NULL, 0 },
 /* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
@@ -615,7 +613,9 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		write(fd, data, len);
+		ssize_t ret = write(fd, data, len);
+		if (ret != len)
+			DEBUG(0,("smb_dump: problem: write returned %d\n", (int)ret ));
 		close(fd);
 		DEBUG(0,("created %s len %d\n", fname, len));
 	}
@@ -708,20 +708,20 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does this protocol need to be run as root? */
     if (!(flags & AS_USER))
-      unbecome_user();
+      change_to_root_user();
 
     /* does this protocol need a valid tree connection? */
     if ((flags & AS_USER) && !conn) {
-	    return ERROR(ERRSRV, ERRinvnid);
+	    return ERROR_DOS(ERRSRV, ERRinvnid);
     }
 
 
     /* does this protocol need to be run as the connected user? */
-    if ((flags & AS_USER) && !become_user(conn,session_tag)) {
+    if ((flags & AS_USER) && !change_to_user(conn,session_tag)) {
       if (flags & AS_GUEST) 
         flags &= ~AS_USER;
       else
-        return(ERROR(ERRSRV,ERRaccess));
+        return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* this code is to work around a bug is MS client 3 without
@@ -732,23 +732,23 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does it need write permission? */
     if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
 
     /* ipc services are limited */
     if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC)) {
-      return(ERROR(ERRSRV,ERRaccess));	    
+      return(ERROR_DOS(ERRSRV,ERRaccess));	    
     }
 
     /* load service specific parameters */
-    if (conn && !become_service(conn,(flags & AS_USER)?True:False)) {
-      return(ERROR(ERRSRV,ERRaccess));
+    if (conn && !set_current_service(conn,(flags & AS_USER)?True:False)) {
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* does this protocol need to be run as guest? */
     if ((flags & AS_GUEST) && 
-		 (!become_guest() || 
+		 (!change_to_guest() || 
 		!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     last_inbuf = inbuf;
@@ -797,7 +797,7 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
 ****************************************************************************/
 static BOOL smbd_process_limit(void)
 {
-	int  total_smbds;
+	int32  total_smbds;
 	
 	if (lp_max_smbd_processes()) {
 
@@ -813,7 +813,7 @@ set. Ignoring max smbd restriction.\n"));
 			return False;
 		}
 
-		if (tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
+		if (tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, 1) == -1)
 			return True;
 
 		return total_smbds > lp_max_smbd_processes();
@@ -920,11 +920,11 @@ void construct_reply_common(char *inbuf,char *outbuf)
   memset(outbuf,'\0',smb_size);
 
   set_message(outbuf,0,0,True);
-  CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
+  SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 
   memcpy(outbuf+4,inbuf+4,4);
-  CVAL(outbuf,smb_rcls) = SMB_SUCCESS;
-  CVAL(outbuf,smb_reh) = 0;
+  SCVAL(outbuf,smb_rcls,SMB_SUCCESS);
+  SCVAL(outbuf,smb_reh,0);
   SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); /* bit 7 set
                                  means a reply */
   SSVAL(outbuf,smb_flg2,FLAGS2_LONG_PATH_COMPONENTS);
@@ -955,7 +955,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   /* maybe its not chained */
   if (smb_com2 == 0xFF) {
-    CVAL(outbuf,smb_vwv0) = 0xFF;
+    SCVAL(outbuf,smb_vwv0,0xFF);
     return outsize;
   }
 
@@ -975,7 +975,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
 
   /* we need to tell the client where the next part of the reply will be */
   SSVAL(outbuf,smb_vwv1,smb_offset(outbuf+outsize,outbuf));
-  CVAL(outbuf,smb_vwv0) = smb_com2;
+  SCVAL(outbuf,smb_vwv0,smb_com2);
 
   /* remember how much the caller added to the chain, only counting stuff
      after the parameter words */
@@ -997,7 +997,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   memmove(inbuf2,inbuf,smb_wct);
 
   /* create the in buffer */
-  CVAL(inbuf2,smb_com) = smb_com2;
+  SCVAL(inbuf2,smb_com,smb_com2);
 
   /* create the out buffer */
   construct_reply_common(inbuf2, outbuf2);
@@ -1012,7 +1012,7 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   /* copy the new reply and request headers over the old ones, but
      preserve the smb_com field */
   memmove(orig_outbuf,outbuf2,smb_wct);
-  CVAL(orig_outbuf,smb_com) = smb_com1;
+  SCVAL(orig_outbuf,smb_com,smb_com1);
 
   /* restore the saved data, being careful not to overwrite any
    data from the reply header */
@@ -1102,7 +1102,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     last_idle_closed_check = t;
 
   /* become root again if waiting */
-  unbecome_user();
+  change_to_root_user();
 
   /* check if we need to reload services */
   check_reload(t);
@@ -1141,7 +1141,7 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
     return False;
   }
 
-  if(global_machine_password_needs_changing)
+  if(global_machine_password_needs_changing && lp_security() == SEC_DOMAIN)
   {
     unsigned char trust_passwd_hash[16];
     time_t lct;

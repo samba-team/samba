@@ -31,8 +31,6 @@
 #include "includes.h"
 #include "smb.h"
 
-extern int DEBUGLEVEL;
-
 struct sync_record {
 	struct sync_record *next, *prev;
 	fstring workgroup;
@@ -299,7 +297,7 @@ void sync_check_completion(void)
 			complete_sync(s);
 			DLIST_REMOVE(syncs, s);
 			ZERO_STRUCTP(s);
-			free(s);
+			SAFE_FREE(s);
 		}
 	}
 }

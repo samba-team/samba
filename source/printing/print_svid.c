@@ -37,8 +37,6 @@
 
 #ifdef SYSV
 
-extern int DEBUGLEVEL;
-
 typedef struct printer {
 	char *name;
 	struct printer *next;

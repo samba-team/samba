@@ -12,7 +12,7 @@ extern void _cleanup(pam_handle_t *, void *, int);
  * evidence of old token around for later stack analysis.
  */
 
-extern char *xstrdup(const char *);
+extern char *smbpXstrDup(const char *);
 
 /* ************************************************************** *
  * Useful non-trivial functions                                   *

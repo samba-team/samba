@@ -29,6 +29,7 @@
 
 struct cli_state *cli;
 extern BOOL in_client;
+extern BOOL AllowDebugChange;
 static int port = SMB_PORT;
 pstring cur_dir = "\\";
 pstring cd_path = "";
@@ -59,9 +60,6 @@ static void cmd_help(void);
 
 time_t newer_than = 0;
 int archive_level = 0;
-
-extern pstring debugf;
-extern int DEBUGLEVEL;
 
 BOOL translation = False;
 
@@ -372,10 +370,7 @@ functions for do_list_queue
  */
 static void reset_do_list_queue(void)
 {
-	if (do_list_queue)
-	{
-		free(do_list_queue);
-	}
+	SAFE_FREE(do_list_queue);
 	do_list_queue = 0;
 	do_list_queue_size = 0;
 	do_list_queue_start = 0;
@@ -713,7 +708,7 @@ static void do_get(char *rname,char *lname)
                rname, (long)nread));
 	}
 
-	free(data);
+	SAFE_FREE(data);
 	
 	if (!cli_close(cli, fnum)) {
 		DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
@@ -930,6 +925,21 @@ static BOOL do_mkdir(char *name)
 	return(True);
 }
 
+/****************************************************************************
+ Show 8.3 name of a file.
+****************************************************************************/
+
+static BOOL do_altname(char *name)
+{
+	fstring altname;
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		DEBUG(0,("%s getting alt name for %s\n", cli_errstr(cli),name));
+		return(False);
+	}
+	DEBUG(0,("%s\n", altname));
+
+	return(True);
+}
 
 /****************************************************************************
  Exit client.
@@ -980,6 +990,26 @@ static void cmd_mkdir(void)
 	}
 }
 
+/****************************************************************************
+  show alt name
+  ****************************************************************************/
+
+static void cmd_altname(void)
+{
+	pstring name;
+	fstring buf;
+	char *p=buf;
+
+	pstrcpy(name,cur_dir);
+
+	if (!next_token(NULL,p,NULL,sizeof(buf))) {
+		DEBUG(0,("altname <file>\n"));
+		return;
+	}
+	pstrcat(name,p);
+
+	do_altname(name);
+}
 
 /****************************************************************************
   put a single file
@@ -1050,13 +1080,13 @@ static void do_put(char *rname,char *lname)
 	if (!cli_close(cli, fnum)) {
 		DEBUG(0,("%s closing remote file %s\n",cli_errstr(cli),rname));
 		fclose(f);
-		if (buf) free(buf);
+		SAFE_FREE(buf);
 		return;
 	}
 
 	
 	fclose(f);
-	if (buf) free(buf);
+	SAFE_FREE(buf);
 
 	{
 		struct timeval tp_end;
@@ -1144,8 +1174,8 @@ static void free_file_list (struct file_list * list)
 	{
 		tmp = list;
 		DLIST_REMOVE(list, list);
-		if (tmp->file_path) free(tmp->file_path);
-		free(tmp);
+		SAFE_FREE(tmp->file_path);
+		SAFE_FREE(tmp);
 	}
 }
 
@@ -1215,7 +1245,7 @@ static int file_find(struct file_list **list, const char *directory,
 				}
 				
 				if (ret == -1) {
-					free(path);
+					SAFE_FREE(path);
 					closedir(dir);
 					return -1;
 				}
@@ -1230,7 +1260,7 @@ static int file_find(struct file_list **list, const char *directory,
 			entry->isdir = isdir;
                         DLIST_ADD(*list, entry);
 		} else {
-			free(path);
+			SAFE_FREE(path);
 		}
         }
 
@@ -1266,7 +1296,7 @@ static void cmd_mput(void)
 		for (temp_list = file_list; temp_list; 
 		     temp_list = temp_list->next) {
 
-			if (lname) free(lname);
+			SAFE_FREE(lname);
 			if (asprintf(&lname, "%s/", temp_list->file_path) <= 0)
 				continue;
 			trim_string(lname, "./", "/");
@@ -1275,16 +1305,16 @@ static void cmd_mput(void)
 			if (temp_list->isdir) {
 				/* if (!recurse) continue; */
 				
-				if (quest) free(quest);
-				asprintf(&quest, "Put directory %s? ", lname);
+				SAFE_FREE(quest);
+				if (asprintf(&quest, "Put directory %s? ", lname) < 0) break;
 				if (prompt && !yesno(quest)) { /* No */
 					/* Skip the directory */
 					lname[strlen(lname)-1] = '/';
 					if (!seek_list(temp_list, lname))
 						break;		    
 				} else { /* Yes */
-	      				if (rname) free(rname);
-					asprintf(&rname, "%s%s", cur_dir, lname);
+	      				SAFE_FREE(rname);
+					if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
 					if (!cli_chkpath(cli, rname) && 
 					    !do_mkdir(rname)) {
@@ -1297,14 +1327,14 @@ static void cmd_mput(void)
 				}
 				continue;
 			} else {
-				if (quest) free(quest);
-				asprintf(&quest,"Put file %s? ", lname);
+				SAFE_FREE(quest);
+				if (asprintf(&quest,"Put file %s? ", lname) < 0) break;
 				if (prompt && !yesno(quest)) /* No */
 					continue;
 				
 				/* Yes */
-				if (rname) free(rname);
-				asprintf(&rname, "%s%s", cur_dir, lname);
+				SAFE_FREE(rname);
+				if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 			}
 
 			dos_format(rname);
@@ -1312,9 +1342,9 @@ static void cmd_mput(void)
 			do_put(rname, lname);
 		}
 		free_file_list(file_list);
-		if (quest) free(quest);
-		if (lname) free(lname);
-		if (rname) free(rname);
+		SAFE_FREE(quest);
+		SAFE_FREE(lname);
+		SAFE_FREE(rname);
 	}
 }
 
@@ -1475,6 +1505,141 @@ static void cmd_rmdir(void)
 		DEBUG(0,("%s removing remote directory file %s\n",
 			 cli_errstr(cli),mask));
 	}  
+}
+
+/****************************************************************************
+ UNIX hardlink.
+****************************************************************************/
+
+static void cmd_link(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+  
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("link <src> <dest>\n"));
+		return;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_hardlink(cli, src, dest)) {
+		DEBUG(0,("%s linking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX symlink.
+****************************************************************************/
+
+static void cmd_symlink(void)
+{
+	pstring src,dest;
+	fstring buf,buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
+	pstrcpy(src,cur_dir);
+	pstrcpy(dest,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("symlink <src> <dest>\n"));
+		return;
+	}
+
+	pstrcat(src,buf);
+	pstrcat(dest,buf2);
+
+	if (!cli_unix_symlink(cli, src, dest)) {
+		DEBUG(0,("%s symlinking files (%s -> %s)\n",
+			cli_errstr(cli), src, dest));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX chmod.
+****************************************************************************/
+
+static void cmd_chmod(void)
+{
+	pstring src;
+	mode_t mode;
+	fstring buf, buf2;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2))) {
+		DEBUG(0,("chmod mode file\n"));
+		return;
+	}
+
+	mode = (mode_t)strtol(buf, NULL, 8);
+	pstrcat(src,buf2);
+
+	if (!cli_unix_chmod(cli, src, mode)) {
+		DEBUG(0,("%s chmod file %s 0%o\n",
+			cli_errstr(cli), src, (unsigned int)mode));
+		return;
+	}  
+}
+
+/****************************************************************************
+ UNIX chown.
+****************************************************************************/
+
+static void cmd_chown(void)
+{
+	pstring src;
+	uid_t uid;
+	gid_t gid;
+	fstring buf, buf2, buf3;
+  
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		DEBUG(0,("Server doesn't support UNIX CIFS calls.\n"));
+		return;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token(NULL,buf,NULL,sizeof(buf)) || 
+	    !next_token(NULL,buf2,NULL, sizeof(buf2)) ||
+	    !next_token(NULL,buf3,NULL, sizeof(buf3))) {
+		DEBUG(0,("chown uid gid file\n"));
+		return;
+	}
+
+	uid = (uid_t)atoi(buf);
+	gid = (gid_t)atoi(buf2);
+	pstrcat(src,buf3);
+
+	if (!cli_unix_chown(cli, src, uid, gid)) {
+		DEBUG(0,("%s chown file %s uid=%d, gid=%d\n",
+			cli_errstr(cli), src, (int)uid, (int)gid));
+		return;
+	} 
 }
 
 /****************************************************************************
@@ -1706,7 +1871,11 @@ static BOOL list_servers(char *wk_grp)
 #define COMPL_REMOTE      1          /* Complete remote filename */
 #define COMPL_LOCAL       2          /* Complete local filename */
 
-/* This defines the commands supported by this client */
+/* This defines the commands supported by this client.
+ * NOTE: The "!" must be the last one in the list because it's fn pointer
+ *       field is NULL, and NULL in that field is used in process_tok()
+ *       (below) to indicate the end of the list.  crh
+ */
 struct
 {
   char *name;
@@ -1715,47 +1884,53 @@ struct
   char compl_args[2];      /* Completion argument info */
 } commands[] = 
 {
-  {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
+  {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
+  {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
+  {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
+  {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
-  {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
-  {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
-  {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
+  {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
-  {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
-  {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
-  {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
-  {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
-  {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
-  {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
-  {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
-  {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
-  {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
-  {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
-  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
+  {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+  {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
+  {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
+  {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
+  {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
+  {"md",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
+  {"mget",cmd_mget,"<mask> get all the matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"mkdir",cmd_mkdir,"<directory> make a directory",{COMPL_NONE,COMPL_NONE}},
+  {"more",cmd_more,"<remote name> view a remote file with your pager",{COMPL_REMOTE,COMPL_NONE}},  
+  {"mput",cmd_mput,"<mask> put all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
+  {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"print",cmd_print,"<file name> print a file",{COMPL_NONE,COMPL_NONE}},
   {"printmode",cmd_printmode,"<graphics or text> set the print mode",{COMPL_NONE,COMPL_NONE}},
-  {"queue",cmd_queue,"show the print queue",{COMPL_NONE,COMPL_NONE}},
-  {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
-  {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"prompt",cmd_prompt,"toggle prompting for filenames for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"put",cmd_put,"<local name> [remote name] put a file",{COMPL_LOCAL,COMPL_REMOTE}},
+  {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)",{COMPL_NONE,COMPL_NONE}},
   {"q",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
-  {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
-  {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
-  {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
-  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
-  {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
-  {"tarmode",cmd_tarmode,
-     "<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
+  {"queue",cmd_queue,"show the print queue",{COMPL_NONE,COMPL_NONE}},
+  {"quit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
+  {"rd",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
+  {"recurse",cmd_recurse,"toggle directory recursion for mget and mput",{COMPL_NONE,COMPL_NONE}},  
+  {"rename",cmd_rename,"<src> <dest> rename some files",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
+  {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
-  {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
+  {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
+  {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},  
+
+  /* Yes, this must be here, see crh's comment above. */
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
@@ -1854,7 +2029,7 @@ static void process_command_string(char *cmd)
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
-static char **completion_fn(char *text, int start, int end)
+static char **completion_fn(const char *text, int start, int end)
 {
 #define MAX_COMPLETIONS 100
 	char **matches;
@@ -1878,7 +2053,7 @@ static char **completion_fn(char *text, int start, int end)
 	}
 
 	if (count == 2) {
-		free(matches[0]);
+		SAFE_FREE(matches[0]);
 		matches[0] = strdup(matches[1]);
 	}
 	matches[count] = NULL;
@@ -1908,7 +2083,7 @@ static void readline_callback(void)
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
-	sys_select_intr(cli->fd+1,&fds,&timeout);
+	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
       		
 	/* We deliberately use receive_smb instead of
 	   client_receive_smb as we want to receive
@@ -2012,7 +2187,6 @@ struct cli_state *do_connect(char *server, char *share)
 		DEBUG(0,("session request to %s failed (%s)\n", 
 			 called.name, cli_errstr(c)));
 		cli_shutdown(c);
-		free(c);
 		if ((p=strchr(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -2029,7 +2203,6 @@ struct cli_state *do_connect(char *server, char *share)
 	if (!cli_negprot(c)) {
 		DEBUG(0,("protocol negotiation failed\n"));
 		cli_shutdown(c);
-		free(c);
 		return NULL;
 	}
 
@@ -2049,7 +2222,6 @@ struct cli_state *do_connect(char *server, char *share)
 		    !cli_session_setup(c, "", "", 0, "", 0, workgroup)) { 
 			DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
 			cli_shutdown(c);
-			free(c);
 			return NULL;
 		}
 		DEBUG(0,("Anonymous login successful\n"));
@@ -2073,7 +2245,6 @@ struct cli_state *do_connect(char *server, char *share)
 			    password, strlen(password)+1)) {
 		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
 		cli_shutdown(c);
-		free(c);
 		return NULL;
 	}
 
@@ -2285,13 +2456,13 @@ static int do_message_op(void)
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
-	int old_debug;
 	pstring query_host;
 	BOOL message = False;
 	extern char tar_type;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
 	pstring new_name_resolve_order;
+	pstring logfile;
 	char *p;
 
 #ifdef KANJI
@@ -2306,6 +2477,7 @@ static int do_message_op(void)
 	*new_name_resolve_order = 0;
 
 	DEBUGLEVEL = 2;
+	AllowDebugChange = False;
  
 	setup_logging(pname,True);
 
@@ -2331,6 +2503,25 @@ static int do_message_op(void)
 				exit(1);
 			}
 		}
+		else if(strncmp(argv[opt], "-d", 2) == 0) {
+			if(argv[opt][2] != '\0') {
+				if (argv[opt][2] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(&argv[opt][2]);
+			} else if(argv[opt+1] != NULL) {
+				/*
+				 * At least one more arg left.
+				 */
+				if (argv[opt+1][0] == 'A')
+					DEBUGLEVEL = 10000;
+				else
+					DEBUGLEVEL = atoi(argv[opt+1]);
+			} else {
+				usage(pname);
+				exit(1);
+			}
+		}
 	}
 
 	TimeInit();
@@ -2338,11 +2529,9 @@ static int do_message_op(void)
 
 	in_client = True;   /* Make sure that we tell lp_load we are */
 
-	old_debug = DEBUGLEVEL;
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
 	}
-	DEBUGLEVEL = old_debug;
 	
 	codepage_initialise(lp_client_code_page());
 
@@ -2462,7 +2651,8 @@ static int do_message_op(void)
 			port = atoi(optarg);
 			break;
 		case 'l':
-			slprintf(debugf,sizeof(debugf)-1, "%s.client",optarg);
+			slprintf(logfile,sizeof(logfile)-1, "%s.client",optarg);
+			lp_set_logfile(logfile);
 			break;
 		case 'h':
 			usage(pname);
@@ -2540,7 +2730,8 @@ static int do_message_op(void)
 					}
 					else if (strwicmp("username", param) == 0)
 						pstrcpy(username, val);
-						
+					else if (strwicmp("domain", param) == 0)
+						pstrcpy(workgroup,val);
 					memset(buf, 0, sizeof(buf));
 				}
 				fclose(auth);

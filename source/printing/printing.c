@@ -21,8 +21,6 @@
 
 #include "printing.h"
 
-extern int DEBUGLEVEL;
-
 /* Current printer interface */
 struct printif *current_printif = &generic_printif;
 
@@ -47,9 +45,10 @@ static pid_t local_pid;
 static int get_queue_status(int, print_status_struct *);
 
 /****************************************************************************
-initialise the printing backend. Called once at startup. 
-Does not survive a fork
+ Initialise the printing backend. Called once at startup. 
+ Does not survive a fork
 ****************************************************************************/
+
 BOOL print_backend_init(void)
 {
 	char *sversion = "INFO/version";
@@ -65,9 +64,9 @@ BOOL print_backend_init(void)
 
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, sversion);
-	if (tdb_fetch_int(tdb, sversion) != PRINT_DATABASE_VERSION) {
-		tdb_traverse(tdb, (tdb_traverse_func)tdb_delete, NULL);
-		tdb_store_int(tdb, sversion, PRINT_DATABASE_VERSION);
+	if (tdb_fetch_int32(tdb, sversion) != PRINT_DATABASE_VERSION) {
+		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
+		tdb_store_int32(tdb, sversion, PRINT_DATABASE_VERSION);
 	}
 	tdb_unlock_bystring(tdb, sversion);
 
@@ -82,8 +81,9 @@ BOOL print_backend_init(void)
 }
 
 /****************************************************************************
-useful function to generate a tdb key
+ Useful function to generate a tdb key.
 ****************************************************************************/
+
 static TDB_DATA print_key(int jobid)
 {
 	static int j;
@@ -96,8 +96,9 @@ static TDB_DATA print_key(int jobid)
 }
 
 /****************************************************************************
-useful function to find a print job in the database
+ Useful function to find a print job in the database.
 ****************************************************************************/
+
 static struct printjob *print_job_find(int jobid)
 {
 	static struct printjob pjob;
@@ -107,13 +108,14 @@ static struct printjob *print_job_find(int jobid)
 	if (!ret.dptr || ret.dsize != sizeof(pjob)) return NULL;
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
-	free(ret.dptr);
+	SAFE_FREE(ret.dptr);
 	return &pjob;
 }
 
 /****************************************************************************
-store a job structure back to the database
+ Store a job structure back to the database.
 ****************************************************************************/
+
 static BOOL print_job_store(int jobid, struct printjob *pjob)
 {
 	TDB_DATA d;
@@ -124,8 +126,9 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 }
 
 /****************************************************************************
-parse a file name from the system spooler to generate a jobid
+ Parse a file name from the system spooler to generate a jobid.
 ****************************************************************************/
+
 static int print_parse_jobid(char *fname)
 {
 	int jobid;
@@ -139,10 +142,10 @@ static int print_parse_jobid(char *fname)
 	return jobid;
 }
 
-
 /****************************************************************************
-list a unix job in the print database
+ List a unix job in the print database.
 ****************************************************************************/
+
 static void print_unix_job(int snum, print_queue_struct *q)
 {
 	int jobid = q->job + UNIX_JOB_START;
@@ -249,14 +252,15 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 }
 
 /****************************************************************************
-check if the print queue has been updated recently enough
+ Check if the print queue has been updated recently enough.
 ****************************************************************************/
+
 static void print_cache_flush(int snum)
 {
 	fstring key;
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-	tdb_store_int(tdb, key, -1);
+	tdb_store_int32(tdb, key, -1);
 }
 
 /****************************************************************************
@@ -278,7 +282,7 @@ static pid_t get_updating_pid(fstring printer_name)
 		return (pid_t)-1;
 
 	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	if (process_exists(updating_pid))
 		return updating_pid;
@@ -381,7 +385,7 @@ static void print_queue_update(int snum)
 	 */
 
 	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", printer_name);
-	tdb_store_int(tdb, cachestr, (int)time(NULL));
+	tdb_store_int32(tdb, cachestr, (int)time(NULL));
 
         /* get the current queue using the appropriate interface */
 	ZERO_STRUCT(status);
@@ -437,7 +441,7 @@ static void print_queue_update(int snum)
 
 	safe_free(tstruct.queue);
 
-	tdb_store_int(tdb, "INFO/total_jobs", tstruct.total_jobs);
+	tdb_store_int32(tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	/*
 	 * Get the old print status. We will use this to compare the
@@ -467,26 +471,27 @@ static void print_queue_update(int snum)
 	 */
 
 	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", printer_name);
-	tdb_store_int(tdb, keystr, (int)time(NULL));
+	tdb_store_int32(tdb, keystr, (int32)time(NULL));
 
 	/* Delete our pid from the db. */
 	set_updating_pid(printer_name, True);
 }
 
 /****************************************************************************
-check if a jobid is valid. It is valid if it exists in the database
+ Check if a jobid is valid. It is valid if it exists in the database.
 ****************************************************************************/
+
 BOOL print_job_exists(int jobid)
 {
 	return tdb_exists(tdb, print_key(jobid));
 }
 
-
 /****************************************************************************
-work out which service a jobid is for
-note that we have to look up by queue name to ensure that it works for 
-other than the process that started the job
+ Work out which service a jobid is for.
+ Note that we have to look up by queue name to ensure that it works for 
+ other than the process that started the job.
 ****************************************************************************/
+
 int print_job_snum(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -496,8 +501,9 @@ int print_job_snum(int jobid)
 }
 
 /****************************************************************************
-give the fd used for a jobid
+ Give the fd used for a jobid.
 ****************************************************************************/
+
 int print_job_fd(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -508,10 +514,11 @@ int print_job_fd(int jobid)
 }
 
 /****************************************************************************
-give the filename used for a jobid
-only valid for the process doing the spooling and when the job
-has not been spooled
+ Give the filename used for a jobid.
+ Only valid for the process doing the spooling and when the job
+ has not been spooled.
 ****************************************************************************/
+
 char *print_job_fname(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -519,10 +526,10 @@ char *print_job_fname(int jobid)
 	return pjob->filename;
 }
 
-
 /****************************************************************************
-set the place in the queue for a job
+ Set the place in the queue for a job.
 ****************************************************************************/
+
 BOOL print_job_set_place(int jobid, int place)
 {
 	DEBUG(2,("print_job_set_place not implemented yet\n"));
@@ -530,8 +537,9 @@ BOOL print_job_set_place(int jobid, int place)
 }
 
 /****************************************************************************
-set the name of a job. Only possible for owner
+ Set the name of a job. Only possible for owner.
 ****************************************************************************/
+
 BOOL print_job_set_name(int jobid, char *name)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -541,10 +549,10 @@ BOOL print_job_set_name(int jobid, char *name)
 	return print_job_store(jobid, pjob);
 }
 
-
 /****************************************************************************
-delete a print job - don't update queue
+ Delete a print job - don't update queue.
 ****************************************************************************/
+
 static BOOL print_job_delete1(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -588,8 +596,9 @@ static BOOL print_job_delete1(int jobid)
 }
 
 /****************************************************************************
-return true if the current user owns the print job
+ Return true if the current user owns the print job.
 ****************************************************************************/
+
 static BOOL is_owner(struct current_user *user, int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -607,9 +616,10 @@ static BOOL is_owner(struct current_user *user, int jobid)
 }
 
 /****************************************************************************
-delete a print job
+ Delete a print job.
 ****************************************************************************/
-BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
+
+BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 {
 	int snum = print_job_snum(jobid);
 	char *printer_name;
@@ -623,7 +633,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	if (!owner && 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -643,11 +653,11 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	return !print_job_exists(jobid);
 }
 
-
 /****************************************************************************
-pause a job
+ Pause a job.
 ****************************************************************************/
-BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
+
+BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
@@ -662,7 +672,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -670,7 +680,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -689,9 +699,10 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 }
 
 /****************************************************************************
-resume a job
+ Resume a job.
 ****************************************************************************/
-BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
+
+BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	char *printer_name;
@@ -706,14 +717,14 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -730,8 +741,9 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 }
 
 /****************************************************************************
-write to a print file
+ Write to a print file.
 ****************************************************************************/
+
 int print_job_write(int jobid, const char *buf, int size)
 {
 	int fd;
@@ -753,9 +765,11 @@ static BOOL print_cache_expired(int snum)
 
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-	t2 = tdb_fetch_int(tdb, key);
+	t2 = (time_t)tdb_fetch_int32(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
-		DEBUG(3, ("print cache expired\n"));
+		DEBUG(3, ("print cache expired for queue %s \
+(last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
+			(int)t2, (int)t, (int)lp_lpqcachetime() ));
 		return True;
 	}
 	return False;
@@ -764,6 +778,7 @@ static BOOL print_cache_expired(int snum)
 /****************************************************************************
  Get the queue status - do not update if db is out of date.
 ****************************************************************************/
+
 static int get_queue_status(int snum, print_status_struct *status)
 {
 	fstring keystr;
@@ -779,7 +794,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 		if (data.dsize == sizeof(print_status_struct)) {
 			memcpy(status, data.dptr, sizeof(print_status_struct));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 	return status->qcount;
 }
@@ -787,20 +802,28 @@ static int get_queue_status(int snum, print_status_struct *status)
 /****************************************************************************
  Determine the number of jobs in a queue.
 ****************************************************************************/
-static int print_queue_length(int snum)
+
+int print_queue_length(int snum, print_status_struct *pstatus)
 {
 	print_status_struct status;
-
+	int len;
+ 
 	/* make sure the database is up to date */
-	if (print_cache_expired(snum)) print_queue_update(snum);
-
+	if (print_cache_expired(snum))
+		print_queue_update(snum);
+ 
 	/* also fetch the queue status */
-	return get_queue_status(snum, &status);
+	memset(&status, 0, sizeof(status));
+	len = get_queue_status(snum, &status);
+	if (pstatus)
+		*pstatus = status;
+	return len;
 }
 
 /****************************************************************************
  Determine the number of jobs in all queues.
 ****************************************************************************/
+
 static int get_total_jobs(int snum)
 {
 	int total_jobs;
@@ -808,7 +831,7 @@ static int get_total_jobs(int snum)
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
 
-	total_jobs = tdb_fetch_int(tdb, "INFO/total_jobs");
+	total_jobs = tdb_fetch_int32(tdb, "INFO/total_jobs");
 	if (total_jobs >0)
 		return total_jobs;
 	else
@@ -816,8 +839,9 @@ static int get_total_jobs(int snum)
 }
 
 /***************************************************************************
-start spooling a job - return the jobid
+ Start spooling a job - return the jobid.
 ***************************************************************************/
+
 int print_job_start(struct current_user *user, int snum, char *jobname)
 {
 	int jobid;
@@ -825,6 +849,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	struct printjob pjob;
 	int next_jobid;
 	user_struct *vuser;
+	int njobs = 0;
 
 	errno = 0;
 
@@ -859,9 +884,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	}
 
 	/* Insure the maximum queue size is not violated */
-	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
+	if (lp_maxprintjobs(snum) && (njobs = print_queue_length(snum,NULL)) > lp_maxprintjobs(snum)) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per queue (%d).\n",
-			print_queue_length(snum), lp_maxprintjobs(snum) ));
+			njobs, lp_maxprintjobs(snum) ));
 		errno = ENOSPC;
 		return -1;
 	}
@@ -869,7 +894,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* Insure the maximum print jobs in the system is not violated */
 	if (lp_totalprintjobs() && get_total_jobs(snum) > lp_totalprintjobs()) {
 		DEBUG(3, ("print_job_start: number of jobs (%d) larger than max printjobs per system (%d).\n",
-			print_queue_length(snum), lp_totalprintjobs() ));
+			njobs, lp_totalprintjobs() ));
 		errno = ENOSPC;
 		return -1;
 	}
@@ -898,7 +923,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
 
-	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
+	next_jobid = tdb_fetch_int32(tdb, "INFO/nextjob");
 	if (next_jobid == -1)
 		next_jobid = 1;
 
@@ -913,7 +938,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		goto fail;
 	}
 
-	tdb_store_int(tdb, "INFO/nextjob", jobid);
+	tdb_store_int32(tdb, "INFO/nextjob", jobid);
 
 	/* we have a job entry - now create the spool file */
 	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%.6d.XXXXXX", 
@@ -1106,8 +1131,9 @@ static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
 }
 
 /****************************************************************************
-get a printer queue listing
+ Get a printer queue listing.
 ****************************************************************************/
+
 int print_queue_status(int snum, 
 		       print_queue_struct **queue,
 		       print_status_struct *status)
@@ -1136,7 +1162,7 @@ int print_queue_status(int snum,
 		if (data.dsize == sizeof(*status)) {
 			memcpy(status, data.dptr, sizeof(*status));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
 	/*
@@ -1178,10 +1204,10 @@ int print_queue_status(int snum,
 	return tstruct.qcount;
 }
 
-
 /****************************************************************************
-turn a queue name into a snum
+ Turn a queue name into a snum.
 ****************************************************************************/
+
 int print_queue_snum(char *qname)
 {
 	int snum = lp_servicenumber(qname);
@@ -1189,24 +1215,24 @@ int print_queue_snum(char *qname)
 	return snum;
 }
 
-
 /****************************************************************************
- pause a queue
+ Pause a queue.
 ****************************************************************************/
-BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
+
+BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
 	int ret;
 	
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_pause))(snum);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -1223,22 +1249,23 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 }
 
 /****************************************************************************
- resume a queue
+ Resume a queue.
 ****************************************************************************/
-BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
+
+BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 {
 	char *printer_name;
 	int ret;
 
 	if (!print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
-		*errcode = ERRnoaccess;
+		*errcode = WERR_ACCESS_DENIED;
 		return False;
 	}
 
 	ret = (*(current_printif->queue_resume))(snum);
 
 	if (ret != 0) {
-		*errcode = ERRinvalidparam;
+		*errcode = WERR_INVALID_PARAM;
 		return False;
 	}
 
@@ -1255,9 +1282,10 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 }
 
 /****************************************************************************
- purge a queue - implemented by deleting all jobs that we can delete
+ Purge a queue - implemented by deleting all jobs that we can delete.
 ****************************************************************************/
-BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
+
+BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 {
 	print_queue_struct *queue;
 	print_status_struct status;

@@ -26,10 +26,33 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern DOM_SID global_sam_sid;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
+
+static PRIVS privs[] = {
+    {SE_PRIV_NONE, "no_privs", "No privilege"},
+    {SE_PRIV_ADD_USERS, "add_users", "add users"},
+    {SE_PRIV_ADD_MACHINES, "add_computers", "add computers to domain"},
+    {SE_PRIV_PRINT_OPERATOR, "print_op", "printer operator"},
+    {SE_PRIV_ALL, "all_privs", "all privileges"}
+};
+
+struct lsa_info {
+    DOM_SID sid;
+    uint32 access;
+};
+
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+
+static void free_lsa_info(void *ptr)
+{
+	struct lsa_info *lsa = (struct lsa_info *)ptr;
+
+	SAFE_FREE(lsa);
+}
 
 /***************************************************************************
 Init dom_query
@@ -283,7 +306,7 @@ static void init_reply_lookup_sids(LSA_R_LOOKUP_SIDS *r_l,
  _lsa_open_policy2.
  ***************************************************************************/
 
-uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
+NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
 {
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
@@ -298,7 +321,7 @@ uint32 _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 
  _lsa_open_policy
  ***************************************************************************/
 
-uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u)
+NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u)
 {
 	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
@@ -313,7 +336,7 @@ uint32 _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_
  _lsa_enum_trust_dom - this needs fixing to do more than return NULL ! JRA.
  ***************************************************************************/
 
-uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
+NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENUM_TRUST_DOM *r_u)
 {
 	uint32 enum_context = 0;
 	char *dom_name = NULL;
@@ -324,7 +347,7 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
 
 	/* set up the LSA QUERY INFO response */
 	init_r_enum_trust_dom(p->mem_ctx, r_u, enum_context, dom_name, dom_sid,
-	      dom_name != NULL ? NT_STATUS_OK : NT_STATUS_UNABLE_TO_FREE_VM);
+	      dom_name != NULL ? NT_STATUS_OK : NT_STATUS_NO_MORE_ENTRIES);
 
 	return r_u->status;
 }
@@ -333,11 +356,12 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
  _lsa_query_info. See the POLICY_INFOMATION_CLASS docs at msdn.
  ***************************************************************************/
 
-uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
+NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
 {
 	LSA_INFO_UNION *info = &r_u->dom;
 	DOM_SID domain_sid;
 	fstring dos_domain;
+	fstring dos_myname;
 	char *name = NULL;
 	DOM_SID *sid = NULL;
 
@@ -345,6 +369,9 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
+
+	fstrcpy(dos_myname, global_myname);
+	unix_to_dos(dos_myname, True);
 
 	fstrcpy(dos_domain, global_myworkgroup);
 	unix_to_dos(dos_domain, True);
@@ -355,13 +382,13 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 			unsigned int i;
 			/* fake info: We audit everything. ;) */
 			info->id2.auditing_enabled = 1;
-            info->id2.count1 = 7;
-            info->id2.count2 = 7;
+			info->id2.count1 = 7;
+			info->id2.count2 = 7;
 			if ((info->id2.auditsettings = (uint32 *)talloc(p->mem_ctx,7*sizeof(uint32))) == NULL)
-				return False;
-            for (i = 0; i < 7; i++)
-                info->id2.auditsettings[i] = 3;
-            break;
+				return NT_STATUS_NO_MEMORY;
+			for (i = 0; i < 7; i++)
+				info->id2.auditsettings[i] = 3;
+			break;
 		}
 	case 0x03:
 		/* Request PolicyPrimaryDomainInformation. */
@@ -382,7 +409,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				break;
 			case ROLE_STANDALONE:
 				name = dos_domain;
-				sid = NULL; /* Tell it we're not in a domain. */
+				sid = NULL;
 				break;
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -398,11 +425,11 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 				sid = &global_sam_sid;
 				break;
 			case ROLE_DOMAIN_MEMBER:
-				name = dos_domain;
+				name = dos_myname;
 				sid = &global_sam_sid;
 				break;
 			case ROLE_STANDALONE:
-				name = dos_domain;
+				name = dos_myname;
 				sid = &global_sam_sid;
 				break;
 			default:
@@ -434,7 +461,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
 		break;
 	}
 
-	if(r_u->status == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(r_u->status)) {
 		r_u->undoc_buffer = 0x22000000; /* bizarre */
 		r_u->info_class = q_u->info_class;
 	}
@@ -446,7 +473,7 @@ uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO 
  _lsa_lookup_sids
  ***************************************************************************/
 
-uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SIDS *r_u)
+NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SIDS *r_u)
 {
 	DOM_SID2 *sid = q_u->sids.sid;
 	int num_entries = q_u->sids.num_entries;
@@ -474,7 +501,7 @@ uint32 _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_SI
 lsa_reply_lookup_names
  ***************************************************************************/
 
-uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_NAMES *r_u)
+NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_NAMES *r_u)
 {
 	UNISTR2 *names = q_u->uni_name;
 	int num_entries = q_u->num_entries;
@@ -502,7 +529,7 @@ uint32 _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP_N
  _lsa_close. Also weird - needs to check if lsa handle is correct. JRA.
  ***************************************************************************/
 
-uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
+NTSTATUS _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
 {
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
@@ -515,12 +542,82 @@ uint32 _lsa_close(pipes_struct *p, LSA_Q_CLOSE *q_u, LSA_R_CLOSE *r_u)
   "No more secrets Marty...." :-).
  ***************************************************************************/
 
-uint32 _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u)
+NTSTATUS _lsa_open_secret(pipes_struct *p, LSA_Q_OPEN_SECRET *q_u, LSA_R_OPEN_SECRET *r_u)
 {
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
-uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
+/***************************************************************************
+_lsa_enum_privs.
+ ***************************************************************************/
+
+NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIVS *r_u)
+{
+	uint32 i;
+
+	uint32 enum_context=q_u->enum_context;
+	LSA_PRIV_ENTRY *entry;
+	LSA_PRIV_ENTRY *entries;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (enum_context >= PRIV_ALL_INDEX)
+		return NT_STATUS_UNABLE_TO_FREE_VM;
+
+	entries = (LSA_PRIV_ENTRY *)talloc_zero(p->mem_ctx, sizeof(LSA_PRIV_ENTRY) * (PRIV_ALL_INDEX-enum_context));
+	if (entries==NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	entry = entries;
+	for (i = 0; i < PRIV_ALL_INDEX-enum_context; i++, entry++) {
+		init_uni_hdr(&entry->hdr_name, strlen(privs[i+1-enum_context].priv));
+		init_unistr2(&entry->name, privs[i+1-enum_context].priv, strlen(privs[i+1-enum_context].priv) );
+		entry->luid_low = privs[i+1-enum_context].se_priv;
+		entry->luid_high = 1;
+	}
+
+	init_lsa_r_enum_privs(r_u, i+enum_context, PRIV_ALL_INDEX-enum_context, entries);
+
+	return NT_STATUS_OK;
+}
+
+/***************************************************************************
+_lsa_priv_get_dispname.
+ ***************************************************************************/
+
+NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, LSA_R_PRIV_GET_DISPNAME *r_u)
+{
+	fstring name_asc;
+	fstring desc_asc;
+	int i;
+
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
+
+	DEBUG(0,("_lsa_priv_get_dispname: %s", name_asc));
+
+	for (i=1; privs[i].se_priv!=SE_PRIV_ALL; i++) {
+		if ( strcmp(name_asc, privs[i].priv)) {
+			
+			fstrcpy(desc_asc, privs[i].description);
+		
+		}
+	}
+	DEBUG(0,(": %s\n", desc_asc));
+
+	init_uni_hdr(&r_u->hdr_desc, strlen(desc_asc));
+	init_unistr2(&r_u->desc, desc_asc, strlen(desc_asc) );
+
+	r_u->ptr_info=0xdeadbeef;
+	r_u->lang_id=q_u->lang_id;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
 {
   fstring username, domname;
   int ulen, dlen;
@@ -548,4 +645,50 @@ uint32 _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R
   r_u->status = NT_STATUS_OK;
   
   return r_u->status;
+}
+
+/***************************************************************************
+ 
+ ***************************************************************************/
+
+NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+{
+	struct lsa_info *info;
+
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	/* associate the user/group SID with the (unique) handle. */
+	if ((info = (struct lsa_info *)malloc(sizeof(struct lsa_info))) == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	ZERO_STRUCTP(info);
+	info->sid = q_u->sid.sid;
+	info->access = q_u->access;
+
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+
+	return r_u->status;
+}
+
+/***************************************************************************
+ 
+ ***************************************************************************/
+
+NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
+{
+	r_u->status = NT_STATUS_OK;
+
+	/* find the connection policy handle. */
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		return NT_STATUS_INVALID_HANDLE;
+
+	r_u->access=3;
+
+	return r_u->status;
 }

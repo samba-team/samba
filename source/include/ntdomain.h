@@ -38,18 +38,6 @@
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
  */
-
-#define CHECK_STRUCT(data) \
-{ \
-        if ((data)->struct_start != 0xfefefefe || \
-            (data)->struct_end != 0xdcdcdcdc) \
-        { \
-                DEBUG(0,("uninitialised structure (%s, %d)\n", \
-                FUNCTION_MACRO, __LINE__)); \
-                sleep(30); \
-        } \
-}
-
  
 typedef struct _prs_struct 
 {
@@ -219,6 +207,12 @@ typedef struct pipes_struct
 	 */
 	
 	BOOL fault_state;
+	
+	/*
+	 * Set to true when we should return fault PDU's for a bad handle.
+	 */
+	
+	BOOL bad_handle_fault_state;
 	
 	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's

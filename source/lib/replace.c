@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
  void replace_dummy(void);
  void replace_dummy(void) {}
 
@@ -194,7 +192,7 @@ Corrections by richard.kettlewell@kewill.com
 	}
 	endgrent();
 	ret = sys_setgroups(i,grouplst);
-	free((char *)grouplst);
+	SAFE_FREE(grouplst);
 	return ret;
 #endif /* HAVE_SETGROUPS */
 }

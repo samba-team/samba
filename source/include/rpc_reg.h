@@ -26,47 +26,86 @@
 
 
 /* winreg pipe defines */
-#define REG_OPEN_HKLM       0x02
-#define REG_OPEN_HKU        0x04
-#define REG_FLUSH_KEY       0x0B
-#define REG_UNK_1A          0x1a
-#define REG_QUERY_KEY       0x10
-#define REG_ENUM_KEY        0x09
-#define REG_CREATE_KEY      0x06
-#define REG_DELETE_KEY      0x07
-#define REG_DELETE_VALUE    0x08
-#define REG_CREATE_VALUE    0x16
-#define REG_GET_KEY_SEC     0x0c
-#define REG_SET_KEY_SEC     0x15
-#define REG_ENUM_VALUE      0x0a
-#define REG_OPEN_ENTRY      0x0f
-#define REG_INFO            0x11
-#define REG_CLOSE           0x05
+#define REG_OPEN_HKCR		0x00
+#define _REG_UNK_01		0x01
+#define REG_OPEN_HKLM		0x02
+#define _REG_UNK_03		0x03
+#define REG_OPEN_HKU		0x04
+#define REG_CLOSE		0x05
+#define REG_CREATE_KEY		0x06
+#define REG_DELETE_KEY		0x07
+#define REG_DELETE_VALUE	0x08
+#define REG_ENUM_KEY		0x09
+#define REG_ENUM_VALUE		0x0a
+#define REG_FLUSH_KEY		0x0b
+#define REG_GET_KEY_SEC		0x0c
+#define	_REG_UNK_0D		0x0d
+#define _REG_UNK_0E		0x0e
+#define REG_OPEN_ENTRY		0x0f
+#define REG_QUERY_KEY		0x10
+#define REG_INFO		0x11
+#define	_REG_UNK_12		0x12
+#define _REG_UNK_13		0x13
+#define	_REG_UNK_14		0x14
+#define REG_SET_KEY_SEC		0x15
+#define REG_CREATE_VALUE	0x16
+#define	_REG_UNK_17		0x17
+#define REG_SHUTDOWN		0x18
+#define REG_ABORT_SHUTDOWN	0x19
+#define REG_UNK_1A		0x1a
 
-#define HKEY_LOCAL_MACHINE 0x80000000
-#define HKEY_USERS         0x80000003
+#define HKEY_CLASSES_ROOT	0x80000000
+#define HKEY_CURRENT_USER	0x80000001
+#define HKEY_LOCAL_MACHINE 	0x80000002
+#define HKEY_USERS         	0x80000003
 
-/* REG_Q_OPEN_HKLM   */
-typedef struct q_reg_open_policy_info
+#define REG_SZ		1
+#define REG_BINARY	3
+#define REG_DWORD	4
+#define REG_MULTI_SZ	7
+
+/* REG_Q_OPEN_HKCR   */
+typedef struct q_reg_open_hkcr_info
 {
 	uint32 ptr;
-	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
+	uint16 unknown_0; /* 0x5428      - 16 bit unknown */
 	uint16 unknown_1; /* random.  changes */
 	uint32 level;     /* 0x0000 0002 - 32 bit unknown */
 
-} REG_Q_OPEN_HKLM  ;
+} REG_Q_OPEN_HKCR  ;
 
-/* REG_R_OPEN_HKLM   */
-typedef struct r_reg_open_policy_info
+/* REG_R_OPEN_HKCR   */
+typedef struct r_reg_open_hkcr_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
-} REG_R_OPEN_HKLM;
+} REG_R_OPEN_HKCR;
+
+
+/* REG_Q_OPEN_HKLM   */
+typedef struct q_reg_open_hklm_info
+{
+	uint32 ptr;
+	uint16 unknown_0;	/* 0xE084      - 16 bit unknown */
+	uint16 unknown_1;	/* random.  changes */
+	uint32 access_mask;	/* 0x0000 0002 - 32 bit unknown */
+
+}
+REG_Q_OPEN_HKLM;
+
+/* REG_R_OPEN_HKLM   */
+typedef struct r_reg_open_hklm_info
+{
+	POLICY_HND pol;		/* policy handle */
+	NTSTATUS status;		/* return status */
+
+}
+REG_R_OPEN_HKLM;
 
 
 /* REG_Q_OPEN_HKU */
-typedef struct q_reg_open_unk4_info
+typedef struct q_reg_open_hku_info
 {
 	uint32 ptr;
 	uint16 unknown_0; /* 0xE084      - 16 bit unknown */
@@ -76,10 +115,10 @@ typedef struct q_reg_open_unk4_info
 } REG_Q_OPEN_HKU;
 
 /* REG_R_OPEN_HKU */
-typedef struct r_reg_open_unk4_info
+typedef struct r_reg_open_hku_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_OPEN_HKU;
 
@@ -94,7 +133,7 @@ typedef struct q_reg_open_flush_key_info
 /* REG_R_FLUSH_KEY */
 typedef struct r_reg_open_flush_key_info
 {
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_FLUSH_KEY;
 
@@ -115,7 +154,7 @@ typedef struct q_reg_set_key_sec_info
 /* REG_R_SET_KEY_SEC */
 typedef struct r_reg_set_key_sec_info
 {
-	uint32 status;
+	NTSTATUS status;
 	
 } REG_R_SET_KEY_SEC;
 
@@ -142,7 +181,7 @@ typedef struct r_reg_get_key_sec_info
 	BUFHDR hdr_sec;    /* header for security data */
 	SEC_DESC_BUF *data;    /* security data */
 
-	uint32 status;
+	NTSTATUS status;
 	
 } REG_R_GET_KEY_SEC;
 
@@ -163,7 +202,7 @@ typedef struct q_reg_create_value_info
 /* REG_R_CREATE_VALUE */
 typedef struct r_reg_create_value_info
 { 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_CREATE_VALUE;
 
@@ -209,7 +248,7 @@ typedef struct r_reg_enum_value_info
 	uint32 ptr2;            /* pointer */
 	uint32 len_value2;       /* */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_ENUM_VALUE;
 
@@ -245,7 +284,7 @@ typedef struct r_reg_create_key_info
 	POLICY_HND key_pol;       /* policy handle */
 	uint32 unknown; /* 0x0000 0000 */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_CREATE_KEY;
 
@@ -263,7 +302,7 @@ typedef struct r_reg_delete_key_info
 {
 	POLICY_HND key_pol;       /* policy handle */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_DELETE_KEY;
 
@@ -282,7 +321,7 @@ typedef struct r_reg_delete_val_info
 {
 	POLICY_HND key_pol;       /* policy handle */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_DELETE_VALUE;
 
@@ -310,7 +349,7 @@ typedef struct r_reg_query_key_info
 	uint32 sec_desc; /* 0x0000 0078 */
 	NTTIME mod_time;  /* modified time */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_QUERY_KEY;
 
@@ -326,7 +365,7 @@ typedef struct q_reg_unk_1a_info
 typedef struct r_reg_unk_1a_info
 {
 	uint32 unknown;         /* 0x0500 0000 */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_UNK_1A;
 
@@ -343,7 +382,7 @@ typedef struct reg_r_close_info
 {
 	POLICY_HND pol; /* policy handle.  should be all zeros. */
 
-	uint32 status; /* return code */
+	NTSTATUS status; /* return code */
 
 } REG_R_CLOSE;
 
@@ -388,7 +427,7 @@ typedef struct r_reg_enum_key_info
 	uint32 ptr3;            /* pointer */
 	NTTIME time;            /* current time? */
 
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_ENUM_KEY;
 
@@ -396,43 +435,43 @@ typedef struct r_reg_enum_key_info
 /* REG_Q_INFO */
 typedef struct q_reg_info_info
 {
-  POLICY_HND pol;        /* policy handle */
+	POLICY_HND pol;		/* policy handle */
 
-  UNIHDR  hdr_type;       /* unicode product type header */
-  UNISTR2 uni_type;       /* unicode product type - "ProductType" */
+	UNIHDR  hdr_type;	/* unicode product type header */
+	UNISTR2 uni_type;	/* unicode product type - "ProductType" */
 
-  uint32 ptr_reserved;    
+	uint32 ptr_reserved;	/* pointer */
   
-  uint32 ptr_buf;         /* the next three fields follow if ptr_buf != 0 */
-  uint32 ptr_bufsize;
-  uint32 bufsize;
-  uint32 buf_unk;
+	uint32 ptr_buf;		/* the next three fields follow if ptr_buf != 0 */
+	uint32 ptr_bufsize;
+	uint32 bufsize;
+	uint32 buf_unk;
 
-  uint32 unk1;
-  uint32 ptr_buflen;
-  uint32 buflen;
+	uint32 unk1;
+	uint32 ptr_buflen;
+	uint32 buflen;
   
-  uint32 ptr_buflen2;
-  uint32 buflen2;
+	uint32 ptr_buflen2;
+	uint32 buflen2;
 
 } REG_Q_INFO;
 
 /* REG_R_INFO */
 typedef struct r_reg_info_info
 { 
-  uint32 ptr_type;            /* keyvalue  pointer */
-  uint32 type;          /*  keyvalue datatype  */
+	uint32 ptr_type;	/* key type pointer */
+	uint32 type;		/* key datatype  */
 
-  uint32 ptr_uni_val;       /* pointer to o/s type */
-  BUFFER2 *uni_val;      /* unicode string o/s type - "LanmanNT" */
+	uint32 ptr_uni_val;	/* key value pointer */
+	BUFFER2 *uni_val;	/* key value */
 
-  uint32 ptr_max_len;    /* pointer to unknown_0 */
-  uint32 buf_max_len;    /* 0x12 */
+	uint32 ptr_max_len;
+	uint32 buf_max_len;
 
-  uint32 ptr_len;    /* pointer to unknown_1 */
-  uint32 buf_len;        /* 0x12 */
-
-  uint32 status;         /* return status */
+	uint32 ptr_len;
+	uint32 buf_len;
+  
+	NTSTATUS status;	/* return status */
 
 } REG_R_INFO;
 
@@ -456,10 +495,44 @@ typedef struct q_reg_open_entry_info
 typedef struct r_reg_open_entry_info
 {
 	POLICY_HND pol;       /* policy handle */
-	uint32 status;         /* return status */
+	NTSTATUS status;         /* return status */
 
 } REG_R_OPEN_ENTRY;
 
+/* REG_Q_SHUTDOWN */
+typedef struct q_reg_shutdown_info
+{
+	uint32 ptr_0;
+	uint32 ptr_1;
+	uint32 ptr_2;
+	UNIHDR hdr_msg;		/* shutdown message */
+	UNISTR2 uni_msg;	/* seconds */
+	uint32 timeout;		/* seconds */
+	uint16 flags;
+		
+} REG_Q_SHUTDOWN;
+
+/* REG_R_SHUTDOWN */
+typedef struct r_reg_shutdown_info
+{
+	NTSTATUS status;		/* return status */
+
+} REG_R_SHUTDOWN;
+
+/* REG_Q_ABORT_SHUTDOWN */
+typedef struct q_reg_abort_shutdown_info
+{
+	uint32 ptr_server;
+	uint16 server;
+
+} REG_Q_ABORT_SHUTDOWN;
+
+/* REG_R_ABORT_SHUTDOWN */
+typedef struct r_reg_abort_shutdown_info
+{ 
+	NTSTATUS status; /* return status */
+
+} REG_R_ABORT_SHUTDOWN;
 
 
 #endif /* _RPC_REG_H */

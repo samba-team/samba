@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-   SMB parameters and setup
+   DOS error code constants
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
@@ -51,9 +51,11 @@
 #define ERRremcd 16 /* Attempt to delete current directory */
 #define ERRdiffdevice 17 /* rename/move across different filesystems */
 #define ERRnofiles 18 /* no more files found in file search */
+#define ERRgeneral 31 /* General failure */
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
+#define ERRnetnamedel 64 /* Network name deleted or not available */
 #define ERRnosuchshare 67 /* You specified an invalid share name */
 #define ERRfilexists 80 /* File in operation already exists */
 #define ERRinvalidparam 87
@@ -71,9 +73,11 @@
 #define ERRnomoreitems 259
 #define ERRbaddirectory 267 /* Invalid directory name in a path. */
 #define ERReasnotsupported 282 /* Extended attributes */
+#define ERRlogonfailure 1326 /* Unknown username or bad password */
 #define ERRbuftoosmall 2123
 #define ERRunknownipc 2142
 #define ERRnosuchprintjob 2151
+#define ERRinvgroup 2455
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66 /* don't support ipc */
@@ -82,6 +86,7 @@
 
 #define ERRunknownprinterdriver 1797 /* ERROR_UNKNOWN_PRINTER_DRIVER */
 #define ERRinvalidprintername 1801 /* ERROR_INVALID_PRINTER_NAME */
+#define ERRprinteralreadyexists 1802 /* ERROR_PRINTER_ALREADY_EXISTS */
 #define ERRinvaliddatatype 1804 /* ERROR_INVALID_DATATYPE */
 #define ERRinvalidenvironment 1805 /* ERROR_INVALID_ENVIRONMENT */
 #define ERRprinterdriverinuse 3001 /* ERROR_PRINTER_DRIVER_IN_USE */
@@ -139,5 +144,48 @@
 #define ERRFCBunavail 35
 #define ERRsharebufexc 36 /* share buffer exceeded */
 #define ERRdiskfull 39
+
+
+/* these are win32 error codes. There are only a few places where
+   these matter for Samba, primarily in the NT printing code */
+#define WERR_OK W_ERROR(0)
+#define WERR_BADFILE W_ERROR(2)
+#define WERR_ACCESS_DENIED W_ERROR(5)
+#define WERR_BADFID W_ERROR(6)
+#define WERR_BADFUNC W_ERROR(1)
+#define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
+#define WERR_NO_SUCH_SHARE W_ERROR(67)
+#define WERR_ALREADY_EXISTS W_ERROR(80)
+#define WERR_INVALID_PARAM W_ERROR(87)
+#define WERR_NOT_SUPPORTED W_ERROR(50)
+#define WERR_BAD_PASSWORD W_ERROR(86)
+#define WERR_NOMEM W_ERROR(8)
+#define WERR_INVALID_NAME W_ERROR(123)
+#define WERR_UNKNOWN_LEVEL W_ERROR(124)
+#define WERR_NO_MORE_ITEMS W_ERROR(259)
+#define WERR_MORE_DATA W_ERROR(234)
+#define WERR_UNKNOWN_PRINTER_DRIVER W_ERROR(1797)
+#define WERR_INVALID_PRINTER_NAME W_ERROR(1801)
+#define WERR_PRINTER_ALREADY_EXISTS W_ERROR(1802)
+#define WERR_INVALID_DATATYPE W_ERROR(1804)
+#define WERR_INVALID_ENVIRONMENT W_ERROR(1805)
+#define WERR_BUF_TOO_SMALL W_ERROR(2123)
+#define WERR_JOB_NOT_FOUND W_ERROR(2151)
+#define WERR_DEST_NOT_FOUND W_ERROR(2152)
+#define WERR_NOT_LOCAL_DOMAIN W_ERROR(2320)
+#define WERR_PRINTER_DRIVER_IN_USE W_ERROR(3001)
+#define WERR_STATUS_MORE_ENTRIES   W_ERROR(0x0105)
+
+/* DFS errors */
+
+#ifndef NERR_BASE
+#define NERR_BASE (2100)
+#endif
+
+#define WERR_DFS_NO_SUCH_VOL            W_ERROR(NERR_BASE+562)
+#define WERR_DFS_NO_SUCH_SHARE          W_ERROR(NERR_BASE+565)
+#define WERR_DFS_NO_SUCH_SERVER         W_ERROR(NERR_BASE+573)
+#define WERR_DFS_INTERNAL_ERROR         W_ERROR(NERR_BASE+590)
+#define WERR_DFS_CANT_CREATE_JUNCT      W_ERROR(NERR_BASE+569)
 
 #endif /* _DOSERR_H */

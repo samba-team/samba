@@ -26,7 +26,14 @@
 #include "nterr.h"
 #include "rpc_parse.h"   
 
-extern int DEBUGLEVEL;
+/******************************************************************* 
+Make a DFS_Q_DFS_QUERY structure
+*******************************************************************/
+
+void init_dfs_q_dfs_exist(DFS_Q_DFS_EXIST *q_d)
+{
+	q_d->dummy = 0;
+}
 
 /*************************************************************
  Read/write a DFS_Q_DFS_EXIST structure - dummy...
@@ -67,10 +74,10 @@ BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps, int de
 Make a DFS_Q_DFS_REMOVE structure
 *******************************************************************/
 
-BOOL make_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
+BOOL init_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
 			   char *servername, char *sharename)
 {
-	DEBUG(5,("make_dfs_q_dfs_remove\n"));
+	DEBUG(5,("init_dfs_q_dfs_remove\n"));
 	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
 	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
 	init_unistr2(&q_d->ShareName,    sharename,  strlen(sharename)+1);
@@ -112,6 +119,8 @@ BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps, int 
 	if(q_d->ptr_ShareName)
 		if (!smb_io_unistr2("ShareName",&q_d->ShareName,  q_d->ptr_ShareName, ps, depth))
 			return False;
+	if(!prs_align(ps))
+		return False;
 
 	return True;
 }
@@ -128,7 +137,7 @@ BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int 
 	prs_debug(ps, depth, desc, "dfs_io_r_dfs_remove");
 	depth++;
 
-	if(!prs_uint32("status", ps, depth, &r_d->status))
+	if(!prs_werror("status", ps, depth, &r_d->status))
 		return False;
 
 	return True;
@@ -138,10 +147,10 @@ BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps, int 
 Make a DFS_Q_DFS_ADD structure
 *******************************************************************/
 
-BOOL make_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
+BOOL init_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
 			char *sharename, char *comment, uint32 flags)
 {
-	DEBUG(5,("make_dfs_q_dfs_add\n"));
+	DEBUG(5,("init_dfs_q_dfs_add\n"));
 	q_d->ptr_DfsEntryPath = q_d->ptr_ServerName = q_d->ptr_ShareName = 1;
 	init_unistr2(&q_d->DfsEntryPath, entrypath,  strlen(entrypath)+1);
 	init_unistr2(&q_d->ServerName,   servername, strlen(servername)+1);
@@ -214,9 +223,22 @@ BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "dfs_io_r_dfs_add");
 	depth++;
 
-	if(!prs_uint32("status", ps, depth, &r_d->status))
+	if(!prs_werror("status", ps, depth, &r_d->status))
 		return False;
 
+	return True;
+}
+
+BOOL init_dfs_q_dfs_get_info(DFS_Q_DFS_GET_INFO *q_d, char *entrypath,
+			     char *servername, char *sharename, 
+			     uint32 info_level)
+{
+	DEBUG(5,("init_dfs_q2_get_info\n"));
+	init_unistr2(&q_d->uni_path, entrypath,  strlen(entrypath)+1);
+	init_unistr2(&q_d->uni_server,   servername, strlen(servername)+1);
+	init_unistr2(&q_d->uni_share,    sharename,  strlen(sharename)+1);
+	q_d->level = info_level;
+	q_d->ptr_server = q_d->ptr_share = 1;
 	return True;
 }
 
@@ -276,7 +298,7 @@ BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, 
 
 	if(!dfs_io_dfs_info_ctr("", &r_i->ctr, 1, r_i->level, ps, depth))
 		return False;
-	if(!prs_uint32("status", ps, depth, &r_i->status))
+	if(!prs_werror("status", ps, depth, &r_i->status))
 		return False;
 	return True;
 }
@@ -284,7 +306,7 @@ BOOL dfs_io_r_dfs_get_info(char* desc, DFS_R_DFS_GET_INFO* r_i, prs_struct* ps, 
 /************************************************************
  Make a DFS_Q_DFS_ENUM structure
  ************************************************************/
-BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr)
+BOOL init_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr)
 {
 	q_d->level = level;
 	q_d->maxpreflen = -1;
@@ -477,7 +499,7 @@ BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int dept
 
 	if(!smb_io_enum_hnd("resume_hnd", &q_d->reshnd, ps, depth))
 		return False;
-	if(!prs_uint32("status", ps, depth, &q_d->status))
+	if(!prs_werror("status", ps, depth, &q_d->status))
 		return False;
 	return True;
 }

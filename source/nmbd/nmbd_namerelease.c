@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  Deal with a response packet when releasing one of our names.
 ****************************************************************************/

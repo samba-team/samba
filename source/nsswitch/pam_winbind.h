@@ -25,9 +25,9 @@
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
 
-#if defined(SUNOS5) || defined(SUNOS4)
+#if defined(SUNOS5) || defined(SUNOS4) || defined(HPUX)
 
-/* Solaris always uses dynamic pam modules */
+/* Solaris and HPUX always use dynamic pam modules */
 #define PAM_EXTERN extern
 #include <security/pam_appl.h> 
 
@@ -68,13 +68,7 @@ do {                             \
  * Don't just free it, forget it too.
  */
 
-#define _pam_drop(X) \
-do {                 \
-    if (X) {         \
-        free(X);     \
-        X=NULL;      \
-    }                \
-} while (0)  
+#define _pam_drop(X) SAFE_FREE(X)
 
 #define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
 #endif

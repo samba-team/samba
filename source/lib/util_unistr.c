@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
  smb_ucs2_t wchar_list_sep[] = { (smb_ucs2_t)' ', (smb_ucs2_t)'\t', (smb_ucs2_t)',',
 								(smb_ucs2_t)';', (smb_ucs2_t)':', (smb_ucs2_t)'\n',
 								(smb_ucs2_t)'\r', 0 };
@@ -40,6 +38,48 @@ static uint16 *ucs2_to_unixcp;
 #ifndef MAXUNI
 #define MAXUNI 1024
 #endif
+
+/*******************************************************************
+ Write a string in (little-endian) unicode format. src is in
+ the current UNIX character set. len is the length in bytes of the
+ string pointed to by dst.
+
+ if null_terminate is True then null terminate the packet (adds 2 bytes)
+
+ the return value is the length in bytes consumed by the string, including the
+ null termination if applied
+********************************************************************/
+
+size_t unix_PutUniCode(char *dst,const char *src, ssize_t len, BOOL null_terminate)
+{
+	size_t ret = 0;
+	while (*src && (len >= 2)) {
+		size_t skip = get_character_len(*src);
+		smb_ucs2_t val = (*src & 0xff);
+
+		/*
+		 * If this is a multibyte character (and all DOS/Windows
+		 * codepages have at maximum 2 byte multibyte characters)
+		 * then work out the index value for the unicode conversion.
+		 */
+
+		if (skip == 2)
+			val = ((val << 8) | (src[1] & 0xff));
+
+		SSVAL(dst,ret,unixcp_to_ucs2[val]);
+		ret += 2;
+		len -= 2;
+		if (skip)
+			src += skip;
+		else
+			src++;
+	}
+	if (null_terminate) {
+		SSVAL(dst,ret,0);
+		ret += 2;
+	}
+	return(ret);
+}
 
 /*******************************************************************
  Write a string in (little-endian) unicode format. src is in
@@ -286,21 +326,21 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	}
 
 	src = str->buffer;
-	len = MIN(str->uni_str_len, maxlen);
 
+	len = MIN(str->uni_str_len, maxlen);
 	if (len == 0) {
 		*dest='\0';
 		return;
 	}
 
-	for (p = dest; (p-dest < len) && *src; src++) {
+	for (p = dest; (p-dest < maxlen-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
 		uint16 cp_val = ucs2_to_doscp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
 		else {
-			*p   = (cp_val >> 8) & 0xff;
+			*p++ = (cp_val >> 8) & 0xff;
 			*p++ = (cp_val & 0xff);
 		}
 	}
@@ -481,15 +521,8 @@ static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 		*pp_ucs2_to_cp = NULL;
 	}
 
-	if (*pp_cp_to_ucs2) {
-		free(*pp_cp_to_ucs2);
-		*pp_cp_to_ucs2 = NULL;
-	}
-
-	if (*pp_ucs2_to_cp) {
-		free(*pp_ucs2_to_cp);
-		*pp_ucs2_to_cp = NULL;
-	}
+	SAFE_FREE(*pp_cp_to_ucs2);
+	SAFE_FREE(*pp_ucs2_to_cp);
 }
 
 /*******************************************************************
@@ -668,6 +701,7 @@ BOOL load_dos_unicode_map(int codepage)
   fstring codepage_str;
 
   slprintf(codepage_str, sizeof(fstring)-1, "%03d", codepage);
+  DEBUG(10,("load_dos_unicode_map: %s\n", codepage_str));
   return load_unicode_map(codepage_str, &doscp_to_ucs2, &ucs2_to_doscp);
 }
 
@@ -675,13 +709,23 @@ BOOL load_dos_unicode_map(int codepage)
  Load a UNIX codepage to unicode and vica-versa map.
 ********************************************************************/
 
-BOOL load_unix_unicode_map(const char *unix_char_set)
+BOOL load_unix_unicode_map(const char *unix_char_set, BOOL override)
 {
-  fstring upper_unix_char_set;
+	static BOOL init_done;
+	fstring upper_unix_char_set;
 
-  fstrcpy(upper_unix_char_set, unix_char_set);
-  strupper(upper_unix_char_set);
-  return load_unicode_map(upper_unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
+	fstrcpy(upper_unix_char_set, unix_char_set);
+	strupper(upper_unix_char_set);
+
+	DEBUG(10,("load_unix_unicode_map: %s (init_done=%d, override=%d)\n",
+		upper_unix_char_set, (int)init_done, (int)override ));
+
+	if (!init_done)
+		init_done = True;
+	else if (!override)
+		return True;
+
+	return load_unicode_map(upper_unix_char_set, &unixcp_to_ucs2, &ucs2_to_unixcp);
 }
 
 /*******************************************************************
@@ -737,7 +781,7 @@ smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
 
 	dst_len /= sizeof(smb_ucs2_t); /* Convert to smb_ucs2_t units. */
 
-	for(i = 0; (i < (dst_len  - 1)) && src[i];) {
+	for(i = 0; (i < (dst_len  - 1)) && *src;) {
 		size_t skip = skip_multibyte_char(*src);
 		smb_ucs2_t val = (*src & 0xff);
 
@@ -785,6 +829,28 @@ char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len)
 smb_ucs2_t *unix_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len)
 {
 	return multibyte_to_unicode(dst, src, dst_len, unixcp_to_ucs2);
+}
+
+/*******************************************************************
+ Convert a single UNICODE character to unix character. Returns the
+ number of bytes in the unix character.
+********************************************************************/ 
+
+size_t unicode_to_unix_char(char *dst, const smb_ucs2_t src)
+{
+	smb_ucs2_t val = ucs2_to_unixcp[src];
+	if(val < 256) {
+		*dst = (char)val;
+		return (size_t)1;
+	}
+	/*
+	 * A 2 byte value is always written as
+	 * high/low into the buffer stream.
+	 */
+
+	dst[0] = (char)((val >> 8) & 0xff);
+	dst[1] = (char)(val & 0xff);
+	return (size_t)2;
 }
 
 /*******************************************************************
@@ -1791,9 +1857,7 @@ void string_free_w(smb_ucs2_t **s)
 		return;
 	if (*s == null_string)
 		*s = NULL;
-	if (*s)
-		free((char *)*s);
-	*s = NULL;
+	SAFE_FREE(*s);
 }
 
 /****************************************************************************
@@ -1983,3 +2047,12 @@ int ucs2doscp(smb_ucs2_t w)
   return ((int)ucs2_to_doscp[w]);
 }
 
+/* Temporary fix until 3.0... JRA */
+
+int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
+{
+	if(dest_len==-1)
+		dest_len=MAXUNI-3;
+	unistr_to_ascii(dest, src, dest_len - 1);
+	return src_len;
+}

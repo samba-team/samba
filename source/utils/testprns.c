@@ -36,7 +36,6 @@
 
 /* these live in util.c */
 extern FILE *dbf;
-extern int DEBUGLEVEL;
 
 int main(int argc, char *argv[])
 {

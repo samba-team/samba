@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  This file wraps all differing system ACL interfaces into a consistent
  one based on the POSIX interface. It also returns the correct errors
@@ -700,7 +698,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			maxlen += nbytes + 20 * (acl_d->count - i);
 
 			if ((text = Realloc(oldtext, maxlen)) == NULL) {
-				free(oldtext);
+				SAFE_FREE(oldtext);
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -928,9 +926,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 	ret = acl(name, SETACL, acl_count, acl_p);
 
-	if (acl_buf) {
-		free(acl_buf);
-	}
+	SAFE_FREE(acl_buf);
 
 	return ret;
 }
@@ -966,13 +962,968 @@ int sys_acl_delete_def_file(const char *path)
 
 int sys_acl_free_text(char *text)
 {
-	free(text);
+	SAFE_FREE(text);
 	return 0;
 }
 
 int sys_acl_free_acl(SMB_ACL_T acl_d) 
 {
-	free(acl_d);
+	SAFE_FREE(acl_d);
+	return 0;
+}
+
+int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype)
+{
+	return 0;
+}
+
+#elif defined(HAVE_HPUX_ACLS)
+#include <dl.h>
+
+/*
+ * Based on the Solaris/SCO code - with modifications.
+ */
+
+/*
+ * Note that while this code implements sufficient functionality
+ * to support the sys_acl_* interfaces it does not provide all
+ * of the semantics of the POSIX ACL interfaces.
+ *
+ * In particular, an ACL entry descriptor (SMB_ACL_ENTRY_T) returned
+ * from a call to sys_acl_get_entry() should not be assumed to be
+ * valid after calling any of the following functions, which may
+ * reorder the entries in the ACL.
+ *
+ *	sys_acl_valid()
+ *	sys_acl_set_file()
+ *	sys_acl_set_fd()
+ */
+
+/* This checks if the POSIX ACL system call is defined */
+/* which basically corresponds to whether JFS 3.3 or   */
+/* higher is installed. If acl() was called when it    */
+/* isn't defined, it causes the process to core dump   */
+/* so it is important to check this and avoid acl()    */
+/* calls if it isn't there.                            */
+
+static BOOL hpux_acl_call_presence(void)
+{
+
+	shl_t handle = NULL;
+	void *value;
+	int ret_val=0;
+	static BOOL already_checked=0;
+
+	if(already_checked)
+		return True;
+
+
+	ret_val = shl_findsym(&handle, "acl", TYPE_PROCEDURE, &value);
+
+	if(ret_val != 0) {
+		DEBUG(5, ("hpux_acl_call_presence: shl_findsym() returned %d, errno = %d, error %s\n",
+			ret_val, errno, strerror(errno)));
+		DEBUG(5,("hpux_acl_call_presence: acl() system call is not present. Check if you have JFS 3.3 and above?\n"));
+		return False;
+	}
+
+	DEBUG(10,("hpux_acl_call_presence: acl() system call is present. We have JFS 3.3 or above \n"));
+
+	already_checked = True;
+	return True;
+}
+
+int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p)
+{
+	if (entry_id != SMB_ACL_FIRST_ENTRY && entry_id != SMB_ACL_NEXT_ENTRY) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_p == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (entry_id == SMB_ACL_FIRST_ENTRY) {
+		acl_d->next = 0;
+	}
+
+	if (acl_d->next < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->next >= acl_d->count) {
+		return 0;
+	}
+
+	*entry_p = &acl_d->acl[acl_d->next++];
+
+	return 1;
+}
+
+int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p)
+{
+	*type_p = entry_d->a_type;
+
+	return 0;
+}
+
+int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
+{
+	*permset_p = &entry_d->a_perm;
+
+	return 0;
+}
+
+void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
+{
+	if (entry_d->a_type != SMB_ACL_USER
+	    && entry_d->a_type != SMB_ACL_GROUP) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return &entry_d->a_id;
+}
+
+/*
+ * There is no way of knowing what size the ACL returned by
+ * ACL_GET will be unless you first call ACL_CNT which means
+ * making an additional system call.
+ *
+ * In the hope of avoiding the cost of the additional system
+ * call in most cases, we initially allocate enough space for
+ * an ACL with INITIAL_ACL_SIZE entries. If this turns out to
+ * be too small then we use ACL_CNT to find out the actual
+ * size, reallocate the ACL buffer, and then call ACL_GET again.
+ */
+
+#define	INITIAL_ACL_SIZE	16
+
+SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
+{
+	SMB_ACL_T	acl_d;
+	int		count;		/* # of ACL entries allocated	*/
+	int		naccess;	/* # of access ACL entries	*/
+	int		ndefault;	/* # of default ACL entries	*/
+
+	if(hpux_acl_call_presence() == False) {
+		/* Looks like we don't have the acl() system call on HPUX. 
+		 * May be the system doesn't have the latest version of JFS.
+		 */
+		return NULL; 
+	}
+
+	if (type != SMB_ACL_TYPE_ACCESS && type != SMB_ACL_TYPE_DEFAULT) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	count = INITIAL_ACL_SIZE;
+	if ((acl_d = sys_acl_init(count)) == NULL) {
+		return NULL;
+	}
+
+	/*
+	 * If there isn't enough space for the ACL entries we use
+	 * ACL_CNT to determine the actual number of ACL entries
+	 * reallocate and try again. This is in a loop because it
+	 * is possible that someone else could modify the ACL and
+	 * increase the number of entries between the call to
+	 * ACL_CNT and the call to ACL_GET.
+	 */
+	while ((count = acl(path_p, ACL_GET, count, &acl_d->acl[0])) < 0 && errno == ENOSPC) {
+
+		sys_acl_free_acl(acl_d);
+
+		if ((count = acl(path_p, ACL_CNT, 0, NULL)) < 0) {
+			return NULL;
+		}
+
+		if ((acl_d = sys_acl_init(count)) == NULL) {
+			return NULL;
+		}
+	}
+
+	if (count < 0) {
+		sys_acl_free_acl(acl_d);
+		return NULL;
+	}
+
+	/*
+	 * calculate the number of access and default ACL entries
+	 *
+	 * Note: we assume that the acl() system call returned a
+	 * well formed ACL which is sorted so that all of the
+	 * access ACL entries preceed any default ACL entries
+	 */
+	for (naccess = 0; naccess < count; naccess++) {
+		if (acl_d->acl[naccess].a_type & ACL_DEFAULT)
+			break;
+	}
+	ndefault = count - naccess;
+	
+	/*
+	 * if the caller wants the default ACL we have to copy
+	 * the entries down to the start of the acl[] buffer
+	 * and mask out the ACL_DEFAULT flag from the type field
+	 */
+	if (type == SMB_ACL_TYPE_DEFAULT) {
+		int	i, j;
+
+		for (i = 0, j = naccess; i < ndefault; i++, j++) {
+			acl_d->acl[i] = acl_d->acl[j];
+			acl_d->acl[i].a_type &= ~ACL_DEFAULT;
+		}
+
+		acl_d->count = ndefault;
+	} else {
+		acl_d->count = naccess;
+	}
+
+	return acl_d;
+}
+
+SMB_ACL_T sys_acl_get_fd(int fd)
+{
+	/*
+	 * HPUX doesn't have the facl call. Fake it using the path.... JRA.
+	 */
+
+	files_struct *fsp = file_find_fd(fd);
+
+	if (fsp == NULL) {
+		errno = EBADF;
+		return NULL;
+	}
+
+	/*
+	 * We know we're in the same conn context. So we
+	 * can use the relative path.
+	 */
+
+	return sys_acl_get_file(dos_to_unix(fsp->fsp_name,False), SMB_ACL_TYPE_ACCESS);
+}
+
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
+{
+	*permset_d = 0;
+
+	return 0;
+}
+
+int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	if (perm != SMB_ACL_READ && perm != SMB_ACL_WRITE
+	    && perm != SMB_ACL_EXECUTE) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (permset_d == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*permset_d |= perm;
+
+	return 0;
+}
+
+int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm)
+{
+	return *permset_d & perm;
+}
+
+char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
+{
+	int	i;
+	int	len, maxlen;
+	char	*text;
+
+	/*
+	 * use an initial estimate of 20 bytes per ACL entry
+	 * when allocating memory for the text representation
+	 * of the ACL
+	 */
+	len	= 0;
+	maxlen	= 20 * acl_d->count;
+	if ((text = malloc(maxlen)) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	for (i = 0; i < acl_d->count; i++) {
+		struct acl	*ap	= &acl_d->acl[i];
+		struct passwd	*pw;
+		struct group	*gr;
+		char		tagbuf[12];
+		char		idbuf[12];
+		char		*tag;
+		char		*id	= "";
+		char		perms[4];
+		int		nbytes;
+
+		switch (ap->a_type) {
+			/*
+			 * for debugging purposes it's probably more
+			 * useful to dump unknown tag types rather
+			 * than just returning an error
+			 */
+			default:
+				slprintf(tagbuf, sizeof(tagbuf)-1, "0x%x",
+					ap->a_type);
+				tag = tagbuf;
+				slprintf(idbuf, sizeof(idbuf)-1, "%ld",
+					(long)ap->a_id);
+				id = idbuf;
+				break;
+
+			case SMB_ACL_USER:
+				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = pw->pw_name;
+				}
+			case SMB_ACL_USER_OBJ:
+				tag = "user";
+				break;
+
+			case SMB_ACL_GROUP:
+				if ((gr = getgrgid(ap->a_id)) == NULL) {
+					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
+						(long)ap->a_id);
+					id = idbuf;
+				} else {
+					id = gr->gr_name;
+				}
+			case SMB_ACL_GROUP_OBJ:
+				tag = "group";
+				break;
+
+			case SMB_ACL_OTHER:
+				tag = "other";
+				break;
+
+			case SMB_ACL_MASK:
+				tag = "mask";
+				break;
+
+		}
+
+		perms[0] = (ap->a_perm & SMB_ACL_READ) ? 'r' : '-';
+		perms[1] = (ap->a_perm & SMB_ACL_WRITE) ? 'w' : '-';
+		perms[2] = (ap->a_perm & SMB_ACL_EXECUTE) ? 'x' : '-';
+		perms[3] = '\0';
+
+		/*          <tag>      :  <qualifier>   :  rwx \n  \0 */
+		nbytes = strlen(tag) + 1 + strlen(id) + 1 + 3 + 1 + 1;
+
+		/*
+		 * If this entry would overflow the buffer
+		 * allocate enough additional memory for this
+		 * entry and an estimate of another 20 bytes
+		 * for each entry still to be processed
+		 */
+		if ((len + nbytes) > maxlen) {
+			char *oldtext = text;
+
+			maxlen += nbytes + 20 * (acl_d->count - i);
+
+			if ((text = Realloc(oldtext, maxlen)) == NULL) {
+				SAFE_FREE(oldtext);
+				errno = ENOMEM;
+				return NULL;
+			}
+		}
+
+		slprintf(&text[len], nbytes-1, "%s:%s:%s\n", tag, id, perms);
+		len += nbytes - 1;
+	}
+
+	if (len_p)
+		*len_p = len;
+
+	return text;
+}
+
+SMB_ACL_T sys_acl_init(int count)
+{
+	SMB_ACL_T	a;
+
+	if (count < 0) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/*
+	 * note that since the definition of the structure pointed
+	 * to by the SMB_ACL_T includes the first element of the
+	 * acl[] array, this actually allocates an ACL with room
+	 * for (count+1) entries
+	 */
+	if ((a = malloc(sizeof(*a) + count * sizeof(struct acl))) == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	a->size = count + 1;
+	a->count = 0;
+	a->next = -1;
+
+	return a;
+}
+
+
+int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
+{
+	SMB_ACL_T	acl_d;
+	SMB_ACL_ENTRY_T	entry_d;
+
+	if (acl_p == NULL || entry_p == NULL || (acl_d = *acl_p) == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_d->count >= acl_d->size) {
+		errno = ENOSPC;
+		return -1;
+	}
+
+	entry_d		= &acl_d->acl[acl_d->count++];
+	entry_d->a_type	= 0;
+	entry_d->a_id	= -1;
+	entry_d->a_perm	= 0;
+	*entry_p	= entry_d;
+
+	return 0;
+}
+
+int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type)
+{
+	switch (tag_type) {
+		case SMB_ACL_USER:
+		case SMB_ACL_USER_OBJ:
+		case SMB_ACL_GROUP:
+		case SMB_ACL_GROUP_OBJ:
+		case SMB_ACL_OTHER:
+		case SMB_ACL_MASK:
+			entry_d->a_type = tag_type;
+			break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
+	return 0;
+}
+
+int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
+{
+	if (entry_d->a_type != SMB_ACL_GROUP
+	    && entry_d->a_type != SMB_ACL_USER) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	entry_d->a_id = *((id_t *)qual_p);
+
+	return 0;
+}
+
+int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d)
+{
+	if (*permset_d & ~(SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE)) {
+		return EINVAL;
+	}
+
+	entry_d->a_perm = *permset_d;
+
+	return 0;
+}
+
+/* Structure to capture the count for each type of ACE. */
+
+struct hpux_acl_types {
+	int n_user;
+	int n_def_user;
+	int n_user_obj;
+	int n_def_user_obj;
+
+	int n_group;
+	int n_def_group;
+	int n_group_obj;
+	int n_def_group_obj;
+
+	int n_other;
+	int n_other_obj;
+	int n_def_other_obj;
+
+	int n_class_obj;
+	int n_def_class_obj;
+
+	int n_illegal_obj;
+};
+
+/* count_obj:
+ * Counts the different number of objects in a given array of ACL
+ * structures.
+ * Inputs:
+ *
+ * acl_count      - Count of ACLs in the array of ACL strucutres.
+ * aclp           - Array of ACL structures.
+ * acl_type_count - Pointer to acl_types structure. Should already be
+ *                  allocated.
+ * Output: 
+ *
+ * acl_type_count - This structure is filled up with counts of various 
+ *                  acl types.
+ */
+
+static int hpux_count_obj(int acl_count, struct acl *aclp, struct hpux_acl_types *acl_type_count)
+{
+	int i;
+
+	memset(acl_type_count, 0, sizeof(struct hpux_acl_types));
+
+	for(i=0;i<acl_count;i++) {
+		switch(aclp[i].a_type) {
+		case USER: 
+			acl_type_count->n_user++;
+			break;
+		case USER_OBJ: 
+			acl_type_count->n_user_obj++;
+			break;
+		case DEF_USER_OBJ: 
+			acl_type_count->n_def_user_obj++;
+			break;
+		case GROUP: 
+			acl_type_count->n_group++;
+			break;
+		case GROUP_OBJ: 
+			acl_type_count->n_group_obj++;
+			break;
+		case DEF_GROUP_OBJ: 
+			acl_type_count->n_def_group_obj++;
+			break;
+		case OTHER_OBJ: 
+			acl_type_count->n_other_obj++;
+			break;
+		case DEF_OTHER_OBJ: 
+			acl_type_count->n_def_other_obj++;
+			break;
+		case CLASS_OBJ:
+			acl_type_count->n_class_obj++;
+			break;
+		case DEF_CLASS_OBJ:
+			acl_type_count->n_def_class_obj++;
+			break;
+		case DEF_USER:
+			acl_type_count->n_def_user++;
+			break;
+		case DEF_GROUP:
+			acl_type_count->n_def_group++;
+			break;
+		default: 
+			acl_type_count->n_illegal_obj++;
+			break;
+		}
+	}
+}
+
+/* swap_acl_entries:  Swaps two ACL entries. 
+ *
+ * Inputs: aclp0, aclp1 - ACL entries to be swapped.
+ */
+
+static void hpux_swap_acl_entries(struct acl *aclp0, struct acl *aclp1)
+{
+	struct acl temp_acl;
+
+	temp_acl.a_type = aclp0->a_type;
+	temp_acl.a_id = aclp0->a_id;
+	temp_acl.a_perm = aclp0->a_perm;
+
+	aclp0->a_type = aclp1->a_type;
+	aclp0->a_id = aclp1->a_id;
+	aclp0->a_perm = aclp1->a_perm;
+
+	aclp1->a_type = temp_acl.a_type;
+	aclp1->a_id = temp_acl.a_id;
+	aclp1->a_perm = temp_acl.a_perm;
+}
+
+/* prohibited_duplicate_type
+ * Identifies if given ACL type can have duplicate entries or 
+ * not.
+ *
+ * Inputs: acl_type - ACL Type.
+ *
+ * Outputs: 
+ *
+ * Return.. 
+ *
+ * True - If the ACL type matches any of the prohibited types.
+ * False - If the ACL type doesn't match any of the prohibited types.
+ */ 
+
+static BOOL hpux_prohibited_duplicate_type(int acl_type)
+{
+	switch(acl_type) {
+		case USER:
+		case GROUP:
+		case DEF_USER: 
+		case DEF_GROUP:
+			return True;
+		default:
+			return False;
+	}
+}
+
+/* get_needed_class_perm
+ * Returns the permissions of a ACL structure only if the ACL
+ * type matches one of the pre-determined types for computing 
+ * CLASS_OBJ permissions.
+ *
+ * Inputs: aclp - Pointer to ACL structure.
+ */
+
+static int hpux_get_needed_class_perm(struct acl *aclp)
+{
+	switch(aclp->a_type) {
+		case USER: 
+		case GROUP_OBJ: 
+		case GROUP: 
+		case DEF_USER_OBJ: 
+		case DEF_USER:
+		case DEF_GROUP_OBJ: 
+		case DEF_GROUP:
+		case DEF_CLASS_OBJ:
+		case DEF_OTHER_OBJ: 
+			return aclp->a_perm;
+		default: 
+			return 0;
+	}
+}
+
+/* acl_sort for HPUX.
+ * Sorts the array of ACL structures as per the description in
+ * aclsort man page. Refer to aclsort man page for more details
+ *
+ * Inputs:
+ *
+ * acl_count - Count of ACLs in the array of ACL structures.
+ * calclass  - If this is not zero, then we compute the CLASS_OBJ
+ *             permissions.
+ * aclp      - Array of ACL structures.
+ *
+ * Outputs:
+ *
+ * aclp     - Sorted array of ACL structures.
+ *
+ * Outputs:
+ *
+ * Returns 0 for success -1 for failure. Prints a message to the Samba
+ * debug log in case of failure.
+ */
+
+static int hpux_acl_sort(int acl_count, int calclass, struct acl *aclp)
+{
+#if !defined(HAVE_HPUX_ACLSORT)
+	/*
+	 * The aclsort() system call is availabe on the latest HPUX General
+	 * Patch Bundles. So for HPUX, we developed our version of acl_sort 
+	 * function. Because, we don't want to update to a new 
+	 * HPUX GR bundle just for aclsort() call.
+	 */
+
+	struct hpux_acl_types acl_obj_count;
+	int n_class_obj_perm = 0;
+	int i, j;
+ 
+	if(!acl_count) {
+		DEBUG(10,("Zero acl count passed. Returning Success\n"));
+		return 0;
+	}
+
+	if(aclp == NULL) {
+		DEBUG(0,("Null ACL pointer in hpux_acl_sort. Returning Failure. \n"));
+		return -1;
+	}
+
+	/* Count different types of ACLs in the ACLs array */
+
+	hpux_count_obj(acl_count, aclp, &acl_obj_count);
+
+	/* There should be only one entry each of type USER_OBJ, GROUP_OBJ, 
+	 * CLASS_OBJ and OTHER_OBJ 
+	 */
+
+	if( (acl_obj_count.n_user_obj  != 1) || 
+		(acl_obj_count.n_group_obj != 1) || 
+		(acl_obj_count.n_class_obj != 1) ||
+		(acl_obj_count.n_other_obj != 1) 
+	) {
+		DEBUG(0,("hpux_acl_sort: More than one entry or no entries for \
+USER OBJ or GROUP_OBJ or OTHER_OBJ or CLASS_OBJ\n"));
+		return -1;
+	}
+
+	/* If any of the default objects are present, there should be only
+	 * one of them each.
+	 */
+
+	if( (acl_obj_count.n_def_user_obj  > 1) || (acl_obj_count.n_def_group_obj > 1) || 
+			(acl_obj_count.n_def_other_obj > 1) || (acl_obj_count.n_def_class_obj > 1) ) {
+		DEBUG(0,("hpux_acl_sort: More than one entry for DEF_CLASS_OBJ \
+or DEF_USER_OBJ or DEF_GROUP_OBJ or DEF_OTHER_OBJ\n"));
+		return -1;
+	}
+
+	/* We now have proper number of OBJ and DEF_OBJ entries. Now sort the acl 
+	 * structures.  
+	 *
+	 * Sorting crieteria - First sort by ACL type. If there are multiple entries of
+	 * same ACL type, sort by ACL id.
+	 *
+	 * I am using the trival kind of sorting method here because, performance isn't 
+	 * really effected by the ACLs feature. More over there aren't going to be more
+	 * than 17 entries on HPUX. 
+	 */
+
+	for(i=0; i<acl_count;i++) {
+		for (j=i+1; j<acl_count; j++) {
+			if( aclp[i].a_type > aclp[j].a_type ) {
+				/* ACL entries out of order, swap them */
+
+				hpux_swap_acl_entries((aclp+i), (aclp+j));
+
+			} else if ( aclp[i].a_type == aclp[j].a_type ) {
+
+				/* ACL entries of same type, sort by id */
+
+				if(aclp[i].a_id > aclp[j].a_id) {
+					hpux_swap_acl_entries((aclp+i), (aclp+j));
+				} else if (aclp[i].a_id == aclp[j].a_id) {
+					/* We have a duplicate entry. */
+					if(hpux_prohibited_duplicate_type(aclp[i].a_type)) {
+						DEBUG(0, ("hpux_acl_sort: Duplicate entry: Type(hex): %x Id: %d\n",
+							aclp[i].a_type, aclp[i].a_id));
+						return -1;
+					}
+				}
+
+			}
+		}
+	}
+
+	/* set the class obj permissions to the computed one. */
+	if(calclass) {
+		int n_class_obj_index = -1;
+
+		for(i=0;i<acl_count;i++) {
+			n_class_obj_perm |= hpux_get_needed_class_perm((aclp+i));
+
+			if(aclp[i].a_type == CLASS_OBJ)
+				n_class_obj_index = i;
+		}
+		aclp[n_class_obj_index].a_perm = n_class_obj_perm;
+	}
+
+	return 0;
+#else
+	return aclsort(acl_count, calclass, aclp);
+#endif
+}
+
+/*
+ * sort the ACL and check it for validity
+ *
+ * if it's a minimal ACL with only 4 entries then we
+ * need to recalculate the mask permissions to make
+ * sure that they are the same as the GROUP_OBJ
+ * permissions as required by the UnixWare acl() system call.
+ *
+ * (note: since POSIX allows minimal ACLs which only contain
+ * 3 entries - ie there is no mask entry - we should, in theory,
+ * check for this and add a mask entry if necessary - however
+ * we "know" that the caller of this interface always specifies
+ * a mask so, in practice "this never happens" (tm) - if it *does*
+ * happen aclsort() will fail and return an error and someone will
+ * have to fix it ...)
+ */
+
+static int acl_sort(SMB_ACL_T acl_d)
+{
+	int fixmask = (acl_d->count <= 4);
+
+	if (hpux_acl_sort(acl_d->count, fixmask, acl_d->acl) != 0) {
+		errno = EINVAL;
+		return -1;
+	}
+	return 0;
+}
+ 
+int sys_acl_valid(SMB_ACL_T acl_d)
+{
+	return acl_sort(acl_d);
+}
+
+int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
+{
+	struct stat	s;
+	struct acl	*acl_p;
+	int		acl_count;
+	struct acl	*acl_buf	= NULL;
+	int		ret;
+
+	if(hpux_acl_call_presence() == False) {
+		/* Looks like we don't have the acl() system call on HPUX. 
+		 * May be the system doesn't have the latest version of JFS.
+		 */
+		errno=ENOSYS;
+		return -1; 
+	}
+
+	if (type != SMB_ACL_TYPE_ACCESS && type != SMB_ACL_TYPE_DEFAULT) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (acl_sort(acl_d) != 0) {
+		return -1;
+	}
+
+	acl_p		= &acl_d->acl[0];
+	acl_count	= acl_d->count;
+
+	/*
+	 * if it's a directory there is extra work to do
+	 * since the acl() system call will replace both
+	 * the access ACLs and the default ACLs (if any)
+	 */
+	if (stat(name, &s) != 0) {
+		return -1;
+	}
+	if (S_ISDIR(s.st_mode)) {
+		SMB_ACL_T	acc_acl;
+		SMB_ACL_T	def_acl;
+		SMB_ACL_T	tmp_acl;
+		int		i;
+
+		if (type == SMB_ACL_TYPE_ACCESS) {
+			acc_acl = acl_d;
+			def_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_DEFAULT);
+
+		} else {
+			def_acl = acl_d;
+			acc_acl = tmp_acl = sys_acl_get_file(name, SMB_ACL_TYPE_ACCESS);
+		}
+
+		if (tmp_acl == NULL) {
+			return -1;
+		}
+
+		/*
+		 * allocate a temporary buffer for the complete ACL
+		 */
+		acl_count = acc_acl->count + def_acl->count;
+		acl_p = acl_buf = malloc(acl_count * sizeof(acl_buf[0]));
+
+		if (acl_buf == NULL) {
+			sys_acl_free_acl(tmp_acl);
+			errno = ENOMEM;
+			return -1;
+		}
+
+		/*
+		 * copy the access control and default entries into the buffer
+		 */
+		memcpy(&acl_buf[0], &acc_acl->acl[0],
+			acc_acl->count * sizeof(acl_buf[0]));
+
+		memcpy(&acl_buf[acc_acl->count], &def_acl->acl[0],
+			def_acl->count * sizeof(acl_buf[0]));
+
+		/*
+		 * set the ACL_DEFAULT flag on the default entries
+		 */
+		for (i = acc_acl->count; i < acl_count; i++) {
+			acl_buf[i].a_type |= ACL_DEFAULT;
+		}
+
+		sys_acl_free_acl(tmp_acl);
+
+	} else if (type != SMB_ACL_TYPE_ACCESS) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ret = acl(name, ACL_SET, acl_count, acl_p);
+
+	SAFE_FREE(acl_buf);
+
+	return ret;
+}
+
+int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
+{
+	/*
+	 * HPUX doesn't have the facl call. Fake it using the path.... JRA.
+	 */
+
+	files_struct *fsp = file_find_fd(fd);
+
+	if (fsp == NULL) {
+		errno = EBADF;
+		return NULL;
+	}
+
+	if (acl_sort(acl_d) != 0) {
+		return -1;
+	}
+
+	/*
+	 * We know we're in the same conn context. So we
+	 * can use the relative path.
+	 */
+
+	return sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), SMB_ACL_TYPE_ACCESS, acl_d);
+}
+
+int sys_acl_delete_def_file(const char *path)
+{
+	SMB_ACL_T	acl_d;
+	int		ret;
+
+	/*
+	 * fetching the access ACL and rewriting it has
+	 * the effect of deleting the default ACL
+	 */
+	if ((acl_d = sys_acl_get_file(path, SMB_ACL_TYPE_ACCESS)) == NULL) {
+		return -1;
+	}
+
+	ret = acl(path, ACL_SET, acl_d->count, acl_d->acl);
+
+	sys_acl_free_acl(acl_d);
+	
+	return ret;
+}
+
+int sys_acl_free_text(char *text)
+{
+	SAFE_FREE(text);
+	return 0;
+}
+
+int sys_acl_free_acl(SMB_ACL_T acl_d) 
+{
+	SAFE_FREE(acl_d);
 	return 0;
 }
 
@@ -1047,7 +1998,7 @@ SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
 		return NULL;
 	}
 	if ((a->aclp = acl_get_file(path_p, type)) == NULL) {
-		free(a);
+		SAFE_FREE(a);
 		return NULL;
 	}
 	a->next = -1;
@@ -1064,7 +2015,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 		return NULL;
 	}
 	if ((a->aclp = acl_get_fd(fd)) == NULL) {
-		free(a);
+		SAFE_FREE(a);
 		return NULL;
 	}
 	a->next = -1;
@@ -1355,7 +2306,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 	rc = statacl((char *)path_p,0,file_acl,BUFSIZ);
 	if(rc == -1) {
 		DEBUG(0,("statacl returned %d with errno %d\n",rc,errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1375,7 +2326,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 
 	acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 	if(acl_entry_link->entryp == NULL) {
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		errno = ENOMEM;
 		DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 		return(NULL);
@@ -1412,7 +2363,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 											malloc(sizeof(struct acl_entry_link));
 
 				if(acl_entry_link->nextp == NULL) {
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					errno = ENOMEM;
 					DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 					return(NULL);
@@ -1422,7 +2373,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 				acl_entry_link = acl_entry_link->nextp;
 				acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 				if(acl_entry_link->entryp == NULL) {
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					errno = ENOMEM;
 					DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 					return(NULL);
@@ -1481,7 +2432,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 		if(acl_entry_link_head->count != 0) {
 			acl_entry_link->nextp = (struct acl_entry_link *)malloc(sizeof(struct acl_entry_link));
 			if(acl_entry_link->nextp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 				return(NULL);
@@ -1491,7 +2442,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 			acl_entry_link = acl_entry_link->nextp;
 			acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 			if(acl_entry_link->entryp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 				return(NULL);
@@ -1535,7 +2486,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 	}
 
 	acl_entry_link_head->count = 0;
-	free(file_acl);
+	SAFE_FREE(file_acl);
 
 	return(acl_entry_link_head);
 }
@@ -1569,7 +2520,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	rc = fstatacl(fd,0,file_acl,BUFSIZ);
 	if(rc == -1) {
 		DEBUG(0,("The fstatacl call returned %d with errno %d\n",rc,errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1585,7 +2536,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 
 	acl_entry_link_head = acl_entry_link = sys_acl_init(0);
 	if(acl_entry_link_head == NULL){
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1594,7 +2545,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	if(acl_entry_link->entryp == NULL) {
 		errno = ENOMEM;
 		DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1630,7 +2581,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 				if(acl_entry_link->nextp == NULL) {
 					errno = ENOMEM;
 					DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					return(NULL);
 				}
 				acl_entry_link->nextp->prevp = acl_entry_link;
@@ -1639,7 +2590,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 				if(acl_entry_link->entryp == NULL) {
 					errno = ENOMEM;
 					DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					return(NULL);
 				}
 
@@ -1698,7 +2649,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 			if(acl_entry_link->nextp == NULL) {
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				return(NULL);
 			}
 
@@ -1707,7 +2658,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 			acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 
 			if(acl_entry_link->entryp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
 				return(NULL);
@@ -1750,7 +2701,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	}
 
 	acl_entry_link_head->count = 0;
-	free(file_acl);
+	SAFE_FREE(file_acl);
  
 	return(acl_entry_link_head);
 }
@@ -1955,14 +2906,14 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 			acl_length += sizeof(struct acl_entry);
 			file_acl_temp = (struct acl *)malloc(acl_length);
 			if(file_acl_temp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_set_file is %d\n",errno));
 				return(-1);
 			}  
 
 			memcpy(file_acl_temp,file_acl,file_acl->acl_len);
-			free(file_acl);
+			SAFE_FREE(file_acl);
 			file_acl = file_acl_temp;
 		}
 
@@ -1989,7 +2940,7 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 	rc = chacl(name,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
-	free(file_acl);
+	SAFE_FREE(file_acl);
 	DEBUG(10,("Exiting the sys_acl_set_file\n"));
 	return(rc);
 }
@@ -2044,14 +2995,14 @@ int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 			acl_length += sizeof(struct acl_entry);
 			file_acl_temp = (struct acl *)malloc(acl_length);
 			if(file_acl_temp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_set_fd is %d\n",errno));
 				return(-1);
 			}
 
 			memcpy(file_acl_temp,file_acl,file_acl->acl_len);
-			free(file_acl);
+			SAFE_FREE(file_acl);
 			file_acl = file_acl_temp;
 		}
 
@@ -2078,7 +3029,7 @@ int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 	rc = fchacl(fd,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
-	free(file_acl);
+	SAFE_FREE(file_acl);
 	DEBUG(10,("Exiting sys_acl_set_fd\n"));
 	return(rc);
 }
@@ -2104,14 +3055,14 @@ int sys_acl_free_acl(SMB_ACL_T posix_acl)
 	struct acl_entry_link *acl_entry_link;
 
 	for(acl_entry_link = posix_acl->nextp; acl_entry_link->nextp != NULL; acl_entry_link = acl_entry_link->nextp) {
-		free(acl_entry_link->prevp->entryp);
-		free(acl_entry_link->prevp);
+		SAFE_FREE(acl_entry_link->prevp->entryp);
+		SAFE_FREE(acl_entry_link->prevp);
 	}
 
-	free(acl_entry_link->prevp->entryp);
-	free(acl_entry_link->prevp);
-	free(acl_entry_link->entryp);
-	free(acl_entry_link);
+	SAFE_FREE(acl_entry_link->prevp->entryp);
+	SAFE_FREE(acl_entry_link->prevp);
+	SAFE_FREE(acl_entry_link->entryp);
+	SAFE_FREE(acl_entry_link);
  
 	return(0);
 }

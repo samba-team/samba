@@ -21,10 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-extern int DEBUGLEVEL;
-
 #include "includes.h"
-
 
 /*******************************************************************
 dump a prs to a file
@@ -64,9 +61,14 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 }
 
 
-/*******************************************************************
- Initialise a parse structure - malloc the data if requested.
- ********************************************************************/
+/**
+ * Initialise an expandable parse structure.
+ *
+ * @param size Initial buffer size.  If >0, a new buffer will be
+ * created with malloc().
+ *
+ * @return False if allocation fails, otherwise True.
+ **/
 BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
@@ -85,6 +87,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 			DEBUG(0,("prs_init: malloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
 		}
+		memset(ps->data_p, '\0', (size_t)size);
 		ps->is_dynamic = True; /* We own this memory. */
 	}
 
@@ -116,12 +119,20 @@ BOOL prs_read(prs_struct *ps, int fd, size_t len, int timeout)
 
 void prs_mem_free(prs_struct *ps)
 {
-	if(ps->is_dynamic && (ps->data_p != NULL))
-		free(ps->data_p);
+	if(ps->is_dynamic)
+		SAFE_FREE(ps->data_p);
 	ps->is_dynamic = False;
-	ps->data_p = NULL;
 	ps->buffer_size = 0;
 	ps->data_offset = 0;
+}
+
+/*******************************************************************
+ Clear the memory in a parse structure.
+ ********************************************************************/
+
+void prs_mem_clear(prs_struct *ps)
+{
+	memset(ps->data_p, '\0', (size_t)ps->buffer_size);
 }
 
 /*******************************************************************
@@ -240,7 +251,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
 			return False;
 		}
-		memset(new_data, '\0', new_size );
+		memset(new_data, '\0', (size_t)new_size );
 	} else {
 		/*
 		 * If the current buffer size is bigger than the space needed, just 
@@ -254,7 +265,7 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 			return False;
 		}
 
-		memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
+		memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 	}
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
@@ -285,7 +296,7 @@ BOOL prs_force_grow(prs_struct *ps, uint32 extra_space)
 		return False;
 	}
 
-	memset(&new_data[ps->buffer_size], '\0', new_size - ps->buffer_size);
+	memset(&new_data[ps->buffer_size], '\0', (size_t)(new_size - ps->buffer_size));
 
 	ps->buffer_size = new_size;
 	ps->data_p = new_data;
@@ -551,6 +562,67 @@ BOOL prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 	return True;
 }
 
+/*******************************************************************
+ Stream a NTSTATUS
+ ********************************************************************/
+
+BOOL prs_ntstatus(char *name, prs_struct *ps, int depth, NTSTATUS *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = NT_STATUS(RIVAL(q,0));
+		else
+			*status = NT_STATUS(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,NT_STATUS_V(*status));
+		else
+			SIVAL(q,0,NT_STATUS_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 get_nt_error_msg(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+/*******************************************************************
+ Stream a WERROR
+ ********************************************************************/
+
+BOOL prs_werror(char *name, prs_struct *ps, int depth, WERROR *status)
+{
+	char *q = prs_mem_get(ps, sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	if (UNMARSHALLING(ps)) {
+		if (ps->bigendian_data)
+			*status = W_ERROR(RIVAL(q,0));
+		else
+			*status = W_ERROR(IVAL(q,0));
+	} else {
+		if (ps->bigendian_data)
+			RSIVAL(q,0,W_ERROR_V(*status));
+		else
+			SIVAL(q,0,W_ERROR_V(*status));
+	}
+
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+		 werror_str(*status)));
+
+	ps->data_offset += sizeof(uint32);
+
+	return True;
+}
+
+
 /******************************************************************
  Stream an array of uint8s. Length is number of uint8s.
  ********************************************************************/
@@ -789,12 +861,12 @@ BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *
 BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *str)
 {
 	int i;
-	char *q = prs_mem_get(ps, str->str_str_len);
+	char *q = prs_mem_get(ps, str->str_max_len);
 	if (q == NULL)
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_str_len);
+		str->buffer = (unsigned char *)prs_alloc_mem(ps,str->str_max_len);
 		if (str->buffer == NULL)
 			return False;
 	}
@@ -1149,3 +1221,27 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
 
     return 0;
 } 
+
+/*******************************************************************
+ hash a stream.
+ ********************************************************************/
+BOOL prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
+{
+	char *q;
+
+	q = prs_data_p(ps);
+        q = &q[offset];
+
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("prs_hash1\n"));
+	dump_data(100, sess_key, 16);
+	dump_data(100, q, 68);
+#endif
+	SamOEMhash((uchar *) q, sess_key, 68);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, q, 68);
+#endif
+
+	return True;
+}

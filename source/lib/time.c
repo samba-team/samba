@@ -27,10 +27,7 @@
   */
 
 
-int serverzone=0;
 int extra_time_offset = 0;
-
-extern int DEBUGLEVEL;
 
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
@@ -107,21 +104,61 @@ static int TimeZone(time_t t)
 
 }
 
+static BOOL done_serverzone_init;
 
-/*******************************************************************
-init the time differences
-********************************************************************/
-void TimeInit(void)
+/* Return the smb serverzone value */
+
+static int get_serverzone(void)
 {
-  serverzone = TimeZone(time(NULL));
+        static int serverzone;
 
-  if ((serverzone % 60) != 0) {
-	  DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
-  }
+        if (!done_serverzone_init) {
+                serverzone = TimeZone(time(NULL));
 
-  DEBUG(4,("Serverzone is %d\n",serverzone));
+                if ((serverzone % 60) != 0) {
+                        DEBUG(1,("WARNING: Your timezone is not a multiple of 1 minute.\n"));
+                }
+
+                DEBUG(4,("Serverzone is %d\n",serverzone));
+
+                done_serverzone_init = True;
+        }
+
+        return serverzone;
 }
 
+/* Re-read the smb serverzone value */
+
+static struct timeval start_time_hires; 
+
+void TimeInit(void)
+{
+	done_serverzone_init = False;
+	get_serverzone();
+	/* Save the start time of this process. */
+	if (start_time_hires.tv_sec == 0 && start_time_hires.tv_usec == 0)
+		GetTimeOfDay(&start_time_hires);
+}
+
+/**********************************************************************
+ Return a timeval struct of the uptime of this process. As TimeInit is
+ done before a daemon fork then this is the start time from the parent
+ daemon start. JRA.
+***********************************************************************/
+ 
+void get_process_uptime(struct timeval *ret_time)
+{
+	struct timeval time_now_hires;
+ 
+	GetTimeOfDay(&time_now_hires);
+	ret_time->tv_sec = time_now_hires.tv_sec - start_time_hires.tv_sec;
+	ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
+	if (time_now_hires.tv_usec < start_time_hires.tv_usec) {
+		ret_time->tv_sec -= 1;
+		ret_time->tv_usec = 1000000 + (time_now_hires.tv_usec - start_time_hires.tv_usec);
+	} else
+		ret_time->tv_usec = time_now_hires.tv_usec - start_time_hires.tv_usec;
+}
 
 /*******************************************************************
 return the same value as TimeZone, but it should be more efficient.
@@ -157,14 +194,12 @@ static int TimeZoneFaster(time_t t)
 					      sizeof(dst_table[0])*(i+1));
     if (!tdt) {
       DEBUG(0,("TimeZoneFaster: out of memory!\n"));
-      if (dst_table)
-        free(dst_table);
+      SAFE_FREE(dst_table);
       table_size = 0;
     } else {
-
       dst_table = tdt;
       table_size++;
-    
+
       dst_table[i].zone = zone; 
       dst_table[i].start = dst_table[i].end = t;
     
@@ -288,10 +323,54 @@ time_t nt_time_to_unix(NTTIME *nt)
   ret = (time_t)(d+0.5);
 
   /* this takes us from kludge-GMT to real GMT */
-  ret -= serverzone;
+  ret -= get_serverzone();
   ret += LocTimeDiff(ret);
 
   return(ret);
+}
+
+/****************************************************************************
+convert a NTTIME structure to a time_t
+It's originally in "100ns units"
+
+this is an absolute version of the one above.
+By absolute I mean, it doesn't adjust from 1/1/1601 to 1/1/1970
+if the NTTIME was 5 seconds, the time_t is 5 seconds. JFM
+****************************************************************************/
+time_t nt_time_to_unix_abs(NTTIME *nt)
+{
+	double d;
+	time_t ret;
+	/* The next two lines are a fix needed for the 
+	   broken SCO compiler. JRA. */
+	time_t l_time_min = TIME_T_MIN;
+	time_t l_time_max = TIME_T_MAX;
+
+	if (nt->high == 0)
+		return(0);
+
+	if (nt->high==0x80000000 && nt->low==0)
+		return -1;
+
+	/* reverse the time */
+	/* it's a negative value, turn it to positive */
+	nt->high=~nt->high;
+	nt->low=~nt->low;
+
+	d = ((double)nt->high)*4.0*(double)(1<<30);
+	d += (nt->low&0xFFF00000);
+	d *= 1.0e-7;
+  
+	if (!(l_time_min <= d && d <= l_time_max))
+		return(0);
+
+	ret = (time_t)(d+0.5);
+
+	/* this takes us from kludge-GMT to real GMT */
+	ret -= get_serverzone();
+	ret += LocTimeDiff(ret);
+
+	return(ret);
 }
 
 
@@ -335,7 +414,7 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	}		
 
 	/* this converts GMT to kludge-GMT */
-	t -= LocTimeDiff(t) - serverzone; 
+	t -= LocTimeDiff(t) - get_serverzone(); 
 
 	d = (double)(t);
 	d += TIME_FIXUP_CONSTANT;
@@ -343,6 +422,50 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 
 	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
 	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+}
+
+/****************************************************************************
+convert a time_t to a NTTIME structure
+
+this is an absolute version of the one above.
+By absolute I mean, it doesn't adjust from 1/1/1970 to 1/1/1601
+if the nttime_t was 5 seconds, the NTTIME is 5 seconds. JFM
+****************************************************************************/
+void unix_to_nt_time_abs(NTTIME *nt, time_t t)
+{
+	double d;
+
+	if (t==0) {
+		nt->low = 0;
+		nt->high = 0;
+		return;
+	}
+
+	if (t == TIME_T_MAX) {
+		nt->low = 0xffffffff;
+		nt->high = 0x7fffffff;
+		return;
+	}
+		
+	if (t == -1) {
+		/* that's what NT uses for infinite */
+		nt->low = 0x0;
+		nt->high = 0x80000000;
+		return;
+	}		
+
+	/* this converts GMT to kludge-GMT */
+	t -= LocTimeDiff(t) - get_serverzone(); 
+
+	d = (double)(t);
+	d *= 1.0e7;
+
+	nt->high = (uint32)(d * (1.0/(4.0*(double)(1<<30))));
+	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
+
+	/* convert to a negative value */
+	nt->high=~nt->high;
+	nt->low=~nt->low;
 }
 
 
@@ -616,3 +739,12 @@ time_t get_create_time(SMB_STRUCT_STAT *st,BOOL fake_dirs)
   return ret;
 }
 
+/****************************************************************************
+initialise an NTTIME to -1, which means "unknown" or "don't expire"
+****************************************************************************/
+
+void init_nt_time(NTTIME *nt)
+{
+	nt->high = 0x7FFFFFFF;
+	nt->low = 0xFFFFFFFF;
+}

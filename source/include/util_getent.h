@@ -19,9 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* element for a single linked list of group entries */
-/* replace the use of struct group in some cases */
-/* used by getgrent_list() */
+#ifndef _UTIL_GETENT_H
+#define _UTIL_GETENT_H
+
+/* Element for a single linked list of group entries */
+/* Replace the use of struct group in some cases */
+/* Used by getgrent_list() */
+
 struct sys_grent {
 	char *gr_name;
 	char *gr_passwd;
@@ -30,9 +34,10 @@ struct sys_grent {
 	struct sys_grent *next;
 };
 
-/* element for a single linked list of passwd entries */
-/* replace the use of struct passwd in some cases */
-/* used by getpwent_list() */
+/* Element for a single linked list of passwd entries */
+/* Replace the use of struct passwd in some cases */
+/* Used by getpwent_list() */
+
 struct sys_pwent {
 	char *pw_name;
 	char *pw_passwd;
@@ -43,3 +48,15 @@ struct sys_pwent {
 	char *pw_shell;
 	struct sys_pwent *next;
 };
+
+/* Element for a single linked list of user names in a group. */
+/* Used to return group lists that may span multiple lines in 
+   /etc/group file. */
+/* Used by get_users_in_group() */
+
+struct sys_userlist {
+	struct sys_userlist *next, *prev;
+	char *unix_name;
+};
+
+#endif /* _UTIL_GETENT_H */

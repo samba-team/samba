@@ -62,7 +62,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 
 	tc = malloc(sizeof(*tc));
 	if (!tc) {
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -79,6 +79,7 @@ void *talloc(TALLOC_CTX *t, size_t size)
 void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
 	struct talloc_chunk *tc;
+	void *new_ptr;
 
 	/* size zero is equivalent to free() */
 	if (size == 0)
@@ -90,13 +91,13 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 
 	for (tc=t->list; tc; tc=tc->next) {
 		if (tc->ptr == ptr) {
-			ptr = Realloc(ptr, size);
-			if (ptr) {
+			new_ptr = Realloc(ptr, size);
+			if (new_ptr) {
 				t->total_alloc_size += (size - tc->size);
 				tc->size = size;
-				tc->ptr = ptr;
+				tc->ptr = new_ptr;
 			}
-			return ptr;
+			return new_ptr;
 		}
 	}
 	return NULL;
@@ -112,8 +113,8 @@ void talloc_destroy_pool(TALLOC_CTX *t)
 
 	while (t->list) {
 		c = t->list->next;
-		if (t->list->ptr) free(t->list->ptr);
-		free(t->list);
+		SAFE_FREE(t->list->ptr);
+		SAFE_FREE(t->list);
 		t->list = c;
 	}
 
@@ -128,7 +129,7 @@ void talloc_destroy(TALLOC_CTX *t)
 		return;
 	talloc_destroy_pool(t);
 	memset(t, 0, sizeof(*t));
-	free(t);
+	SAFE_FREE(t);
 }
 
 /* return the current total size of the pool. */

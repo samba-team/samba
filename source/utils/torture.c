@@ -215,7 +215,8 @@ static BOOL check_error(struct cli_state *c,
 {
 	uint8 class;
 	uint32 num;
-	(void)cli_error(c, &class, &num, NULL);
+	
+	(void)cli_dos_error(c, &class, &num);
 	if ((eclass != class || ecode != num) &&
 	    num != (nterr&0xFFFFFF)) {
 		printf("unexpected error code class=%d code=%d\n", 
@@ -3645,8 +3646,8 @@ int cli_setfileinfo_test(struct cli_state *cli, int fnum, int level, char *data,
         return False;
     }
  
-    if (rdata) free(rdata);
-    if (rparam) free(rparam);
+    SAFE_FREE(rdata);
+    SAFE_FREE(rparam);
  
     return True;
 }
@@ -4305,7 +4306,7 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-	cli_error( &cli1, &eclass, &errnum, NULL);
+	cli_dos_error( &cli1, &eclass, &errnum);
 	
 	if (eclass != ERRDOS || errnum != ERRnoaccess) {
 		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,
@@ -4333,7 +4334,7 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-	cli_error( &cli1, &eclass, &errnum, NULL);
+	cli_dos_error( &cli1, &eclass, &errnum);
 
 	if (eclass != ERRDOS || errnum != ERRbadshare) {
 		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,

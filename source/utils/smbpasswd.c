@@ -22,7 +22,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern int DEBUGLEVEL;
+extern BOOL AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -35,16 +35,17 @@ extern int optind;
 static BOOL local_mode;
 
 /*********************************************************
-a strdup with exit
+ A strdup with exit
 **********************************************************/
-static char *xstrdup(char *s)
+
+static char *strdup_x(const char *s)
 {
-	s = strdup(s);
-	if (!s) {
+	char *new_s = strdup(s);
+	if (!new_s) {
 		fprintf(stderr,"out of memory\n");
 		exit(1);
 	}
-	return s;
+	return new_s;
 }
 
 
@@ -81,66 +82,6 @@ static void usage(void)
 	exit(1);
 }
 
-/*********************************************************
-Join a domain.
-**********************************************************/
-static int join_domain(char *domain, char *remote)
-{
-	pstring remote_machine;
-	fstring trust_passwd;
-	unsigned char orig_trust_passwd_hash[16];
-	BOOL ret;
-
-	pstrcpy(remote_machine, remote ? remote : "");
-	fstrcpy(trust_passwd, global_myname);
-	strlower(trust_passwd);
-	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
-
-	/* Ensure that we are not trying to join a
-	   domain if we are locally set up as a domain
-	   controller. */
-
-	if(strequal(remote, global_myname)) {
-		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
-		return 1;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
-		fprintf(stderr, "Unable to write the machine account password for \
-machine %s in domain %s.\n", global_myname, domain);
-		return 1;
-	}
-	
-	/*
-	 * If we are given a remote machine assume this is the PDC.
-	 */
-	
-	if(remote == NULL) {
-		pstrcpy(remote_machine, lp_passwordserver());
-	}
-
-	if(!*remote_machine) {
-		fprintf(stderr, "No password server list given in smb.conf - \
-unable to join domain.\n");
-		return 1;
-	}
-
-	ret = change_trust_account_password( domain, remote_machine);
-	
-	if(!ret) {
-		trust_password_delete(domain);
-		fprintf(stderr,"Unable to join domain %s.\n",domain);
-	} else {
-		printf("Joined domain %s.\n",domain);
-	}
-	
-	return (int)ret;
-}
-
 /* Initialise client credentials for authenticated pipe access */
 
 void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
@@ -165,13 +106,13 @@ Join a domain using the administrator username and password
 /* Macro for checking RPC error codes to make things more readable */
 
 #define CHECK_RPC_ERR(rpc, msg) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, (msg ": %s\n", get_nt_error_msg(result))); \
                 goto done; \
         }
 
 #define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
-        if ((result = rpc) != NT_STATUS_OK) { \
+        if (!NT_STATUS_IS_OK(result = rpc)) { \
                 DEBUG(0, debug_args); \
                 goto done; \
         }
@@ -205,7 +146,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 	/* Misc */
 
-	uint32 result;
+	NTSTATUS result;
 	int retval = 1;
 
 	/* Connect to remote machine */
@@ -293,14 +234,18 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 						  acct_name, ACB_WSTRUST,
 						  unknown, &user_pol, 
 						  &user_rid);
+	}
+
+
+	if (NT_STATUS_IS_OK(result)) {
 
 		/* We *must* do this.... don't ask... */
-
+	  
 		CHECK_RPC_ERR_DEBUG(cli_samr_close(&cli, mem_ctx, &user_pol), ("error closing user policy"));
 		result = NT_STATUS_USER_EXISTS;
-	}	
+	}
 
-	if (result == NT_STATUS_USER_EXISTS) {
+	if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_USER_EXISTS)) {
 		uint32 num_rids, *name_types, *user_rids;
 		uint32 flags = 0x3e8;
 		char *names;
@@ -333,7 +278,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 			("could not re-open existing user %s: %s\n",
 			 acct_name, get_nt_error_msg(result)));
 		
-	} else if (result != NT_STATUS_OK) {
+	} else if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error creating domain user: %s\n",
 			  get_nt_error_msg(result)));
 		goto done;
@@ -430,6 +375,75 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	return retval;
 }
 
+/*********************************************************
+Join a domain. Old server manager method.
+**********************************************************/
+
+static int join_domain(char *domain, char *remote)
+{
+	pstring remote_machine;
+	fstring trust_passwd;
+	unsigned char orig_trust_passwd_hash[16];
+	DOM_SID domain_sid;
+	BOOL ret;
+
+	pstrcpy(remote_machine, remote ? remote : "");
+	fstrcpy(trust_passwd, global_myname);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
+
+	/* Ensure that we are not trying to join a
+	   domain if we are locally set up as a domain
+	   controller. */
+
+	if(strequal(remote, global_myname)) {
+		fprintf(stderr, "Cannot join domain %s as the domain controller name is our own. We cannot be a domain controller for a domain and also be a domain member.\n", domain);
+		return 1;
+	}
+
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if(!secrets_store_trust_account_password(domain,  orig_trust_passwd_hash)) {              
+		fprintf(stderr, "Unable to write the machine account password for \
+machine %s in domain %s.\n", global_myname, domain);
+		return 1;
+	}
+	
+	/*
+	 * If we are given a remote machine assume this is the PDC.
+	 */
+	
+	if(remote == NULL) {
+		pstrcpy(remote_machine, lp_passwordserver());
+	}
+
+	if(!*remote_machine) {
+		fprintf(stderr, "No password server list given in smb.conf - \
+unable to join domain.\n");
+		return 1;
+	}
+
+	if (!fetch_domain_sid( domain, remote_machine, &domain_sid) ||
+		!secrets_store_domain_sid(domain, &domain_sid)) {
+		fprintf(stderr,"Failed to get domain SID. Unable to join domain %s.\n",domain);
+		return 1;
+	}
+		
+	ret = change_trust_account_password( domain, remote_machine);
+	
+	if(!ret) {
+		trust_password_delete(domain);
+		fprintf(stderr,"Unable to join domain %s.\n",domain);
+		return 1;
+	} else {
+		printf("Joined domain %s.\n",domain);
+	}
+	
+	return 0;
+}
+
 static void set_line_buffering(FILE *f)
 {
 	setvbuf(f, NULL, _IOLBF, 0);
@@ -474,7 +488,7 @@ static char *get_pass( char *prompt, BOOL stdin_get)
 	} else {
 		p = getpass(prompt);
 	}
-	return xstrdup(p);
+	return strdup_x(p);
 }
 
 /*************************************************************
@@ -546,11 +560,6 @@ static BOOL password_change(const char *remote_machine, char *user_name,
  ******************************************************************/
 static BOOL store_ldap_admin_pw (char* pw)
 {
-	TDB_DATA kbuf, dbuf;
-	pstring fname;
-	pstring key;
-	char *p;
-	
 	if (!pw) 
 		return False;
 
@@ -593,11 +602,11 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'x':
 			local_flags |= LOCAL_DELETE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'd':
 			local_flags |= LOCAL_DISABLE_USER;
-			new_passwd = xstrdup("XXXXXX");
+			new_passwd = strdup_x("XXXXXX");
 			break;
 		case 'e':
 			local_flags |= LOCAL_ENABLE_USER;
@@ -607,7 +616,7 @@ static int process_root(int argc, char *argv[])
 			break;
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
-			new_passwd = xstrdup("NO PASSWORD");
+			new_passwd = strdup_x("NO PASSWORD");
 			break;
 		case 'j':
 			new_domain = optarg;
@@ -740,7 +749,7 @@ static int process_root(int argc, char *argv[])
 		if (got_username || got_pass)
 			usage();
 		fstrcpy(user_name, argv[0]);
-		new_passwd = xstrdup(argv[1]);
+		new_passwd = strdup_x(argv[1]);
 		break;
 	default:
 		usage();
@@ -770,7 +779,7 @@ static int process_root(int argc, char *argv[])
 
 		if (local_flags & LOCAL_ADD_USER) {
 		        safe_free(new_passwd);
-			new_passwd = xstrdup(user_name);
+			new_passwd = strdup_x(user_name);
 			strlower(new_passwd);
 		}
 
@@ -810,7 +819,7 @@ static int process_root(int argc, char *argv[])
 				goto done;
 			}
 			if((sampass != NULL) && (pdb_get_lanman_passwd(sampass) != NULL)) {
-				new_passwd = xstrdup("XXXX"); /* Don't care. */
+				new_passwd = strdup_x("XXXX"); /* Don't care. */
 			}
 			
 			pdb_free_sam(sampass);
@@ -910,7 +919,7 @@ static int process_nonroot(int argc, char *argv[])
 	if (!user_name) {
 		pwd = sys_getpwuid(getuid());
 		if (pwd) {
-			user_name = xstrdup(pwd->pw_name);
+			user_name = strdup_x(pwd->pw_name);
 		} else {
 			fprintf(stderr,"you don't exist - go away\n");
 			exit(1);
@@ -965,6 +974,8 @@ static int process_nonroot(int argc, char *argv[])
 int main(int argc, char **argv)
 {	
 	static pstring servicesf = CONFIGFILE;
+
+	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);

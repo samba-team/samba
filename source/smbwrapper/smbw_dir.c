@@ -28,7 +28,6 @@ extern fstring smbw_prefix;
 static struct smbw_dir *smbw_dirs;
 
 extern struct bitmap *smbw_file_bmap;
-extern int DEBUGLEVEL;
 
 extern int smbw_busy;
 
@@ -64,12 +63,10 @@ free a smbw_dir structure and all entries
 *******************************************************/
 static void free_dir(struct smbw_dir *dir)
 {
-	if (dir->list) {
-		free(dir->list);
-	}
-	if (dir->path) free(dir->path);
+	SAFE_FREE(dir->list);
+	SAFE_FREE(dir->path);
 	ZERO_STRUCTP(dir);
-	free(dir);
+	SAFE_FREE(dir);
 }
 
 

@@ -1,16 +1,37 @@
+/* 
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
+ *  RPC Pipe client / server routines
+ *  Copyright (C) Luke Kenneth Casson Leighton 1997-2001.
+ *  
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
 
-typedef struct
+typedef const struct
 {
 	char *nt_errstr;
-	uint32 nt_errcode;
-
+	NTSTATUS nt_errcode;
 } nt_err_code_struct;
 
 nt_err_code_struct nt_errs[] =
 {
+	{ "NT_STATUS_OK", NT_STATUS_OK },
 	{ "NT_STATUS_UNSUCCESSFUL", NT_STATUS_UNSUCCESSFUL },
 	{ "NT_STATUS_NOT_IMPLEMENTED", NT_STATUS_NOT_IMPLEMENTED },
 	{ "NT_STATUS_INVALID_INFO_CLASS", NT_STATUS_INVALID_INFO_CLASS },
@@ -513,39 +534,48 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
-	{ NULL, 0 }
+        { "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
+	{ NULL, NT_STATUS(0) }
 };
 
 /*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
-BOOL get_safe_nt_error_msg(uint32 nt_code,char *msg, size_t len)
+char *get_nt_error_msg(NTSTATUS nt_code)
 {
-	int idx = 0;
+        static pstring msg;
+        int idx = 0;
 
-	slprintf(msg, len-1, "NT code %08x", nt_code);
+	slprintf(msg, sizeof(msg), "NT code 0x%08x", NT_STATUS_V(nt_code));
 
-	while (nt_errs[idx].nt_errstr != NULL)
-	{
-		if ((nt_errs[idx].nt_errcode & 0xFFFFFF) == (nt_code & 0xFFFFFF))
-		{
-			safe_strcpy(msg, nt_errs[idx].nt_errstr, len);
-			return True;
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+                    NT_STATUS_V(nt_code)) {
+                        return nt_errs[idx].nt_errstr;
 		}
 		idx++;
 	}
-	return False;
-}
 
-/*****************************************************************************
- returns an NT error message.  not amazingly helpful, but better than a number.
- *****************************************************************************/
-char *get_nt_error_msg(uint32 nt_code)
-{
-        static pstring msg;
-
-        get_safe_nt_error_msg(nt_code, msg, sizeof(msg));
         return msg;
 }
 
+/*****************************************************************************
+ returns an NT_STATUS constant as a string for inclusion in autogen C code
+ *****************************************************************************/
+char *get_nt_error_c_code(NTSTATUS nt_code)
+{
+        static pstring out;
+        int idx = 0;
 
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (NT_STATUS_V(nt_errs[idx].nt_errcode) == 
+                    NT_STATUS_V(nt_code)) {
+                        return nt_errs[idx].nt_errstr;
+		}
+		idx++;
+	}
+
+	slprintf(out, sizeof(out), "NT_STATUS(0x%08x)", NT_STATUS_V(nt_code));
+
+        return out;
+}

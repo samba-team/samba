@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 static unsigned char hash[258];
 static uint32 counter;
 unsigned char *reseed_data;
@@ -37,8 +34,7 @@ size_t reseed_data_size;
 
 void set_rand_reseed_data(unsigned char *data, size_t len)
 {
-	if (reseed_data)
-		free(reseed_data);
+	SAFE_FREE(reseed_data);
 	reseed_data_size = 0;
 
 	reseed_data = (unsigned char *)memdup(data, len);

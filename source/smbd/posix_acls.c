@@ -38,7 +38,7 @@ typedef struct canon_ace {
 	struct canon_ace *next, *prev;
 	SMB_ACL_TAG_T type;
 	mode_t perms; /* Only use S_I(R|W|X)USR mode bits here. */
-	DOM_SID sid;
+	DOM_SID trustee;
 	enum ace_owner owner_type;
 	enum ace_attribute attr;
 	posix_id unix_ug; 
@@ -74,7 +74,7 @@ static void free_canon_ace_list( canon_ace *list_head )
 	while (list_head) {
 		canon_ace *old_head = list_head;
 		DLIST_REMOVE(list_head, list_head);
-		free(old_head);
+		SAFE_FREE(old_head);
 	}
 }
 
@@ -103,13 +103,13 @@ static void print_canon_ace(canon_ace *pace, int num)
 	fstring str;
 
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
-    dbgtext( "SID = %s ", sid_to_string( str, &pace->sid));
+	dbgtext( "SID = %s ", sid_to_string( str, &pace->trustee));
 	if (pace->owner_type == UID_ACE) {
-		struct passwd *pass = sys_getpwuid(pace->unix_ug.uid);
-		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, pass ? pass->pw_name : "UNKNOWN");
+		char *u_name = uidtoname(pace->unix_ug.uid);
+		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name);
 	} else if (pace->owner_type == GID_ACE) {
-		struct group *grp = getgrgid(pace->unix_ug.gid);
-		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, grp ? grp->gr_name : "UNKNOWN");
+		char *g_name = gidtoname(pace->unix_ug.gid);
+		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name);
 	} else
 		dbgtext( "other ");
 	switch (pace->type) {
@@ -243,7 +243,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 			curr_ace_next = curr_ace->next; /* Save the link in case of delete. */
 
-			if (sid_equal(&curr_ace->sid, &curr_ace_outer->sid) &&
+			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 				(curr_ace->attr == curr_ace_outer->attr)) {
 
 				if( DEBUGLVL( 10 )) {
@@ -256,7 +256,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 				curr_ace_outer->perms |= curr_ace->perms;
 				DLIST_REMOVE(list_head, curr_ace);
-				free(curr_ace);
+				SAFE_FREE(curr_ace);
 				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 			}
 		}
@@ -283,7 +283,7 @@ static void merge_aces( canon_ace **pp_list_head )
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if (sid_equal(&curr_ace->sid, &curr_ace_outer->sid) &&
+			if (sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
 				(curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
 				if( DEBUGLVL( 10 )) {
@@ -301,7 +301,7 @@ static void merge_aces( canon_ace **pp_list_head )
 					 */
 
 					DLIST_REMOVE(list_head, curr_ace);
-					free(curr_ace);
+					SAFE_FREE(curr_ace);
 					curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 
 				} else {
@@ -317,7 +317,8 @@ static void merge_aces( canon_ace **pp_list_head )
 					 */
 
 					DLIST_REMOVE(list_head, curr_ace_outer);
-					free(curr_ace_outer);
+					SAFE_FREE(curr_ace_outer);
+					break;
 				}
 			}
 
@@ -572,7 +573,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->type = SMB_ACL_USER_OBJ;
 		pace->owner_type = UID_ACE;
 		pace->unix_ug.uid = pst->st_uid;
-		pace->sid = *pfile_owner_sid;
+		pace->trustee = *pfile_owner_sid;
 		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		pace->attr = ALLOW_ACE;
 
@@ -589,7 +590,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->type = SMB_ACL_GROUP_OBJ;
 		pace->owner_type = GID_ACE;
 		pace->unix_ug.uid = pst->st_gid;
-		pace->sid = *pfile_grp_sid;
+		pace->trustee = *pfile_grp_sid;
 		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
 		pace->attr = ALLOW_ACE;
 
@@ -606,7 +607,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->type = SMB_ACL_OTHER;
 		pace->owner_type = WORLD_ACE;
 		pace->unix_ug.world = -1;
-		pace->sid = global_sid_World;
+		pace->trustee = global_sid_World;
 		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 		pace->attr = ALLOW_ACE;
 
@@ -688,7 +689,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 			if (psa1->info.mask != psa2->info.mask)
 				continue;
 
-			if (!sid_equal(&psa1->sid, &psa2->sid))
+			if (!sid_equal(&psa1->trustee, &psa2->trustee))
 				continue;
 
 			/*
@@ -718,10 +719,10 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		 * Ignore non-mappable SIDs (NT Authority, BUILTIN etc).
 		 */
 
-		if (non_mappable_sid(&psa->sid)) {
+		if (non_mappable_sid(&psa->trustee)) {
 			fstring str;
 			DEBUG(10,("create_canon_ace_lists: ignoring non-mappable SID %s\n",
-				sid_to_string(str, &psa->sid) ));
+				sid_to_string(str, &psa->trustee) ));
 			continue;
 		}
 
@@ -738,28 +739,28 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 		ZERO_STRUCTP(current_ace);
 
-		sid_copy(&current_ace->sid, &psa->sid);
+		sid_copy(&current_ace->trustee, &psa->trustee);
 
 		/*
 		 * Try and work out if the SID is a user or group
 		 * as we need to flag these differently for POSIX.
 		 */
 
-		if( sid_equal(&current_ace->sid, &global_sid_World)) {
+		if( sid_equal(&current_ace->trustee, &global_sid_World)) {
 			current_ace->owner_type = WORLD_ACE;
 			current_ace->unix_ug.world = -1;
-		} else if (sid_to_uid( &current_ace->sid, &current_ace->unix_ug.uid, &sid_type)) {
+		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid, &sid_type)) {
 			current_ace->owner_type = UID_ACE;
-		} else if (sid_to_gid( &current_ace->sid, &current_ace->unix_ug.gid, &sid_type)) {
+		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid, &sid_type)) {
 			current_ace->owner_type = GID_ACE;
 		} else {
 			fstring str;
 
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
-			free(current_ace);
 			DEBUG(0,("create_canon_ace_lists: unable to map SID %s to uid or gid.\n",
-				sid_to_string(str, &current_ace->sid) ));
+				sid_to_string(str, &current_ace->trustee) ));
+			SAFE_FREE(current_ace);
 			return False;
 		}
 
@@ -775,15 +776,15 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 		 * Now note what kind of a POSIX ACL this should map to.
 		 */
 
-		if(sid_equal(&current_ace->sid, pfile_owner_sid)) {
+		if(sid_equal(&current_ace->trustee, pfile_owner_sid)) {
 
 			current_ace->type = SMB_ACL_USER_OBJ;
 
-		} else if( sid_equal(&current_ace->sid, pfile_grp_sid)) {
+		} else if( sid_equal(&current_ace->trustee, pfile_grp_sid)) {
 
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 
-		} else if( sid_equal(&current_ace->sid, &global_sid_World)) {
+		} else if( sid_equal(&current_ace->trustee, &global_sid_World)) {
 
 			current_ace->type = SMB_ACL_OTHER;
 
@@ -827,7 +828,7 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 					free_canon_ace_list(file_ace);
 					free_canon_ace_list(dir_ace);
-					free(current_ace);
+					SAFE_FREE(current_ace);
 					return False;
 				}	
 
@@ -878,7 +879,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 				free_canon_ace_list(file_ace);
 				free_canon_ace_list(dir_ace);
-				free(current_ace);
+				SAFE_FREE(current_ace);
 				return False;
 			}	
 
@@ -894,8 +895,7 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 		 * Free if ACE was not added.
 		 */
 
-		if (current_ace)
-			free(current_ace);
+		SAFE_FREE(current_ace);
 	}
 
 	if (fsp->is_directory && all_aces_are_inherit_only) {
@@ -926,26 +926,23 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 {
 	extern DOM_SID global_sid_World;
-	struct passwd *pass = NULL;
-	struct group *gptr = NULL;
+	fstring u_name;
+	fstring g_name;
 
 	/* "Everyone" always matches every uid. */
 
-	if (sid_equal(&group_ace->sid, &global_sid_World))
+	if (sid_equal(&group_ace->trustee, &global_sid_World))
 		return True;
 
-	if (!(pass = sys_getpwuid(uid_ace->unix_ug.uid)))
-		return False;
-
-	if (!(gptr = getgrgid(group_ace->unix_ug.gid)))
-		return False;
+	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
+	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
 
 	/*
 	 * Due to the winbind interfaces we need to do this via names,
 	 * not uids/gids.
 	 */
 
-	return user_in_group_list(pass->pw_name, gptr->gr_name );
+	return user_in_group_list(u_name, g_name );
 }
 
 /****************************************************************************
@@ -1068,7 +1065,7 @@ static void process_deny_list( canon_ace **pp_ace_list )
 			continue;
 		}
 
-		if (!sid_equal(&curr_ace->sid, &global_sid_World))
+		if (!sid_equal(&curr_ace->trustee, &global_sid_World))
 			continue;
 
 		/* JRATEST - assert. */
@@ -1519,7 +1516,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		ace->type = tagtype;
 		ace->perms = convert_permset_to_mode_t(permset);
 		ace->attr = ALLOW_ACE;
-		ace->sid = sid;
+		ace->trustee = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
 
@@ -1720,6 +1717,12 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
 		if (sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), the_acl_type, the_acl) == -1) {
+			/*
+			 * Some systems allow all the above calls and only fail with no ACL support
+			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
+			 */
+			if (errno == ENOSYS)
+				*pacl_set_support = False;
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file type %s failed for file %s (%s).\n",
 					the_acl_type == SMB_ACL_TYPE_DEFAULT ? "directory default" : "file",
 					fsp->fsp_name, strerror(errno) ));
@@ -1727,6 +1730,12 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 		}
 	} else {
 		if (sys_acl_set_fd(fsp->fd, the_acl) == -1) {
+			/*
+			 * Some systems allow all the above calls and only fail with no ACL support
+			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
+			 */
+			if (errno == ENOSYS)
+				*pacl_set_support = False;
 			DEBUG(2,("set_canon_ace_list: sys_acl_set_file failed for file %s (%s).\n",
 					fsp->fsp_name, strerror(errno) ));
 			goto done;
@@ -1938,14 +1947,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
 		for (i = 0; i < num_acls; i++, ace = ace->next) {
 			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-			init_sec_ace(&nt_ace_list[num_aces++], &ace->sid, nt_acl_type, acc, 0);
+			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 0);
 		}
 
 		ace = dir_ace;
 
 		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
 			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
-			init_sec_ace(&nt_ace_list[num_aces++], &ace->sid, nt_acl_type, acc, 
+			init_sec_ace(&nt_ace_list[num_aces++], &ace->trustee, nt_acl_type, acc, 
 					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
 		}
 
@@ -1979,8 +1988,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		sys_acl_free_acl(dir_acl);
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
-	if (nt_ace_list)
-		free(nt_ace_list);
+	SAFE_FREE(nt_ace_list);
 
 	return sd_size;
 }
@@ -2244,7 +2252,7 @@ static int chmod_acl_internals( SMB_ACL_T posix_acl, mode_t mode)
  Note that name is in UNIX character set.
 ****************************************************************************/
 
-int chmod_acl(char *name, mode_t mode)
+int chmod_acl(const char *name, mode_t mode)
 {
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;

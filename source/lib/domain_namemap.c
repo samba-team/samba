@@ -47,7 +47,6 @@
 
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 extern fstring global_myworkgroup;
 extern DOM_SID global_member_sid;
@@ -240,19 +239,10 @@ static ubi_slList ntusrname_map_list;
 
 static void delete_name_entry(name_map_entry *gmep)
 {
-	if (gmep->grp.nt_name)
-	{
-		free(gmep->grp.nt_name);
-	}
-	if (gmep->grp.nt_domain)
-	{
-		free(gmep->grp.nt_domain);
-	}
-	if (gmep->grp.unix_name)
-	{
-		free(gmep->grp.unix_name);
-	}
-	free((char*)gmep);
+	SAFE_FREE(gmep->grp.nt_name);
+	SAFE_FREE(gmep->grp.nt_domain);
+	SAFE_FREE(gmep->grp.unix_name);
+	SAFE_FREE(gmep);
 }
 
 /**************************************************************************
@@ -930,15 +920,8 @@ static BOOL lookup_remote_ntname(const char *ntname, DOM_SID *sid, uint8 *type)
 	{
 		res3 = False;
 	}
-	if (types != NULL)
-	{
-		free(types);
-	}
-	
-	if (sids != NULL)
-	{
-		free(sids);
-	}
+	SAFE_FREE(types);
+	SAFE_FREE(sids);
 	
 	return res3 && res4;
 }

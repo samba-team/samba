@@ -59,6 +59,56 @@ static BOOL wbinfo_get_usergroups(char *user)
 	return True;
 }
 
+/* Convert NetBIOS name to IP */
+
+static BOOL wbinfo_wins_byname(char *name)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.name, name);
+	if (winbindd_request(WINBINDD_WINS_BYNAME, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.name.name);
+
+	return True;
+}
+
+/* Convert IP to NetBIOS name */
+
+static BOOL wbinfo_wins_byip(char *ip)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	fstrcpy(request.data.name, ip);
+	if (winbindd_request(WINBINDD_WINS_BYIP, &request, &response) !=
+	    NSS_STATUS_SUCCESS) {
+		return False;
+	}
+
+	/* Display response */
+
+	printf("%s\n", response.data.name.name);
+
+	return True;
+}
+
 /* List trusted domains */
 
 static BOOL wbinfo_list_domains(void)
@@ -244,6 +294,13 @@ static BOOL wbinfo_lookupname(char *name)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(name, *lp_winbind_separator()))
+		return False;
+
 	/* Send off request */
 
 	ZERO_STRUCT(request);
@@ -270,6 +327,13 @@ static BOOL wbinfo_auth(char *username)
 	struct winbindd_response response;
         NSS_STATUS result;
         char *p;
+
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(username, *lp_winbind_separator()))
+		return False;
 
 	/* Send off request */
 
@@ -305,6 +369,13 @@ static BOOL wbinfo_auth_crap(char *username)
         NSS_STATUS result;
         fstring pass;
         char *p;
+
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(username, *lp_winbind_separator()))
+		return False;
 
 	/* Send off request */
 
@@ -399,14 +470,44 @@ static BOOL print_domain_groups(void)
 	return True;
 }
 
+/* Set the authorised user for winbindd access in secrets.tdb */
+
+static BOOL wbinfo_set_auth_user(char *username)
+{
+	char *password;
+
+	/* Separate into user and password */
+
+	password = strchr(username, '%');
+
+	if (password) {
+		*password = 0;
+		password++;
+	} else
+		password = "";
+
+	/* Store in secrets.tdb */
+
+	if (!secrets_init() ||
+	    !secrets_store(SECRETS_AUTH_USER, username, strlen(username) + 1) ||
+	    !secrets_store(SECRETS_AUTH_PASSWORD, password, strlen(password) + 1)) {
+		fprintf(stderr, "error storing authenticated user info\n");
+		return False;
+	}
+
+	return True;
+}
+
 /* Print program usage */
 
 static void usage(void)
 {
 	printf("Usage: wbinfo -ug | -n name | -sSY sid | -UG uid/gid | -tm "
-               "| -a user%%password\n");
+               "| -aA user%%password\n");
 	printf("\t-u\t\t\tlists all domain users\n");
 	printf("\t-g\t\t\tlists all domain groups\n");
+	printf("\t-h name\t\t\tconverts NetBIOS hostname to IP\n");
+	printf("\t-i ip\t\t\tconverts IP address to NetBIOS name\n");
 	printf("\t-n name\t\t\tconverts name to sid\n");
 	printf("\t-s sid\t\t\tconverts sid to name\n");
 	printf("\t-U uid\t\t\tconverts uid to sid\n");
@@ -417,6 +518,7 @@ static void usage(void)
 	printf("\t-m\t\t\tlist trusted domains\n");
 	printf("\t-r user\t\t\tget user groups\n");
 	printf("\t-a user%%password\tauthenticate user\n");
+	printf("\t-A user%%password\tstore session setup auth password\n");
 }
 
 /* Main program */
@@ -440,8 +542,12 @@ int main(int argc, char **argv)
 
 	TimeInit();
 
+	codepage_initialise(lp_client_code_page());
+	charset_initialise();
+
 	if (!lp_load(CONFIGFILE, True, False, False)) {
-		DEBUG(0, ("error opening config file\n"));
+		fprintf(stderr, "wbinfo: error opening config file %s. Error was %s\n",
+			CONFIGFILE, strerror(errno));
 		exit(1);
 	}
 	
@@ -454,7 +560,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:tmr:a:")) != EOF) {
+	while ((opt = getopt(argc, argv, "h:i:ugs:n:U:G:S:Y:tmr:a:A:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
@@ -465,6 +571,18 @@ int main(int argc, char **argv)
 		case 'g':
 			if (!print_domain_groups()) {
 				printf("Error looking up domain groups\n");
+				return 1;
+			}
+			break;
+		case 'h':
+			if (!wbinfo_wins_byname(optarg)) {
+				printf("Could not lookup WINS by hostname %s\n", optarg);
+				return 1;
+			}
+			break;
+		case 'i':
+			if (!wbinfo_wins_byip(optarg)) {
+				printf("Could not lookup WINS by IP %s\n", optarg);
 				return 1;
 			}
 			break;
@@ -547,6 +665,12 @@ int main(int argc, char **argv)
                         break;
 				
                 }
+		case 'A': {
+			if (!(wbinfo_set_auth_user(optarg))) {
+				return 1;
+			}
+			break;
+		}
                       /* Invalid option */
 
 		default:

@@ -26,9 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 /*******************************************************************
 interface/version dce/rpc pipe identification
 ********************************************************************/
@@ -520,7 +517,7 @@ BOOL smb_io_rpc_hdr_fault(char *desc, RPC_HDR_FAULT *rpc, prs_struct *ps, int de
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
 	depth++;
 
-	if(!prs_uint32("status  ", ps, depth, &rpc->status))
+	if(!prs_ntstatus("status  ", ps, depth, &rpc->status))
 		return False;
 	if(!prs_uint32("reserved", ps, depth, &rpc->reserved))
 		return False;
@@ -885,6 +882,7 @@ void init_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 		fstrcpy(rsp->user, user);
 		fstrcpy(rsp->wks, wks);
 	}
+	
 	rsp->sess_key[0] = 0;
 }
 

@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern fstring global_myworkgroup;
 
 /****************************************************************************
@@ -311,12 +309,12 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
       DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
 register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
 
-      free((char *)ip_list);
+      SAFE_FREE(ip_list);
       return True;
     }
   }
 
-  free((char *)ip_list);
+  SAFE_FREE(ip_list);
 
   return False;
 }

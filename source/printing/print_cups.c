@@ -1,7 +1,7 @@
 /*
  * Support code for the Common UNIX Printing System ("CUPS")
  *
- * Copyright 1999-2001 by Easy Software Products
+ * Copyright 1999-2001 by Michael R Sweet.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,9 +50,6 @@ struct printif	cups_printif =
 		  cups_job_resume,
 		  cups_job_submit,
 		};
-
-extern int DEBUGLEVEL;
-
 
 /*
  * 'cups_passwd_cb()' - The CUPS password callback...
@@ -826,7 +823,7 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 				ippDelete(response);
 				httpClose(http);
 
-				free (queue);
+				SAFE_FREE(queue);
 				return (0);
 			}
 

@@ -39,8 +39,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
@@ -197,7 +195,7 @@ void get_domain_user_groups(char *domain_groups, char *user)
 /*******************************************************************
  Look up a local (domain) rid and return a name and type.
  ********************************************************************/
-uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
+NTSTATUS local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_DOM_GRP;
@@ -213,7 +211,7 @@ uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 	{
 		fstrcpy(group_name, domain_group_rids[i].name);
 		DEBUG(5,(" = %s\n", group_name));
-		return 0x0;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,(" none mapped\n"));
@@ -223,7 +221,7 @@ uint32 local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 /*******************************************************************
  Look up a local alias rid and return a name and type.
  ********************************************************************/
-uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
+NTSTATUS local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 {
 	int i = 0; 
 	(*type) = SID_NAME_WKN_GRP;
@@ -239,7 +237,7 @@ uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 	{
 		fstrcpy(alias_name, builtin_alias_rids[i].name);
 		DEBUG(5,(" = %s\n", alias_name));
-		return 0x0;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,(" none mapped\n"));
@@ -249,7 +247,7 @@ uint32 local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 /*******************************************************************
  Look up a local user rid and return a name and type.
  ********************************************************************/
-uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
+NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
 	SAM_ACCOUNT *sampwd=NULL;
 	int i = 0;
@@ -268,7 +266,7 @@ uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	if (domain_user_rids[i].rid != 0) {
 		fstrcpy(user_name, domain_user_rids[i].name);
 		DEBUG(5,(" = %s\n", user_name));
-		return 0x0;
+		return NT_STATUS_OK;
 	}
 
 	pdb_init_sam(&sampwd);
@@ -282,7 +280,7 @@ uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 		fstrcpy(user_name, pdb_get_username(sampwd) );
 		DEBUG(5,(" = %s\n", user_name));
 		pdb_free_sam(sampwd);
-		return 0x0;
+		return NT_STATUS_OK;
 	}
 
 	DEBUG(5,(" none mapped\n"));
@@ -293,7 +291,7 @@ uint32 local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 /*******************************************************************
  Look up a local (domain) group name and return a rid
  ********************************************************************/
-uint32 local_lookup_group_rid(char *group_name, uint32 *rid)
+NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
 {
 	char *grp_name;
 	int i = -1; /* start do loop at -1 */
@@ -306,13 +304,13 @@ uint32 local_lookup_group_rid(char *group_name, uint32 *rid)
 
 	} while (grp_name != NULL && !strequal(grp_name, group_name));
 
-	return (grp_name != NULL) ? 0 : NT_STATUS_NONE_MAPPED;
+	return (grp_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
  Look up a local (BUILTIN) alias name and return a rid
  ********************************************************************/
-uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid)
+NTSTATUS local_lookup_alias_rid(char *alias_name, uint32 *rid)
 {
 	char *als_name;
 	int i = -1; /* start do loop at -1 */
@@ -325,13 +323,13 @@ uint32 local_lookup_alias_rid(char *alias_name, uint32 *rid)
 
 	} while (als_name != NULL && !strequal(als_name, alias_name));
 
-	return (als_name != NULL) ? 0 : NT_STATUS_NONE_MAPPED;
+	return (als_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
 }
 
 /*******************************************************************
  Look up a local user name and return a rid
  ********************************************************************/
-uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
+NTSTATUS local_lookup_user_rid(char *user_name, uint32 *rid)
 {
 	SAM_ACCOUNT *sampass=NULL;
 	BOOL ret;
@@ -348,7 +346,7 @@ uint32 local_lookup_user_rid(char *user_name, uint32 *rid)
 	if (ret == True) {
 		(*rid) = pdb_get_user_rid(sampass);
 		pdb_free_sam(sampass);
-		return 0x0;
+		return NT_STATUS_OK;
 	}
 
 	pdb_free_sam(sampass);

@@ -462,6 +462,13 @@
 #endif
 
 #ifdef HAVE_UTIMES
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
  int utimes(const char *name, const struct timeval *tvp)
 {
 	if (smbw_path(name)) {

@@ -24,7 +24,6 @@
 #include "includes.h"
 
 
-extern int DEBUGLEVEL;
 DOM_SID global_sam_sid;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
@@ -365,23 +364,30 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
  Convert a string to a SID. Returns True on success, False on fail.
 *****************************************************************/  
    
-BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
+BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p = sidstr;
+  char *p, *q;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
 
-  memset((char *)sidout, '\0', sizeof(DOM_SID));
 
   if (StrnCaseCmp( sidstr, "S-", 2)) {
     DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
     return False;
   }
 
-  p += 2;
+  memset((char *)sidout, '\0', sizeof(DOM_SID));
+  
+  q = p = strdup(sidstr + 2);
+  if (p == NULL) {
+    DEBUG(0, ("string_to_sid: out of memory!\n"));
+    return False;
+  }
+  
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    SAFE_FREE(q);
     return False;
   }
 
@@ -390,6 +396,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
 
   if (!next_token(&p, tok, "-", sizeof(tok))) {
     DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+    SAFE_FREE(q);
     return False;
   }
 
@@ -417,6 +424,7 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
 
   DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
 
+  SAFE_FREE(q);
   return True;
 }
 

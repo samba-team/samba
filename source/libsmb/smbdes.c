@@ -259,7 +259,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 	permute(out, rl, perm6, 64);
 }
 
-static void str_to_key(unsigned char *str,unsigned char *key)
+static void str_to_key(const unsigned char *str,unsigned char *key)
 {
 	int i;
 
@@ -277,7 +277,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
+static void smbhash(unsigned char *out, const unsigned char *in, const unsigned char *key, int forw)
 {
 	int i;
 	char outb[64];
@@ -305,33 +305,33 @@ static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, i
 	}
 }
 
-void E_P16(unsigned char *p14,unsigned char *p16)
+void E_P16(const unsigned char *p14,unsigned char *p16)
 {
 	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	smbhash(p16, sp8, p14, 1);
 	smbhash(p16+8, sp8, p14+7, 1);
 }
 
-void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
+void E_P24(const unsigned char *p21, const unsigned char *c8, unsigned char *p24)
 {
 	smbhash(p24, c8, p21, 1);
 	smbhash(p24+8, c8, p21+7, 1);
 	smbhash(p24+16, c8, p21+14, 1);
 }
 
-void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out)
+void D_P16(const unsigned char *p14, const unsigned char *in, unsigned char *out)
 {
 	smbhash(out, in, p14, 0);
         smbhash(out+8, in+8, p14+7, 0);
 }
 
-void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out)
+void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *out)
 {
         smbhash(out, in, p14, 1);
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash1(unsigned char *out, const unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 
@@ -339,7 +339,7 @@ void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash2(unsigned char *out, const unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 	static unsigned char key2[8];
@@ -358,7 +358,7 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
-void SamOEMhash( unsigned char *data, unsigned char *key, int val)
+void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
 {
   unsigned char s_box[256];
   unsigned char index_i = 0;
@@ -396,4 +396,21 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val)
     t = s_box[index_i] + s_box[index_j];
     data[ind] = data[ind] ^ s_box[t];
   }
+}
+
+/* Decode a sam password hash into a password.  The password hash is the
+   same method used to store passwords in the NT registry.  The DES key
+   used is based on the RID of the user. */
+
+void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw)
+{
+	uchar s[14];
+
+	s[0] = s[4] = s[8] = s[12] = (uchar)(rid & 0xFF);
+	s[1] = s[5] = s[9] = s[13] = (uchar)((rid >> 8) & 0xFF);
+	s[2] = s[6] = s[10]        = (uchar)((rid >> 16) & 0xFF);
+	s[3] = s[7] = s[11]        = (uchar)((rid >> 24) & 0xFF);
+
+	smbhash(out, in, s, forw);
+	smbhash(out+8, in+8, s+7, forw);
 }

@@ -23,8 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
  * This is set on startup - it defines the SID for this
  * machine, and therefore the SAM database for which it is
@@ -78,6 +76,9 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	}
 	
 	ZERO_STRUCTP(user);
+	
+	user->init_flag		        = FLAG_SAM_UNINIT;
+	user->uid = user->gid		= -1;
 	user->logon_time            = (time_t)0;
 	user->pass_last_set_time    = (time_t)0;
 	user->pass_can_change_time  = (time_t)0;
@@ -138,14 +139,15 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, struct passwd *pwd)
 		return False;
 	}
 
+
 	pdb_set_username(*new_sam_acct, pwd->pw_name);
 	pdb_set_fullname(*new_sam_acct, pwd->pw_gecos);
 	pdb_set_uid(*new_sam_acct, pwd->pw_uid);
 	pdb_set_gid(*new_sam_acct, pwd->pw_gid);
-	pdb_set_profile_path(*new_sam_acct, lp_logon_path());
-	pdb_set_homedir(*new_sam_acct, lp_logon_home());
-	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive());
-	pdb_set_logon_script(*new_sam_acct, lp_logon_script());
+	pdb_set_profile_path(*new_sam_acct, lp_logon_path(), False);
+	pdb_set_homedir(*new_sam_acct, lp_logon_home(), False);
+	pdb_set_dir_drive(*new_sam_acct, lp_logon_drive(), False);
+	pdb_set_logon_script(*new_sam_acct, lp_logon_script(), False);
 	return True;
 }
 
@@ -826,8 +828,11 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	to->unknown_6 = from->unknown_6;
 }
 
+#if 0	/* JERRY */
 /*************************************************************
  Copies a SAM_ACCOUNT.
+ FIXME!!!!  This is broken as SAM_ACCOUNT contains two 
+ pointers.   --jerry
  **************************************************************/
 
 void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
@@ -836,7 +841,10 @@ void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 		return;
 
 	memcpy(to, from, sizeof(SAM_ACCOUNT));
-}
+	
+	
+} 
+#endif 
 
 /*************************************************************
  Change a password entry in the local smbpasswd file.
@@ -875,6 +883,16 @@ account without a valid local system user.\n", user_name);
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
+	if(local_flags & LOCAL_DELETE_USER) {
+		if (!pdb_delete_sam_account(user_name)) {
+			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
+			pdb_free_sam(sam_pass);
+			return False;
+		}
+		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
+		pdb_free_sam(sam_pass);
+		return True;
+	}
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		pdb_free_sam(sam_pass);
 		
@@ -904,6 +922,9 @@ account without a valid local system user.\n", user_name);
 				return False;
 			}
 		}
+
+		/* Remember to set the "last changed time". */
+		pdb_set_pass_last_set_time(sam_pass, time(NULL));
 
 		if (pdb_add_sam_account(sam_pass)) {
 			slprintf(msg_str, msg_str_len-1, "Added user %s.\n", user_name);
@@ -936,7 +957,6 @@ account without a valid local system user.\n", user_name);
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
 	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
-		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
 		if (!pdb_set_lanman_passwd (sam_pass, NULL)) {
 			pdb_free_sam(sam_pass);
@@ -965,26 +985,17 @@ account without a valid local system user.\n", user_name);
 		}
 	}
 	
-	if(local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(user_name)) {
-			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_free_sam(sam_pass);
-			return False;
-		}
-		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
-	} else {
-		if(!pdb_update_sam_account(sam_pass, True)) {
-			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
-			pdb_free_sam(sam_pass);
-			return False;
-		}
-		if(local_flags & LOCAL_DISABLE_USER)
-			slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
-		else if (local_flags & LOCAL_ENABLE_USER)
-			slprintf(msg_str, msg_str_len-1, "Enabled user %s.\n", user_name);
-		else if (local_flags & LOCAL_SET_NO_PASSWORD)
-			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
+	if(!pdb_update_sam_account(sam_pass, True)) {
+		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
+		pdb_free_sam(sam_pass);
+		return False;
 	}
+	if(local_flags & LOCAL_DISABLE_USER)
+		slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
+	else if (local_flags & LOCAL_ENABLE_USER)
+		slprintf(msg_str, msg_str_len-1, "Enabled user %s.\n", user_name);
+	else if (local_flags & LOCAL_SET_NO_PASSWORD)
+		slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 
 	pdb_free_sam(sam_pass);
 	return True;
@@ -1314,12 +1325,22 @@ BOOL pdb_set_hours_len (SAM_ACCOUNT *sampass, uint32 len)
 	return True;
 }
 
-BOOL pdb_set_logons_divs (SAM_ACCOUNT *sampass, uint16 hours)
+BOOL pdb_set_logon_divs (SAM_ACCOUNT *sampass, uint16 hours)
 {
 	if (!sampass)
 		return False;
 
 	sampass->logon_divs = hours;
+	return True;
+}
+
+BOOL pdb_set_init_flag (SAM_ACCOUNT *sampass, uint32 flag)
+{
+	if (!sampass)
+		return False;
+	
+	sampass->init_flag |= flag;
+
 	return True;
 }
 
@@ -1329,6 +1350,8 @@ BOOL pdb_set_uid (SAM_ACCOUNT *sampass, uid_t uid)
 		return False;
 
 	sampass->uid = uid;
+	sampass->init_flag |= FLAG_SAM_UID; 
+
 	return True;
 }
 
@@ -1337,7 +1360,9 @@ BOOL pdb_set_gid (SAM_ACCOUNT *sampass, gid_t gid)
 	if (!sampass)
 		return False;
 
-	sampass->gid = gid;
+	sampass->gid = gid;	
+	sampass->init_flag |= FLAG_SAM_GID; 
+
 	return True;
 }
 
@@ -1371,7 +1396,7 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
 	if (!username)
 		return False;
 
-	StrnCpy (sampass->username, username, strlen(username));
+	StrnCpy (sampass->username, username, sizeof(sampass->username)-1);
 
 	return True;
 }
@@ -1388,7 +1413,7 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
 	if (!domain)
 		return False;
 
-	StrnCpy (sampass->domain, domain, strlen(domain));
+	StrnCpy (sampass->domain, domain, sizeof(sampass->domain)-1);
 
 	return True;
 }
@@ -1405,7 +1430,7 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
 	if (!nt_username)
 		return False;
 
-	StrnCpy (sampass->nt_username, nt_username, strlen(nt_username));
+	StrnCpy (sampass->nt_username, nt_username, sizeof(sampass->nt_username) -1);
 
 	return True;
 }
@@ -1422,7 +1447,7 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
 	if (!fullname)
 		return False;
 
-	StrnCpy (sampass->full_name, fullname, strlen(fullname));
+	StrnCpy (sampass->full_name, fullname, sizeof(sampass->full_name)-1);
 
 	return True;
 }
@@ -1431,7 +1456,7 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
  Set the user's logon script.
  ********************************************************************/
 
-BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
+BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1439,7 +1464,10 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 	if (!logon_script)
 		return False;
 
-	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
+	StrnCpy (sampass->logon_script, logon_script, sizeof(sampass->logon_script)-1);
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
 
 	return True;
 }
@@ -1448,7 +1476,7 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
  Set the user's profile path.
  ********************************************************************/
 
-BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
+BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1456,7 +1484,10 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 	if (!profile_path)
 		return False;
 	
-	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
+	StrnCpy (sampass->profile_path, profile_path, sizeof(sampass->profile_path)-1);
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
 	
 	return True;
 }
@@ -1465,7 +1496,7 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
  Set the user's directory drive.
  ********************************************************************/
 
-BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
+BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1473,7 +1504,10 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 	if (!dir_drive)
 		return False;
 
-	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
+	StrnCpy (sampass->dir_drive, dir_drive, sizeof(sampass->dir_drive)-1);
+	
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
 
 	return True;
 }
@@ -1482,7 +1516,7 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
  Set the user's home directory.
  ********************************************************************/
 
-BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
+BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir, BOOL store)
 {
 	if (!sampass)
 		return False;
@@ -1490,7 +1524,10 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 	if (!homedir)
 		return False;
 	
-	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
+	StrnCpy (sampass->home_dir, homedir, sizeof(sampass->home_dir)-1);
+
+	if (store)
+		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
 
 	return True;
 }
@@ -1507,7 +1544,7 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
 	if (!acct_desc)
 		return False;
 	
-	StrnCpy (sampass->acct_desc, acct_desc, strlen(acct_desc));
+	StrnCpy (sampass->acct_desc, acct_desc, sizeof(sampass->acct_desc)-1);
 
 	return True;
 }
@@ -1524,7 +1561,7 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
 	if (!workstations)
 		return False;
 
-	StrnCpy (sampass->workstations, workstations, strlen(workstations));
+	StrnCpy (sampass->workstations, workstations, sizeof(sampass->workstations)-1);
 
 	return True;
 }
@@ -1541,7 +1578,7 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 	if (!munged_dial)
 		return False;
 
-	StrnCpy (sampass->munged_dial, munged_dial, strlen(munged_dial));
+	StrnCpy (sampass->munged_dial, munged_dial, sizeof(sampass->munged_dial)-1);
 
 	return True;
 }
@@ -1555,6 +1592,9 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	if (!sampass)
 		return False;
 	
+	/* Remember to set the "last changed time". */
+	pdb_set_pass_last_set_time(sampass, time(NULL));
+
 	if (!pwd) {
 		/* Allow setting to NULL */
 		SAFE_FREE(sampass->nt_pw);
@@ -1582,6 +1622,9 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
 	if (!sampass)
 		return False;
+
+	/* Remember to set the "last changed time". */
+	pdb_set_pass_last_set_time(sampass, time(NULL));
 
 	if (!pwd) {
 		/* Allow setting to NULL */
@@ -1666,3 +1709,34 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
+
+/***************************************************************************
+ Search by uid.  Wrapper around pdb_getsampwnam()
+ **************************************************************************/
+
+BOOL pdb_getsampwuid (SAM_ACCOUNT* user, uid_t uid)
+{
+	struct passwd	*pw;
+	fstring		name;
+
+	if (user==NULL) {
+		DEBUG(0,("pdb_getsampwuid: SAM_ACCOUNT is NULL.\n"));
+		return False;
+	}
+
+	/*
+	 * Never trust the uid in the passdb.  Lookup the username first
+	 * and then lokup the user by name in the sam.
+	 */
+	 
+	if ((pw=sys_getpwuid(uid)) == NULL)  {
+		DEBUG(0,("pdb_getsampwuid: getpwuid(%d) return NULL. User does not exist in Unix accounts!\n", uid));
+		return False;
+	}
+	
+	fstrcpy (name, pw->pw_name);
+
+	return pdb_getsampwnam (user, name);
+
+}
+

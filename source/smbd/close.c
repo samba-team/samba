@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
 run a file if it is a magic script
 ****************************************************************************/
@@ -102,10 +100,7 @@ static int close_filestruct(files_struct *fsp)
 	fsp->stat_open = False; 
     
 	conn->num_files_open--;
-	if(fsp->wbmpx_ptr) {  
-		free((char *)fsp->wbmpx_ptr);
-		fsp->wbmpx_ptr = NULL; 
-	}  
+	SAFE_FREE(fsp->wbmpx_ptr);
 
 	return ret;
 }    
@@ -172,21 +167,21 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * reference to a file.
 	 */
 
-    if (normal_close && delete_on_close) {
-        DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
-	    fsp->fsp_name));
+	if (normal_close && delete_on_close) {
+		DEBUG(5,("close_file: file %s. Delete on close was set - deleting file.\n",
+			fsp->fsp_name));
 		if(fsp->conn->vfs_ops.unlink(conn,dos_to_unix(fsp->fsp_name, False)) != 0) {
-          /*
-           * This call can potentially fail as another smbd may have
-           * had the file open with delete on close set and deleted
-           * it when its last reference to this file went away. Hence
-           * we log this but not at debug level zero.
-           */
+			/*
+			 * This call can potentially fail as another smbd may have
+			 * had the file open with delete on close set and deleted
+			 * it when its last reference to this file went away. Hence
+			 * we log this but not at debug level zero.
+			 */
 
-          DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
+			DEBUG(5,("close_file: file %s. Delete on close was set and unlink failed \
 with error %s\n", fsp->fsp_name, strerror(errno) ));
-        }
-    }
+		}
+	}
 
 	unlock_share_entry_fsp(fsp);
 
@@ -202,14 +197,22 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 		check_magic(fsp,conn);
 	}
 
+	/*
+	 * Ensure pending modtime is set after close.
+	 */
+
+	if(fsp->pending_modtime) {
+		int saved_errno = errno;
+		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
+		errno = saved_errno;
+	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		 conn->user,fsp->fsp_name,
 		 conn->num_files_open, err ? strerror(err) : ""));
 
-	if (fsp->fsp_name) {
+	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
-	}
 
 	file_free(fsp);
 
@@ -244,7 +247,7 @@ static int close_directory(files_struct *fsp, BOOL normal_close)
 
 		if(ok)
 			remove_pending_change_notify_requests_by_filename(fsp);
-    }
+	}
 
 	/*
 	 * Do the code common to files and directories.

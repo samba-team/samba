@@ -24,7 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
@@ -36,9 +34,10 @@ extern fstring remote_machine;
 
 
 /****************************************************************************
-load parameters specific to a connection/service
+ Load parameters specific to a connection/service.
 ****************************************************************************/
-BOOL become_service(connection_struct *conn,BOOL do_chdir)
+
+BOOL set_current_service(connection_struct *conn,BOOL do_chdir)
 {
 	extern char magic_char;
 	static connection_struct *last_conn;
@@ -126,7 +125,7 @@ int find_service(char *service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_user_home_dir(service);
+      char *phome_dir = get_user_service_home_dir(service);
 
       if(!phome_dir)
       {
@@ -135,7 +134,7 @@ int find_service(char *service)
          * be a Windows to unix mapped user name.
          */
         if(map_username(service))
-          phome_dir = get_user_home_dir(service);
+          phome_dir = get_user_service_home_dir(service);
       }
 
       DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -214,8 +213,11 @@ int find_service(char *service)
 
 
 /****************************************************************************
-  make a connection to a service
+ Make a connection to a service. This function is designed to be called
+ AS ROOT and will return to being root on exit ! Modified current_user conn
+ and vuid elements.
 ****************************************************************************/
+
 connection_struct *make_connection(char *service,char *user,char *password, int pwlen, char *dev,uint16 vuid, int *ecode)
 {
 	int snum;
@@ -223,7 +225,15 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+	uid_t euid;
 	int ret;
+
+	/* This must ONLY BE CALLED AS ROOT. As it exits this function as root. */
+
+	if (!non_root_mode() && ((euid = geteuid()) != 0)) {
+		DEBUG(0,("make_connection: PANIC ERROR. Called as nonroot (%u)\n", (unsigned int)euid ));
+		smb_panic("make_connection: PANIC ERROR. Called as nonroot\n");
+	}
 
 	strlower(service);
 
@@ -320,6 +330,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
   
+	add_session_user(user);
+		
 	conn = conn_new();
 	if (!conn) {
 		DEBUG(0,("Couldn't find free connection.\n"));
@@ -338,7 +350,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	conn->read_only = lp_readonly(snum);
-
 
 	{
 		pstring list;
@@ -482,7 +493,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->groups = NULL;
 	
 	/* Find all the groups this uid is in and
-	   store them. Used by become_user() */
+	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
 		
@@ -499,7 +510,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		
 	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
 					      conn->ngroups, conn->groups,
-					      guest);
+					      guest, NULL);
 
 	/*
 	 * New code to check if there's a share security descripter
@@ -516,7 +527,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				*ecode = ERRaccess;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
-				yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+				yield_connection(conn, lp_servicename(SNUM(conn)));
 				conn_free(conn);
 				return NULL;
 			} else {
@@ -528,7 +539,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (!vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
-		yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
 	}
@@ -542,31 +553,42 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
 		}
 	}
 	
-	if (!become_user(conn, conn->vuid)) {
+	if (!change_to_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
 	}
 	
+	/* execute any "preexec = " line */
+	if (*lp_preexec(SNUM(conn))) {
+		pstring cmd;
+		pstrcpy(cmd,lp_preexec(SNUM(conn)));
+		standard_sub_conn(conn,cmd);
+		ret = smbrun(cmd,NULL);
+		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
+			DEBUG(1,("preexec gave %d - failing connection\n", ret));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
+			conn_free(conn);
+			*ecode = ERRsrverror;
+			return NULL;
+		}
+	}
+
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
-		unbecome_user();
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		change_to_root_user();
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -585,23 +607,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 #endif
 	
-	add_session_user(user);
-		
-	/* execute any "preexec = " line */
-	if (*lp_preexec(SNUM(conn))) {
-		pstring cmd;
-		pstrcpy(cmd,lp_preexec(SNUM(conn)));
-		standard_sub_conn(conn,cmd);
-		ret = smbrun(cmd,NULL);
-		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
-			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
-			conn_free(conn);
-			*ecode = ERRsrverror;
-			return NULL;
-		}
-	}
-
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using.
@@ -616,7 +621,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	
 	/* we've finished with the sensitive stuff */
-	unbecome_user();
+	change_to_root_user();
 	
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
@@ -635,15 +640,15 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	return(conn);
 }
 
-
 /****************************************************************************
-close a cnum
+ Close a cnum
 ****************************************************************************/
+
 void close_cnum(connection_struct *conn, uint16 vuid)
 {
 	DirCacheFlush(SNUM(conn));
 
-	unbecome_user();
+	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
 				 remote_machine,conn->client_address,
@@ -657,24 +662,21 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-	yield_connection(conn,
-			 lp_servicename(SNUM(conn)),
-			 lp_max_connections(SNUM(conn)));
+	yield_connection(conn, lp_servicename(SNUM(conn)));
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(SNUM(conn)) && 
-	    become_user(conn, vuid))  {
+	    change_to_user(conn, vuid))  {
 		pstring cmd;
 		pstrcpy(cmd,lp_postexec(SNUM(conn)));
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL);
-		unbecome_user();
 	}
 
-	unbecome_user();
+	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		pstring cmd;

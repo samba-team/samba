@@ -23,7 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 static fstring password;
 static fstring username;
 static int got_pass;

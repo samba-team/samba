@@ -23,7 +23,6 @@
 
 #if HAVE_KERNEL_CHANGE_NOTIFY
 
-extern int DEBUGLEVEL;
 static VOLATILE sig_atomic_t fd_pending;
 static VOLATILE sig_atomic_t signals_received;
 static VOLATILE sig_atomic_t signals_processed;
@@ -111,7 +110,7 @@ static void kernel_remove_notify(void *datap)
 		}
 		close(fd);
 	}
-	free(data);
+	SAFE_FREE(data);
 	DEBUG(3,("removed kernel change notify fd=%d\n", fd));
 }
 

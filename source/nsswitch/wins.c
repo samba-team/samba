@@ -23,13 +23,18 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include <nss.h>
+#ifdef HAVE_NS_API_H
+#undef VOLATILE
 
-extern int DEBUGLEVEL;
+#include <ns_daemon.h>
+#endif
 
 #ifndef INADDRSZ
 #define INADDRSZ 4
 #endif
+
+static int initialised;
+
 
 /* Use our own create socket code so we don't recurse.... */
 
@@ -58,31 +63,64 @@ static int wins_lookup_open_socket_in(void)
 
 	/* now we've got a socket - we need to bind it */
 
-	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0)
+	if (bind(res, (struct sockaddr * ) &sock,sizeof(sock)) < 0) {
+		close(res);
 		return(-1);
+	}
+
+	set_socket_options(res,"SO_BROADCAST");
 
 	return res;
 }
 
-struct in_addr *lookup_backend(const char *name, int *count)
+
+static void nss_wins_init(void)
+{
+	initialised = 1;
+	DEBUGLEVEL = 10;
+
+	/* needed for lp_xx() functions */
+	charset_initialise();
+
+	TimeInit();
+	setup_logging("nss_wins",False);
+	lp_load(CONFIGFILE,True,False,False);
+	load_interfaces();
+	codepage_initialise(lp_client_code_page());
+}
+
+static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 {
 	int fd;
-	static int initialised;
+	struct in_addr  ip;
+	struct nmb_name nname;
+	struct node_status *status;
+
+	if (!initialised) {
+		nss_wins_init();
+	}
+
+	fd = wins_lookup_open_socket_in();
+	if (fd == -1)
+		return NULL;
+
+	make_nmb_name(&nname, "*", 0);
+	ip = *interpret_addr2(addr);
+	status = node_status_query(fd,&nname,ip, count);
+
+	close(fd);
+	return status;
+}
+
+static struct in_addr *lookup_byname_backend(const char *name, int *count)
+{
+	int fd;
 	struct in_addr *ret = NULL;
 	struct in_addr  p;
 	int j;
 
 	if (!initialised) {
-		initialised = 1;
-		DEBUGLEVEL = 0;
-
-		/* needed for lp_xx() functions */
-		charset_initialise();
-
-		TimeInit();
-		setup_logging("nss_wins",True);
-		lp_load(CONFIGFILE,True,False,False);
-		load_interfaces();
+		nss_wins_init();
 	}
 
 	*count = 0;
@@ -91,15 +129,6 @@ struct in_addr *lookup_backend(const char *name, int *count)
 	if (fd == -1)
 		return NULL;
 
-	set_socket_options(fd,"SO_BROADCAST");
-
-/* The next four lines commented out by JHT
-   and replaced with the four lines following */
-/*	if( !zero_ip( wins_ip ) ) {
- *		ret = name_query( fd, name, 0x20, False, True, wins_src_ip(), count );
- *		goto out;
- *	}
- */
 	p = wins_srv_ip();
 	if( !zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
@@ -128,11 +157,121 @@ struct in_addr *lookup_backend(const char *name, int *count)
 }
 
 
+#ifdef HAVE_NS_API_H
+/* IRIX version */
+
+int init(void)
+{
+	nsd_logprintf(NSD_LOG_MIN, "entering init (wins)\n");
+	nss_wins_init();
+	return NSD_OK;
+}
+
+int lookup(nsd_file_t *rq)
+{
+	char *map;
+	char *key;
+	char *addr;
+	struct in_addr *ip_list;
+	struct node_status *status;
+	int i, count, len, size;
+	char response[1024];
+	BOOL found = False;
+
+	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
+	if (! rq) 
+		return NSD_ERROR;
+
+	map = nsd_attr_fetch_string(rq->f_attrs, "table", (char*)0);
+	if (! map) {
+		rq->f_status = NS_FATAL;
+		return NSD_ERROR;
+	}
+
+	key = nsd_attr_fetch_string(rq->f_attrs, "key", (char*)0);
+	if (! key || ! *key) {
+		rq->f_status = NS_FATAL;
+		return NSD_ERROR;
+	}
+
+	response[0] = '\0';
+	len = sizeof(response) - 2;
+
+	/* 
+	 * response needs to be a string of the following format
+	 * ip_address[ ip_address]*\tname[ alias]*
+	 */
+	if (strcasecmp(map,"hosts.byaddr") == 0) {
+		if ( status = lookup_byaddr_backend(key, &count)) {
+		    size = strlen(key) + 1;
+		    if (size > len) {
+			SAFE_FREE(status);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    strncat(response,key,size);
+		    strncat(response,"\t",1);
+		    for (i = 0; i < count; i++) {
+			/* ignore group names */
+			if (status[i].flags & 0x80) continue;
+			if (status[i].type == 0x20) {
+				size = sizeof(status[i].name) + 1;
+				if (size > len) {
+				    SAFE_FREE(status);
+				    return NSD_ERROR;
+				}
+				len -= size;
+				strncat(response, status[i].name, size);
+				strncat(response, " ", 1);
+				found = True;
+			}
+		    }
+		    response[strlen(response)-1] = '\n';
+		    SAFE_FREE(status);
+		}
+	} else if (strcasecmp(map,"hosts.byname") == 0) {
+	    if (ip_list = lookup_byname_backend(key, &count)) {
+		for (i = count; i ; i--) {
+		    addr = inet_ntoa(ip_list[i-1]);
+		    size = strlen(addr) + 1;
+		    if (size > len) {
+			SAFE_FREE(ip_list);
+			return NSD_ERROR;
+		    }
+		    len -= size;
+		    if (i != 0)
+			response[strlen(response)-1] = ' ';
+		    strncat(response,addr,size);
+		    strncat(response,"\t",1);
+		}
+		size = strlen(key) + 1;
+		if (size > len) {
+		    SAFE_FREE(ip_list);
+		    return NSD_ERROR;
+		}   
+		strncat(response,key,size);
+		strncat(response,"\n",1);
+		found = True;
+		SAFE_FREE(ip_list);
+	    }
+	}
+
+	if (found) {
+	    nsd_logprintf(NSD_LOG_LOW, "lookup (wins %s) %s\n",map,response);
+	    nsd_set_result(rq,NS_SUCCESS,response,strlen(response),VOLATILE);
+	    return NSD_OK;
+	}
+	nsd_logprintf(NSD_LOG_LOW, "lookup (wins) not found\n");
+	rq->f_status = NS_NOTFOUND;
+	return NSD_NEXT;
+}
+
+#else
 /****************************************************************************
 gethostbyname() - we ignore any domain portion of the name and only
 handle names that are at most 15 characters long
   **************************************************************************/
-enum nss_status 
+NSS_STATUS
 _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 			  char *buffer, size_t buflen, int *errnop,
 			  int *h_errnop)
@@ -144,7 +283,7 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		
 	memset(he, '\0', sizeof(*he));
 
-	ip_list = lookup_backend(name, &count);
+	ip_list = lookup_byname_backend(name, &count);
 	if (!ip_list) {
 		return NSS_STATUS_NOTFOUND;
 	}
@@ -171,11 +310,12 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		host_addresses++;
 	}
 
-	if (ip_list)
-		free(ip_list);
+	SAFE_FREE(ip_list);
 
 	memcpy(buffer, name, namelen);
 	he->h_name = buffer;
 
 	return NSS_STATUS_SUCCESS;
 }
+#endif
+

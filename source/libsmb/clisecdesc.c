@@ -19,16 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define NO_SYSLOG
-
 #include "includes.h"
-
-
 
 /****************************************************************************
   query the security descriptor for a open file
-  ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx)
+ ****************************************************************************/
+SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum, 
+			    TALLOC_CTX *mem_ctx)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
@@ -36,7 +33,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx)
 	prs_struct pd;
 	SEC_DESC *psd = NULL;
 
-	SIVAL(param, 0, fd);
+	SIVAL(param, 0, fnum);
 	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
@@ -68,8 +65,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx)
 
  cleanup:
 
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	prs_mem_free(&pd);
 	return psd;
@@ -77,8 +74,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli,int fd, TALLOC_CTX *mem_ctx)
 
 /****************************************************************************
   set the security descriptor for a open file
-  ****************************************************************************/
-BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
+ ****************************************************************************/
+BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 {
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
@@ -100,7 +97,7 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 		goto cleanup;
 	}
 
-	SIVAL(param, 0, fd);
+	SIVAL(param, 0, fnum);
 	SSVAL(param, 4, 0x7);
 
 	if (!cli_send_nt_trans(cli, 
@@ -125,8 +122,8 @@ BOOL cli_set_secdesc(struct cli_state *cli,int fd, SEC_DESC *sd)
 
   cleanup:
 
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	talloc_destroy(mem_ctx);
 

@@ -27,7 +27,6 @@
 
 /* Misc bit macros */
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
-#define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
 
 /* for readability... */
@@ -38,7 +37,9 @@
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
 /* free memory if the pointer is valid and zero the pointer */
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
 
 /* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
@@ -73,14 +74,17 @@
 #define FNUM_OK(fsp,c) (OPEN_FSP(fsp) && (c)==(fsp)->conn)
 
 #define CHECK_FSP(fsp,conn) if (!FNUM_OK(fsp,conn)) \
-                               return(ERROR(ERRDOS,ERRbadfid)); \
+                               return(ERROR_DOS(ERRDOS,ERRbadfid)); \
                             else if((fsp)->fd == -1) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
 #define CHECK_READ(fsp) if (!(fsp)->can_read) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
-                               return(ERROR(ERRDOS,ERRbadaccess))
+                               return(ERROR_DOS(ERRDOS,ERRbadaccess))
+
+#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
+								return(CACHED_ERROR(fsp))
 
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
@@ -132,22 +136,33 @@
 #define SMB_LPID_OFFSET(indx) (10 * (indx))
 #define SMB_LKOFF_OFFSET(indx) ( 2 + (10 * (indx)))
 #define SMB_LKLEN_OFFSET(indx) ( 6 + (10 * (indx)))
-#define SMB_LARGE__LPID_OFFSET(indx) (20 * (indx))
+#define SMB_LARGE_LPID_OFFSET(indx) (20 * (indx))
 #define SMB_LARGE_LKOFF_OFFSET_HIGH(indx) (4 + (20 * (indx)))
 #define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
+/* Macro to cache an error in a write_bmpx_struct */
+#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
+                w->wr_discard = True, -1)
+/* Macro to test if an error has been cached for this fnum */
+#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
+                (fsp)->wbmpx_ptr->wr_discard)
+/* Macro to turn the cached error into an error packet */
+#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
+
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
 
-#define ERROR(class,x) error_packet(outbuf,0,class,x,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,status,0,0,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,NT_STATUS_OK,class,code,__LINE__,__FILE__)
 #define ERROR_BOTH(nterr,class,x) error_packet(outbuf,nterr,class,x,__LINE__,__FILE__)
 
 /* this is how errors are generated */
 #define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,__LINE__,__FILE__)
 
 #define SMB_ROUNDUP(x,g) (((x)+((g)-1))&~((g)-1))
+#define SMB_ROUNDUP_ALLOCATION(s) (SMB_ROUNDUP((SMB_OFF_T)((s)+1), ((SMB_OFF_T)SMB_ROUNDUP_ALLOCATION_SIZE)))
 
 /* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
 #define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
@@ -200,6 +215,13 @@ copy an IP address from one buffer to another
 
 #define putip(dest,src) memcpy(dest,src,4)
 
+
+/*******************************************************************
+ Return True if a server has CIFS UNIX capabilities.
+********************************************************************/
+
+#define SERVER_HAS_UNIX_CIFS(c) ((c)->capabilities & CAP_UNIX)
+
 /****************************************************************************
  Make a filename into unix format.
 ****************************************************************************/
@@ -217,6 +239,12 @@ copy an IP address from one buffer to another
 ********************************************************************/
 
 #define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix((fname),False),(st)))
+
+/*******************************************************************
+ vfs lstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), dos_to_unix((fname),False),(st)))
 
 /*******************************************************************
  vfs fstat wrapper that calls dos_to_unix.

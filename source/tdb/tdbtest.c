@@ -23,12 +23,12 @@ static GDBM_FILE gdbm;
 
 struct timeval tp1,tp2;
 
-static void start_timer()
+static void start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer()
+static double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -48,6 +48,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	va_start(ap, format);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
+	fflush(stdout);
 }
 
 static void compare_db(void)
@@ -70,9 +71,9 @@ static void compare_db(void)
 		}
 
 		nextkey = tdb_nextkey(db, key);
-		free(key.dptr);
-		free(d.dptr);
-		free(gd.dptr);
+		SAFE_FREE(key.dptr);
+		SAFE_FREE(d.dptr);
+		SAFE_FREE(gd.dptr);
 		key = nextkey;
 	}
 
@@ -91,9 +92,9 @@ static void compare_db(void)
 		}
 
 		gnextkey = gdbm_nextkey(gdbm, gkey);
-		free(gkey.dptr);
-		free(gd.dptr);
-		free(d.dptr);
+		SAFE_FREE(gkey.dptr);
+		SAFE_FREE(gd.dptr);
+		SAFE_FREE(d.dptr);
 		gkey = gnextkey;
 	}
 }
@@ -137,11 +138,11 @@ static void addrec_db(void)
 		}
 	} else {
 		data = tdb_fetch(db, key);
-		if (data.dptr) free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
-	free(k);
-	free(d);
+	SAFE_FREE(k);
+	SAFE_FREE(d);
 }
 
 static void addrec_gdbm(void)
@@ -170,57 +171,51 @@ static void addrec_gdbm(void)
 		}
 	} else {
 		data = gdbm_fetch(gdbm, key);
-		if (data.dptr) free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
-	free(k);
-	free(d);
+	SAFE_FREE(k);
+	SAFE_FREE(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
 #endif
-	tdb_delete(db, key);
+	tdb_delete(tdb, key);
 	return 0;
 }
 
-static void merge_test()
+static void merge_test(void)
 {
-    int klen, dlen;
-    int i;
+	int i;
 	char keys[5][2];
-    TDB_DATA key, data;
-
+	TDB_DATA key, data;
+	
 	for (i = 0; i < 5; i++) {
 		sprintf(keys[i], "%d", i);
-	    key.dptr = keys[i];
-	    key.dsize = 2;
-
-        data.dptr = "test";
-        data.dsize = 4;
-
-        if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
-            fatal("tdb_store failed");
-        }
+		key.dptr = keys[i];
+		key.dsize = 2;
+		
+		data.dptr = "test";
+		data.dsize = 4;
+		
+		if (tdb_store(db, key, data, TDB_REPLACE) != 0) {
+			fatal("tdb_store failed");
+		}
 	}
 
 	key.dptr = keys[0];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[4];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[2];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[1];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 	key.dptr = keys[3];
 	tdb_delete(db, key);
-	tdb_printfreelist(db);
 }
 	
 int main(int argc, char *argv[])

@@ -18,11 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-#if STANDALONE
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#if STANDALONE
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -384,11 +384,11 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 
 	/* Write it out (appending to end) */
 	if (write(fd, rwlocks, size) != size) {
-		free(rwlocks);
+		SAFE_FREE(rwlocks);
 		return -1;
 	}
 	smp_machine = this_is_smp();
-	free(rwlocks);
+	SAFE_FREE(rwlocks);
 	return 0;
 }
 

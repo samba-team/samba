@@ -21,12 +21,10 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 /****************************************************************************
-initialises a password structure
+ Initialises a password structure.
 ****************************************************************************/
+
 void pwd_init(struct pwd_info *pwd)
 {
 	memset((char *)pwd->password  , '\0', sizeof(pwd->password  ));
@@ -41,59 +39,51 @@ void pwd_init(struct pwd_info *pwd)
 }
 
 /****************************************************************************
-returns NULL password flag
+ Returns NULL password flag.
 ****************************************************************************/
+
 BOOL pwd_is_nullpwd(const struct pwd_info *pwd)
 {
         return pwd->null_pwd;
 }
 
-
 /****************************************************************************
-compares two passwords.  hmm, not as trivial as expected.  hmm.
+ Compares two passwords.  hmm, not as trivial as expected.  hmm.
 ****************************************************************************/
+
 BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
 {
-	if (pwd1->cleartext && pwd2->cleartext)
-	{
+	if (pwd1->cleartext && pwd2->cleartext) {
 		if (strequal(pwd1->password, pwd2->password))
-		{
 			return True;
-		}
 	}
 	if (pwd1->null_pwd && pwd2->null_pwd)
-	{
 		return True;
-	}
 
 	if (!pwd1->null_pwd  && !pwd2->null_pwd &&
-	    !pwd1->cleartext && !pwd2->cleartext)
-	{
+	    !pwd1->cleartext && !pwd2->cleartext) {
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: nt#\n"));
 		dump_data(100, pwd1->smb_nt_pwd, 16);
 		dump_data(100, pwd2->smb_nt_pwd, 16);
 #endif
 		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
-		{
 			return True;
-		}
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: lm#\n"));
 		dump_data(100, pwd1->smb_lm_pwd, 16);
 		dump_data(100, pwd2->smb_lm_pwd, 16);
 #endif
 		if (memcmp(pwd1->smb_lm_pwd, pwd2->smb_lm_pwd, 16) == 0)
-		{
 			return True;
-		}
 	}
 	return False;
 }
 
 /****************************************************************************
-reads a password
+ Reads a password.
 ****************************************************************************/
+
 void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt)
 {
 	/* grab a password */
@@ -112,24 +102,19 @@ void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt)
 	 */
 #if 0
 	if (user_pass == NULL || user_pass[0] == 0)
-	{
 		pwd_set_nullpwd(pwd);
-	}
 	else if (do_encrypt)
 #endif
 	if (do_encrypt)
-	{
 		pwd_make_lm_nt_16(pwd, user_pass);
-	}
 	else
-	{
 		pwd_set_cleartext(pwd, user_pass);
-	}
 }
 
 /****************************************************************************
- stores a cleartext password
- ****************************************************************************/
+ Stores a cleartext password.
+****************************************************************************/
+
 void pwd_set_nullpwd(struct pwd_info *pwd)
 {
 	pwd_init(pwd);
@@ -140,8 +125,9 @@ void pwd_set_nullpwd(struct pwd_info *pwd)
 }
 
 /****************************************************************************
- stores a cleartext password
+ Stores a cleartext password.
  ****************************************************************************/
+
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 {
 	pwd_init(pwd);
@@ -153,45 +139,36 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 }
 
 /****************************************************************************
- gets a cleartext password
- ****************************************************************************/
+ Gets a cleartext password.
+****************************************************************************/
+
 void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 {
-	if (pwd->cleartext)
-	{
+	if (pwd->cleartext) {
 		fstrcpy(clr, pwd->password);
 		dos_to_unix(clr, True);
-	}
-	else
-	{
+	} else {
 		clr[0] = 0;
 	}
 }
 
 /****************************************************************************
- stores lm and nt hashed passwords
- ****************************************************************************/
+ Stores lm and nt hashed passwords.
+****************************************************************************/
+
 void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	pwd_init(pwd);
 
 	if (lm_pwd)
-	{
 		memcpy(pwd->smb_lm_pwd, lm_pwd, 16);
-	}
 	else
-	{
 		memset((char *)pwd->smb_lm_pwd, '\0', 16);
-	}
 
 	if (nt_pwd)
-	{
 		memcpy(pwd->smb_nt_pwd, nt_pwd, 16);
-	}
 	else
-	{
 		memset((char *)pwd->smb_nt_pwd, '\0', 16);
-	}
 
 	pwd->null_pwd  = False;
 	pwd->cleartext = False;
@@ -199,23 +176,21 @@ void pwd_set_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 }
 
 /****************************************************************************
- gets lm and nt hashed passwords
- ****************************************************************************/
+ Gets lm and nt hashed passwords.
+****************************************************************************/
+
 void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
 {
 	if (lm_pwd != NULL)
-	{
 		memcpy(lm_pwd, pwd->smb_lm_pwd, 16);
-	}
 	if (nt_pwd != NULL)
-	{
 		memcpy(nt_pwd, pwd->smb_nt_pwd, 16);
-	}
 }
 
 /****************************************************************************
- makes lm and nt hashed passwords
- ****************************************************************************/
+ Makes lm and nt hashed passwords.
+****************************************************************************/
+
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 {
 	pstring dos_passwd;
@@ -232,8 +207,9 @@ void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 }
 
 /****************************************************************************
- makes lm and nt OWF crypts
- ****************************************************************************/
+ Makes lm and nt OWF crypts.
+****************************************************************************/
+
 void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 {
 
@@ -264,16 +240,13 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8])
 }
 
 /****************************************************************************
- gets lm and nt crypts
- ****************************************************************************/
+ Gets lm and nt crypts.
+****************************************************************************/
+
 void pwd_get_lm_nt_owf(struct pwd_info *pwd, uchar lm_owf[24], uchar nt_owf[24])
 {
 	if (lm_owf != NULL)
-	{
 		memcpy(lm_owf, pwd->smb_lm_owf, 24);
-	}
 	if (nt_owf != NULL)
-	{
 		memcpy(nt_owf, pwd->smb_nt_owf, 24);
-	}
 }

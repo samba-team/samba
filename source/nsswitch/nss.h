@@ -1,3 +1,5 @@
+#ifndef _NSSWITCH_NSS_H
+#define _NSSWITCH_NSS_H
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
@@ -46,7 +48,49 @@ typedef nss_status_t NSS_STATUS;
 
 typedef enum nss_status NSS_STATUS;
 
-#else /* Nothing's defined. Neither gnu nor sun */
+#elif HAVE_NS_API_H
+
+/* SGI IRIX */
+
+/* following required to prevent warnings of double definition
+ * of datum from ns_api.h
+*/
+#ifdef DATUM
+#define _DATUM_DEFINED
+#endif
+
+#include <ns_api.h>
+
+typedef enum
+{
+  NSS_STATUS_SUCCESS=NS_SUCCESS,
+  NSS_STATUS_NOTFOUND=NS_NOTFOUND,
+  NSS_STATUS_UNAVAIL=NS_UNAVAIL,
+  NSS_STATUS_TRYAGAIN=NS_TRYAGAIN
+} NSS_STATUS;
+
+#define NSD_MEM_STATIC 0
+#define NSD_MEM_VOLATILE 1
+#define NSD_MEM_DYNAMIC 2
+
+#elif defined(HPUX)
+/* HP-UX 11 */
+
+#include "nsswitch/hp_nss_common.h"
+#include "nsswitch/hp_nss_dbdefs.h"
+#include <nsswitch.h>
+
+#ifndef _HAVE_TYPEDEF_NSS_STATUS
+#define _HAVE_TYPEDEF_NSS_STATUS
+typedef nss_status_t NSS_STATUS;
+
+#define NSS_STATUS_SUCCESS     NSS_SUCCESS
+#define NSS_STATUS_NOTFOUND    NSS_NOTFOUND
+#define NSS_STATUS_UNAVAIL     NSS_UNAVAIL
+#define NSS_STATUS_TRYAGAIN    NSS_TRYAGAIN
+#endif /* HPUX */
+
+#else /* Nothing's defined. Neither gnu nor sun nor hp */
 
 typedef enum
 {
@@ -58,3 +102,4 @@ typedef enum
 
 #endif
 
+#endif /* _NSSWITCH_NSS_H */

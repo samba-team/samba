@@ -31,8 +31,6 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
-
 extern struct pipe_id_info pipe_names[];
 
 /****************************************************************************
@@ -58,7 +56,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
 	if ( strncmp(fname,PIPE,PIPELEN) != 0 )
-		return(ERROR(ERRSRV,ERRaccess));
+		return(ERROR_DOS(ERRSRV,ERRaccess));
 
 	DEBUG(4,("Opening pipe %s.\n", fname));
 
@@ -68,7 +66,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 			break;
 
 	if (pipe_names[i].client_pipe == NULL)
-		return(ERROR(ERRSRV,ERRaccess));
+		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
 
 	/* Strip \PIPE\ off the name. */
 	pstrcpy(fname,smb_buf(inbuf) + PIPELEN);
@@ -78,7 +76,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	 * Hack for NT printers... JRA.
 	 */
     if(should_fail_next_srvsvc_open(fname))
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
 #endif
 
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
@@ -87,7 +85,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	smb_ofun |= FILE_CREATE_IF_NOT_EXIST;
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
-	if (!p) return(ERROR(ERRSRV,ERRnofids));
+	if (!p) return(ERROR_DOS(ERRSRV,ERRnofids));
 
 	/* Prepare the reply */
 	set_message(outbuf,15,0,True);
@@ -123,7 +121,7 @@ int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize)
 	char *data;
 
 	if (!p)
-		return(ERROR(ERRDOS,ERRbadfid));
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	data = smb_buf(inbuf) + 3;
 
@@ -163,7 +161,7 @@ int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	char *data;
 
 	if (!p)
-		return(ERROR(ERRDOS,ERRbadfid));
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	data = smb_base(inbuf) + smb_doff;
 
@@ -223,7 +221,7 @@ int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 #endif
 
 	if (!p)
-		return(ERROR(ERRDOS,ERRbadfid));
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	set_message(outbuf,12,0,True);
 	data = smb_buf(outbuf);
@@ -252,12 +250,12 @@ int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf)
 	int outsize = set_message(outbuf,0,0,True);
 
 	if (!p)
-		return(ERROR(ERRDOS,ERRbadfid));
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	DEBUG(5,("reply_pipe_close: pnum:%x\n", p->pnum));
 
 	if (!close_rpc_pipe_hnd(p, conn))
-		return(ERROR(ERRDOS,ERRbadfid));
+		return(ERROR_DOS(ERRDOS,ERRbadfid));
 
 	return(outsize);
 }

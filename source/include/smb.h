@@ -108,7 +108,7 @@ implemented */
 #define GET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define SET_OPEN_MODE(x) ((x) & OPEN_MODE_MASK)
 #define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
-#define SET_DENY_MODE(x) ((x)<<SHARE_MODE_SHIFT)
+#define SET_DENY_MODE(x) (((x) & SHARE_MODE_MASK) <<SHARE_MODE_SHIFT)
 
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)
@@ -199,6 +199,36 @@ typedef struct nttime_info
 
 } NTTIME;
 
+/* the following rather strange looking definitions of NTSTATUS and WERROR
+   and there in order to catch common coding errors where different error types
+   are mixed up. This is especially important as we slowly convert Samba
+   from using BOOL for internal functions
+*/
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} NTSTATUS;
+#define NT_STATUS(x) ((NTSTATUS) { x })
+#define NT_STATUS_V(x) ((x).v)
+#else
+typedef uint32 NTSTATUS;
+#define NT_STATUS(x) (x)
+#define NT_STATUS_V(x) (x)
+#endif
+ 
+#if defined(HAVE_IMMEDIATE_STRUCTURES)
+typedef struct {uint32 v;} WERROR;
+#define W_ERROR(x) ((WERROR) { x })
+#define W_ERROR_V(x) ((x).v)
+#else
+typedef uint32 WERROR;
+#define W_ERROR(x) (x)
+#define W_ERROR_V(x) (x)
+#endif
+ 
+#define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
+#define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
+#define NT_STATUS_EQUAL(x,y) (NT_STATUS_V(x) == NT_STATUS_V(y))
+#define W_ERROR_IS_OK(x) (W_ERROR_V(x) == 0)
+
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
 #define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
@@ -270,6 +300,9 @@ typedef struct sid_info
  * token->user_sids[1] = primary group SID.
  * token->user_sids[2-num_sids] = supplementary group SIDS.
  */
+
+#define PRIMARY_USER_SID_INDEX 0
+#define PRIMARY_GROUP_SID_INDEX 1
 
 #ifndef _NT_USER_TOKEN
 typedef struct _nt_user_token {
@@ -369,6 +402,7 @@ typedef struct files_struct
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
+	unsigned long file_id;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
@@ -518,13 +552,15 @@ struct interface
 };
 
 /* struct returned by get_share_modes */
-typedef struct
-{
-  pid_t pid;
-  uint16 op_port;
-  uint16 op_type;
-  int share_mode;
-  struct timeval time;
+typedef struct {
+	pid_t pid;
+	uint16 op_port;
+	uint16 op_type;
+	int share_mode;
+	struct timeval time;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
+	unsigned long share_file_id;
 } share_mode_entry;
 
 
@@ -534,8 +570,29 @@ typedef struct
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
+/*
+ * bit flags representing initialized fields in SAM_ACCOUNT
+ */
+#define FLAG_SAM_UNINIT		0x00000000
+#define FLAG_SAM_UID		0x00000001
+#define FLAG_SAM_GID		0x00000002
+#define FLAG_SAM_SMBHOME	0x00000004
+#define FLAG_SAM_PROFILE	0x00000008
+#define FLAG_SAM_LOGONSCRIPT	0x00000010
+#define FLAG_SAM_DRIVE		0x00000020
+
+#define IS_SAM_UNIX_USER(x) \
+	(((x)->init_flag & SAM_ACCT_UNIX_UID) \
+	 && ((x)->init_flag & SAM_ACCT_UNIX_GID))
+
+#define IS_SAM_SET(x, flag) 	((x)->init_flag & (flag))
+
+		
 typedef struct sam_passwd
 {
+	/* initiailization flags */
+	uint32 init_flag;
+
 	time_t logon_time;            /* logon time */
 	time_t logoff_time;           /* logoff time */
 	time_t kickoff_time;          /* kickoff time */
@@ -967,11 +1024,11 @@ struct bitmap {
 /* Generic access masks & rights. */
 #define SPECIFIC_RIGHTS_MASK 0x00FFFFL
 #define STANDARD_RIGHTS_MASK 0xFF0000L
-#define DELETE_ACCESS        (1L<<16)
-#define READ_CONTROL_ACCESS  (1L<<17)
-#define WRITE_DAC_ACCESS     (1L<<18)
-#define WRITE_OWNER_ACCESS   (1L<<19)
-#define SYNCHRONIZE_ACCESS   (1L<<20)
+#define DELETE_ACCESS        (1L<<16) /* 0x00010000 */
+#define READ_CONTROL_ACCESS  (1L<<17) /* 0x00020000 */
+#define WRITE_DAC_ACCESS     (1L<<18) /* 0x00040000 */
+#define WRITE_OWNER_ACCESS   (1L<<19) /* 0x00080000 */
+#define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
 /* Combinations of standard masks. */
 #define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)
@@ -980,12 +1037,12 @@ struct bitmap {
 #define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS)
 #define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS)
 
-#define SYSTEM_SECURITY_ACCESS (1L<<24)
-#define MAXIMUM_ALLOWED_ACCESS (1L<<25)
-#define GENERIC_ALL_ACCESS   (1<<28)
-#define GENERIC_EXECUTE_ACCESS  (1<<29)
-#define GENERIC_WRITE_ACCESS   (1<<30)
-#define GENERIC_READ_ACCESS   (((unsigned)1)<<31)
+#define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
+#define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
+#define GENERIC_ALL_ACCESS     (1<<28)            /* 0x10000000 */
+#define GENERIC_EXECUTE_ACCESS (1<<29)            /* 0x20000000 */
+#define GENERIC_WRITE_ACCESS   (1<<30)            /* 0x40000000 */
+#define GENERIC_READ_ACCESS   (((unsigned)1)<<31) /* 0x80000000 */
 
 /* Mapping of generic access rights for files to specific rights. */
 
@@ -1042,7 +1099,9 @@ struct bitmap {
 #define FILE_ATTRIBUTE_ARCHIVE aARCH
 #define FILE_ATTRIBUTE_NORMAL 0x80L
 #define FILE_ATTRIBUTE_TEMPORARY 0x100L
+#define FILE_ATTRIBUTE_SPARSE 0x200L
 #define FILE_ATTRIBUTE_COMPRESSED 0x800L
+#define FILE_ATTRIBUTE_NONINDEXED 0x2000L
 #define SAMBA_ATTRIBUTES_MASK 0x7F
 
 /* Flags - combined with attributes. */
@@ -1096,9 +1155,10 @@ struct bitmap {
 /* Acconding to testing, this actually sets the security attribute! */
 #define FILE_PERSISTENT_ACLS 0x08
 /* These entries added from cifs9f --tsb */
-#define FILE_FILE_COMPRESSION 0x08
-#define FILE_VOLUME_QUOTAS 0x10
-#define FILE_DEVICE_IS_MOUNTED 0x20
+#define FILE_FILE_COMPRESSION 0x10
+#define FILE_VOLUME_QUOTAS 0x20
+/* I think this is wrong. JRA #define FILE_DEVICE_IS_MOUNTED 0x20 */
+#define FILE_VOLUME_SPARSE_FILE 0x40
 #define FILE_VOLUME_IS_COMPRESSED 0x8000
 
 /* ChangeNotify flags. */
@@ -1237,6 +1297,7 @@ char *strdup(char *s);
 #define CAP_W2K_SMBS         0x2000
 #define CAP_LARGE_READX      0x4000
 #define CAP_LARGE_WRITEX     0x8000
+#define CAP_UNIX             0x800000 /* Capabilities for UNIX extensions. Created by HP. */
 #define CAP_EXTENDED_SECURITY 0x80000000
 
 /* protocol types. It assumes that higher protocols include lower protocols
@@ -1397,19 +1458,18 @@ extern int chain_size;
  * 
  * The form of this is :
  *
- *  0     2       6        10       14    14+devsize 14+devsize+inodesize
- *  +----+--------+--------+--------+-------+--------+
- *  | cmd| pid    | sec    | usec   | dev   |  inode |
- *  +----+--------+--------+--------+-------+--------+
+ *  0     2       2+pid   2+pid+dev 2+pid+dev+ino
+ *  +----+--------+-------+--------+---------+
+ *  | cmd| pid    | dev   |  inode | fileid  |
+ *  +----+--------+-------+--------+---------+
  */
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_SEC_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
-#define OPLOCK_BREAK_USEC_OFFSET (OPLOCK_BREAK_SEC_OFFSET + sizeof(time_t))
-#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_USEC_OFFSET + sizeof(long))
+#define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_PID_OFFSET + sizeof(pid_t))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define OPLOCK_BREAK_FILEID_OFFSET (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
 
 #define KERNEL_OPLOCK_BREAK_CMD 0x2
 #define LEVEL_II_OPLOCK_BREAK_CMD 0x3
@@ -1426,13 +1486,14 @@ extern int chain_size;
  * Form of this is :
  *
  *  0     2       2+devsize 2+devsize+inodesize
- *  +----+--------+--------+
- *  | cmd| dev    |  inode |
- *  +----+--------+--------+
+ *  +----+--------+--------+----------+
+ *  | cmd| dev    |  inode |  fileid  |
+ *  +----+--------+--------+----------+
  */
 #define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
 #define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
-#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define KERNEL_OPLOCK_BREAK_FILEID_OFFSET (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_FILEID_OFFSET + sizeof(unsigned long))
 
 
 /* if a kernel does support oplocks then a structure of the following
@@ -1441,7 +1502,7 @@ struct kernel_oplocks {
 	BOOL (*receive_message)(fd_set *fds, char *buffer, int buffer_len);
 	BOOL (*set_oplock)(files_struct *fsp, int oplock_type);
 	void (*release_oplock)(files_struct *fsp);
-	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev);
+	BOOL (*parse_message)(char *msg_start, int msg_len, SMB_INO_T *inode, SMB_DEV_T *dev, unsigned long *file_id);
 	BOOL (*msg_waiting)(fd_set *fds);
 	int notification_fd;
 };
@@ -1542,10 +1603,16 @@ typedef struct user_struct
 	int session_id; /* used by utmp and pam session code */
 } user_struct;
 
+struct unix_error_map {
+	int unix_error;
+	int dos_class;
+	int dos_code;
+	NTSTATUS nt_error;
+};
+
 #include "ntdomain.h"
 
 #include "client.h"
-#include "rpcclient.h"
 
 /*
  * Size of new password account encoding string. DO NOT CHANGE.
@@ -1582,13 +1649,5 @@ typedef struct user_struct
 
 #include "nsswitch/winbindd_nss.h"
 #include "smb_acls.h"
-
-/* Used by winbindd_glue functions */
-
-typedef struct {
-	struct cli_state *cli;
-	POLICY_HND handle;
-	TALLOC_CTX *mem_ctx;
-} CLI_POLICY_HND;
 
 #endif /* _SMB_H */

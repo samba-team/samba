@@ -30,10 +30,6 @@
 
 #include "winbindd_nss.h"
 
-/* Naughty global stuff */
-
-extern int DEBUGLEVEL;
-
 /* Client state structure */
 
 struct winbindd_cli_state {
@@ -59,6 +55,7 @@ struct getent_state {
 	uint32 grp_query_start_ndx;
 	BOOL got_all_sam_entries, got_sam_entries;
 	struct winbindd_domain *domain;
+	POLICY_HND dom_pol; /* Cached SAMR domain handle. */
 };
 
 /* Storage for cached getpwent() user entries */
@@ -72,17 +69,11 @@ struct getpwent_user {
 /* Server state structure */
 
 struct winbindd_state {
-	/* Netbios name of PDC */
-	fstring controller;
-	
+
 	/* User and group id pool */
+
 	uid_t uid_low, uid_high;               /* Range of uids to allocate */
 	gid_t gid_low, gid_high;               /* Range of gids to allocate */
-	
-	/* Cached handle to lsa pipe */
-	CLI_POLICY_HND lsa_handle;
-	BOOL lsa_handle_open;
-	BOOL pwdb_initialised;
 };
 
 extern struct winbindd_state server_state;  /* Server information */
@@ -90,25 +81,19 @@ extern struct winbindd_state server_state;  /* Server information */
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
-
-	/* Domain information */
-
-	fstring name;                          /* Domain name */
-	fstring controller;                    /* NetBIOS name of DC */
-	
+	fstring name;                          /* Domain name */	
 	DOM_SID sid;                           /* SID for this domain */
-	BOOL got_domain_info;                  /* Got controller and sid */
-	
-	/* Cached handles to samr pipe */
-	
-	CLI_POLICY_HND sam_handle, sam_dom_handle;
-	BOOL sam_handle_open, sam_dom_handle_open;
-	time_t last_check;
-	
 	struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */
+
+/* Used to glue a policy handle and cli_state together */
+
+typedef struct {
+	struct cli_state *cli;
+	POLICY_HND pol;
+} CLI_POLICY_HND;
 
 #include "winbindd_proto.h"
 
@@ -131,5 +116,10 @@ extern struct winbindd_domain *domain_list;  /* List of domains we know */
 #else
 #define SETENV(name, value, overwrite) ;
 #endif
+
+/* Authenticated user info is stored in secrets.tdb under these keys */
+
+#define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
+#define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
 
 #endif /* _WINBINDD_H */

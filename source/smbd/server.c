@@ -22,7 +22,6 @@
 #include "includes.h"
 
 pstring servicesf = CONFIGFILE;
-extern pstring debugf;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 
@@ -33,8 +32,6 @@ int last_message = -1;
 
 /* a useful macro to debug the last message processed */
 #define LAST_MESSAGE() smb_fn_name(last_message)
-
-extern int DEBUGLEVEL;
 
 extern pstring user_socket_options;
 
@@ -104,7 +101,7 @@ static BOOL open_sockets_inetd(void)
 /****************************************************************************
   open the socket communication
 ****************************************************************************/
-static BOOL open_sockets(BOOL is_daemon,int port)
+static BOOL open_sockets(BOOL is_daemon,BOOL interactive, int port)
 {
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
@@ -212,14 +209,14 @@ max can be %d\n",
 		memcpy((char *)&lfds, (char *)&listen_set, 
 		       sizeof(listen_set));
 		
-		num = sys_select(FD_SETSIZE,&lfds,NULL);
+		num = sys_select(FD_SETSIZE,&lfds,NULL,NULL,NULL);
 		
 		if (num == -1 && errno == EINTR) {
 			extern VOLATILE sig_atomic_t reload_after_sighup;
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
-				unbecome_user();
+				change_to_root_user();
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
 				reload_after_sighup = False;
@@ -258,7 +255,10 @@ max can be %d\n",
 					 strerror(errno)));
 				continue;
 			}
-			
+		
+			if (smbd_server_fd() != -1 && interactive)
+				return True;
+	
 			if (smbd_server_fd() != -1 && sys_fork()==0) {
 				/* Child code ... */
 				
@@ -365,7 +365,7 @@ BOOL reload_services(BOOL test)
 	reset_stat_cache();
 
 	/* this forces service parameters to be flushed */
-	become_service(NULL,True);
+	set_current_service(NULL,True);
 
 	return(ret);
 }
@@ -398,7 +398,7 @@ static BOOL dump_core(void)
 {
 	char *p;
 	pstring dname;
-	pstrcpy(dname,debugf);
+	pstrcpy(dname,lp_logfile());
 	if ((p=strrchr(dname,'/'))) *p=0;
 	pstrcat(dname,"/corefiles");
 	mkdir(dname,0700);
@@ -434,11 +434,11 @@ update the current smbd process count
 
 static void decrement_smbd_process_count(void)
 {
-	int total_smbds;
+	int32 total_smbds;
 
 	if (lp_max_smbd_processes()) {
 		total_smbds = 0;
-		tdb_change_int_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
+		tdb_change_int32_atomic(conn_tdb_ctx(), "INFO/total_smbds", &total_smbds, -1);
 	}
 }
 
@@ -454,7 +454,7 @@ void exit_server(char *reason)
 	if (!firsttime) exit(0);
 	firsttime = 0;
 
-	unbecome_user();
+	change_to_root_user();
 	DEBUG(2,("Closing connections\n"));
 
 	conn_close_all();
@@ -462,9 +462,8 @@ void exit_server(char *reason)
 	invalidate_all_vuids();
 
 	/* delete our entry in the connections database. */
-	if (lp_status(-1)) {
-		yield_connection(NULL,"",MAXSTATUS);
-	}
+	if (lp_status(-1))
+		yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
@@ -532,10 +531,11 @@ usage on the program
 static void usage(char *pname)
 {
 
-	printf("Usage: %s [-DaoPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
+	printf("Usage: %s [-DaioPh?V] [-d debuglevel] [-l log basename] [-p port]\n", pname);
 	printf("       [-O socket options] [-s services file]\n");
-	printf("\t-D                    Become a daemon\n");
+	printf("\t-D                    Become a daemon (default)\n");
 	printf("\t-a                    Append to log file (default)\n");
+	printf("\t-i                    Run interactive (not a daemon)\n");
 	printf("\t-o                    Overwrite log file, don't append\n");
 	printf("\t-h                    Print usage\n");
 	printf("\t-?                    Print usage\n");
@@ -557,10 +557,12 @@ static void usage(char *pname)
 	extern BOOL append_log;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
+	BOOL interactive = False;
 	BOOL specified_logfile = False;
 	int port = SMB_PORT;
 	int opt;
 	extern char *optarg;
+	pstring logfile;
 	
 #ifdef HAVE_SET_AUTH_PARAMETERS
 	set_auth_parameters(argc,argv);
@@ -572,7 +574,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dp:h?Vaof:")) )
+	while ( EOF != (opt = getopt(argc, argv, "O:l:s:d:Dip:h?Vaof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -584,7 +586,8 @@ static void usage(char *pname)
 
 		case 'l':
 			specified_logfile = True;
-			slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", optarg);
+			slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", optarg);
+			lp_set_logfile(logfile);
 			break;
 
 		case 'a':
@@ -597,6 +600,10 @@ static void usage(char *pname)
 
 		case 'D':
 			is_daemon = True;
+			break;
+
+		case 'i':
+			interactive = True;
 			break;
 
 		case 'd':
@@ -638,12 +645,13 @@ static void usage(char *pname)
 	TimeInit();
 
 	if(!specified_logfile) {
-		slprintf(debugf, sizeof(debugf)-1, "%s/log.smbd", LOGFILEBASE);
+		slprintf(logfile, sizeof(logfile)-1, "%s/log.smbd", LOGFILEBASE);
+		lp_set_logfile(logfile);
 	}
 
 	pstrcpy(remote_machine, "smbd");
 
-	setup_logging(argv[0],False);
+	setup_logging(argv[0],interactive);
 
 	charset_initialise();
 
@@ -683,11 +691,12 @@ static void usage(char *pname)
 	umask(0);
 
 	init_sec_ctx();
+	init_conn_ctx();
 
 	reopen_logs();
 
-	DEBUG(1,( "smbd version %s started.\n", VERSION));
-	DEBUGADD(1,( "Copyright Andrew Tridgell 1992-1998\n"));
+	DEBUG(0,( "smbd version %s started.\n", VERSION));
+	DEBUGADD(0,( "Copyright Andrew Tridgell and the Samba Team 1992-2002\n"));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
@@ -731,59 +740,66 @@ static void usage(char *pname)
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
-		DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+		if (!interactive)
+			DEBUG(0,("standard input is not a socket, assuming -D option\n"));
+
+		/*
+		 * Setting is_daemon here prevents us from eventually calling
+		 * the open_sockets_inetd()
+		 */
+
 		is_daemon = True;
 	}
 
-	if (is_daemon) {
+	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon();
 	}
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+#if HAVE_SETPGID
+	/*
+	 * If we're interactive we want to set our own process group for
+	 * signal management.
+	 */
+	if (interactive)
+		setpgid( (pid_t)0, (pid_t)0);
+#endif
+
+	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
-	}
 
-	if (is_daemon) {
+	if (is_daemon)
 		pidfile_create("smbd");
-	}
 
-	if (!message_init()) {
+	if (!message_init())
 		exit(1);
-	}
 
 	/* Setup the main smbd so that we can get messages. */
-	if (lp_status(-1)) {
-		claim_connection(NULL,"",MAXSTATUS,True);
-	}
+	if (lp_status(-1))
+		claim_connection(NULL,"",0,True);
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
-	if (!migrate_from_old_password_file(global_myworkgroup)) {
+	if (!migrate_from_old_password_file(global_myworkgroup))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
-	}
 
-	if (!open_sockets(is_daemon,port))
+	if (!open_sockets(is_daemon,interactive,port))
 		exit(1);
 
 	/*
-	 * everything after this point is run after the fork()
+	 * Everything after this point is run after the fork().
 	 */ 
 
-	if (!locking_init(0)) {
+	if (!locking_init(0))
 		exit(1);
-	}
 
-	if (!print_backend_init()) {
+	if (!print_backend_init())
 		exit(1);
-	}
 
-	if (!share_info_db_init()) {
+	if (!share_info_db_init())
 		exit(1);
-	}
 
-	if(!initialize_password_db(False)) {
+	if(!initialize_password_db(False))
 		exit(1);
-	}
 
 	/* possibly reload the services file. */
 	reload_services(True);
@@ -799,14 +815,12 @@ static void usage(char *pname)
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks()) {
+	if (!init_oplocks())
 		exit(1);
-	}
 
 	/* Setup change notify */
-	if (!init_change_notify()) {
+	if (!init_change_notify())
 		exit(1);
-	}
 
 	smbd_process();
 	

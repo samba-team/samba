@@ -73,6 +73,7 @@ extern pstring user_socket_options;
 extern pstring global_myname;
 pstring global_scope = "";
 
+
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
 #endif
@@ -277,6 +278,7 @@ typedef struct
 	BOOL bHostMSDfs;
 	BOOL bHideLocalUsers;
 	BOOL bUseMmap;
+	BOOL bUnixExtensions;
 }
 global;
 
@@ -373,6 +375,7 @@ typedef struct
 	BOOL bLocking;
 	BOOL bStrictLocking;
 	BOOL bPosixLocking;
+	BOOL bShareModes;
 	BOOL bOpLocks;
 	BOOL bLevel2OpLocks;
 	BOOL bOnlyUser;
@@ -395,6 +398,7 @@ typedef struct
 	BOOL bInheritPerms;
 	BOOL bMSDfsRoot;
 	BOOL bUseClientDriver;
+	BOOL bDefaultDevmode;
 	BOOL bNTAclSupport;
 
 	char dummy[3];		/* for alignment */
@@ -488,6 +492,7 @@ static service sDefault = {
 	True,			/* bLocking */
 	False,			/* bStrictLocking */
 	True,			/* bPosixLocking */
+	True,			/* bShareModes */
 	True,			/* bOpLocks */
 	True,			/* bLevel2OpLocks */
 	False,			/* bOnlyUser */
@@ -510,6 +515,7 @@ static service sDefault = {
 	False,			/* bInheritPerms */
 	False,			/* bMSDfsRoot */
 	False,			/* bUseClientDriver */
+	False,			/* bDefaultDevmode */
 	True,			/* bNTAclSupport */
 
 	""			/* dummy */
@@ -538,7 +544,8 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
+static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
+static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
 static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( char *pszParmValue, char **ptr );
 
@@ -593,6 +600,7 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "off"},
 	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
+	{LDAP_SSL_START_TLS, "start_tls"},
 	{-1, NULL}
 };
 #endif
@@ -826,6 +834,7 @@ static struct parm_struct parm_table[] = {
 	{"max wins ttl", P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl, NULL, NULL, 0},
 	{"min wins ttl", P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl, NULL, NULL, 0},
 	{"time server", P_BOOL, P_GLOBAL, &Globals.bTimeServer, NULL, NULL, 0},
+	{"unix extensions", P_BOOL, P_GLOBAL, &Globals.bUnixExtensions, NULL, NULL, 0},
 
 	{"Tuning Options", P_SEP, P_SEPARATOR},
 	
@@ -879,6 +888,7 @@ static struct parm_struct parm_table[] = {
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT|FLAG_DOS_STRING},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_DOS_STRING},
 	{"use client driver", P_BOOL, P_LOCAL, &sDefault.bUseClientDriver, NULL, NULL, FLAG_PRINT},
+	{"default devmode", P_BOOL, P_LOCAL, &sDefault.bDefaultDevmode, NULL, NULL, FLAG_PRINT},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
 	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
@@ -964,6 +974,7 @@ static struct parm_struct parm_table[] = {
 	{"oplock contention limit", P_INTEGER, P_LOCAL, &sDefault.iOplockContentionLimit, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"posix locking", P_BOOL, P_LOCAL, &sDefault.bPosixLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"strict locking", P_BOOL, P_LOCAL, &sDefault.bStrictLocking, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"share modes", P_BOOL, P_LOCAL,  &sDefault.bShareModes, NULL, NULL, FLAG_SHARE|FLAG_GLOBAL},
 
 #ifdef WITH_LDAP_SAM
 	{"Ldap Options", P_SEP, P_SEPARATOR},
@@ -1046,8 +1057,8 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
-	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
-	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_uid, NULL, 0},
+	{"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_gid, NULL, 0},
 	{"template homedir", P_STRING, P_GLOBAL, &Globals.szTemplateHomedir, NULL, NULL, 0},
 	{"template shell", P_STRING, P_GLOBAL, &Globals.szTemplateShell, NULL, NULL, 0},
 	{"winbind separator", P_STRING, P_GLOBAL, &Globals.szWinbindSeparator, NULL, NULL, 0},
@@ -1315,6 +1326,7 @@ static void init_globals(void)
 #else
 	Globals.bUseMmap = True;
 #endif
+	Globals.bUnixExtensions = False;
 
 #ifdef WITH_SSL
 	Globals.sslVersion = SMB_SSL_V23;
@@ -1341,8 +1353,8 @@ static void init_globals(void)
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_port = 389;
-	Globals.ldap_ssl = LDAP_SSL_OFF;
+	Globals.ldap_port = 636;
+	Globals.ldap_ssl = LDAP_SSL_ON;
 #endif /* WITH_LDAP_SAM */
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -1508,8 +1520,6 @@ FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_domain_admin_group, &Globals.szDomainAdminGroup)
 FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
-FN_GLOBAL_STRING(lp_winbind_uid, &Globals.szWinbindUID)
-FN_GLOBAL_STRING(lp_winbind_gid, &Globals.szWinbindGID)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
@@ -1589,6 +1599,7 @@ FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
 FN_GLOBAL_BOOL(lp_kernel_oplocks, &Globals.bKernelOplocks)
 FN_GLOBAL_BOOL(lp_enhanced_browsing, &Globals.enhanced_browsing)
 FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
+FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_INTEGER(lp_os_level, &Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl, &Globals.max_ttl)
 FN_GLOBAL_INTEGER(lp_max_wins_ttl, &Globals.max_wins_ttl)
@@ -1682,6 +1693,7 @@ FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
+FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
@@ -1703,6 +1715,7 @@ FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_use_client_driver, bUseClientDriver)
+FN_LOCAL_BOOL(lp_default_devmode, bDefaultDevmode)
 FN_LOCAL_BOOL(lp_nt_acl_support, bNTAclSupport)
 FN_LOCAL_INTEGER(lp_create_mask, iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode, iCreate_force_mode)
@@ -1762,11 +1775,7 @@ static void free_service(service * pservice)
 		       pservice->szService));
 
 	string_free(&pservice->szService);
-	if (pservice->copymap)
-	{
-		free(pservice->copymap);
-		pservice->copymap = NULL;
-	}
+	SAFE_FREE(pservice->copymap);
 
 	for (i = 0; parm_table[i].label; i++)
 		if ((parm_table[i].type == P_STRING ||
@@ -1792,6 +1801,7 @@ static int add_a_service(service * pservice, char *name)
 	tservice = *pservice;
 
 	/* it might already exist */
+
 	if (name)
 	{
 		i = getservicebyname(name, NULL);
@@ -2517,20 +2527,71 @@ static BOOL handle_copy(char *pszParmValue, char **ptr)
 
 ***************************************************************************/
 
-/* Do some simple checks on "winbind [ug]id" parameter value */
+/* Some lp_ routines to return winbind [ug]id information */
 
-static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
+static uid_t winbind_uid_low, winbind_uid_high;
+static gid_t winbind_gid_low, winbind_gid_high;
+
+BOOL lp_winbind_uid(uid_t *low, uid_t *high)
+{
+        if (winbind_uid_low == 0 || winbind_uid_high == 0)
+                return False;
+
+        if (low)
+                *low = winbind_uid_low;
+
+        if (high)
+                *high = winbind_uid_high;
+
+        return True;
+}
+
+BOOL lp_winbind_gid(gid_t *low, gid_t *high)
+{
+        if (winbind_gid_low == 0 || winbind_gid_high == 0)
+                return False;
+
+        if (low)
+                *low = winbind_gid_low;
+
+        if (high)
+                *high = winbind_gid_high;
+
+        return True;
+}
+
+/* Do some simple checks on "winbind [ug]id" parameter values */
+
+static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 {
 	int low, high;
 
-	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2)
-	{
+	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
 		return False;
-	}
 
 	/* Parse OK */
 
 	string_set(ptr, pszParmValue);
+
+        winbind_uid_low = low;
+        winbind_uid_high = high;
+
+	return True;
+}
+
+static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
+{
+	gid_t low, high;
+
+	if (sscanf(pszParmValue, "%d-%d", &low, &high) != 2 || high < low)
+		return False;
+
+	/* Parse OK */
+
+	string_set(ptr, pszParmValue);
+
+        winbind_gid_low = low;
+        winbind_gid_high = high;
 
 	return True;
 }
@@ -2566,8 +2627,7 @@ initialise a copymap
 static void init_copymap(service * pservice)
 {
 	int i;
-	if (pservice->copymap)
-		free(pservice->copymap);
+	SAFE_FREE(pservice->copymap);
 	pservice->copymap = (BOOL *)malloc(sizeof(BOOL) * NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
@@ -3110,17 +3170,18 @@ static void dump_copy_map(BOOL *pcopymap)
 #endif
 
 /***************************************************************************
-Return TRUE if the passed service number is within range.
+ Return TRUE if the passed service number is within range.
 ***************************************************************************/
+
 BOOL lp_snum_ok(int iService)
 {
 	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
 
-
 /***************************************************************************
-auto-load some home services
+ Auto-load some home services.
 ***************************************************************************/
+
 static void lp_add_auto_services(char *str)
 {
 	char *s;
@@ -3136,34 +3197,30 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP))
-	{
-		char *home = get_user_home_dir(p);
+	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+		char *home = get_user_service_home_dir(p);
 
 		if (lp_servicenumber(p) >= 0)
 			continue;
 
 		if (home && homes >= 0)
-		{
 			lp_add_home(p, homes, home);
-		}
 	}
-	free(s);
+	SAFE_FREE(s);
 }
 
 /***************************************************************************
-auto-load one printer
+ Auto-load one printer.
 ***************************************************************************/
+
 void lp_add_one_printer(char *name, char *comment)
 {
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
 
-	if (lp_servicenumber(name) < 0)
-	{
+	if (lp_servicenumber(name) < 0) {
 		lp_add_printer(name, printers);
-		if ((i = lp_servicenumber(name)) >= 0)
-		{
+		if ((i = lp_servicenumber(name)) >= 0) {
 			string_set(&ServicePtrs[i]->comment, comment);
 			unix_to_dos(ServicePtrs[i]->comment, True);
 			ServicePtrs[i]->autoloaded = True;
@@ -3430,16 +3487,26 @@ does not copy the found service.
 int lp_servicenumber(char *pszServiceName)
 {
 	int iService;
+	fstring serviceName;
+	
 
 	for (iService = iNumServices - 1; iService >= 0; iService--)
-		if (VALID(iService) && ServicePtrs[iService]->szService &&
-				strequal(ServicePtrs[iService]->szService, pszServiceName))
-			break;
+	{
+		if (VALID(iService) && ServicePtrs[iService]->szService) 
+		{
+			/*
+			 * The substitution here is used to support %U is 
+			 * service names
+			 */
+			fstrcpy(serviceName, ServicePtrs[iService]->szService);
+			standard_sub_basic(serviceName);
+			if (strequal(serviceName, pszServiceName))
+				break;
+		}
+	}
 
 	if (iService < 0)
-		DEBUG(7,
-		      ("lp_servicenumber: couldn't find %s\n",
-		       pszServiceName));
+		DEBUG(7,("lp_servicenumber: couldn't find %s\n", pszServiceName));
 
 	return (iService);
 }
@@ -3686,4 +3753,25 @@ void get_private_directory(pstring priv_dir)
 
 	p = strrchr(priv_dir, '/');
 	if (p)	*p = 0;
+}
+
+/***********************************************************
+ Allow daemons such as winbindd to fix their logfile name.
+************************************************************/
+
+void lp_set_logfile(const char *name)
+{
+	extern pstring debugf;
+	string_set(&Globals.szLogFile, name);
+	pstrcpy(debugf, name);
+}
+
+/*******************************************************************
+ Return the NetBIOS called name.
+********************************************************************/
+
+const char *get_called_name(void)
+{
+	extern fstring local_machine;
+        return (*local_machine) ? local_machine : global_myname;
 }

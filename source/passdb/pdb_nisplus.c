@@ -325,27 +325,40 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     pstrcpy(samlogon_user, pdb_get_username(pw_buf));
     
     get_single_attribute(obj, NPF_HOME_DIR, home_dir, sizeof(pstring));
-    if( !(home_dir && *home_dir) )
+    if( !(home_dir && *home_dir) ) {
       pstrcpy(home_dir, lp_logon_home());
-    pdb_set_homedir(pw_buf, home_dir);
+      pdb_set_homedir(pw_buf, home_dir, False);
+    }
+    else
+      pdb_set_homedir(pw_buf, home_dir, True);
 
     get_single_attribute(obj, NPF_DIR_DRIVE, home_drive, sizeof(pstring));
-    if( !(home_drive && *home_drive) )
+    if( !(home_drive && *home_drive) ) {
       pstrcpy(home_drive, lp_logon_drive());
-    pdb_set_dir_drive(pw_buf, home_drive);
+      pdb_set_dir_drive(pw_buf, home_drive, False);
+    }
+    else
+      pdb_set_dir_drive(pw_buf, home_drive, True);
 
     get_single_attribute(obj, NPF_LOGON_SCRIPT, logon_script,
 			 sizeof(pstring));
-    if( !(logon_script && *logon_script) )
-      pstrcpy(logon_script, lp_logon_script());
-    pdb_set_logon_script(pw_buf, logon_script);
+    if( !(logon_script && *logon_script) ) {
+      pstrcpy(logon_script, lp_logon_script(), False);
+    }
+    else
+      pdb_set_logon_script(pw_buf, logon_script, True);
 
-    get_single_attribute(obj, NPF_PROFILE_PATH, profile_path,
-			 sizeof(pstring));
-    if( !(profile_path && *profile_path) )
+    get_single_attribute(obj, NPF_PROFILE_PATH, profile_path, sizeof(pstring));
+    if( !(profile_path && *profile_path) ) {
       pstrcpy(profile_path, lp_logon_path());
-    pdb_set_profile_path(pw_buf, profile_path);
-  } else {
+      pdb_set_profile_path(pw_buf, profile_path, False);
+    }
+    else
+      pdb_set_profile_path(pw_buf, profile_path, True);
+
+  } 
+  else 
+  {
     /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
     pdb_set_group_rid (pw_buf, DOMAIN_GROUP_RID_USERS); 
   }
@@ -375,7 +388,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   if (!(pdb_get_acct_ctrl(pw_buf) & ACB_PWNOTREQ) &&
       strncasecmp(ptr, "NO PASSWORD", 11)) {
     if (strlen(ptr) != 32 || !pdb_gethexpwd(ptr, smbntpwd)) {
-      DEBUG(0, ("malformed NT pwd entry:
+      DEBUG(0, ("malformed NT pwd entry:\
  uid = %d.\n",
 		pdb_get_uid(pw_buf)));
       return False;
@@ -385,7 +398,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   }
   
   pdb_set_unknown_3(pw_buf, 0xffffff); /* don't know */
-  pdb_set_logons_divs(pw_buf, 168);     /* hours per week */
+  pdb_set_logon_divs(pw_buf, 168);     /* hours per week */
 		      
 		      if( (hours_len = ENTRY_LEN(obj, NPF_HOURS)) == 21 ) {
     memcpy(hours, ENTRY_VAL(obj, NPF_HOURS), hours_len);
@@ -1000,46 +1013,6 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 	nisname = make_nisname_from_user_rid(rid, pfiletmp);
 
 	DEBUG(10, ("search by rid: %s\n", nisname));
-
-	/* Search the table. */
-
-	if(!(result = nisp_get_nis_list(nisname, 0)))
-	{
-		return False;
-	}
-
-	ret = make_sam_from_nisresult(user, result);
-	nis_freeresult(result);
-
-	return ret;
-}
-
-/*************************************************************************
- Routine to search the nisplus passwd file for an entry matching the username
- *************************************************************************/
-BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid)
-{
-	nis_result *result;
-	char *nisname;
-	BOOL ret;
-	char *sp, *p = lp_smb_passwd_file();
-	pstring pfiletmp;
-
-	if (!*p)
-	{
-		DEBUG(0, ("no SMB password file set\n"));
-		return False;
-	}
-
-	if( (sp = strrchr( p, '/' )) )
-          safe_strcpy(pfiletmp, sp+1, sizeof(pfiletmp)-1);
-        else
-          safe_strcpy(pfiletmp, p, sizeof(pfiletmp)-1);
-        safe_strcat(pfiletmp, ".org_dir", sizeof(pfiletmp)-strlen(pfiletmp)-1);
-
-	nisname = make_nisname_from_uid(uid, pfiletmp);
-
-	DEBUG(10, ("search by uid: %s\n", nisname));
 
 	/* Search the table. */
 

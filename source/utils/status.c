@@ -44,8 +44,8 @@ struct session_record{
   struct session_record *next;
 } *srecs;
 
-extern int DEBUGLEVEL;
 extern FILE *dbf;
+extern BOOL AllowDebugChange;
 
 static pstring Ucrit_username = "";                   /* added by OH */
 static pid_t	Ucrit_pid[100];  /* Ugly !!! */        /* added by OH */
@@ -535,6 +535,8 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 		}
 		if (ptr==NULL) {
 			ptr=(struct session_record *) malloc(sizeof(struct session_record));
+			if (!ptr)
+				return 0;
 			ptr->uid=crec.uid;
 			ptr->pid=crec.pid;
 			ptr->start=crec.start;
@@ -579,6 +581,7 @@ static int traverse_fn1(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 	
 	charset_initialise();
 	
+	AllowDebugChange = False;
 	DEBUGLEVEL = 0;
 	dbf = stderr;
 	

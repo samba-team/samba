@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
 static fstring this_salt;
@@ -233,7 +231,7 @@ static BOOL dfs_auth(char *user, char *password)
 	}
 
 	/*
-	 * NB. I'd like to change these to call something like become_user()
+	 * NB. I'd like to change these to call something like change_to_user()
 	 * instead but currently we don't have a connection
 	 * context to become the correct user. This is already
 	 * fairly platform specific code however, so I think
@@ -599,7 +597,7 @@ static BOOL password_check(char *password)
 {
 
 #ifdef WITH_PAM
-	return (smb_pam_passcheck(this_user, password) == NT_STATUS_OK);
+	return (NT_STATUS_IS_OK(smb_pam_passcheck(this_user, password)));
 #endif /* WITH_PAM */
 
 #ifdef WITH_AFS

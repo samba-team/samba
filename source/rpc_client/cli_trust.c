@@ -35,6 +35,17 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char new_trust_passwd_hash[16])
 {
   struct cli_state cli;
+  NTSTATUS result;
+  DOM_SID domain_sid;
+
+  /*
+   * Ensure we have the domain SID for this domain.
+   */
+
+  if (!secrets_fetch_domain_sid(domain, &domain_sid)) {
+    DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
+    return False;
+  }
 
   ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == NULL) {
@@ -115,13 +126,6 @@ Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
    * Now start the NT Domain stuff :-).
    */
 
-  if(cli_lsa_get_domain_sid(&cli, remote_machine) == False) {
-    DEBUG(0,("modify_trust_password: unable to obtain domain sid from %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
-    cli_ulogoff(&cli);
-    cli_shutdown(&cli);
-    return False;
-  }
-
   if(cli_nt_session_open(&cli, PIPE_NETLOGON) == False) {
     DEBUG(0,("modify_trust_password: unable to open the domain client session to \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
@@ -131,9 +135,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
     return False;
   } 
   
-  if(cli_nt_setup_creds(&cli, orig_trust_passwd_hash) == False) {
+  result = cli_nt_setup_creds(&cli, orig_trust_passwd_hash);
+
+  if (!NT_STATUS_IS_OK(result)) {
     DEBUG(0,("modify_trust_password: unable to setup the PDC credentials to machine \
-%s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
+%s. Error was : %s.\n", remote_machine, get_nt_error_msg(result)));
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
@@ -207,15 +213,14 @@ account password for domain %s.\n", domain));
 
       for(i = 0; i < count; i++) {
         fstring dc_name;
-        if(!lookup_pdc_name(global_myname, domain, &ip_list[i], dc_name))
+        if(!lookup_dc_name(global_myname, domain, &ip_list[i], dc_name))
           continue;
         if((res = modify_trust_password( domain, dc_name,
                                          old_trust_passwd_hash, new_trust_passwd_hash)))
           break;
       }
 
-      if(ip_list != NULL)
-        free((char *)ip_list);
+      SAFE_FREE(ip_list);
 
     } else {
       res = modify_trust_password( domain, remote_machine,

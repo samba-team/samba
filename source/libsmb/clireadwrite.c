@@ -35,11 +35,11 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 
 	set_message(cli->outbuf,10,0,True);
 		
-	CVAL(cli->outbuf,smb_com) = SMBreadX;
+	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
@@ -61,7 +61,7 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 
 	set_message(cli->outbuf,10,0,True);
 		
-	CVAL(cli->outbuf,smb_com) = SMBreadbraw;
+	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
@@ -80,8 +80,6 @@ static BOOL cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 
 ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
 {
-	uint32 ecode;
-	uint8 eclass;
 	char *p;
 	int size2;
 	int readsize;
@@ -108,15 +106,22 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		if (!cli_receive_smb(cli))
 			return -1;
 
-		/*
-		 * Check for error.  Because the client library doesn't support
-		 * STATUS32, we need to check for and ignore the more data error
-		 * for pipe support.
-		 */
+		/* Check for error.  Make sure to check for DOS and NT
+                   errors. */
 
-		if (cli_error(cli, &eclass, &ecode, NULL) &&
-			(eclass != ERRDOS && ecode != ERRmoredata)) {
-			return -1;
+                if (cli_is_error(cli)) {
+                        NTSTATUS status = NT_STATUS_OK;
+                        uint8 eclass = 0;
+			uint32 ecode = 0;
+
+                        if (cli_is_nt_error(cli))
+                                status = cli_nt_error(cli);
+                        else
+                                cli_dos_error(cli, &eclass, &ecode);
+
+                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
+                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
+                                return -1;
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
@@ -227,11 +232,11 @@ static BOOL cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 	else
 		set_message(cli->outbuf,12,0,True);
 	
-	CVAL(cli->outbuf,smb_com) = SMBwriteX;
+	SCVAL(cli->outbuf,smb_com,SMBwriteX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
 
 	SIVAL(cli->outbuf,smb_vwv3,offset);
@@ -292,7 +297,7 @@ ssize_t cli_write(struct cli_state *cli,
 
 		received++;
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
@@ -322,7 +327,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 		set_message(cli->outbuf,5, 0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBwrite;
+		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
 		
@@ -344,7 +349,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		if (!cli_receive_smb(cli))
 			return -1;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			return -1;
 
 		size = SVAL(cli->inbuf,smb_vwv0);

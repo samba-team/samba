@@ -34,121 +34,95 @@ static int interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
+	file_info finfo2;
+	int len;
+	char *base = p;
 
-	if (finfo)
-		memcpy(finfo,&def_finfo,sizeof(*finfo));
+	if (!finfo) finfo = &finfo2;
+
+	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
 	switch (level)
 		{
 		case 1: /* OS/2 understands this */
-			if (finfo) {
-				/* these dates are converted to GMT by make_unix_date */
-				finfo->ctime = make_unix_date2(p+4);
-				finfo->atime = make_unix_date2(p+8);
-				finfo->mtime = make_unix_date2(p+12);
-				finfo->size = IVAL(p,16);
-				finfo->mode = CVAL(p,24);
-				clistr_pull(cli, finfo->name, p+27,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
-			}
-			return(28 + CVAL(p,26));
+			/* these dates are converted to GMT by
+                           make_unix_date */
+			finfo->ctime = make_unix_date2(p+4);
+			finfo->atime = make_unix_date2(p+8);
+			finfo->mtime = make_unix_date2(p+12);
+			finfo->size = IVAL(p,16);
+			finfo->mode = CVAL(p,24);
+			len = CVAL(p, 26);
+			p += 27;
+			p += clistr_align_in(cli, p, 0);
+			p += clistr_pull(cli, finfo->name, p,
+				    sizeof(finfo->name),
+				    len, 
+				    STR_TERMINATE);
+			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */
-			if (finfo) {
-				/* these dates are converted to GMT by make_unix_date */
-				finfo->ctime = make_unix_date2(p+4);
-				finfo->atime = make_unix_date2(p+8);
-				finfo->mtime = make_unix_date2(p+12);
-				finfo->size = IVAL(p,16);
-				finfo->mode = CVAL(p,24);
-				clistr_pull(cli, finfo->name, p+31,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
-			}
-			return(32 + CVAL(p,30));
-
-			/* levels 3 and 4 are untested */
-		case 3:
-			if (finfo) {
-				/* these dates are probably like the other ones */
-				finfo->ctime = make_unix_date2(p+8);
-				finfo->atime = make_unix_date2(p+12);
-				finfo->mtime = make_unix_date2(p+16);
-				finfo->size = IVAL(p,20);
-				finfo->mode = CVAL(p,28);
-				clistr_pull(cli, finfo->name, p+33,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
-			}
-			return(SVAL(p,4)+4);
-			
-		case 4:
-			if (finfo) {
-				/* these dates are probably like the other ones */
-				finfo->ctime = make_unix_date2(p+8);
-				finfo->atime = make_unix_date2(p+12);
-				finfo->mtime = make_unix_date2(p+16);
-				finfo->size = IVAL(p,20);
-				finfo->mode = CVAL(p,28);
-				clistr_pull(cli, finfo->name, p+37,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE | STR_CONVERT);
-			}
-			return(SVAL(p,4)+4);
+			/* these dates are converted to GMT by
+                           make_unix_date */
+			finfo->ctime = make_unix_date2(p+4);
+			finfo->atime = make_unix_date2(p+8);
+			finfo->mtime = make_unix_date2(p+12);
+			finfo->size = IVAL(p,16);
+			finfo->mode = CVAL(p,24);
+			len = CVAL(p, 30);
+			p += 31;
+			/* check for unisys! */
+			p += clistr_pull(cli, finfo->name, p,
+					 sizeof(finfo->name),
+					 len, 
+					 STR_NOALIGN);
+			return PTR_DIFF(p, base) + 1;
 			
 		case 260: /* NT uses this, but also accepts 2 */
-			if (finfo) {
-				int ret = SVAL(p,0);
-				int namelen;
-				p += 4; /* next entry offset */
-				p += 4; /* fileindex */
+		{
+			int namelen, slen;
+			p += 4; /* next entry offset */
+			p += 4; /* fileindex */
 				
-				/* these dates appear to arrive in a
-				   weird way. It seems to be localtime
-				   plus the serverzone given in the
-				   initial connect. This is GMT when
-				   DST is not in effect and one hour
-				   from GMT otherwise. Can this really
-				   be right??
-
-				   I suppose this could be called
-				   kludge-GMT. Is is the GMT you get
-				   by using the current DST setting on
-				   a different localtime. It will be
-				   cheap to calculate, I suppose, as
-				   no DST tables will be needed */
-
-				finfo->ctime = interpret_long_date(p); p += 8;
-				finfo->atime = interpret_long_date(p); p += 8;
-				finfo->mtime = interpret_long_date(p); p += 8; p += 8;
-				finfo->size = IVAL(p,0); p += 8;
-				p += 8; /* alloc size */
-				finfo->mode = CVAL(p,0); p += 4;
-				namelen = IVAL(p,0); p += 4;
-				p += 4; /* EA size */
-				/* slen = SVAL(p, 0); */
-				p += 2; 
-				{
-					/* stupid NT bugs. grr */
-					int flags = STR_CONVERT;
-					if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
-					clistr_pull(cli, finfo->short_name, p,
-						    sizeof(finfo->short_name),
-						    24, flags);
-				}
-				p += 24; /* short name? */	  
-				clistr_pull(cli, finfo->name, p,
-					    sizeof(finfo->name),
-					    namelen, 
-					    STR_CONVERT);
-				return(ret);
+			/* these dates appear to arrive in a
+			   weird way. It seems to be localtime
+			   plus the serverzone given in the
+			   initial connect. This is GMT when
+			   DST is not in effect and one hour
+			   from GMT otherwise. Can this really
+			   be right??
+			   
+			   I suppose this could be called
+			   kludge-GMT. Is is the GMT you get
+			   by using the current DST setting on
+			   a different localtime. It will be
+			   cheap to calculate, I suppose, as
+			   no DST tables will be needed */
+			
+			finfo->ctime = interpret_long_date(p); p += 8;
+			finfo->atime = interpret_long_date(p); p += 8;
+			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
+			finfo->size = IVAL(p,0); p += 8;
+			p += 8; /* alloc size */
+			finfo->mode = CVAL(p,0); p += 4;
+			namelen = IVAL(p,0); p += 4;
+			p += 4; /* EA size */
+			slen = SVAL(p, 0);
+			p += 2; 
+			{
+				/* stupid NT bugs. grr */
+				int flags = 0;
+				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
+				clistr_pull(cli, finfo->short_name, p,
+					    sizeof(finfo->short_name),
+					    slen, flags);
 			}
-			return(SVAL(p,0));
+			p += 24; /* short name? */	  
+			clistr_pull(cli, finfo->name, p,
+				    sizeof(finfo->name),
+				    namelen, 0);
+			return SVAL(base, 0);
+		}
 		}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
@@ -168,7 +142,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	pstring mask;
 	file_info finfo;
 	int i;
-	char *dirlist = NULL;
+	char *tdl, *dirlist = NULL;
 	int dirlist_len = 0;
 	int total_received = -1;
 	BOOL First = True;
@@ -203,7 +177,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SIVAL(param,8,0);
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE | STR_CONVERT);
+					 STR_TERMINATE);
 		} else {
 			setup = TRANSACT2_FINDNEXT;
 			SSVAL(param,0,ff_dir_handle);
@@ -213,7 +187,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SSVAL(param,10,8+4+2);	/* continue + resume required + close on end */
 			p = param+12;
 			p += clistr_push(cli, param+12, mask, -1, 
-					 STR_TERMINATE | STR_CONVERT);
+					 STR_TERMINATE);
 		}
 
 		param_len = PTR_DIFF(p, param);
@@ -231,16 +205,20 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		if (!cli_receive_trans(cli, SMBtrans2, 
 				       &rparam, &param_len,
-				       &rdata, &data_len)) {
+				       &rdata, &data_len) &&
+                    cli_is_dos_error(cli)) {
 			/* we need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
-			cli_error(cli, &eclass, &ecode, NULL);
+			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror) break;
 			msleep(100);
 			continue;
 		}
+
+                if (cli_is_error(cli) || !rdata || !rparam) 
+			break;
 
 		if (total_received == -1) total_received = 0;
 
@@ -271,15 +249,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 					clistr_pull(cli, mask, p+ff_lastname,
 						    sizeof(mask), 
 						    data_len-ff_lastname,
-						    STR_TERMINATE |
-						    STR_CONVERT);
+						    STR_TERMINATE);
 					break;
 				case 1:
 					clistr_pull(cli, mask, p+ff_lastname+1,
 						    sizeof(mask), 
 						    -1,
-						    STR_TERMINATE |
-						    STR_CONVERT);
+						    STR_TERMINATE);
 					break;
 				}
 		} else {
@@ -287,12 +263,13 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
  
 		/* and add them to the dirlist pool */
-		dirlist = Realloc(dirlist,dirlist_len + data_len);
+		tdl = Realloc(dirlist,dirlist_len + data_len);
 
-		if (!dirlist) {
-			DEBUG(0,("Failed to expand dirlist\n"));
+		if (!tdl) {
+			DEBUG(0,("cli_list_new: Failed to expand dirlist\n"));
 			break;
 		}
+		else dirlist = tdl;
 
 		/* put in a length for the last entry, to ensure we can chain entries 
 		   into the next packet */
@@ -306,9 +283,9 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		total_received += ff_searchcount;
 
-		if (rdata) free(rdata); rdata = NULL;
-		if (rparam) free(rparam); rparam = NULL;
-		
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+
 		DEBUG(3,("received %d entries (eos=%d)\n",
 			 ff_searchcount,ff_eos));
 
@@ -323,7 +300,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	}
 
 	/* free up the dirlist buffer */
-	if (dirlist) free(dirlist);
+	SAFE_FREE(dirlist);
 	return(total_received);
 }
 
@@ -345,7 +322,7 @@ static int interpret_short_filename(struct cli_state *cli, char *p,file_info *fi
 	finfo->ctime = make_unix_date(p+22);
 	finfo->mtime = finfo->atime = finfo->ctime;
 	finfo->size = IVAL(p,26);
-	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_CONVERT|STR_ASCII);
+	clistr_pull(cli, finfo->name, p+30, sizeof(finfo->name), 12, STR_ASCII);
 	if (strcmp(finfo->name, "..") && strcmp(finfo->name, "."))
 		fstrcpy(finfo->short_name,finfo->name);
 	
@@ -368,7 +345,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int num_asked = (cli->max_xmit - 100)/DIR_STRUCT_SIZE;
 	int num_received = 0;
 	int i;
-	char *dirlist = NULL;
+	char *tdl, *dirlist = NULL;
 	pstring mask;
 	
 	ZERO_ARRAY(status);
@@ -381,7 +358,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		set_message(cli->outbuf,2,0,True);
 
-		CVAL(cli->outbuf,smb_com) = SMBsearch;
+		SCVAL(cli->outbuf,smb_com,SMBsearch);
 
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
@@ -392,7 +369,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		p = smb_buf(cli->outbuf);
 		*p++ = 4;
       
-		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE|STR_CONVERT);      
+		p += clistr_push(cli, p, first?mask:"", -1, STR_TERMINATE);
 		*p++ = 5;
 		if (first) {
 			SSVAL(p,0,0);
@@ -413,10 +390,14 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 		first = False;
 
-		dirlist = Realloc(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
+		tdl = Realloc(dirlist,(num_received + received)*DIR_STRUCT_SIZE);
 
-		if (!dirlist) 
+		if (!tdl) {
+			DEBUG(0,("cli_list_old: failed to expand dirlist"));
+			SAFE_FREE(dirlist);
 			return 0;
+		}
+		else dirlist = tdl;
 
 		p = smb_buf(cli->inbuf) + 3;
 
@@ -427,7 +408,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		
 		num_received += received;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0) break;
+		if (cli_is_error(cli)) break;
 	}
 
 	if (!first) {
@@ -435,7 +416,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->inbuf,'\0',smb_size);
 
 		set_message(cli->outbuf,2,0,True);
-		CVAL(cli->outbuf,smb_com) = SMBfclose;
+		SCVAL(cli->outbuf,smb_com,SMBfclose);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);
 
@@ -455,7 +436,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		cli_setup_bcc(cli, p);
 		cli_send_smb(cli);
 		if (!cli_receive_smb(cli)) {
-			DEBUG(0,("Error closing search: %s\n",smb_errstr(cli->inbuf)));
+			DEBUG(0,("Error closing search: %s\n",cli_errstr(cli)));
 		}
 	}
 
@@ -465,7 +446,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		fn(&finfo, Mask, state);
 	}
 
-	if (dirlist) free(dirlist);
+	SAFE_FREE(dirlist);
 	return(num_received);
 }
 

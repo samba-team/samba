@@ -23,36 +23,36 @@
 
 #include "includes.h"
 
-
-extern int DEBUGLEVEL;
-
-
 /*****************************************************
  RAP error codes - a small start but will be extended.
 *******************************************************/
 
-static struct
+static const struct
 {
-  int err;
-  char *message;
-} rap_errmap[] =
-{
-  {5,    "User has insufficient privilege" },
-  {86,   "The specified password is invalid" },
-  {2226, "Operation only permitted on a Primary Domain Controller"  },
-  {2242, "The password of this user has expired." },
-  {2243, "The password of this user cannot change." },
-  {2244, "This password cannot be used now (password history conflict)." },
-  {2245, "The password is shorter than required." },
-  {2246, "The password of this user is too recent to change."},
+	int err;
+	char *message;
+} rap_errmap[] = {
+	{5,    "RAP5: User has insufficient privilege" },
+	{50,   "RAP50: Not supported by server" },
+	{65,   "RAP65: Access denied" },
+	{86,   "RAP86: The specified password is invalid" },
+	{2220, "RAP2220: Group does not exist" },
+	{2221, "RAP2221: User does not exist" },
+	{2226, "RAP2226: Operation only permitted on a Primary Domain Controller"  },
+	{2237, "RAP2237: User is not in group" },
+	{2242, "RAP2242: The password of this user has expired." },
+	{2243, "RAP2243: The password of this user cannot change." },
+	{2244, "RAP2244: This password cannot be used now (password history conflict)." },
+	{2245, "RAP2245: The password is shorter than required." },
+	{2246, "RAP2246: The password of this user is too recent to change."},
 
-  /* these really shouldn't be here ... */
-  {0x80, "Not listening on called name"},
-  {0x81, "Not listening for calling name"},
-  {0x82, "Called name not present"},
-  {0x83, "Called name present, but insufficient resources"},
+	/* these really shouldn't be here ... */
+	{0x80, "Not listening on called name"},
+	{0x81, "Not listening for calling name"},
+	{0x82, "Called name not present"},
+	{0x83, "Called name present, but insufficient resources"},
 
-  {0, NULL}
+	{0, NULL}
 };  
 
 /****************************************************************************
@@ -60,136 +60,97 @@ static struct
 ****************************************************************************/
 static char *cli_smb_errstr(struct cli_state *cli)
 {
-	return smb_errstr(cli->inbuf);
+	return smb_dos_errstr(cli->inbuf);
 }
 
-/******************************************************
- Return an error message - either an SMB error or a RAP
- error.
-*******************************************************/
+/***************************************************************************
+ Return an error message - either an NT error, SMB error or a RAP error.
+ Note some of the NT errors are actually warnings or "informational" errors
+ in which case they can be safely ignored.
+****************************************************************************/
     
 char *cli_errstr(struct cli_state *cli)
 {   
-	static fstring error_message;
-	uint8 errclass;
-	uint32 errnum;
-	uint32 nt_rpc_error;
-	int i;      
+	static fstring cli_error_message;
+	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;
+        uint8 errclass;
+        int i;
 
-	/*  
-	 * Errors are of three kinds - smb errors,
-	 * dealt with by cli_smb_errstr, NT errors,
-	 * whose code is in cli.nt_error, and rap
-	 * errors, whose error code is in cli.rap_error.
-	 */ 
+        /* Case #1: RAP error */
+	if (cli->rap_error) {
+		for (i = 0; rap_errmap[i].message != NULL; i++) {
+			if (rap_errmap[i].err == cli->rap_error) {
+				return rap_errmap[i].message;
+			}
+		} 
 
-	cli_error(cli, &errclass, &errnum, &nt_rpc_error);
+		slprintf(cli_error_message, sizeof(cli_error_message) - 1, "RAP code %d", 
+			cli->rap_error);
 
-	if (errclass != 0)
-	{
-		return cli_smb_errstr(cli);
+		return cli_error_message;
 	}
 
-	/*
-	 * Was it an NT error ?
-	 */
+        /* Case #2: 32-bit NT errors */
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+                NTSTATUS status = NT_STATUS(IVAL(cli->inbuf,smb_rcls));
 
-	if (nt_rpc_error)
-	{
-		char *nt_msg = (char *)get_nt_error_msg(nt_rpc_error);
+                return get_nt_error_msg(status);
+        }
 
-		if (nt_msg == NULL)
-		{
-			slprintf(error_message, sizeof(fstring) - 1, "NT code %d", nt_rpc_error);
-		}
-		else
-		{
-			fstrcpy(error_message, nt_msg);
-		}
+        cli_dos_error(cli, &errclass, &errnum);
 
-		return error_message;
-	}
+        /* Case #3: SMB error */
 
-	/*
-	 * Must have been a rap error.
-	 */
-
-	slprintf(error_message, sizeof(error_message) - 1, "code %d", cli->rap_error);
-
-	for (i = 0; rap_errmap[i].message != NULL; i++)
-	{
-		if (rap_errmap[i].err == cli->rap_error)
-		{
-			fstrcpy( error_message, rap_errmap[i].message);
-			break;
-		}
-	} 
-
-	return error_message;
+	return cli_smb_errstr(cli);
 }
 
 
-/****************************************************************************
-  return error codes for the last packet
-  returns 0 if there was no error and the best approx of a unix errno
-  otherwise
+/* Return the 32-bit NT status code from the last packet */
+NTSTATUS cli_nt_error(struct cli_state *cli)
+{
+        int flgs2 = SVAL(cli->inbuf,smb_flg2);
 
-  for 32 bit "warnings", a return code of 0 is expected.
+	if (!(flgs2 & FLAGS2_32_BIT_ERROR_CODES)) {
+		int class  = CVAL(cli->inbuf,smb_rcls);
+		int code  = SVAL(cli->inbuf,smb_err);
+		return dos_to_ntstatus(class, code);
+        }
 
-****************************************************************************/
-int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_error)
+        return NT_STATUS(IVAL(cli->inbuf,smb_rcls));
+}
+
+
+/* Return the DOS error from the last packet - an error class and an error
+   code. */
+void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 {
 	int  flgs2;
 	char rcls;
 	int code;
 
-	if (eclass) *eclass = 0;
-	if (num   ) *num = 0;
-	if (nt_rpc_error) *nt_rpc_error = 0;
-
-	if(!cli->initialised)
-		return EINVAL;
-
-	if(!cli->inbuf)
-		return ENOMEM;
+	if(!cli->initialised) return;
 
 	flgs2 = SVAL(cli->inbuf,smb_flg2);
-	if (nt_rpc_error) *nt_rpc_error = cli->nt_error;
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-		/* 32 bit error codes detected */
-		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
-		if (num) *num = nt_err;
-		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
-		if (!(nt_err & 0xc0000000))
-			return 0;
-
-		switch (nt_err) {
-		case NT_STATUS_ACCESS_VIOLATION: return EACCES;
-		case NT_STATUS_NO_SUCH_FILE: return ENOENT;
-		case NT_STATUS_NO_SUCH_DEVICE: return ENODEV;
-		case NT_STATUS_INVALID_HANDLE: return EBADF;
-		case NT_STATUS_NO_MEMORY: return ENOMEM;
-		case NT_STATUS_ACCESS_DENIED: return EACCES;
-		case NT_STATUS_OBJECT_NAME_NOT_FOUND: return ENOENT;
-		case NT_STATUS_SHARING_VIOLATION: return EBUSY;
-		case NT_STATUS_OBJECT_PATH_INVALID: return ENOTDIR;
-		case NT_STATUS_OBJECT_NAME_COLLISION: return EEXIST;
-		}
-
-		/* for all other cases - a default code */
-		return EINVAL;
-	}
+		NTSTATUS ntstatus = NT_STATUS(IVAL(cli->inbuf, smb_rcls));
+		ntstatus_to_dos(ntstatus, eclass, ecode);
+                return;
+        }
 
 	rcls  = CVAL(cli->inbuf,smb_rcls);
 	code  = SVAL(cli->inbuf,smb_err);
-	if (rcls == 0) return 0;
 
 	if (eclass) *eclass = rcls;
-	if (num   ) *num    = code;
+	if (ecode) *ecode    = code;
+}
 
-	if (rcls == ERRDOS) {
-		switch (code) {
+/* Return a UNIX errno from a dos error class, error number tuple */
+
+int cli_errno_from_dos(uint8 eclass, uint32 num)
+{
+	if (eclass == ERRDOS) {
+		switch (num) {
 		case ERRbadfile: return ENOENT;
 		case ERRbadpath: return ENOTDIR;
 		case ERRnoaccess: return EACCES;
@@ -201,8 +162,9 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case ERRnosuchshare: return ENODEV;
 		}
 	}
-	if (rcls == ERRSRV) {
-		switch (code) {
+
+	if (eclass == ERRSRV) {
+		switch (num) {
 		case ERRbadpw: return EPERM;
 		case ERRaccess: return EACCES;
 		case ERRnoresource: return ENOMEM;
@@ -210,7 +172,101 @@ int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num, uint32 *nt_rpc_
 		case ERRinvnetname: return ENODEV;
 		}
 	}
+
 	/* for other cases */
 	return EINVAL;
 }
 
+/* Return a UNIX errno from a NT status code */
+static struct {
+	NTSTATUS status;
+	int error;
+} nt_errno_map[] = {
+        {NT_STATUS_ACCESS_VIOLATION, EACCES},
+        {NT_STATUS_NO_SUCH_FILE, ENOENT},
+        {NT_STATUS_NO_SUCH_DEVICE, ENODEV},
+        {NT_STATUS_INVALID_HANDLE, EBADF},
+        {NT_STATUS_NO_MEMORY, ENOMEM},
+        {NT_STATUS_ACCESS_DENIED, EACCES},
+        {NT_STATUS_OBJECT_NAME_NOT_FOUND, ENOENT},
+        {NT_STATUS_SHARING_VIOLATION, EBUSY},
+        {NT_STATUS_OBJECT_PATH_INVALID, ENOTDIR},
+        {NT_STATUS_OBJECT_NAME_COLLISION, EEXIST},
+        {NT_STATUS_PATH_NOT_COVERED, ENOENT},
+	{NT_STATUS(0), 0}
+};
+
+int cli_errno_from_nt(NTSTATUS status)
+{
+	int i;
+        DEBUG(10,("cli_errno_from_nt: 32 bit codes: code=%08x\n", NT_STATUS_V(status)));
+
+        /* Status codes without this bit set are not errors */
+
+        if (!(NT_STATUS_V(status) & 0xc0000000))
+                return 0;
+
+	for (i=0;nt_errno_map[i].error;i++) {
+		if (NT_STATUS_V(nt_errno_map[i].status) ==
+		    NT_STATUS_V(status)) return nt_errno_map[i].error;
+	}
+
+        /* for all other cases - a default code */
+        return EINVAL;
+}
+
+/* Return a UNIX errno appropriate for the error received in the last
+   packet. */
+
+int cli_errno(struct cli_state *cli)
+{
+        NTSTATUS status;
+
+        if (cli_is_dos_error(cli)) {
+                uint8 eclass;
+                uint32 ecode;
+
+                cli_dos_error(cli, &eclass, &ecode);
+                return cli_errno_from_dos(eclass, ecode);
+        }
+
+        status = cli_nt_error(cli);
+
+        return cli_errno_from_nt(status);
+}
+
+/* Return true if the last packet was in error */
+
+BOOL cli_is_error(struct cli_state *cli)
+{
+	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
+
+        if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
+                /* Return error is error bits are set */
+                rcls = IVAL(cli->inbuf, smb_rcls);
+                return (rcls & 0xF0000000) == 0xC0000000;
+        }
+                
+        /* Return error if error class in non-zero */
+
+        rcls = CVAL(cli->inbuf, smb_rcls);
+        return rcls != 0;
+}
+
+/* Return true if the last error was an NT error */
+
+BOOL cli_is_nt_error(struct cli_state *cli)
+{
+	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
+
+        return cli_is_error(cli) && (flgs2 & FLAGS2_32_BIT_ERROR_CODES);
+}
+
+/* Return true if the last error was a DOS error */
+
+BOOL cli_is_dos_error(struct cli_state *cli)
+{
+	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
+
+        return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
+}

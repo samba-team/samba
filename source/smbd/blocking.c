@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
+
 extern char *OutBuffer;
 
 /****************************************************************************
@@ -46,8 +46,8 @@ static ubi_slList blocking_lock_queue = { NULL, (ubi_slNodePtr)&blocking_lock_qu
 
 static void free_blocking_lock_record(blocking_lock_record *blr)
 {
-  free(blr->inbuf);
-  free((char *)blr);
+  SAFE_FREE(blr->inbuf);
+  SAFE_FREE(blr);
 }
 
 /****************************************************************************
@@ -103,7 +103,7 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout, int 
 
   if((blr->inbuf = (char *)malloc(length)) == NULL) {
     DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
-    free((char *)blr);
+    SAFE_FREE(blr);
     return False;
   }
 
@@ -134,7 +134,7 @@ static void send_blocking_reply(char *outbuf, int outsize)
 		smb_setlen(outbuf,outsize - 4);
 
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("send_blocking_reply: send_smb failed.\n");
+		exit_server("send_blocking_reply: send_smb failed.");
 }
 
 /****************************************************************************
@@ -170,15 +170,15 @@ static void reply_lockingX_success(blocking_lock_record *blr)
  Return a generic lock fail error blocking call.
 *****************************************************************************/
 
-static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, int32 ecode)
+static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS status)
 {
 	char *outbuf = OutBuffer;
 	char *inbuf = blr->inbuf;
 	construct_reply_common(inbuf, outbuf);
 
-	ERROR(eclass,ecode);
+	ERROR_NT(status);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("generic_blocking_lock_error: send_smb failed.\n");
+		exit_server("generic_blocking_lock_error: send_smb failed.");
 }
 
 /****************************************************************************
@@ -186,72 +186,68 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, i
  obtained first.
 *****************************************************************************/
 
-static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ecode)
+static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 {
-  char *inbuf = blr->inbuf;
-  files_struct *fsp = blr->fsp;
-  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
-  uint16 lock_pid;
-  unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-  char *data;
-  int i;
+	char *inbuf = blr->inbuf;
+	files_struct *fsp = blr->fsp;
+	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
+	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT) 0;
+	uint16 lock_pid;
+	unsigned char locktype = CVAL(inbuf,smb_vwv3);
+	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+	char *data;
+	int i;
 
-  data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
+	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
+	
+	/* 
+	 * Data now points at the beginning of the list
+	 * of smb_lkrng structs.
+	 */
 
-  /* 
-   * Data now points at the beginning of the list
-   * of smb_lkrng structs.
-   */
-
-  /*
-   * Ensure we don't do a remove on the lock that just failed,
-   * as under POSIX rules, if we have a lock already there, we
-   * will delete it (and we shouldn't) .....
-   */
-
-  for(i = blr->lock_num - 1; i >= 0; i--) {
-    int dummy1;
-    uint32 dummy2;
-    BOOL err;
-
-    lock_pid = get_lock_pid( data, i, large_file_format);
-    count = get_lock_count( data, i, large_file_format);
-    offset = get_lock_offset( data, i, large_file_format, &err);
-
-    /*
-     * We know err cannot be set as if it was the lock
-     * request would never have been queued. JRA.
-     */
-
-    do_unlock(fsp,conn,lock_pid,count,offset,&dummy1,&dummy2);
-  }
-
-  generic_blocking_lock_error(blr, eclass, ecode);
+	/*
+	 * Ensure we don't do a remove on the lock that just failed,
+	 * as under POSIX rules, if we have a lock already there, we
+	 * will delete it (and we shouldn't) .....
+	 */
+	
+	for(i = blr->lock_num - 1; i >= 0; i--) {
+		BOOL err;
+		
+		lock_pid = get_lock_pid( data, i, large_file_format);
+		count = get_lock_count( data, i, large_file_format);
+		offset = get_lock_offset( data, i, large_file_format, &err);
+		
+		/*
+		 * We know err cannot be set as if it was the lock
+		 * request would never have been queued. JRA.
+		 */
+		
+		do_unlock(fsp,conn,lock_pid,count,offset);
+	}
+	
+	generic_blocking_lock_error(blr, status);
 }
 
 /****************************************************************************
  Return a lock fail error.
 *****************************************************************************/
 
-static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int32 ecode)
+static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status)
 {
-  switch(blr->com_type) {
-  case SMBlock:
-    generic_blocking_lock_error(blr, eclass, ecode);
-    break;
-  case SMBlockread:
-    generic_blocking_lock_error(blr, eclass, ecode);
-    break;
-  case SMBlockingX:
-    reply_lockingX_error(blr, eclass, ecode);
-    break;
-  default:
-    DEBUG(0,("blocking_lock_reply_error: PANIC - unknown type on blocking lock queue - exiting.!\n"));
-    exit_server("PANIC - unknown type on blocking lock queue");
-  }
+	switch(blr->com_type) {
+	case SMBlock:
+	case SMBlockread:
+		generic_blocking_lock_error(blr, status);
+		break;
+	case SMBlockingX:
+		reply_lockingX_error(blr, status);
+		break;
+	default:
+		DEBUG(0,("blocking_lock_reply_error: PANIC - unknown type on blocking lock queue - exiting.!\n"));
+		exit_server("PANIC - unknown type on blocking lock queue");
+	}
 }
 
 /****************************************************************************
@@ -261,65 +257,68 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, int eclass, int
 
 static BOOL process_lockread(blocking_lock_record *blr)
 {
-  char *outbuf = OutBuffer;
-  char *inbuf = blr->inbuf;
-  ssize_t nread = -1;
-  char *data;
-  int outsize = 0;
-  SMB_OFF_T startpos;
-  size_t numtoread;
-  int eclass;
-  uint32 ecode;
-  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  files_struct *fsp = blr->fsp;
+	char *outbuf = OutBuffer;
+	char *inbuf = blr->inbuf;
+	ssize_t nread = -1;
+	char *data, *p;
+	int outsize = 0;
+	SMB_OFF_T startpos;
+	size_t numtoread;
+	NTSTATUS status;
+	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+	files_struct *fsp = blr->fsp;
 
-  numtoread = SVAL(inbuf,smb_vwv1);
-  startpos = IVAL(inbuf,smb_vwv2);
+	numtoread = SVAL(inbuf,smb_vwv1);
+	startpos = IVAL(inbuf,smb_vwv2);
+	
+	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
+	data = smb_buf(outbuf) + 3;
  
-  numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
-  data = smb_buf(outbuf) + 3;
- 
-  if(!do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, (SMB_BIG_UINT)startpos, READ_LOCK, &eclass, &ecode)) {
-    if((errno != EACCES) && (errno != EAGAIN)) {
-      /*
-       * We have other than a "can't get lock" POSIX
-       * error. Send an error.
-       * Return True so we get dequeued.
-       */
+	status = do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
+			  (SMB_BIG_UINT)startpos, READ_LOCK);
+	if (NT_STATUS_V(status)) {
+		if ((errno != EACCES) && (errno != EAGAIN)) {
+			/*
+			 * We have other than a "can't get lock" POSIX
+			 * error. Send an error.
+			 * Return True so we get dequeued.
+			 */
+			generic_blocking_lock_error(blr, status);
+			return True;
+		}
 
-      generic_blocking_lock_error(blr, eclass, ecode);
-      return True;
-    }
+		/*
+		 * Still waiting for lock....
+		 */
+		
+		DEBUG(10,("process_lockread: failed to get lock for file = %s. Still waiting....\n",
+			  fsp->fsp_name));
+		return False;
+	}
 
-    /*
-     * Still waiting for lock....
-     */
+	nread = read_file(fsp,data,startpos,numtoread);
 
-    DEBUG(10,("process_lockread: failed to get lock for file = %s. Still waiting....\n",
-          fsp->fsp_name));
-    return False;
-  }
-
-  nread = read_file(fsp,data,startpos,numtoread);
-
-  if (nread < 0) {
-    generic_blocking_lock_error(blr,ERRDOS,ERRnoaccess);
-    return True;
-  }
-
-  construct_reply_common(inbuf, outbuf);
-  outsize = set_message(outbuf,5,3,True);
-
-  outsize += nread;
-  SSVAL(outbuf,smb_vwv0,nread);
-  SSVAL(outbuf,smb_vwv5,nread+3);
-  SSVAL(smb_buf(outbuf),1,nread);
-
-  DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
-        fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );
-
-  send_blocking_reply(outbuf,outsize);
-  return True;
+	if (nread < 0) {
+		generic_blocking_lock_error(blr,NT_STATUS_ACCESS_DENIED);
+		return True;
+	}
+	
+	construct_reply_common(inbuf, outbuf);
+	outsize = set_message(outbuf,5,0,True);
+	
+	outsize += nread;
+	SSVAL(outbuf,smb_vwv0,nread);
+	SSVAL(outbuf,smb_vwv5,nread+3);
+	p = smb_buf(outbuf);
+	*p++ = 1;
+	SSVAL(p,0,nread); p += 2;
+	set_message_end(outbuf, p+nread);
+	
+	DEBUG(3, ( "process_lockread file = %s, fnum=%d num=%d nread=%d\n",
+		   fsp->fsp_name, fsp->fnum, (int)numtoread, (int)nread ) );
+	
+	send_blocking_reply(outbuf,outsize);
+	return True;
 }
 
 /****************************************************************************
@@ -329,52 +328,50 @@ static BOOL process_lockread(blocking_lock_record *blr)
 
 static BOOL process_lock(blocking_lock_record *blr)
 {
-  char *outbuf = OutBuffer;
-  char *inbuf = blr->inbuf;
-  int outsize;
-  SMB_OFF_T count = 0, offset = 0;
-  int eclass;
-  uint32 ecode;
-  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  files_struct *fsp = blr->fsp;
+	char *outbuf = OutBuffer;
+	char *inbuf = blr->inbuf;
+	int outsize;
+	SMB_OFF_T count = 0, offset = 0;
+	NTSTATUS status;
+	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+	files_struct *fsp = blr->fsp;
 
-  count = IVAL(inbuf,smb_vwv1);
-  offset = IVAL(inbuf,smb_vwv3);
+	count = IVAL(inbuf,smb_vwv1);
+	offset = IVAL(inbuf,smb_vwv3);
 
-  errno = 0;
-  if (!do_lock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, (SMB_BIG_UINT)offset, WRITE_LOCK, &eclass, &ecode)) {
-    if((errno != EACCES) && (errno != EAGAIN)) {
+	errno = 0;
+	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
+			 (SMB_BIG_UINT)offset, WRITE_LOCK);
+	if (NT_STATUS_IS_ERR(status)) {
+		if((errno != EACCES) && (errno != EAGAIN)) {
+			/*
+			 * We have other than a "can't get lock" POSIX
+			 * error. Send an error.
+			 * Return True so we get dequeued.
+			 */
+			
+			blocking_lock_reply_error(blr, status);
+			return True;
+		}
+		/*
+		 * Still can't get the lock - keep waiting.
+		 */
+		DEBUG(10,("process_lock: failed to get lock for file = %s. Still waiting....\n",
+			  fsp->fsp_name));
+		return False;
+	}
 
-      /*
-       * We have other than a "can't get lock" POSIX
-       * error. Send an error.
-       * Return True so we get dequeued.
-       */
-
-      blocking_lock_reply_error(blr, eclass, ecode);
-      return True;
-    }
-
-    /*
-     * Still can't get the lock - keep waiting.
-     */
-
-    DEBUG(10,("process_lock: failed to get lock for file = %s. Still waiting....\n",
-          fsp->fsp_name));
-    return False;
-  }
-
-  /*
-   * Success - we got the lock.
-   */
-
-  DEBUG(3,("process_lock : file=%s fnum=%d offset=%.0f count=%.0f\n",
-       fsp->fsp_name, fsp->fnum, (double)offset, (double)count));
-
-  construct_reply_common(inbuf, outbuf);
-  outsize = set_message(outbuf,0,0,True);
-  send_blocking_reply(outbuf,outsize);
-  return True;
+	/*
+	 * Success - we got the lock.
+	 */
+	
+	DEBUG(3,("process_lock : file=%s fnum=%d offset=%.0f count=%.0f\n",
+		 fsp->fsp_name, fsp->fnum, (double)offset, (double)count));
+	
+	construct_reply_common(inbuf, outbuf);
+	outsize = set_message(outbuf,0,0,True);
+	send_blocking_reply(outbuf,outsize);
+	return True;
 }
 
 /****************************************************************************
@@ -384,75 +381,72 @@ static BOOL process_lock(blocking_lock_record *blr)
 
 static BOOL process_lockingX(blocking_lock_record *blr)
 {
-  char *inbuf = blr->inbuf;
-  unsigned char locktype = CVAL(inbuf,smb_vwv3);
-  files_struct *fsp = blr->fsp;
-  connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
-  uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
-  uint16 num_locks = SVAL(inbuf,smb_vwv7);
-  SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
-  uint16 lock_pid;
-  BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-  char *data;
-  int eclass=0;
-  uint32 ecode=0;
+	char *inbuf = blr->inbuf;
+	unsigned char locktype = CVAL(inbuf,smb_vwv3);
+	files_struct *fsp = blr->fsp;
+	connection_struct *conn = conn_find(SVAL(inbuf,smb_tid));
+	uint16 num_ulocks = SVAL(inbuf,smb_vwv6);
+	uint16 num_locks = SVAL(inbuf,smb_vwv7);
+	SMB_BIG_UINT count = (SMB_BIG_UINT)0, offset = (SMB_BIG_UINT)0;
+	uint16 lock_pid;
+	BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
+	char *data;
+	NTSTATUS status = NT_STATUS_OK;
 
-  data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
+	data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
 
-  /* 
-   * Data now points at the beginning of the list
-   * of smb_lkrng structs.
-   */
+	/* 
+	 * Data now points at the beginning of the list
+	 * of smb_lkrng structs.
+	 */
+	
+	for(; blr->lock_num < num_locks; blr->lock_num++) {
+		BOOL err;
 
-  for(; blr->lock_num < num_locks; blr->lock_num++) {
-    BOOL err;
+		lock_pid = get_lock_pid( data, blr->lock_num, large_file_format);
+		count = get_lock_count( data, blr->lock_num, large_file_format);
+		offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
+		
+		/*
+		 * We know err cannot be set as if it was the lock
+		 * request would never have been queued. JRA.
+		 */
+		errno = 0;
+		status = do_lock(fsp,conn,lock_pid,count,offset, 
+				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
+		if (NT_STATUS_IS_ERR(status)) break;
+	}
 
-    lock_pid = get_lock_pid( data, blr->lock_num, large_file_format);
-    count = get_lock_count( data, blr->lock_num, large_file_format);
-    offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
+	if(blr->lock_num == num_locks) {
+		/*
+		 * Success - we got all the locks.
+		 */
+		
+		DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d num_locks=%d\n",
+			 fsp->fsp_name, fsp->fnum, (unsigned int)locktype, num_locks) );
 
-    /*
-     * We know err cannot be set as if it was the lock
-     * request would never have been queued. JRA.
-     */
-    errno = 0;
-    if(!do_lock(fsp,conn,lock_pid,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
-                &eclass, &ecode))
-      break;
-  }
+		reply_lockingX_success(blr);
+		return True;
+	} else if ((errno != EACCES) && (errno != EAGAIN)) {
+		/*
+		 * We have other than a "can't get lock" POSIX
+		 * error. Free any locks we had and return an error.
+		 * Return True so we get dequeued.
+		 */
+		
+		blocking_lock_reply_error(blr, status);
+		return True;
+	}
 
-  if(blr->lock_num == num_locks) {
-
-    /*
-     * Success - we got all the locks.
-     */
-
-    DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d num_locks=%d\n",
-          fsp->fsp_name, fsp->fnum, (unsigned int)locktype, num_locks) );
-
-    reply_lockingX_success(blr);
-    return True;
-
-  } else if((errno != EACCES) && (errno != EAGAIN)) {
-
-    /*
-     * We have other than a "can't get lock" POSIX
-     * error. Free any locks we had and return an error.
-     * Return True so we get dequeued.
-     */
-
-    blocking_lock_reply_error(blr, eclass, ecode);
-    return True;
-  }
-
-  /*
-   * Still can't get all the locks - keep waiting.
-   */
-
-  DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
-Waiting....\n", blr->lock_num, num_locks, fsp->fsp_name, fsp->fnum));
-
-  return False;
+	/*
+	 * Still can't get all the locks - keep waiting.
+	 */
+	
+	DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
+Waiting....\n", 
+		  blr->lock_num, num_locks, fsp->fsp_name, fsp->fnum));
+	
+	return False;
 }
 
 /****************************************************************************
@@ -517,7 +511,7 @@ void remove_pending_lock_requests_by_mid(int mid)
       DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
 file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
-      blocking_lock_reply_error(blr,0,NT_STATUS_CANCELLED);
+      blocking_lock_reply_error(blr,NT_STATUS_CANCELLED);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
@@ -582,33 +576,33 @@ void process_blocking_lock_queue(time_t t)
       DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
           fsp->fnum, fsp->fsp_name ));
 
-      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
+      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
     }
 
-    if(!become_user(conn,vuid)) {
+    if(!change_to_user(conn,vuid)) {
       DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
             vuid ));
       /*
        * Remove the entry and return an error to the client.
        */
-      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
+      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
       continue;
     }
 
-    if(!become_service(conn,True)) {
+    if(!set_current_service(conn,True)) {
       DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
       /*
        * Remove the entry and return an error to the client.
        */
-      blocking_lock_reply_error(blr,ERRSRV,ERRaccess);
+      blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-      unbecome_user();
+      change_to_root_user();
       continue;
     }
 
@@ -621,11 +615,11 @@ void process_blocking_lock_queue(time_t t)
     if(blocking_lock_record_process(blr)) {
       free_blocking_lock_record((blocking_lock_record *)ubi_slRemNext( &blocking_lock_queue, prev));
       blr = (blocking_lock_record *)(prev ? ubi_slNext(prev) : ubi_slFirst(&blocking_lock_queue));
-      unbecome_user();
+      change_to_root_user();
       continue;
     }
 
-    unbecome_user();
+    change_to_root_user();
 
     /*
      * Move to the next in the list.

@@ -20,8 +20,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
-
 
 static void (*cont_fn)(void *);
 
@@ -79,6 +77,3 @@ void fault_setup(void (*fn)(void *))
 	CatchSignal(SIGBUS,SIGNAL_CAST sig_fault);
 #endif
 }
-
-
-

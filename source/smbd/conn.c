@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* set these to define the limits of the server. NOTE These are on a
    per-client basis. Thus any one machine can't connect to more than
    MAX_CONNECTIONS services, but any number of machines may connect at
@@ -177,7 +175,7 @@ void conn_free(connection_struct *conn)
 	DLIST_REMOVE(Connections, conn);
 
 	if (conn->ngroups && conn->groups) {
-		free(conn->groups);
+		SAFE_FREE(conn->groups);
 		conn->groups = NULL;
 		conn->ngroups = 0;
 	}
@@ -196,7 +194,7 @@ void conn_free(connection_struct *conn)
 	num_open--;
 
 	ZERO_STRUCTP(conn);
-	free(conn);
+	SAFE_FREE(conn);
 }
 
 

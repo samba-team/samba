@@ -24,8 +24,6 @@
 #include "nterr.h"
 #include "sids.h"
 
-extern int DEBUGLEVEL;
-
 /**********************************************************************************
  Check if this ACE has a SID in common with the token.
 **********************************************************************************/
@@ -35,7 +33,7 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
 	size_t i;
 
 	for (i = 0; i < token->num_sids; i++) {
-		if (sid_equal(&ace->sid, &token->user_sids[i]))
+		if (sid_equal(&ace->trustee, &token->user_sids[i]))
 			return True;
 	}
 
@@ -47,7 +45,8 @@ static BOOL token_sid_in_ace(const NT_USER_TOKEN *token, const SEC_ACE *ace)
  bits not yet granted. Zero means permission allowed (no more needed bits).
 **********************************************************************************/
 
-static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, uint32 *status)
+static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
+			NTSTATUS *status)
 {
 	uint32 mask = ace->info.mask;
 
@@ -106,7 +105,9 @@ static uint32 check_ace(SEC_ACE *ace, NT_USER_TOKEN *token, uint32 acc_desired, 
  include other bits requested.
 **********************************************************************************/ 
 
-static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, uint32 desired, uint32 *status)
+static BOOL get_max_access( SEC_ACL *the_acl, NT_USER_TOKEN *token, uint32 *granted, 
+			    uint32 desired, 
+			    NTSTATUS *status)
 {
 	uint32 acc_denied = 0;
 	uint32 acc_granted = 0;
@@ -202,7 +203,8 @@ void se_map_generic(uint32 *access_mask, struct generic_mapping *mapping)
 *****************************************************************************/ 
 
 BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
-		     uint32 acc_desired, uint32 *acc_granted, uint32 *status)
+		     uint32 acc_desired, uint32 *acc_granted, 
+		     NTSTATUS *status)
 {
 	extern NT_USER_TOKEN anonymous_token;
 	size_t i;
@@ -220,8 +222,8 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 	*acc_granted = 0;
 
 	DEBUG(10,("se_access_check: requested access %x, for  NT token with %u entries and first sid %s.\n",
-				(unsigned int)acc_desired, (unsigned int)token->num_sids,
-				sid_to_string(sid_str, &token->user_sids[0])));
+		 (unsigned int)acc_desired, (unsigned int)token->num_sids,
+		sid_to_string(sid_str, &token->user_sids[0])));
 
 	/*
 	 * No security descriptor or security descriptor with no DACL
@@ -239,7 +241,7 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 	/* The user sid is the first in the token */
 
-	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[0]) ));
+	DEBUG(3, ("se_access_check: user sid is %s\n", sid_to_string(sid_str, &token->user_sids[PRIMARY_USER_SID_INDEX]) ));
 
 	for (i = 1; i < token->num_sids; i++) {
 		DEBUG(3, ("se_access_check: also %s\n",
@@ -266,7 +268,8 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 	if (tmp_acc_desired & MAXIMUM_ALLOWED_ACCESS) {
 		tmp_acc_desired &= ~MAXIMUM_ALLOWED_ACCESS;
-		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, status);
+		return get_max_access( the_acl, token, acc_granted, tmp_acc_desired, 
+				       status);
 	}
 
 	for ( i = 0 ; i < the_acl->num_aces && tmp_acc_desired != 0; i++) {
@@ -274,14 +277,14 @@ BOOL se_access_check(SEC_DESC *sd, NT_USER_TOKEN *token,
 
 		DEBUG(10,("se_access_check: ACE %u: type %d, flags = 0x%02x, SID = %s mask = %x, current desired = %x\n",
 			  (unsigned int)i, ace->type, ace->flags,
-			  sid_to_string(sid_str, &ace->sid),
+			  sid_to_string(sid_str, &ace->trustee),
 			  (unsigned int) ace->info.mask, 
 			  (unsigned int)tmp_acc_desired ));
 
 		tmp_acc_desired = check_ace( ace, token, tmp_acc_desired, status);
-		if (*status != NT_STATUS_OK) {
+		if (NT_STATUS_V(*status)) {
 			*acc_granted = 0;
-			DEBUG(5,("se_access_check: ACE %u denied with status %x.\n", (unsigned int)i, (unsigned int)*status ));
+			DEBUG(5,("se_access_check: ACE %u denied with status %s.\n", (unsigned int)i, get_nt_error_msg(*status)));
 			return False;
 		}
 	}
@@ -385,10 +388,10 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 			continue;
 
 		init_sec_access(&new_ace->info, ace->info.mask);
-		init_sec_ace(new_ace, &ace->sid, ace->type,
+		init_sec_ace(new_ace, &ace->trustee, ace->type,
 			     new_ace->info, new_flags);
 
-		sid_to_string(sid_str, &ace->sid);
+		sid_to_string(sid_str, &ace->trustee);
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n", sid_str,

@@ -559,6 +559,62 @@ int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
     return result;
 }
 
+/*********************************************************************
+ A version of ftruncate that will write the space on disk if strict
+ allocate is set.
+**********************************************************************/
+
+static int strict_allocate_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
+{
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	SMB_STRUCT_STAT st;
+	SMB_OFF_T currpos = vfs_ops->lseek(fsp, fd, 0, SEEK_CUR);
+	unsigned char zero_space[4096];
+	SMB_OFF_T space_to_write = len - st.st_size;
+
+	if (currpos == -1)
+		return -1;
+
+	if (vfs_ops->fstat(fsp, fd, &st) == -1)
+		return -1;
+
+#ifdef S_ISFIFO
+	if (S_ISFIFO(st.st_mode))
+		return 0;
+#endif
+
+	if (st.st_size == len)
+		return 0;
+
+	/* Shrink - just ftruncate. */
+	if (st.st_size > len)
+		return sys_ftruncate(fd, len);
+
+	/* Write out the real space on disk. */
+	if (vfs_ops->lseek(fsp, fd, st.st_size, SEEK_SET) != st.st_size)
+		return -1;
+
+	space_to_write = len - st.st_size;
+
+	memset(zero_space, '\0', sizeof(zero_space));
+	while ( space_to_write > 0) {
+		SMB_OFF_T retlen;
+		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
+
+		retlen = vfs_ops->write(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+		if (retlen <= 0)
+			return -1;
+
+		space_to_write -= retlen;
+	}
+
+	/* Seek to where we were */
+	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos)
+		return -1;
+
+	return 0;
+}
+
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 {
 	int result = -1;
@@ -569,13 +625,21 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 
 	START_PROFILE(syscall_ftruncate);
 
+	if (lp_strict_allocate(SNUM(fsp->conn))) {
+		result = strict_allocate_ftruncate(fsp, fd, len);
+		END_PROFILE(syscall_ftruncate);
+		return result;
+	}
+
 	/* we used to just check HAVE_FTRUNCATE_EXTEND and only use
 	   sys_ftruncate if the system supports it. Then I discovered that
 	   you can have some filesystems that support ftruncate
 	   expansion and some that don't! On Linux fat can't do
 	   ftruncate extend but ext2 can. */
+
 	result = sys_ftruncate(fd, len);
-	if (result == 0) goto done;
+	if (result == 0)
+		goto done;
 
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
@@ -589,7 +653,7 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	   size in which case the ftruncate above should have
 	   succeeded or shorter, in which case seek to len - 1 and
 	   write 1 byte of zero */
-	if (vfs_ops->fstat(fsp, fd, &st) < 0) {
+	if (vfs_ops->fstat(fsp, fd, &st) == -1) {
 		goto done;
 	}
 
@@ -610,19 +674,17 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 		goto done;
 	}
 
-	if (vfs_ops->lseek(fsp, fd, len-1, SEEK_SET) != len -1) {
+	if (vfs_ops->lseek(fsp, fd, len-1, SEEK_SET) != len -1)
 		goto done;
-	}
 
-	if (vfs_ops->write(fsp, fd, &c, 1)!=1) {
+	if (vfs_ops->write(fsp, fd, &c, 1)!=1)
 		goto done;
-	}
 
 	/* Seek to where we were */
-	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos) {
+	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos)
 		goto done;
-	}
 	result = 0;
+
   done:
 
 	END_PROFILE(syscall_ftruncate);
@@ -670,6 +732,51 @@ int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_
     result = sys_readlink(path, buf, bufsiz);
     END_PROFILE(syscall_readlink);
     return result;
+}
+
+int vfswrap_link(connection_struct *conn, const char *oldpath, const char *newpath)
+{
+	int result;
+
+	START_PROFILE(syscall_link);
+
+#ifdef VFS_CHECK_NULL
+	if ((oldpath == NULL) || (newpath == NULL))
+                smb_panic("NULL pointer passed to vfswrap_link()\n");
+#endif
+	result = sys_link(oldpath, newpath);
+	END_PROFILE(syscall_link);
+	return result;
+}
+
+int vfswrap_mknod(connection_struct *conn, const char *pathname, mode_t mode, SMB_DEV_T dev)
+{
+	int result;
+
+	START_PROFILE(syscall_mknod);
+
+#ifdef VFS_CHECK_NULL
+	if (pathname == NULL)
+                smb_panic("NULL pointer passed to vfswrap_mknod()\n");
+#endif
+	result = sys_mknod(pathname, mode, dev);
+	END_PROFILE(syscall_mknod);
+	return result;
+}
+
+char *vfswrap_realpath(connection_struct *conn, const char *path, char *resolved_path)
+{
+	char *result;
+
+	START_PROFILE(syscall_realpath);
+
+#ifdef VFS_CHECK_NULL
+	if ((path == NULL) || (resolved_path == NULL))
+                smb_panic("NULL pointer passed to vfswrap_realpath()\n");
+#endif
+	result = sys_realpath(path, resolved_path);
+	END_PROFILE(syscall_realpath);
+	return result;
 }
 
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)

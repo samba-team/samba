@@ -24,7 +24,6 @@
 */
 
 #include "includes.h"
-extern int DEBUGLEVEL;
 
 /*
  * The POSIX locking database handle.
@@ -107,8 +106,7 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(int));
 	if (!tp) {
 		DEBUG(0,("add_fd_to_close_entry: Realloc fail !\n"));
-		if (dbuf.dptr)
-			free(dbuf.dptr);
+		SAFE_FREE(dbuf.dptr);
 		return False;
 	} else
 		dbuf.dptr = tp;
@@ -120,7 +118,7 @@ static BOOL add_fd_to_close_entry(files_struct *fsp)
 		DEBUG(0,("add_fd_to_close_entry: tdb_store fail !\n"));
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	return True;
 }
 
@@ -240,17 +238,16 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		 */
 
 		if (!add_fd_to_close_entry(fsp)) {
-			free((char *)entries);
+			SAFE_FREE(entries);
 			return False;
 		}
 
-		free((char *)entries);
+		SAFE_FREE(entries);
 		fsp->fd = -1;
 		return 0;
 	}
 
-	if(entries)
-		free((char *)entries);
+	SAFE_FREE(entries);
 
 	/*
 	 * No outstanding POSIX locks. Get the pending close fd's
@@ -276,8 +273,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 		delete_close_entries(fsp);
 	}
 
-	if (fd_array)
-		free((char *)fd_array);
+	SAFE_FREE(fd_array);
 
 	/*
 	 * Finally close the fd associated with this fsp.
@@ -338,13 +334,12 @@ static BOOL delete_posix_lock_entry_by_index(files_struct *fsp, size_t entry)
 		tdb_store(posix_lock_tdb, kbuf, dbuf, TDB_REPLACE);
 	}
 
-	free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 
 	return True;
 
  fail:
-    if (dbuf.dptr)
-		free(dbuf.dptr);
+    SAFE_FREE(dbuf.dptr);
     return False;
 }
 
@@ -391,7 +386,7 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
 		goto fail;
 	}
 
-    free(dbuf.dptr);
+    SAFE_FREE(dbuf.dptr);
 
 	DEBUG(10,("add_posix_lock: File %s: type = %s: start=%.0f size=%.0f: dev=%.0f inode=%.0f\n",
 			fsp->fsp_name, posix_lock_type_name(lock_type), (double)start, (double)size,
@@ -400,8 +395,7 @@ static BOOL add_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T s
     return True;
 
  fail:
-    if (dbuf.dptr)
-		free(dbuf.dptr);
+    SAFE_FREE(dbuf.dptr);
     return False;
 }
 
@@ -499,14 +493,12 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 			posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
 				(unsigned int)num_overlapping_records ));
 
-    if (dbuf.dptr)
-		free(dbuf.dptr);
+    SAFE_FREE(dbuf.dptr);
 
 	return num_overlapping_records;
 
  fail:
-    if (dbuf.dptr)
-		free(dbuf.dptr);
+    SAFE_FREE(dbuf.dptr);
     return -1;
 }
 
@@ -955,8 +947,7 @@ lock: start = %.0f, size = %.0f\n", (double)l_curr->start, (double)l_curr->size,
 		} /* end for ( l_curr = lhead; l_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
 
-	if (dbuf.dptr)
-		free(dbuf.dptr);
+	SAFE_FREE(dbuf.dptr);
 	
 	return lhead;
 }
@@ -1266,7 +1257,7 @@ void posix_locking_close_file(files_struct *fsp)
 		/* All locks are ours. */
 		DEBUG(10,("posix_locking_close_file: file %s has %u outstanding locks, but all on one fd.\n", 
 			fsp->fsp_name, (unsigned int)count ));
-		free((char *)entries);
+		SAFE_FREE(entries);
 		delete_posix_lock_entries(fsp);
 		return;
 	}
@@ -1281,7 +1272,7 @@ void posix_locking_close_file(files_struct *fsp)
 		if (pl->fd == fsp->fd)
 			release_posix_lock(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
 	}
-	free((char *)entries);
+	SAFE_FREE(entries);
 }
 
 /*******************************************************************

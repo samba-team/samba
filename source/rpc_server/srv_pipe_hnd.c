@@ -28,13 +28,24 @@
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)
 
-extern int DEBUGLEVEL;
 static pipes_struct *chain_p;
 static int pipes_open;
 
 #ifndef MAX_OPEN_PIPES
-#define MAX_OPEN_PIPES 64
+#define MAX_OPEN_PIPES 2048
 #endif
+
+/*
+ * Sometimes I can't decide if I hate Windows printer driver
+ * writers more than I hate the Windows spooler service driver
+ * writers. This gets around a combination of bugs in the spooler
+ * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ */
+
+#ifndef MAX_OPEN_SPOOLSS_PIPES
+#define MAX_OPEN_SPOOLSS_PIPES 20
+#endif
+static int current_spoolss_pipes_open;
 
 static pipes_struct *Pipes;
 static struct bitmap *bmap;
@@ -84,7 +95,7 @@ void init_rpc_pipe_hnd(void)
 {
 	bmap = bitmap_allocate(MAX_OPEN_PIPES);
 	if (!bmap)
-		exit_server("out of memory in init_rpc_pipe_hnd\n");
+		exit_server("out of memory in init_rpc_pipe_hnd");
 }
 
 /****************************************************************************
@@ -127,11 +138,20 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	int i;
 	pipes_struct *p;
 	static int next_pipe;
+	BOOL is_spoolss_pipe = False;
 
 	DEBUG(4,("Open pipe requested %s (pipes_open=%d)\n",
 		 pipe_name, pipes_open));
 
-	
+	if (strstr(pipe_name, "spoolss"))
+		is_spoolss_pipe = True;
+
+	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
+		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
+			pipe_name ));
+		return NULL;
+	}
+
 	/* not repeating pipe numbers makes it easier to track things in 
 	   log files and prevents client bugs where pipe numbers are reused
 	   over connection restarts */
@@ -159,14 +179,14 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if ((p->mem_ctx = talloc_init()) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
 	if (!init_pipe_handle_list(p, pipe_name)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
-		free(p);
+		SAFE_FREE(p);
 		return NULL;
 	}
 
@@ -243,6 +263,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 	/* OVERWRITE p as a temp variable, to display all open pipes */ 
 	for (p = Pipes; p; p = p->next)
 		DEBUG(5,("open pipes: name %s pnum=%x\n", p->name, p->pnum));  
+
+	if (is_spoolss_pipe)
+		current_spoolss_pipes_open++;
 
 	return chain_p;
 }
@@ -475,9 +498,12 @@ authentication failed. Denying the request.\n", p->name));
 
 	/*
 	 * Check the data length doesn't go over the 10Mb limit.
+	 * increased after observing a bug in the Windows NT 4.0 SP6a
+	 * spoolsv.exe when the response to a GETPRINTERDRIVER2 RPC
+	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
 	
-	if(prs_data_size(&p->in_data.data) + data_len > 10*1024*1024) {
+	if(prs_data_size(&p->in_data.data) + data_len > 15*1024*1024) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
 		set_incoming_fault(p);
@@ -570,7 +596,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return (ssize_t)data_len;
 	}
 
@@ -619,7 +645,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
@@ -904,6 +930,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 		return False;
 	}
 
+	if (strstr(p->name, "spoolss"))
+		current_spoolss_pipes_open--;
+
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
@@ -927,7 +956,7 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 
 	ZERO_STRUCTP(p);
 
-	free(p);
+	SAFE_FREE(p);
 	
 	return True;
 }

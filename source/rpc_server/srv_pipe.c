@@ -40,8 +40,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
     unsigned char *hash = p->ntlmssp_hash;
@@ -93,7 +91,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -382,20 +380,20 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 		
 		unbecome_root();
 
-	        /* Quit if the account was disabled. */
-	        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
+        /* Quit if the account was disabled. */
+        if((pdb_get_acct_ctrl(sampass) & ACB_DISABLED) || !pdb_get_lanman_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' was disabled.\n", pipe_user_name));
 			pdb_free_sam(sampass);
 			return False;
- 	       }
+		}
  
 		if(!pdb_get_nt_passwd(sampass)) {
 			DEBUG(1,("Account for user '%s' has no NT password hash.\n", pipe_user_name));
 			pdb_free_sam(sampass);
 			return False;
-	        }
+		}
  
-	        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
+        smb_passwd_ptr = pdb_get_lanman_passwd(sampass);
 	}
 
 	/*
@@ -456,9 +454,10 @@ failed authentication on named pipe %s.\n", domain, pipe_user_name, wks, p->name
 	/* Create an NT_USER_TOKEN struct for this user. */
 	p->pipe_user.nt_user_token = create_nt_token(p->pipe_user.uid,p->pipe_user.gid,
 						p->pipe_user.ngroups, p->pipe_user.groups,
-						guest_user);
+						guest_user, NULL);
 
 	p->ntlmssp_auth_validated = True;
+	pdb_free_sam(sampass);
 	return True;
 }
 
@@ -615,7 +614,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
+BOOL setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -1134,7 +1133,6 @@ BOOL api_pipe_request(pipes_struct *p)
 {
 	int i = 0;
 	BOOL ret = False;
-	BOOL changed_user_id = False;
 
 	if (p->ntlmssp_auth_validated) {
 
@@ -1142,8 +1140,6 @@ BOOL api_pipe_request(pipes_struct *p)
 			prs_mem_free(&p->out_data.rdata);
 			return False;
 		}
-
-		changed_user_id = True;
 	}
 
 	for (i = 0; api_fd_commands[i].pipe_clnt_name; i++) {
@@ -1156,8 +1152,8 @@ BOOL api_pipe_request(pipes_struct *p)
 		}
 	}
 
-	if(changed_user_id)
-		unbecome_authenticated_pipe_user(p);
+	if (p->ntlmssp_auth_validated)
+		unbecome_authenticated_pipe_user();
 
 	return ret;
 }
@@ -1181,7 +1177,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
-			DEBUG(3,("api_rpcTNP: rpc command: %s\n", api_rpc_cmds[fn_num].name));
+			DEBUG(3,("api_rpcTNP: pipe %u rpc command: %s\n", (unsigned int)p->pnum, api_rpc_cmds[fn_num].name));
 			break;
 		}
 	}
@@ -1193,7 +1189,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p, 0x1c010002);
+		setup_fault_pdu(p, NT_STATUS(0x1c010002));
 		return True;
 	}
 
@@ -1204,6 +1200,13 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
+	}
+
+	if (p->bad_handle_fault_state) {
+		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
+		p->bad_handle_fault_state = False;
+		setup_fault_pdu(p, NT_STATUS(0x1C00001A));
+		return True;
 	}
 
 	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
@@ -1228,7 +1231,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		if (data) {
 			prs_uint8s(False, "", &p->in_data.data, 0, (unsigned char *)data,
 				   data_len);
-			free(data);
+			SAFE_FREE(data);
 		}
 
 	}

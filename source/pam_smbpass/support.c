@@ -216,12 +216,13 @@ void _cleanup( pam_handle_t * pamh, void *x, int error_status )
     x = _pam_delete( (char *) x );
 }
 
-/*
+/* JHT
+ *
  * Safe duplication of character strings. "Paranoid"; don't leave
  * evidence of old token around for later stack analysis.
+ *
  */
-
-char * xstrdup( const char *x )
+char * smbpXstrDup( const char *x )
 {
     register char *new = NULL;
 
@@ -231,7 +232,7 @@ char * xstrdup( const char *x )
         for (i = 0; x[i]; ++i); /* length of string */
         if ((new = malloc(++i)) == NULL) {
             i = 0;
-            _log_err( LOG_CRIT, "out of memory in xstrdup" );
+            _log_err( LOG_CRIT, "out of memory in smbpXstrDup" );
         } else {
             while (i-- > 0) {
                 new[i] = x[i];
@@ -292,7 +293,7 @@ void _cleanup_failures( pam_handle_t * pamh, void *fl, int err )
         }
         _pam_delete( failure->agent );	/* tidy up */
         _pam_delete( failure->user );	/* tidy up */
-	free( failure );
+	SAFE_FREE( failure );
     }
 }
 
@@ -414,9 +415,9 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
                       , pdb_get_uid(sampass) );
                     new->count = 1;
                 }
-                new->user = xstrdup( name );
+                new->user = smbpXstrDup( name );
                 new->id = pdb_get_uid(sampass);
-                new->agent = xstrdup( uidtoname( getuid() ) );
+                new->agent = smbpXstrDup( uidtoname( getuid() ) );
                 pam_set_data( pamh, data_name, new, _cleanup_failures );
 
             } else {
@@ -556,7 +557,7 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
 
         if (retval == PAM_SUCCESS) {	/* a good conversation */
 
-            token = xstrdup(resp[j++].resp);
+            token = smbpXstrDup(resp[j++].resp);
             if (token != NULL) {
                 if (expect == 2) {
                     /* verify that password entered correctly */
@@ -625,10 +626,10 @@ int _smb_read_password( pam_handle_t * pamh, unsigned int ctrl,
     return PAM_SUCCESS;
 }
 
-int _pam_smb_approve_pass(pam_handle_t * pamh
-						  ,unsigned int ctrl
-						  ,const char *pass_old
-						  ,const char *pass_new)
+int _pam_smb_approve_pass(pam_handle_t * pamh,
+		unsigned int ctrl,
+		const char *pass_old,
+		const char *pass_new )
 {
 
     /* Further checks should be handled through module stacking. -SRL */

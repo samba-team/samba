@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
@@ -158,7 +157,7 @@ reply for the nt protocol
 static int reply_nt1(char *outbuf)
 {
   /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_LEVEL_II_OPLOCKS|
+  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_LEVEL_II_OPLOCKS|CAP_STATUS32| (lp_unix_extensions() ? CAP_UNIX : 0) |
                      (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
 					 ((lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) ?
 							CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS : 0) |
@@ -217,7 +216,7 @@ static int reply_nt1(char *outbuf)
   set_message(outbuf,17,data_len,True);
   pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
 
-  CVAL(outbuf,smb_vwv1) = secword;
+  SCVAL(outbuf,smb_vwv1,secword);
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
   if (doencrypt) 
 	  memcpy(smb_buf(outbuf), cryptkey, 8);

@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2002.
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -235,6 +235,14 @@ Byte offset   Type     name                description
  * Thursby MAC extensions....
  */
 
+/*
+ * MAC CIFS Extensions have the range 0x300 - 0x2FF reserved.
+ * Supposedly Microsoft have agreed to this.
+ */
+
+#define MIN_MAC_INFO_LEVEL 0x300
+#define MAX_MAC_INFO_LEVEL 0x3FF
+
 #define SMB_MAC_QUERY_FS_INFO           0x301
 
 #define DIRLEN_GUESS (45+MAX(l1_achName,l2_achName))
@@ -299,8 +307,132 @@ Byte offset   Type     name                description
 #define SMB_FILE_TRACKING_INFORMATION			1036
 #define SMB_FILE_MAXIMUM_INFORMATION			1037
 
+/* NT passthough levels for qfsinfo. */
+
+#define SMB_FS_VOLUME_INFORMATION			1001
+#define SMB_FS_LABEL_INFORMATION			1002
+#define SMB_FS_SIZE_INFORMATION				1003
+#define SMB_FS_DEVICE_INFORMATION			1004
+#define SMB_FS_ATTRIBUTE_INFORMATION			1005
+#define SMB_FS_CONTROL_INFORMATION			1006
+#define SMB_FS_FULL_SIZE_INFORMATION			1007
+#define SMB_FS_OBJECTID_INFORMATION			1008
+
+/* UNIX CIFS Extensions - created by HP */
+/*
+ * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
+ * Supposedly Microsoft have agreed to this.
+ */
+
+#define MIN_UNIX_INFO_LEVEL 0x200
+#define MAX_UNIX_INFO_LEVEL 0x2FF
+
+#define INFO_LEVEL_IS_UNIX(level) (((level) >= MIN_UNIX_INFO_LEVEL) && ((level) <= MAX_UNIX_INFO_LEVEL))
+
+#define SMB_QUERY_FILE_UNIX_BASIC      0x200   /* UNIX File Info*/
+#define SMB_SET_FILE_UNIX_BASIC        0x200
+
+#define SMB_MODE_NO_CHANGE                 0xFFFFFFFF     /* file mode value which */
+                                              /* means "don't change it" */
+#define SMB_UID_NO_CHANGE                  0xFFFFFFFF
+#define SMB_GID_NO_CHANGE                  0xFFFFFFFF
+
+/*
+Offset Size         Name
+0      LARGE_INTEGER EndOfFile                File size
+8      LARGE_INTEGER Blocks                   Number of bytes used on disk (st_blocks).
+16     LARGE_INTEGER CreationTime             Creation time
+24     LARGE_INTEGER LastAccessTime           Last access time
+32     LARGE_INTEGER LastModificationTime     Last modification time
+40     LARGE_INTEGER Uid                      Numeric user id for the owner
+48     LARGE_INTEGER Gid                      Numeric group id of owner
+56     ULONG Type                             Enumeration specifying the pathname type:
+                                              0 -- File
+                                              1 -- Directory
+                                              2 -- Symbolic link
+                                              3 -- Character device
+                                              4 -- Block device
+                                              5 -- FIFO (named pipe)
+                                              6 -- Unix domain socket
+
+60     LARGE_INTEGER devmajor                 Major device number if type is device
+68     LARGE_INTEGER devminor                 Minor device number if type is device
+76     LARGE_INTEGER uniqueid                 This is a server-assigned unique id for the file. The client
+                                              will typically map this onto an inode number. The scope of
+                                              uniqueness is the share.
+84     LARGE_INTEGER permissions              Standard UNIX file permissions  - see below.
+92     LARGE_INTEGER nlinks                   The number of directory entries that map to this entry
+                                              (number of hard links)
+
+100 - end.
+*/
+
+/* UNIX filetype mappings. */
+
+#define UNIX_TYPE_FILE 0
+#define UNIX_TYPE_DIR 1
+#define UNIX_TYPE_SYMLINK 2
+#define UNIX_TYPE_CHARDEV 3
+#define UNIX_TYPE_BLKDEV 4
+#define UNIX_TYPE_FIFO 5
+#define UNIX_TYPE_SOCKET 6
+#define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
+
+/*
+ * Oh this is fun. "Standard UNIX permissions" has no
+ * meaning in POSIX. We need to define the mapping onto
+ * and off the wire as this was not done in the original HP
+ * spec. JRA.
+ */
+
+#define UNIX_X_OTH			0000001
+#define UNIX_W_OTH			0000002
+#define UNIX_R_OTH			0000004
+#define UNIX_X_GRP			0000010
+#define UNIX_W_GRP                      0000020
+#define UNIX_R_GRP                      0000040
+#define UNIX_X_USR                      0000100
+#define UNIX_W_USR                      0000200
+#define UNIX_R_USR                      0000400
+#define UNIX_STICKY                     0001000
+#define UNIX_SET_GID                    0002000
+#define UNIX_SET_UID                    0004000
+
+/* Masks for the above */
+#define UNIX_OTH_MASK                   0000007
+#define UNIX_GRP_MASK                   0000070
+#define UNIX_USR_MASK                   0000700
+#define UNIX_PERM_MASK                  0000777
+#define UNIX_EXTRA_MASK                 0007000
+#define UNIX_ALL_MASK                   0007777
+
+#define SMB_QUERY_FILE_UNIX_LINK       0x201
+#define SMB_SET_FILE_UNIX_LINK         0x201
+#define SMB_SET_FILE_UNIX_HLINK        0x203
+
+#define SMB_FIND_FILE_UNIX             0x202
+
+/*
+ Info level for QVOLINFO - returns version of CIFS UNIX extensions, plus
+ 64-bits worth of capability fun :-).
+*/
+
+#define SMB_QUERY_CIFS_UNIX_INFO      0x200
+
+/* Returns the following.
+
+  UINT16             major version number
+  UINT16             minor version number
+  LARGE_INTEGER      capability bitfield
+
+*/
+
+#define CIFS_UNIX_MAJOR_VERSION 1
+#define CIFS_UNIX_MINOR_VERSION 0
+
+#define CIFS_UNIX_FCNTL_LOCKS_CAP           0x1
+#define CIFS_UNIX_POSIX_ACLS_CAP            0x2
+
+/* ... more as we think of them :-). */
 
 #endif
-
-
-

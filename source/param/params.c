@@ -98,8 +98,6 @@
  *  bSize       - The size of the global buffer <bufr>.
  */
 
-extern int DEBUGLEVEL;
-
 static char *bufr  = NULL;
 static int   bSize = 0;
 
@@ -121,8 +119,8 @@ static int mygetc(myFILE *f)
 static void myfile_close(myFILE *f)
 {
 	if (!f) return;
-	if (f->buf) free(f->buf);
-	free(f);
+	SAFE_FREE(f->buf);
+	SAFE_FREE(f);
 }
 
 /* -------------------------------------------------------------------------- **
@@ -198,7 +196,7 @@ static int Continuation( char *line, int pos )
   int pos2 = 0;
 
   pos--;
-  while( (pos >= 0) && isspace(line[pos]) )
+  while( (pos >= 0) && isspace((int)line[pos]) )
      pos--;
 
   /* we should recognize if `\` is part of a multibyte character or not. */
@@ -438,7 +436,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           c = 0;
         else
           {
-          for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
+          for( end = i; (end >= 0) && isspace((int)bufr[end]); end-- )
             ;
           c = mygetc( InFile );
           }
@@ -543,7 +541,7 @@ static myFILE *OpenConfFile( char *FileName )
     DEBUG( lvl,
       ("%s Unable to open configuration file \"%s\":\n\t%s\n",
       func, FileName, strerror(errno)) );
-    free(ret);
+    SAFE_FREE(ret);
     return NULL;
     }
 
@@ -593,7 +591,7 @@ BOOL pm_process( char *FileName,
       return( False );
       }
     result = Parse( InFile, sfunc, pfunc );
-    free( bufr );
+    SAFE_FREE( bufr );
     bufr  = NULL;
     bSize = 0;
     }

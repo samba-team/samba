@@ -130,9 +130,8 @@ BOOL wins_srv_load_list( char *src )
   /* Empty the list. */
   while( NULL != (entry =(list_entry *)ubi_slRemHead( wins_srv_list )) )
     {
-    if( entry->server )
-      free( entry->server );
-    free( entry );
+    SAFE_FREE( entry->server );
+    SAFE_FREE( entry );
     }
   (void)ubi_slInitList( wins_srv_list );  /* shouldn't be needed */
 
@@ -150,7 +149,7 @@ BOOL wins_srv_load_list( char *src )
       entry->mourning = 0;
       if( NULL == (entry->server = strdup( wins_id_bufr )) )
         {
-        free( entry );
+        SAFE_FREE( entry );
         DEBUG( 0, ("wins_srv_load_list(): strdup(\"%s\") failed.\n", wins_id_bufr) );
         }
       else

@@ -24,7 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct pipe_id_info pipe_names[];
 extern fstring global_myworkgroup;
 extern pstring global_myname;
@@ -81,11 +80,13 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 		DEBUG(5,("rpc_read: num_read = %d, read offset: %d, to read: %d\n",
 		          num_read, stream_offset, data_to_read));
 
-		if (cli_error(cli, &eclass, &ecode, NULL) && 
-		    (eclass != ERRDOS && ecode != ERRmoredata)) {
-			DEBUG(0,("rpc_read: Error %d/%u in cli_read\n", 
-				 eclass, (unsigned int)ecode));
-			return False;
+        if (cli_is_dos_error(cli)) {
+			cli_dos_error(cli, &eclass, &ecode);
+			if (eclass != ERRDOS && ecode != ERRmoredata) {
+                                DEBUG(0,("rpc_read: Error %d/%u in cli_read\n",
+                                         eclass, (unsigned int)ecode));
+				return False;
+			}
 		}
 
 		data_to_read -= num_read;
@@ -361,10 +362,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 
 	/* Throw away returned params - we know we won't use them. */
 
-	if(rparam) {
-		free(rparam);
-		rparam = NULL;
-	}
+	SAFE_FREE(rparam);
 
 	if (prdata == NULL) {
 		DEBUG(0,("rpc_api_pipe: cmd %x on pipe %x failed to return data.\n",
@@ -468,11 +466,13 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
 		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
-		if (cli_error(cli, &eclass, &ecode, NULL) &&
-		    (eclass != ERRDOS && ecode != ERRmoredata)) {
-			DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", 
-				 eclass, ecode));
-			return False;
+
+		if (cli_is_dos_error(cli)) {
+			cli_dos_error(cli, &eclass, &ecode);
+			if (eclass != ERRDOS && ecode != ERRmoredata) {
+				DEBUG(0,("rpc_api_pipe: cli_read error : %d/%d\n", eclass, ecode));
+				return False;
+			}
 		}
 
 		DEBUG(5,("rpc_api_pipe: read header (size:%d)\n", num_read));
@@ -897,7 +897,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
  Set the handle state.
 ****************************************************************************/
 
-static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state)
+static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, const char *pipe_name, uint16 device_state)
 {
 	BOOL state_set = False;
 	char param[2];
@@ -931,10 +931,8 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint1
 		state_set = True;
 	}
 
-	if (rparam)
-		free(rparam);
-	if (rdata)
-		free(rdata );
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	return state_set;
 }
@@ -943,7 +941,7 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint1
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *transfer)
+static BOOL valid_pipe_name(const char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	int pipe_idx = 0;
 
@@ -973,7 +971,7 @@ static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *tra
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *transfer)
+static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const char *pipe_name, RPC_IFACE *transfer)
 {
 	int i = 0;
 
@@ -1107,7 +1105,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
+BOOL rpc_pipe_bind(struct cli_state *cli, const char *pipe_name, char *my_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1192,16 +1190,16 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
  Open a session.
  ****************************************************************************/
 
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
+BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
 {
 	int fnum;
 
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
 
 	if (cli->capabilities & CAP_NT_SMBS) {
-		if ((fnum = cli_nt_create(cli, &(pipe_name[5]), DESIRED_ACCESS_PIPE)) == -1) {
+		if ((fnum = cli_nt_create(cli, &pipe_name[5], DESIRED_ACCESS_PIPE)) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
-				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));
+				 &pipe_name[5], cli->desthost, cli_errstr(cli)));
 			return False;
 		}
 

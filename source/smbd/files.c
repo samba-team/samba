@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int real_max_open_files;
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
@@ -41,8 +39,22 @@ static files_struct *oplock_save_chain_fsp = NULL;
 static int files_used;
 
 /****************************************************************************
-  find first available file slot
+ Return a unique number identifying this fsp over the life of this pid.
 ****************************************************************************/
+
+static unsigned long get_gen_count(void)
+{
+	static unsigned long file_gen_counter;
+
+	if ((++file_gen_counter) == 0)
+		return ++file_gen_counter;
+	return file_gen_counter;
+}
+
+/****************************************************************************
+ Find first available file slot.
+****************************************************************************/
+
 files_struct *file_new(connection_struct *conn)
 {
 	int i;
@@ -92,6 +104,8 @@ files_struct *file_new(connection_struct *conn)
 	ZERO_STRUCTP(fsp);
 	fsp->fd = -1;
 	fsp->conn = conn;
+	fsp->file_id = get_gen_count();
+	GetTimeOfDay(&fsp->open_time);
 
 	first_file = (i+1) % real_max_open_files;
 
@@ -111,10 +125,10 @@ files_struct *file_new(connection_struct *conn)
 	return fsp;
 }
 
-
 /****************************************************************************
-close all open files for a connection
+ Close all open files for a connection.
 ****************************************************************************/
+
 void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
@@ -128,7 +142,7 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
-initialise file structures
+ Initialise file structures.
 ****************************************************************************/
 
 #define MAX_OPEN_FUDGEFACTOR 10
@@ -164,10 +178,10 @@ open files, %d are available.\n", request_max_open_files, real_max_open_files));
 	set_pipe_handle_offset(real_max_open_files);
 }
 
-
 /****************************************************************************
-close files open by a specified vuid
+ Close files open by a specified vuid.
 ****************************************************************************/
+
 void file_close_user(int vuid)
 {
 	files_struct *fsp, *next;
@@ -180,13 +194,32 @@ void file_close_user(int vuid)
 	}
 }
 
-
 /****************************************************************************
- Find a fsp given a device, inode and timevalue
- If this is from a kernel oplock break request then tval may be NULL.
+ Find a fsp given a file descriptor.
 ****************************************************************************/
 
-files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
+files_struct *file_find_fd(int fd)
+{
+	int count=0;
+	files_struct *fsp;
+
+	for (fsp=Files;fsp;fsp=fsp->next,count++) {
+		if (fsp->fd == fd) {
+			if (count > 10) {
+				DLIST_PROMOTE(Files, fsp);
+			}
+			return fsp;
+		}
+	}
+
+	return NULL;
+}
+
+/****************************************************************************
+ Find a fsp given a device, inode and file_id.
+****************************************************************************/
+
+files_struct *file_find_dif(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id)
 {
 	int count=0;
 	files_struct *fsp;
@@ -195,8 +228,7 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 		if (fsp->fd != -1 &&
 		    fsp->dev == dev && 
 		    fsp->inode == inode &&
-		    (tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True ) &&
-		    (tval ? (fsp->open_time.tv_usec == tval->tv_usec) : True )) {
+		    fsp->file_id == file_id ) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
@@ -260,8 +292,9 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 }
 
 /****************************************************************************
-find a fsp that is open for printing
+ Find a fsp that is open for printing.
 ****************************************************************************/
+
 files_struct *file_find_print(void)
 {
 	files_struct *fsp;
@@ -273,10 +306,10 @@ files_struct *file_find_print(void)
 	return NULL;
 }
 
-
 /****************************************************************************
-sync open files on a connection
+ Sync open files on a connection.
 ****************************************************************************/
+
 void file_sync_all(connection_struct *conn)
 {
 	files_struct *fsp, *next;
@@ -289,10 +322,10 @@ void file_sync_all(connection_struct *conn)
 	}
 }
 
-
 /****************************************************************************
-free up a fsp
+ Free up a fsp.
 ****************************************************************************/
+
 void file_free(files_struct *fsp)
 {
 	DLIST_REMOVE(Files, fsp);
@@ -311,19 +344,20 @@ void file_free(files_struct *fsp)
 
 	if (fsp == chain_fsp) chain_fsp = NULL;
 
-	free(fsp);
+	SAFE_FREE(fsp);
 }
 
-
 /****************************************************************************
-get a fsp from a packet given the offset of a 16 bit fnum
+ Get a fsp from a packet given the offset of a 16 bit fnum.
 ****************************************************************************/
+
 files_struct *file_fsp(char *buf, int where)
 {
 	int fnum, count=0;
 	files_struct *fsp;
 
-	if (chain_fsp) return chain_fsp;
+	if (chain_fsp)
+		return chain_fsp;
 
 	fnum = SVAL(buf, where);
 
@@ -340,7 +374,7 @@ files_struct *file_fsp(char *buf, int where)
 }
 
 /****************************************************************************
- Reset the chained fsp - done at the start of a packet reply
+ Reset the chained fsp - done at the start of a packet reply.
 ****************************************************************************/
 
 void file_chain_reset(void)
@@ -360,6 +394,7 @@ void file_chain_save(void)
 /****************************************************************************
 Restore the chained fsp - done after an oplock break.
 ****************************************************************************/
+
 void file_chain_restore(void)
 {
 	chain_fsp = oplock_save_chain_fsp;

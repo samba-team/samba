@@ -39,7 +39,7 @@ static void initPid2Machine (void)
 {
 	/* show machine name rather PID on table "Open Files"? */
 	if (PID_or_Machine) {
-		PIDMAP *p, *q;
+		PIDMAP *p;
 
 		for (p = pidmap; p != NULL; ) {
 			DLIST_REMOVE(pidmap, p);

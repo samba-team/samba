@@ -167,7 +167,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
             set( SMB__OLD_PASSWD, ctrl );
             retval = _smb_read_password( pamh, ctrl, Announce, "Current SMB password: ",
                                          NULL, _SMB_OLD_AUTHTOK, &pass_old );
-            free( Announce );
+            SAFE_FREE( Announce );
 
             if (retval != PAM_SUCCESS) {
                 _log_err( LOG_NOTICE
@@ -191,13 +191,15 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
     } else if (flags & PAM_UPDATE_AUTHTOK) {
 
+#if 0
+        /* We used to return when this flag was set, but that breaks
+           password synchronization when /other/ tokens are expired.  For
+           now, we change the password whenever we're asked. SRL */
         if (flags & PAM_CHANGE_EXPIRED_AUTHTOK) {
-            /* NOTE: there is currently no support for password expiring
-               under Samba. Support will be added here when it becomes
-               available. */
             pdb_free_sam(sampass);
             return PAM_SUCCESS;
         }
+#endif
         /*
          * obtain the proposed password
          */

@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 main()
 {
 	char filter[]="0123456789ABCDEF";

@@ -85,6 +85,7 @@ BOOL    append_log = False;
 
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
+BOOL	AllowDebugChange = True;
 
 
 /* -------------------------------------------------------------------------- **
@@ -213,6 +214,8 @@ BOOL debug_parse_levels(char *params_str)
 	char *params[DBGC_LAST];
 	int  debuglevel_class[DBGC_LAST];	
 
+	if (AllowDebugChange == False)
+		return True;
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
 
@@ -336,7 +339,8 @@ BOOL reopen_logs( void )
 		log_overflow = True;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
 		log_overflow = False;
-		fflush(dbf);
+		if (dbf)
+			fflush(dbf);
 		ret = False;
 	} else {
 		setbuf(new_dbf, NULL);

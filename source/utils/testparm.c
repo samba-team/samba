@@ -35,9 +35,10 @@
 #include "includes.h"
 #include "smb.h"
 
+extern BOOL AllowDebugChange;
+
 /* these live in util.c */
 extern FILE *dbf;
-extern int DEBUGLEVEL;
 
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
@@ -219,6 +220,7 @@ int main(int argc, char *argv[])
 
   dbf = stdout;
   DEBUGLEVEL = 2;
+  AllowDebugChange = False;
 
   printf("Load smb config files from %s\n",configfile);
 

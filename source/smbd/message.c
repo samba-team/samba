@@ -27,8 +27,6 @@
 #include "includes.h"
 
 /* look in server.c for some explanation of these variables */
-extern int DEBUGLEVEL;
-
 
 static char msgbuf[1600];
 static int msgpos=0;
@@ -113,7 +111,7 @@ int reply_sends(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsends);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -154,7 +152,7 @@ int reply_sendstrt(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendstrt);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,1,0,True);
@@ -188,7 +186,7 @@ int reply_sendtxt(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendtxt);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -219,7 +217,7 @@ int reply_sendend(connection_struct *conn,
 
   if (! (*lp_msg_command())) {
     END_PROFILE(SMBsendend);
-    return(ERROR(ERRSRV,ERRmsgoff));
+    return(ERROR_DOS(ERRSRV,ERRmsgoff));
   }
 
   outsize = set_message(outbuf,0,0,True);

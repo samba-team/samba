@@ -27,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*******************************************************************
  api_reg_close
  ********************************************************************/
@@ -134,6 +132,59 @@ static BOOL api_reg_info(pipes_struct *p)
 	return True;
 }
 
+#if 0
+/*******************************************************************
+ api_reg_shutdown
+ ********************************************************************/
+
+static BOOL api_reg_shutdown(pipes_struct *p)
+{
+	REG_Q_SHUTDOWN q_u;
+	REG_R_SHUTDOWN r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg shutdown */
+	if(!reg_io_q_shutdown("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_shutdown(p, &q_u, &r_u);
+
+	if(!reg_io_r_shutdown("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_abort_shutdown
+ ********************************************************************/
+
+static BOOL api_reg_abort_shutdown(pipes_struct *p)
+{
+	REG_Q_ABORT_SHUTDOWN q_u;
+	REG_R_ABORT_SHUTDOWN r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg shutdown */
+	if(!reg_io_q_abort_shutdown("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_abort_shutdown(p, &q_u, &r_u);
+
+	if(!reg_io_r_abort_shutdown("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+#endif
 
 /*******************************************************************
  array of \PIPE\reg operations
@@ -144,6 +195,10 @@ static struct api_struct api_reg_cmds[] =
 	{ "REG_OPEN_ENTRY"   , REG_OPEN_ENTRY   , api_reg_open_entry   },
 	{ "REG_OPEN"         , REG_OPEN_HKLM    , api_reg_open         },
 	{ "REG_INFO"         , REG_INFO         , api_reg_info         },
+#if 0
+	{ "REG_SHUTDOWN"     , REG_SHUTDOWN     , api_reg_shutdown     },
+	{ "REG_ABORT_SHUTDOWN", REG_ABORT_SHUTDOWN, api_reg_abort_shutdown },
+#endif
 	{ NULL,                0                , NULL                 }
 };
 

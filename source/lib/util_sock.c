@@ -28,8 +28,6 @@ extern SSL  *ssl;
 extern int  sslFd;
 #endif  /* WITH_SSL */
 
-extern int DEBUGLEVEL;
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -261,7 +259,7 @@ static ssize_t read_socket_with_timeout(int fd,char *buf,size_t mincnt,size_t ma
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     /* Check if error */
     if(selrtn == -1) {
@@ -365,7 +363,7 @@ ssize_t read_with_timeout(int fd,char *buf,size_t mincnt,size_t maxcnt,unsigned 
     FD_ZERO(&fds);
     FD_SET(fd,&fds);
       
-    selrtn = sys_select_intr(fd+1,&fds,&timeout);
+    selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
 
     if(selrtn <= 0)
       return selrtn;
@@ -651,6 +649,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
 		DEBUG(10,("receive_smb: length < 0!\n"));
+		smb_read_error = READ_ERROR;
 		return(False);
 	}
 
@@ -817,7 +816,7 @@ int open_socket_in( int type, int port, int dlevel, uint32 socket_addr, BOOL reb
 		if( setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val)) == -1 ) {
 			if( DEBUGLVL( dlevel ) ) {
 				dbgtext( "open_socket_in(): setsockopt: ");
-				dbgtext( "SO_REUSEPORT = %d ", val?"True":"False" );
+				dbgtext( "SO_REUSEPORT = %s ", val?"True":"False" );
 				dbgtext( "on port %d failed ", port );
 				dbgtext( "with error = %s\n", strerror(errno) );
 			}
@@ -1074,74 +1073,6 @@ int open_pipe_sock(char *path)
 	}
 
 	return sock;
-}
-
-int create_pipe_socket(char *dir, int dir_perms,
-				char *path, int path_perms)
-{
-	int s;
-	struct sockaddr_un sa;
-
-	DEBUG(0,("create_pipe_socket: %s %d %s %d\n",
-	           dir, dir_perms, path, path_perms));
-
-	DEBUG(0,("*** RACE CONDITION.  PLEASE SOMEONE EXAMINE create_pipe_Socket AND FIX IT ***\n"));
-
-	mkdir(dir, dir_perms);
-
-	if (chmod(dir, dir_perms) < 0)
-	{
-		DEBUG(0, ("chmod on %s failed\n", dir));
-		return -1;
-	}
-
-	if (!remove(path))
-	{
-		DEBUG(0, ("remove on %s failed\n", path));
-	}
-		
-	/* start listening on unix socket */
-	s = socket(AF_UNIX, SOCK_STREAM, 0);
-
-	if (s < 0)
-	{
-		DEBUG(0, ("socket open failed\n"));
-		return -1;
-	}
-
-	ZERO_STRUCT(sa);
-	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
-
-	if (bind(s, (struct sockaddr*) &sa, sizeof(sa)) < 0)
-	{
-		DEBUG(0, ("socket bind to %s failed\n", sa.sun_path));
-		close(s);
-		remove(path);
-		return -1;
-	}
-
-	if (s == -1)
-	{
-		DEBUG(0,("bind failed\n"));
-		remove(path);
-		return -1;
-	}
-
-	if (path_perms != 0)
-	{
-		chmod(path, path_perms);
-	}
-
-	if (listen(s, 5) == -1)
-	{
-		DEBUG(0,("listen failed\n"));
-		return -1;
-	}
-
-	DEBUG(5,("unix socket opened: %s\n", path));
-
-	return s;
 }
 
 /*******************************************************************

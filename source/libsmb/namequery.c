@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
 
@@ -75,7 +73,7 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 do a NBT node status query on an open socket and return an array of
 structures holding the returned names or NULL if the query failed
 **************************************************************************/
-struct node_status *name_status_query(int fd,struct nmb_name *name,
+struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
 	BOOL found=False;
@@ -162,7 +160,8 @@ find the first type XX name in a node status reply - used for finding
 a servers name given its IP
 return the matched name in *name
 **************************************************************************/
-BOOL name_status_find(int type, struct in_addr to_ip, char *name)
+
+BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
 {
 	struct node_status *status;
 	struct nmb_name nname;
@@ -170,23 +169,28 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	int sock;
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
-	if (sock == -1) return False;
+	if (sock == -1)
+		return False;
 
-	make_nmb_name(&nname, "*", 0);
-	status = name_status_query(sock, &nname, to_ip, &count);
+	/* W2K PDC's seem not to respond to '*'#0. JRA */
+	make_nmb_name(&nname, q_name, q_type);
+	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
-	if (!status) return False;
+	if (!status)
+		return False;
 
 	for (i=0;i<count;i++) {
-		if (status[i].type == type) break;
+		if (status[i].type == type)
+			break;
 	}
-	if (i == count) return False;
+	if (i == count)
+		return False;
 
 	StrnCpy(name, status[i].name, 15);
 
 	dos_to_unix(name, True);
 
-	free(status);
+	SAFE_FREE(status);
 	return True;
 }
 
@@ -209,7 +213,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   register_ip.s_addr = name_ip.s_addr;  /* Fix this ... */
   
-  bzero((char *)&p, sizeof(p));
+  memset((char *)&p, '\0', sizeof(p));
 
   *count = 0;
 
@@ -241,7 +245,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   }
 
-  bzero((char *)nmb->additional, sizeof(struct res_rec));
+  memset((char *)nmb->additional, '\0', sizeof(struct res_rec));
 
   nmb->additional->rr_name  = nmb->question.question_name;
   nmb->additional->rr_type  = RR_TYPE_NB;
@@ -275,7 +279,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
     debug_nmb_packet(p2);
-    free(p2);  /* No memory leaks ... */
+    SAFE_FREE(p2);  /* No memory leaks ... */
   }
 
   return True;
@@ -407,8 +411,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 
 			if (!tmp_ip_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
-				if (ip_list)
-					free(ip_list);
+					SAFE_FREE(ip_list);
 			}
 
 			ip_list = tmp_ip_list;
@@ -867,10 +870,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
 	  }
   }
 
-  if((*return_iplist) != NULL) {
-    free((char *)(*return_iplist));
-    *return_iplist = NULL;
-  }
+  SAFE_FREE(*return_iplist);
   return False;
 }
 
@@ -886,13 +886,26 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 	struct in_addr *ip_list = NULL;
 	int count = 0;
 
-	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
-		*return_ip = ip_list[0];
-		free((char *)ip_list);
+	if (is_ipaddress(name)) {
+		*return_ip = *interpret_addr2(name);
 		return True;
 	}
-	if(ip_list != NULL)
-		free((char *)ip_list);
+
+	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
+		int i;
+		/* only return valid addresses for TCP connections */
+		for (i=0; i<count; i++) {
+			char *ip_str = inet_ntoa(ip_list[i]);
+			if (ip_str &&
+				strcmp(ip_str, "255.255.255.255") != 0 &&
+				strcmp(ip_str, "0.0.0.0") != 0) {
+				*return_ip = ip_list[i];
+				SAFE_FREE(ip_list);
+				return True;
+			}
+		}
+	}
+	SAFE_FREE(ip_list);
 	return False;
 }
 
@@ -928,7 +941,7 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
         if (strcmp(dest_host,"*") == 0) {
                 extern pstring global_myname;
                 ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+                lookup_dc_name(global_myname, lp_workgroup(), ip, dest_host);
         } else {
                 ret = resolve_name(dest_host, ip, 0x20);
         }
@@ -953,46 +966,46 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 
-	if(ip_list != NULL)
-		free((char *)ip_list);
+	SAFE_FREE(ip_list);
 	return False;
 }
 
 /********************************************************
- Lookup a PDC name given a Domain name and IP address.
+ Lookup a DC name given a Domain name and IP address.
 *********************************************************/
 
-BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pdc_ip, char *ret_name)
+BOOL lookup_dc_name(const char *srcname, const char *domain, 
+		    struct in_addr *dc_ip, char *ret_name)
 {
 #if !defined(I_HATE_WINDOWS_REPLY_CODE)
 
-  fstring pdc_name;
-  BOOL ret;
+	fstring dc_name;
+	BOOL ret;
 
-  /*
-   * Due to the fact win WinNT *sucks* we must do a node status
-   * query here... JRA.
-   */
+	/*
+	 * Due to the fact win WinNT *sucks* we must do a node status
+	 * query here... JRA.
+	 */
 
-  *pdc_name = '\0';
+	*dc_name = '\0';
 
-  ret = name_status_find(0x20,*pdc_ip,pdc_name);
+	ret = name_status_find(domain, 0x1c, 0x20, *dc_ip, dc_name);
 
-  if(ret && *pdc_name) {
-    fstrcpy(ret_name, pdc_name);
-    return True;
-  }
+	if(ret && *dc_name) {
+		fstrcpy(ret_name, dc_name);
+		return True;
+	}
 
-  return False;
+	return False;
 
 #else /* defined(I_HATE_WINDOWS_REPLY_CODE) */
 
@@ -1021,7 +1034,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	
 	/* Find out the transient UDP port we have been allocated. */
 	if(getsockname(sock, (struct sockaddr *)&sock_name, &sock_len)<0) {
-		DEBUG(0,("lookup_pdc_name: Failed to get local UDP port. Error was %s\n",
+		DEBUG(0,("lookup_dc_name: Failed to get local UDP port. Error was %s\n",
 			 strerror(errno)));
 		close(sock);
 		return False;
@@ -1098,7 +1111,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	GetTimeOfDay(&tval);
 	
 	if (!send_packet(&p)) {
-		DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+		DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
 		close(sock);
 		return False;
 	}
@@ -1114,7 +1127,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			if (!retries)
 				break;
 			if (!send_packet(&p)) {
-				DEBUG(0,("lookup_pdc_name: send_packet failed.\n"));
+				DEBUG(0,("lookup_dc_name: send_packet failed.\n"));
 				close(sock);
 				return False;
 			}
@@ -1131,7 +1144,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf -= 4;
 
 			if (CVAL(buf,smb_com) != SMBtrans) {
-				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
+				DEBUG(0,("lookup_dc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
 					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
 				free_packet(p_ret);
 				continue;
@@ -1141,17 +1154,17 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf2 = smb_base(buf) + SVAL(buf,smb_vwv12);
 			
 			if (len <= 0) {
-				DEBUG(0,("lookup_pdc_name: datagram len < 0 (%d)\n", len ));
+				DEBUG(0,("lookup_dc_name: datagram len < 0 (%d)\n", len ));
 				free_packet(p_ret);
 				continue;
 			}
 
-			DEBUG(4,("lookup_pdc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
+			DEBUG(4,("lookup_dc_name: datagram reply from %s to %s IP %s for %s of type %d len=%d\n",
 				 nmb_namestr(&dgram2->source_name),nmb_namestr(&dgram2->dest_name),
 				 inet_ntoa(p_ret->ip), smb_buf(buf),SVAL(buf2,0),len));
 
 			if(SVAL(buf2,0) != QUERYFORPDC_R) {
-				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
+				DEBUG(0,("lookup_dc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
 					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
 				free_packet(p_ret);
 				continue;
@@ -1176,7 +1189,58 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
+
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
-	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
+	int name_type = pdc_only ? 0x1B : 0x1C;
+
+	/*
+	 * If it's our domain then
+	 * use the 'password server' parameter.
+	 */
+
+	if (strequal(group, lp_workgroup())) {
+		char *p;
+		char *pserver = lp_passwordserver();
+		fstring name;
+		int num_adresses = 0;
+		struct in_addr *return_iplist = NULL;
+
+		if (! *pserver)
+			return internal_resolve_name(group, name_type, ip_list, count);
+
+		p = pserver;
+		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+			if (strequal(name, "*"))
+				return internal_resolve_name(group, name_type, ip_list, count);
+			num_adresses++;
+		}
+		if (num_adresses == 0)
+			return internal_resolve_name(group, name_type, ip_list, count);
+
+		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
+		if(return_iplist == NULL) {
+			DEBUG(3,("get_dc_list: malloc fail !\n"));
+			return False;
+		}
+		p = pserver;
+		*count = 0;
+		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+			struct in_addr name_ip;
+			if (resolve_name( name, &name_ip, 0x20) == False)
+				continue;
+			return_iplist[(*count)++] = name_ip;
+		}
+		*ip_list = return_iplist;
+		return (*count != 0);
+	} else
+		return internal_resolve_name(group, name_type, ip_list, count);
+}
+
+/********************************************************
+ Get the IP address list of the Local Master Browsers
+********************************************************/
+BOOL get_lmb_list(struct in_addr **ip_list, int *count)
+{
+	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);
 }

@@ -22,6 +22,8 @@
 #ifndef _RPC_CLIENT_H
 #define _RPC_CLIENT_H
 
+#if 0	/* JERRY */
 #include "rpc_client_proto.h"
+#endif 
 
 #endif /* _RPC_CLIENT_H */

@@ -142,6 +142,7 @@
 #undef WITH_MSDFS
 #undef WITH_VFS
 #undef HAVE_INO64_T
+#undef HAVE_DEV64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
 #undef SIZEOF_OFF_T
@@ -209,6 +210,7 @@
 #undef HAVE_ACL_GET_PERM_NP
 #undef HAVE_UNIXWARE_ACLS
 #undef HAVE_SOLARIS_ACLS
+#undef HAVE_HPUX_ACLS
 #undef HAVE_IRIX_ACLS
 #undef HAVE_AIX_ACLS
 #undef HAVE_TRU64_ACLS
@@ -227,6 +229,13 @@
 #undef WITH_TDB_SAM
 #undef LINUX_QUOTAS_1
 #undef LINUX_QUOTAS_2
+#undef BROKEN_REDHAT_7_SYSTEM_HEADERS
+#undef HAVE_IMMEDIATE_STRUCTURES
+#undef HAVE_STAT_ST_BLOCKS
+#undef STAT_ST_BLOCKSIZE
+#undef HAVE_DEVICE_MAJOR_FN
+#undef HAVE_DEVICE_MINOR_FN
+#undef HAVE_MAKEDEV_FN
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -576,6 +585,9 @@
 /* Define if you have the innetgr function.  */
 #undef HAVE_INNETGR
 
+/* Define if you have the link function.  */
+#undef HAVE_LINK
+
 /* Define if you have the llseek function.  */
 #undef HAVE_LLSEEK
 
@@ -590,6 +602,12 @@
 
 /* Define if you have the memset function.  */
 #undef HAVE_MEMSET
+
+/* Define if you have the mknod function.  */
+#undef HAVE_MKNOD
+
+/* Define if you have the mknod64 function.  */
+#undef HAVE_MKNOD64
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
@@ -642,6 +660,9 @@
 /* Define if you have the readlink function.  */
 #undef HAVE_READLINK
 
+/* Define if you have the realpath function.  */
+#undef HAVE_REALPATH
+
 /* Define if you have the rename function.  */
 #undef HAVE_RENAME
 
@@ -668,6 +689,9 @@
 
 /* Define if you have the setnetgrent function.  */
 #undef HAVE_SETNETGRENT
+
+/* Define if you have the setpgid function.  */
+#undef HAVE_SETPGID
 
 /* Define if you have the setpriv function.  */
 #undef HAVE_SETPRIV
@@ -732,6 +756,9 @@
 /* Define if you have the sysconf function.  */
 #undef HAVE_SYSCONF
 
+/* Define if you have the syslog function.  */
+#undef HAVE_SYSLOG
+
 /* Define if you have the updwtmp function.  */
 #undef HAVE_UPDWTMP
 
@@ -752,6 +779,9 @@
 
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
+
+/* Define if you have the vsyslog function.  */
+#undef HAVE_VSYSLOG
 
 /* Define if you have the waitpid function.  */
 #undef HAVE_WAITPID
@@ -795,6 +825,9 @@
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
 
+/* Define if you have the <linux/xqm.h> header file.  */
+#undef HAVE_LINUX_XQM_H
+
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H
 
@@ -816,6 +849,9 @@
 /* Define if you have the <netinet/tcp.h> header file.  */
 #undef HAVE_NETINET_TCP_H
 
+/* Define if you have the <ns_api.h> header file.  */
+#undef HAVE_NS_API_H
+
 /* Define if you have the <nss.h> header file.  */
 #undef HAVE_NSS_H
 
@@ -824,6 +860,9 @@
 
 /* Define if you have the <poll.h> header file.  */
 #undef HAVE_POLL_H
+
+/* Define if you have the <pthread.h> header file.  */
+#undef HAVE_PTHREAD_H
 
 /* Define if you have the <readline.h> header file.  */
 #undef HAVE_READLINE_H
@@ -872,6 +911,9 @@
 
 /* Define if you have the <stropts.h> header file.  */
 #undef HAVE_STROPTS_H
+
+/* Define if you have the <synch.h> header file.  */
+#undef HAVE_SYNCH_H
 
 /* Define if you have the <sys/acl.h> header file.  */
 #undef HAVE_SYS_ACL_H

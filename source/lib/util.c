@@ -4,6 +4,7 @@
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2001
+   Copyright (C) Simo Sorce 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,10 +46,6 @@
 
 #include <rpcsvc/nis.h>
 
-#else /* !WITH_NISPLUS_HOME */
-
-#include "rpcsvc/ypclnt.h"
-
 #endif /* WITH_NISPLUS_HOME */
 #endif /* HAVE_NETGROUP && WITH_AUTOMOUNT */
 
@@ -58,8 +55,6 @@
 extern SSL  *ssl;
 extern int  sslFd;
 #endif  /* WITH_SSL */
-
-extern int DEBUGLEVEL;
 
 int Protocol = PROTOCOL_COREPLUS;
 
@@ -165,9 +160,9 @@ char *get_numlist(char *p, uint32 **num, int *count)
 		uint32 *tn;
 
 		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if (tn == NULL) {
-			if (*num)
-				free(*num);
+		if (tn == NULL)
+		{
+			SAFE_FREE(*num);
 			return NULL;
 		} else
 			(*num) = tn;
@@ -312,10 +307,10 @@ void smb_setlen(char *buf,int len)
 {
   _smb_setlen(buf,len);
 
-  CVAL(buf,4) = 0xFF;
-  CVAL(buf,5) = 'S';
-  CVAL(buf,6) = 'M';
-  CVAL(buf,7) = 'B';
+  SCVAL(buf,4,0xFF);
+  SCVAL(buf,5,'S');
+  SCVAL(buf,6,'M');
+  SCVAL(buf,7,'B');
 }
 
 /*******************************************************************
@@ -325,7 +320,7 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 {
 	if (zero)
 		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
-	CVAL(buf,smb_wct) = num_words;
+	SCVAL(buf,smb_wct,num_words);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
@@ -334,20 +329,21 @@ int set_message(char *buf,int num_words,int num_bytes,BOOL zero)
 /*******************************************************************
   setup only the byte count for a smb message
 ********************************************************************/
-void set_message_bcc(char *buf,int num_bytes)
+int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
 	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	return (smb_size + num_words*2 + num_bytes);
 }
 
 /*******************************************************************
   setup only the byte count for a smb message, using the end of the
   message as a marker
 ********************************************************************/
-void set_message_end(void *outbuf,void *end_ptr)
+int set_message_end(void *outbuf,void *end_ptr)
 {
-	set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
+	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
@@ -442,7 +438,7 @@ void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,ti
     memcpy(buf+1,mask2,MIN(strlen(mask2),11));
 
   memset(buf+21,'\0',DIR_STRUCT_SIZE-21);
-  CVAL(buf,21) = mode;
+  SCVAL(buf,21,mode);
   put_dos_date(buf,22,date);
   SSVAL(buf,26,size & 0xFFFF);
   SSVAL(buf,28,(size >> 16)&0xFFFF);
@@ -513,44 +509,55 @@ int set_blocking(int fd, BOOL set)
  Transfer some data between two fd's.
 ****************************************************************************/
 
+#ifndef TRANSFER_BUF_SIZE
+#define TRANSFER_BUF_SIZE 65536
+#endif
+
 ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
 						ssize_t (*write_fn)(int, const void *, size_t))
 {
-	static char buf[16384];
+	char *buf;
 	size_t total = 0;
 	ssize_t read_ret;
-	size_t write_total = 0;
-    ssize_t write_ret;
+	ssize_t write_ret;
+	size_t num_to_read_thistime;
+	size_t num_written = 0;
+
+	if ((buf = malloc(TRANSFER_BUF_SIZE)) == NULL)
+		return -1;
 
 	while (total < n) {
-		size_t num_to_read_thistime = MIN((n - total), sizeof(buf));
+		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
 
-		read_ret = (*read_fn)(infd, buf + total, num_to_read_thistime);
+		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
 		if (read_ret == -1) {
 			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
+			SAFE_FREE(buf);
 			return -1;
 		}
 		if (read_ret == 0)
 			break;
 
-		write_total = 0;
+		num_written = 0;
  
-		while (write_total < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + total, read_ret);
+		while (num_written < read_ret) {
+			write_ret = (*write_fn)(outfd,buf + num_written, read_ret - num_written);
  
 			if (write_ret == -1) {
 				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
+				SAFE_FREE(buf);
 				return -1;
 			}
 			if (write_ret == 0)
 				return (ssize_t)total;
  
-			write_total += (size_t)write_ret;
+			num_written += (size_t)write_ret;
 		}
 
 		total += (size_t)read_ret;
 	}
 
+	SAFE_FREE(buf);
 	return (ssize_t)total;		
 }
 
@@ -578,7 +585,7 @@ void msleep(int t)
  
 		FD_ZERO(&fds);
 		errno = 0;
-		sys_select_intr(0,&fds,&tval);
+		sys_select_intr(0,&fds,NULL,NULL,&tval);
 
 		GetTimeOfDay(&t2);
 		tdiff = TvalDiff(&t1,&t2);
@@ -639,8 +646,7 @@ void *Realloc(void *p,size_t size)
 	void *ret=NULL;
 
 	if (size == 0) {
-		if (p)
-			free(p);
+		SAFE_FREE(p);
 		DEBUG(5,("Realloc asked for 0 bytes\n"));
 		return NULL;
 	}
@@ -658,12 +664,13 @@ void *Realloc(void *p,size_t size)
 
 /****************************************************************************
  Free memory, checks for NULL.
+use directly SAFE_FREE()
+exist only because we need to pass a function pointer somewhere --SSS
 ****************************************************************************/
 
 void safe_free(void *p)
 {
-	if (p != NULL)
-		free(p);
+	SAFE_FREE(p);
 }
 
 /****************************************************************************
@@ -744,7 +751,7 @@ BOOL is_ipaddress(const char *str)
 interpret an internet address or name into an IP address in 4 byte form
 ****************************************************************************/
 
-uint32 interpret_addr(char *str)
+uint32 interpret_addr(const char *str)
 {
   struct hostent *hp;
   uint32 res;
@@ -777,7 +784,7 @@ uint32 interpret_addr(char *str)
 /*******************************************************************
   a convenient addition to interpret_addr()
   ******************************************************************/
-struct in_addr *interpret_addr2(char *str)
+struct in_addr *interpret_addr2(const char *str)
 {
   static struct in_addr ret;
   uint32 a = interpret_addr(str);
@@ -972,7 +979,8 @@ char *uidtoname(uid_t uid)
 		return name;
 
 	pass = sys_getpwuid(uid);
-	if (pass) return(pass->pw_name);
+	if (pass)
+		return(pass->pw_name);
 	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
 	return(name);
 }
@@ -991,7 +999,8 @@ char *gidtoname(gid_t gid)
 		return name;
 
 	grp = getgrgid(gid);
-	if (grp) return(grp->gr_name);
+	if (grp)
+		return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
@@ -1245,13 +1254,11 @@ routine to free a namearray.
 
 void free_namearray(name_compare_entry *name_array)
 {
-  if(name_array == 0)
+  if(name_array == NULL)
     return;
 
-  if(name_array->name != NULL)
-    free(name_array->name);
-
-  free((char *)name_array);
+  SAFE_FREE(name_array->name);
+  SAFE_FREE(name_array);
 }
 
 /****************************************************************************
@@ -1325,6 +1332,48 @@ BOOL is_myname(char *s)
   DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
   return(ret);
 }
+
+BOOL is_myname_or_ipaddr(char *s)
+{
+	char *ptr;
+	pstring nbname;
+	
+	/* optimize for the common case */
+	if (strequal(s, global_myname)) 
+		return True;
+
+	/* maybe its an IP address? */
+	if (is_ipaddress(s))
+	{
+		struct iface_struct nics[MAX_INTERFACES];
+		int i, n;
+		uint32 ip;
+		
+		ip = interpret_addr(s);
+		if ((ip==0) || (ip==0xffffffff))
+			return False;
+			
+		n = get_interfaces(nics, MAX_INTERFACES);
+		for (i=0; i<n; i++) {
+			if (ip == nics[i].ip.s_addr)
+				return True;
+		}
+	}	
+	
+	/* check for an alias */
+  	ptr = lp_netbios_aliases();
+	while ( next_token(&ptr, nbname, NULL, sizeof(nbname)) )
+	{
+		if (StrCaseCmp(s, nbname) == 0)
+			return True;
+	}
+		
+	
+	/* no match */
+	return False;
+
+}
+
 
 /*******************************************************************
 set the horrid remote_arch string based on an enum.
@@ -1500,7 +1549,7 @@ zero a memory area then free it. Used to catch bugs faster
 void zero_free(void *p, size_t size)
 {
 	memset(p, 0, size);
-	free(p);
+	SAFE_FREE(p);
 }
 
 
@@ -1645,6 +1694,44 @@ int smb_mkstemp(char *template)
 	if (!p) return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif
+}
+
+/*****************************************************************
+ malloc that aborts with smb_panic on fail or zero size.
+ *****************************************************************/  
+
+void *smb_xmalloc(size_t size)
+{
+	void *p;
+	if (size == 0)
+		smb_panic("smb_xmalloc: called with zero size.\n");
+	if ((p = malloc(size)) == NULL)
+		smb_panic("smb_xmalloc: malloc fail.\n");
+	return p;
+}
+
+/*****************************************************************
+ Memdup with smb_panic on fail.
+ *****************************************************************/  
+
+void *xmemdup(const void *p, size_t size)
+{
+	void *p2;
+	p2 = smb_xmalloc(size);
+	memcpy(p2, p, size);
+	return p2;
+}
+
+/*****************************************************************
+ strdup that aborts on malloc fail.
+ *****************************************************************/  
+
+char *xstrdup(const char *s)
+{
+	char *s1 = strdup(s);
+	if (!s1)
+		smb_panic("xstrdup: malloc fail\n");
+	return s1;
 }
 
 /*****************************************************************

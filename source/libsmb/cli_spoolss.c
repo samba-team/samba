@@ -33,61 +33,12 @@ struct cli_state *cli_spoolss_initialise(struct cli_state *cli,
 					 char *system_name,
 					 struct ntuser_creds *creds)
 {
-	struct in_addr dest_ip;
-	struct nmb_name calling, called;
-	fstring dest_host;
-	extern pstring global_myname;
-	struct ntuser_creds anon;
-
-	/* Initialise cli_state information */
-
-	if (!cli_initialise(cli)) {
-		return NULL;
-	}
-
-	if (!creds) {
-		ZERO_STRUCT(anon);
-		anon.pwd.null_pwd = 1;
-		creds = &anon;
-	}
-
-	cli_init_creds(cli, creds);
-
-	/* Establish a SMB connection */
-
-	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
-		return NULL;
-	}
-
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
-
-	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
-				      &called, "IPC$", "IPC", False, True)) {
-		return NULL;
-	}
-
-	/* Open a NT session thingy */
-
-	if (!cli_nt_session_open(cli, PIPE_SPOOLSS)) {
-		cli_shutdown(cli);
-		return NULL;
-	}
-
-	return cli;
-}
-
-/* Shut down a SMB connection to the SPOOLSS pipe */
-
-void cli_spoolss_shutdown(struct cli_state *cli)
-{
-	if (cli->fd != -1) cli_ulogoff(cli);
-	cli_shutdown(cli);
+        return cli_pipe_initialise(cli, system_name, PIPE_SPOOLSS, creds);
 }
 
 /* Open printer ex */
 
-uint32 cli_spoolss_open_printer_ex(
+NTSTATUS cli_spoolss_open_printer_ex(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	char *printername,
@@ -101,7 +52,7 @@ uint32 cli_spoolss_open_printer_ex(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_OPEN_PRINTER_EX q;
 	SPOOL_R_OPEN_PRINTER_EX r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -133,8 +84,11 @@ uint32 cli_spoolss_open_printer_ex(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (W_ERROR_IS_OK(r.status)) {
+		result = NT_STATUS_OK;
 		*pol = r.handle;
+	} else {
+		result = werror_to_ntstatus(r.status);
 	}
 
  done:
@@ -146,7 +100,7 @@ uint32 cli_spoolss_open_printer_ex(
 
 /* Close a printer handle */
 
-uint32 cli_spoolss_close_printer(
+NTSTATUS cli_spoolss_close_printer(
 	struct cli_state *cli,
 	TALLOC_CTX *mem_ctx,
 	POLICY_HND *pol
@@ -155,7 +109,7 @@ uint32 cli_spoolss_close_printer(
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_CLOSEPRINTER q;
 	SPOOL_R_CLOSEPRINTER r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -186,8 +140,11 @@ uint32 cli_spoolss_close_printer(
 
 	/* Return output parameters */
 
-	if ((result = r.status) == NT_STATUS_OK) {
+	if (W_ERROR_IS_OK(r.status)) {
 		*pol = r.handle;
+		result = NT_STATUS_OK;
+	} else {
+		result = werror_to_ntstatus(r.status);
 	}
 
  done:
@@ -221,7 +178,7 @@ static void decode_printer_info_0(
         uint32 i;
         PRINTER_INFO_0  *inf;
 
-        inf=(PRINTER_INFO_0 *)talloc(mem_ctx,returned*sizeof(PRINTER_INFO_0));
+        inf=(PRINTER_INFO_0 *)talloc(mem_ctx, returned*sizeof(PRINTER_INFO_0));
 
         buffer->prs.data_offset=0;
 
@@ -429,7 +386,7 @@ static void decode_printerdriverdir_1 (
 
 /* Enumerate printers */
 
-uint32 cli_spoolss_enum_printers(
+NTSTATUS cli_spoolss_enum_printers(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	uint32 flags,
@@ -442,8 +399,8 @@ uint32 cli_spoolss_enum_printers(
 	SPOOL_Q_ENUMPRINTERS q;
         SPOOL_R_ENUMPRINTERS r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
-	uint32 result;
+	uint32 needed = 0x1068;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -476,11 +433,14 @@ uint32 cli_spoolss_enum_printers(
 			needed = r.needed;
 		}
 		
+		result = werror_to_ntstatus(r.status);
+		
+		if (NT_STATUS_V(result)==NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER) || !W_ERROR_IS_OK(result))
+			goto done;
+	
 		/* Return output parameters */
 
-		if (((result=r.status) == NT_STATUS_OK) && (*returned = r.returned))
-		{
-
+		if ((*returned = r.returned)) {
 			switch (level) {
 			case 1:
 				decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
@@ -501,13 +461,13 @@ uint32 cli_spoolss_enum_printers(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
 
 /* Enumerate printer ports */
-uint32 cli_spoolss_enum_ports(
+NTSTATUS cli_spoolss_enum_ports(
 	struct cli_state *cli, 
 	TALLOC_CTX *mem_ctx,
 	uint32 level, 
@@ -520,7 +480,7 @@ uint32 cli_spoolss_enum_ports(
         SPOOL_R_ENUMPORTS r;
 	NEW_BUFFER buffer;
 	uint32 needed = 100;
-	uint32 result;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -553,8 +513,9 @@ uint32 cli_spoolss_enum_ports(
 		}
 		
 		/* Return output parameters */
+		result = werror_to_ntstatus(r.status);
 
-		if ((result = r.status) == NT_STATUS_OK &&
+		if (NT_STATUS_IS_OK(result) &&
 		    r.returned > 0) {
 
 			*returned = r.returned;
@@ -575,26 +536,21 @@ uint32 cli_spoolss_enum_ports(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
 
 /* Get printer info */
-uint32 cli_spoolss_getprinter(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr
-)
+NTSTATUS cli_spoolss_getprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol, uint32 level, PRINTER_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTER q;
 	SPOOL_R_GETPRINTER r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
-	uint32 result;
+	uint32 needed = 0x1068;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -623,8 +579,9 @@ uint32 cli_spoolss_getprinter(
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_OK) {
-
+		result = werror_to_ntstatus(r.status);
+		
+		if (NT_STATUS_IS_OK(result)) {
 			switch (level) {
 			case 0:
 				decode_printer_info_0(mem_ctx, r.buffer, 1, &ctr->printers_0);
@@ -645,7 +602,7 @@ uint32 cli_spoolss_getprinter(
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -653,19 +610,14 @@ uint32 cli_spoolss_getprinter(
 /**********************************************************************
  * Set printer info 
  */
-uint32 cli_spoolss_setprinter(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	POLICY_HND *pol,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr,
-	uint32 command
-)
+NTSTATUS cli_spoolss_setprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *pol, uint32 level, PRINTER_INFO_CTR *ctr,
+				uint32 command)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_SETPRINTER q;
 	SPOOL_R_SETPRINTER r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -680,7 +632,7 @@ uint32 cli_spoolss_setprinter(
 	if (!spoolss_io_q_setprinter("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, SPOOLSS_SETPRINTER, &qbuf, &rbuf)) 
 	{
-		result = NT_STATUS_UNSUCCESSFUL;
+		result = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 
@@ -690,7 +642,7 @@ uint32 cli_spoolss_setprinter(
 		goto done;
 	}
 	
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 		
 done:
 	prs_mem_free(&qbuf);
@@ -703,21 +655,16 @@ done:
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_getprinterdriver (
-	struct cli_state 	*cli, 
-	TALLOC_CTX 		*mem_ctx,
-	POLICY_HND 		*pol, 
-	uint32 			level,
-	char* 			env,
-	PRINTER_DRIVER_CTR  	*ctr
-)
+NTSTATUS cli_spoolss_getprinterdriver (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, uint32 level, char* env,
+					PRINTER_DRIVER_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_GETPRINTERDRIVER2 q;
         SPOOL_R_GETPRINTERDRIVER2 r;
 	NEW_BUFFER buffer;
-	uint32 needed = 1024;
-	uint32 result;
+	uint32 needed = 0x1068;
+	NTSTATUS result;
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -754,9 +701,10 @@ uint32 cli_spoolss_getprinterdriver (
 		}
 		
 		/* Return output parameters */
-		if ((result = r.status) == NT_STATUS_OK) 
+		result = werror_to_ntstatus(r.status);
+		
+		if (NT_STATUS_IS_OK(result))
 		{
-
 			switch (level) 
 			{
 			case 1:
@@ -775,7 +723,7 @@ uint32 cli_spoolss_getprinterdriver (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -783,7 +731,7 @@ uint32 cli_spoolss_getprinterdriver (
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_enumprinterdrivers (
+NTSTATUS cli_spoolss_enumprinterdrivers (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -797,7 +745,7 @@ uint32 cli_spoolss_enumprinterdrivers (
         SPOOL_R_ENUMPRINTERDRIVERS 	r;
 	NEW_BUFFER 			buffer;
 	uint32 				needed = 0;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -833,7 +781,8 @@ uint32 cli_spoolss_enumprinterdrivers (
 		}
 		
 		/* Return output parameters */
-		if (((result=r.status) == NT_STATUS_OK) && 
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result) && 
 		    (r.returned != 0))
 		{
 			*returned = r.returned;
@@ -856,7 +805,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -865,7 +814,7 @@ uint32 cli_spoolss_enumprinterdrivers (
 /**********************************************************************
  * Get installed printer drivers for a given printer
  */
-uint32 cli_spoolss_getprinterdriverdir (
+NTSTATUS cli_spoolss_getprinterdriverdir (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -878,7 +827,7 @@ uint32 cli_spoolss_getprinterdriverdir (
         SPOOL_R_GETPRINTERDRIVERDIR 	r;
 	NEW_BUFFER 			buffer;
 	uint32 				needed = 100;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -914,7 +863,8 @@ uint32 cli_spoolss_getprinterdriverdir (
 		}
 		
 		/* Return output parameters */
-		if ((result=r.status) == NT_STATUS_OK)
+		result = werror_to_ntstatus(r.status);
+		if (NT_STATUS_IS_OK(result))
 		{
 			switch (level) 
 			{
@@ -928,7 +878,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 		prs_mem_free(&qbuf);
 		prs_mem_free(&rbuf);
 
-	} while (result == ERROR_INSUFFICIENT_BUFFER);
+	} while (NT_STATUS_V(result) == NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
 
 	return result;	
 }
@@ -936,7 +886,7 @@ uint32 cli_spoolss_getprinterdriverdir (
 /**********************************************************************
  * Install a printer driver
  */
-uint32 cli_spoolss_addprinterdriver (
+NTSTATUS cli_spoolss_addprinterdriver (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -946,7 +896,7 @@ uint32 cli_spoolss_addprinterdriver (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTERDRIVER 	q;
         SPOOL_R_ADDPRINTERDRIVER 	r;
-	uint32 				result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS 			result = NT_STATUS_UNSUCCESSFUL;
 	fstring 			server;
 
 	ZERO_STRUCT(q);
@@ -980,7 +930,7 @@ uint32 cli_spoolss_addprinterdriver (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);
@@ -992,7 +942,7 @@ done:
 /**********************************************************************
  * Install a printer 
  */
-uint32 cli_spoolss_addprinterex (
+NTSTATUS cli_spoolss_addprinterex (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	uint32 			level,
@@ -1002,7 +952,7 @@ uint32 cli_spoolss_addprinterex (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_ADDPRINTEREX 		q;
         SPOOL_R_ADDPRINTEREX 		r;
-	uint32 				result;
+	NTSTATUS 			result;
 	fstring 			server,
 					client,
 					user;
@@ -1042,7 +992,7 @@ uint32 cli_spoolss_addprinterex (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);
@@ -1055,7 +1005,7 @@ done:
  * Delete a Printer Driver from the server (does not remove 
  * the driver files
  */
-uint32 cli_spoolss_deleteprinterdriver (
+NTSTATUS cli_spoolss_deleteprinterdriver (
 	struct cli_state 	*cli, 
 	TALLOC_CTX		*mem_ctx,
 	char			*arch,
@@ -1065,7 +1015,7 @@ uint32 cli_spoolss_deleteprinterdriver (
 	prs_struct 			qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVER	q;
         SPOOL_R_DELETEPRINTERDRIVER	r;
-	uint32 				result;
+	NTSTATUS			result;
 	fstring				server;
 
 	ZERO_STRUCT(q);
@@ -1099,7 +1049,7 @@ uint32 cli_spoolss_deleteprinterdriver (
 	}
 		
 	/* Return output parameters */
-	result = r.status;
+	result = werror_to_ntstatus(r.status);
 
 done:
 	prs_mem_free(&qbuf);
@@ -1108,4 +1058,109 @@ done:
 	return result;	
 }
 
+/* Get print processor directory */
+
+NTSTATUS cli_spoolss_getprintprocessordirectory(struct cli_state *cli,
+						TALLOC_CTX *mem_ctx,
+						char *name,
+						char *environment,
+						fstring procdir)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q;
+	SPOOL_R_GETPRINTPROCESSORDIRECTORY r;
+	NTSTATUS result;
+	int level = 1;
+	NEW_BUFFER buffer;
+	uint32 needed = 100;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+
+	/* Initialise input parameters */
+
+	do {
+		init_buffer(&buffer, needed, mem_ctx);
+
+		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+		
+		make_spoolss_q_getprintprocessordirectory(&q, name, 
+							  environment, level,
+							  &buffer, needed);
+
+		/* Marshall data and send request */
+
+		if (!spoolss_io_q_getprintprocessordirectory("", &q, &qbuf, 0) ||
+		    !rpc_api_pipe_req(cli, SPOOLSS_GETPRINTPROCESSORDIRECTORY, &qbuf, &rbuf)) {
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+		
+		/* Unmarshall response */
+		
+		if (!spoolss_io_r_getprintprocessordirectory("", &r, &rbuf, 0)) {
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Return output parameters */
+		
+		result = werror_to_ntstatus(r.status);
+
+	} while (NT_STATUS_V(result) == 
+		 NT_STATUS_V(ERROR_INSUFFICIENT_BUFFER));
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+
+/*****************************************************************************/
+
+NTSTATUS cli_spoolss_setprinterdata (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					POLICY_HND *pol, char* valname, char* value)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_SETPRINTERDATA q;
+        SPOOL_R_SETPRINTERDATA r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise input parameters */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+
+	/* write the request */
+	make_spoolss_q_setprinterdata(&q, mem_ctx, pol, valname, value);
+
+	/* Marshall data and send request */
+	if (!spoolss_io_q_setprinterdata ("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req (cli, SPOOLSS_SETPRINTERDATA, &qbuf, &rbuf)) 
+	{
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+	if (spoolss_io_r_setprinterdata ("", &r, &rbuf, 0)) {
+		result = werror_to_ntstatus(r.status);
+	}
+		
+done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;	
+}
 

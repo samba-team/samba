@@ -22,21 +22,20 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
-
 struct change_data {
 	time_t last_check_time; /* time we last checked this entry */
 	time_t modify_time; /* Info from the directory we're monitoring. */ 
 	time_t status_time; /* Info from the directory we're monitoring. */
 	time_t total_time; /* Total time of all directory entries - don't care if it wraps. */
 	unsigned int num_entries; /* Zero or the number of files in the directory. */
+	unsigned int mode_sum;
+	unsigned char name_hash[16];
 };
-
 
 /****************************************************************************
  Create the hash we will use to determine if the contents changed.
 *****************************************************************************/
+
 static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags, 
 			struct change_data *data, struct change_data *old_data)
 {
@@ -50,7 +49,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 
 	ZERO_STRUCTP(data);
 
-	if(vfs_stat(conn,path, &st) == -1) return False;
+	if(vfs_stat(conn,path, &st) == -1)
+		return False;
 
 	data->modify_time = st.st_mtime;
 	data->status_time = st.st_ctime;
@@ -76,10 +76,9 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	 * larger than the max time_t value).
 	 */
 
-	if (!(flags & (FILE_NOTIFY_CHANGE_SIZE|FILE_NOTIFY_CHANGE_LAST_WRITE))) return True;
-
 	dp = OpenDir(conn, path, True);
-	if (dp == NULL)	return False;
+	if (dp == NULL)
+		return False;
 
 	data->num_entries = 0;
 	
@@ -91,7 +90,8 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	p = &full_name[fullname_len];
 	
 	while ((fname = ReadDirName(dp))) {
-		if(strequal(fname, ".") || strequal(fname, "..")) continue;		
+		if(strequal(fname, ".") || strequal(fname, ".."))
+			continue;		
 
 		data->num_entries++;
 		safe_strcpy(p, fname, remaining_len);
@@ -102,7 +102,31 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 		 * Do the stat - but ignore errors.
 		 */		
 		vfs_stat(conn,full_name, &st);
+
+		/*
+		 * Always sum the times.
+		 */
+
 		data->total_time += (st.st_mtime + st.st_ctime);
+
+		/*
+		 * If requested hash the names.
+		 */
+
+		if (flags & (FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_FILE)) {
+			int i;
+			unsigned char tmp_hash[16];
+			mdfour(tmp_hash, (unsigned char *)fname, strlen(fname));
+			for (i=0;i<16;i++)
+				data->name_hash[i] ^= tmp_hash[i];
+		}
+
+		/*
+		 * If requested sum the mode_t's.
+		 */
+
+		if (flags & (FILE_NOTIFY_CHANGE_ATTRIBUTES|FILE_NOTIFY_CHANGE_SECURITY))
+			data->mode_sum = st.st_mode;
 	}
 	
 	CloseDir(dp);
@@ -110,15 +134,16 @@ static BOOL notify_hash(connection_struct *conn, char *path, uint32 flags,
 	return True;
 }
 
-
 /****************************************************************************
-register a change notify request
+ Register a change notify request.
 *****************************************************************************/
+
 static void *hash_register_notify(connection_struct *conn, char *path, uint32 flags)
 {
 	struct change_data data;
 
-	if (!notify_hash(conn, path, flags, &data, NULL)) return NULL;
+	if (!notify_hash(conn, path, flags, &data, NULL))
+		return NULL;
 
 	data.last_check_time = time(NULL);
 
@@ -129,16 +154,19 @@ static void *hash_register_notify(connection_struct *conn, char *path, uint32 fl
  Check if a change notify should be issued.
  A time of zero means instantaneous check - don't modify the last check time.
 *****************************************************************************/
+
 static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, uint32 flags, void *datap, time_t t)
 {
 	struct change_data *data = (struct change_data *)datap;
 	struct change_data data2;
 
-	if (t && t < data->last_check_time + lp_change_notify_timeout()) return False;
+	if (t && t < data->last_check_time + lp_change_notify_timeout())
+		return False;
 
-	if (!become_user(conn,vuid)) return True;
-	if (!become_service(conn,True)) {
-		unbecome_user();
+	if (!change_to_user(conn,vuid))
+		return True;
+	if (!set_current_service(conn,True)) {
+		change_to_root_user();
 		return True;
 	}
 
@@ -146,31 +174,34 @@ static BOOL hash_check_notify(connection_struct *conn, uint16 vuid, char *path, 
 	    data2.modify_time != data->modify_time ||
 	    data2.status_time != data->status_time ||
 	    data2.total_time != data->total_time ||
-	    data2.num_entries != data->num_entries) {
-		unbecome_user();
+	    data2.num_entries != data->num_entries ||
+		data2.mode_sum != data->mode_sum ||
+		memcmp(data2.name_hash, data->name_hash, sizeof(data2.name_hash))) {
+		change_to_root_user();
 		return True;
 	}
 
 	if (t)
 		data->last_check_time = t;
 
-	unbecome_user();
+	change_to_root_user();
 
 	return False;
 }
 
 /****************************************************************************
-remove a change notify data structure
+ Remove a change notify data structure.
 *****************************************************************************/
+
 static void hash_remove_notify(void *datap)
 {
-	free(datap);
+	SAFE_FREE(datap);
 }
 
-
 /****************************************************************************
-setup hash based change notify
+ Setup hash based change notify.
 ****************************************************************************/
+
 struct cnotify_fns *hash_notify_init(void) 
 {
 	static struct cnotify_fns cnotify;
@@ -182,7 +213,6 @@ struct cnotify_fns *hash_notify_init(void)
 
 	return &cnotify;
 }
-
 
 /*
   change_notify_reply_packet(cnbp->request_buf,ERRSRV,ERRaccess);

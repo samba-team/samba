@@ -24,9 +24,9 @@
 #include "includes.h"
 
 
-static  struct {
+static const struct {
     int prot;
-    char *name;
+    const char *name;
   }
 prots[] = 
     {
@@ -43,11 +43,282 @@ prots[] =
 
 
 /****************************************************************************
+do an old lanman2 style session setup
+****************************************************************************/
+static BOOL cli_session_setup_lanman2(struct cli_state *cli, char *user, 
+				      char *pass, int passlen)
+{
+	fstring pword;
+	char *p;
+
+	if (passlen > sizeof(pword)-1) {
+		return False;
+	}
+
+	/* if in share level security then don't send a password now */
+	if (!(cli->sec_mode & 1)) {
+		passlen = 0;
+	}
+
+	if (passlen > 0 && (cli->sec_mode & 2) && passlen != 24) {
+		/* Encrypted mode needed, and non encrypted password supplied. */
+		passlen = 24;
+		clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
+		SMBencrypt((uchar *)pword,cli->cryptkey,(uchar *)pword);
+	} else if ((cli->sec_mode & 2) && passlen == 24) {
+		/* Encrypted mode needed, and encrypted password supplied. */
+		memcpy(pword, pass, passlen);
+	} else if (passlen > 0) {
+		/* Plaintext mode needed, assume plaintext supplied. */
+		passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
+	}
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+	set_message(cli->outbuf,10, 0, True);
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
+	cli_setup_packet(cli);
+	
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,1);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+
+	p = smb_buf(cli->outbuf);
+	memcpy(p,pword,passlen);
+	p += passlen;
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);	
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+
+/****************************************************************************
+work out suitable capabilities to offer the server
+****************************************************************************/
+static uint32 cli_session_setup_capabilities(struct cli_state *cli)
+{
+	uint32 capabilities = CAP_NT_SMBS;
+
+	if (!cli->force_dos_errors) {
+		capabilities |= CAP_STATUS32;
+	}
+
+	if (cli->use_level_II_oplocks) {
+		capabilities |= CAP_LEVEL_II_OPLOCKS;
+	}
+
+	if (cli->capabilities & CAP_UNICODE) {
+		capabilities |= CAP_UNICODE;
+	}
+
+	return capabilities;
+}
+
+
+/****************************************************************************
+do a NT1 guest session setup
+****************************************************************************/
+static BOOL cli_session_setup_guest(struct cli_state *cli)
+{
+	char *p;
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+
+	set_message(cli->outbuf,13,0,True);
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
+	cli_setup_packet(cli);
+			
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,0);
+	SSVAL(cli->outbuf,smb_vwv8,0);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* username */
+	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+	      return False;
+	
+	show_msg(cli->inbuf);
+	
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	fstrcpy(cli->user_name, "");
+
+	return True;
+}
+
+
+/****************************************************************************
+do a NT1 plaintext session setup
+****************************************************************************/
+static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user, 
+					char *pass, char *workgroup)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	fstring pword;
+	int passlen;
+	char *p;
+
+	passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+
+	set_message(cli->outbuf,13,0,True);
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
+	cli_setup_packet(cli);
+			
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+	SSVAL(cli->outbuf,smb_vwv8,0);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p, pword, passlen);
+	p += passlen;
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE); /* username */
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE); /* workgroup */
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+	      return False;
+	
+	show_msg(cli->inbuf);
+	
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+
+/****************************************************************************
+do a NT1 NTLM/LM encrypted session setup
+****************************************************************************/
+static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user, 
+				  char *pass, int passlen,
+				  char *ntpass, int ntpasslen,
+				  char *workgroup)
+{
+	uint32 capabilities = cli_session_setup_capabilities(cli);
+	fstring pword, ntpword;
+	char *p;
+
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
+		return False;
+	}
+
+	if (passlen != 24) {
+		/* non encrypted password supplied. */
+		passlen = 24;
+		ntpasslen = 24;
+		clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+		clistr_push(cli, ntpword, ntpass, sizeof(ntpword), STR_TERMINATE);
+		SMBencrypt((uchar *)pword,cli->cryptkey,(uchar *)pword);
+		SMBNTencrypt((uchar *)ntpword,cli->cryptkey,(uchar *)ntpword);
+	} else {
+		memcpy(pword, pass, passlen);
+		memcpy(ntpword, ntpass, ntpasslen);
+	}
+
+	/* send a session setup command */
+	memset(cli->outbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,13,0,True);
+	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
+	cli_setup_packet(cli);
+			
+	SCVAL(cli->outbuf,smb_vwv0,0xFF);
+	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
+	SSVAL(cli->outbuf,smb_vwv3,2);
+	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
+	SSVAL(cli->outbuf,smb_vwv7,passlen);
+	SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
+	p = smb_buf(cli->outbuf);
+	memcpy(p,pword,passlen); p += passlen;
+	memcpy(p,ntpword,ntpasslen); p += ntpasslen;
+	p += clistr_push(cli, p, user, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, workgroup, -1, STR_TERMINATE|STR_UPPER);
+	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
+	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
+	cli_setup_bcc(cli, p);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli))
+		return False;
+
+	show_msg(cli->inbuf);
+
+	if (cli_is_error(cli)) {
+		return False;
+	}
+	
+	/* use the returned vuid from now on */
+	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	
+	p = smb_buf(cli->inbuf);
+	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+
+	fstrcpy(cli->user_name, user);
+
+	return True;
+}
+
+/****************************************************************************
  Send a session setup. The username and workgroup is in UNIX character
  format and must be converted to DOS codepage format before sending. If the
  password is in plaintext, the same should be done.
 ****************************************************************************/
-
 BOOL cli_session_setup(struct cli_state *cli, 
 		       char *user, 
 		       char *pass, int passlen,
@@ -55,12 +326,11 @@ BOOL cli_session_setup(struct cli_state *cli,
 		       char *workgroup)
 {
 	char *p;
-	fstring pword, ntpword;
 	fstring user2;
 
 	/* allow for workgroups as part of the username */
 	fstrcpy(user2, user);
-	if ((p=strchr(user2,'\\')) || (p=strchr(user2,'/'))) {
+	if ((p=strchr(user2,'\\')) || (p=strchr(user2,'/')) || (p=strchr(user2,*lp_winbind_separator())) ) {
 		*p = 0;
 		user = p+1;
 		workgroup = user2;
@@ -69,138 +339,38 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if (cli->protocol < PROTOCOL_LANMAN1)
 		return True;
 
-	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
-		return False;
+	/* now work out what sort of session setup we are going to
+           do. I have split this into separate functions to make the
+           flow a bit easier to understand (tridge) */
+
+	/* if its an older server then we have to use the older request format */
+	if (cli->protocol < PROTOCOL_NT1) {
+		return cli_session_setup_lanman2(cli, user, pass, passlen);
 	}
 
-	if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
-		/* Null session connect. */
-		pword[0] = '\0';
-		ntpword[0] = '\0';
-	} else {
-		if ((cli->sec_mode & 2) && passlen != 24) {
-			/*
-			 * Encrypted mode needed, and non encrypted password supplied.
-			 */
-			passlen = 24;
-			ntpasslen = 24;
-			fstrcpy(pword, pass);
-			unix_to_dos(pword,True);
-			fstrcpy(ntpword, ntpass);;
-			SMBencrypt((uchar *)pword,(uchar *)cli->cryptkey,(uchar *)pword);
-			SMBNTencrypt((uchar *)ntpword,(uchar *)cli->cryptkey,(uchar *)ntpword);
-		} else if ((cli->sec_mode & 2) && passlen == 24) {
-			/*
-			 * Encrypted mode needed, and encrypted password supplied.
-			 */
-			memcpy(pword, pass, passlen);
-			if(ntpasslen == 24) {
-				memcpy(ntpword, ntpass, ntpasslen);
-			} else {
-				fstrcpy(ntpword, "");
-				ntpasslen = 0;
-			}
-		} else {
-			/*
-			 * Plaintext mode needed, assume plaintext supplied.
-			 */
-			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
-			fstrcpy(ntpword, "");
-			ntpasslen = 0;
-		}
+	/* if no user is supplied then we have to do an anonymous connection.
+	   passwords are ignored */
+	if (!user || !*user) {
+		return cli_session_setup_guest(cli);
 	}
 
-	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {
-		fstrcpy(pword, "");
-		passlen=1;
-		fstrcpy(ntpword, "");
-		ntpasslen=1;
-	} 
-
-	/* send a session setup command */
-	memset(cli->outbuf,'\0',smb_size);
-
-	if (cli->protocol < PROTOCOL_NT1)
-	{
-		set_message(cli->outbuf,10, 0, True);
-		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_packet(cli);
-
-		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,cli->max_xmit);
-		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,1);
-		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-		SSVAL(cli->outbuf,smb_vwv7,passlen);
-		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen);
-		p += passlen;
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_UPPER|STR_TERMINATE);
-		cli_setup_bcc(cli, p);
-	}
-	else
-	{
-		uint32 capabilities;
-
-		capabilities = CAP_NT_SMBS;
-		if (cli->use_level_II_oplocks) {
-			capabilities |= CAP_LEVEL_II_OPLOCKS;
-		}
-		if (cli->capabilities & CAP_UNICODE) {
-			capabilities |= CAP_UNICODE;
-		}
-		set_message(cli->outbuf,13,0,True);
-		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
-		cli_setup_packet(cli);
-		
-		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-		SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-		SSVAL(cli->outbuf,smb_vwv7,passlen);
-		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
-		SIVAL(cli->outbuf,smb_vwv11,capabilities);
-		p = smb_buf(cli->outbuf);
-		memcpy(p,pword,passlen); 
-		p += SVAL(cli->outbuf,smb_vwv7);
-		memcpy(p,ntpword,ntpasslen); 
-		p += SVAL(cli->outbuf,smb_vwv8);
-		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, workgroup, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
-		p += clistr_push(cli, p, "Unix", -1, STR_CONVERT|STR_TERMINATE);
-		p += clistr_push(cli, p, "Samba", -1, STR_CONVERT|STR_TERMINATE);
-		cli_setup_bcc(cli, p);
+	/* if the server is share level then send a plaintext null
+           password at this point. The password is sent in the tree
+           connect */
+	if ((cli->sec_mode & 1) == 0) {
+		return cli_session_setup_plaintext(cli, user, "", workgroup);
 	}
 
-      cli_send_smb(cli);
-      if (!cli_receive_smb(cli))
-	      return False;
+	/* if the server doesn't support encryption then we have to use plaintext. The 
+	   second password is ignored */
+	if ((cli->sec_mode & 2) == 0) {
+		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+	}
 
-      show_msg(cli->inbuf);
-
-      if (CVAL(cli->inbuf,smb_rcls) != 0) {
-	      return False;
-      }
-
-      /* use the returned vuid from now on */
-      cli->vuid = SVAL(cli->inbuf,smb_uid);
-
-      if (cli->protocol >= PROTOCOL_NT1) {
-	      /*
-	       * Save off some of the connected server
-	       * info.
-	       */
-	      char *q = smb_buf(cli->inbuf);
-	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
-	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
-	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
-      }
-
-      fstrcpy(cli->user_name, user);
-
-      return True;
+	/* Do a NT1 style session setup */
+	return cli_session_setup_nt1(cli, user, 
+				     pass, passlen, ntpass, ntpasslen,
+				     workgroup);	
 }
 
 /****************************************************************************
@@ -211,7 +381,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 {
         memset(cli->outbuf,'\0',smb_size);
         set_message(cli->outbuf,2,0,True);
-        CVAL(cli->outbuf,smb_com) = SMBulogoffX;
+        SCVAL(cli->outbuf,smb_com,SMBulogoffX);
         cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,0);  /* no additional info */
@@ -220,14 +390,14 @@ BOOL cli_ulogoff(struct cli_state *cli)
         if (!cli_receive_smb(cli))
                 return False;
 
-        return CVAL(cli->inbuf,smb_rcls) == 0;
+        return !cli_is_error(cli);
 }
 
 /****************************************************************************
 send a tconX
 ****************************************************************************/
 BOOL cli_send_tconX(struct cli_state *cli, 
-		    char *share, char *dev, char *pass, int passlen)
+		    const char *share, const char *dev, const char *pass, int passlen)
 {
 	fstring fullshare, pword, dos_pword;
 	char *p;
@@ -247,9 +417,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
 		passlen = 24;
-		fstrcpy(dos_pword,pass);
-		unix_to_dos(dos_pword,True);
-		SMBencrypt((uchar *)dos_pword,(uchar *)cli->cryptkey,(uchar *)pword);
+		clistr_push(cli, dos_pword, pass, -1, STR_CONVERT|STR_TERMINATE);
+		SMBencrypt((uchar *)dos_pword,cli->cryptkey,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & 3) == 0) {
 			/*
@@ -261,13 +430,16 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		}
 	}
 
-	slprintf(fullshare, sizeof(fullshare)-1,
-		 "\\\\%s\\%s", cli->desthost, share);
-	unix_to_dos(fullshare, True);
-	strupper(fullshare);
+	if (cli->port == 445) {
+		slprintf(fullshare, sizeof(fullshare)-1,
+			 "%s", share);
+	} else {
+		slprintf(fullshare, sizeof(fullshare)-1,
+			 "\\\\%s\\%s", cli->desthost, share);
+	}
 
 	set_message(cli->outbuf,4, 0, True);
-	CVAL(cli->outbuf,smb_com) = SMBtconX;
+	SCVAL(cli->outbuf,smb_com,SMBtconX);
 	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -276,25 +448,23 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p += clistr_push(cli, p, fullshare, -1, STR_CONVERT | STR_TERMINATE);
+	p += clistr_push(cli, p, fullshare, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
 	fstrcpy(p, dev); p += strlen(dev)+1;
 
 	cli_setup_bcc(cli, p);
-
-	SCVAL(cli->inbuf,smb_rcls, 1);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
 	fstrcpy(cli->dev, "A:");
 
 	if (cli->protocol >= PROTOCOL_NT1) {
-		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE | STR_CONVERT);
+		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE);
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
@@ -320,7 +490,7 @@ BOOL cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
 	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBtdis;
+	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 	
@@ -328,7 +498,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	if (!cli_receive_smb(cli))
 		return False;
 	
-	return CVAL(cli->inbuf,smb_rcls) == 0;
+	return !cli_is_error(cli);
 }
 
 
@@ -350,16 +520,14 @@ void cli_negprot_send(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++) {
 		*p++ = 2;
-		pstrcpy(p,prots[numprots].name);
-		unix_to_dos(p,True);
-		p += strlen(p) + 1;
+		p += clistr_push(cli, p, prots[numprots].name, -1, STR_CONVERT|STR_TERMINATE);
 	}
 
-	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	SCVAL(cli->outbuf,smb_com,SMBnegprot);
 	cli_setup_bcc(cli, p);
 	cli_setup_packet(cli);
 
-	CVAL(smb_buf(cli->outbuf),0) = 2;
+	SCVAL(smb_buf(cli->outbuf),0,2);
 
 	cli_send_smb(cli);
 }
@@ -389,15 +557,13 @@ BOOL cli_negprot(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++) {
 		*p++ = 2;
-		pstrcpy(p,prots[numprots].name);
-		unix_to_dos(p,True);
-		p += strlen(p) + 1;
+		p += clistr_push(cli, p, prots[numprots].name, -1, STR_CONVERT|STR_TERMINATE);
 	}
 
-	CVAL(cli->outbuf,smb_com) = SMBnegprot;
+	SCVAL(cli->outbuf,smb_com,SMBnegprot);
 	cli_setup_packet(cli);
 
-	CVAL(smb_buf(cli->outbuf),0) = 2;
+	SCVAL(smb_buf(cli->outbuf),0,2);
 
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
@@ -405,13 +571,12 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	show_msg(cli->inbuf);
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0 || 
+	if (cli_is_error(cli) ||
 	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
 		return(False);
 	}
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
-
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		/* NT protocol */
@@ -433,7 +598,7 @@ BOOL cli_negprot(struct cli_state *cli)
 		if (smb_buflen(cli->inbuf) > 8) {
 			clistr_pull(cli, cli->server_domain, 
 				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
-				    smb_buflen(cli->inbuf)-8, STR_CONVERT|STR_UNICODE|STR_NOALIGN);
+				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
@@ -473,8 +638,10 @@ BOOL cli_session_request(struct cli_state *cli,
 	int len = 4;
 	extern pstring user_socket_options;
 
-	/* send a session request (RFC 1002) */
+	/* 445 doesn't have session request */
+	if (cli->port == 445) return True;
 
+	/* send a session request (RFC 1002) */
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
   
@@ -490,7 +657,7 @@ BOOL cli_session_request(struct cli_state *cli,
 
 	/* setup the packet length */
 	_smb_setlen(cli->outbuf,len);
-	CVAL(cli->outbuf,0) = 0x81;
+	SCVAL(cli->outbuf,0,0x81);
 
 #ifdef WITH_SSL
 retry:
@@ -565,83 +732,54 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
 	extern struct in_addr ipzero;
 	extern pstring user_socket_options;
+	int name_type = 0x20;
+	char *p;
+
+	/* reasonable default hostname */
+	if (!host)
+		host = "*SMBSERVER";
 
 	fstrcpy(cli->desthost, host);
 	
+	/* allow hostnames of the form NAME#xx and do a netbios lookup */
+	if ((p = strchr(cli->desthost, '#'))) {
+		name_type = strtol(p+1, NULL, 16);		
+		*p = 0;
+	}
+	
 	if (!ip || ip_equal(*ip, ipzero)) {
-                if (!resolve_name( cli->desthost, &cli->dest_ip, 0x20)) {
-                        return False;
-                }
-		if (ip) *ip = cli->dest_ip;
+		if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
+			return False;
+		}
+		if (ip)
+			*ip = cli->dest_ip;
 	} else {
 		cli->dest_ip = *ip;
 	}
 
-        if (cli->port == 0) cli->port = 139;  /* Set to default */
-
 	if (getenv("LIBSMB_PROG")) {
 		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
 	} else {
+		/* try 445 first, then 139 */
+		int port = cli->port?cli->port:445;
 		cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
-					  cli->port, cli->timeout);
+					  port, cli->timeout);
+		if (cli->fd == -1 && cli->port == 0) {
+			port = 139;
+			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ip, 
+						  port, cli->timeout);
+		}
+		if (cli->fd != -1) cli->port = port;
 	}
-	if (cli->fd == -1)
+	if (cli->fd == -1) {
+		DEBUG(1,("Error connecting to %s (%s)\n",
+			 inet_ntoa(*ip),strerror(errno)));
 		return False;
+	}
 
 	set_socket_options(cli->fd,user_socket_options);
 
 	return True;
-}
-
-/****************************************************************************
-re-establishes a connection
-****************************************************************************/
-BOOL cli_reestablish_connection(struct cli_state *cli)
-{
-	struct nmb_name calling;
-	struct nmb_name called;
-	fstring dest_host;
-	fstring share;
-	fstring dev;
-	BOOL do_tcon = False;
-	int oldfd = cli->fd;
-
-	if (!cli->initialised || cli->fd == -1)
-	{
-		DEBUG(3,("cli_reestablish_connection: not connected\n"));
-		return False;
-	}
-
-	/* copy the parameters necessary to re-establish the connection */
-
-	if (cli->cnum != 0)
-	{
-		fstrcpy(share, cli->share);
-		fstrcpy(dev  , cli->dev);
-		do_tcon = True;
-	}
-
-	memcpy(&called , &(cli->called ), sizeof(called ));
-	memcpy(&calling, &(cli->calling), sizeof(calling));
-	fstrcpy(dest_host, cli->full_dest_host_name);
-
-	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
-		 nmb_namestr(&calling), nmb_namestr(&called), 
-		 inet_ntoa(cli->dest_ip),
-		 cli->user_name, cli->domain));
-
-	cli->fd = -1;
-
-	if (cli_establish_connection(cli,
-				     dest_host, &cli->dest_ip,
-				     &calling, &called,
-				     share, dev, False, do_tcon)) {
-		if ((cli->fd != oldfd) && (oldfd != -1)) {
-			close( oldfd );
-		}
-		return True;
-	}
-	return False;
 }
 
 /****************************************************************************
@@ -669,7 +807,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		if (!cli_connect(cli, dest_host, dest_ip))
 		{
 			DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
-					  nmb_namestr(calling), inet_ntoa(*dest_ip)));
+					  nmb_namestr(called), inet_ntoa(*dest_ip)));
 			return False;
 		}
 	}
@@ -742,8 +880,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		unsigned char lm_sess_pwd[24];
 
 		/* creates (storing a copy of) and then obtains a 24 byte password OWF */
-		pwd_make_lm_nt_owf(&(cli->pwd), cli->cryptkey);
-		pwd_get_lm_nt_owf(&(cli->pwd), lm_sess_pwd, nt_sess_pwd);
+		pwd_make_lm_nt_owf(&cli->pwd, cli->cryptkey);
+		pwd_get_lm_nt_owf(&cli->pwd, lm_sess_pwd, nt_sess_pwd);
 
 		/* attempt encrypted session */
 		if (!cli_session_setup(cli, cli->user_name,
@@ -762,9 +900,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
     		if (*cli->server_domain || *cli->server_os || *cli->server_type)
     		{
     			DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-    			     cli->server_domain,
-    		             cli->server_os,
-    		             cli->server_type));
+				 cli->server_domain,
+				 cli->server_os,
+				 cli->server_type));
     		}
 		
 		if (do_tcon)
@@ -781,7 +919,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	}
 
 	if (do_shutdown)
-      cli_shutdown(cli);
+		cli_shutdown(cli);
 
 	return True;
 }

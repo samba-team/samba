@@ -22,8 +22,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static TDB_CONTEXT *tdbd = NULL;
 
 /* the key type used in the unexpeceted packet database */
@@ -149,9 +147,9 @@ check for a particular packet in the unexpected packet queue
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id, 
 					 char *mailslot_name)
 {
-	TDB_CONTEXT *tdb2;
+	TDB_CONTEXT *tdb2 = NULL;
 
-	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
+	tdb2 = tdb_open_log(lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
 	if (!tdb2) return NULL;
 
 	matched_packet = NULL;

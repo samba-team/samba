@@ -6,6 +6,7 @@
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
+ *  Copyirht  (C) Andrew Bartlett                   2001.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +27,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
 extern pstring global_myname;
@@ -38,7 +37,7 @@ extern DOM_SID global_sam_sid;
  *************************************************************************/
 
 static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
-                                DOM_CHAL *srv_chal, int status)
+                                DOM_CHAL *srv_chal, NTSTATUS status)
 {
 	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
 	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
@@ -53,19 +52,46 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 #define ERROR_NO_LOGON_SERVERS 0x51f
 
 /*************************************************************************
+ net_reply_logon_ctrl:
+ *************************************************************************/
+
+/* Some flag values reverse engineered from NLTEST.EXE */
+
+#define LOGON_CTRL_IN_SYNC          0x00
+#define LOGON_CTRL_REPL_NEEDED      0x01
+#define LOGON_CTRL_REPL_IN_PROGRESS 0x02
+
+NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
+		       NET_R_LOGON_CTRL *r_u)
+{
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x00; /* Maybe a win32 error code? */
+	
+	/* Setup the Logon Control response */
+
+	init_net_r_logon_ctrl(r_u, q_u->query_level, flags, 
+			      pdc_connection_status);
+
+	return r_u->status;
+}
+
+/*************************************************************************
  net_reply_logon_ctrl2:
  *************************************************************************/
 
-uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
+NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
 {
-    /* lkclXXXX - guess what - absolutely no idea what these are! */
-    uint32 flags = 0x0;
-    uint32 pdc_connection_status = 0x0;
-    uint32 logon_attempts = 0x0;
-    uint32 tc_status = ERROR_NO_LOGON_SERVERS;
-    char *trusted_domain = "test_domain";
+	uint32 flags = 0x0;
+	uint32 pdc_connection_status = 0x0;
+	uint32 logon_attempts = 0x0;
+	uint32 tc_status = ERROR_NO_LOGON_SERVERS;
+	char *trusted_domain = "test_domain";
+
+        DEBUG(0, ("*** net long ctrl2 %d, %d, %d\n",
+                  q_u->function_code, q_u->query_level, q_u->switch_value));
 
 	DEBUG(6,("_net_logon_ctrl2: %d\n", __LINE__));
+
 
 	/* set up the Logon Control2 response */
 	init_net_r_logon_ctrl2(r_u, q_u->query_level,
@@ -81,7 +107,7 @@ uint32 _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTR
  net_reply_trust_dom_list:
  *************************************************************************/
 
-uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
+NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
 {
 	char *trusted_domain = "test_domain";
 	uint32 num_trust_domains = 1;
@@ -101,7 +127,7 @@ uint32 _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRU
  ***********************************************************************************/
 
 static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-                             DOM_CRED *srv_cred, int status)  
+                             DOM_CRED *srv_cred, NTSTATUS status)  
 {
 	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
 
@@ -168,9 +194,9 @@ static BOOL get_md4pw(char *md4pw, char *mach_acct)
  _net_req_chal
  *************************************************************************/
 
-uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
+NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	fstring mach_acct;
 
 	if (!get_valid_user_struct(p->vuid))
@@ -217,7 +243,7 @@ uint32 _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
  init_net_r_auth:
  *************************************************************************/
 
-static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
+static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS status)
 {
 	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
 	r_a->status = status;
@@ -227,9 +253,9 @@ static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, int status)
  _net_auth
  *************************************************************************/
 
-uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
@@ -262,7 +288,7 @@ uint32 _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
  *************************************************************************/
 
 static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, int status)
+                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, NTSTATUS status)
 {
 	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
 	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
@@ -273,9 +299,9 @@ static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
  _net_auth_2
  *************************************************************************/
 
-uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
+NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 	NEG_FLAGS srv_flgs;
@@ -310,9 +336,9 @@ uint32 _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
  _net_srv_pwset
  *************************************************************************/
 
-uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
+NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DOM_CRED srv_cred;
 	pstring mach_acct;
 	SAM_ACCOUNT *sampass=NULL;
@@ -336,6 +362,16 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 
 	DEBUG(3,("Server Password Set Wksta:[%s]\n", mach_acct));
 
+	/*
+	 * Check the machine account name we're changing is the same
+	 * as the one we've authenticated from. This prevents arbitrary
+	 * machines changing other machine account passwords.
+	 */
+
+	if (!strequal(mach_acct, p->dc.mach_acct)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	pdb_init_sam(&sampass);
 
 	become_root();
@@ -349,19 +385,6 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
 		return NT_STATUS_NO_SUCH_USER;
 	}
 				    				    
-
-	/*
-	 * Check the machine account name we're changing is the same
-	 * as the one we've authenticated from. This prevents arbitrary
-	 * machines changing other machine account passwords.
-	 */
-
-	if (!strequal(mach_acct, p->dc.mach_acct)) {
-		pdb_free_sam(sampass);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	
-
 	DEBUG(100,("Server password set : new given value was :\n"));
 	for(i = 0; i < 16; i++)
 		DEBUG(100,("%02X ", q_u->pwd[i]));
@@ -399,7 +422,7 @@ uint32 _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_
  _net_sam_logoff:
  *************************************************************************/
 
-uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
+NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
 {
 	DOM_CRED srv_cred;
 
@@ -426,7 +449,7 @@ uint32 _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF 
  net_login_interactive:
  *************************************************************************/
 
-static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
+static NTSTATUS net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pipes_struct *p)
 {
 	uint8    *stored_nt_pwd, *stored_lanman_pwd;
 	char nt_pwd[16];
@@ -493,7 +516,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1, SAM_ACCOUNT *sampass, pi
  _net_login_network:
  *************************************************************************/
 
-static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
+static NTSTATUS net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
 {
 	uint8    *nt_pwd, *lanman_pwd;
 
@@ -539,9 +562,9 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2, SAM_ACCOUNT *sampass)
  _net_sam_logon
  *************************************************************************/
 
-uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
 {
-	uint32 status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 	NET_USER_INFO_3 *usr_info = NULL;
 	DOM_CRED srv_cred;
 	SAM_ACCOUNT *sampass = NULL;
@@ -610,8 +633,11 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 	unbecome_root();
 
 	if (!ret)
+	{
+		pdb_free_sam(sampass);
 		return NT_STATUS_NO_SUCH_USER;
-
+	}
+	
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
 	/* Validate password - if required. */
@@ -629,19 +655,25 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
 		}
 	}
 
-	if (status != NT_STATUS_OK)
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(sampass);
 		return status;
+	}
 
 #ifdef WITH_PAM
 	become_root();
 	status = smb_pam_accountcheck(pdb_get_username(sampass));
 	unbecome_root();
-	if (status != NT_STATUS_OK)
+	if (!NT_STATUS_IS_OK(status)) {
+		pdb_free_sam(sampass);
 		return status;
+	}
 #endif
 
-	if (acct_ctrl & ACB_DISABLED)
+	if (acct_ctrl & ACB_DISABLED) {
+		pdb_free_sam(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
+	}
     
 	/* lkclXXXX this is the point at which, if the login was
 		successful, that the SAM Local Security Authority should
@@ -690,7 +722,8 @@ uint32 _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_
                             &global_sam_sid,     /* DOM_SID *dom_sid */
                             NULL); /* char *other_sids */
         
-    }
+	}
 
-    return status;
+	pdb_free_sam(sampass);
+	return status;
 }

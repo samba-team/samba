@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static char *last_ptr=NULL;
 
 void set_first_token(char *ptr)
@@ -319,9 +317,9 @@ int strwicmp(char *psz1, char *psz2)
 	/* sync the strings on first non-whitespace */
 	while (1)
 	{
-		while (isspace(*psz1))
+		while (isspace((int)*psz1))
 			psz1++;
-		while (isspace(*psz2))
+		while (isspace((int)*psz2))
 			psz2++;
 		if (toupper(*psz1) != toupper(*psz2) || *psz1 == '\0'
 		    || *psz2 == '\0')
@@ -926,6 +924,8 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+	size_t buflen;
+	smb_ucs2_t *str_ucs, *other_ucs;
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -937,22 +937,44 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
 		return dest;
 	}  
 
-	len = strlen(src);
-	if (len >= maxlength)
-		len = maxlength - 1;
+	/* Get UCS2 version of src string*/
+
+	buflen=2*strlen(src)+2;
+	if (buflen >= (2*maxlength))
+		buflen = 2*(maxlength - 1);
+
+	str_ucs = (smb_ucs2_t*)malloc(buflen);
+	if(!str_ucs) {
+		*dest=0;
+		return dest;
+	}
+	unix_to_unicode(str_ucs, src, buflen);
+	len = strlen_w(str_ucs);
 
 	if (!other_safe_chars)
 		other_safe_chars = "";
 
-	for(i = 0; i < len; i++) {
-		int val = (src[i] & 0xff);
-		if(isupper(val) || islower(val) || isdigit(val) || strchr(other_safe_chars, val))
-			dest[i] = src[i];
-		else
-			dest[i] = '_';
+	/* Get UCS2 version of other_safe_chars string*/
+	buflen=2*strlen(other_safe_chars)+2;
+	other_ucs = (smb_ucs2_t*)malloc(buflen);
+	if(!other_ucs) {
+		*dest=0;
+		SAFE_FREE(str_ucs);
+		return dest;
 	}
+	unix_to_unicode(other_ucs, other_safe_chars, buflen);
 
-	dest[i] = '\0';
+	for(i = 0; i < len; i++) {
+		if(isupper_w(str_ucs[i]) || islower_w(str_ucs[i]) || isdigit_w(str_ucs[i]) || strchr_w(other_ucs, str_ucs[i]))
+			;
+		else
+			str_ucs[i] = (smb_ucs2_t)'_'; /*This will work*/
+
+	}
+	unicode_to_unix(dest, str_ucs, maxlength);
+
+	SAFE_FREE(other_ucs);
+	SAFE_FREE(str_ucs);
 
 	return dest;
 }
@@ -1117,8 +1139,7 @@ void string_free(char **s)
   if (!s || !(*s)) return;
   if (*s == null_string)
     *s = NULL;
-  if (*s) free(*s);
-  *s = NULL;
+  SAFE_FREE(*s);
 }
 
 /****************************************************************************

@@ -112,8 +112,8 @@ int cli_print_queue(struct cli_state *cli,
 	}
 
 	/* If any parameters or data were returned, free the storage. */
-	if(rparam) free(rparam);
-	if(rdata) free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	return i;
 }
@@ -149,8 +149,8 @@ int cli_printjob_del(struct cli_state *cli, int job)
 		ret = SVAL(rparam,0);
 	}
 
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	return ret;
 }

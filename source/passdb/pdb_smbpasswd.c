@@ -44,7 +44,6 @@ struct smb_passwd
 };
 
 
-extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 extern struct passdb_ops pdb_ops;
@@ -168,7 +167,7 @@ static void *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
     DEBUG(10, ("startsmbfilepwent_internal: opening file %s\n", pfile));
 
     if((fp = sys_fopen(pfile, open_mode)) == NULL) {
-      DEBUG(0, ("startsmbfilepwent_internal: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
+      DEBUG(2, ("startsmbfilepwent_internal: unable to open file %s. Error was %s\n", pfile, strerror(errno) ));
       return NULL;
     }
 
@@ -1089,7 +1088,7 @@ static BOOL del_smbfilepwd_entry(const char *name)
     size_t new_entry_length;
 
     if (strequal(name, pwd->smb_name)) {
-      DEBUG(10, ("add_smbfilepwd_entry: found entry with name %s - deleting it.\n", name));
+      DEBUG(10, ("del_smbfilepwd_entry: found entry with name %s - deleting it.\n", name));
       continue;
     }
 
@@ -1221,7 +1220,7 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_domain (sam_pass, lp_workgroup());
 	
-	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
+	pdb_set_dir_drive     (sam_pass, lp_logon_drive(), False);
 
 	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
 	   max password age?   For now, we'll use the current time + 21 days. 
@@ -1238,15 +1237,15 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 
 	        pstrcpy(str, lp_logon_script());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_logon_script(sam_pass, str);
+		pdb_set_logon_script(sam_pass, str, False);
 
 	        pstrcpy(str, lp_logon_path());
        		standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_profile_path(sam_pass, str);
+		pdb_set_profile_path(sam_pass, str, False);
 
 	        pstrcpy(str, lp_logon_home());
         	standard_sub_advanced(-1, pw_buf->smb_name, "", gid, str);
-		pdb_set_homedir(sam_pass, str);
+		pdb_set_homedir(sam_pass, str, False);
  		
 		sam_logon_in_ssb = False;
 	} else {
@@ -1402,48 +1401,6 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 	return True;
 }
 
-
-BOOL pdb_getsampwuid (SAM_ACCOUNT *sam_acct, uid_t uid)
-{
-	struct smb_passwd *smb_pw;
-	void *fp = NULL;
-
-	DEBUG(10, ("pdb_getsampwuid: search by uid: %d\n", uid));
-
-	/* Open the sam password file - not for update. */
-	fp = startsmbfilepwent(lp_smb_passwd_file(), PWF_READ, &pw_file_lock_depth);
-
-	if (fp == NULL) {
-		DEBUG(0, ("unable to open passdb database.\n"));
-		return False;
-	}
-
-	while ( ((smb_pw=getsmbfilepwent(fp)) != NULL) && (smb_pw->smb_userid != uid) )
-      		/* do nothing */ ;
-
-	endsmbfilepwent(fp, &pw_file_lock_depth);
-
-	/* did we locate the username in smbpasswd  */
-	if (smb_pw == NULL)
-		return False;
-	
-	DEBUG(10, ("pdb_getsampwuid: found by name: %s\n", smb_pw->smb_name));
-		
-	if (!sam_acct) {
-		DEBUG(10,("pdb_getsampwuid:SAM_ACCOUNT is NULL\n"));
-#if 0
-		smb_panic("NULL pointer passed to pdb_getsampwuid\n");
-#endif
-		return False;
-	}
-
-	/* now build the SAM_ACCOUNT */
-	if (!build_sam_account(sam_acct, smb_pw))
-		return False;
-
-	/* success */
-	return True;
-}
 
 BOOL pdb_getsampwrid(SAM_ACCOUNT *sam_acct,uint32 rid)
 {

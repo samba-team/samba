@@ -127,7 +127,7 @@ Notes:
 #endif
 
 /****************************************************************************
-obtain/release a small number (0 upwards) unique within and across smbds
+ Obtain/release a small number (0 upwards) unique within and across smbds.
 ****************************************************************************/
 /*
  * Need a "small" number to represent this connection, unique within this
@@ -154,8 +154,9 @@ obtain/release a small number (0 upwards) unique within and across smbds
  */
 
 /****************************************************************************
-Default paths to various {u,w}tmp{,x} files
+ Default paths to various {u,w}tmp{,x} files.
 ****************************************************************************/
+
 #ifdef	HAVE_UTMPX_H
 
 static const char *ux_pathname =
@@ -260,9 +261,11 @@ static void uw_pathname(pstring fname, const char *uw_name, const char *uw_defau
 }
 
 #ifndef HAVE_PUTUTLINE
+
 /****************************************************************************
-Update utmp file directly.  No subroutine interface: probably a BSD system.
+ Update utmp file directly.  No subroutine interface: probably a BSD system.
 ****************************************************************************/
+
 static void pututline_my(pstring uname, struct utmp *u, BOOL claim)
 {
 	DEBUG(1,("pututline_my: not yet implemented\n"));
@@ -271,10 +274,12 @@ static void pututline_my(pstring uname, struct utmp *u, BOOL claim)
 #endif /* HAVE_PUTUTLINE */
 
 #ifndef HAVE_UPDWTMP
+
 /****************************************************************************
-Update wtmp file directly.  No subroutine interface: probably a BSD system.
-Credit: Michail Vidiassov <master@iaas.msu.ru>
+ Update wtmp file directly.  No subroutine interface: probably a BSD system.
+ Credit: Michail Vidiassov <master@iaas.msu.ru>
 ****************************************************************************/
+
 static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 {
 	int fd;
@@ -294,8 +299,8 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 		 *	man page appears not to specify (hints non-NULL)
 		 *	A correspondent suggest at least ut_name should be NULL
 		 */
-		memset((char *)&(u->ut_name), '\0', sizeof(u->ut_name));
-		memset((char *)&(u->ut_host), '\0', sizeof(u->ut_host));
+		memset((char *)&u->ut_name, '\0', sizeof(u->ut_name));
+		memset((char *)&u->ut_host, '\0', sizeof(u->ut_host));
 	}
 	/* Stolen from logwtmp function in libutil.
 	 * May be more locking/blocking is needed?
@@ -311,9 +316,10 @@ static void updwtmp_my(pstring wname, struct utmp *u, BOOL claim)
 #endif /* HAVE_UPDWTMP */
 
 /****************************************************************************
-Update via utmp/wtmp (not utmpx/wtmpx)
+ Update via utmp/wtmp (not utmpx/wtmpx).
 ****************************************************************************/
-static void utmp_nox_update(struct utmp *u, const char *host, BOOL claim)
+
+static void utmp_nox_update(struct utmp *u, BOOL claim)
 {
 	pstring uname, wname;
 #if defined(PUTUTLINE_RETURNS_UTMP)
@@ -369,21 +375,41 @@ static void utmp_nox_update(struct utmp *u, const char *host, BOOL claim)
 }
 
 /****************************************************************************
-Update via utmpx/wtmpx (preferred) or via utmp/wtmp
+ Copy a string in the utmp structure.
 ****************************************************************************/
+
+static void utmp_strcpy(char *dest, const char *src, size_t n)
+{
+	size_t len = 0;
+
+	memset(dest, '\0', n);
+	if (src)
+		len = strlen(src);
+	if (len >= n) {
+		memcpy(dest, src, n);
+	} else {
+		if (len)
+			memcpy(dest, src, len);
+	}
+}
+
+/****************************************************************************
+ Update via utmpx/wtmpx (preferred) or via utmp/wtmp.
+****************************************************************************/
+
 static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 {
 #if !defined(HAVE_UTMPX_H)
 	/* No utmpx stuff.  Drop to non-x stuff */
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #elif !defined(HAVE_PUTUTXLINE)
 	/* Odd.  Have utmpx.h but no "pututxline()".  Drop to non-x stuff */
 	DEBUG(1,("utmp_update: have utmpx.h but no pututxline() function\n"));
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #elif !defined(HAVE_GETUTMPX)
 	/* Odd.  Have utmpx.h but no "getutmpx()".  Drop to non-x stuff */
 	DEBUG(1,("utmp_update: have utmpx.h but no getutmpx() function\n"));
-	utmp_nox_update(u, hostname, claim);
+	utmp_nox_update(u, claim);
 #else
 	pstring uname, wname;
 	struct utmpx ux, *uxrc;
@@ -391,10 +417,12 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	getutmpx(u, &ux);
 
 #if defined(HAVE_UX_UT_SYSLEN)
-	if (hostname) ux.ut_syslen = strlen(hostname) + 1;	/* include end NULL */
-	else ux.ut_syslen = 0;
+	if (hostname)
+		ux.ut_syslen = strlen(hostname) + 1;	/* include end NULL */
+	else
+		ux.ut_syslen = 0;
 #endif
-	safe_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host)-1);
+	utmp_strcpy(ux.ut_host, hostname, sizeof(ux.ut_host));
 
 	uw_pathname(uname, "utmpx", ux_pathname);
 	uw_pathname(wname, "wtmpx", wx_pathname);
@@ -407,7 +435,7 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 	 * Drop to non-x method.  (E.g. RH6 has good defaults in "utmp.h".)
 	 */
 	if ((strlen(uname) == 0) || (strlen(wname) == 0)) {
-		utmp_nox_update(u, hostname, claim);
+		utmp_nox_update(u, claim);
 	} else {
 		utmpxname(uname);
 		setutxent();
@@ -424,8 +452,9 @@ static void sys_utmp_update(struct utmp *u, const char *hostname, BOOL claim)
 
 #if defined(HAVE_UT_UT_ID)
 /****************************************************************************
-encode the unique connection number into "ut_id"
+ Encode the unique connection number into "ut_id".
 ****************************************************************************/
+
 static int ut_id_encode(int i, char *fourbyte)
 {
 	int nbase;
@@ -467,9 +496,9 @@ static BOOL sys_utmp_fill(struct utmp *u,
 	 *	rather than to try to detect and optimise.
 	 */
 #if defined(HAVE_UT_UT_USER)
-	safe_strcpy(u->ut_user, username, sizeof(u->ut_user)-1);
+	utmp_strcpy(u->ut_user, username, sizeof(u->ut_user));
 #elif defined(HAVE_UT_UT_NAME)
-	safe_strcpy(u->ut_name, username, sizeof(u->ut_name)-1);
+	utmp_strcpy(u->ut_name, username, sizeof(u->ut_name));
 #endif
 
 	/*
@@ -485,7 +514,7 @@ static BOOL sys_utmp_fill(struct utmp *u,
 			 id_str, sizeof(u->ut_line)));
 		return False;
 	}
-	memcpy(u->ut_line, id_str, sizeof(u->ut_line));
+	utmp_strcpy(u->ut_line, id_str, sizeof(u->ut_line));
 
 #if defined(HAVE_UT_UT_PID)
 	u->ut_pid = sys_getpid();
@@ -508,7 +537,7 @@ static BOOL sys_utmp_fill(struct utmp *u,
 #endif
 
 #if defined(HAVE_UT_UT_HOST)
-	safe_strcpy(u->ut_host, hostname, sizeof(u->ut_host)-1);
+	utmp_strcpy(u->ut_host, hostname, sizeof(u->ut_host));
 #endif
 
 #if defined(HAVE_UT_UT_ADDR)
@@ -529,8 +558,9 @@ static BOOL sys_utmp_fill(struct utmp *u,
 }
 
 /****************************************************************************
-close a connection
+ Close a connection.
 ****************************************************************************/
+
 void sys_utmp_yield(const char *username, const char *hostname, 
 		    const char *id_str, int id_num)
 {
@@ -553,8 +583,9 @@ void sys_utmp_yield(const char *username, const char *hostname,
 }
 
 /****************************************************************************
-claim a entry in whatever utmp system the OS uses
+ Claim a entry in whatever utmp system the OS uses.
 ****************************************************************************/
+
 void sys_utmp_claim(const char *username, const char *hostname, 
 		    const char *id_str, int id_num)
 {

@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  A temporary TALLOC context for things like unistrs, that is valid for
  the life of a complete RPC call.
@@ -296,7 +294,7 @@ void init_dom_sid(DOM_SID *sid, char *str_sid)
  Inits a DOM_SID2 structure.
 ********************************************************************/
 
-void init_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid)
+void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid)
 {
 	sid2->sid = *sid;
 	sid2->num_auths = sid2->sid.num_auths;
@@ -787,7 +785,7 @@ void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf)
  Copies a UNISTR2 structure.
 ********************************************************************/
 
-void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
+void copy_unistr2(UNISTR2 *str, const UNISTR2 *from)
 {
 
 	/* set up string lengths. add one if string is not null-terminated */
@@ -824,23 +822,23 @@ void copy_unistr2(UNISTR2 *str, UNISTR2 *from)
  Creates a STRING2 structure.
 ********************************************************************/
 
-void init_string2(STRING2 *str, char *buf, int len)
+void init_string2(STRING2 *str, const char *buf, int max_len, int str_len)
 {
 	int alloc_len = 0;
 
 	/* set up string lengths. */
-	str->str_max_len = len;
+	str->str_max_len = max_len;
 	str->undoc       = 0;
-	str->str_str_len = len;
+	str->str_str_len = str_len;
 
 	/* store the string */
-	if(len != 0) {
-		if (len < MAX_STRINGLEN)
+	if(str_len != 0) {
+		if (str_len < MAX_STRINGLEN)
 			alloc_len = MAX_STRINGLEN;
 		str->buffer = talloc_zero(get_talloc_ctx(), alloc_len);
 		if (str->buffer == NULL)
 			smb_panic("init_string2: malloc fail\n");
-		memcpy(str->buffer, buf, len);
+		memcpy(str->buffer, buf, str_len);
   }
 }
 
@@ -910,6 +908,13 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 		smb_panic("init_unistr2: malloc fail\n");
 		return;
 	}
+
+	/*
+	 * don't move this test above ! The UNISTR2 must be initialized !!!
+	 * jfm, 7/7/2001.
+	 */
+	if (buf==NULL)
+		return;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	dos_struni2((char *)str->buffer, buf, len);
@@ -1525,4 +1530,68 @@ BOOL prs_uint64(char *name, prs_struct *ps, int depth, UINT64_S *data64)
 		prs_uint32(name, ps, depth+1, &data64->high);
 }
 
+/*******************************************************************
+reads or writes a BUFHDR2 structure.
+********************************************************************/
+BOOL smb_io_bufhdr2(char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_bufhdr2");
+	depth++;
 
+	prs_align(ps);
+	prs_uint32("info_level", ps, depth, &(hdr->info_level));
+	prs_uint32("length    ", ps, depth, &(hdr->length    ));
+	prs_uint32("buffer    ", ps, depth, &(hdr->buffer    ));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a BUFFER4 structure.
+********************************************************************/
+BOOL smb_io_buffer4(char *desc, BUFFER4 *buf4, uint32 buffer, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "smb_io_buffer4");
+	depth++;
+
+	prs_align(ps);
+	prs_uint32("buf_len", ps, depth, &(buf4->buf_len));
+
+	if (buf4->buf_len > MAX_BUFFERLEN)
+	{
+		buf4->buf_len = MAX_BUFFERLEN;
+	}
+
+	prs_uint8s(True, "buffer", ps, depth, buf4->buffer, buf4->buf_len);
+
+	return True;
+}
+
+/*******************************************************************
+creates a UNIHDR structure.
+********************************************************************/
+
+BOOL make_uni_hdr(UNIHDR *hdr, int len)
+{
+	if (hdr == NULL)
+	{
+		return False;
+	}
+	hdr->uni_str_len = 2 * len;
+	hdr->uni_max_len = 2 * len;
+	hdr->buffer      = len != 0 ? 1 : 0;
+
+	return True;
+}
+
+/*******************************************************************
+creates a BUFHDR2 structure.
+********************************************************************/
+BOOL make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
+{
+	hdr->info_level = info_level;
+	hdr->length     = length;
+	hdr->buffer     = buffer;
+
+	return True;
+}

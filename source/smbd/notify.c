@@ -22,16 +22,13 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-extern uint32 global_client_caps;
-
 static struct cnotify_fns *cnotify;
 
 /****************************************************************************
  This is the structure to queue to implement NT change
  notify. It consists of smb_size bytes stored from the
  transact command (to keep the mid, tid etc around).
- Plus the fid to examine and notify private data
+ Plus the fid to examine and notify private data.
 *****************************************************************************/
 
 struct change_notify {
@@ -48,26 +45,14 @@ static struct change_notify *change_notify_list;
 /****************************************************************************
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
-static void change_notify_reply_packet(char *inbuf, uint32 error_code)
+static void change_notify_reply_packet(char *inbuf, NTSTATUS error_code)
 {
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
 	construct_reply_common(inbuf, outbuf);
 
-	/*
-	 * If we're returning a 'too much in the directory changed' we need to
-	 * set this is an NT error status flags. If we don't then the (probably
-	 * untested) code in the NT redirector has a bug in that it doesn't re-issue
-	 * the change notify.... Ah - I *love* it when I get so deeply into this I
-	 * can even determine how MS failed to test stuff and why.... :-). JRA.
-	 */
-	
-	if (global_client_caps & CAP_STATUS32) {
-		ERROR(0,error_code);
-	} else {
-		ERROR(ERRDOS,STATUS_NOTIFY_ENUM_DIR);
-	}
+	ERROR_NT(error_code);
 
 	/*
 	 * Seems NT needs a transact command with an error code
@@ -76,26 +61,26 @@ static void change_notify_reply_packet(char *inbuf, uint32 error_code)
 	set_message(outbuf,18,0,False);
 
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("change_notify_reply_packet: send_smb failed.\n");
+		exit_server("change_notify_reply_packet: send_smb failed.");
 }
 
 /****************************************************************************
-remove an entry from the list and free it, also closing any
-directory handle if necessary
-Notice the horrible stuff we have to do because this is a singly linked list.
+ Remove an entry from the list and free it, also closing any
+ directory handle if necessary.
 *****************************************************************************/
+
 static void change_notify_remove(struct change_notify *cnbp)
 {
 	cnotify->remove_notify(cnbp->change_data);
 	DLIST_REMOVE(change_notify_list, cnbp);
 	ZERO_STRUCTP(cnbp);
-	free(cnbp);
+	SAFE_FREE(cnbp);
 }
-
 
 /****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
+
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
 {
 	struct change_notify *cnbp, *next;
@@ -111,6 +96,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp)
 /****************************************************************************
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
+
 void remove_pending_change_notify_requests_by_mid(int mid)
 {
 	struct change_notify *cnbp, *next;
@@ -128,6 +114,7 @@ void remove_pending_change_notify_requests_by_mid(int mid)
  Delete entries by filename and cnum from the change notify pending queue.
  Always send reply.
 *****************************************************************************/
+
 void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 {
 	struct change_notify *cnbp, *next;
@@ -148,6 +135,7 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
 /****************************************************************************
  Return true if there are pending change notifies.
 ****************************************************************************/
+
 int change_notify_timeout(void)
 {
 	return cnotify->select_time;
@@ -158,6 +146,7 @@ int change_notify_timeout(void)
  Returns True if there are still outstanding change notify requests on the
  queue.
 *****************************************************************************/
+
 BOOL process_pending_change_notify_queue(time_t t)
 {
 	struct change_notify *cnbp, *next;
@@ -167,8 +156,9 @@ BOOL process_pending_change_notify_queue(time_t t)
 		next=cnbp->next;
 
 		vuid = (lp_security() == SEC_SHARE) ? UID_FIELD_INVALID : SVAL(cnbp->request_buf,smb_uid);
-		
+
 		if (cnotify->check_notify(cnbp->conn, vuid, cnbp->fsp->fsp_name, cnbp->flags, cnbp->change_data, t)) {
+			DEBUG(10,("process_pending_change_notify_queue: dir %s changed !\n", cnbp->fsp->fsp_name ));
 			change_notify_reply_packet(cnbp->request_buf,STATUS_NOTIFY_ENUM_DIR);
 			change_notify_remove(cnbp);
 		}
@@ -178,11 +168,12 @@ BOOL process_pending_change_notify_queue(time_t t)
 }
 
 /****************************************************************************
-   * Now queue an entry on the notify change list.
-   * We only need to save smb_size bytes from this incoming packet
-   * as we will always by returning a 'read the directory yourself'
-   * error.
+ Now queue an entry on the notify change list.
+ We only need to save smb_size bytes from this incoming packet
+ as we will always by returning a 'read the directory yourself'
+ error.
 ****************************************************************************/
+
 BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, uint32 flags)
 {
 	struct change_notify *cnbp;
@@ -201,7 +192,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	cnbp->change_data = cnotify->register_notify(conn, fsp->fsp_name, flags);
 	
 	if (!cnbp->change_data) {
-		free(cnbp);
+		SAFE_FREE(cnbp);
 		return False;
 	}
 
@@ -210,10 +201,10 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 	return True;
 }
 
-
 /****************************************************************************
-initialise the change notify subsystem
+ Initialise the change notify subsystem.
 ****************************************************************************/
+
 BOOL init_change_notify(void)
 {
 #if HAVE_KERNEL_CHANGE_NOTIFY

@@ -30,8 +30,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 #ifdef WITH_PAM
 
 /*******************************************************************
@@ -49,9 +47,9 @@ extern int DEBUGLEVEL;
  */
 
 struct smb_pam_userdata {
-	char *PAM_username;
-	char *PAM_password;
-	char *PAM_newpassword;
+	const char *PAM_username;
+	const char *PAM_password;
+	const char *PAM_newpassword;
 };
 
 typedef int (*smb_pam_conv_fn)(int, const struct pam_message **, struct pam_response **, void *appdata_ptr);
@@ -83,12 +81,13 @@ static BOOL smb_pam_error_handler(pam_handle_t *pamh, int pam_error, char *msg, 
 *********************************************************************/
 
 static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
-							char *msg, int dbglvl, uint32 *nt_status)
+							char *msg, int dbglvl, 
+					    NTSTATUS *nt_status)
 {
 	if (smb_pam_error_handler(pamh, pam_error, msg, dbglvl))
 		return True;
 
-	if (*nt_status == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(*nt_status)) {
 		/* Complain LOUDLY */
 		DEBUG(0, ("smb_pam_nt_status_error_handler: PAM: BUG: PAM and NT_STATUS \
 error MISMATCH, forcing to NT_STATUS_LOGON_FAILURE"));
@@ -158,7 +157,7 @@ static int smb_pam_conv(int num_msg,
 
 			default:
 				/* Must be an error of some sort... */
-				free(reply);
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 		}
 	}
@@ -181,7 +180,7 @@ static void special_char_sub(char *buf)
 	all_string_sub(buf, "\\t", "\t", 0);
 }
 
-static void pwd_sub(char *buf, char *username, char *oldpass, char *newpass)
+static void pwd_sub(char *buf, const char *username, const char *oldpass, const char *newpass)
 {
 	pstring_sub(buf, "%u", username);
 	all_string_sub(buf, "%o", oldpass, sizeof(fstring));
@@ -249,7 +248,7 @@ static void free_pw_chat(struct chat_struct *list)
     while (list) {
         struct chat_struct *old_head = list;
         DLIST_REMOVE(list, list);
-        free(old_head);
+        SAFE_FREE(old_head);
     }
 }
 
@@ -324,8 +323,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			if (!found) {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				free_pw_chat(pw_chat);
-				free(reply);
-				reply = NULL;
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 			}
 			break;
@@ -357,8 +355,7 @@ static int smb_pam_passchange_conv(int num_msg,
 			if (!found) {
 				DEBUG(3,("smb_pam_passchange_conv: Could not find reply for PAM prompt: %s\n",msg[replies]->msg));
 				free_pw_chat(pw_chat);
-				free(reply);
-				reply = NULL;
+				SAFE_FREE(reply);
 				return PAM_CONV_ERR;
 			}
 			break;
@@ -375,8 +372,7 @@ static int smb_pam_passchange_conv(int num_msg,
 		default:
 			/* Must be an error of some sort... */
 			free_pw_chat(pw_chat);
-			free(reply);
-			reply = NULL;
+			SAFE_FREE(reply);
 			return PAM_CONV_ERR;
 		}
 	}
@@ -394,24 +390,24 @@ static int smb_pam_passchange_conv(int num_msg,
 static void smb_free_pam_conv(struct pam_conv *pconv)
 {
 	if (pconv)
-		safe_free(pconv->appdata_ptr);
+		SAFE_FREE(pconv->appdata_ptr);
 
-	safe_free(pconv);
+	SAFE_FREE(pconv);
 }
 
 /***************************************************************************
  Allocate a pam_conv struct.
 ****************************************************************************/
 
-static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, char *user,
-					char *passwd, char *newpass)
+static struct pam_conv *smb_setup_pam_conv(smb_pam_conv_fn smb_pam_conv_fnptr, const char *user,
+					const char *passwd, const char *newpass)
 {
 	struct pam_conv *pconv = (struct pam_conv *)malloc(sizeof(struct pam_conv));
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)malloc(sizeof(struct smb_pam_userdata));
 
 	if (pconv == NULL || udp == NULL) {
-		safe_free(pconv);
-		safe_free(udp);
+		SAFE_FREE(pconv);
+		SAFE_FREE(udp);
 		return NULL;
 	}
 
@@ -449,9 +445,10 @@ static BOOL smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
  * Start PAM authentication for specified account
  */
 
-static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct pam_conv *pconv)
+static BOOL smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
+	const char *our_rhost;
 
 	*pamh = (pam_handle_t *)NULL;
 
@@ -464,14 +461,16 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct p
 	}
 
 	if (rhost == NULL) {
-		rhost = client_name();
+		our_rhost = client_name();
 		if (strequal(rhost,"UNKNOWN"))
-			rhost = client_addr();
+			our_rhost = client_addr();
+	} else {
+		our_rhost = rhost;
 	}
 
 #ifdef PAM_RHOST
-	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", rhost));
-	pam_error = pam_set_item(*pamh, PAM_RHOST, rhost);
+	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", our_rhost));
+	pam_error = pam_set_item(*pamh, PAM_RHOST, our_rhost);
 	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {
 		smb_pam_end(*pamh, pconv);
 		*pamh = (pam_handle_t *)NULL;
@@ -494,10 +493,10 @@ static BOOL smb_pam_start(pam_handle_t **pamh, char *user, char *rhost, struct p
 /*
  * PAM Authentication Handler
  */
-static uint32 smb_pam_auth(pam_handle_t *pamh, char *user)
+static NTSTATUS smb_pam_auth(pam_handle_t *pamh, char *user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 
 	/*
 	 * To enable debugging set in /etc/pam.d/samba:
@@ -548,10 +547,10 @@ static uint32 smb_pam_auth(pam_handle_t *pamh, char *user)
 /* 
  * PAM Account Handler
  */
-static uint32 smb_pam_account(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_account(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_ACCOUNT_DISABLED;
+	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 
 	DEBUG(4,("smb_pam_account: PAM: Account Management for User: %s\n", user));
 	pam_error = pam_acct_mgmt(pamh, PAM_SILENT); /* Is user account enabled? */
@@ -594,10 +593,10 @@ static uint32 smb_pam_account(pam_handle_t *pamh, char * user)
  * PAM Credential Setting
  */
 
-static uint32 smb_pam_setcred(pam_handle_t *pamh, char * user)
+static NTSTATUS smb_pam_setcred(pam_handle_t *pamh, char * user)
 {
 	int pam_error;
-	uint32 nt_status = NT_STATUS_NO_TOKEN;
+	NTSTATUS nt_status = NT_STATUS_NO_TOKEN;
 
 	/*
 	 * This will allow samba to aquire a kerberos token. And, when
@@ -668,7 +667,7 @@ static BOOL smb_internal_pam_session(pam_handle_t *pamh, char *user, char *tty, 
  * Internal PAM Password Changer.
  */
 
-static BOOL smb_pam_chauthtok(pam_handle_t *pamh, char * user)
+static BOOL smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
 {
 	int pam_error;
 
@@ -778,9 +777,9 @@ BOOL smb_pam_close_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Account handler
  */
 
-uint32 smb_pam_accountcheck(char * user)
+NTSTATUS smb_pam_accountcheck(const char * user)
 {
-	uint32 nt_status = NT_STATUS_ACCOUNT_DISABLED;
+	NTSTATUS nt_status = NT_STATUS_ACCOUNT_DISABLED;
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
 
@@ -790,12 +789,12 @@ uint32 smb_pam_accountcheck(char * user)
 		return NT_STATUS_OK;
 
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, NULL, NULL)) == NULL)
-		return False;
+		return NT_STATUS_NO_MEMORY;
 
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_ACCOUNT_DISABLED;
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK)
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_account(pamh, user)))
 		DEBUG(0, ("smb_pam_accountcheck: PAM: Account Validation Failed - Rejecting User %s!\n", user));
 
 	smb_pam_end(pamh, pconv);
@@ -806,10 +805,10 @@ uint32 smb_pam_accountcheck(char * user)
  * PAM Password Validation Suite
  */
 
-uint32 smb_pam_passcheck(char * user, char * password)
+NTSTATUS smb_pam_passcheck(char * user, char * password)
 {
 	pam_handle_t *pamh = NULL;
-	uint32 nt_status = NT_STATUS_LOGON_FAILURE;
+	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
 	struct pam_conv *pconv = NULL;
 
 	/*
@@ -824,19 +823,19 @@ uint32 smb_pam_passcheck(char * user, char * password)
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_LOGON_FAILURE;
 
-	if ((nt_status = smb_pam_auth(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_auth(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_auth failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_account(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_account failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_setcred(pamh, user)) != NT_STATUS_OK) {
+	if (!NT_STATUS_IS_OK(nt_status = smb_pam_setcred(pamh, user))) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_setcred failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
@@ -850,7 +849,7 @@ uint32 smb_pam_passcheck(char * user, char * password)
  * PAM Password Change Suite
  */
 
-BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
+BOOL smb_pam_passchange(const char * user, const char * oldpassword, const char * newpassword)
 {
 	/* Appropriate quantities of root should be obtained BEFORE calling this function */
 	struct pam_conv *pconv = NULL;
@@ -874,19 +873,19 @@ BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
 #else
 
 /* If PAM not used, no PAM restrictions on accounts. */
- uint32 smb_pam_accountcheck(char * user)
+NTSTATUS smb_pam_accountcheck(const char * user)
 {
 	return NT_STATUS_OK;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
+BOOL smb_pam_claim_session(char *user, char *tty, char *rhost)
 {
 	return True;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
- BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
+BOOL smb_pam_close_session(char *in_user, char *tty, char *rhost)
 {
 	return True;
 }

@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -46,10 +44,10 @@ static void send_election_dgram(struct subnet_record *subrec, char *workgroup_na
 
   memset(outbuf,'\0',sizeof(outbuf));
   p = outbuf;
-  CVAL(p,0) = ANN_Election; /* Election opcode. */
+  SCVAL(p,0,ANN_Election); /* Election opcode. */
   p++;
 
-  CVAL(p,0) = (criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION;
+  SCVAL(p,0,((criterion == 0 && timeup == 0) ? 0 : ELECTION_VERSION));
   SIVAL(p,1,criterion);
   SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
   p += 13;

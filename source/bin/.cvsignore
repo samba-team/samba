@@ -1,10 +1,12 @@
 .dummy
 .libs
+debug2html
 make_printerdef
 make_smbcodepage
 make_unicodemap
 nmbd
 nmblookup
+nsstest
 pdbedit
 rpcclient
 smbcacls
@@ -12,12 +14,14 @@ smbcacls
 smbclient
 smbcontrol
 smbd
+smbfilter
 smbmnt
 smbmount
 smbpasswd
 smbsh
 smbspool
 smbstatus
+smbtorture
 smbumount
 swat
 testparm

@@ -32,7 +32,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
-extern int DEBUGLEVEL;
+extern BOOL AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -43,11 +43,11 @@ extern int optind;
 
 /*********************************************************
  Print command usage on stderr and die.
-**********************************************************/
+ **********************************************************/
 static void usage(void)
 {
 	if (getuid() == 0) {
-		printf("tdbedit options\n");
+		printf("pdbedit options\n");
 	} else {
 		printf("You need to be root to use this tool!\n");
 	}
@@ -188,13 +188,13 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
 	if (homedir)
-		pdb_set_homedir(sam_pwent, homedir);
+		pdb_set_homedir(sam_pwent, homedir, True);
 	if (drive)
-		pdb_set_dir_drive(sam_pwent,drive);
+		pdb_set_dir_drive(sam_pwent, drive, True);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script);
+		pdb_set_logon_script(sam_pwent, script, True);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile);
+		pdb_set_profile_path (sam_pwent, profile, True);
 	
 	if (pdb_update_sam_account (sam_pwent, True))
 		print_user_info (username, True, False);
@@ -208,13 +208,98 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 }
 
 /*********************************************************
+ A strdup with exit
+**********************************************************/
+
+static char *strdup_x(const char *s)
+{
+	char *new_s = strdup(s);
+	if (!new_s) {
+		fprintf(stderr,"out of memory\n");
+		exit(1);
+	}
+	return new_s;
+}
+
+/*************************************************************
+ Utility function to prompt for passwords from stdin. Each
+ password entered must end with a newline.
+*************************************************************/
+static char *stdin_new_passwd(void)
+{
+	static fstring new_passwd;
+	size_t len;
+
+	ZERO_ARRAY(new_passwd);
+
+	/*
+	 * if no error is reported from fgets() and string at least contains
+	 * the newline that ends the password, then replace the newline with
+	 * a null terminator.
+	 */
+	if ( fgets(new_passwd, sizeof(new_passwd), stdin) != NULL) {
+		if ((len = strlen(new_passwd)) > 0) {
+			if(new_passwd[len-1] == '\n')
+				new_passwd[len - 1] = 0; 
+		}
+	}
+	return(new_passwd);
+}
+
+/*************************************************************
+ Utility function to get passwords via tty or stdin
+ Used if the '-s' option is set to silently get passwords
+ to enable scripting.
+ _copied_ from smbpasswd
+*************************************************************/
+static char *get_pass( char *prompt, BOOL stdin_get)
+{
+	char *p;
+	if (stdin_get) {
+		p = stdin_new_passwd();
+	} else {
+		p = getpass(prompt);
+	}
+	return strdup_x(p);
+}
+
+/*************************************************************
+ Utility function to prompt for new password.
+ _copied_ from smbpasswd
+*************************************************************/
+static char *prompt_for_new_password(BOOL stdin_get)
+{
+	char *p;
+	fstring new_passwd;
+
+	ZERO_ARRAY(new_passwd);
+ 
+	p = get_pass("New SMB password:", stdin_get);
+
+	fstrcpy(new_passwd, p);
+	safe_free(p);
+
+	p = get_pass("Retype new SMB password:", stdin_get);
+
+	if (strcmp(p, new_passwd)) {
+		fprintf(stderr, "Mismatch - password unchanged.\n");
+		ZERO_ARRAY(new_passwd);
+		safe_free(p);
+		return NULL;
+	}
+
+	return p;
+}
+
+
+/*********************************************************
  Add New User
 **********************************************************/
 static int new_user (char *username, char *fullname, char *homedir, char *drive, char *script, char *profile)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	struct passwd  *pwd = NULL;
-	char *password1, *password2;
+	char *password;
 	
 	ZERO_STRUCT(sam_pwent);
 
@@ -225,28 +310,27 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 		pdb_free_sam (sam_pwent);
 		return -1;
 	}
-	
-	password1 = getpass("new password:");
-	password2 = getpass("retype new password:");
-	if (strcmp (password1, password2)) {
-		 fprintf (stderr, "Passwords does not match!\n");
+
+	password = prompt_for_new_password(0);
+	if (!password) {
+		 fprintf (stderr, "Passwords do not match!\n");
 		 pdb_free_sam (sam_pwent);
 		 return -1;
 	}
 
-	pdb_set_plaintext_passwd(sam_pwent, password1);
+	pdb_set_plaintext_passwd(sam_pwent, password);
 
 	pdb_set_username(sam_pwent, username);
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname);
 	if (homedir)
-		pdb_set_homedir (sam_pwent, homedir);
+		pdb_set_homedir (sam_pwent, homedir, True);
 	if (drive)
-		pdb_set_dir_drive (sam_pwent, drive);
+		pdb_set_dir_drive (sam_pwent, drive, True);
 	if (script)
-		pdb_set_logon_script(sam_pwent, script);
+		pdb_set_logon_script(sam_pwent, script, True);
 	if (profile)
-		pdb_set_profile_path (sam_pwent, profile);
+		pdb_set_profile_path (sam_pwent, profile, True);
 	
 	/* TODO: Check uid not being in MACHINE UID range!! */
 	pdb_set_uid (sam_pwent, pwd->pw_uid);
@@ -557,7 +641,7 @@ static int import_users (char *filename)
 		good++;
 		pdb_reset_sam (sam_pwent);
 	}
-	printf ("%d lines read.\n%d entryes imported\n", line, good);
+	printf ("%d lines read.\n%d entries imported\n", line, good);
 	pdb_free_sam(sam_pwent);	
 	return 0;
 }
@@ -588,25 +672,35 @@ int main (int argc, char **argv)
 
 	TimeInit();
 	
-	setup_logging("tdbedit", True);
+	setup_logging("pdbedit", True);
+
+	charset_initialise();
 
 	if (argc < 2) {
 		usage();
 		return 0;
 	}
 	
-	if(!initialize_password_db(True)) {
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-	
+	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
+
 	if (!lp_load(servicesf,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			servicesf);
 		exit(1);
 	}
+
+	secrets_init();
+
+	if(!initialize_password_db(True)) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
+		exit(1);
+	}
 	
-	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwx")) != EOF) {
+	
+	codepage_initialise(lp_client_code_page());
+
+	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwxD:")) != EOF) {
 		switch(ch) {
 		case 'a':
 			add_user = True;
@@ -653,6 +747,9 @@ int main (int argc, char **argv)
 			import = True;
 			smbpasswd = optarg;
 			break;
+		case 'D':
+                        DEBUGLEVEL = atoi(optarg);
+                        break;
 		default:
 			usage();
 		}

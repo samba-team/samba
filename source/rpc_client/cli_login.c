@@ -23,7 +23,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern fstring global_myworkgroup;
 extern pstring global_myname;
 
@@ -31,8 +30,9 @@ extern pstring global_myname;
 Initialize domain session credentials.
 ****************************************************************************/
 
-BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
+NTSTATUS cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
 {
+  NTSTATUS result;
   DOM_CHAL clnt_chal;
   DOM_CHAL srv_chal;
 
@@ -46,7 +46,7 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
   if (!cli_net_req_chal(cli, &clnt_chal, &srv_chal))
   {
     DEBUG(0,("cli_nt_setup_creds: request challenge failed\n"));
-    return False;
+    return NT_STATUS_UNSUCCESSFUL;
   }
 
   /**************** Long-term Session key **************/
@@ -66,14 +66,16 @@ BOOL cli_nt_setup_creds(struct cli_state *cli, unsigned char mach_pwd[16])
    * Receive an auth-2 challenge response and check it.
    */
 
-  if (!cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
-                     SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, &srv_chal))
+  result = cli_net_auth2(cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
+                         SEC_CHAN_WKSTA : SEC_CHAN_BDC, 0x000001ff, &srv_chal);
+  
+  if (!NT_STATUS_IS_OK(result))
   {
     DEBUG(0,("cli_nt_setup_creds: auth2 challenge failed\n"));
-    return False;
+    return result;
   }
 
-  return True;
+  return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -103,13 +105,13 @@ NT login - interactive.
 password equivalents, protected by the session key) is inherently insecure
 given the current design of the NT Domain system. JRA.
  ****************************************************************************/
-BOOL cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
+NTSTATUS cli_nt_login_interactive(struct cli_state *cli, char *domain, char *username, 
                               uint32 smb_userid_low, char *password,
                               NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
   uchar lm_owf_user_pwd[16];
   uchar nt_owf_user_pwd[16];
-  BOOL ret;
+  NTSTATUS ret;
 
   DEBUG(5,("cli_nt_login_interactive: %d\n", __LINE__));
 
@@ -156,33 +158,33 @@ NT login - network.
 password equivalents over the network. JRA.
 ****************************************************************************/
 
-BOOL cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
-                          uint32 smb_userid_low, char lm_chal[8], 
-			  char *lm_chal_resp, char *nt_chal_resp,
-                          NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
+NTSTATUS cli_nt_login_network(struct cli_state *cli, char *domain, char *username, 
+							uint32 smb_userid_low, const char lm_chal[8], 
+							const char *lm_chal_resp, const char *nt_chal_resp,
+							NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
 {
 	fstring dos_wksta_name, dos_username, dos_domain;
-  DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
-  /* indicate a "network" login */
-  ctr->switch_value = NET_LOGON_TYPE;
+	DEBUG(5,("cli_nt_login_network: %d\n", __LINE__));
+	/* indicate a "network" login */
+	ctr->switch_value = NET_LOGON_TYPE;
 
-  fstrcpy(dos_wksta_name, cli->clnt_name_slash);
-  unix_to_dos(dos_wksta_name, True);
+	fstrcpy(dos_wksta_name, cli->clnt_name_slash);
+	unix_to_dos(dos_wksta_name, True);
 
-  fstrcpy(dos_username, username);
-  unix_to_dos(dos_username, True);
+	fstrcpy(dos_username, username);
+	unix_to_dos(dos_username, True);
 
-  fstrcpy(dos_domain, domain);
-  unix_to_dos(dos_domain, True);
+	fstrcpy(dos_domain, domain);
+	unix_to_dos(dos_domain, True);
 
-  /* Create the structure needed for SAM logon. */
-  init_id_info2(&ctr->auth.id2, dos_domain, 0, smb_userid_low, 0,
-                dos_username, dos_wksta_name,
-		(uchar *)lm_chal, (uchar *)lm_chal_resp, 
-		(uchar *)nt_chal_resp);
+	/* Create the structure needed for SAM logon. */
+	init_id_info2(&ctr->auth.id2, dos_domain, 0, smb_userid_low, 0,
+		dos_username, dos_wksta_name,
+		(const uchar *)lm_chal, (const uchar *)lm_chal_resp, lm_chal_resp ? 24 : 0,
+		(const uchar *)nt_chal_resp, nt_chal_resp ? 24 : 0 );
 
-  /* Send client sam-logon request - update credentials on success. */
-  return cli_net_sam_logon(cli, ctr, user_info3);
+	/* Send client sam-logon request - update credentials on success. */
+	return cli_net_sam_logon(cli, ctr, user_info3);
 }
 
 /****************************************************************************

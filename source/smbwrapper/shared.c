@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 static int shared_fd;
 static char *variables;
 static int shared_size;

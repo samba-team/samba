@@ -22,7 +22,6 @@
 #ifdef USE_SMBPASS_DB
 
 static int al_file_lock_depth = 0;
-extern int DEBUGLEVEL;
 
 static char s_readbuf[1024];
 

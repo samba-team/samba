@@ -29,7 +29,7 @@ static struct smbw_server *smbw_srvs;
 
 struct bitmap *smbw_file_bmap;
 extern pstring global_myname;
-extern int DEBUGLEVEL;
+extern BOOL AllowDebugChange;
 
 fstring smbw_prefix = SMBW_PREFIX;
 
@@ -60,6 +60,7 @@ void smbw_init(void)
 	smbw_busy++;
 
 	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 	setup_logging("smbsh",True);
 
 	dbf = stderr;
@@ -73,7 +74,7 @@ void smbw_init(void)
 		exit(1);
 	}
 
-	charset_initialize();
+	charset_initialise();
 
 	in_client = True;
 
@@ -84,8 +85,7 @@ void smbw_init(void)
 	}
 
 	lp_load(servicesf,True,False,False);
-
-	charset_initialize();
+	codepage_initialise(lp_client_code_page());
 
 	get_myname(global_myname);
 
@@ -280,17 +280,17 @@ static char *smbw_find_workgroup(void)
 
 	for (i=0;i<count;i++) {
 		static fstring name;
-		if (name_status_find(0x1d, ip_list[i], name)) {
+		if (name_status_find("*", 0, 0x1d, ip_list[i], name)) {
 			slprintf(server, sizeof(server), "%s#1D", name);
 			if (smbw_server(server, "IPC$")) {
 				smbw_setshared("WORKGROUP", name);
-				free(ip_list);
+				SAFE_FREE(ip_list);
 				return name;
 			}
 		}
 	}
 
-	free(ip_list);
+	SAFE_FREE(ip_list);
 
 	return p;
 }
@@ -403,17 +403,7 @@ return a unix errno from a SMB error pair
 *******************************************************/
 int smbw_errno(struct cli_state *c)
 {
-	uint8 eclass;
-	uint32 ecode;
-	int ret;
-
-	ret = cli_error(c, &eclass, &ecode, NULL);
-
-	if (ret) {
-		DEBUG(3,("smbw_error %d %d (0x%x) -> %d\n", 
-			 (int)eclass, (int)ecode, (int)ecode, ret));
-	}
-	return ret;
+	return cli_errno(c);
 }
 
 /* Return a username and password given a server and share name */
@@ -619,9 +609,9 @@ struct smbw_server *smbw_server(char *server, char *share)
 	cli_shutdown(&c);
 	if (!srv) return NULL;
 
-	if (srv->server_name) free(srv->server_name);
-	if (srv->share_name) free(srv->share_name);
-	free(srv);
+	SAFE_FREE(srv->server_name);
+	SAFE_FREE(srv->share_name);
+	SAFE_FREE(srv);
 	return NULL;
 }
 
@@ -735,12 +725,10 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 	}
 	if (file) {
 		if (file->f) {
-			if (file->f->fname) {
-				free(file->f->fname);
-			}
-			free(file->f);
+			SAFE_FREE(file->f->fname);
+			SAFE_FREE(file->f);
 		}
-		free(file);
+		SAFE_FREE(file);
 	}
 	smbw_busy--;
 	return -1;
@@ -905,11 +893,11 @@ int smbw_close(int fd)
 
 	file->f->ref_count--;
 	if (file->f->ref_count == 0) {
-		free(file->f->fname);
-		free(file->f);
+		SAFE_FREE(file->f->fname);
+		SAFE_FREE(file->f);
 	}
 	ZERO_STRUCTP(file);
-	free(file);
+	SAFE_FREE(file);
 	
 	smbw_busy--;
 
@@ -1397,14 +1385,14 @@ static void smbw_srv_close(struct smbw_server *srv)
 
 	cli_shutdown(&srv->cli);
 
-	free(srv->server_name);
-	free(srv->share_name);
+	SAFE_FREE(srv->server_name);
+	SAFE_FREE(srv->share_name);
 
 	DLIST_REMOVE(smbw_srvs, srv);
 
 	ZERO_STRUCTP(srv);
 
-	free(srv);
+	SAFE_FREE(srv);
 	
 	smbw_busy--;
 }

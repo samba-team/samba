@@ -31,8 +31,6 @@ extern int ClientNMB;
 extern int ClientDGRAM;
 extern int global_nmb_port;
 
-extern int DEBUGLEVEL;
-
 extern fstring myworkgroup;
 extern char **my_netbios_names;
 extern struct in_addr ipzero;
@@ -188,7 +186,7 @@ static struct subnet_record *make_subnet(char *name, enum subnet_type type,
     close(nmb_sock);
     close(dgram_sock);
     ZERO_STRUCTP(subrec);
-    free((char *)subrec);
+    SAFE_FREE(subrec);
     return(NULL);
   }
 

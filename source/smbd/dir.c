@@ -21,8 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /*
    This module implements directory related functions for Samba.
 */
@@ -246,10 +244,9 @@ static void dptr_close_internal(dptr_struct *dptr)
   }
 
   /* Lanman 2 specific code */
-  if (dptr->wcard)
-    free(dptr->wcard);
+  SAFE_FREE(dptr->wcard);
   string_set(&dptr->path,"");
-  free((char *)dptr);
+  SAFE_FREE(dptr);
 }
 
 /****************************************************************************
@@ -438,7 +435,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum > 254) {
         DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
@@ -467,7 +464,7 @@ int dptr_create(connection_struct *conn,char *path, BOOL old_handle, BOOL expect
 
       if(dptr->dnum == -1 || dptr->dnum < 255) {
         DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-        free((char *)dptr);
+        SAFE_FREE(dptr);
         return -1;
       }
     }
@@ -669,12 +666,47 @@ check to see if a user can read a file. This is only approximate,
 it is used as part of the "hide unreadable" option. Don't
 use it for anything security sensitive
 ********************************************************************/
+
 static BOOL user_can_read_file(connection_struct *conn, char *name)
 {
+	extern struct current_user current_user;
 	SMB_STRUCT_STAT ste;
+	SEC_DESC *psd = NULL;
+	size_t sd_size;
+	files_struct *fsp;
+	int smb_action;
+	NTSTATUS status;
+	uint32 access_granted;
+
+	ZERO_STRUCT(ste);
 
 	/* if we can't stat it does not show it */
-	if (vfs_stat(conn, name, &ste) != 0) return False;
+	if (vfs_stat(conn, name, &ste) != 0)
+		return False;
+
+	/* Pseudo-open the file (note - no fd's created). */
+
+	if(S_ISDIR(ste.st_mode))	
+		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), FILE_OPEN,
+			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
+	else
+		fsp = open_file_stat(conn,name,&ste,DOS_OPEN_RDONLY,&smb_action);
+	if (!fsp)
+		return False;
+
+	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
+	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
+	close_file(fsp, True);
+
+	/* No access if SD get failed. */
+	if (!sd_size)
+		return False;
+
+	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
+                                 &access_granted, &status);
+
+#if 0
+	/* Old - crappy check :-). JRA */
 
 	if (ste.st_uid == conn->uid) {
 		return (ste.st_mode & S_IRUSR) == S_IRUSR;
@@ -691,6 +723,7 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	}
 
 	return (ste.st_mode & S_IROTH) == S_IROTH;
+#endif
 }
 
 /*******************************************************************
@@ -733,7 +766,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
       
 	    if (asprintf(&entry, "%s/%s/%s", conn->origpath, name, n) > 0) {
 		    ret = user_can_read_file(conn, entry);
-		    free(entry);
+		    SAFE_FREE(entry);
 	    }
 	    if (!ret) continue;
     }
@@ -768,8 +801,8 @@ void CloseDir(void *p)
 {
   Dir *dirp = (Dir *)p;
   if (!dirp) return;    
-  if (dirp->data) free(dirp->data);
-  free(dirp);
+  SAFE_FREE(dirp->data);
+  SAFE_FREE(dirp);
 }
 
 /*******************************************************************
@@ -878,7 +911,7 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
 
   /* Free excess cache entries. */
   while( DIRCACHESIZE < dir_cache->count )
-    free( ubi_dlRemTail( dir_cache ) );
+    safe_free( ubi_dlRemTail( dir_cache ) );
 
 }
 
@@ -930,7 +963,7 @@ void DirCacheFlush(int snum)
 	    NULL != entry; )  {
 		next = ubi_dlNext( entry );
 		if( entry->snum == snum )
-			free( ubi_dlRemThis( dir_cache, entry ) );
+			safe_free( ubi_dlRemThis( dir_cache, entry ) );
 		entry = (dir_cache_entry *)next;
 	}
 }

@@ -32,4 +32,9 @@ typedef struct {
 	size_t total_alloc_size;
 } TALLOC_CTX;
 
+/* free memory if the pointer is valid and zero the pointer */
+#ifndef SAFE_FREE
+#define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
+#endif
+
 #endif

@@ -58,9 +58,6 @@
 #define MAX_OPEN_FILES 10000
 #endif
  
-/* the max number of simultanous connections to the server by all clients */
-#define MAXSTATUS 100000
-
 #define WORDMAX 0xFFFF
 
 /* the maximum password length before we declare a likely attack */
@@ -139,9 +136,6 @@
    accessible to root */
 #define DUMP_CORE 1
 
-#define SMB_ALIGNMENT 1
-
-
 /* shall we support browse requests via a FIFO to nmbd? */
 #define ENABLE_FIFO 1
 
@@ -188,5 +182,11 @@
 #ifndef SESSION_TEMPLATE
 #define SESSION_TEMPLATE "smb/%d"
 #endif
+
+/* the maximum age in seconds of a password. Should be a lp_ parameter */
+#define MAX_PASSWORD_AGE (21*24*60*60)
+
+/* Allocation roundup. */
+#define SMB_ROUNDUP_ALLOCATION_SIZE 0x100000
 
 #endif

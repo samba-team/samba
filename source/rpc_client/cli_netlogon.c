@@ -23,13 +23,8 @@
  */
 
 
-#ifdef SYSLOG
-#undef SYSLOG
-#endif
-
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -57,7 +52,7 @@ static void gen_next_creds( struct cli_state *cli, DOM_CRED *new_clnt_cred)
 /****************************************************************************
 do a LSA Logon Control2
 ****************************************************************************/
-BOOL cli_net_logon_ctrl2(struct cli_state *cli, uint32 status_level)
+BOOL cli_net_logon_ctrl2(struct cli_state *cli, NTSTATUS status_level)
 {
   prs_struct rbuf;
   prs_struct buf; 
@@ -118,13 +113,14 @@ Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
+NTSTATUS cli_net_auth2(struct cli_state *cli, uint16 sec_chan, 
                    uint32 neg_flags, DOM_CHAL *srv_chal)
 {
   prs_struct rbuf;
   prs_struct buf; 
   NET_Q_AUTH_2 q_a;
   BOOL ok = False;
+  NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
   prs_init(&buf , 1024, cli->mem_ctx, MARSHALL);
   prs_init(&rbuf, 0,    cli->mem_ctx, UNMARSHALL);
@@ -144,7 +140,7 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     DEBUG(0,("cli_net_auth2: Error : failed to marshall NET_Q_AUTH_2 struct.\n"));
     prs_mem_free(&buf);
     prs_mem_free(&rbuf);
-    return False;
+    return result;
   }
 
   /* send the data on \PIPE\ */
@@ -153,12 +149,12 @@ BOOL cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
     NET_R_AUTH_2 r_a;
 
     ok = net_io_r_auth_2("", &r_a, &rbuf, 0);
+    result = r_a.status;
 		
-    if (ok && r_a.status != 0)
+    if (ok && !NT_STATUS_IS_OK(result))
     {
       /* report error code */
-      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(r_a.status)));
-      cli->nt_error = r_a.status;
+      DEBUG(0,("cli_net_auth2: Error %s\n", get_nt_error_msg(result)));
       ok = False;
     }
 
@@ -201,7 +197,7 @@ password ?).\n", cli->desthost ));
   prs_mem_free(&buf);
   prs_mem_free(&rbuf);
 
-  return ok;
+  return result;
 }
 
 /****************************************************************************
@@ -244,11 +240,10 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
 
     ok = net_io_r_req_chal("", &r_c, &rbuf, 0);
 		
-    if (ok && r_c.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_c.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_req_chal: Error %s\n", get_nt_error_msg(r_c.status)));
-      cli->nt_error = r_c.status;
       ok = False;
     }
 
@@ -310,11 +305,10 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
 
     ok = net_io_r_srv_pwset("", &r_s, &rbuf, 0);
 		
-    if (ok && r_s.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_s.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_srv_pwset: %s\n", get_nt_error_msg(r_s.status)));
-      cli->nt_error = r_s.status;
       ok = False;
     }
 
@@ -341,8 +335,9 @@ password ?).\n", cli->desthost ));
  returns level 3.
 ****************************************************************************/
 
-static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
-                       NET_USER_INFO_3 *user_info3, uint16 validation_level)
+static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+					   NET_USER_INFO_3 *user_info3, 
+					   uint16 validation_level)
 {
 	DOM_CRED new_clnt_cred;
 	DOM_CRED dummy_rtn_creds;
@@ -350,7 +345,7 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	prs_struct buf; 
 	NET_Q_SAM_LOGON q_s;
 	NET_R_SAM_LOGON r_s;
-	uint32 retval;
+	NTSTATUS retval = NT_STATUS_OK;
 
 	gen_next_creds( cli, &new_clnt_cred);
 
@@ -382,8 +377,8 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 
 	/* send the data on \PIPE\ */
 	if (!rpc_api_pipe_req(cli, NET_SAMLOGON, &buf, &rbuf)) {
-		DEBUG(0,("cli_net_sam_logon_internal: Erro rpc_api_pipe_req failed.\n"));
-		retval = cli->nt_error;
+		DEBUG(0,("cli_net_sam_logon_internal: Error rpc_api_pipe_req failed.\n"));
+                retval = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 
@@ -402,14 +397,13 @@ static uint32 cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CTR 
 	 * the call.
 	 */
 	
-	if (retval == NT_STATUS_INVALID_INFO_CLASS) {
+	if (NT_STATUS_V(retval) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
 		goto out;
 	}
 
-	if (retval != 0) {
+	if (!NT_STATUS_IS_OK(retval)) {
 		/* report error code */
 		DEBUG(0,("cli_net_sam_logon_internal: %s\n", get_nt_error_msg(r_s.status)));
-		cli->nt_error = r_s.status;
 		goto out;
     }
 
@@ -442,18 +436,18 @@ password ?).\n", cli->desthost ));
 LSA SAM Logon - interactive or network.
 ****************************************************************************/
 
-BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INFO_3 *user_info3)
+NTSTATUS cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, 
+                         NET_USER_INFO_3 *user_info3)
 {
-	BOOL ok = True;
 	uint16 validation_level=3;
-	uint32 ret_err_code;
+	NTSTATUS result;
 
-	ret_err_code = cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level);
+	result = cli_net_sam_logon_internal(cli, ctr, user_info3, 
+                                            validation_level);
 
-	if(ret_err_code == NT_STATUS_OK) {
+	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cli_net_sam_logon: Success \n"));
-		ok = True;
-	} else if (ret_err_code == NT_STATUS_INVALID_INFO_CLASS) {
+	} else if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_INVALID_INFO_CLASS)) {
 		DEBUG(10,("cli_net_sam_logon: STATUS INVALID INFO CLASS \n"));
 
 		validation_level=2;
@@ -463,15 +457,11 @@ BOOL cli_net_sam_logon(struct cli_state *cli, NET_ID_INFO_CTR *ctr, NET_USER_INF
 		 * for the error. If its error, return False. 
 		 */
 
-		if(cli_net_sam_logon_internal(cli, ctr, user_info3, validation_level) != 0)
-			ok = False;
-
-	} else {
-		DEBUG(10,("cli_net_sam_logon: Error\n"));
-		ok = False;
+		result = cli_net_sam_logon_internal(cli, ctr, user_info3,
+                                                    validation_level);
 	}
 
-	return ok;
+	return result;
 }
 
 /***************************************************************************
@@ -525,11 +515,10 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
     ok = net_io_r_sam_logoff("", &r_s, &rbuf, 0);
 		
-    if (ok && r_s.status != 0)
+    if (ok && !NT_STATUS_IS_OK(r_s.status))
     {
       /* report error code */
       DEBUG(0,("cli_net_sam_logoff: %s\n", get_nt_error_msg(r_s.status)));
-      cli->nt_error = r_s.status;
       ok = False;
     }
 

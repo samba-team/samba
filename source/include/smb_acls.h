@@ -122,6 +122,47 @@ typedef struct acl					*SMB_ACL_ENTRY_T;
 #define SMB_ACL_TYPE_ACCESS			0
 #define SMB_ACL_TYPE_DEFAULT		1
 
+#elif defined(HAVE_HPUX_ACLS)
+
+/*
+ * Based on the Solaris & UnixWare code.
+ */
+
+#undef GROUP
+#include <sys/aclv.h>
+
+/* SVR4.2 ES/MP ACLs */
+typedef int			SMB_ACL_TAG_T;
+typedef int			SMB_ACL_TYPE_T;
+typedef ushort		*SMB_ACL_PERMSET_T;
+typedef ushort		SMB_ACL_PERM_T;
+#define SMB_ACL_READ 				4
+#define SMB_ACL_WRITE 				2
+#define SMB_ACL_EXECUTE				1
+
+/* Types of ACLs. */
+#define SMB_ACL_USER				USER
+#define SMB_ACL_USER_OBJ			USER_OBJ
+#define SMB_ACL_GROUP				GROUP
+#define SMB_ACL_GROUP_OBJ			GROUP_OBJ
+#define SMB_ACL_OTHER				OTHER_OBJ
+#define SMB_ACL_MASK				CLASS_OBJ
+
+typedef struct SMB_ACL_T {
+	int	size;
+	int	count;
+	int	next;
+	struct acl	acl[1];
+} *SMB_ACL_T;
+
+typedef struct acl					*SMB_ACL_ENTRY_T;
+
+#define SMB_ACL_FIRST_ENTRY			0
+#define SMB_ACL_NEXT_ENTRY			1
+
+#define SMB_ACL_TYPE_ACCESS			0
+#define SMB_ACL_TYPE_DEFAULT		1
+
 #elif defined(HAVE_IRIX_ACLS)
 
 #define SMB_ACL_TAG_T               acl_tag_t

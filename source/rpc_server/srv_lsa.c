@@ -26,8 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
-
 /***************************************************************************
  api_lsa_open_policy2
  ***************************************************************************/
@@ -269,6 +267,98 @@ static BOOL api_lsa_open_secret(pipes_struct *p)
 }
 
 /***************************************************************************
+ api_lsa_open_secret.
+ ***************************************************************************/
+
+static BOOL api_lsa_enum_privs(pipes_struct *p)
+{
+	LSA_Q_ENUM_PRIVS q_u;
+	LSA_R_ENUM_PRIVS r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_enum_privs("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_enum_privs: failed to unmarshall LSA_Q_ENUM_PRIVS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_enum_privs(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_enum_privs("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_enum_privs: Failed to marshall LSA_R_ENUM_PRIVS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_open_secret.
+ ***************************************************************************/
+
+static BOOL api_lsa_priv_get_dispname(pipes_struct *p)
+{
+	LSA_Q_PRIV_GET_DISPNAME q_u;
+	LSA_R_PRIV_GET_DISPNAME r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_priv_get_dispname("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_priv_get_dispname: failed to unmarshall LSA_Q_PRIV_GET_DISPNAME.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_priv_get_dispname(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_priv_get_dispname("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_priv_get_dispname: Failed to marshall LSA_R_PRIV_GET_DISPNAME.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+#if 0
+/***************************************************************************
+ api_lsa_open_secret.
+ ***************************************************************************/
+
+static BOOL api_lsa_enum_accounts(pipes_struct *p)
+{
+	LSA_Q_ENUM_ACCOUNTS q_u;
+	LSA_R_ENUM_ACCOUNTS r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_enum_accounts("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_enum_accounts: failed to unmarshall LSA_Q_ENUM_ACCOUNTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_enum_accounts(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_enum_accounts("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_enum_accounts: Failed to marshall LSA_R_ENUM_ACCOUNTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+#endif
+
+/***************************************************************************
  api_lsa_UNK_GET_CONNUSER
  ***************************************************************************/
 
@@ -300,6 +390,102 @@ static BOOL api_lsa_unk_get_connuser(pipes_struct *p)
 }
 
 /***************************************************************************
+ api_lsa_open_user
+ ***************************************************************************/
+
+static BOOL api_lsa_open_account(pipes_struct *p)
+{
+	LSA_Q_OPENACCOUNT q_u;
+	LSA_R_OPENACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_open_account("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_open_account: failed to unmarshall LSA_Q_OPENACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_open_account(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_open_account("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_open_account: Failed to marshall LSA_R_OPENACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+#if 0
+/***************************************************************************
+ api_lsa_get_privs
+ ***************************************************************************/
+
+static BOOL api_lsa_enum_privsaccount(pipes_struct *p)
+{
+	LSA_Q_ENUMPRIVSACCOUNT q_u;
+	LSA_R_ENUMPRIVSACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_enum_privsaccount("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_enum_privsaccount: failed to unmarshall LSA_Q_ENUMPRIVSACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_enum_privsaccount(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_enum_privsaccount("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_enum_privsaccount: Failed to marshall LSA_R_ENUMPRIVSACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+#endif
+
+/***************************************************************************
+ api_lsa_getsystemaccount
+ ***************************************************************************/
+
+static BOOL api_lsa_getsystemaccount(pipes_struct *p)
+{
+	LSA_Q_GETSYSTEMACCOUNT q_u;
+	LSA_R_GETSYSTEMACCOUNT r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_getsystemaccount("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_getsystemaccount: failed to unmarshall LSA_Q_GETSYSTEMACCOUNT.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_getsystemaccount(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_getsystemaccount("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_getsystemaccount: Failed to marshall LSA_R_GETSYSTEMACCOUNT.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/***************************************************************************
  \PIPE\ntlsa commands
  ***************************************************************************/
 
@@ -313,7 +499,17 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_OPENSECRET"      , LSA_OPENSECRET      , api_lsa_open_secret    },
 	{ "LSA_LOOKUPSIDS"      , LSA_LOOKUPSIDS      , api_lsa_lookup_sids    },
 	{ "LSA_LOOKUPNAMES"     , LSA_LOOKUPNAMES     , api_lsa_lookup_names   },
+	{ "LSA_ENUM_PRIVS"      , LSA_ENUM_PRIVS      , api_lsa_enum_privs     },
+	{ "LSA_PRIV_GET_DISPNAME",LSA_PRIV_GET_DISPNAME,api_lsa_priv_get_dispname},
+#if 0
+	{ "LSA_ENUM_ACCOUNTS"   , LSA_ENUM_ACCOUNTS   , api_lsa_enum_accounts  },
+#endif
 	{ "LSA_UNK_GET_CONNUSER", LSA_UNK_GET_CONNUSER, api_lsa_unk_get_connuser},
+	{ "LSA_OPENACCOUNT"     , LSA_OPENACCOUNT     , api_lsa_open_account    },
+#if 0
+	{ "LSA_ENUMPRIVSACCOUNT", LSA_ENUMPRIVSACCOUNT, api_lsa_enum_privsaccount},
+#endif
+	{ "LSA_GETSYSTEMACCOUNT", LSA_GETSYSTEMACCOUNT, api_lsa_getsystemaccount},
 	{ NULL                  , 0                   , NULL                   }
 };
 

@@ -25,8 +25,6 @@
 extern fstring remote_machine;
 static TDB_CONTEXT *tdb;
 
-extern int DEBUGLEVEL;
-
 /****************************************************************************
  Return the connection tdb context (used for message send all).
 ****************************************************************************/
@@ -40,7 +38,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
+BOOL yield_connection(connection_struct *conn,char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -59,8 +57,9 @@ BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
 	kbuf.dsize = sizeof(key);
 
 	if (tdb_delete(tdb, kbuf) != 0) {
-		DEBUG(0,("yield_connection: tdb_delete for name %s failed with error %s.\n",
-				name, tdb_errorstr(tdb) ));
+		int dbg_lvl = (!conn && (tdb_error(tdb) == TDB_ERR_NOEXIST)) ? 3 : 0;
+		DEBUG(dbg_lvl,("yield_connection: tdb_delete for name %s failed with error %s.\n",
+			name, tdb_errorstr(tdb) ));
 		return (False);
 	}
 
@@ -88,7 +87,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-    if (crec.cnum == -1)
+	if (crec.cnum == -1)
 		return 0;
 
 	/* If the pid was not found delete the entry from connections.tdb */

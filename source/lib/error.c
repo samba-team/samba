@@ -23,53 +23,51 @@
 
 /* Mapping between Unix, DOS and NT error numbers */
 
-struct {
-	int unix_error;
-	int dos_error;
-	uint32 nt_error;
-} unix_dos_nt_errmap[] = {
-	{ EPERM, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ EACCES, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
-	{ ENOENT, ERRbadfile, NT_STATUS_NO_SUCH_FILE },
-	{ ENOTDIR, ERRbadpath, NT_STATUS_NOT_A_DIRECTORY },
-	{ EIO, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
-	{ EBADF, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EINVAL, ERRsrverror, NT_STATUS_INVALID_HANDLE },
-	{ EEXIST, ERRfilexists, NT_STATUS_ACCESS_DENIED},
-	{ ENFILE, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ EMFILE, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
-	{ ENOSPC, ERRdiskfull, NT_STATUS_DISK_FULL },
+struct unix_error_map unix_dos_nt_errmap[] = {
+	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
+	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
+	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_NO_SUCH_FILE },
+	{ ENOTDIR, ERRDOS, ERRbadpath, NT_STATUS_NOT_A_DIRECTORY },
+	{ EIO, ERRHRD, ERRgeneral, NT_STATUS_IO_DEVICE_ERROR },
+	{ EBADF, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
+	{ EINVAL, ERRSRV, ERRsrverror, NT_STATUS_INVALID_HANDLE },
+	{ EEXIST, ERRDOS, ERRfilexists, NT_STATUS_ACCESS_DENIED},
+	{ ENFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ EMFILE, ERRDOS, ERRnofids, NT_STATUS_TOO_MANY_OPENED_FILES },
+	{ ENOSPC, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
 #ifdef EDQUOT
-	{ EDQUOT, ERRdiskfull, NT_STATUS_DISK_FULL },
+	{ EDQUOT, ERRHRD, ERRdiskfull, NT_STATUS_DISK_FULL },
 #endif
 #ifdef ENOTEMPTY
-	{ ENOTEMPTY, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
+	{ ENOTEMPTY, ERRDOS, ERRnoaccess, NT_STATUS_DIRECTORY_NOT_EMPTY },
 #endif
 #ifdef EXDEV
-	{ EXDEV, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
+	{ EXDEV, ERRDOS, ERRdiffdevice, NT_STATUS_NOT_SAME_DEVICE },
 #endif
-	{ EROFS, ERRnowrite, NT_STATUS_ACCESS_DENIED },
-
-	{ 0, 0, 0 }
+#ifdef EROFS
+	{ EROFS, ERRHRD, ERRnowrite, NT_STATUS_ACCESS_DENIED },
+#endif
+	{ 0, 0, 0, NT_STATUS_OK }
 };
 
-/* Map an NT error code from a Unix error code */
+/*********************************************************************
+ Map an NT error code from a Unix error code.
+*********************************************************************/
 
-uint32 map_nt_error_from_unix(int unix_error)
+NTSTATUS map_nt_error_from_unix(int unix_error)
 {
 	int i = 0;
 
+	if (unix_error == 0)
+		return NT_STATUS_OK;
+
 	/* Look through list */
-
 	while(unix_dos_nt_errmap[i].unix_error != 0) {
-		if (unix_dos_nt_errmap[i].unix_error == unix_error) {
+		if (unix_dos_nt_errmap[i].unix_error == unix_error)
 			return unix_dos_nt_errmap[i].nt_error;
-		}
-
 		i++;
 	}
 
 	/* Default return */
-
 	return NT_STATUS_ACCESS_DENIED;
 }

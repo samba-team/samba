@@ -1,10 +1,10 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 2.0
 
    Winbind daemon for ntdom nss module
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Tim Potter 2000-2001
+   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,609 +24,20 @@
 #include "winbindd.h"
 #include "sids.h"
 
-/* Debug connection state */
+/**
+ * @file winbindd_util.c
+ *
+ * Winbind daemon for NT domain authentication nss module.
+ **/
+
+
+/**
+ * Used to clobber name fields that have an undefined value.
+ *
+ * Correct code should never look at a field that has this value.
+ **/
+static const fstring name_deadbeef = "<deadbeef>";
 
-void debug_conn_state(void)
-{
-	struct winbindd_domain *domain;
-
-	DEBUG(3, ("server: dc=%s, pwdb_init=%d, lsa_hnd=%d\n", 
-		  server_state.controller,
-		  server_state.pwdb_initialised,
-		  server_state.lsa_handle_open));
-
-	for (domain = domain_list; domain; domain = domain->next) {
-		DEBUG(3, ("%s: dc=%s, got_sid=%d, sam_hnd=%d sam_dom_hnd=%d\n",
-			  domain->name, domain->controller,
-			  domain->got_domain_info, domain->sam_handle_open,
-			  domain->sam_dom_handle_open));
-	}
-}
-
-/* Add a trusted domain to our list of domains */
-
-static struct winbindd_domain *add_trusted_domain(char *domain_name)
-{
-    struct winbindd_domain *domain, *tmp;
-
-    for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-	    if (strcmp(domain_name, tmp->name) == 0) {
-		    DEBUG(3, ("domain %s already in trusted list\n",
-			      domain_name));
-		    return tmp;
-	    }
-    }
-
-    DEBUG(1, ("adding trusted domain %s\n", domain_name));
-
-    /* Create new domain entry */
-
-    if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL) {
-        return NULL;
-    }
-
-    /* Fill in fields */
-
-    ZERO_STRUCTP(domain);
-
-    if (domain_name) {
-        fstrcpy(domain->name, domain_name);
-    }
-
-    /* Link to domain list */
-
-    DLIST_ADD(domain_list, domain);
-
-    return domain;
-}
-
-/* Look up global info for the winbind daemon */
-
-static BOOL get_trusted_domains(void)
-{
-	uint32 enum_ctx = 0;
-	uint32 num_doms = 0;
-	char **domains = NULL;
-	DOM_SID *sids = NULL;
-	BOOL result;
-	int i;
-	
-	DEBUG(1, ("getting trusted domain list\n"));
-
-	/* Add our workgroup - keep handle to look up trusted domains */
-	if (!add_trusted_domain(lp_workgroup())) {
-		DEBUG(0, ("could not add record for domain %s\n", 
-			  lp_workgroup()));
-		return False;
-	}
-	
-	/* Enumerate list of trusted domains */	
-	result = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-				       &num_doms, &domains, &sids);
-	
-	if (!result || !domains) return False;
-	
-        /* Add each domain to the trusted domain list */
-	for(i = 0; i < num_doms; i++) {
-		if (!add_trusted_domain(domains[i])) {
-			DEBUG(0, ("could not add record for domain %s\n", 
-				  domains[i]));
-			result = False;
-		}
-	}
-	
-	return True;
-}
-
-/* Open sam and sam domain handles */
-
-static BOOL open_sam_handles(struct winbindd_domain *domain)
-{
-	/* Get domain info (sid and controller name) */
-
-	if (!domain->got_domain_info) {
-		domain->got_domain_info = get_domain_info(domain);
-		if (!domain->got_domain_info) return False;
-	}
-
-	/* Shut down existing sam handles */
-
-	if (domain->sam_dom_handle_open) {
-		wb_samr_close(&domain->sam_dom_handle);
-		domain->sam_dom_handle_open = False;
-	}
-
-	if (domain->sam_handle_open) {
-		wb_samr_close(&domain->sam_handle);
-		domain->sam_handle_open = False;
-	}
-
-	/* Open sam handle */
-
-	domain->sam_handle_open = 
-		wb_samr_connect(domain->controller, 
-				SEC_RIGHTS_MAXIMUM_ALLOWED, 
-				&domain->sam_handle);
-
-	if (!domain->sam_handle_open) return False;
-
-	/* Open sam domain handle */
-
-	domain->sam_dom_handle_open =
-		wb_samr_open_domain(&domain->sam_handle, 
-				    SEC_RIGHTS_MAXIMUM_ALLOWED, 
-				    &domain->sid, 
-				    &domain->sam_dom_handle);
-
-	if (!domain->sam_dom_handle_open) return False;
-	
-	return True;
-}
-
-static BOOL rpc_hnd_ok(CLI_POLICY_HND *hnd)
-{
-	return hnd->cli->fd != -1;
-}
-
-/* Return true if the SAM domain handles are open and responding.  */
-
-BOOL domain_handles_open(struct winbindd_domain *domain)
-{
-	time_t t;
-	BOOL result;
-
-	/* Check we haven't checked too recently */
-
-	t = time(NULL);
-
-	if ((t - domain->last_check) < WINBINDD_ESTABLISH_LOOP) {
-		return domain->sam_handle_open &&
-			domain->sam_dom_handle_open;
-	}
-	
-	DEBUG(3, ("checking domain handles for domain %s\n", domain->name));
-	debug_conn_state();
-
-	domain->last_check = t;
-
-	/* Open sam handles if they are marked as closed */
-
-	if (!domain->sam_handle_open || !domain->sam_dom_handle_open) {
-	reopen:
-		DEBUG(3, ("opening sam handles\n"));
-		return open_sam_handles(domain);
-	}
-
-	/* Check sam handles are ok - the domain controller may have failed
-	   and we need to move to a BDC. */
-
-	if (!rpc_hnd_ok(&domain->sam_handle) || 
-	    !rpc_hnd_ok(&domain->sam_dom_handle)) {
-
-		/* We want to close the current connection but attempt
-		   to open a new set, possibly to a new dc.  If this
-		   doesn't work then return False as we have no dc
-		   to talk to. */
-
-		DEBUG(3, ("sam handles not responding\n"));
-
-		winbindd_kill_connections(domain);
-		goto reopen;
-	}
-
-	result = domain->sam_handle_open && domain->sam_dom_handle_open;
-
-	return result;
-}
-
-/* Shut down connections to all domain controllers */
-
-void winbindd_kill_connections(struct winbindd_domain *domain)
-{
-        /* Kill all connections */
-
-        if (!domain) {
-                struct winbindd_domain *tmp;
-
-                for (tmp = domain_list; tmp; tmp = tmp->next) {
-                        winbindd_kill_connections(domain);
-                }
-
-                return;
-        }
-
-	/* Log a level 0 message - this is probably a domain controller
-	   failure */
-
-        if (!domain->controller[0])
-                return;
-
-	DEBUG(0, ("killing connections to domain %s with controller %s\n", 
-		  domain->name, domain->controller));
-
-	debug_conn_state();
-
-        /* Close LSA connections if we are killing connections to the dc
-           that has them open. */
-
-	if (strequal(server_state.controller, domain->controller)) {
-		server_state.pwdb_initialised = False;
-		server_state.lsa_handle_open = False;
-		wb_lsa_close(&server_state.lsa_handle);
-	}
-	
-	/* Close domain sam handles but don't free them as this
-	   severely traumatises the getent state.  The connections
-	   will be reopened later. */
-
-	if (domain->sam_dom_handle_open) {
-		wb_samr_close(&domain->sam_dom_handle);
-		domain->sam_dom_handle_open = False;
-	}
-	
-	if (domain->sam_handle_open) {
-		wb_samr_close(&domain->sam_handle);
-		domain->sam_handle_open = False;
-	}
-
-	/* Re-lookup domain info which includes domain controller name */
-	
-	domain->got_domain_info = False;
-}
-
-/* Kill connections to all servers */
-
-void winbindd_kill_all_connections(void)
-{
-	struct winbindd_domain *domain;
-
-	/* Iterate over domain list */
-
-	domain = domain_list;
-
-	while (domain) {
-		struct winbindd_domain *next;
-
-		/* Kill conections */
-
-		winbindd_kill_connections(domain);
-
-		/* Remove domain from list */
-
-		next = domain->next;
-		DLIST_REMOVE(domain_list, domain);
-		free(domain);
-
-		domain = next;
-	}
-}
-
-static BOOL get_any_dc_name(char *domain, fstring srv_name)
-{
-	struct in_addr *ip_list, dc_ip;
-	extern pstring global_myname;
-	int count, i;
-
-	/* Lookup domain controller name */
-		
-	if (!get_dc_list(False, domain, &ip_list, &count))
-		return False;
-		
-	/* Firstly choose a PDC/BDC who has the same network address as any
-	   of our interfaces. */
-	
-	for (i = 0; i < count; i++) {
-		if(!is_local_net(ip_list[i]))
-			goto got_ip;
-	}
-	
-	i = (sys_random() % count);
-	
- got_ip:
-	dc_ip = ip_list[i];
-	free(ip_list);
-		
-	if (!lookup_pdc_name(global_myname, domain, &dc_ip, srv_name))
-		return False;
-
-	return True;
-}
-
-/* Attempt to connect to all domain controllers we know about */
-
-void establish_connections(BOOL force_reestablish) 
-{
-	static time_t lastt;
-	time_t t;
-
-	/* Check we haven't checked too recently */
-
-	t = time(NULL);
-	if ((t - lastt < WINBINDD_ESTABLISH_LOOP) && !force_reestablish) {
-		return;
-	}
-	lastt = t;
-
-	DEBUG(3, ("establishing connections\n"));
-	debug_conn_state();
-
-	/* Maybe the connection died - if so then close up and restart */
-
-	if (server_state.pwdb_initialised &&
-	    server_state.lsa_handle_open &&
-	    !rpc_hnd_ok(&server_state.lsa_handle)) {
-		winbindd_kill_connections(NULL);
-	}
-
-	if (!server_state.pwdb_initialised) {
-
-		/* Lookup domain controller name */
-
-		if (!get_any_dc_name(lp_workgroup(), 
-				     server_state.controller)) {
-			DEBUG(3, ("could not find any domain controllers "
-				  "for domain %s\n", lp_workgroup()));
-			return;
-		}
-
-		/* Initialise password database and sids */
-		
-		/* server_state.pwdb_initialised = pwdb_initialise(False); */
-		server_state.pwdb_initialised = True;
-
-		if (!server_state.pwdb_initialised) {
-			DEBUG(3, ("could not initialise pwdb\n"));
-			return;
-		}
-	}
-
-	/* Open lsa handle if it isn't already open */
-	
-	if (!server_state.lsa_handle_open) {
-		
-		server_state.lsa_handle_open =
-			wb_lsa_open_policy(server_state.controller, 
-					   False, SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   &server_state.lsa_handle);
-
-		if (!server_state.lsa_handle_open) {
-			DEBUG(0, ("error opening lsa handle on dc %s\n",
-				  server_state.controller));
-			return;
-		}
-
-		/* Now we can talk to the server we can get some info */
-
-		get_trusted_domains();
-	}
-
-	debug_conn_state();
-}
-
-/* Connect to a domain controller using get_any_dc_name() to discover 
-   the domain name and sid */
-
-BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
-{
-    fstring level5_dom;
-    BOOL res;
-    uint32 enum_ctx = 0;
-    uint32 num_doms = 0;
-    char **domains = NULL;
-    DOM_SID *sids = NULL;
-
-    if (domain == NULL) {
-        return False;
-    }
-
-    DEBUG(1, ("looking up sid for domain %s\n", domain_name));
-
-    /* Get controller name for domain */
-
-    if (!get_any_dc_name(domain_name, domain->controller)) {
-	    DEBUG(0, ("Could not resolve domain controller for domain %s\n",
-		      domain_name));
-	    return False;
-    }
-
-    /* Do a level 5 query info policy if we are looking up our own SID */
-
-    if (strequal(domain_name, lp_workgroup())) {
-	    return wb_lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
-					 level5_dom, &domain->sid);
-    } 
-
-    /* Use lsaenumdomains to get sid for this domain */
-    
-    res = wb_lsa_enum_trust_dom(&server_state.lsa_handle, &enum_ctx,
-				&num_doms, &domains, &sids);
-    
-    /* Look for domain name */
-    
-    if (res && domains && sids) {
-            int found = False;
-            int i;
-	    
-            for(i = 0; i < num_doms; i++) {
-		    if (strequal(domain_name, domains[i])) {
-			    sid_copy(&domain->sid, &sids[i]);
-			    found = True;
-			    break;
-		    }
-            }
-	    
-            res = found;
-    }
-    
-    return res;
-}
-
-/* Lookup domain controller and sid for a domain */
-
-BOOL get_domain_info(struct winbindd_domain *domain)
-{
-    fstring sid_str;
-
-    DEBUG(1, ("Getting domain info for domain %s\n", domain->name));
-
-    /* Lookup domain sid */        
-
-    if (!lookup_domain_sid(domain->name, domain)) {
-	    DEBUG(0, ("could not find sid for domain %s\n", domain->name));
-
-	    /* Could be a DC failure - shut down connections to this domain */
-
-	    winbindd_kill_connections(domain);
-
-	    return False;
-    }
-    
-    /* Lookup OK */
-
-    domain->got_domain_info = 1;
-
-    sid_to_string(sid_str, &domain->sid);
-    DEBUG(1, ("found sid %s for domain %s\n", sid_str, domain->name));
-
-    return True;
-}        
-
-/* Lookup a sid in a domain from a name */
-
-BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
-                                 enum SID_NAME_USE *type)
-{
-    int num_sids = 0, num_names = 1;
-    DOM_SID *sids = NULL;
-    uint32 *types = NULL;
-    BOOL res;
-
-    /* Don't bother with machine accounts */
-
-    if (name[strlen(name) - 1] == '$') {
-        return False;
-    }
-
-    /* Lookup name */
-
-    res = wb_lsa_lookup_names(&server_state.lsa_handle, num_names, 
-			      (char **)&name, &sids, &types, &num_sids);
-
-    /* Return rid and type if lookup successful */
-
-    if (res) {
-
-        /* Return sid */
-
-        if ((sid != NULL) && (sids != NULL)) {
-            sid_copy(sid, &sids[0]);
-        }
-
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-    
-    return res;
-}
-
-/* Lookup a name in a domain from a sid */
-
-BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
-                                 enum SID_NAME_USE *type)
-{
-    int num_sids = 1, num_names = 0;
-    uint32 *types = NULL;
-    char **names;
-    BOOL res;
-
-    /* Lookup name */
-
-    res = wb_lsa_lookup_sids(&server_state.lsa_handle, num_sids, sid, 
-			     &names, &types, &num_names);
-
-    /* Return name and type if successful */
-
-    if (res) {
-
-        /* Return name */
-
-        if ((names != NULL) && (name != NULL)) {
-            fstrcpy(name, names[0]);
-        }
-
-        /* Return name type */
-
-        if ((type != NULL) && (types != NULL)) {
-            *type = types[0];
-        }
-    }
-
-    return res;
-}
-
-/* Lookup user information from a rid */
-
-BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain,
-                              uint32 user_rid, SAM_USERINFO_CTR **user_info)
-{
-	return wb_get_samr_query_userinfo(&domain->sam_dom_handle, 0x15, 
-					  user_rid, user_info);
-}                                   
-
-/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
-
-BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
-				uint32 user_rid, uint32 *num_groups,
-				DOM_GID **user_groups)
-{
-	POLICY_HND user_pol;
-	BOOL result;
-
-        if (!wb_samr_open_user(&domain->sam_dom_handle, 
-			       SEC_RIGHTS_MAXIMUM_ALLOWED,
-			       user_rid, &user_pol)) {
-		return False;
-	}
-
-	if (cli_samr_query_usergroups(domain->sam_dom_handle.cli,
-				      domain->sam_dom_handle.mem_ctx,
-				      &user_pol, num_groups, user_groups)
-	    != NT_STATUS_OK) {
-		result = False;
-		goto done;
-	}
-
-	result = True;
-
-done:
-	cli_samr_close(domain->sam_dom_handle.cli,
-		       domain->sam_dom_handle.mem_ctx, &user_pol);
-
-	return True;
-}
-
-/* Lookup group information from a rid */
-
-BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
-                              uint32 group_rid, GROUP_INFO_CTR *info)
-{
-	return wb_get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
-					   group_rid, info);
-}
-
-/* Lookup group membership given a rid */
-
-BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
-                              uint32 group_rid, uint32 *num_names, 
-                              uint32 **rid_mem, char ***names, 
-                              enum SID_NAME_USE **name_types)
-{
-	return wb_sam_query_groupmem(&domain->sam_dom_handle, group_rid, 
-				     num_names, rid_mem, names, name_types);
-}
 
 /* Globals for domain list stuff */
 
@@ -639,18 +50,15 @@ struct winbindd_domain *find_domain_from_name(char *domain_name)
 {
 	struct winbindd_domain *tmp;
 
+	if (domain_list == NULL)
+		get_domain_info();
+
 	/* Search through list */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strcmp(domain_name, tmp->name) == 0) {
-
-			if (!tmp->got_domain_info) {
-				get_domain_info(tmp);
-			}
-
-                        return tmp->got_domain_info ? tmp : NULL;
-                }
-        }
+		if (strcmp(domain_name, tmp->name) == 0)
+			return tmp;
+	}
 
 	/* Not found */
 
@@ -663,74 +71,773 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 {
 	struct winbindd_domain *tmp;
 
+	if (domain_list == NULL)
+		get_domain_info();
+
 	/* Search through list */
+
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (sid_equal(sid, &tmp->sid)) {
-			if (!tmp->got_domain_info) return NULL;
-                        return tmp;
-                }
-        }
+		if (sid_equal(sid, &tmp->sid))
+			return tmp;
+	}
 
 	/* Not found */
+
 	return NULL;
+}
+
+/* Add a trusted domain to our list of domains */
+
+static struct winbindd_domain *add_trusted_domain(char *domain_name,
+                                                  DOM_SID *domain_sid)
+{
+	struct winbindd_domain *domain, *tmp;
+        
+	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+		if (strcmp(domain_name, tmp->name) == 0) {
+			DEBUG(3, ("domain %s already in domain list\n", domain_name));
+			return tmp;
+		}
+	}
+        
+	DEBUG(1, ("adding domain %s\n", domain_name));
+        
+	/* Create new domain entry */
+        
+	if ((domain = (struct winbindd_domain *)malloc(sizeof(*domain))) == NULL)
+		return NULL;
+
+	/* Fill in fields */
+        
+	ZERO_STRUCTP(domain);
+	fstrcpy(domain->name, domain_name);
+	sid_copy(&domain->sid, domain_sid);
+        
+	/* Link to domain list */
+        
+	DLIST_ADD(domain_list, domain);
+        
+	return domain;
+}
+
+/* Look up global info for the winbind daemon */
+
+BOOL get_domain_info(void)
+{
+	uint32 enum_ctx = 0, num_doms = 0;
+	char **domains = NULL;
+	DOM_SID *sids = NULL, domain_sid;
+	NTSTATUS result;
+	CLI_POLICY_HND *hnd;
+	int i;
+	fstring level5_dom;
+	BOOL rv = False;
+	TALLOC_CTX *mem_ctx;
+	
+	DEBUG(1, ("getting trusted domain list\n"));
+
+	if (!(mem_ctx = talloc_init()))
+		return False;
+
+	/* Add our workgroup - keep handle to look up trusted domains */
+
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+
+	result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
+					&hnd->pol, 0x05, level5_dom, &domain_sid);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	add_trusted_domain(lp_workgroup(), &domain_sid);
+	
+	/* Enumerate list of trusted domains */	
+
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+
+	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
+						&hnd->pol, &enum_ctx, &num_doms, &domains, &sids);
+	
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+	
+	/* Add each domain to the trusted domain list */
+
+	for(i = 0; i < num_doms; i++)
+		add_trusted_domain(domains[i], &sids[i]);
+
+	rv = True;	
+
+ done:
+
+	talloc_destroy(mem_ctx);
+
+	return rv;
+}
+
+/* Free global domain info */
+
+void free_domain_info(void)
+{
+	struct winbindd_domain *domain;
+
+	/* Free list of domains */
+
+	if (domain_list) {
+		struct winbindd_domain *next_domain;
+
+		domain = domain_list;
+
+		while(domain) {
+			next_domain = domain->next;
+			SAFE_FREE(domain);
+			domain = next_domain;
+		}
+	}
+}
+
+/* Connect to a domain controller using get_any_dc_name() to discover 
+   the domain name and sid */
+
+BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
+{
+	fstring level5_dom;
+	uint32 enum_ctx = 0, num_doms = 0;
+	char **domains = NULL;
+	DOM_SID *sids = NULL;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	BOOL rv = False;
+	TALLOC_CTX *mem_ctx;
+        
+	DEBUG(1, ("looking up sid for domain %s\n", domain_name));
+        
+	if (!(mem_ctx = talloc_init()))
+		return False;
+        
+	if (!(hnd = cm_get_lsa_handle(domain_name)))
+		goto done;
+        
+	/* Do a level 5 query info policy if we are looking up the SID for
+		our own domain. */
+        
+	if (strequal(domain_name, lp_workgroup())) {
+                
+		result = cli_lsa_query_info_policy(hnd->cli, mem_ctx,
+						&hnd->pol, 0x05, level5_dom,
+						&domain->sid);
+                
+			rv = NT_STATUS_IS_OK(result);
+			goto done;
+	} 
+        
+	/* Use lsaenumdomains to get sid for this domain */
+        
+	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx, &hnd->pol,
+						&enum_ctx, &num_doms, &domains, &sids);
+        
+	/* Look for domain name */
+        
+	if (NT_STATUS_IS_OK(result) && domains && sids) {
+		BOOL found = False;
+		int i;
+                
+		for(i = 0; i < num_doms; i++) {
+			if (strequal(domain_name, domains[i])) {
+				sid_copy(&domain->sid, &sids[i]);
+				found = True;
+				break;
+			}
+		}
+                
+		rv = found;
+		goto done;
+	}
+      
+	rv = False;             /* An error occured with a trusted domain */
+
+ done:
+
+	talloc_destroy(mem_ctx);
+
+	return rv;
+}
+
+/* Store a SID in a domain indexed by name in the cache. */
+
+static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE type)
+{
+	fstring domain_str;
+	char *p;
+	struct winbindd_sid sid_val;
+	struct winbindd_domain *domain;
+
+	/* Get name from domain. */
+	fstrcpy( domain_str, name);
+	p = strchr(domain_str, '\\');
+	if (p)
+		*p = '\0';
+
+	if ((domain = find_domain_from_name(domain_str)) == NULL)
+        return;
+
+	sid_to_string(sid_val.sid, sid);
+	sid_val.type = (int)type;
+
+	DEBUG(10,("store_sid_by_name_in_cache: storing cache entry %s -> SID %s\n",
+		name, sid_val.sid ));
+
+	winbindd_store_sid_cache_entry(domain, name, &sid_val);
+}
+
+/* Lookup a SID in a domain indexed by name in the cache. */
+
+static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
+{
+	fstring domain_str;
+	char *p;
+	struct winbindd_sid sid_ret;
+	struct winbindd_domain *domain;
+
+	/* Get name from domain. */
+	fstrcpy( domain_str, name);
+	p = strchr(domain_str, '\\');
+	if (p)
+		*p = '\0';
+
+	if ((domain = find_domain_from_name(domain_str)) == NULL)
+        return False;
+
+	if (!winbindd_fetch_sid_cache_entry(domain, name, &sid_ret))
+		return False;
+
+	string_to_sid( sid, sid_ret.sid);
+	*type = (enum SID_NAME_USE)sid_ret.type;
+
+	DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
+		name, sid_ret.sid ));
+
+	return True;
+}
+
+/* Store a name in a domain indexed by SID in the cache. */
+
+static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE type)
+{
+	fstring sid_str;
+	uint32 rid;
+	DOM_SID domain_sid;
+	struct winbindd_name name_val;
+	struct winbindd_domain *domain;
+
+	/* Split sid into domain sid and user rid */
+	sid_copy(&domain_sid, sid);
+	sid_split_rid(&domain_sid, &rid);
+
+	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
+        return;
+
+	sid_to_string(sid_str, sid);
+	fstrcpy( name_val.name, name );
+	name_val.type = (int)type;
+
+	DEBUG(10,("store_name_by_sid_in_cache: storing cache entry SID %s -> %s\n",
+		sid_str, name_val.name ));
+
+	winbindd_store_name_cache_entry(domain, sid_str, &name_val);
+}
+
+/* Lookup a name in a domain indexed by SID in the cache. */
+
+static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE *type)
+{
+	fstring sid_str;
+	uint32 rid;
+	DOM_SID domain_sid;
+	struct winbindd_name name_ret;
+	struct winbindd_domain *domain;
+
+	/* Split sid into domain sid and user rid */
+	sid_copy(&domain_sid, sid);
+	sid_split_rid(&domain_sid, &rid);
+
+	if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
+        return False;
+
+	sid_to_string(sid_str, sid);
+
+	if (!winbindd_fetch_name_cache_entry(domain, sid_str, &name_ret))
+		return False;
+
+	fstrcpy( name, name_ret.name );
+	*type = (enum SID_NAME_USE)name_ret.type;
+
+	DEBUG(10,("winbindd_lookup_name_by_sid_in_cache: Cache hit for SID = %s, name %s\n",
+		sid_str, name ));
+
+	return True;
+}
+
+/* Lookup a sid in a domain from a name */
+
+BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid, enum SID_NAME_USE *type)
+{
+	int num_sids = 0, num_names = 1;
+	DOM_SID *sids = NULL;
+	uint32 *types = NULL;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	BOOL rv = False;
+        
+	/* Don't bother with machine accounts */
+        
+	if (name[strlen(name) - 1] == '$')
+		return False;
+
+	/* First check cache. */
+	if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
+		if (*type == SID_NAME_USE_NONE)
+			return False; /* Negative cache hit. */
+		return True;
+	}
+
+	/* Lookup name */
+        
+	if (!(mem_ctx = talloc_init()))
+		return False;
+        
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+        
+	result = cli_lsa_lookup_names(hnd->cli, mem_ctx, &hnd->pol, 
+				num_names, (char **)&name, &sids, 
+				&types, &num_sids);
+        
+	/* Return rid and type if lookup successful */
+        
+	if (NT_STATUS_IS_OK(result)) {
+                
+		/* Return sid */
+                
+		if ((sid != NULL) && (sids != NULL))
+			sid_copy(sid, &sids[0]);
+                
+		/* Return name type */
+                
+		if ((type != NULL) && (types != NULL))
+			*type = types[0];
+
+		/* Store the forward and reverse map of this lookup in the cache. */
+		store_sid_by_name_in_cache(name, &sids[0], types[0]);
+		store_name_by_sid_in_cache(&sids[0], name, types[0]);
+	} else {
+		/* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+		DOM_SID nullsid;
+
+		ZERO_STRUCT(nullsid);
+		store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+		*type = SID_NAME_UNKNOWN;
+	}
+
+	rv = NT_STATUS_IS_OK(result);
+
+ done:
+	talloc_destroy(mem_ctx);
+        
+	return rv;
+}
+
+/**
+ * @brief Lookup a name in a domain from a sid.
+ *
+ * @param sid Security ID you want to look up.
+ *
+ * @param name On success, set to the name corresponding to @p sid.
+ * 
+ * @param type On success, contains the type of name: alias, group or
+ * user.
+ *
+ * @retval True if the name exists, in which case @p name and @p type
+ * are set, otherwise False.
+ **/
+BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
+				 fstring name,
+				 enum SID_NAME_USE *type)
+{
+	int num_sids = 1, num_names = 0;
+	uint32 *types = NULL;
+	char **names;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	TALLOC_CTX *mem_ctx;
+	BOOL rv = False;
+
+	/* First check cache. */
+	if (winbindd_lookup_name_by_sid_in_cache(sid, name, type)) {
+		if (*type == SID_NAME_USE_NONE) {
+			fstrcpy(name, name_deadbeef);
+			*type = SID_NAME_UNKNOWN;
+			return False; /* Negative cache hit. */
+		} else 
+			return True;
+	}
+
+	/* Lookup name */
+
+	if (!(mem_ctx = talloc_init()))
+		return False;
+        
+	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
+		goto done;
+        
+	result = cli_lsa_lookup_sids(hnd->cli, mem_ctx, &hnd->pol,
+							num_sids, sid, &names, &types, 
+							&num_names);
+
+	/* Return name and type if successful */
+        
+	if ((rv = NT_STATUS_IS_OK(result))) {
+                
+		/* Return name */
+                
+		if ((names != NULL) && (name != NULL))
+			fstrcpy(name, names[0]);
+                
+		/* Return name type */
+
+		if ((type != NULL) && (types != NULL))
+			*type = types[0];
+
+		store_sid_by_name_in_cache(names[0], sid, types[0]);
+		store_name_by_sid_in_cache(sid, names[0], types[0]);
+	} else {
+		/* OK, so we tried to look up a name in this sid, and
+		 * didn't find it.  Therefore add a negative cache
+		 * entry.  */
+		store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+		*type = SID_NAME_UNKNOWN;
+		fstrcpy(name, name_deadbeef);
+	}
+
+        
+ done:
+	talloc_destroy(mem_ctx);
+
+	return rv;
+}
+
+/* Lookup user information from a rid */
+
+BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, 
+                              TALLOC_CTX *mem_ctx, uint32 user_rid, 
+                              SAM_USERINFO_CTR **user_info)
+{
+	CLI_POLICY_HND *hnd;
+	uint16 info_level = 0x15;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	POLICY_HND dom_pol, user_pol;
+	BOOL got_dom_pol = False, got_user_pol = False;
+
+	/* Get sam handle */
+
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
+
+	/* Get domain handle */
+
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_dom_pol = True;
+
+	/* Get user handle */
+
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+					des_access, user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get user info */
+
+	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
+					info_level, user_info);
+
+	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+ done:
+	/* Clean up policy handles */
+
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return NT_STATUS_IS_OK(result);
+}                                   
+
+/* Lookup groups a user is a member of.  I wish Unix had a call like this! */
+
+BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 user_rid, uint32 *num_groups,
+				DOM_GID **user_groups)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	POLICY_HND dom_pol, user_pol;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	BOOL got_dom_pol = False, got_user_pol = False;
+
+	/* Get sam handle */
+
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
+
+	/* Get domain handle */
+
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+					des_access, &domain->sid, &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_dom_pol = True;
+
+	/* Get user handle */
+
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+					des_access, user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_user_pol = True;
+
+	/* Query user rids */
+
+	result = cli_samr_query_usergroups(hnd->cli, mem_ctx, &user_pol, 
+					num_groups, user_groups);
+
+ done:
+
+	/* Clean up policy handles */
+
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return NT_STATUS_IS_OK(result);
+}
+
+/* Lookup group membership given a rid.   */
+
+BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
+                              TALLOC_CTX *mem_ctx,
+                              uint32 group_rid, uint32 *num_names, 
+                              uint32 **rid_mem, char ***names, 
+                              uint32 **name_types)
+{
+        CLI_POLICY_HND *hnd;
+        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+        uint32 i, total_names = 0;
+        POLICY_HND dom_pol, group_pol;
+        uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+        BOOL got_dom_pol = False, got_group_pol = False;
+
+        /* Get sam handle */
+
+        if (!(hnd = cm_get_sam_handle(domain->name)))
+                goto done;
+
+        /* Get domain handle */
+
+        result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+                                      des_access, &domain->sid, &dom_pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        got_dom_pol = True;
+
+        /* Get group handle */
+
+        result = cli_samr_open_group(hnd->cli, mem_ctx, &dom_pol,
+                                     des_access, group_rid, &group_pol);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        got_group_pol = True;
+
+        /* Step #1: Get a list of user rids that are the members of the
+           group. */
+
+        result = cli_samr_query_groupmem(hnd->cli, mem_ctx,
+                                         &group_pol, num_names, rid_mem,
+                                         name_types);
+
+        if (!NT_STATUS_IS_OK(result))
+                goto done;
+
+        /* Step #2: Convert list of rids into list of usernames.  Do this
+           in bunches of ~1000 to avoid crashing NT4.  It looks like there
+           is a buffer overflow or something like that lurking around
+           somewhere. */
+
+#define MAX_LOOKUP_RIDS 900
+
+        *names = talloc(mem_ctx, *num_names * sizeof(char *));
+        *name_types = talloc(mem_ctx, *num_names * sizeof(uint32));
+
+        for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
+                int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
+                uint32 tmp_num_names = 0;
+                char **tmp_names = NULL;
+                uint32 *tmp_types = NULL;
+
+                /* Lookup a chunk of rids */
+
+                result = cli_samr_lookup_rids(hnd->cli, mem_ctx,
+                                              &dom_pol, 1000, /* flags */
+                                              num_lookup_rids,
+                                              &(*rid_mem)[i],
+                                              &tmp_num_names,
+                                              &tmp_names, &tmp_types);
+
+                if (!NT_STATUS_IS_OK(result))
+                        goto done;
+
+                /* Copy result into array.  The talloc system will take
+                   care of freeing the temporary arrays later on. */
+
+                memcpy(&(*names)[i], tmp_names, sizeof(char *) * 
+                       tmp_num_names);
+
+                memcpy(&(*name_types)[i], tmp_types, sizeof(uint32) *
+                       tmp_num_names);
+
+                total_names += tmp_num_names;
+        }
+
+        *num_names = total_names;
+
+ done:
+        if (got_group_pol)
+                cli_samr_close(hnd->cli, mem_ctx, &group_pol);
+
+        if (got_dom_pol)
+                cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+        return NT_STATUS_IS_OK(result);
+}
+
+BOOL create_samr_domain_handle(struct winbindd_domain *domain, POLICY_HND *pdom_pol)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	ZERO_STRUCTP(pdom_pol);
+
+	if (!mem_ctx)
+		return False;
+
+	/* Get sam handle */
+
+	if (!(hnd = cm_get_sam_handle(domain->name))) {
+		talloc_destroy(mem_ctx);
+                return False;
+	}
+	/* Get domain handle */
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+				des_access, &domain->sid, pdom_pol);
+
+	talloc_destroy(mem_ctx);
+	if (!NT_STATUS_IS_OK(result))
+		return False;
+
+	return True;
+}
+
+void close_samr_domain_handle(struct winbindd_domain *domain, POLICY_HND *pdom_pol)
+{
+	static POLICY_HND zero_pol;
+	CLI_POLICY_HND *hnd;
+	TALLOC_CTX *mem_ctx = talloc_init();
+
+	if (!mem_ctx)
+		return;
+
+	if (memcmp(pdom_pol, &zero_pol, sizeof(zero_pol)) == 0)
+		return;
+
+	if (!(hnd = cm_get_sam_handle(domain->name))) {
+		talloc_destroy(mem_ctx);
+                return;
+	}
+
+	cli_samr_close(hnd->cli, mem_ctx, pdom_pol);
+	ZERO_STRUCTP(pdom_pol);
+
+	talloc_destroy(mem_ctx);
 }
 
 /* Free state information held for {set,get,end}{pw,gr}ent() functions */
 
 void free_getent_state(struct getent_state *state)
 {
-    struct getent_state *temp;
+	struct getent_state *temp;
 
-    /* Iterate over state list */
+	/* Iterate over state list */
 
-    temp = state;
+	temp = state;
 
-    while(temp != NULL) {
-        struct getent_state *next;
+	while(temp != NULL) {
+		struct getent_state *next;
 
-        /* Free sam entries then list entry */
+		/* Close SAMR cache handle. */
+		close_samr_domain_handle(temp->domain, &temp->dom_pol);
 
-        safe_free(state->sam_entries);
-        DLIST_REMOVE(state, state);
-        next = temp->next;
+		/* Free sam entries then list entry */
 
-        free(temp);
-        temp = next;
-    }
+		SAFE_FREE(state->sam_entries);
+		DLIST_REMOVE(state, state);
+		next = temp->next;
+
+		SAFE_FREE(temp);
+		temp = next;
+	}
 }
 
-/* Parse list of arguments to winbind uid or winbind gid parameters */
-
-static BOOL parse_id_list(char *paramstr, BOOL is_user)
+struct getent_state *create_getent_state(struct winbindd_domain *domain)
 {
-    uid_t id_low, id_high = 0;
+	struct getent_state *state = (struct getent_state *)malloc(sizeof(struct getent_state));
 
-    /* Give a nicer error message if no parameters specified */
+	if (state == NULL)
+		return NULL;
 
-    if (strequal(paramstr, "")) {
-        DEBUG(0, ("winbind %s parameter missing\n", is_user ? "uid" : "gid"));
-        return False;
-    }
-    
-    /* Parse entry */
+	ZERO_STRUCTP(state);
+	state->domain = domain;
 
-    if (sscanf(paramstr, "%u-%u", &id_low, &id_high) != 2) {
-        DEBUG(0, ("winbind %s parameter invalid\n", 
-                  is_user ? "uid" : "gid"));
-        return False;
-    }
-    
-    /* Store id info */
-    
-    if (is_user) {
-        server_state.uid_low = id_low;
-        server_state.uid_high = id_high;
-    } else {
-        server_state.gid_low = id_low;
-        server_state.gid_high = id_high;
-    }
+	/* Create and cache a SAMR domain handle. */
+	if (!create_samr_domain_handle(state->domain, &state->dom_pol)) {
+		free_getent_state(state);
+		return NULL;
+	}
 
-    return True;
+	return state;
 }
 
 /* Initialise trusted domain info */
@@ -739,143 +846,43 @@ BOOL winbindd_param_init(void)
 {
     /* Parse winbind uid and winbind_gid parameters */
 
-    if (!(parse_id_list(lp_winbind_uid(), True) &&
-          parse_id_list(lp_winbind_gid(), False))) {
-        return False;
+    if (!lp_winbind_uid(&server_state.uid_low, &server_state.uid_high)) {
+            DEBUG(0, ("winbind uid range missing or invalid\n"));
+            return False;
     }
 
-    /* Check for reversed uid and gid ranges */
-        
-    if (server_state.uid_low > server_state.uid_high) {
-        DEBUG(0, ("uid range invalid\n"));
-        return False;
-    }
-    
-    if (server_state.gid_low > server_state.gid_high) {
-        DEBUG(0, ("gid range invalid\n"));
-        return False;
+    if (!lp_winbind_gid(&server_state.gid_low, &server_state.gid_high)) {
+            DEBUG(0, ("winbind gid range missing or invalid\n"));
+            return False;
     }
     
     return True;
-}
-
-/* Convert a enum winbindd_cmd to a string */
-
-struct cmdstr_table {
-	enum winbindd_cmd cmd;
-	char *desc;
-};
-
-static struct cmdstr_table cmdstr_table[] = {
-	
-	/* User functions */
-
-	{ WINBINDD_GETPWNAM_FROM_USER, "getpwnam from user" },
-	{ WINBINDD_GETPWNAM_FROM_UID, "getpwnam from uid" },
-	{ WINBINDD_SETPWENT, "setpwent" },
-	{ WINBINDD_ENDPWENT, "endpwent" },
-	{ WINBINDD_GETPWENT, "getpwent" },
-	{ WINBINDD_GETGROUPS, "getgroups" },
-
-	/* Group functions */
-
-	{ WINBINDD_GETGRNAM_FROM_GROUP, "getgrnam from group" },
-	{ WINBINDD_GETGRNAM_FROM_GID, "getgrnam from gid" },
-	{ WINBINDD_SETGRENT, "setgrent" },
-	{ WINBINDD_ENDGRENT, "endgrent" },
-	{ WINBINDD_GETGRENT, "getgrent" },
-
-	/* PAM auth functions */
-
-	{ WINBINDD_PAM_AUTH, "pam auth" },
-	{ WINBINDD_PAM_CHAUTHTOK, "pam chauthtok" },
-
-	/* List things */
-
-        { WINBINDD_LIST_USERS, "list users" },
-        { WINBINDD_LIST_GROUPS, "list groups" },
-	{ WINBINDD_LIST_TRUSTDOM, "list trusted domains" },
-
-	/* SID related functions */
-
-	{ WINBINDD_LOOKUPSID, "lookup sid" },
-	{ WINBINDD_LOOKUPNAME, "lookup name" },
-
-	/* S*RS related functions */
-
-	{ WINBINDD_SID_TO_UID, "sid to uid" },
-	{ WINBINDD_SID_TO_GID, "sid to gid " },
-	{ WINBINDD_GID_TO_SID, "gid to sid" },
-	{ WINBINDD_UID_TO_SID, "uid to sid" },
-
-	/* Miscellaneous other stuff */
-
-	{ WINBINDD_CHECK_MACHACC, "check machine acct pw" },
-
-	/* End of list */
-
-	{ WINBINDD_NUM_CMDS, NULL }
-};
-
-char *winbindd_cmd_to_string(enum winbindd_cmd cmd)
-{
-	struct cmdstr_table *table = cmdstr_table;
-	char *result = NULL;
-
-	for(table = cmdstr_table; table->desc; table++) {
-		if (cmd == table->cmd) {
-			result = table->desc;
-			break;
-		}
-	}
-	
-	if (result == NULL) {
-		result = "invalid command";
-	}
-
-	return result;
-};
-
-/* find the sequence number for a domain */
-
-uint32 domain_sequence_number(char *domain_name)
-{
-	struct winbindd_domain *domain;
-	SAM_UNK_CTR ctr;
-
-	domain = find_domain_from_name(domain_name);
-	if (!domain) return DOM_SEQUENCE_NONE;
-
-	if (!wb_samr_query_dom_info(&domain->sam_dom_handle, 2, &ctr)) {
-
-		/* If this fails, something bad has gone wrong */
-
-		winbindd_kill_connections(domain);
-
-		DEBUG(2,("domain sequence query failed\n"));
-		return DOM_SEQUENCE_NONE;
-	}
-
-	DEBUG(4,("got domain sequence number for %s of %u\n", 
-		 domain_name, (unsigned)ctr.info.inf2.seq_num));
-	
-	return ctr.info.inf2.seq_num;
 }
 
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */
 
-uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
-			     uint32 *start_ndx, uint16 info_level, 
-			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
+NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
+                                 TALLOC_CTX *mem_ctx, POLICY_HND *pdom_pol,
+				 uint32 *start_ndx, uint16 info_level, 
+				 uint32 *num_entries, SAM_DISPINFO_CTR *ctr)
 {
-	uint32 status;
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	status = wb_samr_query_dispinfo(&domain->sam_dom_handle, start_ndx,
-					info_level, num_entries, ctr);
+	/* Get sam handle */
 
-	return status;
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	/* Query display info */
+
+	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
+					pdom_pol, start_ndx, info_level,
+					num_entries, 0xffff, ctr);
+
+	return result;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */
@@ -886,32 +893,25 @@ BOOL check_domain_env(char *domain_env, char *domain)
 	char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
-		if (strequal(name, domain)) {
+		if (strequal(name, domain))
 			return True;
-		}
 	}
 
 	return False;
 }
 
-
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
-void parse_domain_user(char *domuser, fstring domain, fstring user)
+BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-	char *p;
-	char *sep = lp_winbind_separator();
-	if (!sep) sep = "\\";
-	p = strchr(domuser,*sep);
-	if (!p) p = strchr(domuser,'\\');
-	if (!p) {
-		fstrcpy(domain,"");
-		fstrcpy(user, domuser);
-		return;
-	}
+	char *p = strchr(domuser,*lp_winbind_separator());
+
+	if (!p)
+		return False;
 	
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 	strupper(domain);
+	return True;
 }

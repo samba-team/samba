@@ -21,7 +21,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern struct current_user current_user;
 
 struct sec_ctx {
@@ -60,10 +59,8 @@ static BOOL become_uid(uid_t uid)
 	/* Set effective user id */
 
 	set_effective_uid(uid);
-	current_user.uid = uid;
 
 	DO_PROFILE_INC(uid_changes);
-
 	return True;
 }
 
@@ -89,8 +86,6 @@ static BOOL become_gid(gid_t gid)
 	/* Set effective group id */
 
 	set_effective_gid(gid);
-	current_user.gid = gid;
-	
 	return True;
 }
 
@@ -157,14 +152,14 @@ int get_current_groups(int *p_ngroups, gid_t **p_groups)
 	}
 
 	if ((ngroups = sys_getgroups(ngroups,groups)) == -1) {
-		safe_free(groups);
+		SAFE_FREE(groups);
 		return -1;
 	}
 
 	(*p_ngroups) = ngroups;
 	(*p_groups) = groups;
 
-	DEBUG( 3, ( "get_current_groups: uid %u is in %u groups: ", (unsigned int)getuid() , ngroups ) );
+	DEBUG( 3, ( "get_current_groups: user is in %u groups: ", ngroups ) );
 	for (i = 0; i < ngroups; i++ ) {
 		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
 	}
@@ -181,11 +176,10 @@ void delete_nt_token(NT_USER_TOKEN **pptoken)
 {
     if (*pptoken) {
 		NT_USER_TOKEN *ptoken = *pptoken;
-        safe_free( ptoken->user_sids );
+        SAFE_FREE( ptoken->user_sids );
         ZERO_STRUCTP(ptoken);
     }
-    safe_free(*pptoken);
-	*pptoken = NULL;
+    SAFE_FREE(*pptoken);
 }
 
 /****************************************************************************
@@ -205,7 +199,7 @@ NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
     ZERO_STRUCTP(token);
 
     if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
-        free(token);
+        SAFE_FREE(token);
         return NULL;
     }
 
@@ -248,8 +242,7 @@ BOOL initialise_groups(char *user, uid_t uid, gid_t gid)
 
 	prev_ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx - 1];
 
-	safe_free(prev_ctx_p->groups);
-	prev_ctx_p->groups = NULL;
+	SAFE_FREE(prev_ctx_p->groups);
 	prev_ctx_p->ngroups = 0;
 
 	get_current_groups(&prev_ctx_p->ngroups, &prev_ctx_p->groups);
@@ -340,7 +333,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 
 	ctx_p->ngroups = ngroups;
 
-	safe_free(ctx_p->groups);
+	SAFE_FREE(ctx_p->groups);
 	if (token && (token == ctx_p->token))
 		smb_panic("DUPLICATE_TOKEN");
 
@@ -397,7 +390,7 @@ BOOL pop_sec_ctx(void)
 	ctx_p->uid = (uid_t)-1;
 	ctx_p->gid = (gid_t)-1;
 
-	safe_free(ctx_p->groups);
+	SAFE_FREE(ctx_p->groups);
 	ctx_p->ngroups = 0;
 
 	delete_nt_token(&ctx_p->token);

@@ -26,7 +26,6 @@
 
 #include "includes.h"
 
-extern int DEBUGLEVEL;
 extern pstring global_myname;
 
 /*******************************************************************
@@ -60,7 +59,7 @@ static void create_wks_info_100(WKS_INFO_100 *inf)
 
  ********************************************************************/
 
-uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u)
+NTSTATUS _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u)
 {
 	WKS_INFO_100 *wks100 = NULL;
 
