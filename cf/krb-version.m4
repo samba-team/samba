@@ -3,11 +3,11 @@ dnl
 dnl
 dnl output a C header-file with some version strings
 dnl
+
 AC_DEFUN(AC_KRB_VERSION,[
-dnl AC_OUTPUT_COMMANDS([
 cat > include/newversion.h.in <<FOOBAR
-const char *${PACKAGE}_long_version = "@(#)\$Version: $PACKAGE-$VERSION by @USER@ on @HOST@ ($host) @DATE@ \$";
-const char *${PACKAGE}_version = "$PACKAGE-$VERSION";
+const char *${PACKAGE_TARNAME}_long_version = "@(#)\$Version: $PACKAGE_STRING by @USER@ on @HOST@ ($host) @DATE@ \$";
+const char *${PACKAGE_TARNAME}_version = "$PACKAGE_STRING";
 FOOBAR
 
 if test -f include/version.h && cmp -s include/newversion.h.in include/version.h.in; then
@@ -21,5 +21,4 @@ else
 	mv -f include/newversion.h.in include/version.h.in
 	sed -e "s/@USER@/$User/" -e "s/@HOST@/$Host/" -e "s/@DATE@/$Date/" include/version.h.in > include/version.h
 fi
-dnl ],host=$host PACKAGE=$PACKAGE VERSION=$VERSION)
 ])
