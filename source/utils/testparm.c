@@ -178,11 +178,11 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	}
 
 #ifndef HAVE_DLOPEN
-    if (lp_preload_modules()) {
-        printf("WARNING: 'preload modules = ' set while loading plugins not supported.\n");
-    }
+	if (lp_preload_modules()) {
+		printf("WARNING: 'preload modules = ' set while loading plugins not supported.\n");
+	}
 #endif
-	
+
 	return ret;
 }   
 

@@ -24,21 +24,57 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/** List of various built-in passdb modules */
+static struct pdb_init_function_entry *backends = NULL;
 
-const struct pdb_init_function_entry builtin_pdb_init_functions[] = {
-	{ "smbpasswd", pdb_init_smbpasswd },
-	{ "smbpasswd_nua", pdb_init_smbpasswd_nua },
-	{ "tdbsam", pdb_init_tdbsam },
-	{ "tdbsam_nua", pdb_init_tdbsam_nua },
-	{ "ldapsam", pdb_init_ldapsam },
-	{ "ldapsam_nua", pdb_init_ldapsam_nua },
-	{ "unixsam", pdb_init_unixsam },
-	{ "guest", pdb_init_guestsam },
-	{ "nisplussam", pdb_init_nisplussam },
-	{ "plugin", pdb_init_plugin },
-	{ NULL, NULL}
-};
+static void lazy_initialize_passdb(void)
+{
+	static BOOL initialized = False;
+	if(initialized)return;
+	static_init_pdb;
+	initialized = True;
+}
+
+BOOL smb_register_passdb(const char *name, pdb_init_function init, int version) 
+{
+	struct pdb_init_function_entry *entry = backends;
+
+	if(version != PASSDB_INTERFACE_VERSION)
+		return False;
+
+	DEBUG(5,("Attempting to register passdb backend %s\n", name));
+
+	/* Check for duplicates */
+	while(entry) { 
+		if(strcasecmp(name, entry->name) == 0) { 
+			DEBUG(0,("There already is a passdb backend registered with the name %s!\n", name));
+			return False;
+		}
+		entry = entry->next;
+	}
+
+	entry = smb_xmalloc(sizeof(struct pdb_init_function_entry));
+	entry->name = smb_xstrdup(name);
+	entry->init = init;
+
+	DLIST_ADD(backends, entry);
+	DEBUG(5,("Successfully added passdb backend '%s'\n", name));
+	return True;
+}
+
+static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name)
+{
+	struct pdb_init_function_entry *entry = backends;
+	pstring stripped;
+
+	module_path_get_name(name, stripped);
+
+	while(entry) {
+		if (strequal(entry->name, stripped)) return entry;
+		entry = entry->next;
+	}
+
+	return NULL;
+}
 
 static NTSTATUS context_setsampwent(struct pdb_context *context, BOOL update)
 {
@@ -372,8 +408,10 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 {
 	char *module_name = smb_xstrdup(selected);
 	char *module_location = NULL, *p;
+	struct pdb_init_function_entry *entry;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	int i;
+
+	lazy_initialize_passdb();
 
 	p = strchr(module_name, ':');
 
@@ -385,27 +423,37 @@ static NTSTATUS make_pdb_methods_name(struct pdb_methods **methods, struct pdb_c
 
 	trim_string(module_name, " ", " ");
 
+
 	DEBUG(5,("Attempting to find an passdb backend to match %s (%s)\n", selected, module_name));
-	for (i = 0; builtin_pdb_init_functions[i].name; i++)
-	{
-		if (strequal(builtin_pdb_init_functions[i].name, module_name))
-		{
-			DEBUG(5,("Found pdb backend %s (at pos %d)\n", module_name, i));
-			nt_status = builtin_pdb_init_functions[i].init(context, methods, module_location);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(5,("pdb backend %s has a valid init\n", selected));
-			} else {
-				DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
-			}
+
+	entry = pdb_find_backend_entry(module_name);
+	
+	/* Try to find a module that contains this module */
+	if (!entry) { 
+		DEBUG(2,("No builtin backend found, trying to load plugin\n"));
+		if(smb_probe_module("passdb", module_name) && !(entry = pdb_find_backend_entry(module_name))) {
+			DEBUG(0,("Plugin is available, but doesn't register passdb backend %s\n", module_name));
 			SAFE_FREE(module_name);
-			return nt_status;
-			break; /* unreached */
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
-
+	
 	/* No such backend found */
+	if(!entry) { 
+		DEBUG(0,("No builtin nor plugin backend for %s found\n", module_name));
+		SAFE_FREE(module_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	
+	DEBUG(5,("Found pdb backend %s\n", module_name));
+	nt_status = entry->init(context, methods, module_location);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(5,("pdb backend %s has a valid init\n", selected));
+	} else {
+		DEBUG(0,("pdb backend %s did not correctly init (error was %s)\n", selected, nt_errstr(nt_status)));
+	}
 	SAFE_FREE(module_name);
-	return NT_STATUS_INVALID_PARAMETER;
+	return nt_status;
 }
 
 /******************************************************************
