@@ -254,29 +254,29 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
 
 static void get_filename( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	DEBUG(10,("get_filename: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  if(data_len - fname_len > 1) {
-    /*
-     * NT 5.0 Beta 2 has kindly sent us a UNICODE string
-     * without bothering to set the unicode bit. How kind.
-     *
-     * Firstly - ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if(data_len - fname_len > 1) {
+		/*
+		 * NT 5.0 Beta 2 has kindly sent us a UNICODE string
+		 * without bothering to set the unicode bit. How kind.
+		 *
+		 * Firstly - ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
@@ -286,32 +286,38 @@ static void get_filename( char *fname, char *inbuf, int data_offset, int data_le
 
 static void get_filename_transact( char *fname, char *inbuf, int data_offset, int data_len, int fname_len)
 {
-  /*
-   * We need various heuristics here to detect a unicode string... JRA.
-   */
+	DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
+			data_offset, data_len, fname_len ));
 
-  DEBUG(10,("get_filename_transact: data_offset = %d, data_len = %d, fname_len = %d\n",
-           data_offset, data_len, fname_len ));
+	/*
+	 * Win2K sends a unicode filename plus one extra alingment byte.
+	 * WinNT4.x send an ascii string with multiple garbage bytes on
+	 * the end here.
+	 */
 
-  /*
-   * Win2K sends a unicode filename plus one extra alingment byte.
-   * WinNT4.x send an ascii string with multiple garbage bytes on
-   * the end here.
-   */
+	/*
+	 * We need various heuristics here to detect a unicode string... JRA.
+	 */
 
-  if((data_len == 1) || (inbuf[data_offset] == '\0')) {
-    /*
-     * Ensure that the data offset is aligned
-     * on a 2 byte boundary - add one if not.
-     */
-    fname_len = fname_len/2;
-    if(data_offset & 1)
-      data_offset++;
-    pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
-  } else {
-    StrnCpy(fname,inbuf+data_offset,fname_len);
-    fname[fname_len] = '\0';
-  }
+	if( ((fname_len % 2) == 0) &&
+		(
+			(data_len == 1) ||
+			(inbuf[data_offset] == '\0') ||
+			((fname_len > 1) && (inbuf[data_offset+1] == '\\') && (inbuf[data_offset+2] == '\0'))
+		)) {
+
+		/*
+		 * Ensure that the data offset is aligned
+		 * on a 2 byte boundary - add one if not.
+		 */
+		fname_len = fname_len/2;
+		if(data_offset & 1)
+			data_offset++;
+		pstrcpy(fname, dos_unistrn2((uint16 *)(inbuf+data_offset), fname_len));
+	} else {
+		StrnCpy(fname,inbuf+data_offset,fname_len);
+		fname[fname_len] = '\0';
+	}
 }
 
 /****************************************************************************
