@@ -85,7 +85,7 @@ LDAP (from OpenLDAP), or Sun's iPlanet, of NetWare Directory Server, etc.
 <para>
 Please refer to the section on Howto configure Samba as a Primary Domain Controller
 and for more information regarding how to create a domain machine account for a
-domain member server as well as for information regading how to enable the samba
+domain member server as well as for information regarding how to enable the samba
 domain member machine to join the domain and to be fully trusted by it.
 </para>
 

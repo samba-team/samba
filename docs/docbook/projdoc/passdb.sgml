@@ -238,8 +238,8 @@ data is stored at all.
 <sect1>
 <title>TDB</title>
 <para>Samba can also store the user data in a "TDB" (Trivial Database). Using this backend 
-doesn't require any additional configuration. This backend is recommended for new installations who 
-don't require LDAP.
+doesn't require any additional configuration. This backend is recommended for new installations that 
+don not require LDAP.
 </para>
 </sect1>
 
@@ -284,7 +284,7 @@ Two additional Samba resources which may prove to be helpful are
 </sect2>
 
 <sect2>
-<title>Introduction</title>
+<title>Encrypted Password Database</title>
 
 <para>
 Traditionally, when configuring <ulink url="smb.conf.5.html#ENCRYPTPASSWORDS">"encrypt
@@ -327,7 +327,7 @@ API, and is still so named in the CVS trees).
 </para>
 
 <para>
-There are a few points to stress about what the ldapsam
+There are a few points to stress about that the ldapsam
 does not provide.  The LDAP support referred to in the this documentation does not
 include:
 </para>

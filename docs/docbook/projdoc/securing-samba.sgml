@@ -2,6 +2,7 @@
 
 <chapterinfo>
 	&author.tridge;
+	&author.jht;
 	<pubdate>17 March 2003</pubdate>
 </chapterinfo>
 
@@ -36,8 +37,8 @@ might be:
 </para>
 
 <para><programlisting>
-  hosts allow = 127.0.0.1 192.168.2.0/24 192.168.3.0/24
-  hosts deny = 0.0.0.0/0
+	hosts allow = 127.0.0.1 192.168.2.0/24 192.168.3.0/24
+	hosts deny = 0.0.0.0/0
 </programlisting></para>
 
 <para>
@@ -66,8 +67,8 @@ You can change this behaviour using options like the following:
 </para>
 
 <para><programlisting>
-  interfaces = eth* lo
-  bind interfaces only = yes
+	interfaces = eth* lo
+	bind interfaces only = yes
 </programlisting></para>
 
 <para>
@@ -105,10 +106,10 @@ UDP ports to allow and block. Samba uses the following:
 </para>
 
 <para><programlisting>
-UDP/137    - used by nmbd
-UDP/138    - used by nmbd
-TCP/139    - used by smbd
-TCP/445    - used by smbd
+	UDP/137    - used by nmbd
+	UDP/138    - used by nmbd
+	TCP/139    - used by smbd
+	TCP/445    - used by smbd
 </programlisting></para>
 
 <para>
@@ -135,9 +136,9 @@ To do that you could use:
 </para>
 
 <para><programlisting>
-  [ipc$]
-     hosts allow = 192.168.115.0/24 127.0.0.1
-     hosts deny = 0.0.0.0/0
+	[ipc$]
+	     hosts allow = 192.168.115.0/24 127.0.0.1
+	     hosts deny = 0.0.0.0/0
 </programlisting></para>
 
 <para>
@@ -161,6 +162,32 @@ This is not recommended unless you cannot use one of the other
 methods listed above for some reason.
 </para>
 
+</sect1>
+
+<sect1>
+<title>NTLMv2 Security</title>
+
+<para>
+To configure NTLMv2 authentication the following registry keys are worth knowing about:
+</para>
+
+<para>
+<programlisting>
+	[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa]
+	"lmcompatibilitylevel"=dword:00000003
+
+	0x3 - Send NTLMv2 response only. Clients will use NTLMv2 authentication,
+	use NTLMv2 session security if the server supports it. Domain
+	controllers accept LM, NTLM and NTLMv2 authentication.
+
+	[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\MSV1_0]
+	"NtlmMinClientSec"=dword:00080000
+
+	0x80000 - NTLMv2 session security. If either NtlmMinClientSec or
+	NtlmMinServerSec is set to 0x80000, the connection will fail if NTLMv2
+	session security is not negotiated.
+</programlisting>
+</para>
 </sect1>
 
 <sect1>

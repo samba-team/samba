@@ -57,9 +57,9 @@ parameters in the [global]-section of the smb.conf have to be set:
 </para>
 
 <para><programlisting>
-workgroup = SAMBA
-domain master = yes
-domain logons = yes
+	workgroup = SAMBA
+	domain master = yes
+	domain logons = yes
 </programlisting></para>
 
 <para>
@@ -201,9 +201,9 @@ by setting
 </para>
 
 <para><programlisting>
-workgroup = samba
-domain master = no
-domain logons = yes
+	workgroup = samba
+	domain master = no
+	domain logons = yes
 </programlisting></para>
 
 <para>
