@@ -2168,7 +2168,7 @@ static int call_nt_transact_get_user_quota(connection_struct *conn, char *inbuf,
 			sid_len = IVAL(pdata,4);
 
 			if (data_count < 8+sid_len) {
-				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long(8+sid_len)));
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %lu bytes data\n",data_count,(unsigned long)(8+sid_len)));
 				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
 			}
 
