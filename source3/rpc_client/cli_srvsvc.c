@@ -43,7 +43,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETCONNENUM */
+	/* create and send a MSRPC command with api SRV_NET_CONN_ENUM */
 
 	DEBUG(4,("SRV Net Server Connection Enum(%s, %s), level %d, enum:%8x\n",
 				server_name, qual_name, switch_value, get_enum_hnd(hnd)));
@@ -67,7 +67,7 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if(!rpc_api_pipe_req(cli, SRV_NETCONNENUM, &data, &rdata)) {
+	if(!rpc_api_pipe_req(cli, SRV_NET_CONN_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -123,7 +123,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETSESSENUM */
+	/* create and send a MSRPC command with api SRV_NET_SESS_ENUM */
 
 	DEBUG(4,("SRV Net Session Enum (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -147,7 +147,7 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETSESSENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_SESS_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -200,7 +200,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETSHAREENUM */
+	/* create and send a MSRPC command with api SRV_NET_SHARE_ENUM */
 
 	DEBUG(4,("SRV Get Share Info (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -217,7 +217,7 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETSHAREENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;
@@ -271,7 +271,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
 	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
-	/* create and send a MSRPC command with api SRV_NETFILEENUM */
+	/* create and send a MSRPC command with api SRV_NET_FILE_ENUM */
 
 	DEBUG(4,("SRV Get File Info (%s), level %d, enum:%8x\n",
 				server_name, switch_value, get_enum_hnd(hnd)));
@@ -297,7 +297,7 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	}
 
 	/* send the data on \PIPE\ */
-	if (!rpc_api_pipe_req(cli, SRV_NETFILEENUM, &data, &rdata)) {
+	if (!rpc_api_pipe_req(cli, SRV_NET_FILE_ENUM, &data, &rdata)) {
 		prs_mem_free(&data);
 		prs_mem_free(&rdata);
 		return False;

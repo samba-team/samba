@@ -95,7 +95,7 @@ WERROR cli_srvsvc_net_share_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_share_enum("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NETSHAREENUM_ALL, &qbuf, &rbuf))
+	    !rpc_api_pipe_req(cli, SRV_NET_SHARE_ENUM_ALL, &qbuf, &rbuf))
 		goto done;
 
 	/* Unmarshall response */
