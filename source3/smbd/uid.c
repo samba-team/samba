@@ -253,12 +253,10 @@ BOOL become_user(int cnum, uint16 vuid)
       if (!become_gid(gid)) return(False);
 
 #ifndef NO_SETGROUPS      
-      if (!IS_IPC(cnum)) {
 	/* groups stuff added by ih/wreu */
 	if (current_user.ngroups > 0)
 	  if (setgroups(current_user.ngroups,current_user.groups)<0)
 	    DEBUG(0,("setgroups call failed!\n"));
-      }
 #endif
 
       if (!Connections[cnum].admin_user && !become_uid(uid))
