@@ -1,3 +1,13 @@
+Mon Mar 10 01:43:22 1997  Assar Westerlund  <assar@sics.se>
+
+	* reduced generated code by 1/5
+
+ 	(der_put_length_and_tag): new function
+
+	* lib/asn1/der_get.c (der_match_tag_and_length): new function
+
+	* lib/asn1/der.h: added prototypes
+
 Mon Mar 10 01:15:43 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* lib/krb5/krb5.h: Include <asn1_err.h>. Add prototype for
