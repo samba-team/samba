@@ -1563,7 +1563,22 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 	if(!prs_align(ps))
 		return False;
 
-	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+	if (UNMARSHALLING(ps) && num_entries > 0) {
+
+		if ((sam->sam = (SAM_ENTRY2 *)
+		     prs_alloc_mem(ps, sizeof(SAM_ENTRY2) *
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_ENTRY2\n"));
+			return False;
+		}
+
+		if ((sam->str = (SAM_STR2 *)
+		     prs_alloc_mem(ps, sizeof(SAM_STR2) * 
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_STR2\n"));
+			return False;
+		}
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		if(!sam_io_sam_entry2("", &sam->sam[i], ps, depth))
@@ -1648,7 +1663,22 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 	if(!prs_align(ps))
 		return False;
 
-	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+	if (UNMARSHALLING(ps) && num_entries > 0) {
+
+		if ((sam->sam = (SAM_ENTRY3 *)
+		     prs_alloc_mem(ps, sizeof(SAM_ENTRY3) *
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_ENTRY3\n"));
+			return False;
+		}
+
+		if ((sam->str = (SAM_STR3 *)
+		     prs_alloc_mem(ps, sizeof(SAM_STR3) * 
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_STR3\n"));
+			return False;
+		}
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		if(!sam_io_sam_entry3("", &sam->sam[i], ps, depth))
@@ -1732,7 +1762,22 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 	if(!prs_align(ps))
 		return False;
 
-	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+	if (UNMARSHALLING(ps) && num_entries > 0) {
+
+		if ((sam->sam = (SAM_ENTRY4 *)
+		     prs_alloc_mem(ps, sizeof(SAM_ENTRY4) *
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_ENTRY4\n"));
+			return False;
+		}
+
+		if ((sam->str = (SAM_STR4 *)
+		     prs_alloc_mem(ps, sizeof(SAM_STR4) * 
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_STR4\n"));
+			return False;
+		}
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		if(!sam_io_sam_entry4("", &sam->sam[i], ps, depth))
@@ -1814,7 +1859,22 @@ static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 * sam,
 	if(!prs_align(ps))
 		return False;
 
-	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+	if (UNMARSHALLING(ps) && num_entries > 0) {
+
+		if ((sam->sam = (SAM_ENTRY5 *)
+		     prs_alloc_mem(ps, sizeof(SAM_ENTRY5) *
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_ENTRY5\n"));
+			return False;
+		}
+
+		if ((sam->str = (SAM_STR5 *)
+		     prs_alloc_mem(ps, sizeof(SAM_STR5) * 
+				   num_entries)) == NULL) {
+			DEBUG(0, ("out of memory allocating SAM_STR5\n"));
+			return False;
+		}
+	}
 
 	for (i = 0; i < num_entries; i++) {
 		if(!sam_io_sam_entry5("", &sam->sam[i], ps, depth))
