@@ -517,6 +517,7 @@ smb_ucs2_t *multibyte_to_unicode(smb_ucs2_t *dst, const char *src,
 char *unicode_to_unix(char *dst, const smb_ucs2_t *src, size_t dst_len);
 smb_ucs2_t *unix_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
 char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len);
+size_t unicode_to_dos_char(char *dst, const smb_ucs2_t src);
 smb_ucs2_t *dos_to_unicode(smb_ucs2_t *dst, const char *src, size_t dst_len);
 size_t strlen_w(const smb_ucs2_t *src);
 smb_ucs2_t *safe_strcpy_w(smb_ucs2_t *dest,const smb_ucs2_t *src, size_t maxlength);

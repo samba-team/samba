@@ -780,6 +780,28 @@ char *unicode_to_dos(char *dst, const smb_ucs2_t *src, size_t dst_len)
 }
 
 /*******************************************************************
+ Convert a single UNICODE character to DOS codepage. Returns the
+ number of bytes in the DOS codepage character.
+********************************************************************/ 
+
+size_t unicode_to_dos_char(char *dst, const smb_ucs2_t src)
+{
+	smb_ucs2_t val = ucs2_to_doscp[src];
+	if(val < 256) {
+		*dst = (char)val;
+		return (size_t)1;
+	}
+	/*
+	 * A 2 byte value is always written as
+	 * high/low into the buffer stream.
+	 */
+
+	dst[0] = (char)((val >> 8) & 0xff);
+	dst[1] = (char)(val & 0xff);
+	return (size_t)2;
+}
+
+/*******************************************************************
  Convert a DOS string to UNICODE format. Note that the 'dst' is in
  native byte order, not little endian. Always zero terminates.
  This function may be replaced if the DOS codepage format is a

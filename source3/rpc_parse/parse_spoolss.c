@@ -3718,12 +3718,12 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
  convert a buffer of UNICODE strings null terminated
  the buffer is terminated by a NULL
  
- convert to an ascii array (null terminated)
+ convert to an dos codepage array (null terminated)
  
  dynamically allocate memory
  
 ********************************************************************/  
-BOOL uniarray_2_ascarray(BUFFER5 *buf5, char ***ar)
+static BOOL uniarray_2_dosarray(BUFFER5 *buf5, char ***ar)
 {
 	char **array;
 	char *string;
@@ -3750,7 +3750,7 @@ BOOL uniarray_2_ascarray(BUFFER5 *buf5, char ***ar)
 
 	while (dest < destend)
 	{
-		*(dest++) = (char)*(src++);
+		dest += unicode_to_dos_char(dest, (smb_ucs2_t)*(src++));
 	}
 		
 	/* that ugly for the first one but that's working */
@@ -3912,7 +3912,7 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 	DEBUGADD(8,( "monitorname:     %s\n", d->monitorname));
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
-	uniarray_2_ascarray(&(uni->dependentfiles), &(d->dependentfiles) );
+	uniarray_2_dosarray(&(uni->dependentfiles), &(d->dependentfiles) );
 
 	return True;
 }
