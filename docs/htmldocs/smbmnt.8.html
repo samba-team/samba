@@ -1,179 +1,24 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML
-><HEAD
-><TITLE
->smbmnt</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
-><BODY
-CLASS="REFENTRY"
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><H1
-><A
-NAME="SMBMNT"
-></A
->smbmnt</H1
-><DIV
-CLASS="REFNAMEDIV"
-><A
-NAME="AEN5"
-></A
-><H2
->Name</H2
->smbmnt&nbsp;--&nbsp;helper utility for mounting SMB filesystems</DIV
-><DIV
-CLASS="REFSYNOPSISDIV"
-><A
-NAME="AEN8"
-></A
-><H2
->Synopsis</H2
-><P
-><B
-CLASS="COMMAND"
->smbmnt</B
->  {mount-point} [-s &lt;share&gt;] [-r] [-u &lt;uid&gt;] [-g &lt;gid&gt;] [-f &lt;mask&gt;] [-d &lt;mask&gt;] [-o &lt;options&gt;]</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN19"
-></A
-><H2
->DESCRIPTION</H2
-><P
-><B
-CLASS="COMMAND"
->smbmnt</B
-> is a helper application used 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbmnt</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbmnt.8"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbmnt &#8212; helper utility for mounting SMB filesystems</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbmnt</tt>  {mount-point} [-s &lt;share&gt;] [-r] [-u &lt;uid&gt;] [-g &lt;gid&gt;] [-f &lt;mask&gt;] [-d &lt;mask&gt;] [-o &lt;options&gt;] [-h]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p><b class="command">smbmnt</b> is a helper application used 
 	by the smbmount program to do the actual mounting of SMB shares. 
-	<B
-CLASS="COMMAND"
->smbmnt</B
-> can be installed setuid root if you want
-	normal users to be able to mount their SMB shares.</P
-><P
->A setuid smbmnt will only allow mounts on directories owned
-	by the user, and that the user has write permission on.</P
-><P
->The <B
-CLASS="COMMAND"
->smbmnt</B
-> program is normally invoked 
-	by <A
-HREF="smbmount.8.html"
-TARGET="_top"
-><B
-CLASS="COMMAND"
->smbmount(8)</B
->
-	</A
->. It should not be invoked directly by users. </P
-><P
->smbmount searches the normal PATH for smbmnt. You must ensure
-	that the smbmnt version in your path matches the smbmount used.</P
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN30"
-></A
-><H2
->OPTIONS</H2
-><P
-></P
-><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
->-r</DT
-><DD
-><P
->mount the filesystem read-only 
-		</P
-></DD
-><DT
->-u uid</DT
-><DD
-><P
->specify the uid that the files will 
-		be owned by </P
-></DD
-><DT
->-g gid</DT
-><DD
-><P
->specify the gid that the files will be 
-		owned by </P
-></DD
-><DT
->-f mask</DT
-><DD
-><P
->specify the octal file mask applied
-		</P
-></DD
-><DT
->-d mask</DT
-><DD
-><P
->specify the octal directory mask 
-		applied  </P
-></DD
-><DT
->-o options</DT
-><DD
-><P
->		list of options that are passed as-is to smbfs, if this
+	<b class="command">smbmnt</b> can be installed setuid root if you want
+	normal users to be able to mount their SMB shares.</p><p>A setuid smbmnt will only allow mounts on directories owned
+	by the user, and that the user has write permission on.</p><p>The <b class="command">smbmnt</b> program is normally invoked 
+	by <a href="smbmount.8.html"><span class="citerefentry"><span class="refentrytitle">smbmount</span>(8)</span></a>. It should not be invoked directly by users. </p><p>smbmount searches the normal PATH for smbmnt. You must ensure
+	that the smbmnt version in your path matches the smbmount used.</p></div><div class="refsect1" lang="en"><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-r</span></dt><dd><p>mount the filesystem read-only 
+		</p></dd><dt><span class="term">-u uid</span></dt><dd><p>specify the uid that the files will 
+		be owned by </p></dd><dt><span class="term">-g gid</span></dt><dd><p>specify the gid that the files will be 
+		owned by </p></dd><dt><span class="term">-f mask</span></dt><dd><p>specify the octal file mask applied
+		</p></dd><dt><span class="term">-d mask</span></dt><dd><p>specify the octal directory mask 
+		applied  </p></dd><dt><span class="term">-o options</span></dt><dd><p>
+		list of options that are passed as-is to smbfs, if this
 		command is run on a 2.4 or higher Linux kernel.
-		</P
-></DD
-></DL
-></DIV
-></DIV
-><DIV
-CLASS="REFSECT1"
-><A
-NAME="AEN57"
-></A
-><H2
->AUTHOR</H2
-><P
->Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
-	and others.</P
-><P
->The current maintainer of smbfs and the userspace
-	tools <B
-CLASS="COMMAND"
->smbmount</B
->, <B
-CLASS="COMMAND"
->smbumount</B
->,
-	and <B
-CLASS="COMMAND"
->smbmnt</B
-> is <A
-HREF="mailto:urban@teststation.com"
-TARGET="_top"
->Urban Widmark</A
->.
-	The <A
-HREF="mailto:samba@samba.org"
-TARGET="_top"
->SAMBA Mailing list</A
->
+		</p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
+</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>AUTHOR</h2><p>Volker Lendecke, Andrew Tridgell, Michael H. Warfield 
+	and others.</p><p>The current maintainer of smbfs and the userspace
+	tools <b class="command">smbmount</b>, <b class="command">smbumount</b>,
+	and <b class="command">smbmnt</b> is <a href="mailto:urban@teststation.com" target="_top">Urban Widmark</a>.
+	The <a href="mailto:samba@samba.org" target="_top">SAMBA Mailing list</a>
 	is the preferred place to ask questions regarding these programs.
-	</P
-><P
->The conversion of this manpage for Samba 2.2 was performed 
-	by Gerald Carter</P
-></DIV
-></BODY
-></HTML
->
+	</p><p>The conversion of this manpage for Samba 2.2 was performed 
+	by Gerald Carter. The conversion to DocBook XML 4.2 for Samba 3.0
+	was done by Alexander Bokovoy.</p></div></div></body></html>

@@ -3850,7 +3850,7 @@ An alternative command could be this:
         flags:[0x800000]
         name:[\\transmeta\ir85wm]
         description:[\\transmeta\ir85wm,ir85wm,DPD]
-        comment:[CUPS PostScript-Treiber f&uuml;r WinNT/2K/XP]
+        comment:[CUPS PostScript-Treiber for WinNT/2K/XP]
 
 </screen></para>
 
@@ -4496,7 +4496,7 @@ data should look like and which printer commands to embed into the
 data stream.
 </para>
 
-<highlights><para>
+<para>
 You need:
 </para>
 
@@ -4524,7 +4524,6 @@ the selected "driver" for your model (as shown by "gs
 produced for cupsomatic don't work with
 foomatic-rip).</para></listitem>
 </itemizedlist>
-</highlights>
 </sect2>
 </sect1>
 

@@ -224,7 +224,7 @@ $(MANDIR)/%: $(MANPROJDOC)/%.xml
 
 clean: 
 	@rm -f $(MANPAGES) $(MANPAGES_HTML) $(HTMLDIR)/*.html $(HTMLDIR)/*.css $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
-	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml
+	@rm -f $(MANPROJDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
 	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml
 	@rm -f $(IMAGEPROJDIR)/*.eps
 
