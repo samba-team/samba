@@ -258,7 +258,7 @@ static BOOL api_srv_net_share_set_info(pipes_struct *p)
 }
 
 /*******************************************************************
- RPC to add share information. Use the SET wire format.
+ RPC to add share information.
 ********************************************************************/
 
 static BOOL api_srv_net_share_add(pipes_struct *p)
@@ -281,6 +281,36 @@ static BOOL api_srv_net_share_add(pipes_struct *p)
 
 	if(!srv_io_r_net_share_add("", &r_u, rdata, 0)) {
 		DEBUG(0,("api_srv_net_share_add: Failed to marshall SRV_R_NET_SHARE_ADD.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ RPC to delete share information.
+********************************************************************/
+
+static BOOL api_srv_net_share_del(pipes_struct *p)
+{
+	SRV_Q_NET_SHARE_DEL q_u;
+	SRV_R_NET_SHARE_DEL r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* Unmarshall the net server del info. */
+	if(!srv_io_q_net_share_del("", &q_u, data, 0)) {
+		DEBUG(0,("api_srv_net_share_del: Failed to unmarshall SRV_Q_NET_SHARE_DEL.\n"));
+		return False;
+	}
+
+	r_u.status = _srv_net_share_del(p, &q_u, &r_u);
+
+	if(!srv_io_r_net_share_del("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_srv_net_share_del: Failed to marshall SRV_R_NET_SHARE_DEL.\n"));
 		return False;
 	}
 
@@ -325,6 +355,7 @@ struct api_struct api_srv_cmds[] =
 	{ "SRV_NETSHAREENUM_ALL"  , SRV_NETSHAREENUM_ALL  , api_srv_net_share_enum_all   },
 	{ "SRV_NETSHAREENUM"      , SRV_NETSHAREENUM      , api_srv_net_share_enum   },
 	{ "SRV_NET_SHARE_ADD"     , SRV_NET_SHARE_ADD     , api_srv_net_share_add },
+	{ "SRV_NET_SHARE_DEL"     , SRV_NET_SHARE_DEL     , api_srv_net_share_del },
 	{ "SRV_NET_SHARE_GET_INFO", SRV_NET_SHARE_GET_INFO, api_srv_net_share_get_info },
 	{ "SRV_NET_SHARE_SET_INFO", SRV_NET_SHARE_SET_INFO, api_srv_net_share_set_info },
 	{ "SRV_NETFILEENUM"       , SRV_NETFILEENUM       , api_srv_net_file_enum    },
