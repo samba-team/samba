@@ -392,7 +392,7 @@ BOOL cli_credentials_is_anonymous(struct cli_credentials *credentials)
 {
 	const char *username = cli_credentials_get_username(credentials);
 
-	if (!username[0]) 
+	if (!username || !username[0]) 
 		return True;
 
 	return False;

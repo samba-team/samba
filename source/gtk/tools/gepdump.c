@@ -40,6 +40,7 @@ static GtkTreeStore *store_eps;
 static GtkWidget *table_statistics;
 static GtkWidget *lbl_calls_in, *lbl_calls_out, *lbl_pkts_in, *lbl_pkts_out;
 static GtkWidget *lbl_iface_version, *lbl_iface_uuid, *lbl_iface_name;
+static GtkListStore *store_princ_names;
 TALLOC_CTX *eps_ctx = NULL;
 TALLOC_CTX *conn_ctx = NULL;
 
@@ -174,6 +175,7 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	gint result;
+	struct cli_credentials *credentials;
 
 	d = GTK_RPC_BINDING_DIALOG(gtk_rpc_binding_dialog_new(TRUE, NULL));
 	result = gtk_dialog_run(GTK_DIALOG(d));
@@ -188,9 +190,13 @@ static void on_connect_clicked(GtkButton *btn, gpointer         user_data)
 	mem_ctx = talloc_init("connect");
 	bs = gtk_rpc_binding_dialog_get_binding_string (d, mem_ctx);
 
+	credentials = cli_credentials_init(mem_ctx);
+	cli_credentials_guess(credentials);
+	cli_credentials_set_gtk_callbacks(credentials);
+
 	status = dcerpc_pipe_connect(talloc_autofree_context(), &epmapper_pipe, bs, 
 				     DCERPC_EPMAPPER_UUID, DCERPC_EPMAPPER_VERSION, 
-				     cmdline_credentials);
+				     credentials);
 
 	if (NT_STATUS_IS_ERR(status)) {
 		gtk_show_ntstatus(mainwin, "Error connecting to endpoint mapper", status);
@@ -250,6 +256,8 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 		struct mgmt_inq_princ_name r;
 		int i;
 
+		gtk_list_store_clear(store_princ_names);
+
 		for (i=0;i<100;i++) {
 			r.in.authn_proto = i;  /* DCERPC_AUTH_TYPE_* */
 			r.in.princ_name_size = 100;
@@ -259,14 +267,20 @@ static gboolean on_eps_select(GtkTreeSelection *selection,
 				continue;
 			}
 			if (W_ERROR_IS_OK(r.out.result)) {
+				GtkTreeIter iter;
 				const char *name = gensec_get_name_by_authtype(i);
+				char *protocol;
 				if (name) {
-					printf("\tprinciple name for proto %u (%s) is '%s'\n",
-						   i, name, r.out.princ_name);
+					protocol = talloc_asprintf(mem_ctx, "%u (%s)", i, name);
 				} else {
-					printf("\tprinciple name for proto %u is '%s'\n",
-						   i, r.out.princ_name);
+					protocol = talloc_asprintf(mem_ctx, "%u", i);
 				}
+				gtk_list_store_append(store_princ_names, &iter);
+				gtk_list_store_set(store_princ_names, &iter, 
+								   0, protocol,
+								   1, r.out.princ_name,
+								   -1);
+
 			}
 		}
 	}
@@ -287,6 +301,7 @@ static GtkWidget* create_mainwindow (void)
 	GtkWidget *menuitem4_menu;
 	GtkWidget *mnu_connect;
 	GtkWidget *mnu_refresh;
+	GtkWidget *treeview_princ_names;
 	GtkWidget *about1;
 	GtkWidget *hbox2;
 	GtkWidget *scrolledwindow1;
@@ -397,6 +412,28 @@ static GtkWidget* create_mainwindow (void)
 	
 	frame1 = gtk_frame_new("Authentication");
 	gtk_container_add (GTK_CONTAINER(vbox2), frame1);
+
+	treeview_princ_names = gtk_tree_view_new();
+
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Protocol");
+    renderer = gtk_cell_renderer_text_new();
+    gtk_tree_view_column_pack_start(curcol, renderer, True);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview_princ_names), curcol);
+    gtk_tree_view_column_add_attribute(curcol, renderer, "text", 0);
+
+	curcol = gtk_tree_view_column_new ();
+	gtk_tree_view_column_set_title(curcol, "Principal Name");
+    renderer = gtk_cell_renderer_text_new();
+    gtk_tree_view_column_pack_start(curcol, renderer, True);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview_princ_names), curcol);
+    gtk_tree_view_column_add_attribute(curcol, renderer, "text", 1);
+
+	gtk_container_add (GTK_CONTAINER(frame1), treeview_princ_names);
+
+    store_princ_names = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(treeview_princ_names), GTK_TREE_MODEL(store_princ_names));
+    g_object_unref(store_princ_names);
 
 	statusbar = gtk_statusbar_new ();
 	gtk_box_pack_start (GTK_BOX (vbox1), statusbar, FALSE, FALSE, 0);
