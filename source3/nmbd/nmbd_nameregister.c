@@ -253,8 +253,7 @@ responding.\n", inet_ntoa(rrec->packet->ip)));
 
 static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
                                       register_name_success_function success_fn,
-                                      register_name_fail_function fail_fn,
-                                      struct userdata_struct *userdata)
+                                      register_name_fail_function fail_fn)
 {
   /*
      If we are adding a group name, we just send multiple
@@ -276,55 +275,53 @@ static BOOL multihomed_register_name( struct nmb_name *nmbname, uint16 nb_flags,
      will ever query names from us on this subnet).
    */
 
-  int num_ips=0;
-  int i;
-  struct in_addr *ip_list = NULL;
-  struct subnet_record *subrec;
+	int num_ips=0;
+	int i;
+	struct in_addr *ip_list = NULL;
+	struct subnet_record *subrec;
+	
+	for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
+		num_ips++;
+	
+	if((ip_list = (struct in_addr *)malloc(num_ips * sizeof(struct in_addr)))==NULL) {
+		DEBUG(0,("multihomed_register_name: malloc fail !\n"));
+		return True;
+	}
 
-  for(subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec) )
-    num_ips++;
+	for( subrec = FIRST_SUBNET, i = 0; 
+	     subrec;
+	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec), i++ ) {
+		ip_list[i] = subrec->myip;
+	}
 
-  if((ip_list = (struct in_addr *)malloc(num_ips * sizeof(struct in_addr)))==NULL)
-  {
-    DEBUG(0,("multihomed_register_name: malloc fail !\n"));
-    return True;
-  }
+	(void)add_name_to_subnet( unicast_subnet, nmbname->name, nmbname->name_type,
+				  nb_flags, lp_max_ttl(), SELF_NAME,
+				  num_ips, ip_list);
 
-  for( subrec = FIRST_SUBNET, i = 0; 
-       subrec;
-       subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec), i++ )
-    ip_list[i] = subrec->myip;
-
-  (void)add_name_to_subnet( unicast_subnet, nmbname->name, nmbname->name_type,
-                            nb_flags, lp_max_ttl(), SELF_NAME,
-                            num_ips, ip_list);
-
-  /* Now try and register the name, num_ips times. On the last time use
-     the given success and fail functions. */
-
-  for( i = 0; i < num_ips; i++)
-  {
-    if(queue_register_multihomed_name( unicast_subnet,
-        register_name_response,
-        register_name_timeout_response,
-        (i == num_ips - 1) ? success_fn : NULL,
-        (i == num_ips - 1) ? fail_fn : NULL,
-        (i == num_ips - 1) ? userdata : NULL,
-        nmbname,
-        nb_flags,
-        ip_list[i]) == NULL)
-    {
-      DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
+	/* Now try and register the name, num_ips times. On the last time use
+	   the given success and fail functions. */
+	
+	for (i = 0; i < num_ips; i++) {
+		if (queue_register_multihomed_name( unicast_subnet,
+						    register_name_response,
+						    register_name_timeout_response,
+						    (i == num_ips - 1) ? success_fn : NULL,
+						    (i == num_ips - 1) ? fail_fn : NULL,
+						    NULL,
+						    nmbname,
+						    nb_flags,
+						    ip_list[i]) == NULL) {
+			DEBUG(0,("multihomed_register_name: Failed to send packet trying to \
 register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
-
-      SAFE_FREE(ip_list);
-      return True;
-    }
-  }
-
-  SAFE_FREE(ip_list);
-
-  return False;
+			
+			SAFE_FREE(ip_list);
+			return True;
+		}
+	}
+	
+	SAFE_FREE(ip_list);
+	
+	return False;
 }
 
 /****************************************************************************
@@ -350,10 +347,10 @@ BOOL register_name(struct subnet_record *subrec,
   /* If this is the unicast subnet, and we are a multi-homed
      host, then register a multi-homed name. */
 
-  if( (subrec == unicast_subnet) && we_are_multihomed())
-    return multihomed_register_name(&nmbname, nb_flags,
-                                    success_fn, fail_fn,
-                                    userdata);
+  if( (subrec == unicast_subnet) && we_are_multihomed()) {
+	  return multihomed_register_name(&nmbname, nb_flags,
+					  success_fn, fail_fn);
+  }
 
   if(queue_register_name( subrec,
         register_name_response,
