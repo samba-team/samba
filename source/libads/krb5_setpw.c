@@ -667,7 +667,7 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 {
     int ret;
 
-    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {
+    if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL, NULL))) {
 	DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
 	return ADS_ERROR_KRB5(ret);
     }
