@@ -611,31 +611,24 @@ static int expand_file(TDB_CONTEXT *tdb, tdb_off size, tdb_off addition)
 #else
 	char b = 0;
 
-#ifdef HAVE_PWRITE
-	if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {
-#else
 	if (lseek(tdb->fd, (size+addition) - 1, SEEK_SET) != (size+addition) - 1 || 
 	    write(tdb->fd, &b, 1) != 1) {
-#endif
 		TDB_LOG((tdb, 0, "expand_file to %d failed (%s)\n", 
 			   size+addition, strerror(errno)));
 		return -1;
 	}
 #endif
 
-	/* now fill the file with something. This ensures that the file isn't sparse, which would be
-	   very bad if we ran out of disk. This must be done with write, not via mmap */
+	/* now fill the file with something. This ensures that the
+	   file isn't sparse, which would be very bad if we ran out of
+	   disk. This must be done with write, not via mmap */
 	memset(buf, 0x42, sizeof(buf));
 	while (addition) {
 		int n = addition>sizeof(buf)?sizeof(buf):addition;
-#ifdef HAVE_PWRITE
-		int ret = pwrite(tdb->fd, buf, n, size);
-#else
 		int ret;
 		if (lseek(tdb->fd, size, SEEK_SET) != size)
 			return -1;
 		ret = write(tdb->fd, buf, n);
-#endif
 		if (ret != n) {
 			TDB_LOG((tdb, 0, "expand_file write of %d failed (%s)\n", 
 				   n, strerror(errno)));
@@ -1369,6 +1362,7 @@ TDB_CONTEXT *tdb_open(char *name, int hash_size, int tdb_flags,
 	tdb.map_ptr = NULL;
 	tdb.lockedkeys = NULL;
 	tdb.flags = tdb_flags;
+	tdb.open_flags = open_flags;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY)
 		goto fail;
@@ -1604,4 +1598,48 @@ void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key)
 void tdb_logging_function(TDB_CONTEXT *tdb, void (*fn)(TDB_CONTEXT *, int , const char *, ...))
 {
 	tdb->log_fn = fn;
+}
+
+
+/* reopen a tdb - this is used after a fork to ensure that we have an independent
+   seek pointer from our parent and to re-establish locks */
+int tdb_reopen(TDB_CONTEXT *tdb)
+{
+	struct stat st;
+
+	tdb_munmap(tdb);
+	close(tdb->fd);
+	tdb->fd = open(tdb->name, tdb->open_flags & ~(O_CREAT|O_TRUNC), 0);
+	if (tdb->fd == -1) {
+		TDB_LOG((tdb, 0, "tdb_reopen: open failed (%s)\n", strerror(errno)));
+		goto fail;
+	}
+	fstat(tdb->fd, &st);
+	if (st.st_ino != tdb->inode || st.st_dev != tdb->device) {
+		TDB_LOG((tdb, 0, "tdb_reopen: file dev/inode has changed!\n"));
+		goto fail;
+	}
+	tdb_mmap(tdb);
+	if (tdb_brlock(tdb, ACTIVE_LOCK, F_RDLCK, F_SETLKW, 0) == -1) {
+		TDB_LOG((tdb, 0, "tdb_reopen: failed to obtain active lock\n"));
+		goto fail;
+	}
+
+	return 0;
+
+fail:
+	tdb_close(tdb);
+	return -1;
+}
+
+/* reopen all tdb's */
+int tdb_reopen_all(void)
+{
+	TDB_CONTEXT *tdb;
+
+	for (tdb=tdbs; tdb; tdb = tdb->next) {
+		if (tdb_reopen(tdb) != 0) return -1;
+	}
+
+	return 0;
 }
