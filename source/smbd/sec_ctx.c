@@ -313,9 +313,9 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, NT_USER_TOKEN
 	if (ngroups) {
 		int i;
 
-		DEBUG(3, ("%d user groups: "));
+		DEBUG(3, ("%d user groups: \n", ngroups));
 		for (i = 0; i < ngroups; i++) {
-			DEBUGADD(3, ("%d "));
+			DEBUGADD(3, ("%d ", groups[i]));
 		}
 
 		DEBUG(3, ("\n"));
