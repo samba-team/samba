@@ -3068,14 +3068,25 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	 * as this is what Samba insists upon.
 	 */
 
-	if (!(info->attributes & PRINTER_ATTRIBUTE_SHARED))
+	if (!(info->attributes & PRINTER_ATTRIBUTE_SHARED)) {
+		DEBUG(10,("check_printer_ok: SHARED check failed (%x).\n", (unsigned int)info->attributes ));
 		return False;
+	}
 
-	if (!(info->attributes & PRINTER_ATTRIBUTE_RAW_ONLY))
-		return False;
+	if (!(info->attributes & PRINTER_ATTRIBUTE_RAW_ONLY)) {
+		/* NT forgets to set the raw attribute but sends the correct type. */
+		if (strequal(info->datatype, "RAW"))
+			info->attributes |= PRINTER_ATTRIBUTE_RAW_ONLY;
+		else {
+			DEBUG(10,("check_printer_ok: RAW check failed (%x).\n", (unsigned int)info->attributes ));
+			return False;
+		}
+	}
 
-	if (!strequal(info->sharename, lp_servicename(snum)))
+	if (!strequal(info->sharename, lp_servicename(snum))) {
+		DEBUG(10,("check_printer_ok: NAME check failed (%s) (%s).\n", info->sharename, lp_servicename(snum)));
 		return False;
+	}
 
 	return True;
 }
@@ -4010,6 +4021,7 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring name;
 	fstring share_name;
+	int snum;
 
 	if ((printer = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL))) == NULL) {
 		DEBUG(0,("spoolss_addprinterex_level_2: malloc fail.\n"));
@@ -4021,9 +4033,23 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
 	convert_printer_info(info, printer, 2);
 
-	unistr2_to_ascii(share_name, &info->info_2->printername, sizeof(share_name)-1);
+	unistr2_to_ascii(share_name, &info->info_2->sharename, sizeof(share_name)-1);
 	
 	slprintf(name, sizeof(name)-1, "\\\\%s\\%s", global_myname, share_name);
+
+	if ((snum = print_queue_snum(share_name)) == -1) {
+		free_a_printer(&printer,2);
+		return ERROR_ACCESS_DENIED;
+	}
+	
+	/*
+	 * Do sanity check on the requested changes for Samba.
+	 */
+
+	if (!check_printer_ok(printer->info_2, snum)) {
+		free_a_printer(&printer,2);
+		return ERROR_ACCESS_DENIED;
+	}
 
 	/* write the ASCII on disk */
 	if (add_a_printer(*printer, 2) != 0) {
@@ -4032,6 +4058,8 @@ static uint32 spoolss_addprinterex_level_2( const UNISTR2 *uni_srv_name,
 	}
 
 	if (!open_printer_hnd(handle, name)) {
+		/* Handle open failed - remove addition. */
+		del_a_printer(share_name);
 		free_a_printer(&printer,2);
 		return ERROR_ACCESS_DENIED;
 	}
