@@ -1,5 +1,6 @@
 Changes in release 0.1n:
 
+ * implmenet a keytab backend for AFS KeyFile's
  * implement a keytab backend for v4 srvtabs
  * implement `ktutil copy'
  * support password quality control in v4 kadmind
