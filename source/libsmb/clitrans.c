@@ -412,20 +412,25 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 	total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
 
 	/* allocate it */
-	tdata = Realloc(*data,total_data);
-	if (!tdata) {
-		DEBUG(0,("cli_receive_nt_trans: failed to enlarge buffer"));
-		return False;
+	if (total_data) {
+		tdata = Realloc(*data,total_data);
+		if (!tdata) {
+			DEBUG(0,("cli_receive_nt_trans: failed to enlarge data buffer to %d\n",total_data));
+			return False;
+		} else {
+			*data = tdata;
+		}
 	}
-	else
-		*data = tdata;
-	tparam = Realloc(*param,total_param);
-	if (!tparam) {
-		DEBUG(0,("cli_receive_nt_trans: failed to enlarge buffer"));
-		return False;
+
+	if (total_param) {
+		tparam = Realloc(*param,total_param);
+		if (!tparam) {
+			DEBUG(0,("cli_receive_nt_trans: failed to enlarge param buffer to %d\n", total_param));
+			return False;
+		} else {
+			*param = tparam;
+		}
 	}
-	else
-		*param = tparam;
 
 	while (1)  {
 		this_data = SVAL(cli->inbuf,smb_ntr_DataCount);

@@ -75,7 +75,6 @@ char *cli_errstr(struct cli_state *cli)
         int i;
 
         /* Case #1: 32-bit NT errors */
-
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
                 uint32 status = IVAL(cli->inbuf,smb_rcls);
 
@@ -90,7 +89,6 @@ char *cli_errstr(struct cli_state *cli)
                 return cli_smb_errstr(cli);
 
         /* Case #3: RAP error */
-
 	for (i = 0; rap_errmap[i].message != NULL; i++) {
 		if (rap_errmap[i].err == cli->rap_error) {
 			return rap_errmap[i].message;
@@ -103,69 +101,45 @@ char *cli_errstr(struct cli_state *cli)
 	return error_message;
 }
 
-/* Return the 32-bit NT status code from the last packet */
 
+/* Return the 32-bit NT status code from the last packet */
 uint32 cli_nt_error(struct cli_state *cli)
 {
         int flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	if (!(flgs2 & FLAGS2_32_BIT_ERROR_CODES)) {
-
-                /* Eek!  We've requested a NT error when the packet that
-                   came back does not contain one.  What do we return 
-                   here? */
-
-                DEBUG(1, ("ERROR: cli_nt_error() called to read a status code "
-                          "from a packet that does not contain one!\n"));
-
-                return NT_STATUS_UNSUCCESSFUL;
+		int class  = CVAL(cli->inbuf,smb_rcls);
+		int code  = SVAL(cli->inbuf,smb_err);
+		return dos_to_ntstatus(class, code);
         }
 
         return IVAL(cli->inbuf,smb_rcls);
 }
 
+
 /* Return the DOS error from the last packet - an error class and an error
    code. */
-
-void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
+void cli_dos_error(struct cli_state *cli, uint8 *eclass, uint32 *ecode)
 {
 	int  flgs2;
 	char rcls;
 	int code;
 
-	if (eclass) 
-                *eclass = 0;
-
-	if (num) 
-                *num = 0;
-
-	if(!cli->initialised)
-		return;
-
-	if(!cli->inbuf)
-		return;
+	if(!cli->initialised) return;
 
 	flgs2 = SVAL(cli->inbuf,smb_flg2);
 
 	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-                /* Eek!  We've requested a DOS error when the packet that
-                   came back does not contain one.  What do we return 
-                   here? */
-
-                DEBUG(1, ("ERROR: cli_dos_error() called to read a dos error "
-                          "code from a packet that does not contain one!\n"));
-
+		uint32 ntstatus = IVAL(cli->inbuf, smb_rcls);
+		ntstatus_to_dos(ntstatus, eclass, ecode);
                 return;
         }
 
 	rcls  = CVAL(cli->inbuf,smb_rcls);
 	code  = SVAL(cli->inbuf,smb_err);
 
-	if (rcls == 0) 
-                return;
-
 	if (eclass) *eclass = rcls;
-	if (num   ) *num    = code;
+	if (ecode) *ecode    = code;
 }
 
 /* Return a UNIX errno from a dos error class, error number tuple */
@@ -256,9 +230,7 @@ BOOL cli_is_error(struct cli_state *cli)
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), rcls = 0;
 
         if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
-
                 /* Return error is error bits are set */
-
                 rcls = IVAL(cli->inbuf, smb_rcls);
                 return (rcls & 0xF0000000) == 0xC0000000;
         }
@@ -286,3 +258,4 @@ BOOL cli_is_dos_error(struct cli_state *cli)
 
         return cli_is_error(cli) && !(flgs2 & FLAGS2_32_BIT_ERROR_CODES);
 }
+

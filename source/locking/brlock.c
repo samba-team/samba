@@ -30,6 +30,8 @@
 
 extern int DEBUGLEVEL;
 
+#define ZERO_ZERO 0
+
 /* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
    this client */
@@ -115,6 +117,32 @@ static BOOL brl_conflict(struct lock_struct *lck1,
 	    
 	return True;
 } 
+
+#if ZERO_ZERO
+static BOOL brl_conflict1(struct lock_struct *lck1, 
+			 struct lock_struct *lck2)
+{
+	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
+		return False;
+	}
+
+	if (brl_same_context(&lck1->context, &lck2->context) &&
+	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) {
+		return False;
+	}
+
+	if (lck2->start == 0 && lck2->size == 0 && lck1->size != 0) {
+		return True;
+	}
+
+	if (lck1->start >= (lck2->start + lck2->size) ||
+	    lck2->start >= (lck1->start + lck1->size)) {
+		return False;
+	}
+	    
+	return True;
+} 
+#endif
 
 /****************************************************************************
  Check to see if this lock conflicts, but ignore our own locks on the
@@ -231,6 +259,21 @@ void brl_shutdown(int read_only)
 	tdb_close(tdb);
 }
 
+#if ZERO_ZERO
+/****************************************************************************
+compare two locks for sorting
+****************************************************************************/
+static int lock_compare(struct lock_struct *lck1, 
+			 struct lock_struct *lck2)
+{
+	if (lck1->start != lck2->start) return (lck1->start - lck2->start);
+	if (lck2->size != lck1->size) {
+		return ((int)lck1->size - (int)lck2->size);
+	}
+	return 0;
+}
+#endif
+
 /****************************************************************************
  Lock a range of bytes.
 ****************************************************************************/
@@ -249,10 +292,10 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 	dbuf.dptr = NULL;
 
-#if 0
+#if !ZERO_ZERO
 	if (start == 0 && size == 0) {
-		tdb_delete(tdb, kbuf);
-		return True;
+		DEBUG(0,("client sent 0/0 lock - please report this\n"));
+		return False;
 	}
 #endif
 
@@ -275,16 +318,14 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 			if (brl_conflict(&locks[i], &lock)) {
 				goto fail;
 			}
+#if ZERO_ZERO
+			if (lock.start == 0 && lock.size == 0 && 
+			    locks[i].size == 0) {
+				break;
+			}
+#endif
 		}
 	}
-
-#if 0
-	if (start == 0 && size == 0) {
-		if (dbuf.dptr) free(dbuf.dptr);
-		tdb_chainunlock(tdb, kbuf);		
-		return True;
-	}
-#endif
 
 	/* no conflicts - add it to the list of locks */
 	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
@@ -292,6 +333,12 @@ BOOL brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	else dbuf.dptr = tp;
 	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
 	dbuf.dsize += sizeof(lock);
+
+#if ZERO_ZERO
+	/* sort the lock list */
+	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), lock_compare);
+#endif
+
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
 	free(dbuf.dptr);
@@ -337,6 +384,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);
 
+#if ZERO_ZERO
 	for (i=0; i<count; i++) {
 		struct lock_struct *lock = &locks[i];
 
@@ -362,6 +410,7 @@ BOOL brl_unlock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 			return True;
 		}
 	}
+#endif
 
 	locks = (struct lock_struct *)dbuf.dptr;
 	count = dbuf.dsize / sizeof(*locks);

@@ -99,14 +99,13 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
  Utility function called by locking requests.
 ****************************************************************************/
 
-BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-             SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type,
-             int *eclass,uint32 *ecode)
+NTSTATUS do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		 SMB_BIG_UINT count,SMB_BIG_UINT offset,enum brl_type lock_type)
 {
 	BOOL ok = False;
 
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_NOPROBLEMO;
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
@@ -142,31 +141,25 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
 		}
 	}
 
-	if (!ok) {
-		*eclass = ERRDOS;
-		*ecode = ERRlock;
-		return False;
-	}
-	return True; /* Got lock */
+	if (!ok) return NT_STATUS_FILE_LOCK_CONFLICT;
+
+	return NT_STATUS_NOPROBLEMO; /* Got lock */
 }
 
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
-               SMB_BIG_UINT count,SMB_BIG_UINT offset, 
-	       int *eclass,uint32 *ecode)
+NTSTATUS do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
+		   SMB_BIG_UINT count,SMB_BIG_UINT offset)
 {
 	BOOL ok = False;
 	
 	if (!lp_locking(SNUM(conn)))
-		return(True);
+		return NT_STATUS_NOPROBLEMO;
 	
 	if (!OPEN_FSP(fsp) || !fsp->can_lock || (fsp->conn != conn)) {
-		*eclass = ERRDOS;
-		*ecode = ERRbadfid;
-		return False;
+		return NT_STATUS_INVALID_HANDLE;
 	}
 	
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for file %s\n",
@@ -183,17 +176,15 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn, uint16 lock_pid,
    
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
-		*eclass = ERRDOS;
-		*ecode = ERRnotlocked;
-		return False;
+		return NT_STATUS_LOCK_NOT_GRANTED;
 	}
 
 	if (!lp_posix_locking(SNUM(conn)))
-		return True;
+		return NT_STATUS_NOPROBLEMO;
 
 	(void)release_posix_lock(fsp, offset, count);
 
-	return True; /* Did unlock */
+	return NT_STATUS_NOPROBLEMO; /* Did unlock */
 }
 
 /****************************************************************************

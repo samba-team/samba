@@ -157,95 +157,97 @@ reply for the nt protocol
 ****************************************************************************/
 static int reply_nt1(char *outbuf)
 {
-  /* dual names + lock_and_read + nt SMBs + remote API calls */
-  int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|CAP_LEVEL_II_OPLOCKS|
-                     (lp_nt_smb_support() ? CAP_NT_SMBS | CAP_RPC_REMOTE_APIS : 0) |
-					 ((lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) ?
-							CAP_LARGE_READX | CAP_LARGE_WRITEX | CAP_W2K_SMBS : 0) |
-                     (SMB_OFF_T_BITS == 64 ? CAP_LARGE_FILES : 0);
+	/* dual names + lock_and_read + nt SMBs + remote API calls */
+	int capabilities = CAP_NT_FIND|CAP_LOCK_AND_READ|
+		CAP_LEVEL_II_OPLOCKS|CAP_STATUS32;
 
+	int secword=0;
+	BOOL doencrypt = SMBENCRYPT();
+	time_t t = time(NULL);
+	struct cli_state *cli = NULL;
+	char cryptkey[8];
+	char crypt_len = 0;
+	char *p, *q;
+	
+	if (lp_security() == SEC_SERVER) {
+		DEBUG(5,("attempting password server validation\n"));
+		cli = server_cryptkey();
+	} else {
+		DEBUG(5,("not attempting password server validation\n"));
+	}
+	
+	if (cli) {
+		DEBUG(3,("using password server validation\n"));
+		doencrypt = ((cli->sec_mode & 2) != 0);
+	} else {
+		DEBUG(3,("not using password server validation\n"));
+	}
+	
+	if (doencrypt) {
+		crypt_len = 8;
+		if (!cli) {
+			generate_next_challenge(cryptkey);
+		} else {
+			memcpy(cryptkey, cli->cryptkey, 8);
+			set_challenge(cli->cryptkey);
+		}
+	}
 
-/*
-  other valid capabilities which we may support at some time...
-                     CAP_LARGE_READX|CAP_STATUS32|CAP_LEVEL_II_OPLOCKS;
- */
-
-  int secword=0;
-  BOOL doencrypt = SMBENCRYPT();
-  time_t t = time(NULL);
-  struct cli_state *cli = NULL;
-  char cryptkey[8];
-  char crypt_len = 0;
-  char *p, *q;
-
-  if (lp_security() == SEC_SERVER) {
-	  DEBUG(5,("attempting password server validation\n"));
-	  cli = server_cryptkey();
-  } else {
-	  DEBUG(5,("not attempting password server validation\n"));
-  }
-
-  if (cli) {
-	  DEBUG(3,("using password server validation\n"));
-	  doencrypt = ((cli->sec_mode & 2) != 0);
-  } else {
-	  DEBUG(3,("not using password server validation\n"));
-  }
-
-  if (doencrypt) {
-	  crypt_len = 8;
-	  if (!cli) {
-		  generate_next_challenge(cryptkey);
-	  } else {
-		  memcpy(cryptkey, cli->cryptkey, 8);
-		  set_challenge(cli->cryptkey);
-	  }
-  }
-
-  if (lp_readraw() && lp_writeraw()) {
-	  capabilities |= CAP_RAW_MODE;
-  }
-
-
-  /* allow for disabling unicode */
-  if (lp_unicode()) {
-	  capabilities |= CAP_UNICODE;
-  }
-
+	if (lp_nt_smb_support()) {
+		capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+	}
+	
+	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) {
+		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
+	}
+	
+	if (SMB_OFF_T_BITS == 64) {
+		capabilities |= CAP_LARGE_FILES;
+	}
+	
+	if (lp_readraw() && lp_writeraw()) {
+		capabilities |= CAP_RAW_MODE;
+	}
+	
+	/* allow for disabling unicode */
+	if (lp_unicode()) {
+		capabilities |= CAP_UNICODE;
+	}
+	
 #ifdef WITH_MSDFS
-  if(lp_host_msdfs())
-	capabilities |= CAP_DFS;
+	if(lp_host_msdfs())
+		capabilities |= CAP_DFS;
 #endif
-
-  if (lp_security() >= SEC_USER) secword |= 1;
-  if (doencrypt) secword |= 2;
-
-  set_message(outbuf,17,0,True);
-
-  CVAL(outbuf,smb_vwv1) = secword;
-  SSVALS(outbuf,smb_vwv16+1,crypt_len);
-
-  Protocol = PROTOCOL_NT1;
-
-  SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
-  SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
-  SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
-  SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
-  SIVAL(outbuf,smb_vwv7+1,sys_getpid()); /* session key */
-  SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
-  put_long_date(outbuf+smb_vwv11+1,t);
-  SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
-
-  p = q = smb_buf(outbuf);
-  if (doencrypt) memcpy(p, cryptkey, 8);
-  p += 8;
-  p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
-		   STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
-
-  SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
-  set_message_end(outbuf, p);
-
-  return (smb_len(outbuf)+4);
+	
+	if (lp_security() >= SEC_USER) secword |= 1;
+	if (doencrypt) secword |= 2;
+	
+	set_message(outbuf,17,0,True);
+	
+	CVAL(outbuf,smb_vwv1) = secword;
+	SSVALS(outbuf,smb_vwv16+1,crypt_len);
+	
+	Protocol = PROTOCOL_NT1;
+	
+	SSVAL(outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
+	SSVAL(outbuf,smb_vwv2+1,1); /* num vcs */
+	SIVAL(outbuf,smb_vwv3+1,0xffff); /* max buffer. LOTS! */
+	SIVAL(outbuf,smb_vwv5+1,0x10000); /* raw size. full 64k */
+	SIVAL(outbuf,smb_vwv7+1,sys_getpid()); /* session key */
+	SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
+	put_long_date(outbuf+smb_vwv11+1,t);
+	SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
+	
+	p = q = smb_buf(outbuf);
+	if (doencrypt) memcpy(p, cryptkey, 8);
+	p += 8;
+	p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
+			 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
+	
+	SSVAL(outbuf,smb_vwv17, p - q); /* length of challenge+domain strings */
+	set_message_end(outbuf, p);
+	
+	return (smb_len(outbuf)+4);
 }
 
 /* these are the protocol lists used for auto architecture detection:

@@ -84,10 +84,7 @@ static int send_nt_replies(char *inbuf, char *outbuf, int bufsize, uint32 nt_err
   set_message(outbuf,18,0,True);
 
   if(nt_error != 0) {
-    /* NT Error. */
-    SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-
-    ERROR(0,nt_error);
+	  ERROR_NT(nt_error);
   }
 
   /* 
@@ -475,14 +472,14 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* See if it is one we want to handle. */
 
 	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
-		return(ERROR(ERRSRV,ERRaccess));
+		return(ERROR_DOS(ERRSRV,ERRaccess));
 
 	for( i = 0; known_nt_pipes[i]; i++ )
 		if( strequal(fname,known_nt_pipes[i]))
 			break;
     
 	if ( known_nt_pipes[i] == NULL )
-		return(ERROR(ERRSRV,ERRaccess));
+		return(ERROR_DOS(ERRSRV,ERRaccess));
     
 	/* Strip \\ off the name. */
 	fname++;
@@ -491,7 +488,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 
 	p = open_rpc_pipe_p(fname, conn, vuid);
 	if (!p)
-		return(ERROR(ERRSRV,ERRnofids));
+		return(ERROR_DOS(ERRSRV,ERRnofids));
 
 	*ppnum = p->pnum;
 
@@ -582,7 +579,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
 		} else {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR(ERRDOS,ERRbadaccess));
+			return(ERROR_DOS(ERRDOS,ERRbadaccess));
 		}
 	}
 			
@@ -594,7 +591,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	
 	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return(ERROR(ERRDOS,ERRbadaccess));
+		return(ERROR_DOS(ERRDOS,ERRbadaccess));
 	}
 
 	/*
@@ -610,7 +607,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 
       if(!dir_fsp) {
 	END_PROFILE(SMBntcreateX);
-        return(ERROR(ERRDOS,ERRbadfid));
+        return(ERROR_DOS(ERRDOS,ERRbadfid));
       }
 
       if(!dir_fsp->is_directory) {
@@ -621,12 +618,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	srvstr_pull(inbuf, fname, smb_buf(inbuf), sizeof(fname), -1, STR_TERMINATE);
 
         if( strchr_m(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
           END_PROFILE(SMBntcreateX);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
         }
 	END_PROFILE(SMBntcreateX);
-        return(ERROR(ERRDOS,ERRbadfid));
+        return(ERROR_DOS(ERRDOS,ERRbadfid));
       }
 
       /*
@@ -662,7 +658,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return(ERROR(ERRDOS,ERRbadaccess));
+		return ERROR_DOS(ERRDOS,ERRbadaccess);
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -753,7 +749,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					SSVAL(outbuf, smb_flg2, 
 					      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
-					return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
 	
 				oplock_request = 0;
@@ -812,7 +808,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (!fsp->is_directory && (fmode & aDIR)) {
 		close_file(fsp,False);
 		END_PROFILE(SMBntcreateX);
-		return(ERROR(ERRDOS,ERRnoaccess));
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	} 
 	
 	/* 
@@ -904,7 +900,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 
 	if(total_parameter_count < 54) {
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-		return(ERROR(ERRDOS,ERRbadaccess));
+		return ERROR_DOS(ERRDOS,ERRbadaccess);
 	}
 
 	srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
@@ -915,7 +911,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	/* Realloc the size of parameters and data we will return */
 	params = Realloc(*ppparams, 69);
 	if(params == NULL)
-		return(ERROR(ERRDOS,ERRnomem));
+		return ERROR_DOS(ERRDOS,ERRnomem);
 
 	*ppparams = params;
 
@@ -1074,7 +1070,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
 					bufsize, ppsetup, ppparams, ppdata);
 		else
-			return(ERROR(ERRDOS,ERRbadaccess));
+			return ERROR_DOS(ERRDOS,ERRbadaccess);
   }
 
   /*
@@ -1083,7 +1079,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
   if(total_parameter_count < 54) {
     DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-    return(ERROR(ERRDOS,ERRbadaccess));
+    return ERROR_DOS(ERRDOS,ERRbadaccess);
   }
 
   flags = IVAL(params,0);
@@ -1102,7 +1098,7 @@ static int call_nt_transact_create(connection_struct *conn,
    */    
 
   if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return(ERROR(ERRDOS,ERRbadmem));
+    return ERROR_DOS(ERRDOS,ERRbadmem);
 
   /*
    * Get the file name.
@@ -1117,7 +1113,7 @@ static int call_nt_transact_create(connection_struct *conn,
     size_t dir_name_len;
 
     if(!dir_fsp)
-        return(ERROR(ERRDOS,ERRbadfid));
+        return ERROR_DOS(ERRDOS,ERRbadfid);
 
     if(!dir_fsp->is_directory) {
       /*
@@ -1127,11 +1123,10 @@ static int call_nt_transact_create(connection_struct *conn,
       srvstr_pull(inbuf, fname, params+53, sizeof(fname), -1, STR_TERMINATE);
 
       if( strchr_m(fname, ':')) {
-          SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-          return(ERROR(0, NT_STATUS_OBJECT_PATH_NOT_FOUND));
+          return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
       }
 
-      return(ERROR(ERRDOS,ERRbadfid));
+      return ERROR_DOS(ERRDOS,ERRbadfid);
     }
 
     /*
@@ -1163,7 +1158,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
   if((smb_open_mode = map_share_mode( &stat_open_only, fname, desired_access,
                                       share_access, file_attributes)) == -1)
-    return(ERROR(ERRDOS,ERRbadaccess));
+    return ERROR_DOS(ERRDOS,ERRbadaccess);
 
   oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
   oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
@@ -1226,7 +1221,7 @@ static int call_nt_transact_create(connection_struct *conn,
 				restore_case_semantics(file_attributes);
 				SSVAL(outbuf, smb_flg2, 
 				      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-				return(ERROR(0, NT_STATUS_FILE_IS_A_DIRECTORY));
+				return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 			}
 	
 			oplock_request = 0;
@@ -1280,7 +1275,7 @@ static int call_nt_transact_create(connection_struct *conn,
       if (fmode & aDIR) {
         close_file(fsp,False);
         restore_case_semantics(file_attributes);
-        return(ERROR(ERRDOS,ERRnoaccess));
+        return ERROR_DOS(ERRDOS,ERRnoaccess);
       } 
 
       /* 
@@ -1303,7 +1298,7 @@ static int call_nt_transact_create(connection_struct *conn,
   if (!set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
     close_file(fsp,False);
     restore_case_semantics(file_attributes);
-    return(ERROR(error_class, error_code));
+    return ERROR_DOS(error_class, error_code);
   }
 
   restore_case_semantics(file_attributes);
@@ -1311,7 +1306,7 @@ static int call_nt_transact_create(connection_struct *conn,
   /* Realloc the size of parameters and data we will return */
   params = Realloc(*ppparams, 69);
   if(params == NULL)
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
 
   *ppparams = params;
 
@@ -1416,10 +1411,10 @@ static int call_nt_transact_notify_change(connection_struct *conn,
   DEBUG(3,("call_nt_transact_notify_change\n"));
 
   if(!fsp)
-    return(ERROR(ERRDOS,ERRbadfid));
+    return ERROR_DOS(ERRDOS,ERRbadfid);
 
   if((!fsp->is_directory) || (conn != fsp->conn))
-    return(ERROR(ERRDOS,ERRbadfid));
+    return ERROR_DOS(ERRDOS,ERRbadfid);
 
   if (!change_notify_set(inbuf, fsp, conn, flags)) {
 	  return(UNIXERROR(ERRDOS,ERRbadfid));
@@ -1496,13 +1491,13 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
   files_struct *fsp = file_fsp(params,0);
 
   if(!fsp)
-    return(ERROR(ERRDOS,ERRbadfid));
+    return ERROR_DOS(ERRDOS,ERRbadfid);
 
   DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
 
   params = Realloc(*ppparams, 4);
   if(params == NULL)
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
 
   *ppparams = params;
 
@@ -1530,7 +1525,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   data = Realloc(*ppdata, sd_size);
   if(data == NULL) {
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
 
   *ppdata = data;
@@ -1543,7 +1538,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
   if ((mem_ctx = talloc_init()) == NULL) {
     DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
 
   prs_init(&pd, 0, mem_ctx, MARSHALL);
@@ -1601,10 +1596,10 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
 
   if(total_parameter_count < 8)
-    return(ERROR(ERRDOS,ERRbadfunc));
+    return ERROR_DOS(ERRDOS,ERRbadfunc);
 
   if((fsp = file_fsp(params,0)) == NULL)
-    return(ERROR(ERRDOS,ERRbadfid));
+    return ERROR_DOS(ERRDOS,ERRbadfid);
 
   security_info_sent = IVAL(params,4);
 
@@ -1612,7 +1607,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
        (unsigned int)security_info_sent ));
 
   if (!set_sd( fsp, data, total_data_count, security_info_sent, &error_class, &error_code))
-		return (ERROR(error_class, error_code));
+		return ERROR_DOS(error_class, error_code);
 
   send_nt_replies(inbuf, outbuf, bufsize, 0, NULL, 0, NULL, 0);
   return -1;
@@ -1632,7 +1627,7 @@ static int call_nt_transact_ioctl(connection_struct *conn,
     DEBUG(0,("call_nt_transact_ioctl: Currently not implemented.\n"));
     logged_message = True; /* Only print this once... */
   }
-  return(ERROR(ERRSRV,ERRnosupport));
+  return ERROR_DOS(ERRSRV,ERRnosupport);
 }
    
 /****************************************************************************
@@ -1674,7 +1669,7 @@ due to being in oplock break state.\n" ));
 
   if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
     END_PROFILE(SMBnttrans);
-    return (ERROR(ERRSRV,ERRaccess));
+    return ERROR_DOS(ERRSRV,ERRaccess);
   }
 
   outsize = set_message(outbuf,0,0,True);
@@ -1688,7 +1683,7 @@ due to being in oplock break state.\n" ));
     DEBUG(2,("Invalid smb_wct %d in nttrans call (should be %d)\n",
           CVAL(inbuf, smb_wct), 19 + (setup_count/2)));
     END_PROFILE(SMBnttrans);
-    return(ERROR(ERRSRV,ERRerror));
+    return ERROR_DOS(ERRSRV,ERRerror);
   }
     
   /* Allocate the space for the setup, the maximum needed parameters and data */
@@ -1707,7 +1702,7 @@ due to being in oplock break state.\n" ));
 	safe_free(data);
     DEBUG(0,("reply_nttrans : Out of memory\n"));
     END_PROFILE(SMBnttrans);
-    return(ERROR(ERRDOS,ERRnomem));
+    return ERROR_DOS(ERRDOS,ERRnomem);
   }
 
   /* Copy the param and data bytes sent with this request into
@@ -1761,7 +1756,7 @@ due to being in oplock break state.\n" ));
         if(setup)
           free(setup);
 	END_PROFILE(SMBnttrans);
-        return(ERROR(ERRSRV,ERRerror));
+        return ERROR_DOS(ERRSRV,ERRerror);
       }
       
       /* Revise total_params and total_data in case they have changed downwards */
@@ -1837,7 +1832,7 @@ due to being in oplock break state.\n" ));
 	  if(data)
 		  free(data);
 	  END_PROFILE(SMBnttrans);
-	  return (ERROR(ERRSRV,ERRerror));
+	  return ERROR_DOS(ERRSRV,ERRerror);
   }
 
   /* As we do not know how many data packets will need to be

@@ -119,7 +119,7 @@ static BOOL open_nbt_connection(struct cli_state *c)
 	return True;
 }
 
-static BOOL open_connection(struct cli_state *c)
+BOOL torture_open_connection(struct cli_state *c)
 {
 	ZERO_STRUCTP(c);
 
@@ -153,7 +153,7 @@ static BOOL open_connection(struct cli_state *c)
 }
 
 
-static BOOL close_connection(struct cli_state *c)
+BOOL torture_close_connection(struct cli_state *c)
 {
 	BOOL ret = True;
 	if (!cli_tdis(c)) {
@@ -195,8 +195,8 @@ static BOOL check_error(int line, struct cli_state *c,
                 status = cli_nt_error(c);
 
                 if (nterr != status) {
-                        printf("unexpected error code 0x%08x\n", status);
-                        printf(" expected 0x%08x (line=%d)\n", nterr, line);
+                        printf("unexpected error code %s\n", get_nt_error_msg(status));
+                        printf(" expected %s (line=%d)\n", get_nt_error_msg(nterr), line);
                         return False;
                 }
         }
@@ -314,7 +314,7 @@ static BOOL run_torture(int dummy)
 
 	ret = rw_torture(&cli);
 	
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		ret = False;
 	}
 
@@ -501,7 +501,7 @@ static BOOL run_readwritetest(int dummy)
 	static struct cli_state cli1, cli2;
 	BOOL test1, test2;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -515,11 +515,11 @@ static BOOL run_readwritetest(int dummy)
 	test2 = rw_torture2(&cli1, &cli1);
 	printf("Passed readwritetest v2: %s\n", BOOLSTR(test2));
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		test1 = False;
 	}
 
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		test2 = False;
 	}
 
@@ -538,7 +538,7 @@ static BOOL run_readwritemulti(int dummy)
 	printf("run_readwritemulti: fname %s\n", randomfname);
 	test = rw_torture3(&cli, randomfname);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		test = False;
 	}
 	
@@ -554,7 +554,7 @@ static BOOL run_readwritelarge(int dummy)
 	char buf[0x10000];
 	BOOL correct = True;
  
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -609,7 +609,7 @@ static BOOL run_readwritelarge(int dummy)
 		correct = False;
 	}
 	
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 	return correct;
@@ -715,7 +715,7 @@ static BOOL run_netbench(int client)
 
 	printf("+");	
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 	
@@ -766,7 +766,7 @@ static BOOL run_locktest1(int dummy)
 	int fnum1, fnum2, fnum3;
 	time_t t1, t2;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -851,11 +851,11 @@ static BOOL run_locktest1(int dummy)
 	}
 
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		return False;
 	}
 
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		return False;
 	}
 
@@ -874,7 +874,7 @@ static BOOL run_tcon_test(int dummy)
 	uint16 cnum;
 	char buf[4];
 
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -929,7 +929,7 @@ static BOOL run_tcon_test(int dummy)
 		return False;
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		return False;
 	}
 
@@ -956,7 +956,7 @@ static BOOL run_locktest2(int dummy)
 	int fnum1, fnum2, fnum3;
 	BOOL correct = True;
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -1070,7 +1070,7 @@ static BOOL run_locktest2(int dummy)
 		return False;
 	}
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -1095,7 +1095,7 @@ static BOOL run_locktest3(int dummy)
 
 #define NEXT_OFFSET offset += (~(uint32)0) / numops
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -1190,11 +1190,11 @@ static BOOL run_locktest3(int dummy)
 		return False;
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 	
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		correct = False;
 	}
 
@@ -1219,7 +1219,7 @@ static BOOL run_locktest4(int dummy)
 	char buf[1000];
 	BOOL correct = True;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 
@@ -1370,8 +1370,8 @@ static BOOL run_locktest4(int dummy)
 	cli_close(&cli1, fnum1);
 	cli_close(&cli2, fnum2);
 	cli_unlink(&cli1, fname);
-	close_connection(&cli1);
-	close_connection(&cli2);
+	torture_close_connection(&cli1);
+	torture_close_connection(&cli2);
 
 	printf("finished locktest4\n");
 	return correct;
@@ -1389,7 +1389,7 @@ static BOOL run_locktest5(int dummy)
 	char buf[1000];
 	BOOL correct = True;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 
@@ -1489,10 +1489,10 @@ static BOOL run_locktest5(int dummy)
 	cli_close(&cli1, fnum1);
 	cli_close(&cli2, fnum2);
 	cli_unlink(&cli1, fname);
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		correct = False;
 	}
 
@@ -1532,7 +1532,7 @@ static BOOL run_denytest1(int dummy)
 		{-1, NULL}};
 	BOOL correct = True;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -1586,10 +1586,10 @@ static BOOL run_denytest1(int dummy)
 		cli_unlink(&cli1, fnames[f]);
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		correct = False;
 	}
 	
@@ -1629,7 +1629,7 @@ static BOOL run_denytest2(int dummy)
 		{-1, NULL}};
 	BOOL correct = True;
 
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -1682,7 +1682,7 @@ static BOOL run_denytest2(int dummy)
 		cli_unlink(&cli1, fnames[f]);
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 	
@@ -1701,7 +1701,7 @@ static BOOL run_fdpasstest(int dummy)
 	int fnum1;
 	pstring buf;
 
-	if (!open_connection(&cli1) || !open_connection(&cli2)) {
+	if (!torture_open_connection(&cli1) || !torture_open_connection(&cli2)) {
 		return False;
 	}
 	cli_sockopt(&cli1, sockops);
@@ -1736,8 +1736,8 @@ static BOOL run_fdpasstest(int dummy)
 	cli_close(&cli1, fnum1);
 	cli_unlink(&cli1, fname);
 
-	close_connection(&cli1);
-	close_connection(&cli2);
+	torture_close_connection(&cli1);
+	torture_close_connection(&cli2);
 
 	printf("finished fdpasstest\n");
 	return True;
@@ -1756,7 +1756,7 @@ static BOOL run_unlinktest(int dummy)
 	int fnum;
 	BOOL correct = True;
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -1785,7 +1785,7 @@ static BOOL run_unlinktest(int dummy)
 	cli_close(&cli, fnum);
 	cli_unlink(&cli, fname);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -1844,7 +1844,7 @@ static BOOL run_maxfidtest(int dummy)
 	printf("%6d\n", 0);
 
 	printf("maxfid test finished\n");
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 	return correct;
@@ -1876,7 +1876,7 @@ static BOOL run_negprot_nowait(int dummy)
 		cli_negprot_send(&cli);
 	}
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -1900,7 +1900,7 @@ static BOOL run_randomipc(int dummy)
 
 	printf("starting random ipc test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -1923,7 +1923,7 @@ static BOOL run_randomipc(int dummy)
 	}
 	printf("%d/%d\n", i, count);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -1953,7 +1953,7 @@ static BOOL run_browsetest(int dummy)
 
 	printf("starting browse test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -1967,7 +1967,7 @@ static BOOL run_browsetest(int dummy)
 			  SV_TYPE_ALL,
 			  browse_callback, NULL);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -1991,7 +1991,7 @@ static BOOL run_attrtest(int dummy)
 
 	printf("starting attrib test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -2032,7 +2032,7 @@ static BOOL run_attrtest(int dummy)
 
 	cli_unlink(&cli, fname);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -2058,7 +2058,7 @@ static BOOL run_trans2test(int dummy)
 
 	printf("starting trans2 test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -2155,7 +2155,7 @@ static BOOL run_trans2test(int dummy)
 	cli_unlink(&cli, fname2);
 	cli_rmdir(&cli, dname);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -2163,71 +2163,6 @@ static BOOL run_trans2test(int dummy)
 
 	return correct;
 }
-
-
-/****************************************************************************
-check for existance of a trans2 call
-****************************************************************************/
-static BOOL scan_trans2(struct cli_state *cli, int op, int level)
-{
-	int data_len = 0;
-	int param_len = 0;
-	uint16 setup = op;
-	pstring param;
-	char *rparam=NULL, *rdata=NULL;
-
-	param_len = 6;
-	SSVAL(param, 0, level);
-	SSVAL(param, 2, level);
-	SSVAL(param, 4, level);
-
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL,                           /* name */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            NULL, data_len, cli->max_xmit   /* data, length, max */
-                           )) {
-		return False;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
-		printf("recv failed op=%d level=%d %s\n", op, level, cli_errstr(cli));
-		return False;
-	}
-
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
-	return True;
-}
-
-
-static BOOL run_trans2_scan(int dummy)
-{
-	static struct cli_state cli;
-	int op, level;
-
-	printf("starting trans2 scan test\n");
-
-	if (!open_connection(&cli)) {
-		return False;
-	}
-
-	for (op=1; op<200; op++) {
-		for (level = 1; level < 300; level++) {
-			scan_trans2(&cli, op, level);
-		}
-	}
-
-	close_connection(&cli);
-
-	printf("trans2 scan finished\n");
-	return True;
-}
-
-
 
 /*
   This checks new W2K calls.
@@ -2261,7 +2196,7 @@ static BOOL run_w2ktest(int dummy)
 
 	printf("starting w2k test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -2274,7 +2209,7 @@ static BOOL run_w2ktest(int dummy)
 
 	cli_close(&cli, fnum);
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -2296,7 +2231,7 @@ static BOOL run_oplock1(int dummy)
 
 	printf("starting oplock test 1\n");
 
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 
@@ -2327,7 +2262,7 @@ static BOOL run_oplock1(int dummy)
 		return False;
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 
@@ -2354,7 +2289,7 @@ static BOOL run_oplock2(int dummy)
 
 	printf("starting oplock test 2\n");
 
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		use_level_II_oplocks = False;
 		use_oplocks = saved_use_oplocks;
 		return False;
@@ -2363,7 +2298,7 @@ static BOOL run_oplock2(int dummy)
 	cli1.use_oplocks = True;
 	cli1.use_level_II_oplocks = True;
 
-	if (!open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2)) {
 		use_level_II_oplocks = False;
 		use_oplocks = saved_use_oplocks;
 		return False;
@@ -2457,7 +2392,7 @@ static BOOL run_oplock2(int dummy)
 		correct = False;
 	}
 
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 
@@ -2496,7 +2431,7 @@ static BOOL run_oplock3(int dummy)
 		/* Child code */
 		use_oplocks = True;
 		use_level_II_oplocks = True;
-		if (!open_connection(&cli)) {
+		if (!torture_open_connection(&cli)) {
 			*shared_correct = False;
 			exit(0);
 		} 
@@ -2510,7 +2445,7 @@ static BOOL run_oplock3(int dummy)
 	/* parent code */
 	use_oplocks = True;
 	use_level_II_oplocks = True;
-	if (!open_connection(&cli)) { 
+	if (!torture_open_connection(&cli)) { 
 		return False;
 	}
 	cli_oplock_handler(&cli, oplock3_handler);
@@ -2542,7 +2477,7 @@ static BOOL run_deletetest(int dummy)
 	
 	printf("starting delete test\n");
 	
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 	
@@ -2816,7 +2751,7 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 	
-	if (!open_connection(&cli2)) {
+	if (!torture_open_connection(&cli2)) {
 		printf("[8] failed to open second connection.\n");
 		return False;
 	}
@@ -2871,10 +2806,10 @@ static BOOL run_deletetest(int dummy)
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 	
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
-	if (!close_connection(&cli2)) {
+	if (!torture_close_connection(&cli2)) {
 		correct = False;
 	}
 	return correct;
@@ -2894,7 +2829,7 @@ static BOOL run_opentest(int dummy)
 
 	printf("starting open test\n");
 	
-	if (!open_connection(&cli1)) {
+	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
 	
@@ -3038,7 +2973,7 @@ static BOOL run_opentest(int dummy)
 		cli_unlink(&cli1, tmp_path);
 	}
 	
-	if (!close_connection(&cli1)) {
+	if (!torture_close_connection(&cli1)) {
 		correct = False;
 	}
 	
@@ -3063,7 +2998,7 @@ static BOOL run_dirtest(int dummy)
 
 	printf("starting directory test\n");
 
-	if (!open_connection(&cli)) {
+	if (!torture_open_connection(&cli)) {
 		return False;
 	}
 
@@ -3096,7 +3031,7 @@ static BOOL run_dirtest(int dummy)
 		cli_unlink(&cli, fname);
 	}
 
-	if (!close_connection(&cli)) {
+	if (!torture_close_connection(&cli)) {
 		correct = False;
 	}
 
@@ -3129,8 +3064,8 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 		return -1;
 	}
 
-	memset(child_status, 0, sizeof(pid_t)*nprocs);
-	memset(child_status_out, True, sizeof(BOOL)*nprocs);
+	memset((void *)child_status, 0, sizeof(pid_t)*nprocs);
+	memset((void *)child_status_out, True, sizeof(BOOL)*nprocs);
 
 	start_timer();
 
@@ -3144,7 +3079,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 			while (1) {
 				memset(&current_cli, 0, sizeof(current_cli));
-				if (open_connection(&current_cli)) break;
+				if (torture_open_connection(&current_cli)) break;
 				if (tries-- == 0) {
 					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
@@ -3237,7 +3172,8 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"DELETE", run_deletetest, 0},
 	{"W2K", run_w2ktest, 0},
-	{"TRANS2SCAN", run_trans2_scan, 0},
+	{"TRANS2SCAN", torture_trans2_scan, 0},
+	{"NTTRANSSCAN", torture_nttrans_scan, 0},
 	{NULL, NULL, 0}};
 
 

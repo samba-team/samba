@@ -112,6 +112,9 @@ void cli_setup_packet(struct cli_state *cli)
 		if (cli->capabilities & CAP_UNICODE) {
 			flags2 |= FLAGS2_UNICODE_STRINGS;
 		}
+		if (cli->capabilities & CAP_STATUS32) {
+			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+		}
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }

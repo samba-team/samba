@@ -1650,7 +1650,7 @@ int smbc_opendir(const char *fname)
 	    free(smbc_file_table[slot]);
 	  }
 	  smbc_file_table[slot] = NULL;
-	  errno = cli_error(&srv->cli);
+	  errno = cli_errno(&srv->cli);
 	  return -1;
 
 	}

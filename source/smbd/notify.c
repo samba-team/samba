@@ -54,16 +54,7 @@ static void change_notify_reply_packet(char *inbuf, uint32 error_code)
 	memset(outbuf, '\0', sizeof(outbuf));
 	construct_reply_common(inbuf, outbuf);
 
-	/*
-	 * If we're returning a 'too much in the directory changed' we need to
-	 * set this is an NT error status flags. If we don't then the (probably
-	 * untested) code in the NT redirector has a bug in that it doesn't re-issue
-	 * the change notify.... Ah - I *love* it when I get so deeply into this I
-	 * can even determine how MS failed to test stuff and why.... :-). JRA.
-	 */
-	
-	SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-	ERROR(0,error_code);
+	ERROR_NT(error_code);
 
 	/*
 	 * Seems NT needs a transact command with an error code

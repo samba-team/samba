@@ -352,9 +352,9 @@ struct smb_message_struct
 /* 0x1b */ { "SMBreadBmpx",reply_readbmpx,AS_USER},
 /* 0x1c */ { "SMBreadBs",NULL,AS_USER},
 /* 0x1d */ { "SMBwritebraw",reply_writebraw,AS_USER},
-/* 0x1e */ { "SMBwriteBmpx",reply_writebmpx,AS_USER},
-/* 0x1f */ { "SMBwriteBs",reply_writebs,AS_USER},
-/* 0x20 */ { "SMBwritec",NULL,AS_USER},
+/* 0x1e */ { NULL,NULL,0},
+/* 0x1f */ { NULL,NULL,0},
+/* 0x20 */ { NULL,NULL,0},
 /* 0x21 */ { NULL, NULL, 0 },
 /* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
@@ -695,7 +695,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does this protocol need a valid tree connection? */
     if ((flags & AS_USER) && !conn) {
-	    return ERROR(ERRSRV, ERRinvnid);
+	    return ERROR_DOS(ERRSRV, ERRinvnid);
     }
 
 
@@ -704,7 +704,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
       if (flags & AS_GUEST) 
         flags &= ~AS_USER;
       else
-        return(ERROR(ERRSRV,ERRaccess));
+        return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* this code is to work around a bug is MS client 3 without
@@ -715,23 +715,23 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 
     /* does it need write permission? */
     if ((flags & NEED_WRITE) && !CAN_WRITE(conn))
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
 
     /* ipc services are limited */
     if (IS_IPC(conn) && (flags & AS_USER) && !(flags & CAN_IPC)) {
-      return(ERROR(ERRSRV,ERRaccess));	    
+      return(ERROR_DOS(ERRSRV,ERRaccess));	    
     }
 
     /* load service specific parameters */
     if (conn && !become_service(conn,(flags & AS_USER)?True:False)) {
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     /* does this protocol need to be run as guest? */
     if ((flags & AS_GUEST) && 
 		 (!become_guest() || 
 		!check_access(smbd_server_fd(), lp_hostsallow(-1), lp_hostsdeny(-1)))) {
-      return(ERROR(ERRSRV,ERRaccess));
+      return(ERROR_DOS(ERRSRV,ERRaccess));
     }
 
     last_inbuf = inbuf;
