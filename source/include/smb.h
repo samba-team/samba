@@ -277,7 +277,7 @@ implemented */
 struct smb_passwd
 {
 	int smb_userid;
-	char *smb_name;
+	fstring smb_name;
 	unsigned char *smb_passwd; /* Null if no password */
 	unsigned char *smb_nt_passwd; /* Null if no password */
 	/* Other fields / flags may be added later */
@@ -356,6 +356,13 @@ struct dcinfo
   uchar  md4pw[16];   /* md4(machine password) */
 };
 
+struct acct_info
+{
+	LSA_POL_HND acct_pol; /* use this as a reference */
+	fstring acct_name; /* account name */
+	uint32 smb_userid; /* domain-relative RID */
+};
+
 struct nt_client_info
 {
 	/************* \PIPE\NETLOGON stuff ******************/
@@ -390,7 +397,9 @@ struct nt_client_info
 	uint16 samr_fnum;
 
 	LSA_POL_HND samr_pol_open;
-	LSA_POL_HND samr_pol_secret;
+
+	struct acct_info sam[MAX_SAM_ENTRIES];
+	int num_sam_entries;
 };
 
 struct tar_client_info

@@ -105,37 +105,34 @@ void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info)
 
 
 /****************************************************************************
-experimental nt login.
+experimental SAM user query.
 ****************************************************************************/
-void cmd_sam_lookup_rid(struct cli_state *cli, struct client_info *info)
+void cmd_sam_query_users(struct cli_state *cli, struct client_info *info)
 {
-	fstring sid;
 	fstring srv_name;
-	fstring rid;
-	uint32 user_rid;
+	fstring sid;
+	int user_idx;
 	BOOL res = True;
 
 	fstrcpy(sid, info->dom.level5_sid);
 
 	if (strlen(sid) == 0)
 	{
-		DEBUG(0,("cmd_sam_lookup_rid: use 'lsaquery <domain server name>' first\n"));
+		DEBUG(0,("cmd_sam_query_users: use 'lsaquery <domain server name>' first\n"));
 		return;
 	}
 
 	strcpy(srv_name, "\\\\");
 
-	if (!next_token(NULL, &(srv_name[2]), NULL) ||
-	    !next_token(NULL, rid, NULL))
+	if (!next_token(NULL, &(srv_name[2]), NULL))
 	{
-		DEBUG(0,("cmd_sam_lookup_rid: <domain server name> <hex rid>\n"));
+		DEBUG(0,("cmd_sam_lookup_rid: <domain server name>\n"));
 		return;
 	}
 
-	user_rid = strtol(rid, (char**)NULL, 16);
 	strupper(srv_name);
 
-	DEBUG(4,("cmd_sam_lookup_rid: sid:%s rid:%8x\n", sid, user_rid));
+	DEBUG(0,("Account Information for %s, SID: %s\n", srv_name, sid));
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? do_samr_session_open(cli, info) : False;
@@ -145,21 +142,42 @@ void cmd_sam_lookup_rid(struct cli_state *cli, struct client_info *info)
 				srv_name, 0x00000020,
 				&info->dom.samr_pol_open) : False;
 
-	/* send client open secret; receive a client policy handle */
-	res = res ? do_samr_open_secret(cli, info->dom.samr_fnum,
-	            &info->dom.samr_pol_open, user_rid, sid,
-				&info->dom.samr_pol_secret) : False;
+	res = res ? do_samr_enum_sam_db(cli, info->dom.samr_fnum,
+				&info->dom.samr_pol_open, 0xffff,
+				info->dom.sam, &info->dom.num_sam_entries) : False;
+
+	if (res && info->dom.num_sam_entries == 0)
+	{
+		DEBUG(0,("No users\n"));
+	}
+
+	/* query all the users */
+	user_idx = 0;
+
+	while (res && user_idx < info->dom.num_sam_entries)
+	{
+		DEBUG(0,("User-rid: %8x  User name: %s\n",
+		          info->dom.sam[user_idx].smb_userid,
+		          info->dom.sam[user_idx].acct_name));
+
+		/* send client open secret; receive a client policy handle */
+		res = res ? do_samr_open_secret(cli, info->dom.samr_fnum,
+					&info->dom.samr_pol_open,
+					info->dom.sam[user_idx].smb_userid, sid,
+					&(info->dom.sam[user_idx].acct_pol)) : False;
+		user_idx++;
+	}
 
 	/* close the session */
 	do_samr_session_close(cli, info);
 
 	if (res)
 	{
-		DEBUG(5,("cmd_sam_lookup_rid: succeeded\n"));
+		DEBUG(5,("cmd_sam_query_users: succeeded\n"));
 	}
 	else
 	{
-		DEBUG(5,("cmd_sam_lookup_rid: failed\n"));
+		DEBUG(5,("cmd_sam_query_users: failed\n"));
 	}
 }
 

@@ -108,6 +108,233 @@ static int gethexpwd(char *p, char *pwd)
  Routine to search the smbpasswd file for an entry matching the username
  or user id.  if the name is NULL, then the smb_uid is used instead.
  *************************************************************************/
+BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num_entries)
+{
+	/* Static buffers we will return. */
+	static pstring  user_name;
+	static unsigned char smbpwd[16];
+	static unsigned char smbntpwd[16];
+	char            linebuf[256];
+	char            readbuf[16 * 1024];
+	unsigned char   c;
+	unsigned char  *p;
+	long            uidval;
+	long            linebuf_len;
+	FILE           *fp;
+	int             lockfd;
+	char           *pfile = lp_smb_passwd_file();
+	unsigned long   acct_ctrl;
+	(*num_entries) = 0;
+
+	if (pw_buf == NULL) return False;
+
+	if (!*pfile) {
+		DEBUG(0, ("No SMB password file set\n"));
+		return False;
+	}
+	DEBUG(10, ("get_smbpwd_entries: opening file %s\n", pfile));
+
+	fp = fopen(pfile, "r");
+
+	if (fp == NULL) {
+		DEBUG(0, ("get_smbpwd_entries: unable to open file %s\n", pfile));
+		return False;
+	}
+	/* Set a 16k buffer to do more efficient reads */
+	setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
+
+	if ((lockfd = pw_file_lock(pfile, F_RDLCK, 5)) < 0) {
+		DEBUG(0, ("get_smbpwd_entries: unable to lock file %s\n", pfile));
+		fclose(fp);
+		return False;
+	}
+	/* make sure it is only rw by the owner */
+	chmod(pfile, 0600);
+
+	/* We have a read lock on the file. */
+	/*
+	 * Scan the file, a line at a time and check if the name matches.
+	 */
+	while (!feof(fp) && (*num_entries) < max_num_entries)
+	{
+		linebuf[0] = '\0';
+
+		fgets(linebuf, 256, fp);
+		if (ferror(fp)) {
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+		/*
+		 * Check if the string is terminated with a newline - if not
+		 * then we must keep reading and discard until we get one.
+		 */
+		linebuf_len = strlen(linebuf);
+		if (linebuf[linebuf_len - 1] != '\n') {
+			c = '\0';
+			while (!ferror(fp) && !feof(fp)) {
+				c = fgetc(fp);
+				if (c == '\n')
+					break;
+			}
+		} else
+			linebuf[linebuf_len - 1] = '\0';
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100, ("get_smbpwd_entries: got line |%s|\n", linebuf));
+#endif
+		if ((linebuf[0] == 0) && feof(fp)) {
+			DEBUG(4, ("get_smbpwd_entries: end of file reached\n"));
+			break;
+		}
+		/*
+		 * The line we have should be of the form :-
+		 * 
+		 * username:uid:[32hex bytes]:....other flags presently
+		 * ignored....
+		 * 
+		 * or,
+		 *
+		 * username:uid:[32hex bytes]:[32hex bytes]:....ignored....
+		 *
+		 * if Windows NT compatible passwords are also present.
+		 */
+
+		if (linebuf[0] == '#' || linebuf[0] == '\0') {
+			DEBUG(6, ("get_smbpwd_entries: skipping comment or blank line\n"));
+			continue;
+		}
+		p = (unsigned char *) strchr(linebuf, ':');
+		if (p == NULL) {
+			DEBUG(0, ("get_smbpwd_entries: malformed password entry (no :)\n"));
+			continue;
+		}
+		/*
+		 * As 256 is shorter than a pstring we don't need to check
+		 * length here - if this ever changes....
+		 */
+		strncpy(user_name, linebuf, PTR_DIFF(p, linebuf));
+		user_name[PTR_DIFF(p, linebuf)] = '\0';
+
+		/* get smb uid */
+
+		p++;		/* Go past ':' */
+		if (!isdigit(*p))
+		{
+			DEBUG(0, ("get_smbpwd_entries: malformed password entry (uid not number)\n"));
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+
+		uidval = atoi((char *) p);
+
+		while (*p && isdigit(*p))
+		{
+			p++;
+		}
+
+		if (*p != ':')
+		{
+			DEBUG(0, ("get_smbpwd_entries: malformed password entry (no : after uid)\n"));
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+
+		/* if we're here, the entry has been found (either by name or uid) */
+
+		/*
+		 * Now get the password value - this should be 32 hex digits
+		 * which are the ascii representations of a 16 byte string.
+		 * Get two at a time and put them into the password.
+		 */
+
+		/* skip the ':' */
+		p++;
+
+		if (*p == '*' || *p == 'X')
+		{
+			/* Password deliberately invalid - end here. */
+			DEBUG(10, ("get_smbpwd_entries: entry invalidated for user %s\n", user_name));
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+
+		if (linebuf_len < (PTR_DIFF(p, linebuf) + 33))
+		{
+			DEBUG(0, ("get_smbpwd_entries: malformed password entry (passwd too short)\n"));
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return (False);
+		}
+
+		if (p[32] != ':')
+		{
+			DEBUG(0, ("get_smbpwd_entries: malformed password entry (no terminating :)\n"));
+			fclose(fp);
+			pw_file_unlock(lockfd);
+			return False;
+		}
+
+		if (!strncasecmp((char *) p, "NO PASSWORD", 11))
+		{
+			pw_buf[(*num_entries)].smb_passwd = NULL;
+		}
+		else
+		{
+			if (!gethexpwd((char *)p, (char *)smbpwd))
+			{
+				DEBUG(0, ("Malformed Lanman password entry (non hex chars)\n"));
+				fclose(fp);
+				pw_file_unlock(lockfd);
+				return False;
+			}
+			pw_buf[(*num_entries)].smb_passwd = smbpwd;
+		}
+
+		fstrcpy(pw_buf[(*num_entries)].smb_name, user_name);
+		pw_buf[(*num_entries)].smb_userid    = uidval;
+		pw_buf[(*num_entries)].smb_nt_passwd = NULL;
+		pw_buf[(*num_entries)].acct_ctrl     = ACB_NORMAL;
+
+		/* Now check if the NT compatible password is available. */
+		p += 33; /* Move to the first character of the line after
+					the lanman password. */
+		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':'))
+		{
+			if (*p != '*' && *p != 'X')
+			{
+				if(gethexpwd((char *)p,(char *)smbntpwd))
+					pw_buf[(*num_entries)].smb_nt_passwd = smbntpwd;
+			}
+		}
+
+		/* Now check if the Account Control Bits are available */
+		p += 33; 
+		if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 5)) && (p[4] == ':'))
+		{
+			acct_ctrl = strtoul( p, (char**)NULL, 16);
+			pw_buf[(*num_entries)].acct_ctrl = (uint16)acct_ctrl;
+		}
+		
+		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x\n",
+			  (*num_entries), user_name, uidval, acct_ctrl));
+
+		(*num_entries)++;
+	}
+
+	fclose(fp);
+	pw_file_unlock(lockfd);
+
+	return (*num_entries) > 0;
+}
+
+/*************************************************************************
+ Routine to search the smbpasswd file for an entry matching the username
+ or user id.  if the name is NULL, then the smb_uid is used instead.
+ *************************************************************************/
 struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 {
 	/* Static buffers we will return. */
@@ -313,7 +540,7 @@ struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid)
 			pw_buf.smb_passwd = smbpwd;
 		}
 
-		pw_buf.smb_name      = user_name;
+		fstrcpy(pw_buf.smb_name, user_name);
 		pw_buf.smb_userid    = uidval;
 		pw_buf.smb_nt_passwd = NULL;
 		pw_buf.acct_ctrl     = ACB_NORMAL;

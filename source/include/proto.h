@@ -140,8 +140,8 @@ void cli_shutdown(struct cli_state *cli);
 char *cli_errstr(struct cli_state *cli);
 BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
-int cli_setpid(struct cli_state *cli, int pid);
 int cli_setmid(struct cli_state *cli, int mid);
+int cli_setpid(struct cli_state *cli, int pid);
 BOOL cli_establish_connection(struct cli_state *cli,
 				char *dest_host, uint8 name_type, struct in_addr *dest_ip,
 				char *my_hostname,
@@ -718,7 +718,7 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 /*The following definitions come from  ntclient.c  */
 
 void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info);
-void cmd_sam_lookup_rid(struct cli_state *cli, struct client_info *info);
+void cmd_sam_query_users(struct cli_state *cli, struct client_info *info);
 void cmd_nt_login_test(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  nterr.c  */
@@ -875,6 +875,7 @@ int reply_getattrE(char *inbuf,char *outbuf);
 void create_pol_hnd(LSA_POL_HND *hnd);
 void init_lsa_policy_hnd(void);
 BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd);
+int find_lsa_policy_by_hnd(LSA_POL_HND *hnd);
 BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
 BOOL set_lsa_policy_samr_pol_status(LSA_POL_HND *hnd, uint32 pol_status);
 BOOL set_lsa_policy_samr_sid(LSA_POL_HND *hnd, DOM_SID *sid);
@@ -1015,11 +1016,15 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum,
 
 BOOL do_samr_session_open(struct cli_state *cli, struct client_info *info);
 void do_samr_session_close(struct cli_state *cli, struct client_info *info);
+BOOL do_samr_enum_sam_db(struct cli_state *cli, uint16 fnum, 
+				LSA_POL_HND *pol, uint32 size,
+				struct acct_info sam[MAX_SAM_ENTRIES],
+				int *num_sam_users);
 BOOL do_samr_open_policy(struct cli_state *cli, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				LSA_POL_HND *rtn_pol);
 BOOL do_samr_open_secret(struct cli_state *cli, uint16 fnum, 
-				LSA_POL_HND *query_pol, uint32 unknown_0,
+				LSA_POL_HND *query_pol, uint32 rid,
 				char *sid, LSA_POL_HND *rtn_pol);
 
 /*The following definitions come from  rpc_pipes/ntclientstatus.c  */
@@ -1094,9 +1099,14 @@ BOOL api_wkssvcTNP(int cnum,int uid, char *param,char *data,
 char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
 void make_samr_q_open_secret(SAMR_Q_OPEN_SECRET *q_u,
-				LSA_POL_HND *pol, uint32 unknown_0, char *sid);
+				LSA_POL_HND *pol, uint32 rid, char *sid);
 char* samr_io_q_open_secret(BOOL io, SAMR_Q_OPEN_SECRET *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_secret(BOOL io, SAMR_R_OPEN_SECRET *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_enum_sam_db(SAMR_Q_ENUM_SAM_DB *q_e, LSA_POL_HND *pol, uint32 size);
+char* samr_io_q_enum_sam_db(BOOL io, SAMR_Q_ENUM_SAM_DB *q_e, char *q, char *base, int align, int depth);
+void make_samr_r_enum_sam_db(SAMR_R_ENUM_SAM_DB *r_u,
+		uint32 num_sam_entries, struct smb_passwd pass[MAX_SAM_ENTRIES], uint32 status);
+char* samr_io_r_enum_sam_db(BOOL io, SAMR_R_ENUM_SAM_DB *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_lookup_rids(BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, char *q, char *base, int align, int depth);
 void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_rids, uint32 rid, uint32 status);
@@ -1138,6 +1148,8 @@ void make_dom_rid3(DOM_RID3 *rid3, uint32 rid);
 char* smb_io_dom_rid3(BOOL io, DOM_RID3 *rid3, char *q, char *base, int align, int depth);
 void make_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
 char* smb_io_dom_rid4(BOOL io, DOM_RID4 *rid4, char *q, char *base, int align, int depth);
+void make_sam_entry(SAM_ENTRY *sam, char *sam_name, uint32 rid);
+char* smb_io_sam_entry(BOOL io, SAM_ENTRY *sam, char *q, char *base, int align, int depth);
 void make_clnt_srv(DOM_CLNT_SRV *log, char *logon_srv, char *comp_name);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
 void make_log_info(DOM_LOG_INFO *log, char *logon_srv, char *acct_name,
@@ -1310,6 +1322,7 @@ char *smb_errstr(char *inbuf);
 
 int pw_file_lock(char *name, int type, int secs);
 int pw_file_unlock(int fd);
+BOOL get_smbpwd_entries(struct smb_passwd *pw_buf, int *num_entries, int max_num_entries);
 struct smb_passwd *get_smbpwd_entry(char *name, int smb_userid);
 BOOL add_smbpwd_entry(struct smb_passwd* pwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);

@@ -226,7 +226,7 @@ struct
 #ifdef NTDOMAIN
   {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login"},
   {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
-  {"samrid",     cmd_sam_lookup_rid,   "<server> <hex RID> SAM rid lookup"},
+  {"samrid",     cmd_sam_query_users,  "<server> SAM User Info lookup"},
 #endif
   {"ls",         cmd_dir,         "<mask> list the contents of the current directory"},
   {"dir",        cmd_dir,         "<mask> list the contents of the current directory"},

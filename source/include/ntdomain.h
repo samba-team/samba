@@ -58,6 +58,7 @@ enum RPC_PKT_TYPE
 #define SAMR_OPEN_SECRET    0x07
 #define SAMR_LOOKUP_RIDS    0x11
 #define SAMR_UNKNOWN_3      0x03
+#define SAMR_ENUM_SAM_DB    0x0d
 #define SAMR_UNKNOWN_22     0x22
 #define SAMR_UNKNOWN_24     0x24
 #define SAMR_UNKNOWN_32     0x32
@@ -172,7 +173,7 @@ typedef struct unihdr2_info
 } UNIHDR2;
 
 /* clueless as to what maximum length should be */
-#define MAX_UNISTRLEN 1024
+#define MAX_UNISTRLEN 256
 
 /* UNISTR - unicode string size and buffer */
 typedef struct unistr_info
@@ -1042,6 +1043,48 @@ typedef struct r_samr_open_secret_info
 	uint32 status;         /* return status */
 
 } SAMR_R_OPEN_SECRET;
+
+
+/* SAMR_Q_ENUM_SAM_DB - SAM rids and names */
+typedef struct q_samr_sam_db_info
+{
+	LSA_POL_HND pol;          /* policy handle */
+
+	/* these are possibly an enumeration context handle... */
+	uint32 unknown_0;         /* 0x0000 0000 */
+	uint32 unknown_1;         /* 0x0000 0000 */
+
+	uint32 max_size;              /* 0x0000 ffff */
+
+} SAMR_Q_ENUM_SAM_DB;
+
+#define MAX_SAM_ENTRIES 250
+
+typedef struct samr_entry_info
+{
+	uint32 rid;
+	UNIHDR hdr_acct_name;
+
+} SAM_ENTRY;
+
+/* SAMR_R_ENUM_SAM_DB - SAM rids and names */
+typedef struct q_samr_unknown_d_info
+{
+	uint32 num_entries;
+	uint32 ptr_entries;
+
+	uint32 num_entries2;
+	uint32 ptr_entries2;
+
+	SAM_ENTRY sam[MAX_SAM_ENTRIES];
+	UNISTR2 uni_acct_name[MAX_SAM_ENTRIES];
+
+	uint32 num_entries3;
+
+	uint32 status;
+
+} SAMR_R_ENUM_SAM_DB;
+
 
 
 /****************************************************************************
