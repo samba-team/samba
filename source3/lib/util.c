@@ -1341,6 +1341,14 @@ gid_t nametogid(const char *name)
 }
 
 /*******************************************************************
+ legacy wrapper for smb_panic2()
+********************************************************************/
+void smb_panic( const char *why )
+{
+	smb_panic2( why, True );
+}
+
+/*******************************************************************
  Something really nasty happened - panic !
 ********************************************************************/
 
@@ -1348,7 +1356,7 @@ gid_t nametogid(const char *name)
 #include <libexc.h>
 #endif
 
-void smb_panic(const char *why)
+void smb_panic2(const char *why, BOOL decrement_pid_count )
 {
 	char *cmd;
 	int result;
@@ -1370,6 +1378,10 @@ void smb_panic(const char *why)
 		} 
 	}
 #endif
+
+	/* only smbd needs to decrement the smbd counter in connections.tdb */
+	if ( decrement_pid_count )
+		decrement_smbd_process_count();
 
 	cmd = lp_panic_action();
 	if (cmd && *cmd) {

@@ -53,8 +53,8 @@ BOOL session_claim(user_struct *vuser)
 	}
 
 	if (!tdb) {
-		tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			       O_RDWR | O_CREAT, 0644);
+		tdb = tdb_open_ex(lock_path("sessionid.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			       O_RDWR | O_CREAT, 0644, smbd_tdb_log);
 		if (!tdb) {
 			DEBUG(1,("session_claim: failed to open sessionid tdb\n"));
 			return False;
