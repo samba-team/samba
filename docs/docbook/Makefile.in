@@ -66,6 +66,7 @@ everything: manpages pdf html-single html htmlman htmlfaq txt
 
 manpages: $(MANDIR) $(MANPAGES)
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
+hpdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
