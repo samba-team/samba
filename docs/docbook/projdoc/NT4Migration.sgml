@@ -253,7 +253,7 @@ to be changed to the SID of the Samba-3 domain.
 <para>
 It is possible to migrate all account settings from an MS Windows NT4 domain to Samba-3. Before
  attempting to migrate user and group accounts it is STRONGLY advised to create in Samba-3 the
-groups that are present on the MS Windows NT4 domain <ephasis>AND</emphasis> to connect these to
+groups that are present on the MS Windows NT4 domain <emphasis>AND</emphasis> to connect these to
 suitable Unix/Linux groups. Following this simple advice will mean that all user and group attributes
 should migrate painlessly.
 </para>
