@@ -20,79 +20,16 @@
 
 #include "includes.h"
 #include "Python.h"
+
 #include "python/py_common.h"
+#include "python/py_conv.h"
 #include "python/py_spoolss.h"
 #include "python/py_spoolss_forms.h"
+#include "python/py_spoolss_ports.h"
 
 /* Exceptions this module can raise */
 
 PyObject *spoolss_error, *spoolss_werror;
-
-static void py_policy_hnd_dealloc(PyObject* self)
-{
-	PyObject_Del(self);
-}
-
-
-
-static PyMethodDef spoolss_hnd_methods[] = {
-
-	/* Forms */
-
-	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate forms" },
-
-	{ "setform", spoolss_setform, METH_VARARGS | METH_KEYWORDS,
-	  "Modify properties of a form" },
-
-	{ "addform", spoolss_addform, METH_VARARGS | METH_KEYWORDS,
-	  "Insert a form" },
-
-	{ "getform", spoolss_getform, METH_VARARGS | METH_KEYWORDS,
-	  "Fetch form properties" },
-
-	{ "deleteform", spoolss_deleteform, METH_VARARGS | METH_KEYWORDS,
-	  "Delete a form" },
-
-	{ NULL }
-
-};
-static PyObject *py_policy_hnd_getattr(PyObject *self, char *attrname)
-{
-	return Py_FindMethod(spoolss_hnd_methods, self, attrname);
-}
-
-static PyObject *new_policy_hnd_object(struct cli_state *cli, 
-				       TALLOC_CTX *mem_ctx, POLICY_HND *pol)
-{
-	spoolss_policy_hnd_object *o;
-
-	o = PyObject_New(spoolss_policy_hnd_object, &spoolss_policy_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
-     
-PyTypeObject spoolss_policy_hnd_type = {
-	PyObject_HEAD_INIT(NULL)
-	0,
-	"Policy Handle",
-	sizeof(spoolss_policy_hnd_object),
-	0,
-	py_policy_hnd_dealloc, /*tp_dealloc*/
-	0,          /*tp_print*/
-	py_policy_hnd_getattr,          /*tp_getattr*/
-	0,          /*tp_setattr*/
-	0,          /*tp_compare*/
-	0,          /*tp_repr*/
-	0,          /*tp_as_number*/
-	0,          /*tp_as_sequence*/
-	0,          /*tp_as_mapping*/
-	0,          /*tp_hash */
-};
 
 /*
  * Routines to convert from python hashes to Samba structures
@@ -274,107 +211,6 @@ struct pyconv py_DRIVER_INFO_6[] = {
 	{ NULL }
 };
 
-static void fstr_pull(fstring str, UNISTR *uni)
-{
-	rpcstr_pull(str, uni->buffer, sizeof(fstring), 0, STR_TERMINATE);
-}
-
-/* Convert a structure to a Python dict */
-
-PyObject *from_struct(void *s, struct pyconv *conv)
-{
-	PyObject *obj, *item;
-	int i;
-
-	obj = PyDict_New();
-
-	for (i = 0; conv[i].name; i++) {
-		switch (conv[i].type) {
-		case PY_UNISTR: {
-			UNISTR *u = (UNISTR *)((char *)s + conv[i].offset);
-			fstring s = "";
-
-			if (u->buffer)
-				fstr_pull(s, u);
-
-			item = PyString_FromString(s);
-			PyDict_SetItemString(obj, conv[i].name, item);
-
-			break;
-		}
-		case PY_UINT32: {
-			uint32 *u = (uint32 *)((char *)s + conv[i].offset);
-
-			item = PyInt_FromLong(*u);
-			PyDict_SetItemString(obj, conv[i].name, item);
-			
-			break;
-		}
-		case PY_UINT16: {
-			uint16 *u = (uint16 *)((char *)s + conv[i].offset);
-
-			item = PyInt_FromLong(*u);
-			PyDict_SetItemString(obj, conv[i].name, item);
-
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
-	return obj;
-}
-
-/* Convert a Python dict to a structure */
-
-void to_struct(void *s, PyObject *dict, struct pyconv *conv)
-{
-	int i;
-
-	for (i = 0; conv[i].name; i++) {
-		PyObject *obj;
-		
-		obj = PyDict_GetItemString(dict, conv[i].name);
-		
-		switch (conv[i].type) {
-		case PY_UNISTR: {
-			UNISTR *u = (UNISTR *)((char *)s + conv[i].offset);
-			char *s = "";
-
-			if (obj && PyString_Check(obj))
-				s = PyString_AsString(obj);
-
-			init_unistr(u, s);
-			
-			break;
-		}
-		case PY_UINT32: {
-			uint32 *u = (uint32 *)((char *)s + conv[i].offset);
-
-			if (obj && PyInt_Check(obj)) 
-				*u = PyInt_AsLong(obj);
-			else
-				*u = 0;
-
-			break;
-		}
-		case PY_UINT16: {
-			uint16 *u = (uint16 *)((char *)s + conv[i].offset);
-
-			if (obj && PyInt_Check(obj)) 
-				*u = PyInt_AsLong(obj);
-			else
-				*u = 0;
-
-			break;
-		}
-		default:
-			break;
-		}
-	}
-}
-
 /* Return a cli_state struct opened on the SPOOLSS pipe.  If credentials
    are passed use them. */
 
@@ -452,6 +288,20 @@ static struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 	return cli;
 }
 
+static PyObject *new_policy_hnd_object(struct cli_state *cli, 
+				       TALLOC_CTX *mem_ctx, POLICY_HND *pol)
+{
+	spoolss_policy_hnd_object *o;
+
+	o = PyObject_New(spoolss_policy_hnd_object, &spoolss_policy_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+     
 /* Open a printer */
 
 static PyObject *spoolss_openprinter(PyObject *self, PyObject *args,
@@ -549,23 +399,20 @@ static PyObject *spoolss_closeprinter(PyObject *self, PyObject *args)
 static PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
 					  PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result;
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1;
 	uint32 needed;
 	char *arch = "Windows NT x86";
-	static char *kwlist[] = {"hnd", "level", "arch", NULL};
+	static char *kwlist[] = {"level", "arch", NULL};
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|is", kwlist, 
-					 &spoolss_policy_hnd_type, &po, &level, &arch))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "|is", kwlist, 
+					 &level, &arch))
 		return NULL;
-
-	hnd = (spoolss_policy_hnd_object *)po;
 
 	/* Call rpc function */
 
@@ -608,23 +455,20 @@ static PyObject *spoolss_getprinterdriver(PyObject *self, PyObject *args,
 static PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 					    PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result;
 	PRINTER_DRIVER_CTR ctr;
 	int level = 1, i;
 	uint32 needed, num_drivers;
 	char *arch = "Windows NT x86";
-	static char *kwlist[] = {"hnd", "level", "arch", NULL};
+	static char *kwlist[] = {"level", "arch", NULL};
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|is", kwlist, 
-					 &spoolss_policy_hnd_type, &po, &level, &arch))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "|is", kwlist, 
+					 &level, &arch))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 	
@@ -784,22 +628,18 @@ PyObject *PyDEVICEMODE_FromDEVICEMODE(DEVICEMODE *devmode)
 static PyObject *spoolss_getprinter(PyObject *self, PyObject *args,
 				    PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result;
 	PRINTER_INFO_CTR ctr;
 	int level = 1;
 	uint32 needed;
-	static char *kwlist[] = {"hnd", "level", NULL};
+	static char *kwlist[] = {"level", NULL};
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|i", kwlist, 
-					 &spoolss_policy_hnd_type, &po, &level))
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "|i", kwlist, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Call rpc function */
 	
@@ -865,13 +705,12 @@ static PyObject *spoolss_getprinter(PyObject *self, PyObject *args,
 static PyObject *spoolss_setprinter(PyObject *self, PyObject *args,
 				    PyObject *kw)
 {
-	PyObject *po;
-	spoolss_policy_hnd_object *hnd;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
 	PyObject *result, *info;
 	PRINTER_INFO_CTR ctr;
 	int level = 1;
-	static char *kwlist[] = { "hnd", "dict", "level", NULL };
+	static char *kwlist[] = {"dict", "level", NULL};
 	union {
 		PRINTER_INFO_0 printers_0;
 		PRINTER_INFO_1 printers_1;
@@ -883,12 +722,9 @@ static PyObject *spoolss_setprinter(PyObject *self, PyObject *args,
 
 	/* Parse parameters */
 
-	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!O!|i", kwlist, 
-					 &spoolss_policy_hnd_type, &po, 
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "O!|i", kwlist, 
 					 &PyDict_Type, &info, &level))
 		return NULL;
-	
-	hnd = (spoolss_policy_hnd_object *)po;
 	
 	/* Fill in printer info */
 
@@ -1024,8 +860,6 @@ static PyObject *spoolss_enumprinters(PyObject *self, PyObject *args,
  * Method dispatch table
  */
 
-#include "python/py_spoolss_forms.h"
-
 static PyMethodDef spoolss_methods[] = {
 
 	/* Open/close printer handles */
@@ -1036,6 +870,31 @@ static PyMethodDef spoolss_methods[] = {
 	{ "closeprinter", spoolss_closeprinter, METH_VARARGS, 
 	  "Close printer" },
 
+	/* Enumerate printers */
+
+	{ "enumprinters", spoolss_enumprinters, METH_VARARGS | METH_KEYWORDS,
+	  "Enumerate printers" },
+
+	/* Ports */
+
+	{ "enumports", spoolss_enumports, METH_VARARGS,
+	  "Enumerate ports" },
+
+	{ NULL }
+};
+
+/* Methods attached to a spoolss handle object */
+
+static PyMethodDef spoolss_hnd_methods[] = {
+
+	/* Printer info */
+
+	{ "getprinter", spoolss_getprinter, METH_VARARGS | METH_KEYWORDS,
+	  "Fetch printer information" },
+
+	{ "setprinter", spoolss_setprinter, METH_VARARGS | METH_KEYWORDS,
+	  "Set printer information" },
+
 	/* Printer drivers */
 
 	{ "getprinterdriver", spoolss_getprinterdriver, 
@@ -1044,16 +903,53 @@ static PyMethodDef spoolss_methods[] = {
 	{ "enumprinterdrivers", spoolss_enumprinterdrivers,
 	  METH_VARARGS | METH_KEYWORDS, "Enumerate printer drivers" },
 
-	{ "getprinter", spoolss_getprinter, METH_VARARGS | METH_KEYWORDS,
-	  "Fetch printer information" },
+	/* Forms */
 
-	{ "setprinter", spoolss_setprinter, METH_VARARGS | METH_KEYWORDS,
-	  "Set printer information" },
+	{ "enumforms", spoolss_enumforms, METH_VARARGS | METH_KEYWORDS,
+	  "Enumerate forms" },
 
-	{ "enumprinters", spoolss_enumprinters, METH_VARARGS | METH_KEYWORDS,
-	  "Enumerate printers" },
+	{ "setform", spoolss_setform, METH_VARARGS | METH_KEYWORDS,
+	  "Modify properties of a form" },
+
+	{ "addform", spoolss_addform, METH_VARARGS | METH_KEYWORDS,
+	  "Insert a form" },
+
+	{ "getform", spoolss_getform, METH_VARARGS | METH_KEYWORDS,
+	  "Fetch form properties" },
+
+	{ "deleteform", spoolss_deleteform, METH_VARARGS | METH_KEYWORDS,
+	  "Delete a form" },
 
 	{ NULL }
+
+};
+
+static void py_policy_hnd_dealloc(PyObject* self)
+{
+	PyObject_Del(self);
+}
+
+static PyObject *py_policy_hnd_getattr(PyObject *self, char *attrname)
+{
+	return Py_FindMethod(spoolss_hnd_methods, self, attrname);
+}
+
+PyTypeObject spoolss_policy_hnd_type = {
+	PyObject_HEAD_INIT(NULL)
+	0,
+	"Policy Handle",
+	sizeof(spoolss_policy_hnd_object),
+	0,
+	py_policy_hnd_dealloc, /*tp_dealloc*/
+	0,          /*tp_print*/
+	py_policy_hnd_getattr,          /*tp_getattr*/
+	0,          /*tp_setattr*/
+	0,          /*tp_compare*/
+	0,          /*tp_repr*/
+	0,          /*tp_as_number*/
+	0,          /*tp_as_sequence*/
+	0,          /*tp_as_mapping*/
+	0,          /*tp_hash */
 };
 
 /* Initialise constants */
