@@ -543,7 +543,7 @@ clientstat(code, parm1, parm2)
 
 		ws.ws_col = parm1;
 		ws.ws_row = parm2;
-		(void) ioctl(pty, TIOCSWINSZ, (char *)&ws);
+		(void) ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
 	    }
 #endif	/* TIOCSWINSZ */
 
@@ -635,7 +635,7 @@ defer_terminit()
 		memset((char *)&ws, 0, sizeof(ws));
 		ws.ws_col = def_col;
 		ws.ws_row = def_row;
-		(void) ioctl(pty, TIOCSWINSZ, (char *)&ws);
+		(void) ioctl(ourpty, TIOCSWINSZ, (char *)&ws);
 	}
 #endif
 

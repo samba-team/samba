@@ -79,11 +79,17 @@ int	registerd_host_only = 0;
 #ifdef	STREAMSPTY
 # include <stropts.h>
 # include <termios.h>
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
 #endif
 # ifdef HAVE_SYS_STRTTY_H
 # include <sys/strtty.h>
+# endif
+# ifdef HAVE_SYS_STR_TTY_H
+# include <sys/str_tty.h>
 # endif
 /* make sure we don't get the bsd version */
 /* what is this here for? solaris? /joda */
@@ -803,8 +809,8 @@ void doit(struct sockaddr_in *who)
 	 * Find an available pty to use.
 	 */
 #ifndef	convex
-	pty = getpty(&ptynum);
-	if (pty < 0)
+	ourpty = getpty(&ptynum);
+	if (ourpty < 0)
 		fatal(net, "All network ports in use");
 #else
 	for (;;) {
@@ -814,7 +820,7 @@ void doit(struct sockaddr_in *who)
 		if ((lp = getpty()) == NULL)
 			fatal(net, "Out of ptys");
 
-		if ((pty = open(lp, 2)) >= 0) {
+		if ((ourpty = open(lp, 2)) >= 0) {
 			strcpy(line,lp);
 			line[5] = 't';
 			break;
@@ -911,9 +917,9 @@ void doit(struct sockaddr_in *who)
 	}
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-	telnet(net, pty);  /* begin server processing */
+	telnet(net, ourpty);  /* begin server processing */
 #else
-	telnet(net, pty, host);
+	telnet(net, ourpty, host);
 #endif
 	/*NOTREACHED*/
 }  /* end of doit */
@@ -1550,12 +1556,12 @@ interrupt()
 	/* Streams PTY style ioctl to post a signal */
 	{
 		int sig = SIGINT;
-		(void) ioctl(pty, TIOCSIGNAL, &sig);
-		(void) ioctl(pty, I_FLUSH, FLUSHR);
+		(void) ioctl(ourpty, TIOCSIGNAL, &sig);
+		(void) ioctl(ourpty, I_FLUSH, FLUSHR);
 	}
 #else
 #ifdef	TCSIG
-	(void) ioctl(pty, TCSIG, (char *)SIGINT);
+	(void) ioctl(ourpty, TCSIG, (char *)SIGINT);
 #else	/* TCSIG */
 	init_termbuf();
 	*pfrontp++ = slctab[SLC_IP].sptr ?
@@ -1574,7 +1580,7 @@ sendbrk()
 {
 	ptyflush();	/* half-hearted */
 #ifdef	TCSIG
-	(void) ioctl(pty, TCSIG, (char *)SIGQUIT);
+	(void) ioctl(ourpty, TCSIG, (char *)SIGQUIT);
 #else	/* TCSIG */
 	init_termbuf();
 	*pfrontp++ = slctab[SLC_ABORT].sptr ?
@@ -1588,7 +1594,7 @@ sendsusp()
 #ifdef	SIGTSTP
 	ptyflush();	/* half-hearted */
 # ifdef	TCSIG
-	(void) ioctl(pty, TCSIG, (char *)SIGTSTP);
+	(void) ioctl(ourpty, TCSIG, (char *)SIGTSTP);
 # else	/* TCSIG */
 	*pfrontp++ = slctab[SLC_SUSP].sptr ?
 			(unsigned char)*slctab[SLC_SUSP].sptr : '\032';

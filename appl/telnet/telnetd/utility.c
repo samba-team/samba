@@ -101,7 +101,7 @@ stilloob(s)
     } while ((value == -1) && (errno == EINTR));
 
     if (value < 0) {
-	fatalperror(pty, "select");
+	fatalperror(ourpty, "select");
     }
     if (FD_ISSET(s, &excepts)) {
 	return 1;
@@ -120,7 +120,7 @@ ptyflush()
 			{ sprintf(nfrontp, "td: ptyflush %d chars\r\n", n);
 			  nfrontp += strlen(nfrontp); });
 		DIAG(TD_PTYDATA, printdata("pd", pbackp, n));
-		n = write(pty, pbackp, n);
+		n = write(ourpty, pbackp, n);
 	}
 	if (n < 0) {
 		if (errno == EWOULDBLOCK || errno == EINTR)
