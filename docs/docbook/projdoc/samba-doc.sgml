@@ -21,6 +21,7 @@
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "GROUP-MAPPING-HOWTO.sgml">
 <!ENTITY Portability SYSTEM "Portability.sgml">
 <!ENTITY Other-Clients SYSTEM "Other-Clients.sgml">
+<!ENTITY ADS-HOWTO SYSTEM "ADS-HOWTO.sgml">
 ]>
 
 <book id="Samba-Project-Documentation">
@@ -78,6 +79,7 @@ Cheers, jerry
 &Samba-PDC-HOWTO;
 &Samba-BDC-HOWTO;
 &Samba-LDAP;
+&ADS-HOWTO;
 &BROWSING;
 &SPEED;
 &Other-Clients;
