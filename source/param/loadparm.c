@@ -163,8 +163,7 @@ typedef struct
 	char *szSourceEnv;
 	char *szIdmapUID;
 	char *szIdmapGID;
-	BOOL *bIdmapOnly;
-	char *szNonUnixAccountRange;
+	BOOL bEnableRidAlgorithm;
 	int AlgorithmicRidBase;
 	char *szTemplateHomedir;
 	char *szTemplateShell;
@@ -172,6 +171,7 @@ typedef struct
 	BOOL bWinbindEnumUsers;
 	BOOL bWinbindEnumGroups;
 	BOOL bWinbindUseDefaultDomain;
+	BOOL bWinbindTrustedDomainsOnly;
 	char *szWinbindBackend;
 	char *szIdmapBackend;
 	char *szAddShareCommand;
@@ -1117,7 +1117,7 @@ static struct parm_struct parm_table[] = {
 
 	{"Winbind options", P_SEP, P_SEPARATOR},
 
-	{"idmap only", P_BOOL, P_GLOBAL, &Globals.bIdmapOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"enable rid algorithm", P_BOOL, P_GLOBAL, &Globals.bEnableRidAlgorithm, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED},
 	{"idmap backend", P_STRING, P_GLOBAL, &Globals.szIdmapBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"idmap uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind uid", P_STRING, P_GLOBAL, &Globals.szIdmapUID, handle_idmap_uid, NULL, FLAG_ADVANCED | FLAG_DEVELOPER | FLAG_DEPRECATED },
@@ -1130,6 +1130,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"winbind trusted domains only", P_BOOL, P_GLOBAL, &Globals.bWinbindTrustedDomainsOnly, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1467,12 +1468,13 @@ static void init_globals(void)
 	string_set(&Globals.szWinbindSeparator, "\\");
 	string_set(&Globals.szAclCompat, "");
 
-	Globals.winbind_cache_time = 600;	/* 5 minutes */
+	Globals.winbind_cache_time = 300;	/* 5 minutes */
 	Globals.bWinbindEnumUsers = True;
 	Globals.bWinbindEnumGroups = True;
 	Globals.bWinbindUseDefaultDomain = False;
+	Globals.bWinbindTrustedDomainsOnly = False;
 
-	Globals.bIdmapOnly = False;
+	Globals.bEnableRidAlgorithm = True;
 
 	Globals.name_cache_timeout = 660; /* In seconds */
 
@@ -1637,9 +1639,10 @@ FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
+FN_GLOBAL_BOOL(lp_winbind_trusted_domains_only, &Globals.bWinbindTrustedDomainsOnly)
 
 FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
-FN_GLOBAL_BOOL(lp_idmap_only, &Globals.bIdmapOnly)
+FN_GLOBAL_BOOL(lp_enable_rid_algorithm, &Globals.bEnableRidAlgorithm)
 
 #ifdef WITH_LDAP_SAMCONFIG
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)

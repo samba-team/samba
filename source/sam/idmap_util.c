@@ -93,7 +93,7 @@ BOOL idmap_get_free_rid_range(uint32 *low, uint32 *high)
 {
 	uint32 id_low, id_high;
 
-	if (lp_idmap_only()) {
+	if (!lp_enable_rid_algorithm()) {
 		*low = BASE_RID;
 		*high = (uint32)-1;
 	}
@@ -134,130 +134,71 @@ BOOL idmap_get_free_ugid_range(uint32 *low, uint32 *high)
 }
 
 /*****************************************************************
- *THE CANONICAL* convert uid_t to SID function.
  check idmap if uid is in idmap range, otherwise falls back to
- the legacy algorithmic mapping.
- Returns SID pointer.
+ the legacy algorithmic mapping.  Returns SID pointer.
 *****************************************************************/  
 
-NTSTATUS uid_to_sid(DOM_SID *sid, uid_t uid)
+NTSTATUS idmap_uid_to_sid(DOM_SID *sid, uid_t uid)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	unid_t id;
 	int flags;
 
-	DEBUG(10,("uid_to_sid: uid = [%d]\n", uid));
+	DEBUG(10,("idmap_uid_to_sid: uid = [%d]\n", uid));
 
 	flags = ID_USERID;
-	if (!lp_idmap_only() && !idmap_check_ugid_is_in_free_range(uid)) {
-		flags |= ID_QUERY_ONLY;
-	}
-
 	id.uid = uid;
-	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
-		DEBUG(10, ("uid_to_sid: Failed to map uid = [%u]\n", (unsigned int)uid));
-		if (flags & ID_QUERY_ONLY) {
-			sid_copy(sid, get_global_sam_sid());
-			sid_append_rid(sid, fallback_pdb_uid_to_user_rid(uid));
-
-			DEBUG(10,("uid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", (unsigned int)uid, sid_string_static(sid)));
-			ret = NT_STATUS_OK;
-		}
-	}
-
-	return ret;
+	
+	return idmap_get_sid_from_id(sid, id, flags);
 }
 
 /*****************************************************************
- *THE CANONICAL* convert gid_t to SID function.
  check idmap if gid is in idmap range, otherwise falls back to
  the legacy algorithmic mapping.
  Group mapping is used for gids that maps to Wellknown SIDs
  Returns SID pointer.
 *****************************************************************/  
 
-NTSTATUS gid_to_sid(DOM_SID *sid, gid_t gid)
+NTSTATUS idmap_gid_to_sid(DOM_SID *sid, gid_t gid)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	unid_t id;
 	int flags;
 
-	DEBUG(10,("gid_to_sid: gid = [%d]\n", gid));
+	DEBUG(10,("idmap_gid_to_sid: gid = [%d]\n", gid));
 
 	flags = ID_GROUPID;
-	if (!lp_idmap_only() && !idmap_check_ugid_is_in_free_range(gid)) {
+	if (!idmap_check_ugid_is_in_free_range(gid)) {
 		flags |= ID_QUERY_ONLY;
 	}
 
 	id.gid = gid;
-	if (!NT_STATUS_IS_OK(ret = idmap_get_sid_from_id(sid, id, flags))) {
-		DEBUG(10, ("gid_to_sid: Failed to map gid = [%u]\n", (unsigned int)gid));
-		if (flags & ID_QUERY_ONLY) {
-			sid_copy(sid, get_global_sam_sid());
-			sid_append_rid(sid, pdb_gid_to_group_rid(gid));
-
-			DEBUG(10,("gid_to_sid: Fall back to algorithmic mapping: %u -> %s\n", (unsigned int)gid, sid_string_static(sid)));
-			ret = NT_STATUS_OK;
-		}
-	}
-
-	return ret;
+	return idmap_get_sid_from_id(sid, id, flags);
 }
 
 /*****************************************************************
- *THE CANONICAL* convert SID to uid function.
  if it is a foreign sid or it is in idmap rid range check idmap,
  otherwise falls back to the legacy algorithmic mapping.
  Returns True if this name is a user sid and the conversion
  was done correctly, False if not.
 *****************************************************************/  
 
-NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
+NTSTATUS idmap_sid_to_uid(const DOM_SID *sid, uid_t *uid, uint32 flags)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	BOOL fallback = False;
 	unid_t id;
-	int flags;
 
-	DEBUG(10,("sid_to_uid: sid = [%s]\n", sid_string_static(sid)));
+	DEBUG(10,("idmap_sid_to_uid: sid = [%s]\n", sid_string_static(sid)));
 
-	flags = ID_USERID;
-	if (!lp_idmap_only()) {
-		if (!idmap_check_sid_is_in_free_range(sid)) {
-			flags |= ID_QUERY_ONLY;
-			fallback = True;
-		}
-	}
+	flags |= ID_USERID;
 
-	if (NT_STATUS_IS_OK(ret = idmap_get_id_from_sid(&id, &flags, sid))) {
-
-		DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
-
+	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	
+	if ( NT_STATUS_IS_OK(ret) ) {
+		DEBUG(10,("idmap_sid_to_uid: uid = [%d]\n", id.uid));
 		*uid = id.uid;
-		
-	} else if (fallback) {
-		uint32 rid;
+	} 
 
-		if (!sid_peek_rid(sid, &rid)) {
-			DEBUG(10,("sid_to_uid: invalid SID!\n"));
-			ret = NT_STATUS_INVALID_PARAMETER;
-			goto done;
-		}
-
-		DEBUG(10,("sid_to_uid: Fall back to algorithmic mapping\n"));
-
-		if (!fallback_pdb_rid_is_user(rid)) {
-			DEBUG(3, ("sid_to_uid: SID %s is *NOT* a user\n", sid_string_static(sid)));
-			ret = NT_STATUS_UNSUCCESSFUL;
-		} else {
-			*uid = fallback_pdb_user_rid_to_uid(rid);
-			DEBUG(10,("sid_to_uid: mapping: %s -> %u\n", sid_string_static(sid), (unsigned int)(*uid)));
-			ret = NT_STATUS_OK;
-		}
-	}
-
-done:
 	return ret;
+
 }
 
 /*****************************************************************
@@ -269,50 +210,26 @@ done:
  was done correctly, False if not.
 *****************************************************************/  
 
-NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
+NTSTATUS idmap_sid_to_gid(const DOM_SID *sid, gid_t *gid, uint32 flags)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	BOOL fallback = False;
 	unid_t id;
-	int flags;
 
 	DEBUG(10,("sid_to_gid: sid = [%s]\n", sid_string_static(sid)));
 
-	flags = ID_GROUPID;
-	if (!lp_idmap_only()) {
-		if (!idmap_check_sid_is_in_free_range(sid)) {
-			flags |= ID_QUERY_ONLY;
-			fallback = True;
-		}
-	}
+	flags |= ID_GROUPID;
 
-	if (NT_STATUS_IS_OK(ret = idmap_get_id_from_sid(&id, &flags, sid))) {
-		
-		DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
+	ret = idmap_get_id_from_sid(&id, &flags, sid);
+	
+	if ( NT_STATUS_IS_OK(ret) ) 
+	{
+		DEBUG(10,("idmap_sid_to_gid: gid = [%d]\n", id.gid));
 		*gid = id.gid;
-
-	} else if (fallback) {
-		uint32 rid;
-
-		if (!sid_peek_rid(sid, &rid)) {
-			DEBUG(10,("sid_to_uid: invalid SID!\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		DEBUG(10,("sid_to_gid: Fall back to algorithmic mapping\n"));
-
-		if (fallback_pdb_rid_is_user(rid)) {
-			DEBUG(3, ("sid_to_gid: SID %s is *NOT* a group\n", sid_string_static(sid)));
-			ret = NT_STATUS_UNSUCCESSFUL;
-		} else {
-			*gid = pdb_group_rid_to_gid(rid);
-			DEBUG(10,("sid_to_gid: mapping: %s -> %u\n", sid_string_static(sid), (unsigned int)(*gid)));
-			ret = NT_STATUS_OK;
-		}
 	}
 
 	return ret;
 }
+
 
 /***************************************************************************
  Check first, call set_mapping if it doesn't already exist.

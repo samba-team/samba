@@ -815,7 +815,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
     	}
 
 	if (ldap_state->ldap_struct != NULL) {
-		DEBUG(5,("smbldap_open: already connected to the LDAP server\n"));
+		DEBUG(11,("smbldap_open: already connected to the LDAP server\n"));
 		return LDAP_SUCCESS;
 	}
 

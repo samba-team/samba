@@ -842,7 +842,7 @@ void build_options(BOOL screen);
 	if (!init_registry())
 		exit(1);
 
-	/* Initialise the password backed before idmap and the global_sam_sid
+	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
 	if(!initialize_password_db(False))
@@ -854,18 +854,6 @@ void build_options(BOOL screen);
 	}
 
 	static_init_auth;
-
-	{
-		const char *idmap_back = lp_idmap_backend();
-
-		if (!idmap_init((idmap_back && *idmap_back) ? "winbind" : NULL))
-			exit(1);
-	}
-
-	if (!idmap_init_wellknown_sids()) {
-		DEBUG(0,("ERROR: Samba failed to initialize it's 'well known' SID -> ID mapping tables.\n"));
-		exit(1);
-	}
 
 	static_init_rpc;
 

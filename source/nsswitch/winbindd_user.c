@@ -44,14 +44,14 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	
 	/* Resolve the uid number */
 
-	if (!NT_STATUS_IS_OK(sid_to_uid(user_sid, &(pw->pw_uid)))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(user_sid, &(pw->pw_uid), 0))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
 	
 	/* Resolve the gid number */   
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(group_sid, &(pw->pw_gid)))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(group_sid, &(pw->pw_gid), 0))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
@@ -116,10 +116,11 @@ enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state)
 			       name_user))
 		return WINBINDD_ERROR;
 	
-	/* don't handle our own domain if we are a DC.  This code handles cases where
+	/* don't handle our own domain if we are a DC ( or a member of a Samba domain 
+	   that shares UNIX accounts).  This code handles cases where
 	   the account doesn't exist anywhere and gets passed on down the NSS layer */
 
-	if ( IS_DC_FOR_DOMAIN(domain->name) ) {
+	if ( (IS_DC || lp_winbind_trusted_domains_only()) && strequal(name_domain, lp_workgroup()) ) {
 		DEBUG(7,("winbindd_getpwnam: rejecting getpwnam() for %s\\%s since I am on the PDC for this domain\n", 
 			name_domain, name_user));
 		return WINBINDD_ERROR;
@@ -202,7 +203,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (!NT_STATUS_IS_OK(uid_to_sid(&user_sid, state->request.data.uid))) {
+	if (!NT_STATUS_IS_OK(idmap_uid_to_sid(&user_sid, state->request.data.uid))) {
 		DEBUG(1, ("could not convert uid %d to SID\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -246,7 +247,7 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Check group has a gid number */
 
-	if (!NT_STATUS_IS_OK(sid_to_gid(user_info.group_sid, &gid))) {
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(user_info.group_sid, &gid, 0))) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
@@ -296,10 +297,14 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 		struct getent_state *domain_state;
                 
 		
-		/* don't add our domaina if we are a PDC */
+		/* don't add our domaina if we are a PDC or if we 
+		   are a member of a Samba domain */
 		
-		if ( IS_DC_FOR_DOMAIN( domain->name ) )
-			continue; 
+		if ( (IS_DC || lp_winbind_trusted_domains_only())
+			&& strequal(domain->name, lp_workgroup()) )
+		{
+			continue;
+		}
 						
 		/* Create a state record for this domain */
                 

@@ -111,11 +111,12 @@ enum winbindd_cmd {
 	WINBINDD_NUM_CMDS
 };
 
-#define WINBIND_PAM_INFO3_NDR  0x0001
-#define WINBIND_PAM_INFO3_TEXT 0x0002
-#define WINBIND_PAM_NTKEY      0x0004
-#define WINBIND_PAM_LMKEY      0x0008
-#define WINBIND_PAM_CONTACT_TRUSTDOM 0x0010
+#define WBFLAG_PAM_INFO3_NDR  		0x0001
+#define WBFLAG_PAM_INFO3_TEXT 		0x0002
+#define WBFLAG_PAM_NTKEY      		0x0004
+#define WBFLAG_PAM_LMKEY      		0x0008
+#define WBFLAG_PAM_CONTACT_TRUSTDOM 	0x0010
+#define WBFLAG_QUERY_ONLY		0x0020
 
 /* Winbind request structure */
 
@@ -123,6 +124,7 @@ struct winbindd_request {
 	uint32 length;
 	enum winbindd_cmd cmd;   /* Winbindd command to execute */
 	pid_t pid;               /* pid of calling process */
+	uint32 flags;            /* flags relavant to a given request */
 
 	union {
 		fstring winsreq;     /* WINS request */
@@ -146,7 +148,6 @@ struct winbindd_request {
                         fstring nt_resp;
                         uint16 nt_resp_len;
 			fstring workstation;
-			uint32 flags;
                 } auth_crap;
                 struct {
                     fstring user;
