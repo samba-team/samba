@@ -70,6 +70,18 @@ setprogname(const char *argv0)
 #endif /* HAVE_SETPROGNAME */
 
 void
+set_progname(char *argv0)
+{
+    setprogname ((const char *)argv0);
+}
+
+const char *
+get_progname (void)
+{
+    return getprogname ();
+}
+
+void
 warnerr(int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;

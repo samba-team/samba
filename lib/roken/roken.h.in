@@ -603,4 +603,7 @@ void setprogname(const char *argv0);
 const char *getprogname(void);
 #endif
 
+void set_progname(char *argv0);
+const char *get_progname(void);
+
 ROKEN_CPP_END
