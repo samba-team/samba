@@ -493,9 +493,21 @@ doit_passive (kx_context *kc,
 	int cookiesp = TRUE;
 	       
 	FD_ZERO(&fds);
+	if (sock >= FD_SETSIZE) {
+	    syslog (LOG_ERR, "fd too large");
+	    cleanup(nsockets, sockets);
+	    return 1;
+	}
+
 	FD_SET(sock, &fds);
-	for (i = 0; i < nsockets; ++i)
+	for (i = 0; i < nsockets; ++i) {
+	    if (sockets[i].fd >= FD_SETSIZE) {
+		syslog (LOG_ERR, "fd too large");
+		cleanup(nsockets, sockets);
+		return 1;
+	    }
 	    FD_SET(sockets[i].fd, &fds);
+	}
 	ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
 	if(ret <= 0)
 	    continue;
