@@ -15,7 +15,7 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw);
 BOOL py_parse_creds(PyObject *creds, char **username, char **domain, 
 		    char **password, char **errstr);
 struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
-				  char *pipe_name, char **errstr);
+				  int pipe_idx, char **errstr);
 BOOL get_level_value(PyObject *dict, uint32 *level);
 
 /* The following definitions come from python/py_ntsec.c  */
