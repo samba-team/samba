@@ -85,6 +85,131 @@ static uint16 open_rpc_pipe(char *inbuf, char *outbuf, char *rname, int Client, 
 }
 
 /****************************************************************************
+do an rpc bind
+****************************************************************************/
+static BOOL do_rpc_bind(uint16 fnum)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	int data_len;
+	pstring data; /* only 1024 bytes */
+	uint16 setup[2]; /* only need 2 uint16 setup parameters */
+
+	RPC_HDR    hdr;
+
+	RPC_HDR_RB hdr_rb;
+	RPC_IFACE abstract;
+	RPC_IFACE transfer;
+
+    BOOL valid_ack = False;
+	int call_id = 0x1;
+	int i;
+
+	static char abs_data[16];
+	static char trn_data[16];
+
+	/* create and send a MSRPC command with api LSA_OPENPOLICY */
+
+	DEBUG(4,("LSA RPC Bind[%d]\n", fnum));
+
+	for (i = 0; i < sizeof(trn_data); i++)
+	{
+		trn_data[i] = 2 * i;
+	}
+
+	for (i = 0; i < sizeof(abs_data); i++)
+	{
+		abs_data[i] = i;
+	}
+
+	/* create interface UUIDs. */
+	make_rpc_iface(&abstract, abs_data, 0x0);
+	make_rpc_iface(&transfer, trn_data, 0x2);
+
+	/* create the request RPC_HDR_RB */
+	make_rpc_hdr_rb(&hdr_rb, 
+	                0x1630, 0x1630, 0x0,
+	                0x1, 0x1, 0x1,
+					&abstract, &transfer);
+
+	/* stream the bind request data */
+	p = smb_io_rpc_hdr_rb(False, &hdr_rb, data + 0x10, data, 4, 0);
+
+	data_len = PTR_DIFF(p, data);
+
+	/* create the request RPC_HDR */
+	make_rpc_hdr(&hdr, RPC_BIND, call_id, PTR_DIFF(p, data + 0x10));
+
+	/* stream the header into data */
+	p = smb_io_rpc_hdr(False, &hdr, data, data, 4, 0);
+
+	/* create setup parameters. */
+	setup[0] = 0x0026; /* 0x26 indicates "transact named pipe" */
+	setup[1] = fnum; /* file handle, from the SMBcreateX pipe, earlier */
+
+	/* send the data on \PIPE\ */
+	if (cli_call_api("\\PIPE\\", 0, data_len, 2, 1024,
+                BUFFER_SIZE,
+				&rprcnt, &rdrcnt,
+				NULL, data, setup,
+				&rparam, &rdata))
+	{
+		RPC_HDR_BA hdr_ba;
+		int hdr_len;
+		int pkt_len;
+
+		DEBUG(5, ("cli_call_api: return OK\n"));
+
+		p = rdata;
+
+		if (p) p = smb_io_rpc_hdr(True, &hdr, p, rdata, 4, 0);
+		if (p) p = align_offset(p, rdata, 4); /* oh, what a surprise */
+
+		hdr_len = PTR_DIFF(p, rdata);
+
+		if (p) p = smb_io_rpc_hdr_ba(True, &hdr_ba, p, rdata, 4, 0);
+
+		pkt_len = PTR_DIFF(p, rdata);
+#if 0
+		if (p && hdr_len != hdr.hdr.frag_len - hdr.alloc_hint)
+		{
+			/* header length not same as calculated header length */
+			DEBUG(2,("do_lsa_open_policy: hdr_len %x != frag_len-alloc_hint %x\n",
+			          hdr_len, hdr.hdr.frag_len - hdr.alloc_hint));
+			p = NULL;
+		}
+
+
+		if (p && pkt_len != hdr.hdr.frag_len)
+		{
+			/* packet data size not same as reported fragment length */
+			DEBUG(2,("do_lsa_open_policy: pkt_len %x != frag_len \n",
+			                           pkt_len, hdr.hdr.frag_len));
+			p = NULL;
+		}
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_OPENPOLICY: nt_status error %lx\n", r_o.status));
+			p = NULL;
+		}
+#endif
+		if (p)
+		{
+			/* ok, at last: we're happy. */
+			valid_ack = True;
+		}
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return valid_ack;
+}
+
+/****************************************************************************
 do a LSA Open Policy
 ****************************************************************************/
 static BOOL do_lsa_open_policy(uint16 fnum, char *server_name, LSA_POL_HND *hnd)
@@ -936,6 +1061,14 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 		return False;
 	}
 
+	/******************* bind request on \PIPE\lsarpc *****************/
+
+	if (!do_rpc_bind(fnum))
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
 	/******************* Open Policy ********************/
 
 	fstrcpy(server_name, ("\\\\"));
@@ -990,6 +1123,14 @@ BOOL do_nt_login(char *desthost, char *myhostname,
 	/******************* open the \PIPE\NETLOGON file *****************/
 
 	if ((fnum = open_rpc_pipe(inbuf, outbuf, PIPE_NETLOGON, Client, cnum)) == 0xffff)
+	{
+		free(inbuf); free(outbuf);
+		return False;
+	}
+
+	/******************* bind request on \PIPE\NETLOGON *****************/
+
+	if (!do_rpc_bind(fnum))
 	{
 		free(inbuf); free(outbuf);
 		return False;

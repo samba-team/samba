@@ -4484,7 +4484,7 @@ char *align_offset(char *q, char *base, int align_offset_len)
 	return q;
 }
 
-static void print_asc(int level, unsigned char *buf,int len)
+void print_asc(int level, unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)

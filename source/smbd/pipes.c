@@ -216,7 +216,7 @@ BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
 
  TransactNamedPipe on \PIPE\lsarpc.
 ****************************************************************************/
-void LsarpcTNP1(char *data,char **rdata, int *rdata_len)
+static void LsarpcTNP1(char *data,char **rdata, int *rdata_len)
 {
   uint32 dword1, dword2;
   char pname[] = "\\PIPE\\lsass";

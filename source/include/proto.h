@@ -714,7 +714,6 @@ BOOL api_LsarpcSNPHS(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len);
-void LsarpcTNP1(char *data,char **rdata, int *rdata_len);
 BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
 		     int mdrcnt,int mprcnt,
 		     char **rdata,char **rparam,
@@ -955,8 +954,7 @@ void make_rpc_addr_str(RPC_ADDR_STR *str, char *name);
 char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int align, int depth);
 void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid);
 char* smb_io_rpc_hdr_bba(BOOL io, RPC_HDR_BBA *rpc, char *q, char *base, int align, int depth);
-void make_rpc_hdr_rb(RPC_HDR_RB *rpc, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len,
+void make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
 				RPC_IFACE *abstract, RPC_IFACE *transfer);
@@ -964,8 +962,7 @@ char* smb_io_rpc_hdr_rb(BOOL io, RPC_HDR_RB *rpc, char *q, char *base, int align
 void make_rpc_results(RPC_RESULTS *res, 
 				uint8 num_results, uint16 result, uint16 reason);
 char* smb_io_rpc_results(BOOL io, RPC_RESULTS *res, char *q, char *base, int align, int depth);
-void make_rpc_hdr_ba(RPC_HDR_BA *rpc, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len,
+void make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
@@ -1225,5 +1222,6 @@ void pstrcpy(char *dest, char *src);
 char *align4(char *q, char *base);
 char *align2(char *q, char *base);
 char *align_offset(char *q, char *base, int align_offset_len);
+void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
 char *tab_depth(int depth);

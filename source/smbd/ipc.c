@@ -2893,7 +2893,8 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   int rdata_len = 0;
   int rparam_len = 0;
 
-  BOOL reply = False;
+  BOOL reply    = False;
+  BOOL bind_req = False;
 
   int i;
   int fd;
@@ -2940,12 +2941,49 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   rdata  = (char *)malloc(1024); if (rdata ) bzero(rdata ,1024);
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
-  DEBUG(10,("calling api_fd_command\n"));
+#ifdef NTDOMAIN
+  if (api_fd_commands[i].subcommand != -1)
+  {
+    RPC_HDR hdr;
+    char *q = smb_io_rpc_hdr(True, &hdr, data, data, 4, 0);
+    
+    if ((bind_req = ((q != NULL) && (hdr.pkt_type == RPC_BIND))))
+    {
+      RPC_HDR_RB hdr_rb;
 
-  reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
+      char *p = smb_io_rpc_hdr_rb(True, &hdr_rb, q, data, 4, 0);
+
+      if ((bind_req = (p != NULL)))
+      {
+        RPC_HDR_BA hdr_ba;
+        make_rpc_hdr_ba(&hdr_ba,
+               hdr_rb.bba.max_tsize, hdr_rb.bba.max_rsize, hdr_rb.bba.assoc_gid,
+               api_fd_commands[i].pipename,
+               0x1, 0x0, 0x0,
+               &(hdr_rb.transfer));
+
+        p = smb_io_rpc_hdr_ba(False, &hdr_ba, rdata + 0x10, rdata, 4, 0);
+
+		rdata_len = PTR_DIFF(p, rdata);
+
+        make_rpc_hdr(&hdr, RPC_BINDACK, hdr.call_id, rdata_len);
+
+        p = smb_io_rpc_hdr(False, &hdr, rdata, rdata, 4, 0);
+        
+        reply = (p != NULL);
+      }
+    }
+  }
+#endif
+
+  if (!bind_req)
+  {
+    DEBUG(10,("calling api_fd_command\n"));
+
+    reply = api_fd_commands[i].fn(cnum,vuid,params,data,mdrcnt,mprcnt,
 			        &rdata,&rparam,&rdata_len,&rparam_len);
-  
-  DEBUG(10,("called api_fd_command\n"));
+    DEBUG(10,("called api_fd_command\n"));
+  }
 
   if (rdata_len > mdrcnt || rparam_len > mprcnt)
   {
