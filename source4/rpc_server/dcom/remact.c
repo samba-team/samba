@@ -38,6 +38,7 @@ struct dcom_interface_pointer *dcom_interface_pointer_by_ipid(struct GUID *ipid)
 */
 static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct RemoteActivation *r)
 {
+	int i;
 	/* FIXME: CoGetClassObject() */
 	/* FIXME: IClassFactory::CreateInstance() */
 	/* FIXME: Register newly created object with dcerpc subsystem */
@@ -47,14 +48,33 @@ static WERROR RemoteActivation(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	r->out.ServerVersion.MajorVersion = COM_MAJOR_VERSION;
 	r->out.ServerVersion.MinorVersion = COM_MINOR_VERSION;
 
-	/* FIXME: */
-	r->out.hr = WERR_NOT_SUPPORTED;
-	r->out.pOxid = 0;
-	r->out.AuthnHint = 0;
+	r->out.AuthnHint = DCERPC_AUTH_LEVEL_DEFAULT;
+	r->out.pdsaOxidBindings = dcom_server_generate_dual_string(mem_ctx, dce_call);
+	
 	/* FIXME: Loop thru given interfaces and set r->out.results and 
 	 * r->out.interfaces */
+	r->out.ifaces = talloc_array_p(mem_ctx, struct pMInterfacePointer, r->in.Interfaces);
+	r->out.results = talloc_array_p(mem_ctx, WERROR, r->in.Interfaces);
+	for (i = 0; i < r->in.Interfaces; i++) {
+			ZERO_STRUCT(r->out.ifaces[i]);	
+			r->out.results[i] = WERR_NOT_SUPPORTED;
+	}
+
+	/* FIXME: */
+	r->out.pOxid = 0;
+	ZERO_STRUCT(r->out.ipidRemUnknown);
+	r->out.hr = WERR_NOT_SUPPORTED;
 	
 	return WERR_NOT_SUPPORTED;
+}
+
+
+static NTSTATUS register_dcom_class(const void *_c)
+{
+	const struct dcom_class *class = _c;
+	/* FIXME */
+
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 NTSTATUS dcerpc_server_dcom_init(void)
@@ -66,6 +86,11 @@ NTSTATUS dcerpc_server_dcom_init(void)
 	}
 
 	status = dcerpc_server_IRemoteActivation_init();
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	status = register_subsystem("dcom", register_dcom_class);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
