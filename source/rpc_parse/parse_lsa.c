@@ -935,7 +935,7 @@ void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM *r_e)
 }
 
 /*******************************************************************
-reads or writes an LSA_Q_QUERY_INFO structure.
+reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int depth)
 {
@@ -949,6 +949,7 @@ BOOL lsa_io_r_query(char *desc,  LSA_R_QUERY_INFO *r_q, prs_struct *ps, int dept
 	if (r_q->undoc_buffer != 0)
 	{
 		prs_uint16("info_class", ps, depth, &(r_q->info_class));
+		prs_align(ps);
 
 		switch (r_q->info_class)
 		{

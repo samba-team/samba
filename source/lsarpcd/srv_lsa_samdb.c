@@ -195,7 +195,7 @@ uint32 _lsa_enum_trust_dom(POLICY_HND *hnd, uint32 *enum_ctx,
 }
 
 /***************************************************************************
-make_lsa_rid2s
+_lsa_lookup_names
  ***************************************************************************/
 static uint32 get_remote_sid(const char *dom_name, char *find_name,
 			     DOM_SID *sid, uint32 *rid, uint32 *sid_name_use)
@@ -229,20 +229,23 @@ static uint32 get_remote_sid(const char *dom_name, char *find_name,
 	return status;
 }
 
-static void make_lsa_rid2s(DOM_R_REF *ref,
-				DOM_RID2 *rid2,
-				int num_entries, UNISTR2 name[MAX_LOOKUP_SIDS],
+static uint32 _lsa_lookup_names(uint32 num_entries, const UNISTR2 *name,
+				DOM_R_REF *ref,
+				DOM_RID2 **ret_rid2,
 				uint32 *mapped_count)
 {
 	int i;
 	int total = 0;
+	DOM_RID2 *rid2;
+
 	(*mapped_count) = 0;
 
-	SMB_ASSERT(num_entries <= MAX_LOOKUP_SIDS);
+	rid2 = g_new(DOM_RID2, num_entries);
+	(*ret_rid2) = rid2;
 
 	for (i = 0; i < num_entries; i++)
 	{
-		uint32 status = NT_STATUS_NOPROBLEMO;
+		uint32 status1 = NT_STATUS_NOPROBLEMO;
 		DOM_SID find_sid;
 		DOM_SID sid;
 		uint32 rid = 0xffffffff;
@@ -257,9 +260,9 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 
 		if (!split_domain_name(full_name, dom_name, find_name))
 		{
-			status = NT_STATUS_NONE_MAPPED;
+			status1 = NT_STATUS_NONE_MAPPED;
 		}
-		if (status == NT_STATUS_NOPROBLEMO && map_domain_name_to_sid(&find_sid,
+		if (status1 == NT_STATUS_NOPROBLEMO && map_domain_name_to_sid(&find_sid,
 		                                            &find_name))
 		{
 			sid_name_use = SID_NAME_DOMAIN;
@@ -267,7 +270,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			rid = 0xffffffff;
 			sid_copy(&sid, &find_sid);
 		}
-		else if (status == NT_STATUS_NOPROBLEMO)
+		else if (status1 == NT_STATUS_NOPROBLEMO)
 		{
 			uint32 ret;
 			ret = lookup_sam_domainname("\\\\.",
@@ -279,7 +282,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 				sid_to_string(tmp, &find_sid);
 				DEBUG(10,("lookup sam name: %s %s\n",
 				           tmp, find_name));
-				status = lookup_sam_name(NULL,
+				status1 = lookup_sam_name(NULL,
 				                         &find_sid,
 				                         find_name,
 							 &rid, &sid_name_use);
@@ -287,18 +290,18 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			}
 			else
 			{
-				status = get_remote_sid(dom_name, find_name,
+				status1 = get_remote_sid(dom_name, find_name,
 							&sid, &rid,
 							&sid_name_use);
 			}
 		}
 
-		if (status == NT_STATUS_NOPROBLEMO)
+		if (status1 == NT_STATUS_NOPROBLEMO)
 		{
 			dom_idx = make_dom_ref(ref, find_name, &sid);
 		}
 
-		if (status == NT_STATUS_NOPROBLEMO)
+		if (status1 == NT_STATUS_NOPROBLEMO)
 		{
 			(*mapped_count)++;
 		}
@@ -317,32 +320,17 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 			free(find_name);
 		}
 	}
-}
 
-/***************************************************************************
-make_reply_lookup_names
- ***************************************************************************/
-static void make_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
-				DOM_R_REF *ref, uint32 num_entries,
-				DOM_RID2 *rid2, uint32 mapped_count)
-{
-	r_l->ptr_dom_ref  = 1;
-	r_l->dom_ref      = ref;
-
-	r_l->num_entries  = num_entries;
-	r_l->ptr_entries  = 1;
-	r_l->num_entries2 = num_entries;
-	r_l->dom_rid      = rid2;
-
-	r_l->mapped_count = mapped_count;
-
-	if (mapped_count == 0)
+	if ((*mapped_count) == 0)
 	{
-		r_l->status = NT_STATUS_NONE_MAPPED;
+		safe_free(rid2);
+		(*ret_rid2) = NULL;
+
+		return NT_STATUS_NONE_MAPPED;
 	}
 	else
 	{
-		r_l->status = NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_NOPROBLEMO;
 	}
 }
 
@@ -440,29 +428,6 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 }
 
 /***************************************************************************
-lsa_reply_lookup_names
- ***************************************************************************/
-static BOOL lsa_reply_lookup_names(prs_struct *rdata,
-				UNISTR2 names[MAX_LOOKUP_SIDS], int num_entries)
-{
-	LSA_R_LOOKUP_NAMES r_l;
-	DOM_R_REF ref;
-	DOM_RID2 rids[MAX_LOOKUP_SIDS];
-	uint32 mapped_count = 0;
-
-	ZERO_STRUCT(r_l);
-	ZERO_STRUCT(ref);
-	ZERO_STRUCT(rids);
-
-	/* set up the LSA Lookup RIDs response */
-	make_lsa_rid2s(&ref, rids, num_entries, names, &mapped_count);
-	make_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
-
-	/* store the response in the SMB stream */
-	return lsa_io_r_lookup_names("", &r_l, rdata, 0);
-}
-
-/***************************************************************************
 _lsa_query_info
  ***************************************************************************/
 uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
@@ -511,27 +476,6 @@ uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 	}
 
 	return status;
-}
-
-/***************************************************************************
-_lsa_lookup_names
- ***************************************************************************/
-static BOOL _lsa_lookup_names( rpcsrv_struct *p, prs_struct *data,
-                                  prs_struct *rdata )
-{
-	LSA_Q_LOOKUP_NAMES q_l;
-	ZERO_STRUCT(q_l);
-
-	/* grab the info class and policy handle */
-	if (!lsa_io_q_lookup_names("", &q_l, data, 0))
-	{
-		return False;
-	}
-
-
-	SMB_ASSERT_ARRAY(q_l.uni_name, q_l.num_entries);
-
-	return lsa_reply_lookup_names(rdata, q_l.uni_name, q_l.num_entries);
 }
 
 /***************************************************************************

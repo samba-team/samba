@@ -40,16 +40,16 @@ enum SID_NAME_USE
 
 /* ntlsa pipe */
 #define LSA_CLOSE              0x00
+#define LSA_OPENPOLICY         0x06
 #define LSA_QUERYINFOPOLICY    0x07
 #define LSA_ENUMTRUSTDOM       0x0d
 #define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
-#define LSA_OPENPOLICY         0x06
-#define LSA_OPENPOLICY2        0x2c
 #define LSA_CREATESECRET       0x10
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
+#define LSA_OPENPOLICY2        0x2c
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
@@ -141,15 +141,15 @@ typedef struct lsa_query_info
 /* LSA_R_QUERY_INFO - response to LSA query info policy */
 typedef struct lsa_r_query_info
 {
-    uint32 undoc_buffer; /* undocumented buffer pointer */
-    uint16 info_class; /* info class (same as info class in request) */
+	uint32 undoc_buffer; /* undocumented buffer pointer */
+	uint16 info_class; /* info class (same as info class in request) */
     
 	union
-    {
-        DOM_QUERY_3 id3;
+	{
+        	DOM_QUERY_3 id3;
 		DOM_QUERY_5 id5;
 
-    } dom;
+	} dom;
 
 	uint32 status; /* return code */
 

@@ -55,39 +55,6 @@ static void make_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 }
 
 /***************************************************************************
-lsa_reply_query_info
- ***************************************************************************/
-static BOOL lsa_reply_query_info(LSA_Q_QUERY_INFO *q_q, prs_struct *rdata,
-				char *dom_name, DOM_SID *dom_sid,
-				uint32 status)
-{
-	LSA_R_QUERY_INFO r_q;
-
-	ZERO_STRUCT(r_q);
-
-	r_q.status = status;
-
-	if (r_q.status == 0x0 && !find_policy_by_hnd(get_global_hnd_cache(), &q_q->pol))
-	{
-		r_q.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-	if (r_q.status == 0x0)
-	{
-		/* set up the LSA QUERY INFO response */
-
-		r_q.undoc_buffer = 0x1; 
-		r_q.info_class = q_q->info_class;
-
-		make_dom_query(&r_q.dom.id5, dom_name, dom_sid);
-
-		r_q.status = 0x0;
-	}
-	/* store the response in the SMB stream */
-	return lsa_io_r_query("", &r_q, rdata, 0);
-}
-
-
-/***************************************************************************
 make_lsa_rid2s
  ***************************************************************************/
 static uint32 get_remote_sid(const char *dom_name, char *find_name,
@@ -402,13 +369,14 @@ static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
                                 prs_struct *rdata )
 {
 	LSA_Q_QUERY_INFO q_i;
+	LSA_R_QUERY_INFO r_i;
 	fstring name;
-	uint32 status = 0x0;
 	DOM_SID sid;
 
 	memset(name, 0, sizeof(name));
 	ZERO_STRUCT(sid);
 	ZERO_STRUCT(q_i);
+	ZERO_STRUCT(r_i);
 
 	/* grab the info class and policy handle */
 	if (!lsa_io_q_query("", &q_i, data, 0))
@@ -416,12 +384,21 @@ static BOOL api_lsa_query_info( rpcsrv_struct *p, prs_struct *data,
 		return False;
 	}
 
+	r_i.status = _lsa_query_info_pol(&q_i.pol, q_i.info_class,
+					 name, &sid);
 
-	status = _lsa_query_info_pol(&q_i.pol, q_i.info_class,
-				     name, &sid);
+	if (r_i.status == 0x0)
+	{
+		/* set up the LSA QUERY INFO response */
 
-	/* construct reply.  return status is always 0x0 */
-	return lsa_reply_query_info(&q_i, rdata, name, &sid, status);
+		r_i.undoc_buffer = 0x1; 
+		r_i.info_class = q_i.info_class;
+
+		make_dom_query(&r_i.dom.id5, name, &sid);
+	}
+
+	/* store the response in the SMB stream */
+	return lsa_io_r_query("", &r_i, rdata, 0);
 }
 
 /***************************************************************************
