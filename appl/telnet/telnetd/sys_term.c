@@ -357,6 +357,9 @@ getnpty()
 static char Xline[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 char *line = Xline;
 
+char *line_nodev;
+char *line_notty;
+
 #ifdef	CRAY
 char *myline = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
@@ -372,9 +375,41 @@ static char *ptsname(int fd)
 }
 #endif
 
+#ifdef HAVE_UTMPX_H
+static char utid[32]; /* XXX larger than ut_id */
+
+void
+set_utid(void)
+{
+    int ptynum;
+    
+    line_nodev = line;
+    if(!strncmp(line, "/dev/", 5))
+	line_nodev += 5;
+
+    line_notty = line_nodev;
+    if(!strncmp(line_nodev, "tty", 3))
+	line_notty += 3;
+    else if(!strncmp(line_nodev, "pts/", 4))
+	line_notty += 4;
+    
+    /* Derive utmp ID from pty slave number */
+    if(isdigit(line_notty[0]) && sscanf(line_notty, "%d", &ptynum) == 1)
+	
+	sprintf(utid, "tn%02x", ptynum & 0xff);
+    else
+	sprintf(utid, "tn%s", line_notty);
+}
+#else
+void
+set_utid(void)
+{
+}
+#endif
+
 int getpty(int *ptynum)
 {
-#ifdef __osf__
+#ifdef __osf__ /* XXX */
         int master;
 	int slave;
 	if(openpty(&master, &slave, line, 0, 0) == 0){
@@ -1425,20 +1460,23 @@ init_env(void)
 /*
  * scrub_env()
  *
- * Remove a few things from the environment that
- * don't need to be there.
+ * Remove variables from the environment that might cause login to
+ * behave in a bad manner. To avoid this, login should be staticly
+ * linked.
  */
 
 static void scrub_env(void)
 {
+  static char *remove[] = { "LD_", "_RLD_", "LIBPATH=", "IFS=", NULL };
+
   char **cpp, **cpp2;
+  char **p;
   
   for (cpp2 = cpp = environ; *cpp; cpp++) {
-    if (strncmp(*cpp, "LD_", 3) &&
-	strncmp(*cpp, "_RLD_", 5) &&
-	strncmp(*cpp, "LIBPATH=", 8) &&
-	strncmp(*cpp, "IFS=", 4))
-      *cpp2++ = *cpp;
+    for(p = remove; *p; p++)
+      if(strncmp(*cpp, *p, strlen(*p)) == 0)
+	continue;
+    *cpp2++ = *cpp;
   }
   *cpp2 = 0;
 }
@@ -1464,6 +1502,7 @@ void start_login(char *host, int autologin, char *name)
 	register char *cp;
 	struct arg_val argv;
 	extern char *getenv(const char *);
+
 #ifdef	HAVE_UTMPX_H
 	char id_buf[3];
 	int ptynum;
@@ -1478,18 +1517,13 @@ void start_login(char *host, int autologin, char *name)
 
 	memset(&utmpx, 0, sizeof(utmpx));
 	SCPYN(utmpx.ut_user, ".telnet");
-	SCPYN(utmpx.ut_line, line + sizeof("/dev/") - 1);
+
+	SCPYN(utmpx.ut_line, line_nodev);
 	utmpx.ut_pid = pid;
-	/* Derive utmp ID from pty slave number */
-	if(sscanf(line, "%*[^0-9]%d", &ptynum) != 1 || ptynum > 255)
-	    fatal(net, "pty slave number incorrect");
-	sprintf(id_buf, "%02x", ptynum);
-	utmpx.ut_id[0] = 't';
-	utmpx.ut_id[1] = 'n';
-	utmpx.ut_id[2] = id_buf[0];
-	utmpx.ut_id[3] = id_buf[1];
+	SCPYN(utmpx.ut_id, utid);
+	
 	utmpx.ut_type = LOGIN_PROCESS;
-	(void) time(&utmpx.ut_tv.tv_sec);
+	gettimeofday(&utmpx.ut_tv);
 	if (pututxline(&utmpx) == NULL)
 		fatal(net, "pututxline failed");
 #endif
@@ -1726,30 +1760,31 @@ int addarg(struct arg_val *argv, char *val)
  * This is the routine to call when we are all through, to
  * clean up anything that needs to be cleaned up.
  */
-	/* ARGSUSED */
-	void
+
+extern void rmut(void);
+
+void
 cleanup(int sig)
 {
 #ifndef	PARENT_DOES_UTMP
-# if (BSD > 43) || defined(convex)
-	char *p;
-
-	p = line + sizeof("/dev/") - 1;
-	if (logout(p))
-		logwtmp(p, "", "");
-	(void)chmod(line, 0666);
-	(void)chown(line, 0, 0);
-	*p = 'p';
-	(void)chmod(line, 0666);
-	(void)chown(line, 0, 0);
-	(void) shutdown(net, 2);
-	exit(1);
+#ifndef HAVE_UTMPX_H
+    /* # if (BSD > 43) || defined(convex) */
+    char *p;
+    
+    p = line + sizeof("/dev/") - 1;
+    if (logout(p))
+	logwtmp(p, "", "");
+    (void)chmod(line, 0666);
+    (void)chown(line, 0, 0);
+    *p = 'p';
+    (void)chmod(line, 0666);
+    (void)chown(line, 0, 0);
+    (void) shutdown(net, 2);
+    exit(1);
 # else
-	void rmut();
-
-	rmut();
+    rmut();
 #ifdef HAVE_VHANGUP
-	vhangup();	/* XXX */
+    vhangup();	/* XXX */
 #else
 #endif
 	(void) shutdown(net, 2);
@@ -2071,7 +2106,7 @@ cleantmpdir(jid, tpath, user)
  */
 
 #ifdef	HAVE_UTMPX_H
-	void
+void
 rmut()
 {
 	register f;
@@ -2086,15 +2121,19 @@ rmut()
 	 * This updates the utmpx and utmp entries and make a wtmp/x entry
 	 */
 
-	SCPYN(utmpx.ut_line, line + sizeof("/dev/") - 1);
-	utxp = getutxline(&utmpx);
+	setutxent();
+	memset(&utmpx, 0, sizeof(utmpx));
+	strncpy(utmpx.ut_id, utid, sizeof(utmpx.ut_id));
+	utmpx.ut_type = LOGIN_PROCESS;
+	utxp = getutxid(&utmpx);
 	if (utxp) {
-		utxp->ut_type = DEAD_PROCESS;
-		utxp->ut_exit.e_termination = 0;
-		utxp->ut_exit.e_exit = 0;
-		(void) time(&utmpx.ut_tv.tv_sec);
-		utmpx.ut_tv.tv_usec = 0;
-		modutx(utxp);
+	    strcpy(utxp->ut_user, "");
+	    utxp->ut_type = DEAD_PROCESS;
+	    utxp->ut_exit.e_termination = 0;
+	    utxp->ut_exit.e_exit = 0;
+	    gettimeofday(&utxp->ut_tv, NULL);
+	    pututxline(utxp);
+	    updwtmpx(WTMPX_FILE, utxp);
 	}
 	endutxent();
 }  /* end of rmut */
