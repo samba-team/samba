@@ -4681,7 +4681,6 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
 				devmode);
 
-	safe_free(devmode);
 	free_a_printer(&ntprinter, 2);
 	safe_free(queue);
 
@@ -4691,11 +4690,13 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 
 	if (*needed > offered) {
 		*returned=0;
+		free_devmode(devmode);
 		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
 	if (!alloc_buffer_size(buffer, *needed)) {
+		free_devmode(devmode);
 		safe_free(info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
@@ -4705,6 +4706,7 @@ static uint32 enumjobs_level2(print_queue_struct *queue, int snum,
 		new_smb_io_job_info_2("", buffer, &info[i], 0);	
 	}
 
+	safe_free(devmode);
 	free(info);
 
 	return NT_STATUS_NO_PROBLEMO;
