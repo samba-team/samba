@@ -1,5 +1,8 @@
 1999-06-23  Assar Westerlund  <assar@sics.se>
 
+	* admin/srvcreate.c (srvcreate): always take the DES-CBC-MD5 key.
+  	increase possible verbosity.
+
 	* lib/krb5/config_file.c (parse_list): handle blank lines at
  	another place
 	
