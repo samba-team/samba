@@ -110,10 +110,11 @@ struct cli_state *server_cryptkey(void)
 
 
 /****************************************************************************
- Validate a password with the password server.
+ Check for a valid username and password in security=server mode.
+  - Validate a password with the password server.
 ****************************************************************************/
 
-static NTSTATUS server_validate(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
+NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
 {
 	struct cli_state *cli;
 	static unsigned char badpass[24];
@@ -212,7 +213,7 @@ use this machine as the password server.\n"));
 			       user_info->domain.str)) {
 		DEBUG(1,("password server %s rejected the password\n", cli->desthost));
 		/* Make this cli_nt_error() when the conversion is in */
-		nt_status = NT_STATUS_LOGON_FAILURE;
+		nt_status = cli_nt_error(cli);
 	} else {
 		nt_status = NT_STATUS_OK;
 	}
@@ -226,19 +227,6 @@ use this machine as the password server.\n"));
 	cli_ulogoff(cli);
 
 	return(nt_status);
-}
-
-/****************************************************************************
- Check for a valid username and password in security=server mode.
-****************************************************************************/
-
-NTSTATUS check_server_security(const auth_usersupplied_info *user_info, auth_serversupplied_info *server_info)
-{
-	
-	if(lp_security() != SEC_SERVER)
-		return NT_STATUS_LOGON_FAILURE;
-	
-	return server_validate(user_info, server_info);
 }
 
 
