@@ -2540,16 +2540,28 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		return True;
 	}
 	else {
-		/* writing */
-		if (buffer->ptr==0)
-			return True;
-		
-		if (!prs_uint32("size", ps, depth, &buffer->size))
-			return False;
-		if (!prs_append_some_prs_data(ps, &buffer->prs, 0, buffer->size))
-			return False;
+		BOOL ret = False;
 
-		return True;
+		/* writing */
+		if (buffer->ptr==0) {
+			/* We have finished with the data in buffer->prs - free it. */
+			prs_mem_free(&buffer->prs);
+			return True;
+		}
+	
+		if (!prs_uint32("size", ps, depth, &buffer->size))
+			goto out;
+
+		if (!prs_append_some_prs_data(ps, &buffer->prs, 0, buffer->size))
+			goto out;
+
+		ret = True;
+	out:
+
+		/* We have finished with the data in buffer->prs - free it. */
+		prs_mem_free(&buffer->prs);
+
+		return ret;
 	}
 }
 

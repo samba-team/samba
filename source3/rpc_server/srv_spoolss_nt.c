@@ -158,7 +158,7 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 
 SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
 {
-	SPOOL_NOTIFY_OPTION *new_sp = malloc(sizeof(SPOOL_NOTIFY_OPTION));
+	SPOOL_NOTIFY_OPTION *new_sp = NULL;
 
 	if (!sp)
 		return NULL;
@@ -825,6 +825,9 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		}
 		else if ((printer_default->access_required & SERVER_ACCESS_ADMINISTER ) == SERVER_ACCESS_ADMINISTER) {
 
+			if (!get_printer_snum(handle, &snum))
+				return ERROR_INVALID_HANDLE;
+
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(handle);
 				return ERROR_ACCESS_DENIED;
@@ -843,12 +846,12 @@ uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		/* NT doesn't let us connect to a printer if the connecting user
 		   doesn't have print permission.  */
 
-		if (!get_printer_snum(handle, &snum))
-			return ERROR_INVALID_HANDLE;
-
 		/* map an empty access mask to the minimum access mask */
 		if (printer_default->access_required == 0x0)
 			printer_default->access_required = PRINTER_ACCESS_USE;
+
+		if (!get_printer_snum(handle, &snum))
+			return ERROR_INVALID_HANDLE;
 
 		if (!print_access_check(&user, snum, printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
