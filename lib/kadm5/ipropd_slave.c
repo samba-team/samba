@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -72,10 +72,6 @@ get_creds(krb5_context context, const char *keytab_str,
     char *server;
     char keytab_buf[256];
     
-    ret = krb5_kt_register(context, &hdb_kt_ops);
-    if(ret)
-	krb5_err(context, 1, ret, "krb5_kt_register");
-
     if (keytab_str == NULL) {
 	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
 	if (ret)
