@@ -31,7 +31,10 @@
 #define PAM_EXTERN extern
 #include <security/pam_appl.h> 
 
+#ifndef PAM_AUTHTOK_RECOVER_ERR
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
+#endif
+
 #endif
 
 #ifdef HAVE_SECURITY_PAM_MODULES_H
