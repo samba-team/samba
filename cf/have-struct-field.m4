@@ -15,6 +15,5 @@ if test "$cache_val" = yes; then
 	AC_DEFINE(foo, 1, [Define if $1 has field $2.])
 	undefine(foo)
 fi
-AC_MSG_RESULT($cache_val)
 undefine(cache_val)
 ])
