@@ -237,7 +237,7 @@ SMB_OFF_T sys_ftell(FILE *fp)
 
 int sys_creat(const char *path, mode_t mode)
 {
-#if defined(HAVE_CREAT64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_CREAT64)
   return creat64(path, mode);
 #else
   /*
@@ -254,7 +254,7 @@ int sys_creat(const char *path, mode_t mode)
 
 int sys_open(const char *path, int oflag, mode_t mode)
 {
-#if defined(HAVE_OPEN64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OPEN64)
   return open64(path, oflag, mode);
 #else
   return open(path, oflag, mode);
@@ -267,7 +267,7 @@ int sys_open(const char *path, int oflag, mode_t mode)
 
 FILE *sys_fopen(const char *path, const char *type)
 {
-#if defined(HAVE_FOPEN64)
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FOPEN64)
   return fopen64(path, type);
 #else
   return fopen(path, type);
