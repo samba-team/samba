@@ -352,7 +352,7 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
                 if (!(pass = Get_Pwnam(dom_user)))
                         pass = Get_Pwnam(user_info->internal_username.str);
 
-                free(dom_user);
+                SAFE_FREE(dom_user);
 
 		if (pass) {
 			make_server_info_pw(server_info, pass);

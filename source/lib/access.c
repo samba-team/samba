@@ -86,7 +86,7 @@ static int string_match(char *tok,char *s, char *invalid_char)
 			 tok+1,
 			 BOOLSTR(netgroup_ok)));
 
-		free(hostname);
+		SAFE_FREE(hostname);
       
 		if (netgroup_ok) return(True);
 #else
@@ -180,12 +180,12 @@ static int list_match(char *list,char *item, int (*match_fn)(char *, char *))
 	while ((tok = strtok((char *) 0, sep)) && strcasecmp(tok, "EXCEPT"))
 	     /* VOID */ ;
 	if (tok == 0 || list_match((char *) 0, item, match_fn) == False) {
-	    if (listcopy != 0) free(listcopy); /* jkf */
+	    SAFE_FREE(listcopy); /* jkf */
 	    return (match);
 	}
     }
 
-    if (listcopy != 0) free(listcopy); /* jkf */
+    SAFE_FREE(listcopy); /* jkf */
     return (False);
 }
 
@@ -272,8 +272,7 @@ static BOOL only_ipaddrs_in_list(const char* list)
 		}
 	}
 	
-	if (listcopy) 
-		free (listcopy);
+	SAFE_FREE(listcopy);
 	
 	return only_ip;
 }
@@ -321,10 +320,8 @@ BOOL check_access(int sock, char *allow_list, char *deny_list)
 		}
 	}
 
-	if (deny)
-		free(deny);
-	if (allow)
-		free(allow);
+	SAFE_FREE(deny);
+	SAFE_FREE(allow);
 	
 	return(ret);
 }

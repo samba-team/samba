@@ -39,7 +39,7 @@ struct bitmap *bitmap_allocate(int n)
 	bm->n = n;
 	bm->b = (uint32 *)malloc(sizeof(bm->b[0])*(n+31)/32);
 	if (!bm->b) {
-		free(bm);
+		SAFE_FREE(bm);
 		return NULL;
 	}
 
@@ -57,10 +57,8 @@ void bitmap_free(struct bitmap *bm)
 	if (!bm)
 		return;
 
-	if(bm->b)
-		free(bm->b);
-
-	free(bm);
+	SAFE_FREE(bm->b);
+	SAFE_FREE(bm);
 }
 
 /****************************************************************************

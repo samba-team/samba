@@ -615,14 +615,14 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 		{
 		reply_size = setup_ver2_dfs_referral(pathname, ppdata, &junction, 
 						     consumedcnt, self_referral);
-		free(junction.referral_list);
+		SAFE_FREE(junction.referral_list);
 		break;
 		}
 	case 3:
 		{
 		reply_size = setup_ver3_dfs_referral(pathname, ppdata, &junction, 
 						     consumedcnt, self_referral);
-		free(junction.referral_list);
+		SAFE_FREE(junction.referral_list);
 		break;
 		}
 	default:

@@ -479,15 +479,8 @@ static void free_maps(smb_ucs2_t **pp_cp_to_ucs2, uint16 **pp_ucs2_to_cp)
 		*pp_ucs2_to_cp = NULL;
 	}
 
-	if (*pp_cp_to_ucs2) {
-		free(*pp_cp_to_ucs2);
-		*pp_cp_to_ucs2 = NULL;
-	}
-
-	if (*pp_ucs2_to_cp) {
-		free(*pp_ucs2_to_cp);
-		*pp_ucs2_to_cp = NULL;
-	}
+	SAFE_FREE(*pp_cp_to_ucs2);
+	SAFE_FREE(*pp_ucs2_to_cp);
 }
 
 /*******************************************************************
@@ -1789,9 +1782,7 @@ void string_free_w(smb_ucs2_t **s)
 		return;
 	if (*s == null_string)
 		*s = NULL;
-	if (*s)
-		free((char *)*s);
-	*s = NULL;
+	SAFE_FREE((char *)*s);
 }
 
 /****************************************************************************

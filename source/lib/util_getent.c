@@ -66,7 +66,7 @@ struct sys_grent * getgrent_list(void)
 	grp = getgrent();
 	if (grp == NULL) {
 		endgrent();
-		free(glist);
+		SAFE_FREE(glist);
 		return NULL;
 	}
 
@@ -130,19 +130,17 @@ void grent_free (struct sys_grent *glist)
 	while (glist) {
 		struct sys_grent *prev;
 		
-		if (glist->gr_name)
-			free(glist->gr_name);
-		if (glist->gr_passwd)
-			free(glist->gr_passwd);
+		SAFE_FREE(glist->gr_name);
+		SAFE_FREE(glist->gr_passwd);
 		if (glist->gr_mem) {
 			int i;
 			for (i = 0; glist->gr_mem[i]; i++)
-				free(glist->gr_mem[i]);
-			free(glist->gr_mem);
+				SAFE_FREE(glist->gr_mem[i]);
+			SAFE_FREE(glist->gr_mem);
 		}
 		prev = glist;
 		glist = glist->next;
-		free(prev);
+		SAFE_FREE(prev);
 	}
 }
 
@@ -221,19 +219,14 @@ void pwent_free (struct sys_pwent *plist)
 	while (plist) {
 		struct sys_pwent *prev;
 		
-		if (plist->pw_name)
-			free(plist->pw_name);
-		if (plist->pw_passwd)
-			free(plist->pw_passwd);
-		if (plist->pw_gecos)
-			free(plist->pw_gecos);
-		if (plist->pw_dir)
-			free(plist->pw_dir);
-		if (plist->pw_shell)
-			free(plist->pw_shell);
+		SAFE_FREE(plist->pw_name);
+		SAFE_FREE(plist->pw_passwd);
+		SAFE_FREE(plist->pw_gecos);
+		SAFE_FREE(plist->pw_dir);
+		SAFE_FREE(plist->pw_shell);
 
 		prev = plist;
 		plist = plist->next;
-		free(prev);
+		SAFE_FREE(prev);
 	}
 }

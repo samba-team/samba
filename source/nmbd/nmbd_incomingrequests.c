@@ -594,7 +594,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
   if (!success && bcast)
   {
     if((prdata != rdata) && (prdata != NULL))
-      free(prdata);
+      SAFE_FREE(prdata);
     goto done; /* Never reply with a negative response to broadcasts. */
   }
 
@@ -607,7 +607,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
   if(!success && !bcast && nmb->header.nm_flags.recursion_desired)
   {
     if((prdata != rdata) && (prdata != NULL))
-      free(prdata);
+      SAFE_FREE(prdata);
     goto done;
   }
 
@@ -633,7 +633,7 @@ on the same subnet (%s) as the requestor. Not replying.\n",
                        reply_data_len);                /* data length. */
 
   if((prdata != rdata) && (prdata != NULL))
-    free(prdata);
+    SAFE_FREE(prdata);
 done:
   END_PROFILE(name_query);
 }

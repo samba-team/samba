@@ -639,8 +639,7 @@ void *Realloc(void *p,size_t size)
 	void *ret=NULL;
 
 	if (size == 0) {
-		if (p)
-			free(p);
+		SAFE_FREE(p);
 		DEBUG(5,("Realloc asked for 0 bytes\n"));
 		return NULL;
 	}
@@ -1499,7 +1498,7 @@ zero a memory area then free it. Used to catch bugs faster
 void zero_free(void *p, size_t size)
 {
 	memset(p, 0, size);
-	free(p);
+	SAFE_FREE(p);
 }
 
 

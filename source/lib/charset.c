@@ -312,8 +312,7 @@ clean_and_exit:
 
   if(fd != -1)
     close(fd);
-  if(cp_p)
-    free((char *)cp_p);
+  SAFE_FREE((char *)cp_p);
   return NULL;
 }
 
@@ -394,5 +393,5 @@ void add_char_string(char *s)
     }
   }
 
-  free(extra_chars);
+  SAFE_FREE(extra_chars);
 }

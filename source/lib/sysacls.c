@@ -698,7 +698,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 			maxlen += nbytes + 20 * (acl_d->count - i);
 
 			if ((text = Realloc(oldtext, maxlen)) == NULL) {
-				free(oldtext);
+				SAFE_FREE(oldtext);
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -926,9 +926,7 @@ int sys_acl_set_file(const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d)
 
 	ret = acl(name, SETACL, acl_count, acl_p);
 
-	if (acl_buf) {
-		free(acl_buf);
-	}
+	SAFE_FREE(acl_buf);
 
 	return ret;
 }
@@ -964,13 +962,13 @@ int sys_acl_delete_def_file(const char *path)
 
 int sys_acl_free_text(char *text)
 {
-	free(text);
+	SAFE_FREE(text);
 	return 0;
 }
 
 int sys_acl_free_acl(SMB_ACL_T acl_d) 
 {
-	free(acl_d);
+	SAFE_FREE(acl_d);
 	return 0;
 }
 
@@ -1045,7 +1043,7 @@ SMB_ACL_T sys_acl_get_file(const char *path_p, SMB_ACL_TYPE_T type)
 		return NULL;
 	}
 	if ((a->aclp = acl_get_file(path_p, type)) == NULL) {
-		free(a);
+		SAFE_FREE(a);
 		return NULL;
 	}
 	a->next = -1;
@@ -1062,7 +1060,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 		return NULL;
 	}
 	if ((a->aclp = acl_get_fd(fd)) == NULL) {
-		free(a);
+		SAFE_FREE(a);
 		return NULL;
 	}
 	a->next = -1;
@@ -1353,7 +1351,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 	rc = statacl((char *)path_p,0,file_acl,BUFSIZ);
 	if(rc == -1) {
 		DEBUG(0,("statacl returned %d with errno %d\n",rc,errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1373,7 +1371,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 
 	acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 	if(acl_entry_link->entryp == NULL) {
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		errno = ENOMEM;
 		DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 		return(NULL);
@@ -1410,7 +1408,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 											malloc(sizeof(struct acl_entry_link));
 
 				if(acl_entry_link->nextp == NULL) {
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					errno = ENOMEM;
 					DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 					return(NULL);
@@ -1420,7 +1418,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 				acl_entry_link = acl_entry_link->nextp;
 				acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 				if(acl_entry_link->entryp == NULL) {
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					errno = ENOMEM;
 					DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 					return(NULL);
@@ -1479,7 +1477,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 		if(acl_entry_link_head->count != 0) {
 			acl_entry_link->nextp = (struct acl_entry_link *)malloc(sizeof(struct acl_entry_link));
 			if(acl_entry_link->nextp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 				return(NULL);
@@ -1489,7 +1487,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 			acl_entry_link = acl_entry_link->nextp;
 			acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 			if(acl_entry_link->entryp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
 				return(NULL);
@@ -1533,7 +1531,7 @@ SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type)
 	}
 
 	acl_entry_link_head->count = 0;
-	free(file_acl);
+	SAFE_FREE(file_acl);
 
 	return(acl_entry_link_head);
 }
@@ -1567,7 +1565,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	rc = fstatacl(fd,0,file_acl,BUFSIZ);
 	if(rc == -1) {
 		DEBUG(0,("The fstatacl call returned %d with errno %d\n",rc,errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1583,7 +1581,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 
 	acl_entry_link_head = acl_entry_link = sys_acl_init(0);
 	if(acl_entry_link_head == NULL){
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1592,7 +1590,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	if(acl_entry_link->entryp == NULL) {
 		errno = ENOMEM;
 		DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-		free(file_acl);
+		SAFE_FREE(file_acl);
 		return(NULL);
 	}
 
@@ -1628,7 +1626,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 				if(acl_entry_link->nextp == NULL) {
 					errno = ENOMEM;
 					DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					return(NULL);
 				}
 				acl_entry_link->nextp->prevp = acl_entry_link;
@@ -1637,7 +1635,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 				if(acl_entry_link->entryp == NULL) {
 					errno = ENOMEM;
 					DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-					free(file_acl);
+					SAFE_FREE(file_acl);
 					return(NULL);
 				}
 
@@ -1696,7 +1694,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 			if(acl_entry_link->nextp == NULL) {
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				return(NULL);
 			}
 
@@ -1705,7 +1703,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 			acl_entry_link->entryp = (struct new_acl_entry *)malloc(sizeof(struct new_acl_entry));
 
 			if(acl_entry_link->entryp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_get_fd is %d\n",errno));
 				return(NULL);
@@ -1748,7 +1746,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	}
 
 	acl_entry_link_head->count = 0;
-	free(file_acl);
+	SAFE_FREE(file_acl);
  
 	return(acl_entry_link_head);
 }
@@ -1953,14 +1951,14 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 			acl_length += sizeof(struct acl_entry);
 			file_acl_temp = (struct acl *)malloc(acl_length);
 			if(file_acl_temp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_set_file is %d\n",errno));
 				return(-1);
 			}  
 
 			memcpy(file_acl_temp,file_acl,file_acl->acl_len);
-			free(file_acl);
+			SAFE_FREE(file_acl);
 			file_acl = file_acl_temp;
 		}
 
@@ -1987,7 +1985,7 @@ int sys_acl_set_file( const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl
 	rc = chacl(name,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
-	free(file_acl);
+	SAFE_FREE(file_acl);
 	DEBUG(10,("Exiting the sys_acl_set_file\n"));
 	return(rc);
 }
@@ -2042,14 +2040,14 @@ int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 			acl_length += sizeof(struct acl_entry);
 			file_acl_temp = (struct acl *)malloc(acl_length);
 			if(file_acl_temp == NULL) {
-				free(file_acl);
+				SAFE_FREE(file_acl);
 				errno = ENOMEM;
 				DEBUG(0,("Error in sys_acl_set_fd is %d\n",errno));
 				return(-1);
 			}
 
 			memcpy(file_acl_temp,file_acl,file_acl->acl_len);
-			free(file_acl);
+			SAFE_FREE(file_acl);
 			file_acl = file_acl_temp;
 		}
 
@@ -2076,7 +2074,7 @@ int sys_acl_set_fd( int fd, SMB_ACL_T theacl)
 	rc = fchacl(fd,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
-	free(file_acl);
+	SAFE_FREE(file_acl);
 	DEBUG(10,("Exiting sys_acl_set_fd\n"));
 	return(rc);
 }
@@ -2102,14 +2100,14 @@ int sys_acl_free_acl(SMB_ACL_T posix_acl)
 	struct acl_entry_link *acl_entry_link;
 
 	for(acl_entry_link = posix_acl->nextp; acl_entry_link->nextp != NULL; acl_entry_link = acl_entry_link->nextp) {
-		free(acl_entry_link->prevp->entryp);
-		free(acl_entry_link->prevp);
+		SAFE_FREE(acl_entry_link->prevp->entryp);
+		SAFE_FREE(acl_entry_link->prevp);
 	}
 
-	free(acl_entry_link->prevp->entryp);
-	free(acl_entry_link->prevp);
-	free(acl_entry_link->entryp);
-	free(acl_entry_link);
+	SAFE_FREE(acl_entry_link->prevp->entryp);
+	SAFE_FREE(acl_entry_link->prevp);
+	SAFE_FREE(acl_entry_link->entryp);
+	SAFE_FREE(acl_entry_link);
  
 	return(0);
 }
