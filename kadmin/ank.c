@@ -211,8 +211,8 @@ add_new_key(struct add_options *opt, int argc, char **argv)
     krb5_key_data key_data[3];
     krb5_key_data *kdp = NULL;
 
-    if(optind == argc) {
-	printf("foo\n");
+    if(argc == 0) {
+	printf("usage: add principal\n");
 	return 0;
     }
 
@@ -242,7 +242,7 @@ add_new_key(struct add_options *opt, int argc, char **argv)
 	kdp = key_data;
     }
 
-    for (i = optind; i < argc; ++i) {
+    for(i = 0; i < argc; i++) {
 	ret = add_one_principal (argv[i], 
 				 opt->random_key_flag, 
 				 opt->random_password_flag,
