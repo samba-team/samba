@@ -46,26 +46,12 @@ print_time(OM_uint32 time_rec)
     }
 }
 
-int
-main(int argc, char **argv)
+static void
+test_add(gss_cred_id_t cred_handle)
 {
     OM_uint32 major_status, minor_status;
-    gss_cred_id_t cred_handle, copy_cred;
+    gss_cred_id_t copy_cred;
     OM_uint32 time_rec;
-
-    major_status = gss_acquire_cred(&minor_status, 
-				    GSS_C_NO_NAME,
-				    0,
-				    NULL,
-				    GSS_C_INITIATE,
-				    &cred_handle,
-				    NULL,
-				    &time_rec);
-    if (GSS_ERROR(major_status))
-	errx(1, "acquire_cred failed");
-	
-
-    print_time(time_rec);
 
     major_status = gss_add_cred (&minor_status,
 				 cred_handle,
@@ -85,12 +71,37 @@ main(int argc, char **argv)
     print_time(time_rec);
 
     major_status = gss_release_cred(&minor_status,
-				    &cred_handle);
+				    &copy_cred);
     if (GSS_ERROR(major_status))
 	errx(1, "release_cred failed");
+}
+
+int
+main(int argc, char **argv)
+{
+    OM_uint32 major_status, minor_status;
+    gss_cred_id_t cred_handle;
+    OM_uint32 time_rec;
+
+    major_status = gss_acquire_cred(&minor_status, 
+				    GSS_C_NO_NAME,
+				    0,
+				    NULL,
+				    GSS_C_INITIATE,
+				    &cred_handle,
+				    NULL,
+				    &time_rec);
+    if (GSS_ERROR(major_status))
+	errx(1, "acquire_cred failed");
+	
+    print_time(time_rec);
+
+    test_add(cred_handle);
+    test_add(cred_handle);
+    test_add(cred_handle);
 
     major_status = gss_release_cred(&minor_status,
-				    &copy_cred);
+				    &cred_handle);
     if (GSS_ERROR(major_status))
 	errx(1, "release_cred failed");
 
