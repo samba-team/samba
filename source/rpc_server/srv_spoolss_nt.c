@@ -5924,14 +5924,8 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 		return ERROR_INVALID_NAME;
 
 	convert_specific_param(&param, value , type, data, real_len);
-#if 0 /*JRRTEST - change_id*/
-    /* We can't test to see if the param/value is the same and skip the write
-       back to the tdb, as the change_id must change even if the data doesn't,
-       it is held in the tdb. JRR 011205 */
-	get_specific_param(*printer, 2, param->value, &old_param.data,
-			       &old_param.type, (unsigned int *)&old_param.data_len);
-#else
-	if (get_specific_param(*printer, 2, param->value, &old_param.data,
+
+    if (get_specific_param(*printer, 2, param->value, &old_param.data,
 		&old_param.type, (unsigned int *)&old_param.data_len)) {
 	
 		if (param->type == old_param.type &&
@@ -5944,7 +5938,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 				goto done;
 		}
 	}
-#endif
+
 	unlink_specific_param_if_exist(printer->info_2, param);
 
 	/*
