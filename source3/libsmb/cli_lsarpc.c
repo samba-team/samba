@@ -25,15 +25,28 @@
 
 #include "includes.h"
 
-/* Opens a SMB connection to the lsa pipe */
+/** @defgroup rpc_client RPC Client
+ *
+ * @{
+ **/
 
+/**
+ * @file cli_lsarpc.c
+ *
+ * RPC client routines for the LSA RPC pipe.  LSA means "local
+ * security authority", which is half of a password database.
+ **/
+
+/** Opens a SMB connection to the lsa pipe
+ *
+ * @param system_name NETBIOS name of the machine to connect to. */
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 				     struct ntuser_creds *creds)
 {
         return cli_pipe_initialise(cli, system_name, PIPE_LSASS, creds);
 }
 
-/* Open a LSA policy handle */
+/** Open a LSA policy handle */
 
 NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
@@ -89,7 +102,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Open a LSA policy handle */
+/** Open a LSA policy handle */
 
 NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
@@ -147,7 +160,7 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Close a LSA policy handle */
+/** Close a LSA policy handle */
 
 NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                        POLICY_HND *pol)
@@ -195,7 +208,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Lookup a list of sids */
+/** Lookup a list of sids */
 
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
@@ -305,7 +318,7 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Lookup a list of names */
+/** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               POLICY_HND *pol, int num_names, char **names, 
@@ -406,7 +419,7 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Query info policy */
+/** Query info policy */
 
 NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *pol, uint16 info_class, 
@@ -493,7 +506,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Enumerate list of trusted domains */
+/** Enumerate list of trusted domains */
 
 NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, 
@@ -591,3 +604,5 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+/** @} **/
