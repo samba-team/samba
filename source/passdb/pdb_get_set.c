@@ -479,6 +479,12 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
  
 	if (username) { 
 		sampass->private.username = talloc_strdup(sampass->mem_ctx, username);
+
+		if (!sampass->private.username) {
+			DEBUG(0, ("pdb_set_username: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.username = PDB_NOT_QUITE_NULL;
 	}
@@ -500,6 +506,12 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
  
 	if (domain) { 
 		sampass->private.domain = talloc_strdup(sampass->mem_ctx, domain);
+
+		if (!sampass->private.domain) {
+			DEBUG(0, ("pdb_set_domain: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.domain = PDB_NOT_QUITE_NULL;
 	}
@@ -521,6 +533,12 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
  
 	if (nt_username) { 
 		sampass->private.nt_username = talloc_strdup(sampass->mem_ctx, nt_username);
+		
+		if (!sampass->private.nt_username) {
+			DEBUG(0, ("pdb_set_nt_username: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.nt_username = PDB_NOT_QUITE_NULL;
 	}
@@ -542,6 +560,12 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *full_name)
 	
 	if (full_name) { 
 		sampass->private.full_name = talloc_strdup(sampass->mem_ctx, full_name);
+
+		if (!sampass->private.full_name) {
+			DEBUG(0, ("pdb_set_fullname: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.full_name = PDB_NOT_QUITE_NULL;
 	}
@@ -563,6 +587,12 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
  
 	if (logon_script) { 
 		sampass->private.logon_script = talloc_strdup(sampass->mem_ctx, logon_script);
+
+		if (!sampass->private.logon_script) {
+			DEBUG(0, ("pdb_set_logon_script: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.logon_script = PDB_NOT_QUITE_NULL;
 	}
@@ -587,6 +617,12 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
  
 	if (profile_path) { 
 		sampass->private.profile_path = talloc_strdup(sampass->mem_ctx, profile_path);
+		
+		if (!sampass->private.profile_path) {
+			DEBUG(0, ("pdb_set_profile_path: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.profile_path = PDB_NOT_QUITE_NULL;
 	}
@@ -608,6 +644,12 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 
 	if (dir_drive) { 
 		sampass->private.dir_drive = talloc_strdup(sampass->mem_ctx, dir_drive);
+		
+		if (!sampass->private.dir_drive) {
+			DEBUG(0, ("pdb_set_dir_drive: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.dir_drive = PDB_NOT_QUITE_NULL;
 	}
@@ -629,6 +671,12 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 
 	if (home_dir) { 
 		sampass->private.home_dir = talloc_strdup(sampass->mem_ctx, home_dir);
+		
+		if (!sampass->private.home_dir) {
+			DEBUG(0, ("pdb_set_home_dir: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.home_dir = PDB_NOT_QUITE_NULL;
 	}
@@ -650,6 +698,12 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, const char *acct_desc)
 
 	if (acct_desc) { 
 		sampass->private.acct_desc = talloc_strdup(sampass->mem_ctx, acct_desc);
+
+		if (!sampass->private.acct_desc) {
+			DEBUG(0, ("pdb_set_acct_desc: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.acct_desc = PDB_NOT_QUITE_NULL;
 	}
@@ -668,6 +722,12 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 
 	if (workstations) { 
 		sampass->private.workstations = talloc_strdup(sampass->mem_ctx, workstations);
+
+		if (!sampass->private.workstations) {
+			DEBUG(0, ("pdb_set_workstations: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.workstations = PDB_NOT_QUITE_NULL;
 	}
@@ -686,6 +746,12 @@ BOOL pdb_set_unknown_str (SAM_ACCOUNT *sampass, const char *unknown_str)
 
 	if (unknown_str) { 
 		sampass->private.unknown_str = talloc_strdup(sampass->mem_ctx, unknown_str);
+		
+		if (!sampass->private.unknown_str) {
+			DEBUG(0, ("pdb_set_unknown_str: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.unknown_str = PDB_NOT_QUITE_NULL;
 	}
@@ -703,6 +769,12 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 		return False;
 	if (munged_dial) { 
 		sampass->private.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
+		
+		if (!sampass->private.munged_dial) {
+			DEBUG(0, ("pdb_set_munged_dial: talloc_strdup() failed!\n"));
+			return False;
+		}
+
 	} else {
 		sampass->private.munged_dial = PDB_NOT_QUITE_NULL;
 	}
