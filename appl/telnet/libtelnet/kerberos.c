@@ -67,6 +67,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <des.h>	/* BSD wont include this in krb.h, so we do it here */
 #include <krb.h>
+#include <pwd.h>
 #ifdef	__STDC__
 #include <stdlib.h>
 #endif
@@ -83,16 +84,18 @@ RCSID("$Id$");
 int kerberos4_cksum (unsigned char *, int);
 extern int auth_debug_mode;
 
-static unsigned char str_data[1024] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
+static unsigned char str_data[2048] = { IAC, SB, TELOPT_AUTHENTICATION, 0,
 			  		AUTHTYPE_KERBEROS_V4, };
-static unsigned char str_name[1024] = { IAC, SB, TELOPT_AUTHENTICATION,
-					TELQUAL_NAME, };
 
 #define	KRB_AUTH	0		/* Authentication data follows */
 #define	KRB_REJECT	1		/* Rejected (reason might follow) */
 #define	KRB_ACCEPT	2		/* Accepted */
 #define	KRB_CHALLENGE	3		/* Challenge for mutual auth. */
 #define	KRB_RESPONSE	4		/* Response for mutual auth. */
+
+#define KRB_FORWARD		5	/* */
+#define KRB_FORWARD_ACCEPT	6	/* */
+#define KRB_FORWARD_REJECT	7	/* */
 
 #define KRB_SERVICE_NAME   "rcmd"
 
@@ -102,6 +105,11 @@ static	AUTH_DAT adat;
 static des_cblock session_key;
 static des_key_schedule sched;
 static des_cblock challenge;
+static int auth_done; /* XXX */
+
+static int pack_cred(CREDENTIALS *cred, unsigned char *buf);
+static int unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred);
+
 
 static int
 Data(Authenticator *ap, int type, void *d, int c)
@@ -295,9 +303,15 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	memmove(session_key, adat.session, sizeof(adat.session));
 	krb_kntoln(&adat, name);
 
-	if (UserNameRequested && !kuserok(&adat, UserNameRequested))
+	if (UserNameRequested && !kuserok(&adat, UserNameRequested)){
+	    char ts[MaxPathLen];
+	    struct passwd *pw = getpwnam(UserNameRequested);
+	    if(pw){
+		sprintf(ts, "%s%d", TKT_ROOT, pw->pw_uid);
+		setenv("KRBTKFILE", ts);
+	    }
 	    Data(ap, KRB_ACCEPT, NULL, 0);
-	else {
+	} else {
 	    char *msg = malloc(ANAME_SZ + 1 + INST_SZ +
 			       REALM_SZ +
 			       strlen(UserNameRequested) + 80);
@@ -354,6 +368,47 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 #endif
 	break;
 
+    case KRB_FORWARD:
+	{
+	    des_key_schedule ks;
+	    unsigned char netcred[sizeof(CREDENTIALS)];
+	    char *msg;
+	    CREDENTIALS cred;
+	    int ret;
+	    if(cnt > sizeof(cred))
+		abort();
+
+	    des_set_key(&session_key, ks);
+	    des_pcbc_encrypt((void*)data, (void*)netcred, cnt, 
+			     ks, &session_key, DES_DECRYPT);
+	    unpack_cred(netcred, cnt, &cred);
+	    {
+		if(strcmp(cred.service, KRB_TICKET_GRANTING_TICKET) ||
+		   strncmp(cred.instance, cred.realm, sizeof(cred.instance)) ||
+		   cred.lifetime < 0 || cred.lifetime > 255 ||
+		   cred.kvno < 0 || cred.kvno > 255 ||
+		   cred.issue_date < 0 || 
+		   cred.issue_date > time(0) + CLOCK_SKEW ||
+		   strncmp(cred.pname, adat.pname, sizeof(cred.pname)) ||
+		   strncmp(cred.pinst, adat.pinst, sizeof(cred.pname))){
+		    Data(ap, KRB_FORWARD_REJECT, "Bad credentials", -1);
+		}else{
+		    if((ret = tf_setup(&cred) == KSUCCESS)){
+			chown(tkt_string(), pw->pw_uid, pw->pw_gid);
+			Data(ap, KRB_FORWARD_ACCEPT, 0, 0);
+		    } else{
+			Data(ap, KRB_FORWARD_REJECT, 
+			     krb_get_err_text(ret), -1);
+		    }
+		}
+	    }
+	    memset(data, 0, cnt);
+	    memset(ks, 0, sizeof(ks));
+	    memset(&cred, 0, sizeof(cred));
+	}
+	
+	break;
+
     default:
 	if (auth_debug_mode)
 	    printf("Unknown Kerberos option %d\r\n", data[-1]);
@@ -371,27 +426,32 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 	return;
     switch (*data++) {
     case KRB_REJECT:
-	if (cnt > 0) {
-	    printf("[ Kerberos V4 refuses authentication because %.*s ]\r\n",
-		   cnt, data);
-	} else
-	    printf("[ Kerberos V4 refuses authentication ]\r\n");
-	auth_send_retry();
+	if(auth_done){ /* XXX Ick! */
+	    printf("[ Kerberos V4 received unknown opcode ]\r\n");
+	}else{
+	    printf("[ Kerberos V4 refuses authentication ");
+	    if (cnt > 0) 
+		printf("because %.*s ", cnt, data);
+	    printf("]\r\n");
+	    auth_send_retry();
+	}
 	return;
     case KRB_ACCEPT:
 	printf("[ Kerberos V4 accepts you ]\r\n");
+	auth_done = 1;
 	if ((ap->way & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) {
 	    /*
 	     * Send over the encrypted challenge.
 	     */
 	    Data(ap, KRB_CHALLENGE, session_key, 
 		 sizeof(session_key));
-#ifdef ENCRYPTION
 	    des_ecb_encrypt(&session_key, &session_key, sched, 1);
 	    skey.type = SK_DES;
 	    skey.length = 8;
 	    skey.data = session_key;
 	    encrypt_session_key(&skey, 0);
+#if 0
+	    kerberos4_forward(ap);
 #endif
 	    return;
 	}
@@ -407,6 +467,13 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 	}
 	printf("[ Kerberos V4 challenge successful ]\r\n");
 	auth_finished(ap, AUTH_USER);
+	break;
+    case KRB_FORWARD_ACCEPT:
+	printf("[ Kerberos V4 accepted forwarded credentials ]\r\n");
+	break;
+    case KRB_FORWARD_REJECT:
+	printf("[ Kerberos V4 rejected forwarded credentials: `%.*s']\r\n",
+	       cnt, data);
 	break;
     default:
 	if (auth_debug_mode)
@@ -518,18 +585,73 @@ kerberos4_cksum(unsigned char *d, int n)
 	}
     return(ck);
 }
-#endif
 
-#ifdef notdef
-
-prkey(msg, key)
-     char *msg;
-     unsigned char *key;
+static int
+pack_cred(CREDENTIALS *cred, unsigned char *buf)
 {
-    int i;
-    printf("%s:", msg);
-    for (i = 0; i < 8; i++)
-	printf(" %3d", key[i]);
-    printf("\r\n");
+    int l;
+    unsigned char *p = buf;
+    
+    p += krb_put_nir(cred->service, cred->instance, cred->realm, p);
+    memcpy(p, cred->session, 8);
+    p += 8;
+    *p++ = cred->lifetime;
+    *p++ = cred->kvno;
+    p += krb_put_int(cred->ticket_st.length);
+    memcpy(p, cred->ticket_st.dat, cred->ticket_st.length);
+    p += cred->ticket_st.length;
+    p += krb_put_int(cred->issue_date, p, 4);
+    p += krb_put_nir(cred->pname, cred->pinst, NULL, p);
+    return p - buf;
 }
-#endif
+
+static int
+unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
+{
+    unsigned char *p;
+    p += krb_get_nir(p, cred->service, cred->instance, cred->realm);
+    memcpy(cred->session, p, 8);
+    p += 8;
+    cred->lifetime = *p++;
+    cred->kvno = *p++;
+    p += krb_get_int(p, &cred->ticket_st.length);
+    memcpy(cred->ticket_st.dat, p, cred->ticket_st.length);
+    cred->ticket_st.mbz = 0;
+    p += krb_get_int(p, &cred->issue_date, 4, 0);
+    p += krb_get_nir(p, cred->pname, cred->pinst, NULL);
+    return 0;
+}
+
+
+int
+kerberos4_forward(Authenticator *ap)
+{
+    CREDENTIALS cred;
+    char *realm;
+    des_key_schedule ks;
+    int len;
+    unsigned char netcred[sizeof(CREDENTIALS)];
+    int ret;
+
+    realm = krb_realmofhost(RemoteHostName);
+    if(realm == NULL)
+	return -1;
+    memset(&cred, 0, sizeof(cred));
+    ret = krb_get_cred(KRB_TICKET_GRANTING_TICKET,
+		       realm,
+		       realm, 
+		       &cred);
+    if(ret)
+	return ret;
+    des_set_key(&session_key, ks);
+    len = pack_cred(&cred, netcred);
+    des_pcbc_encrypt((void*)netcred, (void*)netcred, len,
+		     ks, &session_key, DES_ENCRYPT);
+    memset(ks, 0, sizeof(ks));
+    Data(ap, KRB_FORWARD, netcred, len);
+    memset(netcred, 0, sizeof(netcred));
+    return 0;
+}
+
+#endif /* KRB4 */
+
