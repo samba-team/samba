@@ -8,6 +8,13 @@
 	PA-ENC-TIMESTAMP in the AS-REQ, using the first encryption
 	type specified by the KDC.
 
+2003-02-15 Love Hörquist Åstrand <lha@it.su.se>
+
+	* fix-export: some autoconf put their version number in
+	autom4te.cache, so remove autom4te*.cache
+	
+	* fix-export: make sure $1 is a directory
+	
 2003-02-04  Love Hörquist Åstrand <lha@it.su.se>
 
 	* kpasswd/kpasswdd.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
