@@ -1,3 +1,59 @@
+                 ==============================
+                 Release Notes for Samba 2.2.11
+                          Aug 12, 2004
+                 ==============================
+
+This is the latest stable release of the Samba 2.2 code base.
+
+Please note that the Samba 2.2 code tree will reach end-of-life
+on October 1, 2004.  Administrators of existing Samba 2.2
+installations are encouraged to upgrade to the latest Samba 3.0.x
+release prior to that date.
+
+The Samba 2.2.11 release addresses 2 bugs:
+
+  * Crashes in smbd caused derferencing a NULL pointer troggered 
+    by a Windows XP SP2 client sending a FindNextPrintChange-
+    Notify() requirest without previously issueing FindFirst-
+    PrintChangeNotify().
+  * An smbd crash generated when attempting to reopen the Samba 
+    log files under certain conditions.
+
+
+Older releases notes for 2.2.x distributions follow
+
+       ------------------------------------------------------
+                 ==============================
+                 Release Notes for Samba 2.2.10
+                          July 22, 2004
+                 ==============================
+
+
+######################## SECURITY RELEASE ########################
+
+Summary:       Potential Buffer Overrun in Samba 2.2.x
+CVE ID:        CAN-2004-0686
+               (http://cve.mitre.org/)
+
+This is the latest stable release of the Samba 2.2 code base.
+There are no further Samba 2.2.x releases planned at this time.
+
+-------------
+CAN-2004-0686
+-------------
+
+Affected Versions:      Samba 2.2.0 through 2.2.9
+
+A buffer overrun has been located in the code used to support
+the 'mangling method = hash' smb.conf option.   Affected Samba 
+2.2 installations can avoid this possible security bug by using 
+the hash2 mangling method.  Server installations requiring 
+the hash mangling method are encouraged to upgrade to Samba v2.2.10 
+or v3.0.5.
+
+
+       ------------------------------------------------------
+
                  =============================
                  Release Notes for Samba 2.2.9
                           May 8, 2004
@@ -11,7 +67,6 @@ No other changes have been applied since Samba 2.2.8a.
 
 There are no further Samba 2.2.x releases planned at this time.
 
-Older releases notes for 2.2.x distributions follow
 
        ------------------------------------------------------
 
