@@ -8,27 +8,17 @@ decrypt_tkt_enc_part (krb5_context context,
 		      EncryptedData *enc_part,
 		      EncTicketPart *decr_part)
 {
-    des_key_schedule sched;
-    char *buf;
-    int i;
-    int len = enc_part->cipher.length;
+    krb5_error_code ret;
+    krb5_data plain;
+    int len;
 
-    des_set_key (key->contents.data, sched);
-    buf = malloc (len);
-    if (buf == NULL)
-	return ENOMEM;
-    des_cbc_encrypt ((des_cblock *)enc_part->cipher.data,
-		     (des_cblock *)buf,
-		     len,
-		     sched,
-		     key->contents.data,
-		     DES_DECRYPT);
-    /* XXX: Check CRC */
+    ret = krb5_decrypt (context, enc_part->cipher.data, enc_part->cipher.length, key, &plain);
+    if (ret)
+	return ret;
 
-    i = decode_EncTicketPart((unsigned char*)buf + 12, len - 12,
-			     decr_part);
-    free (buf);
-    if (i < 0)
+    len = decode_EncTicketPart(plain.data, plain.length, decr_part);
+    krb5_data_free (&plain);
+    if (len < 0)
       return ASN1_PARSE_ERROR;
     return 0;
 }
@@ -39,30 +29,20 @@ decrypt_authenticator (krb5_context context,
 		       EncryptedData *enc_part,
 		       Authenticator *authenticator)
 {
-    des_key_schedule sched;
-    char *buf;
-    int i;
-    int len = enc_part->cipher.length;
+    krb5_error_code ret;
+    krb5_data plain;
+    int len;
 
-    des_set_key (key->keyvalue.data, sched);
-    buf = malloc (len);
-    if (buf == NULL)
-	return ENOMEM;
-    des_cbc_encrypt ((des_cblock *)enc_part->cipher.data,
-		     (des_cblock *)buf,
-		     len,
-		     sched,
-		     key->keyvalue.data,
-		     DES_DECRYPT);
-    /* XXX: Check CRC */
+    ret = krb5_decrypt (context, enc_part->cipher.data, enc_part->cipher.length, key, &plain);
+    if (ret)
+	return ret;
 
-    i = decode_Authenticator((unsigned char*)buf + 12, len - 12,
-			     authenticator);
-    free(buf);
-    if (i < 0)
+    len = decode_Authenticator(plain.data, plain.length, authenticator);
+    krb5_data_free (&plain);
+    if (len < 0)
       return ASN1_PARSE_ERROR;
     return 0;
-}
+}    
 
 krb5_error_code
 krb5_rd_req(krb5_context context,
@@ -162,7 +142,7 @@ krb5_rd_req(krb5_context context,
 	*ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
     }
 
-    /* Check adress and time */
+    /* Check address and time */
 
     return 0;
   }
