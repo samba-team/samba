@@ -72,7 +72,7 @@ sub _prepare_SUFFIXES($)
 
 	$output = "
 .SUFFIXES:
-.SUFFIXES: .c .o .h .gch .a .so
+.SUFFIXES: .c .o .h .h.gch .a .so
 ";
 	return $output;
 }
@@ -549,8 +549,10 @@ distclean: clean
 	-rm -f config.smb_build.*
 	-rm -f config.log config.cache
 
-realdistclean: distclean
+removebackup:
 	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
+
+realdistclean: distclean removebackup
 	-rm -f include/config.h.in
 	-rm -f lib/version.h
 	-rm -f configure
@@ -672,7 +674,7 @@ sub _prepare_makefile_in($)
 	$output .= _prepare_dummy_MAKEDIR();
 
 	$output .= _prepare_std_CC_rule("c","o","Compiling","Rule for std objectfiles");
-	$output .= _prepare_std_CC_rule("h","gch","Precompiling","Rule for precompiled headerfiles");
+	$output .= _prepare_std_CC_rule("h","h.gch","Precompiling","Rule for precompiled headerfiles");
 
 	$output .= _prepare_obj_and_lib_lists($CTX);
 
