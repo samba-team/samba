@@ -256,10 +256,18 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	 return PAM_AUTHTOK_ERR;
      }
      
-     if (ctrl & PAM_DEBUG_ARG)
+     if (ctrl & PAM_DEBUG_ARG) {
+
+	     /* Let's not give too much away in the log file */
+
+#ifdef DEBUG_PASSWORD
 	 _pam_log(LOG_INFO, "Verify user `%s' with password `%s'",
 		  username, password);
-     
+#else
+	 _pam_log(LOG_INFO, "Verify user `%s'", username);
+#endif
+     }
+
      /* Now use the username to look up password */
      retval = user_lookup(username, password);
      switch (retval) {
