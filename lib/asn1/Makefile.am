@@ -24,7 +24,8 @@ BUILT_SOURCES = asn1_APOptions.c asn1_AP_REP.c asn1_AP_REQ.c \
 	asn1_KrbCredInfo.c asn1_LastReq.c asn1_PA_DATA.c asn1_PA_ENC_TS_ENC.c \
 	asn1_PrincipalName.c asn1_Principal.c asn1_Realm.c asn1_TGS_REP.c \
 	asn1_TGS_REQ.c asn1_Ticket.c asn1_TicketFlags.c \
-	asn1_TransitedEncoding.c asn1_METHOD_DATA.c
+	asn1_TransitedEncoding.c asn1_METHOD_DATA.c \
+	asn1_PA_KEY_INFO.c asn1_PA_KEY_INFO_ENTRY.c
 
 foo = asn1_APOptions.x asn1_AP_REP.x asn1_AP_REQ.x \
 	asn1_AS_REP.x asn1_AS_REQ.x asn1_Authenticator.x \
@@ -38,7 +39,8 @@ foo = asn1_APOptions.x asn1_AP_REP.x asn1_AP_REQ.x \
 	asn1_KrbCredInfo.x asn1_LastReq.x asn1_PA_DATA.x asn1_PA_ENC_TS_ENC.x \
 	asn1_PrincipalName.x asn1_Principal.x asn1_Realm.x asn1_TGS_REP.x \
 	asn1_TGS_REQ.x asn1_Ticket.x asn1_TicketFlags.x \
-	asn1_TransitedEncoding.x asn1_METHOD_DATA.x
+	asn1_TransitedEncoding.x asn1_METHOD_DATA.x \
+	asn1_PA_KEY_INFO.x asn1_PA_KEY_INFO_ENTRY.x
 
 
 noinst_PROGRAMS = asn1_compile
