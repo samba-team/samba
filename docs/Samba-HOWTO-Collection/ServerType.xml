@@ -614,7 +614,7 @@ to use another SMB server as its source for user authentication alone.
 
 <para>
 The &smb.conf; parameter <smbconfoption><name>security</name><value>domain</value></smbconfoption> does not really make Samba behave
-as a Domain Controller. This setting means we want Samba to be a Domain Member.
+as a Domain Controller. This setting means we want Samba to be a Domain Member. See <link linkend="samba-pdc">Samba as a PDC</link> for more information.
 </para>
 
 </sect2>
