@@ -1496,13 +1496,15 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   char *fname;
   int fd = -1;
   BOOL bad_path = False;
+  files_struct *fsp = NULL;
 
   if (!CAN_WRITE(conn))
     return(ERROR(ERRSRV,ERRaccess));
 
   if (tran_call == TRANSACT2_SETFILEINFO) {
-    files_struct *fsp = file_fsp(params,0);
     info_level = SVAL(params,2);    
+
+    fsp = file_fsp(params,0);
 
     if(fsp && fsp->open && fsp->is_directory) {
       /*
@@ -1802,7 +1804,18 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
    */
   if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime)
   {
-    if(file_utime(conn, fname, &tvs)!=0)
+    if(fsp != NULL)
+    {
+      /*
+       * This was a setfileinfo on an open file.
+       * NT does this a lot. It's actually pointless
+       * setting the time here, as it will be overwritten
+       * on the next write, so we save the request
+       * away and will set it on file code. JRA.
+       */
+      fsp->pending_modtime = tvs.modtime;
+    }
+    else if(file_utime(conn, fname, &tvs)!=0)
     {
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     }
