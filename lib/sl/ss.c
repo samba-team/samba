@@ -138,7 +138,7 @@ int
 ss_listen (int index)
 {
     char *prompt = malloc(strlen(subsystems[index].name) + 3);
-    if (prompt = NULL)
+    if (prompt == NULL)
 	return ENOMEM;
 
     strcpy(prompt, subsystems[index].name);
