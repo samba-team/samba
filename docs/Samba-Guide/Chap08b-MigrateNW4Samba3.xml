@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<chapter id="nw4migration">
+  <title>Migrating NetWare 4.11 Server to Samba-3</title>
+
+	<para>
+	Novell is a company any seasoned IT manager has to admire. Since the acquisition of
+	the SuSE Linux company, the acquisition on Ximian, and other moves that are friendly
+	to the FLOSS (Free-Libre/Open Source Software) movement, Novell are emerging out of
+	a deep regression that almost saw the company disappear into obscurity.
+	</para>
+
+	<para>
+	This chapter was contributed by Kristal Sarbanes, a UNIX administrator of many
+	years who surfaced on the Samba mailing list with a barrage of questions, and who
+	regularly now helps other administrators to solve thorny Samba migration questions.
+	</para>
+
+	<para>
+	One wonders how many NetWare servers remain in active service. Many are being migrated
+	to Samba on Linux. SUSE Linux Enterprise Server 9 is an ideal target platform to which
+	a NetWare server may be migrated. The migration method of choice is much dependant on
+	the tools that the administrator finds most natural to use. The old-hand NetWare guru
+	will likely want to use the tools that are part of the Mars_NWE (Martin Stovers NetWare
+	Emulator) open source package. The MS Windows administrator will likely make use of the
+	NWConv utility that is a part of Windows NT4 Server, while the die-hard UNIX administrator
+	will have a natural inclination to use the NetWare NLM for <command>rsync</command> to
+	migrate files from the NetWare server to the Samba server. Whatever your tool of choice,
+	migration will be filled with joyous and challenging moments - though probably not
+	concurrently.
+	</para>
+
+	<para>
+	This chapter tells its own story, so ride along, ... maybe the information here presented
+	will help to smooth over a similar migration that may be required in your favorite
+	networking environment.
+	</para>
+
+<sect1>
+	<title>Introduction</title>
+
+	<para>
+	Kristal Sarbanes was recruited by Abmas Inc. to administer a network that had
+	not received much attention for some years and was much in need of a make-over.
+	As a brand-new sysadmin to this company, she inherited a very old Novell file server,
+	and came with a determination to change things for the better.
+	</para>
+
+	<para>
+	A site survey turned up the following details for the old NetWare server:
+	</para>
+
+	<simplelist>
+		<member><para>200 MHz MMX processor</para></member>
+		<member><para>512K RAM</para></member>
+		<member><para>24 GB disk space in RAID1</para></member>
+		<member><para>Novell 4.11 patched to service pack 7</para></member>
+		<member><para>60+ users</para></member>
+		<member><para>7 network-attached printers</para></member>
+	</simplelist>
+
+	<para>
+	The company had outgrown this server several years ago and were dealing with
+	severe growing pains. Some of the problems experienced were:
+	</para>
+		
+	<itemizedlist>
+		<listitem>
+			<para>Very slow performance</para>
+		</listitem>
+		<listitem>
+			<para>Available storage hovering around the 5% range.</para>
+			<itemizedlist>
+				<listitem>
+					<para>Extremely slow print spooling.</para>
+				</listitem>
+				<listitem>
+					<para>
+					Users storing information on their local hard
+					drives, causing backup integrity problems.
+					</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+	  </itemizedlist>
+
+	<para>
+	At one point disk space had filled up to 100% causing the payroll database
+	to become corrupt. This caused the accounting department to be down for over
+	a week and necessitated deployment of another file server. The replacement
+	server was created with very poor security and design considerations from
+	a discarded desktop PC.
+	</para>
+
+	<sect2>
+		<title>Assignment Tasks</title>
+
+	<para>
+	Kristal tells her own story in the following words:
+	</para>
+
+	<para>
+	After presenting a cost-benefit report to management, as well as an estimated
+	cost and time-to-completion, approval was given procede with the solution
+	proposed. The server was built from purchased components. The total expense
+	was $3000. A brief description of the configuration follows:
+	</para>
+
+	<simplelist>
+		<member>
+			<para>3.0 GHz P4 Processor</para>
+		</member>
+		<member>
+			<para>1 GB RAM</para>
+		</member>
+		<member>
+			<para>120 GB SATA operating system drive</para>
+		</member>
+		<member>
+			<para>4 x 80 GB SATA data drives configured in a RAID5 array to give a total of about 240 GB usable space</para>
+		</member>
+		<member>
+			<para>2 x 80 GB SATA removable drives for online backup</para>
+		</member>
+		<member>
+			<para>A DLT drive for asynchronous offline backup</para>
+		</member>
+		<member>
+			<para>SUSE Linux Enterprise Server 9</para>
+		</member>
+	</simplelist>
+
+
+	</sect2>
+</sect1>
+
+<sect1>
+	<title>Dissection and Discussion</title>
+
+	<para>
+	A decision to use LDAP was made even though I know nothing about LDAP except that
+	I had been reading the book <quote>LDAP System Administration</quote>, by Gerald Carter.
+	LDAP seemed to provide some of the functionality of Novell's e-Directory Services
+	and would provide centralized authentication and identity management.
+	</para>
+
+	<para>
+	Building the LDAP database took a while, and a lot of trial and error. Following
+	LDAP System Administration's guidance, I installed OpenLDAP (from RPM later I compiled
+	a more current version from source) and built my initial LDAP tree.
+	</para>
+
+	<sect2>
+	<title>Technical Issues</title>
+
+	<para>
+	The very first challenge was to create a company white-pages, followed by manually
+	entering everything from the printed company diretory. This used only the inetOrgPerson
+	objectclass from the OpenLDAP schemas. The next step was to write a shell script which
+	would look at the <filename>/etc/passwd</filename> and <filename>/etc/shadow</filename>
+	files on our mail server, and create a LDIF file from which the information could be
+	imported into LDAP. This would allow use of LDAP for Linux authentication, IMAP, POP3,
+	and SMTP.
+	</para>
+
+	</sect2>
+
+</sect1>
+
+<sect1>
+	<title>Implementation</title>
+
+	<para>
+	</para>
+
+	<sect2>
+	<title>NetWare Migration Using LDAP Backend</title>
+
+	<para>
+	</para>
+
+	</sect2>
+
+</sect1>
+
+</chapter>
+
