@@ -3507,14 +3507,14 @@ static BOOL is_in_path(char *name, char *namelist)
 
   while (*nameptr) 
     {
-      if ( *nameptr == '\\' ) 
+      if ( *nameptr == '/' ) 
       {
-          /* cope with multiple (useless) \s) */
+          /* cope with multiple (useless) /s) */
           nameptr++;
           continue;
       }
-      /* find the next \ */
-      if ((name_end = strchr(nameptr,'\\')) != NULL) 
+      /* find the next / */
+      if ((name_end = strchr(nameptr,'/')) != NULL) 
       {
           *name_end = 0;
       }
@@ -3526,7 +3526,7 @@ static BOOL is_in_path(char *name, char *namelist)
          return True;
       }
 
-      /* oops - the last check for a \ didn't find one. */
+      /* oops - the last check for a / didn't find one. */
       if (name_end == NULL)
       {
          DEBUG(5,("is_in_path: last name.  failed\n"));
