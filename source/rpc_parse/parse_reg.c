@@ -164,23 +164,23 @@ static BOOL reg_io_hdrbuf_sec(uint32 ptr, uint32 *ptr3, BUFHDR *hdr_sec,
 creates a structure.
 ********************************************************************/
 BOOL make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
-				char *name, char *class,
+				char *key_name, char *key_class,
 				SEC_ACCESS *sam_access,
 				SEC_DESC_BUF *sec_buf,
 				int sec_len, SEC_DESC *sec)
 {
-	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
-	int len_class = class != NULL ? strlen(class) + 1: 0;
+	int len_name  = key_name  != NULL ? strlen(key_name ) + 1: 0;
+	int len_class = key_class != NULL ? strlen(key_class) + 1: 0;
 
 	ZERO_STRUCTP(q_c);
 
 	memcpy(&(q_c->pnt_pol), hnd, sizeof(q_c->pnt_pol));
 
 	make_uni_hdr(&(q_c->hdr_name), len_name);
-	make_unistr2(&(q_c->uni_name), name, len_name);
+	make_unistr2(&(q_c->uni_name), key_name, len_name);
 
 	make_uni_hdr(&(q_c->hdr_class), len_class);
-	make_unistr2(&(q_c->uni_class), class, len_class);
+	make_unistr2(&(q_c->uni_class), key_class, len_class);
 
 	q_c->reserved = 0x00000000;
 	memcpy(&(q_c->sam_access), sam_access, sizeof(q_c->sam_access));
