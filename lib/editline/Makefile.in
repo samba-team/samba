@@ -31,20 +31,26 @@ SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
+LIB2 = $(LIBPREFIX)el_compat.a
+LIBS = $(LIB) @el_yes@ $(LIB2)
 
 LIB_DEPS = -lc
 build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
+install_symlink_command2 = @install_symlink_command2@
 
-SOURCES = edit_compat.c editline.c complete.c sysunix.c
+SOURCES = edit_compat.c editline.c complete.c sysunix.c 
 
 EXTRA_SOURCES = strdup.c 
 EXTRA_OBJECTS = strdup.o
 
-OBJECTS = @editline_OBJS@ $(EXTRA_OBJECTS)
+libeditline_a_OBJECTS = editline.o complete.o sysunix.o $(EXTRA_OBJECTS)
 
+libel_compat_a_OBJECTS = edit_compat.o
 
-all: $(LIB)
+OBJECTS = $(libeditline_a_OBJECTS) $(libel_compat_a_OBJECTS)
+
+all: $(LIBS)
 
 Wall:
 	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
@@ -56,9 +62,11 @@ install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
 	@install_symlink_command@
+@el_yes@	$(INSTALL_DATA) -m 0555 $(LIB2) $(DESTDIR)$(libdir)/$(LIB2)
+@el_yes@	@install_symlink_command2@
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(LIB)
+	for i in $(LIBS); do rm -f $(DESTDIR)$(libdir)/$$i; done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -66,7 +74,7 @@ TAGS: $(SOURCES)
 check:
 
 clean:
-	rm -f $(LIB) *.o *.a *.so *.so.* so_locations
+	rm -f $(LIBS) *.o *.a *.so *.so.* so_locations
 
 mostlyclean: clean
 
@@ -82,16 +90,21 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS)
+$(LIBNAME).a: $(libeditline_a_OBJECTS)
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS)
+	$(AR) cr $@ $(libeditline_a_OBJECTS)
 	-$(RANLIB) $@
 
 
-$(LIBNAME).$(SHLIBEXT): $(OBJECTS)
+$(LIBNAME).$(SHLIBEXT): $(libeditline_a_OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
+	$(LDSHARED) -o $@ $(libeditline_a_OBJECTS) $(LIB_DEPS)
 	@build_symlink_command@
+
+$(LIB2): $(libel_compat_a_OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(libel_compat_a_OBJECTS)
+	-$(RANLIB) $@
 
 $(OBJECTS): ../../include/config.h
 
