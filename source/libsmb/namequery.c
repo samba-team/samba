@@ -188,7 +188,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 
 	StrnCpy(name, status[i].name, 15);
 
-	dos_to_unix(name, True);
+	dos_to_unix(name);
 
 	SAFE_FREE(status);
 	return True;

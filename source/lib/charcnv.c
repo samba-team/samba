@@ -317,47 +317,61 @@ update_map("\370\253\371\246\372\247\373\256\374\376\375\257\376\361");
 /*
  * Convert unix to dos
  */
-char *unix2dos_format(char *str,BOOL overwrite)
+
+char *unix2dos_format_static(const char *str)
 {
-  char *p;
-  char *dp;
+	const char *p;
+	char *dp;
 
-  if (!mapsinited)
-    initmaps();
+	if (!mapsinited)
+		initmaps();
 
-  if (overwrite) {
-    for (p = str; *p; p++)
-      *p = unix2dos[(unsigned char)*p];
-    return str;
-  } else {
-    for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
-      *dp = unix2dos[(unsigned char)*p];
-    *dp = 0;
-    return cvtbuf;
-  }
+	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+		*dp = unix2dos[(unsigned char)*p];
+	*dp = 0;
+	return cvtbuf;
+}
+
+char *unix2dos_format(char *str)
+{
+	char *p;
+
+	if (!mapsinited)
+		initmaps();
+
+	for (p = str; *p; p++)
+		*p = unix2dos[(unsigned char)*p];
+	return str;
 }
 
 /*
  * Convert dos to unix
  */
-char *dos2unix_format(char *str, BOOL overwrite)
+
+char *dos2unix_format_static(const char *str)
 {
-  char *p;
-  char *dp;
+	const char *p;
+	char *dp;
 
-  if (!mapsinited)
-    initmaps();
+	if (!mapsinited)
+		initmaps();
 
-  if (overwrite) {
-    for (p = str; *p; p++)
-      *p = dos2unix[(unsigned char)*p];
-    return str;
-  } else {
-    for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
-      *dp = dos2unix[(unsigned char)*p];
-    *dp = 0;
-    return cvtbuf;
-  }
+	for (p = str, dp = cvtbuf;*p && (dp - cvtbuf < sizeof(cvtbuf) - 1); p++,dp++)
+		*dp = dos2unix[(unsigned char)*p];
+	*dp = 0;
+	return cvtbuf;
+}
+
+char *dos2unix_format(char *str)
+{
+	char *p;
+
+	if (!mapsinited)
+		initmaps();
+
+	for (p = str; *p; p++)
+		*p = dos2unix[(unsigned char)*p];
+	return str;
 }
 
 

@@ -1680,6 +1680,7 @@ FN_LOCAL_STRING(lp_writelist, writelist)
 FN_LOCAL_STRING(lp_printer_admin, printer_admin)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
+FN_LOCAL_STRING(lp_vfoptions, szVfsOptions)
 static FN_LOCAL_STRING(lp_volume, volume)
 FN_LOCAL_STRING(lp_mangled_map, szMangledMap)
 FN_LOCAL_STRING(lp_veto_files, szVetoFiles)
@@ -2271,7 +2272,7 @@ static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
 	 * Convert from UNIX to DOS string - the UNIX to DOS converter
 	 * isn't called on the special handlers.
 	 */
-	unix_to_dos(netbios_name, True);
+	unix_to_dos(netbios_name);
 	pstrcpy(global_myname, netbios_name);
 
 	DEBUG(4,
@@ -2756,26 +2757,26 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 		case P_STRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
+				unix_to_dos(*(char **)parm_ptr);
 			break;
 
 		case P_USTRING:
 			string_set(parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos(*(char **)parm_ptr, True);
+				unix_to_dos(*(char **)parm_ptr);
 			strupper(*(char **)parm_ptr);
 			break;
 
 		case P_GSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
+				unix_to_dos((char *)parm_ptr);
 			break;
 
 		case P_UGSTRING:
 			pstrcpy((char *)parm_ptr, pszParmValue);
 			if (parm_table[parmnum].flags & FLAG_DOS_STRING)
-				unix_to_dos((char *)parm_ptr, True);
+				unix_to_dos((char *)parm_ptr);
 			strupper((char *)parm_ptr);
 			break;
 
@@ -2819,7 +2820,7 @@ static BOOL do_parameter(char *pszParmName, char *pszParmValue)
 /***************************************************************************
 print a parameter of the specified type
 ***************************************************************************/
-static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(*dos_to_ext)(char *, BOOL))
+static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(*dos_to_ext)(const char *))
 {
 	int i;
 	switch (p->type)
@@ -2866,7 +2867,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 		case P_UGSTRING:
 			if ((char *)ptr) {
 				if (p->flags & FLAG_DOS_STRING)
-					fprintf(f, "%s", dos_to_ext((char *)ptr, False));
+					fprintf(f, "%s", dos_to_ext((const char *)ptr));
 				else
 					fprintf(f, "%s", (char *)ptr);
 			}
@@ -2876,7 +2877,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 		case P_USTRING:
 			if (*(char **)ptr) {
 				if(p->flags & FLAG_DOS_STRING)
-					fprintf(f,"%s",dos_to_ext(*(char **)ptr, False));
+					fprintf(f,"%s",dos_to_ext((const char *)*(const char **)ptr));
 				else
 					fprintf(f, "%s", *(char **)ptr);
 			}
@@ -3034,7 +3035,7 @@ static BOOL is_default(int i)
 /***************************************************************************
 Display the contents of the global structure.
 ***************************************************************************/
-static void dump_globals(FILE *f, char *(*dos_to_ext)(char *, BOOL))
+static void dump_globals(FILE *f, char *(*dos_to_ext)(const char *))
 {
 	int i;
 	fprintf(f, "# Global parameters\n[global]\n");
@@ -3068,7 +3069,7 @@ BOOL lp_is_default(int snum, struct parm_struct *parm)
 /***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
-static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(char *, BOOL))
+static void dump_a_service(service * pService, FILE * f, char *(*dos_to_ext)(const char *))
 {
 	int i;
 	if (pService != &sDefault)
@@ -3244,7 +3245,7 @@ void lp_add_one_printer(char *name, char *comment)
 		lp_add_printer(name, printers);
 		if ((i = lp_servicenumber(name)) >= 0) {
 			string_set(&ServicePtrs[i]->comment, comment);
-			unix_to_dos(ServicePtrs[i]->comment, True);
+			unix_to_dos(ServicePtrs[i]->comment);
 			ServicePtrs[i]->autoloaded = True;
 		}
 	}
@@ -3469,7 +3470,7 @@ int lp_numservices(void)
 /***************************************************************************
 Display the contents of the services array in human-readable form.
 ***************************************************************************/
-void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(char *, BOOL))
+void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(const char *))
 {
 	int iService;
 
@@ -3489,7 +3490,7 @@ void lp_dump(FILE *f, BOOL show_defaults, int maxtoprint, char *(*dos_to_ext)(ch
 /***************************************************************************
 Display the contents of one service in human-readable form.
 ***************************************************************************/
-void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(char *, BOOL))
+void lp_dump_one(FILE * f, BOOL show_defaults, int snum, char *(*dos_to_ext)(const char *))
 {
 	if (VALID(snum))
 	{

@@ -438,7 +438,7 @@ BOOL check_name(char *name,connection_struct *conn)
 #ifdef S_ISLNK
   if (!lp_symlinks(SNUM(conn))) {
       SMB_STRUCT_STAT statbuf;
-      if ( (conn->vfs_ops.lstat(conn,dos_to_unix(name,False),&statbuf) != -1) &&
+      if ( (conn->vfs_ops.lstat(conn,dos_to_unix_static(name),&statbuf) != -1) &&
                 (S_ISLNK(statbuf.st_mode)) ) {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
           ret=0; 

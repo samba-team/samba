@@ -166,7 +166,7 @@ BOOL is_msdfs_link(connection_struct* conn, char* path,
 
 	strlower(path);
 
-	if (conn->vfs_ops.lstat(conn,dos_to_unix(path,False),&st) != 0) {
+	if (conn->vfs_ops.lstat(conn,dos_to_unix_static(path),&st) != 0) {
 		DEBUG(5,("is_msdfs_link: %s does not exist.\n",path));
 		return False;
 	}
@@ -808,7 +808,7 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 		cnt++;
 	}
 
-	dirp = conn->vfs_ops.opendir(conn, dos_to_unix(connect_path,False));
+	dirp = conn->vfs_ops.opendir(conn, dos_to_unix_static(connect_path));
 	if(!dirp)
 		return False;
 

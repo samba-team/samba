@@ -259,7 +259,7 @@ static void print_cache_flush(int snum)
 {
 	fstring key;
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	tdb_store_int32(tdb, key, -1);
 }
 
@@ -349,7 +349,7 @@ static void print_queue_update(int snum)
 	/* Convert printer name (i.e. share name) to unix-codepage for all of the 
 	 * following tdb key generation */
 	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name, True);
+	dos_to_unix(printer_name);
 	
 	/*
 	 * Check to see if someone else is doing this update.
@@ -622,10 +622,10 @@ static BOOL is_owner(struct current_user *user, int jobid)
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		return strequal(pjob->user, 
-				unix_to_dos(vuser->user.smb_name,False));
+				unix_to_dos_static(vuser->user.smb_name));
 	} else {
 		return strequal(pjob->user, 
-				unix_to_dos(uidtoname(user->uid),False));
+				unix_to_dos_static(uidtoname(user->uid)));
 	}
 }
 
@@ -778,7 +778,7 @@ static BOOL print_cache_expired(int snum)
 	time_t last_qscan_time, time_now = time(NULL);
 
 	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	last_qscan_time = (time_t)tdb_fetch_int32(tdb, key);
 
 	/*
@@ -812,7 +812,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
-	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
+	dos_to_unix(keystr);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);
@@ -939,9 +939,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		fstrcpy(pjob.user, unix_to_dos(vuser->user.smb_name,False));
+		fstrcpy(pjob.user, unix_to_dos_static(vuser->user.smb_name));
 	} else {
-		fstrcpy(pjob.user, unix_to_dos(uidtoname(user->uid),False));
+		fstrcpy(pjob.user, unix_to_dos_static(uidtoname(user->uid)));
 	}
 
 	pjob.snum = snum;
@@ -1180,7 +1180,7 @@ int print_queue_status(int snum,
 	 */
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
-	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
+	dos_to_unix(keystr);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);

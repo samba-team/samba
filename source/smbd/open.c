@@ -40,13 +40,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		flags |= O_NOFOLLOW;
 #endif
 
-	fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+	fd = conn->vfs_ops.open(conn,dos_to_unix_static(fname),flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+		fd = conn->vfs_ops.open(conn,dos_to_unix_static(fname),flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
@@ -815,7 +815,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
         if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-			(def_acl = directory_has_default_acl(conn, dos_to_unix(parent_dirname(fname),False))))
+			(def_acl = directory_has_default_acl(conn, dos_to_unix_static(parent_dirname(fname)))))
                 mode = 0777;
 
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",

@@ -65,7 +65,7 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 		if (flags & STR_TERMINATE)
 			len++;
 		if (flags & STR_CONVERT)
-			unix_to_dos(dest,True);
+			unix_to_dos(dest);
 		if (flags & STR_UPPER)
 			strupper(dest);
 		return len;
@@ -73,7 +73,7 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 
 	/* the server likes unicode. give it the works */
 	if (flags & STR_CONVERT)
-		dos_PutUniCode(dest, unix_to_dos((char *)src,False), dest_len, flags & STR_TERMINATE);
+		dos_PutUniCode(dest, unix_to_dos_static(src), dest_len, flags & STR_TERMINATE);
 	else
 		unix_PutUniCode(dest, src, dest_len, flags & STR_TERMINATE);
 
@@ -123,7 +123,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			memcpy(dest, src, len);
 			dest[len] = 0;
 		}
-		safe_strcpy(dest,dos_to_unix(dest,False),dest_len);
+		safe_strcpy(dest,dos_to_unix_static(dest),dest_len);
 		return len;
 	}
 

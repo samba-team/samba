@@ -82,7 +82,7 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	standard_sub_snum(snum,syscmd);
 
 	/* Convert script args to unix-codepage */
-	dos_to_unix(syscmd, True);
+	dos_to_unix(syscmd);
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -195,7 +195,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
               
 	/* Convert printer name (i.e. share name) to unix-codepage */
 	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name, True);
+	dos_to_unix(printer_name);
 	
 	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 

@@ -239,9 +239,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
 	/* try in all lower case first as this is the most
 	   common case on UNIX systems */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strlower(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	ret = _Get_Pwnam(user);
 	if (ret)
@@ -260,9 +260,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* finally, try in all caps if that is a new case */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strupper(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	if (strcmp(user, orig_username) != 0) {
 		ret = _Get_Pwnam(user);
@@ -271,9 +271,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* Try all combinations up to usernamelevel. */
-	unix_to_dos(user, True);
+	unix_to_dos(user);
 	strlower(user);
-	dos_to_unix(user, True);
+	dos_to_unix(user);
 
 	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
 

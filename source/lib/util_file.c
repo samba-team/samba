@@ -466,7 +466,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines, BOOL convert
 
 	if (convert) {
 		for (i = 0; ret[i]; i++)
-			unix_to_dos(ret[i], True);
+			unix_to_dos(ret[i]);
 	}
 
 	return ret;

@@ -282,7 +282,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 
   errno = 0;
 
-  if(conn->vfs_ops.utime(conn,dos_to_unix(fname, False), times) == 0)
+  if(conn->vfs_ops.utime(conn,dos_to_unix_static(fname), times) == 0)
     return 0;
 
   if((errno != EPERM) && (errno != EACCES))
@@ -310,7 +310,7 @@ int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 			 current_user.ngroups,current_user.groups)))) {
 		  /* We are allowed to become root and change the filetime. */
 		  become_root();
-		  ret = conn->vfs_ops.utime(conn,dos_to_unix(fname, False), times);
+		  ret = conn->vfs_ops.utime(conn,dos_to_unix_static(fname), times);
 		  unbecome_root();
 	  }
   }

@@ -59,8 +59,10 @@ char *(*multibyte_strtok)(char *, const char *) = (char *(*)(char *, const char 
 static size_t skip_non_multibyte_char(char);
 static BOOL not_multibyte_char_1(char);
 
-char *(*_dos_to_unix)(char *, BOOL) = dos2unix_format;
-char *(*_unix_to_dos)(char *, BOOL) = unix2dos_format;
+char *(*_dos_to_unix)(char *) = dos2unix_format;
+char *(*_dos_to_unix_static)(const char *) = dos2unix_format_static;
+char *(*_unix_to_dos)(char *) = unix2dos_format;
+char *(*_unix_to_dos_static)(const char *) = unix2dos_format_static;
 size_t (*_skip_multibyte_char)(char) = skip_non_multibyte_char;
 BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
 
@@ -71,12 +73,15 @@ BOOL (*is_multibyte_char_1)(char) = not_multibyte_char_1;
  * sj_to_sj in this file.
  */
 
-static char *sj_to_sj(char *from, BOOL overwrite);
+static char *sj_to_sj(char *from);
+static char *sj_to_sj_static(const char *from);
 static size_t skip_kanji_multibyte_char(char);
 static BOOL is_kanji_multibyte_char_1(char);
 
-char *(*_dos_to_unix)(char *, BOOL) = sj_to_sj;
-char *(*_unix_to_dos)(char *, BOOL) = sj_to_sj;
+char *(*_dos_to_unix)(char *) = sj_to_sj;
+char *(*_dos_to_unix_static)(const char *) = sj_to_sj_static;
+char *(*_unix_to_dos)(char *) = sj_to_sj;
+char *(*_unix_to_dos_static)(const char *) = sj_to_sj_static;
 size_t (*_skip_multibyte_char)(char) = skip_kanji_multibyte_char;
 int (*is_multibyte_char_1)(char) = is_kanji_multibyte_char_1;
 
@@ -458,12 +463,10 @@ static int sjis2euc (int hi, int lo)
  return converted buffer
 ********************************************************************/
 
-static char *sj_to_euc(char *from, BOOL overwrite)
+static char *sj_to_euc_static(const char *from)
 {
   char *out;
-  char *save;
 
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
     if (is_shift_jis (*from)) {
       int code = sjis2euc ((int) from[0] & 0xff, (int) from[1] & 0xff);
@@ -478,12 +481,13 @@ static char *sj_to_euc(char *from, BOOL overwrite)
     }
   }
   *out = 0;
-  if (overwrite) {
-    pstrcpy((char *) save, (char *) cvtbuf);
-    return (char *) save;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *sj_to_euc(char *from)
+{
+  pstrcpy(from, sj_to_euc_static(from));
+  return from;
 }
 
 /*******************************************************************
@@ -491,12 +495,10 @@ static char *sj_to_euc(char *from, BOOL overwrite)
  return converted buffer
 ********************************************************************/
 
-static char *euc_to_sj(char *from, BOOL overwrite)
+static char *euc_to_sj_static(const char *from)
 {
   char *out;
-  char *save;
 
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3); ) {
     if (is_euc (*from)) {
       int code = euc2sjis ((int) from[0] & 0xff, (int) from[1] & 0xff);
@@ -511,13 +513,13 @@ static char *euc_to_sj(char *from, BOOL overwrite)
     }
   }
   *out = 0;
+  return cvtbuf;
+}
 
-  if (overwrite) {
-	pstrcpy(save, (char *) cvtbuf); 
-    return save;
-  } else {
-    return cvtbuf;
-  }
+static char *euc_to_sj(char *from)
+{
+  pstrcpy(from, euc_to_sj_static(from));
+  return from;
 }
 
 /*******************************************************************
@@ -700,13 +702,11 @@ static int  euc3sjis (int hi, int lo, BOOL is_3byte)
  return converted buffer
 ********************************************************************/
 
-static char *sj_to_euc3(char *from, BOOL overwrite)
+static char *sj_to_euc3_static(const char *from)
 {
   char *out;
-  char *save;
   int len;
 
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4);) {
     if (is_shift_jis (*from)) {
       int code = sjis3euc ((int) from[0] & 0xff, (int) from[1] & 0xff, &len);
@@ -724,24 +724,24 @@ static char *sj_to_euc3(char *from, BOOL overwrite)
     }
   }
   *out = 0;
-  if (overwrite) {
-    pstrcpy((char *) save, (char *) cvtbuf);
-    return (char *) save;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *sj_to_euc3(char *from)
+{
+  pstrcpy(from, sj_to_euc3_static(from));
+  return from;
 }
 
 /*******************************************************************
  Convert FROM contain EUC codes (with Sup-Kanji) to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *euc3_to_sj(char *from, BOOL overwrite)
+
+static char *euc3_to_sj_static(const char *from)
 {
   char *out;
-  char *save;
 
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3); ) {
     if (is_euc_sup (*from)) {
       int code = euc3sjis((int) from[1] & 0xff, (int) from[2] & 0xff, True);
@@ -761,13 +761,13 @@ static char *euc3_to_sj(char *from, BOOL overwrite)
     }
   }
   *out = 0;
+  return cvtbuf;
+}
 
-  if (overwrite) {
-	pstrcpy(save, (char *) cvtbuf); 
-    return save;
-  } else {
-    return cvtbuf;
-  }
+static char *euc3_to_sj(char *from)
+{
+  pstrcpy(from, euc3_to_sj_static(from));
+  return from;
 }
 
 /*******************************************************************
@@ -846,14 +846,12 @@ static int jis2sjis(int hi, int lo)
  return converted buffer
 ********************************************************************/
 
-static char *jis8_to_sj(char *from, BOOL overwrite)
+static char *jis8_to_sj_static(const char *from)
 {
   char *out;
   int shifted;
-  char *save;
 
   shifted = _KJ_ROMAN;
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
     if (is_esc (*from)) {
       if (is_so1 (from[1]) && is_so2 (from[2])) {
@@ -887,12 +885,13 @@ normal:
   }
 
   *out = 0;
-  if (overwrite) {
-    pstrcpy (save, (char *) cvtbuf);
-    return save;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *jis8_to_sj(char *from)
+{
+  pstrcpy(from, jis8_to_sj_static(from));
+  return from;
 }
 
 /*******************************************************************
@@ -900,14 +899,12 @@ normal:
  return converted buffer
 ********************************************************************/
 
-static char *sj_to_jis8(char *from, BOOL overwrite)
+static char *sj_to_jis8_static(const char *from)
 {
   char *out;
   int shifted;
-  char *save;
 
   shifted = _KJ_ROMAN;
-  save = (char *) from;
   for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
     if (is_shift_jis (*from)) {
       int code;
@@ -945,26 +942,26 @@ static char *sj_to_jis8(char *from, BOOL overwrite)
     break;
   }
   *out = 0;
-  if (overwrite) {
-    pstrcpy (save, (char *) cvtbuf);
-    return save;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *sj_to_jis8(char *from)
+{
+  pstrcpy(from, sj_to_jis8_static(from));
+  return from;
 }
 
 /*******************************************************************
  Convert FROM contain 7 bits JIS codes to SHIFT JIS codes
  return converted buffer
 ********************************************************************/
-static char *jis7_to_sj(char *from, BOOL overwrite)
+
+static char *jis7_to_sj_static(const char *from)
 {
     char *out;
     int shifted;
-    char *save;
 
     shifted = _KJ_ROMAN;
-    save = (char *) from;
     for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
 	if (is_esc (*from)) {
 	    if (is_so1 (from[1]) && is_so2 (from[2])) {
@@ -1004,26 +1001,26 @@ static char *jis7_to_sj(char *from, BOOL overwrite)
 	}
     }
     *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
 }
+
+static char *jis7_to_sj(char *from)
+{
+  pstrcpy(from, jis7_to_sj_static(from));
+  return from;
+} 
 
 /*******************************************************************
  Convert FROM contain SHIFT JIS codes to 7 bits JIS codes
  return converted buffer
 ********************************************************************/
-static char *sj_to_jis7(char *from, BOOL overwrite)
+
+static char *sj_to_jis7_static(const char *from)
 {
     char *out;
     int shifted;
-    char *save;
 
     shifted = _KJ_ROMAN;
-    save = (char *) from;
     for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
 	if (is_shift_jis (*from)) {
 	    int code;
@@ -1080,12 +1077,13 @@ static char *sj_to_jis7(char *from, BOOL overwrite)
 	break;
     }
     *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *sj_to_jis7(char *from)
+{
+  pstrcpy(from, sj_to_jis7_static(from));
+  return from;
 }
 
 /*******************************************************************
@@ -1093,14 +1091,12 @@ static char *sj_to_jis7(char *from, BOOL overwrite)
  return converted buffer
 ********************************************************************/
 
-static char *junet_to_sj(char *from, BOOL overwrite)
+static char *junet_to_sj_static(const char *from)
 {
     char *out;
     int shifted;
-    char *save;
 
     shifted = _KJ_ROMAN;
-    save = (char *) from;
     for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-3);) {
 	if (is_esc (*from)) {
 	    if (is_so1 (from[1]) && is_so2 (from[2])) {
@@ -1137,26 +1133,26 @@ static char *junet_to_sj(char *from, BOOL overwrite)
 	}
     }
     *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *junet_to_sj(char *from)
+{
+  pstrcpy(from, junet_to_sj_static(from));
+  return from;
 }
 
 /*******************************************************************
  Convert FROM contain SHIFT JIS codes to 7 bits JIS(junet) codes
  return converted buffer
 ********************************************************************/
-static char *sj_to_junet(char *from, BOOL overwrite)
+
+static char *sj_to_junet_static(const char *from)
 {
     char *out;
     int shifted;
-    char *save;
 
     shifted = _KJ_ROMAN;
-    save = (char *) from;
     for (out = cvtbuf; *from && (out - cvtbuf < sizeof(cvtbuf)-4); ) {
 	if (is_shift_jis (*from)) {
 	    int code;
@@ -1206,23 +1202,26 @@ static char *sj_to_junet(char *from, BOOL overwrite)
 	break;
     }
     *out = 0;
-    if (overwrite) {
-	pstrcpy (save, (char *) cvtbuf);
-	return save;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *sj_to_junet(char *from)
+{
+  pstrcpy(from, sj_to_junet_static(from));
+  return from;
 }
 
 /*******************************************************************
   HEX <-> SJIS
 ********************************************************************/
 /* ":xx" -> a byte */
-static char *hex_to_sj(char *from, BOOL overwrite)
+
+static char *hex_to_sj_static(const char *from)
 {
-    char *sp, *dp;
+    const char *sp;
+    char *dp;
     
-    sp = (char *) from;
+    sp = from;
     dp = cvtbuf;
     while (*sp && (dp - cvtbuf < sizeof(cvtbuf)-3)) {
 	if (*sp == hex_tag && isxdigit((int)sp[1]) && isxdigit((int)sp[2])) {
@@ -1232,22 +1231,25 @@ static char *hex_to_sj(char *from, BOOL overwrite)
 	    *dp++ = *sp++;
     }
     *dp = '\0';
-    if (overwrite) {
-	pstrcpy ((char *) from, (char *) cvtbuf);
-	return (char *) from;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
 }
  
+static char *hex_to_sj(char *from)
+{
+  pstrcpy(from, hex_to_sj_static(from));
+  return from;
+}
+
 /*******************************************************************
   kanji/kana -> ":xx" 
 ********************************************************************/
-static char *sj_to_hex(char *from, BOOL overwrite)
+
+static char *sj_to_hex_static(const char *from)
 {
-    unsigned char *sp, *dp;
+    const unsigned char *sp;
+    unsigned char *dp;
     
-    sp = (unsigned char*) from;
+    sp = from;
     dp = (unsigned char*) cvtbuf;
     while (*sp && (((char *)dp)- cvtbuf < sizeof(cvtbuf)-7)) {
 	if (is_kana(*sp)) {
@@ -1268,23 +1270,25 @@ static char *sj_to_hex(char *from, BOOL overwrite)
 	    *dp++ = *sp++;
     }
     *dp = '\0';
-    if (overwrite) {
-	pstrcpy ((char *) from, (char *) cvtbuf);
-	return (char *) from;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *sj_to_hex(char *from)
+{
+  pstrcpy(from, sj_to_hex_static(from));
+  return from;
 }
 
 /*******************************************************************
   CAP <-> SJIS
 ********************************************************************/
 /* ":xx" CAP -> a byte */
-static char *cap_to_sj(char *from, BOOL overwrite)
+static char *cap_to_sj_static(const char *from)
 {
-    char *sp, *dp;
+    const char *sp;
+    char *dp;
 
-    sp = (char *) from;
+    sp = (const char *) from;
     dp = cvtbuf;
     while (*sp && (dp- cvtbuf < sizeof(cvtbuf)-2)) {
         /*
@@ -1300,22 +1304,24 @@ static char *cap_to_sj(char *from, BOOL overwrite)
             *dp++ = *sp++;
     }
     *dp = '\0';
-    if (overwrite) {
-        pstrcpy ((char *) from, (char *) cvtbuf);
-        return (char *) from;
-    } else {
-        return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *cap_to_sj(char *from)
+{
+  pstrcpy(from, cap_to_sj_static(from));
+  return from;
 }
 
 /*******************************************************************
   kanji/kana -> ":xx" - CAP format.
 ********************************************************************/
-static char *sj_to_cap(char *from, BOOL overwrite)
+static char *sj_to_cap_static(const char *from)
 {
-    unsigned char *sp, *dp;
+    const unsigned char *sp;
+    unsigned char *dp;
 
-    sp = (unsigned char*) from;
+    sp = from;
     dp = (unsigned char*) cvtbuf;
     while (*sp && (((char *)dp) - cvtbuf < sizeof(cvtbuf)-4)) {
 	if (*sp >= 0x80) {
@@ -1328,39 +1334,42 @@ static char *sj_to_cap(char *from, BOOL overwrite)
 	}
     }
     *dp = '\0';
-    if (overwrite) {
-	pstrcpy ((char *) from, (char *) cvtbuf);
-	return (char *) from;
-    } else {
-	return cvtbuf;
-    }
+    return cvtbuf;
+}
+
+static char *sj_to_cap(char *from)
+{
+  pstrcpy(from, sj_to_cap_static(from));
+  return from;
 }
 
 /*******************************************************************
  sj to sj
 ********************************************************************/
-static char *sj_to_sj(char *from, BOOL overwrite)
+
+static char *sj_to_sj_static(const char *from)
 {
-    if (!overwrite) {
-	pstrcpy (cvtbuf, (char *) from);
+	pstrcpy (cvtbuf, from);
 	return cvtbuf;
-    } else {
-	return (char *) from;
-    }
+}
+
+static char *sj_to_sj(char *from)
+{
+	return from;
 }
 
 /*******************************************************************
  cp to utf8
 ********************************************************************/
-static char *cp_to_utf8(char *from, BOOL overwrite)
+static char *cp_to_utf8_static(const char *from)
 {
   unsigned char *dst;
-  unsigned char *src;
+  const unsigned char *src;
   smb_ucs2_t val;
   int w;
   size_t len;
 
-  src = (unsigned char *)from;
+  src = (const unsigned char *)from;
   dst = (unsigned char *)cvtbuf;
   while (*src && (((char *)dst - cvtbuf) < sizeof(cvtbuf)-4)) {
     len = _skip_multibyte_char(*src);
@@ -1385,25 +1394,26 @@ static char *cp_to_utf8(char *from, BOOL overwrite)
 
   }
   *dst++='\0';
-  if (overwrite) {
-    pstrcpy ((char *) from, (char *) cvtbuf);
-    return (char *) from;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *cp_to_utf8(char *from)
+{
+  pstrcpy(from, cp_to_utf8_static(from));
+  return from;
 }
 
 /*******************************************************************
  utf8 to cp
 ********************************************************************/
-static char *utf8_to_cp(char *from, BOOL overwrite)
+static char *utf8_to_cp_static(const char *from)
 {
-  unsigned char *src;
+  const unsigned char *src;
   unsigned char *dst;
   smb_ucs2_t val;
   int w;
 
-  src = (unsigned char *)from; 
+  src = (const unsigned char *)from; 
   dst = (unsigned char *)cvtbuf; 
 
   while (*src && ((char *)dst - cvtbuf < sizeof(cvtbuf)-4)) {
@@ -1425,12 +1435,13 @@ static char *utf8_to_cp(char *from, BOOL overwrite)
     }
   }
   *dst++='\0';
-  if (overwrite) {
-    pstrcpy ((char *) from, (char *) cvtbuf);
-    return (char *) from;
-  } else {
-    return cvtbuf;
-  }
+  return cvtbuf;
+}
+
+static char *utf8_to_cp(char *from)
+{
+  pstrcpy(from, utf8_to_cp_static(from));
+  return from;
 }
 
 /************************************************************************
@@ -1443,50 +1454,72 @@ static void setup_string_function(int codes)
     switch (codes) {
     default:
         _dos_to_unix = dos2unix_format;
+        _dos_to_unix_static = dos2unix_format_static;
         _unix_to_dos = unix2dos_format;
+        _unix_to_dos_static = unix2dos_format_static;
         break;
 
     case SJIS_CODE:
 	_dos_to_unix = sj_to_sj;
+	_dos_to_unix_static = sj_to_sj_static;
 	_unix_to_dos = sj_to_sj;
+	_unix_to_dos_static = sj_to_sj_static;
 	break;
 	
     case EUC_CODE:
 	_dos_to_unix = sj_to_euc;
+	_dos_to_unix_static = sj_to_euc_static;
 	_unix_to_dos = euc_to_sj;
+	_unix_to_dos_static = euc_to_sj_static;
 	break;
 	
     case JIS7_CODE:
 	_dos_to_unix = sj_to_jis7;
+	_dos_to_unix_static = sj_to_jis7_static;
 	_unix_to_dos = jis7_to_sj;
+	_unix_to_dos_static = jis7_to_sj_static;
 	break;
 
     case JIS8_CODE:
 	_dos_to_unix = sj_to_jis8;
+	_dos_to_unix_static = sj_to_jis8_static;
 	_unix_to_dos = jis8_to_sj;
+	_unix_to_dos_static = jis8_to_sj_static;
 	break;
 
     case JUNET_CODE:
 	_dos_to_unix = sj_to_junet;
+	_dos_to_unix_static = sj_to_junet_static;
 	_unix_to_dos = junet_to_sj;
+	_unix_to_dos_static = junet_to_sj_static;
 	break;
 
     case HEX_CODE:
 	_dos_to_unix = sj_to_hex;
+	_dos_to_unix_static = sj_to_hex_static;
 	_unix_to_dos = hex_to_sj;
+	_unix_to_dos_static = hex_to_sj_static;
 	break;
 
     case CAP_CODE:
 	_dos_to_unix = sj_to_cap;
+	_dos_to_unix_static = sj_to_cap_static;
 	_unix_to_dos = cap_to_sj;
+	_unix_to_dos_static = cap_to_sj_static;
 	break;
+
     case UTF8_CODE:
 	_dos_to_unix = cp_to_utf8;
+	_dos_to_unix_static = cp_to_utf8_static;
 	_unix_to_dos = utf8_to_cp;
+	_unix_to_dos_static = utf8_to_cp_static;
 	break;
+
     case EUC3_CODE:
 	_dos_to_unix = sj_to_euc3;
+	_dos_to_unix_static = sj_to_euc3_static;
 	_unix_to_dos = euc3_to_sj;
+	_unix_to_dos_static = euc3_to_sj_static;
 	break;
     }
 }
@@ -1680,12 +1713,10 @@ void initialize_multibyte_vectors( int client_codepage)
    (to catalog file encoding) is not needed because
    they are using same character codes.
    **************************************************** */
-static char *no_conversion(char *str, BOOL bOverwrite)
+static char *no_conversion_static(const char *str)
 {
        static pstring temp;
-       if(bOverwrite)
-               return str;
        pstrcpy(temp, str);
        return temp;
 }
-char *(*_dos_to_dos)(char *, BOOL) = no_conversion;
+char *(*_dos_to_dos_static)(const char *) = no_conversion_static;

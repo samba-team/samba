@@ -124,7 +124,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = sys_open(dos_to_unix(path,False),O_RDONLY, 0);
+	fd = sys_open(dos_to_unix_static(path),O_RDONLY, 0);
 
 	if (fd == -1) {
 		DEBUG(3,("Failed to open directory %s for change notify\n", path));

@@ -192,7 +192,7 @@ static void send_message(void)
 		 * DOS before sending.
 		 */
 
-		unix_to_dos(msg, True);
+		unix_to_dos(msg);
 
 		if (!cli_message_text(cli, msg, l, grp_id)) {
 			printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));

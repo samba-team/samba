@@ -29,55 +29,55 @@
 
 /* FOR SHIFT JIS CODE */
 #define is_shift_jis(c) \
-    ((0x81 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0x9f) \
-     || (0xe0 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xfc))
+    ((0x81 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0x9f) \
+     || (0xe0 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xfc))
 #define is_shift_jis2(c) \
-    (0x40 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xfc \
-    && ((unsigned char) (c)) != 0x7f)
-#define is_kana(c) ((0xa0 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xdf))
+    (0x40 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xfc \
+    && ((const unsigned char) (c)) != 0x7f)
+#define is_kana(c) ((0xa0 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xdf))
 
 /* case conversion */
 #define is_sj_upper2(c) \
-  ((0x60 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x79))
+  ((0x60 <= (const unsigned char) (c)) && ((const unsigned char) (c) <= 0x79))
 #define is_sj_lower2(c) \
-  ((0x81 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x9A))
+  ((0x81 <= (const unsigned char) (c)) && ((const unsigned char) (c) <= 0x9A))
 #define sjis_alph 0x82
-#define is_sj_alph(c) (sjis_alph == (unsigned char) (c))
+#define is_sj_alph(c) (sjis_alph == (const unsigned char) (c))
 #define is_sj_upper(c1, c2) (is_sj_alph (c1) && is_sj_upper2 (c2))
 #define is_sj_lower(c1, c2) (is_sj_alph (c1) && is_sj_lower2 (c2))
 #define sj_toupper2(c) \
-    (is_sj_lower2 (c) ? ((int) ((unsigned char) (c) - 0x81 + 0x60)) : \
-     ((int) (unsigned char) (c)))
+    (is_sj_lower2 (c) ? ((const int) ((const unsigned char) (c) - 0x81 + 0x60)) : \
+     ((int) (const unsigned char) (c)))
 #define sj_tolower2(c) \
-    (is_sj_upper2 (c) ? ((int) ((unsigned char) (c) - 0x60 + 0x81)) : \
-     ((int) (unsigned char) (c)))
+    (is_sj_upper2 (c) ? ((const int) ((const unsigned char) (c) - 0x60 + 0x81)) : \
+     ((const int) (const unsigned char) (c)))
 
 #define is_sj_ru_upper2(c) \
-  ((0x40 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x60))
+  ((0x40 <= (const unsigned char) (c)) && ((const unsigned char) (c) <= 0x60))
 #define is_sj_ru_lower2(c) \
-  (((0x70 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x7e)) || \
-   ((0x80 <= (unsigned char) (c)) && ((unsigned char) (c) <= 0x91)))
+  (((0x70 <= (const unsigned char) (c)) && ((const unsigned char) (c) <= 0x7e)) || \
+   ((0x80 <= (const unsigned char) (c)) && ((const unsigned char) (c) <= 0x91)))
 #define sjis_russian 0x84
-#define is_sj_russian(c) (sjis_russian == (unsigned char) (c))
+#define is_sj_russian(c) (sjis_russian == (const unsigned char) (c))
 #define is_sj_ru_upper(c1, c2) (is_sj_russian (c1) && is_sj_ru_upper2 (c2))
 #define is_sj_ru_lower(c1, c2) (is_sj_russian (c1) && is_sj_ru_lower2 (c2))
 #define sj_ru_toupper2(c) \
-    (is_sj_ru_lower2 (c) ? ((int) ((unsigned char) (c) + \
-	(((unsigned char)(c) >= 0x4f) ? (0x70 - 0x40) : (0x80 - 0x4f)))) : \
-	((int) (unsigned char) (c)))
+    (is_sj_ru_lower2 (c) ? ((const int) ((const unsigned char) (c) + \
+	(((const unsigned char)(c) >= 0x4f) ? (0x70 - 0x40) : (0x80 - 0x4f)))) : \
+	((const int) (const unsigned char) (c)))
 #define sj_ru_tolower2(c) \
-    (is_sj_ru_upper2 (c) ? ((int) ((unsigned char) (c) - \
-	(((unsigned char)(c) >= 0x80) ? (0x70 - 0x40) : (0x80 - 0x4f)))) : \
-        ((int) (unsigned char) (c)))
+    (is_sj_ru_upper2 (c) ? ((const int) ((const unsigned char) (c) - \
+	(((const unsigned char)(c) >= 0x80) ? (0x70 - 0x40) : (0x80 - 0x4f)))) : \
+        ((const int) (const unsigned char) (c)))
 
 #ifdef _KANJI_C_
 /* FOR EUC CODE */
 #define euc_kana (0x8e)
-#define is_euc_kana(c) (((unsigned char) (c)) == euc_kana)
-#define is_euc(c)  (0xa0 < ((unsigned char) (c)) && ((unsigned char) (c)) < 0xff)
+#define is_euc_kana(c) (((const unsigned char) (c)) == euc_kana)
+#define is_euc(c)  (0xa0 < ((const unsigned char) (c)) && ((const unsigned char) (c)) < 0xff)
 
 #define euc_sup (0x8f)
-#define is_euc_sup(c) (((unsigned char ) (c)) == euc_sup) 
+#define is_euc_sup(c) (((const unsigned char ) (c)) == euc_sup) 
 
 /* FOR JIS CODE */
 /* default jis third shift code, use for output */
@@ -96,18 +96,18 @@
 #define jis_si (0x0f)
 #define jis_si1 ('(')
 #define jis_si2 ('J')
-#define is_esc(c) (((unsigned char) (c)) == jis_esc)
-#define is_so1(c) (((unsigned char) (c)) == jis_so1)
-#define is_so2(c) (((unsigned char) (c)) == jis_so2 || ((unsigned char) (c)) == '@')
-#define is_si1(c) (((unsigned char) (c)) == jis_si1)
-#define is_si2(c) (((unsigned char) (c)) == jis_si2 || ((unsigned char) (c)) == 'B' \
-    || ((unsigned char) (c)) == 'H')
-#define is_so(c) (((unsigned char) (c)) == jis_so)
-#define is_si(c) (((unsigned char) (c)) == jis_si)
+#define is_esc(c) (((const unsigned char) (c)) == jis_esc)
+#define is_so1(c) (((const unsigned char) (c)) == jis_so1)
+#define is_so2(c) (((const unsigned char) (c)) == jis_so2 || ((const unsigned char) (c)) == '@')
+#define is_si1(c) (((const unsigned char) (c)) == jis_si1)
+#define is_si2(c) (((const unsigned char) (c)) == jis_si2 || ((const unsigned char) (c)) == 'B' \
+    || ((const unsigned char) (c)) == 'H')
+#define is_so(c) (((const unsigned char) (c)) == jis_so)
+#define is_si(c) (((const unsigned char) (c)) == jis_si)
 #define junet_kana1 ('(')
 #define junet_kana2 ('I')
-#define is_juk1(c) (((unsigned char) (c)) == junet_kana1)
-#define is_juk2(c) (((unsigned char) (c)) == junet_kana2)
+#define is_juk1(c) (((const unsigned char) (c)) == junet_kana1)
+#define is_juk2(c) (((const unsigned char) (c)) == junet_kana2)
 
 #define _KJ_ROMAN (0)
 #define _KJ_KANJI (1)
@@ -116,22 +116,22 @@
 /* FOR HEX */
 #define HEXTAG ':'
 #define hex2bin(x)						      \
-    ( ((int) '0' <= ((int) (x)) && ((int) (x)) <= (int)'9')?	      \
-        (((int) (x))-(int)'0'):					      \
-      ((int) 'a'<= ((int) (x)) && ((int) (x))<= (int) 'f')?	      \
-        (((int) (x)) - (int)'a'+10):				      \
-      (((int) (x)) - (int)'A'+10) )
+    ( ((const int) '0' <= ((const int) (x)) && ((const int) (x)) <= (const int)'9')?	      \
+        (((const int) (x))-(const int)'0'):					      \
+      ((const int) 'a'<= ((const int) (x)) && ((const int) (x))<= (const int) 'f')?	      \
+        (((const int) (x)) - (const int)'a'+10):				      \
+      (((const int) (x)) - (const int)'A'+10) )
 #define bin2hex(x)						      \
-    ( (((int) (x)) >= 10)? (((int) (x))-10 + (int) 'a'): (((int) (x)) + (int) '0') )
+    ( (((const int) (x)) >= 10)? (((const int) (x))-10 + (const int) 'a'): (((const int) (x)) + (const int) '0') )
 
 /* For Hangul (Korean - code page 949). */
-#define is_hangul(c) ((0x81 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xfd))
+#define is_hangul(c) ((0x81 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xfd))
 
 /* For traditional Chinese (known as Big5 encoding - code page 950). */
-#define is_big5_c1(c) ((0xa1 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xf9)) 
+#define is_big5_c1(c) ((0xa1 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xf9)) 
 
 /* For simplified Chinese (code page - 936). */
-#define is_simpch_c1(c) ((0xa1 <= ((unsigned char) (c)) && ((unsigned char) (c)) <= 0xf7))
+#define is_simpch_c1(c) ((0xa1 <= ((const unsigned char) (c)) && ((const unsigned char) (c)) <= 0xf7))
 
 #else /* not _KANJI_C_ */
 
@@ -164,9 +164,11 @@ extern char *(*multibyte_strchr)(const char *s, int c);
 extern char *(*multibyte_strrchr)(const char *s, int c);
 extern char *(*multibyte_strstr)(const char *s1, const char *s2);
 extern char *(*multibyte_strtok)(char *s1, const char *s2);
-extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
-extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
-extern char *(*_dos_to_dos)(char *str, BOOL overwrite);
+extern char *(*_dos_to_unix)(char *str);
+extern char *(*_dos_to_unix_static)(const char *str);
+extern char *(*_unix_to_dos)(char *str);
+extern char *(*_unix_to_dos_static)(const char *str);
+extern char *(*_dos_to_dos_static)(const char *str);
 extern BOOL (*is_multibyte_char)(char c);
 extern int (*_skip_multibyte_char)(char c);
 
@@ -174,9 +176,11 @@ extern int (*_skip_multibyte_char)(char c);
 #define strrchr(s1, c) ((*multibyte_strrchr)((s1), (c)))
 #define strstr(s1, s2) ((*multibyte_strstr)((s1), (s2)))
 #define strtok(s1, s2) ((*multibyte_strtok)((s1), (s2)))
-#define dos_to_unix(x,y) ((*_dos_to_unix)((x), (y)))
-#define unix_to_dos(x,y) ((*_unix_to_dos)((x), (y)))
-#define dos_to_dos(x,y) ((*_dos_to_dos)((x), (y)))
+#define dos_to_unix(x) ((*_dos_to_unix)(x))
+#define dos_to_unix_static(x) ((*_dos_to_unix_static)(x))
+#define unix_to_dos(x) ((*_unix_to_dos)(x))
+#define unix_to_dos_static(x) ((*_unix_to_dos_static)(x))
+#define dos_to_dos_static(x) ((*_dos_to_dos)(x))
 #define skip_multibyte_char(c) ((*_skip_multibyte_char)((c)))
 
 #endif /* _KANJI_C_ */
@@ -197,8 +201,8 @@ extern int (*_skip_multibyte_char)(char c);
 
 /* For conversion */
 
-#define EXTSJISC(c)   (0xf0 <= ((unsigned char)(c)) \
-		       && ((unsigned char)(c) <= 0xfc)) 
+#define EXTSJISC(c)   (0xf0 <= ((const unsigned char)(c)) \
+		       && ((const unsigned char)(c) <= 0xfc)) 
 #define GETAHI (0x81)
 #define GETALO (0xac)
 

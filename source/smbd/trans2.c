@@ -1367,7 +1367,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
+			fstype_len = dos_PutUniCode(pdata+12,unix_to_dos_static(fstype),sizeof(pstring), False);
 			SIVAL(pdata,8,fstype_len);
 			data_len = 12 + fstype_len;
 			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
@@ -2055,11 +2055,11 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 #else
 			return(UNIXERROR(ERRDOS,ERRbadlink));
 #endif
-			len = conn->vfs_ops.readlink(conn,dos_to_unix(fullpathname,False), buffer, sizeof(pstring)-1);     /* read link */
+			len = conn->vfs_ops.readlink(conn,dos_to_unix_static(fullpathname), buffer, sizeof(pstring)-1);     /* read link */
 			if (len == -1)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			buffer[len] = 0;
-			unix_to_dos(buffer,True);
+			unix_to_dos(buffer);
 			pstrcpy(pdata,buffer);                            /* write '\0' terminated string */
 			pdata += strlen(buffer)+1;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -2202,10 +2202,10 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 		pstrcpy(link_dest, "./");
 	}
 		
-	if (conn->vfs_ops.realpath(conn,dos_to_unix(link_dest,False),resolved_name) == NULL)
+	if (conn->vfs_ops.realpath(conn,dos_to_unix_static(link_dest),resolved_name) == NULL)
 		return -1;
 
-	pstrcpy(link_dest, unix_to_dos(resolved_name,False));
+	pstrcpy(link_dest, unix_to_dos_static(resolved_name));
 	pstrcat(link_dest, "/");
 	pstrcat(link_dest, last_component);
 
@@ -2625,7 +2625,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 0%o for file %s\n", (double)dev, unixmode, fname ));
 
 				/* Ok - do the mknod. */
-				if (conn->vfs_ops.mknod(conn,dos_to_unix(fname,False), unixmode, dev) != 0)
+				if (conn->vfs_ops.mknod(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 				SSVAL(params,0,0);
@@ -2687,8 +2687,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			dos_to_unix(link_dest, True);
-			dos_to_unix(fname, True);
+			dos_to_unix(link_dest);
+			dos_to_unix(fname);
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 				fname, link_dest ));
@@ -2715,8 +2715,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-			dos_to_unix(link_dest, True);
-			dos_to_unix(fname, True);
+			dos_to_unix(link_dest);
+			dos_to_unix(fname);
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 				fname, link_dest ));

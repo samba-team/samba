@@ -139,7 +139,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 	printf("</td>");
 
 	printf("<td>%s</td><td>%s</td></tr>\n",
-	       dos_to_unix(fname,False),tstring(e->time.tv_sec));
+	       dos_to_unix_static(fname),tstring(e->time.tv_sec));
 }
 
 

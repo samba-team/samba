@@ -1719,7 +1719,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	 */
 
 	if(default_ace || fsp->is_directory || fsp->fd == -1) {
-		if (conn->vfs_ops.sys_acl_set_file(conn, dos_to_unix(fsp->fsp_name,False), the_acl_type, the_acl) == -1) {
+		if (conn->vfs_ops.sys_acl_set_file(conn, dos_to_unix_static(fsp->fsp_name), the_acl_type, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
@@ -1878,14 +1878,14 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 * Get the ACL from the path.
 		 */
 
-		posix_acl = conn->vfs_ops.sys_acl_get_file( conn, dos_to_unix(fsp->fsp_name, False), SMB_ACL_TYPE_ACCESS);
+		posix_acl = conn->vfs_ops.sys_acl_get_file( conn, dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_ACCESS);
 
 		/*
 		 * If it's a directory get the default POSIX ACL.
 		 */
 
 		if(fsp->is_directory)
-			dir_acl = conn->vfs_ops.sys_acl_get_file( conn, dos_to_unix(fsp->fsp_name, False), SMB_ACL_TYPE_DEFAULT);
+			dir_acl = conn->vfs_ops.sys_acl_get_file( conn, dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_DEFAULT);
 
 	} else {
 
@@ -2142,7 +2142,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 				 * No default ACL - delete one if it exists.
 				 */
 
-				if (conn->vfs_ops.sys_acl_delete_def_file(conn, dos_to_unix(fsp->fsp_name,False)) == -1) {
+				if (conn->vfs_ops.sys_acl_delete_def_file(conn, dos_to_unix_static(fsp->fsp_name)) == -1) {
 					DEBUG(3,("set_nt_acl: conn->vfs_ops.sys_acl_delete_def_file failed (%s)\n", strerror(errno)));
 					free_canon_ace_list(file_ace_list);
 					return False;
@@ -2170,7 +2170,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 				DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
 					fsp->fsp_name, (unsigned int)posix_perms ));
 
-				if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), posix_perms) == -1) {
+				if(conn->vfs_ops.chmod(conn,dos_to_unix_static(fsp->fsp_name), posix_perms) == -1) {
 					DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
 							fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
 					free_canon_ace_list(file_ace_list);

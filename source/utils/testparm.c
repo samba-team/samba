@@ -283,7 +283,7 @@ Level II oplocks can only be set if oplocks are also set.\n",
       getc(stdin);
     }
     memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
-    lp_dump(stdout,True, lp_numservices(), _dos_to_unix);
+    lp_dump(stdout,True, lp_numservices(), _dos_to_unix_static);
   }
   
   if (argc >= 3) {

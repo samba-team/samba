@@ -459,7 +459,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[i].name);
-        dos_to_unix(key, True);            /* Convert key to unix-codepage */
+        dos_to_unix(key);            /* Convert key to unix-codepage */
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
@@ -546,7 +546,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[n].name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 	if (tdb_delete(tdb_forms, kbuf) != 0) {
@@ -1613,7 +1613,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	DEBUG(5,("add_a_printer_driver_3: Adding driver with key %s\n", key ));
 
@@ -1994,7 +1994,7 @@ uint32 del_a_printer(char *sharename)
 	TDB_DATA kbuf;
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -2090,7 +2090,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2603,7 +2603,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2874,7 +2874,7 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -3018,7 +3018,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -3700,7 +3700,7 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	   Aargh! */
 
 	fstrcpy(dos_domain, lp_workgroup());
-	unix_to_dos(dos_domain, True);
+	unix_to_dos(dos_domain);
 
 	if (secrets_fetch_domain_sid(dos_domain, &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);

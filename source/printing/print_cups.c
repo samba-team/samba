@@ -195,9 +195,9 @@ cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
 			break;
 
  		if (info == NULL || !info[0])
-			(*fn)(unix_to_dos(name,False), make_model);
+			(*fn)(unix_to_dos_static(name), make_model);
 		else
-			(*fn)(unix_to_dos(name,False), info);
+			(*fn)(unix_to_dos_static(name), info);
 	}
 
 	ippDelete(response);
@@ -266,7 +266,7 @@ cups_printername_ok(char *name)		/* I - Name of printer */
                      "requested-attributes", NULL, "printer-uri");
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         dos_to_unix(name, False));
+	         dos_to_unix_static(name));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);

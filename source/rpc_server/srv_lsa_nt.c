@@ -263,8 +263,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		/* unistr routines take dos codepage strings */
 
-		unix_to_dos(dom_name, True);
-		unix_to_dos(name, True);
+		unix_to_dos(dom_name);
+		unix_to_dos(name);
 
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
@@ -371,10 +371,10 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		return NT_STATUS_INVALID_HANDLE;
 
 	fstrcpy(dos_myname, global_myname);
-	unix_to_dos(dos_myname, True);
+	unix_to_dos(dos_myname);
 
 	fstrcpy(dos_domain, global_myworkgroup);
-	unix_to_dos(dos_domain, True);
+	unix_to_dos(dos_domain);
 
 	switch (q_u->info_class) {
 	case 0x02:

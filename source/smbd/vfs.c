@@ -210,7 +210,7 @@ BOOL smbd_vfs_init(connection_struct *conn)
  Check if directory exists.
 ********************************************************************/
 
-BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *st)
+BOOL vfs_directory_exist(connection_struct *conn, const char *dname, SMB_STRUCT_STAT *st)
 {
 	SMB_STRUCT_STAT st2;
 	BOOL ret;
@@ -232,13 +232,13 @@ BOOL vfs_directory_exist(connection_struct *conn, char *dname, SMB_STRUCT_STAT *
  vfs mkdir wrapper that calls dos_to_unix.
 ********************************************************************/
 
-int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
+int vfs_mkdir(connection_struct *conn, char *const fname, mode_t mode)
 {
 	int ret;
 	pstring name;
 	SMB_STRUCT_STAT sbuf;
 
-	pstrcpy(name,dos_to_unix(fname,False)); /* paranoia copy */
+	pstrcpy(name,dos_to_unix_static(fname)); /* paranoia copy */
 	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
 		/*
 		 * Check if high bits should have been set,
@@ -261,7 +261,7 @@ char *vfs_getwd(connection_struct *conn, char *unix_path)
     char *wd;
     wd = conn->vfs_ops.getwd(conn,unix_path);
     if (wd)
-        unix_to_dos(wd, True);
+        unix_to_dos(wd);
     return wd;
 }
 
@@ -269,7 +269,7 @@ char *vfs_getwd(connection_struct *conn, char *unix_path)
  Check if an object exists in the vfs.
 ********************************************************************/
 
-BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL vfs_object_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 
@@ -287,7 +287,7 @@ BOOL vfs_object_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
  Check if a file exists in the vfs.
 ********************************************************************/
 
-BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL vfs_file_exist(connection_struct *conn, const char *fname,SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_STAT st;
 
@@ -330,7 +330,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
  Write data to a fd on the vfs.
 ****************************************************************************/
 
-ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
+ssize_t vfs_write_data(files_struct *fsp,const char *buffer,size_t N)
 {
 	size_t total=0;
 	ssize_t ret;
@@ -487,7 +487,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	{
 		static pstring buf;
 		memcpy(buf, dname, NAMLEN(ptr)+1);
-		unix_to_dos(buf, True);
+		unix_to_dos(buf);
 		dname = buf;
 	}
 
@@ -564,7 +564,7 @@ static BOOL handle_vfs_option(char *pszParmValue, char **ptr)
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-int vfs_ChDir(connection_struct *conn, char *path)
+int vfs_ChDir(connection_struct *conn, const char *path)
 {
 	int res;
 	static pstring LastDir="";

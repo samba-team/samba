@@ -64,7 +64,7 @@ static void msg_deliver(void)
 
   if(msgpos > 0) {
     msgbuf[msgpos] = '\0'; /* Ensure null terminated. */
-    pstrcpy(msgbuf,dos_to_unix(msgbuf,False));
+    pstrcpy(msgbuf,dos_to_unix_static(msgbuf));
   }
 
   for (i=0;i<msgpos;) {

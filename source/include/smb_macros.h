@@ -238,13 +238,13 @@ copy an IP address from one buffer to another
  vfs stat wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix((fname),False),(st)))
+#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix_static((fname)),(st)))
 
 /*******************************************************************
  vfs lstat wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), dos_to_unix((fname),False),(st)))
+#define vfs_lstat(conn, fname, st) ((conn)->vfs_ops.lstat((conn), dos_to_unix_static((fname)),(st)))
 
 /*******************************************************************
  vfs fstat wrapper that calls dos_to_unix.
@@ -256,30 +256,30 @@ copy an IP address from one buffer to another
  vfs rmdir wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),dos_to_unix((fname),False)))
+#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),dos_to_unix_static((fname))))
 
 /*******************************************************************
  vfs Unlink wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),dos_to_unix((fname),False)))
+#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),dos_to_unix_static((fname))))
 
 /*******************************************************************
  vfs chmod wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),dos_to_unix((fname),False),(mode)))
+#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),dos_to_unix_static((fname)),(mode)))
 
 /*******************************************************************
  vfs chown wrapper that calls dos_to_unix.
 ********************************************************************/
 
-#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),dos_to_unix((fname),False),(uid),(gid)))
+#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),dos_to_unix_static((fname)),(uid),(gid)))
 
 /*******************************************************************
  A wrapper for vfs_chdir().
 ********************************************************************/
 
-#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),dos_to_unix((fname),False)))
+#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),dos_to_unix_static((fname))))
 
 #endif /* _SMB_MACROS_H */

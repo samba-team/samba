@@ -236,9 +236,9 @@ int reply_tcon(connection_struct *conn,
      * Ensure the user and password names are in UNIX codepage format.
      */
 
-    pstrcpy(user,dos_to_unix(user,False));
+    pstrcpy(user,dos_to_unix_static(user));
 	if (!doencrypt)
-    	pstrcpy(password,dos_to_unix(password,False));
+    	pstrcpy(password,dos_to_unix_static(password));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -346,9 +346,9 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	 * Ensure the user and password names are in UNIX codepage format.
 	 */
 
-	pstrcpy(user,dos_to_unix(user,False));
+	pstrcpy(user,dos_to_unix_static(user));
 	if (!doencrypt)
-		pstrcpy(password,dos_to_unix(password,False));
+		pstrcpy(password,dos_to_unix_static(password));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -726,7 +726,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    pstrcpy(user,dos_to_unix(user,False));
+    pstrcpy(user,dos_to_unix_static(user));
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -812,8 +812,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
        * Ensure the plaintext passwords are in UNIX format.
        */
       if(!doencrypt) {
-        pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
-        pstrcpy(smb_ntpasswd,dos_to_unix(smb_ntpasswd,False));
+        pstrcpy(smb_apasswd,dos_to_unix_static(smb_apasswd));
+        pstrcpy(smb_ntpasswd,dos_to_unix_static(smb_ntpasswd));
       }
 
     } else {
@@ -823,7 +823,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       /*
        * Ensure the plaintext password is in UNIX format.
        */
-      pstrcpy(smb_apasswd,dos_to_unix(smb_apasswd,False));
+      pstrcpy(smb_apasswd,dos_to_unix_static(smb_apasswd));
       
       /* trim the password */
       smb_apasslen = strlen(smb_apasswd);
@@ -842,8 +842,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
-    pstrcpy(user,dos_to_unix(user,False));
-    fstrcpy(domain, dos_to_unix(p, False));
+    pstrcpy(user,dos_to_unix_static(user));
+    fstrcpy(domain, dos_to_unix_static(p));
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,skip_string(p,1),skip_string(p,2)));
   }
@@ -912,7 +912,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     /* Work out who's who */
 
     slprintf(dom_user, sizeof(dom_user) - 1,"%s%s%s",
-               dos_to_unix(domain, False), lp_winbind_separator(), user);
+               dos_to_unix_static(domain), lp_winbind_separator(), user);
 
     if (sys_getpwnam(dom_user) != NULL) {
       pstrcpy(user, dom_user);
@@ -1053,7 +1053,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
     p = smb_buf(outbuf);
     pstrcpy(p,"Unix"); p = skip_string(p,1);
     pstrcpy(p,"Samba "); pstrcat(p,VERSION); p = skip_string(p,1);
-    pstrcpy(p,global_myworkgroup); unix_to_dos(p, True); p = skip_string(p,1);
+    pstrcpy(p,global_myworkgroup); unix_to_dos(p); p = skip_string(p,1);
     set_message(outbuf,3,PTR_DIFF(p,smb_buf(outbuf)),False);
     /* perhaps grab OS version here?? */
   }
@@ -1916,7 +1916,7 @@ static NTSTATUS can_delete(char *fname,connection_struct *conn, int dirtype)
 	if (!CAN_WRITE(conn))
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 
-	if (conn->vfs_ops.lstat(conn,dos_to_unix(fname,False),&sbuf) != 0)
+	if (conn->vfs_ops.lstat(conn,dos_to_unix_static(fname),&sbuf) != 0)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	fmode = dos_mode(conn,fname,&sbuf);
@@ -3427,7 +3427,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
 		pstrcat(fullname, "/");
 		pstrcat(fullname, dname);
 
-		if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname,False), &st) != 0) {
+		if(conn->vfs_ops.lstat(conn,dos_to_unix_static(fullname), &st) != 0) {
 			ret = True;
 			break;
 		}
@@ -3499,7 +3499,7 @@ BOOL rmdir_internals(connection_struct *conn, char *directory)
 					pstrcat(fullname, "/");
 					pstrcat(fullname, dname);
                      
-					if(conn->vfs_ops.lstat(conn,dos_to_unix(fullname, False), &st) != 0)
+					if(conn->vfs_ops.lstat(conn,dos_to_unix_static(fullname), &st) != 0)
 						break;
 					if(st.st_mode & S_IFDIR) {
 						if(lp_recursive_veto_delete(SNUM(conn))) {
@@ -3807,8 +3807,8 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 			return error;
 		}
 
-               	pstrcpy(zdirectory, dos_to_unix(directory, False));
-		pstrcpy(znewname, dos_to_unix(newname,False));
+               	pstrcpy(zdirectory, dos_to_unix_static(directory));
+		pstrcpy(znewname, dos_to_unix_static(newname));
 
 		/*
 		 * If the src and dest names are identical - including case,
@@ -3889,8 +3889,8 @@ directory = %s, newname = %s, newname_last_component = %s, is_8_3 = %d\n",
 					continue;
 				}
 				
-				if (!conn->vfs_ops.rename(conn,dos_to_unix(fname,False),
-                                                          dos_to_unix(destname,False)))
+				if (!conn->vfs_ops.rename(conn,dos_to_unix_static(fname),
+                                                          dos_to_unix_static(destname)))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
