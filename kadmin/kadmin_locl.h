@@ -161,8 +161,6 @@ foreach_principal(const char *exp,
 		  const char *funcname,
 		  void *data);
 
-void get_response(const char *prompt, const char *def, char *buf, size_t len);
-
 int parse_des_key (const char *key_string,
 		   krb5_key_data *key_data, const char **err);
 
