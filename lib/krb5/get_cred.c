@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -148,14 +148,10 @@ init_tgs_req (krb5_context context,
     if (ret)
 	goto fail;
 
-    if(in_creds->times.endtime){
-	ALLOC(t->req_body.till, 1);
-	*t->req_body.till = in_creds->times.endtime;
-    } else {
-	/* this is necessary with old MIT code (such as DCE secd) */
-	ALLOC(t->req_body.till, 1);
-	*t->req_body.till = 0;
-    }
+    /* req_body.till should be NULL if there is no endtime specified,
+       but old MIT code (like DCE secd) doesn't like that */
+    ALLOC(t->req_body.till, 1);
+    *t->req_body.till = in_creds->times.endtime;
     
     t->req_body.nonce = nonce;
     if(second_ticket){
