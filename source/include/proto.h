@@ -153,12 +153,12 @@ void mdfour(unsigned char *out, unsigned char *in, int n);
 void ping_message(int msg_type, pid_t src, void *buf, size_t len);
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len);
 BOOL message_init(void);
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len);
+BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
 void message_dispatch(void);
 void message_register(int msg_type, 
 		      void (*fn)(int msg_type, pid_t pid, void *buf, size_t len));
 void message_deregister(int msg_type);
-BOOL message_send_all(int msg_type, void *buf, size_t len);
+BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed);
 
 /*The following definitions come from  lib/ms_fnmatch.c  */
 
@@ -3754,7 +3754,7 @@ int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int d
 int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize);
 int reply_lseek(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
 int reply_flush(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
-int reply_exit(connection_struct *conn,
+int reply_exit(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
                 int dum_buffsize);
@@ -3763,11 +3763,11 @@ int reply_writeclose(connection_struct *conn,
 int reply_lock(connection_struct *conn,
 	       char *inbuf,char *outbuf, int length, int dum_buffsize);
 int reply_unlock(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize);
-int reply_tdis(connection_struct *conn,
+int reply_tdis(connection_struct *conn, 
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_echo(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int reply_printopen(connection_struct *conn,
+int reply_printopen(connection_struct *conn, 
 		    char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_printclose(connection_struct *conn,
 		     char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
@@ -3778,8 +3778,8 @@ int mkdir_internal(connection_struct *conn, char *inbuf, char *outbuf, pstring d
 int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 BOOL rmdir_internals(connection_struct *conn, char *directory);
 int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int rename_internals(connection_struct *conn,
-		     char *inbuf, char *outbuf, char *name,
+int rename_internals(connection_struct *conn, 
+		     char *inbuf, char *outbuf, char *name, 
 		     char *newname, BOOL replace_if_exists);
 int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize);

@@ -71,7 +71,7 @@ a useful function for testing the message system
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	DEBUG(1,("INFO: Received PING message from PID %d\n",src));
-	message_send_pid(src, MSG_PONG, buf, len);
+	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 
 /****************************************************************************
@@ -83,7 +83,7 @@ void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 	
 	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %d\n",src));
         level = DEBUGLEVEL;
-	message_send_pid(src, MSG_DEBUGLEVEL, &level, sizeof(int));
+	message_send_pid(src, MSG_DEBUGLEVEL, &level, sizeof(int), True);
 }
 
 /****************************************************************************
@@ -148,12 +148,22 @@ static BOOL message_notify(pid_t pid)
 /****************************************************************************
 send a message to a particular pid
 ****************************************************************************/
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
+BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
 	struct message_rec rec;
 	void *p;
+
+	/*
+	 * Do an early check for process exists - saves adding into a tdb
+	 * and deleting again if the target is not present. JRA.
+	 */
+
+	if (kill(pid, 0) == -1) {
+		DEBUG(2,("message_send_pid: pid %d doesn't exist\n", (int)pid));
+		return False;
+	}
 
 	rec.msg_version = MESSAGE_VERSION;
 	rec.msg_type = msg_type;
@@ -181,6 +191,30 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len)
 		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 		free(p);
 		goto ok;
+	}
+
+	if (!duplicates_allowed) {
+		char *ptr;
+		struct message_rec *prec;
+		
+		for(ptr = (char *)dbuf.dptr, prec = (struct message_rec *)ptr; ptr < dbuf.dptr + dbuf.dsize;
+					ptr += (sizeof(rec) + prec->len), prec = (struct message_rec *)ptr) {
+
+			/*
+			 * First check if the message header matches, then, if it's a non-zero
+			 * sized message, check if the data matches. If so it's a duplicate and
+			 * we can discard it. JRA.
+			 */
+
+			if (!memcmp(ptr, &rec, sizeof(rec))) {
+				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
+					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
+					free(dbuf.dptr);
+					tdb_unlockchain(tdb, kbuf);
+					return True;
+				}
+			}
+		}
 	}
 
 	/* we're adding to an existing entry */
@@ -323,6 +357,7 @@ static struct {
 	int msg_type;
 	void *buf;
 	size_t len;
+	BOOL duplicates;
 } msg_all;
 
 /****************************************************************************
@@ -335,7 +370,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
 
 	if (crec.cnum == -1) return 0;
-	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len);
+	message_send_pid(crec.pid, msg_all.msg_type, msg_all.buf, msg_all.len, msg_all.duplicates);
 	return 0;
 }
 
@@ -344,7 +379,7 @@ this is a useful function for sending messages to all smbd processes.
 It isn't very efficient, but should be OK for the sorts of applications that 
 use it. When we need efficient broadcast we can add it.
 ****************************************************************************/
-BOOL message_send_all(int msg_type, void *buf, size_t len)
+BOOL message_send_all(int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
 {
 	TDB_CONTEXT *the_tdb;
 
@@ -357,6 +392,7 @@ BOOL message_send_all(int msg_type, void *buf, size_t len)
 	msg_all.msg_type = msg_type;
 	msg_all.buf = buf;
 	msg_all.len = len;
+	msg_all.duplicates = duplicates_allowed;
 
 	tdb_traverse(the_tdb, traverse_fn, NULL);
 	tdb_close(the_tdb);

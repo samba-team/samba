@@ -115,13 +115,13 @@ void profilelevel_function(int msg_type, pid_t src, void *buf, size_t len)
 /****************************************************************************
 send a message to a named destination
 ****************************************************************************/
-static BOOL send_message(char *dest, int msg_type, void *buf, int len)
+static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL duplicates)
 {
 	pid_t pid;
 
 	/* "smbd" is the only broadcast operation */
 	if (strequal(dest,"smbd")) {
-		return message_send_all(msg_type, buf, len);
+		return message_send_all(msg_type, buf, len, duplicates);
 	} else if (strequal(dest,"nmbd")) {
 		pid = pidfile_pid(dest);
 		if (pid == 0) {
@@ -136,7 +136,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len)
 		}		
 	} 
 
-	return message_send_pid(pid, msg_type, buf, len);
+	return message_send_pid(pid, msg_type, buf, len, duplicates);
 }
 
 /****************************************************************************
@@ -174,7 +174,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			return(False);
 		}
 		v = atoi(params);
-		send_message(dest, MSG_DEBUG, &v, sizeof(int));
+		send_message(dest, MSG_DEBUG, &v, sizeof(int), False);
 		break;
 
 	case MSG_PROFILE:
@@ -195,7 +195,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			"MSG_PROFILE parameter must be off, count, on, or flush\n");
 		    return(False);
 		}
-		send_message(dest, MSG_PROFILE, &v, sizeof(int));
+		send_message(dest, MSG_PROFILE, &v, sizeof(int), False);
 		break;
 
 	case MSG_FORCE_ELECTION:
@@ -203,7 +203,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			fprintf(stderr,"force-election can only be sent to nmbd\n");
 			return(False);
 		}
-		send_message(dest, MSG_FORCE_ELECTION, NULL, 0);
+		send_message(dest, MSG_FORCE_ELECTION, NULL, 0, False);
 		break;
 
 	case MSG_REQ_PROFILELEVEL:
@@ -212,7 +212,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		    profilelevel_registered = True;
 		}
 		got_level = False;
-		retval = send_message(dest, MSG_REQ_PROFILELEVEL, NULL, 0);
+		retval = send_message(dest, MSG_REQ_PROFILELEVEL, NULL, 0, True);
 		if (retval) {
 			timeout_start = time(NULL);
 			while (!got_level) {
@@ -231,7 +231,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		    debuglevel_registered = True;
 		}
 		got_level = False;
-		retval = send_message(dest, MSG_REQ_DEBUGLEVEL, NULL, 0);
+		retval = send_message(dest, MSG_REQ_DEBUGLEVEL, NULL, 0, True);
 		if (retval) {
 			timeout_start = time(NULL);
 			while (!got_level) {
@@ -254,7 +254,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 			return (False);
 		}
 		retval = send_message(dest, MSG_PRINTER_NOTIFY, params,
-				      strlen(params) + 1);
+				      strlen(params) + 1, False);
 		break;
 
 	case MSG_PING:
@@ -269,7 +269,7 @@ static BOOL do_command(char *dest, char *msg_name, char *params)
 		n = atoi(params);
 		pong_count = 0;
 		for (i=0;i<n;i++) {
-			retval = send_message(dest, MSG_PING, NULL, 0);
+			retval = send_message(dest, MSG_PING, NULL, 0, True);
 			if (retval == False) break;
 		}
 		if (retval) {

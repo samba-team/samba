@@ -288,6 +288,9 @@ SMBTORTURE_OBJ = utils/torture.o utils/nbio.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
 MASKTEST_OBJ = utils/masktest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
+MSGTEST_OBJ = utils/msgtest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
+                 $(UBIQX_OBJ) $(LIB_OBJ)
+
 LOCKTEST_OBJ = utils/locktest.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -355,6 +358,8 @@ smbwrapper : CHECK bin/smbsh bin/smbwrapper.@SHLIBEXT@ @WRAP32@
 smbtorture : CHECK bin/smbtorture
 
 masktest : CHECK bin/masktest
+
+msgtest : CHECK bin/msgtest
 
 locktest : CHECK bin/locktest
 
@@ -506,6 +511,10 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 bin/masktest: $(MASKTEST_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MASKTEST_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/locktest: $(LOCKTEST_OBJ) bin/.dummy
 	@echo Linking $@
