@@ -419,14 +419,15 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	ZERO_STRUCT(qt);
 
+	/* set default debug level to 1 regardless of what smb.conf sets */
+	setup_logging( "smbcquotas", True );
+	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
+	dbf = x_stderr;
+	x_setbuf( x_stderr, NULL );
+
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
-
 	fault_setup(NULL);
-
-	setup_logging(argv[0],True);
-
 
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
