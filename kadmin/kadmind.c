@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,7 +41,7 @@ static char *keytab_str = "HDB:";
 static int help_flag;
 static int version_flag;
 static int debug_flag;
-static int debug_port;
+static char *port_str;
 char *realm;
 
 static struct getargs args[] = {
@@ -63,8 +63,8 @@ static struct getargs args[] = {
     {	"debug",	'd',	arg_flag,   &debug_flag, 
 	"enable debugging" 
     },
-    {	"debug-port",	'p',	arg_integer,&debug_port, 
-	"port to use with debug", "port" },
+    {	"ports",	'p',	arg_integer,&port_str, 
+	"ports to listen to", "port" },
     {	"help",		'h',	arg_flag,   &help_flag },
     {	"version",	'v',	arg_flag,   &version_flag }
 };
@@ -134,14 +134,22 @@ main(int argc, char **argv)
 
     {
 	int fd = 0;
+	struct sockaddr sa;
+	size_t sa_len;
 	krb5_auth_context ac = NULL;
-	if(debug_flag){
-	    if(debug_port == 0)
+	int debug_port;
+	sa_len = sizeof(sa);
+	if(debug_flag) {
+	    if(port_str == NULL)
 		debug_port = krb5_getportbyname (context, "kerberos-adm", 
 						 "tcp", 749);
 	    else
-		debug_port = htons(debug_port);
+		debug_port = htons(atoi(port_str));
 	    mini_inetd(debug_port);
+	} else if(getsockname(STDIN_FILENO, &sa, &sa_len) < 0 && 
+		   errno == ENOTSOCK) {
+	    parse_ports(context, port_str ? port_str : "+");
+	    start_server(context);
 	}
 	if(realm)
 	    krb5_set_default_realm(context, realm); /* XXX */
