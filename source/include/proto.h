@@ -1822,9 +1822,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
-struct smb_passwd *getsmbfilepwent(void *vp);
-BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override);
-BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override);
 struct passdb_ops *file_initialize_password_db(void);
 
 /*The following definitions come from  smbpassfile.c  */

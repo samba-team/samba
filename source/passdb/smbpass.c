@@ -182,7 +182,7 @@ static struct sam_passwd *getsmbfile21pwent(void *vp)
  Routine to return the next entry in the smbpasswd list.
  *************************************************************************/
 
-struct smb_passwd *getsmbfilepwent(void *vp)
+static struct smb_passwd *getsmbfilepwent(void *vp)
 {
   /* Static buffers we will return. */
   static struct smb_passwd pw_buf;
@@ -423,15 +423,6 @@ static BOOL setsmbfilepwpos(void *vp, unsigned long tok)
  Routine to add an entry to the smbpasswd file.
 *************************************************************************/
 
-static BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
-{
-	return False;
-}
-
-/************************************************************************
- Routine to add an entry to the smbpasswd file.
-*************************************************************************/
-
 static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
 {
   char *pfile = lp_smb_passwd_file();
@@ -564,21 +555,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  override = True, override XXXXXXXX'd out password or NO PASS
 ************************************************************************/
 
-BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
-{
-	return False;
-}
-
-/************************************************************************
- Routine to search the smbpasswd file for an entry matching the username.
- and then modify its password entry. We can't use the startsmbpwent()/
- getsmbpwent()/endsmbpwent() interfaces here as we depend on looking
- in the actual file to decide how much room we have to write data.
- override = False, normal
- override = True, override XXXXXXXX'd out password or NO PASS
-************************************************************************/
-
-BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
+static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
   static pstring  user_name;
@@ -920,19 +897,29 @@ BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
   return True;
 }
 
+static BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override)
+{
+ 	return mod_smbfilepwd_entry(pdb_sam_to_smb(pwd), override);
+}
+
+static BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd)
+{
+ 	return add_smbfilepwd_entry(pdb_sam_to_smb(newpwd));
+}
+
 static struct sam_disp_info *getsmbfiledispnam(char *name)
 {
-	return pdb_sam_to_dispinfo(pdb_ops->getsmbfile21pwnam(name));
+	return pdb_sam_to_dispinfo(getsam21pwnam(name));
 }
 
 static struct sam_disp_info *getsmbfiledisprid(uint32 rid)
 {
-	return pdb_sam_to_dispinfo(pdb_ops->getsmbfile21pwrid(rid));
+	return pdb_sam_to_dispinfo(getsam21pwrid(rid));
 }
 
 static struct sam_disp_info *getsmbfiledispent(void *vp)
 {
-	return pdb_sam_to_dispinfo(pdb_ops->getsmbfile21pwent(vp));
+	return pdb_sam_to_dispinfo(getsam21pwent(vp));
 }
 
 static struct passdb_ops file_ops = {
@@ -946,11 +933,11 @@ static struct passdb_ops file_ops = {
   add_smbfilepwd_entry,
   mod_smbfilepwd_entry,
   getsmbfile21pwent,
-  iterate_getsam21pwnam,        /* In passdb.c */
-  iterate_getsam21pwuid,        /* In passdb.c */
-  iterate_getsam21pwrid,        /* In passdb.c */
+  iterate_getsam21pwnam,
+  iterate_getsam21pwuid,
+  iterate_getsam21pwrid, 
   add_smbfile21pwd_entry,
-  mod_smbfile21pwd_entry
+  mod_smbfile21pwd_entry,
   getsmbfiledispnam,
   getsmbfiledisprid,
   getsmbfiledispent
