@@ -4354,7 +4354,7 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 							q_u->num_names2);
 		q_u->uni_name = (UNISTR2 *)prs_alloc_mem(ps, sizeof(UNISTR2) *
 							 q_u->num_names2);
-		if (!q_u->hdr_name || q_u->uni_name)
+		if (!q_u->hdr_name || !q_u->uni_name)
 			return False;
 	}
 
