@@ -167,7 +167,7 @@ kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
 /* version4.c */
 
 void
-handle_v4(krb5_context context, int len, int fd);
+handle_v4(krb5_context context, krb5_keytab keytab, int len, int fd);
 
 /* random_password.c */
 
