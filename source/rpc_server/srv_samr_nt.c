@@ -1017,8 +1017,6 @@ static NTSTATUS get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DO
 
 /*******************************************************************
  samr_reply_enum_dom_groups
- Only reply with one group - domain admins. This must be fixed for
- a real PDC. JRA.
  ********************************************************************/
 
 NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
