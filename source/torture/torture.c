@@ -70,7 +70,7 @@ void *shm_setup(int size)
 	int shmid;
 	void *ret;
 
-	shmid = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
+	shmid = shmget(IPC_PRIVATE, size, S_IRUSR | S_IWUSR);
 	if (shmid == -1) {
 		printf("can't get shared memory\n");
 		exit(1);
