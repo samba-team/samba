@@ -1457,7 +1457,8 @@ BOOL domain_client_validate( char *user, char *domain,
    * PDC/BDC. Contact each in turn and try and authenticate.
    */
 
-  pserver = strdup(lp_passwordserver());
+  pserver = lp_passwordserver();
+  if (! *pserver) pserver = "*";
   p = pserver;
 
   while (!connected_ok &&
@@ -1468,8 +1469,6 @@ BOOL domain_client_validate( char *user, char *domain,
 		  connected_ok = connect_to_domain_password_server(&cli, remote_machine, trust_passwd);
 	  }
   }
-
-  free(pserver);
 
   if (!connected_ok) {
     DEBUG(0,("domain_client_validate: Domain password server not available.\n"));

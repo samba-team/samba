@@ -26,7 +26,9 @@
 BOOL domain_handles_open(struct winbindd_domain *domain)
 {
 	return domain->sam_handle_open &&
-		domain->sam_dom_handle_open;
+		domain->sam_dom_handle_open &&
+		rpc_hnd_ok(&domain->sam_handle) &&
+		rpc_hnd_ok(&domain->sam_dom_handle);
 }
 
 static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
@@ -36,8 +38,7 @@ static BOOL resolve_dc_name(char *domain_name, fstring domain_controller)
 	
 	/* if its our primary domain and password server is not '*' then use the
 	   password server parameter */
-	if (strcmp(domain_name,lp_workgroup()) == 0 && 
-	    strcmp(lp_passwordserver(),"*") != 0) {
+	if (strcmp(domain_name,lp_workgroup()) == 0 && !lp_wildcard_dc()) {
 		fstrcpy(domain_controller, lp_passwordserver());
 		return True;
 	}
@@ -124,6 +125,19 @@ static BOOL open_sam_handles(struct winbindd_domain *domain)
 		if (!domain->got_domain_info) return False;
 	}
 
+	if ((domain->sam_handle_open && !rpc_hnd_ok(&domain->sam_handle)) ||
+	    (domain->sam_dom_handle_open && !rpc_hnd_ok(&domain->sam_dom_handle))) {
+		domain->got_domain_info = get_domain_info(domain);
+		if (domain->sam_dom_handle_open) {
+			samr_close(&domain->sam_dom_handle);
+			domain->sam_dom_handle_open = False;
+		}
+		if (domain->sam_handle_open) {
+			samr_close(&domain->sam_handle);
+			domain->sam_handle_open = False;
+		}
+	}
+
 	/* Open sam handle if it isn't already open */
 	if (!domain->sam_handle_open) {
 		domain->sam_handle_open = 
@@ -187,7 +201,7 @@ void establish_connections(void)
 
 	if (!server_state.pwdb_initialised) {
 		fstrcpy(server_state.controller, lp_passwordserver());
-		if (strcmp(server_state.controller,"*") == 0) {
+		if (lp_wildcard_dc()) {
 			if (!resolve_dc_name(lp_workgroup(), server_state.controller)) {
 				return;
 			}
