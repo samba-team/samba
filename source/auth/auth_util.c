@@ -703,6 +703,14 @@ static NTSTATUS make_server_info(auth_serversupplied_info **server_info)
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(*server_info);
+
+	/* Initialise the uid and gid values to something non-zero
+	   which may save us from giving away root access if there
+	   is a bug in allocating these fields. */
+
+	(*server_info)->uid = -1;
+	(*server_info)->gid = -1;
+
 	return NT_STATUS_OK;
 }
 
