@@ -12,6 +12,8 @@ ac_help=
 ac_default_prefix=/usr/local
 # Any additions from configure.in:
 ac_default_prefix=/usr/athena
+ac_help="$ac_help
+  --with-skeylib=dir      use the skeylib.a in dir"
 
 # Initialize some variables set by options.
 # The variables have the same names as the options, with
@@ -604,7 +606,7 @@ else
   yes;
 #endif
 EOF
-if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:608: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:610: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
   ac_cv_prog_gcc=yes
 else
   ac_cv_prog_gcc=no
@@ -684,13 +686,13 @@ else
   # On the NeXT, cc -E runs the code through the compiler's parser,
   # not just through cpp.
   cat > conftest.$ac_ext <<EOF
-#line 688 "configure"
+#line 690 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:694: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:696: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   :
@@ -699,13 +701,13 @@ else
   rm -rf conftest*
   CPP="${CC-cc} -E -traditional-cpp"
   cat > conftest.$ac_ext <<EOF
-#line 703 "configure"
+#line 705 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:709: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:711: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   :
@@ -847,11 +849,11 @@ else
   ac_cv_c_cross=yes
 else
 cat > conftest.$ac_ext <<EOF
-#line 851 "configure"
+#line 853 "configure"
 #include "confdefs.h"
 main(){return(0);}
 EOF
-{ (eval echo configure:855: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
+{ (eval echo configure:857: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
 if test -s conftest && (./conftest; exit) 2>/dev/null; then
   ac_cv_c_cross=no
 else
@@ -872,6 +874,24 @@ else
 fi
  LD_FLAGS="$krb_cv_ld_flags"
    
+# Check whether --with-skeylib or --without-skeylib was given.
+if test "${with_skeylib+set}" = set; then
+  withval="$with_skeylib"
+  :
+fi
+
+test -n "$with_skeylib" && 
+SKEYLIB="-L$with_skeylib -lskey" &&
+SKEYINCLUDE="-I$with_skeylib" &&
+echo "$ac_t""Using skeylib in $with_skeylib" 1>&6
+
+
+test -n "$with_skeylib" &&
+cat >> confdefs.h <<\EOF
+#define SKEY 1
+EOF
+
+
 for ac_hdr in sys/select.h paths.h bsd/bsd.h sys/mman.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
@@ -880,12 +900,12 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 884 "configure"
+#line 904 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:889: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:909: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -925,7 +945,7 @@ if eval "test \"\$ac_cv_func_socket\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 929 "configure"
+#line 949 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -933,7 +953,7 @@ int t() {
 socket()
 ; return 0; }
 EOF
-if { (eval echo configure:937: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:957: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_socket=$ac_lib; else ac_cv_funclib_socket=yes; fi";break
 fi
@@ -1003,7 +1023,7 @@ if eval "test \"\$ac_cv_func_gethostbyname\" != yes" ; then
 			LIBS="$ac_lib $ac_save_LIBS"
 		fi
 		cat > conftest.$ac_ext <<EOF
-#line 1007 "configure"
+#line 1027 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1011,7 +1031,7 @@ int t() {
 gethostbyname()
 ; return 0; }
 EOF
-if { (eval echo configure:1015: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1035: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "if test -n \"$ac_lib\";then ac_cv_funclib_gethostbyname=$ac_lib; else ac_cv_funclib_gethostbyname=yes; fi";break
 fi
@@ -1074,7 +1094,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1078 "configure"
+#line 1098 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1096,7 +1116,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1100: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1120: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1126,7 +1146,7 @@ else
   ac_cv_func_mmap=no
 else
 cat > conftest.$ac_ext <<EOF
-#line 1130 "configure"
+#line 1150 "configure"
 #include "confdefs.h"
 
 /* Thanks to Mike Haertel and Jim Avera for this test. */
@@ -1195,7 +1215,7 @@ main()
 }
 
 EOF
-{ (eval echo configure:1199: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
+{ (eval echo configure:1219: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }
 if test -s conftest && (./conftest; exit) 2>/dev/null; then
   ac_cv_func_mmap=yes
 else
@@ -1221,7 +1241,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1225 "configure"
+#line 1245 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1243,7 +1263,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1247: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
+if { (eval echo configure:1267: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -1390,6 +1410,8 @@ s%@YACC@%$YACC%g
 s%@INSTALL_PROGRAM@%$INSTALL_PROGRAM%g
 s%@INSTALL_DATA@%$INSTALL_DATA%g
 s%@LD_FLAGS@%$LD_FLAGS%g
+s%@SKEYLIB@%$SKEYLIB%g
+s%@SKEYINCLUDE@%$SKEYINCLUDE%g
 
 CEOF
 EOF
