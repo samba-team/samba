@@ -58,7 +58,7 @@ int open_socket(krb5_context context)
 	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
-	sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(4712));
+	sin.sin_port = krb5_getportbyname ("hprop", "tcp", htons(HPROP_PORT));
 	if(bind(s, (struct sockaddr*)&sin, sizeof(sin)) < 0){
 	    krb5_warn(context, errno, "bind");
 	    close(s);
@@ -81,7 +81,7 @@ int open_socket(krb5_context context)
 
 static int help_flag;
 static int version_flag;
-static char *database = HDB_DEFAULT_DB;;
+static char *database = HDB_DEFAULT_DB;
 
 struct getargs args[] = {
 #if 0
@@ -107,13 +107,11 @@ int main(int argc, char **argv)
     krb5_context context;
     krb5_auth_context ac = NULL;
     krb5_principal server;
-    krb5_creds creds;
     krb5_keytab keytab;
-    int fd, fd2;
+    int fd;
     HDB *db;
-    char *realm;
     char hostname[128];
-    int optind;
+    int optind = 0;
     char *tmp_db;
     krb5_log_facility *fac;
 
@@ -154,7 +152,7 @@ int main(int argc, char **argv)
     ret = krb5_kt_default(context, &keytab);
     if(ret) krb5_err(context, 1, ret, "krb5_kt_default");
 
-    ret = krb5_recvauth(context, &ac, &fd2, HPROP_VERSION, server, 0, keytab, NULL);
+    ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION, server, 0, keytab, NULL);
     if(ret) krb5_err(context, 1, ret, "krb5_recvauth");
 
     ret = krb5_kt_close(context, keytab);
@@ -165,34 +163,26 @@ int main(int argc, char **argv)
     if(ret) krb5_err(context, 1, ret, "hdb_open");
 
     while(1){
-	unsigned char tmp[4];
-	unsigned char buf[1024];
-	char *name;
-	size_t len;
-	krb5_data data, out;
+	krb5_data data;
 	hdb_entry entry;
-	if(krb5_net_read(context, fd2, tmp, 4) != 4)
-	    break;
-	len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
-	if(krb5_net_read(context, fd2, buf, len) != len)
-	    break;
-	data.data = buf;
-	data.length = len;
-	ret = krb5_rd_priv(context, ac, &data, &out, NULL);
-	if(ret) krb5_err(context, 1, ret, "krb5_rd_priv");
-	if(out.length == 0){
-	    fprintf(stderr, "mv %s %s\n", tmp_db, database);
+
+	ret = recv_priv(context, ac, fd, &data);
+	if(ret) krb5_err(context, 1, ret, "recv_priv");
+
+	if(data.length == 0){
+	    data.data = NULL;
+	    data.length = 0;
+	    send_priv(context, ac, &data, fd);
+	    ret = db->rename(context, db, database);
+	    if(ret) krb5_err(context, 1, ret, "db_rename");
+	    ret = db->close(context, db);
+	    if(ret) krb5_err(context, 1, ret, "db_close");
 	    break;
 	}
-	ret = hdb_value2entry(context, &out, &entry);
+	ret = hdb_value2entry(context, &data, &entry);
 	if(ret) krb5_err(context, 1, ret, "hdb_value2entry");
 	ret = db->store(context, db, &entry);
 	if(ret) krb5_err(context, 1, ret, "db_store");
-#if 0
-	ret = krb5_unparse_name(context, entry.principal, &name);
-	if(ret) krb5_err(context, 1, ret, "krb5_unparse_name");
-	printf("%s\n", name);
-#endif
 	hdb_free_entry(context, &entry);
     }
     exit(0);
