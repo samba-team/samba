@@ -720,6 +720,11 @@ static const struct gensec_security_ops gensec_ms_krb5_security_ops = {
 NTSTATUS gensec_krb5_init(void)
 {
 	NTSTATUS ret;
+
+	if (!lp_parm_bool(-1, "gensec", "krb5", True)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	ret = register_backend("gensec", &gensec_krb5_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
