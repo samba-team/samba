@@ -126,6 +126,77 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 	return Py_None;
 }
 
+/* Parse credentials from a python dictionary.  The dictionary can
+   only have the keys "username", "domain" and "password".  Return
+   True for valid credentials in which case the username, domain and
+   password are set to pointers to their values from the dicationary.
+   If returns False, the errstr is set to point at some mallocated
+   memory describing the error. */
+
+BOOL py_parse_creds(PyObject *creds, char **username, char **domain, 
+		    char **password, char **errstr)
+{
+	/* Initialise anonymous credentials */
+
+	*username = "";
+	*domain = "";
+	*password = "";
+
+	if (creds && PyDict_Size(creds) > 0) {
+		PyObject *username_obj, *password_obj, *domain_obj;
+
+		/* Check for presence of required fields */
+
+		username_obj = PyDict_GetItemString(creds, "username");
+		domain_obj = PyDict_GetItemString(creds, "domain");
+		password_obj = PyDict_GetItemString(creds, "password");
+
+		if (!username_obj) {
+			*errstr = strdup("no username field in credential");
+			return False;
+		}
+
+		if (!domain_obj) {
+			*errstr = strdup("no domain field in credential");
+			return False;
+		}
+
+		if (!password_obj) {
+			*errstr = strdup("no password field in credential");
+			return False;
+		}
+
+		/* Look for any other fields */
+
+		/* Check type of required fields */
+
+		if (!PyString_Check(username_obj)) {
+			*errstr = strdup("username field is not string type");
+			return False;
+		}
+
+		if (!PyString_Check(domain_obj)) {
+			*errstr = strdup("domain field is not string type");
+			return False;
+		}
+
+		if (!PyString_Check(password_obj)) {
+			*errstr = strdup("password field is not string type");
+			return False;
+		}
+
+		/* Assign values */
+
+		*username = PyString_AsString(username_obj);
+		*domain = PyString_AsString(domain_obj);
+		*password = PyString_AsString(password_obj);
+	}
+
+	*errstr = NULL;
+
+	return True;
+}
+
 /* Return a cli_state to a RPC pipe on the given server.  Use the
    credentials passed if not NULL.  If an error occurs errstr is set to a
    string describing the error and NULL is returned.  If set, errstr must
@@ -134,41 +205,14 @@ PyObject *py_setup_logging(PyObject *self, PyObject *args, PyObject *kw)
 struct cli_state *open_pipe_creds(char *server, PyObject *creds, 
 				  char *pipe_name, char **errstr)
 {
-	char *username = "", *password = "", *domain = "";
+	char *username, *password, *domain;
 	struct cli_state *cli;
 	NTSTATUS result;
 	
 	/* Extract credentials from the python dictionary */
 
-	if (creds && PyDict_Size(creds) > 0) {
-		PyObject *username_obj, *password_obj, *domain_obj;
-
-		/* Check credentials passed are valid.  This means the
-		   username, domain and password keys must exist and be
-		   string objects. */
-
-		username_obj = PyDict_GetItemString(creds, "username");
-		domain_obj = PyDict_GetItemString(creds, "domain");
-		password_obj = PyDict_GetItemString(creds, "password");
-
-		if (!username_obj || !domain_obj || !password_obj) {
-		creds_error:
-			*errstr = strdup("invalid credentials");
-			return NULL;
-		}
-
-		if (!PyString_Check(username_obj) || 
-		    !PyString_Check(domain_obj) || 
-		    !PyString_Check(password_obj))
-			goto creds_error;
-
-		username = PyString_AsString(username_obj);
-		domain = PyString_AsString(domain_obj);
-		password = PyString_AsString(password_obj);
-
-		if (!username || !domain || !password)
-			goto creds_error;
-	}
+	if (!py_parse_creds(creds, &username, &password, &domain, errstr))
+		return NULL;
 
 	/* Now try to connect */
 
