@@ -127,6 +127,14 @@ static WERROR reg_dir_add_value(REG_KEY *p, const char *name, int type, void *da
 	return WERR_NOT_SUPPORTED;
 }
 
+static WERROR reg_dir_get_hive(REG_HANDLE *h, int hive, REG_KEY **key)
+{
+	if(hive != 0) return WERR_NO_MORE_ITEMS;
+	*key = reg_key_new_abs("", h, NULL);
+	(*key)->backend_data = talloc_strdup((*key)->mem_ctx, h->location);
+	return WERR_OK;
+}
+
 static WERROR reg_dir_del_value(REG_VAL *v)
 {
 	/* FIXME*/
@@ -137,6 +145,7 @@ static struct registry_ops reg_backend_dir = {
 	.name = "dir",
 	.open_registry = reg_dir_open,
 	.open_key = reg_dir_open_key,
+	.get_hive = reg_dir_get_hive,
 	.fetch_subkeys = reg_dir_fetch_subkeys,
 	.add_key = reg_dir_add_key,
 	.del_key = reg_dir_del_key,
