@@ -619,8 +619,9 @@
 		<listitem><para><parameter>encrypt passwords</parameter> </para></listitem>
 		<listitem><para><parameter>getwd cache</parameter> </para></listitem>
 		<listitem><para><parameter>hide local users</parameter> </para></listitem>
-		<listitem><para><parameter>homedir map</parameter> </para></listitem>
-		<listitem><para><parameter>hosts equiv</parameter> </para></listitem>
+		<listitem><para><parameter>homedir map</parameter></para></listitem>
+		<listitem><para><parameter>host msdfs</parameter></para></listitem>
+		<listitem><para><parameter>hosts equiv</parameter></para></listitem>
 		<listitem><para><parameter>interfaces</parameter></para></listitem>
 		<listitem><para><parameter>keepalive</parameter> </para></listitem>
 		<listitem><para><parameter>kernel oplocks</parameter> </para></listitem>
@@ -811,6 +812,7 @@
 		<listitem><para><parameter>max connections</parameter> </para></listitem>
 		<listitem><para><parameter>max print jobs</parameter></para></listitem>
 		<listitem><para><parameter>min print space</parameter> </para></listitem>
+		<listitem><para><parameter>msdfs root</parameter> </para></listitem>
 		<listitem><para><parameter>only guest</parameter> </para></listitem>
 		<listitem><para><parameter>only user</parameter> </para></listitem>
 		<listitem><para><parameter>oplock contention limit</parameter> </para></listitem>
@@ -2605,6 +2607,27 @@
 		</varlistentry>
 
 
+
+
+	
+		<varlistentry>
+		<term><anchor id="HOSTMSDFS">host msdfs (G)</term>
+		<listitem><para>This boolean parameter is only available 
+		if Samba has been configured and compiled with the <command>
+		--with-msdfs</command> option. If set to <constant>yes</constant>, 
+		Samba will act as a Dfs server, and  allow Dfs-aware clients 
+		to browse Dfs trees hosted on the server.</para>
+
+		<para>See also the <link linkend="MSDFSROOT"><parameter>
+		msdfs root</parameter></link> share  level  parameter.  For
+		more  information  on  setting  up a Dfs tree on Samba,
+		refer to <ulink url="msdfs_setup.html">msdfs_setup.html</ulink>.
+		</para>
+		
+		<para>Default: <command>host msdfs = no</command></para>
+		</listitem>
+		</varlistentry>
+
 	
 		<varlistentry>
 		<term><anchor id="HOSTSALLOW">hosts allow (S)</term>
@@ -3874,7 +3897,7 @@
 		to handle connections to all shares from a given host.
 		</para>
 
-		<para>Default: <command>max smbd processes = 0   ## no limit</command></para>
+		<para>Default: <command>max smbd processes = 0</command>   ## no limit</para>
 		<para>Example: <command>max smbd processes = 1000</command></para>
 		</listitem>
 		</varlistentry>
@@ -4058,8 +4081,30 @@
 		</varlistentry>
 
 
-
+		
+		
 		<varlistentry>
+		<term><anchor id="MSDFSROOT">msdfs root (S)</term>
+		<listitem><para>This boolean parameter is only available if 
+		Samba is configured  and  compiled with the <command>
+		--with-msdfs</command> option.  If set to <constant>yes></constant>, 
+		Samba treats the share as a Dfs root and  allows clients to browse 
+		the distributed file system tree rooted at the share directory. 
+		Dfs links are specified  in  the share directory by symbolic 
+		links of the form <filename>msdfs:serverA\shareA,serverB\shareB
+		</filename> and so on.  For more information on setting up a Dfs tree 
+		on Samba,  refer to <ulink url="msdfs_setup.html">msdfs_setup.html
+		</ulink>.</para>
+		
+		<para>See also <link linkend="HOSTMSDFS"><parameter>host msdfs
+		</parameter></link></para>
+		
+		<para>Default: <command>msdfs root = no</command></para>
+		</listitem>
+		</varlistentry>
+	  
+	  
+		<varlistentry> 
 		<term><anchor id="NAMERESOLVEORDER">name resolve order (G)</term>
 		<listitem><para>This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
