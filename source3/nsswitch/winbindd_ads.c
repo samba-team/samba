@@ -24,6 +24,27 @@
 
 #ifdef HAVE_ADS
 
+/* useful utility */
+static void sid_from_rid(struct winbindd_domain *domain, uint32 rid, DOM_SID *sid)
+{
+	sid_copy(sid, &domain->sid);
+	sid_append_rid(sid, rid);
+}
+
+/* turn a sAMAccountType into a SID_NAME_USE */
+static enum SID_NAME_USE ads_atype_map(uint32 atype)
+{
+	switch (atype & 0xF0000000) {
+	case ATYPE_GROUP:
+		return SID_NAME_DOM_GRP;
+	case ATYPE_USER:
+		return SID_NAME_USER;
+	default:
+		DEBUG(1,("hmm, need to map account type 0x%x\n", atype));
+	}
+	return SID_NAME_UNKNOWN;
+}
+
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
@@ -254,28 +275,70 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	switch (t & 0xF0000000) {
-	case ATYPE_GROUP:
-		*type = SID_NAME_DOM_GRP;
-		break;
-	case ATYPE_USER:
-		*type = SID_NAME_USER;
-		break;
-	default:
-		DEBUG(1,("hmm, need to map account type 0x%x\n", t));
-		*type = SID_NAME_UNKNOWN;
-		break;
-	}
+	*type = ads_atype_map(t);
 
 	ads_destroy(&ads);
+
 
 	return NT_STATUS_OK;
 }
 
-/* Lookup user information from a rid or username. */
+/* convert a sid to a user or group name */
+static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid,
+			    char **name,
+			    enum SID_NAME_USE *type)
+{
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"sAMAccountName", "sAMAccountType", NULL};
+	int rc;
+	void *msg;
+	char *exp;
+	char *sidstr;
+	uint32 atype;
+	char *s;
+
+	DEBUG(3,("ads: sid_to_name\n"));
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("sid_to_name ads_connect: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	sidstr = ads_sid_binstring(sid);
+	asprintf(&exp, "(objectSid=%s)", sidstr);
+	rc = ads_search(ads, &msg, exp, attrs);
+	free(exp);
+	free(sidstr);
+	if (rc) {
+		DEBUG(1,("sid_to_name ads_search: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	s = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	*name = talloc_asprintf(mem_ctx, "%s%s%s", domain->name, lp_winbind_separator(), s);
+	*type = ads_atype_map(atype);
+
+	return NT_STATUS_OK;
+}
+
+
+/* Lookup user information from a rid */
 static NTSTATUS query_user(struct winbindd_domain *domain, 
 			   TALLOC_CTX *mem_ctx, 
-			   const char *user_name, uint32 user_rid, 
+			   uint32 user_rid, 
 			   WINBIND_USERINFO *info)
 {
 	ADS_STRUCT *ads;
@@ -285,13 +348,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	void *msg;
 	char *exp;
 	DOM_SID sid;
-	fstring dom2, name2;
+	char *sidstr;
 
-	/* sigh. Need to fix interface to give us a raw name */
-	if (!parse_domain_user(user_name, dom2, name2))
-		return NT_STATUS_UNSUCCESSFUL;
-	
 	DEBUG(3,("ads: query_user\n"));
+
+	sid_from_rid(domain, user_rid, &sid);
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
@@ -305,33 +366,35 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	asprintf(&exp, "(sAMAccountName=%s)", name2);
+	sidstr = ads_sid_binstring(&sid);
+	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search(ads, &msg, exp, attrs);
 	free(exp);
+	free(sidstr);
 	if (rc) {
-		DEBUG(1,("query_user(%s) ads_search: %s\n", user_name, ads_errstr(rc)));
+		DEBUG(1,("query_user(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	count = ads_count_replies(ads, msg);
 	if (count != 1) {
-		DEBUG(1,("query_user(%s): Not found\n", user_name));
+		DEBUG(1,("query_user(rid=%d): Not found\n", user_rid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	info->acct_name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
 	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
 	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
-		DEBUG(1,("No sid for %s !?\n", user_name));
+		DEBUG(1,("No sid for %d !?\n", user_rid));
 		goto error;
 	}
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &info->group_rid)) {
-		DEBUG(1,("No primary group for %s !?\n", user_name));
+		DEBUG(1,("No primary group for %d !?\n", user_rid));
 		goto error;
 	}
 	
 	if (!sid_peek_rid(&sid, &info->user_rid)) {
-		DEBUG(1,("No rid for %s !?\n", user_name));
+		DEBUG(1,("No rid for %d !?\n", user_rid));
 		goto error;
 	}
 
@@ -346,7 +409,7 @@ error:
 /* Lookup groups a user is a member of. */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  const char *user_name, uint32 user_rid, 
+				  uint32 user_rid, 
 				  uint32 *num_groups, uint32 **user_gids)
 {
 	ADS_STRUCT *ads;
@@ -359,10 +422,14 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DOM_SID *sids;
 	int i;
 	uint32 primary_group;
+	DOM_SID sid;
+	char *sidstr;
 
 	DEBUG(3,("ads: lookup_usergroups\n"));
 
 	(*num_groups) = 0;
+
+	sid_from_rid(domain, user_rid, &sid);
 
 	ads = ads_init(NULL, NULL, NULL);
 	if (!ads) {
@@ -376,11 +443,13 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	asprintf(&exp, "(sAMAccountName=%s)", user_name);
+	sidstr = ads_sid_binstring(&sid);
+	asprintf(&exp, "(objectSid=%s)", sidstr);
 	rc = ads_search(ads, &msg, exp, attrs);
 	free(exp);
+	free(sidstr);
 	if (rc) {
-		DEBUG(1,("lookup_usergroups(%s) ads_search: %s\n", user_name, ads_errstr(rc)));
+		DEBUG(1,("lookup_usergroups(rid=%d) ads_search: %s\n", user_rid, ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -388,12 +457,12 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 
 	rc = ads_search_dn(ads, &msg, user_dn, attrs2);
 	if (rc) {
-		DEBUG(1,("lookup_usergroups(%s) ads_search tokenGroups: %s\n", user_name, ads_errstr(rc)));
+		DEBUG(1,("lookup_usergroups(rid=%d) ads_search tokenGroups: %s\n", user_rid, ads_errstr(rc)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &primary_group)) {
-		DEBUG(1,("No primary group for %s !?\n", user_name));
+		DEBUG(1,("No primary group for rid=%d !?\n", user_rid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -412,17 +481,25 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+
+static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 group_rid, uint32 *num_names, 
+				uint32 **rid_mem, char ***names, 
+				uint32 **name_types)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
-	/* I can't see a good way to do a sid to name mapping with ldap,
-	   and MS servers always allow RPC for this (even in native mode) so
-	   just use RPC for sid_to_name. Maybe that's why they allow it? */
-	winbindd_rpc_sid_to_name,
+	sid_to_name,
 	query_user,
-	lookup_usergroups
+	lookup_usergroups,
+	lookup_groupmem
 };
 
 #endif

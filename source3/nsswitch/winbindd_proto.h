@@ -109,11 +109,6 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_rpc.c  */
 
-NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  DOM_SID *sid,
-				  char **name,
-				  enum SID_NAME_USE *type);
 
 /* The following definitions come from nsswitch/winbindd_sid.c  */
 
@@ -145,11 +140,6 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 				 fstring name,
 				 enum SID_NAME_USE *type);
-BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
-                              TALLOC_CTX *mem_ctx,
-                              uint32 group_rid, uint32 *num_names, 
-                              uint32 **rid_mem, char ***names, 
-                              uint32 **name_types);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 BOOL check_domain_env(char *domain_env, char *domain);

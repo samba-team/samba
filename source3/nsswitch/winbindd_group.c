@@ -60,6 +60,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	char **names = NULL, *buf;
 	BOOL result = False;
 	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
 
 	if (!(mem_ctx = talloc_init()))
 		return False;
@@ -78,10 +79,9 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	}
 
 	/* Lookup group members */
-
-	if (!winbindd_lookup_groupmem(domain, mem_ctx, group_rid, &num_names, 
-				      &rid_mem, &names, &name_types)) {
-
+	status = domain->methods->lookup_groupmem(domain, mem_ctx, group_rid, &num_names, 
+						  &rid_mem, &names, &name_types);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("fill_grent_mem(): could not lookup membership "
 			  "for group rid %d in domain %s\n", 
 			  group_rid, domain->name));
@@ -958,7 +958,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	sid_split_rid(&user_sid, &user_rid);
 
-	status = domain->methods->lookup_usergroups(domain, mem_ctx, name_user, user_rid, &num_groups, &user_gids);
+	status = domain->methods->lookup_usergroups(domain, mem_ctx, user_rid, &num_groups, &user_gids);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* Copy data back to client */
