@@ -1,3 +1,8 @@
+2001-07-27  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/context.c (init_context_from_config_file): check
+	parsing of addresses
+
 2001-07-26  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/sock_principal.c (krb5_sock_to_principal): rename
