@@ -47,6 +47,7 @@
 #include "rpc_wkssvc.h"
 #include "rpc_atsvc.h"
 #include "rpc_eventlog.h"
+#include "rpc_dfs.h"
 
 /* MS AD prototypes */
 #include "sam.h"

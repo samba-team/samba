@@ -1,15 +1,6 @@
 
 /* 
  *  Unix SMB/Netbios implementation.
- *  Version 1.9.
- *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-2000,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
- *  Copyright (C) Paul Ashton                  1997-2000.
- *  
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *  
  *  This program is distributed in the hope that it will be useful,
@@ -158,6 +149,15 @@ interface/version dce/rpc pipe identification
 	}, 0x00                             \
 }
 
+#define SYNT_NETDFS_V3                      \
+{                                           \
+        {                                   \
+                0x4fc742e0, 0x4a10, 0x11cf, \
+                { 0x82, 0x73, 0x00, 0xaa,   \
+                  0x00, 0x4a, 0xe6, 0x73 }  \
+        }, 0x03                             \
+} 
+
 struct pipe_id_info pipe_names[] = {
 	/* client pipe , abstract syntax , server pipe   , transfer syntax */
 	{PIPE_LSARPC, SYNT_LSARPC_V0, PIPE_LSASS, TRANS_SYNT_V2},
@@ -171,6 +171,7 @@ struct pipe_id_info pipe_names[] = {
 	{PIPE_ATSVC, SYNT_ATSVC_V1, PIPE_ATSVC, TRANS_SYNT_V2},
 	{PIPE_SPOOLSS, SYNT_SPOOLSS_V1, PIPE_SPOOLSS, TRANS_SYNT_V2},
 	{PIPE_EVENTLOG, SYNT_EVENTLOG_V0, PIPE_EVENTLOG, TRANS_SYNT_V2},
+	{PIPE_NETDFS, SYNT_NETDFS_V3, PIPE_NETDFS, TRANS_SYNT_V2}, 
 	{NULL, SYNT_NONE_V0, NULL, SYNT_NONE_V0}
 };
 

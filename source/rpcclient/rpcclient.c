@@ -35,6 +35,7 @@
 	add_ntl_commands();
 	add_at_commands();
 	add_spl_commands();
+	add_dfs_commands();
 
 	return command_main(argc, argv);
 }

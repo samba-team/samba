@@ -68,6 +68,13 @@ BOOL set_policy_con(struct policy_cache *cache, POLICY_HND * hnd,
 BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND * hnd,
 		    struct cli_connection **con);
 
+/*The following definitions come from  rpc_client/cli_dfs.c  */
+
+BOOL dfs_remove(char *srv_name, char *dfs_entrypath, char *dfs_servername, 
+		char *dfs_sharename);
+BOOL dfs_add(char *srv_name, char* entrypath, char* servername, char* sharename, char* comment);
+uint32 dfs_enum(char *srv_name, uint32 level, DFS_INFO_CTR *ctr);
+
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
 BOOL event_open(const char* srv_name, const char *log, POLICY_HND *hnd);

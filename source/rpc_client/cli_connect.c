@@ -157,12 +157,13 @@ static struct cli_connection *cli_con_get(const char *srv_name,
 			ncacn_np_use_add(pipe_name, user_key, srv_name,
 					 ntc, True, reuse,
 					 &is_new_connection);
-		if (con->msrpc.smb != NULL)
-		{
-			key = con->msrpc.smb->smb->nt.key;
-			con->msrpc.smb->smb->nt.key.pid = 0;
-			con->msrpc.smb->smb->nt.key.vuid = UID_FIELD_INVALID;
-		}
+
+		if (con->msrpc.smb == NULL)
+			return NULL;
+
+		key = con->msrpc.smb->smb->nt.key;
+		con->msrpc.smb->smb->nt.key.pid = 0;
+		con->msrpc.smb->smb->nt.key.vuid = UID_FIELD_INVALID;
 		copy_nt_creds(&con->usr_creds.ntc,
 		              &con->msrpc.smb->smb->usr);
 	}

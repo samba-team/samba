@@ -48,6 +48,29 @@ BOOL make_brs_r_query_info(BRS_R_QUERY_INFO *r_u,
 				int status)  ;
 BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int depth);
 
+/*The following definitions come from  rpc_parse/parse_dfs.c  */
+
+BOOL dfs_io_r_dfs_exist(char *desc, DFS_R_DFS_EXIST *q_d, prs_struct *ps,
+			int depth);
+BOOL make_dfs_q_dfs_remove(DFS_Q_DFS_REMOVE *q_d, char *entrypath, 
+			   char *servername, char *sharename);
+BOOL dfs_io_q_dfs_remove(char *desc, DFS_Q_DFS_REMOVE *q_d, prs_struct *ps,
+			 int depth);
+BOOL dfs_io_r_dfs_remove(char *desc, DFS_R_DFS_REMOVE *r_d, prs_struct *ps,
+		      int depth);
+BOOL make_dfs_q_dfs_add(DFS_Q_DFS_ADD *q_d, char *entrypath, char *servername,
+			char *sharename, char *comment, uint32 flags);
+BOOL dfs_io_q_dfs_add(char *desc, DFS_Q_DFS_ADD *q_d, prs_struct *ps,
+		      int depth);
+BOOL dfs_io_r_dfs_add(char *desc, DFS_R_DFS_ADD *r_d, prs_struct *ps,
+		      int depth);
+BOOL make_dfs_q_dfs_enum(DFS_Q_DFS_ENUM *q_d, uint32 level, DFS_INFO_CTR *ctr);
+BOOL dfs_io_q_dfs_enum(char *desc, DFS_Q_DFS_ENUM *q_d, prs_struct *ps,
+		      int depth);
+BOOL dfs_io_r_dfs_enum(char *desc, DFS_R_DFS_ENUM *q_d, prs_struct *ps, int depth);
+BOOL smb_io_dfs_storage_info(char *desc, DFS_INFO_3* info3,
+			     prs_struct *ps, int depth);
+
 /*The following definitions come from  rpc_parse/parse_eventlog.c  */
 
 BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, const char *journal, char *unk);
