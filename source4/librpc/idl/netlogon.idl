@@ -308,20 +308,20 @@ interface netlogon
 	} netr_USER_PRIVATE_INFO;
 
 	typedef struct {
-		netr_String username;
-		netr_String FullName;
-		uint32 UserID;
-		uint32 PrimaryGroupID;
-		netr_String HomeDir;
-		netr_String HomeDirDrive;
-		netr_String LogonScript;
-		netr_String Comment;
+		netr_String account_name;
+		netr_String full_name;
+		uint32 rid;
+		uint32 primary_group;
+		netr_String home_dir;
+		netr_String home_drive;
+		netr_String logon_script;
+		netr_String description;
 		netr_String workstations;
 		NTTIME LastLogon;
 		NTTIME LastLogoff;
 		samr_LogonHours logon_hours;
-		uint16 BadPwCount;
-		uint16 LogonCount;
+		uint16 bad_pw_count;
+		uint16 logon_count;
 		NTTIME PwLastSet;
 		NTTIME AccountExpires;
 		uint32 AccountControl;
@@ -337,7 +337,7 @@ interface netlogon
 		netr_USER_PRIVATE_INFO user_private_info;
 		uint32 SecurityInformation;
 		sec_desc_buf sdbuf;
-		netr_String unknown1;
+		netr_String profile_path;
 		netr_String unknown2;
 		netr_String unknown3;
 		netr_String unknown4;
