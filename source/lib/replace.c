@@ -205,7 +205,7 @@ Corrections by richard.kettlewell@kewill.com
 	struct group *g;
 	char   *gr;
 	
-	if((grouplst = (gid_t *)malloc(sizeof(gid_t) * max_gr)) == NULL) {
+	if((grouplst = SMB_MALLOC_ARRAY(gid_t, max_gr)) == NULL) {
 		DEBUG(0,("initgroups: malloc fail !\n"));
 		return -1;
 	}
@@ -311,6 +311,11 @@ needs.
 /****************************************************************************
 duplicate a string
 ****************************************************************************/
+
+#ifdef strdup
+#undef strdup
+#endif
+
  char *strdup(const char *s)
 {
 	size_t len;
@@ -319,7 +324,7 @@ duplicate a string
 	if (!s) return(NULL);
 
 	len = strlen(s)+1;
-	ret = (char *)malloc(len);
+	ret = (char *)SMB_MALLOC(len);
 	if (!ret) return(NULL);
 	memcpy(ret,s,len);
 	return(ret);
