@@ -60,7 +60,7 @@ static struct testcase {
     {"/a", "/a@", "", 2, {"", "a"}, FALSE},
     {"\\@@\\@", "\\@@\\@", "@", 1, {"@"}, TRUE},
     {"a/b/c", "a/b/c@", "", 3, {"a", "b", "c"}, FALSE},
-    {NULL, NULL, "", 0, {}, FALSE}};
+    {NULL, NULL, "", 0, { NULL }, FALSE}};
 
 int
 main(int argc, char **argv)
