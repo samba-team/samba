@@ -917,6 +917,7 @@ handle_v4(krb5_context context,
     int addr_len;
     krb5_error_code ret;
     krb5_data message, reply;
+    ssize_t n;
 
     addr_len = sizeof(client_addr);
     if (getsockname(fd, (struct sockaddr*)&admin_addr, &addr_len) < 0)
@@ -931,8 +932,12 @@ handle_v4(krb5_context context,
                bytes of the version string */
 	    krb5_data_alloc(&message, len);
 	    memcpy(message.data, "KA", 2);
-	    ret = krb5_net_read(context, &fd, (char*)message.data + 2,
-				len - 2);
+	    n = krb5_net_read(context, &fd, (char*)message.data + 2,
+			      len - 2);
+	    if (n == 0)
+		exit (0);
+	    if (n < 0)
+		krb5_err (context, 1, errno, "krb5_net_read");
 	    first = 0;
 	} else {
 	    char buf[2];
@@ -942,18 +947,29 @@ handle_v4(krb5_context context,
 	    n = krb5_net_read(context, &fd, buf, sizeof(2));
 	    if (n == 0)
 		exit (0);
+	    if (n < 0)
+		krb5_err (context, 1, errno, "krb5_net_read");
 	    _krb5_get_int(buf, &tmp, 2);
 	    krb5_data_alloc(&message, tmp);
-	    krb5_net_read(context, &fd, message.data, message.length);
+	    n = krb5_net_read(context, &fd, message.data, message.length);
+	    if (n == 0)
+		krb5_errx (context, 1, "EOF in krb5_net_read");
+	    if (n < 0)
+		krb5_err (context, 1, errno, "krb5_net_read");
 	}
 	decode_packet(context, &admin_addr, &client_addr, 
 		      message, &reply);
 	krb5_data_free(&message);
 	{
 	    char buf[2];
+
 	    _krb5_put_int(buf, reply.length, sizeof(buf));
-	    krb5_net_write(context, &fd, buf, sizeof(buf));
-	    krb5_net_write(context, &fd, reply.data, reply.length);
+	    n = krb5_net_write(context, &fd, buf, sizeof(buf));
+	    if (n < 0)
+		krb5_err (context, 1, errno, "krb5_net_write");
+	    n = krb5_net_write(context, &fd, reply.data, reply.length);
+	    if (n < 0)
+		krb5_err (context, 1, errno, "krb5_net_write");
 	    krb5_data_free(&reply);
 	}
     }
