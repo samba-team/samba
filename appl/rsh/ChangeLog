@@ -1,5 +1,10 @@
 2000-05-23  Assar Westerlund  <assar@sics.se>
 
+	* rsh.c (proto): select on the normal socket when waiting for the
+	daemon to connect back to the stderr port, so that we discover
+	when data arrives there before.  when that happens, we assume that
+	the daemon did not manage to connect (because of NAT/whatever) and
+	continue as if `-e' was given
 	* rshd.c (doit): if we fail to connect back to the stderr port,
 	act as if `-e' was given on the client side, i.e. without the
 	special TCP-connection.  This tries to make things better when
