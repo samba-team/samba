@@ -378,42 +378,6 @@ pytdbpack_buffer(PyObject *val_iter, PyObject *packed_list)
 }
 
 
-#if 0
-else if (ch == 'B') {
-			long size;
-			char *sval;
-
-			if (!PyNumber_Check(val_obj)) {
-				pytdbpack_bad_type(ch, "Number", val_obj);
-				return NULL;
-			}
-
-			if (!(val_obj = PyNumber_Long(val_obj)))
-				return NULL;
-
-			size = PyLong_AsLong(val_obj);
-			pack_le_uint32(size, &packed);
-
-			/* Release the new reference created by the cast */
-			Py_DECREF(val_obj);
-
-			val_obj = PySequence_GetItem(val_seq, val_i++);
-			if (!val_obj)
-				return NULL;
-			
-			sval = PyString_AsString(val_obj);
-			if (!sval)
-				return NULL;
-			
-			pack_bytes(size, sval, &packed); /* do not include nul */
-		}
-		else {
-		
-	}
-		
-	return Py_None;
-}
-#endif
 
 static PyObject *
 pytdbpack_unpack(PyObject *self,
