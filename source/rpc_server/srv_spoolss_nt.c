@@ -6017,11 +6017,9 @@ static WERROR enumjobs_level2(print_queue_struct *queue, int snum,
 		goto done;
 	}
 		
-	if (!(devmode = construct_dev_mode(snum))) {
-		*returned = 0;
-		result = WERR_NOMEM;
-		goto done;
-	}
+	/* this should not be a failure condition if the devmode is NULL */
+	
+	devmode = construct_dev_mode(snum);
 
 	for (i=0; i<*returned; i++)
 		fill_job_info_2(&(info[i]), &queue[i], i, snum, ntprinter,
@@ -8122,7 +8120,8 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 	
 	/* 
 	 * if the print job does not have a DEVMODE associated with it, 
-	 * just use the one for the printer 
+	 * just use the one for the printer. A NULL devicemode is not
+	 *  a failure condition
 	 */
 	 
 	if ( !(nt_devmode=print_job_devmode( snum, jobid )) )
@@ -8134,11 +8133,6 @@ static WERROR getjob_level_2(print_queue_struct *queue, int count, int snum, uin
 		}
 	}
 	
-	if ( !devmode ) {
-		ret = WERR_NOMEM;
-		goto done;
-	}
-
 	fill_job_info_2(info_2, &(queue[i-1]), i, snum, ntprinter, devmode);
 	
 	*needed += spoolss_size_job_info_2(info_2);
