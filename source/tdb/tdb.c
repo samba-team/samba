@@ -1453,7 +1453,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	}
 
 	if ((tdb->fd = open(name, open_flags, mode)) == -1) {
-		TDB_LOG((tdb, 0, "tdb_open_ex: could not open file %s: %s\n",
+		TDB_LOG((tdb, 5, "tdb_open_ex: could not open file %s: %s\n",
 			 name, strerror(errno)));
 		goto fail;	/* errno set by open(2) */
 	}
