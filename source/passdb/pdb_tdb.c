@@ -147,7 +147,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 			ret = False;
 			goto done;
 		}
-		uid_t = pw->pw_uid;
+		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 
 		pdb_set_uid(sampass, uid);
