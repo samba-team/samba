@@ -736,7 +736,7 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 		PACKI(desc,"W",5);		/* pad1 */
 		PACKS(desc,"z","");		/* pszSepFile */
 		PACKS(desc,"z","WinPrint");	/* pszPrProc */
-		PACKS(desc,"z","");		/* pszParms */
+		PACKS(desc,"z",NULL);		/* pszParms */
 		PACKS(desc,"z",NULL);		/* pszComment - don't ask.... JRA */
 		/* "don't ask" that it's done this way to fix corrupted 
 		   Win9X/ME printer comments. */
