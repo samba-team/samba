@@ -270,6 +270,9 @@
 	/******************/
 	/* Function: 0x0d */
 
+	/* w2k3 treats max_size as max_domains*60	*/
+	const int LSA_ENUM_TRUST_DOMAIN_MULTIPLIER = 60;
+
 	typedef struct {
 		lsa_String name;
 		dom_sid2 *sid;
@@ -283,7 +286,7 @@
 	NTSTATUS lsa_EnumTrustDom (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
-		[in,range(0,1000)] uint32 num_entries,
+		[in,range(0,1000)] uint32 max_size,
 		[out,ref]    lsa_DomainList *domains
 		);
 
