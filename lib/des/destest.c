@@ -585,25 +585,29 @@ char *argv[];
 	printf("Doing quad_cksum\n");
 	cs=quad_cksum((C_Block *)cbc_data,(C_Block *)qret,
 		(long)strlen(cbc_data),2,(C_Block *)cbc_iv);
-	for (i=0; i<4; i++)
-		{
-		lqret[i]=0;
-		memcpy(&(lqret[i]),&(qret[i][0]),4);
-		}
-	{ /* Big-endian fix */
+	{
 	static DES_LONG l=1;
 	static unsigned char *c=(unsigned char *)&l;
-	DES_LONG ll;
-
 	if (!c[0])
 		{
-		ll=lqret[0]^lqret[3];
-		lqret[0]^=ll;
-		lqret[3]^=ll;
-		ll=lqret[1]^lqret[2];
-		lqret[1]^=ll;
-		lqret[2]^=ll;
-		}
+			for (i=0; i<4; i++)
+			{
+			lqret[i] = (qret[3-i][0] << 24) |
+				(qret[3-i][1] << 16) |
+				(qret[3-i][2] << 8) |
+				(qret[3-i][3] << 0);
+			}
+		}	
+	else
+		{
+			for (i=0; i<4; i++)
+			{
+			lqret[i] = (qret[i][3] << 24) |
+				(qret[i][2] << 16) |
+				(qret[i][1] << 8) |
+				(qret[i][0] << 0);
+			}
+		}	
 	}
 	if (cs != 0x70d7a63aL)
 		{
