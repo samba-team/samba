@@ -404,29 +404,19 @@ static NTSTATUS db_idmap_init( char *params )
 	BOOL tdb_is_new = False;
 
 	/* use the old database if present */
-	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
-		if (file_exist(lock_path("winbindd_idmap.tdb"), &stbuf)) {
-			DEBUG(0, ("idmap_init: using winbindd_idmap.tdb file!\n"));
-			tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
-			if (!tdbfile) {
-				DEBUG(0, ("idmap_init: out of memory!\n"));
-				return NT_STATUS_NO_MEMORY;
-			}
-		} else {
-			tdb_is_new = True;
-		}
-	}
+	tdbfile = strdup(lock_path("winbindd_idmap.tdb"));
 	if (!tdbfile) {
-		tdbfile = strdup(lock_path("idmap.tdb"));
-		if (!tdbfile) {
-			DEBUG(0, ("idmap_init: out of memory!\n"));
-			return NT_STATUS_NO_MEMORY;
-		}
+		DEBUG(0, ("idmap_init: out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	 DEBUG(10,("db_idmap_init: Opening tdbfile\n", tdbfile ));
+	if (!file_exist(tdbfile, &stbuf)) {
+		tdb_is_new = True;
+	}
 
-	/* Open tdb cache */
+	DEBUG(10,("db_idmap_init: Opening tdbfile\n", tdbfile ));
+
+	/* Open idmap repository */
 	if (!(idmap_tdb = tdb_open_log(tdbfile, 0,
 				       TDB_DEFAULT, O_RDWR | O_CREAT,
 				       0644))) {
@@ -438,12 +428,16 @@ static NTSTATUS db_idmap_init( char *params )
 	SAFE_FREE(tdbfile);
 
 	/* check against earlier versions */
-	if (tdb_is_new) {
-		/* TODO: delete the file if this fail */
-		tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION);
-	} else {
-		version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
-		if (version != IDMAP_VERSION) {
+	version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
+	if (version != IDMAP_VERSION) {
+		if (tdb_is_new) {
+			/* the file didn't existed before opening it, let's
+			 * store idmap version as nobody else yet opened and
+			 * stored it. I do not like this method but didn't
+			 * found a way to understand if an opened tdb have
+			 * been just created or not --- SSS */
+			tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION);
+		} else {
 			DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
