@@ -466,7 +466,7 @@ NTSTATUS net_copy_file(TALLOC_CTX *mem_ctx,
 	if (!src_name || !dst_name)
 		goto out;
 
-	if (cli_share_dst == NULL || cli_share_dst == NULL)
+	if (cli_share_src == NULL || cli_share_dst == NULL)
 		goto out; 
 		
 
