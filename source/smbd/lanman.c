@@ -2346,15 +2346,15 @@ static BOOL api_RNetServerGetInfo(connection_struct *conn,uint16 vuid, char *par
       pstring comment;
       uint32 servertype= lp_default_server_announce();
 
-      pstrcpy(comment,string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+      push_ascii(comment,lp_serverstring(), MAX_SERVER_STRING_LENGTH,STR_TERMINATE);
 
       if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
-	for (i=0;i<count;i++)
-	  if (strequal(servers[i].name,local_machine))
-      {
+	for (i=0;i<count;i++) {
+	  if (strequal(servers[i].name,local_machine)) {
 	    servertype = servers[i].type;
-	    pstrcpy(comment,servers[i].comment);	    
+	    push_ascii(comment,servers[i].comment,sizeof(pstring),STR_TERMINATE);	    
 	  }
+	}
       }
       SAFE_FREE(servers);
 
