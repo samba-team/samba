@@ -85,10 +85,7 @@ unsigned long wins_srv_count(void)
 	int count = 0;
 
 	list = lp_wins_server_list();
-	while (list && *list) {
-		count++;
-		list++;
-	}
+	for (count=0; list && list[count]; count++) /* nop */ ;
 
 	DEBUG(6,("Found %u wins servers in list\n", count));
 	return count;
@@ -101,25 +98,24 @@ struct in_addr wins_srv_ip(void)
 {
 	char **list;
 	struct in_addr ip;
+	int i;
 
 	list = lp_wins_server_list();
-	if (!list || !*list) {
+	if (!list || !list[0]) {
 		zero_ip(&ip);
 		return ip;
 	}
 
 	/* find the first live one */
-	while (list && *list) {
-		ip = *interpret_addr2(*list);
+	for (i=0; list[i]; i++) {
+		ip = *interpret_addr2(list[i]);
 		if (!wins_is_dead(ip)) {
 			DEBUG(6,("Current wins server is %s\n", inet_ntoa(ip)));
 			return ip;
 		}
-		list++;
 	}
 
 	/* damn, they are all dead. Keep trying the primary until they revive */
-	list = lp_wins_server_list();
 	ip = *interpret_addr2(list[0]);
 
 	return ip;
