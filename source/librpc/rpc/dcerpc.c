@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 static struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
@@ -630,10 +631,8 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (pkt.ptype == DCERPC_PKT_BIND_ACK) {
-		p->conn->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
-		p->conn->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
-	}
+	p->conn->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
+	p->conn->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
 
 	/* the bind_ack might contain a reply set of credentials */
 	if (p->conn->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
@@ -1331,4 +1330,81 @@ uint32 dcerpc_auth_level(struct dcerpc_connection *c)
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
 	return auth_level;
+}
+
+
+/* 
+   send a dcerpc alter_context request
+*/
+NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p, 
+			      TALLOC_CTX *mem_ctx,
+			      const struct dcerpc_syntax_id *syntax,
+			      const struct dcerpc_syntax_id *transfer_syntax)
+{
+	struct dcerpc_packet pkt;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	p->syntax = *syntax;
+	p->transfer_syntax = *transfer_syntax;
+
+	init_dcerpc_hdr(p->conn, &pkt);
+
+	pkt.ptype = DCERPC_PKT_ALTER;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	pkt.call_id = p->conn->call_id;
+	pkt.auth_length = 0;
+
+	pkt.u.alter.max_xmit_frag = 5840;
+	pkt.u.alter.max_recv_frag = 5840;
+	pkt.u.alter.assoc_group_id = 0;
+	pkt.u.alter.num_contexts = 1;
+	pkt.u.alter.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
+	if (!pkt.u.alter.ctx_list) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pkt.u.alter.ctx_list[0].context_id = p->context_id;
+	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
+	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
+	pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
+	pkt.u.alter.auth_info = data_blob(NULL, 0);
+
+	/* construct the NDR form of the packet */
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* send it on its way */
+	status = full_request(p->conn, mem_ctx, &blob, &blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* unmarshall the NDR */
+	status = dcerpc_pull(p->conn, &blob, mem_ctx, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (pkt.ptype == DCERPC_PKT_BIND_NAK) {
+		DEBUG(2,("dcerpc: alter_nak reason %d\n", pkt.u.bind_nak.reject_reason));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if ((pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
+	    pkt.u.alter_ack.num_results == 0 ||
+	    pkt.u.alter_ack.ctx_list[0].result != 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* the alter_ack might contain a reply set of credentials */
+	if (p->conn->security_state.auth_info && pkt.u.alter_ack.auth_info.length) {
+		status = ndr_pull_struct_blob(&pkt.u.alter_ack.auth_info,
+					      mem_ctx,
+					      p->conn->security_state.auth_info,
+					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
+	}
+
+	return status;	
 }

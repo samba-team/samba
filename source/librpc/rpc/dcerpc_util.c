@@ -1265,3 +1265,50 @@ void dcerpc_log_packet(const struct dcerpc_interface_table *ndr,
 	}
 }
 
+
+
+/*
+  create a secondary context from a primary connection
+
+  this uses dcerpc_alter_context() to create a new dcerpc context_id
+*/
+NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, struct dcerpc_pipe **pp2,
+				  uint32_t context_id,
+				  const char *pipe_uuid,
+				  uint32_t pipe_version)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p2;
+	
+	p2 = talloc_zero(p, struct dcerpc_pipe);
+	if (p2 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	p2->conn = talloc_reference(p2, p->conn);
+
+	p2->context_id = context_id;
+
+	status = GUID_from_string(pipe_uuid, &p2->syntax.uuid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(p2);
+		return status;
+	}
+	p2->syntax.if_version = pipe_version;
+
+	status = GUID_from_string(NDR_GUID, &p2->transfer_syntax.uuid);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(p2);
+		return status;
+	}
+	p2->transfer_syntax.if_version = NDR_GUID_VERSION;
+
+	status = dcerpc_alter_context(p2, p2, &p2->syntax, &p2->transfer_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(p2);
+		return status;
+	}
+
+	*pp2 = p2;
+
+	return status;
+}

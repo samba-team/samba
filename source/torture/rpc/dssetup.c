@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_dssetup.h"
 
 
-static BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+BOOL test_DsRoleGetPrimaryDomainInformation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct dssetup_DsRoleGetPrimaryDomainInformation r;
 	NTSTATUS status;
