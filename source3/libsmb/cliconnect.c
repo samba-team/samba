@@ -1205,7 +1205,13 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	struct nmb_name called;
 	struct cli_state *cli;
 	struct in_addr ip;
-	 
+	
+	if (!output_cli) {
+		DEBUG(0, ("output_cli is NULL!?!"));
+	}
+
+	*output_cli = NULL;
+	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
 
