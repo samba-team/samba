@@ -41,9 +41,8 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 		return 0;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_lsa_query_info_poicy: talloc_init returned NULL!\n"));
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_lsa_query_info_poicy: talloc_init failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -53,7 +52,7 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 	
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
+		DEBUG(0, ("Could not initialize samr pipe!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -75,7 +74,11 @@ static uint32 cmd_lsa_query_info_policy(struct cli_state *cli, int argc, char **
 
 	sid_to_string(sid_str, &dom_sid);
 
-	printf("domain %s has sid %s\n", domain_name, sid_str);
+	if (domain_name[0]) {
+		printf("domain %s has sid %s\n", domain_name, sid_str);
+	} else {
+		printf("could not query info for level %d\n", info_class);
+	}
 
 done:
 
@@ -106,15 +109,14 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 		return 0;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_lsa_lookup_names: talloc_init returned NULL!\n"));
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_lsa_lookup_names: talloc_init failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
+		DEBUG(0, ("Could not initialize samr pipe!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -141,14 +143,9 @@ static uint32 cmd_lsa_lookup_names(struct cli_state *cli, int argc, char **argv)
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s\t\t%s (%d)\n", argv[i + 1], sid_str,
+		printf("%s %s (%d)\n", argv[i + 1], sid_str,
 		       types[i]);
 	}
-
-#if 0	/* JERRY */
-	safe_free(sids);
-	safe_free(types);      
-#endif
 
  done:
 
@@ -180,15 +177,14 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 		return 0;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_lsa_lookup_sids: talloc_init returned NULL!\n"));
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_lsa_lookup_sids: talloc_init failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
+		DEBUG(0, ("Could not initialize samr pipe!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -227,7 +223,7 @@ static uint32 cmd_lsa_lookup_sids(struct cli_state *cli, int argc, char **argv)
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
-		printf("%s\t\t%s (%d)\n", sid_str, names[i] ? names[i] :
+		printf("%s %s (%d)\n", sid_str, names[i] ? names[i] :
 		       "*unknown*", types[i]);
 	}
 
@@ -273,15 +269,14 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 		return 0;
 	}
 
-	if (!(mem_ctx=talloc_init()))
-	{
-		DEBUG(0,("cmd_lsa_enum_trust_dom: talloc_init returned NULL!\n"));
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(0,("cmd_lsa_enum_trust_dom: talloc_init failed\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Initialise RPC connection */
 	if (!cli_nt_session_open (cli, PIPE_LSARPC)) {
-		fprintf (stderr, "Could not initialize samr pipe!\n");
+		DEBUG(0, ("Could not initialize samr pipe!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -308,19 +303,9 @@ static uint32 cmd_lsa_enum_trust_dom(struct cli_state *cli, int argc, char **arg
 		fstring sid_str;
 
 		sid_to_string(sid_str, &domain_sids[i]);
-		printf("%s\t\t%s\n", domain_names[i] ? domain_names[i] : 
+		printf("%s %s\n", domain_names[i] ? domain_names[i] : 
 		       "*unknown*", sid_str);
 	}
-
-#if 0	/* JERRY */
-	safe_free(domain_sids);
-
-	for (i = 0; i < num_domains; i++) {
-		safe_free(domain_names[i]);
-	}
-
-	safe_free(domain_names);
-#endif
 
  done:
 
