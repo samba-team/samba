@@ -2270,10 +2270,11 @@ AC_MSG_CHECKING(whether to compile winbind)
 
 case "$host_os" in 
         *linux*|*solaris*)
-                WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PROGS)"
+                WINBIND_TARGETS="\$(WINBIND_PROGS)"
+		WINBIND_STARGETS="\$(WINBIND_SPROGS)"
 		case "$with_pam" in
 			yes)
-				WINBIND_TARGETS="$WINBIND_TARGETS \$(WINBIND_PAM_PROGS)"
+				WINBIND_STARGETS="$WINBIND_STARGETS \$(WINBIND_PAM_PROGS)"
 			;;
 			*)
 		esac
@@ -2290,6 +2291,7 @@ AC_ARG_WITH(winbind,
   case "$withval" in
         no)
                 WINBIND_TARGETS=""
+		WINBIND_STARGETS=""
                 winbind_reason=""
                 ;;
   esac ],
@@ -2302,6 +2304,7 @@ else
 fi
 
 AC_SUBST(WINBIND_TARGETS)
+AC_SUBST(WINBIND_STARGETS)
 
 #################################################
 # final configure stuff
