@@ -663,7 +663,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	}
 
 	/*
 	 * Ordinary file or directory.
@@ -841,12 +843,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * exclusive & batch here.
 	 */
 
-	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
-		SCVAL(p,0, BATCH_OPLOCK_RETURN);
-	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+	if (smb_action & EXTENDED_OPLOCK_GRANTED) {
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			SCVAL(p,0, BATCH_OPLOCK_RETURN);
+		} else {
+			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
+		}
+	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-	else
+	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
+	}
 	
 	p++;
 	SSVAL(p,0,fsp->fnum);
