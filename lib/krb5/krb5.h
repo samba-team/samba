@@ -611,6 +611,16 @@ typedef struct _krb5_verify_init_creds_opt {
 
 #define KRB5_VERIFY_INIT_CREDS_OPT_AP_REQ_NOFAIL	0x0001
 
+typedef struct krb5_verify_opt {
+    unsigned int flags;
+    krb5_ccache ccache;
+    krb5_keytab keytab;
+    krb5_boolean secure;
+    const char *service;
+} krb5_verify_opt;
+
+#define KRB5_VERIFY_LREALMS 1
+
 extern const krb5_cc_ops krb5_fcc_ops;
 extern const krb5_cc_ops krb5_mcc_ops;
 
