@@ -78,7 +78,7 @@ int reply_open_pipe_and_X(connection_struct * conn,
 	/* Known pipes arrive with DIR attribs. Remove it so a regular file */
 	/* can be opened and add it in after the open. */
 	DEBUG(3, ("Known pipe %s opening.\n", fname));
-	smb_ofun |= 0x10;	/* Add Create it not exists flag */
+	smb_ofun |= FILE_CREATE_IF_NOT_EXIST;
 
 	key.pid = getpid();
 	key.vuid = vuid;
@@ -93,8 +93,7 @@ int reply_open_pipe_and_X(connection_struct * conn,
 	SSVAL(outbuf, smb_vwv9, 2);
 	SSVAL(outbuf, smb_vwv10, 0xc700);
 
-	if (rmode == 2)
-	{
+	if (rmode == 2) {
 		DEBUG(4, ("Resetting open result to open from create.\n"));
 		rmode = 1;
 	}
@@ -151,7 +150,7 @@ int reply_pipe_write(char *inbuf, char *outbuf, int length, int bufsize)
 }
 
 /****************************************************************************
-  reply to a write and X
+ Reply to a write and X.
 
   This code is basically stolen from reply_write_and_X with some
   wrinkles to handle pipes.

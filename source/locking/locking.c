@@ -60,6 +60,8 @@ void locking_close_file(files_struct *fsp)
 	 * Now release all the tdb locks.
 	 */
 
+	/* Placeholder for code here.... */
+#if 0
 	brl_close(fsp->dev, fsp->inode, getpid(), fsp->conn->cnum, fsp->fnum);
 
 	/*
@@ -71,8 +73,7 @@ void locking_close_file(files_struct *fsp)
 	 * on *that* fd will get lost when we close this one. POSIX
 	 * braindamage... JRA.
 	 */
-
-	/* Placeholder for code here.... */
+#endif
 }
 
 /****************************************************************************
@@ -360,10 +361,15 @@ static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
-    ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,map_posix_lock_type(fsp,lock_type)); 
+	/*
+	 * Note that setting multiple overlapping read locks on different
+	 * file descriptors will not be held separately by the kernel (POSIX
+	 * braindamage), but will be merged into one continuous read lock
+	 * range. We cope with this case in the release_posix_lock code
+	 * below. JRA.
+	 */
 
-	if(ret)
-		fsp->num_posix_locks++;
+    ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,map_posix_lock_type(fsp,lock_type)); 
 
 	return ret;
 }
@@ -377,10 +383,22 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
-	BOOL ret;
+	BOOL ret = True;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
 			fsp->fsp_name, (double)offset, (double)count ));
+
+	if(u_count == 0) {
+
+		/*
+		 * This lock must overlap with an existing read-only lock
+		 * help by another fd. Just decrement the count but don't
+		 * do any POSIX call.
+		 */
+
+		fsp->num_posix_locks--;
+		return True;
+	}
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
@@ -422,12 +440,9 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	/*
 	 * There is no lock held by an SMB daemon, check to
 	 * see if there is a POSIX lock from a UNIX or NFS process.
-	 * Note that as an optimisation we only bother to
-	 * check this if the file is not exclusively
-	 * oplocked. JRA.
 	 */
 
-	if(!ret && !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_posix_locking(snum))
+	if(!ret && lp_posix_locking(snum))
 		ret = is_posix_locked(fsp, offset, count, lock_type);
 
 	return ret;
@@ -465,11 +480,13 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 
 			/*
 			 * Try and get a POSIX lock on this range.
+			 * Note that this is ok if it is a read lock
+			 * overlapping on a different fd. JRA.
 			 */
 
-			ok = set_posix_lock(fsp, offset, count, lock_type);
-
-			if(!ok) {
+			if((ok = set_posix_lock(fsp, offset, count, lock_type)) == True)
+				fsp->num_posix_locks++;
+			else {
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -506,18 +523,33 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 		  (double)offset, (double)count, fsp->fsp_name ));
 	
 	if (OPEN_FSP(fsp) && fsp->can_lock && (fsp->conn == conn)) {
-		ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
-				global_smbpid, getpid(), conn->cnum, 
-				offset, count);
 
-		if(ok && lp_posix_locking(SNUM(conn))) {
+		if(lp_posix_locking(SNUM(conn))) {
+
+#if 0
+			/*
+			 * The following call calculates if there are any
+			 * overlapping read locks held by this process on
+			 * other fd's open on the same file and truncates
+			 * any overlapping range and returns the value in
+			 * the non_overlap_XXX variables. Thus the POSIX
+			 * unlock may not be done on the same region as
+			 * the brl_lock. JRA.
+			 */
+
+			brl_unlock_list(fsp->dev, fsp->inode, fsp->fnum,
+#endif
 
 			/*
 			 * Release the POSIX lock on this range.
 			 */
 
 			(void)release_posix_lock(fsp, offset, count);
+			fsp->num_posix_locks--;
 		}
+
+		ok = brl_unlock(fsp->dev, fsp->inode, fsp->fnum,
+				global_smbpid, getpid(), conn->cnum, offset, count);
 	}
    
 	if (!ok) {
@@ -630,7 +662,8 @@ int get_share_modes(connection_struct *conn,
 
 	data = (struct locking_data *)dbuf.dptr;
 	ret = data->num_share_mode_entries;
-	*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
+	if(ret)
+		*shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data), ret * sizeof(**shares));
 	free(dbuf.dptr);
 
 	if (! *shares) return 0;
@@ -675,7 +708,11 @@ void del_share_mode(files_struct *fsp)
 	dbuf.dsize -= del_count * sizeof(*shares);
 
 	/* store it back in the database */
-	tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+	if (data->num_share_mode_entries == 0) {
+		tdb_delete(tdb, locking_key_fsp(fsp));
+	} else {
+		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+	}
 
 	free(dbuf.dptr);
 }
@@ -782,7 +819,11 @@ static BOOL mod_share_mode(files_struct *fsp,
 
 	/* if the mod fn was called then store it back */
 	if (need_store) {
-		tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+		if (data->num_share_mode_entries == 0) {
+			tdb_delete(tdb, locking_key_fsp(fsp));
+		} else {
+			tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE);
+		}
 	}
 
 	free(dbuf.dptr);
