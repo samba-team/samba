@@ -36,7 +36,7 @@
 #define DCESRV_CHECK_HANDLE(h) do {if (!(h)) DCESRV_FAULT(DCERPC_FAULT_CONTEXT_MISMATCH); } while (0)
 
 /* this checks for a valid policy handle, and gives a fault if an
-   invalid handle or NT_STATUS_INVALID_HANDLE if the handle is of the
+   invalid handle or retval if the handle is of the
    wrong type */
 #define DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, retval) do { \
 	(h) = dcesrv_handle_fetch(dce_call->conn, (inhandle), DCESRV_HANDLE_ANY); \
