@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -125,7 +125,9 @@ mandoc_template(struct getargs *args,
 	    }
 	    if(args[i].long_name) {
 		print_arg(buf, sizeof(buf), 1, 1, args + i);
-		printf("Fl -%s%s", args[i].long_name, buf);
+		printf("Fl -%s%s%s",
+		       args[i].type == arg_negative_flag ? "no-" : "",
+		       args[i].long_name, buf);
 	    }
 	    printf("\n");
 	} else {
