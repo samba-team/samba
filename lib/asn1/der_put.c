@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -293,17 +293,20 @@ encode_octet_string (unsigned char *p, size_t len,
     return 0;
 }
 
-void
+int
 time2generalizedtime (time_t t, octet_string *s)
 {
      struct tm *tm;
 
      s->data = malloc(16);
+     if (s->data == NULL)
+	 return ENOMEM;
      s->length = 15;
      tm = gmtime (&t);
      sprintf (s->data, "%04d%02d%02d%02d%02d%02dZ", tm->tm_year + 1900,
 	      tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min,
 	      tm->tm_sec);
+     return 0;
 }
 
 int
@@ -315,7 +318,9 @@ encode_generalized_time (unsigned char *p, size_t len,
     octet_string k;
     int e;
 
-    time2generalizedtime (*t, &k);
+    e = time2generalizedtime (*t, &k);
+    if (e)
+	return e;
     e = der_put_octet_string (p, len, &k, &l);
     free (k.data);
     if (e)
