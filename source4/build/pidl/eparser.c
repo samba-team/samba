@@ -41,9 +41,7 @@ void ndr_pull_struct_end(struct ndr_pull *ndr)
 
 void ndr_pull_align(struct ndr_pull *ndr, int size)
 {
-       	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) {
-		ndr->offset = (ndr->offset + (size-1)) & ~(size-1);
-	}
+	ndr->offset = (ndr->offset + (size-1)) & ~(size-1);
 }
 
 void ndr_pull_ptr(struct ndr_pull *ndr, proto_tree *tree, int hf, guint32 *ptr)
@@ -86,50 +84,14 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 
 		ndr->offset += len2 * 2;
 
-#if 0
-
-		ndr_pull_uint32(ndr, &len1));
-		ndr_pull_uint32(ndr, &ofs);
-		ndr_pull_uint32(ndr, &len2);
-		if (len2 > len1) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, 
-					      "Bad string lengths len1=%u ofs=%u len2=%u\n", 
-					      len1, ofs, len2);
-		}
-		if (len2 == 0) {
-			*s = talloc_strdup(ndr->mem_ctx, "");
-			break;
-		}
-		NDR_PULL_NEED_BYTES(ndr, len2*2);
-		ret = convert_string_talloc(ndr->mem_ctx, chset, CH_UNIX, 
-					    ndr->data+ndr->offset, 
-					    len2*2,
-					    (const void **)&as);
-		if (ret == -1) {
-			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
-					      "Bad character conversion");
-		}
-		ndr_pull_advance(ndr, len2*2);
-
-		/* this is a way of detecting if a string is sent with the wrong
-		   termination */
-		if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-			if (strlen(as) < len2) {
-				DEBUG(6,("short string '%s'\n", as));
-			}
-		} else {
-			if (strlen(as) == len2) {
-				DEBUG(6,("long string '%s'\n", as));
-			}
-		}
-		*s = as;
-
-#endif
-
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
 
+		g_warning("%d: unimplemented string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
+		
 #if 0
 
 		ndr_pull_uint32(ndr, &len1);
@@ -155,6 +117,10 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 
+		g_warning("%d: unimplemented string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
+
 #if 0
 
 		len1 = strnlen_w(ndr->data+ndr->offset, 
@@ -179,26 +145,31 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
 
-#if 0
+		ndr_pull_uint32(ndr, tree, hf_string4_len, &len1);
+		ndr_pull_uint32(ndr, tree, hf_string4_offset, &ofs);
+		ndr_pull_uint32(ndr, tree, hf_string4_len2, &len2);
 
-		ndr_pull_uint32(ndr, &len1);
-		ndr_pull_uint32(ndr, &ofs);
-		ndr_pull_uint32(ndr, &len2);
-		if (len2 > len1) {
-			return ndr_pull_error(ndr, NDR_ERR_STRING, 
-					      "Bad ascii string lengths len1=%u ofs=%u len2=%u\n", 
-					      len1, ofs, len2);
-		}
-		NDR_ALLOC_N(ndr, as, (len2+1));
-		ndr_pull_bytes(ndr, as, len2);
-		as[len2] = 0;
-		(*s) = as;
+		g_warning("%d: len = %d", ndr->pinfo->fd->num, len1);
+		g_warning("%d: offset = %d", ndr->pinfo->fd->num, ofs);
+		g_warning("%d: len2 = %d", ndr->pinfo->fd->num, len2);
 
-#endif
+		ndr->offset += len2;
+		break;
+
+		data = g_malloc(len2 + 1);
+
+		proto_tree_add_bytes(tree, hf_string_data, ndr->tvb,
+				     ndr->offset, len2, data);
+
+		g_free(data);
 
 		break;
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_LEN4:
+
+		g_warning("%d: unimplemented string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
 
 #if 0
 		ndr_pull_uint32(ndr, &ofs);
@@ -214,6 +185,10 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE2:
 
+		g_warning("%d: unimplemented string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
+
 #if 0
 
 		ndr_pull_uint16(ndr, &len3);
@@ -227,6 +202,10 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 		break;
 
 	case LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM:
+
+		g_warning("%d: unimplemented string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
 
 #if 0
 
@@ -244,6 +223,10 @@ void ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree,
 		break;
 
 	default:
+
+		g_warning("%d: bad string flags 0x%x",
+			  ndr->pinfo->fd->num, 
+			  ndr->flags & LIBNDR_STRING_FLAGS);
 
 #if 0
 
@@ -422,7 +405,9 @@ void ndr_pull_int64(struct ndr_pull *ndr, proto_tree *tree, int hf, int64 *data)
 
 void ndr_pull_NTTIME(struct ndr_pull *ndr, proto_tree *tree, int hf, NTTIME *data)
 {
-	g_warning("%d: ndr_pull_NTTIME() not implemented", ndr->pinfo->fd->num);
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		tree, ndr->drep, hf, data);	
 }
 
 void ndr_pull_NTSTATUS(struct ndr_pull *ndr, proto_tree *tree, int hf, NTSTATUS *data)
@@ -434,7 +419,9 @@ void ndr_pull_NTSTATUS(struct ndr_pull *ndr, proto_tree *tree, int hf, NTSTATUS 
 
 void ndr_pull_HYPER_T(struct ndr_pull *ndr, proto_tree *tree, int hf, HYPER_T *data)
 {
-	g_warning("%d: ndr_pull_HYPER_T() not implemented", ndr->pinfo->fd->num);
+	ndr->offset = dissect_ndr_uint64(
+		ndr->tvb, ndr->offset, ndr->pinfo,
+		tree, ndr->drep, hf, data);	
 }
 
 static int hf_num_auths = -1;
