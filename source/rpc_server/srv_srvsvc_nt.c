@@ -1600,7 +1600,6 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	int action;
 	NTSTATUS nt_status;
 	struct current_user user;
-	fstring user_name;
 	connection_struct *conn = NULL;
 
 	ZERO_STRUCT(st);
@@ -1689,7 +1688,6 @@ NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *
 	int action;
 	NTSTATUS nt_status;
 	struct current_user user;
-	fstring user_name;
 	connection_struct *conn = NULL;
 	BOOL became_user = False;
 
