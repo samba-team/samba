@@ -58,7 +58,7 @@ static TDB_CONTEXT *tdb_reg;
 static BOOL store_reg_keys( TDB_CONTEXT *tdb, char *keyname, char **subkeys, uint32 num_subkeys  )
 {
 	TDB_DATA kbuf, dbuf;
-	void *buffer, *tmpbuf;
+	char *buffer, *tmpbuf;
 	int i = 0;
 	uint32 len, buflen;
 	BOOL ret = True;
@@ -121,7 +121,7 @@ static int fetch_reg_keys( TDB_CONTEXT *tdb,  char* key, char **subkeys )
 	pstring path;
 	uint32 num_items;
 	TDB_DATA dbuf;
-	void *buf;
+	char *buf;
 	uint32 buflen, len;
 	int i;
 	char *s;
@@ -172,7 +172,7 @@ static int fetch_reg_keys_count( TDB_CONTEXT *tdb,  char* key )
 	pstring path;
 	uint32 num_items;
 	TDB_DATA dbuf;
-	void *buf;
+	char *buf;
 	uint32 buflen, len;
 	
 	
@@ -203,7 +203,8 @@ static int fetch_reg_keys_count( TDB_CONTEXT *tdb,  char* key )
  is assumed to be an fstring.
  ***********************************************************************/
 
-static BOOL fetch_reg_keys_specific( TDB_CONTEXT *tdb,  char* key, char* subkey, uint32 index )
+static BOOL fetch_reg_keys_specific( TDB_CONTEXT *tdb,  char* key, char* subkey, 
+				     uint32 key_index )
 {
 	int num_subkeys, i;
 	char *subkeys = NULL;
@@ -216,7 +217,7 @@ static BOOL fetch_reg_keys_specific( TDB_CONTEXT *tdb,  char* key, char* subkey,
 	s = subkeys;
 	for ( i=0; i<num_subkeys; i++ ) {
 		/* copy the key if the index matches */
-		if ( i == index ) {
+		if ( i == key_index ) {
 			fstrcpy( subkey, s );
 			break;
 		}
@@ -235,7 +236,7 @@ static BOOL fetch_reg_keys_specific( TDB_CONTEXT *tdb,  char* key, char* subkey,
  Open the registry database
  ***********************************************************************/
  
-static BOOL init_registry_data( TDB_CONTEXT* tdb_reg )
+static BOOL init_registry_data( TDB_CONTEXT* registry_tdb )
 {
 	pstring keyname;
 	char *subkeys[3];
@@ -244,27 +245,27 @@ static BOOL init_registry_data( TDB_CONTEXT* tdb_reg )
 	
 	pstrcpy( keyname, KEY_HKLM );
 	subkeys[0] = "SYSTEM";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 1 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 1 ))
 		return False;
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM" );
 	subkeys[0] = "CurrentControlSet";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 1 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 1 ))
 		return False;
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
 	subkeys[0] = "Control";
 	subkeys[1] = "services";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 2 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 2 ))
 		return False;
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
 	subkeys[0] = "Print";
 	subkeys[1] = "ProduceOptions";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 2 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 2 ))
 		return False;
 
 	pstrcpy( keyname, KEY_HKLM );
@@ -272,36 +273,36 @@ static BOOL init_registry_data( TDB_CONTEXT* tdb_reg )
 	subkeys[0] = "Environments";
 	subkeys[1] = "Forms";
 	subkeys[2] = "Printers";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 3 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 3 ))
 		return False;
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/ProductOptions" );
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 0 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 0 ))
 		return False;
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services" );
 	subkeys[0] = "Netlogon";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 1 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 1 ))
 		return False;
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon" );
 	subkeys[0] = "parameters";
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 1 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 1 ))
 		return False;
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon/parameters" );
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 0 ))
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 0 ))
 		return False;
 
 	
 	/* HKEY_USER */
 		
 	pstrcpy( keyname, KEY_HKU );
-	if ( !store_reg_keys( tdb_reg, keyname, subkeys, 0 ) )
+	if ( !store_reg_keys( registry_tdb, keyname, subkeys, 0 ) )
 		return False;
 		
 	return True;
