@@ -16,22 +16,29 @@ static int check_push_ucs2(const char *orig)
 	push_ucs2_allocate(&dest, orig);
 	pull_ucs2_allocate(&orig2, dest);
 	ret = strcmp(orig, orig2);
+	if (ret) {
+		fprintf(stderr, "orig: %s\n", orig);
+		fprintf(stderr, "orig (UNIX -> UCS2 -> UNIX): %s\n", orig2);
+	}
+
 	SAFE_FREE(dest);
 	SAFE_FREE(orig2);
+
+	return ret;
 }
 
 int main(int argc, char *argv[])
 {
-	int i, ret;
+	int i, ret = 0;
 	
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s STRING1\n"
-			"Converts a string, prints the results of memcmp\n",
+			"Converts a string, prints the results of strcmp\n",
 			argv[0]);
 		return 2;
 	}
 
-	for (i = 0; i < 10000; i++)
+	for (i = 0; ((i < 10000) && (!ret)); i++)
 		ret = check_push_ucs2(argv[1]);
 
 	printf("%d\n", ret);
