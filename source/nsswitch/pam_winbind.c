@@ -134,22 +134,15 @@ static int pam_winbind_request(enum winbindd_cmd req_type,
 	return PAM_SUCCESS;
 }
 
-/* talk to winbindd */
-static int winbind_auth_request(const char *user, const char *pass, int ctrl)
+static int pam_winbind_request_log(enum winbindd_cmd req_type,
+			       struct winbindd_request *request,
+			       struct winbindd_response *response,
+				   int ctrl,
+				   const char *user)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
 	int retval;
 
-	ZERO_STRUCT(request);
-
-	strncpy(request.data.auth.user, user, 
-                sizeof(request.data.auth.user)-1);
-
-	strncpy(request.data.auth.pass, pass, 
-                sizeof(request.data.auth.pass)-1);
-	
-        retval = pam_winbind_request(WINBINDD_PAM_AUTH, &request, &response);
+        retval = pam_winbind_request(req_type, request, response);
 
 	switch (retval) {
 	case PAM_AUTH_ERR:
@@ -178,8 +171,16 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 		}	 
 		return retval;
 	case PAM_SUCCESS:
-		/* Otherwise, the authentication looked good */
-		_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
+		if (req_type == WINBINDD_PAM_AUTH) {
+			/* Otherwise, the authentication looked good */
+			_pam_log(LOG_NOTICE, "user '%s' granted acces", user);
+		} else if (req_type == WINBINDD_PAM_CHAUTHTOK) {
+			/* Otherwise, the authentication looked good */
+			_pam_log(LOG_NOTICE, "user '%s' password changed", user);
+		} else { 
+			/* Otherwise, the authentication looked good */
+			_pam_log(LOG_NOTICE, "user '%s' OK", user);
+		}
 		return retval;
 	default:
 		/* we don't know anything about this return value */
@@ -187,12 +188,29 @@ static int winbind_auth_request(const char *user, const char *pass, int ctrl)
 			 retval, user);
 		return retval;
 	}
-     /* should not be reached */
+}
+
+/* talk to winbindd */
+static int winbind_auth_request(const char *user, const char *pass, int ctrl)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	ZERO_STRUCT(request);
+
+	strncpy(request.data.auth.user, user, 
+                sizeof(request.data.auth.user)-1);
+
+	strncpy(request.data.auth.pass, pass, 
+                sizeof(request.data.auth.pass)-1);
+	
+	
+        return pam_winbind_request_log(WINBINDD_PAM_AUTH, &request, &response, ctrl, user);
 }
 
 /* talk to winbindd */
 static int winbind_chauthtok_request(const char *user, const char *oldpass,
-                                     const char *newpass)
+                                     const char *newpass, int ctrl)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
@@ -218,7 +236,7 @@ static int winbind_chauthtok_request(const char *user, const char *oldpass,
             request.data.chauthtok.newpass[0] = '\0';
         }
 	
-        return pam_winbind_request(WINBINDD_PAM_CHAUTHTOK, &request, &response);
+        return pam_winbind_request_log(WINBINDD_PAM_CHAUTHTOK, &request, &response, ctrl, user);
 }
 
 /*
@@ -665,7 +683,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		 * rebuild the password database file.
 		 */
 
-		retval = winbind_chauthtok_request(user, pass_old, pass_new);
+		retval = winbind_chauthtok_request(user, pass_old, pass_new, ctrl);
 		_pam_overwrite(pass_new);
 		_pam_overwrite(pass_old);
 		pass_old = pass_new = NULL;

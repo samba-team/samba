@@ -354,5 +354,12 @@ done:
 	fstrcpy(state->response.data.auth.error_string, nt_errstr(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
+	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
+	      ("Password change for user [%s]\\[%s] returned %s (PAM: %d)\n", 
+	       domain,
+	       user,
+	       state->response.data.auth.nt_status_string,
+	       state->response.data.auth.pam_error));	      
+
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
