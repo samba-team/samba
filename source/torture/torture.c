@@ -31,7 +31,6 @@ static BOOL use_oplocks;
 static BOOL use_level_II_oplocks;
 static const char *client_txt = "client_oplocks.txt";
 static BOOL use_kerberos;
-static BOOL bypass_io;
 
 BOOL torture_showall = False;
 
@@ -4050,7 +4049,6 @@ static void usage(void)
 {
 	int opt, i;
 	char *p;
-	int gotuser = 0;
 	BOOL correct = True;
 	char *host, *share, *username;
 
@@ -4097,7 +4095,7 @@ static void usage(void)
 
 	srandom(time(NULL));
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:bs:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			lp_set_cmdline("smb ports", optarg);
@@ -4148,16 +4146,12 @@ static void usage(void)
 #endif
 			break;
 		case 'U':
-			gotuser = 1;
 			parse_user(optarg);
 			break;
 		case 'f':
 			torture_failures = atoi(optarg);
 			break;
-		case 'b':
-			bypass_io = True;
-			break;
-			
+
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			usage();

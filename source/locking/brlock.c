@@ -367,7 +367,7 @@ NTSTATUS brl_lock(SMB_DEV_T dev, SMB_INO_T ino, int fnum,
 
 #if ZERO_ZERO
 	/* sort the lock list */
-	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), lock_compare);
+	qsort(dbuf.dptr, dbuf.dsize/sizeof(lock), sizeof(lock), QSORT_CAST lock_compare);
 #endif
 
 	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);

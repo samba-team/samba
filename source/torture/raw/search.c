@@ -546,11 +546,14 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		CHECK_VALUE(result.count, num_files);
 
 		if (search_types[t].level == RAW_SEARCH_BOTH_DIRECTORY_INFO) {
-			qsort(result.list, result.count, sizeof(result.list[0]), search_both_compare);
+			qsort(result.list, result.count, sizeof(result.list[0]), 
+			      QSORT_CAST  search_both_compare);
 		} else if (search_types[t].level == RAW_SEARCH_STANDARD) {
-			qsort(result.list, result.count, sizeof(result.list[0]), search_standard_compare);
+			qsort(result.list, result.count, sizeof(result.list[0]), 
+			      QSORT_CAST search_standard_compare);
 		} else {
-			qsort(result.list, result.count, sizeof(result.list[0]), search_old_compare);
+			qsort(result.list, result.count, sizeof(result.list[0]), 
+			      QSORT_CAST search_old_compare);
 		}
 
 		for (i=0;i<num_files;i++) {

@@ -258,9 +258,11 @@ void nb_findfirst(const char *mask)
 
 void nb_flush(int fnum)
 {
+	struct smb_flush io;
 	int i;
 	i = find_handle(fnum);
-	/* hmmm, we don't have cli_flush() yet */
+	io.in.fnum = ftable[i].fd;
+	smb_raw_flush(c->tree, &io);
 }
 
 void nb_deltree(const char *dname)
