@@ -476,7 +476,7 @@ int main(int argc, char **argv)
 
     if(remote_machine == NULL)
       remote_machine = "127.0.0.1";
-  }    
+  }
     
   if (*user_name == '\0') {
     fprintf(stderr, "%s: Unable to get a user name for password change.\n", prog_name);

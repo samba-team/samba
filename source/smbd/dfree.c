@@ -205,7 +205,7 @@ static SMB_BIG_UINT disk_free(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree
 
 	/* FIXME : Any reason for this assumption ? */
 	if (*bsize < 256) {
-		DEBUG(5,("disk_free:Warning: bsize == %d < 256 . Changing to assumed correct bsize = 512\n",*bsize));
+		DEBUG(5,("disk_free:Warning: bsize == %d < 256 . Changing to assumed correct bsize = 512\n",(int)*bsize));
 		*bsize = 512;
 	}
 

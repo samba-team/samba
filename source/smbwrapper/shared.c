@@ -158,7 +158,6 @@ set a variable in the shared area
 *******************************************************/
 void smbw_setshared(const char *name, const char *val)
 {
-	int len;
 	int l1, l2;
 
 	/* we don't allow variable overwrite */
