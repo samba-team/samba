@@ -3613,8 +3613,40 @@ static NTSTATUS ldapsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PAS
 
 static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	return nt_status;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
+	int rc;
+	BOOL ret;
+	fstring sidstr;
+	pstring filter;
+	char **attr_list;
+	const char *attr_sid = get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID);
+
+	pstr_sprintf(filter, "(&(%s=%s)(objectclass=%s))", attr_sid,
+		     sid_to_string(sidstr, pdb_get_tp_domain_sid(trust)),
+		     LDAP_OBJ_TRUST_PASSWORD);
+
+	attr_list = get_attr_list(trustpw_attr_list);
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, attr_list,
+	                           &ldap_state->result);
+	free_attr_list(attr_list);
+
+	if (rc != LDAP_SUCCESS) {
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+	                                     ldap_state->result);
+	if (!ldap_state->entry)
+		return NT_STATUS_NOT_FOUND;
+
+	memset((void*)trust, 0, sizeof(*trust));
+	ret = init_trustpw_from_ldap(ldap_state, trust, ldap_state->entry);
+	if (ret)
+		return NT_STATUS_OK;
+	else
+		return NT_STATUS_UNSUCCESSFUL;
 }
 
 
