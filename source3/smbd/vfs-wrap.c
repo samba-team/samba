@@ -237,14 +237,104 @@ ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp,
 	return result;
 }
 
+/*********************************************************
+ For rename across filesystems Patch from Warren Birnbaum
+ <warrenb@hpcvscdp.cv.hp.com>
+**********************************************************/
+
+static int copy_reg(const char *source, const char *dest)
+{
+	SMB_STRUCT_STAT source_stats;
+	int saved_errno;
+	int ifd = -1;
+	int ofd = -1;
+
+	if (sys_lstat (source, &source_stats) == -1)
+		return -1;
+
+	if (!S_ISREG (source_stats.st_mode))
+		return -1;
+
+	if((ifd = sys_open (source, O_RDONLY, 0)) < 0)
+		return -1;
+
+	if (unlink (dest) && errno != ENOENT)
+		return -1;
+
+#ifdef O_NOFOLLOW
+	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0600)) < 0 )
+#else
+	if((ofd = sys_open (dest, O_WRONLY | O_CREAT | O_TRUNC , 0600)) < 0 )
+#endif
+		goto err;
+
+	if (transfer_file(ifd, ofd, (size_t)-1) == -1)
+		goto err;
+
+	/*
+	 * Try to preserve ownership.  For non-root it might fail, but that's ok.
+	 * But root probably wants to know, e.g. if NFS disallows it.
+	 */
+
+	if ((fchown(ofd, source_stats.st_uid, source_stats.st_gid) == -1) && (errno != EPERM))
+		goto err;
+
+	/*
+	 * fchown turns off set[ug]id bits for non-root,
+	 * so do the chmod last.
+	 */
+
+#if defined(HAVE_FCHMOD)
+	if (fchmod (ofd, source_stats.st_mode & 07777))
+#else
+	if (chmod (dest, source_stats.st_mode & 07777))
+#endif
+		goto err;
+
+	if (close (ifd) == -1)
+		goto err;
+
+	if (close (ofd) == -1)
+		return -1;
+
+	/* Try to copy the old file's modtime and access time.  */
+	{
+		struct utimbuf tv;
+
+		tv.actime = source_stats.st_atime;
+		tv.modtime = source_stats.st_mtime;
+		utime(dest, &tv);
+	}
+
+	if (unlink (source) == -1)
+		return -1;
+
+	return 0;
+
+  err:
+
+	saved_errno = errno;
+	if (ifd != -1)
+		close(ifd);
+	if (ofd != -1)
+		close(ofd);
+	errno = saved_errno;
+	return -1;
+}
+
 int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const char *old, const char *new)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_rename);
-    result = rename(old, new);
-    END_PROFILE(syscall_rename);
-    return result;
+	START_PROFILE(syscall_rename);
+	result = rename(old, new);
+	if (errno == EXDEV) {
+		/* Rename across filesystems needed. */
+		result = copy_reg(old, new);
+	}
+
+	END_PROFILE(syscall_rename);
+	return result;
 }
 
 int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
