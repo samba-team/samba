@@ -88,10 +88,10 @@ This can be done using a configuration similar to the one shown in <link linkend
 		A simple module to audit file access to the syslog
 		facility. The following operations are logged:
 		<itemizedlist>
-			<listitem>share</listitem>
-			<listitem>connect/disconnect</listitem>
-			<listitem>directory opens/create/remove</listitem>
-			<listitem>file open/close/rename/unlink/chmod</listitem>
+			<listitem><para>share</para></listitem>
+			<listitem><para>connect/disconnect</para></listitem>
+			<listitem><para>directory opens/create/remove</para></listitem>
+			<listitem><para>file open/close/rename/unlink/chmod</para></listitem>
 		</itemizedlist>
 		</para>
 

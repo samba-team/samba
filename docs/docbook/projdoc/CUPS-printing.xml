@@ -588,7 +588,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para>
 
-	<image><imagedescription>Windows printing to a local printer.</imagedescription><imagefile>1small</imagefile></image>
+	<image id="small1"><imagedescription>Windows printing to a local printer.</imagedescription><imagefile>1small</imagefile></image>
 	</para>
 	</sect2>
 
@@ -681,7 +681,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</note>
 
 	<para>
-	<image><imagedescription>Printing to a PostScript printer.</imagedescription>
+		<image id="small2"><imagedescription>Printing to a PostScript printer.</imagedescription>
 			<imagefile>2small</imagefile></image>
 	</para>
 
@@ -714,7 +714,7 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	</para>
 
 	<para>
-	<image><imagedescription>Ghostscript as a RIP for non-postscript printers.</imagedescription>
+	<image id="small3"><imagedescription>Ghostscript as a RIP for non-postscript printers.</imagedescription>
 		<imagefile>3small</imagefile>
 	</image>
 	</para>
@@ -1123,7 +1123,7 @@ print options already embedded into the file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Pre-filtering in CUPS to form PostScript.</imagedescription>
+	<image id="small4" scale="25"><imagedescription>Pre-filtering in CUPS to form PostScript.</imagedescription>
 	<imagefile>4small</imagefile>
 </image>
 </para>
@@ -1142,7 +1142,7 @@ stapling and punching it, and so on) into the PostScript file.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>Adding device-specific print options.</imagedescription>
+	<image scale="25" id="small5"><imagedescription>Adding device-specific print options.</imagedescription>
 		<imagefile>5small</imagefile>
 	</image>
 </para>
@@ -1183,7 +1183,7 @@ that are able to generate device-specific printer data.
 </para>
 
 <para>
-	<image scale="25"><imagedescription>PostScript to intermediate raster format.</imagedescription><imagefile>6small</imagefile></image>
+	<image id="small6" scale="25"><imagedescription>PostScript to intermediate raster format.</imagedescription><imagefile>6small</imagefile></image>
 </para>
 
 <para>
@@ -1200,7 +1200,7 @@ than one vendor financing the development of CUPS raster drivers).
 </para>
 
 <para>
-	<image><imagedescription>CUPS-raster production using Ghostscript.</imagedescription>
+	<image id="small7"><imagedescription>CUPS-raster production using Ghostscript.</imagedescription>
 		<imagefile>7small</imagefile>
 	</image>
 </para>
@@ -1663,7 +1663,7 @@ specific model supports. See <link linkend="cups-ppds">the figure below</link> f
 	<title>PPDs shipped with CUPS</title>
 	<tgroup cols="2" align="left">
 		<colspec align="left"/>
-		<colspec align="justify" width="1*"/>
+		<colspec align="justify" colwidth="1*"/>
 		<thead><row><entry>PPD file</entry><entry>Printer type</entry></row></thead>
 		<tbody>
 		<row><entry>deskjet.ppd</entry><entry>older HP inkjet printers and compatible</entry></row>
@@ -2112,7 +2112,7 @@ simply use <smbconfoption><name>printing</name><value>sysv</value></smbconfoptio
 </para>
 
 <para>
-<image><imagedescription>Printing via CUPS/Samba server.</imagedescription>
+<image id="small13"><imagedescription>Printing via CUPS/Samba server.</imagedescription>
 	<imagefile>13small</imagefile>
 </image>
 </para>
@@ -2533,9 +2533,9 @@ the Windows NT/2000/XP client.
 
 <para>
 	<itemizedlist>
-		<listitem>cups.hlp</listitem>
-		<listitem>cupsdrvr.dll</listitem>
-		<listitem>cupsui.dll</listitem>
+		<listitem><para>cups.hlp</para></listitem>
+		<listitem><para>cupsdrvr.dll</para></listitem>
+		<listitem><para>cupsui.dll</para></listitem>
 	</itemizedlist>
 </para>
 
@@ -2549,12 +2549,12 @@ different platforms.
 
 <para>
 	<itemizedlist>
-	<listitem>ADFONTS.MFM</listitem>
-	<listitem>ADOBEPS4.DRV</listitem>
-	<listitem>ADOBEPS4.HLP</listitem>
-	<listitem>DEFPRTR2.PPD</listitem>
-	<listitem>ICONLIB.DLL</listitem>
-	<listitem>PSMON.DLL</listitem>
+	<listitem><para>ADFONTS.MFM</para></listitem>
+	<listitem><para>ADOBEPS4.DRV</para></listitem>
+	<listitem><para>ADOBEPS4.HLP</para></listitem>
+	<listitem><para>DEFPRTR2.PPD</para></listitem>
+	<listitem><para>ICONLIB.DLL</para></listitem>
+	<listitem><para>PSMON.DLL</para></listitem>
 </itemizedlist>
 </para>
 
@@ -2562,9 +2562,9 @@ different platforms.
 
 <para>
 <itemizedlist>
-	<listitem>ADOBEPS5.DLL</listitem>
-	<listitem>ADOBEPSU.DLL</listitem>
-	<listitem>ADOBEPSU.HLP</listitem>
+	<listitem><para>ADOBEPS5.DLL</para></listitem>
+	<listitem><para>ADOBEPSU.DLL</para></listitem>
+	<listitem><para>ADOBEPSU.HLP</para></listitem>
 </itemizedlist>
 
 </para>

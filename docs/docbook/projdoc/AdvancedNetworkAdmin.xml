@@ -53,9 +53,9 @@ on <application>Windows 9x/Me</application> systems. The tools set includes:
 </para>
 
 <itemizedlist>
-	<listitem>Server Manager</listitem>
-	<listitem>User Manager for Domains</listitem>
-	<listitem>Event Viewer</listitem>
+	<listitem><para>Server Manager</para></listitem>
+	<listitem><para>User Manager for Domains</para></listitem>
+	<listitem><para>Event Viewer</para></listitem>
 </itemizedlist>
 
 <para>
@@ -219,12 +219,12 @@ There are several opportunities for creating a custom network startup configurat
 </para>
 
 <itemizedlist>
-	<listitem>No Logon Script.</listitem>
-	<listitem>Simple universal Logon Script that applies to all users.</listitem>
-	<listitem>Use of a conditional Logon Script that applies per user or per group attributes.</listitem>
-	<listitem>Use of Samba's preexec and postexec functions on access to the NETLOGON share to create
-	a custom logon script and then execute it.</listitem>
-	<listitem>User of a tool such as KixStart.</listitem>
+	<listitem><para>No Logon Script.</para></listitem>
+	<listitem><para>Simple universal Logon Script that applies to all users.</para></listitem>
+	<listitem><para>Use of a conditional Logon Script that applies per user or per group attributes.</para></listitem>
+	<listitem><para>Use of Samba's preexec and postexec functions on access to the NETLOGON share to create
+	a custom logon script and then execute it.</para></listitem>
+	<listitem><para>User of a tool such as KixStart.</para></listitem>
 </itemizedlist>
 
 <para>
@@ -323,8 +323,8 @@ Those wishing to use more elaborate or capable logon processing system should ch
 </para>
 
 <itemizedlist>
-	<listitem><ulink noescape="1" url="http://www.craigelachi.e.org/rhacer/ntlogon">http://www.craigelachi.e.org/rhacer/ntlogon</ulink></listitem>
-	<listitem><ulink noescape="1" url="http://www.kixtart.org">http://www.kixtart.org</ulink></listitem>
+	<listitem><para><ulink noescape="1" url="http://www.craigelachi.e.org/rhacer/ntlogon">http://www.craigelachi.e.org/rhacer/ntlogon</ulink></para></listitem>
+	<listitem><para><ulink noescape="1" url="http://www.kixtart.org">http://www.kixtart.org</ulink></para></listitem>
 </itemizedlist>
 
 <sect2>

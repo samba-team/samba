@@ -329,8 +329,8 @@ example of what you would not want to see would be:
 	<para>On Debian, you need to install the following packages:</para>
 	<para>
 		<itemizedlist>
-			<listitem>libkrb5-dev</listitem>
-			<listitem>krb5-user</listitem>
+			<listitem><para>libkrb5-dev</para></listitem>
+			<listitem><para>krb5-user</para></listitem>
 		</itemizedlist>
 	</para>
 	</sect3>
@@ -341,9 +341,9 @@ example of what you would not want to see would be:
 	<para>On Red Hat Linux, this means you should have at least: </para>
 	<para>
 		<itemizedlist>
-			<listitem>krb5-workstation (for kinit)</listitem>
-			<listitem>krb5-libs (for linking with)</listitem>
-			<listitem>krb5-devel (because you are compiling from source)</listitem>
+			<listitem><para>krb5-workstation (for kinit)</para></listitem>
+			<listitem><para>krb5-libs (for linking with)</para></listitem>
+			<listitem><para>krb5-devel (because you are compiling from source)</para></listitem>
 		</itemizedlist>
 	</para>
 

@@ -101,15 +101,15 @@ different type of servers:</para>
 <itemizedlist>
 	<listitem><para>Domain Controller</para>
 		<itemizedlist>
-			<listitem>Primary Domain Controller</listitem>
-			<listitem>Backup Domain Controller</listitem>
-			<listitem>ADS Domain Controller</listitem>
+			<listitem><para>Primary Domain Controller</para></listitem>
+			<listitem><para>Backup Domain Controller</para></listitem>
+			<listitem><para>ADS Domain Controller</para></listitem>
 		</itemizedlist>
 	</listitem>
 	<listitem><para>Domain Member Server</para>
 		<itemizedlist>
-			<listitem>Active Directory Domain Server</listitem>
-			<listitem>NT4 Style Domain Domain Server</listitem>
+			<listitem><para>Active Directory Domain Server</para></listitem>
+				<listitem><para>NT4 Style Domain Domain Server</para></listitem>
 		</itemizedlist>
 	</listitem>
 	<listitem><para>Stand-alone Server</para></listitem>

@@ -463,12 +463,12 @@ Server, and so on.
 </emphasis>
 </para>
 
-<para><note>
+<note><para>
 When Samba is configured to use an LDAP, or other identity management and/or
 directory service, it is Samba that continues to perform user and machine
 authentication. It should be noted that the LDAP server does not perform
 authentication handling in place of what Samba is designed to do.
-</note></para>
+</para></note>
 
 <para>
 Please refer to <link linkend="samba-pdc"></link>, for more information regarding
@@ -867,7 +867,7 @@ may want to create the machine account within a particular organizational unit. 
 this to be done using the following syntax:
 <screen>
 &rootprompt;  <userinput>kinit Administrator@your.kerberos.REALM</userinput>
-&rootprompt; <userinput>net ads join <quote>organizational_unit</quote></userinput>
+&rootprompt; <userinput>net ads join "organizational_unit"</userinput>
 </screen>
 </para>
 
@@ -925,9 +925,9 @@ be logged in with Kerberos without needing to know a password. If this fails the
 an encryption type of DES-CBC-MD5? 
 </para>
 
-<para><note>
+<note><para>
 Samba can use both DES-CBC-MD5 encryption as well as ARCFOUR-HMAC-MD5 encoding.
-</note></para>
+</para></note>
 
 </sect2>
 

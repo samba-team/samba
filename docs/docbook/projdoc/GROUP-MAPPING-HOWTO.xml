@@ -165,7 +165,7 @@
 
 		<para>
 	<screen>
-	&rootprompt;<userinput>net groupmap add ntgroup=<quote>Domain Admins</quote> UNIXgroup=domadm</userinput>
+	&rootprompt;<userinput>net groupmap add ntgroup="Domain Admins" UNIXgroup=domadm</userinput>
 	</screen>
 	</para>
 		
@@ -221,10 +221,10 @@
 	Aliases, and RIDs are shown in <link linkend="WKURIDS"/>.
 	</para>
 
-	<para><note>
+	<note><para>
 	When the <parameter>passdb backend</parameter> uses LDAP (<constant>ldapsam</constant>) it is the
 	admininstrators' responsibility to create the essential Domain Groups, and to assign each its default RID.
-	</note></para>
+	</para></note>
 
 	<para>
 	It is permissible to create any Domain Group that may be necessary, just make certain that the essential

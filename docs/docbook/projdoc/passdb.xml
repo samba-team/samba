@@ -106,6 +106,9 @@ as follows:
 
 </sect2>
 
+<sect2>
+<title>New Backends</title>
+
 <para>
 Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
@@ -113,9 +116,6 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>mysqlsam</secondary></indexterm>
 <indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 </para>
-
-<sect2>
-<title>New Backends</title>
 
 <variablelist>
 	<varlistentry><term>tdbsam</term>
@@ -279,10 +279,10 @@ Samba-3 introduces a number of new password backend capabilities.
 		</para>
 
 		<itemizedlist>
-			<listitem>MS DOS Network client 3.0 with the basic network redirector installed.</listitem>
-			<listitem>Windows 95 with the network redirector update installed.</listitem>
-			<listitem>Windows 98 [Second Edition].</listitem>
-			<listitem>Windows Me.</listitem>
+			<listitem><para>MS DOS Network client 3.0 with the basic network redirector installed.</para></listitem>
+			<listitem><para>Windows 95 with the network redirector update installed.</para></listitem>
+			<listitem><para>Windows 98 [Second Edition].</para></listitem>
+			<listitem><para>Windows Me.</para></listitem>
 		</itemizedlist>
 
 		<note>
@@ -296,11 +296,11 @@ Samba-3 introduces a number of new password backend capabilities.
 		</para>
 
 		<itemizedlist>
-			<listitem>Windows NT 3.5x.</listitem>
-			<listitem>Windows NT 4.0.</listitem>
-			<listitem>Windows 2000 Professional.</listitem>
-			<listitem>Windows 200x Server/Advanced Server.</listitem>
-			<listitem>Windows XP Professional.</listitem>
+			<listitem><para>Windows NT 3.5x.</para></listitem>
+			<listitem><para>Windows NT 4.0.</para></listitem>
+			<listitem><para>Windows 2000 Professional.</para></listitem>
+			<listitem><para>Windows 200x Server/Advanced Server.</para></listitem>
+			<listitem><para>Windows XP Professional.</para></listitem>
 		</itemizedlist>
 			
 		<para>
@@ -414,10 +414,9 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
 <smbconfexample id="idmapbackendexample">
 <title>Example configuration with the LDAP idmap backend</title>
-<indexterm><primary>SAM backend</primary><secondary>xmlsam</secondary></indexterm>
 <smbconfsection>[global]</smbconfsection>
 <smbconfoption><name>idmap backend</name><value>ldapsam:ldap://ldap-server.quenya.org:636</value></smbconfoption>
-<smbcomment>Alternately, this could be specified as:</smbcomment>
+<smbconfcomment>Alternately, this could be specified as:</smbconfcomment>
 <smbconfoption><name>idmap backend</name><value>ldapsam:ldaps://ldap-server.quenya.org</value></smbconfoption>
 </smbconfexample>
 	</para>
@@ -495,12 +494,12 @@ be announced in time for the Samba-3.0.1 release.
 		</para>
 
 		<itemizedlist>
-			<listitem><emphasis>add</emphasis> user or machine accounts.</listitem>
-			<listitem><emphasis>delete</emphasis> user or machine accounts.</listitem>
-			<listitem><emphasis>enable</emphasis> user or machine accounts.</listitem>
-			<listitem><emphasis>disable</emphasis> user or machine accounts.</listitem>
-			<listitem><emphasis>set to NULL</emphasis> user passwords.</listitem>
-			<listitem><emphasis>manage interdomain trust accounts.</emphasis></listitem>
+			<listitem><para><emphasis>add</emphasis> user or machine accounts.</para></listitem>
+			<listitem><para><emphasis>delete</emphasis> user or machine accounts.</para></listitem>
+			<listitem><para><emphasis>enable</emphasis> user or machine accounts.</para></listitem>
+			<listitem><para><emphasis>disable</emphasis> user or machine accounts.</para></listitem>
+			<listitem><para><emphasis>set to NULL</emphasis> user passwords.</para></listitem>
+			<listitem><para><emphasis>manage interdomain trust accounts.</emphasis></para></listitem>
 		</itemizedlist>
 		
 		<para>
@@ -563,9 +562,9 @@ be announced in time for the Samba-3.0.1 release.
 		</para>
 
 		<itemizedlist>
-			<listitem>add, remove or modify user accounts.</listitem>
-			<listitem>list user accounts.</listitem>
-			<listitem>migrate user accounts.</listitem>
+			<listitem><para>add, remove or modify user accounts.</para></listitem>
+			<listitem><para>list user accounts.</para></listitem>
+			<listitem><para>migrate user accounts.</para></listitem>
 		</itemizedlist>
 
 		<para>
@@ -1326,10 +1325,10 @@ access to attrs=lmPassword,ntPassword
 			</para>
 
 			<itemizedlist>
-				<listitem>sambaHomePath</listitem>
-				<listitem>sambaLogonScript</listitem>
-				<listitem>sambaProfilePath</listitem>
-				<listitem>sambaHomeDrive</listitem>
+				<listitem><para>sambaHomePath</para></listitem>
+				<listitem><para>sambaLogonScript</para></listitem>
+				<listitem><para>sambaProfilePath</para></listitem>
+				<listitem><para>sambaHomeDrive</para></listitem>
 			</itemizedlist>
 
 			<para>
@@ -1418,11 +1417,11 @@ access to attrs=lmPassword,ntPassword
 		<para>The <smbconfoption><name>ldap passwd sync</name></smbconfoption> options can have the  values shown in
 		<link linkend="ldappwsync"/>.</para>
 
-		<table iframe="all" id="ldappwsync">
+		<table frame="all" id="ldappwsync">
 			<title>Possible <emphasis>ldap passwd sync</emphasis> values</title>
 		<tgroup cols="2">
-			<colspec align="left" width="1*"/>
-			<colspec align="justify" width="4*"/>
+			<colspec align="left" colwidth="1*"/>
+			<colspec align="justify" colwidth="4*"/>
 		<thead>
 			<row><entry align="left">Value</entry><entry align="center">Description</entry></row>
 		</thead>
@@ -1690,10 +1689,7 @@ access to attrs=lmPassword,ntPassword
 
 	<para>
 	<smbconfblock>
-	<smbconfsection>[global]</smbconfsection>
-	<member>...</member>
 	<smbconfoption><name>passdb backend</name><value>smbpasswd, tdbsam</value></smbconfoption>
-	<member>...</member>
 	</smbconfblock>
 	</para>
 
@@ -1704,10 +1700,10 @@ access to attrs=lmPassword,ntPassword
 
 	<para>
 <smbconfblock>
-[globals]
-...
+	<smbconfsection>[globals]</smbconfsection>
+	<member>...</member>
 <smbconfoption><name>passdb backend</name><value>tdbsam, smbpasswd</value></smbconfoption>
-...
+	<member>...</member>
 </smbconfblock>
 	</para>
 

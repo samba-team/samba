@@ -408,7 +408,7 @@ workstation as follows: </para>
 
 	<note><para>You will need to log on if a logon box opens up. 
 	For example, connect as <replaceable>DOMAIN</replaceable>\root, password:
-	<replaceable>mypassword</replaceable>.</para></note> </step>
+	<replaceable>mypassword</replaceable>.</para></note></step>
 
 	<step><para> To make the profile capable of being used by anyone, select <quote>Everyone</quote>. </para></step>
 
@@ -424,7 +424,7 @@ workstation as follows: </para>
 <note><para>
 Under Windows NT/200x, the use of mandatory profiles forces the use of MS Exchange storage of mail
 data and keeps it out of the desktop profile. That keeps desktop profiles from becoming unusable.
-</para> </note>
+</para></note>
 
 <sect4>
 <title>Windows XP Service Pack 1</title>
@@ -830,7 +830,7 @@ since it will involve copying a new default profile to every MS Windows 200x/XP 
 exists there it will copy this to the workstation to the <filename>C:\Documents and Settings\</filename>
 under the Windows login name of the user. </para>
 
-<note> <para> This path translates, in Samba parlance, to the &smb.conf;
+<note><para> This path translates, in Samba parlance, to the &smb.conf;
 <smbconfsection>[NETLOGON]</smbconfsection> share. The directory should be created at the root
 of this share and must be called <filename>Default Profile</filename>.	</para> </note>
 
@@ -968,9 +968,9 @@ per-user settings using the Domain User Manager (as with MS Windows NT4/ Win 200
 <para> In any case, you can configure only one profile per user. That profile can be either: </para>
 
 <itemizedlist>
-	<listitem>A profile unique to that user.</listitem>
-	<listitem>A mandatory profile (one the user cannot change).</listitem>
-	<listitem>A group profile (really should be mandatory, that is unchangable).</listitem>
+	<listitem><para>A profile unique to that user.</para></listitem>
+	<listitem><para>A mandatory profile (one the user cannot change).</para></listitem>
+	<listitem><para>A group profile (really should be mandatory, that is unchangable).</para></listitem>
 </itemizedlist>
 
 </sect2>
