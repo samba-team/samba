@@ -124,12 +124,17 @@ struct spoolss_EnumPrinters {
 
 };
 
-struct spoolss_01 {
+struct spoolss_OpenPrinter {
 	struct {
+		const char *server;
+		const char *printer;
+		DATA_BLOB *buffer;
+		uint32 access_mask;
 	} in;
 
 	struct {
-		NTSTATUS result;
+		struct policy_handle *handle;
+		WERROR result;
 	} out;
 
 };
@@ -1135,7 +1140,7 @@ struct spoolss_5f {
 };
 
 #define DCERPC_SPOOLSS_ENUMPRINTERS 0
-#define DCERPC_SPOOLSS_01 1
+#define DCERPC_SPOOLSS_OPENPRINTER 1
 #define DCERPC_SPOOLSS_02 2
 #define DCERPC_SPOOLSS_03 3
 #define DCERPC_SPOOLSS_ENUMJOBS 4

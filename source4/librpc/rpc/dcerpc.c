@@ -814,3 +814,10 @@ failed:
 }
 
 
+/*
+  a useful function for retrieving the server name we connected to
+*/
+const char *dcerpc_server_name(struct dcerpc_pipe *p)
+{
+	return p->tree->session->transport->called.name;
+}

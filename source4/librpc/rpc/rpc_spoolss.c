@@ -11,18 +11,12 @@ NTSTATUS dcerpc_spoolss_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				  r);
 }
 
-NTSTATUS dcerpc_spoolss_01(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_01 *r)
+NTSTATUS dcerpc_spoolss_OpenPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_OpenPrinter *r)
 {
-	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SPOOLSS_01, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_spoolss_01,
-				    (ndr_pull_fn_t) ndr_pull_spoolss_01,
-				    r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	
-	return r->out.result;
+	return dcerpc_ndr_request(p, DCERPC_SPOOLSS_OPENPRINTER, mem_ctx,
+				  (ndr_push_fn_t) ndr_push_spoolss_OpenPrinter,
+				  (ndr_pull_fn_t) ndr_pull_spoolss_OpenPrinter,
+				  r);
 }
 
 NTSTATUS dcerpc_spoolss_02(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct spoolss_02 *r)
