@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,9 +56,8 @@ kadm5_s_get_principal(void *server_handle,
 	return ret;
     ret = context->db->fetch(context->context, context->db, &ent);
     context->db->close(context->context, context->db);
-    if(ret == HDB_ERR_NOENTRY)
+    if(ret)
 	return _kadm5_error_code(ret);
-
 
     memset(out, 0, sizeof(*out));
     if(mask & KADM5_PRINCIPAL)
