@@ -609,6 +609,25 @@ AC_DEFUN(jm_ICONV,
   fi
 ])
 
+AC_DEFUN(rjs_CHARSET
+[
+  dnl Find out if we can convert from $1 to UCS2-LE
+  AC_MSG_CHECKING(we can convert from $1 to UCS2-LE)
+  AC_TRY_RUN([
+#include <$jm_cv_include>
+main(){
+    iconv_t cd = iconv_open("$1", "UCS-2LE");
+    if (cd == 0 || cd == (iconv_t)-1) {
+	return -1;
+    }
+    return 0;
+}
+  ],ICONV_CHARSET=$1,ICONV_CHARSET="",])
+  if test x"$ICONV_CHARSET" != x; then
+     AC_MSG_RESULT($ICONV_CHARSET)
+  fi
+])
+
 dnl CFLAGS_ADD_DIR(CFLAGS, $INCDIR)
 dnl This function doesn't add -I/usr/include into CFLAGS
 AC_DEFUN(CFLAGS_ADD_DIR,[
