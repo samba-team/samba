@@ -376,8 +376,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		spnego_state->state_position = SPNEGO_SERVER_TARG;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		spnego_out.negTokenTarg.supportedMech 
-			= spnego_state->sub_sec_security->ops->oid;
+		spnego_out.negTokenTarg.supportedMech = NULL;
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
