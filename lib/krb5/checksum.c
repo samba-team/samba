@@ -154,42 +154,6 @@ MD4_DES_verify (void *p, size_t len, const krb5_keyblock *keyblock,
     return memcmp (res, (u_char *)other + 8, 16);
 }
 
-#if 0
-static void
-MD4_DES_broken_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
-			 void *result)
-{
-    struct md4 md4;
-    des_key_schedule schedule;
-    u_char *r = result;
-
-    md4_init(&md4);
-    md4_update(&md4, p, len);
-    md4_finito(&md4, r);
-    des_set_key((des_cblock*)keyblock->keyvalue.data, schedule);
-    des_cbc_encrypt(result, result, 16, schedule, 
-		    (des_cblock*)keyblock->keyvalue.data, DES_ENCRYPT);
-}
-
-static int
-MD4_DES_broken_verify (void *p, size_t len, const krb5_keyblock *keyblock,
-		       void *other)
-{
-    des_key_schedule schedule;
-    u_char res[16];
-    struct md4 md4;
-
-    des_set_key((des_cblock*)keyblock->keyvalue.data, schedule);
-    des_cbc_encrypt(other, other, 16, schedule, 
-		    (des_cblock*)keyblock->keyvalue.data, DES_DECRYPT);
-
-    md4_init(&md4);
-    md4_update(&md4, p, len);
-    md4_finito(&md4, res);
-
-    return memcmp (res, (u_char *)other, 16);
-}
-#endif
 
 static void
 MD5_DES_checksum (void *p, size_t len, const krb5_keyblock *keyblock,
@@ -359,10 +323,6 @@ static struct checksum_type cm[] = {
     MD5_checksum,     NULL,				F_CPROOF, "md5" },
   { CKSUMTYPE_RSA_MD4_DES,	64,	24,	KEYTYPE_DES,
     MD4_DES_checksum, MD4_DES_verify,			F_KEYED|F_CPROOF, "md4-des" },
-#if 0
-  { CKSUMTYPE_RSA_MD4_DES,	64,	16,	KEYTYPE_DES,
-    MD4_DES_broken_checksum, MD4_DES_broken_verify,	F_KEYED|F_CPROOF, "md4-des" },
-#endif
   { CKSUMTYPE_RSA_MD5_DES,	64,	24,	KEYTYPE_DES,
     MD5_DES_checksum, MD5_DES_verify,			F_KEYED|F_CPROOF, "md5-des" },
   { CKSUMTYPE_RSA_MD5_DES3,	64,	24,	KEYTYPE_DES3,
@@ -388,8 +348,9 @@ find_checksum_type(krb5_cksumtype ctype)
 krb5_boolean
 krb5_checksum_is_keyed(krb5_cksumtype ctype)
 {
-    struct checksum_type *c;
-    c = find_checksum_type(ctype);
+    struct checksum_type *c = find_checksum_type(ctype);
+    if(c == NULL)
+	return FALSE;
     return (c->flags & F_KEYED) != 0;
 }
 
@@ -398,7 +359,7 @@ krb5_checksum_is_collision_proof(krb5_cksumtype ctype)
 {
     struct checksum_type *c = find_checksum_type(ctype);
     if(c == NULL)
-	return FALSE; /* XXX */
+	return FALSE;
     return (c->flags & F_CPROOF) != 0;
 }
 
