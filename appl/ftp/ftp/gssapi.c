@@ -214,7 +214,7 @@ struct sec_server_mech gss_server_mech = {
     gss_userok
 };
 
-#else
+#else /* FTP_SEVER */
 
 extern struct sockaddr_in hisctladdr, myctladdr;
 
@@ -268,10 +268,22 @@ gss_auth(void *app_data, char *host)
 					NULL,
 					NULL);
 	if (GSS_ERROR(maj_stat)) {
-	    printf("Error initializing security context: %x.%d\n", 
-		   maj_stat, min_stat);
-	    return -1;
+	    int new_stat;
+	    int msg_ctx = 0;
+	    gss_buffer_desc status_string;
+	    
+	    gss_display_status(&new_stat,
+			       min_stat,
+			       GSS_C_MECH_CODE,
+			       GSS_C_NO_OID,
+			       &msg_ctx,
+			       &status_string);
+	    printf("Error initializing security context: %s\n", 
+		   (char*)status_string.value);
+	    gss_release_buffer(&new_stat, &status_string);
+	    return AUTH_CONTINUE;
 	}
+
 	gss_release_buffer(&min_stat, &input);
 	if (output_token.length != 0) {
 	    base64_encode(output_token.value, output_token.length, &p);
@@ -290,7 +302,7 @@ gss_auth(void *app_data, char *host)
 	    p = strstr(reply_string, "ADAT=");
 	    if(p == NULL){
 		printf("Error: expected ADAT in reply.\n");
-		return -1;
+		return AUTH_ERROR;
 	    } else {
 		p+=5;
 		input.value = malloc(strlen(p));
@@ -299,12 +311,12 @@ gss_auth(void *app_data, char *host)
 	} else {
 	    if(code != 235) {
 		printf("Unrecognized response code: %d\n", code);
-		return -1;
+		return AUTH_ERROR;
 	    }
 	    context_established = 1;
 	}
     }
-    return 0;
+    return AUTH_OK;
 }
 
 struct sec_client_mech gss_client_mech = {
@@ -319,4 +331,4 @@ struct sec_client_mech gss_client_mech = {
     gss_decode,
 };
 
-#endif
+#endif /* FTP_SERVER */
