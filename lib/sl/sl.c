@@ -101,6 +101,8 @@ readline(char *prompt)
     fflush (stdout);
     if(fgets(buf, sizeof(buf), stdin) == NULL)
 	return NULL;
+    if (buf[strlen(buf) - 1] == '\n')
+	buf[strlen(buf) - 1] = '\0';
     return strdup(buf);
 }
 
@@ -128,11 +130,10 @@ sl_loop (SL_cmd *cmds, char *prompt)
 	if(buf == NULL)
 	    break;
 
-	if (buf[strlen(buf) - 1] == '\n')
-	    buf[strlen(buf) - 1] = '\0';
 	p = buf;
 	count = 0;
-	add_history(buf);
+	if(*buf)
+	    add_history(buf);
 	for (;;) {
 	    while (*p == ' ' || *p == '\t')
 		p++;
@@ -146,11 +147,13 @@ sl_loop (SL_cmd *cmds, char *prompt)
 		break;
 	    *p++ = '\0';
 	}
-	c = sl_match (cmds, ptr[0], 0);
-	if (c)
-	    (*c->func)(count, ptr);
-	else
-	    printf ("Unrecognized command: %s\n", ptr[0]);
+	if (count > 0) {
+	    c = sl_match (cmds, ptr[0], 0);
+	    if (c)
+		(*c->func)(count, ptr);
+	    else
+		printf ("Unrecognized command: %s\n", ptr[0]);
+	}
 	free(buf);
     }
     return 0;
