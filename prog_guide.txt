@@ -539,30 +539,32 @@ will be auto-determined.
 
 other recognised flags are:
 
-  sign : enable ntlmssp signing
-  seal : enable ntlmssp sealing
-  connect : enable rpc connect level auth (auth, but no sign or seal)
-  validate: enable the NDR validator
-  print: enable debugging of the packets
-  bigendian: use bigendian RPC
-  padcheck: check reply data for non-zero pad bytes
+  sign      : enable ntlmssp signing
+  seal      : enable ntlmssp sealing
+  spnego    : use SPNEGO instead of NTLMSSP authentication
+  connect   : enable rpc connect level auth (auth, but no sign or seal)
+  validate  : enable the NDR validator
+  print     : enable debugging of the packets
+  bigendian : use bigendian RPC
+  padcheck  : check reply data for non-zero pad bytes
 
 
-For example, these all connect to the samr pipe:
+Here are some examples:
 
    ncacn_np:myserver
    ncacn_np:myserver[samr]
    ncacn_np:myserver[\pipe\samr]
    ncacn_np:myserver[/pipe/samr]
    ncacn_np:myserver[samr,sign,print]
+   ncacn_np:myserver[sign,spnego]
    ncacn_np:myserver[\pipe\samr,sign,seal,bigendian]
    ncacn_np:myserver[/pipe/samr,seal,validate]
    ncacn_np:
    ncacn_np:[/pipe/samr]
-
    ncacn_ip_tcp:myserver
    ncacn_ip_tcp:myserver[1024]
-   ncacn_ip_tcp:myserver[1024,sign,seal]
+   ncacn_ip_tcp:myserver[sign,seal]
+   ncacn_ip_tcp:myserver[spnego,seal]
 
 
 IDEA: Maybe extend UNC names like this?
@@ -764,6 +766,8 @@ BUGS:
      trans2 and other calls
   handle servers that don't have the setattre call in torture
   add max file coponent length test and max path len test
+  check for alloc failure in all core reply.c and trans2.c code where
+    allocation size depends on client parameter
 
 case-insenstive idea:
   all filenames on disk lowercase
@@ -779,3 +783,4 @@ solve del *.* idea:
   setup a timer
   destroy cache after 30 sec
   destroy if a 2nd dir scan happens on same dir
+
