@@ -1,3 +1,7 @@
+1999-11-05  Assar Westerlund  <assar@sics.se>
+
+	* check-x.m4: include X_PRE_LIBS and X_EXTRA_LIBS when testing
+
 1999-11-01  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (install-build-headers): use `cp' instead of
