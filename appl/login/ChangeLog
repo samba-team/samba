@@ -1,3 +1,8 @@
+1999-10-28  Assar Westerlund  <assar@sics.se>
+
+	* login.c (start_logout_proceess): don't examine `prog' before
+ 	setting it.
+
 1999-10-27  Assar Westerlund  <assar@sics.se>
 
 	* login.c (do_login): chown and chmod the tty.  some clean-up.
