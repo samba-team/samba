@@ -1,47 +1,27 @@
-/* crypto/des/des.c */
-/* Copyright (C) 1995-1997 Eric Young (eay@mincom.oz.au)
+/*
+ * Copyright (c) 2005 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@mincom.oz.au).
- * The implementation was written so as to conform with Netscapes SSL.
- * 
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@mincom.oz.au).
- * 
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 1. Redistributions of source code must retain the copyright
+ * 
+ * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
+ * 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@mincom.oz.au)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from 
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@mincom.oz.au)"
  * 
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
+ * 3. Neither the name of the Institute nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -49,911 +29,896 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- * 
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ */
+
+/*
+ * The document that got me started for real was "Efficient
+ * Implementation of the Data Encryption Standard" by Dag Arne Osvik.
+ * I never got to the PC1 transformation was working, instead I used
+ * table-lookup was used for all key schedule setup. The document was
+ * very useful since it de-mystified other implementations for me.
+ *
+ * The core DES function (SBOX + P transformation) is from Richard
+ * Outerbridge public domain DES implementation. My sanity is saved
+ * thanks to his work. Thank you Richard.
  */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_IO_H
-#include <io.h>
-#endif
+#include <strings.h>
+#include <krb5-types.h>
 
-#include <time.h>
-#include "des_ver.h"
-
-#ifdef VMS
-#include <types.h>
-#include <stat.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
 #include "des.h"
 
-#ifndef HAVE_RANDOM
-#define random rand
-#define srandom(s) srand(s)
-#endif
+static void desx(uint32_t [2], DES_key_schedule *, int);
+static void IP(uint32_t [2]);
+static void FP(uint32_t [2]);
 
-#ifndef NOPROTO
-void usage(void);
-void doencryption(void);
-int uufwrite(unsigned char *data, int size, unsigned int num, FILE *fp);
-void uufwriteEnd(FILE *fp);
-int uufread(unsigned char *out,int size,unsigned int num,FILE *fp);
-int uuencode(unsigned char *in,int num,unsigned char *out);
-int uudecode(unsigned char *in,int num,unsigned char *out);
-#else
-void usage();
-void doencryption();
-int uufwrite();
-void uufwriteEnd();
-int uufread();
-int uuencode();
-int uudecode();
-#endif
+#include "des-tables.h"
 
-#ifdef VMS
-#define EXIT(a) exit(a&0x10000000)
-#else
-#define EXIT(a) exit(a)
-#endif
+#define ROTATE_LEFT28(x,one)				\
+    if (one) {						\
+	x = ( ((x)<<(1)) & 0xffffffe) | ((x) >> 27);	\
+    } else {						\
+	x = ( ((x)<<(2)) & 0xffffffc) | ((x) >> 26);	\
+    }
 
-#define BUFSIZE (8*1024)
-#define VERIFY  1
-#define KEYSIZ	8
-#define KEYSIZB 1024 /* should hit tty line limit first :-) */
-char key[KEYSIZB+1];
-int do_encrypt,longk=0;
-FILE *DES_IN,*DES_OUT,*CKSUM_OUT;
-char uuname[200];
-unsigned char uubuf[50];
-int uubufnum=0;
-#define INUUBUFN	(45*100)
-#define OUTUUBUF	(65*100)
-unsigned char b[OUTUUBUF];
-unsigned char bb[300];
-DES_cblock cksum={0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-char cksumname[200]="";
+/*
+ *
+ */
 
-int vflag,cflag,eflag,dflag,kflag,bflag,fflag,sflag,uflag,flag3,hflag,error;
+int
+DES_set_odd_parity(DES_cblock *key)
+{
+    int i;
+    for (i = 0; i < DES_CBLOCK_LEN; i++)
+	(*key)[i] = odd_parity[(*key)[i]];
+    return 0;
+}
 
-int main(argc, argv)
-int argc;
-char **argv;
-	{
-	int i;
-	struct stat ins,outs;
-	char *p;
-	char *in=NULL,*out=NULL;
+/*
+ *
+ */
 
-	vflag=cflag=eflag=dflag=kflag=hflag=bflag=fflag=sflag=uflag=flag3=0;
-	error=0;
-	memset(key,0,sizeof(key));
+int
+DES_set_key(DES_cblock *key, DES_key_schedule *ks)
+{
+    uint32_t t1, t2;
+    uint32_t c, d;
+    int shifts[16] = { 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
+    uint32_t *k = &ks->ks[0];
+    int i;
 
-	for (i=1; i<argc; i++)
-		{
-		p=argv[i];
-		if ((p[0] == '-') && (p[1] != '\0'))
-			{
-			p++;
-			while (*p)
-				{
-				switch (*(p++))
-					{
-				case '3':
-					flag3=1;
-					longk=1;
-					break;
-				case 'c':
-					cflag=1;
-					strncpy(cksumname,p,200);
-					p+=strlen(cksumname);
-					break;
-				case 'C':
-					cflag=1;
-					longk=1;
-					strncpy(cksumname,p,200);
-					p+=strlen(cksumname);
-					break;
-				case 'e':
-					eflag=1;
-					break;
-				case 'v':
-					vflag=1;
-					break;
-				case 'E':
-					eflag=1;
-					longk=1;
-					break;
-				case 'd':
-					dflag=1;
-					break;
-				case 'D':
-					dflag=1;
-					longk=1;
-					break;
-				case 'b':
-					bflag=1;
-					break;
-				case 'f':
-					fflag=1;
-					break;
-				case 's':
-					sflag=1;
-					break;
-				case 'u':
-					uflag=1;
-					strncpy(uuname,p,200);
-					p+=strlen(uuname);
-					break;
-				case 'h':
-					hflag=1;
-					break;
-				case 'k':
-					kflag=1;
-					if ((i+1) == argc)
-						{
-						fputs("must have a key with the -k option\n",stderr);
-						error=1;
-						}
-					else
-						{
-						int j;
+    t1 = (*key)[0] << 24 | (*key)[1] << 16 | (*key)[2] << 8 | (*key)[3];
+    t2 = (*key)[4] << 24 | (*key)[5] << 16 | (*key)[6] << 8 | (*key)[7];
 
-						i++;
-						strncpy(key,argv[i],KEYSIZB);
-						for (j=strlen(argv[i])-1; j>=0; j--)
-							argv[i][j]='\0';
-						}
-					break;
-				default:
-					fprintf(stderr,"'%c' unknown flag\n",p[-1]);
-					error=1;
-					break;
-					}
-				}
-			}
-		else
-			{
-			if (in == NULL)
-				in=argv[i];
-			else if (out == NULL)
-				out=argv[i];
-			else
-				error=1;
-			}
-		}
-	if (error) usage();
-	/* We either
-	 * do checksum or
-	 * do encrypt or
-	 * do decrypt or
-	 * do decrypt then ckecksum or
-	 * do checksum then encrypt
-	 */
-	if (((eflag+dflag) == 1) || cflag)
-		{
-		if (eflag) do_encrypt=DES_ENCRYPT;
-		if (dflag) do_encrypt=DES_DECRYPT;
-		}
-	else
-		{
-		if (vflag) 
-			{
-#ifndef _Windows			
-			fprintf(stderr,"des(1) built with %s\n",libdes_version);
-#endif			
-			EXIT(1);
-			}
-		else usage();
-		}
+    c =   (pc1_c_3[(t1 >> (5            )) & 0x7] << 3)
+	| (pc1_c_3[(t1 >> (5 + 8        )) & 0x7] << 2)
+	| (pc1_c_3[(t1 >> (5 + 8 + 8    )) & 0x7] << 1)
+	| (pc1_c_3[(t1 >> (5 + 8 + 8 + 8)) & 0x7] << 0)
+	| (pc1_c_4[(t2 >> (4            )) & 0xf] << 3)
+	| (pc1_c_4[(t2 >> (4 + 8        )) & 0xf] << 2)
+	| (pc1_c_4[(t2 >> (4 + 8 + 8    )) & 0xf] << 1)
+	| (pc1_c_4[(t2 >> (4 + 8 + 8 + 8)) & 0xf] << 0);
 
-#ifndef _Windows			
-	if (vflag) fprintf(stderr,"des(1) built with %s\n",libdes_version);
-#endif			
-	if (	(in != NULL) &&
-		(out != NULL) &&
-#ifndef MSDOS
-		(stat(in,&ins) != -1) &&
-		(stat(out,&outs) != -1) &&
-		(ins.st_dev == outs.st_dev) &&
-		(ins.st_ino == outs.st_ino))
-#else /* MSDOS */
-		(strcmp(in,out) == 0))
-#endif
-			{
-			fputs("input and output file are the same\n",stderr);
-			EXIT(3);
-			}
-
-	if (!kflag)
-		if (UI_UTIL_read_pw_string(key,KEYSIZB+1,"Enter key:",eflag?VERIFY:0))
-			{
-			fputs("password error\n",stderr);
-			EXIT(2);
-			}
-
-	if (in == NULL)
-		DES_IN=stdin;
-	else if ((DES_IN=fopen(in,"r")) == NULL)
-		{
-		perror("opening input file");
-		EXIT(4);
-		}
-
-	CKSUM_OUT=stdout;
-	if (out == NULL)
-		{
-		DES_OUT=stdout;
-		CKSUM_OUT=stderr;
-		}
-	else if ((DES_OUT=fopen(out,"w")) == NULL)
-		{
-		perror("opening output file");
-		EXIT(5);
-		}
-
-#ifdef MSDOS
-	/* This should set the file to binary mode. */
-	{
-#include <fcntl.h>
-	if (!(uflag && dflag))
-		setmode(fileno(DES_IN),O_BINARY);
-	if (!(uflag && eflag))
-		setmode(fileno(DES_OUT),O_BINARY);
-	}
-#endif
-
-	doencryption();
-	fclose(DES_IN);
-	fclose(DES_OUT);
-	EXIT(0);
-	}
-
-void usage()
-	{
-	char **u;
-	static const char *Usage[]={
-"des <options> [input-file [output-file]]",
-"options:",
-"-v         : des(1) version number",
-"-e         : encrypt using sunOS compatible user key to DES key conversion.",
-"-E         : encrypt ",
-"-d         : decrypt using sunOS compatible user key to DES key conversion.",
-"-D         : decrypt ",
-"-c[ckname] : generate a cbc_cksum using sunOS compatible user key to",
-"             DES key conversion and output to ckname (stdout default,",
-"             stderr if data being output on stdout).  The checksum is",
-"             generated before encryption and after decryption if used",
-"             in conjunction with -[eEdD].",
-"-C[ckname] : generate a cbc_cksum as for -c but compatible with -[ED].",
-"-k key     : use key 'key'",
-"-h         : the key that is entered will be a hexidecimal number",
-"             that is used directly as the des key",
-"-u[uuname] : input file is uudecoded if -[dD] or output uuencoded data if -[eE]",
-"             (uuname is the filename to put in the uuencode header).",
-"-b         : encrypt using DES in ecb encryption mode, the defaut is cbc mode.",
-"-3         : encrypt using tripple DES encryption.  This uses 2 keys",
-"             generated from the input key.  If the input key is less",
-"             than 8 characters long, this is equivelent to normal",
-"             encryption.  Default is tripple cbc, -b makes it tripple ecb.",
-NULL
-};
-	for (u=(char **)Usage; *u; u++)
-		{
-		fputs(*u,stderr);
-		fputc('\n',stderr);
-		}
-
-	EXIT(1);
-	}
-
-void doencryption()
-	{
-#ifdef _LIBC
-	extern int srandom();
-	extern int random();
-	extern unsigned long time();
-#endif
-
-	register int i;
-	DES_key_schedule ks,ks2;
-	unsigned char iv[8],iv2[8];
-	char *p;
-	int num=0,j,k,l,rem,ll,len,last,ex=0;
-	DES_cblock kk,k2;
-	FILE *O;
-	int Exit=0;
-#ifndef MSDOS
-	static unsigned char buf[BUFSIZE+8],obuf[BUFSIZE+8];
-#else
-	static unsigned char *buf=NULL,*obuf=NULL;
-
-	if (buf == NULL)
-		{
-		if (    (( buf=(unsigned char *)Malloc(BUFSIZE+8)) == NULL) ||
-			((obuf=(unsigned char *)Malloc(BUFSIZE+8)) == NULL))
-			{
-			fputs("Not enough memory\n",stderr);
-			Exit=10;
-			goto problems;
-			}
-		}
-#endif
-
-	if (hflag)
-		{
-		j=(flag3?16:8);
-		p=key;
-		for (i=0; i<j; i++)
-			{
-			k=0;
-			if ((*p <= '9') && (*p >= '0'))
-				k=(*p-'0')<<4;
-			else if ((*p <= 'f') && (*p >= 'a'))
-				k=(*p-'a'+10)<<4;
-			else if ((*p <= 'F') && (*p >= 'A'))
-				k=(*p-'A'+10)<<4;
-			else
-				{
-				fputs("Bad hex key\n",stderr);
-				Exit=9;
-				goto problems;
-				}
-			p++;
-			if ((*p <= '9') && (*p >= '0'))
-				k|=(*p-'0');
-			else if ((*p <= 'f') && (*p >= 'a'))
-				k|=(*p-'a'+10);
-			else if ((*p <= 'F') && (*p >= 'A'))
-				k|=(*p-'A'+10);
-			else
-				{
-				fputs("Bad hex key\n",stderr);
-				Exit=9;
-				goto problems;
-				}
-			p++;
-			if (i < 8)
-				kk[i]=k;
-			else
-				k2[i-8]=k;
-			}
-		DES_set_key((C_Block *)k2,&ks2);
-		memset(k2,0,sizeof(k2));
-		}
-	else if (longk || flag3)
-		{
-		if (flag3)
-			{
-			DES_string_to_2keys(key,(C_Block *)kk,(C_Block *)k2);
-			DES_set_key((C_Block *)k2,&ks2);
-			memset(k2,0,sizeof(k2));
-			}
-		else
-			DES_string_to_key(key,(C_Block *)kk);
-		}
-	else
-		for (i=0; i<KEYSIZ; i++)
-			{
-			l=0;
-			k=key[i];
-			for (j=0; j<8; j++)
-				{
-				if (k&1) l++;
-				k>>=1;
-				}
-			if (l & 1)
-				kk[i]=key[i]&0x7f;
-			else
-				kk[i]=key[i]|0x80;
-			}
-
-	DES_set_key((C_Block *)kk,&ks);
-	memset(key,0,sizeof(key));
-	memset(kk,0,sizeof(kk));
-	/* woops - A bug that does not showup under unix :-( */
-	memset(iv,0,sizeof(iv));
-	memset(iv2,0,sizeof(iv2));
-
-	l=1;
-	rem=0;
-	/* first read */
-	if (eflag || (!dflag && cflag))
-		{
-		for (;;)
-			{
-			num=l=fread(&(buf[rem]),1,BUFSIZE,DES_IN);
-			l+=rem;
-			num+=rem;
-			if (l < 0)
-				{
-				perror("read error");
-				Exit=6;
-				goto problems;
-				}
-
-			rem=l%8;
-			len=l-rem;
-			if (feof(DES_IN))
-				{
-				srandom((unsigned int)time(NULL));
-				for (i=7-rem; i>0; i--)
-					buf[l++]=random()&0xff;
-				buf[l++]=rem;
-				ex=1;
-				len+=rem;
-				}
-			else
-				l-=rem;
-
-			if (cflag)
-				{
-				DES_cbc_cksum((C_Block *)buf,(C_Block *)cksum,
-					(long)len,&ks,(C_Block *)cksum);
-				if (!eflag)
-					{
-					if (feof(DES_IN)) break;
-					else continue;
-					}
-				}
-
-			if (bflag && !flag3)
-				for (i=0; i<l; i+=8)
-					DES_ecb_encrypt(
-						(DES_cblock *)&(buf[i]),
-						(DES_cblock *)&(obuf[i]),
-						&ks,do_encrypt);
-			else if (flag3 && bflag)
-				for (i=0; i<l; i+=8)
-					DES_ecb2_encrypt(
-						(DES_cblock *)&(buf[i]),
-						(DES_cblock *)&(obuf[i]),
-						&ks,&ks2,do_encrypt);
-			else if (flag3 && !bflag)
-				{
-				char tmpbuf[8];
-
-				if (rem) memcpy(tmpbuf,&(buf[l]),
-					(unsigned int)rem);
-				DES_3cbc_encrypt(
-					(DES_cblock *)buf,(DES_cblock *)obuf,
-					(long)l,&ks,&ks2,(DES_cblock *)iv,
-					(DES_cblock *)iv2,do_encrypt);
-				if (rem) memcpy(&(buf[l]),tmpbuf,
-					(unsigned int)rem);
-				}
-			else
-				{
-				DES_cbc_encrypt(
-					(DES_cblock *)buf,(DES_cblock *)obuf,
-					(long)l,&ks,(DES_cblock *)iv,do_encrypt);
-				if (l >= 8) memcpy(iv,&(obuf[l-8]),8);
-				}
-			if (rem) memcpy(buf,&(buf[l]),(unsigned int)rem);
-
-			i=0;
-			while (i < l)
-				{
-				if (uflag)
-					j=uufwrite(obuf,1,(unsigned int)l-i,
-						DES_OUT);
-				else
-					j=fwrite(obuf,1,(unsigned int)l-i,
-						DES_OUT);
-				if (j == -1)
-					{
-					perror("Write error");
-					Exit=7;
-					goto problems;
-					}
-				i+=j;
-				}
-			if (feof(DES_IN))
-				{
-				if (uflag) uufwriteEnd(DES_OUT);
-				break;
-				}
-			}
-		}
-	else /* decrypt */
-		{
-		ex=1;
-		for (;;)
-			{
-			if (ex) {
-				if (uflag)
-					l=uufread(buf,1,BUFSIZE,DES_IN);
-				else
-					l=fread(buf,1,BUFSIZE,DES_IN);
-				ex=0;
-				rem=l%8;
-				l-=rem;
-				}
-			if (l < 0)
-				{
-				perror("read error");
-				Exit=6;
-				goto problems;
-				}
-
-			if (bflag && !flag3)
-				for (i=0; i<l; i+=8)
-					DES_ecb_encrypt(
-						(DES_cblock *)&(buf[i]),
-						(DES_cblock *)&(obuf[i]),
-						&ks,do_encrypt);
-			else if (flag3 && bflag)
-				for (i=0; i<l; i+=8)
-					DES_ecb2_encrypt(
-						(DES_cblock *)&(buf[i]),
-						(DES_cblock *)&(obuf[i]),
-						&ks,&ks2,do_encrypt);
-			else if (flag3 && !bflag)
-				{
-				DES_3cbc_encrypt(
-					(DES_cblock *)buf,(DES_cblock *)obuf,
-					(long)l,&ks,&ks2,(DES_cblock *)iv,
-					(DES_cblock *)iv2,do_encrypt);
-				}
-			else
-				{
-				DES_cbc_encrypt(
-					(DES_cblock *)buf,(DES_cblock *)obuf,
-				 	(long)l,&ks,(DES_cblock *)iv,do_encrypt);
-				if (l >= 8) memcpy(iv,&(buf[l-8]),8);
-				}
-
-			if (uflag)
-				ll=uufread(&(buf[rem]),1,BUFSIZE,DES_IN);
-			else
-				ll=fread(&(buf[rem]),1,BUFSIZE,DES_IN);
-			ll+=rem;
-			rem=ll%8;
-			ll-=rem;
-			if (feof(DES_IN) && (ll == 0))
-				{
-				last=obuf[l-1];
-
-				if ((last > 7) || (last < 0))
-					{
-					fputs("The file was not decrypted correctly.\n",
-						stderr);
-					Exit=8;
-					last=0;
-					}
-				l=l-8+last;
-				}
-			i=0;
-			if (cflag) DES_cbc_cksum((C_Block *)obuf,
-				(C_Block *)cksum,(long)l/8*8,&ks,
-				(C_Block *)cksum);
-			while (i != l)
-				{
-				j=fwrite(obuf,1,(unsigned int)l-i,DES_OUT);
-				if (j == -1)
-					{
-					perror("Write error");
-					Exit=7;
-					goto problems;
-					}
-				i+=j;
-				}
-			l=ll;
-			if ((l == 0) && feof(DES_IN)) break;
-			}
-		}
-	if (cflag)
-		{
-		l=0;
-		if (cksumname[0] != '\0')
-			{
-			if ((O=fopen(cksumname,"w")) != NULL)
-				{
-				CKSUM_OUT=O;
-				l=1;
-				}
-			}
-		for (i=0; i<8; i++)
-			fprintf(CKSUM_OUT,"%02X",cksum[i]);
-		fprintf(CKSUM_OUT,"\n");
-		if (l) fclose(CKSUM_OUT);
-		}
-problems:
-	memset(buf,0,sizeof(buf));
-	memset(obuf,0,sizeof(obuf));
-	memset(&ks,0,sizeof(ks));
-	memset(&ks2,0,sizeof(ks2));
-	memset(iv,0,sizeof(iv));
-	memset(iv2,0,sizeof(iv2));
-	memset(kk,0,sizeof(kk));
-	memset(k2,0,sizeof(k2));
-	memset(uubuf,0,sizeof(uubuf));
-	memset(b,0,sizeof(b));
-	memset(bb,0,sizeof(bb));
-	memset(cksum,0,sizeof(cksum));
-	if (Exit) EXIT(Exit);
-	}
-
-int uufwrite(data, size, num, fp)
-unsigned char *data;
-int size;
-unsigned int num;
-FILE *fp;
-      
-     /* We ignore this parameter but it should be > ~50 I believe */
-   
     
-	{
-	int i,j,left,rem,ret=num;
-	static int start=1;
+    d =   (pc1_d_3[(t2 >> (1            )) & 0x7] << 3)
+	| (pc1_d_3[(t2 >> (1 + 8        )) & 0x7] << 2)
+	| (pc1_d_3[(t2 >> (1 + 8 + 8    )) & 0x7] << 1)
+	| (pc1_d_3[(t2 >> (1 + 8 + 8 + 8)) & 0x7] << 0)
+	| (pc1_d_4[(t1 >> (1            )) & 0xf] << 3)
+	| (pc1_d_4[(t1 >> (1 + 8        )) & 0xf] << 2)
+	| (pc1_d_4[(t1 >> (1 + 8 + 8    )) & 0xf] << 1)
+	| (pc1_d_4[(t1 >> (1 + 8 + 8 + 8)) & 0xf] << 0);
 
-	if (start)
-		{
-		fprintf(fp,"begin 600 %s\n",
-			(uuname[0] == '\0')?"text.d":uuname);
-		start=0;
-		}
+    for (i = 0; i < 16; i++) {
+	uint32_t kc, kd;
+	
+	ROTATE_LEFT28(c, shifts[i]);
+	ROTATE_LEFT28(d, shifts[i]);
+	
+	kc = pc2_c_1[(c >> 22) & 0x3f] |
+	    pc2_c_2[((c >> 16) & 0x30) | ((c >> 15) & 0xf)] |
+	    pc2_c_3[((c >> 9 ) & 0x3c) | ((c >> 8 ) & 0x3)] |
+	    pc2_c_4[((c >> 2 ) & 0x20) | ((c >> 1) & 0x18) | (c & 0x7)];
+	kd = pc2_d_1[(d >> 22) & 0x3f] |
+	    pc2_d_2[((d >> 15) & 0x30) | ((d >> 14) & 0xf)] |
+	    pc2_d_3[ (d >> 7 ) & 0x3f] |
+	    pc2_d_4[((d >> 1 ) & 0x3c) | ((d      ) & 0x3)];
 
-	if (uubufnum)
-		{
-		if (uubufnum+num < 45)
-			{
-			memcpy(&(uubuf[uubufnum]),data,(unsigned int)num);
-			uubufnum+=num;
-			return(num);
-			}
-		else
-			{
-			i=45-uubufnum;
-			memcpy(&(uubuf[uubufnum]),data,(unsigned int)i);
-			j=uuencode((unsigned char *)uubuf,45,b);
-			fwrite(b,1,(unsigned int)j,fp);
-			uubufnum=0;
-			data+=i;
-			num-=i;
-			}
-		}
+	/* Change to byte order used by the S boxes */
+	*k  =    (kc & 0x00fc0000L) << 6;
+	*k |=    (kc & 0x00000fc0L) << 10;
+	*k |=    (kd & 0x00fc0000L) >> 10;
+	*k++  |= (kd & 0x00000fc0L) >> 6;
+	*k  =    (kc & 0x0003f000L) << 12;
+	*k |=    (kc & 0x0000003fL) << 16;
+	*k |=    (kd & 0x0003f000L) >> 4;
+	*k++  |= (kd & 0x0000003fL);
+    }
 
-	for (i=0; i<(((int)num)-INUUBUFN); i+=INUUBUFN)
-		{
-		j=uuencode(&(data[i]),INUUBUFN,b);
-		fwrite(b,1,(unsigned int)j,fp);
-		}
-	rem=(num-i)%45;
-	left=(num-i-rem);
-	if (left)
-		{
-		j=uuencode(&(data[i]),left,b);
-		fwrite(b,1,(unsigned int)j,fp);
-		i+=left;
-		}
-	if (i != num)
-		{
-		memcpy(uubuf,&(data[i]),(unsigned int)rem);
-		uubufnum=rem;
-		}
-	return(ret);
+    return 0;
+}
+
+/* FIPS 74 */
+static DES_cblock weak_keys[] = {
+    {0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01}, /* weak keys */
+    {0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE},
+    {0x1F,0x1F,0x1F,0x1F,0x0E,0x0E,0x0E,0x0E},
+    {0xE0,0xE0,0xE0,0xE0,0xF1,0xF1,0xF1,0xF1},
+    {0x01,0xFE,0x01,0xFE,0x01,0xFE,0x01,0xFE}, /* semi-weak keys */
+    {0xFE,0x01,0xFE,0x01,0xFE,0x01,0xFE,0x01},
+    {0x1F,0xE0,0x1F,0xE0,0x0E,0xF1,0x0E,0xF1},
+    {0xE0,0x1F,0xE0,0x1F,0xF1,0x0E,0xF1,0x0E},
+    {0x01,0xE0,0x01,0xE0,0x01,0xF1,0x01,0xF1},
+    {0xE0,0x01,0xE0,0x01,0xF1,0x01,0xF1,0x01},
+    {0x1F,0xFE,0x1F,0xFE,0x0E,0xFE,0x0E,0xFE},
+    {0xFE,0x1F,0xFE,0x1F,0xFE,0x0E,0xFE,0x0E},
+    {0x01,0x1F,0x01,0x1F,0x01,0x0E,0x01,0x0E},
+    {0x1F,0x01,0x1F,0x01,0x0E,0x01,0x0E,0x01},
+    {0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1,0xFE},
+    {0xFE,0xE0,0xFE,0xE0,0xFE,0xF1,0xFE,0xF1}
+};
+
+int
+DES_is_weak_key(DES_cblock *key)
+{
+    int i;
+
+    for (i = 0; i < sizeof(weak_keys)/sizeof(weak_keys[0]); i++) {
+	if (memcmp(weak_keys[i], key, DES_CBLOCK_LEN) == 0)
+	    return 1;
+    }
+    return 0;
+}
+
+/*
+ *
+ */
+
+static void
+load(const unsigned char *b, uint32_t v[2])
+{
+    v[0] =  b[0] << 24;
+    v[0] |= b[1] << 16;
+    v[0] |= b[2] << 8;
+    v[0] |= b[3] << 0;
+    v[1] =  b[4] << 24;
+    v[1] |= b[5] << 16;
+    v[1] |= b[6] << 8;
+    v[1] |= b[7] << 0;
+}
+
+static void
+store(const uint32_t v[2], unsigned char *b)
+{
+    b[0] = (v[0] >> 24) & 0xff;
+    b[1] = (v[0] >> 16) & 0xff;
+    b[2] = (v[0] >>  8) & 0xff;
+    b[3] = (v[0] >>  0) & 0xff;
+    b[4] = (v[1] >> 24) & 0xff;
+    b[5] = (v[1] >> 16) & 0xff;
+    b[6] = (v[1] >>  8) & 0xff;
+    b[7] = (v[1] >>  0) & 0xff;
+}
+
+/*
+ *
+ */
+
+void
+DES_encrypt(uint32_t u[2], DES_key_schedule *ks, int encrypt)
+{
+    IP(u);
+    desx(u, ks, encrypt);
+    FP(u);
+}
+
+/*
+ *
+ */
+
+void
+DES_ecb_encrypt(DES_cblock *input, DES_cblock *output,
+		DES_key_schedule *ks, int encrypt)
+{
+    uint32_t u[2];
+    load(*input, u);
+    DES_encrypt(u, ks, encrypt);
+    store(u, *output);
+}
+
+/*
+ *
+ */
+
+void
+DES_cbc_encrypt(unsigned char *input, unsigned char *output, long length,
+		DES_key_schedule *ks, DES_cblock *iv, int encrypt)
+{
+    uint32_t u[2];
+    uint32_t uiv[2];
+
+    load(*iv, uiv);
+
+    if (encrypt) {
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    DES_encrypt(u, ks, 1);
+	    uiv[0] = u[0]; uiv[1] = u[1];
+	    store(u, output);
+
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
 	}
-
-void uufwriteEnd(fp)
-FILE *fp;
-	{
-	int j;
-	static const char *end=" \nend\n";
-
-	if (uubufnum != 0)
-		{
-		uubuf[uubufnum]='\0';
-		uubuf[uubufnum+1]='\0';
-		uubuf[uubufnum+2]='\0';
-		j=uuencode(uubuf,uubufnum,b);
-		fwrite(b,1,(unsigned int)j,fp);
-		}
-	fwrite(end,1,strlen(end),fp);
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    DES_encrypt(u, ks, 1);
+	    store(u, output);
 	}
+    } else {
+	uint32_t t[2];
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    t[0] = u[0]; t[1] = u[1];
+	    DES_encrypt(u, ks, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    store(u, output);
+	    uiv[0] = t[0]; uiv[1] = t[1];
 
-int uufread(out, size, num, fp)
-unsigned char *out;
-int size; /* should always be > ~ 60; I actually ignore this parameter :-) */
-unsigned int num;
-FILE *fp;
-	{
-	int i,j,tot;
-	static int done=0;
-	static int valid=0;
-	static int start=1;
-
-	if (start)
-		{
-		for (;;)
-			{
-			b[0]='\0';
-			fgets((char *)b,300,fp);
-			if (b[0] == '\0')
-				{
-				fprintf(stderr,"no 'begin' found in uuencoded input\n");
-				return(-1);
-				}
-			if (strncmp((char *)b,"begin ",6) == 0) break;
-			}
-		start=0;
-		}
-	if (done) return(0);
-	tot=0;
-	if (valid)
-		{
-		memcpy(out,bb,(unsigned int)valid);
-		tot=valid;
-		valid=0;
-		}
-	for (;;)
-		{
-		b[0]='\0';
-		fgets((char *)b,300,fp);
-		if (b[0] == '\0') break;
-		i=strlen((char *)b);
-		if ((b[0] == 'e') && (b[1] == 'n') && (b[2] == 'd'))
-			{
-			done=1;
-			while (!feof(fp))
-				{
-				fgets((char *)b,300,fp);
-				}
-			break;
-			}
-		i=uudecode(b,i,bb);
-		if (i < 0) break;
-		if ((i+tot+8) > num)
-			{
-			/* num to copy to make it a multiple of 8 */
-			j=(num/8*8)-tot-8;
-			memcpy(&(out[tot]),bb,(unsigned int)j);
-			tot+=j;
-			memcpy(bb,&(bb[j]),(unsigned int)i-j);
-			valid=i-j;
-			break;
-			}
-		memcpy(&(out[tot]),bb,(unsigned int)i);
-		tot+=i;
-		}
-	return(tot);
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
 	}
-
-#define ccc2l(c,l)      (l =((DES_LONG)(*((c)++)))<<16, \
-			 l|=((DES_LONG)(*((c)++)))<< 8, \
-		 	 l|=((DES_LONG)(*((c)++))))
-
-#define l2ccc(l,c)      (*((c)++)=(unsigned char)(((l)>>16)&0xff), \
-                    *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
-                    *((c)++)=(unsigned char)(((l)    )&0xff))
-
-
-int uuencode(in, num, out)
-unsigned char *in;
-int num;
-unsigned char *out;
-	{
-	int j,i,n,tot=0;
-	DES_LONG l;
-	register unsigned char *p;
-	p=out;
-
-	for (j=0; j<num; j+=45)
-		{
-		if (j+45 > num)
-			i=(num-j);
-		else	i=45;
-		*(p++)=i+' ';
-		for (n=0; n<i; n+=3)
-			{
-			ccc2l(in,l);
-			*(p++)=((l>>18)&0x3f)+' ';
-			*(p++)=((l>>12)&0x3f)+' ';
-			*(p++)=((l>> 6)&0x3f)+' ';
-			*(p++)=((l    )&0x3f)+' ';
-			tot+=4;
-			}
-		*(p++)='\n';
-		tot+=2;
-		}
-	*p='\0';
-	l=0;
-	return(tot);
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    DES_encrypt(u, ks, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    store(u, output);
 	}
+    }
+    uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
+}
 
-int uudecode(in, num, out)
-unsigned char *in;
-int num;
-unsigned char *out;
-	{
-	int j,i,k;
-	unsigned int n=0,space=0;
-	DES_LONG l;
-	DES_LONG w,x,y,z;
-	unsigned int blank=(unsigned int)'\n'-' ';
+/*
+ *
+ */
 
-	for (j=0; j<num; )
-		{
-		n= *(in++)-' ';
-		if (n == blank)
-			{
-			n=0;
-			in--;
-			}
-		if (n > 60)
-			{
-			fprintf(stderr,"uuencoded line length too long\n");
-			return(-1);
-			}
-		j++;
+void
+DES_pcbc_encrypt(unsigned char *input, unsigned char *output, long length,
+		 DES_key_schedule *ks, DES_cblock *iv, int encrypt)
+{
+    uint32_t u[2];
+    uint32_t uiv[2];
 
-		for (i=0; i<n; j+=4,i+=3)
-			{
-			/* the following is for cases where spaces are
-			 * removed from lines.
-			 */
-			if (space)
-				{
-				w=x=y=z=0;
-				}
-			else
-				{
-				w= *(in++)-' ';
-				x= *(in++)-' ';
-				y= *(in++)-' ';
-				z= *(in++)-' ';
-				}
-			if ((w > 63) || (x > 63) || (y > 63) || (z > 63))
-				{
-				k=0;
-				if (w == blank) k=1;
-				if (x == blank) k=2;
-				if (y == blank) k=3;
-				if (z == blank) k=4;
-				space=1;
-				switch (k) {
-				case 1:	w=0; in--;
-				case 2: x=0; in--;
-				case 3: y=0; in--;
-				case 4: z=0; in--;
-					break;
-				case 0:
-					space=0;
-					fprintf(stderr,"bad uuencoded data values\n");
-					w=x=y=z=0;
-					return(-1);
-					break;
-					}
-				}
-			l=(w<<18)|(x<<12)|(y<< 6)|(z    );
-			l2ccc(l,out);
-			}
-		if (*(in++) != '\n')
-			{
-			fprintf(stderr,"missing nl in uuencoded line\n");
-			w=x=y=z=0;
-			return(-1);
-			}
-		j++;
-		}
-	*out='\0';
-	w=x=y=z=0;
-	return(n);
+    load(*iv, uiv);
+
+    if (encrypt) {
+	uint32_t t[2];
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    t[0] = u[0]; t[1] = u[1];
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    DES_encrypt(u, ks, 1);
+	    uiv[0] = u[0] ^ t[0]; uiv[1] = u[1] ^ t[1];
+	    store(u, output);
+
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
 	}
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    DES_encrypt(u, ks, 1);
+	    store(u, output);
+	}
+    } else {
+	uint32_t t[2];
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    t[0] = u[0]; t[1] = u[1];
+	    DES_encrypt(u, ks, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    store(u, output);
+	    uiv[0] = t[0] ^ u[0]; uiv[1] = t[1] ^ u[1];
+
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
+	}
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    DES_encrypt(u, ks, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	}
+    }
+    uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
+}
+
+/*
+ *
+ */
+
+static void
+_des3_encrypt(uint32_t u[2], DES_key_schedule *ks1, DES_key_schedule *ks2, 
+	      DES_key_schedule *ks3, int encrypt)
+{
+    IP(u);
+    if (encrypt) {
+	desx(u, ks1, 1); /* IP + FP cancel out each other */
+	desx(u, ks2, 0);
+	desx(u, ks3, 1);
+    } else {
+	desx(u, ks3, 0);
+	desx(u, ks2, 1);
+	desx(u, ks1, 0);
+    }
+    FP(u);
+}
+
+/*
+ *
+ */
+
+void
+DES_ecb3_encrypt(DES_cblock *input,
+		 DES_cblock *output,
+		 DES_key_schedule *ks1,
+		 DES_key_schedule *ks2,
+		 DES_key_schedule *ks3,
+		 int encrypt)
+{
+    uint32_t u[2];
+    load(*input, u);
+    _des3_encrypt(u, ks1, ks2, ks3, encrypt);
+    store(u, *output);
+    return;
+}
+
+/*
+ *
+ */
+
+void
+DES_ede3_cbc_encrypt(const unsigned char *input, unsigned char *output,
+		     long length, DES_key_schedule *ks1, 
+		     DES_key_schedule *ks2, DES_key_schedule *ks3,
+		     DES_cblock *iv, int encrypt)
+{
+    uint32_t u[2];
+    uint32_t uiv[2];
+
+    load(*iv, uiv);
+
+    if (encrypt) {
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    _des3_encrypt(u, ks1, ks2, ks3, 1);
+	    uiv[0] = u[0]; uiv[1] = u[1];
+	    store(u, output);
+
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
+	}
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    _des3_encrypt(u, ks1, ks2, ks3, 1);
+	    store(u, output);
+	}
+    } else {
+	uint32_t t[2];
+	while (length >= DES_CBLOCK_LEN) {
+	    load(input, u);
+	    t[0] = u[0]; t[1] = u[1];
+	    _des3_encrypt(u, ks1, ks2, ks3, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    store(u, output);
+	    uiv[0] = t[0]; uiv[1] = t[1];
+
+	    length -= DES_CBLOCK_LEN;
+	    input += DES_CBLOCK_LEN;
+	    output += DES_CBLOCK_LEN;
+	}
+	if (length) {
+	    char tmp[DES_CBLOCK_LEN];
+	    memcpy(tmp, input, length);
+	    memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	    load(tmp, u);
+	    _des3_encrypt(u, ks1, ks2, ks3, 0);
+	    u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	    store(u, output);
+	}
+    }
+    store(uiv, *iv);
+    uiv[0] = 0; u[0] = 0; uiv[1] = 0; u[1] = 0;
+}
+
+/*
+ *
+ */
+
+void
+DES_cfb64_encrypt(unsigned char *input, unsigned char *output, 
+		  long length, DES_key_schedule *ks, DES_cblock *iv,
+		  int *num, int encrypt)
+{
+    unsigned char tmp[DES_CBLOCK_LEN];
+    uint32_t uiv[2];
+
+    load(*iv, uiv);
+
+    if (encrypt) {
+	int i = *num;
+
+	while (length > 0) {
+	    if (i == 0)
+		DES_encrypt(uiv, ks, 1);
+	    store(uiv, tmp);
+	    for (; i < DES_CBLOCK_LEN && i < length; i++) {
+		output[i] = tmp[i] ^ input[i];
+	    }
+	    if (i == DES_CBLOCK_LEN)
+		load(output, uiv);
+	    output += i;
+	    input += i;
+	    length -= i;
+	    if (i == DES_CBLOCK_LEN)
+		i = 0;
+	}
+	store(uiv, *iv);
+	*num = i;
+    } else {
+	int i = *num;
+	unsigned char c;
+
+	while (length > 0) {
+	    if (i == 0) {
+		DES_encrypt(uiv, ks, 1);
+		store(uiv, tmp);
+	    }
+	    for (; i < DES_CBLOCK_LEN && i < length; i++) {
+		c = input[i];
+		output[i] = tmp[i] ^ input[i];
+		(*iv)[i] = c;
+	    }
+	    output += i;
+	    input += i;
+	    length -= i;
+	    if (i == DES_CBLOCK_LEN) {
+		i = 0;
+		load(*iv, uiv);
+	    }
+	}
+	store(uiv, *iv);
+	*num = i;
+    }
+}
+
+/*
+ *
+ */
+
+uint32_t
+DES_cbc_cksum(const unsigned char *input, DES_cblock *output,
+	      long length, DES_key_schedule *ks, DES_cblock *iv)
+{
+    uint32_t uiv[2];
+    uint32_t u[2];
+
+    load(*iv, uiv);
+
+    while (length >= DES_CBLOCK_LEN) {
+	load(input, u);
+	u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	DES_encrypt(u, ks, 1);
+	uiv[0] = u[0]; uiv[1] = u[1];
+	
+	length -= DES_CBLOCK_LEN;
+	input += DES_CBLOCK_LEN;
+    }
+    if (length) {
+	char tmp[DES_CBLOCK_LEN];
+	memcpy(tmp, input, length);
+	memset(tmp + length, 0, DES_CBLOCK_LEN - length);
+	load(tmp, u);
+	u[0] ^= uiv[0]; u[1] ^= uiv[1];
+	DES_encrypt(u, ks, 1);
+    }
+    if (output)
+	store(u, *output);
+
+    uiv[0] = 0; u[0] = 0; uiv[1] = 0;
+    return u[1];
+}
+
+/*
+ *
+ */
+
+static unsigned char
+bitswap8(unsigned char b)
+{
+    unsigned char r = 0;
+    int i;
+    for (i = 0; i < 8; i++) {
+	r = r << 1 | (b & 1);
+	b = b >> 1;
+    }
+    return r;
+}
+
+void
+DES_string_to_key(const char *str, DES_cblock *key)
+{
+    unsigned char *s, *k;
+    DES_key_schedule ks;
+    size_t i, len;
+
+    memset(key, 0, sizeof(*key));
+    k = *key;
+    s = (unsigned char *)str;
+
+    len = strlen(str);
+    for (i = 0; i < len; i++) {
+	if ((i % 16) < 8)
+	    k[i % 8] ^= s[i] << 1;
+	else
+	    k[7 - (i % 8)] ^= bitswap8(s[i]);
+    }
+    DES_set_odd_parity(key);
+    if (DES_is_weak_key(key))
+	k[7] ^= 0xF0;
+    DES_set_key(key, &ks);
+    DES_cbc_cksum(s, key, len, &ks, key);
+    memset(&ks, 0, sizeof(ks));
+    DES_set_odd_parity(key);
+    if (DES_is_weak_key(key))
+	k[7] ^= 0xF0;
+}
+
+/*
+ *
+ */
+
+int
+DES_read_password(DES_cblock *key, char *prompt, int verify)
+{
+    char buf[512];
+    int ret;
+
+    ret = UI_UTIL_read_pw_string(buf, sizeof(buf) - 1, prompt, verify);
+    if (ret == 0)
+	DES_string_to_key(buf, key);
+    return ret;
+}
+
+/*
+ *
+ */
+
+
+void
+_DES_ipfp_test(void)
+{
+    DES_cblock k = "\x01\x02\x04\x08\x10\x20\x40\x80", k2;
+    uint32_t u[2] = { 1, 0 };
+    IP(u);
+    FP(u);
+    IP(u);
+    FP(u);
+    if (u[0] != 1 || u[1] != 0)
+	abort();
+
+    load(k, u);
+    store(u, k2);
+    if (memcmp(k, k2, 8) != 0)
+	abort();
+}    
+
+/* D3DES (V5.09) - 
+ *
+ * A portable, public domain, version of the Data Encryption Standard.
+ *
+ * Written with Symantec's THINK (Lightspeed) C by Richard Outerbridge.
+ * Thanks to: Dan Hoey for his excellent Initial and Inverse permutation
+ * code;  Jim Gillogly & Phil Karn for the DES key schedule code; Dennis
+ * Ferguson, Eric Young and Dana How for comparing notes; and Ray Lau,
+ * for humouring me on. 
+ *
+ * Copyright (c) 1988,1989,1990,1991,1992 by Richard Outerbridge.
+ * (GEnie : OUTER; CIS : [71755,204]) Graven Imagery, 1992.
+ */
+
+static uint32_t SP1[64] = {
+    0x01010400L, 0x00000000L, 0x00010000L, 0x01010404L,
+    0x01010004L, 0x00010404L, 0x00000004L, 0x00010000L,
+    0x00000400L, 0x01010400L, 0x01010404L, 0x00000400L,
+    0x01000404L, 0x01010004L, 0x01000000L, 0x00000004L,
+    0x00000404L, 0x01000400L, 0x01000400L, 0x00010400L,
+    0x00010400L, 0x01010000L, 0x01010000L, 0x01000404L,
+    0x00010004L, 0x01000004L, 0x01000004L, 0x00010004L,
+    0x00000000L, 0x00000404L, 0x00010404L, 0x01000000L,
+    0x00010000L, 0x01010404L, 0x00000004L, 0x01010000L,
+    0x01010400L, 0x01000000L, 0x01000000L, 0x00000400L,
+    0x01010004L, 0x00010000L, 0x00010400L, 0x01000004L,
+    0x00000400L, 0x00000004L, 0x01000404L, 0x00010404L,
+    0x01010404L, 0x00010004L, 0x01010000L, 0x01000404L,
+    0x01000004L, 0x00000404L, 0x00010404L, 0x01010400L,
+    0x00000404L, 0x01000400L, 0x01000400L, 0x00000000L,
+    0x00010004L, 0x00010400L, 0x00000000L, 0x01010004L };
+
+static uint32_t SP2[64] = {
+    0x80108020L, 0x80008000L, 0x00008000L, 0x00108020L,
+    0x00100000L, 0x00000020L, 0x80100020L, 0x80008020L,
+    0x80000020L, 0x80108020L, 0x80108000L, 0x80000000L,
+    0x80008000L, 0x00100000L, 0x00000020L, 0x80100020L,
+    0x00108000L, 0x00100020L, 0x80008020L, 0x00000000L,
+    0x80000000L, 0x00008000L, 0x00108020L, 0x80100000L,
+    0x00100020L, 0x80000020L, 0x00000000L, 0x00108000L,
+    0x00008020L, 0x80108000L, 0x80100000L, 0x00008020L,
+    0x00000000L, 0x00108020L, 0x80100020L, 0x00100000L,
+    0x80008020L, 0x80100000L, 0x80108000L, 0x00008000L,
+    0x80100000L, 0x80008000L, 0x00000020L, 0x80108020L,
+    0x00108020L, 0x00000020L, 0x00008000L, 0x80000000L,
+    0x00008020L, 0x80108000L, 0x00100000L, 0x80000020L,
+    0x00100020L, 0x80008020L, 0x80000020L, 0x00100020L,
+    0x00108000L, 0x00000000L, 0x80008000L, 0x00008020L,
+    0x80000000L, 0x80100020L, 0x80108020L, 0x00108000L };
+
+static uint32_t SP3[64] = {
+    0x00000208L, 0x08020200L, 0x00000000L, 0x08020008L,
+    0x08000200L, 0x00000000L, 0x00020208L, 0x08000200L,
+    0x00020008L, 0x08000008L, 0x08000008L, 0x00020000L,
+    0x08020208L, 0x00020008L, 0x08020000L, 0x00000208L,
+    0x08000000L, 0x00000008L, 0x08020200L, 0x00000200L,
+    0x00020200L, 0x08020000L, 0x08020008L, 0x00020208L,
+    0x08000208L, 0x00020200L, 0x00020000L, 0x08000208L,
+    0x00000008L, 0x08020208L, 0x00000200L, 0x08000000L,
+    0x08020200L, 0x08000000L, 0x00020008L, 0x00000208L,
+    0x00020000L, 0x08020200L, 0x08000200L, 0x00000000L,
+    0x00000200L, 0x00020008L, 0x08020208L, 0x08000200L,
+    0x08000008L, 0x00000200L, 0x00000000L, 0x08020008L,
+    0x08000208L, 0x00020000L, 0x08000000L, 0x08020208L,
+    0x00000008L, 0x00020208L, 0x00020200L, 0x08000008L,
+    0x08020000L, 0x08000208L, 0x00000208L, 0x08020000L,
+    0x00020208L, 0x00000008L, 0x08020008L, 0x00020200L };
+
+static uint32_t SP4[64] = {
+    0x00802001L, 0x00002081L, 0x00002081L, 0x00000080L,
+    0x00802080L, 0x00800081L, 0x00800001L, 0x00002001L,
+    0x00000000L, 0x00802000L, 0x00802000L, 0x00802081L,
+    0x00000081L, 0x00000000L, 0x00800080L, 0x00800001L,
+    0x00000001L, 0x00002000L, 0x00800000L, 0x00802001L,
+    0x00000080L, 0x00800000L, 0x00002001L, 0x00002080L,
+    0x00800081L, 0x00000001L, 0x00002080L, 0x00800080L,
+    0x00002000L, 0x00802080L, 0x00802081L, 0x00000081L,
+    0x00800080L, 0x00800001L, 0x00802000L, 0x00802081L,
+    0x00000081L, 0x00000000L, 0x00000000L, 0x00802000L,
+    0x00002080L, 0x00800080L, 0x00800081L, 0x00000001L,
+    0x00802001L, 0x00002081L, 0x00002081L, 0x00000080L,
+    0x00802081L, 0x00000081L, 0x00000001L, 0x00002000L,
+    0x00800001L, 0x00002001L, 0x00802080L, 0x00800081L,
+    0x00002001L, 0x00002080L, 0x00800000L, 0x00802001L,
+    0x00000080L, 0x00800000L, 0x00002000L, 0x00802080L };
+
+static uint32_t SP5[64] = {
+    0x00000100L, 0x02080100L, 0x02080000L, 0x42000100L,
+    0x00080000L, 0x00000100L, 0x40000000L, 0x02080000L,
+    0x40080100L, 0x00080000L, 0x02000100L, 0x40080100L,
+    0x42000100L, 0x42080000L, 0x00080100L, 0x40000000L,
+    0x02000000L, 0x40080000L, 0x40080000L, 0x00000000L,
+    0x40000100L, 0x42080100L, 0x42080100L, 0x02000100L,
+    0x42080000L, 0x40000100L, 0x00000000L, 0x42000000L,
+    0x02080100L, 0x02000000L, 0x42000000L, 0x00080100L,
+    0x00080000L, 0x42000100L, 0x00000100L, 0x02000000L,
+    0x40000000L, 0x02080000L, 0x42000100L, 0x40080100L,
+    0x02000100L, 0x40000000L, 0x42080000L, 0x02080100L,
+    0x40080100L, 0x00000100L, 0x02000000L, 0x42080000L,
+    0x42080100L, 0x00080100L, 0x42000000L, 0x42080100L,
+    0x02080000L, 0x00000000L, 0x40080000L, 0x42000000L,
+    0x00080100L, 0x02000100L, 0x40000100L, 0x00080000L,
+    0x00000000L, 0x40080000L, 0x02080100L, 0x40000100L };
+
+static uint32_t SP6[64] = {
+    0x20000010L, 0x20400000L, 0x00004000L, 0x20404010L,
+    0x20400000L, 0x00000010L, 0x20404010L, 0x00400000L,
+    0x20004000L, 0x00404010L, 0x00400000L, 0x20000010L,
+    0x00400010L, 0x20004000L, 0x20000000L, 0x00004010L,
+    0x00000000L, 0x00400010L, 0x20004010L, 0x00004000L,
+    0x00404000L, 0x20004010L, 0x00000010L, 0x20400010L,
+    0x20400010L, 0x00000000L, 0x00404010L, 0x20404000L,
+    0x00004010L, 0x00404000L, 0x20404000L, 0x20000000L,
+    0x20004000L, 0x00000010L, 0x20400010L, 0x00404000L,
+    0x20404010L, 0x00400000L, 0x00004010L, 0x20000010L,
+    0x00400000L, 0x20004000L, 0x20000000L, 0x00004010L,
+    0x20000010L, 0x20404010L, 0x00404000L, 0x20400000L,
+    0x00404010L, 0x20404000L, 0x00000000L, 0x20400010L,
+    0x00000010L, 0x00004000L, 0x20400000L, 0x00404010L,
+    0x00004000L, 0x00400010L, 0x20004010L, 0x00000000L,
+    0x20404000L, 0x20000000L, 0x00400010L, 0x20004010L };
+
+static uint32_t SP7[64] = {
+    0x00200000L, 0x04200002L, 0x04000802L, 0x00000000L,
+    0x00000800L, 0x04000802L, 0x00200802L, 0x04200800L,
+    0x04200802L, 0x00200000L, 0x00000000L, 0x04000002L,
+    0x00000002L, 0x04000000L, 0x04200002L, 0x00000802L,
+    0x04000800L, 0x00200802L, 0x00200002L, 0x04000800L,
+    0x04000002L, 0x04200000L, 0x04200800L, 0x00200002L,
+    0x04200000L, 0x00000800L, 0x00000802L, 0x04200802L,
+    0x00200800L, 0x00000002L, 0x04000000L, 0x00200800L,
+    0x04000000L, 0x00200800L, 0x00200000L, 0x04000802L,
+    0x04000802L, 0x04200002L, 0x04200002L, 0x00000002L,
+    0x00200002L, 0x04000000L, 0x04000800L, 0x00200000L,
+    0x04200800L, 0x00000802L, 0x00200802L, 0x04200800L,
+    0x00000802L, 0x04000002L, 0x04200802L, 0x04200000L,
+    0x00200800L, 0x00000000L, 0x00000002L, 0x04200802L,
+    0x00000000L, 0x00200802L, 0x04200000L, 0x00000800L,
+    0x04000002L, 0x04000800L, 0x00000800L, 0x00200002L };
+
+static uint32_t SP8[64] = {
+    0x10001040L, 0x00001000L, 0x00040000L, 0x10041040L,
+    0x10000000L, 0x10001040L, 0x00000040L, 0x10000000L,
+    0x00040040L, 0x10040000L, 0x10041040L, 0x00041000L,
+    0x10041000L, 0x00041040L, 0x00001000L, 0x00000040L,
+    0x10040000L, 0x10000040L, 0x10001000L, 0x00001040L,
+    0x00041000L, 0x00040040L, 0x10040040L, 0x10041000L,
+    0x00001040L, 0x00000000L, 0x00000000L, 0x10040040L,
+    0x10000040L, 0x10001000L, 0x00041040L, 0x00040000L,
+    0x00041040L, 0x00040000L, 0x10041000L, 0x00001000L,
+    0x00000040L, 0x10040040L, 0x00001000L, 0x00041040L,
+    0x10001000L, 0x00000040L, 0x10000040L, 0x10040000L,
+    0x10040040L, 0x10000000L, 0x00040000L, 0x10001040L,
+    0x00000000L, 0x10041040L, 0x00040040L, 0x10000040L,
+    0x10040000L, 0x10001000L, 0x10001040L, 0x00000000L,
+    0x10041040L, 0x00041000L, 0x00041000L, 0x00001040L,
+    0x00001040L, 0x00040040L, 0x10000000L, 0x10041000L };
+
+static void
+IP(uint32_t v[2])
+{
+    uint32_t work;
+
+    work = ((v[0] >> 4) ^ v[1]) & 0x0f0f0f0fL;
+    v[1] ^= work;
+    v[0] ^= (work << 4);
+    work = ((v[0] >> 16) ^ v[1]) & 0x0000ffffL;
+    v[1] ^= work;
+    v[0] ^= (work << 16);
+    work = ((v[1] >> 2) ^ v[0]) & 0x33333333L;
+    v[0] ^= work;
+    v[1] ^= (work << 2);
+    work = ((v[1] >> 8) ^ v[0]) & 0x00ff00ffL;
+    v[0] ^= work;
+    v[1] ^= (work << 8);
+    v[1] = ((v[1] << 1) | ((v[1] >> 31) & 1L)) & 0xffffffffL;
+    work = (v[0] ^ v[1]) & 0xaaaaaaaaL;
+    v[0] ^= work;
+    v[1] ^= work;
+    v[0] = ((v[0] << 1) | ((v[0] >> 31) & 1L)) & 0xffffffffL;
+}
+
+static void
+FP(uint32_t v[2])
+{
+    uint32_t work;
+
+    v[0] = (v[0] << 31) | (v[0] >> 1);
+    work = (v[1] ^ v[0]) & 0xaaaaaaaaL;
+    v[1] ^= work;
+    v[0] ^= work;
+    v[1] = (v[1] << 31) | (v[1] >> 1);
+    work = ((v[1] >> 8) ^ v[0]) & 0x00ff00ffL;
+    v[0] ^= work;
+    v[1] ^= (work << 8);
+    work = ((v[1] >> 2) ^ v[0]) & 0x33333333L;
+    v[0] ^= work;
+    v[1] ^= (work << 2);
+    work = ((v[0] >> 16) ^ v[1]) & 0x0000ffffL;
+    v[1] ^= work;
+    v[0] ^= (work << 16);
+    work = ((v[0] >> 4) ^ v[1]) & 0x0f0f0f0fL;
+    v[1] ^= work;
+    v[0] ^= (work << 4);
+}
+
+static void
+desx(uint32_t block[2], DES_key_schedule *ks, int encrypt)
+{
+    uint32_t *keys;
+    uint32_t fval, work, right, left;
+    int round;
+
+    left = block[0];
+    right = block[1];
+
+    if (encrypt) {
+	keys = &ks->ks[0];
+
+	for( round = 0; round < 8; round++ ) {
+	    work  = (right << 28) | (right >> 4);
+	    work ^= *keys++;
+	    fval  = SP7[ work     & 0x3fL];
+	    fval |= SP5[(work >>  8) & 0x3fL];
+	    fval |= SP3[(work >> 16) & 0x3fL];
+	    fval |= SP1[(work >> 24) & 0x3fL];
+	    work  = right ^ *keys++;
+	    fval |= SP8[ work     & 0x3fL];
+	    fval |= SP6[(work >>  8) & 0x3fL];
+	    fval |= SP4[(work >> 16) & 0x3fL];
+	    fval |= SP2[(work >> 24) & 0x3fL];
+	    left ^= fval;
+	    work  = (left << 28) | (left >> 4);
+	    work ^= *keys++;
+	    fval  = SP7[ work     & 0x3fL];
+	    fval |= SP5[(work >>  8) & 0x3fL];
+	    fval |= SP3[(work >> 16) & 0x3fL];
+	    fval |= SP1[(work >> 24) & 0x3fL];
+	    work  = left ^ *keys++;
+	    fval |= SP8[ work     & 0x3fL];
+	    fval |= SP6[(work >>  8) & 0x3fL];
+	    fval |= SP4[(work >> 16) & 0x3fL];
+	    fval |= SP2[(work >> 24) & 0x3fL];
+	    right ^= fval;
+	}
+    } else {
+	keys = &ks->ks[30];
+
+	for( round = 0; round < 8; round++ ) {
+	    work  = (right << 28) | (right >> 4);
+	    work ^= *keys++;
+	    fval  = SP7[ work     & 0x3fL];
+	    fval |= SP5[(work >>  8) & 0x3fL];
+	    fval |= SP3[(work >> 16) & 0x3fL];
+	    fval |= SP1[(work >> 24) & 0x3fL];
+	    work  = right ^ *keys++;
+	    fval |= SP8[ work     & 0x3fL];
+	    fval |= SP6[(work >>  8) & 0x3fL];
+	    fval |= SP4[(work >> 16) & 0x3fL];
+	    fval |= SP2[(work >> 24) & 0x3fL];
+	    left ^= fval;
+	    work  = (left << 28) | (left >> 4);
+	    keys -= 4;
+	    work ^= *keys++;
+	    fval  = SP7[ work     & 0x3fL];
+	    fval |= SP5[(work >>  8) & 0x3fL];
+	    fval |= SP3[(work >> 16) & 0x3fL];
+	    fval |= SP1[(work >> 24) & 0x3fL];
+	    work  = left ^ *keys++;
+	    fval |= SP8[ work     & 0x3fL];
+	    fval |= SP6[(work >>  8) & 0x3fL];
+	    fval |= SP4[(work >> 16) & 0x3fL];
+	    fval |= SP2[(work >> 24) & 0x3fL];
+	    right ^= fval;
+	    keys -= 4;
+	}
+    }
+    block[0] = right;
+    block[1] = left;
+}

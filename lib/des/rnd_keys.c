@@ -38,7 +38,6 @@ RCSID("$Id$");
 #endif
 
 #include <des.h>
-#include <des_locl.h>
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
@@ -338,7 +337,7 @@ DES_rand_data_key(DES_cblock *key)
 	DES_rand_data(data, sizeof(data));
 	DES_rand_data((unsigned char*)key, sizeof(DES_cblock));
 	DES_set_odd_parity(key);
-	DES_key_sched(key, &sched);
+	DES_set_key(key, &sched);
 	DES_ecb_encrypt(&data, key, &sched, DES_ENCRYPT);
 	memset(&data, 0, sizeof(data));
 	memset(&sched, 0, sizeof(sched));
@@ -399,7 +398,7 @@ DES_set_sequence_number(unsigned char *ll)
 void
 DES_set_random_generator_seed(DES_cblock *seed)
 {
-    DES_key_sched(seed, &sequence_seed);
+    DES_set_key(seed, &sequence_seed);
     zero_long_long(sequence_index);
     initialized = 1;
 }

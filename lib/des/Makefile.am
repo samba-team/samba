@@ -9,110 +9,28 @@ include_HEADERS = des.h md4.h md5.h sha.h rc2.h rc4.h aes.h
 
 build_HEADERZ = $(include_HEADERS)
 
-check_PROGRAMS = destest mdtest md5crypt_test rctest rc2test
+check_PROGRAMS = destest mdtest rctest rc2test destest #md5crypt_test 
 
-TESTS = destest mdtest md5crypt_test rctest rc2test
-CHECK_LOCAL = no-check-local
-bin_PROGRAMS = des #rpw speed
-
-des_SOURCES = des.c des_ver.h
+TESTS = destest mdtest rctest rc2test #md5crypt_test 
 
 LDADD = $(lib_LTLIBRARIES)
 
 libdes_la_SOURCES =	\
 	aes.c		\
-	cbc3_enc.c	\
-	cbc_cksm.c	\
-	cbc_enc.c	\
-	cfb64ede.c	\
-	cfb64enc.c	\
-	cfb_enc.c	\
-	des_enc.c	\
-	des_locl.h	\
-	ecb3_enc.c	\
-	ecb_enc.c	\
-	ede_enc.c	\
-	enc_read.c	\
-	enc_writ.c	\
-	fcrypt.c	\
-	hash.h		\
-	key_par.c	\
+	aes.h		\
+	des.c		\
+	des.h		\
 	md4.c		\
+	md4.h		\
 	md5.c		\
-	ncbc_enc.c	\
-	ofb64ede.c	\
-	ofb64enc.c	\
-	ofb_enc.c	\
-	pcbc_enc.c	\
-	podd.h		\
-	qud_cksm.c	\
+	md5.h		\
 	rc2.c		\
+	rc2.h		\
 	rc4.c		\
-	read_pwd.c	\
+	rc4.h		\
 	rijndael-alg-fst.c \
+	rijndael-alg-fst.h \
 	rnd_keys.c	\
-	set_key.c	\
 	sha.c		\
-	sk.h		\
-	spr.h		\
-	str2key.c	\
-	xcbc_enc.c
-
-EXTRA_libdes_la_SOURCES = dllmain.c passwd_dialog.aps passwd_dialog.clw \
-	passwd_dialog.rc passwd_dialog.res passwd_dlg.c passwd_dlg.h resource.h
-
-man_MANS = des.1 des_crypt.3
-
-## this is an awful lot of junk, but it's just as well to include everything
-EXTRA_DIST =		\
-	COPYRIGHT	\
-	DES.pm		\
-	DES.pod		\
-	DES.xs		\
-	FILES		\
-	Imakefile	\
-	KERBEROS	\
-	MODES.DES	\
-	Makefile.PL	\
-	Makefile.ssl	\
-	Makefile.uni	\
-	PC1		\
-	PC2		\
-	VERSION		\
-	des.def		\
-	des.dsp		\
-	des.doc		\
-	des.mak		\
-	des.man		\
-	des.org		\
-	des.pl		\
-	des_crypt.man	\
-	des_locl.org	\
-	des_opts.c	\
-	doIP		\
-	doPC1		\
-	doPC2		\
-	makefile.bc	\
-	rand_key.c	\
-	rpc_des.h	\
-	rpc_enc.c	\
-	shifts.pl	\
-	supp.c		\
-	testdes.pl	\
-	times		\
-	typemap		\
-	version.h	\
-	vms.com
-
-asm_files = des-som2.pl des-som3.pl des586.pl des686.pl desboth.pl \
-	dx86-cpp.s dx86unix.cpp readme win32.asm win32.obj win32.uu x86ms.pl \
-	x86unix.pl
-
-dist-hook:
-	$(mkinstalldirs) $(distdir)/t
-	$(INSTALL_DATA) $(srcdir)/t/perl $(distdir)/t
-	$(INSTALL_DATA) $(srcdir)/t/test $(distdir)/t
-	$(mkinstalldirs) $(distdir)/asm
-	(cd $(srcdir)/asm && tar cf - $(asm_files)) \
-		| (cd $(distdir)/asm; tar xf -)
-
+	sha.h		\
+	ui.c
