@@ -883,7 +883,7 @@ python_common_proto:
 		$(PY_COMMON_PROTO_OBJ)
 
 python_ext: $(PYTHON_OBJS)
-	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
+	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS) $(FLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py build
 
@@ -891,6 +891,9 @@ python_install: $(PYTHON_OBJS)
 	PYTHON_OBJS="$(PYTHON_OBJS)" PYTHON_CFLAGS="$(CFLAGS) $(CPPFLAGS)" \
 	LIBS="$(LIBS)" \
 		$(PYTHON) python/setup.py install
+
+python_clean:
+	@if test -n "$(PYTHON)"; then $(PYTHON) python/setup.py clean; fi
 
 # revert to the previously installed version
 revert:
@@ -927,9 +930,9 @@ uninstallscripts:
 # Toplevel clean files
 TOPFILES=dynconfig.o dynconfig.po
 
-clean: delheaders
+clean: delheaders python_clean
 	-rm -f core */*~ *~ */*.o */*.po */*.po32 */*.@SHLIBEXT@ \
-	$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
+		$(TOPFILES) $(PROGS) $(SPROGS) .headers.stamp
 
 # Making this target will just make sure that the prototype files
 # exist, not necessarily that they are up to date.  Since they're
