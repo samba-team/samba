@@ -40,8 +40,6 @@
 #define CONFIG_WORKSTATIONS_DEFAULT			"workstations"
 #define CONFIG_UNKNOWN_STR_DEFAULT			"unknown_str"
 #define CONFIG_MUNGED_DIAL_DEFAULT			"munged_dial"
-#define CONFIG_UID_DEFAULT				"uid"
-#define CONFIG_GID_DEFAULT				"gid"
 #define CONFIG_USER_SID_DEFAULT				"user_sid"
 #define CONFIG_GROUP_SID_DEFAULT			"group_sid"
 #define CONFIG_LM_PW_DEFAULT				"lm_pw"
@@ -242,32 +240,27 @@ static NTSTATUS row_to_sam_account(MYSQL_RES * r, SAM_ACCOUNT * u)
 	pdb_set_unknown_str(u, row[16], PDB_SET);
 	pdb_set_munged_dial(u, row[17], PDB_SET);
 
-	if (row[18])
-		pdb_set_uid(u, xatol(row[18]), PDB_SET);
-	if (row[19])
-		pdb_set_gid(u, xatol(row[19]), PDB_SET);
-
-	string_to_sid(&sid, row[20]);
+	string_to_sid(&sid, row[18]);
 	pdb_set_user_sid(u, &sid, PDB_SET);
-	string_to_sid(&sid, row[21]);
+	string_to_sid(&sid, row[19]);
 	pdb_set_group_sid(u, &sid, PDB_SET);
 
-	if (pdb_gethexpwd(row[22], temp), PDB_SET)
+	if (pdb_gethexpwd(row[20], temp), PDB_SET)
 		pdb_set_lanman_passwd(u, temp, PDB_SET);
-	if (pdb_gethexpwd(row[23], temp), PDB_SET)
+	if (pdb_gethexpwd(row[21], temp), PDB_SET)
 		pdb_set_nt_passwd(u, temp, PDB_SET);
 
 	/* Only use plaintext password storage when lanman and nt are
 	 * NOT used */
-	if (!row[22] || !row[23])
-		pdb_set_plaintext_passwd(u, row[24]);
+	if (!row[20] || !row[21])
+		pdb_set_plaintext_passwd(u, row[22]);
 
-	pdb_set_acct_ctrl(u, xatol(row[25]), PDB_SET);
-	pdb_set_unknown_3(u, xatol(row[26]), PDB_SET);
-	pdb_set_logon_divs(u, xatol(row[27]), PDB_SET);
-	pdb_set_hours_len(u, xatol(row[28]), PDB_SET);
-	pdb_set_unknown_5(u, xatol(row[29]), PDB_SET);
-	pdb_set_unknown_6(u, xatol(row[30]), PDB_SET);
+	pdb_set_acct_ctrl(u, xatol(row[23]), PDB_SET);
+	pdb_set_unknown_3(u, xatol(row[24]), PDB_SET);
+	pdb_set_logon_divs(u, xatol(row[25]), PDB_SET);
+	pdb_set_hours_len(u, xatol(row[26]), PDB_SET);
+	pdb_set_unknown_5(u, xatol(row[27]), PDB_SET);
+	pdb_set_unknown_6(u, xatol(row[28]), PDB_SET);
 
 	return NT_STATUS_OK;
 }
@@ -285,7 +278,7 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 	}
 
 	asprintf(&query,
-			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
+			 "SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s FROM %s",
 			 config_value_read(data, "logon time column",
 							   CONFIG_LOGON_TIME_DEFAULT),
 			 config_value_read(data, "logoff time column",
@@ -322,8 +315,6 @@ static NTSTATUS mysqlsam_setsampwent(struct pdb_methods *methods, BOOL update)
 							   CONFIG_UNKNOWN_STR_DEFAULT),
 			 config_value_read(data, "munged dial column",
 							   CONFIG_MUNGED_DIAL_DEFAULT),
-			 config_value_read(data, "uid column", CONFIG_UID_DEFAULT),
-			 config_value_read(data, "gid column", CONFIG_GID_DEFAULT),
 			 config_value_read(data, "user sid column",
 							   CONFIG_USER_SID_DEFAULT),
 			 config_value_read(data, "group sid column",
@@ -488,8 +479,6 @@ static NTSTATUS mysqlsam_select_by_field(struct pdb_methods * methods, SAM_ACCOU
 							   CONFIG_UNKNOWN_STR_DEFAULT),
 			 config_value_read(data, "munged dial column",
 							   CONFIG_MUNGED_DIAL_DEFAULT),
-			 config_value_read(data, "uid column", CONFIG_UID_DEFAULT),
-			 config_value_read(data, "gid column", CONFIG_GID_DEFAULT),
 			 config_value_read(data, "user sid column",
 							   CONFIG_USER_SID_DEFAULT),
 			 config_value_read(data, "group sid column",
@@ -756,20 +745,6 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 											   "logon divs column",
 											   CONFIG_LOGON_DIVS_DEFAULT),
 							pdb_get_logon_divs(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_UID) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data, "uid column",
-											   CONFIG_UID_DEFAULT),
-							pdb_get_uid(newpwd));
-	}
-
-	if (pdb_get_init_flags(newpwd, PDB_GID) != PDB_DEFAULT) {
-		pdb_mysql_int_field(methods, &query,
-							config_value_write(data, "gid column",
-											   CONFIG_GID_DEFAULT),
-							pdb_get_gid(newpwd));
 	}
 
 	pdb_mysql_string_field(methods, &query,
