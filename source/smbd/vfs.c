@@ -87,7 +87,7 @@ struct vfs_ops default_vfs_ops = {
 	NULL,
 #else
 	vfswrap_chmod_acl,
-	vfswrap_fchmod_acl
+	vfswrap_fchmod_acl,
 #endif
 	vfswrap_sys_acl_get_entry,
 	vfswrap_sys_acl_get_tag_type,
