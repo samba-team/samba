@@ -223,7 +223,7 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	static unsigned char smblmpwd[16];
 	static unsigned char smbntpwd[16];
 
-	pdb_init_smb(user);
+	pwdb_init_smb(user);
 
 	bzero(smblmpwd, sizeof(smblmpwd));
 	bzero(smbntpwd, sizeof(smbntpwd));
@@ -237,16 +237,16 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #else
 	get_single_attribute(ldap_struct, entry, "unicodePwd", temp);
-	pdb_gethexpwd(temp, smbntpwd);		
+	pwdb_gethexpwd(temp, smbntpwd);		
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 
 	get_single_attribute(ldap_struct, entry, "dBCSPwd", temp);
-	pdb_gethexpwd(temp, smblmpwd);		
+	pwdb_gethexpwd(temp, smblmpwd);		
 	bzero(temp, sizeof(temp)); /* destroy local copy of the password */
 #endif
 	
 	get_single_attribute(ldap_struct, entry, "userAccountControl", temp);
-	user->acct_ctrl = pdb_decode_acct_ctrl(temp);
+	user->acct_ctrl = pwdb_decode_acct_ctrl(temp);
 
 	get_single_attribute(ldap_struct, entry, "pwdLastSet", temp);
 	user->pass_last_set_time = (time_t)strtol(temp, NULL, 16);
@@ -254,7 +254,7 @@ static void ldap_get_smb_passwd(LDAP *ldap_struct,LDAPMessage *entry,
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 
 	/* the smb (unix) ids are not stored: they are created */
-	user->smb_userid = pdb_user_rid_to_uid (atoi(temp));
+	user->smb_userid = pwdb_user_rid_to_uid (atoi(temp));
 
 	if (user->acct_ctrl & (ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST) )
 	{
@@ -288,7 +288,7 @@ static void ldap_get_sam_passwd(LDAP *ldap_struct, LDAPMessage *entry,
 	static pstring temp;
 	static struct smb_passwd pw_buf;
 
-	pdb_init_sam(user);
+	pwdb_init_sam(user);
 
 	ldap_get_smb_passwd(ldap_struct, entry, &pw_buf);
 	
@@ -576,7 +576,7 @@ static BOOL modadd_ldappwd_entry(struct smb_passwd *newpwd, int flag)
 	
 	make_a_mod(&mods, ldap_state, "rid", rid);
 	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
-	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	make_a_mod(&mods, ldap_state, "userAccountControl", pwdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 	
 	switch(flag)
 	{
@@ -708,7 +708,7 @@ static BOOL modadd_ldap21pwd_entry(struct sam_passwd *newpwd, int flag)
 	
 	make_a_mod(&mods, ldap_state, "rid", rid);
 	make_a_mod(&mods, ldap_state, "pwdLastSet", lst);
-	make_a_mod(&mods, ldap_state, "userAccountControl", pdb_encode_acct_ctrl(newpwd->acct_ctrl,NEW_PW_FORMAT_SPACE_PADDED_LEN));
+	make_a_mod(&mods, ldap_state, "userAccountControl", pwdb_encode_acct_ctrl(newpwd->acct_ctrl,NEW_PW_FORMAT_SPACE_PADDED_LEN));
 	
 	ldap_modify_s(ldap_struct, dn, mods);
 	
@@ -922,52 +922,52 @@ static BOOL setldappwpos(void *vp, SMB_BIG_UINT tok)
 
 static struct smb_passwd *getldappwnam(char *name)
 {
-  return pdb_sam_to_smb(iterate_getsam21pwnam(name));
+  return pwdb_sam_to_smb(iterate_getsam21pwnam(name));
 }
 
 static struct smb_passwd *getldappwuid(uid_t smb_userid)
 {
-  return pdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
+  return pwdb_sam_to_smb(iterate_getsam21pwuid(smb_userid));
 }
 
 static struct smb_passwd *getldappwrid(uint32 user_rid)
 {
-  return pdb_sam_to_smb(iterate_getsam21pwuid(pdb_user_rid_to_uid(user_rid)));
+  return pwdb_sam_to_smb(iterate_getsam21pwuid(pwdb_user_rid_to_uid(user_rid)));
 }
 
 static struct smb_passwd *getldappwent(void *vp)
 {
-  return pdb_sam_to_smb(getldap21pwent(vp));
+  return pwdb_sam_to_smb(getldap21pwent(vp));
 }
 
 static BOOL add_ldappwd_entry(struct smb_passwd *newpwd)
 {
-  return add_ldap21pwd_entry(pdb_smb_to_sam(newpwd));
+  return add_ldap21pwd_entry(pwdb_smb_to_sam(newpwd));
 }
 
 static BOOL mod_ldappwd_entry(struct smb_passwd* pwd, BOOL override)
 {
-  return mod_ldap21pwd_entry(pdb_smb_to_sam(pwd), override);
+  return mod_ldap21pwd_entry(pwdb_smb_to_sam(pwd), override);
 }
 
 static struct sam_disp_info *getldapdispnam(char *name)
 {
-	return pdb_sam_to_dispinfo(getldap21pwnam(name));
+	return pwdb_sam_to_dispinfo(getldap21pwnam(name));
 }
 
 static struct sam_disp_info *getldapdisprid(uint32 rid)
 {
-	return pdb_sam_to_dispinfo(getldap21pwrid(rid));
+	return pwdb_sam_to_dispinfo(getldap21pwrid(rid));
 }
 
 static struct sam_disp_info *getldapdispent(void *vp)
 {
-	return pdb_sam_to_dispinfo(getldap21pwent(vp));
+	return pwdb_sam_to_dispinfo(getldap21pwent(vp));
 }
 
 static struct sam_passwd *getldap21pwuid(uid_t uid)
 {
-	return pdb_smb_to_sam(iterate_getsam21pwuid(pdb_uid_to_user_rid(uid)));
+	return pwdb_smb_to_sam(iterate_getsam21pwuid(pwdb_uid_to_user_rid(uid)));
 }
 
 static struct passdb_ops ldap_ops =

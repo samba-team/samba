@@ -130,24 +130,36 @@ static char *get_alias_members(char *p, int *num_mem, LOCAL_GRP_MEMBER **members
 	{
 		DOM_SID sid;
 		uint8 type;
+		BOOL found = False;
 
-		if (lookup_sid(name, &sid, &type))
+		if (strnequal(name, "S-", 2))
 		{
-			(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
-			(*num_mem)++;
+			/* sid entered directly */
+			string_to_sid(&sid, name);
+			found = lookup_name(&sid, name, &type) == 0x0;
 		}
 		else
+		{
+			found = lookup_sid(name, &sid, &type) == 0x0;
+		}
+
+		if (!found)
 		{
 			DEBUG(0,("alias database: could not resolve alias named %s\n", name));
 			continue;
 		}
+
+		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(LOCAL_GRP_MEMBER));
+
 		if ((*members) == NULL)
 		{
 			return NULL;
 		}
-		fstrcpy((*members)[(*num_mem)-1].name, name);
-		(*members)[(*num_mem)-1].sid_use = type;
-		sid_copy(&(*members)[(*num_mem)-1].sid, &sid);
+
+		fstrcpy((*members)[*num_mem].name, name);
+		(*members)[*num_mem].sid_use = type;
+		sid_copy(&(*members)[*num_mem].sid, &sid);
+		(*num_mem)++;
 	}
 	return p;
 }

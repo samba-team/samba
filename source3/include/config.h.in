@@ -633,9 +633,6 @@
 /* Define if you have the <rpc/auth.h> header file.  */
 #undef HAVE_RPC_AUTH_H
 
-/* Define if you have the <rpc/clnt.h> header file.  */
-#undef HAVE_RPC_CLNT_H
-
 /* Define if you have the <rpc/rpc.h> header file.  */
 #undef HAVE_RPC_RPC_H
 

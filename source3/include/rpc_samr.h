@@ -769,7 +769,7 @@ itself.  the response to the lookup rids is relative to this SID.
 /* SAMR_Q_LOOKUP_IDS */
 typedef struct q_samr_lookup_ids_info
 {
-    POLICY_HND pol;       /* policy handle */
+	POLICY_HND pol;       /* policy handle */
 
 	uint32 num_sids1;      /* number of rids being looked up */
 	uint32 ptr;            /* buffer pointer */

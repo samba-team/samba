@@ -26,6 +26,9 @@ extern int DEBUGLEVEL;
 
 static char s_readbuf[1024];
 
+extern DOM_SID global_sam_sid;
+extern fstring global_sam_name;
+
 /***************************************************************
  Start to enumerate the grppasswd list. Returns a void pointer
  to ensure no modification outside this module.
@@ -128,11 +131,36 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 
 	while (next_token(&p, name, ",", sizeof(fstring)))
 	{
+		DOM_SID sid;
+		uint8 type;
+		BOOL found = False;
+
+		if (isdigit(name))
+		{
+			uint32 rid = get_number(name);
+			sid_copy(&sid, &global_sam_sid);
+			sid_append_rid(&sid, rid);
+			
+			found = lookup_name(&sid, name, &type) == 0x0;
+		}
+		else
+		{
+			found = lookup_sid(name, &sid, &type) == 0x0;
+		}
+
+		if (!found)
+		{
+			DEBUG(0,("alias database: could not resolve name %s in domain %s\n",
+			          name, global_sam_name));
+			continue;
+		}
+
 		(*members) = Realloc((*members), ((*num_mem)+1) * sizeof(DOMAIN_GRP_MEMBER));
 		if ((*members) == NULL)
 		{
 			return NULL;
 		}
+
 		fstrcpy((*members)[(*num_mem)].name, name);
 		(*members)[(*num_mem)].attr = 0x07;
 		(*num_mem)++;

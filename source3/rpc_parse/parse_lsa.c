@@ -37,7 +37,7 @@ void make_lsa_trans_name(LSA_TRANS_NAME *trn, UNISTR2 *uni_name,
 	int len_name = strlen(name);
 
 	trn->sid_name_use = sid_name_use;
-	make_uni_hdr(&(trn->hdr_name), len_name, len_name, len_name != 0);
+	make_uni_hdr(&(trn->hdr_name), len_name, len_name, 1);
 	make_unistr2(uni_name, name, len_name);
 	trn->domain_idx = idx;
 }
@@ -692,7 +692,7 @@ void lsa_io_q_lookup_rids(char *desc,  LSA_Q_LOOKUP_RIDS *q_r, prs_struct *ps, i
 
 	for (i = 0; i < q_r->num_entries; i++)
 	{
-		smb_io_unistr3("", &(q_r->lookup_name[i]), ps, depth); /* names to be looked up */
+		smb_io_unistr3("dom_name", &(q_r->lookup_name[i]), ps, depth); /* names to be looked up */
 	}
 
 	prs_uint8s (False, "undoc          ", ps, depth, q_r->undoc, UNKNOWN_LEN);

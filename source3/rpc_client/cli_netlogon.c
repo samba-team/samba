@@ -32,7 +32,6 @@
 extern int DEBUGLEVEL;
 extern pstring scope;
 extern pstring global_myname;
-extern fstring global_myworkgroup;
 
 /****************************************************************************
 Generate the next creds to use.

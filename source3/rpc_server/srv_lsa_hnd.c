@@ -290,7 +290,8 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 {
 	struct policy *p = find_lsa_policy(hnd);
 
-	if (!p) {
+	if (!p)
+	{
 		DEBUG(3,("Error closing policy\n"));
 		return False;
 	}
@@ -302,6 +303,7 @@ BOOL close_lsa_policy_hnd(POLICY_HND *hnd)
 	bitmap_clear(bmap, p->pnum);
 
 	ZERO_STRUCTP(p);
+	ZERO_STRUCTP(hnd);
 
 	free(p);
 

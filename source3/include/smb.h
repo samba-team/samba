@@ -463,8 +463,19 @@ typedef struct local_grp_info
 {
 	fstring name;
 	fstring comment;
+	uint32  rid; /* alias rid */
 
 } LOCAL_GRP;
+
+/*** query a domain group, get a list of these: shows who is in that group ***/
+
+/* domain group info */
+typedef struct domain_grp_member_info
+{
+	fstring name;
+	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
+
+} DOMAIN_GRP_MEMBER;
 
 /*** enumerate these to get list of domain groups ***/
 
@@ -477,16 +488,6 @@ typedef struct domain_grp_info
 	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
 
 } DOMAIN_GRP;
-
-/*** query a domain group, get a list of these: shows who is in that group ***/
-
-/* domain group info */
-typedef struct domain_grp_member_info
-{
-	fstring name;
-	uint8   attr; /* attributes forced to be set to 0x7: SE_GROUP_xxx */
-
-} DOMAIN_GRP_MEMBER;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
@@ -812,6 +813,110 @@ struct passdb_ops {
   struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16]);
   struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
 #endif
+};
+
+/*
+ * Each implementation of the passgrp database code needs
+ * to support the following operations.
+ */
+
+struct passgrp_ops {
+  /*
+   * Password database ops.
+   */
+  void *(*startsmbgrpent)(BOOL);
+  void (*endsmbgrpent)(void *);
+  SMB_BIG_UINT (*getsmbgrppos)(void *);
+  BOOL (*setsmbgrppos)(void *, SMB_BIG_UINT);
+
+  /*
+   * smb passgrp database query functions.
+   */
+  struct smb_passwd *(*getsmbgrpnam)(char *, uint32**, int*, uint32**, int*);
+  struct smb_passwd *(*getsmbgrpuid)(uid_t , uint32**, int*, uint32**, int*);
+  struct smb_passwd *(*getsmbgrprid)(uint32, uint32**, int*, uint32**, int*);
+  struct smb_passwd *(*getsmbgrpent)(void *, uint32**, int*, uint32**, int*);
+
+};
+
+/*
+ * Each implementation of the group database code needs
+ * to support the following operations.
+ *
+ * This allows enumeration, modification and addition of groups.  there
+ * is _no_ deletion of groups: you can only modify them to a status of
+ * "deleted" (this by the way is a requirement of c2 rating)
+ */
+
+struct groupdb_ops
+{
+	/*
+	 * Group database ops.
+	 */
+	void *(*startgroupent)(BOOL);
+	void (*endgroupent)(void *);
+	SMB_BIG_UINT (*getgrouppos)(void *);
+	BOOL (*setgrouppos)(void *, SMB_BIG_UINT);
+
+	/*
+	 * group database query functions. set the BOOL to Tru
+	 * if you want the members in the group as well.
+	 */
+	DOMAIN_GRP *(*getgroupnam)(char *, DOMAIN_GRP_MEMBER **, int *);
+	DOMAIN_GRP *(*getgroupgid)(gid_t , DOMAIN_GRP_MEMBER **, int *);
+	DOMAIN_GRP *(*getgrouprid)(uint32, DOMAIN_GRP_MEMBER **, int *);
+	DOMAIN_GRP *(*getgroupent)(void *, DOMAIN_GRP_MEMBER **, int *);
+
+	/*
+	 * group database modification functions.
+	 */
+	BOOL (*add_group_entry)(DOMAIN_GRP *);
+	BOOL (*mod_group_entry)(DOMAIN_GRP *);
+
+	/*
+	 * user group functions
+	 */
+	BOOL (*getusergroupsnam)(char *, DOMAIN_GRP **, int *);
+};
+
+/*
+ * Each implementation of the alias database code needs
+ * to support the following operations.
+ *
+ * This allows enumeration, modification and addition of aliases.  there
+ * is _no_ deletion of aliases: you can only modify them to a status of
+ * "deleted" (this by the way is a requirement of c2 rating)
+ */
+
+struct aliasdb_ops
+{
+	/*
+	 * Alias database ops.
+	 */
+	void *(*startaliasent)(BOOL);
+	void (*endaliasent)(void *);
+	SMB_BIG_UINT (*getaliaspos)(void *);
+	BOOL (*setaliaspos)(void *, SMB_BIG_UINT);
+
+	/*
+	 * alias database query functions. set the BOOL to Tru
+	 * if you want the members in the alias as well.
+	 */
+	LOCAL_GRP *(*getaliasnam)(char *, LOCAL_GRP_MEMBER **, int *);
+	LOCAL_GRP *(*getaliasgid)(gid_t , LOCAL_GRP_MEMBER **, int *);
+	LOCAL_GRP *(*getaliasrid)(uint32, LOCAL_GRP_MEMBER **, int *);
+	LOCAL_GRP *(*getaliasent)(void *, LOCAL_GRP_MEMBER **, int *);
+
+	/*
+	 * alias database modification functions.
+	 */
+	BOOL (*add_alias_entry)(LOCAL_GRP *);
+	BOOL (*mod_alias_entry)(LOCAL_GRP *);
+
+	/*
+	 * user alias functions
+	 */
+	BOOL (*getuseraliasnam)(char *, LOCAL_GRP **, int *);
 };
 
 /* this is used for smbstatus */
@@ -1650,11 +1755,8 @@ extern int unix_ERR_code;
 /* zero a structure */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
-/* zero a structure given a pointer to the structure - no zero check */
-#define ZERO_STRUCTPN(x) memset((char *)(x), 0, sizeof(*(x)))
-
 /* zero a structure given a pointer to the structure */
-#define ZERO_STRUCTP(x) { if ((x) != NULL) ZERO_STRUCTPN(x); }
+#define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
 
 /* zero an array - note that sizeof(array) must work - ie. it must not be a 
    pointer */

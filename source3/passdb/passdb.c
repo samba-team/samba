@@ -26,14 +26,6 @@
 extern int DEBUGLEVEL;
 
 /*
- * This is set on startup - it defines the SID for this
- * machine, and therefore the SAM database for which it is
- * responsible.
- */
-
-DOM_SID global_sam_sid;
-
-/*
  * NOTE. All these functions are abstracted into a structure
  * that points to the correct function for the selected database. JRA.
  *
@@ -49,36 +41,39 @@ DOM_SID global_sam_sid;
  * functions in a first pass, as struct sam_passwd contains more
  * information, needed by the NT Domain support.
  * 
- * a full example set of derivative functions are listed below.  an API
- * writer is expected to cut/paste these into their module, replace
- * either one set (struct smb_passwd) or the other (struct sam_passwd)
- * OR both, and optionally also to write display info routines
- * (struct sam_disp_info).  lkcl
+ * an API writer is expected to create either one set (struct smb_passwd) or
+ * the other (struct sam_passwd) OR both, and optionally also to write display
+ * info routines * (struct sam_disp_info).  functions which the API writer
+ * chooses NOT to write must be wrapped in conversion functions (pwdb_x_to_y)
+ * such that API users can call any function and still get valid results.
+ *
+ * the password API does NOT fill in the gaps if you set an API function
+ * to NULL: it will deliberately attempt to call the NULL function.
  *
  */
 
-static struct passdb_ops *pdb_ops;
+static struct passdb_ops *pwdb_ops;
 
 /***************************************************************
- Initialize the password db operations.
+ Initialise the password db operations.
 ***************************************************************/
 
-BOOL initialize_password_db(void)
+BOOL initialise_password_db(void)
 {
-  if (pdb_ops)
+  if (pwdb_ops)
   {
     return True;
   }
 
 #ifdef WITH_NISPLUS
-  pdb_ops =  nisplus_initialize_password_db();
+  pwdb_ops =  nisplus_initialise_password_db();
 #elif defined(WITH_LDAP)
-  pdb_ops = ldap_initialize_password_db();
+  pwdb_ops = ldap_initialise_password_db();
 #else 
-  pdb_ops = file_initialize_password_db();
+  pwdb_ops = file_initialise_password_db();
 #endif 
 
-  return (pdb_ops != NULL);
+  return (pwdb_ops != NULL);
 }
 
 /*
@@ -91,7 +86,7 @@ BOOL initialize_password_db(void)
 
 struct smb_passwd *iterate_getsmbpwrid(uint32 user_rid)
 {
-	return iterate_getsmbpwuid(pdb_user_rid_to_uid(user_rid));
+	return iterate_getsmbpwuid(pwdb_user_rid_to_uid(user_rid));
 }
 
 /************************************************************************
@@ -173,7 +168,7 @@ struct smb_passwd *iterate_getsmbpwnam(char *name)
 
 void *startsmbpwent(BOOL update)
 {
-  return pdb_ops->startsmbpwent(update);
+  return pwdb_ops->startsmbpwent(update);
 }
 
 /***************************************************************
@@ -188,7 +183,7 @@ void *startsmbpwent(BOOL update)
 
 void endsmbpwent(void *vp)
 {
-  pdb_ops->endsmbpwent(vp);
+  pwdb_ops->endsmbpwent(vp);
 }
 
 /*************************************************************************
@@ -197,7 +192,7 @@ void endsmbpwent(void *vp)
 
 struct smb_passwd *getsmbpwent(void *vp)
 {
-	return pdb_ops->getsmbpwent(vp);
+	return pwdb_ops->getsmbpwent(vp);
 }
 
 /************************************************************************
@@ -206,7 +201,7 @@ struct smb_passwd *getsmbpwent(void *vp)
 
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 {
- 	return pdb_ops->add_smbpwd_entry(newpwd);
+ 	return pwdb_ops->add_smbpwd_entry(newpwd);
 }
 
 /************************************************************************
@@ -220,7 +215,7 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
- 	return pdb_ops->mod_smbpwd_entry(pwd, override);
+ 	return pwdb_ops->mod_smbpwd_entry(pwd, override);
 }
 
 /************************************************************************
@@ -229,7 +224,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 
 struct smb_passwd *getsmbpwnam(char *name)
 {
-	return pdb_ops->getsmbpwnam(name);
+	return pwdb_ops->getsmbpwnam(name);
 }
 
 /************************************************************************
@@ -238,7 +233,7 @@ struct smb_passwd *getsmbpwnam(char *name)
 
 struct smb_passwd *getsmbpwrid(uint32 user_rid)
 {
-	return pdb_ops->getsmbpwrid(user_rid);
+	return pwdb_ops->getsmbpwrid(user_rid);
 }
 
 /************************************************************************
@@ -247,7 +242,7 @@ struct smb_passwd *getsmbpwrid(uint32 user_rid)
 
 struct smb_passwd *getsmbpwuid(uid_t smb_userid)
 {
-	return pdb_ops->getsmbpwuid(smb_userid);
+	return pwdb_ops->getsmbpwuid(smb_userid);
 }
 
 /*
@@ -370,7 +365,7 @@ struct sam_passwd *iterate_getsam21pwuid(uid_t uid)
  *************************************************************************/
 struct sam_disp_info *getsamdisprid(uint32 rid)
 {
-	return pdb_ops->getsamdisprid(rid);
+	return pwdb_ops->getsamdisprid(rid);
 }
 
 /*************************************************************************
@@ -379,7 +374,7 @@ struct sam_disp_info *getsamdisprid(uint32 rid)
 
 struct sam_passwd *getsam21pwent(void *vp)
 {
-	return pdb_ops->getsam21pwent(vp);
+	return pwdb_ops->getsam21pwent(vp);
 }
 
 
@@ -389,7 +384,7 @@ struct sam_passwd *getsam21pwent(void *vp)
 
 struct sam_passwd *getsam21pwnam(char *name)
 {
-	return pdb_ops->getsam21pwnam(name);
+	return pwdb_ops->getsam21pwnam(name);
 }
 
 /************************************************************************
@@ -398,7 +393,7 @@ struct sam_passwd *getsam21pwnam(char *name)
 
 struct sam_passwd *getsam21pwrid(uint32 rid)
 {
-	return pdb_ops->getsam21pwrid(rid);
+	return pwdb_ops->getsam21pwrid(rid);
 }
 
 
@@ -415,7 +410,7 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
  initialises a struct sam_disp_info.
  **************************************************************/
 
-static void pdb_init_dispinfo(struct sam_disp_info *user)
+static void pwdb_init_dispinfo(struct sam_disp_info *user)
 {
 	if (user == NULL) return;
 	bzero(user, sizeof(*user));
@@ -425,7 +420,7 @@ static void pdb_init_dispinfo(struct sam_disp_info *user)
  initialises a struct smb_passwd.
  **************************************************************/
 
-void pdb_init_smb(struct smb_passwd *user)
+void pwdb_init_smb(struct smb_passwd *user)
 {
 	if (user == NULL) return;
 	bzero(user, sizeof(*user));
@@ -435,7 +430,7 @@ void pdb_init_smb(struct smb_passwd *user)
 /*************************************************************
  initialises a struct sam_passwd.
  **************************************************************/
-void pdb_init_sam(struct sam_passwd *user)
+void pwdb_init_sam(struct sam_passwd *user)
 {
 	if (user == NULL) return;
 	bzero(user, sizeof(*user));
@@ -451,13 +446,13 @@ void pdb_init_sam(struct sam_passwd *user)
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
 
-struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user)
+struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user)
 {
 	static struct sam_disp_info disp_info;
 
 	if (user == NULL) return NULL;
 
-	pdb_init_dispinfo(&disp_info);
+	pwdb_init_dispinfo(&disp_info);
 
 	disp_info.smb_name  = user->smb_name;
 	disp_info.full_name = user->full_name;
@@ -470,13 +465,13 @@ struct sam_disp_info *pdb_sam_to_dispinfo(struct sam_passwd *user)
  converts a sam_passwd structure to a smb_passwd structure.
  **************************************************************/
 
-struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
+struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
 {
 	static struct smb_passwd pw_buf;
 
 	if (user == NULL) return NULL;
 
-	pdb_init_smb(&pw_buf);
+	pwdb_init_smb(&pw_buf);
 
 	pw_buf.smb_userid         = user->smb_userid;
 	pw_buf.smb_name           = user->smb_name;
@@ -493,13 +488,13 @@ struct smb_passwd *pdb_sam_to_smb(struct sam_passwd *user)
  converts a smb_passwd structure to a sam_passwd structure.
  **************************************************************/
 
-struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
+struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 {
 	static struct sam_passwd pw_buf;
 
 	if (user == NULL) return NULL;
 
-	pdb_init_sam(&pw_buf);
+	pwdb_init_sam(&pw_buf);
 
 	pw_buf.smb_userid         = user->smb_userid;
 	pw_buf.smb_name           = user->smb_name;
@@ -517,7 +512,7 @@ struct sam_passwd *pdb_smb_to_sam(struct smb_passwd *user)
  null). length *MUST BE MORE THAN 2* !
  **********************************************************/
 
-char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
+char *pwdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
 {
   static fstring acct_str;
   size_t i = 0;
@@ -553,7 +548,7 @@ char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
  15 lines, which is more important.
  **********************************************************/
 
-uint16 pdb_decode_acct_ctrl(char *p)
+uint16 pwdb_decode_acct_ctrl(char *p)
 {
 	uint16 acct_ctrl = 0;
 	BOOL finished = False;
@@ -603,7 +598,9 @@ static time_t get_time_from_string(char *p)
 	for (i = 0; i < 8; i++)
 	{
 		if (p[i] == '\0' || !isxdigit((int)(p[i]&0xFF)))
-		break;
+		{
+			break;
+		}
 	}
 	if (i == 8)
 	{
@@ -621,7 +618,7 @@ static time_t get_time_from_string(char *p)
  gets password last set time
  ********************************************************************/
 
-time_t pdb_get_last_set_time(char *p)
+time_t pwdb_get_last_set_time(char *p)
 {
 	if (*p && StrnCaseCmp((char *)p, "LCT-", 4))
 	{
@@ -642,7 +639,7 @@ static void set_time_in_string(char *p, int max_len, char *type, time_t t)
 /*******************************************************************
  sets logon time
  ********************************************************************/
-void pdb_set_logon_time(char *p, int max_len, time_t t)
+void pwdb_set_logon_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "LNT", t);
 }
@@ -650,7 +647,7 @@ void pdb_set_logon_time(char *p, int max_len, time_t t)
 /*******************************************************************
  sets logoff time
  ********************************************************************/
-void pdb_set_logoff_time(char *p, int max_len, time_t t)
+void pwdb_set_logoff_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "LOT", t);
 }
@@ -658,7 +655,7 @@ void pdb_set_logoff_time(char *p, int max_len, time_t t)
 /*******************************************************************
  sets kickoff time
  ********************************************************************/
-void pdb_set_kickoff_time(char *p, int max_len, time_t t)
+void pwdb_set_kickoff_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "KOT", t);
 }
@@ -666,7 +663,7 @@ void pdb_set_kickoff_time(char *p, int max_len, time_t t)
 /*******************************************************************
  sets password can change time
  ********************************************************************/
-void pdb_set_can_change_time(char *p, int max_len, time_t t)
+void pwdb_set_can_change_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "CCT", t);
 }
@@ -674,7 +671,7 @@ void pdb_set_can_change_time(char *p, int max_len, time_t t)
 /*******************************************************************
  sets password last set time
  ********************************************************************/
-void pdb_set_must_change_time(char *p, int max_len, time_t t)
+void pwdb_set_must_change_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "MCT", t);
 }
@@ -682,7 +679,7 @@ void pdb_set_must_change_time(char *p, int max_len, time_t t)
 /*******************************************************************
  sets password last set time
  ********************************************************************/
-void pdb_set_last_set_time(char *p, int max_len, time_t t)
+void pwdb_set_last_set_time(char *p, int max_len, time_t t)
 {
 	set_time_in_string(p, max_len, "LCT", t);
 }
@@ -691,7 +688,7 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t)
 /*************************************************************
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
-void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
+void pwdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
 {
 	if (pwd != NULL)
 	{
@@ -713,327 +710,114 @@ void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
 		}
 	}
 }
+
 /*************************************************************
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-BOOL pdb_gethexpwd(char *p, char *pwd)
+BOOL pwdb_gethexpwd(char *p, char *pwd)
 {
-	int i;
-	unsigned char   lonybble, hinybble;
-	char           *hexchars = "0123456789ABCDEF";
-	char           *p1, *p2;
-
-	for (i = 0; i < 32; i += 2)
-	{
-		hinybble = toupper(p[i]);
-		lonybble = toupper(p[i + 1]);
-
-		p1 = strchr(hexchars, hinybble);
-		p2 = strchr(hexchars, lonybble);
-
-		if (!p1 || !p2)
-		{
-			return (False);
-		}
-
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		pwd[i / 2] = (hinybble << 4) | lonybble;
-	}
-	return (True);
+	return strhex_to_str(pwd, 32, p) == 16;
 }
 
 /*******************************************************************
- Group and User RID username mapping function
+ converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-
-BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
+uid_t pwdb_user_rid_to_uid(uint32 user_rid)
 {
-    struct passwd *pw = Get_Pwnam(user_name, False);
-
-	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
-	{
-		return False;
-	}
-
-	if (!pw)
-	{
-		DEBUG(1,("Username %s is invalid on this system\n", user_name));
-		return False;
-	}
-
-	if (user_in_list(user_name, lp_domain_guest_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_GUEST;
-	}
-	else if (user_in_list(user_name, lp_domain_admin_users()))
-	{
-		*u_rid = DOMAIN_USER_RID_ADMIN;
-	}
-	else
-	{
-		/* turn the unix UID into a Domain RID.  this is what the posix
-		   sub-system does (adds 1000 to the uid) */
-		*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
-	}
-
-	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
-
-	return True;
-}
-
-/****************************************************************************
- Read the machine SID from a file.
-****************************************************************************/
-
-static BOOL read_sid_from_file(int fd, char *sid_file)
-{   
-  fstring fline;
-    
-  memset(fline, '\0', sizeof(fline));
-
-  if(read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("unable to read file %s. Error was %s\n",
-           sid_file, strerror(errno) ));
-    return False;
-  }
-
-  /*
-   * Convert to the machine SID.
-   */
-
-  fline[sizeof(fline)-1] = '\0';
-  if(!string_to_sid( &global_sam_sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
-    return False;
-  }
-
-  return True;
-}
-
-/****************************************************************************
- Generate the global machine sid. Look for the MACHINE.SID file first, if
- not found then look in smb.conf and use it to create the MACHINE.SID file.
-****************************************************************************/
-BOOL pdb_generate_sam_sid(void)
-{
-	int fd;
-	char *p;
-	pstring sid_file;
-	fstring sid_string;
-	SMB_STRUCT_STAT st;
-	uchar raw_sid_data[12];
-
-	pstrcpy(sid_file, lp_smb_passwd_file());
-	p = strrchr(sid_file, '/');
-	if(p != NULL) {
-		*++p = '\0';
-	}
-
-	if (!directory_exist(sid_file, NULL)) {
-		if (dos_mkdir(sid_file, 0700) != 0) {
-			DEBUG(0,("can't create private directory %s : %s\n",
-				 sid_file, strerror(errno)));
-			return False;
-		}
-	}
-
-	pstrcat(sid_file, "MACHINE.SID");
-    
-	if((fd = open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("unable to open or create file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		return False;
-	} 
-  
-	/*
-	 * Check if the file contains data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
-		/*
-		 * We have a valid SID - read it.
-		 */
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-		close(fd);
-		return True;
-	} 
-  
-	/*
-	 * The file contains no data - we need to generate our
-	 * own sid.
-	 */
-	
-	{
-		/*
-		 * Generate the new sid data & turn it into a string.
-		 */
-		int i;
-		generate_random_buffer( raw_sid_data, 12, True);
-		
-		fstrcpy( sid_string, "S-1-5-21");
-		for( i = 0; i < 3; i++) {
-			fstring tmp_string;
-			slprintf( tmp_string, sizeof(tmp_string) - 1, "-%u", IVAL(raw_sid_data, i*4));
-			fstrcat( sid_string, tmp_string);
-		}
-	} 
-	
-	fstrcat(sid_string, "\n");
-	
-	/*
-	 * Ensure our new SID is valid.
-	 */
-	
-	if(!string_to_sid( &global_sam_sid, sid_string)) {
-		DEBUG(0,("unable to generate machine SID.\n"));
-		return False;
-	} 
-  
-	/*
-	 * Do an exclusive blocking lock on the file.
-	 */
-	
-	if(!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("unable to lock file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	/*
-	 * At this point we have a blocking lock on the SID
-	 * file - check if in the meantime someone else wrote
-	 * SID data into the file. If so - they were here first,
-	 * use their data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
-		/*
-		 * Unlock as soon as possible to reduce
-		 * contention on the exclusive lock.
-		 */ 
-		do_file_lock( fd, 60, F_UNLCK);
-		
-		/*
-		 * We have a valid SID - read it.
-		 */
-		
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-		close(fd);
-		return True;
-	} 
-	
-	/*
-	 * The file is still empty and we have an exlusive lock on it.
-	 * Write out out SID data into the file.
-	 */
-	
-	if(fchmod(fd, 0644) < 0) {
-		DEBUG(0,("unable to set correct permissions on file %s. \
-Error was %s\n", sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-	
-	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("unable to write file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-	
-	/*
-	 * Unlock & exit.
-	 */
-	
-	do_file_lock( fd, 60, F_UNLCK);
-	close(fd);
-	return True;
-}   
-
-/*******************************************************************
- converts UNIX uid to an NT User RID.
- ********************************************************************/
-
-uid_t pdb_user_rid_to_uid(uint32 user_rid)
-{
-	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
+	uid_t uid = (uid_t)(((user_rid & (~RID_TYPE_USER))- 1000)/RID_MULTIPLIER);
+	return uid;
 }
 
 /*******************************************************************
- converts UNIX uid to an NT User RID.
+ converts UNIX uid to an NT User RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-
-uint32 pdb_uid_to_user_rid(uid_t uid)
+uint32 pwdb_uid_to_user_rid(uid_t uid)
 {
-	return (((((uint32)uid)*RID_MULTIPLIER) + 1000) | USER_RID_TYPE);
+	uint32 user_rid = (((((uint32)uid)*RID_MULTIPLIER) + 1000) | RID_TYPE_USER);
+	return user_rid;
 }
 
 /*******************************************************************
- converts NT Group RID to a UNIX uid.
+ converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-
-uint32 pdb_gid_to_group_rid(gid_t gid)
+uint32 pwdb_gid_to_group_rid(gid_t gid)
 {
-  return (((((uint32)gid)*RID_MULTIPLIER) + 1000) | GROUP_RID_TYPE);
+	uint32 grp_rid = (((((uint32)gid)*RID_MULTIPLIER) + 1000) | RID_TYPE_GROUP);
+	return grp_rid;
+}
+
+/*******************************************************************
+ converts NT Group RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
+ ********************************************************************/
+gid_t pwdb_group_rid_to_gid(uint32 group_rid)
+{
+	gid_t gid = (gid_t)(((group_rid & (~RID_TYPE_GROUP))- 1000)/RID_MULTIPLIER);
+	return gid;
+}
+
+/*******************************************************************
+ converts UNIX gid to an NT Alias RID. NOTE: IS SOMETHING SPECIFIC TO SAMBA
+ ********************************************************************/
+uint32 pwdb_gid_to_alias_rid(gid_t gid)
+{
+	uint32 alias_rid = (((((uint32)gid)*RID_MULTIPLIER) + 1000) | RID_TYPE_ALIAS);
+	return alias_rid;
+}
+
+/*******************************************************************
+ converts NT Alias RID to a UNIX uid. NOTE: IS SOMETHING SPECIFIC TO SAMBA
+ ********************************************************************/
+gid_t pwdb_alias_rid_to_gid(uint32 alias_rid)
+{
+	gid_t gid = (gid_t)(((alias_rid & (~RID_TYPE_ALIAS))- 1000)/RID_MULTIPLIER);
+	return gid;
 }
 
 /*******************************************************************
  Decides if a RID is a well known RID.
  ********************************************************************/
-
-static BOOL pdb_rid_is_well_known(uint32 rid)
+static BOOL pwdb_rid_is_well_known(uint32 rid)
 {
-  return (rid < 1000);
+	return (rid < 1000);
 }
 
 /*******************************************************************
- Decides if a RID is a user or group RID.
+ determines a rid's type.  NOTE: THIS IS SOMETHING SPECIFIC TO SAMBA
  ********************************************************************/
-  
-BOOL pdb_rid_is_user(uint32 rid)
+static uint32 pwdb_rid_type(uint32 rid)
 {
-  /* lkcl i understand that NT attaches an enumeration to a RID
-   * such that it can be identified as either a user, group etc
-   * type.  there are 5 such categories, and they are documented.
-   */
-   if(pdb_rid_is_well_known(rid)) {
-      /*
-       * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
-       * and DOMAIN_USER_RID_GUEST.
-       */
-     if(rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
-       return True;
-   } else if((rid & RID_TYPE_MASK) == USER_RID_TYPE) {
-     return True;
-   }
-   return False;
+	/* lkcl i understand that NT attaches an enumeration to a RID
+	 * such that it can be identified as either a user, group etc
+	 * type: SID_ENUM_TYPE.
+	 */
+	if (pwdb_rid_is_well_known(rid))
+	{
+		/*
+		 * The only well known user RIDs are DOMAIN_USER_RID_ADMIN
+		 * and DOMAIN_USER_RID_GUEST.
+		 */
+		if (rid == DOMAIN_USER_RID_ADMIN || rid == DOMAIN_USER_RID_GUEST)
+		{
+			return RID_TYPE_USER;
+		}
+		if (DOMAIN_GROUP_RID_ADMINS <= rid && rid <= DOMAIN_GROUP_RID_GUESTS)
+		{
+			return RID_TYPE_GROUP;
+		}
+		if (BUILTIN_ALIAS_RID_ADMINS <= rid && rid <= BUILTIN_ALIAS_RID_REPLICATOR)
+		{
+			return RID_TYPE_ALIAS;
+		}
+	}
+	return (rid & RID_TYPE_MASK);
 }
+
+/*******************************************************************
+ checks whether rid is a user rid.  NOTE: THIS IS SOMETHING SPECIFIC TO SAMBA
+ ********************************************************************/
+BOOL pwdb_rid_is_user(uint32 rid)
+{
+	return pwdb_rid_type(rid) == RID_TYPE_USER;
+}
+

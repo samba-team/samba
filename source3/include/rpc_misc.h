@@ -56,13 +56,14 @@
  * NT RIDS.
  */
 
-/* Take the bottom bit. */
-#define RID_TYPE_MASK 1
-#define RID_MULTIPLIER 2
+/* Take the bottom bits. */
+#define RID_TYPE_MASK 2
+#define RID_MULTIPLIER 4
 
-/* The two common types. */
-#define USER_RID_TYPE 0
-#define GROUP_RID_TYPE 1
+/* The three common types. */
+#define RID_TYPE_USER 0
+#define RID_TYPE_GROUP 1
+#define RID_TYPE_ALIAS 2
 
 /* ENUM_HND */
 typedef struct enum_hnd_info

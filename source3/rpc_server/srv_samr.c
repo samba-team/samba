@@ -30,9 +30,11 @@ extern int DEBUGLEVEL;
 
 extern BOOL sam_logon_in_ssb;
 extern pstring samlogon_user;
-extern fstring global_myworkgroup;
+extern fstring global_sam_name;
 extern pstring global_myname;
 extern DOM_SID global_sam_sid;
+extern DOM_SID global_sid_S_1_1;
+extern DOM_SID global_sid_S_1_5_20;
 
 extern rid_name domain_group_rids[];
 extern rid_name domain_alias_rids[];
@@ -79,8 +81,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
-		               user_name_len, 1);
+		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
+		               user_name_len-1, 1);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
 		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
 
@@ -292,24 +294,21 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 
 	if (status == 0x0)
 	{
-		DOM_SID user_sid;
-		DOM_SID everyone_sid;
+		DOM_SID usr_sid;
 
-		user_sid = global_sam_sid;
+		usr_sid = global_sam_sid;
 
-		SMB_ASSERT_ARRAY(user_sid.sub_auths, user_sid.num_auths+1);
+		SMB_ASSERT_ARRAY(usr_sid.sub_auths, usr_sid.num_auths+1);
 
 		/*
 		 * Add the user RID.
 		 */
-		user_sid.sub_auths[user_sid.num_auths++] = rid;
+		sid_append_rid(&usr_sid, rid);
 		
-			string_to_sid(&everyone_sid, "S-1-1");
-
-			/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
-			/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
-			make_dom_sid3(&(sid[0]), 0x035b, 0x0002, &everyone_sid);
-			make_dom_sid3(&(sid[1]), 0x0044, 0x0002, &user_sid);
+		/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
+		/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
+		make_dom_sid3(&(sid[0]), 0x035b, 0x0002, &global_sid_S_1_1);
+		make_dom_sid3(&(sid[1]), 0x0044, 0x0002, &usr_sid);
 	}
 
 	make_samr_r_unknown_3(&r_u,
@@ -400,37 +399,92 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_ENUM_DOM_GROUPS r_e;
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
-	int num_entries;
+	DOMAIN_GRP *grps = NULL;
+	int num_entries = 0;
 	BOOL got_grps;
-	char *dummy_group = "Domain Admins";
+	DOM_SID sid;
+	fstring sid_str;
 
 	r_e.status = 0x0;
 	r_e.num_entries = 0;
 
 	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	if (r_e.status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &sid))
 	{
 		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
+	sid_to_string(sid_str, &sid);
 
-	got_grps = True;
-	num_entries = 1;
-	make_unistr2(&(pass[0].uni_user_name), dummy_group, strlen(dummy_group));
-	pass[0].user_rid = DOMAIN_GROUP_RID_ADMINS;
+	DEBUG(5,("samr_reply_enum_dom_groups: sid %s\n", sid_str));
+
+	/* well-known groups */
+	if (sid_equal(&sid, &global_sid_S_1_5_20))
+	{
+		char *name;
+		got_grps = True;
+
+		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[num_entries].name) != NULL))
+		{
+			DOMAIN_GRP tmp_grp;
+
+			fstrcpy(tmp_grp.name   , name);
+			fstrcpy(tmp_grp.comment, "");
+			tmp_grp.rid = domain_group_rids[num_entries].rid;
+			tmp_grp.attr = 0x7;
+
+			if (!add_domain_group(&grps, &num_entries, &tmp_grp))
+			{
+				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+				break;
+			}
+		}
+	}
+	else if (sid_equal(&sid, &global_sam_sid))
+	{
+		BOOL ret;
+		char *name;
+		got_grps = True;
+
+		while (num_entries < MAX_SAM_ENTRIES && ((name = domain_group_rids[num_entries].name) != NULL))
+		{
+			DOMAIN_GRP tmp_grp;
+
+			fstrcpy(tmp_grp.name   , name);
+			fstrcpy(tmp_grp.comment, "");
+			tmp_grp.rid = domain_group_rids[num_entries].rid;
+			tmp_grp.attr = 0x7;
+
+			if (!add_domain_group(&grps, &num_entries, &tmp_grp))
+			{
+				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+				break;
+			}
+		}
+
+		become_root(True);
+		ret = enumdomgroups(&grps, &num_entries);
+		unbecome_root(True);
+		if (!ret)
+		{
+			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	if (r_e.status == 0 && got_grps)
 	{
-		make_samr_r_enum_dom_groups(&r_e, q_u->start_idx, num_entries, pass, r_e.status);
+		make_samr_r_enum_dom_groups(&r_e, q_u->start_idx, num_entries, grps, r_e.status);
 	}
 
 	/* store the response in the SMB stream */
 	samr_io_r_enum_dom_groups("", &r_e, rdata, 0);
 
-	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
+	if (grps != NULL)
+	{
+		free(grps);
+	}
 
+	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
 }
 
 /*******************************************************************
@@ -455,11 +509,10 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_ENUM_DOM_ALIASES r_e;
-	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	LOCAL_GRP *alss = NULL;
 	int num_entries = 0;
 	DOM_SID sid;
 	fstring sid_str;
-	fstring sam_sid_str;
 
 	r_e.status = 0x0;
 	r_e.num_entries = 0;
@@ -471,33 +524,56 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	}
 
 	sid_to_string(sid_str, &sid);
-	sid_to_string(sam_sid_str, &global_sam_sid);
 
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
 	/* well-known aliases */
-	if (strequal(sid_str, "S-1-5-32"))
+	if (sid_equal(&sid, &global_sid_S_1_5_20))
 	{
 		char *name;
-		while (num_entries < MAX_SAM_ENTRIES && ((name = builtin_alias_rids[num_entries].name) != NULL))
+
+		while ((name = builtin_alias_rids[num_entries].name) != NULL)
 		{
-			make_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name));
-			pass[num_entries].user_rid = builtin_alias_rids[num_entries].rid;
-			num_entries++;
+			LOCAL_GRP tmp_als;
+
+			fstrcpy(tmp_als.name   , name);
+			fstrcpy(tmp_als.comment, "");
+			tmp_als.rid = builtin_alias_rids[num_entries].rid;
+
+			if (!add_domain_alias(&alss, &num_entries, &tmp_als))
+			{
+				r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+				break;
+			}
 		}
 	}
-	else if (strequal(sid_str, sam_sid_str))
+	else if (sid_equal(&sid, &global_sam_sid))
 	{
+		BOOL ret;
 		/* local aliases */
-		/* oops!  there's no code to deal with this */
-		DEBUG(3,("samr_reply_enum_dom_aliases: enum of aliases in our domain not supported yet\n"));
 		num_entries = 0;
+
+		become_root(True);
+		ret = enumdomaliases(&alss, &num_entries);
+		unbecome_root(True);
+		if (!ret)
+		{
+			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
+		}
 	}
 		
-	make_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
+	if (r_e.status == 0x0)
+	{
+		make_samr_r_enum_dom_aliases(&r_e, num_entries, alss, r_e.status);
+	}
 
 	/* store the response in the SMB stream */
 	samr_io_r_enum_dom_aliases("", &r_e, rdata, 0);
+
+	if (alss != NULL)
+	{
+		free(alss);
+	}
 
 	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
 
@@ -669,11 +745,30 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 {
 	uint32 rid[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
-	int num_rids = q_u->num_sids1;
+	int num_rids = 0;
+	int i;
+	struct sam_passwd *sam_pass;
+	DOM_SID usr_sid;
+	DOM_SID dom_sid;
+	uint32 user_rid;
+	fstring sam_sid_str;
+	fstring dom_sid_str;
+	fstring usr_sid_str;
 
 	SAMR_R_LOOKUP_IDS r_u;
 
 	DEBUG(5,("samr_lookup_ids: %d\n", __LINE__));
+
+	/* find the policy handle.  open a policy on it. */
+	if (status == 0x0 && !get_lsa_policy_samr_sid(&q_u->pol, &dom_sid))
+	{
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+	else
+	{
+		sid_to_string(dom_sid_str, &dom_sid       );
+		sid_to_string(sam_sid_str, &global_sam_sid);
+	}
 
 	if (num_rids > MAX_SAM_ENTRIES)
 	{
@@ -681,38 +776,61 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 		DEBUG(5,("samr_lookup_ids: truncating entries to %d\n", num_rids));
 	}
 
-#if 0
-	int i;
-	SMB_ASSERT_ARRAY(q_u->uni_user_name, num_rids);
-
-	for (i = 0; i < num_rids && status == 0; i++)
+	if (status == 0x0)
 	{
-		struct sam_passwd *sam_pass;
-		fstring user_name;
+		usr_sid = q_u->sid[0].sid;
+		sid_split_rid(&usr_sid, &user_rid);
+		sid_to_string(usr_sid_str, &usr_sid);
 
+	}
 
-		fstrcpy(user_name, unistrn2(q_u->uni_user_name[i].buffer,
-		                            q_u->uni_user_name[i].uni_str_len));
-
+	if (status == 0x0)
+	{
 		/* find the user account */
 		become_root(True);
-		sam_pass = get_smb21pwd_entry(user_name, 0);
+		sam_pass = getsam21pwrid(user_rid);
 		unbecome_root(True);
 
 		if (sam_pass == NULL)
 		{
 			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-			rid[i] = 0;
+			num_rids = 0;
+		}
+	}
+
+	if (status == 0x0)
+	{
+		if (sid_equal(&dom_sid, &global_sid_S_1_5_20))
+		{
+			DEBUG(5,("lookup on S-1-5-20\n"));
+		}
+		else if (sid_equal(&dom_sid, &usr_sid))
+		{
+			DOMAIN_GRP *mem_grp = NULL;
+			BOOL ret;
+
+			DEBUG(5,("lookup on Domain SID\n"));
+
+			become_root(True);
+			ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_rids);
+			unbecome_root(True);
+
+			num_rids = MIN(num_rids, MAX_SAM_ENTRIES);
+
+			if (mem_grp != NULL)
+			{
+				for (i = 0; i < num_rids; i++)
+				{
+					rid[i] = mem_grp[i].rid;
+				}
+				free(mem_grp);
+			}
 		}
 		else
 		{
-			rid[i] = sam_pass->user_rid;
+			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
 		}
 	}
-#endif
-
-	num_rids = 1;
-	rid[0] = BUILTIN_ALIAS_RID_USERS;
 
 	make_samr_r_lookup_ids(&r_u, num_rids, rid, status);
 
@@ -743,7 +861,8 @@ static void api_samr_lookup_ids( uint16 vuid, prs_struct *data, prs_struct *rdat
 static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 				prs_struct *rdata)
 {
-	uint32 rid[MAX_SAM_ENTRIES];
+	uint32 rid [MAX_SAM_ENTRIES];
+	uint8  type[MAX_SAM_ENTRIES];
 	uint32 status     = 0;
 	int i;
 	int num_rids = q_u->num_rids1;
@@ -763,17 +882,12 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	for (i = 0; i < num_rids && status == 0; i++)
 	{
 		fstring name;
-
-		status = 0xC0000000 | NT_STATUS_NONE_MAPPED;
-
 		fstrcpy(name, unistrn2(q_u->uni_user_name[i].buffer, q_u->uni_user_name[i].uni_str_len));
 
-		status = (status != 0x0) ? lookup_user_rid (name, &(rid[i])) : status;
-		status = (status != 0x0) ? lookup_group_rid(name, &(rid[i])) : status;
-		status = (status != 0x0) ? lookup_alias_rid(name, &(rid[i])) : status;
+		status = lookup_rid(name, &(rid[i]), &(type[i]));
 	}
 
-	make_samr_r_lookup_names(&r_u, num_rids, rid, status);
+	make_samr_r_lookup_names(&r_u, num_rids, rid, type, status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_lookup_names("", &r_u, rdata, 0);
@@ -1017,7 +1131,7 @@ static BOOL get_user_info_10(SAM_USER_INFO_10 *id10, uint32 user_rid)
 {
 	struct smb_passwd *smb_pass;
 
-	if (!pdb_rid_is_user(user_rid))
+	if (!pwdb_rid_is_user(user_rid))
 	{
 		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
 		return False;
@@ -1050,7 +1164,7 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 user_rid)
 	LOGON_HRS hrs;
 	int i;
 
-	if (!pdb_rid_is_user(user_rid))
+	if (!pwdb_rid_is_user(user_rid))
 	{
 		DEBUG(4,("RID 0x%x is not a user RID\n", user_rid));
 		return False;
@@ -1255,10 +1369,20 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 
 	if (status == 0x0)
 	{
-		pstring groups;
-		get_domain_user_groups(groups, sam_pass->smb_name);
+		DOMAIN_GRP *mem_grp = NULL;
+		BOOL ret;
+
+		become_root(True);
+		ret = getusergroupsnam(sam_pass->smb_name, &mem_grp, &num_groups);
+		unbecome_root(True);
+
                 gids = NULL;
-		num_groups = make_dom_gids(groups, &gids);
+		num_groups = make_dom_gids(mem_grp, num_groups, &gids);
+
+		if (mem_grp != NULL)
+		{
+			free(mem_grp);
+		}
 	}
 
 	/* construct the response.  lkclXXXX: gids are not copied! */
@@ -1322,7 +1446,7 @@ static void samr_reply_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
 			case 0x02:
 			{
 				switch_value = 0x2;
-				make_unk_info2(&ctr.info.inf2, global_myworkgroup, global_myname);
+				make_unk_info2(&ctr.info.inf2, global_sam_name, global_myname);
 
 				break;
 			}
