@@ -155,6 +155,14 @@ NTSTATUS connect_to_ipc(struct cli_state **c, struct in_addr *server_ip,
 		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
 			d_printf("The username or password was not correct.\n");
 
+		if (NT_STATUS_V(nt_status) == 
+		    NT_STATUS_V(NT_STATUS_ACCOUNT_LOCKED_OUT))
+			d_printf("The account was locked out.\n");
+
+		if (NT_STATUS_V(nt_status) == 
+		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
+			d_printf("The account was disabled.\n");
+
 		return nt_status;
 	}
 }
