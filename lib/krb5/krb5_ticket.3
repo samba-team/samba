@@ -1,4 +1,4 @@
-.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,7 +31,7 @@
 .\"
 .\" $Id$
 .\"
-.Dd November  9, 2003
+.Dd August 12, 2004
 .Dt KRB5_TICKET 3
 .Os HEIMDAL
 .Sh NAME
@@ -113,6 +113,10 @@ If there isn't any authorization data of type
 .Fa type ,
 .Dv ENOENT
 is returned.
+.Fa data
+needs to be freed with
+.Fn krb5_data_free
+on success.
 .Pp
 .Fn krb5_ticket_get_client
 and
