@@ -8,10 +8,10 @@ NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="samba-project-documentation.html"><LINK
+HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
-TITLE="Diagnosing your samba server"
-HREF="diagnosis.html"><LINK
+TITLE="How to Install and Test SAMBA"
+HREF="install.html"><LINK
 REL="NEXT"
 TITLE="Configuring PAM for distributed but centrally 
 managed authentication"
@@ -43,7 +43,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="diagnosis.html"
+HREF="install.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -72,15 +72,15 @@ CLASS="CHAPTER"
 ><A
 NAME="INTEGRATE-MS-NETWORKS"
 ></A
->Chapter 3. Integrating MS Windows networks with Samba</H1
+>Chapter 2. Integrating MS Windows networks with Samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN365"
+NAME="AEN223"
 ></A
->3.1. Agenda</H1
+>2.1. Agenda</H1
 ><P
 >To identify the key functional mechanisms of MS Windows networking 
 to enable the deployment of Samba as a means of extending and/or 
@@ -145,9 +145,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN387"
+NAME="AEN245"
 ></A
->3.2. Name Resolution in a pure Unix/Linux world</H1
+>2.2. Name Resolution in a pure Unix/Linux world</H1
 ><P
 >The key configuration files covered in this section are:</P
 ><P
@@ -187,9 +187,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN403"
+NAME="AEN261"
 ></A
->3.2.1. <TT
+>2.2.1. <TT
 CLASS="FILENAME"
 >/etc/hosts</TT
 ></H2
@@ -268,9 +268,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN419"
+NAME="AEN277"
 ></A
->3.2.2. <TT
+>2.2.2. <TT
 CLASS="FILENAME"
 >/etc/resolv.conf</TT
 ></H2
@@ -306,9 +306,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN430"
+NAME="AEN288"
 ></A
->3.2.3. <TT
+>2.2.3. <TT
 CLASS="FILENAME"
 >/etc/host.conf</TT
 ></H2
@@ -335,9 +335,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN438"
+NAME="AEN296"
 ></A
->3.2.4. <TT
+>2.2.4. <TT
 CLASS="FILENAME"
 >/etc/nsswitch.conf</TT
 ></H2
@@ -404,9 +404,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN450"
+NAME="AEN308"
 ></A
->3.3. Name resolution as used within MS Windows networking</H1
+>2.3. Name resolution as used within MS Windows networking</H1
 ><P
 >MS Windows networking is predicated about the name each machine 
 is given. This name is known variously (and inconsistently) as 
@@ -489,9 +489,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN462"
+NAME="AEN320"
 ></A
->3.3.1. The NetBIOS Name Cache</H2
+>2.3.1. The NetBIOS Name Cache</H2
 ><P
 >All MS Windows machines employ an in memory buffer in which is 
 stored the NetBIOS names and IP addresses for all external 
@@ -516,9 +516,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN467"
+NAME="AEN325"
 ></A
->3.3.2. The LMHOSTS file</H2
+>2.3.2. The LMHOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 
 2000 in <TT
@@ -619,9 +619,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN475"
+NAME="AEN333"
 ></A
->3.3.3. HOSTS file</H2
+>2.3.3. HOSTS file</H2
 ><P
 >This file is usually located in MS Windows NT 4.0 or 2000 in 
 <TT
@@ -641,9 +641,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN480"
+NAME="AEN338"
 ></A
->3.3.4. DNS Lookup</H2
+>2.3.4. DNS Lookup</H2
 ><P
 >This capability is configured in the TCP/IP setup area in the network 
 configuration facility. If enabled an elaborate name resolution sequence 
@@ -661,9 +661,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN483"
+NAME="AEN341"
 ></A
->3.3.5. WINS Lookup</H2
+>2.3.5. WINS Lookup</H2
 ><P
 >A WINS (Windows Internet Name Server) service is the equivaent of the 
 rfc1001/1002 specified NBNS (NetBIOS Name Server). A WINS server stores 
@@ -704,9 +704,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN495"
+NAME="AEN353"
 ></A
->3.4. How browsing functions and how to deploy stable and 
+>2.4. How browsing functions and how to deploy stable and 
 dependable browsing using Samba</H1
 ><P
 >As stated above, MS Windows machines register their NetBIOS names 
@@ -771,9 +771,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN505"
+NAME="AEN363"
 ></A
->3.5. MS Windows security options and how to configure 
+>2.5. MS Windows security options and how to configure 
 Samba for seemless integration</H1
 ><P
 >MS Windows clients may use encrypted passwords as part of a 
@@ -908,9 +908,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN533"
+NAME="AEN391"
 ></A
->3.5.1. Use MS Windows NT as an authentication server</H2
+>2.5.1. Use MS Windows NT as an authentication server</H2
 ><P
 >This method involves the additions of the following parameters 
 in the smb.conf file:</P
@@ -944,9 +944,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN541"
+NAME="AEN399"
 ></A
->3.5.2. Make Samba a member of an MS Windows NT security domain</H2
+>2.5.2. Make Samba a member of an MS Windows NT security domain</H2
 ><P
 >This method involves additon of the following paramters in the smb.conf file:</P
 ><P
@@ -1007,9 +1007,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN558"
+NAME="AEN416"
 ></A
->3.5.3. Configure Samba as an authentication server</H2
+>2.5.3. Configure Samba as an authentication server</H2
 ><P
 >This mode of authentication demands that there be on the 
 Unix/Linux system both a Unix style account as well as an 
@@ -1044,9 +1044,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN565"
+NAME="AEN423"
 ></A
->3.5.3.1. Users</H3
+>2.5.3.1. Users</H3
 ><P
 >A user account that may provide a home directory should be 
 created. The following Linux system commands are typical of 
@@ -1067,9 +1067,9 @@ CLASS="SECT3"
 ><H3
 CLASS="SECT3"
 ><A
-NAME="AEN570"
+NAME="AEN428"
 ></A
->3.5.3.2. MS Windows NT Machine Accounts</H3
+>2.5.3.2. MS Windows NT Machine Accounts</H3
 ><P
 >These are required only when Samba is used as a domain 
 controller.  Refer to the Samba-PDC-HOWTO for more details.</P
@@ -1088,9 +1088,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN575"
+NAME="AEN433"
 ></A
->3.6. Conclusions</H1
+>2.6. Conclusions</H1
 ><P
 >Samba provides a flexible means to operate as...</P
 ><P
@@ -1136,7 +1136,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="diagnosis.html"
+HREF="install.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -1145,7 +1145,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="samba-project-documentation.html"
+HREF="samba-howto-collection.html"
 ACCESSKEY="H"
 >Home</A
 ></TD
@@ -1164,7 +1164,7 @@ ACCESSKEY="N"
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->Diagnosing your samba server</TD
+>How to Install and Test SAMBA</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"

@@ -8,7 +8,7 @@ NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="samba-project-documentation.html"><LINK
+HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
 TITLE="How to Act as a Backup Domain Controller in a Purely Samba Controlled Domain"
 HREF="samba-bdc.html"><LINK
@@ -71,15 +71,15 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-LDAP-HOWTO"
 ></A
->Chapter 14. Storing Samba's User/Machine Account information in an LDAP Directory</H1
+>Chapter 13. Storing Samba's User/Machine Account information in an LDAP Directory</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2353"
+NAME="AEN2211"
 ></A
->14.1. Purpose</H1
+>13.1. Purpose</H1
 ><P
 >This document describes how to use an LDAP directory for storing Samba user
 account information traditionally stored in the smbpasswd(5) file.  It is
@@ -145,9 +145,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2373"
+NAME="AEN2231"
 ></A
->14.2. Introduction</H1
+>13.2. Introduction</H1
 ><P
 >Traditionally, when configuring <A
 HREF="smb.conf.5.html#ENCRYPTPASSWORDS"
@@ -262,9 +262,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2402"
+NAME="AEN2260"
 ></A
->14.3. Supported LDAP Servers</H1
+>13.3. Supported LDAP Servers</H1
 ><P
 >The LDAP samdb code in 2.2.3 has been developed and tested using the OpenLDAP
 2.0 server and client libraries.  The same code should be able to work with
@@ -287,9 +287,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2407"
+NAME="AEN2265"
 ></A
->14.4. Schema and Relationship to the RFC 2307 posixAccount</H1
+>13.4. Schema and Relationship to the RFC 2307 posixAccount</H1
 ><P
 >Samba 2.2.3 includes the necessary schema file for OpenLDAP 2.0 in
 <TT
@@ -346,17 +346,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2419"
+NAME="AEN2277"
 ></A
->14.5. Configuring Samba with LDAP</H1
+>13.5. Configuring Samba with LDAP</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2421"
+NAME="AEN2279"
 ></A
->14.5.1. OpenLDAP configuration</H2
+>13.5.1. OpenLDAP configuration</H2
 ><P
 >To include support for the sambaAccount object in an OpenLDAP directory
 server, first copy the samba.schema file to slapd's configuration directory.</P
@@ -436,9 +436,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2438"
+NAME="AEN2296"
 ></A
->14.5.2. Configuring Samba</H2
+>13.5.2. Configuring Samba</H2
 ><P
 >The following parameters are available in smb.conf only with <TT
 CLASS="PARAMETER"
@@ -556,9 +556,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2466"
+NAME="AEN2324"
 ></A
->14.6. Accounts and Groups management</H1
+>13.6. Accounts and Groups management</H1
 ><P
 >As users accounts are managed thru the sambaAccount objectclass, you should
 modify you existing administration tools to deal with sambaAccount attributes.</P
@@ -581,9 +581,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2471"
+NAME="AEN2329"
 ></A
->14.7. Security and sambaAccount</H1
+>13.7. Security and sambaAccount</H1
 ><P
 >There are two important points to remember when discussing the security
 of sambaAccount entries in the directory.</P
@@ -660,9 +660,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2491"
+NAME="AEN2349"
 ></A
->14.8. LDAP specials attributes for sambaAccounts</H1
+>13.8. LDAP specials attributes for sambaAccounts</H1
 ><P
 >The sambaAccount objectclass is composed of the following attributes:</P
 ><P
@@ -871,9 +871,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2561"
+NAME="AEN2419"
 ></A
->14.9. Example LDIF Entries for a sambaAccount</H1
+>13.9. Example LDIF Entries for a sambaAccount</H1
 ><P
 >The following is a working LDIF with the inclusion of the posixAccount objectclass:</P
 ><P
@@ -929,9 +929,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2569"
+NAME="AEN2427"
 ></A
->14.10. Comments</H1
+>13.10. Comments</H1
 ><P
 >Please mail all comments regarding this HOWTO to <A
 HREF="mailto:jerry@samba.org"
@@ -966,7 +966,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="samba-project-documentation.html"
+HREF="samba-howto-collection.html"
 ACCESSKEY="H"
 >Home</A
 ></TD

@@ -8,13 +8,13 @@ NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="samba-project-documentation.html"><LINK
+HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
 TITLE="Using samba 3.0 with ActiveDirectory support"
 HREF="ads.html"><LINK
 REL="NEXT"
-TITLE="Samba performance issues"
-HREF="speed.html"></HEAD
+TITLE="Quick Cross Subnet Browsing / Cross Workgroup Browsing guide"
+HREF="browsing-quick.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -56,7 +56,7 @@ WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
 ><A
-HREF="speed.html"
+HREF="browsing-quick.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -71,15 +71,15 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 16. Improved browsing in samba</H1
+>Chapter 15. Improved browsing in samba</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2659"
+NAME="AEN2517"
 ></A
->16.1. Overview of browsing</H1
+>15.1. Overview of browsing</H1
 ><P
 >SMB networking provides a mechanism by which clients can access a list
 of machines in a network, a so-called "browse list".  This list
@@ -101,9 +101,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2663"
+NAME="AEN2521"
 ></A
->16.2. Browsing support in samba</H1
+>15.2. Browsing support in samba</H1
 ><P
 >Samba now fully supports browsing.  The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see smb.conf(5)).</P
@@ -146,9 +146,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2672"
+NAME="AEN2530"
 ></A
->16.3. Problem resolution</H1
+>15.3. Problem resolution</H1
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
 you track down the problem.  Try a debug level of 2 or 3 for finding
@@ -180,9 +180,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2679"
+NAME="AEN2537"
 ></A
->16.4. Browsing across subnets</H1
+>15.4. Browsing across subnets</H1
 ><P
 >With the release of Samba 1.9.17(alpha1 and above) Samba has been
 updated to enable it to support the replication of browse lists
@@ -211,9 +211,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2684"
+NAME="AEN2542"
 ></A
->16.4.1. How does cross subnet browsing work ?</H2
+>15.4.1. How does cross subnet browsing work ?</H2
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
 moving parts.  It has taken Microsoft several years to get the code
@@ -423,9 +423,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2719"
+NAME="AEN2577"
 ></A
->16.5. Setting up a WINS server</H1
+>15.5. Setting up a WINS server</H1
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
 as a WINS server.  To set a Samba machine to be a WINS server you must
@@ -506,9 +506,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2738"
+NAME="AEN2596"
 ></A
->16.6. Setting up Browsing in a WORKGROUP</H1
+>15.6. Setting up Browsing in a WORKGROUP</H1
 ><P
 >To set up cross subnet browsing on a network containing machines
 in up to be in a WORKGROUP, not an NT Domain you need to set up one
@@ -590,9 +590,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2756"
+NAME="AEN2614"
 ></A
->16.7. Setting up Browsing in a DOMAIN</H1
+>15.7. Setting up Browsing in a DOMAIN</H1
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
 you must not set up a Samba server as a domain master browser.
@@ -641,9 +641,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2766"
+NAME="AEN2624"
 ></A
->16.8. Forcing samba to be the master</H1
+>15.8. Forcing samba to be the master</H1
 ><P
 >Who becomes the "master browser" is determined by an election process
 using broadcasts.  Each election packet contains a number of parameters
@@ -689,9 +689,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2775"
+NAME="AEN2633"
 ></A
->16.9. Making samba the domain master</H1
+>15.9. Making samba the domain master</H1
 ><P
 >The domain master is responsible for collating the browse lists of
 multiple subnets so that browsing can occur between subnets.  You can
@@ -762,9 +762,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2793"
+NAME="AEN2651"
 ></A
->16.10. Note about broadcast addresses</H1
+>15.10. Note about broadcast addresses</H1
 ><P
 >If your network uses a "0" based broadcast address (for example if it
 ends in a 0) then you will strike problems.  Windows for Workgroups
@@ -776,9 +776,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2796"
+NAME="AEN2654"
 ></A
->16.11. Multiple interfaces</H1
+>15.11. Multiple interfaces</H1
 ><P
 >Samba now supports machines with multiple network interfaces.  If you
 have multiple interfaces then you will need to use the "interfaces"
@@ -810,7 +810,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="samba-project-documentation.html"
+HREF="samba-howto-collection.html"
 ACCESSKEY="H"
 >Home</A
 ></TD
@@ -819,7 +819,7 @@ WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
 ><A
-HREF="speed.html"
+HREF="browsing-quick.html"
 ACCESSKEY="N"
 >Next</A
 ></TD
@@ -839,7 +839,7 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Samba performance issues</TD
+>Quick Cross Subnet Browsing / Cross Workgroup Browsing guide</TD
 ></TR
 ></TABLE
 ></DIV

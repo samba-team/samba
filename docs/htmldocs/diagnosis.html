@@ -8,13 +8,10 @@ NAME="GENERATOR"
 CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
-HREF="samba-project-documentation.html"><LINK
+HREF="samba-howto-collection.html"><LINK
 REL="PREVIOUS"
-TITLE="How to Install and Test SAMBA"
-HREF="install.html"><LINK
-REL="NEXT"
-TITLE="Integrating MS Windows networks with Samba"
-HREF="integrate-ms-networks.html"></HEAD
+TITLE="Samba and other CIFS clients"
+HREF="other-clients.html"></HEAD
 ><BODY
 CLASS="CHAPTER"
 BGCOLOR="#FFFFFF"
@@ -42,7 +39,7 @@ WIDTH="10%"
 ALIGN="left"
 VALIGN="bottom"
 ><A
-HREF="install.html"
+HREF="other-clients.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -55,11 +52,7 @@ VALIGN="bottom"
 WIDTH="10%"
 ALIGN="right"
 VALIGN="bottom"
-><A
-HREF="integrate-ms-networks.html"
-ACCESSKEY="N"
->Next</A
-></TD
+>&nbsp;</TD
 ></TR
 ></TABLE
 ><HR
@@ -71,15 +64,15 @@ CLASS="CHAPTER"
 ><A
 NAME="DIAGNOSIS"
 ></A
->Chapter 2. Diagnosing your samba server</H1
+>Chapter 23. Diagnosing your samba server</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN223"
+NAME="AEN3184"
 ></A
->2.1. Introduction</H1
+>23.1. Introduction</H1
 ><P
 >This file contains a list of tests you can perform to validate your
 Samba server. It also tells you what the likely cause of the problem
@@ -99,9 +92,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN228"
+NAME="AEN3189"
 ></A
->2.2. Assumptions</H1
+>23.2. Assumptions</H1
 ><P
 >In all of the tests I assume you have a Samba server called BIGSERVER
 and a PC called ACLIENT both in workgroup TESTGROUP. I also assume the
@@ -140,17 +133,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN238"
+NAME="AEN3199"
 ></A
->2.3. Tests</H1
+>23.3. Tests</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN240"
+NAME="AEN3201"
 ></A
->2.3.1. Test 1</H2
+>23.3.1. Test 1</H2
 ><P
 >In the directory in which you store your smb.conf file, run the command
 "testparm smb.conf". If it reports any errors then your smb.conf
@@ -170,9 +163,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN246"
+NAME="AEN3207"
 ></A
->2.3.2. Test 2</H2
+>23.3.2. Test 2</H2
 ><P
 >Run the command "ping BIGSERVER" from the PC and "ping ACLIENT" from
 the unix box. If you don't get a valid response then your TCP/IP
@@ -196,9 +189,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN252"
+NAME="AEN3213"
 ></A
->2.3.3. Test 3</H2
+>23.3.3. Test 3</H2
 ><P
 >Run the command "smbclient -L BIGSERVER" on the unix box. You
 should get a list of available shares back. </P
@@ -267,9 +260,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN267"
+NAME="AEN3228"
 ></A
->2.3.4. Test 4</H2
+>23.3.4. Test 4</H2
 ><P
 >Run the command "nmblookup -B BIGSERVER __SAMBA__". You should get the
 IP address of your Samba server back.</P
@@ -288,9 +281,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN272"
+NAME="AEN3233"
 ></A
->2.3.5. Test 5</H2
+>23.3.5. Test 5</H2
 ><P
 >run the command <B
 CLASS="COMMAND"
@@ -309,9 +302,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN278"
+NAME="AEN3239"
 ></A
->2.3.6. Test 6</H2
+>23.3.6. Test 6</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -343,9 +336,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN286"
+NAME="AEN3247"
 ></A
->2.3.7. Test 7</H2
+>23.3.7. Test 7</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -432,9 +425,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN312"
+NAME="AEN3273"
 ></A
->2.3.8. Test 8</H2
+>23.3.8. Test 8</H2
 ><P
 >On the PC type the command <B
 CLASS="COMMAND"
@@ -492,9 +485,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN329"
+NAME="AEN3290"
 ></A
->2.3.9. Test 9</H2
+>23.3.9. Test 9</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -526,9 +519,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN337"
+NAME="AEN3298"
 ></A
->2.3.10. Test 10</H2
+>23.3.10. Test 10</H2
 ><P
 >Run the command <B
 CLASS="COMMAND"
@@ -552,9 +545,9 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN343"
+NAME="AEN3304"
 ></A
->2.3.11. Test 11</H2
+>23.3.11. Test 11</H2
 ><P
 >From file manager try to browse the server. Your samba server should
 appear in the browse list of your local workgroup (or the one you
@@ -580,9 +573,9 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN348"
+NAME="AEN3309"
 ></A
->2.4. Still having troubles?</H1
+>23.4. Still having troubles?</H1
 ><P
 >Try the mailing list or newsgroup, or use the ethereal utility to
 sniff the problem. The official samba mailing list can be reached at
@@ -618,7 +611,7 @@ WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
 ><A
-HREF="install.html"
+HREF="other-clients.html"
 ACCESSKEY="P"
 >Prev</A
 ></TD
@@ -627,7 +620,7 @@ WIDTH="34%"
 ALIGN="center"
 VALIGN="top"
 ><A
-HREF="samba-project-documentation.html"
+HREF="samba-howto-collection.html"
 ACCESSKEY="H"
 >Home</A
 ></TD
@@ -635,18 +628,14 @@ ACCESSKEY="H"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
-><A
-HREF="integrate-ms-networks.html"
-ACCESSKEY="N"
->Next</A
-></TD
+>&nbsp;</TD
 ></TR
 ><TR
 ><TD
 WIDTH="33%"
 ALIGN="left"
 VALIGN="top"
->How to Install and Test SAMBA</TD
+>Samba and other CIFS clients</TD
 ><TD
 WIDTH="34%"
 ALIGN="center"
@@ -656,7 +645,7 @@ VALIGN="top"
 WIDTH="33%"
 ALIGN="right"
 VALIGN="top"
->Integrating MS Windows networks with Samba</TD
+>&nbsp;</TD
 ></TR
 ></TABLE
 ></DIV
