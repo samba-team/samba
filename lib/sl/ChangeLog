@@ -1,5 +1,8 @@
 2000-03-07  Assar Westerlund  <assar@sics.se>
 
+	* sl.h (SL_BADCOMMAND): define
+	(sl_apropos): add prototype
+
 	* sl.c: mandoc-generation
 	(sl_apropos): stolen from arla
 
