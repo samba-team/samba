@@ -40,7 +40,8 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	krb5_ticket *tkt = NULL;
 	int ret;
 	char *realm, *client, *p;
-	fstring service;
+	fstring hostname;
+	char *principle;
 	extern pstring global_myname;
 	const struct passwd *pw;
 	char *user;
@@ -55,35 +56,24 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	/* the service is the wins name lowercase with $ tacked on */
-	fstrcpy(service, global_myname);
-	strlower(service);
-	fstrcat(service, "$");
-
+	fstrcpy(hostname, global_myname);
+	strlower(hostname);
+	asprintf(&principle, "HOST/%s@%s", hostname, realm);
+	
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-#if 0
-	ret = krb5_build_principal(context, &server, strlen(realm),
-				   realm, "HOST", "blu", NULL);
-#else
-	ret = krb5_build_principal(context, &server, strlen(realm),
-				   realm, service, NULL);
-#endif
-	krb5_princ_type(context, server) = KRB5_NT_PRINCIPAL;
-
+	ret = krb5_parse_name(context, principle, &server);
 	if (ret) {
-		DEBUG(1,("krb5_build_principal failed (%s)\n", error_message(ret)));
+		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", 
+			 principle, error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-#if 0
-	chdir("/home/tridge");
-	file_save("ticket.dat", ticket.data, ticket.length);
-#endif
+	free(principle);
 
 	packet.length = ticket.length;
 	packet.data = (krb5_pointer)ticket.data;
@@ -437,6 +427,8 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	extern uint32 global_client_caps;
 	int ret;
 
+	DEBUG(3,("Doing spego session setup\n"));
+
 	if (global_client_caps == 0) {
 		global_client_caps = IVAL(inbuf,smb_vwv10);
 	}
@@ -509,9 +501,13 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern int max_send;
 	BOOL doencrypt = global_encrypted_passwords_negotiated;
 	START_PROFILE(SMBsesssetupX);
+
+	DEBUG(3,("wct=%d flg2=0x%x\n", CVAL(inbuf, smb_wct), SVAL(inbuf, smb_flg2)));
 	
-	if (SVAL(inbuf, smb_wct) == 12) {
-		/* it's a SPNEGO session setup */
+	/* a SPNEGO session setup has 12 command words, whereas a normal
+	   NT1 session setup has 13. See the cifs spec. */
+	if (CVAL(inbuf, smb_wct) == 12 && 
+	    (SVAL(inbuf, smb_flg2) & FLAGS2_EXTENDED_SECURITY)) {
 		return reply_sesssetup_and_X_spnego(conn, inbuf, outbuf, length, bufsize);
 	}
 
