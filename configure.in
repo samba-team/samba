@@ -417,10 +417,6 @@ rk_AUTH_MODULES([sia afskauthlib])
 
 rk_DESTDIRS
 
-LTLIBOBJS=`echo "$LIB@&t@OBJS" |
-	sed 's,\.[[^.]]* ,.lo ,g;s,\.[[^.]]*$,.lo,'`
-AC_SUBST(LTLIBOBJS)
-
 AH_BOTTOM([#ifdef ROKEN_RENAME
 #include "roken_rename.h"
 #endif])
