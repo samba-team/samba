@@ -2067,16 +2067,16 @@ void make_sam_user_info21(SAM_USER_INFO_21 *usr,
 	usr->pass_can_change_time  = *pass_can_change_time;
 	usr->pass_must_change_time = *pass_must_change_time;
 
-	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   , len_user_name   , len_user_name    != 0);
-	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   , len_full_name   , len_full_name    != 0);
-	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    , len_home_dir    , len_home_dir     != 0);
-	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   , len_dir_drive   , len_dir_drive    != 0);
-	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script, len_logon_script, len_logon_script != 0);
-	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path, len_profile_path, len_profile_path != 0);
-	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description , len_description , len_description  != 0);
-	make_uni_hdr(&(usr->hdr_workstations), len_workstations, len_workstations, len_workstations != 0);
-	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str , len_unknown_str , len_workstations != 0);
-	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial , len_munged_dial , len_workstations != 0);
+	make_uni_hdr(&(usr->hdr_user_name   ), len_user_name   , len_user_name   , 1);
+	make_uni_hdr(&(usr->hdr_full_name   ), len_full_name   , len_full_name   , 1);
+	make_uni_hdr(&(usr->hdr_home_dir    ), len_home_dir    , len_home_dir    , 1);
+	make_uni_hdr(&(usr->hdr_dir_drive   ), len_dir_drive   , len_dir_drive   , 1);
+	make_uni_hdr(&(usr->hdr_logon_script), len_logon_script, len_logon_script, 1);
+	make_uni_hdr(&(usr->hdr_profile_path), len_profile_path, len_profile_path, 1);
+	make_uni_hdr(&(usr->hdr_acct_desc   ), len_description , len_description , 1);
+	make_uni_hdr(&(usr->hdr_workstations), len_workstations, len_workstations, 1);
+	make_uni_hdr(&(usr->hdr_unknown_str ), len_unknown_str , len_unknown_str , 1);
+	make_uni_hdr(&(usr->hdr_munged_dial ), len_munged_dial , len_munged_dial , 1);
 
 	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
 	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
