@@ -87,81 +87,26 @@ static void add_name(const char *machine_name, uint32 server_type,
         DLIST_ADD(*name_list, new_name);
 }
 
-/* Return a cli_state pointing at the IPC$ share for the given workgroup */
+/* Return a cli_state pointing at the IPC$ share for the given server */
 
-static struct cli_state *get_ipc_connect(char *server,
+static struct cli_state *get_ipc_connect(char *server, struct in_addr *server_ip,
                                          struct user_auth_info *user_info)
 {
-        struct nmb_name calling, called;
-        struct in_addr server_ip;
         struct cli_state *cli;
         pstring myname;
-
-        zero_ip(&server_ip);
+	NTSTATUS nt_status;
 
         get_myname(myname);
+	
+	nt_status = cli_full_connection(&cli, myname, server, server_ip, 0, "IPC$", "IPC", 
+					user_info->username, lp_workgroup(), user_info->password, 
+					CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK);
 
-        make_nmb_name(&called, myname, 0x0);
-        make_nmb_name(&calling, server, 0x20);
-
-        if (is_ipaddress(server))
-                if (!resolve_name(server, &server_ip, 0x20))
-                        return False;
-                
- again:
-	if (!(cli = cli_initialise(NULL))) {
-                DEBUG(4, ("Unable to initialise cli structure\n"));
-                goto error;
-        }
-
-        if (!cli_connect(cli, server, &server_ip)) {
-                DEBUG(4, ("Unable to connect to %s\n", server));
-                goto error;
-        }
-
-        if (!cli_session_request(cli, &calling, &called)) {
-                cli_shutdown(cli);
-                if (!strequal(called.name, "*SMBSERVER")) {
-                        make_nmb_name(&called , "*SMBSERVER", 0x20);
-                        goto again;
-                }
-                DEBUG(4, ("Session request failed to %s\n", called.name));
-                goto error;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return cli;
+	} else {
+		return NULL;
 	}
-
-        if (!cli_negprot(cli)) {
-                DEBUG(4, ("Negprot failed\n"));
-                goto error;
-	}
-
-	if (!cli_session_setup(cli, user_info->username, user_info->password, 
-                               strlen(user_info->password),
-			       user_info->password, 
-                               strlen(user_info->password), server) &&
-	    /* try an anonymous login if it failed */
-	    !cli_session_setup(cli, "", "", 1,"", 0, server)) {
-                DEBUG(4, ("Session setup failed\n"));
-                goto error;
-	}
-
-	DEBUG(4,(" session setup ok\n"));
-
-	if (!cli_send_tconX(cli, "IPC$", "?????",
-			    user_info->password, 
-                            strlen(user_info->password)+1)) {
-                DEBUG(4, ("Tconx failed\n"));
-                goto error;
-	}
-
-        return cli;
-
-        /* Clean up after error */
-
- error:
-        if (cli && cli->initialised)
-                cli_shutdown(cli);
-
-        return NULL;
 }
 
 /* Return the IP address and workgroup of a master browser on the 
@@ -223,7 +168,7 @@ static BOOL get_workgroups(struct user_auth_info *user_info)
 		}
         }
 
-        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), user_info)))
+        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
                 return False;
 
         if (!cli_NetServerEnum(cli, master_workgroup, 
@@ -248,7 +193,7 @@ static BOOL get_servers(char *workgroup, struct user_auth_info *user_info)
                 return False;
         }
 
-        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), user_info)))
+        if (!(cli = get_ipc_connect(inet_ntoa(server_ip), &server_ip, user_info)))
                 return False;
 
         if (!cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, add_name, 
@@ -262,7 +207,7 @@ static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
 {
         struct cli_state *cli;
 
-        if (!(cli = get_ipc_connect(server_name, user_info)))
+        if (!(cli = get_ipc_connect(server_name, NULL, user_info)))
                 return False;
 
         if (!cli_RNetShareEnum(cli, add_name, &shares))

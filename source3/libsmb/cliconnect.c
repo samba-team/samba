@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Andrew Barteltt 2001-2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1096,7 +1097,7 @@ static void init_creds(struct ntuser_creds *creds, char* username,
    @param dest_host The netbios name of the remote host
    @param dest_ip (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
-   @param service The share to make the connection to.  Should be 'unqualified' in any way.
+   @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
    @param service_type The 'type' of serivice. 
    @param user Username, unix string
    @param domain User's domain
@@ -1104,11 +1105,12 @@ static void init_creds(struct ntuser_creds *creds, char* username,
 */
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
-			     const char *my_name, const char *dest_host, 
+			     const char *my_name, 
+			     const char *dest_host, 
 			     struct in_addr *dest_ip, int port,
 			     char *service, char *service_type,
 			     char *user, char *domain, 
-			     char *password) 
+			     char *password, int flags) 
 {
 	struct ntuser_creds creds;
 	NTSTATUS nt_status;
@@ -1123,17 +1125,15 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 		SMB_ASSERT("output_cli for cli_full_connection was NULL.\n");
 	}
 
-	*output_cli = NULL;
-
 	if (!my_name) 
 		my_name = global_myname;
+	
+	if (!(cli = cli_initialise(NULL)))
+		return NT_STATUS_NO_MEMORY;
 	
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
 
-	if (!(cli = cli_initialise(NULL)))
-		return NT_STATUS_NO_MEMORY;
-	
 	if (cli_set_port(cli, port) != port) {
 		cli_shutdown(cli);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -1172,6 +1172,12 @@ again:
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
+		cli->use_spnego = False;
+	} else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		cli->use_kerberos = True;
+	}
+
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -1182,18 +1188,23 @@ again:
 	if (!cli_session_setup(cli, user, password, strlen(password)+1, 
 			       password, strlen(password)+1, 
 			       domain)) {
-		DEBUG(1,("failed session setup\n"));
-		nt_status = cli_nt_error(cli);
-		cli_shutdown(cli);
-		if (NT_STATUS_IS_OK(nt_status)) 
-			nt_status = NT_STATUS_UNSUCCESSFUL;
-		return nt_status;
+		if (!(flags & CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK) 
+		    || cli_session_setup(cli, "", "", 0, 
+					 "", 0, domain)) {
+		} else {
+			nt_status = cli_nt_error(cli);
+			DEBUG(1,("failed session setup with %s\n", nt_errstr(nt_status)));
+			cli_shutdown(cli);
+			if (NT_STATUS_IS_OK(nt_status)) 
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			return nt_status;
+		}
 	} 
 
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
 				    (char*)password, strlen(password)+1)) {
-			DEBUG(1,("failed tcon_X\n"));
+			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			nt_status = cli_nt_error(cli);
 			cli_shutdown(cli);
 			if (NT_STATUS_IS_OK(nt_status)) {

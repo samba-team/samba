@@ -3,6 +3,7 @@
    SMB backend for the Common UNIX Printing System ("CUPS")
    Copyright 1999 by Easy Software Products
    Copyright Andrew Tridgell 1994-1998
+   Copyright Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -271,72 +272,25 @@ smb_connect(char *workgroup,		/* I - Workgroup */
             char *password)		/* I - Password */
 {
   struct cli_state	*c;		/* New connection */
-  struct nmb_name	called,		/* NMB name of server */
-			calling;	/* NMB name of client */
-  struct in_addr	ip;		/* IP address of server */
   pstring		myname;		/* Client name */
-
+  NTSTATUS nt_status;
 
  /*
   * Get the names and addresses of the client and server...
   */
 
   get_myname(myname);  
-
-  zero_ip(&ip);
-
-  make_nmb_name(&calling, myname, 0x0);
-  make_nmb_name(&called, server, 0x20);
-
- /*
-  * Open a new connection to the SMB server...
-  */
-
-  if ((c = cli_initialise(NULL)) == NULL)
-  {
-    fputs("ERROR: cli_initialize() failed...\n", stderr);
-    return (NULL);
+  	
+  nt_status = cli_full_connection(&c, myname, server, NULL, 0, share, "?????", 
+				  username, lp_workgroup(), password, 0);
+  
+  if (NT_STATUS_IS_OK(nt_status)) {
+	  return c;
+  } else {
+	  fprintf(stderr, "ERROR:  Connection failed with error %s\n", nt_errstr(nt_status));
+	  return NULL;
   }
 
-  if (!cli_connect(c, server, &ip))
-  {
-    fputs("ERROR: cli_connect() failed...\n", stderr);
-    return (NULL);
-  }
-
-  if (!cli_session_request(c, &calling, &called))
-  {
-    fputs("ERROR: cli_session_request() failed...\n", stderr);
-    return (NULL);
-  }
-
-  if (!cli_negprot(c))
-  {
-    fputs("ERROR: SMB protocol negotiation failed\n", stderr);
-    cli_shutdown(c);
-    return (NULL);
-  }
-
- /*
-  * Do password stuff...
-  */
-
-  if (!cli_session_setup(c, username, 
-			 password, strlen(password),
-			 password, strlen(password),
-			 workgroup))
-  {
-    fprintf(stderr, "ERROR: SMB session setup failed: %s\n", cli_errstr(c));
-    return (NULL);
-  }
-
-  if (!cli_send_tconX(c, share, "?????",
-		      password, strlen(password)+1))
-  {
-    fprintf(stderr, "ERROR: SMB tree connect failed: %s\n", cli_errstr(c));
-    cli_shutdown(c);
-    return (NULL);
-  }
 
  /*
   * Return the new connection...
