@@ -1,3 +1,8 @@
+2005-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (DES_string_to_key_int): must check for weak
+	keys after doing the DES_cbc_cksum
+
 2005-02-19  Luke Howard  <lukeh@padl.com>
 
 	* lib/krb5/krbhst.c: set KD_CONFIG after calling
