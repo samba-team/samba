@@ -43,10 +43,10 @@
 
 #ifdef HAVE__READDIR
 #define real_readdir(d)            	(_readdir(d))
-#elif SYS_readdir
-#define real_readdir(d)		(syscall(SYS_readdir,(d)))
 #elif HAVE___READDIR
 #define real_readdir(d)            	(__readdir(d))
+#elif SYS_readdir
+#define real_readdir(d)		(syscall(SYS_readdir,(d)))
 #endif
 
 #ifdef HAVE__CLOSEDIR
