@@ -61,8 +61,8 @@ enum winbindd_cmd {
 
 	/* SID conversion */
 
-	WINBINDD_STRING2SID,
-	WINBINDD_SID2STRING
+	WINBINDD_LOOKUPSID,        /* Convert sid to name */
+	WINBINDD_LOOKUPNAME        /* Convert name to sid */
 };
 
 /* Winbind request structure */
@@ -85,6 +85,8 @@ struct winbindd_request {
                     fstring oldpass;
                     fstring newpass;
                 } chauthtok;         /* pam_winbind passwd module */
+		fstring sid;         /* lookupsid */
+		fstring name;        /* lookupname */
 	} data;
         fstring domain;      /* {set,get,end}{pw,gr}ent() */
 };
@@ -92,51 +94,53 @@ struct winbindd_request {
 /* Response values */
 
 enum winbindd_result {
-    WINBINDD_ERROR,
-    WINBINDD_OK
+	WINBINDD_ERROR,
+	WINBINDD_OK
 };
 
 /* Winbind response structure */
 
 struct winbindd_response {
     
-    /* Header information */
+	/* Header information */
 
-    int length;                           /* Length of response */
-    enum winbindd_result result;          /* Result code */
+	int length;                           /* Length of response */
+	enum winbindd_result result;          /* Result code */
 
     /* Fixed length return data */
 
-    union {
+	union {
         
-        /* getpwnam, getpwuid, getpwent */
+		/* getpwnam, getpwuid, getpwent */
 
-        struct winbindd_pw {
-            fstring pw_name;
-            fstring pw_passwd;
-            uid_t pw_uid;
-            gid_t pw_gid;
-            fstring pw_gecos;
-            fstring pw_dir;
-            fstring pw_shell;
-            int pwent_ndx;
-        } pw;
+		struct winbindd_pw {
+			fstring pw_name;
+			fstring pw_passwd;
+			uid_t pw_uid;
+			gid_t pw_gid;
+			fstring pw_gecos;
+			fstring pw_dir;
+			fstring pw_shell;
+			int pwent_ndx;
+		} pw;
 
-        /* getgrnam, getgrgid, getgrent */
+		/* getgrnam, getgrgid, getgrent */
 
-        struct winbindd_gr {
-            fstring gr_name;
-            fstring gr_passwd;
-            gid_t gr_gid;
-            int num_gr_mem;
-            int grent_ndx;
-        } gr;
+		struct winbindd_gr {
+			fstring gr_name;
+			fstring gr_passwd;
+			gid_t gr_gid;
+			int num_gr_mem;
+			int grent_ndx;
+		} gr;
 
-    } data;
+		fstring sid;        /* lookupname */
+		fstring name;       /* lookupsid */
+	} data;
 
-    /* Variable length return data */
+	/* Variable length return data */
 
-    void *extra_data;                    /* getgrnam, getgrgid, getgrent */
+	void *extra_data;               /* getgrnam, getgrgid, getgrent */
 };
 
 #endif

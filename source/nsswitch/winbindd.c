@@ -285,12 +285,12 @@ static void process_request(struct winbindd_cli_state *state)
 
 		/* SID related functions */
 
-	case WINBINDD_SID2STRING:
-		state->response.result = winbindd_sid2string(state);
+	case WINBINDD_LOOKUPSID:
+		state->response.result = winbindd_lookupsid(state);
 		break;
 
-	case WINBINDD_STRING2SID:
-		state->response.result = winbindd_string2sid(state);
+	case WINBINDD_LOOKUPNAME:
+		state->response.result = winbindd_lookupname(state);
 		break;
 
 		/* Oops */
