@@ -66,7 +66,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pwd.h>
-#include "nsswitch/nss.h"
+#include "nsswitch/sys_nss.h"
 
 /* Declarations for functions in winbind_nss.c
    needed in winbind_nss_solaris.c (solaris wrapper to nss) */

@@ -736,7 +736,7 @@ typedef struct smb_wpasswd {
 #define UNI_XDIGIT   0x8
 #define UNI_SPACE    0x10
 
-#include "nsswitch/nss.h"
+#include "nsswitch/sys_nss.h"
 
 /***** automatically generated prototypes *****/
 #include "proto.h"
