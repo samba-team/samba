@@ -297,7 +297,7 @@ static void write_tar_hdr(struct client_info *info,
 /****************************************************************************
 Read a tar header into a hblock structure, and validate
 ***************************************************************************/
-static long read_tar_hdr(struct cli_state *cli, struct client_info *info,
+static long read_tar_hdr(struct cli_state *cli, int t_idx, struct client_info *info,
 				union hblock *hb, file_info *finfo, char *prefix)
 {
   long chk, fchk;
@@ -434,7 +434,7 @@ static void do_tar_eof(struct client_info *info, int f)
 /****************************************************************************
 Set DOS file attributes
 ***************************************************************************/
-static BOOL do_setrattr(struct cli_state *cli, struct client_info *info,
+static BOOL do_setrattr(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *fname, uint8 attr, int setit)
 {
   /*
@@ -452,17 +452,17 @@ static BOOL do_setrattr(struct cli_state *cli, struct client_info *info,
 
   /* combine found attributes with bits to be set or reset */
 
-  if (!cli_getatr(cli, fname, &fattr, &write_time, &fsize)) return False;
+  if (!cli_getatr(cli, t_idx, fname, &fattr, &write_time, &fsize)) return False;
 
   attr = setit ? (fattr | attr) : (fattr & ~attr);
 
-  return cli_setatr(cli, fname, fattr, 0); /* zero write time: no change */
+  return cli_setatr(cli, t_idx, fname, fattr, 0); /* zero write time: no change */
 }
 
 /****************************************************************************
 Ensure a remote path exists (make if necessary)
 ***************************************************************************/
-static BOOL ensurepath(struct cli_state *cli, struct client_info *info,
+static BOOL ensurepath(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *fname)
 {
   /* *must* be called with buffer ready malloc'ed */
@@ -489,8 +489,8 @@ static BOOL ensurepath(struct cli_state *cli, struct client_info *info,
     {
       strcat(part_path, p);
 
-      if (!cli_chkpath(cli, part_path)) {
-	if (!cli_mkdir(cli, part_path))
+      if (!cli_chkpath(cli, t_idx, part_path)) {
+	if (!cli_mkdir(cli, t_idx, part_path))
 	  {
 	    DEBUG(0, ("Error mkdir\n"));
 	    return False;
@@ -578,23 +578,23 @@ static BOOL tar_pad_check(struct client_info *info,
 /****************************************************************************
 append one remote file to the tar file
 ***************************************************************************/
-static void do_atar(struct cli_state *cli, struct client_info *info,
+static void do_atar(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname,file_info *finfo1)
 {
-	uint32 nread = cli_get(cli, info, rname, lname, finfo1, info->tar.handle,
+	uint32 nread = cli_get(cli, t_idx, info, rname, lname, finfo1, info->tar.handle,
 				tar_write_check, do_tar_buf, tar_pad_check);
 
 	/* reset the archive bit */
 	if (info->tar.reset)
 	{
-		do_setrattr(cli, info, rname, aARCH, ATTRRESET);
+		do_setrattr(cli, t_idx, info, rname, aARCH, ATTRRESET);
 	}
 }
 
 /****************************************************************************
 Append single file to tar file (or not)
 ***************************************************************************/
-static void do_tar(struct cli_state *cli, struct client_info *info,
+static void do_tar(struct cli_state *cli, int t_idx, struct client_info *info,
 				file_info *finfo)
 {
   pstring rname;
@@ -636,18 +636,18 @@ static void do_tar(struct cli_state *cli, struct client_info *info,
       strcpy(mtar_mask,info->cur_dir);
       strcat(mtar_mask,"*");
       
-      cli_dir(cli, info, mtar_mask, info->tar.attrib, info->recurse_dir, do_tar);
+      cli_dir(cli, t_idx, info, mtar_mask, info->tar.attrib, info->recurse_dir, do_tar);
       strcpy(info->cur_dir,saved_curdir);
     }
   else
     {
       strcpy(rname,info->cur_dir);
       strcat(rname,finfo->name);
-      do_atar(cli, info, rname,finfo->name,finfo);
+      do_atar(cli, t_idx, info, rname,finfo->name,finfo);
     }
 }
 
-static void do_tarput(struct cli_state *cli, struct client_info *info)
+static void do_tarput(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   file_info finfo;
   int nread=0, bufread;
@@ -704,7 +704,7 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
     do {
       if (!fsize)
 	{
-	  switch (read_tar_hdr(cli, info, (union hblock *) bufferp, &finfo, info->cur_dir))
+	  switch (read_tar_hdr(cli, t_idx, info, (union hblock *) bufferp, &finfo, info->cur_dir))
 	    {
 	    case -2:             /* something dodgy but not fatal about this */
 	      DEBUG(0, ("skipping %s...\n", finfo.name));
@@ -743,8 +743,8 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
 
 	  if (finfo.mode & aDIR)
 	    {
-	      if (!cli_chkpath(cli, finfo.name)
-		  && !cli_mkdir(cli, finfo.name))
+	      if (!cli_chkpath(cli, t_idx, finfo.name)
+		  && !cli_mkdir(cli, t_idx, finfo.name))
 		{
 		  DEBUG(0, ("abandoning restore\n"));
 		  return;
@@ -758,8 +758,8 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
 	  
 	  fsize=finfo.size;
 
-	  if (ensurepath(cli, info, finfo.name) &&
-          !cli_create(cli, finfo.name, finfo.mode, finfo.mtime, &fnum))
+	  if (ensurepath(cli, t_idx, info, finfo.name) &&
+          !cli_create(cli, t_idx, finfo.name, finfo.mode, finfo.mtime, &fnum))
 	    {
 	      DEBUG(0, ("abandoning restore\n"));
 	      return;
@@ -780,7 +780,7 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
       while (chunk > 0) {
 	int minichunk=MIN(chunk, cli->max_xmit-200);
 	
-	if (!cli_write(cli, fnum, /* file descriptor */
+	if (!cli_write(cli, t_idx, fnum, /* file descriptor */
 		      nread, /* offset low */
 		      bufferp,
 		      minichunk)) /* n */
@@ -796,7 +796,7 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
       
       if (nread>=fsize)
 	{
-	  if (!cli_close(cli, fnum, 0))
+	  if (!cli_close(cli, t_idx, fnum, 0))
 	    {
 	      DEBUG(0, ("Error closing remote file\n"));
 	      return;
@@ -821,7 +821,7 @@ static void do_tarput(struct cli_state *cli, struct client_info *info)
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-void cmd_block(struct cli_state *cli, struct client_info *info)
+void cmd_block(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   fstring buf;
   int block;
@@ -846,7 +846,7 @@ void cmd_block(struct cli_state *cli, struct client_info *info)
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-void cmd_tarmode(struct cli_state *cli, struct client_info *info)
+void cmd_tarmode(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   fstring buf;
 
@@ -870,7 +870,7 @@ void cmd_tarmode(struct cli_state *cli, struct client_info *info)
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(struct cli_state *cli, struct client_info *info)
+void cmd_setmode(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   char *q;
   fstring buf;
@@ -918,14 +918,14 @@ void cmd_setmode(struct cli_state *cli, struct client_info *info)
     }
 
   DEBUG(1, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
-  do_setrattr(cli, info, fname, attra[ATTRSET], ATTRSET);
-  do_setrattr(cli, info, fname, attra[ATTRRESET], ATTRRESET);
+  do_setrattr(cli, t_idx, info, fname, attra[ATTRSET], ATTRSET);
+  do_setrattr(cli, t_idx, info, fname, attra[ATTRRESET], ATTRRESET);
 }
 
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-void cmd_tar(struct cli_state *cli, struct client_info *info)
+void cmd_tar(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   fstring buf;
   char **argl;
@@ -943,7 +943,7 @@ void cmd_tar(struct cli_state *cli, struct client_info *info)
     return;
   }
 
-  process_tar(cli, info);
+  process_tar(cli, t_idx, info);
 
   free(argl);
 }
@@ -951,12 +951,12 @@ void cmd_tar(struct cli_state *cli, struct client_info *info)
 /****************************************************************************
 Command line (option) version
 ***************************************************************************/
-int process_tar(struct cli_state *cli, struct client_info *info)
+int process_tar(struct cli_state *cli, int t_idx, struct client_info *info)
 {
   init_tar_buf(info);
   switch(info->tar.type) {
   case 'x':
-    do_tarput(cli, info);
+    do_tarput(cli, t_idx, info);
     free(info->tar.buf);
     close(info->tar.handle);
     break;
@@ -987,19 +987,19 @@ int process_tar(struct cli_state *cli, struct client_info *info)
 	  strcpy(info->cur_dir, tarmac);
 	  *(strrchr(info->cur_dir, '\\')+1)='\0';
 
-	  cli_dir(cli, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+	  cli_dir(cli, t_idx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
 	  strcpy(info->cur_dir,saved_dir);
 	} else {
 	  strcpy(tarmac, info->cur_dir);
 	  strcat(tarmac, info->tar.cliplist[i]);
-	  cli_dir(cli, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
+	  cli_dir(cli, t_idx, info, tarmac, info->tar.attrib, info->recurse_dir, do_tar);
 	}
       }
     } else {
       pstring mask;
       strcpy(mask,info->cur_dir);
       strcat(mask,"\\*");
-	  cli_dir(cli, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
+	  cli_dir(cli, t_idx, info, mask, info->tar.attrib, info->recurse_dir, do_tar);
     }
     
     if (info->tar.num_files) do_tar_eof(info, info->tar.handle);

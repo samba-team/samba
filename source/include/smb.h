@@ -285,7 +285,19 @@ struct smb_passwd
 	uint16 acct_ctrl;
 };
 
-struct cli_state {
+/* this is probably going to max out at one... :-) */
+#define MAX_CLIENT_CONNECTIONS 30
+
+/* tconX-specific information */
+struct tcon_state
+{
+	int cnum;
+	fstring full_share;
+	char dev[16];
+};
+
+struct cli_state
+{
 	int fd;
 	int pid;
 	int mid;
@@ -296,10 +308,8 @@ struct cli_state {
 	int privileges;
 	fstring eff_name;
 
-	/* tconX-specific information */
-	int cnum;
-	fstring fullshare;
-	fstring dev;
+	struct tcon_state con[MAX_CLIENT_CONNECTIONS];
+	int num_tcons;
 
 	fstring full_dest_host_name;
 	char called_netbios_name[16];

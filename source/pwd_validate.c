@@ -130,6 +130,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 		     char *ntpass, int ntpasslen)
 {
 	BOOL pwd_ok = False;
+	int t_idx;
 
 	DEBUG(4,("server_validate2: user:[%s] domain:[%s]\n", user, domain));
 
@@ -165,7 +166,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 
 	if (!pwd_ok)
 	{
-		pwd_ok = pass != NULL && cli_send_tconX(clnt, "IPC$", "IPC", pass, passlen);
+		pwd_ok = pass != NULL && cli_send_tconX(clnt, &t_idx, "IPC$", "IPC", pass, passlen);
 	}
 
 	if (!pwd_ok)
@@ -175,7 +176,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 
 	if (!pwd_ok)
 	{
-		pwd_ok = ntpass != NULL && cli_send_tconX(clnt, "IPC$", "IPC", ntpass, ntpasslen);
+		pwd_ok = ntpass != NULL && cli_send_tconX(clnt, &t_idx, "IPC$", "IPC", ntpass, ntpasslen);
 	}
 
 	if (!pwd_ok)
@@ -192,7 +193,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 		DEBUG(3,("server %s rejected the password\n", clnt->full_dest_host_name));
 	}
 
-	cli_tdis(clnt);
+	cli_tdis(clnt, t_idx);
 
 	return pwd_ok;
 }
@@ -206,6 +207,8 @@ BOOL server_validate(struct cli_state *clnt, char *user, char *domain,
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen)
 {
+	int t_idx;
+
 	if (clnt == NULL)
 	{
 		DEBUG(1,("server_validate: NULL client_state. cannot validate\n"));
@@ -229,30 +232,30 @@ BOOL server_validate(struct cli_state *clnt, char *user, char *domain,
 	}
 
 
-	if (!cli_send_tconX(clnt, "IPC$", "IPC", "", 1))
+	if (!cli_send_tconX(clnt, &t_idx, "IPC$", "IPC", "", 1))
     {
 		DEBUG(1,("password server %s refused IPC$ connect\n", clnt->full_dest_host_name));
 		return False;
 	}
 
 
-	if (!cli_send_tconX(clnt, "IPC$", "IPC", "", 1)) {
+	if (!cli_send_tconX(clnt, &t_idx, "IPC$", "IPC", "", 1)) {
 		DEBUG(1,("password server %s refused IPC$ connect\n", clnt->full_dest_host_name));
 		return False;
 	}
 
 
-	if (!cli_NetWkstaUserLogon(clnt, user, clnt->called_netbios_name))
+	if (!cli_NetWkstaUserLogon(clnt, t_idx, user, clnt->called_netbios_name))
 	{
 		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", clnt->full_dest_host_name));
-		cli_tdis(clnt);
+		cli_tdis(clnt, t_idx);
 		return False;
 	}
 
 	if (clnt->privileges == 0)
 	{
 		DEBUG(1,("password server %s gave guest privilages\n", clnt->full_dest_host_name));
-		cli_tdis(clnt);
+		cli_tdis(clnt, t_idx);
 		return False;
 	}
 
@@ -260,13 +263,13 @@ BOOL server_validate(struct cli_state *clnt, char *user, char *domain,
 		DEBUG(1,("password server %s gave different username %s\n", 
 			 clnt->full_dest_host_name,
 			 clnt->eff_name));
-		cli_tdis(clnt);
+		cli_tdis(clnt, t_idx);
 		return False;
 	}
 
 	DEBUG(3,("password server %s accepted the password\n", clnt->full_dest_host_name));
 
-	cli_tdis(clnt);
+	cli_tdis(clnt, t_idx);
 
 	return(True);
 }

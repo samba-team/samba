@@ -64,157 +64,6 @@ static BOOL setup_term_code (char *code)
 }
 
 
-/****************************************************************************
-send a message
-****************************************************************************/
-static void send_message(struct cli_state *cli, char *username, char *dest_host)
-{
-  int total_len;
-  char message[2000];
-  int l;
-  char c;
-
-  printf("Type your message, ending it with a Control-D\n");
-
-      for (l=0; l < sizeof(message) && (c = fgetc(stdin)) != EOF; l++)
-	{
-	  if (c == '\n')
-	    message[l++] = '\r';
-	  message[l] = c;   
-	}
-    if (!cli_send_message(cli, username, dest_host, message, &total_len))
-    {
-	  printf("send_message failed (%s)\n", cli_errstr(cli));
-	  return;
-	}      
-
-  if (total_len >= 1600)
-    printf("the message was truncated to 1600 bytes ");
-  else
-    printf("sent %d bytes ",total_len);
-
-}
-
-
-
-/****************************************************************************
-print browse connection on a host
-****************************************************************************/
-static void print_server(char *sname, uint32 type, char *comment)
-{
-	fstring typestr;
-	*typestr=0;
-
-	if (type == SV_TYPE_ALL)
-	{
-		strcpy(typestr, "All");
-	}
-	else
-	{
-		int i;
-		typestr[0] = 0;
-		for (i = 0; i < 32; i++)
-		{
-			if (IS_BITS_SET(type, 1 << i))
-			{
-				switch (1 << i)
-				{
-					case SV_TYPE_WORKSTATION      : strcat(typestr, "Wk " ); break;
-					case SV_TYPE_SERVER           : strcat(typestr, "Sv " ); break;
-					case SV_TYPE_SQLSERVER        : strcat(typestr, "Sql "); break;
-					case SV_TYPE_DOMAIN_CTRL      : strcat(typestr, "PDC "); break;
-					case SV_TYPE_DOMAIN_BAKCTRL   : strcat(typestr, "BDC "); break;
-					case SV_TYPE_TIME_SOURCE      : strcat(typestr, "Tim "); break;
-					case SV_TYPE_AFP              : strcat(typestr, "AFP "); break;
-					case SV_TYPE_NOVELL           : strcat(typestr, "Nov "); break;
-					case SV_TYPE_DOMAIN_MEMBER    : strcat(typestr, "Dom "); break;
-					case SV_TYPE_PRINTQ_SERVER    : strcat(typestr, "PrQ "); break;
-					case SV_TYPE_DIALIN_SERVER    : strcat(typestr, "Din "); break;
-					case SV_TYPE_SERVER_UNIX      : strcat(typestr, "Unx "); break;
-					case SV_TYPE_NT               : strcat(typestr, "NT " ); break;
-					case SV_TYPE_WFW              : strcat(typestr, "Wfw "); break;
-					case SV_TYPE_SERVER_MFPN      : strcat(typestr, "Mfp "); break;
-					case SV_TYPE_SERVER_NT        : strcat(typestr, "SNT "); break;
-					case SV_TYPE_POTENTIAL_BROWSER: strcat(typestr, "PtB "); break;
-					case SV_TYPE_BACKUP_BROWSER   : strcat(typestr, "BMB "); break;
-					case SV_TYPE_MASTER_BROWSER   : strcat(typestr, "LMB "); break;
-					case SV_TYPE_DOMAIN_MASTER    : strcat(typestr, "DMB "); break;
-					case SV_TYPE_SERVER_OSF       : strcat(typestr, "OSF "); break;
-					case SV_TYPE_SERVER_VMS       : strcat(typestr, "VMS "); break;
-					case SV_TYPE_WIN95_PLUS       : strcat(typestr, "W95 "); break;
-					case SV_TYPE_ALTERNATE_XPORT  : strcat(typestr, "Xpt "); break;
-					case SV_TYPE_LOCAL_LIST_ONLY  : strcat(typestr, "Dom "); break;
-					case SV_TYPE_DOMAIN_ENUM      : strcat(typestr, "Loc "); break;
-				}
-			}
-		}
-		i = strlen(typestr)-1;
-		if (typestr[i] == ' ') typestr[i] = 0;
-
-	}
-
-	printf("\t%-15.15s%-20s %s\n", sname, typestr, comment);
-}
-
-
-/****************************************************************************
-print browse connection on a host
-****************************************************************************/
-static void print_share(char *sname, uint32 type, char *comment)
-{
-	fstring typestr;
-	*typestr=0;
-
-	switch (type)
-	{
-		case STYPE_DISKTREE: strcpy(typestr,"Disk"); break;
-		case STYPE_PRINTQ  : strcpy(typestr,"Printer"); break;	      
-		case STYPE_DEVICE  : strcpy(typestr,"Device"); break;
-		case STYPE_IPC     : strcpy(typestr,"IPC"); break;      
-		default            : strcpy(typestr,"????"); break;      
-	}
-
-	printf("\t%-15.15s%-10.10s%s\n", sname, typestr, comment);
-}
-
-
-/****************************************************************************
-try and browse available connections on a host
-****************************************************************************/
-static void browse_host(struct cli_state *cli, char *workgroup, BOOL sort)
-{
-	int count = 0;
-	BOOL long_share_name = False;
-	
-	printf("\n\tSharename      Type      Comment\n");
-	printf(  "\t---------      ----      -------\n");
-
-	count = cli_NetShareEnum(cli, sort, &long_share_name, print_share);
-
-	if (count == 0)
-	{
-		printf("\tNo shares available on this host\n");
-	}
-
-	if (long_share_name)
-	{
-		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
-	}
-
-	printf("\n");
-	printf("\tWorkgroup      Type                 Master\n");
-	printf("\t---------      ----                 ------\n");
-
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_DOMAIN_ENUM, print_server);
-
-	printf("\n");
-	printf("\tServer         Type                 Comment\n");
-	printf("\t------         ----                 -------\n");
-	
-	cli_NetServerEnum(cli, workgroup, SV_TYPE_ALL, print_server);
-}
-
-
 /* This defines the commands supported by this client */
 struct
 {
@@ -229,6 +78,10 @@ struct
   {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
   {"samrid",     cmd_sam_query_users,  "<server> SAM User Info lookup"},
 #endif
+  {"message",    cmd_send_message,"<username/workgroup> Send a message"},
+  {"shares",     cmd_list_shares, "List shares on a server"},
+  {"servers",    cmd_list_servers,"[<workgroup>] [<type, hex>] List known browse servers"},
+  {"workgroups", cmd_list_wgps,   "[<workgroup>] [<type, hex>] List known browse workgroup"},
   {"ls",         cmd_dir,         "<mask> list the contents of the current directory"},
   {"dir",        cmd_dir,         "<mask> list the contents of the current directory"},
   {"lcd",        cmd_lcd,         "[directory] change/report the local current working directory"},
@@ -337,9 +190,9 @@ void cmd_help(struct cli_state *cli, struct client_info *info)
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
 #ifdef CLIX
-static char wait_keyboard(struct cli_state *cli)
+static char wait_keyboard(struct cli_state *cli, int t_idx)
 #else
-static void wait_keyboard(struct cli_state *cli)
+static void wait_keyboard(struct cli_state *cli, int t_idx)
 #endif
 {
   fd_set fds;
@@ -398,10 +251,10 @@ static void wait_keyboard(struct cli_state *cli)
       if (delay > 100000)
 	{
 	  delay = 0;
-	  cli_chkpath(cli, "\\");
+	  cli_chkpath(cli, t_idx, "\\");
 	}
 #else
-      cli_chkpath(cli, "\\");
+      cli_chkpath(cli, t_idx, "\\");
 #endif
     }  
 }
@@ -410,14 +263,15 @@ static void wait_keyboard(struct cli_state *cli)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static BOOL process(struct cli_state *cli, struct client_info *info,
+static BOOL process(struct cli_state *cli, int t_idx,
+				struct client_info *info,
 				char *cmd_str)
 {
   extern FILE *dbf;
   pstring line;
   char *cmd;
 
-  if (*info->base_dir) do_cd(cli, info, info->base_dir);
+  if (*info->base_dir) do_cd(cli, t_idx, info, info->base_dir);
 
   cmd = cmd_str;
   if (cmd[0] != '\0') while (cmd[0] != '\0')
@@ -468,12 +322,12 @@ static BOOL process(struct cli_state *cli, struct client_info *info,
       fflush(dbf);
 
 #ifdef CLIX
-      line[0] = wait_keyboard(cli);
+      line[0] = wait_keyboard(cli, t_idx);
       /* this might not be such a good idea... */
       if ( line[0] == EOF)
 	break;
 #else
-      wait_keyboard(cli);
+      wait_keyboard(cli, t_idx);
 #endif
   
       /* and get a response */
@@ -540,6 +394,16 @@ static void usage(char *pname)
   DEBUG(0,("\n"));
 }
 
+enum client_action
+{
+	CLIENT_NONE,
+	CLIENT_MESSAGE,
+	CLIENT_QUERY,
+	CLIENT_IPC,
+	CLIENT_TAR,
+	CLIENT_SVC
+};
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -551,9 +415,6 @@ static void usage(char *pname)
 	extern FILE *dbf;
 	extern char *optarg;
 	extern int optind;
-	BOOL message = False;
-	BOOL query_host = False;
-	BOOL nt_domain_logon = False;
 	BOOL anonymous = False;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
@@ -561,6 +422,9 @@ static void usage(char *pname)
 	BOOL got_pass = False;
 	char *cmd_str="";
 	int myumask = 0755;
+	enum client_action cli_action = CLIENT_NONE;
+	int ret = 0;
+	int t_idx = -1;
 
 	struct cli_state smb_cli;
 	struct client_info cli_info;
@@ -738,7 +602,7 @@ static void usage(char *pname)
 			{
 				strcpy(cli_info.dest_host,optarg);
 				strupper(cli_info.dest_host);
-				nt_domain_logon = True;
+				cli_action = CLIENT_IPC;
 				break;
 			}
 
@@ -747,7 +611,7 @@ static void usage(char *pname)
 				name_type = 0x03; /* messages sent to NetBIOS name type 0x3 */
 				strcpy(cli_info.dest_host,optarg);
 				strupper(cli_info.dest_host);
-				message = True;
+				cli_action = CLIENT_MESSAGE;
 				break;
 			}
 
@@ -765,10 +629,9 @@ static void usage(char *pname)
 
 			case 'T':
 			{
-				if (!tar_parseargs(&cli_info, argc, argv, optarg, optind))
+				if (tar_parseargs(&cli_info, argc, argv, optarg, optind))
 				{
-					usage(pname);
-					exit(1);
+					cli_action = CLIENT_TAR;
 				}
 				break;
 			}
@@ -782,7 +645,7 @@ static void usage(char *pname)
 			case 'L':
 			{
 				got_pass = True;
-				query_host = True;
+				cli_action = CLIENT_QUERY;
 				strcpy(cli_info.dest_host,optarg);
 				break;
 			}
@@ -896,7 +759,7 @@ static void usage(char *pname)
 		}
 	}
 
-	if (!cli_info.tar.type && !nt_domain_logon && !query_host && !*service && !message)
+	if (cli_action == CLIENT_NONE)
 	{
 		usage(pname);
 		exit(1);
@@ -932,64 +795,12 @@ static void usage(char *pname)
 	get_myname((*myname)?NULL:myname,NULL);  
 	strupper(myname);
 
-	if (query_host)
+	if (cli_action == CLIENT_IPC || cli_action == CLIENT_QUERY)
 	{
-		strupper(service);
-
-		if (!cli_establish_connection(&smb_cli, cli_info.dest_host, name_type, &cli_info.dest_ip,
-		     cli_info.myhostname,
-		     got_pass ? NULL : "Enter Password:",
-		     cli_info.username, password, cli_info.workgroup,
-		     "IPC$", "IPC",
-		     False, True, False))
-		{
-			cli_shutdown(&smb_cli);
-			return 1;
-		}
-
-		browse_host(&smb_cli, cli_info.workgroup, True);
-
-		cli_shutdown(&smb_cli);
-
-		return 0;
-	}
-
-	if (message)
-	{
-		int ret = 0;
-		if (!cli_establish_connection(&smb_cli, cli_info.dest_host, name_type, &cli_info.dest_ip,
-		     cli_info.myhostname,
-		     got_pass ? NULL : "Enter Password:",
-		     cli_info.username, password, cli_info.workgroup,
-		     service, svc_type,
-		     False, False, True))
-		{
-			cli_shutdown(&smb_cli);
-			return 1;
-		}
-
-		send_message(&smb_cli, cli_info.username, cli_info.dest_host);
-
-		cli_shutdown(&smb_cli);
-
-		return(ret);
-	}
-#ifdef NTDOMAIN
-	if (nt_domain_logon)
-	{
-		strupper(cli_info.myhostname);
-		fstrcpy(cli_info.mach_acct, cli_info.myhostname);
-		strupper(cli_info.mach_acct);
-		strcat(cli_info.mach_acct, "$");
-
-		DEBUG(5,("NT Domain Logon[%s].  Host:%s Mac-acct:%s\n",
-			cli_info.workgroup, cli_info.dest_host, cli_info.mach_acct));
-
 		strcpy(share, "IPC$");
 		strcpy(svc_type, "IPC");
 	}
 	else
-#endif
 	{
 		/* extract destination host (if there isn't one) and share from service */
 		pstrcpy(tmp, service);
@@ -1014,40 +825,14 @@ static void usage(char *pname)
 		}
 	}
 
-	if (cli_info.tar.type)
-	{
-		int ret = 0;
-		cli_info.recurse_dir = True;
-
-		if (!cli_establish_connection(&smb_cli, cli_info.dest_host, name_type, &cli_info.dest_ip,
-		     cli_info.myhostname,
-		     got_pass ? NULL : "Enter Password:",
-		     cli_info.username, password, cli_info.workgroup,
-		     service, svc_type,
-		     False, True, True))
-		{
-			cli_shutdown(&smb_cli);
-			return 1;
-		}
-
-		bzero(smb_cli.outbuf,smb_size);
-		if (*cli_info.base_dir)
-		{
-			do_cd(&smb_cli, &cli_info, cli_info.base_dir);
-		}
-		ret = process_tar(&smb_cli, &cli_info);
-
-		cli_shutdown(&smb_cli);
-		return ret;
-	}
-
 	if (cli_info.username[0] == 0)
 	{
 		anonymous = True;
 	}
 
-	if (!cli_establish_connection(&smb_cli, cli_info.dest_host, name_type, &cli_info.dest_ip,
-		   cli_info.myhostname,
+	if (!cli_establish_connection(&smb_cli, &t_idx,
+			cli_info.dest_host, name_type, &cli_info.dest_ip,
+		     cli_info.myhostname,
 		   (got_pass || anonymous) ? NULL : "Enter Password:",
 		   cli_info.username, !anonymous ? password : NULL, cli_info.workgroup,
 	       share, svc_type,
@@ -1057,10 +842,59 @@ static void usage(char *pname)
 		return 1;
 	}
 
-	if (!process(&smb_cli, &cli_info, cmd_str))
+	if (cli_action == CLIENT_IPC)
 	{
-		cli_shutdown(&smb_cli);
-		return 1;
+		strupper(cli_info.myhostname);
+		fstrcpy(cli_info.mach_acct, cli_info.myhostname);
+		strupper(cli_info.mach_acct);
+		strcat(cli_info.mach_acct, "$");
+
+		DEBUG(5,("IPC$ connection[%s].  Host:%s Mac-acct:%s\n",
+			cli_info.workgroup, cli_info.dest_host, cli_info.mach_acct));
+	}
+
+	ret = 0;
+
+	switch (cli_action)
+	{
+		case CLIENT_QUERY:
+		{
+			client_browse_host(&smb_cli, t_idx, cli_info.workgroup, True);
+			break;
+		}
+		case CLIENT_MESSAGE:
+		{
+			client_send_message(&smb_cli, t_idx, cli_info.username, cli_info.dest_host);
+			break;
+		}
+
+		case CLIENT_TAR:
+		{
+			cli_info.recurse_dir = True;
+
+			if (*cli_info.base_dir)
+			{
+				do_cd(&smb_cli, t_idx, &cli_info, cli_info.base_dir);
+			}
+
+			ret = process_tar(&smb_cli, t_idx, &cli_info);
+
+			break;
+		}
+
+		case CLIENT_IPC:
+		case CLIENT_SVC:
+		{
+			ret = process(&smb_cli, t_idx, &cli_info, cmd_str) ? 0 : 1;
+			break;
+		}
+
+		default:
+		{
+			DEBUG(0,("unknown client action requested\n"));
+			ret = 1;
+			break;
+		}
 	}
 
 	cli_shutdown(&smb_cli);

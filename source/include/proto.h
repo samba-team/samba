@@ -40,51 +40,51 @@ void cmd_help(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  clientgen.c  */
 
-BOOL cli_send_trans(struct cli_state *cli,
+BOOL cli_send_trans(struct cli_state *cli, int t_idx,
 			   int trans, char *name, int pipe_name_len,
                int fid, int flags,
 			   char *data,char *param,uint16 *setup, int ldata,int lparam,
 			   int lsetup,int mdata,int mparam,int msetup);
-BOOL cli_receive_trans(struct cli_state *cli,
+BOOL cli_receive_trans(struct cli_state *cli, int t_idx,
 			      int trans,int *data_len,
 			      int *param_len, char **data,char **param);
-BOOL cli_api_pipe(struct cli_state *cli,
+BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *pipe_name, int pipe_name_len,
 	int prcnt,int drcnt, int srcnt,
 	int mprcnt,int mdrcnt,
 	int *rprcnt,int *rdrcnt,
 	char *param, char *data, uint16 *setup,
 	char **rparam,char **rdata);
-BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
-BOOL cli_NetShareEnum(struct cli_state *cli, BOOL sort, BOOL *long_share_name,
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *workstation);
+BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, BOOL sort, BOOL *long_share_name,
 		       void (*fn)(char *, uint32, char *));
-BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
-BOOL cli_session_setup(struct cli_state *cli, 
+BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
 		       char *ntpass, int ntpasslen,
 		       char *workgroup);
-BOOL cli_send_tconX(struct cli_state *cli, 
+BOOL cli_send_tconX(struct cli_state *cli, int *t_idx, 
 		    char *share, char *dev, char *pass, int passlen);
-BOOL cli_tdis(struct cli_state *cli);
-BOOL cli_rmdir(struct cli_state *cli, char *dname);
-BOOL cli_unlink(struct cli_state *cli, char *fname);
-int cli_send_message(struct cli_state *cli, 
+BOOL cli_tdis(struct cli_state *cli, int t_idx);
+BOOL cli_rmdir(struct cli_state *cli, int t_idx, char *dname);
+BOOL cli_unlink(struct cli_state *cli, int t_idx, char *fname);
+int cli_send_message(struct cli_state *cli, int t_idx, 
 				char *username, char *desthost,
 				char *message, int *total_len);
-void cli_do_dir(struct cli_state *cli, struct client_info *info,
+void cli_do_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*));
-BOOL cli_stat(struct cli_state *cli, char *file);
-BOOL cli_print(struct cli_state *cli, struct client_info *info,
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*));
+BOOL cli_stat(struct cli_state *cli, int t_idx, char *file);
+BOOL cli_print(struct cli_state *cli, int t_idx, struct client_info *info,
 				FILE *f, char *lname, char *rname);
-int cli_queue(struct cli_state *cli, struct client_info *info,
+int cli_queue(struct cli_state *cli, int t_idx, struct client_info *info,
 				void (*fn)(uint16, char*, uint32, uint8));
-BOOL cli_cancel(struct cli_state *cli, uint16 job, uint16 *cancelled);
-int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
+BOOL cli_cancel(struct cli_state *cli, int t_idx, uint16 job, uint16 *cancelled);
+int cli_pqueue_2(struct cli_state *cli, int t_idx, struct client_info *info,
 			void (*fn)(char*, uint16, uint16, char *, time_t, uint32, char *));
-BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
+BOOL cli_printq_info(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *name, uint16 *priority,
 				uint16 *start_time, uint16 *until_time,
 				char *separator_file, char *print_processor,
@@ -92,44 +92,44 @@ BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
 				uint16 *status, uint16 *jobs,
 				char *printers, char *driver_name,
 				char **driver_data, int *driver_count);
-int cli_long_dir(struct cli_state *cli, struct client_info *info,
+int cli_long_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*));
-int cli_short_dir(struct cli_state *cli, struct client_info *info,
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*));
+int cli_short_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*));
-void cli_dir(struct cli_state *cli, struct client_info *info,
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*));
+void cli_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*));
-int cli_put(struct cli_state *cli, struct client_info *info,
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*));
+int cli_put(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname, file_info *finfo,
 				int (*read_fn)(struct client_info *, char*, int, int, FILE *));
-int cli_get(struct cli_state *cli, struct client_info *info,
+int cli_get(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname,file_info *finfo1,
 				int handle,
 				int (*init_fn)(struct client_info *, int, char*, file_info *),
 				int (*write_fn)(struct client_info *, int, char*, int),
 				int (*end_fn)(struct client_info*, int, char*, int, file_info*));
-BOOL cli_chkpath(struct cli_state *cli, char *path);
-BOOL cli_dskattr(struct cli_state *cli,
+BOOL cli_chkpath(struct cli_state *cli, int t_idx, char *path);
+BOOL cli_dskattr(struct cli_state *cli, int t_idx,
 				uint16 *num_blocks, uint32 *block_size, uint16 *free_blocks);
-BOOL cli_mkdir(struct cli_state *cli, char *name);
-BOOL cli_move(struct cli_state *cli, char *src, char *dest);
-BOOL cli_getatr(struct cli_state *cli, char *fname,
+BOOL cli_mkdir(struct cli_state *cli, int t_idx, char *name);
+BOOL cli_move(struct cli_state *cli, int t_idx, char *src, char *dest);
+BOOL cli_getatr(struct cli_state *cli, int t_idx, char *fname,
 				uint8 *fattr, uint16 *ftime, uint16 *fsize);
-BOOL cli_setatr(struct cli_state *cli, char *fname,
+BOOL cli_setatr(struct cli_state *cli, int t_idx, char *fname,
 				uint8 fattr, uint16 write_time);
-BOOL cli_create(struct cli_state *cli,
+BOOL cli_create(struct cli_state *cli, int t_idx,
 				char *name, uint16 file_mode, uint16 make_time, uint16 *fnum);
-uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
+uint16 cli_open(struct cli_state *cli, int t_idx, char *fname, int flags, int share_mode,
 			uint16 *fmode, time_t *mtime, uint32 *fsize);
-BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time);
-BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout);
-BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout);
-int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size);
-int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n);
-int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n);
-int cli_write_x(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size);
+BOOL cli_close(struct cli_state *cli, int t_idx, uint16 fnum, time_t close_time);
+BOOL cli_lock(struct cli_state *cli, int t_idx, uint16 fnum, uint32 offset, uint32 len, int timeout);
+BOOL cli_unlock(struct cli_state *cli, int t_idx, uint16 fnum, uint32 offset, uint32 len, int timeout);
+int cli_readx(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 offset, uint16 size);
+int cli_writeraw(struct cli_state *cli, int t_idx, uint16 fnum,int pos,char *buf,int n);
+int cli_write(struct cli_state *cli, int t_idx, uint16 fnum,int pos,char *buf,int n);
+int cli_write_x(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 offset, uint16 size);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli,
 			char *called_host_name        , int called_name_type,
@@ -142,7 +142,7 @@ BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setmid(struct cli_state *cli, int mid);
 int cli_setpid(struct cli_state *cli, int pid);
-BOOL cli_establish_connection(struct cli_state *cli,
+BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 				char *dest_host, uint8 name_type, struct in_addr *dest_ip,
 				char *my_hostname,
 				char *passwd_report,
@@ -152,43 +152,50 @@ BOOL cli_establish_connection(struct cli_state *cli,
 
 /*The following definitions come from  clientsmb.c  */
 
-void cmd_pwd(struct cli_state *cli, struct client_info *info);
-void do_cd(struct cli_state *cli, struct client_info *info, char *newdir);
-void cmd_cd(struct cli_state *cli, struct client_info *info);
-void cmd_dir(struct cli_state *cli, struct client_info *info);
-void cmd_get(struct cli_state *cli, struct client_info *info);
-void cmd_more(struct cli_state *cli, struct client_info *info);
-void cmd_mget(struct cli_state *cli, struct client_info *info);
-void cmd_mkdir(struct cli_state *cli, struct client_info *info);
-void cmd_put(struct cli_state *cli, struct client_info *info);
-void cmd_select(struct cli_state *cli, struct client_info *info);
-void cmd_mput(struct cli_state *cli, struct client_info *info);
-void cmd_cancel(struct cli_state *cli, struct client_info *info);
-void cmd_stat(struct cli_state *cli, struct client_info *info);
-void cmd_print(struct cli_state *cli, struct client_info *info);
-void cmd_queue(struct cli_state *cli, struct client_info *info);
-void cmd_p_queue_2(struct cli_state *cli, struct client_info *info);
-void cmd_qinfo(struct cli_state *cli, struct client_info *info);
-void cmd_del(struct cli_state *cli, struct client_info *info);
-void cmd_rmdir(struct cli_state *cli, struct client_info *info);
-void cmd_rename(struct cli_state *cli, struct client_info *info);
-void cmd_prompt(struct cli_state *cli, struct client_info *info);
-void cmd_newer(struct cli_state *cli, struct client_info *info);
-void cmd_archive(struct cli_state *cli, struct client_info *info);
-void cmd_lowercase(struct cli_state *cli, struct client_info *info);
-void cmd_recurse(struct cli_state *cli, struct client_info *info);
-void cmd_translate(struct cli_state *cli, struct client_info *info);
-void cmd_printmode(struct cli_state *cli, struct client_info *info);
-void cmd_lcd(struct cli_state *cli, struct client_info *info);
-void cmd_quit(struct cli_state *cli, struct client_info *info);
+void client_send_message(struct cli_state *cli, int t_idx,
+				char *username, char *dest_host);
+void client_browse_host(struct cli_state *cli, int t_idx, char *workgroup, BOOL sort);
+void cmd_send_message(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_list_shares(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_list_wgps(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_list_servers(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_pwd(struct cli_state *cli, int t_idx, struct client_info*info);
+void do_cd(struct cli_state *cli, int t_idx, struct client_info*info, char *newdir);
+void cmd_cd(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_dir(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_get(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_more(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_mget(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_mkdir(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_put(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_select(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_mput(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_cancel(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_stat(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_print(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_queue(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_p_queue_2(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_qinfo(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_del(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_rmdir(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_rename(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_prompt(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_newer(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_archive(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_lowercase(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_recurse(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_translate(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_printmode(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_lcd(struct cli_state *cli, int t_idx, struct client_info*info);
+void cmd_quit(struct cli_state *cli, int t_idx, struct client_info*info);
 
 /*The following definitions come from  clitar.c  */
 
-void cmd_block(struct cli_state *cli, struct client_info *info);
-void cmd_tarmode(struct cli_state *cli, struct client_info *info);
-void cmd_setmode(struct cli_state *cli, struct client_info *info);
-void cmd_tar(struct cli_state *cli, struct client_info *info);
-int process_tar(struct cli_state *cli, struct client_info *info);
+void cmd_block(struct cli_state *cli, int t_idx, struct client_info *info);
+void cmd_tarmode(struct cli_state *cli, int t_idx, struct client_info *info);
+void cmd_setmode(struct cli_state *cli, int t_idx, struct client_info *info);
+void cmd_tar(struct cli_state *cli, int t_idx, struct client_info *info);
+int process_tar(struct cli_state *cli, int t_idx, struct client_info *info);
 int clipfind(char **aret, int ret, char *tok);
 int tar_parseargs(struct client_info *info,
 				int argc, char *argv[], char *Optarg, int Optind);
@@ -944,12 +951,12 @@ char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, i
 
 /*The following definitions come from  rpc_pipes/ntclientlogin.c  */
 
-BOOL do_nt_session_open(struct cli_state *cli, uint16 *fnum,
+BOOL do_nt_session_open(struct cli_state *cli, int t_idx, uint16 *fnum,
 				char *dest_host, char *myhostname,
 				char *mach_acct,
 				char *username, char *workgroup,
 				uchar sess_key[16], DOM_CRED *clnt_cred);
-BOOL do_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
+BOOL do_nt_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				char *new_mach_pwd,
 				char *dest_host, char *mach_acct, char *myhostname);
@@ -957,42 +964,42 @@ void make_nt_login_info(DOM_ID_INFO_1 *id1,
 				uchar sess_key[16],
 				char *workgroup, char *myhostname,
 				uint32 smb_userid, char *username);
-BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
+BOOL do_nt_login(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname,
 				LSA_USER_INFO *user_info1);
-BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
+BOOL do_nt_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 				uint8 sess_key[16], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
 				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname);
-void do_nt_session_close(struct cli_state *cli, uint16 fnum);
+void do_nt_session_close(struct cli_state *cli, int t_idx, uint16 fnum);
 
 /*The following definitions come from  rpc_pipes/ntclientlsa.c  */
 
-BOOL do_lsa_session_open(struct cli_state *cli, struct client_info *info);
-void do_lsa_session_close(struct cli_state *cli, struct client_info *info);
-BOOL do_lsa_open_policy(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
+void do_lsa_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
+BOOL do_lsa_open_policy(struct cli_state *cli, int t_idx, uint16 fnum,
 			char *server_name, LSA_POL_HND *hnd);
-BOOL do_lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_query_info_pol(struct cli_state *cli, int t_idx, uint16 fnum,
 			LSA_POL_HND *hnd, uint16 info_class,
 			fstring domain_name, fstring domain_sid);
-BOOL do_lsa_close(struct cli_state *cli, uint16 fnum, LSA_POL_HND *hnd);
+BOOL do_lsa_close(struct cli_state *cli, int t_idx, uint16 fnum, LSA_POL_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
 
-BOOL do_lsa_logon_ctrl2(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_logon_ctrl2(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *host_name, uint32 status_level);
-BOOL do_lsa_auth2(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_auth2(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL do_lsa_req_chal(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_req_chal(struct cli_state *cli, int t_idx, uint16 fnum,
 		char *desthost, char *myhostname,
         DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL do_lsa_srv_pwset(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_srv_pwset(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[16], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
 		char nt_owf_new_mach_pwd[16]);
-BOOL do_lsa_sam_logon(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_sam_logon(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
@@ -1000,7 +1007,7 @@ BOOL do_lsa_sam_logon(struct cli_state *cli, uint16 fnum,
 		DOM_ID_INFO_1 *id1, uint16 switch_value2,
 		LSA_USER_INFO *user_info,
 		DOM_CRED *srv_cred);
-BOOL do_lsa_sam_logoff(struct cli_state *cli, uint16 fnum,
+BOOL do_lsa_sam_logoff(struct cli_state *cli, int t_idx, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
@@ -1010,23 +1017,23 @@ BOOL do_lsa_sam_logoff(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_pipes/ntclientpipe.c  */
 
-BOOL rpc_pipe_set_hnd_state(struct cli_state *cli,
+BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, int t_idx,
 				char *pipe_name, uint16 fnum, uint16 device_state);
-BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum, 
+BOOL rpc_pipe_bind(struct cli_state *cli, int t_idx, char *pipe_name, uint16 fnum, 
 				RPC_IFACE *abstract, RPC_IFACE *transfer);
 
 /*The following definitions come from  rpc_pipes/ntclientsamr.c  */
 
-BOOL do_samr_session_open(struct cli_state *cli, struct client_info *info);
-void do_samr_session_close(struct cli_state *cli, struct client_info *info);
-BOOL do_samr_enum_sam_db(struct cli_state *cli, uint16 fnum, 
+BOOL do_samr_session_open(struct cli_state *cli, int t_idx, struct client_info *info);
+void do_samr_session_close(struct cli_state *cli, int t_idx, struct client_info *info);
+BOOL do_samr_enum_sam_db(struct cli_state *cli, int t_idx, uint16 fnum, 
 				LSA_POL_HND *pol, uint32 size,
 				struct acct_info sam[MAX_SAM_ENTRIES],
 				int *num_sam_users);
-BOOL do_samr_open_policy(struct cli_state *cli, uint16 fnum, 
+BOOL do_samr_open_policy(struct cli_state *cli, int t_idx, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				LSA_POL_HND *rtn_pol);
-BOOL do_samr_open_secret(struct cli_state *cli, uint16 fnum, 
+BOOL do_samr_open_secret(struct cli_state *cli, int t_idx, uint16 fnum, 
 				LSA_POL_HND *query_pol, uint32 rid,
 				char *sid, LSA_POL_HND *rtn_pol);
 

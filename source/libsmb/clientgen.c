@@ -50,9 +50,27 @@ static void cli_setup_packet(struct cli_state *cli)
 
 
 /****************************************************************************
+setup basics in a outgoing packet
+****************************************************************************/
+static void cli_set_smb_cmd(struct cli_state *cli, int t_idx,
+				uint8 cmd, int num_wds, int num_bytes, BOOL zero)
+{
+	bzero(cli->outbuf,smb_size);
+	bzero(cli->inbuf ,smb_size);
+
+	set_message(cli->outbuf, num_wds, num_bytes, zero);
+
+	CVAL(cli->outbuf,smb_com) = cmd;
+	SSVAL(cli->outbuf, smb_tid, cli->con[t_idx].cnum);
+
+	cli_setup_packet(cli);
+}
+
+
+/****************************************************************************
   send a SMB trans or trans2 request
   ****************************************************************************/
-BOOL cli_send_trans(struct cli_state *cli,
+BOOL cli_send_trans(struct cli_state *cli, int t_idx,
 			   int trans, char *name, int pipe_name_len,
                int fid, int flags,
 			   char *data,char *param,uint16 *setup, int ldata,int lparam,
@@ -67,11 +85,7 @@ BOOL cli_send_trans(struct cli_state *cli,
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*SIZEOFWORD)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*SIZEOFWORD+this_lparam));
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,14+lsetup,0,True);
-	CVAL(cli->outbuf,smb_com) = trans;
-	SSVAL(cli->outbuf,smb_tid, cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  trans, 14+lsetup, 0, True);
 
 	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? (pipe_name_len+1) : 3);
 	outdata = outparam+this_lparam;
@@ -111,7 +125,7 @@ BOOL cli_send_trans(struct cli_state *cli,
 	if (this_ldata < ldata || this_lparam < lparam) {
 		/* receive interim response */
 		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout) || 
-		    cli_error(cli,NULL, NULL)) {
+		    cli_error(cli, NULL, NULL)) {
 			return(False);
 		}      
 
@@ -161,7 +175,7 @@ BOOL cli_send_trans(struct cli_state *cli,
 /****************************************************************************
   receive a SMB trans or trans2 response allocating the necessary memory
   ****************************************************************************/
-BOOL cli_receive_trans(struct cli_state *cli,
+BOOL cli_receive_trans(struct cli_state *cli, int t_idx,
 			      int trans,int *data_len,
 			      int *param_len, char **data,char **param)
 {
@@ -183,7 +197,7 @@ BOOL cli_receive_trans(struct cli_state *cli,
 			 CVAL(cli->inbuf,smb_com)));
 		return(False);
 	}
-	if (cli_error(cli,NULL, NULL)) return(False);
+	if (cli_error(cli, NULL, NULL)) return(False);
 
 	/* parse out the lengths */
 	total_data = SVAL(cli->inbuf,smb_tdrcnt);
@@ -233,7 +247,7 @@ BOOL cli_receive_trans(struct cli_state *cli,
 				 CVAL(cli->inbuf,smb_com)));
 			return(False);
 		}
-		if (cli_error(cli,NULL, NULL)) return(False);
+		if (cli_error(cli, NULL, NULL)) return(False);
 	}
 	
 	return(True);
@@ -253,7 +267,7 @@ parameters:
   char **rparam,char **rdata                return params, data buffers
 
 ****************************************************************************/
-BOOL cli_api_pipe(struct cli_state *cli,
+BOOL cli_api_pipe(struct cli_state *cli, int t_idx,
 	char *pipe_name, int pipe_name_len,
 	int prcnt,int drcnt, int srcnt,
 	int mprcnt,int mdrcnt,
@@ -263,12 +277,12 @@ BOOL cli_api_pipe(struct cli_state *cli,
 {
   if (pipe_name_len == 0) pipe_name_len = strlen(pipe_name);
 
-  cli_send_trans(cli, SMBtrans, pipe_name, pipe_name_len, 0,0,
+  cli_send_trans(cli, t_idx,  SMBtrans, pipe_name, pipe_name_len, 0,0,
 		     data, param, setup,
 		     drcnt, prcnt, srcnt,
 		     mdrcnt, mprcnt, 0);
 
-  return (cli_receive_trans(cli,SMBtrans,
+  return (cli_receive_trans(cli, t_idx, SMBtrans,
                                  rdrcnt,rprcnt,
                                  rdata,rparam));
 }
@@ -277,25 +291,25 @@ BOOL cli_api_pipe(struct cli_state *cli,
 /****************************************************************************
 call a remote api on the LANMAN pipe.  only takes param and data buffers
 ****************************************************************************/
-static BOOL cli_api(struct cli_state *cli,
+static BOOL cli_api(struct cli_state *cli, int t_idx,
 		    int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
 		    int *rdrcnt, char *param,char *data, 
 		    char **rparam, char **rdata)
 {
 #ifdef NTDOMAIN
-	return cli_api_pipe(cli, "\\PIPE\\LANMAN", 0,
+	return cli_api_pipe(cli, t_idx,  "\\PIPE\\LANMAN", 0,
 				prcnt, drcnt, 0,
 				mprcnt, mdrcnt,
 				rprcnt, rdrcnt,
 				param, data, NULL,
 				rparam, rdata);
 #else
-  cli_send_trans(cli,SMBtrans,"\\PIPE\\LANMAN",0,0,0,
+  cli_send_trans(cli, t_idx, SMBtrans,"\\PIPE\\LANMAN",0,0,0,
 		 data,param,NULL,
 		 drcnt,prcnt,0,
 		 mdrcnt,mprcnt,0);
 
-  return (cli_receive_trans(cli,SMBtrans,
+  return (cli_receive_trans(cli, t_idx, SMBtrans,
 				     rdrcnt,rprcnt,
 				     rdata,rparam));
 #endif
@@ -305,7 +319,7 @@ static BOOL cli_api(struct cli_state *cli,
 /****************************************************************************
 perform a NetWkstaUserLogon
 ****************************************************************************/
-BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
+BOOL cli_NetWkstaUserLogon(struct cli_state *cli, int t_idx,char *user, char *workstation)
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
@@ -338,7 +352,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	
 	cli->error = -1;
 	
-	if (cli_api(cli, PTR_DIFF(p,param),0,
+	if (cli_api(cli, t_idx,  PTR_DIFF(p,param),0,
 		    1024,BUFFER_SIZE,
 		    &rprcnt,&rdrcnt,
 		    param,NULL,
@@ -364,7 +378,7 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 /****************************************************************************
 try and browse available connections on a host
 ****************************************************************************/
-BOOL cli_NetShareEnum(struct cli_state *cli, BOOL sort, BOOL *long_share_name,
+BOOL cli_NetShareEnum(struct cli_state *cli, int t_idx, BOOL sort, BOOL *long_share_name,
 		       void (*fn)(char *, uint32, char *))
 {
 #ifdef NOSTRCASECMP
@@ -396,7 +410,7 @@ BOOL cli_NetShareEnum(struct cli_state *cli, BOOL sort, BOOL *long_share_name,
 	SSVAL(p,2,BUFFER_SIZE);
 	p += 4;
 
-	if (cli_api(cli, 
+	if (cli_api(cli, t_idx,  
 		    PTR_DIFF(p,param), /* param count */
 		    0, /*data count */
 		    10, /* mprcount */
@@ -451,7 +465,7 @@ This function then calls the specified callback function for each name returned.
 The callback function takes 3 arguments: the machine name, the server type and
 the comment.
 ****************************************************************************/
-BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+BOOL cli_NetServerEnum(struct cli_state *cli, int t_idx, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *))
 {
 	char *rparam = NULL;
@@ -481,7 +495,7 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 	pstrcpy(p, workgroup);
 	p = skip_string(p,1);
 	
-	if (cli_api(cli, 
+	if (cli_api(cli, t_idx,  
 		    PTR_DIFF(p,param), /* param count */
 		    0, /*data count */
 		    8, /* mprcount */
@@ -550,7 +564,7 @@ in all instances except the pre-computed OWFs, both the LM OWF and NT OWF
 will be generated.
 
 ****************************************************************************/
-BOOL cli_session_setup(struct cli_state *cli, 
+BOOL cli_session_setup(struct cli_state *cli,
 		       char *user, 
 		       char *pass, int passlen,
 		       char *ntpass, int ntpasslen,
@@ -562,6 +576,12 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	DEBUG(3,("cli_session_setup: protocol %d sec_mode: %x passlen %d\n",
 	          cli->protocol, cli->sec_mode, passlen));
+
+	if (cli->num_tcons != 0)
+	{
+		DEBUG(2,("cli_session_setup: connections appear to be already open\n"));
+		return False;
+	}
 
 #ifdef DEBUG_PASSWORD
 	if (pass)
@@ -718,7 +738,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
       show_msg(cli->inbuf);
 
-      if (cli_error(cli,NULL, NULL)) return(False);
+      if (cli_error(cli, NULL, NULL)) return(False);
 
       /* use the returned uid from now on */
       cli->uid = SVAL(cli->inbuf,smb_uid);
@@ -730,7 +750,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 /****************************************************************************
 send a tconX
 ****************************************************************************/
-BOOL cli_send_tconX(struct cli_state *cli, 
+BOOL cli_send_tconX(struct cli_state *cli, int *t_idx, 
 		    char *share, char *dev, char *pass, int passlen)
 {
 	fstring pword;
@@ -740,6 +760,15 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	DEBUG(3,("cli_send_tconX: share:%s dev:%s passlen:%d\n",
 			share, dev, passlen));
+
+	if (cli->num_tcons == MAX_CLIENT_CONNECTIONS)
+	{
+		DEBUG(2,("cli_send_tconX: max number of client connections reached\n"));
+		return False;
+	}
+
+	(*t_idx) = cli->num_tcons;
+	cli->num_tcons++;
 
 	if (!IS_BITS_SET(cli->sec_mode, USE_USER_LEVEL_SECURITY))
 	{
@@ -760,13 +789,13 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		memcpy(pword, pass, passlen);
 	}
 
-	sprintf(cli->fullshare, "\\\\%s\\%s", cli->called_netbios_name, share);
-	strcpy(cli->dev, dev);
+	sprintf(cli->con[(*t_idx)].full_share, "\\\\%s\\%s", cli->called_netbios_name, share);
+	strcpy(cli->con[(*t_idx)].dev, dev);
 
-	DEBUG(5,("cli_send_tconX: full share name:%s\n", cli->fullshare));
+	DEBUG(5,("cli_send_tconX: full share name:%s\n", cli->con[(*t_idx)].full_share));
 
 	set_message(cli->outbuf,4,
-		    2 + strlen(cli->fullshare) + passlen + strlen(cli->dev),True);
+		    2 + strlen(cli->con[(*t_idx)].full_share) + passlen + strlen(cli->con[(*t_idx)].dev),True);
 	CVAL(cli->outbuf,smb_com) = SMBtconX;
 	cli_setup_packet(cli);
 
@@ -776,9 +805,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	strcpy(p,cli->fullshare);
+	strcpy(p,cli->con[(*t_idx)].full_share);
 	p = skip_string(p,1);
-	strcpy(p,cli->dev);
+	strcpy(p,cli->con[(*t_idx)].dev);
 
 	SCVAL(cli->inbuf,smb_rcls, 1);
 
@@ -786,9 +815,9 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 
-    if (cli_error(cli,NULL, NULL)) return(False);
+    if (cli_error(cli, NULL, NULL)) return(False);
 
-	cli->cnum = SVAL(cli->inbuf,smb_tid);
+	cli->con[(*t_idx)].cnum = SVAL(cli->inbuf,smb_tid);
 	return True;
 }
 
@@ -796,37 +825,26 @@ BOOL cli_send_tconX(struct cli_state *cli,
 /****************************************************************************
 send a tree disconnect
 ****************************************************************************/
-BOOL cli_tdis(struct cli_state *cli)
+BOOL cli_tdis(struct cli_state *cli, int t_idx)
 {
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBtdis;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBtdis, 0,0,True);
 	
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout))
 		return False;
 	
-    return !cli_error(cli,NULL, NULL);
+    return !cli_error(cli, NULL, NULL);
 }
 
 
 /****************************************************************************
 delete a directory
 ****************************************************************************/
-BOOL cli_rmdir(struct cli_state *cli, char *dname)
+BOOL cli_rmdir(struct cli_state *cli, int t_idx, char *dname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,0, 2 + strlen(dname),True);
-
-	CVAL(cli->outbuf,smb_com) = SMBrmdir;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBrmdir, 0, 2 + strlen(dname),True);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
@@ -837,7 +855,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -846,18 +864,12 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 /****************************************************************************
 delete a file
 ****************************************************************************/
-BOOL cli_unlink(struct cli_state *cli, char *fname)
+BOOL cli_unlink(struct cli_state *cli, int t_idx, char *fname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	cli_set_smb_cmd(cli, t_idx,  SMBunlink, 1, 2 + strlen(fname),True);
 
-	set_message(cli->outbuf,1, 2 + strlen(fname),True);
-
-	CVAL(cli->outbuf,smb_com) = SMBunlink;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
 
 	SSVAL(cli->outbuf,smb_vwv0,aSYSTEM | aHIDDEN);
   
@@ -871,7 +883,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -880,7 +892,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 /****************************************************************************
  send a message
  ****************************************************************************/
-int cli_send_message(struct cli_state *cli, 
+int cli_send_message(struct cli_state *cli, int t_idx, 
 				char *username, char *desthost,
 				char *message, int *total_len)
 {
@@ -893,10 +905,7 @@ int cli_send_message(struct cli_state *cli,
 	*total_len = 0;
 
 	/* send a SMBsendstrt command */
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsendstrt;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_set_smb_cmd(cli, t_idx,  SMBsendstrt,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -911,7 +920,7 @@ int cli_send_message(struct cli_state *cli,
 	send_smb(cli->fd,cli->outbuf);
 
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli,NULL, NULL)) return False;
+	if (cli_error(cli, NULL, NULL)) return False;
 
 	grp_id = SVAL(cli->inbuf,smb_vwv0);
 
@@ -929,9 +938,7 @@ int cli_send_message(struct cli_state *cli,
 			msg[l] = c;   
 		}
 
-		CVAL(cli->outbuf,smb_com) = SMBsendtxt;
-
-		set_message(cli->outbuf,1,l+3,True);
+		cli_set_smb_cmd(cli, t_idx,  SMBsendtxt, 1,l+3,True);
 
 		SSVAL(cli->outbuf,smb_vwv0,grp_id);
 
@@ -943,19 +950,18 @@ int cli_send_message(struct cli_state *cli,
 		send_smb(cli->fd,cli->outbuf);
 
 		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-		if (cli_error(cli, NULL, NULL)) return False;
+		if (cli_error(cli,  NULL, NULL)) return False;
 
 		(*total_len) += l;
 	}
 
-	CVAL(cli->outbuf,smb_com) = SMBsendend;
-	set_message(cli->outbuf,1,0,False);
+	cli_set_smb_cmd(cli, t_idx,  SMBsendend, 1,0,False);
 	SSVAL(cli->outbuf,smb_vwv0,grp_id);
 
 	send_smb(cli->fd,cli->outbuf);
 
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli,  NULL, NULL)) return False;
 
 	return True;
 }
@@ -963,21 +969,21 @@ int cli_send_message(struct cli_state *cli,
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-void cli_do_dir(struct cli_state *cli, struct client_info *info,
+void cli_do_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*))
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*))
 {
   DEBUG(5,("do_dir(mask:%s, attrib:%x, recurse:%s)\n",
 				Mask,attribute,BOOLSTR(recurse_dir)));
 
   if (cli->protocol >= PROTOCOL_LANMAN2)
     {
-      if (cli_long_dir(cli, info, Mask, attribute, recurse_dir, fn) > 0)
+      if (cli_long_dir(cli, t_idx,  info, Mask, attribute, recurse_dir, fn) > 0)
 	return;
     }
 
   expand_mask(Mask,False);
-  cli_short_dir(cli, info, Mask,attribute, recurse_dir, fn);
+  cli_short_dir(cli, t_idx,  info, Mask,attribute, recurse_dir, fn);
   return;
 }
 
@@ -1001,9 +1007,9 @@ static BOOL do_this_one(file_info *finfo, struct client_info *info)
 /****************************************************************************
   act on the files in a dir listing
   ****************************************************************************/
-static void dir_action(struct cli_state *cli, struct client_info *info,
+static void dir_action(struct cli_state *cli, int t_idx, struct client_info *info,
 				int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*),
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*),
 				file_info *finfo, BOOL longdir)
 {
 
@@ -1027,16 +1033,16 @@ static void dir_action(struct cli_state *cli, struct client_info *info,
 	  strcat(mask2,"*");
 
 	  if (longdir)
-	    cli_long_dir(cli, info, mask2, attribute, recurse_dir, fn);
+	    cli_long_dir(cli, t_idx,  info, mask2, attribute, recurse_dir, fn);
 	  else
-	    cli_dir(cli, info, mask2, attribute, recurse_dir, fn);
+	    cli_dir(cli, t_idx,  info, mask2, attribute, recurse_dir, fn);
 
 	  strcpy(info->cur_dir,sav_dir);
 	}
       else
 	{
 	  if (fn && do_this_one(finfo, info))
-	    fn(cli, info, finfo);
+	    fn(cli, t_idx,  info, finfo);
 	}
     }
 }
@@ -1150,7 +1156,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo,
 /****************************************************************************
   get info on a file
   ****************************************************************************/
-BOOL cli_stat(struct cli_state *cli, char *file)
+BOOL cli_stat(struct cli_state *cli, int t_idx, char *file)
 {
 	BOOL ret;
 	pstring param;
@@ -1166,12 +1172,12 @@ BOOL cli_stat(struct cli_state *cli, char *file)
 	p = param+6;
 	strcat(p, file);
 
-	cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
+	cli_send_trans(cli, t_idx, SMBtrans2,NULL,0,FID_UNUSED,0,
 	               NULL,param,&setup,
 	               0,6 + strlen(p)+1,1,
 	               BUFFER_SIZE,2,0);
 
-	ret = cli_receive_trans(cli, SMBtrans2,
+	ret = cli_receive_trans(cli, t_idx,  SMBtrans2,
 	                        &resp_data_len,&resp_param_len,
 	                        &resp_data,&resp_param);
 
@@ -1185,7 +1191,7 @@ BOOL cli_stat(struct cli_state *cli, char *file)
 /****************************************************************************
   print a file
   ****************************************************************************/
-BOOL cli_print(struct cli_state *cli, struct client_info *info,
+BOOL cli_print(struct cli_state *cli, int t_idx, struct client_info *info,
 				FILE *f, char *lname, char *rname)
 {
 	uint16 fnum;
@@ -1203,12 +1209,7 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 
 	/* open for printing */
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,2,2 + strlen(rname),True);
-
-	CVAL(cli->outbuf,smb_com) = SMBsplopen;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBsplopen, 2,2 + strlen(rname),True);
 
 	SSVAL(cli->outbuf,smb_vwv0,0);
 	SSVAL(cli->outbuf,smb_vwv1,info->print_mode);
@@ -1219,7 +1220,7 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli,  NULL, NULL)) return False;
 
 	fnum = SVAL(cli->inbuf,smb_vwv0);
 
@@ -1256,7 +1257,7 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 		smb_setlen(cli->outbuf,smb_len(cli->outbuf) + n);
 
 		CVAL(cli->outbuf,smb_com) = SMBsplwr;
-		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		SSVAL(cli->outbuf,smb_tid,cli->con[t_idx].cnum );
 		cli_setup_packet(cli);
 
 		SSVAL(cli->outbuf,smb_vwv0,fnum);
@@ -1266,7 +1267,7 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 
 		send_smb(cli->fd,cli->outbuf);
 		if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-		if (cli_error(cli, NULL, NULL))
+		if (cli_error(cli,  NULL, NULL))
 		{
 			DEBUG(0,("%s printing remote file\n", cli_errstr(cli)));
 			break;
@@ -1277,17 +1278,13 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 
 	DEBUG(2,("%d bytes printed\n", nread));
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,1,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBsplclose;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBsplclose, 1,0,True);
 
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL))
+	if (cli_error(cli,  NULL, NULL))
 	{
 		DEBUG(0,("%s closing print file\n", cli_errstr(cli)));
 		if (f != stdin) fclose(f);
@@ -1303,25 +1300,20 @@ BOOL cli_print(struct cli_state *cli, struct client_info *info,
 show a print queue - this is deprecated as it uses the old smb that
 has limited support - the correct call is the cmd_p_queue_4() after this.
 ****************************************************************************/
-int cli_queue(struct cli_state *cli, struct client_info *info,
+int cli_queue(struct cli_state *cli, int t_idx, struct client_info *info,
 				void (*fn)(uint16, char*, uint32, uint8))
 {
 	int count;
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,2,0,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBsplretq;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBsplretq, 2,0,True);
 
 	SSVAL(cli->outbuf, smb_vwv0, 32); /* a max of 20 entries is to be shown */
 	SSVAL(cli->outbuf, smb_vwv1, 0); /* the index into the queue */
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL))
+	if (cli_error(cli,  NULL, NULL))
 	{
 		DEBUG(0,("%s obtaining print queue\n", cli_errstr(cli)));
 		return -1;
@@ -1347,7 +1339,7 @@ int cli_queue(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
   cancel a print job
   ****************************************************************************/
-BOOL cli_cancel(struct cli_state *cli, uint16 job, uint16 *cancelled)
+BOOL cli_cancel(struct cli_state *cli, int t_idx, uint16 job, uint16 *cancelled)
 {
   BOOL ret = False;
   char *rparam = NULL;
@@ -1368,12 +1360,12 @@ BOOL cli_cancel(struct cli_state *cli, uint16 job, uint16 *cancelled)
   SSVAL(p,0,job);     
   p += 2;
 
-	cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
+	cli_send_trans(cli, t_idx, SMBtrans2,NULL,0,FID_UNUSED,0,
 	         NULL,param,NULL,
 	         0,PTR_DIFF(p,param),0,
 	         BUFFER_SIZE,10,0);
 
-	ret = cli_receive_trans(cli, SMBtrans2,
+	ret = cli_receive_trans(cli, t_idx,  SMBtrans2,
 	                       &rdrcnt,&rprcnt,
 	                       &rdata,&rparam);
     if (ret)
@@ -1418,7 +1410,7 @@ else
 /****************************************************************************
 get information in a print queue
 ****************************************************************************/
-int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
+int cli_pqueue_2(struct cli_state *cli, int t_idx, struct client_info *info,
 			void (*fn)(char*, uint16, uint16, char *, time_t, uint32, char *))
 {
 	char *rparam = NULL;
@@ -1437,7 +1429,7 @@ int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
 	p = skip_string(p,1);
 	strcpy(p,"WWzWWDDzz");                    /* returned data format */
 	p = skip_string(p,1);
-	strcpy(p,strrchr(cli->fullshare,'\\')+1); /* name of queue */
+	strcpy(p,strrchr(cli->con[t_idx].full_share,'\\')+1); /* name of queue */
 	p = skip_string(p,1);
 	SSVAL(p,0,2);                             /* API lvl2, PRJINFO_2 data */
 	SSVAL(p,2,1000);                          /* size (bytes) of return buffer */
@@ -1447,12 +1439,12 @@ int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
 
 	DEBUG(1,("Calling DosPrintJobEnum()...\n"));
 
-	cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
+	cli_send_trans(cli, t_idx, SMBtrans2,NULL,0,FID_UNUSED,0,
 	         NULL,param,NULL,
 	         0,PTR_DIFF(p,param),0,
 	         BUFFER_SIZE,10,0);
 
-	if (cli_receive_trans(cli, SMBtrans2,
+	if (cli_receive_trans(cli, t_idx,  SMBtrans2,
 	                       &rdrcnt,&rprcnt,
 	                       &rdata,&rparam))
 	{
@@ -1467,7 +1459,7 @@ int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
 
 		if (result_code != 0) return result_code;
 
-		strcpy(PrinterName,strrchr(cli->fullshare,'\\')+1); /* queue name */
+		strcpy(PrinterName,strrchr(cli->con[t_idx].full_share,'\\')+1); /* queue name */
 		strlower(PrinterName);                              /* in lower case */
 
 		p = rdata; /* received data */
@@ -1524,7 +1516,7 @@ int cli_pqueue_2(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
 show information about a print queue
 ****************************************************************************/
-BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
+BOOL cli_printq_info(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *name, uint16 *priority,
 				uint16 *start_time, uint16 *until_time,
 				char *separator_file, char *print_processor,
@@ -1549,7 +1541,7 @@ BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
 	p = skip_string(p,1);
 	strcpy(p,"zWWWWzzzzWWzzl");		/* returned data format */
 	p = skip_string(p,1);
-	strcpy(p,strrchr(cli->fullshare,'\\')+1);	/* name of queue */
+	strcpy(p,strrchr(cli->con[t_idx].full_share,'\\')+1);	/* name of queue */
 	p = skip_string(p,1);
 	SSVAL(p,0,3);				/* API function level 3, just queue info, no job info */
 	SSVAL(p,2,1000);			/* size of bytes of returned data buffer */
@@ -1559,12 +1551,12 @@ BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
 
 	DEBUG(1,("Calling DosPrintQueueGetInfo()...\n"));
 
-	cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
+	cli_send_trans(cli, t_idx, SMBtrans2,NULL,0,FID_UNUSED,0,
 			 NULL,param, NULL,
 			 0,PTR_DIFF(p,param),1,
 			 BUFFER_SIZE,10,0);
 
-	if (cli_receive_trans(cli, SMBtrans2,
+	if (cli_receive_trans(cli, t_idx,  SMBtrans2,
 	                 &rprcnt, &rdrcnt,
 	                 &rparam, &rdata) )
 	{
@@ -1612,7 +1604,7 @@ BOOL cli_printq_info(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
   display info about a file
   ****************************************************************************/
-static void display_finfo(struct cli_state *cli, struct client_info *info,
+static void display_finfo(struct cli_state *cli, int t_idx, struct client_info *info,
 				file_info *finfo)
 {
   if (do_this_one(finfo, info))
@@ -1635,9 +1627,9 @@ static void display_finfo(struct cli_state *cli, struct client_info *info,
   do a directory listing, calling fn on each file found. Use the TRANSACT2
   call for long filenames
   ****************************************************************************/
-int cli_long_dir(struct cli_state *cli, struct client_info *info,
+int cli_long_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*))
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*))
 {
   int max_matches = 512;
   int info_level = cli->protocol<PROTOCOL_NT1?1:260; /* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -1700,12 +1692,12 @@ int cli_long_dir(struct cli_state *cli, struct client_info *info,
 	}
       /* ??? original code added 1 pad byte after param */
 
-      cli_send_trans(cli,SMBtrans2,NULL,0,FID_UNUSED,0,
+      cli_send_trans(cli, t_idx, SMBtrans2,NULL,0,FID_UNUSED,0,
 			 NULL,param,&setup,
 			 0,12+strlen(mask)+1,1,
 			 BUFFER_SIZE,10,0);
 
-      if (!cli_receive_trans(cli, SMBtrans2,
+      if (!cli_receive_trans(cli, t_idx,  SMBtrans2,
 			      &resp_data_len,&resp_param_len,
 			          &resp_data,&resp_param))
 	{
@@ -1791,13 +1783,13 @@ int cli_long_dir(struct cli_state *cli, struct client_info *info,
     for (p=dirlist,i=0;i<total_received;i++)
       {
 	p += interpret_long_filename(info_level,p,&finfo, info);
-	display_finfo(cli, info, &finfo);
+	display_finfo(cli, t_idx,  info, &finfo);
       }
 
   for (p=dirlist,i=0;i<total_received;i++)
     {
       p += interpret_long_filename(info_level,p,&finfo, info);
-      dir_action(cli, info, attribute, recurse_dir, fn, &finfo, True);
+      dir_action(cli, t_idx,  info, attribute, recurse_dir, fn, &finfo, True);
     }
 
   /* free up the dirlist buffer */
@@ -1826,9 +1818,9 @@ static int interpret_short_filename(char *p,file_info *finfo)
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-int cli_short_dir(struct cli_state *cli, struct client_info *info,
+int cli_short_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*))
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*))
 {
   char *p;
   int received = 0;
@@ -1849,21 +1841,30 @@ int cli_short_dir(struct cli_state *cli, struct client_info *info,
   
   while (1)
     {
+		int num_bytes = 0;
+		int num_words = 0;
+		uint8 cmd = 0;
+
       bzero(cli->outbuf,smb_size);
       if (first)	
-	set_message(cli->outbuf,2,5 + strlen(mask),True);
+		{
+			num_words = 2;
+			num_bytes = 5 + strlen(mask);
+		}
       else
-	set_message(cli->outbuf,2,5 + 21,True);
+		{
+			num_words = 2;
+			num_bytes = 5 + 21;
+		}
 
 #if FFIRST
       if (cli->protocol >= PROTOCOL_LANMAN1)
-	CVAL(cli->outbuf,smb_com) = SMBffirst;
+	cmd = SMBffirst;
       else
 #endif
-	CVAL(cli->outbuf,smb_com) = SMBsearch;
+	cmd = SMBsearch;
 
-      SSVAL(cli->outbuf,smb_tid,cli->cnum);
-      cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  cmd, num_words, num_bytes, True);
 
       SSVAL(cli->outbuf,smb_vwv0,num_asked);
       SSVAL(cli->outbuf,smb_vwv1,attribute);
@@ -1928,7 +1929,7 @@ int cli_short_dir(struct cli_state *cli, struct client_info *info,
       bzero(cli->outbuf,smb_size);
       CVAL(cli->outbuf,smb_com) = SMBfclose;
 
-      SSVAL(cli->outbuf,smb_tid,cli->cnum);
+      SSVAL(cli->outbuf,smb_tid,cli->con[t_idx].cnum );
       cli_setup_packet(cli);
 
       p = smb_buf(cli->outbuf);
@@ -1944,7 +1945,7 @@ int cli_short_dir(struct cli_state *cli, struct client_info *info,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd, cli->inbuf, cli->timeout) ||
-	     cli_error(cli, NULL, NULL))
+	     cli_error(cli,  NULL, NULL))
 	{ 
 	DEBUG(0,("Error closing search: %s\n", cli_errstr(cli)));      
     }
@@ -1954,13 +1955,13 @@ int cli_short_dir(struct cli_state *cli, struct client_info *info,
     for (p=dirlist,i=0;i<num_received;i++)
       {
 	p += interpret_short_filename(p,&finfo);
-	display_finfo(cli, info, &finfo);
+	display_finfo(cli, t_idx,  info, &finfo);
       }
 
   for (p=dirlist,i=0;i<num_received;i++)
     {
       p += interpret_short_filename(p,&finfo);
-      dir_action(cli, info, attribute, recurse_dir, fn, &finfo, False);
+      dir_action(cli, t_idx,  info, attribute, recurse_dir, fn, &finfo, False);
     }
 
   if (dirlist) free(dirlist);
@@ -1970,19 +1971,19 @@ int cli_short_dir(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-void cli_dir(struct cli_state *cli, struct client_info *info,
+void cli_dir(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *Mask,int attribute, BOOL recurse_dir,
-				void (*fn)(struct cli_state*, struct client_info*, file_info*))
+				void (*fn)(struct cli_state*, int, struct client_info*, file_info*))
 {
   DEBUG(5,("cli_dir(%s,%x,%s)\n",Mask,attribute,BOOLSTR(recurse_dir)));
   if (cli->protocol >= PROTOCOL_LANMAN2)
     {
-      if (cli_long_dir(cli, info, Mask, attribute, recurse_dir, fn) > 0)
+      if (cli_long_dir(cli, t_idx,  info, Mask, attribute, recurse_dir, fn) > 0)
 	return;
     }
 
   expand_mask(Mask,False);
-  cli_short_dir(cli, info, Mask, attribute, recurse_dir, fn);
+  cli_short_dir(cli, t_idx,  info, Mask, attribute, recurse_dir, fn);
   return;
 }
 
@@ -1990,7 +1991,7 @@ void cli_dir(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
   put a single file
   ****************************************************************************/
-int cli_put(struct cli_state *cli, struct client_info *info,
+int cli_put(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname, file_info *finfo,
 				int (*read_fn)(struct client_info *, char*, int, int, FILE *))
 {
@@ -2015,7 +2016,7 @@ int cli_put(struct cli_state *cli, struct client_info *info,
   if (finfo->mtime == 0 || finfo->mtime == -1)
     finfo->mtime = finfo->atime = finfo->ctime = time(NULL);
 
-  if (!cli_create(cli, rname, finfo->mode, finfo->mtime, &fnum)) return False;
+  if (!cli_create(cli, t_idx,  rname, finfo->mode, finfo->mtime, &fnum)) return False;
 
   if (fnum == 0xffff) return False;
 
@@ -2047,7 +2048,7 @@ int cli_put(struct cli_state *cli, struct client_info *info,
 	}	  
 
       /* buf+4 is the data.  buf[0..3] *might* get used by writeraw */
-      ret = cli_write(cli, fnum, nread, buf+4, n);
+      ret = cli_write(cli, t_idx,  fnum, nread, buf+4, n);
 
       DEBUG(5,("cli_write: offset %ld requested %d.  received %d\n",
 			nread, n, ret));
@@ -2065,7 +2066,7 @@ int cli_put(struct cli_state *cli, struct client_info *info,
       nread += n;
     }
 
-    if (!cli_close(cli, fnum, close_time))
+    if (!cli_close(cli, t_idx,  fnum, close_time))
     {
       DEBUG(0,("%s closing remote file %s\n",smb_errstr(cli->inbuf),CNV_LANG(rname)));
       fclose(f);
@@ -2100,7 +2101,7 @@ int cli_put(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
   get a file from rname to lname
   ****************************************************************************/
-int cli_get(struct cli_state *cli, struct client_info *info,
+int cli_get(struct cli_state *cli, int t_idx, struct client_info *info,
 				char *rname,char *lname,file_info *finfo1,
 				int handle,
 				int (*init_fn)(struct client_info *, int, char*, file_info *),
@@ -2131,7 +2132,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
   if (info->lowercase)
     strlower(lname);
 
-  fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fmode, &mtime, &fsize);
+  fnum = cli_open(cli, t_idx,  rname, O_RDONLY, DENY_NONE, &fmode, &mtime, &fsize);
 			
   if (fnum == 0xffff) return False;
 
@@ -2210,11 +2211,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 	    close_done = True;
 	    
 	  /* use readX + close */
-	  bzero(cli->outbuf,smb_size);
-	  set_message(cli->outbuf,10,0,True);
-	  CVAL(cli->outbuf,smb_com) = SMBreadX;
-	  SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	  cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBreadX, 10,0,True);
 	  
 	  if (close_done)
 	    {
@@ -2246,7 +2243,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 	  
       send_smb(cli->fd,cli->outbuf);
       if (!receive_smb(cli->fd, cli->inbuf, cli->timeout)) break;
-      if (cli_error(cli, NULL, NULL)) break;
+      if (cli_error(cli,  NULL, NULL)) break;
 
 	  if (close_done &&
 	      SVAL(cli->inbuf,smb_vwv0) != SMBclose)
@@ -2268,11 +2265,8 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 	  {
 	    static int readbraw_size = BUFFER_SIZE;
 	  
-	    bzero(cli->outbuf,smb_size);
-	    set_message(cli->outbuf,8,0,True);
-	    CVAL(cli->outbuf,smb_com) = SMBreadbraw;
-	    SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	    cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBreadbraw, 8,0,True);
+
 	    SSVAL(cli->outbuf,smb_vwv0,fnum);
 	    SIVAL(cli->outbuf,smb_vwv1,nread);
 	    SSVAL(cli->outbuf,smb_vwv3,MIN(finfo.size-nread,readbraw_size));
@@ -2321,11 +2315,8 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 
 	default:
 	  /* use plain read */
-	  bzero(cli->outbuf,smb_size);
-	  set_message(cli->outbuf,5,0,True);
-	  CVAL(cli->outbuf,smb_com) = SMBread;
-	  SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	  cli_setup_packet(cli);
+
+	cli_set_smb_cmd(cli, t_idx,  SMBread, 5,0,True);
 
 	  SSVAL(cli->outbuf,smb_vwv0,fnum);
 	  SSVAL(cli->outbuf,smb_vwv1,MIN(cli->max_xmit-200,finfo.size - nread));
@@ -2334,7 +2325,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 
   send_smb(cli->fd,cli->outbuf);
   if (!receive_smb(cli->fd, cli->inbuf, cli->timeout)) break;
-  if (cli_error(cli, NULL, NULL)) break;
+  if (cli_error(cli,  NULL, NULL)) break;
 
 	  datalen = SVAL(cli->inbuf,smb_vwv0);
 	  dataptr = smb_buf(cli->inbuf) + 3;
@@ -2366,9 +2357,9 @@ int cli_get(struct cli_state *cli, struct client_info *info,
   if (!close_done)
     {
 
-      cli_close(cli, fnum, 0);
+      cli_close(cli, t_idx,  fnum, 0);
       
-      if (!ignore_close_error && cli_error(cli, NULL, NULL))
+      if (!ignore_close_error && cli_error(cli,  NULL, NULL))
 	{
 	  DEBUG(0,("Error %s closing remote file\n",cli_errstr(cli)));
 	  return 0;
@@ -2398,7 +2389,7 @@ int cli_get(struct cli_state *cli, struct client_info *info,
 /****************************************************************************
 check for existance of a dir
 ****************************************************************************/
-BOOL cli_chkpath(struct cli_state *cli, char *path)
+BOOL cli_chkpath(struct cli_state *cli, int t_idx, char *path)
 {
 	fstring path2;
 	char *p;
@@ -2407,14 +2398,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	trim_string(path2,NULL,"\\");
 	if (!*path2) *path2 = '\\';
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,0,4 + strlen(path2),True);
-
-	SCVAL(cli->outbuf,smb_com,SMBchkpth);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBchkpth, 0,4 + strlen(path2),True);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -2439,7 +2423,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -2448,18 +2432,14 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 /****************************************************************************
 check the space on a device
 ****************************************************************************/
-BOOL cli_dskattr(struct cli_state *cli,
+BOOL cli_dskattr(struct cli_state *cli, int t_idx,
 				uint16 *num_blocks, uint32 *block_size, uint16 *free_blocks)
 {
-	bzero(cli->outbuf, smb_size);
-	set_message(cli->outbuf,0,0,True);
-	CVAL(cli->outbuf,smb_com) = SMBdskattr;
-	SSVAL(cli->outbuf, smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBdskattr, 0,0,True);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	*num_blocks  = SVAL(cli->inbuf,smb_vwv0);
 	*block_size  = SVAL(cli->inbuf,smb_vwv1) * SVAL(cli->inbuf,smb_vwv2);
@@ -2471,16 +2451,11 @@ BOOL cli_dskattr(struct cli_state *cli,
 /****************************************************************************
 make a directory of name "name"
 ****************************************************************************/
-BOOL cli_mkdir(struct cli_state *cli, char *name)
+BOOL cli_mkdir(struct cli_state *cli, int t_idx, char *name)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,0,2 + strlen(name),True);
-
-	CVAL(cli->outbuf,smb_com) = SMBmkdir;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBmkdir, 0,2 + strlen(name),True);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
@@ -2488,7 +2463,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *name)
   
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return(True);
 }
@@ -2497,17 +2472,13 @@ BOOL cli_mkdir(struct cli_state *cli, char *name)
 /****************************************************************************
 rename some files
 ****************************************************************************/
-BOOL cli_move(struct cli_state *cli, char *src, char *dest)
+BOOL cli_move(struct cli_state *cli, int t_idx, char *src, char *dest)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	set_message(cli->outbuf,1, 4 + strlen(src) + strlen(dest),True);
+	cli_set_smb_cmd(cli, t_idx,  SMBmv, 1, 4 + strlen(src) + strlen(dest),True);
 
-	CVAL(cli->outbuf,smb_com) = SMBmv;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	SSVAL(cli->outbuf,smb_vwv0,aHIDDEN | aDIR | aSYSTEM);
-	cli_setup_packet(cli);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;      
@@ -2518,7 +2489,7 @@ BOOL cli_move(struct cli_state *cli, char *src, char *dest)
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return(True);
 }
@@ -2526,16 +2497,12 @@ BOOL cli_move(struct cli_state *cli, char *src, char *dest)
 /****************************************************************************
 Get DOS file attributes
 ***************************************************************************/
-BOOL cli_getatr(struct cli_state *cli, char *fname,
+BOOL cli_getatr(struct cli_state *cli, int t_idx, char *fname,
 				uint8 *fattr, uint16 *ftime, uint16 *fsize)
 {
 	char *p;
 
-	memset(cli->outbuf,0,smb_size);
-	set_message(cli->outbuf,0,2 + strlen(fname),True);
-	CVAL(cli->outbuf,smb_com) = SMBgetatr;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBgetatr, 0,2 + strlen(fname),True);
 
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
@@ -2547,7 +2514,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli,  NULL, NULL)) return False;
 
 	if (fattr) (*fattr) = CVAL(cli->inbuf,smb_vwv0);
 	if (ftime) (*ftime) = SVAL(cli->inbuf,smb_vwv1);
@@ -2566,16 +2533,12 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 /****************************************************************************
 Set DOS file attributes
 ***************************************************************************/
-BOOL cli_setatr(struct cli_state *cli, char *fname,
+BOOL cli_setatr(struct cli_state *cli, int t_idx, char *fname,
 				uint8 fattr, uint16 write_time)
 {
 	char *p;
 
-	memset(cli->outbuf,0,smb_size);
-	set_message(cli->outbuf,8,4 + strlen(fname),True);
-	CVAL(cli->outbuf,smb_com) = SMBsetatr;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBsetatr, 8,4 + strlen(fname),True);
 
 	SSVAL(cli->outbuf,smb_vwv0, fattr);
 	SSVAL(cli->outbuf,smb_vwv1, write_time); /* zero indicates no change */
@@ -2591,7 +2554,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli,  NULL, NULL)) return False;
 
 	return(True);
 }
@@ -2600,16 +2563,12 @@ BOOL cli_setatr(struct cli_state *cli, char *fname,
 /****************************************************************************
 Create a file on a share
 ***************************************************************************/
-BOOL cli_create(struct cli_state *cli,
+BOOL cli_create(struct cli_state *cli, int t_idx,
 				char *name, uint16 file_mode, uint16 make_time, uint16 *fnum)
 {
 	char *p;
 
-	memset(cli->outbuf,0,smb_size);
-	set_message(cli->outbuf,3,2 + strlen(name),True);
-	CVAL(cli->outbuf,smb_com) = SMBcreate;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBcreate, 3,2 + strlen(name),True);
 
 	SSVAL(cli->outbuf,smb_vwv0,file_mode);
 	put_dos_date3(cli->outbuf,smb_vwv1,make_time);
@@ -2620,7 +2579,7 @@ BOOL cli_create(struct cli_state *cli,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return False;
-	if (cli_error(cli, NULL, NULL)) return False;
+	if (cli_error(cli,  NULL, NULL)) return False;
 
 	*fnum = SVAL(cli->inbuf,smb_vwv0);
 	return True;
@@ -2629,7 +2588,7 @@ BOOL cli_create(struct cli_state *cli,
 /****************************************************************************
 open a file
 ****************************************************************************/
-uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
+uint16 cli_open(struct cli_state *cli, int t_idx, char *fname, int flags, int share_mode,
 			uint16 *fmode, time_t *mtime, uint32 *fsize)
 {
 	char *p;
@@ -2656,14 +2615,7 @@ uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
 		accessmode |= 1;
 	} 
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,15,1 + strlen(fname),True);
-
-	CVAL(cli->outbuf,smb_com) = SMBopenX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBopenX, 15,1 + strlen(fname),True);
 
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,1);  /* return additional info */
@@ -2680,7 +2632,7 @@ uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return 0xffff;
-    if (cli_error(cli, NULL, NULL)) return 0xffff;
+    if (cli_error(cli,  NULL, NULL)) return 0xffff;
 
 	fnum                = SVAL(cli->inbuf,smb_vwv2);
 
@@ -2699,16 +2651,9 @@ uint16 cli_open(struct cli_state *cli, char *fname, int flags, int share_mode,
 /****************************************************************************
   close a file
 ****************************************************************************/
-BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time)
+BOOL cli_close(struct cli_state *cli, int t_idx, uint16 fnum, time_t close_time)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,3,0,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBclose;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBclose, 3,0,True); 
 
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 	put_dos_date3(cli->outbuf,smb_vwv1, close_time);
@@ -2719,7 +2664,7 @@ BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time)
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -2728,18 +2673,11 @@ BOOL cli_close(struct cli_state *cli, uint16 fnum, time_t close_time)
 /****************************************************************************
   lock a file
 ****************************************************************************/
-BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_lock(struct cli_state *cli, int t_idx, uint16 fnum, uint32 offset, uint32 len, int timeout)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,8,10,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBlockingX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBlockingX, 8,10,True);
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
@@ -2758,7 +2696,7 @@ BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -2766,18 +2704,11 @@ BOOL cli_lock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int
 /****************************************************************************
   unlock a file
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, int timeout)
+BOOL cli_unlock(struct cli_state *cli, int t_idx, uint16 fnum, uint32 offset, uint32 len, int timeout)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,8,10,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBlockingX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBlockingX, 8,10,True);
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
@@ -2796,7 +2727,7 @@ BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, i
 		return False;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 
 	return True;
 }
@@ -2805,18 +2736,11 @@ BOOL cli_unlock(struct cli_state *cli, uint16 fnum, uint32 offset, uint32 len, i
 /****************************************************************************
   read from a file
 ****************************************************************************/
-int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size)
+int cli_readx(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-
-	set_message(cli->outbuf,10,0,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBreadX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBreadX, 10,0,True);
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
@@ -2829,7 +2753,7 @@ int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint
 		return -1;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return -1;
+    if (cli_error(cli, NULL, NULL)) return -1;
 
 	size = SVAL(cli->inbuf, smb_vwv5);
 	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
@@ -2843,17 +2767,11 @@ int cli_readx(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint
 /*******************************************************************
   write to a file using writebraw
   ********************************************************************/
-int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
+int cli_writeraw(struct cli_state *cli, int t_idx, uint16 fnum,int pos,char *buf,int n)
 {
 	DEBUG(5,("cli_write_raw: [%04x] %d %d\n", fnum, pos, n));
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);  
-	set_message(cli->outbuf,cli->protocol>PROTOCOL_COREPLUS?12:10,0,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBwritebraw;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBwritebraw, cli->protocol>PROTOCOL_COREPLUS?12:10,0,True);
 
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 	SSVAL(cli->outbuf,smb_vwv1,n);
@@ -2862,7 +2780,7 @@ int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
-    if (cli_error(cli,NULL, NULL)) return -1;
+    if (cli_error(cli, NULL, NULL)) return -1;
 
 	/* direct write */
 	_smb_setlen(buf-4,n);		/* HACK! XXXX */
@@ -2878,22 +2796,16 @@ int cli_writeraw(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 /*******************************************************************
   write to a file
   ********************************************************************/
-int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
+int cli_write(struct cli_state *cli, int t_idx, uint16 fnum,int pos,char *buf,int n)
 {
 	int len;
 
 	if (cli->writebraw_supported && n > (cli->max_xmit-200)) 
 	{
-		return(cli_writeraw(cli, fnum, pos, buf, n));
+		return(cli_writeraw(cli, t_idx,  fnum, pos, buf, n));
 	}
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
-	set_message(cli->outbuf,5,n + 3,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBwrite;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBwrite, 5,n + 3,True);
 
 	SSVAL(cli->outbuf,smb_vwv0,fnum);
 	SSVAL(cli->outbuf,smb_vwv1,n);
@@ -2906,7 +2818,7 @@ int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
-    if (cli_error(cli,NULL, NULL)) return -1;
+    if (cli_error(cli, NULL, NULL)) return -1;
 
 	len = SVAL(cli->inbuf,smb_vwv0);
 
@@ -2921,18 +2833,14 @@ int cli_write(struct cli_state *cli, uint16 fnum,int pos,char *buf,int n)
 /****************************************************************************
   write to a file
 ****************************************************************************/
-int cli_write_x(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, uint16 size)
+int cli_write_x(struct cli_state *cli, int t_idx, uint16 fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
 
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
-	set_message(cli->outbuf,12,size,True);
-
-	CVAL(cli->outbuf,smb_com) = SMBwriteX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	cli_set_smb_cmd(cli, t_idx,  SMBwriteX, 12,size,True);
 
 	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 	SSVAL(cli->outbuf,smb_vwv2,fnum);
@@ -2946,7 +2854,7 @@ int cli_write_x(struct cli_state *cli, uint16 fnum, char *buf, uint32 offset, ui
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!receive_smb(cli->fd,cli->inbuf,cli->timeout)) return -1;
-    if (cli_error(cli,NULL, NULL)) return -1;
+    if (cli_error(cli, NULL, NULL)) return -1;
 
 	return SVAL(cli->inbuf, smb_vwv2);
 }
@@ -2963,6 +2871,12 @@ BOOL cli_negprot(struct cli_state *cli)
 	bzero(cli->outbuf,smb_size);
 
 	DEBUG(3,("cli_negprot\n"));
+
+	if (cli->num_tcons != 0)
+	{
+		DEBUG(2,("cli_negprot: connections appear to be already open\n"));
+		return False;
+	}
 
 	/* setup the protocol strings */
 	for (plength=0,numprots=0;
@@ -2992,7 +2906,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	show_msg(cli->inbuf);
 
-    if (cli_error(cli,NULL, NULL)) return False;
+    if (cli_error(cli, NULL, NULL)) return False;
 	if ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots) return(False);
 
 	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;
@@ -3122,11 +3036,18 @@ initialise a client structure
 ****************************************************************************/
 BOOL cli_initialise(struct cli_state *cli)
 {
+	int i;
 	if (cli->initialised) cli_shutdown(cli);
 
 	memset(cli, 0, sizeof(*cli));
 	cli->fd = -1;
-	cli->cnum = -1;
+
+	for (i = 0; i < MAX_CLIENT_CONNECTIONS; i++)
+	{
+		cli->con[i].cnum = -1;
+	}
+	cli->num_tcons = 0;
+
 	cli->pid = getpid();
 	cli->mid = 1;
 	cli->uid = getuid();
@@ -3223,7 +3144,7 @@ int cli_setpid(struct cli_state *cli, int pid)
 /****************************************************************************
 establishes a connection right up to doing tconX, reading in a password.
 ****************************************************************************/
-BOOL cli_establish_connection(struct cli_state *cli,
+BOOL cli_establish_connection(struct cli_state *cli, int *t_idx,
 				char *dest_host, uint8 name_type, struct in_addr *dest_ip,
 				char *my_hostname,
 				char *passwd_report,
@@ -3323,7 +3244,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 		if (do_tcon)
 		{
-			if (!cli_send_tconX(cli, service, service_type,
+			if (!cli_send_tconX(cli, t_idx,  service, service_type,
 			                    nt_owf_passwd, sizeof(nt_owf_passwd)))
 			{
 				DEBUG(1,("failed tcon_X\n"));
@@ -3346,7 +3267,7 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		}
 		if (do_tcon)
 		{
-			if (!cli_send_tconX(cli, service, service_type,
+			if (!cli_send_tconX(cli, t_idx,  service, service_type,
 			                    passwd, pass_len))
 			{
 				DEBUG(1,("failed tcon_X\n"));
