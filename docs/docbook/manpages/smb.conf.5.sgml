@@ -7570,6 +7570,12 @@
 		connection is made to a Samba server. Sites may use this to record the
 		user connecting to a Samba share.</para>
 
+	        <para>Due to the requirements of the utmp record, we
+	        are required to create a unique identifier for the
+	        incoming user.  Enabling this option creates an n^2
+	        algorithm to find this number.  This may impede
+	        performance on large installations. </para>
+
 		<para>See also the <link linkend="UTMPDIRECTORY"><parameter>
 		utmp directory</parameter></link> parameter.</para>
 
