@@ -23,30 +23,37 @@
 
 void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 {
-	int num_subkeys, i, num_values;
+	REG_KEY *subkey;
+	REG_VAL *value;
+	WERROR error;
+	int i;
 
 	for(i = 0; i < l; i++) putchar(' ');
 	if(fullpath) printf("%s\n", reg_key_get_path(p));
 	else printf("%s\n", reg_key_name(p));
 
-	num_subkeys = reg_key_num_subkeys(p);
-	for(i = 0; i < num_subkeys; i++) {
-		REG_KEY *subkey = reg_key_get_subkey_by_index(p, i);
+	for(i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(p, i, &subkey)); i++) {
 		print_tree(l+1, subkey, fullpath, novals);
 		reg_key_free(subkey);
 	}
 
+	if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+		DEBUG(0, ("Error occured while fetching subkeys for '%s'\n", reg_key_get_path(p)));
+	}
+
 	if(!novals) {
-		num_values = reg_key_num_values(p);
-		for(i = 0; i < num_values; i++) {
+		for(i = 0; W_ERROR_IS_OK(error = reg_key_get_value_by_index(p, i, &value)); i++) {
 			int j;
 			char *desc;
-			REG_VAL *value = reg_key_get_value_by_index(p, i);
 			for(j = 0; j < l+1; j++) putchar(' ');
 			desc = reg_val_description(value);
 			printf("%s\n", desc);
 			free(desc);
 			reg_val_free(value);
+		}
+
+		if(!W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS)) {
+			DEBUG(0, ("Error occured while fetching subkeys for '%s'\n", reg_key_get_path(p)));
 		}
 	}
 }
@@ -55,15 +62,17 @@ int main (int argc, char **argv)
 {
 	uint32	setparms, checkparms;
 	int opt;
-	char *backend = "dir";
+	char *backend = "dir", *credentials = NULL;
 	poptContext pc;
 	REG_KEY *root;
 	REG_HANDLE *h;
+	WERROR error;
 	int fullpath = 0, no_values = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"backend", 'b', POPT_ARG_STRING, &backend, 0, "backend to use", NULL},
 		{"fullpath", 'f', POPT_ARG_NONE, &fullpath, 0, "show full paths", NULL},
+		{"credentials", 'c', POPT_ARG_NONE, &credentials, 0, "credentials (user%password)", NULL},
 		{"no-values", 'V', POPT_ARG_NONE, &no_values, 0, "don't show values", NULL},
 		POPT_TABLEEND
 	};
@@ -75,15 +84,15 @@ int main (int argc, char **argv)
 
 	setup_logging("regtree", True);
 
-	h = reg_open(backend, poptPeekArg(pc), True);
-	if(!h) {
+	error = reg_open(backend, poptPeekArg(pc), credentials, &h);
+	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", poptGetArg(pc), backend);
 		return 1;
 	}
 	poptFreeContext(pc);
 
-	root = reg_get_root(h);
-	if(!root) return 1;
+	error = reg_get_root(h, &root);
+	if(!W_ERROR_IS_OK(error)) return 1;
 
 	print_tree(0, root, fullpath, no_values);
 	

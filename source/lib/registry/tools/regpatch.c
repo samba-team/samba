@@ -664,11 +664,13 @@ static CMD_FILE *cmd_file_create(const char *file)
 
 char *str_type(unsigned char type);
 
-int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
+int nt_apply_reg_command_file(REG_KEY *root, const char *cmd_file_name)
 {
 	CMD *cmd;
-	int modified = 0;
+	BOOL modified = False;
 	CMD_FILE *cmd_file = NULL;
+	REG_KEY *tmp = NULL;
+	WERROR error;
 	cmd_file = cmd_file_create(cmd_file_name);
 
 	while ((cmd = cmd_file->cmd_ops.get_cmd(cmd_file->fd)) != NULL) {
@@ -677,17 +679,22 @@ int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
 		 * Now, apply the requests to the tree ...
 		 */
 		switch (cmd->cmd) {
-		case CMD_ADD_KEY: {
-		  REG_KEY *tmp = NULL;
-		  tmp = reg_open_key(reg_get_root(regf), cmd->key);
+		case CMD_ADD_KEY: 
+		  error = reg_open_key(root, cmd->key, &tmp);
+
 		  /* If we found it, apply the other bits, else create such a key */
-		  if (!tmp) {
-			  if(reg_key_add_name_recursive(reg_get_root(regf), cmd->key)) {
-				  tmp = reg_open_key(reg_get_root(regf), cmd->key);
+		  if (W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
+			  if(W_ERROR_IS_OK(reg_key_add_name_recursive(root, cmd->key))) {
+				  error = reg_open_key(root, cmd->key, &tmp);
+				  if(!W_ERROR_IS_OK(error)) {
+					DEBUG(0, ("Error finding new key '%s' after it has been added\n", cmd->key));
+					continue;
+				  }
 			  } else {
 					DEBUG(0, ("Error adding new key '%s'\n", cmd->key));
+					continue;
 			  }
-			  modified = 1;
+			  modified = True;
 		  }
 
 		  while (cmd->val_count) {
@@ -695,15 +702,21 @@ int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
 			  REG_VAL *reg_val = NULL;
 
 			  if (val->type == REG_DELETE) {
-				  reg_val = reg_key_get_value_by_name( tmp, val->name);
-				  reg_val_del(reg_val);
-				  modified = 1;
+				  error = reg_key_get_value_by_name( tmp, val->name, &reg_val);
+				  if(W_ERROR_IS_OK(error)) {
+					  error = reg_val_del(reg_val);
+				  }
+				  if(!W_ERROR_IS_OK(error)) {
+					DEBUG(0, ("Error removing value '%s'\n", val->name));
+				  }
+				  modified = True;
 			  }
 			  else {
-				  /* FIXME 
-					 reg_val = nt_add_reg_value(tmp, val->name, val->type,
-					 val->val); */
-				  modified = 1;
+				  if(!W_ERROR_IS_OK(reg_key_add_value(tmp, val->name, val->type, val->val, strlen(val->val)))) {
+					  DEBUG(0, ("Error adding new value '%s'\n", val->name));
+					  continue;
+				  }
+				  modified = True;
 			  }
 
 			  cmd->val_spec_list = val->next;
@@ -712,7 +725,6 @@ int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
 		  }
 
 		  break;
-						  }
 
 		case CMD_DEL_KEY:
 		  /* 
@@ -720,8 +732,18 @@ int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
 		   * Find the key if it exists, and delete it ...
 		   */
 
-		  reg_key_del_recursive(reg_open_key(reg_get_root(regf), cmd->key));
-		  modified = 1;
+		  error = reg_open_key(root, cmd->key, &tmp);
+		  if(!W_ERROR_IS_OK(error)) {
+			  DEBUG(0, ("Unable to open key '%s'\n", cmd->key));
+			  continue;
+		  }
+		  
+		  error = reg_key_del_recursive(tmp);
+		  if(!W_ERROR_IS_OK(error)) {
+			  DEBUG(0, ("Unable to delete key '%s'\n", cmd->key));
+			  continue;
+		  }
+		  modified = True;
 		  break;
 		}
 	}
@@ -737,13 +759,16 @@ int main (int argc, char **argv)
 	poptContext pc;
 	REG_KEY *root;
 	const char *location;
+	const char *credentials = NULL;
 	const char *patch;
-	char *backend = "dir";
+	const char *backend = "dir";
 	REG_HANDLE *h;
 	int fullpath = 0, no_values = 0;
+	WERROR error;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"backend", 'b', POPT_ARG_STRING, &backend, 'b', "backend to use", NULL},
+		{"credentials", 'c', POPT_ARG_STRING, &credentials, 'c', "credentials (user%password", NULL},
 		POPT_TABLEEND
 	};
 
@@ -760,7 +785,7 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	h = reg_open(backend, location, True);
+	error = reg_open(backend, location, credentials, &h);
 	if(!h) {
 		fprintf(stderr, "Unable to open '%s' with backend '%s'\n", location, backend);
 		return 1;
@@ -770,7 +795,15 @@ int main (int argc, char **argv)
 	if(!patch) patch = "/dev/stdin";
 	poptFreeContext(pc);
 
-	nt_apply_reg_command_file(h, patch);
+	error = reg_get_root(h, &root);
+	if(!W_ERROR_IS_OK(error)) {
+		DEBUG(0, ("Error opening root!\n"));
+		return 1;
+	}
+
+	nt_apply_reg_command_file(root, patch);
+
+	reg_free(h);
 
 	return 0;
 }
