@@ -276,8 +276,10 @@ k_afsklog_all_local_cells(char *krealm)
 	sprintf(home, "%s/.TheseCells", p);
 	err = k_afslog_file(home, krealm);
     }
-    err = err && k_afslog_file(_PATH_THESECELLS, krealm);
-    err = err && k_afslog_file(_PATH_THISCELL, krealm);
+    if(k_afslog_file(_PATH_THESECELLS, krealm) == 0)
+	err = 0;
+    if(k_afslog_file(_PATH_THISCELL, krealm) == 0)
+	err = 0;
     return err;
 }
 
