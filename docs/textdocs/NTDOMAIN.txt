@@ -39,8 +39,8 @@ reinstall NT from scratch: their workstation had become totally unuseable.
 This *has* been reported to the NTBUGTRAQ@LISTSERV.NTBUGTRAQ.COM digest.
 
 
-Domain Logons using 1.9.18alpha1
-================================
+Domain Logons using latest cvs source
+=====================================
 
 1) compile samba with -DNTDOMAIN
 
@@ -67,10 +67,10 @@ Domain Logons using 1.9.18alpha1
 ;	substitute your workgroup here
 	workgroup = SAMBA
 
-;	a description of domain sids can be found elsewhere.
-;	you **MUST** begin the domain SID with S-1-5-21.
-;	the rest is up to you.
-	domain sid = S-1-5-21-123-456-789-123
+;	DO NOT add the redundant "domain sid = " parameter as this has
+;	been superseded by code that automatically generates a random
+;	sid for you.
+;	domain sid = redundant.
 
 ;	tells workstations to use SAMBA as its Primary Domain Controller.
 	domain logons = yes
