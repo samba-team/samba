@@ -66,7 +66,8 @@ static char *add_suffix(const char *name, const char *suffix)
 		fprintf(stderr,"Out of memory!\n");
 		exit(1);
 	}
-	snprintf(ret, len, "%s%s", name, suffix);
+	strncpy(ret, name, len);
+	strncat(ret, suffix, len);
 	return ret;
 }
 
