@@ -1789,6 +1789,52 @@ static char *unix_mode_to_str(char *s, mode_t m)
 }
 
 /****************************************************************************
+ UNIX getfacl.
+****************************************************************************/
+
+static int cmd_getfacl(void)
+{
+	pstring src, name;
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	char *retbuf = NULL;
+ 
+	if (!SERVER_HAS_UNIX_CIFS(cli)) {
+		d_printf("Server doesn't support UNIX CIFS calls.\n");
+		return 1;
+	}
+
+	if (!cli_unix_extensions_version(cli, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Can't get UNIX CIFS version from server.\n");
+		return 1;
+	}
+
+	if (!(caplow & CIFS_UNIX_POSIX_ACLS_CAP)) {
+		d_printf("This server supports UNIX extensions but doesn't support POSIX ACLs.\n");
+		return 1;
+	}
+
+	pstrcpy(src,cur_dir);
+	
+	if (!next_token_nr(NULL,name,NULL,sizeof(name))) {
+		d_printf("stat file\n");
+		return 1;
+	}
+
+	pstrcat(src,name);
+
+	if (!cli_unix_getfacl(cli, src, &retbuf)) {
+		d_printf("%s getfacl file %s\n",
+			cli_errstr(cli), src);
+		return 1;
+	} 
+
+	/* ToDo : Print out the ACL values. */
+	SAFE_FREE(retbuf);	
+	return 0;
+}
+
+/****************************************************************************
  UNIX stat.
 ****************************************************************************/
 
@@ -2355,6 +2401,7 @@ static struct
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
+  {"getfacl",cmd_getfacl,"<file name> get the POSIX ACL on a file (UNIX extensions only)",{COMPL_REMOTE,COMPL_LOCAL}},
   {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},

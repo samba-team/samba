@@ -168,6 +168,54 @@ static mode_t unix_filetype_from_wire(uint32 wire_type)
 }
 
 /****************************************************************************
+ Do a POSIX getfacl (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_getfacl(struct cli_state *cli, const char *name, char **retbuf)
+{
+	unsigned int param_len = 0;
+	unsigned int data_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	char param[sizeof(pstring)+6];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_POSIX_ACL);
+	p += 6;
+	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                       /* fid, flags */
+		&setup, 1, 0,                /* setup, length, max */
+		param, param_len, 2,         /* param, length, max */
+		NULL,  0, cli->max_xmit      /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	if (data_len < 6) {
+		SAFE_FREE(rdata);
+		SAFE_FREE(rparam);
+		return False;
+	}
+
+	SAFE_FREE(rparam);
+	*retbuf = rdata;
+
+	return True;
+}
+
+/****************************************************************************
  Stat a file (UNIX extensions).
 ****************************************************************************/
 
