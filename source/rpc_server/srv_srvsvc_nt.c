@@ -136,7 +136,7 @@ BOOL share_info_db_init(void)
     /* handle a Samba upgrade */
     tdb_lock_bystring(share_tdb, vstring);
     if (tdb_fetch_int(share_tdb, vstring) != SHARE_DATABASE_VERSION) {
-        tdb_traverse(share_tdb, (tdb_traverse_func)tdb_delete, NULL);
+        tdb_traverse(share_tdb, tdb_traverse_delete_fn, NULL);
         tdb_store_int(share_tdb, vstring, SHARE_DATABASE_VERSION);
     }
     tdb_unlock_bystring(share_tdb, vstring);

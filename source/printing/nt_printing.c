@@ -269,7 +269,7 @@ BOOL nt_printing_init(void)
 			if (!upgrade_to_version_2())
 				return False;
 		} else
-			tdb_traverse(tdb_drivers, (tdb_traverse_func)tdb_delete, NULL);
+			tdb_traverse(tdb_drivers, tdb_traverse_delete_fn, NULL);
  
 		tdb_store_int(tdb_drivers, vstring, NTDRIVERS_DATABASE_VERSION);
 	}

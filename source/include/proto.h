@@ -4726,6 +4726,8 @@ size_t tdb_pack(char *buf, int bufsize, char *fmt, ...);
 int tdb_unpack(char *buf, int bufsize, char *fmt, ...);
 TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode);
+int tdb_traverse_delete_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf,
+                     void *state);
 
 /*The following definitions come from  utils/nbio.c  */
 
