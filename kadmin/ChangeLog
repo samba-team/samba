@@ -1,3 +1,8 @@
+2003-10-04  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* util.c (str2time_t): allow whitespace between date and time
+	From: Bob Beck <beck@cvs.openbsd.org> and adharw@yahoo.com
+	
 2003-09-03  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* ank.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
