@@ -356,3 +356,59 @@ NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 
 	return status;
 }
+
+/*
+  check that an EA has the right value 
+*/
+NTSTATUS torture_check_ea(struct smbcli_state *cli, 
+			  const char *fname, const char *eaname, const char *value)
+{
+	union smb_fileinfo info;
+	NTSTATUS status;
+	int i;
+	TALLOC_CTX *mem_ctx = talloc(cli, 0);
+
+	info.all_eas.level = RAW_FILEINFO_ALL_EAS;
+	info.all_eas.in.fname = fname;
+
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return status;
+	}
+
+	for (i=0;i<info.all_eas.out.num_eas;i++) {
+		if (StrCaseCmp(eaname, info.all_eas.out.eas[i].name.s) == 0) {
+			if (value == NULL) {
+				printf("attr '%s' should not be present\n", eaname);
+				talloc_free(mem_ctx);
+				return NT_STATUS_EA_CORRUPT_ERROR;
+			}
+			if (strlen(value) == info.all_eas.out.eas[i].value.length &&
+			    memcmp(value, 
+				   info.all_eas.out.eas[i].value.data,
+				   info.all_eas.out.eas[i].value.length) == 0) {
+				talloc_free(mem_ctx);
+				return NT_STATUS_OK;
+			} else {
+				printf("attr '%s' has wrong value '%*.*s'\n", 
+				       eaname, 
+				       info.all_eas.out.eas[i].value.length,
+				       info.all_eas.out.eas[i].value.length,
+				       info.all_eas.out.eas[i].value.data);
+				talloc_free(mem_ctx);
+				return NT_STATUS_EA_CORRUPT_ERROR;
+			}
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	if (value != NULL) {
+		printf("attr '%s' not found\n", eaname);
+		return NT_STATUS_NONEXISTENT_EA_ENTRY;
+	}
+
+	return NT_STATUS_OK;
+}
+

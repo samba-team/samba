@@ -51,7 +51,7 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 	
 	capabilities = transport->negotiate.capabilities;
 
-	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS | FLAGS2_EXTENDED_ATTRIBUTES;
 
 	if (capabilities & CAP_UNICODE) {
 		flags2 |= FLAGS2_UNICODE_STRINGS;

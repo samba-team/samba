@@ -1089,14 +1089,14 @@ static BOOL handler_open(int instance)
 	NTSTATUS status[NSERVERS];
 
 	parm[0].openold.level = RAW_OPEN_OPEN;
-	parm[0].openold.in.flags = gen_bits_mask2(0xF, 0xFFFF);
+	parm[0].openold.in.open_mode = gen_bits_mask2(0xF, 0xFFFF);
 	parm[0].openold.in.search_attrs = gen_attrib();
 	parm[0].openold.in.fname = gen_fname_open(instance);
 
 	if (!options.use_oplocks) {
 		/* mask out oplocks */
-		parm[0].openold.in.flags &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
-					   OPENX_FLAGS_REQUEST_BATCH_OPLOCK);
+		parm[0].openold.in.open_mode &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
+						  OPENX_FLAGS_REQUEST_BATCH_OPLOCK);
 	}
 	
 	GEN_COPY_PARM;

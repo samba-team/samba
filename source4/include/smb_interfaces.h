@@ -1133,6 +1133,7 @@ union smb_open {
 		struct {
 			uint16_t flags;
 			uint16_t open_mode;
+			uint16_t search_attrs;
 			uint16_t file_attrs;
 			time_t write_time;
 			uint16_t open_func;
@@ -1152,7 +1153,7 @@ union smb_open {
 			uint16_t ftype;
 			uint16_t devstate;
 			uint16_t action;
-			uint32_t unknown;
+			uint32_t file_id;
 		} out;
 	} t2open;
 
@@ -1161,7 +1162,7 @@ union smb_open {
 		enum smb_open_level level;
 
 		struct {
-			uint16_t flags;
+			uint16_t open_mode;
 			uint16_t search_attrs;
 			const char *fname;
 		} in;
