@@ -556,6 +556,7 @@ get_response(const char *prompt, const char *def, char *buf, size_t len)
     osig = signal(SIGINT, interrupt);
     if(setjmp(jmpbuf)) {
 	signal(SIGINT, osig);
+	printf("\n");
 	return 1;
     }
 
