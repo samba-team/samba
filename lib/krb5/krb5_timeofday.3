@@ -1,4 +1,6 @@
-.\" Copyright (c) 2001 Kungliga Tekniska Högskolan
+.\" $Id$
+.\"
+.\" Copyright (c) 2001, 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden).
 .\" All rights reserved.
 .\"
@@ -31,27 +33,87 @@
 .\"
 .\" $Id$
 .\"
-.Dd July  1, 2001
+.Dd June 17, 2003
 .Dt KRB5_TIMEOFDAY 3
+.Os HEIMDAL
 .Sh NAME
-.Nm krb5_timeofday ,
+.Nm krb5_timeofday
+.Nm krb5_set_real_time
 .Nm krb5_us_timeofday
-.Nd whatever these functions do
+.Nm krb5_format_time
+.Nm krb5_string_to_deltat
+.Nd Kerberos 5 time handling functions
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
-.Ft "krb5_error_code"
-.Fn krb5_timeofday "krb5_context context" "krb5_timestamp *timeret"
-.Ft "krb5_error_code"
-.Fn krb5_us_timeofday "krb5_context context" "int32_t *sec" "int32_t *usec"
+.Pp
+.Li krb5_timestamp ;
+.Pp
+.Li krb5_deltat ;
+.Ft krb5_error_code
+.Fo krb5_set_real_time
+.Fa "krb5_context context"
+.Fa "krb5_timestamp sec"
+.Fa "int32_t usec"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_timeofday
+.Fa "krb5_context context"
+.Fa "krb5_timestamp *timeret"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_us_timeofday
+.Fa "krb5_context context"
+.Fa "krb5_timestamp *sec"
+.Fa "int32_t *usec"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_format_time
+.Fa "krb5_context context"
+.Fa "time_t t"
+.Fa "char *s"
+.Fa "size_t len"
+.Fa "krb5_boolean include_time"
+.Fc
+.Ft krb5_error_code
+.Fo krb5_string_to_deltat
+.Fa "const char *string"
+.Fa "krb5_deltat *deltat"
+.Fc
 .Sh DESCRIPTION
+.Nm krb5_set_real_time
+set the
+.Fa sec
+and 
+.Fa usec
+to the match the time as the KDC time.
+This update the time screw parameter
+in
+.Fa context .
+.Pp
 .Fn krb5_timeofday
 returns the current time, but adjusted with the time difference
 between the local host and the KDC.
 .Fn krb5_us_timeofday
 also returns microseconds.
 .Pp
-.\".Sh EXAMPLE
+.Nm krb5_format_time
+formats the time
+.Fa t
+into the string
+.Fa s
+of length
+.Fa len .
+If
+.Fa include_time
+is set, the time is set include_time.
+.Pp
+.Nm krb5_string_to_deltat
+Parses delta time
+.Fa string
+into
+.Fa deltat .
 .Sh SEE ALSO
-.Xr gettimeofday 2
+.Xr gettimeofday 2 ,
+.Xr krb5 3

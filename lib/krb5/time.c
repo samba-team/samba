@@ -36,6 +36,24 @@
 RCSID("$Id$");
 
 /*
+ * Set the time the kerberos library will use to `sec',`usec' to
+ */
+
+krb5_error_code
+krb5_set_real_time (krb5_context context,
+		    krb5_timestamp sec,
+		    int32_t usec)
+{
+    struct timeval tv;
+    
+    gettimeofday(&tv, NULL);
+
+    context->kdc_sec_offset = sec - tv.tv_sec;
+    context->kdc_usec_offset = usec - tv.tv_sec;
+    return 0;
+}
+
+/*
  * return ``corrected'' time in `timeret'.
  */
 
