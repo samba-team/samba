@@ -61,6 +61,14 @@ rid_name domain_alias_rids[] =
 	{ 0                             , NULL }
 };
 
+/* array lookup of well-known Domain RID users. */
+rid_name domain_user_rids[] = 
+{
+	{ DOMAIN_USER_RID_ADMIN         , "Administrator" },
+	{ DOMAIN_USER_RID_GUEST         , "Guest" },
+	{ 0                             , NULL }
+};
+
 /* array lookup of well-known Domain RID groups. */
 rid_name domain_group_rids[] = 
 {
@@ -297,6 +305,9 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 		return False;
 	}
 
+	p->frag_len_left   = p->hdr.frag_len - p->file_offset;
+	p->next_frag_start = p->hdr.frag_len; 
+	
 	/* set up the data chain */
 	p->rhdr.data->offset.start = 0;
 	p->rhdr.data->offset.end   = p->rhdr.offset;
@@ -319,6 +330,8 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 	int i = 0; 
 	(*type) = SID_NAME_DOM_GRP;
 
+	DEBUG(5,("lookup_group_name: rid: %d", rid));
+
 	while (domain_group_rids[i].rid != rid && domain_group_rids[i].rid != 0)
 	{
 		i++;
@@ -327,9 +340,11 @@ uint32 lookup_group_name(uint32 rid, char *group_name, uint32 *type)
 	if (domain_group_rids[i].rid != 0)
 	{
 		fstrcpy(group_name, domain_group_rids[i].name);
+		DEBUG(5,(" = %s\n", group_name));
 		return 0x0;
 	}
 
+	DEBUG(5,(" none mapped\n"));
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
 
@@ -343,6 +358,8 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 	int i = 0; 
 	(*type) = SID_NAME_WKN_GRP;
 
+	DEBUG(5,("lookup_alias_name: rid: %d", rid));
+
 	while (domain_alias_rids[i].rid != rid && domain_alias_rids[i].rid != 0)
 	{
 		i++;
@@ -351,9 +368,11 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 	if (domain_alias_rids[i].rid != 0)
 	{
 		fstrcpy(alias_name, domain_alias_rids[i].name);
+		DEBUG(5,(" = %s\n", alias_name));
 		return 0x0;
 	}
 
+	DEBUG(5,(" none mapped\n"));
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
 
@@ -363,9 +382,30 @@ uint32 lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
 uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 {
 	struct smb_passwd *smb_pass;
+	uint32 unix_uid;
+	int i = 0;
 	(*type) = SID_NAME_USER;
 
-	/* find the user account */
+	DEBUG(5,("lookup_user_name: rid: %d", rid));
+
+	/* look up the well-known domain user rids first */
+	while (domain_user_rids[i].rid != rid && domain_user_rids[i].rid != 0)
+	{
+		i++;
+	}
+
+	if (domain_user_rids[i].rid != 0)
+	{
+		fstrcpy(user_name, domain_user_rids[i].name);
+		DEBUG(5,(" = %s\n", user_name));
+		return 0x0;
+	}
+
+	DEBUG(5,(" uid: %d", unix_uid));
+
+	unix_uid = uid_to_user_rid(rid);
+
+	/* ok, it's a user.  find the user account */
 	become_root(True);
 	smb_pass = getsmbpwuid(rid); /* lkclXXXX SHOULD use rid mapping here! */
 	unbecome_root(True);
@@ -373,9 +413,11 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 	if (smb_pass != NULL)
 	{
 		fstrcpy(user_name, smb_pass->smb_name);
+		DEBUG(5,(" = %s\n", user_name));
 		return 0x0;
 	}
 
+	DEBUG(5,(" none mapped\n"));
 	return 0xC0000000 | NT_STATUS_NONE_MAPPED;
 }
 
@@ -470,11 +512,56 @@ BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 	{
 		/* turn the unix UID into a Domain RID.  this is what the posix
 		   sub-system does (adds 1000 to the uid) */
-		*u_rid = (uint32)(pw->pw_uid + 1000);
+		*u_rid = uid_to_user_rid(pw->pw_uid);
 	}
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	*g_rid = (uint32)(pw->pw_gid + 1000);
+	*g_rid = gid_to_group_rid(pw->pw_gid);
 
 	return True;
 }
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT User RID to a UNIX uid.
+ ********************************************************************/
+uid_t user_rid_to_uid(uint32 u_rid)
+{
+	return (uid_t)(u_rid - 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT Group RID to a UNIX uid.
+ ********************************************************************/
+uid_t group_rid_to_uid(uint32 u_gid)
+{
+	return (uid_t)(u_gid - 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts UNIX uid to an NT User RID.
+ ********************************************************************/
+uint32 uid_to_user_rid(uint32 uid)
+{
+	return (uint32)(uid + 1000);
+}
+
+/*******************************************************************
+ XXXX THIS FUNCTION SHOULD NOT BE HERE: IT SHOULD BE A STATIC FUNCTION
+ INSIDE smbpass.c
+
+ converts NT Group RID to a UNIX uid.
+ ********************************************************************/
+uint32 gid_to_group_rid(uint32 gid)
+{
+	return (uint32)(gid + 1000);
+}
+
