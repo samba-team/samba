@@ -344,6 +344,9 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
         NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         uint32 i, total_names = 0;
 
+        /* Step #1: Get a list of user rids that are the members of the
+           group. */
+
         if (!(group_hnd = cm_get_sam_group_handle(domain->name, &domain->sid,
                                                   group_rid)))
                 goto done;
@@ -357,9 +360,10 @@ BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,
         if (!NT_STATUS_IS_OK(result))
                 goto done;
 
-        /* Convert list of rids into list of names.  Do this in bunches of
-           ~1000 to avoid crashing NT4.  It looks like there is a buffer
-           overflow or something like that lurking around somewhere. */
+        /* Step #2: Convert list of rids into list of usernames.  Do this
+           in bunches of ~1000 to avoid crashing NT4.  It looks like there
+           is a buffer overflow or something like that lurking around
+           somewhere. */
 
         if (!(dom_hnd = cm_get_sam_dom_handle(domain->name, &domain->sid)))
                 goto done;

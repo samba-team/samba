@@ -326,6 +326,7 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 
 	status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
 				      &ctr, &info3);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
@@ -335,8 +336,28 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 	}
 
 	/*
-	 * Here, if we really want it, we have lots of info about the user in info3.
-	 */
+	 * Here, if we really want it, we have lots of info about the user
+	 * in info3.  
+         */
+
+        /* Store the user group information in the server_info returned to
+           the caller. */
+
+        if ((server_info->group_rids = malloc(info3.num_groups2 *
+                                        sizeof(uint32))) == NULL) {
+                DEBUG(1, ("out of memory allocating rid group membership\n"));
+                status = NT_STATUS_NO_MEMORY;
+        } else {
+                int i;
+
+                server_info->n_rids = info3.num_groups2;
+                
+                for (i = 0; i < server_info->n_rids; i++) {
+                        server_info->group_rids[i] = info3.gids[i].g_rid;
+                        DEBUG(5, ("** adding group rid 0x%x\n",
+                                  info3.gids[i].g_rid));
+                }
+        }
 
 #if 0
 	/* 

@@ -107,7 +107,9 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 		DEBUG(10, ("fill_grent_mem(): processing name %s\n", 
                            the_name));
 
-		/* Only add domain users */
+		/* FIXME: need to cope with groups within groups.  These
+                   occur in Universal groups on a Windows 2000 native mode
+                   server. */
 
 		if (name_types[i] != SID_NAME_USER) {
 			DEBUG(3, ("fill_grent_mem(): name %s isn't a domain "
