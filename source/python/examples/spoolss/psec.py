@@ -3,7 +3,8 @@
 # Get or set the security descriptor on a printer
 #
 
-import sys, spoolss, re, string
+import sys, re, string
+from samba import spoolss
 
 if len(sys.argv) != 3:
     print "Usage: psec.py getsec|setsec printername"
