@@ -370,6 +370,36 @@ void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
 /****************************************************************************
 nt lsa query
 ****************************************************************************/
+void cmd_lsa_create_secret(struct client_info *info, int argc, char *argv[])
+{
+	char *secret_name;
+	fstring srv_name;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (argc > 2)
+	{
+		report(out_hnd, "createsecret <secret name>\n");
+		return;
+	}
+
+	secret_name = argv[1];
+
+	if (msrpc_lsa_create_secret(srv_name, secret_name, 0x020003))
+	{
+		report(out_hnd, "LSA Create Secret: OK\n");
+	}
+	else
+	{
+		report(out_hnd, "LSA Query Secret: failed\n");
+	}
+}
+
+/****************************************************************************
+nt lsa query
+****************************************************************************/
 void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 {
 	char *secret_name;

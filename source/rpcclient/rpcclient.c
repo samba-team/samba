@@ -306,12 +306,17 @@ struct command_set commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"createsecret",
+		cmd_lsa_create_secret,
+		"LSA Create Secret (developer use)",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"setsecret",
 		cmd_lsa_set_secret,
 		"LSA Set Secret (developer use)",
 		{COMPL_NONE, COMPL_NONE}
 	},
-
 	{
 		"querysecret",
 		cmd_lsa_query_secret,

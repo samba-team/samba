@@ -188,6 +188,33 @@ uint32 lookup_lsa_sid(const char *domain,
 }
 
 /****************************************************************************
+nt lsa create secret
+****************************************************************************/
+BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
+				uint32 access_rights)
+{
+	BOOL res = True;
+	BOOL res1;
+
+	POLICY_HND pol_sec;
+	POLICY_HND lsa_pol;
+
+	/* lookup domain controller; receive a policy handle */
+	res = res ? lsa_open_policy2( srv_name,
+				&lsa_pol, True, 0x02000000) : False;
+
+	/* lookup domain controller; receive a policy handle */
+	res1 = res ? lsa_create_secret( &lsa_pol,
+				secret_name, access_rights, &pol_sec) : False;
+
+	res1 = res1 ? lsa_close(&pol_sec) : False;
+
+	res = res ? lsa_close(&lsa_pol) : False;
+
+	return res1;
+}
+
+/****************************************************************************
 nt lsa query secret
 ****************************************************************************/
 BOOL msrpc_lsa_set_secret(const char* srv_name,
@@ -226,6 +253,7 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 
 	return res2;
 }
+
 /****************************************************************************
 nt lsa query secret
 ****************************************************************************/

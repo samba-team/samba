@@ -353,6 +353,63 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 }
 
 /****************************************************************************
+do a LSA Create Secret
+****************************************************************************/
+BOOL lsa_create_secret( const POLICY_HND *hnd,
+				const char *secret_name,
+				uint32 des_access,
+				POLICY_HND *hnd_secret)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	LSA_Q_CREATE_SECRET q_o;
+	BOOL valid_pol = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 0, 4, False);
+	prs_init(&rbuf, 0   , 4, True );
+
+	/* create and send a MSRPC command with api LSA_CREATE_SECRET */
+
+	DEBUG(4,("LSA Create Secret\n"));
+
+	make_q_create_secret(&q_o, hnd, secret_name, des_access);
+
+	/* turn parameters into data stream */
+	lsa_io_q_create_secret("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_hnd_pipe_req(hnd, LSA_CREATESECRET, &buf, &rbuf))
+	{
+		LSA_R_CREATE_SECRET r_o;
+		BOOL p;
+
+		lsa_io_r_create_secret("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("LSA_OPENSECRET: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			/* ok, at last: we're happy. return the policy handle */
+			memcpy(hnd_secret, r_o.pol.data, sizeof(hnd_secret->data));
+			valid_pol = cli_pol_link(hnd_secret, hnd);
+		}
+	}
+
+	prs_free_data(&rbuf);
+	prs_free_data(&buf );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a LSA Open Secret
 ****************************************************************************/
 BOOL lsa_open_secret( const POLICY_HND *hnd,

@@ -476,6 +476,67 @@ BOOL lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int dept
 }
 
 /*******************************************************************
+makes an LSA_Q_CREATE_SECRET structure.
+********************************************************************/
+BOOL make_q_create_secret(LSA_Q_CREATE_SECRET *q_o, const POLICY_HND *pol_hnd,
+			const char *secret_name, uint32 desired_access)
+{
+	int len = strlen(secret_name);
+
+	if (q_o == NULL) return False;
+
+	DEBUG(5,("make_q_create_secret"));
+
+	memcpy(&(q_o->pol), pol_hnd, sizeof(q_o->pol));
+
+	make_uni_hdr(&(q_o->hdr_secret), len);
+	make_unistr2(&(q_o->uni_secret), secret_name, len);
+
+	q_o->des_access = desired_access;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_Q_CREATE_SECRET structure.
+********************************************************************/
+BOOL lsa_io_q_create_secret(char *desc, LSA_Q_CREATE_SECRET *q_o, prs_struct *ps, int depth)
+{
+	if (q_o == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_q_create_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(q_o->pol), ps, depth);
+
+	prs_align(ps);
+	smb_io_unihdr ("", &(q_o->hdr_secret), ps, depth);
+	smb_io_unistr2("", &(q_o->uni_secret), 1, ps, depth);
+
+	prs_align(ps);
+	prs_uint32("des_access", ps, depth, &(q_o->des_access));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes an LSA_R_CREATE_SECRET structure.
+********************************************************************/
+BOOL lsa_io_r_create_secret(char *desc, LSA_R_CREATE_SECRET *r_o, prs_struct *ps, int depth)
+{
+	if (r_o == NULL) return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_r_create_secret");
+	depth++;
+
+	smb_io_pol_hnd("", &(r_o->pol), ps, depth);
+
+	prs_uint32("status", ps, depth, &(r_o->status));
+
+	return True;
+}
+
+/*******************************************************************
 makes an LSA_Q_OPEN_SECRET structure.
 ********************************************************************/
 BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, const POLICY_HND *pol_hnd,

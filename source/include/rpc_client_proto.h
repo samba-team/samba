@@ -134,6 +134,10 @@ BOOL lsa_open_policy(const char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos, uint32 des_access);
 BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos, uint32 des_access);
+BOOL lsa_create_secret( const POLICY_HND *hnd,
+				const char *secret_name,
+				uint32 des_access,
+				POLICY_HND *hnd_secret);
 BOOL lsa_open_secret( const POLICY_HND *hnd,
 				const char *secret_name,
 				uint32 des_access,
@@ -484,6 +488,8 @@ uint32 lookup_lsa_name(const char *domain,
 				char *name, DOM_SID *sid, uint32 *type);
 uint32 lookup_lsa_sid(const char *domain,
 				DOM_SID *sid, char *name, uint32 *type);
+BOOL msrpc_lsa_create_secret(const char* srv_name, const char* secret_name,
+				uint32 access_rights);
 BOOL msrpc_lsa_set_secret(const char* srv_name,
 				const char* secret_name,
 				const char* data, int len);

@@ -46,6 +46,7 @@ enum SID_NAME_USE
 #define LSA_LOOKUPSIDS         0x0f
 #define LSA_OPENPOLICY         0x06
 #define LSA_OPENPOLICY2        0x2c
+#define LSA_CREATESECRET       0x10
 #define LSA_OPENSECRET         0x1c
 #define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
@@ -153,6 +154,25 @@ typedef struct lsa_r_query_info
 	uint32 status; /* return code */
 
 } LSA_R_QUERY_INFO;
+
+/* LSA_Q_CREATE_SECRET - LSA Create Secret */
+typedef struct lsa_q_create_secret_info
+{
+	POLICY_HND pol;
+	UNIHDR hdr_secret;
+	UNISTR2 uni_secret;
+
+	uint32 des_access; /* desired access attributes */
+
+} LSA_Q_CREATE_SECRET;
+
+/* LSA_R_CREATE_SECRET - response to LSA Open Secret */
+typedef struct lsa_r_create_secret_info
+{
+	POLICY_HND pol;
+	uint32 status;
+
+} LSA_R_CREATE_SECRET;
 
 /* LSA_Q_OPEN_SECRET - LSA Open Secret */
 typedef struct lsa_q_open_secret_info

@@ -105,6 +105,10 @@ BOOL lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int d
 BOOL lsa_io_r_open_pol2(char *desc,  LSA_R_OPEN_POL2 *r_p, prs_struct *ps, int depth);
 BOOL make_q_query(LSA_Q_QUERY_INFO *q_q, POLICY_HND *hnd, uint16 info_class);
 BOOL lsa_io_q_query(char *desc,  LSA_Q_QUERY_INFO *q_q, prs_struct *ps, int depth);
+BOOL make_q_create_secret(LSA_Q_CREATE_SECRET *q_o, const POLICY_HND *pol_hnd,
+			const char *secret_name, uint32 desired_access);
+BOOL lsa_io_q_create_secret(char *desc, LSA_Q_CREATE_SECRET *q_o, prs_struct *ps, int depth);
+BOOL lsa_io_r_create_secret(char *desc, LSA_R_CREATE_SECRET *r_o, prs_struct *ps, int depth);
 BOOL make_q_open_secret(LSA_Q_OPEN_SECRET *q_o, const POLICY_HND *pol_hnd,
 			const char *secret_name, uint32 desired_access);
 BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET *q_o, prs_struct *ps, int depth);
