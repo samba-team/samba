@@ -3434,8 +3434,7 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		stored in the <filename>private/secrets.tdb</filename> file.  See the
 		<citerefentry><refentrytitle>smbpasswd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> man page for more information on how 
-		to accmplish this.
-		</para>
+		to accmplish this.</para>
 		</listitem>
 		</varlistentry>
 	
@@ -3455,7 +3454,6 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		<term><anchor id="LDAPDELONLYSAMATTR"/>ldap del only sam attr (G)</term>
 		<listitem><para> Inverted synonym for <link linked="LDAPDELETEDN"><parameter>
 		ldap delete dn</parameter></link>.</para>
-		</para>
 		</listitem>
 		</varlistentry>
 
