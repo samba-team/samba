@@ -28,6 +28,7 @@ foo_DATA =					\
 	otp.h					\
 	parse_time.h				\
 	parse_units.h				\
+	resolve.h				\
 	roken-common.h				\
 	sha.h					\
 	sl.h					\
@@ -84,6 +85,8 @@ parse_time.h:
 	$(LN_S) $(top_srcdir)/lib/roken/parse_time.h .
 parse_units.h:
 	$(LN_S) $(top_srcdir)/lib/roken/parse_units.h .
+resolve.h:
+	$(LN_S) $(top_srcdir)/lib/roken/resolve.h .
 roken-common.h:
 	$(LN_S) $(top_srcdir)/lib/roken/roken-common.h .
 sha.h:
