@@ -36,7 +36,7 @@
  * SUCH DAMAGE. 
  */
 
-#include "kadm5_locl.h"
+#include "iprop.h"
 
 RCSID("$Id$");
 
@@ -179,6 +179,134 @@ error:
     free(s);
 }
 
+static void
+remove_slave (krb5_context context, slave *s, slave **root)
+{
+    slave **p;
+
+    close (s->fd);
+    free (s->name);
+    krb5_auth_con_free (context, s->ac);
+
+    for (p = root; *p; p = &(*p)->next)
+	if (*p == s) {
+	    *p = s->next;
+	    break;
+	}
+    free (s);
+}
+
+static int
+send_diffs (krb5_context context, slave *s, int log_fd)
+{
+    krb5_storage *sp, *data_sp;
+    u_int32_t ver;
+    time_t timestamp;
+    enum kadm_ops op;
+    u_int32_t len;
+    off_t right, left;
+    krb5_data data;
+    krb5_data priv_data;
+    int ret = 0;
+    u_char buf[4];
+
+    sp = kadm5_log_goto_end (log_fd);
+    right = sp->seek(sp, 0, SEEK_CUR);
+    for (;;) {
+	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
+	    abort ();
+	left = sp->seek(sp, -16, SEEK_CUR);
+	if (ver == s->version)
+	    break;
+    }
+    krb5_data_alloc (&data, right - left + 4);
+    sp->fetch (sp, (char *)data.data + 4, data.length - 4);
+    krb5_storage_free(sp);
+
+    data_sp = krb5_storage_from_mem (data.data, 4);
+    krb5_store_int32 (data_sp, FOR_YOU);
+    krb5_storage_free(sp);
+
+    ret = krb5_mk_priv (context, s->ac, &data, &priv_data, NULL);
+    krb5_data_free(&data);
+    if (ret) {
+	krb5_warn (context, ret, "krb_mk_priv");
+	return 0;
+    }
+    buf[0] = (priv_data.length >> 24) & 0xFF;
+    buf[1] = (priv_data.length >> 16) & 0xFF;
+    buf[2] = (priv_data.length >>  8) & 0xFF;
+    buf[3] = (priv_data.length >>  0) & 0xFF;
+    ret = krb5_net_write (context, &s->fd, buf, 4);
+    if (ret < 0) {
+	krb5_data_free (&priv_data);
+	krb5_warn (context, ret, "krb_net_write");
+	return 1;
+    }
+    ret = krb5_net_write (context, &s->fd, priv_data.data, priv_data.length);
+    krb5_data_free (&priv_data);
+    if (ret < 0) {
+	krb5_warn (context, ret, "krb_net_write");
+	return 1;
+    }
+    return 0;
+}
+
+static int
+process_msg (krb5_context context, slave *s, int log_fd)
+{
+    int ret = 0;
+    u_int32_t len;
+    krb5_data in, out;
+    krb5_storage *sp;
+    int32_t tmp;
+    u_char buf[8];
+
+    ret = krb5_net_read (context, &s->fd, buf, 4);
+    if (ret == 0) {
+	return 1;
+    }
+    if (ret < 0) {
+	krb5_warn(context, errno, "krb5_net_read");
+	return 1;
+    }
+    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    ret = krb5_data_alloc (&in, len);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_data_alloc");
+	return 1;
+    }
+    ret = krb5_net_read(context, &s->fd, in.data, in.length);
+    if (ret < 0) {
+	krb5_warn(context, errno, "krb5_net_read");
+	krb5_data_free (&in);
+	return 1;
+    }
+    ret = krb5_rd_priv (context, s->ac, &in, &out, NULL);
+    krb5_data_free (&in);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_rd_priv");
+	return 1;
+    }
+
+    sp = krb5_storage_from_mem (out.data, out.length);
+    krb5_ret_int32 (sp, &tmp);
+    switch (tmp) {
+    case I_HAVE :
+	krb5_ret_int32 (sp, &tmp);
+	s->version = tmp;
+	ret = send_diffs (context, s, log_fd);
+	break;
+    case FOR_YOU :
+    default :
+	krb5_warnx (context, "Ignoring command %d", tmp);
+	break;
+    }
+
+    krb5_data_free (&out);
+    return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -190,7 +318,7 @@ main(int argc, char **argv)
     int signal_fd, listen_fd;
     int log_fd;
     slave *slaves = NULL;
-    u_int32_t version, old_version = 0;
+    u_int32_t current_version, old_version = 0;
 
     set_progname(argv[0]);
 
@@ -242,9 +370,11 @@ main(int argc, char **argv)
 	    else
 		krb5_err (context, 1, errno, "select");
 	}
-	kadm5_log_get_version (log_fd, &version);
-	if (version > old_version)
-	    ; /* XXX - send out updates */
+	kadm5_log_get_version (log_fd, &current_version);
+	if (current_version > old_version) {
+	    for (p = slaves; p != NULL; p = p->next)
+		send_diffs (context, p, log_fd);
+	}
 	if (ret && FD_ISSET(signal_fd, &readset)) {
 	    struct sockaddr_un peer_addr;
 	    size_t peer_len = sizeof(peer_addr);
@@ -264,7 +394,8 @@ main(int argc, char **argv)
 
 	for(p = slaves; ret-- && p != NULL; p = p->next)
 	    if (FD_ISSET(p->fd, &readset)) {
-		/* XXX */
+		if(process_msg (context, p, log_fd))
+		    remove_slave (context, p, &slaves);
 	    }
     }
 

@@ -597,6 +597,50 @@ kadm5_log_foreach (kadm5_server_context *context,
 }
 
 /*
+ * Go to end of log.
+ */
+
+krb5_storage *
+kadm5_log_goto_end (int fd)
+{
+    krb5_storage *sp;
+
+    sp = krb5_storage_from_fd (fd);
+    sp->seek(sp, 0, SEEK_END);
+    return sp;
+}
+
+/*
+ * Return previous log entry.
+ */
+
+kadm5_ret_t
+kadm5_log_previous (krb5_storage *sp,
+		    u_int32_t *ver,
+		    time_t *timestamp,
+		    enum kadm_ops *op,
+		    u_int32_t *len)
+{
+    int32_t tmp;
+
+    sp->seek(sp, -8, SEEK_CUR);
+    krb5_ret_int32 (sp, &tmp);
+    *len = tmp;
+    krb5_ret_int32 (sp, &tmp);
+    *ver = tmp;
+    sp->seek(sp, -(48 + *len), SEEK_CUR);
+    krb5_ret_int32 (sp, &tmp);
+    assert(tmp == *ver);
+    krb5_ret_int32 (sp, &tmp);
+    *timestamp = tmp;
+    krb5_ret_int32 (sp, &tmp);
+    *op = tmp;
+    krb5_ret_int32 (sp, &tmp);
+    assert(tmp == *len);
+    return 0;
+}
+
+/*
  * Replay a record from the log
  */
 

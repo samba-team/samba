@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -287,12 +288,16 @@ kadm5_log_replay (kadm5_server_context *context,
 		  u_int32_t len,
 		  krb5_storage *sp);
 
+krb5_storage *
+kadm5_log_goto_end (int fd);
+
+kadm5_ret_t
+kadm5_log_previous (krb5_storage *sp,
+		    u_int32_t *ver,
+		    time_t *timestamp,
+		    enum kadm_ops *op,
+		    u_int32_t *len);
+
 #define KADM5_LOG_SIGNAL HDB_DB_DIR "/signal"
-
-#define IPROP_VERSION "iprop-0.0"
-
-#define KADM5_SLAVE_ACL HDB_DB_DIR "/slaves"
-
-#define IPROP_NAME "iprop"
 
 #endif /* __KADM5_LOCL_H__ */
