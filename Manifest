@@ -24,11 +24,12 @@ docs		(Samba Documentation):
 
 	There is the potential for there to be many *INSTALL.txt files, one
 	for each OS that Samba supports. However we are moving all this into
-	the new structure. For now, most people will be using UNIX_INSTALL.txt.
+	the new structure. For now, most people will be using 
+	htmldocs/UNIX_INSTALL.txt
 
 	Please pay close attention to all the files with a .txt extension
-	in the docs/textdocs directory. Most problems can be solved by reference
-	to the two files mentioned.
+	in the docs/textdocs directory and the htmldocs/* files. Most problems 
+	can be solved by reference to the two files mentioned.
 
 	The FAQ documentation can be accessed starting from Samba-meta-FAQ.html,
 	in the docs/faq directory. This is incomplete, but to quote from the 
