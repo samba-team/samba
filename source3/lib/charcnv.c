@@ -432,6 +432,7 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
  * @param dest always set at least to NULL 
  *
  * @retval The number of bytes occupied by the string in the destination
+ *         or -1 in case of error.
  **/
 int push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 {
@@ -447,6 +448,7 @@ int push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
  * @param dest always set at least to NULL 
  *
  * @retval The number of bytes occupied by the string in the destination
+ *         or -1 in case of error.
  **/
 int push_ucs2_allocate(void **dest, const char *src)
 {
