@@ -1363,7 +1363,7 @@ int command_main(int argc, char *argv[])
 	/* Should we exit?  Are we done? */
 	if (cmd_set_options & (CMD_HELP|CMD_STR)) {
 		free_connections();
-		get_safe_nt_error_msg(status, msg, sizeof(msg));
+		get_nt_error_msg(status, msg, sizeof(msg));
 
 		report(out_hnd, "Exit Status: %s\n", msg);
 		/* unix only has 8 bit error codes - blergh */
@@ -1383,7 +1383,7 @@ int command_main(int argc, char *argv[])
 	commands = NULL;
 	
 	/* report and exit */
-	get_safe_nt_error_msg(status, msg, sizeof(msg));
+	get_nt_error_msg(status, msg, sizeof(msg));
 	report(out_hnd, "Exit Status: %s\n", msg);
 	return status;
 }

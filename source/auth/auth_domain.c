@@ -360,7 +360,7 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 			     user_info->nt_resp.buffer, user_info->lm_resp.len,
 			     &ctr, &info3);
 
-	cli_error(&cli, NULL, NULL, &nt_status);
+	nt_status = cli_nt_error(&cli);
 	if (nt_status != NT_STATUS_NOPROBLEMO) {
 		DEBUG(0,("domain_client_validate: unable to validate password for user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user_info->smb_username.str, user_info->domain.str, remote_machine, cli_errstr(&cli)));
