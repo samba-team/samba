@@ -13,8 +13,8 @@
 #
 
 # rpm --eval should always give a correct answer for this
-SPECDIR=`rpm --eval "%{_specdir}"`
-SRCDIR=`rpm --eval "%{_sourcedir}"`
+SPECDIR=`rpm "$@" --eval "%{_specdir}"`
+SRCDIR=`rpm "$@" --eval "%{_sourcedir}"`
 
 # At this point the (SPECDIR and) SRCDIR vaiables must have a value!
 
