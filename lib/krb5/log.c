@@ -257,13 +257,14 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *p)
     char c;
     n = sscanf(p, "%d%c%d/", &min, &c, &max);
     if(n == 2){
-	if(c == '/')
+	if(c == '/') {
 	    if(min < 0){
 		max = -min;
 		min = 0;
 	    }else{
 		max = min;
 	    }
+	}
     }
     if(n){
 	p = strchr(p, '/');
