@@ -158,7 +158,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 * pw_buf,
 
 	endsmbpwent(vp);
 
-	return (*total_entries) > 0;
+	return (*total_entries) >= 0;
 }
 
 /*******************************************************************
