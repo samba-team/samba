@@ -17,6 +17,13 @@ construction.  The following VFS modules are given:
 		connect/disconnect, directory opens/create/remove,
 		file open/close/rename/unlink/chmod.
 
+	block
+		A simple module to block access to certain mount points or 
+		directories. This module only hides the specified directories 
+		and all directories beneath them. It should NOT be used to secure
+		directories. If the name of a file in one of those directories is 
+		known, the file can still be opened.
+
 The libtool program, available from your favourite GNU software
 archive, is required to compile these programs.
 
