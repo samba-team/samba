@@ -122,6 +122,7 @@
 #undef SIZEOF_OFF_T
 #undef STAT_STATVFS64
 #undef HAVE_LIBREADLINE
+#undef HAVE_KERNEL_OPLOCKS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT

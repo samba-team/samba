@@ -1538,11 +1538,11 @@ extern int unix_ERR_code;
  * Loopback command offsets.
  */
 
-#define UDP_CMD_LEN_OFFSET 0
-#define UDP_CMD_PORT_OFFSET 4
-#define UDP_CMD_HEADER_LEN 6
+#define OPBRK_CMD_LEN_OFFSET 0
+#define OPBRK_CMD_PORT_OFFSET 4
+#define OPBRK_CMD_HEADER_LEN 6
 
-#define UDP_MESSAGE_CMD_OFFSET 0
+#define OPBRK_MESSAGE_CMD_OFFSET 0
 
 /*
  * Oplock break command code to send over the udp socket.
@@ -1563,6 +1563,24 @@ extern int unix_ERR_code;
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
+#if defined(HAVE_KERNEL_OPLOCKS)
+/*
+ * Oplock break command code sent via the kernel interface.
+ *
+ * Form of this is :
+ *
+ *  0     2       2+devsize 2+devsize+inodesize
+ *  +----+--------+--------+
+ *  | cmd| dev    |  inode |
+ *  +----+--------+--------+
+ */
+
+#define KERNEL_OPLOCK_BREAK_CMD 0x2
+#define KERNEL_OPLOCK_BREAK_DEV_OFFSET 2
+#define KERNEL_OPLOCK_BREAK_INODE_OFFSET (KERNEL_OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
+#define KERNEL_OPLOCK_BREAK_MSG_LEN (KERNEL_OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+
+#endif /* HAVE_KERNEL_OPLOCKS */
 
 #define CMD_REPLY 0x8000
 

@@ -700,6 +700,8 @@ static void usage(char *pname)
 	if( !open_oplock_ipc() )
 		exit(1);
 
+    check_kernel_oplocks();
+
 	smbd_process();
 	close_sockets();
 	

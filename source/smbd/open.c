@@ -24,8 +24,7 @@
 extern int DEBUGLEVEL;
 
 extern pstring sesssetup_user;
-extern int global_oplocks_open;
-extern uint16 oplock_port;
+extern uint16 global_oplock_port;
 
 
 /****************************************************************************
@@ -917,38 +916,23 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
     if (lp_share_modes(SNUM(conn)))
     {
       uint16 port = 0;
+
       /* JRA. Currently this only services Exlcusive and batch
          oplocks (no other opens on this file). This needs to
          be extended to level II oplocks (multiple reader
          oplocks). */
 
       if((oplock_request) && (num_share_modes == 0) && lp_oplocks(SNUM(conn)) && 
-	      !IS_VETO_OPLOCK_PATH(conn,fname))
+	      !IS_VETO_OPLOCK_PATH(conn,fname) && set_file_oplock(fsp) )
       {
-#if defined(HAVE_KERNEL_OPLOCKS)
-        /*
-         * Try and get a *real* oplock on this file.
-         * If we fail, set the port and oplock request to
-         * zero so that  we don't tell other SMB's that we
-         * got an oplock.
-         */
-        if(lp_kernel_oplocks())
-#endif /* HAVE_KERNEL_OPLOCKS */
-
-        fsp->granted_oplock = True;
-        fsp->sent_oplock_break = False;
-        global_oplocks_open++;
-        port = oplock_port;
-
-        DEBUG(5,("open_file_shared: granted oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", oplock_request, fname, (unsigned int)dev, (double)inode));
-
+        port = global_oplock_port;
       }
       else
       {
         port = 0;
         oplock_request = 0;
       }
+
       set_share_mode(token, fsp, port, oplock_request);
     }
 

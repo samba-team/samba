@@ -60,7 +60,6 @@ extern fstring global_myworkgroup;
 #define QNLEN 12		/* queue name maximum length */
 
 extern int Client;
-extern int oplock_sock;
 extern int smb_read_error;
 
 static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,char *data,
@@ -3660,7 +3659,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 		BOOL ret;
 		int pcnt,poff,dcnt,doff,pdisp,ddisp;
       
-		ret = receive_next_smb(Client,oplock_sock,inbuf,bufsize,SMB_SECONDARY_WAIT);
+		ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 
 		if ((ret && (CVAL(inbuf, smb_com) != SMBtrans)) || !ret) {
 			if(ret) {

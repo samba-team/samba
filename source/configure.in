@@ -277,6 +277,15 @@ if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF)
 fi
 
+AC_CACHE_CHECK([for kernel oplock type definitions],samba_cv_HAVE_KERNEL_OPLOCKS,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <fcntl.h>],
+[oplock_stat_t t; t.os_state = OP_REVOKE; t.os_dev = 1; t.os_ino = 1;],
+samba_cv_HAVE_KERNEL_OPLOCKS=yes,samba_cv_HAVE_KERNEL_OPLOCKS=no)])
+if test x"$samba_cv_HAVE_KERNEL_OPLOCKS" = x"yes"; then
+    AC_DEFINE(HAVE_KERNEL_OPLOCKS)
+fi
+
 
 AC_MSG_CHECKING([for test routines])
 AC_TRY_RUN([#include "${srcdir-.}/tests/trivial.c"],

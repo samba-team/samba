@@ -47,7 +47,6 @@ extern pstring sesssetup_user;
 extern char *last_inbuf;
 extern char *InBuffer;
 extern char *OutBuffer;
-extern int oplock_sock;
 extern int smb_read_error;
 extern BOOL reload_after_sighup;
 extern BOOL global_machine_pasword_needs_changing;
@@ -55,24 +54,168 @@ extern fstring global_myworkgroup;
 extern pstring global_myname;
 extern int max_send;
 
+/****************************************************************************
+ structure to hold a linked list of queued messages.
+ for processing.
+****************************************************************************/
+
+typedef struct {
+   ubi_slNode msg_next;
+   char *msg_buf;
+   int msg_len;
+} pending_message_list;
+
+static ubi_slList smb_oplock_queue = { NULL, (ubi_slNodePtr)&smb_oplock_queue, 0};
+
+/****************************************************************************
+ Function to push a message onto the tail of a linked list of smb messages ready
+ for processing.
+****************************************************************************/
+
+static BOOL push_message(ubi_slList *list_head, char *buf, int msg_len)
+{
+  pending_message_list *msg = (pending_message_list *)
+                               malloc(sizeof(pending_message_list));
+
+  if(msg == NULL)
+  {
+    DEBUG(0,("push_message: malloc fail (1)\n"));
+    return False;
+  }
+
+  msg->msg_buf = (char *)malloc(msg_len);
+  if(msg->msg_buf == NULL)
+  {
+    DEBUG(0,("push_message: malloc fail (2)\n"));
+    free((char *)msg);
+    return False;
+  }
+
+  memcpy(msg->msg_buf, buf, msg_len);
+  msg->msg_len = msg_len;
+
+  ubi_slAddTail( list_head, msg);
+
+  return True;
+}
+
+/****************************************************************************
+ Function to push a smb message onto a linked list of local smb messages ready
+ for processing.
+****************************************************************************/
+
+BOOL push_oplock_pending_smb_message(char *buf, int msg_len)
+{
+  return push_message(&smb_oplock_queue, buf, msg_len);
+}
+
+/****************************************************************************
+  Do a select on an two fd's - with timeout. 
+
+  If a local udp message has been pushed onto the
+  queue (this can only happen during oplock break
+  processing) return this first.
+
+  If a pending smb message has been pushed onto the
+  queue (this can only happen during oplock break
+  processing) return this next.
+
+  If the first smbfd is ready then read an smb from it.
+  if the second (loopback UDP) fd is ready then read a message
+  from it and setup the buffer header to identify the length
+  and from address.
+  Returns False on timeout or error.
+  Else returns True.
+
+The timeout is in milli seconds
+****************************************************************************/
+
+static BOOL receive_message_or_smb(char *buffer, int buffer_len, 
+                                   int timeout, BOOL *got_smb)
+{
+  extern int Client;
+  fd_set fds;
+  int selrtn;
+  struct timeval to;
+  int maxfd;
+
+  smb_read_error = 0;
+
+  *got_smb = False;
+
+  /*
+   * Check to see if we already have a message on the smb queue.
+   * If so - copy and return it.
+   */
+  
+  if(ubi_slCount(&smb_oplock_queue) != 0)
+  {
+    pending_message_list *msg = (pending_message_list *)ubi_slRemHead(&smb_oplock_queue);
+    memcpy(buffer, msg->msg_buf, MIN(buffer_len, msg->msg_len));
+  
+    /* Free the message we just copied. */
+    free((char *)msg->msg_buf);
+    free((char *)msg);
+    *got_smb = True;
+
+    DEBUG(5,("receive_message_or_smb: returning queued smb message.\n"));
+    return True;
+  }
+
+  /*
+   * Setup the select read fd set.
+   */
+
+  FD_ZERO(&fds);
+  FD_SET(Client,&fds);
+  maxfd = setup_oplock_select_set(&fds);
+
+  to.tv_sec = timeout / 1000;
+  to.tv_usec = (timeout % 1000) * 1000;
+
+  selrtn = sys_select(MAX(maxfd,Client)+1,&fds,timeout>0?&to:NULL);
+
+  /* Check if error */
+  if(selrtn == -1) {
+    /* something is wrong. Maybe the socket is dead? */
+    smb_read_error = READ_ERROR;
+    return False;
+  } 
+    
+  /* Did we timeout ? */
+  if (selrtn == 0) {
+    smb_read_error = READ_TIMEOUT;
+    return False;
+  }
+
+  if (FD_ISSET(Client,&fds))
+  {
+    *got_smb = True;
+    return receive_smb(Client, buffer, 0);
+  }
+  else
+  {
+    return receive_local_message(&fds, buffer, buffer_len, 0);
+  }
+}
 
 /****************************************************************************
 Get the next SMB packet, doing the local message processing automatically.
 ****************************************************************************/
-BOOL receive_next_smb(int smbfd, int oplockfd, char *inbuf, int bufsize, int timeout)
+
+BOOL receive_next_smb(char *inbuf, int bufsize, int timeout)
 {
   BOOL got_smb = False;
   BOOL ret;
 
   do
   {
-    ret = receive_message_or_smb(smbfd,oplockfd,inbuf,bufsize,
-                                 timeout,&got_smb);
+    ret = receive_message_or_smb(inbuf,bufsize,timeout,&got_smb);
 
     if(ret && !got_smb)
     {
       /* Deal with oplock break requests from other smbd's. */
-      process_local_message(oplock_sock, inbuf, bufsize);
+      process_local_message(inbuf, bufsize);
       continue;
     }
 
@@ -644,8 +787,8 @@ void smbd_process(void)
     errno = 0;      
 
     for (counter=SMBD_SELECT_LOOP; 
-          !receive_message_or_smb(Client,oplock_sock,
-                      InBuffer,BUFFER_SIZE,SMBD_SELECT_LOOP*1000,&got_smb); 
+          !receive_message_or_smb(InBuffer,BUFFER_SIZE,
+                                  SMBD_SELECT_LOOP*1000,&got_smb); 
           counter += SMBD_SELECT_LOOP)
     {
       time_t t;
@@ -792,6 +935,6 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
     if(got_smb)
       process_smb(InBuffer, OutBuffer);
     else
-      process_local_message(oplock_sock, InBuffer, BUFFER_SIZE);
+      process_local_message(InBuffer, BUFFER_SIZE);
   }
 }

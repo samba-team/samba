@@ -290,31 +290,33 @@ void file_close_user(int vuid)
 
 
 /****************************************************************************
-find a fsp given a device, inode and timevalue
+ Find a fsp given a device, inode and timevalue
+ If this is from a kernel oplock break request then tval may be NULL.
 ****************************************************************************/
+
 files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 {
 	int count=0;
 	files_struct *fsp;
 
 #ifdef USE_FILES_ARRAY
-        for(count = 0; count < MAX_FNUMS; count++) {
-          if((fsp = Files[count]) == NULL)
-            continue;
-          if (fsp->open &&
-              fsp->fd_ptr->dev == dev &&
-              fsp->fd_ptr->inode == inode &&
-              fsp->open_time.tv_sec == tval->tv_sec &&
-              fsp->open_time.tv_usec == tval->tv_usec) 
-            return fsp;
-        }
+	for(count = 0; count < MAX_FNUMS; count++) {
+		if((fsp = Files[count]) == NULL)
+			continue;
+		if (fsp->open &&
+			fsp->fd_ptr->dev == dev &&
+			fsp->fd_ptr->inode == inode &&
+			(tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True) &&
+			(tval ? (fsp->open_time.tv_usec == tval->tv_usec) : True)) 
+				return fsp;
+		}
 #else
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
 		    fsp->fd_ptr->dev == dev && 
 		    fsp->fd_ptr->inode == inode &&
-		    fsp->open_time.tv_sec == tval->tv_sec &&
-		    fsp->open_time.tv_usec == tval->tv_usec) {
+		    (tval ? (fsp->open_time.tv_sec == tval->tv_sec) : True ) &&
+		    (tval ? (fsp->open_time.tv_usec == tval->tv_usec) : True )) {
 			if (count > 10) {
 				DLIST_PROMOTE(Files, fsp);
 			}
