@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -101,9 +101,9 @@ static int
 set_password (krb5_principal principal, char *password)
 {
     krb5_error_code ret = 0;
-    char *pw, pwbuf[128];
+    char pwbuf[128];
 
-    if(pw == NULL) {
+    if(password == NULL) {
 	char *princ_name;
 	char *prompt;
 
@@ -115,10 +115,10 @@ set_password (krb5_principal principal, char *password)
 	if(ret){
 	    return 0; /* XXX error code? */
 	}
-	pw = pwbuf;
+	password = pwbuf;
     }
     if(ret == 0)
-	ret = kadm5_chpass_principal(kadm_handle, principal, pw);
+	ret = kadm5_chpass_principal(kadm_handle, principal, password);
     memset(pwbuf, 0, sizeof(pwbuf));
     return ret;
 }
