@@ -62,7 +62,8 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 
 /****************************************************************************
 try to gain a linux capability
-****************************************************************************/static void set_capability(unsigned capability)
+****************************************************************************/
+static void set_capability(unsigned capability)
 {
 #ifndef _LINUX_CAPABILITY_VERSION
 #define _LINUX_CAPABILITY_VERSION 0x19980330

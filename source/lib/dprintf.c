@@ -68,7 +68,7 @@ again:
 }
 
 
-int d_fprintf(FILE *f, const char *format, ...)
+ int d_fprintf(FILE *f, const char *format, ...)
 {
 	int ret;
 	va_list ap;
@@ -82,7 +82,7 @@ int d_fprintf(FILE *f, const char *format, ...)
 
 static FILE *outfile;
 
-int d_printf(const char *format, ...)
+ int d_printf(const char *format, ...)
 {
 	int ret;
 	va_list ap;

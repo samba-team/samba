@@ -4045,7 +4045,6 @@ SMB_BIG_UINT get_lock_count( char *data, int data_offset, BOOL large_file_format
 /****************************************************************************
  Pathetically try and map a 64 bit lock offset into 31 bits. I hate Windows :-).
 ****************************************************************************/
-
 static uint32 map_lock_offset(uint32 high, uint32 low)
 {
 	unsigned int i;
