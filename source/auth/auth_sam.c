@@ -231,6 +231,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				DEBUG(1, ("Failed to modify entry.\n"));
 			unbecome_root();
 		}
+		data_blob_free(&user_sess_key);
+		data_blob_free(&lm_sess_key);
 		pdb_free_sam(&sampass);
 		return nt_status;
 	}
@@ -253,11 +255,15 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		pdb_free_sam(&sampass);
+		data_blob_free(&user_sess_key);
+		data_blob_free(&lm_sess_key);
 		return nt_status;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = make_server_info_sam(server_info, sampass))) {		
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
+		data_blob_free(&user_sess_key);
+		data_blob_free(&lm_sess_key);
 		return nt_status;
 	}
 

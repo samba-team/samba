@@ -52,28 +52,28 @@ struct dcinfo last_dcinfo;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
-    unsigned char *hash = p->ntlmssp_hash;
-    unsigned char index_i = hash[256];
-    unsigned char index_j = hash[257];
-    int ind;
+	unsigned char *hash = p->ntlmssp_hash;
+	unsigned char index_i = hash[256];
+	unsigned char index_j = hash[257];
+	int ind;
 
-    for( ind = 0; ind < len; ind++) {
-        unsigned char tc;
-        unsigned char t;
+	for( ind = 0; ind < len; ind++) {
+		unsigned char tc;
+		unsigned char t;
 
-        index_i++;
-        index_j += hash[index_i];
+		index_i++;
+		index_j += hash[index_i];
 
-        tc = hash[index_i];
-        hash[index_i] = hash[index_j];
-        hash[index_j] = tc;
+		tc = hash[index_i];
+		hash[index_i] = hash[index_j];
+		hash[index_j] = tc;
 
-        t = hash[index_i] + hash[index_j];
-        data[ind] = data[ind] ^ hash[t];
-    }
+		t = hash[index_i] + hash[index_j];
+		data[ind] = data[ind] ^ hash[t];
+	}
 
-    hash[256] = index_i;
-    hash[257] = index_j;
+	hash[256] = index_i;
+	hash[257] = index_j;
 }
 
 /*******************************************************************
