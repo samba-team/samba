@@ -11,7 +11,7 @@
 static char section[128];
 static FILE *F;
 
-static krb5_config_file *cf;
+static k5_cfile *cf;
 
 static krb5_config_section *csec;
 
@@ -152,7 +152,7 @@ static void yyerror(char *s)
 /*----------------------------------------*/
 
 static void
-free_config_file(krb5_config_file *cf)
+free_config_file(k5_cfile *cf)
 {
   if(!cf)
     return;
@@ -197,13 +197,13 @@ free_config_section(krb5_config_section *sec)
 
 
 void
-krb5_free_config_file(krb5_config_file *cf)
+krb5_free_config_file(k5_cfile *cf)
 {
   free_config_file(cf);
 }
 
 krb5_error_code
-krb5_get_config_tag(krb5_config_file *cf, const char *tag, char **value)
+krb5_get_config_tag(k5_cfile *cf, const char *tag, char **value)
 {
   char *str;
   char *p;
@@ -237,7 +237,7 @@ krb5_get_config_tag(krb5_config_file *cf, const char *tag, char **value)
 }
 
 krb5_error_code
-krb5_parse_config_file(krb5_config_file **cfile, const char *filename)
+krb5_parse_config_file(k5_cfile **cfile, const char *filename)
 {
   krb5_error_code ret;
   if(!filename)
@@ -245,7 +245,7 @@ krb5_parse_config_file(krb5_config_file **cfile, const char *filename)
   F = fopen(filename, "r");
   if(F == NULL)
     return errno;
-  cf = ALLOC(1, krb5_config_file);
+  cf = ALLOC(1, k5_cfile);
   if(!cf)
 	return ENOMEM;
   ret = yyparse();

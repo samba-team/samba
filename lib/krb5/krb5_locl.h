@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <fcntl.h>
+
+#include <des.h>
+
 #include "krb5.h"
 
 void 		krb5_data_free(krb5_data *);

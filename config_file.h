@@ -28,19 +28,19 @@ typedef struct krb5_config_section{
   struct krb5_config_section *next;
 }krb5_config_section;
 
-typedef struct krb5_config_file{
+typedef struct k5_cfile{
   char *filename;
   struct krb5_config_section *sections;
-}krb5_config_file;
+}k5_cfile;
 
 
 
 /*
 static char *gettoken(FILE *F);
 static void
-free_config_file(krb5_config_file *cf);
+free_config_file(k5_cfile *cf);
 static krb5_error_code
-new_config_file(krb5_config_file **cf, const char *filename);
+new_config_file(k5_cfile **cf, const char *filename);
 static void
 free_config_section(krb5_config_section *sec);
 static krb5_error_code
@@ -50,6 +50,6 @@ free_config_relation(krb5_config_relation *rel);
 static void
 free_config_value(krb5_config_value val);
 static krb5_error_code
-parse_config_file(krb5_config_file **cf, const char *filename);
+parse_config_file(k5_cfile **cf, const char *filename);
 */
 #endif /* __CONF_H__ */

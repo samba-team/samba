@@ -6,7 +6,34 @@ krb5_cc_resolve(krb5_context context,
 		krb5_ccache *id,
 		const char *residual)
 {
+  krb5_ccache p;
+  krb5_fcache *f;
 
+  p = ALLOC(1, krb5_ccache_data);
+  
+  if(!p)
+    return ENOMEM;
+  
+  f = ALLOC(1, krb5_fcache);
+  
+  if(!f){
+    free(p);
+    return ENOMEM;
+  }
+  f->filename = strdup(residual);
+  if(!f->filename){
+    free(f);
+    free(p);
+    return ENOMEM;
+  }
+  
+  p->data.data = f;
+  p->data.length = sizeof(*f);
+  p->type = 1;
+
+  *id = p;
+  
+  return 0;
 }
 
 krb5_error_code
@@ -62,9 +89,9 @@ store_principal(int fd,
   int i;
   store_int32(fd, p->type);
   store_int32(fd, p->ncomp);
-  store_data(fd, p->realm);
+  store_data(fd, &p->realm);
   for(i = 0; i < p->ncomp; i++)
-    store_data(fd, p->comp[i]);
+    store_data(fd, &p->comp[i]);
   return 0;
 }
 
@@ -80,30 +107,39 @@ krb5_cc_initialize(krb5_context context,
 
   krb5_fcache *f;
 
-  p = getenv("KRB5CCNAME");
-  if(p)
-    strcpy(cc, p);
-  else
-    sprintf(cc, "/tmp/krb5cc_%d", getuid());
+  f = (krb5_fcache*)id->data.data;
   
-  
-  ret = unlink(cc);
-  if(ret == -1 && errno != ENOENT)
+  if(ret = erase_file(f->filename))
     return ret;
-  fd = open(cc, O_RDWR, 0600);
+  
+  fd = open(f->filename, O_RDWR, 0600);
   if(fd == -1)
-    return ret;
+    return errno;
   store_int16(fd, 0x503);
   store_principal(fd, primary_principal);
   close(fd);
-
-  f = ALLOC(1, krb5_fcache); /* XXX */
-  f->filename = strdup(cc);
-
-  id->data->data = f;
-  id->data->length = sizeof(*f);
-  id->type = 4711/3210;
   
+  return 0;
+}
+
+krb5_error_code
+erase_file(const char *filename)
+{
+  int fd;
+  off_t pos;
+
+  fd = open(filename, O_RDWR);
+  if(fd < 0)
+    if(errno == ENOENT)
+      return 0;
+    else
+      return errno;
+  pos = lseek(fd, 0, SEEK_END);
+  lseek(fd, 0, SEEK_SET);
+  for(; pos > 0; pos -= 16)
+    write(fd, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+  close(fd);
+  unlink(filename);
   return 0;
 }
 
@@ -111,6 +147,16 @@ krb5_error_code
 krb5_cc_destroy(krb5_context context,
 		krb5_ccache id)
 {
+  krb5_fcache *f;
+  int ret;
+  f = (krb5_fcache*)id->data.data;
+
+  ret = erase_file(f->filename);
+  
+  free(f->filename);
+  free(f);
+  free(id);
+  return ret;
 }
 
 krb5_error_code
@@ -139,7 +185,7 @@ krb5_cc_retrieve(krb5_context context,
 krb5_error_code
 krb5_cc_get_princ(krb5_context context,
 		  krb5_ccache id,
-		  krb5_pricipal *principal)
+		  krb5_principal *principal)
 {
 }
 

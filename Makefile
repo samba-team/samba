@@ -1,10 +1,10 @@
-CC=cc
-CFLAGS=-g
+CC=cc -std1
+CFLAGS=-I/usr/athena/include -g
 
 
 YFLAGS = -d
 
-SOURCES = principal.c principal_p.c data.c context.c misc.c \
+SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
 	  krbhst.c getport.c send_to_kdc.c der.c e.c d.c str2key.c \
 	  get_in_tkt.c get_in_tkt_pw.c
 

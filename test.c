@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv)
 {
-  krb5_config_file *cf;
+  k5_cfile *cf;
   char *p;
   krb5_parse_config_file(&cf, "krb5.conf");
   krb5_get_config_tag(cf, "realms ATHENA.MIT.EDU v4_instance_convert mit", &p);

@@ -41,6 +41,8 @@ mit_des_string_to_key(const krb5_keytype keytype,
   unsigned char *key;
   unsigned char tmp[8];
 
+  des_key_schedule sched;
+
   int len;
   int i, j;
   int odd = 0;
@@ -71,7 +73,7 @@ mit_des_string_to_key(const krb5_keytype keytype,
   }
 
   des_set_odd_parity(key);
-  des_key_schedule(key, &sched);
+  des_key_sched(key, &sched);
   des_cbc_cksum(key, key, 8, &sched, key);
   des_set_odd_parity(key);
   if(des_is_weak_key(key))

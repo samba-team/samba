@@ -4,11 +4,11 @@
 #include <sys/types.h>
 #include <stdarg.h>
 
-/* types */
-typedef int	int32_t;
-typedef short 	int16_t;
-typedef char 	int8_t;
+#include <sys/bitypes.h>
 
+#include "config_file.h"
+
+/* types */
 typedef int32_t	krb5_int32;
 typedef int16_t	krb5_int16;
 typedef int8_t	krb5_int8;
@@ -63,7 +63,7 @@ typedef enum krb5_preauthtype {
 
 
 typedef enum krb5_address_type { 
-  KRB5_ADDRESS_INET = AF_INET,
+  KRB5_ADDRESS_INET = 2,
 } krb5_address_type;
 
 typedef struct krb5_address{
@@ -84,7 +84,7 @@ typedef struct krb5_keyblock{
 typedef struct krb5_context_data{
   krb5_enctype *etypes;
   char *default_realm;
-  krb5_config_file *cf;
+  k5_cfile *cf;
 } krb5_context_data;
 
 typedef krb5_context_data *krb5_context;
@@ -98,6 +98,26 @@ typedef struct krb5_times{
   krb5_time renew_till;
 } krb5_times;
 
+
+enum{
+  KRB5_NT_UNKNOWNN	= 0,
+  KRB5_NT_PRINCIPAL	= 1,
+  KRB5_NT_SRV_INST	= 2,
+  KRB5_NT_SRV_HST	= 3,
+  KRB5_NT_SRV_XHST	= 4,
+  KRB5_NT_UID		= 5
+};
+typedef struct krb5_principal_data{
+  int type;
+  krb5_data realm;
+  krb5_data *comp;
+  int ncomp;
+}krb5_principal_data;
+
+typedef krb5_principal_data *krb5_principal;
+typedef const krb5_principal_data *krb5_const_principal;
+
+
 typedef struct krb5_ticket{
   int kvno;
   krb5_principal sprinc;
@@ -110,25 +130,6 @@ typedef struct krb5_ticket{
 
 #define KRB5_PARSE_MALFORMED 17
 #define KRB5_PROG_ETYPE_NOSUPP 4711
-
-typedef enum k{
-  KRB_NT_UNKNOWNN	= 0,
-  KRB_NT_PRINCIPAL	= 1.
-  KRB_NT_SRV_INST	= 2,
-  KRB_NT_SRV_HST	= 3,
-  KRB_NT_SRV_XHST	= 4,
-  KRB_NT_UID		= 5
-};
-
-typedef struct krb5_principal_data{
-  int type;
-  krb5_data realm;
-  krb5_data *comp;
-  int ncomp;
-}krb5_principal_data;
-
-typedef krb5_principal_data *krb5_principal;
-typedef const krb5_principal_data *krb5_const_principal;
 
 typedef struct krb5_creds {
   krb5_principal client;
@@ -153,13 +154,16 @@ typedef struct krb5_rcache{
   int dummy;
 }krb5_rcache;
 
-typedef struct krb5_ccache{
+typedef struct krb5_ccache_data{
+  int type;
   krb5_data data;
-}krb5_ccache;
+}krb5_ccache_data;
+
+typedef struct krb5_ccache_data *krb5_ccache;
 
 typedef struct krb5_fcache{
   char *filename;
-};
+}krb5_fcache;
 
 typedef struct krb5_cc_cursor{
   int dummy;
