@@ -204,11 +204,15 @@ static int
 init_sockets(struct descr **desc)
 {
     int i;
-    struct descr *d = NULL;
+    struct descr *d;
     int num = 0;
+
     parse_ports(port_str);
+    d = malloc(num_ports * sizeof(*d));
+    if (d == NULL)
+	krb5_errx(context, 1, "malloc(%u) failed", num_ports * sizeof(*d));
+
     for (i = 0; i < num_ports; i++){
-	d = realloc(d, (num + 1) * sizeof(*d));
 	init_socket(&d[num], ports[i].family, ports[i].type, ports[i].port);
 	if(d[num].s != -1){
 	    kdc_log(5, "listening to port %u/%s", ntohs(ports[i].port), 
@@ -216,6 +220,9 @@ init_sockets(struct descr **desc)
 	    num++;
 	}
     }
+    d = realloc(d, num * sizeof(*d));
+    if (d == NULL)
+	krb5_errx(context, 1, "realloc(%u) failed", num * sizeof(*d));
     *desc = d;
     return num;
 }
@@ -515,7 +522,7 @@ loop(void)
 	krb5_errx(context, 1, "No sockets!");
     while(exit_flag == 0){
 	struct timeval tmout;
-	struct fd_set fds;
+	fd_set fds;
 	int min_free = -1;
 	int max_fd = 0;
 	int i;
