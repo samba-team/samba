@@ -328,9 +328,20 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 
 	     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		 err(1, "connect(%s)", host);
-	     xserver = connect_local_xsocket (0);
-	     if (xserver < 0)
-		 return 1;
+	     {
+		 int d;
+		 char *s;
+
+		 s = getenv ("DISPLAY");
+		 if (s == NULL || (s = strchr(s, ':')) == NULL)
+		     d = 0;
+		 else
+		     d = atoi (s);
+
+		 xserver = connect_local_xsocket (d);
+		 if (xserver < 0)
+		     return 1;
+	     }
 	     return passive_session (xserver, fd, &key, schedule);
 	 } else {
 	 }
