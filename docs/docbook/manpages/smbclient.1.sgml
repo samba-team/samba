@@ -17,6 +17,7 @@
 	<cmdsynopsis>
 		<command>smbclient</command>
 		<arg choice="req">servicename</arg>
+		<arg choice="opt">password</arg>
 		<arg choice="opt">-b &lt;buffer size&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-D Directory</arg>
@@ -38,7 +39,6 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-T&lt;c|x&gt;IXFqgbNan</arg>
-		<arg choice="opt">password</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -128,7 +128,7 @@
 
 
 		<varlistentry>
-		<term>name resolve order (G)</term> 
+		<term>-R &lt;name resolve order&gt;</term> 
 		<listitem><para>This option is used by the programs in the Samba 
 		suite to determine what naming services and in what order to resolve 
 		host names to IP addresses. The option takes a space separated 
