@@ -1,5 +1,7 @@
 2002-11-26  Johan Danielsson  <joda@pdc.kth.se>
 
+	* afslog.c: remove plural form in help string
+
 	* Makefile.am: add afslog manpage
 
 	* afslog.1: manpage
