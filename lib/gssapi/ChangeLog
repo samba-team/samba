@@ -1,3 +1,18 @@
+2000-08-27  Assar Westerlund  <assar@sics.se>
+
+	* verify_mic.c: re-organize and add 3DES code
+	* wrap.c: re-organize and add 3DES code
+	* unwrap.c: re-organize and add 3DES code
+	* init_sec_context.c: re-organize.  leak less memory.
+	* gssapi_locl.h (gssapi_krb5_encapsulate, gss_krb5_getsomekey):
+	update prototypes add assert.h
+	* gssapi.h (GSS_KRB5_CONF_C_QOP_DES, GSS_KRB5_CONF_C_QOP_DES3_KD):
+	add
+
+	* get_mic.c: re-organize and add 3DES code
+	* encapsulate.c (gssapi_krb5_encapsulate): do not free `in_data',
+	let the caller do that.  fix the callers.
+
 2000-08-16  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: bump version to 2:1:1
