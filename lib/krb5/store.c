@@ -187,8 +187,7 @@ krb5_ret_data(krb5_storage *sp,
 }
 
 krb5_error_code
-krb5_store_string(krb5_storage *sp,
-		  char *s)
+krb5_store_string(krb5_storage *sp, const char *s)
 {
     krb5_data data;
     data.length = strlen(s);
