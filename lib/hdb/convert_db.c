@@ -118,10 +118,8 @@ main(int argc, char **argv)
     EncryptionKey key;
     int optind = 0;
     
-    ret = krb5_init_context(&context);
-    if(ret != 0)
-	krb5_err(context, 1, ret, "krb5_init_context");
-    
+    set_progname(argv[0]);
+
     if(getarg(args, num_args, argc, argv, &optind))
 	krb5_std_usage(1, args, num_args);
 
@@ -133,6 +131,10 @@ main(int argc, char **argv)
 	exit(0);
     }
 
+    ret = krb5_init_context(&context);
+    if(ret != 0)
+	krb5_err(NULL, 1, ret, "krb5_init_context");
+    
     ret = hdb_create(context, &db, old_database);
     if(ret != 0)
 	krb5_err(context, 1, ret, "hdb_create");
