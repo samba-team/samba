@@ -8,7 +8,7 @@ INCLUDES=-DHOST=\"@CANONICAL_HOST@\"
 
 foodir = $(includedir)
 foo_DATA = \
-	des.h error.h getarg.h gssapi.h hdb.h kafs.h		\
+	base64.h des.h error.h getarg.h gssapi.h hdb.h kafs.h		\
 	krb5-protos.h krb5-types.h krb5.h md4.h md5.h otp.h	\
 	parse_time.h parse_units.h roken.h sha.h sl.h		\
 	@EXTRA_HDRS@
@@ -22,6 +22,8 @@ CLEANFILES = $(foo_DATA) asn1.h asn1_err.h hdb_asn1.h hdb_err.h heim_err.h \
 krb5-types.h: bits
 	./bits krb5-types.h
 
+base64.h.h:
+	$(LN_S) $(top_srcdir)/lib/roken/base64.h .
 cache.h:
 	$(LN_S) $(top_srcdir)/lib/krb5/cache.h .
 config_file.h:
