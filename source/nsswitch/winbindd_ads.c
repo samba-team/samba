@@ -67,7 +67,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 		/* if we get ECONNREFUSED then it might be a NT4
                    server, fall back to MSRPC */
-		if (status.error_type == ADS_ERROR_SYSTEM &&
+		if (status.error_type == ENUM_ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
 			DEBUG(1,("Trying MSRPC methods\n"));
 			if (domain->methods == &cache_methods) {
@@ -112,7 +112,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, &res, "(objectCategory=user)", attrs);
+	rc = ads_search_retry(ads, &res, "(objectClass=user)", attrs);
 	if (!ADS_ERR_OK(rc) || !res) {
 		DEBUG(1,("query_user_list ads_search: %s\n", ads_errstr(rc)));
 		goto done;

@@ -107,12 +107,18 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		case SEC_ADS: {
 			extern struct winbindd_methods ads_methods;
 			/* always obey the lp_security parameter for our domain */
-			if ( strequal(lp_realm(), domain->alt_name) || strequal(lp_workgroup(), domain->name) ) {
+			if (domain->primary) {
 				domain->backend = &ads_methods;
 				break;
 			}
 
+			/* only use ADS for native modes at the momment.
+			   The problem is the correct detection of mixed 
+			   mode domains from NT4 BDC's    --jerry */
+			
 			if ( domain->native_mode ) {
+				DEBUG(5,("get_cache: Setting ADS methods for domain %s\n",
+					domain->name));
 				domain->backend = &ads_methods;
 				break;
 			}
@@ -121,6 +127,8 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 		}	
 #endif
 		default:
+			DEBUG(5,("get_cache: Setting MS-RPC methods for domain %s\n",
+				domain->name));
 			domain->backend = &msrpc_methods;
 		}
 	}

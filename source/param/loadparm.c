@@ -1643,7 +1643,7 @@ FN_GLOBAL_STRING(lp_passwd_chat, &Globals.szPasswdChat)
 FN_GLOBAL_STRING(lp_passwordserver, &Globals.szPasswordServer)
 FN_GLOBAL_STRING(lp_name_resolve_order, &Globals.szNameResolveOrder)
 FN_GLOBAL_STRING(lp_realm, &Globals.szRealm)
-FN_GLOBAL_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
+FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
@@ -1678,8 +1678,8 @@ FN_GLOBAL_STRING(lp_abort_shutdown_script, &Globals.szAbortShutdownScript)
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_STRING(lp_template_primary_group, &Globals.szTemplatePrimaryGroup)
-FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
-FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
+FN_GLOBAL_CONST_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
+FN_GLOBAL_CONST_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_CONST_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enable_local_accounts, &Globals.bWinbindEnableLocalAccounts)
@@ -4278,7 +4278,6 @@ void get_private_directory(pstring privdir)
 
 void lp_set_logfile(const char *name)
 {
-	extern pstring debugf;
 	string_set(&Globals.szLogFile, name);
 	pstrcpy(debugf, name);
 }

@@ -241,11 +241,10 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	pw = smb_getpwnam( user );
 	
-	SAFE_FREE(user);
-	SAFE_FREE(client);
-
 	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n",user));
+		SAFE_FREE(user);
+		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
@@ -257,14 +256,24 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	
 	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
+		SAFE_FREE(user);
+		SAFE_FREE(client);
 		data_blob_free(&ap_rep);
 		return ERROR_NT(ret);
 	}
 
-	/* register_vuid keeps the server info */
-	sess_vuid = register_vuid(server_info, session_key, nullblob, user);
+        /* make_server_info_pw does not set the domain. Without this we end up
+	 * with the local netbios name in substitutions for %D. */
 
-	free(user);
+        if (server_info->sam_account != NULL) {
+                pdb_set_domain(server_info->sam_account, domain, PDB_SET);
+        }
+
+	/* register_vuid keeps the server info */
+	sess_vuid = register_vuid(server_info, session_key, nullblob, client);
+
+	SAFE_FREE(user);
+	SAFE_FREE(client);
 
 	if (sess_vuid == -1) {
 		ret = NT_STATUS_LOGON_FAILURE;

@@ -343,7 +343,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 
 	/* allocate a pseudo-terminal device */
 	if ((master = findpty(&slavedev)) < 0) {
-		DEBUG(3, ("Cannot Allocate pty for password change: %s\n", pass->pw_name));
+		DEBUG(3, ("chat_with_program: Cannot Allocate pty for password change: %s\n", pass->pw_name));
 		return (False);
 	}
 
@@ -355,7 +355,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 	CatchChildLeaveStatus();
 
 	if ((pid = sys_fork()) < 0) {
-		DEBUG(3, ("Cannot fork() child for password change: %s\n", pass->pw_name));
+		DEBUG(3, ("chat_with_program: Cannot fork() child for password change: %s\n", pass->pw_name));
 		close(master);
 		CatchChild();
 		return (False);
@@ -364,7 +364,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 	/* we now have a pty */
 	if (pid > 0) {			/* This is the parent process */
 		if ((chstat = talktochild(master, chatsequence)) == False) {
-			DEBUG(3, ("Child failed to change password: %s\n", pass->pw_name));
+			DEBUG(3, ("chat_with_program: Child failed to change password: %s\n", pass->pw_name));
 			kill(pid, SIGKILL);	/* be sure to end this process */
 		}
 
@@ -377,7 +377,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 		}
 
 		if (wpid < 0) {
-			DEBUG(3, ("The process is no longer waiting!\n\n"));
+			DEBUG(3, ("chat_with_program: The process is no longer waiting!\n\n"));
 			close(master);
 			CatchChild();
 			return (False);
@@ -391,19 +391,21 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 		close(master);
 
 		if (pid != wpid) {
-			DEBUG(3, ("We were waiting for the wrong process ID\n"));
+			DEBUG(3, ("chat_with_program: We were waiting for the wrong process ID\n"));
 			return (False);
 		}
-		if (WIFEXITED(wstat) == 0) {
-			DEBUG(3, ("The process exited while we were waiting\n"));
+		if (WIFEXITED(wstat) && (WEXITSTATUS(wstat) != 0)) {
+			DEBUG(3, ("chat_with_program: The process exited with status %d \
+while we were waiting\n", WEXITSTATUS(wstat)));
 			return (False);
 		}
-		if (WEXITSTATUS(wstat) != 0) {
-			DEBUG(3, ("The status of the process exiting was %d\n",
-			       wstat));
+#if defined(WIFSIGNALLED) && defined(WTERMSIG)
+		else if (WIFSIGNALLED(wstat)) {
+                        DEBUG(3, ("chat_with_program: The process was killed by signal %d \
+while we were waiting\n", WTERMSIG(wstat)));
 			return (False);
 		}
-
+#endif
 	} else {
 		/* CHILD */
 
@@ -418,7 +420,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 		if (as_root)
 			become_root();
 
-		DEBUG(3, ("Dochild for user %s (uid=%d,gid=%d) (as_root = %s)\n", pass->pw_name,
+		DEBUG(3, ("chat_with_program: Dochild for user %s (uid=%d,gid=%d) (as_root = %s)\n", pass->pw_name,
 		       (int)getuid(), (int)getgid(), BOOLSTR(as_root) ));
 		chstat = dochild(master, slavedev, pass, passwordprogram, as_root);
 
@@ -434,7 +436,7 @@ static BOOL chat_with_program(char *passwordprogram, struct passwd *pass,
 	}
 
 	if (chstat)
-		DEBUG(3, ("Password change %ssuccessful for user %s\n",
+		DEBUG(3, ("chat_with_program: Password change %ssuccessful for user %s\n",
 		       (chstat ? "" : "un"), pass->pw_name));
 	return (chstat);
 }
@@ -449,12 +451,12 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	struct passwd *pass;
 
 	if (!name) {
-		DEBUG(1, ("NULL username specfied to chgpasswd()!\n"));
+		DEBUG(1, ("chgpasswd: NULL username specfied !\n"));
 	}
 	
 	pass = Get_Pwnam(name);
 	if (!pass) {
-		DEBUG(1, ("Username does not exist in system passwd!\n"));
+		DEBUG(1, ("chgpasswd: Username does not exist in system !\n"));
 		return False;
 	}
 
@@ -462,17 +464,17 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 		oldpass = "";
 	}
 
-	DEBUG(3, ("Password change (as_root=%s) for user: %s\n", BOOLSTR(as_root), name));
+	DEBUG(3, ("chgpasswd: Password change (as_root=%s) for user: %s\n", BOOLSTR(as_root), name));
 
 #if DEBUG_PASSWORD
-	DEBUG(100, ("Passwords: old=%s new=%s\n", oldpass, newpass));
+	DEBUG(100, ("chgpasswd: Passwords: old=%s new=%s\n", oldpass, newpass));
 #endif
 
 	/* Take the passed information and test it for minimum criteria */
 	/* Minimum password length */
 	if (strlen(newpass) < lp_min_passwd_length()) {
 		/* too short, must be at least MINPASSWDLENGTH */
-		DEBUG(0, ("Password Change: user %s, New password is shorter than minimum password length = %d\n",
+		DEBUG(0, ("chgpasswd: Password Change: user %s, New password is shorter than minimum password length = %d\n",
 		       name, lp_min_passwd_length()));
 		return (False);	/* inform the user */
 	}
@@ -480,7 +482,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	/* Password is same as old password */
 	if (strcmp(oldpass, newpass) == 0) {
 		/* don't allow same password */
-		DEBUG(2, ("Password Change: %s, New password is same as old\n", name));	/* log the attempt */
+		DEBUG(2, ("chgpasswd: Password Change: %s, New password is same as old\n", name));	/* log the attempt */
 		return (False);	/* inform the user */
 	}
 
@@ -492,7 +494,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	len = strlen(oldpass);
 	for (i = 0; i < len; i++) {
 		if (iscntrl((int)oldpass[i])) {
-			DEBUG(0, ("chat_with_program: oldpass contains control characters (disallowed).\n"));
+			DEBUG(0, ("chgpasswd: oldpass contains control characters (disallowed).\n"));
 			return False;
 		}
 	}
@@ -500,7 +502,7 @@ BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL 
 	len = strlen(newpass);
 	for (i = 0; i < len; i++) {
 		if (iscntrl((int)newpass[i])) {
-			DEBUG(0, ("chat_with_program: newpass contains control characters (disallowed).\n"));
+			DEBUG(0, ("chgpasswd: newpass contains control characters (disallowed).\n"));
 			return False;
 		}
 	}
@@ -570,7 +572,7 @@ the string %%u, and the given string %s does not.\n", passwordprogram ));
 
 BOOL chgpasswd(const char *name, const char *oldpass, const char *newpass, BOOL as_root)
 {
-	DEBUG(0, ("Password changing not compiled in (user=%s)\n", name));
+	DEBUG(0, ("chgpasswd: Password changing not compiled in (user=%s)\n", name));
 	return (False);
 }
 #endif /* ALLOW_CHANGE_PASSWORD */

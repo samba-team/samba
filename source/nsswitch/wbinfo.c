@@ -298,18 +298,20 @@ static BOOL wbinfo_domain_info(const char *domain_name)
 
 	/* Display response */
 
-	d_printf("Name    : %s\n", response.data.domain_info.name);
-	d_printf("Alt_Name: %s\n", response.data.domain_info.alt_name);
+	d_printf("Name              : %s\n", response.data.domain_info.name);
+	d_printf("Alt_Name          : %s\n", response.data.domain_info.alt_name);
 
-	d_printf("SID     : %s\n", response.data.domain_info.sid);
+	d_printf("SID               : %s\n", response.data.domain_info.sid);
 
-	d_printf("Native  : %s\n",
+	d_printf("Active Directory  : %s\n",
+		 response.data.domain_info.active_directory ? "Yes" : "No");
+	d_printf("Native            : %s\n",
 		 response.data.domain_info.native_mode ? "Yes" : "No");
 
-	d_printf("Primary : %s\n",
+	d_printf("Primary           : %s\n",
 		 response.data.domain_info.primary ? "Yes" : "No");
 
-	d_printf("Sequence: %d\n", response.data.domain_info.sequence_number);
+	d_printf("Sequence          : %d\n", response.data.domain_info.sequence_number);
 
 	return True;
 }
@@ -909,14 +911,14 @@ static void wbinfo_get_auth_user(void)
 	char *user, *domain, *password;
 
 	/* Lift data from secrets file */
+	
+	secrets_fetch_ipc_userpass(&user, &domain, &password);
 
-	secrets_init();
+	if ((!user || !*user) && (!domain || !*domain ) && (!password || !*password)){
 
-	user = secrets_fetch(SECRETS_AUTH_USER, NULL);
-	domain = secrets_fetch(SECRETS_AUTH_DOMAIN, NULL);
-	password = secrets_fetch(SECRETS_AUTH_PASSWORD, NULL);
-
-	if (!user && !domain && !password) {
+		SAFE_FREE(user);
+		SAFE_FREE(domain);
+		SAFE_FREE(password);
 		d_printf("No authorised user configured\n");
 		return;
 	}

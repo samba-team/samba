@@ -71,7 +71,7 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 	key.dsize = sizeof(jinfo);
 	data = tdb_fetch(rap_tdb, key);
 	if (data.dptr && data.dsize == sizeof(uint16)) {
-		memcpy(&rap_jobid, data.dptr, sizeof(uint16));
+		rap_jobid = SVAL(data.dptr, 0);
 		SAFE_FREE(data.dptr);
 		DEBUG(10,("pjobid_to_rap: jobid %u maps to RAP jobid %u\n",
 				(unsigned int)jobid,
@@ -149,7 +149,7 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 	DEBUG(10,("rap_jobid_delete: deleting jobid %u\n",
 				(unsigned int)jobid ));
 
-	memcpy(&rap_jobid, data.dptr, sizeof(uint16));
+	rap_jobid = SVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 	data.dptr = (char *)&rap_jobid;
 	data.dsize = sizeof(rap_jobid);
@@ -597,7 +597,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 {
 	struct printjob pj, *old_pj;
 
-	if (jobid == (uint32)-1)
+	if (jobid == (uint32)-1) 
 		jobid = q->job + UNIX_JOB_START;
 
 	/* Preserve the timestamp on an existing unix print job */
@@ -615,7 +615,7 @@ static void print_unix_job(int snum, print_queue_struct *q, uint32 jobid)
 	pj.spooled = True;
 	fstrcpy(pj.filename, old_pj ? old_pj->filename : "");
 	if (jobid < UNIX_JOB_START) {
-		pj.smbjob = (old_pj != NULL ? True : False);
+		pj.smbjob = True;
 		fstrcpy(pj.jobname, old_pj ? old_pj->jobname : "Remote Downlevel Document");
 	} else {
 		pj.smbjob = False;
@@ -648,7 +648,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (  key.dsize != sizeof(jobid) )
 		return 0;
 		
-	memcpy(&jobid, key.dptr, sizeof(jobid));
+	jobid = IVAL(key.dptr, 0);
 	if ( unpack_pjob( data.dptr, data.dsize, &pjob ) == -1 )
 		return 0;
 	free_nt_devicemode( &pjob.nt_devmode );
@@ -671,9 +671,11 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
 						(unsigned int)jobid ));
 			pjob_delete(ts->snum, jobid);
-		} else
-			ts->total_jobs++;
-		return 0;
+			return 0;
+		} 
+
+		/* need to continue the the bottom of the function to
+		   save the correct attributes */
 	}
 
 	/* maybe it hasn't been spooled yet */
@@ -690,10 +692,14 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		return 0;
 	}
 
-	for (i=0;i<ts->qcount;i++) {
-		uint32 curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
-		if (jobid == curr_jobid)
-			break;
+	/* this check only makes sense for jobs submitted from Windows clients */
+	
+	if ( pjob.smbjob ) {
+		for (i=0;i<ts->qcount;i++) {
+			uint32 curr_jobid = print_parse_jobid(ts->queue[i].fs_file);
+			if (jobid == curr_jobid)
+				break;
+		}
 	}
 	
 	/* The job isn't in the system queue - we have to assume it has
@@ -720,7 +726,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	}
 
 	/* Save the pjob attributes we will store. */
-	ts->queue[i].job = jobid;
+	/* FIXME!!! This is the only place where queue->job 
+	   represents the SMB jobid      --jerry */
+	ts->queue[i].job = jobid;		
 	ts->queue[i].size = pjob.size;
 	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
@@ -775,7 +783,7 @@ static pid_t get_updating_pid(fstring printer_name)
 		return (pid_t)-1;
 	}
 
-	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
+	updating_pid = IVAL(data.dptr, 0);
 	SAFE_FREE(data.dptr);
 
 	if (process_exists(updating_pid))
@@ -921,7 +929,7 @@ static void check_job_changed(int snum, TDB_DATA data, uint32 jobid)
 	for (i = 0; i < job_count; i++) {
 		uint32 ch_jobid;
 
-		memcpy(&ch_jobid, data.dptr + (i*4), 4);
+		ch_jobid = IVAL(data.dptr, i*4);
 		if (ch_jobid == jobid)
 			remove_from_jobs_changed(snum, jobid);
 	}
@@ -1407,7 +1415,7 @@ static BOOL remove_from_jobs_changed(int snum, uint32 jobid)
 	for (i = 0; i < job_count; i++) {
 		uint32 ch_jobid;
 
-		memcpy(&ch_jobid, data.dptr + (i*4), 4);
+		ch_jobid = IVAL(data.dptr, i*4);
 		if (ch_jobid == jobid) {
 			if (i < job_count -1 )
 				memmove(data.dptr + (i*4), data.dptr + (i*4) + 4, (job_count - i - 1)*4 );
@@ -1754,6 +1762,8 @@ static int get_queue_status(int snum, print_status_struct *status)
 		data = tdb_fetch(pdb->tdb, key);
 		if (data.dptr) {
 			if (data.dsize == sizeof(print_status_struct))
+				/* this memcpy is ok since the status struct was 
+				   not packed before storing it in the tdb */
 				memcpy(status, data.dptr, sizeof(print_status_struct));
 			SAFE_FREE(data.dptr);
 		}
@@ -2124,12 +2134,10 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 
 	/* Get the stored queue data. */
 	data = tdb_fetch(pdb->tdb, key);
-
-	if (data.dptr == NULL || data.dsize < 4)
-		qcount = 0;
-	else
-		memcpy(&qcount, data.dptr, 4);
-
+	
+	if (data.dptr && data.dsize >= sizeof(qcount))
+		len += tdb_unpack(data.dptr + len, data.dsize - len, "d", &qcount);
+		
 	/* Get the changed jobs list. */
 	key.dptr = "INFO/jobs_changed";
 	key.dsize = strlen(key.dptr);
@@ -2148,10 +2156,10 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		goto out;
 
 	/* Retrieve the linearised queue data. */
-	len = 0;
+
 	for( i  = 0; i < qcount; i++) {
 		uint32 qjob, qsize, qpage_count, qstatus, qpriority, qtime;
-		len += tdb_unpack(data.dptr + 4 + len, data.dsize - len, "ddddddff",
+		len += tdb_unpack(data.dptr + len, data.dsize - len, "ddddddff",
 				&qjob,
 				&qsize,
 				&qpage_count,
@@ -2175,7 +2183,7 @@ static BOOL get_stored_queue_info(struct tdb_print_db *pdb, int snum, int *pcoun
 		uint32 jobid;
 		struct printjob *pjob;
 
-		memcpy(&jobid, &cgdata.dptr[i*4], 4);
+		jobid = IVAL(&cgdata.dptr, i*4);
 		DEBUG(5,("get_stored_queue_info: changed job = %u\n", (unsigned int)jobid));
 		pjob = print_job_find(snum, jobid);
 		if (!pjob) {
@@ -2260,6 +2268,8 @@ int print_queue_status(int snum,
 	data = tdb_fetch(pdb->tdb, key);
 	if (data.dptr) {
 		if (data.dsize == sizeof(*status)) {
+			/* this memcpy is ok since the status struct was 
+			   not packed before storing it in the tdb */
 			memcpy(status, data.dptr, sizeof(*status));
 		}
 		SAFE_FREE(data.dptr);

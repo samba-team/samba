@@ -841,7 +841,7 @@ int main(int argc, char **argv)
 	reopen_logs();
 
 	DEBUG(1, ("winbindd version %s started.\n", SAMBA_VERSION_STRING) );
-	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2003\n" ) );
+	DEBUGADD( 1, ( "Copyright The Samba Team 2000-2004\n" ) );
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));
@@ -935,6 +935,8 @@ int main(int argc, char **argv)
 
 	netsamlogon_cache_init(); /* Non-critical */
 	
+	init_domain_list();
+
 	/* Loop waiting for requests */
 
 	process_loop();

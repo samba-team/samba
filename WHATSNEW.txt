@@ -1,11 +1,14 @@
-                 =================================
-                 Release Notes for Samba 3.0.2pre1
-                         January 6, 2004
-                 =================================
+                 ================================
+                 Release Notes for Samba 3.0.2rc1
+                         January 16, 2004
+                 ================================
 
-This is a preview release of the Samba 3.0.2 code base and is
-provided for testing only.  This release is *not* intended for
-production servers.  Use at your own risk.
+This is a release candidate snapshot of the Samba 3.0.2 code 
+base and should be considered for testing only.  A release 
+candidate (RC) means that we are close to the final, stable 
+release and in provided for Quality Assurance (QA) purposes.  
+This release is *not* intended for production servers.  Use 
+at your own risk.
 
 There have been several bug fixes since the 3.0.1 release that
 we feel are important to make available to the Samba community
@@ -14,24 +17,111 @@ exact updates.
 
 Common bugs fixed in this preview release include:
 
-  o Joining a Samba domain from Pre-SP2 Windows 2000 clients.
-  o Logging onto a Samba domain from Windows XP clients.
-  o Problems with the %U and %u smb.conf variables in relation
-    to Windows 9x/ME clients.
-  o Kerberos failures due to an invalid in memory keytab 
-    detection test.
-  o Updates to the ntlm_auth tool.
-  o Fixes for various SMB signing errors.
+  o Better separation of WINS and DNS queries for domain 
+    controllers.
+  o Issues with nss_winbind FreeBSD and Solaris.
+  o Several crash bugs in smbd and winbindd.
+  o Output formatting fixes for smbclient for better compatibility
+    with scripts based on the 2.2 version.
 
 
 ######################################################################
 Changes
 #######
-Changes since 3.0.1
-----------------------
+Changes since 3.0.2pre1
+-----------------------
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details.  The list of changes per contributor are as follows:
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Revert change that broke Exchange clear text samlogons.
+    * Fix gcc 3.4 warning in MS-DFS code.
+    
+       
+o   Andrew Bartlet <abartlet@samba.org>
+    * Fix segfault when 'security = ads' but no realm is defined.
+    * BUG 722: Allow winbindd to map machine accounts to uids.
+    * More cleanups for winbindd's find_our_domain().
+    * More clearly detect whether a domain controller is an NT4
+      or mixed-mode AD DC.
+    * Increase separation between DNS queries for hosts and queries
+      for AD domain controllers.
+
+    
+o   Justin Baugh <justin.baugh@request.com>
+    * BUG 948: Implement missing functions required for FreeBSD 
+      nss_winbind support. 
+      
+      
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 922: Make sure enable fast path for strlower_m() and 
+      strupper_m().
+      
+      
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix several warnings reported by the SUN Forte C compiler.
+    * Fully control DNS queries for AD DC's using 'name resolve order'.
+    * BUG 770: Send the SMBjobid for UNIX jobs back to the client.
+    * BUG 972: Fix segfault in cli_ds_getprimarydominfo().
+    * BUG 936: fix bind credentials for schannel binds in smbd.
+    * BUG 446: Fix output of smbclient for better compatibility 
+      with scripts based on the 2.2 version (including Amanda).
+
+
+o   Luke Howard <lukeh@PADL.COM>
+    * Fix segfault in session setup reply caused by a early free().
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Add a German translation for SWAT.
+    * Fix a segfaults in winbindd.
+    * Fix the user's domain passed to register_vuid() from 
+      reply_spnego_kerberos().
+      
+      
+o   Herb Lewis <herb@samba.org>
+    * Fix bit rot in psec.
+    
+    
+o   Jianliang Lu <j.lu@tiesse.com>
+    * BUG 381: check builtin (not local) group SID when updating 
+      group membership.
+
+
+o   John Klinger <john.klinger@lmco.com>
+    * Implement initgroups() call in nss_winbind on Solaris.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Fix regression in net rpc join caused by recent changes 
+      to cli_lsa_query_info_policy().
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Fix XFS quotas: HAVE_XFS_QUOTA -> HAVE_XFS_QUOTAS
+                      XFS_USER_QUOTA -> USRQUOTA
+                      XFS_GROUP_QUOTA -> GRPQUOTA
+    * Fix disk_free calculation with group quotas.
+    * Add debug class 'quota' and a lot of DEBUG()'s 
+      to the quota code.
+    * Fix sys_chown() when no chown() is present.
+    
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 905: Remove POBAD_CC to fix Solaris Forte compiles.
+
+    
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Add smbget utility - a wget-clone for the SMB/CIFS protocol.
+    * Fix for libnss_wins on IRIX platforms.
+    * Fix swatdir for --with-fhs.
+
+
+
+Changes since 3.0.1
+----------------------
 
     Parameter Name              Action
     --------------              ------
@@ -156,10 +246,9 @@ o   J. Tournier <jerome.tournier@IDEALX.com>
     
     
 o   Jelmer Vernooij <jelmer@samba.org>
-    * Put functions for generating SQL queries in pdb_sql.c.
-    * Add pgSQL backend (based on patch by Hamish Friedlander).
-    * BUG 908: Fix -s option to smbcontrol.
-    
+    * Put functions for generating SQL queries in pdb_sql.c
+    * Add pgSQL backend (based on patch by Hamish Friedlander)
+    * BUG 908: Fix -s option to smbcontrol.    
 
 
 Changes since 3.0.0

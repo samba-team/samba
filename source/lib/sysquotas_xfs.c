@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_QUOTA
+
 #ifndef HAVE_SYS_QUOTAS
 #ifdef HAVE_XFS_QUOTAS
 #undef HAVE_XFS_QUOTAS
@@ -86,17 +89,26 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 		
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
-			if ((ret=quotactl(QCMD(Q_XGETQUOTA,XFS_USER_QUOTA), bdev, id.uid, (caddr_t)&D)))
+			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
+				path, bdev, (unsigned)id.uid));
+
+			if ((ret=quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D)))
 				return ret;
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
-			if ((ret=quotactl(QCMD(Q_XGETQUOTA,XFS_GROUP_QUOTA), bdev, id.gid, (caddr_t)&D)))
+			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				path, bdev, (unsigned)id.gid));
+
+			if ((ret=quotactl(QCMD(Q_XGETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D)))
 				return ret;
 			break;
 #endif /* HAVE_GROUP_QUOTA */
-		case SMB_USER_FS_QUOTA_TYPE:	
-			quotactl(QCMD(Q_XGETQSTAT,XFS_USER_QUOTA), bdev, -1, (caddr_t)&F);
+		case SMB_USER_FS_QUOTA_TYPE:
+			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				path, bdev, (unsigned)id.uid));
+
+			quotactl(QCMD(Q_XGETQSTAT,USRQUOTA), bdev, -1, (caddr_t)&F);
 
 			if (F.qs_flags & XFS_QUOTA_UDQ_ENFD) {
 				qflags |= QUOTAS_DENY_DISK;
@@ -109,8 +121,11 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 			break;
 #ifdef HAVE_GROUP_QUOTA
-		case SMB_GROUP_FS_QUOTA_TYPE:	
-			quotactl(QCMD(Q_XGETQSTAT,XFS_GROUP_QUOTA), bdev, -1, (caddr_t)&F);
+		case SMB_GROUP_FS_QUOTA_TYPE:
+			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				path, bdev, (unsigned)id.gid));
+
+			quotactl(QCMD(Q_XGETQSTAT,GRPQUOTA), bdev, -1, (caddr_t)&F);
 
 			if (F.qs_flags & XFS_QUOTA_GDQ_ENFD) {
 				qflags |= QUOTAS_DENY_DISK;
@@ -174,17 +189,26 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
+			DEBUG(10,("sys_set_xfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
+				path, bdev, (unsigned)id.uid));
+
 			D.d_fieldmask |= FS_DQ_LIMIT_MASK;
-			ret = quotactl(QCMD(Q_XSETQLIM,XFS_USER_QUOTA), bdev, id.uid, (caddr_t)&D);
+			ret = quotactl(QCMD(Q_XSETQLIM,USRQUOTA), bdev, id.uid, (caddr_t)&D);
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
+			DEBUG(10,("sys_set_xfs_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				path, bdev, (unsigned)id.gid));
+
 			D.d_fieldmask |= FS_DQ_LIMIT_MASK;
-			ret = quotactl(QCMD(Q_XSETQLIM,XFS_GROUP_QUOTA), bdev, id.gid, (caddr_t)&D);
+			ret = quotactl(QCMD(Q_XSETQLIM,GRPQUOTA), bdev, id.gid, (caddr_t)&D);
 			break;
 #endif /* HAVE_GROUP_QUOTA */
 		case SMB_USER_FS_QUOTA_TYPE:
-			quotactl(QCMD(Q_XGETQSTAT,XFS_USER_QUOTA), bdev, -1, (caddr_t)&F);
+			DEBUG(10,("sys_set_xfs_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				path, bdev, (unsigned)id.uid));
+
+			quotactl(QCMD(Q_XGETQSTAT,USRQUOTA), bdev, -1, (caddr_t)&F);
 			
 			if (qflags & QUOTAS_DENY_DISK) {
 				if (!(F.qs_flags & XFS_QUOTA_UDQ_ENFD))
@@ -193,7 +217,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_on |= XFS_QUOTA_UDQ_ACCT;
 				
 				if (q_on != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAON,XFS_USER_QUOTA),bdev, -1, (caddr_t)&q_on);
+					ret = quotactl(QCMD(Q_XQUOTAON,USRQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
 					ret = 0;
 				}
@@ -203,7 +227,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_off |= XFS_QUOTA_UDQ_ENFD;
 
 				if (q_off != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_USER_QUOTA),bdev, -1, (caddr_t)&q_off);
+					ret = quotactl(QCMD(Q_XQUOTAOFF,USRQUOTA),bdev, -1, (caddr_t)&q_off);
 				} else {
 					ret = 0;
 				}
@@ -212,7 +236,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_on |= XFS_QUOTA_UDQ_ACCT;
 
 				if (q_on != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAON,XFS_USER_QUOTA),bdev, -1, (caddr_t)&q_on);
+					ret = quotactl(QCMD(Q_XQUOTAON,USRQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
 					ret = 0;
 				}
@@ -227,7 +251,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_off |= XFS_QUOTA_UDQ_ACCT;
 
 				if (q_off !=0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_USER_QUOTA),bdev, -1, (caddr_t)&q_off);
+					ret = quotactl(QCMD(Q_XQUOTAOFF,USRQUOTA),bdev, -1, (caddr_t)&q_off);
 				} else {
 					ret = 0;
 				}
@@ -239,7 +263,10 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_FS_QUOTA_TYPE:
-			quotactl(QCMD(Q_XGETQSTAT,XFS_GROUP_QUOTA), bdev, -1, (caddr_t)&F);
+			DEBUG(10,("sys_set_xfs_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				path, bdev, (unsigned)id.gid));
+
+			quotactl(QCMD(Q_XGETQSTAT,GRPQUOTA), bdev, -1, (caddr_t)&F);
 			
 			if (qflags & QUOTAS_DENY_DISK) {
 				if (!(F.qs_flags & XFS_QUOTA_GDQ_ENFD))
@@ -248,7 +275,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_on |= XFS_QUOTA_GDQ_ACCT;
 				
 				if (q_on != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAON,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_on);
+					ret = quotactl(QCMD(Q_XQUOTAON,GRPQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
 					ret = 0;
 				}
@@ -258,7 +285,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_off |= XFS_QUOTA_GDQ_ENFD;
 
 				if (q_off != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_off);
+					ret = quotactl(QCMD(Q_XQUOTAOFF,GRPQUOTA),bdev, -1, (caddr_t)&q_off);
 				} else {
 					ret = 0;
 				}
@@ -267,7 +294,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_on |= XFS_QUOTA_GDQ_ACCT;
 
 				if (q_on != 0) {
-					ret = quotactl(QCMD(Q_XQUOTAON,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_on);
+					ret = quotactl(QCMD(Q_XQUOTAON,GRPQUOTA),bdev, -1, (caddr_t)&q_on);
 				} else {
 					ret = 0;
 				}
@@ -282,7 +309,7 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					q_off |= XFS_QUOTA_GDQ_ACCT;
 
 				if (q_off !=0) {
-					ret = quotactl(QCMD(Q_XQUOTAOFF,XFS_GROUP_QUOTA),bdev, -1, (caddr_t)&q_off);
+					ret = quotactl(QCMD(Q_XQUOTAOFF,GRPQUOTA),bdev, -1, (caddr_t)&q_off);
 				} else {
 					ret = 0;
 				}

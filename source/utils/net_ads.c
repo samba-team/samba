@@ -688,7 +688,7 @@ int net_ads_join(int argc, const char **argv)
 	rc = ads_search_dn(ads, &res, dn, NULL);
 	ads_msgfree(ads, res);
 
-	if (rc.error_type == ADS_ERROR_LDAP && rc.err.rc == LDAP_NO_SUCH_OBJECT) {
+	if (rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_NO_SUCH_OBJECT) {
 		d_printf("ads_join_realm: organizational unit %s does not exist (dn:%s)\n", 
 			 org_unit, dn);
 		return -1;

@@ -1317,9 +1317,10 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	memset((char *)usr->padding, '\0', sizeof(usr->padding));
 
+#if 0 /* JRATEST - exchange auth test. */
 	if (lm_session_key != NULL) 
 		memcpy(usr->padding, lm_session_key, sizeof(usr->user_sess_key));
-
+#endif
 
 	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
 
