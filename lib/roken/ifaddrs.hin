@@ -36,6 +36,13 @@
 #ifndef __ifaddrs_h__
 #define __ifaddrs_h__
 
+/*
+ * the interface is defined in terms of the fields below, and this is
+ * sometimes #define'd, so there seems to be no simple way of solving
+ * this and this seemed the best. */
+
+#undef ifa_dstaddr
+
 struct ifaddrs {
     struct ifaddrs *ifa_next;
     char *ifa_name;
