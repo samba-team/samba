@@ -2626,6 +2626,7 @@ int reply_nt1(char *outbuf)
   int capabilities=0x300; /* has dual names + lock_and_read */
   int secword=0;
   BOOL doencrypt = SMBENCRYPT();
+  time_t t = time(NULL);
 
   if (lp_security()>=SEC_USER) secword |= 1;
   if (doencrypt) secword |= 2;
@@ -2660,8 +2661,8 @@ int reply_nt1(char *outbuf)
   SIVAL(outbuf,smb_vwv3+1,0xFFFF); /* max buffer */
   SIVAL(outbuf,smb_vwv5+1,0xFFFF); /* raw size */
   SIVAL(outbuf,smb_vwv9+1,capabilities); /* capabilities */
-  put_long_date(outbuf+smb_vwv11+1,time(NULL));
-  SSVALS(outbuf,smb_vwv15+1,TimeDiff(time(NULL))/60);
+  put_long_date(outbuf+smb_vwv11+1,t);
+  SSVALS(outbuf,smb_vwv15+1,TimeDiff(t)/60);
 
   return (smb_len(outbuf)+4);
 }

@@ -511,6 +511,43 @@ To syncronize your PC's clock with your Samba server:
 Each time you start your computer (or login for Win95) your PC will
 synchronize it's clock with your Samba server.
 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 4: Problems with WinDD, NTrigue, WinCenterPro etc
+
+All of the above programs are applications that sit on an NT box and
+allow multiple users to access the NT GUI applications from remote
+workstations (often over X).
+
+What has this got to do with Samba? The problem comes when these users
+use filemanager to mount shares from a Samba server. The most common
+symptom is that the first user to connect get correct file permissions
+and has a nice day, but subsequent connections get logged in as the
+same user as the first person to login. They find that they cannot
+access files in their own home directory, but that they can access
+files in the first users home directory (maybe not such a nice day
+after all?)
+
+Why does this happen? The above products all share a common heritage
+(and code base I believe). They all open just a single TCP based SMB
+connection to the Samba server, and requests from all users are piped
+over this connection. This is unfortunate, but not fatal.
+
+It means that if you run your Samba server in share level security
+(the default) then things will definately break as described above. The
+share level SMB security model has no provision for multiple user IDs
+on the one SMB connection. See security_level.txt in the docs for more
+info on share/user/server level security.
+
+If you run in user or server level security then you have a chance,
+but only if you have a recent version of Samba (at least 1.9.15p6). In
+older versions bugs in Samba meant you still would have had problems.
+
+If you have a trapdoor uid system in your OS then it will never work
+properly. Samba needs to be able to switch uids on the connection and
+it can't if your OS has a trapdoor uid system. You'll know this
+because Samba will note it in your logs.
+
 ===============================================================================
 SECTION FIVE: Specific client application problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
