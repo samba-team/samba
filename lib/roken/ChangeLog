@@ -1,5 +1,6 @@
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (libroken_la_LDFLAGS): set version to 11:0:2
 	* vis.c: s/u_int32_t/unsigned/ for systems that do not define
 	u_int32_t
 

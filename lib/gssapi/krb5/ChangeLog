@@ -1,3 +1,7 @@
+2000-12-11  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libgssapi_la_LDFLAGS): bump to 2:3:1
+
 2000-12-08  Assar Westerlund  <assar@sics.se>
 
 	* wrap.c (wrap_des3): use the checksum as ivec when encrypting the

@@ -1,3 +1,7 @@
+2000-12-11  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libss_la_LDFLAGS): bump version to 1:2:1
+
 2000-08-19  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: add dependencies for libss/libsl shared libraries
