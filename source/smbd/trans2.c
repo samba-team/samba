@@ -1484,13 +1484,13 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 	}
 
 	/* 
-	 * If there are no matching entries we must return ERRDOS/ERRnofiles - 
+	 * If there are no matching entries we must return ERRDOS/ERRbadfile - 
 	 * from observation of NT.
 	 */
 
 	if(numentries == 0) {
 		dptr_close(&dptr_num);
-		return ERROR_DOS(ERRDOS,ERRnofiles);
+		return ERROR_DOS(ERRDOS,ERRbadfile);
 	}
 
 	/* At this point pdata points to numentries directory entries. */
