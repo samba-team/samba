@@ -173,7 +173,7 @@ static int profile_dump(void)
 	d_printf("write_count:                    %u\n", profile_p->syscall_write_count);
 	d_printf("write_time:                     %u\n", profile_p->syscall_write_time);
 	d_printf("write_bytes:                    %u\n", profile_p->syscall_write_bytes);
-#ifdef HAVE_SENDFILE
+#ifdef WITH_SENDFILE
 	d_printf("sendfile_count:                 %u\n", profile_p->syscall_sendfile_count);
 	d_printf("sendfile_time:                  %u\n", profile_p->syscall_sendfile_time);
 	d_printf("sendfile_bytes:                 %u\n", profile_p->syscall_sendfile_bytes);
