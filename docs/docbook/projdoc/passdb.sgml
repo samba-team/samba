@@ -811,7 +811,7 @@ You either can set up your own table and specify the field names to pdb_mysql (s
 for the column names) or use the default table. The file <filename>examples/pdb/mysql/mysql.dump</filename> 
 contains the correct queries to create the required tables. Use the command :
 
-<command>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> <replaceable>databasename</replaceable> < <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></command>
+<command>mysql -u<replaceable>username</replaceable> -h<replaceable>hostname</replaceable> -p<replaceable>password</replaceable> <replaceable>databasename</replaceable> &gt; <filename>/path/to/samba/examples/pdb/mysql/mysql.dump</filename></command>
 
 </para>
 </sect2>

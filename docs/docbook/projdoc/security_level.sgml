@@ -320,7 +320,7 @@ MS Windows through things such as setting an invalid shell in the
 
 <para>
 An alternative to assigning UIDs to Windows users on a Samba member server is
-presented in the <ulink url="winbind.html">Winbind Overview</ulink> chapter
+presented in the <link linkend="winbind">Winbind Overview</link> chapter
 in this HOWTO collection.
 </para>
 

@@ -345,9 +345,9 @@ based solution fit into three basic categories.
 	<row><entry align="center">Number of Users</entry><entry>Description</entry></row>
 	</thead>
 	<tbody>
-	<row><entry align="center">&lt 50</entry><entry><para>Want simple conversion with NO pain</para></entry></row>
+	<row><entry align="center">&lt; 50</entry><entry><para>Want simple conversion with NO pain</para></entry></row>
 	<row><entry align="center">50 - 250</entry><entry><para>Want new features, can manage some in-house complexity</para></entry></row>
-	<row><entry align="center">&gt 250</entry><entry><para>Solution/Implementation MUST scale well, complex needs. Cross departmental decision process. Local expertise in most areas</para></entry></row>
+	<row><entry align="center">&gt; 250</entry><entry><para>Solution/Implementation MUST scale well, complex needs. Cross departmental decision process. Local expertise in most areas</para></entry></row>
 	</tbody>
 </tgroup>
 </table>
