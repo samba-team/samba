@@ -2,7 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 3.0
    Samba database functions
-   Copyright (C) Andrew Tridgell 1999
+   Copyright (C) Andrew Tridgell              1999-2000
+   Copyright (C) Luke Kenneth Casson Leighton      2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -600,6 +601,7 @@ char *tdb_error(TDB_CONTEXT *tdb)
 		{TDB_ERR_LOCK, "Locking error"},
 		{TDB_ERR_OOM, "Out of memory"},
 		{TDB_ERR_EXISTS, "Record exists"},
+		{TDB_ERR_NOEXIST, "Record does not exist"},
 		{-1, NULL}};
         if (tdb != NULL) {
             for (i=0;emap[i].estring;i++) {
@@ -630,14 +632,19 @@ int tdb_update(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf)
             return -1;
         }
 
+	/* initialise error code to ok, first */
+	tdb->ecode = 0;
+
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
 	tdb_lock(tdb, BUCKET(hash));
 	rec_ptr = tdb_find(tdb, key, hash, &rec);
 
-	if (!rec_ptr)
+	if (!rec_ptr) {
+		tdb->ecode = TDB_ERR_NOEXIST;
 		goto out;
+	}
 
 	/* must be long enough */
 	if (rec.rec_len < key.dsize + dbuf.dsize)
@@ -1025,16 +1032,30 @@ int tdb_store(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 	/* find which hash bucket it is in */
 	hash = tdb_hash(&key);
 
-	/* check for it existing */
+	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT && tdb_exists(tdb, key)) {
 		tdb->ecode = TDB_ERR_EXISTS;
 		return -1;
 	}
 
-	/* first try in-place update */
+	/* first try in-place update, on modify or replace. */
 	if (flag != TDB_INSERT && tdb_update(tdb, key, dbuf) == 0) {
 		return 0;
 	}
+
+	/* check for it _not_ existing, from error code of the update. */
+	if (flag == TDB_MODIFY && tdb->ecode == TDB_ERR_NOEXIST) {
+		return -1;
+	}
+
+	/* reset the error code potentially set by the tdb_update() */
+	tdb->ecode = 0;
+
+	/*
+	 * now we're into insert / modify / replace of a record
+	 * which we know could not be optimised by an in-place
+	 * store (for various reasons).
+	 */
 
 	rec_ptr = tdb_allocate(tdb, key.dsize + dbuf.dsize);
 	if (rec_ptr == 0) {
