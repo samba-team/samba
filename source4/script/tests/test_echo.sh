@@ -27,6 +27,7 @@ testit() {
 for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
  for bindoptions in connect sign seal sign,seal validate padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
+        "--option=socket:testnonblock=True" \
         "--option=ntlmssp_client:ntlm2=yes" \
         "--option=ntlmssp_client:ntlm2=no" \
         "--option=ntlmssp_client:ntlm2=yes --option=ntlmssp_client:128bit=no" \
