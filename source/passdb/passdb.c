@@ -57,11 +57,17 @@ DOM_SID global_machine_sid;
 ****************************************************************/
 void *startsampwent(BOOL update)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return startnisppwent(update);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return startldappwent(update);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return startsmbpwent(update);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /***************************************************************
@@ -69,11 +75,17 @@ void *startsampwent(BOOL update)
 ****************************************************************/
 void endsampwent(void *vp)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  endnisppwent(vp);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   endldappwent(vp);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   endsmbpwent(vp);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /*************************************************************************
@@ -81,11 +93,46 @@ void endsampwent(void *vp)
  *************************************************************************/
 struct smb_passwd *getsampwent(void *vp)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return getnisppwent(vp);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return getldappwent(vp);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return getsmbpwent(vp);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
+}
+
+/*************************************************************************
+ Routine to return the next entry in the sam passwd list.
+ *************************************************************************/
+struct sam_disp_info *getsamdispent(void *vp)
+{
+	struct sam_passwd *pwd = NULL;
+	static struct sam_disp_info disp_info;
+
+#ifdef USE_NISPLUS_DB
+	pwd = getnisp21pwent(vp);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
+	pwd = getldap21pwent(vp);
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	pwd = getsmb21pwent(vp);
+#endif /* USE_SMBPASS_DB */
+
+	if (pwd == NULL) return NULL;
+
+	disp_info.smb_name  = pwd->smb_name;
+	disp_info.full_name = pwd->full_name;
+	disp_info.user_rid  = pwd->user_rid;
+
+	return &disp_info;
 }
 
 /*************************************************************************
@@ -93,11 +140,17 @@ struct smb_passwd *getsampwent(void *vp)
  *************************************************************************/
 struct sam_passwd *getsam21pwent(void *vp)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return getnisp21pwent(vp);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return getldap21pwent(vp);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return getsmb21pwent(vp);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /*************************************************************************
@@ -106,11 +159,17 @@ struct sam_passwd *getsam21pwent(void *vp)
  *************************************************************************/
 unsigned long getsampwpos(void *vp)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return getnisppwpos(vp);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return getldappwpos(vp);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return getsmbpwpos(vp);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /*************************************************************************
@@ -119,11 +178,17 @@ unsigned long getsampwpos(void *vp)
  *************************************************************************/
 BOOL setsampwpos(void *vp, unsigned long tok)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return setnisppwpos(vp, tok);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return setldappwpos(vp, tok);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return setsmbpwpos(vp, tok);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -131,11 +196,17 @@ BOOL setsampwpos(void *vp, unsigned long tok)
 *************************************************************************/
 BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return add_nisppwd_entry(newpwd);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return add_ldappwd_entry(newpwd);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return add_smbpwd_entry(newpwd);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -143,16 +214,17 @@ BOOL add_sampwd_entry(struct smb_passwd *newpwd)
 *************************************************************************/
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 {
-#if 0
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return add_nisp21pwd_entry(newpwd);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return add_ldap21pwd_entry(newpwd);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return add_smb21pwd_entry(newpwd);
-#endif /* USE_LDAP */
-#else
-	DEBUG(0,("add_sam21pwd_entry() - under development\n"));
-	return False;
-#endif
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -165,11 +237,17 @@ BOOL add_sam21pwd_entry(struct sam_passwd *newpwd)
 ************************************************************************/
 BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return mod_nisppwd_entry(pwd, override);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return mod_ldappwd_entry(pwd, override);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return mod_smbpwd_entry(pwd, override);
-#endif /* USE_LDAP */
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -182,16 +260,17 @@ BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override)
 ************************************************************************/
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
-#if 0
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
+  return mod_nisp21pwd_entry(pwd, override);
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
   return mod_ldap21pwd_entry(pwd, override);
-#else
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
   return mod_smb21pwd_entry(pwd, override);
-#endif /* USE_LDAP */
-#else
-	DEBUG(0,("mod_sam21pwd_entry() - under development\n"));
-	return False;
-#endif
+#endif /* USE_SMBPASS_DB */
 }
 
 /**********************************************************
@@ -242,11 +321,17 @@ static struct smb_passwd *_getsampwnam(char *name)
 *************************************************************************/
 struct smb_passwd *getsampwnam(char *name)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
 	return _getsampwnam(name);
-#else
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
 	return _getsampwnam(name);
-#endif /* USE_LDAP */
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsampwnam(name);
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -258,14 +343,14 @@ static struct sam_passwd *_getsam21pwnam(char *name)
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("getsam21pwnam: search by name: %s\n", name));
+	DEBUG(10, ("_getsam21pwnam: search by name: %s\n", name));
 
 	/* Open the sam password file - not for update. */
 	fp = startsampwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("getsam21pwnam: unable to open sam password database.\n"));
+		DEBUG(0, ("_getsam21pwnam: unable to open sam password database.\n"));
 		return NULL;
 	}
 
@@ -273,7 +358,7 @@ static struct sam_passwd *_getsam21pwnam(char *name)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("getsam21pwnam: found by name: %s\n", name));
+		DEBUG(10, ("_getsam21pwnam: found by name: %s\n", name));
 	}
 
 	endsampwent(fp);
@@ -285,11 +370,17 @@ static struct sam_passwd *_getsam21pwnam(char *name)
 *************************************************************************/
 struct sam_passwd *getsam21pwnam(char *name)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
 	return _getsam21pwnam(name);
-#else
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
 	return _getsam21pwnam(name);
-#endif /* USE_LDAP */
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsam21pwnam(name);
+#endif /* USE_SMBPASS_DB */
 }
 
 /************************************************************************
@@ -328,11 +419,17 @@ static struct smb_passwd *_getsampwuid(uid_t smb_userid)
 *************************************************************************/
 struct smb_passwd *getsampwuid(uid_t smb_userid)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
 	return _getsampwuid(smb_userid);
-#else
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
 	return _getsampwuid(smb_userid);
-#endif /* USE_LDAP */
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsampwuid(smb_userid);
+#endif /* USE_SMBPASS_DB */
 }
 
 
@@ -340,19 +437,19 @@ struct smb_passwd *getsampwuid(uid_t smb_userid)
  Routine to search sam passwd by rid.  use this if your database
  does not have search facilities.
 *************************************************************************/
-struct sam_passwd *_getsam21pwrid(uint32 rid)
+static struct sam_passwd *_getsam21pwrid(uint32 rid)
 {
 	struct sam_passwd *pwd = NULL;
 	void *fp = NULL;
 
-	DEBUG(10, ("getsam21pwrid: search by rid: %x\n", rid));
+	DEBUG(10, ("_getsam21pwrid: search by rid: %x\n", rid));
 
 	/* Open the sam password file - not for update. */
 	fp = startsampwent(False);
 
 	if (fp == NULL)
 	{
-		DEBUG(0, ("getsam21pwrid: unable to open sam password database.\n"));
+		DEBUG(0, ("_getsam21pwrid: unable to open sam password database.\n"));
 		return NULL;
 	}
 
@@ -360,7 +457,7 @@ struct sam_passwd *_getsam21pwrid(uint32 rid)
 
 	if (pwd != NULL)
 	{
-		DEBUG(10, ("getsam21pwrid: found by smb_userid: %x\n", rid));
+		DEBUG(10, ("_getsam21pwrid: found by smb_userid: %x\n", rid));
 	}
 
 	endsmbpwent(fp);
@@ -372,11 +469,17 @@ struct sam_passwd *_getsam21pwrid(uint32 rid)
 *************************************************************************/
 struct sam_passwd *getsam21pwrid(uint32 rid)
 {
-#ifdef USE_LDAP
+#ifdef USE_NISPLUS_DB
 	return _getsam21pwrid(rid);
-#else
+#endif /* USE_NISPLUS_DB */
+
+#ifdef USE_LDAP_DB
 	return _getsam21pwrid(rid);
-#endif /* USE_LDAP */
+#endif /* USE_LDAP_DB */
+
+#ifdef USE_SMBPASS_DB
+	return _getsam21pwrid(rid);
+#endif /* USE_SMBPASS_DB */
 }
 
 
@@ -389,10 +492,62 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
  **********************************************************
  **********************************************************/
 
+/*******************************************************************
+ gets password-database-format time from a string.
+ ********************************************************************/
+static time_t get_time_from_string(char *p)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+	{
+		if (p[i] == '\0' || !isxdigit(p[i]))
+		break;
+	}
+	if (i == 8)
+	{
+		/*
+		 * p points at 8 characters of hex digits - 
+		 * read into a time_t as the seconds since
+		 * 1970 that the password was last changed.
+		 */
+		return (time_t)strtol((char *)p, NULL, 16);
+	}
+	return (time_t)-1;
+}
+
+/*******************************************************************
+ gets password last set time
+ ********************************************************************/
+time_t pdb_get_last_set_time(char *p)
+{
+	if (*p && StrnCaseCmp((char *)p, "LCT-", 4))
+	{
+		return get_time_from_string(p + 4);
+	}
+	return (time_t)-1;
+}
+
+
+/*******************************************************************
+ sets password-database-format time in a string.
+ ********************************************************************/
+static set_time_in_string(char *p, int max_len, char *type, time_t t)
+{
+	slprintf(p, max_len, ":%s-%08X:", type, (uint32)t);
+}
+
+/*******************************************************************
+ sets password last set time
+ ********************************************************************/
+void pdb_set_last_set_time(char *p, int max_len, time_t t)
+{
+	set_time_in_string(p, max_len, "LCT", t);
+}
 /**********************************************************
  Encode the account control bits into a string.
  **********************************************************/
-char *encode_acct_ctrl(uint16 acct_ctrl)
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl)
 {
   static fstring acct_str;
   char *p = acct_str;
@@ -421,7 +576,7 @@ char *encode_acct_ctrl(uint16 acct_ctrl)
  reason: vertical line-up code clarity - all case statements fit into
  15 lines, which is more important.
  **********************************************************/
-uint16 decode_acct_ctrl(char *p)
+uint16 pdb_decode_acct_ctrl(char *p)
 {
 	uint16 acct_ctrl = 0;
 	BOOL finished = False;
@@ -471,7 +626,7 @@ uint16 decode_acct_ctrl(char *p)
  Routine to get the next 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-int gethexpwd(char *p, char *pwd)
+int pdb_gethexpwd(char *p, char *pwd)
 {
   int i;
   unsigned char   lonybble, hinybble;
@@ -497,7 +652,7 @@ int gethexpwd(char *p, char *pwd)
 /*******************************************************************
  Group and User RID username mapping function
  ********************************************************************/
-BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
+BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 {
     struct passwd *pw = Get_Pwnam(user_name, False);
 
@@ -536,7 +691,6 @@ BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 /****************************************************************************
  Read the machine SID from a file.
 ****************************************************************************/
-    
 static BOOL read_sid_from_file(int fd, char *sid_file)
 {   
   fstring fline;
@@ -564,8 +718,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
  Generate the global machine sid. Look for the MACHINE.SID file first, if
  not found then look in smb.conf and use it to create the MACHINE.SID file.
 ****************************************************************************/
-
-BOOL generate_machine_sid(void)
+BOOL pdb_generate_machine_sid(void)
 {
   int fd;
   char *p;
@@ -722,7 +875,7 @@ Error was %s\n", sid_file, strerror(errno) ));
 /*******************************************************************
  converts NT User RID to a UNIX uid.
  ********************************************************************/
-uid_t user_rid_to_uid(uint32 u_rid)
+uid_t pdb_user_rid_to_uid(uint32 u_rid)
 {
 	return (uid_t)(u_rid - 1000);
 }
@@ -730,7 +883,7 @@ uid_t user_rid_to_uid(uint32 u_rid)
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
-uid_t group_rid_to_uid(uint32 u_gid)
+uid_t pdb_group_rid_to_uid(uint32 u_gid)
 {
 	return (uid_t)(u_gid - 1000);
 }
@@ -738,7 +891,7 @@ uid_t group_rid_to_uid(uint32 u_gid)
 /*******************************************************************
  converts UNIX uid to an NT User RID.
  ********************************************************************/
-uint32 uid_to_user_rid(uint32 uid)
+uint32 pdb_uid_to_user_rid(uint32 uid)
 {
 	return (uint32)(uid + 1000);
 }
@@ -746,7 +899,7 @@ uint32 uid_to_user_rid(uint32 uid)
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
  ********************************************************************/
-uint32 gid_to_group_rid(uint32 gid)
+uint32 pdb_gid_to_group_rid(uint32 gid)
 {
 	return (uint32)(gid + 1000);
 }

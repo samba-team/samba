@@ -325,6 +325,14 @@ struct smb_passwd
 };
 
 
+struct sam_disp_info
+{
+	uint32 user_rid;      /* Primary User ID */
+	char *smb_name;     /* username string */
+	char *full_name;    /* user's full name string */
+};
+
+
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
 {

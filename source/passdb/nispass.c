@@ -19,14 +19,12 @@
  * Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifdef NISPLUS
+#ifdef USE_NISPLUS_DB
 
 #include "includes.h"
-
-extern int      DEBUGLEVEL;
-
 #include <rpcsvc/nis.h>
 
+extern int      DEBUGLEVEL;
 
 static int gotalarm;
 
@@ -48,6 +46,7 @@ static void gotalarm_sig(void)
  ****************************************************************/
 void *startnisppwent(BOOL update)
 {
+	return NULL;
 }
 
 /***************************************************************
@@ -69,6 +68,7 @@ void endnisppwent(void *vp)
  *************************************************************************/
 struct sam_passwd *getnisp21pwent(void *vp)
 {
+	return NULL;
 }
 
 /*************************************************************************
@@ -113,11 +113,181 @@ BOOL setnisppwpos(void *vp, unsigned long tok)
  do not call this function directly.  use passdb.c instead.
 
 *************************************************************************/
+BOOL add_nisp21pwd_entry(struct sam_passwd *newpwd)
+{
+}
+
+/************************************************************************
+ Routine to add an entry to the nisplus passwd file.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
 BOOL add_nisppwd_entry(struct smb_passwd *newpwd)
+{
+	/* Static buffers we will return. */
+	static pstring  user_name;
+
+	BOOL            add_user = True;
+	char           *pfile;
+	pstring nisname;
+	nis_result	*nis_user;
+	nis_result *result = NULL,
+	*tblresult = NULL, 
+	*addresult = NULL;
+	nis_object newobj, *obj, *user_obj;
+	char lmpwd[33], ntpwd[33];
+
+	pfile = lp_smb_passwd_file();
+
+	safe_strcpy(user_name, newpwd->smb_name, sizeof(user_name));
+
+	safe_strcpy(nisname, "[name=", sizeof(nisname));
+	safe_strcat(nisname, user_name, sizeof(nisname) - strlen(nisname) -1);
+	safe_strcat(nisname, "],passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+
+	safe_strcpy(nisname, "[uid=", sizeof(nisname));
+	slprintf(nisname, sizeof(nisname), "%s%d", nisname, newpwd->smb_userid);
+	safe_strcat(nisname, "],passwd.org_dir", sizeof(nisname)-strlen(nisname)-1);
+
+	nis_user = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
+
+	if (nis_user->status != NIS_SUCCESS || NIS_RES_NUMOBJ(nis_user) <= 0)
+	{
+		DEBUG(3, ("add_nisppwd_entry: Unable to get NIS+ passwd entry for user: %s.\n",
+		        nis_sperrno(nis_user->status)));
+		return False;
+	}
+
+	/*
+	* Calculate the SMB (lanman) hash functions of both old and new passwords.
+	*/
+
+	user_obj = NIS_RES_OBJECT(nis_user);
+
+	safe_strcpy(nisname, "[name=", sizeof(nisname));
+	safe_strcat(nisname, ENTRY_VAL(user_obj,0),sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, "],", sizeof(nisname)-strlen(nisname)-1);
+	safe_strcat(nisname, pfile, sizeof(nisname)-strlen(nisname)-1);
+
+	result = nis_list(nisname, FOLLOW_PATH|EXPAND_NAME|HARD_LOOKUP,NULL,NULL);
+	if (result->status != NIS_SUCCESS && result->status != NIS_NOTFOUND)
+	{
+		DEBUG(3, ( "add_nisppwd_entry: nis_list failure: %s: %s\n",
+		            nisname,  nis_sperrno(result->status)));
+		nis_freeresult(nis_user);
+		nis_freeresult(result);
+		return False;
+	}   
+
+	if (result->status == NIS_SUCCESS && NIS_RES_NUMOBJ(result) > 0)
+	{
+		DEBUG(3, ("add_nisppwd_entry: User already exists in NIS+ password db: %s\n",
+		            pfile));
+		nis_freeresult(result);
+		nis_freeresult(nis_user);
+		return False;
+	}
+
+	/* User not found. */
+
+	if (!add_user)
+	{
+		DEBUG(3, ("add_nisppwd_entry: User not found in NIS+ password db: %s\n",
+		            pfile));
+		nis_freeresult(result);
+		nis_freeresult(nis_user);
+		return False;
+	}
+
+	tblresult = nis_lookup(pfile, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP );
+	if (tblresult->status != NIS_SUCCESS)
+	{
+		nis_freeresult(result);
+		nis_freeresult(nis_user);
+		nis_freeresult(tblresult);
+		DEBUG(3, ( "add_nisppwd_entry: nis_lookup failure: %s\n",
+		            nis_sperrno(tblresult->status)));
+		return False;
+	}
+
+	newobj.zo_name   = NIS_RES_OBJECT(tblresult)->zo_name;
+	newobj.zo_domain = NIS_RES_OBJECT(tblresult)->zo_domain;
+	newobj.zo_owner  = NIS_RES_OBJECT(nis_user)->zo_owner;
+	newobj.zo_group  = NIS_RES_OBJECT(tblresult)->zo_group;
+	newobj.zo_access = NIS_RES_OBJECT(tblresult)->zo_access;
+	newobj.zo_ttl    = NIS_RES_OBJECT(tblresult)->zo_ttl;
+
+	newobj.zo_data.zo_type = ENTRY_OBJ;
+
+	newobj.zo_data.objdata_u.en_data.en_type = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_type;
+	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len = NIS_RES_OBJECT(tblresult)->zo_data.objdata_u.ta_data.ta_maxcol;
+	newobj.zo_data.objdata_u.en_data.en_cols.en_cols_val = calloc(newobj.zo_data.objdata_u.en_data.en_cols.en_cols_len, sizeof(entry_col));
+
+	ENTRY_VAL(&newobj, 0) = ENTRY_VAL(user_obj, 0);
+	ENTRY_LEN(&newobj, 0) = ENTRY_LEN(user_obj, 0);
+
+	ENTRY_VAL(&newobj, 1) = ENTRY_VAL(user_obj, 2);
+	ENTRY_LEN(&newobj, 1) = ENTRY_LEN(user_obj, 2);
+
+	ENTRY_VAL(&newobj, 2) = lmpwd;
+	ENTRY_LEN(&newobj, 2) = strlen(lmpwd);
+	newobj.EN_data.en_cols.en_cols_val[2].ec_flags = EN_CRYPT;
+
+	ENTRY_VAL(&newobj, 3) = ntpwd;
+	ENTRY_LEN(&newobj, 3) = strlen(ntpwd);
+	newobj.EN_data.en_cols.en_cols_val[3].ec_flags = EN_CRYPT;
+
+	ENTRY_VAL(&newobj, 4) = ENTRY_VAL(user_obj, 4);
+	ENTRY_LEN(&newobj, 4) = ENTRY_LEN(user_obj, 4);
+
+	ENTRY_VAL(&newobj, 5) = ENTRY_VAL(user_obj, 5);
+	ENTRY_LEN(&newobj, 5) = ENTRY_LEN(user_obj, 5);
+
+	ENTRY_VAL(&newobj, 6) = ENTRY_VAL(user_obj, 6);
+	ENTRY_LEN(&newobj, 6) = ENTRY_LEN(user_obj, 6);
+
+	obj = &newobj;
+
+	addresult = nis_add_entry(pfile, obj, ADD_OVERWRITE | FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP);
+
+	nis_freeresult(nis_user);
+	if (tblresult)
+	{
+		nis_freeresult(tblresult);
+	}
+
+	if (addresult->status != NIS_SUCCESS)
+	{
+		DEBUG(3, ( "add_nisppwd_entry: NIS+ table update failed: %s\n",
+		            nisname, nis_sperrno(addresult->status)));
+		nis_freeresult(addresult);
+		nis_freeresult(result);
+		return False;
+	}
+
+	nis_freeresult(addresult);
+	nis_freeresult(result);
+
+	return True;
+}
+
+/************************************************************************
+ Routine to search the nisplus passwd file for an entry matching the username.
+ and then modify its password entry. We can't use the startnisppwent()/
+ getnisppwent()/endnisppwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+
+ do not call this function directly.  use passdb.c instead.
+
+************************************************************************/
+BOOL mod_nisp21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
 	return False;
 }
-
+ 
 /************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username.
  and then modify its password entry. We can't use the startnisppwent()/
@@ -137,12 +307,14 @@ BOOL mod_nisppwd_entry(struct smb_passwd* pwd, BOOL override)
 /************************************************************************
  makes a struct smb_passwd from a NIS+ result.
  ************************************************************************/
-BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
+static BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 {
 	int uidval;
 	static pstring  user_name;
 	static unsigned char smbpwd[16];
 	static unsigned char smbntpwd[16];
+	nis_object *obj;
+	uchar *p;
 
 	if (pw_buf == NULL || result == NULL) return False;
 
@@ -150,21 +322,21 @@ BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 
 	if (result->status != NIS_SUCCESS)
 	{
-		DEBUG(0, ("make_smb_from_nisp: %s: NIS+ lookup failure: %s\n",
-		           nisname, nis_sperrno(result->status)));
+		DEBUG(0, ("make_smb_from_nisp: NIS+ lookup failure: %s\n",
+		           nis_sperrno(result->status)));
 		return False;
 	}
 
 	/* User not found. */
 	if (NIS_RES_NUMOBJ(result) <= 0)
 	{
-		DEBUG(10, ("make_smb_from_nisp: %s not found in NIS+\n", nisname));
+		DEBUG(10, ("make_smb_from_nisp: user not found in NIS+\n"));
 		return False;
 	}
 
 	if (NIS_RES_NUMOBJ(result) > 1)
 	{
-		DEBUG(10, ("make_smb_from_nisp: WARNING: Multiple entries for %s in NIS+ table!\n", nisname));
+		DEBUG(10, ("make_smb_from_nisp: WARNING: Multiple entries for user in NIS+ table!\n"));
 	}
 
 	/* Grab the first hit. */
@@ -172,7 +344,7 @@ BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 
 	/* Check the lanman password column. */
 	p = (uchar *)ENTRY_VAL(obj, 2);
-	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbpwd))
+	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed LM pwd entry.\n"));
 		return False;
@@ -180,7 +352,7 @@ BOOL make_smb_from_nisp(struct smb_passwd *pw_buf, nis_result *result)
 
 	/* Check the NT password column. */
 	p = (uchar *)ENTRY_VAL(obj, 3);
-	if (strlen((char *)p) != 32 || !gethexpwd((char *)p, (char *)smbntpwd))
+	if (strlen((char *)p) != 32 || !pdb_gethexpwd((char *)p, (char *)smbntpwd))
 	{
 		DEBUG(0, ("make_smb_from_nisp: malformed NT pwd entry\n"));
 		return False;
@@ -204,39 +376,20 @@ struct smb_passwd *getnisppwnam(char *name)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
-	char            linebuf[256];
-	char            readbuf[16 * 1024];
-	unsigned char   c;
-	unsigned char  *p;
-	long            uidval;
-	long            linebuf_len;
-	FILE           *fp;
-	int             lockfd;
-	char           *pfile = lp_smb_passwd_file();
 	nis_result *result;
-	nis_object *obj;
-	char *nisname, *nisnamefmt;
+	pstring nisname;
 	BOOL ret;
 
-	if (!*pfile)
+	if (!*lp_smb_passwd_file())
 	{
 		DEBUG(0, ("No SMB password file set\n"));
-		return (NULL);
-	}
-
-	DEBUG(10, ("getnisppwnam: search by name: %s\n", name));
-	DEBUG(10, ("getnisppwnam: using NIS+ table %s\n", pfile));
-
-	nisnamefmt = "[name=%s],%s";
-	nisname = (char *)malloc(strlen(nisnamefmt) + strlen(pfile) + strlen(name));
-
-	if (!nisname)
-	{
-		DEBUG(0,("getnisppwnam: Can't allocate nisname"));
 		return NULL;
 	}
 
-	safe_sprintf(nisname, nisnamefmt, name, pfile);
+	DEBUG(10, ("getnisppwnam: search by name: %s\n", name));
+	DEBUG(10, ("getnisppwnam: using NIS+ table %s\n", lp_smb_passwd_file()));
+
+	slprintf(nisname, sizeof(nisname), "[name=%s],%s", name, lp_smb_passwd_file());
 
 	/* Search the table. */
 	gotalarm = 0;
@@ -244,7 +397,6 @@ struct smb_passwd *getnisppwnam(char *name)
 	alarm(5);
 
 	result = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
-	free(nisname);
 
 	alarm(0);
 	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
@@ -265,41 +417,24 @@ struct smb_passwd *getnisppwnam(char *name)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-struct smb_passwd *getnisppwnam(int uid)
+struct smb_passwd *getnisppwuid(int smb_userid)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
-	char            linebuf[256];
-	char            readbuf[16 * 1024];
-	unsigned char   c;
-	unsigned char  *p;
-	long            linebuf_len;
-	FILE           *fp;
-	int             lockfd;
-	char           *pfile = lp_smb_passwd_file();
 	nis_result *result;
-	nis_object *obj;
-	char *nisname, *nisnamefmt;
+	pstring nisname;
+	BOOL ret;
 
-	if (!*pfile)
+	if (!*lp_smb_passwd_file())
 	{
 		DEBUG(0, ("No SMB password file set\n"));
 		return NULL;
 	}
 
-	DEBUG(10, ("getnisppwuid: search by uid: %d\n", uid));
-	DEBUG(10, ("getnisppwuid: using NIS+ table %s\n", pfile));
+	DEBUG(10, ("getnisppwuid: search by uid: %d\n", smb_userid));
+	DEBUG(10, ("getnisppwuid: using NIS+ table %s\n", lp_smb_passwd_file()));
 
-	nisnamefmt = "[uid=%d],%s";
-	nisname = (char *)malloc(strlen(nisnamefmt) + strlen(pfile)+ sizeof(smb_userid));
-
-	if (!nisname)
-	{
-		DEBUG(0,("getnisppwuid: Can't allocate nisname"));
-		return NULL;
-	}
-
-	safe_sprintf(nisname, nisnamefmt, smb_userid, pfile);
+	slprintf(nisname, sizeof(nisname), "[uid=%d],%s", smb_userid, lp_smb_passwd_file());
 
 	/* Search the table. */
 	gotalarm = 0;
@@ -307,7 +442,6 @@ struct smb_passwd *getnisppwnam(int uid)
 	alarm(5);
 
 	result = nis_list(nisname, FOLLOW_PATH | EXPAND_NAME | HARD_LOOKUP, NULL, NULL);
-	free(nisname);
 
 	alarm(0);
 	signal(SIGALRM, SIGNAL_CAST SIG_DFL);
@@ -327,4 +461,4 @@ struct smb_passwd *getnisppwnam(int uid)
 
 #else
 static void dummy_function(void) { } /* stop some compilers complaining */
-#endif /* NISPLUS */
+#endif /* USE_NISPLUS_DB */

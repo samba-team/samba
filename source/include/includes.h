@@ -1068,6 +1068,10 @@ typedef int mode_t;
 end of the platform specific sections
 ********************************************************************/
 
+#if (!defined(USE_LDAP_DB) && !defined(USE_NISPLUS_DB))
+#define USE_SMBPASS_DB
+#endif
+
 #if defined(USE_MMAP) || defined(FAST_SHARE_MODES)
 #include <sys/mman.h>
 #endif
@@ -1187,11 +1191,6 @@ union semun {
 
 #ifdef KRB4_AUTH
 #include <krb.h>
-#endif
-
-#ifdef USE_LDAP
-#include <lber.h>
-#include <ldap.h>
 #endif
 
 #ifdef NO_UTIMBUF

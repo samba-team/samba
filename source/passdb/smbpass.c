@@ -416,7 +416,7 @@ struct smb_passwd *getsmbpwent(void *vp)
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
-      if (!gethexpwd((char *)p, (char *)smbpwd)) {
+      if (!pdb_gethexpwd((char *)p, (char *)smbpwd)) {
         DEBUG(0, ("getsmbpwent: Malformed Lanman password entry (non hex chars)\n"));
         continue;
       }
@@ -433,7 +433,7 @@ struct smb_passwd *getsmbpwent(void *vp)
                 the lanman password. */
     if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
       if (*p != '*' && *p != 'X') {
-        if(gethexpwd((char *)p,(char *)smbntpwd))
+        if(pdb_gethexpwd((char *)p,(char *)smbntpwd))
           pw_buf.smb_nt_passwd = smbntpwd;
       }
       p += 33; /* Move to the first character of the line after
@@ -515,6 +515,17 @@ unsigned long getsmbpwpos(void *vp)
 BOOL setsmbpwpos(void *vp, unsigned long tok)
 {
   return !fseek((FILE *)vp, tok, SEEK_SET);
+}
+
+/************************************************************************
+ Routine to add an entry to the smbpasswd file.
+
+ do not call this function directly.  use passdb.c instead.
+
+*************************************************************************/
+BOOL add_smb21pwd_entry(struct sam_passwd *newpwd)
+{
+	return False;
 }
 
 /************************************************************************
@@ -644,6 +655,22 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
 
   endsmbpwent(fp);
   return True;
+}
+
+/************************************************************************
+ Routine to search the smbpasswd file for an entry matching the username.
+ and then modify its password entry. We can't use the startsmbpwent()/
+ getsmbpwent()/endsmbpwent() interfaces here as we depend on looking
+ in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
+
+ do not call this function directly.  use passdb.c instead.
+
+************************************************************************/
+BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override)
+{
+	return False;
 }
 
 /************************************************************************
@@ -1140,7 +1167,7 @@ BOOL get_trust_account_password( unsigned char *ret_pwd, time_t *pass_last_set_t
    * Get the hex password.
    */
 
-  if (!gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
+  if (!pdb_gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
          strncmp(&linebuf[33], "TLC-", 4)) {
     DEBUG(0,("get_trust_account_password: Malformed trust password file (incorrect format).\n"));
 #ifdef DEBUG_PASSWORD
