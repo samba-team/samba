@@ -301,7 +301,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		add_failed_connection_entry(new_conn, result);
+		add_failed_connection_entry(domain, new_conn->controller, result);
 		return result;
 	}
 	
