@@ -60,68 +60,6 @@
 
 static uint32 ldapsam_get_next_available_nua_rid(struct smb_ldap_privates *ldap_state);
 
-/*******************************************************************
- find the ldap password
-******************************************************************/
-static BOOL fetch_ldapsam_pw(char **dn, char** pw)
-{
-	char *key = NULL;
-	size_t size;
-	
-	*dn = smb_xstrdup(lp_ldap_admin_dn());
-	
-	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
-		SAFE_FREE(*dn);
-		DEBUG(0, ("fetch_ldapsam_pw: asprintf failed!\n"));
-	}
-	
-	*pw=secrets_fetch(key, &size);
-	if (!size) {
-		/* Upgrade 2.2 style entry */
-		char *p;
-	        char* old_style_key = strdup(*dn);
-		char *data;
-		fstring old_style_pw;
-		
-		if (!old_style_key) {
-			DEBUG(0, ("fetch_ldapsam_pw: strdup failed!\n"));
-			return False;
-		}
-
-		for (p=old_style_key; *p; p++)
-			if (*p == ',') *p = '/';
-	
-		data=secrets_fetch(old_style_key, &size);
-		if (!size && size < sizeof(old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: neither ldap secret retrieved!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;
-		}
-
-		strncpy(old_style_pw, data, size);
-		old_style_pw[size] = 0;
-
-		SAFE_FREE(data);
-
-		if (!secrets_store_ldap_pw(*dn, old_style_pw)) {
-			DEBUG(0,("fetch_ldap_pw: ldap secret could not be upgraded!\n"));
-			SAFE_FREE(old_style_key);
-			SAFE_FREE(*dn);
-			return False;			
-		}
-		if (!secrets_delete(old_style_key)) {
-			DEBUG(0,("fetch_ldap_pw: old ldap secret could not be deleted!\n"));
-		}
-
-		SAFE_FREE(old_style_key);
-
-		*pw = smb_xstrdup(old_style_pw);		
-	}
-	
-	return True;
-}
-
 static const char *attr[] = {"uid", "pwdLastSet", "logonTime",
 			     "logoffTime", "kickoffTime", "cn",
 			     "pwdCanChange", "pwdMustChange",
