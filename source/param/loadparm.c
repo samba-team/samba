@@ -1500,6 +1500,12 @@ static BOOL handle_valid_chars(char *pszParmValue,char **ptr)
 { 
   string_set(ptr,pszParmValue);
 
+  /* A dependency here is that the parameter client code page must be
+     set before this is called - as calling codepage_initialise()
+     would overwrite the valid char lines.
+   */
+  codepage_initialise(lp_client_code_page());
+
   add_char_string(pszParmValue);
   return(True);
 }

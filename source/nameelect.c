@@ -641,6 +641,10 @@ void unbecome_domain_master(struct subnet_record *d, struct work_record *work,
          how it was registered. */
       remove_name_entry(d,work->work_group,0x1b);    
     }
+
+    /* Unregister the 1b name from the WINS server. */
+    if(wins_subnet != NULL)
+      remove_name_entry(wins_subnet, myworkgroup, 0x1b);
   }
 }
 
