@@ -272,7 +272,7 @@ static BOOL del_alsunixgrp_entry(uint32 rid)
 /************************************************************************
  Routine to add a member to an entry to the grppasswd file.
 *************************************************************************/
-static BOOL add_alsunixgrp_member(uint32 rid, DOM_SID *member_sid)
+static BOOL add_alsunixgrp_member(uint32 rid, const DOM_SID *member_sid)
 {
 	DEBUG(0, ("add_alsunixgrp_member: NOT IMPLEMENTED\n"));
 	return False;
@@ -281,7 +281,7 @@ static BOOL add_alsunixgrp_member(uint32 rid, DOM_SID *member_sid)
 /************************************************************************
  Routine to delete a member from an entry to the grppasswd file.
 *************************************************************************/
-static BOOL del_alsunixgrp_member(uint32 rid, DOM_SID *member_sid)
+static BOOL del_alsunixgrp_member(uint32 rid, const DOM_SID *member_sid)
 {
 	DEBUG(0, ("del_alsunixgrp_member: NOT IMPLEMENTED\n"));
 	return False;
