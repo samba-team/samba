@@ -1,4 +1,4 @@
-2003-12-20  Love  <lha@stacken.kth.se>
+2003-12-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* popper.c (main): avoid warning by sending empty string as
 	formatstring instead of NULL (even though pop_msg handles that
