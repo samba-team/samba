@@ -230,11 +230,52 @@ BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type)
 }
 
 /*******************************************************************
+ Static function that actually does the work for the generic function
+ below.
+********************************************************************/
+
+static void remove_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
+                                   void *param)
+{
+  DEBUG(10,("remove_share_oplock_fn: removing oplock info for entry dev=%x ino=%.0f\n",
+        (unsigned int)dev, (double)inode ));
+  /* Delete the oplock info. */
+  entry->op_port = 0;
+  entry->op_type = 0;
+}
+
+/*******************************************************************
  Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
-BOOL remove_share_oplock(files_struct *fsp, int token)
+
+BOOL remove_share_oplock(int token, files_struct *fsp)
 {
-	return share_ops->remove_oplock(fsp, token);
+	return share_ops->mod_entry(token, fsp, remove_share_oplock_fn, NULL);
+}
+
+/*******************************************************************
+ Static function that actually does the work for the generic function
+ below.
+********************************************************************/
+
+static void modify_share_mode_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
+                                   void *param)
+{
+  int new_share_mode = *(int *)param;
+  DEBUG(10,("modify_share_mode_fn: changing share mode info from %x to %x for entry dev=%x ino=%.0f\n",
+        entry->share_mode, new_share_mode, (unsigned int)dev, (double)inode ));
+  /* Change the share mode info. */
+  entry->share_mode = new_share_mode;
+}
+
+/*******************************************************************
+ Modify a share mode on a file. Used by the delete open file code.
+ Return False on fail, True on success.
+********************************************************************/
+
+BOOL modify_share_mode(int token, files_struct *fsp, int new_mode)
+{
+	return share_ops->mod_entry(token, fsp, modify_share_mode_fn, (void *)&new_mode);
 }
 
 /*******************************************************************

@@ -827,9 +827,12 @@ mode 0x%X pid=%d\n",fname,fsp->share_mode,pid));
 }
 
 /*******************************************************************
-Remove an oplock port and mode entry from a share mode.
+ Call a generic modify function for a share mode entry.
 ********************************************************************/
-static BOOL slow_remove_share_oplock(files_struct *fsp, int token)
+
+static BOOL slow_mod_share_entry(int token, files_struct *fsp,
+                                void (*mod_fn)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *),
+                                void *param)
 {
   pstring fname;
   int fd = (int)token;
@@ -841,20 +844,21 @@ static BOOL slow_remove_share_oplock(files_struct *fsp, int token)
   int pid;
   BOOL found = False;
   BOOL new_file;
+  share_mode_entry entry;
 
   share_name(fsp->conn, fsp->fd_ptr->dev, 
                        fsp->fd_ptr->inode, fname);
 
   if(read_share_file( fsp->conn, fd, fname, &buf, &new_file) != 0)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: Failed to read share file %s\n",
+    DEBUG(0,("ERROR: slow_mod_share_entry: Failed to read share file %s\n",
                   fname));
     return False;
   }
 
   if(new_file == True)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: share file %s is new (size zero), \
+    DEBUG(0,("ERROR: slow_mod_share_entry: share file %s is new (size zero), \
 deleting it.\n", fname));
     delete_share_file(fsp->conn, fname);
     return False;
@@ -862,13 +866,13 @@ deleting it.\n", fname));
 
   num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);
 
-  DEBUG(5,("remove_share_oplock: share file %s has %d share mode entries.\n",
+  DEBUG(5,("slow_mod_share_entry: share file %s has %d share mode entries.\n",
             fname, num_entries));
 
   /* PARANOIA TEST */
   if(num_entries < 0)
   {
-    DEBUG(0,("PANIC ERROR:remove_share_oplock: num_share_mode_entries < 0 (%d) \
+    DEBUG(0,("PANIC ERROR:slow_mod_share_entry: num_share_mode_entries < 0 (%d) \
 for share file %s\n", num_entries, fname));
     return False;
   }
@@ -876,7 +880,7 @@ for share file %s\n", num_entries, fname));
   if(num_entries == 0)
   {
     /* No entries - just delete the file. */
-    DEBUG(0,("remove_share_oplock: share file %s has no share mode entries - deleting.\n",
+    DEBUG(0,("slow_mod_share_entry: share file %s has no share mode entries - deleting.\n",
               fname));
     if(buf)
       free(buf);
@@ -885,10 +889,6 @@ for share file %s\n", num_entries, fname));
   }
 
   pid = getpid();
-
-  /* Go through the entries looking for the particular one
-     we have set - remove the oplock settings on it.
-  */
 
   base = buf + SMF_HEADER_LENGTH + SVAL(buf,SMF_FILENAME_LEN_OFFSET);
 
@@ -902,18 +902,41 @@ for share file %s\n", num_entries, fname));
        (IVAL(p,SME_PID_OFFSET) != pid))
       continue;
 
-    DEBUG(5,("remove_share_oplock: clearing oplock on entry number %d (of %d) \
+    DEBUG(5,("slow_mod_share_entry: Calling generic function to modify entry number %d (of %d) \
 from the share file %s\n", i, num_entries, fname));
 
-    SSVAL(p,SME_PORT_OFFSET,0);
-    SSVAL(p,SME_OPLOCK_TYPE_OFFSET,0);
+    /*
+     * Copy into the share_mode_entry structure and then call 
+     * the generic function with the given parameter.
+     */
+
+    entry.pid = IVAL(p,SME_PID_OFFSET);
+    entry.op_port = SVAL(p,SME_PORT_OFFSET);
+    entry.op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
+    entry.share_mode = IVAL(p,SME_SHAREMODE_OFFSET);
+    entry.time.tv_sec = IVAL(p,SME_SEC_OFFSET)
+    entry.time.tv_sec = IVAL(p,SME_USEC_OFFSET);
+
+    (*mod_fn)( &entry, fsp->fd_ptr->dev, fsp->fd_ptr->inode, param);
+
+    /*
+     * Now copy any changes the function made back into the buffer.
+     */
+
+    SIVAL(p,SME_PID_OFFSET, entry.pid)
+    SSVAL(p,SME_PORT_OFFSET,entry.op_port);
+    SSVAL(p,SME_OPLOCK_TYPE_OFFSET,entry.op_type);
+    SIVAL(p,SME_SHAREMODE_OFFSET,entry.share_mode);
+    SIVAL(p,SME_SEC_OFFSET,entry.time.tv_sec)
+    SIVAL(p,SME_USEC_OFFSET,entry.time.tv_sec);
+
     found = True;
     break;
   }
 
   if(!found)
   {
-    DEBUG(0,("remove_share_oplock: entry not found in share file %s\n", fname));
+    DEBUG(0,("slow_mod_share_entry: entry not found in share file %s\n", fname));
     if(buf)
       free(buf);
     return False;
@@ -922,7 +945,7 @@ from the share file %s\n", i, num_entries, fname));
   /* Re-write the file - and truncate it at the correct point. */
   if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: lseek failed to reset to \
+    DEBUG(0,("ERROR: slow_mod_share_entry: lseek failed to reset to \
 position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
     if(buf)
       free(buf);
@@ -932,7 +955,7 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
   fsize = (base - buf) + (SMF_ENTRY_LENGTH*num_entries);
   if(write(fd, buf, fsize) != fsize)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: failed to re-write share \
+    DEBUG(0,("ERROR: slow_mod_share_entry: failed to re-write share \
 mode file %s (%s)\n", fname, strerror(errno)));
     if(buf)
       free(buf);
@@ -1048,7 +1071,7 @@ static struct share_ops share_ops = {
 	slow_get_share_modes,
 	slow_del_share_mode,
 	slow_set_share_mode,
-	slow_remove_share_oplock,
+	slow_mod_share_entry,
 	slow_share_forall,
 	slow_share_status,
 };

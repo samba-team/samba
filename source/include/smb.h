@@ -201,14 +201,19 @@ implemented */
 #define GET_DENY_MODE(x) (((x)>>SHARE_MODE_SHIFT) & SHARE_MODE_MASK)
 #define SET_DENY_MODE(x) ((x)<<SHARE_MODE_SHIFT)
 
-/* allow delete on open file mode (used by NT SMB's). */
-#define ALLOW_SHARE_DELETE (1<<15)
-#define GET_ALLOW_SHARE_DELETE(x) (((x) & ALLOW_SHARE_DELETE) ? 1 : 0)
-#define SET_ALLOW_SHARE_DELETE(x) ((x) ? ALLOW_SHARE_DELETE : 0)
-
 /* Sync on open file (not sure if used anymore... ?) */
 #define FILE_SYNC_OPENMODE (1<<14)
-#define GET_FILE_SYNC_OPENMODE(x) (((x) & FILE_SYNC_OPENMODE) ? 1 : 0)
+#define GET_FILE_SYNC_OPENMODE(x) (((x) & FILE_SYNC_OPENMODE) ? True : False)
+
+/* allow delete on open file mode (used by NT SMB's). */
+#define ALLOW_SHARE_DELETE (1<<15)
+#define GET_ALLOW_SHARE_DELETE(x) (((x) & ALLOW_SHARE_DELETE) ? True : False)
+#define SET_ALLOW_SHARE_DELETE(x) ((x) ? ALLOW_SHARE_DELETE : 0)
+
+/* delete on close flag (used by NT SMB's). */
+#define DELETE_ON_CLOSE_FLAG (1<<16)
+#define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
+#define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
 
 /* open disposition values */
 #define FILE_EXISTS_FAIL 0
@@ -669,7 +674,7 @@ struct share_ops {
 	int (*get_entries)(connection_struct *, int , SMB_DEV_T , SMB_INO_T , share_mode_entry **);
 	void (*del_entry)(int , files_struct *);
 	BOOL (*set_entry)(int, files_struct *, uint16 , uint16 );
-	BOOL (*remove_oplock)(files_struct *, int);
+    BOOL (*mod_entry)(int, files_struct *, void (*)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *), void *);
 	int (*forall)(void (*)(share_mode_entry *, char *));
 	void (*status)(FILE *);
 };

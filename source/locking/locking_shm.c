@@ -495,9 +495,12 @@ static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16
 }
 
 /*******************************************************************
-Remove an oplock port and mode entry from a share mode.
+ Call a generic modify function for a share mode entry.
 ********************************************************************/
-static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
+
+static BOOL shm_mod_share_entry(int token, files_struct *fsp,
+                                void (*mod_fn)(share_mode_entry *, SMB_DEV_T, SMB_INO_T, void *),
+                                void *param)
 {
   SMB_DEV_T dev;
   SMB_INO_T inode;
@@ -518,7 +521,7 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
 
   if(mode_array[hash_entry] == 0)
   {
-    DEBUG(0,("PANIC ERROR:remove_share_oplock: hash bucket %d empty\n",
+    DEBUG(0,("PANIC ERROR:modify_share_entry: hash bucket %d empty\n",
                   hash_entry));
     return False;
   } 
@@ -543,14 +546,14 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
    
   if(!found)
   { 
-     DEBUG(0,("ERROR:remove_share_oplock: no entry found for dev=%x ino=%.0f\n", 
+     DEBUG(0,("ERROR:modify_share_entry: no entry found for dev=%x ino=%.0f\n", 
 	      (unsigned int)dev, (double)inode));
      return False;
   } 
 
   if(file_scanner_p->locking_version != LOCKING_VERSION)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: Deleting old share mode v1=%d dev=%x ino=%.0f\n",
+    DEBUG(0,("ERROR: modify_share_entry: Deleting old share mode v1=%d dev=%x ino=%.0f\n",
 	     file_scanner_p->locking_version, (unsigned int)dev, (double)inode));
 
     if(file_prev_p == file_scanner_p)
@@ -571,9 +574,14 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
         (memcmp(&entry_scanner_p->e.time, 
                 &fsp->open_time,sizeof(struct timeval)) == 0) )
     {
-      /* Delete the oplock info. */
-      entry_scanner_p->e.op_port = 0;
-      entry_scanner_p->e.op_type = 0;
+      /*
+       * Call the generic function with the given parameter.
+       */
+
+      DEBUG(5,("modify_share_entry: Calling generic function to modify entry for dev=%x ino=%.0f\n",
+            (unsigned int)dev, (double)inode));
+
+      (*mod_fn)( &entry_scanner_p->e, dev, inode, param);
       found = True;
       break;
     }
@@ -586,14 +594,13 @@ static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
 
   if(!found)
   {
-    DEBUG(0,("ERROR: remove_share_oplock: No oplock granted. dev=%x ino=%.0f\n", 
+    DEBUG(0,("ERROR: modify_share_entry: No entry found for dev=%x ino=%.0f\n", 
 	     (unsigned int)dev, (double)inode));
     return False;
   }
 
   return True;
 }
-
 
 /*******************************************************************
 call the specified function on each entry under management by the
@@ -670,7 +677,7 @@ static struct share_ops share_ops = {
 	shm_get_share_modes,
 	shm_del_share_mode,
 	shm_set_share_mode,
-	shm_remove_share_oplock,
+	shm_mod_share_entry,
 	shm_share_forall,
 	shm_share_status,
 };
