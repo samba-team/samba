@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -183,6 +183,7 @@ rr13(unsigned char *buf, size_t len)
     free(tmp);
 }
 
+/* XXX what's this function supposed to do anyway? */
 static void
 add1(unsigned char *a, unsigned char *b, size_t len)
 {
@@ -252,6 +253,124 @@ DES3_string_to_key(const unsigned char *str, size_t len, des_cblock *keys)
     memset(tmp, 0, sizeof(tmp));
 }
 
+/* This defines the Andrew string_to_key function.  It accepts a password
+ * string as input and converts its via a one-way encryption algorithm to a DES
+ * encryption key.  It is compatible with the original Andrew authentication
+ * service password database.
+ */
+
+static void
+mklower(char *s)
+{
+    for (; *s; s++)
+        if ('A' <= *s && *s <= 'Z')
+            *s = *s - 'A' + 'a';
+}
+
+/*
+ * Short passwords, i.e 8 characters or less.
+ */
+static void
+afs_cmu_StringToKey (const char *pw, size_t pw_len, 
+		     const char *cell, size_t cell_len, 
+		     des_cblock *key)
+{
+    char  password[8+1];	/* crypt is limited to 8 chars anyway */
+    int   i;
+    
+    memset (password, 0, sizeof(password));
+
+    if(cell_len > 8) cell_len = 8;
+    strncpy (password, cell, cell_len);
+
+    if(pw_len > 8) pw_len = 8;
+    for (i=0; i < pw_len; i++)
+        password[i] ^= pw[i];
+
+    for (i=0; i<8; i++)
+        if (password[i] == '\0') password[i] = 'X';
+
+    /* crypt only considers the first 8 characters of password but for some
+       reason returns eleven characters of result (plus the two salt chars). */
+    strncpy((char *)key, (char *)crypt(password, "#~") + 2, sizeof(des_cblock));
+
+    /* parity is inserted into the LSB so leftshift each byte up one bit.  This
+       allows ascii characters with a zero MSB to retain as much significance
+       as possible. */
+    {   char *keybytes = (char *)key;
+        unsigned int temp;
+
+        for (i = 0; i < 8; i++) {
+            temp = (unsigned int) keybytes[i];
+            keybytes[i] = (unsigned char) (temp << 1);
+        }
+    }
+    des_fixup_key_parity (key);
+}
+
+/*
+ * Long passwords, i.e 9 characters or more.
+ */
+static void
+afs_transarc_StringToKey (const char *pw, size_t pw_len,
+			  const char *cell, size_t cell_len,
+			  des_cblock *key)
+{
+    des_key_schedule schedule;
+    des_cblock temp_key;
+    des_cblock ivec;
+    char password[512];
+    size_t passlen;
+
+    memcpy(password, pw, min(pw_len, sizeof(password)));
+    if(pw_len < sizeof(password))
+	memcpy(password + pw_len, cell, min(cell_len, 
+					    sizeof(password) - pw_len));
+    passlen = min(sizeof(password), pw_len + cell_len);
+    memcpy(&ivec, "kerberos", 8);
+    memcpy(&temp_key, "kerberos", 8);
+    des_fixup_key_parity (&temp_key);
+    des_key_sched (&temp_key, schedule);
+    des_cbc_cksum ((des_cblock *)password, &ivec, passlen, schedule, &ivec);
+
+    memcpy(&temp_key, &ivec, 8);
+    des_fixup_key_parity (&temp_key);
+    des_key_sched (&temp_key, schedule);
+    des_cbc_cksum ((des_cblock *)password, key, passlen, schedule, &ivec);
+    memset(&schedule, 0, sizeof(schedule));
+    memset(&temp_key, 0, sizeof(temp_key));
+    memset(&ivec, 0, sizeof(ivec));
+    memset(password, 0, sizeof(password));
+
+    des_fixup_key_parity (key);
+}
+
+static void
+AFS3_string_to_key(const char *pw, size_t pw_len,
+		   const char *cell, size_t cell_len,
+		   des_cblock *key)
+{
+    if(pw_len > 8)
+	afs_transarc_StringToKey (pw, pw_len, cell, cell_len, key);
+    else
+	afs_cmu_StringToKey (pw, pw_len, cell, cell_len, key);
+}
+
+static void *
+get_str(const void *pw, size_t pw_len, const void *salt, size_t salt_len, 
+	size_t *ret_len)
+{
+    char *p;
+    size_t len = pw_len + salt_len;
+    len = (len + 7) & ~7;
+    p = malloc(len);
+    if(p == NULL)
+	return NULL;
+    memcpy(p, pw, pw_len);
+    memcpy(p + pw_len, salt, salt_len);
+    *ret_len = len;
+    return p;
+}
 
 static krb5_error_code
 string_to_key_internal (const unsigned char *str,
@@ -260,47 +379,51 @@ string_to_key_internal (const unsigned char *str,
 			krb5_keytype ktype,
 			krb5_keyblock *key)
 {
-     size_t len;
-     unsigned char *s, *p;
-     krb5_error_code ret;
+    size_t len;
+    unsigned char *s = NULL;
+    krb5_error_code ret;
 
-     len = str_len + salt->length;
-#if 1
-     len = (len + 7) / 8 * 8;
-#endif
-     p = s = malloc (len);
-     if (p == NULL)
-	  return ENOMEM;
-     memset (s, 0, len);
-     strncpy ((char *)p, (char *)str, str_len);
-     p += str_len;
-     memcpy (p, salt->data, salt->length);
-
-     switch(ktype){
-     case KEYTYPE_DES:{
-	 des_cblock tmpkey;
-	 DES_string_to_key(s, len, &tmpkey);
-	 ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
-	 memset(&tmpkey, 0, sizeof(tmpkey));
-	 break;
-     }
-     case KEYTYPE_DES3:{
-	 des_cblock keys[3];
-	 DES3_string_to_key(s, len, keys);
-	 ret = krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
-	 memset(keys, 0, sizeof(keys));
-	 break;
-     }
-     default:
-	 ret = KRB5_PROG_KEYTYPE_NOSUPP;
-	 break;
-     }
-     memset(s, 0, len);
-     free(s);
-     if(ret)
-	 return ret;
-     key->keytype = ktype;
-     return 0;
+    switch(ktype){
+    case KEYTYPE_DES:{
+	des_cblock tmpkey;
+	s = get_str(str, str_len, salt->data, salt->length, &len);
+	if(s == NULL)
+	    return ENOMEM;
+	DES_string_to_key(s, len, &tmpkey);
+	ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
+	memset(&tmpkey, 0, sizeof(tmpkey));
+	break;
+    }
+    case KEYTYPE_DES_AFS3:{
+	des_cblock tmpkey;
+	AFS3_string_to_key(str, str_len, salt->data, salt->length, &tmpkey);
+	ret = krb5_data_copy(&key->keyvalue, tmpkey, sizeof(des_cblock));
+	key->keytype = KEYTYPE_DES;
+	memset(&tmpkey, 0, sizeof(tmpkey));
+	break;
+    }
+    case KEYTYPE_DES3:{
+	des_cblock keys[3];
+	s = get_str(str, str_len, salt->data, salt->length, &len);
+	if(s == NULL)
+	    return ENOMEM;
+	DES3_string_to_key(s, len, keys);
+	ret = krb5_data_copy(&key->keyvalue, keys, sizeof(keys));
+	memset(keys, 0, sizeof(keys));
+	break;
+    }
+    default:
+	ret = KRB5_PROG_KEYTYPE_NOSUPP;
+	break;
+    }
+    if(s){
+	memset(s, 0, len);
+	free(s);
+    }
+    if(ret)
+	return ret;
+    key->keytype = ktype;
+    return 0;
 }
 
 krb5_error_code
