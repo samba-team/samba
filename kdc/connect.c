@@ -530,6 +530,12 @@ add_new_tcp (struct descr *d, int parent, int child)
 	return;
     }
 	    
+    if (s >= FD_SETSIZE) {
+	krb5_warnx(context, "socket FD too large");
+	close (s);
+	return;
+    }
+
     d[child].s = s;
     d[child].timeout = time(NULL) + TCP_TIMEOUT;
     d[child].type = SOCK_STREAM;
