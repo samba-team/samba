@@ -617,22 +617,49 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 		return False;
 	if (!prs_uint32("displayfrequency", ps, depth, &devmode->displayfrequency))
 		return False;
-	if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
-		return False;
-	if (!prs_uint32("icmintent",        ps, depth, &devmode->icmintent))
-		return False;
-	if (!prs_uint32("mediatype",        ps, depth, &devmode->mediatype))
-		return False;
-	if (!prs_uint32("dithertype",       ps, depth, &devmode->dithertype))
-		return False;
-	if (!prs_uint32("reserved1",        ps, depth, &devmode->reserved1))
-		return False;
-	if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
-		return False;
-	if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
-		return False;
-	if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
-		return False;
+
+	/* 
+	 * Conditional parsing.  Assume that the DeviceMode has been 
+	 * zero'd by the caller. 
+	 */
+	switch(devmode->specversion) {
+	
+		/* Used by spooler when issuing OpenPrinter() calls.  NT 3.5x? */
+		case 0x0320:
+			break;
+		
+		/* See the comments on the DEVMODE in the msdn GDI documentation */
+		/* (WINVER >= 0x0400) */
+		case 0x0400:
+		case 0x0401:
+			if (!prs_uint32("icmmethod",        ps, depth, &devmode->icmmethod))
+				return False;
+			if (!prs_uint32("icmintent",        ps, depth, &devmode->icmintent))
+				return False;
+			if (!prs_uint32("mediatype",        ps, depth, &devmode->mediatype))
+				return False;
+			if (!prs_uint32("dithertype",       ps, depth, &devmode->dithertype))
+				return False;
+			if (!prs_uint32("reserved1",        ps, depth, &devmode->reserved1))
+				return False;
+			if (!prs_uint32("reserved2",        ps, depth, &devmode->reserved2))
+				return False;
+
+			/* (WINVER >= 0x0500) || (_WIN32_WINNT >= 0x0400) */
+			if (devmode->specversion == 0x401) {
+				if (!prs_uint32("panningwidth",     ps, depth, &devmode->panningwidth))
+					return False;
+				if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
+					return False;
+			}
+			break;
+
+		/* log an error if we see something else */
+		default:
+			DEBUG(0,("spoolss_io_devmode: Unknown specversion [0x%x]!\n", devmode->specversion));
+			DEBUG(0,("spoolss_io_devmode: Please report to samba-technical@samba.org\n"));
+			break;
+	}
 
 	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {

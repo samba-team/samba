@@ -3136,6 +3136,8 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 			status = WERR_NOMEM;
 			goto done;
 		}
+		
+		memset(nt_devmode, 0x0, sizeof(NT_DEVICEMODE));
 	
 		ZERO_STRUCTP(nt_devmode);
 
