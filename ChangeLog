@@ -1,5 +1,7 @@
 2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
+	* configure.in: use rk_SUNOS
+
 	* kdc/config.c: add detach options
 
 	* kdc/main.c: maybe detach from console?
