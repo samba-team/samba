@@ -43,7 +43,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 	if (cli->fd == -1) return False; 
 
  again:
-	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
+	ret = client_receive_smb(cli->fd,cli->inbuf,abs(cli->timeout));
 	
 	if (ret) {
 		/* it might be an oplock break request */
@@ -64,7 +64,7 @@ BOOL cli_receive_smb(struct cli_state *cli)
 
         /* If the server is not responding, note that now */
 
-        if (!ret) {
+        if (!ret && cli->timeout > 0) {
                 close(cli->fd);
                 cli->fd = -1;
         }
