@@ -21,8 +21,8 @@
 #include "includes.h"
 
 /****************************************************************************
-  change a dos mode to a unix mode
-    base permission for files:
+ Change a dos mode to a unix mode.
+    Base permission for files:
          if inheriting
            apply read/write bits from parent directory.
          else   
@@ -35,84 +35,84 @@
            Then apply create mask,
            then add force bits.
          }
-    base permission for directories:
+    Base permission for directories:
          dos directory is represented in unix by unix's dir bit and the exec bit
          if !inheriting {
            Then apply create mask,
            then add force bits.
          }
 ****************************************************************************/
-mode_t unix_mode(connection_struct *conn,int dosmode,const char *fname)
+
+mode_t unix_mode(connection_struct *conn, int dosmode, const char *fname)
 {
-  mode_t result = (S_IRUSR | S_IRGRP | S_IROTH);
-  mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
+	mode_t result = (S_IRUSR | S_IRGRP | S_IROTH);
+	mode_t dir_mode = 0; /* Mode of the parent directory if inheriting. */
 
-  if ( !IS_DOS_READONLY(dosmode) )
-    result |= (S_IWUSR | S_IWGRP | S_IWOTH);
+	if ( !IS_DOS_READONLY(dosmode) )
+		result |= (S_IWUSR | S_IWGRP | S_IWOTH);
 
-  if (fname && lp_inherit_perms(SNUM(conn))) {
-    char *dname;
-    SMB_STRUCT_STAT sbuf;
+	if (fname && lp_inherit_perms(SNUM(conn))) {
+		char *dname;
+		SMB_STRUCT_STAT sbuf;
 
-    dname = parent_dirname(fname);
-    DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
-    if (SMB_VFS_STAT(conn,dname,&sbuf) != 0) {
-      DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
-      return(0);      /* *** shouldn't happen! *** */
-    }
+		dname = parent_dirname(fname);
+		DEBUG(2,("unix_mode(%s) inheriting from %s\n",fname,dname));
+		if (SMB_VFS_STAT(conn,dname,&sbuf) != 0) {
+			DEBUG(4,("unix_mode(%s) failed, [dir %s]: %s\n",fname,dname,strerror(errno)));
+			return(0);      /* *** shouldn't happen! *** */
+		}
 
-    /* Save for later - but explicitly remove setuid bit for safety. */
-    dir_mode = sbuf.st_mode & ~S_ISUID;
-    DEBUG(2,("unix_mode(%s) inherit mode %o\n",fname,(int)dir_mode));
-    /* Clear "result" */
-    result = 0;
-  } 
+		/* Save for later - but explicitly remove setuid bit for safety. */
+		dir_mode = sbuf.st_mode & ~S_ISUID;
+		DEBUG(2,("unix_mode(%s) inherit mode %o\n",fname,(int)dir_mode));
+		/* Clear "result" */
+		result = 0;
+	} 
 
-  if (IS_DOS_DIR(dosmode)) {
-    /* We never make directories read only for the owner as under DOS a user
-       can always create a file in a read-only directory. */
-    result |= (S_IFDIR | S_IWUSR);
+	if (IS_DOS_DIR(dosmode)) {
+		/* We never make directories read only for the owner as under DOS a user
+		can always create a file in a read-only directory. */
+		result |= (S_IFDIR | S_IWUSR);
 
-    if (dir_mode) {
-      /* Inherit mode of parent directory. */
-      result |= dir_mode;
-    } else {
-      /* Provisionally add all 'x' bits */
-      result |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
+		if (dir_mode) {
+			/* Inherit mode of parent directory. */
+			result |= dir_mode;
+		} else {
+			/* Provisionally add all 'x' bits */
+			result |= (S_IXUSR | S_IXGRP | S_IXOTH);                 
 
-      /* Apply directory mask */
-      result &= lp_dir_mask(SNUM(conn));
-      /* Add in force bits */
-      result |= lp_force_dir_mode(SNUM(conn));
-    }
-  } else { 
-    if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
-      result |= S_IXUSR;
+			/* Apply directory mask */
+			result &= lp_dir_mask(SNUM(conn));
+			/* Add in force bits */
+			result |= lp_force_dir_mode(SNUM(conn));
+		}
+	} else { 
+		if (lp_map_archive(SNUM(conn)) && IS_DOS_ARCHIVE(dosmode))
+			result |= S_IXUSR;
 
-    if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
-      result |= S_IXGRP;
+		if (lp_map_system(SNUM(conn)) && IS_DOS_SYSTEM(dosmode))
+			result |= S_IXGRP;
  
-    if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
-      result |= S_IXOTH;  
+		if (lp_map_hidden(SNUM(conn)) && IS_DOS_HIDDEN(dosmode))
+			result |= S_IXOTH;  
 
-    if (dir_mode) {
-      /* Inherit 666 component of parent directory mode */
-      result |= dir_mode
-        &  (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
-    } else {
-      /* Apply mode mask */
-      result &= lp_create_mask(SNUM(conn));
-      /* Add in force bits */
-      result |= lp_force_create_mode(SNUM(conn));
-    }
-  }
+		if (dir_mode) {
+			/* Inherit 666 component of parent directory mode */
+			result |= dir_mode & (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
+		} else {
+			/* Apply mode mask */
+			result &= lp_create_mask(SNUM(conn));
+			/* Add in force bits */
+			result |= lp_force_create_mode(SNUM(conn));
+		}
+	}
 
-  DEBUG(3,("unix_mode(%s) returning 0%o\n",fname,(int)result ));
-  return(result);
+	DEBUG(3,("unix_mode(%s) returning 0%o\n",fname,(int)result ));
+	return(result);
 }
 
 /****************************************************************************
-  change a unix mode to a dos mode
+ Change a unix mode to a dos mode.
 ****************************************************************************/
 
 uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
@@ -160,8 +160,9 @@ uint32 dos_mode_from_sbuf(connection_struct *conn, SMB_STRUCT_STAT *sbuf)
 }
 
 /****************************************************************************
-  change a unix mode to a dos mode
+ Change a unix mode to a dos mode.
 ****************************************************************************/
+
 uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 {
 	int result = 0;
@@ -203,7 +204,7 @@ uint32 dos_mode(connection_struct *conn,char *path,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
-chmod a file - but preserve some bits
+ chmod a file - but preserve some bits.
 ********************************************************************/
 
 int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_STAT *st)
@@ -297,70 +298,71 @@ int file_chmod(connection_struct *conn,char *fname, uint32 dosmode,SMB_STRUCT_ST
 	return( ret );
 }
 
-
 /*******************************************************************
-Wrapper around dos_utime that possibly allows DOS semantics rather
-than POSIX.
+ Wrapper around dos_utime that possibly allows DOS semantics rather
+ than POSIX.
 *******************************************************************/
+
 int file_utime(connection_struct *conn, char *fname, struct utimbuf *times)
 {
-  extern struct current_user current_user;
-  SMB_STRUCT_STAT sb;
-  int ret = -1;
+	extern struct current_user current_user;
+	SMB_STRUCT_STAT sb;
+	int ret = -1;
 
-  errno = 0;
+	errno = 0;
 
-  if(SMB_VFS_UTIME(conn,fname, times) == 0)
-    return 0;
+	if(SMB_VFS_UTIME(conn,fname, times) == 0)
+		return 0;
 
-  if((errno != EPERM) && (errno != EACCES))
-    return -1;
+	if((errno != EPERM) && (errno != EACCES))
+		return -1;
 
-  if(!lp_dos_filetimes(SNUM(conn)))
-    return -1;
+	if(!lp_dos_filetimes(SNUM(conn)))
+		return -1;
 
-  /* We have permission (given by the Samba admin) to
-     break POSIX semantics and allow a user to change
-     the time on a file they don't own but can write to
-     (as DOS does).
-   */
+	/* We have permission (given by the Samba admin) to
+	   break POSIX semantics and allow a user to change
+	   the time on a file they don't own but can write to
+	   (as DOS does).
+	 */
 
-  if(SMB_VFS_STAT(conn,fname,&sb) != 0)
-    return -1;
+	if(SMB_VFS_STAT(conn,fname,&sb) != 0)
+		return -1;
 
-  /* Check if we have write access. */
-  if (CAN_WRITE(conn)) {
-	  if (((sb.st_mode & S_IWOTH) ||
-	       conn->admin_user ||
-	       ((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
-	       ((sb.st_mode & S_IWGRP) &&
-		in_group(sb.st_gid,current_user.gid,
-			 current_user.ngroups,current_user.groups)))) {
-		  /* We are allowed to become root and change the filetime. */
-		  become_root();
-		  ret = SMB_VFS_UTIME(conn,fname, times);
-		  unbecome_root();
-	  }
-  }
+	/* Check if we have write access. */
+	if (CAN_WRITE(conn)) {
+		if (((sb.st_mode & S_IWOTH) || conn->admin_user ||
+			((sb.st_mode & S_IWUSR) && current_user.uid==sb.st_uid) ||
+			((sb.st_mode & S_IWGRP) &&
+				in_group(sb.st_gid,current_user.gid,
+					current_user.ngroups,current_user.groups)))) {
+			/* We are allowed to become root and change the filetime. */
+			become_root();
+			ret = SMB_VFS_UTIME(conn,fname, times);
+			unbecome_root();
+		}
+	}
 
-  return ret;
+	return ret;
 }
   
 /*******************************************************************
-Change a filetime - possibly allowing DOS semantics.
+ Change a filetime - possibly allowing DOS semantics.
 *******************************************************************/
+
 BOOL set_filetime(connection_struct *conn, char *fname, time_t mtime)
 {
-  struct utimbuf times;
+	struct utimbuf times;
 
-  if (null_mtime(mtime)) return(True);
+	if (null_mtime(mtime))
+		return(True);
 
-  times.modtime = times.actime = mtime;
+	times.modtime = times.actime = mtime;
 
-  if (file_utime(conn, fname, &times)) {
-    DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
-    return False;
-  }
+	if (file_utime(conn, fname, &times)) {
+		DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
+		return False;
+	}
   
-  return(True);
+	return(True);
 } 
