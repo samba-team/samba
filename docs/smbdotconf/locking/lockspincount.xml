@@ -1,0 +1,17 @@
+<samba:parameter name="lock spin count"
+                 context="G"
+				 type="integer"
+                 xmlns:samba="http://samba.org/common">
+<description>
+	<para>This parameter controls the number of times
+	that smbd should attempt to gain a byte range lock on the 
+	behalf of a client request.  Experiments have shown that
+	Windows 2k servers do not reply with a failure if the lock
+	could not be immediately granted, but try a few more times
+	in case the lock could later be aquired.  This behavior
+	is used to support PC database formats such as MS Access
+	and FoxPro.
+</para>
+</description>
+<value type="default">3</value>
+</samba:parameter>

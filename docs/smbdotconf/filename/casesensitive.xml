@@ -1,0 +1,10 @@
+<samba:parameter name="case sensitive"
+                 context="S"
+				 type="boolean"
+                 xmlns:samba="http://samba.org/common">
+<synonym>casesignames</synonym>
+<description>
+	<para>See the discussion in the section <link linkend="NAMEMANGLINGSECT">NAME MANGLING</link>.</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>

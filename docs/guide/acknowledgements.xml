@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- Stuff for xincludes -->
+  <!ENTITY % xinclude SYSTEM "../entities/xinclude.dtd">
+  %xinclude;
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<preface lang="en-US">
+<title>Acknowledgments</title>
+
+	<para>
+	<emphasis>Samba-3 by Example</emphasis> would not have been written except
+	as a result of feedback provided by reviewers of the book <emphasis>The
+	Official Samba-3 HOWTO and Reference Guide.</emphasis> I hope this book
+	more than answers the challenge and fills the void that was brought to
+	my attention.
+	</para>
+
+	<para>
+	I am deeply indebted to a large group of diligent people. Space prevents 
+	me from listing all of them, but a few stand out as worthy of mention.
+	Jelmer Vernooij made the notable contribution of building the XML production
+	environment and thereby made possible the typesetting of this book.
+	</para>
+
+	<para>
+	Samba would not have come into existence if Andrew Tridgell had not taken
+	the first steps. He continues to lead the project. Under the shadow of his
+	mantle are some great guys who never give up and are always ready to help.
+	Thank you to: Jeremy Allison, Jerry Carter, Andrew Bartlett, Jelmer Vernooij,
+	Alexander Bokovoy, Volker Lendecke, and other team members who answered my 
+	continuous stream of questions &smbmdash; all of which resulted in improved content 
+	in this book.
+	</para>
+
+	<para>
+	My heartfelt thanks go out also to a small set of reviewers (alphabetically 
+	listed) who gave substantial feedback and significant suggestions for improvement:
+	Roland Gruber, Luke Howard, Jon Johnston, Alan Munter, Tarjei Huse, Mike MacIsaac,
+	Scott Mann, Ed Riddle, Santos Soler, Mark Taylor, and Jérôme Tournier.
+	</para>
+
+	<para>
+	My appreciation is extended to a team of over 30 additional reviewers who
+	helped me to find my way around dark corners.
+	</para>
+
+	<para>
+	Particular mention is due to Lyndell, Amos and Melissa who gave me the 
+	latitude necessary to spend nearly a entire year writing Samba documentation.
+	</para>
+
+</preface>

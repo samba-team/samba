@@ -1,0 +1,15 @@
+<samba:parameter name="ldap server"
+                 context="G"
+				 type="string"
+                 xmlns:samba="http://samba.org/common">
+<description>
+	<para>This parameter is only available if Samba has been
+	configure to include the <command moreinfo="none">--with-ldapsam</command> 
+	option at compile time.</para>
+
+	<para>This parameter should contain the FQDN of the ldap directory
+	server which should be queried to locate user account information.
+</para>
+</description>
+<value type="default">localhost</value>
+</samba:parameter>

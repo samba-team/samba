@@ -1,0 +1,19 @@
+<samba:parameter name="client schannel"
+                 context="G"
+                 basic="1"
+				 type="boolean-auto"
+		 xmlns:samba="http://samba.org/common">
+<description>
+
+    <para>This controls whether the client offers or even
+    demands the use of the netlogon schannel.
+    <parameter>client schannel = no</parameter> does not
+    offer the schannel, <parameter>server schannel =
+    auto</parameter> offers the schannel but does not
+    enforce it, and <parameter>server schannel =
+    yes</parameter> denies access if the server is not
+	able to speak netlogon schannel. </para>
+</description>
+<value type="default">auto</value>
+<value type="example">yes</value>
+</samba:parameter>

@@ -1,0 +1,14 @@
+<samba:parameter name="ldap idmap suffix"
+                 context="G"
+		 advanced="1" developer="1"
+		 type="string"
+                 xmlns:samba="http://samba.org/common">
+<description>
+	<para>This parameters specifies the suffix that is 
+	used when storing idmap mappings. If this parameter 
+	is unset, the value of <parameter>ldap suffix</parameter>
+	will be used instead.</para>
+</description>
+<value type="default"></value>
+<value type="example">ou=Idmap,dc=samba,dc=org</value>
+</samba:parameter>

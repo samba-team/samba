@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- Stuff for xincludes -->
+  <!ENTITY % xinclude SYSTEM "../entities/xinclude.dtd">
+  %xinclude;
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+<preface lang="en-US">
+<title>About the Cover Artwork</title>
+
+	<para>
+	The cover artwork of this book continues a theme chosen for the book, 
+	<emphasis>The Official Samba-3 HOWTO and Reference Guide,</emphasis>
+	the cover of which features a Confederate scene. Samba has had a major 
+	impact on the network deployment of Microsoft Windows desktop systems. 
+	The cover artwork of the two official Samba books tells of events that 
+	likewise had a major impact on the future.
+	</para>
+
+	<para>
+	<emphasis>Samba-3 by Example Cover Artwork:</emphasis> King Alfred the Great 
+	(born 849, ruled 871-899) was one of the most amazing kings ever to 
+	rule England. He defended Anglo-Saxon England from Viking raids, formulated 
+	a code of laws, and fostered a rebirth of religious and scholarly activity. 
+	His reign exhibits military skill and innovation, sound governance and the 
+	ability to inspire men to plan for the future. Alfred liberated England
+	at a time when all resistence seemed futile.
+	</para>
+
+	<para>
+	Samba is a network interoperability solution that provides real choice for network
+	administrators. It is an adjunct to Microsoft Windows networks that provides 
+	interoperability of UNIX systems with Microsoft Windows desktop and server systems.
+	You may use Samba to realize the freedom it provides for your network environment 
+	thanks to a dedicated team who work behind the scenes to give you a better choice. 
+	The efforts of these few dedicated developers continues to shape the future of 
+	the Windows interoperability landscape. Enjoy!
+	</para>
+
+</preface>
