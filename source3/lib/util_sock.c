@@ -832,7 +832,7 @@ void client_setfd(int fd)
 
 char *client_name(void)
 {
-	return get_socket_name(client_fd);
+	return get_socket_name(client_fd,False);
 }
 
 char *client_addr(void)
@@ -890,7 +890,7 @@ static BOOL matchname(char *remotehost,struct in_addr  addr)
 /*******************************************************************
  return the DNS name of the remote end of a socket
  ******************************************************************/
-char *get_socket_name(int fd)
+char *get_socket_name(int fd, BOOL force_lookup)
 {
 	static pstring name_buf;
 	static fstring addr_buf;
@@ -902,7 +902,7 @@ char *get_socket_name(int fd)
 	   situations won't work because many networks don't link dhcp
 	   with dns. To avoid the delay we avoid the lookup if
 	   possible */
-	if (!lp_hostname_lookups()) {
+	if (!lp_hostname_lookups() && (force_lookup == False)) {
 		return get_socket_addr(fd);
 	}
 	
