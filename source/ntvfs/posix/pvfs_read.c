@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   POSIX NTVFS backend - 8.3 name routines
+   POSIX NTVFS backend - read
 
    Copyright (C) Andrew Tridgell 2004
 
@@ -23,13 +23,35 @@
 #include "include/includes.h"
 #include "vfs_posix.h"
 
-
 /*
-  return the short name for a given entry in a directory
-  TODO: this is obviously not very useful in its current form !
+  read from a file
 */
-char *pvfs_short_name(struct pvfs_state *pvfs, struct pvfs_filename *name)
+NTSTATUS pvfs_read(struct smbsrv_request *req, union smb_read *rd)
 {
-	char *p = strrchr(name->full_name, '/');
-	return talloc_strndup(name, p+1, 12);
+	struct pvfs_private *pvfs = req->tcon->ntvfs_private;
+	ssize_t ret;
+	struct pvfs_file *f;
+
+	if (rd->generic.level != RAW_READ_READX) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	f = pvfs_find_fd(pvfs, rd->readx.in.fnum);
+	if (!f) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	ret = pread(f->fd, 
+		    rd->readx.out.data, 
+		    rd->readx.in.maxcnt,
+		    rd->readx.in.offset);
+	if (ret == -1) {
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	rd->readx.out.nread = ret;
+	rd->readx.out.remaining = 0; /* should fill this in? */
+	rd->readx.out.compaction_mode = 0; 
+
+	return NT_STATUS_OK;
 }
