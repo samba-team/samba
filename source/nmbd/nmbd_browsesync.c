@@ -34,145 +34,9 @@ extern fstring global_myworkgroup;
 /* This is our local master browser list database. */
 extern struct ubi_dlList lmb_browserlist[];
 
-static struct work_record *call_work;
-static struct subnet_record *call_subrec;
-
-/*******************************************************************
-  This is the NetServerEnum callback.
-  ******************************************************************/
-
-static void callback(char *sname, uint32 stype, char *comment)
-{
-  struct work_record *work;
-
-  stype &= ~SV_TYPE_LOCAL_LIST_ONLY;
-
-  if (stype & SV_TYPE_DOMAIN_ENUM) 
-  {
-    /* See if we can find the workgroup on this subnet. */
-    if(( work = find_workgroup_on_subnet( call_subrec, sname )) != NULL)
-    {
-      /* We already know about this workgroup - update the ttl. */
-      update_workgroup_ttl( work, lp_max_ttl() );
-    }
-    else
-    {
-      /* Create the workgroup on the subnet. */
-      create_workgroup_on_subnet( call_subrec, sname, lp_max_ttl() );
-    }
-  }
-  else
-  {
-    /* Server entry. */
-    struct server_record *servrec;
-
-    work = call_work;
-
-    if(( servrec = find_server_in_workgroup( work, sname )) != NULL)
-    {
-      /* Check that this is not a locally known server - if so ignore the
-         entry. */
-      if(!(servrec->serv.type & SV_TYPE_LOCAL_LIST_ONLY))
-      {
-        /* We already know about this server - update the ttl. */
-        update_server_ttl(servrec, lp_max_ttl() );
-        /* Update the type. */
-        servrec->serv.type = stype;
-      }
-    }
-    else
-    {
-      /* Create the server in the workgroup. */ 
-      create_server_on_workgroup(work, sname,stype,lp_max_ttl(),comment);
-    }
-  }
-}
-
-/*******************************************************************
-  Synchronise browse lists with another browse server.
-  Log in on the remote server's SMB port to their IPC$ service,
-  do a NetServerEnum and update our server and workgroup databases.
-******************************************************************/
-
-static void sync_browse_lists(struct subnet_record *subrec, struct work_record *work,
-		       char *name, int nm_type, struct in_addr ip, BOOL local)
-{
-  extern fstring local_machine;
-  static struct cli_state cli;
-  uint32 local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
-
-  if( DEBUGLVL( 2 ) )
-  {
-    dbgtext( "sync_browse_lists():\n" );
-    dbgtext( "Sync browse lists with server %s<%02x> ", name, nm_type );
-    dbgtext( "at IP %s ", inet_ntoa( ip ) );
-    dbgtext( "for workgroup %s\n", work->work_group );
-  }
-
-  /* Check we're not trying to sync with ourselves. This can happen if we are
-     a domain *and* a local master browser. */
-  if(ismyip(ip))
-  {
-    DEBUG(2,("sync_browse_lists: We are both a domain and a local master browser for workgroup %s. \
-Do not sync with ourselves.\n", work->work_group ));
-    return;
-  }
-
-  if (!cli_initialise(&cli) || !cli_connect(&cli, name, &ip))
-  {
-    DEBUG(0,("sync_browse_lists: Failed to start browse sync with %s\n", name));
-    return;
-  }
-
-  if (!cli_session_request(&cli, name, nm_type, local_machine))
-  {
-    DEBUG(0,("sync_browse_lists: %s rejected the browse sync session\n",name));
-    cli_shutdown(&cli);
-    return;
-  }
-
-  if (!cli_negprot(&cli))
-  {
-    DEBUG(0,("sync_browse_lists: %s rejected the negprot\n",name));
-    cli_shutdown(&cli);
-    return;
-  }
-
-  if (!cli_session_setup(&cli, "", "", 1, "", 0, work->work_group))
-  {
-    DEBUG(0,("sync_browse_lists: %s rejected the browse sync sessionsetup\n", 
-             name));
-    cli_shutdown(&cli);
-    return;
-  }
-
-  if (!cli_send_tconX(&cli, "IPC$", "IPC", "", 1))
-  {
-    DEBUG(0,("sync_browse_lists: %s refused browse sync IPC$ connect\n", name));
-    cli_shutdown(&cli);
-    return;
-  }
-
-  call_work = work;
-  call_subrec = subrec;
-
-  /* Fetch a workgroup list. */
-  cli_NetServerEnum(&cli, work->work_group, 
-                    local_type|SV_TYPE_DOMAIN_ENUM,
-                    callback);
-
-  /* Now fetch a server list. */
-  cli_NetServerEnum(&cli, work->work_group, 
-                    local?SV_TYPE_LOCAL_LIST_ONLY:SV_TYPE_ALL,
-                    callback);
-
-  cli_shutdown(&cli);
-}
-
 /****************************************************************************
 As a domain master browser, do a sync with a local master browser.
 **************************************************************************/
-
 static void sync_with_lmb(struct browse_cache_record *browc)
 {                     
   struct work_record *work;
@@ -198,7 +62,7 @@ for workgroup %s and we are not a domain master browser on this workgroup. Error
   DEBUG(2, ("sync_with_lmb: Initiating sync with local master browser %s<0x20> at IP %s for \
 workgroup %s\n", browc->lmb_name, inet_ntoa(browc->ip), browc->work_group));
 
-  sync_browse_lists(unicast_subnet, work, browc->lmb_name, 0x20, browc->ip, True);
+  sync_browse_lists(work, browc->lmb_name, 0x20, browc->ip, True, True);
 
   browc->sync_time += (CHECK_TIME_DMB_TO_LMB_SYNC * 60);
 }
@@ -206,7 +70,6 @@ workgroup %s\n", browc->lmb_name, inet_ntoa(browc->ip), browc->work_group));
 /****************************************************************************
 Sync or expire any local master browsers.
 **************************************************************************/
-
 void dmb_expire_and_sync_browser_lists(time_t t)
 {
   static time_t last_run = 0;
@@ -272,8 +135,8 @@ static void sync_with_dmb(struct work_record *work)
   DEBUG(2, ("sync_with_dmb: Initiating sync with domain master browser %s at IP %s for \
 workgroup %s\n", namestr(&work->dmb_name), inet_ntoa(work->dmb_addr), work->work_group));
 
-  sync_browse_lists(unicast_subnet, work, work->dmb_name.name, work->dmb_name.name_type, 
-                    work->dmb_addr, False);
+  sync_browse_lists(work, work->dmb_name.name, work->dmb_name.name_type, 
+                    work->dmb_addr, False, True);
 }
 
 /****************************************************************************
@@ -654,7 +517,6 @@ for name %s. This means it is probably not a Samba 1.9.18 or above WINS server.\
  <1b> name in the reply - this is the workgroup name. Add this to the unicast
  subnet. This is expensive, so we only do this every 15 minutes.
 **************************************************************************/
-
 void collect_all_workgroup_names_from_wins_server(time_t t)
 {
   static time_t lastrun = 0;
@@ -688,4 +550,46 @@ void collect_all_workgroup_names_from_wins_server(time_t t)
              find_all_domain_master_names_query_success,
              find_all_domain_master_names_query_fail,
              NULL);
+} 
+
+
+/****************************************************************************
+ If we are a domain master browser on the unicast subnet, do a regular sync
+ with all other DMBs that we know of on that subnet
+**************************************************************************/
+void sync_all_dmbs(time_t t)
+{
+	static time_t lastrun = 0;
+	struct work_record *work;
+
+	/* Only do this if we are using a WINS server. */
+	if(we_are_a_wins_client() == False)
+		return;
+
+	/* Check to see if we are a domain master browser on the
+           unicast subnet. */
+	work = find_workgroup_on_subnet(unicast_subnet, global_myworkgroup);
+	if (!work) return;
+
+	if (!AM_DOMAIN_MASTER_BROWSER(work))
+		return;
+
+	if ((lastrun != 0) && (t < lastrun + (15 * 60)))
+		return;
+     
+
+	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
+		if (strcmp(global_myworkgroup, work->work_group) &&
+		    !ip_equal(work->dmb_addr, ipzero)) {
+			lastrun = t;
+
+			DEBUG(3,("initiating DMB<->DMB sync with %s(%s)\n",
+				 work->dmb_name.name, 
+				 inet_ntoa(work->dmb_addr)));
+			sync_browse_lists(work, 
+					  work->dmb_name.name,
+					  work->dmb_name.name_type, 
+					  work->dmb_addr, False, False);
+		}
+	}
 } 
