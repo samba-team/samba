@@ -4,10 +4,7 @@
 	(C) Jelmer Vernooij 2003
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                xmlns:exsl="http://exslt.org/common"
-                xmlns:samba="http://samba.org/common"
-				version="1.1"
-                extension-element-prefixes="exsl">
+				version="1.1">
 
 <xsl:output method="xml" omit-xml-declaration="yes" indent="yes"/>
 
