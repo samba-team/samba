@@ -1119,9 +1119,29 @@
 	WERROR srvsvc_NETRSERVERTRANSPORTDEL(
 		);
 
+/**************************/
+/* srvsvc_NetRemoteTOD    */
+/**************************/
+	typedef struct {
+		uint32 elapsed;
+		uint32 msecs;
+		uint32 hours;
+		uint32 mins;
+		uint32 secs;
+		uint32 hunds;
+		uint32 timezone;
+		uint32 tinterval;
+		uint32 day;
+		uint32 month;
+		uint32 year;
+		uint32 weekday;
+	} srvsvc_NetRemoteTODInfo;
+
 	/******************/
 	/* Function: 0x1c */
-	WERROR srvsvc_NET_REMOTE_TOD(
+	WERROR srvsvc_NetRemoteTOD(
+		[in]   unistr *server_unc,
+		[out]   srvsvc_NetRemoteTODInfo *info
 		);
 
 /**************************/

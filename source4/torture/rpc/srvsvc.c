@@ -642,6 +642,32 @@ static BOOL test_NetTransportEnum(struct dcerpc_pipe *p,
 	return ret;
 }
 
+/**************************/
+/* srvsvc_NetRemoteTOD    */
+/**************************/
+static BOOL test_NetRemoteTOD(struct dcerpc_pipe *p, 
+			   TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct srvsvc_NetRemoteTOD r;
+	BOOL ret = True;
+
+	r.in.server_unc = talloc_asprintf(mem_ctx,"\\\\%s",dcerpc_server_name(p));
+
+	ZERO_STRUCT(r.out);
+	printf("testing NetRemoteTOD\n");
+	status = dcerpc_srvsvc_NetRemoteTOD(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("NetRemoteTOD failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("NetRemoteTOD failed - %s\n", win_errstr(r.out.result));
+	}
+
+	return ret;
+}
+
 BOOL torture_rpc_srvsvc(int dummy)
 {
         NTSTATUS status;
@@ -692,6 +718,10 @@ BOOL torture_rpc_srvsvc(int dummy)
 	}
 
 	if (!test_NetTransportEnum(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_NetRemoteTOD(p, mem_ctx)) {
 		ret = False;
 	}
 
