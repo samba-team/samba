@@ -116,7 +116,6 @@ sigALRM(int sig)
 
 /* XXX this is a quick hack, should be fixed */
 
-static
 void
 des_rand_data(unsigned char *data, int size)
 {
@@ -135,7 +134,6 @@ des_rand_data(unsigned char *data, int size)
  * It takes about 40ms/byte random data.
  * It's not neccessary to be root to run it.
  */
-static
 void
 des_rand_data(unsigned char *data, int size)
 {
