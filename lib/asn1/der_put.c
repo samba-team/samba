@@ -215,13 +215,7 @@ encode_integer (unsigned char *p, size_t len, int *data, size_t *size)
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length (p, len, l, &l);
-    if (e)
-	return e;
-    p -= l;
-    len -= l;
-    ret += l;
-    e = der_put_tag (p, len, UNIV, PRIM, UT_Integer, &l);
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_Integer, &l);
     if (e)
 	return e;
     p -= l;
@@ -245,13 +239,7 @@ encode_general_string (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length (p, len, l, &l);
-    if (e)
-	return e;
-    p -= l;
-    len -= l;
-    ret += l;
-    e = der_put_tag (p, len, UNIV, PRIM, UT_GeneralString, &l);
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_GeneralString, &l);
     if (e)
 	return e;
     p -= l;
@@ -275,13 +263,7 @@ encode_octet_string (unsigned char *p, size_t len,
     p -= l;
     len -= l;
     ret += l;
-    e = der_put_length (p, len, l, &l);
-    if (e)
-	return e;
-    p -= l;
-    len -= l;
-    ret += l;
-    e = der_put_tag (p, len, UNIV, PRIM, UT_OctetString, &l);
+    e = der_put_length_and_tag (p, len, l, UNIV, PRIM, UT_OctetString, &l);
     if (e)
 	return e;
     p -= l;
