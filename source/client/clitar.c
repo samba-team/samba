@@ -1277,7 +1277,7 @@ static void do_tarput(void)
 /****************************************************************************
 Blocksize command
 ***************************************************************************/
-void cmd_block(void)
+int cmd_block(void)
 {
   fstring buf;
   int block;
@@ -1285,24 +1285,26 @@ void cmd_block(void)
   if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("blocksize <n>\n"));
-      return;
+      return 1;
     }
 
   block=atoi(buf);
   if (block < 0 || block > 65535)
     {
       DEBUG(0, ("blocksize out of range"));
-      return;
+      return 1;
     }
 
   blocksize=block;
   DEBUG(2,("blocksize is now %d\n", blocksize));
+
+  return 0;
 }
 
 /****************************************************************************
 command to set incremental / reset mode
 ***************************************************************************/
-void cmd_tarmode(void)
+int cmd_tarmode(void)
 {
   fstring buf;
 
@@ -1337,12 +1339,13 @@ void cmd_tarmode(void)
 	    tar_reset ? "reset" : "noreset",
 	    tar_noisy ? "verbose" : "quiet"));
 
+  return 0;
 }
 
 /****************************************************************************
 Feeble attrib command
 ***************************************************************************/
-void cmd_setmode(void)
+int cmd_setmode(void)
 {
   char *q;
   fstring buf;
@@ -1355,7 +1358,7 @@ void cmd_setmode(void)
   if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
-      return;
+      return 1;
     }
 
   safe_strcpy(fname, cur_dir, sizeof(pstring));
@@ -1386,18 +1389,20 @@ void cmd_setmode(void)
   if (attra[ATTRSET]==0 && attra[ATTRRESET]==0)
     {
       DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
-      return;
+      return 1;
     }
 
   DEBUG(2, ("\nperm set %d %d\n", attra[ATTRSET], attra[ATTRRESET]));
   do_setrattr(fname, attra[ATTRSET], ATTRSET);
   do_setrattr(fname, attra[ATTRRESET], ATTRRESET);
+
+  return 0;
 }
 
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
-void cmd_tar(void)
+int cmd_tar(void)
 {
   fstring buf;
   char **argl;
@@ -1406,16 +1411,18 @@ void cmd_tar(void)
   if (!next_token_nr(NULL,buf,NULL,sizeof(buf)))
     {
       DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
-      return;
+      return 1;
     }
 
   argl=toktocliplist(&argcl, NULL);
   if (!tar_parseargs(argcl, argl, buf, 0))
-    return;
+    return 1;
 
   process_tar();
 
   SAFE_FREE(argl);
+
+  return 0;
 }
 
 /****************************************************************************
