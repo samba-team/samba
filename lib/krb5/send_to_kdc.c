@@ -55,29 +55,71 @@ send_and_recv (int fd,
      if (sendto (fd, send->data, send->length, 0,
 		 (struct sockaddr *)addr, sizeof(*addr)) < 0)
 	  return -1;
-     FD_ZERO(&fdset);
-     FD_SET(fd, &fdset);
-     timeout.tv_sec  = tmout;
-     timeout.tv_usec = 0;
-     ret = select (fd + 1, &fdset, NULL, NULL, &timeout);
-     if (ret <= 0)
-	  return -1;
-     else {
-	  int len;
+     recv->data = NULL;
+     recv->length = 0;
+     while(1){
+	 FD_ZERO(&fdset);
+	 FD_SET(fd, &fdset);
+	 timeout.tv_sec  = tmout;
+	 timeout.tv_usec = 0;
+	 ret = select (fd + 1, &fdset, NULL, NULL, &timeout);
+	 if (ret <= 0)
+	     return -1;
+	 else {
+	     int len;
 
-	  if (ioctl (fd, FIONREAD, &nbytes) < 0)
-	       return -1;
+	     if (ioctl (fd, FIONREAD, &nbytes) < 0)
+		 return -1;
+	     if(nbytes == 0)
+		 return 0;
 
-	  recv->data = malloc (nbytes);
-	  ret = recvfrom (fd, recv->data, nbytes, 0, NULL, &len);
-	  if (ret < 0) {
-	       free (recv->data);
-	       return -1;
-	  }
-	  recv->data = realloc (recv->data, ret);
-	  recv->length  = ret;
-	  return 0;
+	     recv->data = realloc(recv->data, recv->length + nbytes);
+	     ret = recvfrom (fd, recv->data + recv->length, nbytes, 
+			     0, NULL, &len);
+	     if (ret < 0) {
+		 free (recv->data);
+		 return -1;
+	     }
+	     recv->length += ret;
+	 }
      }
+}
+
+static int
+send_and_recv_http(int fd, 
+		   time_t tmout,
+		   struct sockaddr_in *addr,
+		   const krb5_data *send,
+		   krb5_data *recv)
+{
+    char *request;
+    char *str;
+    krb5_data r;
+    int ret;
+    int len = base64_encode(send->data, send->length, &str);
+    if(len < 0)
+	return -1;
+    asprintf(&request, "GET %s HTTP/1.1\r\n\r\n", str);
+    free(str);
+    r.data = request;
+    r.length = strlen(request);
+    ret = send_and_recv(fd, tmout, addr, &r, recv);
+    free(request);
+    if(ret)
+	return ret;
+    {
+	char *s, *p;
+	s = realloc(recv->data, recv->length + 1);
+	s[recv->length] = 0;
+	p = strstr(s, "\r\n\r\n");
+	if(p == NULL)
+	    return -1;
+	p += 4;
+	recv->data = s;
+	recv->length -= p - s;
+	memmove(recv->data, p, recv->length);
+    }
+    return 0;
 }
 
 krb5_error_code
@@ -94,10 +136,6 @@ krb5_sendto_kdc (krb5_context context,
      int i;
 
      port = krb5_getportbyname ("kerberos", "udp", htons(88));
-     fd = socket (AF_INET, SOCK_DGRAM, 0);
-     if (fd < 0) {
-	  return errno;
-     }
 
      err = krb5_get_krbhst (context, realm, &hostlist);
      if (err) {
@@ -109,7 +147,12 @@ krb5_sendto_kdc (krb5_context context,
 	 for (hp = hostlist; (p = *hp); ++hp) {
 	       char *addr;
 	       char *colon;
+	       int http_flag = 0;
 
+	       if(strncmp(p, "http://", 7) == 0){
+		   p += 7;
+		   http_flag = 1;
+	       }
 	       colon = strchr (p, ':');
 	       if (colon)
 		    *colon = '\0';
@@ -120,7 +163,16 @@ krb5_sendto_kdc (krb5_context context,
 		    *colon++ = ':';
 	       while ((addr = *hostent->h_addr_list++)) {
 		    struct sockaddr_in a;
+		    int ret;
 		    
+		    if(http_flag)
+			fd = socket(AF_INET, SOCK_STREAM, 0);
+		    else
+			fd = socket(AF_INET, SOCK_DGRAM, 0);
+		    
+		    if(fd < 0){
+			return errno;
+		    }
 		    memset (&a, 0, sizeof(a));
 		    a.sin_family = AF_INET;
 		    if (colon) {
@@ -131,16 +183,22 @@ krb5_sendto_kdc (krb5_context context,
 		    } else
 			 a.sin_port   = port;
 		    a.sin_addr   = *((struct in_addr *)addr);
+		    connect(fd, (struct sockaddr*)&a, sizeof(a));
 		    
-		    if (send_and_recv (fd, context->kdc_timeout, 
-				       &a, send, receive) == 0) {
-			 close (fd);
-			 krb5_free_krbhst (context, hostlist);
-			 return 0;
+		    if(http_flag)
+			ret = send_and_recv_http(fd, context->kdc_timeout,
+						 &a, send, receive);
+		    else
+			
+			ret = send_and_recv (fd, context->kdc_timeout, 
+					     &a, send, receive);
+		    close (fd);
+		    if(ret == 0){
+			krb5_free_krbhst (context, hostlist);
+			return 0;
 		    }
 	       }
-	  }
-     close (fd);
+	 }
      krb5_free_krbhst (context, hostlist);
      return KRB5_KDC_UNREACH;
 }

@@ -261,6 +261,53 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    n = 0;
 	}
     }
+#ifdef HTTP
+    else if(strncmp(d[index].buf, "GET ", 4) == 0 && 
+	    strncmp(d[index].buf + d[index].len - 4, "\r\n\r\n", 4) == 0){
+	char *s, *p, *t;
+	void *data;
+	int len;
+	s = d[index].buf;
+	p = strstr(s, "\r\n");
+	*p = 0;
+	p = NULL;
+	kdc_log(5, "HTTP request");
+	strtok_r(s, " \t", &p);
+	t = strtok_r(NULL, " \t", &p);
+	if(t == NULL){
+	    
+	}
+	data = malloc(strlen(t));
+	len = base64_decode(t, data);
+	if(len < 0){
+	    const char *msg = 
+		"HTTP/1.1 404 Not found\r\n"
+		"Server: Heimdal/" VERSION "\r\n"
+		"Content-type: text/html\r\n"
+		"Content-transfer-encoding: 8bit\r\n\r\n"
+		"<TITLE>404 Not found</TITLE>\r\n"
+		"<H1>404 Not found</H1>\r\n"
+		"That page doesn't exist, maybe you are looking for "
+		"<a href=\"http://www.pdc.kth.se/heimdal\">Heimdal</a>?\r\n";
+	    write(d[index].s, msg, strlen(msg));
+	    free(data);
+	    clear_descr(d + index);
+	    return;
+	}
+	{
+	    const char *msg = 
+		"HTTP/1.1 200 OK\r\n"
+		"Server: Heimdal/" VERSION "\r\n"
+		"Content-type: application/octet-stream\r\n"
+		"Content-transfer-encoding: binary\r\n\r\n";
+	    write(d[index].s, msg, strlen(msg));
+	}
+	memcpy(d[index].buf, data, len);
+	d[index].len = len;
+	n = 0;
+	free(data);
+    }
+#endif
     if(n == 0){
 	do_request(d[index].buf, d[index].len, 
 		   d[index].s, (struct sockaddr*)&from, from_len);
