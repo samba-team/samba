@@ -154,8 +154,8 @@ const uint8* pdb_get_pw_history (const SAM_ACCOUNT *sampass, uint32 *current_his
 {
 	if (sampass) {
 		SMB_ASSERT((!sampass->private.nt_pw_his.data) 
-			   || ((sampass->private.nt_pw_his.length % NT_HASH_LEN) == 0));
-		*current_hist_len = sampass->private.nt_pw_his.length / NT_HASH_LEN;
+		   || ((sampass->private.nt_pw_his.length % PW_HISTORY_ENTRY_LEN) == 0));
+		*current_hist_len = sampass->private.nt_pw_his.length / PW_HISTORY_ENTRY_LEN;
 		return ((uint8*)sampass->private.nt_pw_his.data);
 	} else {
 		*current_hist_len = 0;
@@ -995,7 +995,8 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, const uint8 pwd[LM_HASH_LEN], 
 }
 
 /*********************************************************************
- Set the user's password history hash. historyLen is the number of NT_HASH_LEN
+ Set the user's password history hash. historyLen is the number of 
+ PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN length
  entries to store in the history - this must match the size of the uint8 array
  in pwd.
 ********************************************************************/
@@ -1006,7 +1007,8 @@ BOOL pdb_set_pw_history (SAM_ACCOUNT *sampass, const uint8 *pwd, uint32 historyL
 		return False;
 
 	if (historyLen && pwd){
-		sampass->private.nt_pw_his = data_blob_talloc(sampass->mem_ctx, pwd, historyLen*NT_HASH_LEN);
+		sampass->private.nt_pw_his = data_blob_talloc(sampass->mem_ctx,
+						pwd, historyLen*PW_HISTORY_ENTRY_LEN);
 		if (!sampass->private.nt_pw_his.length) {
 			DEBUG(0, ("pdb_set_pw_history: data_blob_talloc() failed!\n"));
 			return False;
@@ -1221,17 +1223,34 @@ BOOL pdb_set_plaintext_passwd (SAM_ACCOUNT *sampass, const char *plaintext)
 					have more history than we need. */
 
 				if (current_history_len < pwHistLen) {
-					/* We only have room for current_history_len entries. */
-					pwHistLen = current_history_len;
+					/* Ensure we have space for the needed history. */
+					uchar *new_history = talloc(sampass->mem_ctx,
+								pwHistLen*PW_HISTORY_ENTRY_LEN);
+					/* And copy it into the new buffer. */
+					if (current_history_len) {
+						memcpy(new_history, pwhistory,
+							current_history_len*PW_HISTORY_ENTRY_LEN);
+					}
+					/* Clearing out any extra space. */
+					memset(&new_history[current_history_len*PW_HISTORY_ENTRY_LEN],
+						'\0', (pwHistLen-current_history_len)*PW_HISTORY_ENTRY_LEN);
+					/* Finally replace it. */
+					pwhistory = new_history;
 				}
 			}
 			if (pwhistory && pwHistLen){
 				/* Make room for the new password in the history list. */
 				if (pwHistLen > 1) {
-					memmove(&pwhistory[NT_HASH_LEN], pwhistory, (pwHistLen -1)*NT_HASH_LEN );
+					memmove(&pwhistory[PW_HISTORY_ENTRY_LEN],
+						pwhistory, (pwHistLen -1)*PW_HISTORY_ENTRY_LEN );
 				}
-				/* Ensure we have a copy of the new password as the first history entry. */
-				memcpy(pwhistory, new_nt_p16, NT_HASH_LEN);
+				/* Create the new salt as the first part of the history entry. */
+				generate_random_buffer(pwhistory, PW_HISTORY_SALT_LEN);
+
+				/* Generate the md5 hash of the salt+new password as the second
+					part of the history entry. */
+
+				E_md5hash(pwhistory, new_nt_p16, &pwhistory[PW_HISTORY_SALT_LEN]);
 				pdb_set_pw_history(sampass, pwhistory, pwHistLen, PDB_CHANGED);
 			} else {
 				DEBUG (10,("pdb_get_set.c: pdb_set_plaintext_passwd: pwhistory was NULL!\n"));

@@ -1,6 +1,6 @@
                 ================================
                 Release Notes for Samba 3.0.6rc2
-                            Aug 3, 2004
+                            Aug 5, 2004
                 ================================
 
 This is a release candidate snapshot of the Samba 3.0.5 code
@@ -17,13 +17,38 @@ exact updates.
 
 Common bugs fixed in 3.0.6rc2 include:
 
-  o 
+  o Fix stalls in smbd caused by inaccessible LDAP servers.
+  o Remove various memory leaks.
+  o Fix issues in the password lockout feature.
+  o Merge security fixes for CAN-2004-0600, CAN-2004-0686 
+    from 3.0.5.
 
 New features introduced in this release include:
 
   o Support for maintaining user password history.
-
   
+------------------------
+Password History Support 
+------------------------
+
+The new password history feature allows smbd to check the new 
+password in password change requests against a list of the user's
+previous passwords.  The number of previous passwords to save can be 
+set using pdbedit (4 in this example):
+
+   root# pdbedit -P "password history" -C 4
+
+When using the ldapsam passdb backend, it is vital to secure 
+the following attributes from access by non-administrative 
+users:
+
+   * sambaNTPassword
+   * sambaLMPassword
+   * sambaPasswordHistory
+
+You should refer to your directory server's documentation on how 
+to implement this restriction).
+
 ######################################################################
 Changes
 #######
@@ -37,6 +62,7 @@ smb.conf changes
 
     Parameter Name              Action
     --------------              ------
+    ldap timeout                New
 
     
 commits
@@ -45,9 +71,108 @@ o   Jeremy Allison <jra@samba.org>
     * Add support for storing a user's password history.
       LDAP portion of the code was based on a patch from 
       Jianliang Lu <j.lu@tiesse.com>.
-      
-      
+    * Correct memory leaks found in the password change code.
+    * Fix support for the mknod command with the Linux CIFS client.
+    * Remove support for passing the new password to smbpasswd 
+      on the command line without using the -s option.
+    * Ensure home directory service number is correctly reused
+      (inspired by patches from Michael Collin Nielsen 
+      <michael@hum.aau.dk>).
+    * Fix to stop printing accounts from resetting the bas 
+      password and account lockout flags.
+    * If a account was locked out by an admin (and has a bad 
+      password count of zero) leave it locked out until an admin 
+      unlocks it (but log a message).
 
+
+o   Tom Alsberg <alsbergt@cs.huji.ac.il>
+    * Allow pdbedit to export a single user from a passdb backend.
+    
+
+o   Andrew Bartlett <abartlet@samba.org>  
+    * Improve smbd's internal random number generation.
+    * Fix a few outstanding long password changes in smbd.
+    * Fix LANMAN2 session setup code.
+
+
+o   Gerald Carter <jerry@samba.org>
+    * BUG 1520: Work around bug in Windows XP SP2 RC2 where the 
+      client sends a FindNextPrintChangeNotify() request without 
+      previously sending a FindFirstPrintChangeNotify().  Return 
+      the same error code as Windows 2000 SP4.
+    * BUG 1516: Manually declare ldap_open_with_timeout() to 
+      workaround compiler errors on IRIX (or other systems without 
+      LDAP headers).
+    * Merge security fixes for CAN-2004-0600, CAN-2004-0686 from 
+      3.0.5.
+    * Corrected syntax error in the OID for sambaUnixIdPool, 
+      sambaSidEntry, & sambaIdmapEntry object classes.
+
+
+
+o   Fabien Chevalier <fabien.chevalier@supelec.fr>
+    * Debian BUG 252591: Ensure that the return value from the 
+      number of available interfaces is initialized in case no 
+      interfaces are actually available.
+
+
+o   Guenther Deschner <gd@sernet.de> 
+    * Display share ACL entries from rpcclient.
+
+
+o   Steve French <sfrench@us.ibm.com>
+    * Fix user unmount of shares mount with suid mount.cifs.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Allow the 'idmap backend' parameter to accept a list of 
+      LDAP servers for failover purposes.
+    * Revert code in smbd to remove a tdb when it has become 
+      corrupted.
+    * Add paranoid checks when mapping SIDs to a uid/gid to 
+      ensure that the type is correct.
+    * Initial work on getting client support for sending mailslot 
+      datagrams.
+    * Add 'ldap timeout' parameter.
+    * Dont always uppercase 'afs username map'.
+    * Expand aliases for getusersids as well.
+
+
+o   James Peach <jpeach@sgi.com>
+    * More iconv detection fixes for IRIX.
+    * Compile fixed for systems that do not have C99/UNIX98 compliant 
+      vsnprintf by default.
+
+
+o   Tim Potter <tpot@samba.org>
+    * BUG 1360: Use -Bsymbolic when creating shared libraries to 
+      avoid conflicts with identical symbols in the global namespace 
+      when loading libnss_wins.so.
+
+
+o   Richard Renard <rrenard@idealx.com>
+    * Save the current password as it is being changed into the 
+      password history list.
+
+
+o   Simo Source <idra@samba.org>
+    * Tidy up parametric options in testparm output.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Add sigchild handling to winbindd to restart the child 
+      daemon if necessary.
+
+
+o   Tom Shaw <tomisfaraway@gmail.com>
+    * Use winbindd_fill_pwent() consistently.
+
+
+o   Nick Thompson <nickthompson@agere.com>
+    * Protect smbd against broken filesystems which return zero 
+      blocksize.
+      
+      
 Changes for older versions follow below:
 
       --------------------------------------------------
