@@ -516,6 +516,13 @@ char **file_lines_pload(char *syscmd, int *numlines, BOOL convert);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 
+/*The following definitions come from  lib/util_getent.c  */
+
+struct sys_grent * getgrent_list(void);
+void grent_free (struct sys_grent *glist);
+struct sys_pwent * getpwent_list(void);
+void pwent_free (struct sys_pwent *plist);
+
 /*The following definitions come from  lib/util_list.c  */
 
 BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src);
@@ -745,6 +752,15 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			      uint32 *num_domains, char ***domain_names, 
 			      DOM_SID **domain_sids);
 
+/*The following definitions come from  libsmb/cli_netlogon.c  */
+
+struct cli_state *cli_netlogon_initialise(struct cli_state *cli, 
+					  char *system_name,
+					  struct ntuser_creds *creds);
+void cli_netlogon_shutdown(struct cli_state *cli);
+uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 query_level);
+
 /*The following definitions come from  libsmb/cli_samr.c  */
 
 struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
@@ -886,6 +902,15 @@ uint32 cli_spoolss_deleteprinterdriver (
 	char			*arch,
 	char			*driver
 );
+
+/*The following definitions come from  libsmb/cli_srvsvc.c  */
+
+struct cli_state *cli_svrsvc_initialise(struct cli_state *cli, 
+					char *system_name,
+					struct ntuser_creds *creds);
+void cli_srvsvc_shutdown(struct cli_state *cli);
+uint32 cli_srvsvc_net_srv_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				   uint32 switch_value, SRV_INFO_CTR *ctr);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
@@ -3801,6 +3826,9 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
 
+/*The following definitions come from  rpcclient/cmd_netlogon.c  */
+
+
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
 
@@ -3808,6 +3836,9 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 
 BOOL get_short_archi(char *short_archi, char *long_archi);
 void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
+
+/*The following definitions come from  rpcclient/cmd_srvsvc.c  */
+
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
