@@ -447,7 +447,7 @@ v5_loop (krb5_context context,
 }
 
 static krb5_boolean
-match_appl_version(void *data, const char *appl_version)
+match_appl_version(const void *data, const char *appl_version)
 {
     unsigned minor;
     if(sscanf(appl_version, "KADM0.%u", &minor) != 1)
