@@ -38,7 +38,7 @@ PROGS = mk_cmds
 
 LIB_SOURCES = sl.c ss.c
 
-SOURCES = $(LIB_SOURCES)
+SOURCES = $(LIB_SOURCES) make_cmds.c
 
 LIB_OBJECTS = sl.o ss.o
 
