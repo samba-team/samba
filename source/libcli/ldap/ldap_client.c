@@ -459,9 +459,13 @@ int ldap_bind_sasl(struct ldap_connection *conn, const char *username, const cha
 			break;
 		}
 
-		status = gensec_update(conn->gensec, mem_ctx,
-				       response->r.BindResponse.SASL.secblob,
-				       &output);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = gensec_update(conn->gensec, mem_ctx,
+					       response->r.BindResponse.SASL.secblob,
+					       &output);
+		} else {
+			output.length = 0;
+		}
 
 		talloc_free(response);
 	}
