@@ -71,12 +71,10 @@ extern int DEBUGLEVEL;
 
 BOOL translation = False;
 
-extern int cnum;
-extern int mid;
-extern int pid;
-extern int tid;
-extern int gid;
-extern int uid;
+extern uint16 cnum;
+extern uint16 mid;
+extern uint16 pid;
+extern uint16 vuid;
 
 extern BOOL have_ip;
 extern int max_xmit;
@@ -805,17 +803,18 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
 /****************************************************************************
   do a directory listing, calling fn on each file found
   ****************************************************************************/
-void do_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo)
+void do_dir(char *inbuf,char *outbuf,char *mask,int attribute,void (*fn)(file_info *),BOOL recurse_dir, BOOL dirstoo)
 {
-  DEBUG(5,("do_dir(%s,%x,%s)\n",Mask,attribute,BOOLSTR(recurse_dir)));
+  dos_format(mask);
+  DEBUG(5,("do_dir(%s,%x,%s)\n",mask,attribute,BOOLSTR(recurse_dir)));
   if (Protocol >= PROTOCOL_LANMAN2)
     {
-      if (do_long_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo) > 0)
+      if (do_long_dir(inbuf,outbuf,mask,attribute,fn,recurse_dir,dirstoo) > 0)
 	return;
     }
 
-  expand_mask(Mask,False);
-  do_short_dir(inbuf,outbuf,Mask,attribute,fn,recurse_dir,dirstoo);
+  expand_mask(mask,False);
+  do_short_dir(inbuf,outbuf,mask,attribute,fn,recurse_dir,dirstoo);
   return;
 }
 
@@ -1051,13 +1050,13 @@ static void cmd_dir(char *inbuf,char *outbuf)
   if(mask[strlen(mask)-1]!='\\')
     pstrcat(mask,"\\");
 
-  if (next_token(NULL,buf,NULL,sizeof(buf)))
-    {
-      if (*p == '\\')
-	pstrcpy(mask,p);
-      else
-	pstrcat(mask,p);
-    }
+  if (next_token(NULL,buf,NULL,sizeof(buf))) {
+    dos_format(p);
+    if (*p == '\\')
+      pstrcpy(mask,p);
+    else
+      pstrcat(mask,p);
+  }
   else {
     pstrcat(mask,"*");
   }
@@ -1086,12 +1085,13 @@ static void cmd_du(char *inbuf,char *outbuf)
     pstrcat(mask,"\\");
 
   if (next_token(NULL,buf,NULL,sizeof(buf)))
-    {
-      if (*p == '\\')
-	pstrcpy(mask,p);
-      else
-	pstrcat(mask,p);
-    }
+  {
+    dos_format(p);
+    if (*p == '\\')
+      pstrcpy(mask,p);
+    else
+      pstrcat(mask,p);
+  }
   else {
     pstrcat(mask,"*");
   }
@@ -1135,10 +1135,10 @@ static void do_get(char *rname,char *lname,file_info *finfo1)
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
 
   if (!inbuf || !outbuf)
-    {
-      DEBUG(0,("out of memory\n"));
-      return;
-    }
+  {
+    DEBUG(0,("out of memory\n"));
+    return;
+  }
 
   bzero(outbuf,smb_size);
   set_message(outbuf,15,1 + strlen(rname),True);
@@ -3807,9 +3807,8 @@ static void usage(char *pname)
   pstrcpy(workgroup,lp_workgroup());
 
   load_interfaces();
-  pid = getpid();
-  uid = getuid();
-  gid = getgid();
+  pid = (uint16)getpid();
+  vuid = (uint16)getuid();
   mid = pid + 100;
   myumask = umask(0);
   umask(myumask);

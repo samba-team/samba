@@ -57,11 +57,10 @@ BOOL writebraw_supported = False;
 
 extern int DEBUGLEVEL;
 
-int cnum = 0;
-int pid = 0;
-int gid = 0;
-int uid = 0;
-int mid = 0;
+uint16 cnum = 0;
+uint16 pid = 0;
+uint16 vuid = 0;
+uint16 mid = 0;
 
 int max_xmit = BUFFER_SIZE;
 
@@ -80,7 +79,7 @@ setup basics in a outgoing packet
 void cli_setup_pkt(char *outbuf)
 {
   SSVAL(outbuf,smb_pid,pid);
-  SSVAL(outbuf,smb_uid,uid);
+  SSVAL(outbuf,smb_uid,vuid);
   SSVAL(outbuf,smb_mid,mid);
   if (Protocol > PROTOCOL_COREPLUS)
     {
@@ -726,10 +725,10 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup, 
     }
 
     /* use the returned uid from now on */
-    if (SVAL(inbuf,smb_uid) != uid)
+    if (SVAL(inbuf,smb_uid) != vuid)
       DEBUG(3,("Server gave us a UID of %d. We gave %d\n",
-    SVAL(inbuf,smb_uid),uid));
-    opt.server_uid = uid = SVAL(inbuf,smb_uid);
+    SVAL(inbuf,smb_uid),(int)vuid));
+    opt.server_vuid = vuid = SVAL(inbuf,smb_uid);
   }
 
   if (opt.sec_mode & 1) {

@@ -118,7 +118,7 @@ static void cli_setup_packet(struct cli_state *cli)
         cli->rap_error = 0;
         cli->nt_error = 0;
 	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->uid);
+	SSVAL(cli->outbuf,smb_uid,cli->vuid);
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
 	if (cli->protocol > PROTOCOL_CORE) {
 		SCVAL(cli->outbuf,smb_flg,0x8);
@@ -393,7 +393,10 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	p += 2;
 	pstrcpy(p,user);
 	strupper(p);
-	p += 21; p++; p += 15; p++; 
+	p += 21;
+    p++;
+    p += 15;
+    p++; 
 	pstrcpy(p, workstation); 
 	strupper(p);
 	p += 16;
@@ -420,8 +423,10 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 		}
 	}
 	
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
+	if (rparam)
+      free(rparam);
+	if (rdata)
+      free(rdata);
 	return (cli->rap_error == 0);
 }
 
@@ -476,8 +481,10 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *)
 	}
     }
   
-  if (rparam) free(rparam);
-  if (rdata) free(rdata);
+  if (rparam)
+    free(rparam);
+  if (rdata)
+    free(rdata);
 
   return(count>0);
 }
@@ -547,8 +554,10 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		}
 	}
   
-	if (rparam) free(rparam);
-	if (rdata) free(rdata);
+	if (rparam)
+      free(rparam);
+	if (rdata)
+      free(rdata);
 	
 	return(count > 0);
 }
@@ -665,8 +674,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 	      return False;
       }
 
-      /* use the returned uid from now on */
-      cli->uid = SVAL(cli->inbuf,smb_uid);
+      /* use the returned vuid from now on */
+      cli->vuid = SVAL(cli->inbuf,smb_uid);
 
       return True;
 }
@@ -1690,21 +1699,23 @@ initialise a client structure
 ****************************************************************************/
 BOOL cli_initialise(struct cli_state *cli)
 {
-	if (cli->initialised) cli_shutdown(cli);
+	if (cli->initialised)
+      cli_shutdown(cli);
 
 	memset(cli, 0, sizeof(*cli));
 	cli->fd = -1;
 	cli->cnum = -1;
-	cli->pid = getpid();
+	cli->pid = (uint16)getpid();
 	cli->mid = 1;
-	cli->uid = getuid();
+	cli->vuid = UID_FIELD_INVALID;
 	cli->protocol = PROTOCOL_NT1;
 	cli->timeout = 20000;
 	cli->bufsize = 0x10000;
 	cli->max_xmit = cli->bufsize - 4;
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
-	if (!cli->outbuf || !cli->inbuf) return False;
+	if (!cli->outbuf || !cli->inbuf)
+      return False;
 	cli->initialised = 1;
 	return True;
 }
@@ -1714,12 +1725,16 @@ shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
 {
-	if (cli->outbuf) free(cli->outbuf);
-	if (cli->inbuf) free(cli->inbuf);
+	if (cli->outbuf)
+      free(cli->outbuf);
+	if (cli->inbuf)
+      free(cli->inbuf);
 #ifdef WITH_SSL
-    if (cli->fd != -1) sslutil_disconnect(cli->fd);
+    if (cli->fd != -1)
+      sslutil_disconnect(cli->fd);
 #endif /* WITH_SSL */
-	if (cli->fd != -1) close(cli->fd);
+	if (cli->fd != -1) 
+      close(cli->fd);
 	memset(cli, 0, sizeof(*cli));
 }
 
@@ -1743,9 +1758,9 @@ void cli_sockopt(struct cli_state *cli, char *options)
 /****************************************************************************
 set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
-int cli_setpid(struct cli_state *cli, int pid)
+uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
-	int ret = cli->pid;
+	uint16 ret = cli->pid;
 	cli->pid = pid;
 	return ret;
 }
@@ -1826,14 +1841,16 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	if (!cli_session_request(cli, calling, called))
 	{
 		DEBUG(1,("failed session request\n"));
-		if (do_shutdown) cli_shutdown(cli);
+		if (do_shutdown)
+          cli_shutdown(cli);
 		return False;
 	}
 
 	if (!cli_negprot(cli))
 	{
 		DEBUG(1,("failed negprot\n"));
-		if (do_shutdown) cli_shutdown(cli);
+		if (do_shutdown)
+          cli_shutdown(cli);
 		return False;
 	}
 
@@ -1852,7 +1869,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown) cli_shutdown(cli);
+			if (do_shutdown)
+              cli_shutdown(cli);
 			return False;
 		}
 		if (do_tcon)
@@ -1861,7 +1879,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			                    (char*)passwd, strlen(passwd)))
 			{
 				DEBUG(1,("failed tcon_X\n"));
-				if (do_shutdown) cli_shutdown(cli);
+				if (do_shutdown)
+                  cli_shutdown(cli);
 				return False;
 			}
 		}
@@ -1883,7 +1902,8 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	                       cli->domain))
 		{
 			DEBUG(1,("failed session setup\n"));
-			if (do_shutdown) cli_shutdown(cli);
+			if (do_shutdown)
+              cli_shutdown(cli);
 			return False;
 		}
 
@@ -1893,13 +1913,15 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			                    (char*)nt_sess_pwd, sizeof(nt_sess_pwd)))
 			{
 				DEBUG(1,("failed tcon_X\n"));
-				if (do_shutdown) cli_shutdown(cli);
+				if (do_shutdown)
+                  cli_shutdown(cli);
 				return False;
 			}
 		}
 	}
 
-	if (do_shutdown) cli_shutdown(cli);
+	if (do_shutdown)
+      cli_shutdown(cli);
 
 	return True;
 }

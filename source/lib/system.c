@@ -464,7 +464,7 @@ char *dos_getwd(char *s)
 /*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
-int sys_chown(char *fname,int uid,int gid)
+int sys_chown(char *fname,uid_t uid,gid_t gid)
 {
 #ifndef HAVE_CHOWN
 	static int done;
@@ -633,4 +633,52 @@ void sys_srandom(unsigned int seed)
   DEBUG(0,("Error - no srandom function available !\n"));
   exit(1);
 #endif
+}
+
+/**************************************************************************
+ Wrapper for getgroups. Deals with broken (int) case.
+****************************************************************************/
+
+int sys_getgroups(int setlen, gid_t *gidset)
+{
+#if !defined(HAVE_BROKEN_GETGROUPS)
+  return getgroups(setlen, gidset);
+#else
+
+  GID_T gid;
+  GID_T *group_list;
+  int i, ngroups;
+
+  if(setlen == 0) {
+    return getgroups(setlen, &gid);
+  }
+
+  /*
+   * Broken case. We need to allocate a
+   * GID_T array of size setlen.
+   */
+
+  if(setlen < 0) {
+    errno = EINVAL; 
+    return -1;
+  } 
+
+  if((group_list = (GID_T *)malloc(setlen * sizoef(GID_T))) == NULL) {
+    DEBUG(0,("sys_getgroups: Malloc fail.\n"));
+    return -1;
+  }
+
+  if((ngroups = getgroups(setlen, group_list)) < 0) {
+    int saved_errno = errno;
+    free((char *)group_list);
+    errno = saved_errno;
+    return -1;
+  }
+
+  for(i = 0; i < ngroups; i++)
+    gidset[i] = (gid_t)group_list[i];
+
+  free((char *)group_list);
+  return ngroups;
+#endif /* HAVE_BROKEN_GETGROUPS */
 }

@@ -58,10 +58,10 @@ struct pwd_info
 
 struct cli_state {
   int fd;
-  int cnum;
-  int pid;
-  int mid;
-  int uid;
+  uint16 cnum;
+  uint16 pid;
+  uint16 mid;
+  uint16 vuid;
   int protocol;
   int sec_mode;
   int rap_error;

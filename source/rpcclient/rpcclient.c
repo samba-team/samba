@@ -739,7 +739,7 @@ enum client_action
 	{
 		case CLIENT_IPC:
 		{
-			process(&cli_info, cmd_str) ? 0 : 1;
+			process(&cli_info, cmd_str);
 			break;
 		}
 

@@ -346,7 +346,8 @@ void close_sockets(void )
 /****************************************************************************
 determine whether we are in the specified group
 ****************************************************************************/
-BOOL in_group(gid_t group, int current_gid, int ngroups, GID_T *groups)
+
+BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 {
 	int i;
 
@@ -4033,6 +4034,7 @@ struct hostent *Get_Hostbyname(char *name)
 /****************************************************************************
 check if a process exists. Does this work on all unixes?
 ****************************************************************************/
+
 BOOL process_exists(int pid)
 {
 	return(kill(pid,0) == 0 || errno != ESRCH);
@@ -4042,24 +4044,26 @@ BOOL process_exists(int pid)
 /*******************************************************************
 turn a uid into a user name
 ********************************************************************/
-char *uidtoname(int uid)
+
+char *uidtoname(uid_t uid)
 {
   static char name[40];
   struct passwd *pass = getpwuid(uid);
   if (pass) return(pass->pw_name);
-  slprintf(name, sizeof(name) - 1, "%d",uid);
+  slprintf(name, sizeof(name) - 1, "%d",(int)uid);
   return(name);
 }
 
 /*******************************************************************
 turn a gid into a group name
 ********************************************************************/
-char *gidtoname(int gid)
+
+char *gidtoname(gid_t gid)
 {
 	static char name[40];
 	struct group *grp = getgrgid(gid);
 	if (grp) return(grp->gr_name);
-	slprintf(name,sizeof(name) - 1, "%d",gid);
+	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
 
