@@ -469,12 +469,12 @@ static NTSTATUS unixuid_setpathinfo(struct ntvfs_module_context *ntvfs,
 /*
   open a file
 */
-static NTSTATUS unixuid_open(struct ntvfs_module_context *ntvfs,
-			    struct smbsrv_request *req, union smb_open *io)
+static NTSTATUS unixuid_openfile(struct ntvfs_module_context *ntvfs,
+				 struct smbsrv_request *req, union smb_open *io)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, open, (ntvfs, req, io));
+	PASS_THRU_REQ(ntvfs, req, openfile, (ntvfs, req, io));
 
 	return status;
 }
@@ -760,7 +760,7 @@ NTSTATUS ntvfs_unixuid_init(void)
 	ops.chkpath = unixuid_chkpath;
 	ops.qpathinfo = unixuid_qpathinfo;
 	ops.setpathinfo = unixuid_setpathinfo;
-	ops.open = unixuid_open;
+	ops.openfile = unixuid_openfile;
 	ops.mkdir = unixuid_mkdir;
 	ops.rmdir = unixuid_rmdir;
 	ops.rename = unixuid_rename;
