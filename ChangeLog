@@ -1,5 +1,16 @@
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/sock_principal.c (krb5_sock_to_principal): use
+	getnameinfo
+
+	* lib/krb5/krbhst.c (srv_find_realm): handle port numbers
+	consistenly in local byte order
+
+	* lib/krb5/get_default_realm.c (krb5_get_default_realm): set an
+	error string
+
+	* kuser/kinit.c (renew_validate): invert condition correctly.  get
+	v4 tickets if we succeed renewing
 	* lib/krb5/principal.c (krb5_principal_get_type): add
 	(default_v4_name_convert): add "smtp"
 
