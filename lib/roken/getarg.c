@@ -347,7 +347,7 @@ arg_match_long(struct getargs *args, size_t num_args,
 	    return ARG_ERR_NO_MATCH;
     }
     
-    if(*optarg == '\0' && !ISFLAG(*current))
+    if(*optarg == '\0' && !ISFLAG(*current) && current->type != arg_collect)
 	return ARG_ERR_NO_MATCH;
     switch(current->type){
     case arg_integer:
@@ -395,7 +395,8 @@ arg_match_long(struct getargs *args, size_t num_args,
     }
     case arg_collect:{
 	struct getarg_collect_info *c = current->value;
-	return (*c->func)(optarg + 1, argc, rargv, optind, c->data);
+	int o = argv - rargv[*optind];
+	return (*c->func)(FALSE, argc, rargv, optind, &o, c->data);
     }
     default:
 	abort ();
@@ -426,7 +427,7 @@ getarg(struct getargs *args, size_t num_args,
 		return ret;
 	    }
 	} else {
-	    for(j = 1; argv[i][j]; j++) {
+	    for(j = 1; argv[i] && j > 0 && j < strlen(argv[i]); j++) {
 		for(k = 0; k < num_args; k++) {
 		    char *optarg;
 		    if(args[k].short_name == 0)
@@ -438,6 +439,14 @@ getarg(struct getargs *args, size_t num_args,
 			}
 			if(args[k].type == arg_negative_flag){
 			    *(int*)args[k].value = 0;
+			    break;
+			} 
+			if(args[k].type == arg_collect){
+			    struct getarg_collect_info *c = args[k].value;
+			    if((*c->func)(TRUE, argc, argv, &i, &j, c->data)) {
+				*optind = i;
+				return ARG_ERR_BAD_ARG;
+			    }
 			    break;
 			}
 			if(argv[i][j + 1])
@@ -472,14 +481,6 @@ getarg(struct getargs *args, size_t num_args,
 			    }
 			    *(double*)args[k].value = tmp;
 			    goto out;
-			} else if(args[k].type == arg_collect){
-			    struct getarg_collect_info *c = args[k].value;
-			    if((*c->func)(optarg, argc, argv, &i, 
-					  c->data)) {
-				*optind = i;
-				return ARG_ERR_BAD_ARG;
-			    }
-			    goto out;
 			}
 			*optind = i;
 			return ARG_ERR_BAD_ARG;
@@ -496,6 +497,27 @@ getarg(struct getargs *args, size_t num_args,
     }
     *optind = i;
     return 0;
+}
+
+char *
+getarg_optarg(int short_flag, int argc, char **argv, int *optind, int *optarg)
+{
+    char *arg;
+    if(short_flag) {
+	if(argv[*optind][*optarg + 1] == '\0') {
+	    arg = argv[*optind + 1];
+	    *optarg = -1;
+	} else {
+	    arg = &argv[*optind][*optarg + 1];
+	    *optarg = -1;
+	}
+    } else {
+	arg = strchr(argv[*optind], '=');
+	if(arg)
+	    arg++;
+	*optarg = -1;
+    }
+    return arg;
 }
 
 #if TEST
