@@ -2063,7 +2063,6 @@ int
 tn(int argc, char **argv)
 {
     struct servent *sp = 0;
-    extern char *inet_ntoa();
 #if defined(IP_OPTIONS) && defined(IPPROTO_IP)
     char *srp = 0;
     int srlen;
@@ -2192,7 +2191,7 @@ tn(int argc, char **argv)
 	    net = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	    setuid (getuid ());
 	    if (net < 0) {
-		warn ("telnet: socket");
+		warn ("socket");
 		continue;
 	    }
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP) && defined(HAVE_SETSOCKOPT)
@@ -2236,6 +2235,9 @@ tn(int argc, char **argv)
 	    auth_encrypt_connect(connected);
 #endif
 	}
+	freeaddrinfo (ai);
+	if (connected == 0)
+	    return 0;
     }
     cmdrc(hostp, hostname);
     if (autologin && user == NULL)
