@@ -25,6 +25,9 @@
 
 #include "includes.h"
 
+int winbindd_request(int req_type, struct winbindd_request *request,
+		     struct winbindd_response *response);
+
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
@@ -53,7 +56,7 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	enum nss_status result;
+	NSS_STATUS result;
 	
 	if (!sid || !name_type)
 		return False;
@@ -64,6 +67,7 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid, enum SID_NAME_USE *name
 	ZERO_STRUCT(response);
 
 	fstrcpy(request.data.name, name);
+
 	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
 		string_to_sid(sid, response.data.sid.sid);
@@ -79,7 +83,7 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_N
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	enum nss_status result;
+	NSS_STATUS result;
 	fstring sid_str;
 	
 	/* Initialise request */
