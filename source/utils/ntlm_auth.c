@@ -405,8 +405,8 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 				      char *buf, int length) 
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
-	SPNEGO_DATA spnego;
-	DATA_BLOB request, token;
+	SPNEGO_DATA request, response;
+	DATA_BLOB token;
 	NTSTATUS status;
 	ssize_t len;
 
@@ -446,9 +446,9 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		return;
 	}
 
-	request = base64_decode_data_blob(buf + 3);
-	len = read_spnego_data(request, &spnego);
-	data_blob_free(&request);
+	token = base64_decode_data_blob(buf + 3);
+	len = read_spnego_data(token, &request);
+	data_blob_free(&token);
 
 	if (len == -1) {
 		DEBUG(1, ("GSS-SPNEGO query [%s] invalid", buf));
@@ -456,28 +456,28 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		return;
 	}
 
-	if (spnego.type == SPNEGO_NEG_TOKEN_INIT) {
+	if (request.type == SPNEGO_NEG_TOKEN_INIT) {
 
 		/* Second request from Client. This is where the
 		   client offers its mechanism to use. We currently
 		   only support NTLMSSP, the decision for Kerberos
 		   would be taken here. */
 
-		if ( (spnego.negTokenInit.mechTypes == NULL) ||
-		     (spnego.negTokenInit.mechTypes[0] == NULL) ) {
+		if ( (request.negTokenInit.mechTypes == NULL) ||
+		     (request.negTokenInit.mechTypes[0] == NULL) ) {
 			DEBUG(1, ("Client did not offer any mechanism"));
 			x_fprintf(x_stdout, "BH\n");
 			return;
 		}
 
-		if ( strcmp(spnego.negTokenInit.mechTypes[0], OID_NTLMSSP) != 0 ) {
+		if ( strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) != 0 ) {
 			DEBUG(1, ("Client did not choose NTLMSSP but %s\n",
-				  spnego.negTokenInit.mechTypes[0]));
+				  request.negTokenInit.mechTypes[0]));
 			x_fprintf(x_stdout, "BH\n");
 			return;
 		}
 
-		if ( spnego.negTokenInit.mechToken.data == NULL ) {
+		if ( request.negTokenInit.mechToken.data == NULL ) {
 			DEBUG(1, ("Client did not provide  NTLMSSP data\n"));
 			x_fprintf(x_stdout, "BH\n");
 			return;
@@ -497,59 +497,52 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 		ntlmssp_state->get_global_myname = get_winbind_netbios_name;
 
 		DEBUG(10, ("got NTLMSSP packet:\n"));
-		dump_data(10, spnego.negTokenInit.mechToken.data,
-			  spnego.negTokenInit.mechToken.length);
-
-		free_spnego_data(&spnego);
-
-		spnego.type = SPNEGO_NEG_TOKEN_TARG;
-		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
-		spnego.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+		dump_data(10, request.negTokenInit.mechToken.data,
+			  request.negTokenInit.mechToken.length);
 
 		status = ntlmssp_server_update(ntlmssp_state,
-					       spnego.negTokenInit.mechToken,
-					       &spnego.negTokenTarg.responseToken);
+					       request.negTokenInit.mechToken,
+					       &response.negTokenTarg.responseToken);
 
 	} else {
 
-		/* spnego.type == SPNEGO_NEG_TOKEN_TARG */
+		/* request.type == SPNEGO_NEG_TOKEN_TARG */
 
-		DATA_BLOB response;
-
-		if (spnego.negTokenTarg.responseToken.data == NULL) {
+		if (request.negTokenTarg.responseToken.data == NULL) {
 			DEBUG(1, ("Got a negTokenArg without a responseToken!\n"));
 			x_fprintf(x_stdout, "BH\n");
 			return;
 		}
 
 		status = ntlmssp_server_update(ntlmssp_state,
-					       spnego.negTokenTarg.responseToken,
-					       &response);
-
-		data_blob_free(&spnego.negTokenTarg.responseToken);
-
-		spnego.negTokenTarg.responseToken = response;
-
+					       request.negTokenTarg.responseToken,
+					       &response.negTokenTarg.responseToken);
 	}
 
+	free_spnego_data(&request);
+
+	response.type = SPNEGO_NEG_TOKEN_TARG;
+	response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+	response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
+
 	if (NT_STATUS_IS_OK(status)) {
-		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
+		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
 		reply_code = "AF";
 		pstr_sprintf(reply_argument, "%s\\%s",
 			     ntlmssp_state->domain, ntlmssp_state->user);
 	} else if (NT_STATUS_EQUAL(status,
 				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		spnego.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		reply_code = "TT";
 		pstr_sprintf(reply_argument, "*");
 	} else {
-		spnego.negTokenTarg.negResult = SPNEGO_REJECT;
+		response.negTokenTarg.negResult = SPNEGO_REJECT;
 		reply_code = "NA";
 		pstrcpy(reply_argument, nt_errstr(status));
 	}
 
-	len = write_spnego_data(&token, &spnego);
-	free_spnego_data(&spnego);
+	len = write_spnego_data(&token, &response);
+	free_spnego_data(&response);
 
 	if (len == -1) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
