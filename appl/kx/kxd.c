@@ -607,7 +607,7 @@ doit(int sock, int tcp_flag)
 }
 
 static char *port_str		= NULL;
-static int inetd_flag		= 0;
+static int inetd_flag		= 1;
 static int tcp_flag		= 0;
 static int version_flag		= 0;
 static int help_flag		= 0;
@@ -679,7 +679,7 @@ main (int argc, char **argv)
 #endif
     }
 
-    if (inetd_flag)
+    if (!inetd_flag)
 	mini_inetd (port);
 
      signal (SIGCHLD, childhandler);
