@@ -30,10 +30,13 @@
  * Respond to a POOL_USAGE message by sending back string form of memory
  * usage stats.
  **/
-void msg_pool_usage(int msg_type, pid_t src_pid, void *buf, size_t len)
+void msg_pool_usage(int msg_type, pid_t src_pid,
+		    void *UNUSED(buf), size_t UNUSED(len))
 {
 	char *reply;
 	TALLOC_CTX *reply_pool = talloc_init_named("msg_pool_usage");
+
+	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
 	
 	DEBUG(2,("Got POOL_USAGE\n"));
 
