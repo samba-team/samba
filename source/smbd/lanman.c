@@ -1501,10 +1501,12 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   if (!check_share_info(uLevel,str2)) return False;
   
   data_len = fixed_len = string_len = 0;
-  for (i=0;i<count;i++)
+  for (i=0;i<count;i++) {
+    fstring servicename_dos;
+    push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )   /* Maximum name length. */
+        && (strlen(servicename_dos) < 13) )   /* Maximum name length. */
     {
       total++;
       data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
@@ -1517,6 +1519,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
       else
         missed = True;
     }
+  }
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
   memset(*rdata,0,*rdata_len);
@@ -1527,9 +1530,11 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   s_len = string_len;
   for( i = 0; i < count; i++ )
     {
+    fstring servicename_dos;
+    push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )
+        && (strlen(servicename_dos) < 13) )
       {
       if( fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0 )
  	break;
