@@ -54,9 +54,9 @@ void display_alias_members(FILE *out_hnd, enum action_type action,
 			{
 				if (sid_mem[i] != NULL)
 				{
-					report(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
-					sid_mem[i], 
-					get_sid_name_use_str(type[i]));
+					report(out_hnd, "\t%s (%s)\n",
+					       sid_mem[i],
+					       get_sid_name_use_str(type[i]));
 				}
 			}
 
@@ -141,8 +141,8 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 
 			for (i = 0; i < num_mem; i++)
 			{
-				report(out_hnd, "\tMember Name:\t%s\tType:\t%s\n", 
-				        name[i], get_sid_name_use_str(type[i]));
+				report(out_hnd, "\t%s (%s)\n", name[i],
+				       get_sid_name_use_str(type[i]));
 			}
 
 			break;

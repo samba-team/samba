@@ -106,7 +106,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 * pw_buf,
 	while (((pwd = getsam21pwent(vp)) != NULL)
 	       && (*num_entries) < max_num_entries)
 	{
-		int user_name_len;
+		SAM_USER_INFO_21 *psam21;
 
 		if (start_idx > 0)
 		{
@@ -121,22 +121,26 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 * pw_buf,
 			continue;
 		}
 
-		user_name_len = strlen(pwd->nt_name);
-		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name),
-			     pwd->nt_name, user_name_len);
-		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name),
-			     user_name_len);
-		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-		memset(pw_buf[(*num_entries)].nt_pwd, 0,  16);
+		psam21 = &pw_buf[(*num_entries)];
+
+		unistr2_assign_ascii_str(&psam21->uni_user_name, pwd->nt_name);
+		make_unihdr_from_unistr2(&psam21->hdr_user_name,
+					 &psam21->uni_user_name);
+		psam21->user_rid = pwd->user_rid;
+		unistr2_assign_ascii_str(&psam21->uni_full_name,
+					 pwd->full_name);
+		make_unihdr_from_unistr2(&psam21->hdr_full_name,
+					 &psam21->uni_full_name);
+		memset(psam21->nt_pwd, 0,  16);
 
 		/* Now check if the NT compatible password is available. */
 		if (pwd->smb_nt_passwd != NULL)
 		{
-			memcpy(pw_buf[(*num_entries)].nt_pwd,
+			memcpy(psam21->nt_pwd,
 			       pwd->smb_nt_passwd, 16);
 		}
 
-		pw_buf[(*num_entries)].acb_info = (uint16) pwd->acct_ctrl;
+		psam21->acb_info = (uint16) pwd->acct_ctrl;
 
 		DEBUG(5, ("entry idx: %d user %s, rid 0x%x, acb %x",
 			  (*num_entries), pwd->nt_name,

@@ -388,7 +388,8 @@ BOOL lsa_io_r_open_pol(char *desc, LSA_R_OPEN_POL * r_p, prs_struct * ps,
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol");
 	depth++;
 
-	smb_io_pol_hnd("", &(r_p->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &r_p->pol, ps, depth))
+		return False;
 
 	prs_uint32("status", ps, depth, &(r_p->status));
 
@@ -462,11 +463,10 @@ BOOL lsa_io_r_open_pol2(char *desc, LSA_R_OPEN_POL2 * r_p, prs_struct * ps,
 	prs_debug(ps, depth, desc, "lsa_io_r_open_pol2");
 	depth++;
 
-	smb_io_pol_hnd("", &(r_p->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &r_p->pol, ps, depth))
+		return False;
 
 	prs_uint32("status", ps, depth, &(r_p->status));
-
-	return True;
 
 	return True;
 }
@@ -500,7 +500,9 @@ BOOL lsa_io_q_query_sec_obj(char *desc, LSA_Q_QUERY_SEC_OBJ * q_q,
 	prs_debug(ps, depth, desc, "lsa_io_q_query_sec_obj");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
 	prs_uint32("sec_info", ps, depth, &(q_q->sec_info));
 
 	return True;
@@ -558,7 +560,8 @@ BOOL lsa_io_q_query(char *desc, LSA_Q_QUERY_INFO * q_q, prs_struct * ps,
 	prs_debug(ps, depth, desc, "lsa_io_q_query");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 
 	prs_uint16("info_class", ps, depth, &q_q->info_class);
 
@@ -601,7 +604,8 @@ BOOL lsa_io_q_create_secret(char *desc, LSA_Q_CREATE_SECRET * q_o,
 	prs_debug(ps, depth, desc, "lsa_io_q_create_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_o->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_o->pol, ps, depth))
+		return False;
 
 	prs_align(ps);
 	smb_io_unihdr("", &(q_o->hdr_secret), ps, depth);
@@ -625,7 +629,8 @@ BOOL lsa_io_r_create_secret(char *desc, LSA_R_CREATE_SECRET * r_o,
 	prs_debug(ps, depth, desc, "lsa_io_r_create_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(r_o->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &r_o->pol, ps, depth))
+		return False;
 
 	prs_uint32("status", ps, depth, &(r_o->status));
 
@@ -667,7 +672,8 @@ BOOL lsa_io_q_open_secret(char *desc, LSA_Q_OPEN_SECRET * q_o,
 	prs_debug(ps, depth, desc, "lsa_io_q_open_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_o->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_o->pol, ps, depth))
+		return False;
 
 	prs_align(ps);
 	smb_io_unihdr("", &(q_o->hdr_secret), ps, depth);
@@ -691,7 +697,8 @@ BOOL lsa_io_r_open_secret(char *desc, LSA_R_OPEN_SECRET * r_o,
 	prs_debug(ps, depth, desc, "lsa_io_r_open_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(r_o->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &r_o->pol, ps, depth))
+		return False;
 
 	prs_uint32("status", ps, depth, &(r_o->status));
 
@@ -818,7 +825,9 @@ BOOL lsa_io_q_query_secret(char *desc, LSA_Q_QUERY_SECRET * q_q,
 	prs_debug(ps, depth, desc, "lsa_io_q_query_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
+
 	lsa_io_secret("", &(q_q->sec), ps, depth);
 
 	return True;
@@ -855,7 +864,8 @@ BOOL lsa_io_q_set_secret(char *desc, LSA_Q_SET_SECRET * q_q, prs_struct * ps,
 	prs_debug(ps, depth, desc, "lsa_io_q_set_secret");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 
 	lsa_io_secret_value("", &(q_q->value), ps, depth);
 	prs_uint32("unknown", ps, depth, &(q_q->unknown));
@@ -912,8 +922,8 @@ BOOL lsa_io_q_enum_trust_dom(char *desc, LSA_Q_ENUM_TRUST_DOM * q_e,
 	prs_debug(ps, depth, desc, "lsa_io_q_enum_trust_dom");
 	depth++;
 
-
-	smb_io_pol_hnd("", &(q_e->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_e->pol, ps, depth))
+		return False;
 
 	prs_uint32("enum_context ", ps, depth, &(q_e->enum_context));
 	prs_uint32("preferred_len", ps, depth, &(q_e->preferred_len));
@@ -1256,7 +1266,9 @@ BOOL lsa_io_q_lookup_sids(char *desc, LSA_Q_LOOKUP_SIDS * q_s,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol_hnd", &(q_s->pol), ps, depth);	/* policy handle */
+	if (!smb_io_pol_hnd("", &q_s->pol, ps, depth))
+		return False;
+
 	lsa_io_sid_enum("sids   ", &(q_s->sids), ps, depth);	/* sids to be looked up */
 	lsa_io_trans_names("names  ", &(q_s->names), ps, depth);	/* translated names */
 	smb_io_lookup_level("switch ", &(q_s->level), ps, depth);	/* lookup level */
@@ -1346,7 +1358,8 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES * q_r,
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("", &(q_r->pol), ps, depth);	/* policy handle */
+	if (!smb_io_pol_hnd("", &q_r->pol, ps, depth))
+		return False;
 
 	prs_uint32("num_entries    ", ps, depth, &(q_r->num_entries));
 	prs_uint32("num_entries2   ", ps, depth, &(q_r->num_entries2));
@@ -1449,7 +1462,8 @@ BOOL lsa_io_q_close(char *desc, LSA_Q_CLOSE * q_c, prs_struct * ps, int depth)
 	prs_debug(ps, depth, desc, "lsa_io_q_close");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_c->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_c->pol, ps, depth))
+		return False;
 
 	return True;
 }
@@ -1465,7 +1479,8 @@ BOOL lsa_io_r_close(char *desc, LSA_R_CLOSE * r_c, prs_struct * ps, int depth)
 	prs_debug(ps, depth, desc, "lsa_io_r_close");
 	depth++;
 
-	smb_io_pol_hnd("", &(r_c->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &r_c->pol, ps, depth))
+		return False;
 
 	prs_uint32("status", ps, depth, &(r_c->status));
 
@@ -1602,6 +1617,23 @@ static BOOL lsa_io_dom_query_5(char *desc,  DOM_QUERY_3 *d_q,
 }
 
 /*******************************************************************
+reads or writes a dom query structure.
+********************************************************************/
+static BOOL lsa_io_dom_query_6(char *desc, DOM_QUERY_6 *d_q,
+			       prs_struct *ps, int depth)
+{
+	if (d_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "lsa_io_dom_query_6");
+	depth++;
+
+	prs_uint16("server_role", ps, depth, &d_q->server_role);
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes an LSA_INFO_UNION structure.
 ********************************************************************/
 static BOOL lsa_io_info_union(char *desc, LSA_INFO_UNION *info,
@@ -1617,19 +1649,25 @@ static BOOL lsa_io_info_union(char *desc, LSA_INFO_UNION *info,
 	{
 		case 2:
 		{
-			return lsa_io_dom_query_2("", &(info->id2),
+			return lsa_io_dom_query_2("", &info->id2,
 						  ps, depth);
 			break;
 		}
 		case 3:
 		{
-			return lsa_io_dom_query_3("", &(info->id3),
+			return lsa_io_dom_query_3("", &info->id3,
 						  ps, depth);
 			break;
 		}
 		case 5:
 		{
-			return lsa_io_dom_query_5("", &(info->id5),
+			return lsa_io_dom_query_5("", &info->id5, 
+						  ps, depth);
+			break;
+		}
+		case 6:
+		{
+			return lsa_io_dom_query_6("", &info->id6,
 						  ps, depth);
 			break;
 		}
@@ -1670,6 +1708,7 @@ BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO * r_q,
 		}
 	}
 
+	prs_align(ps);
 	prs_uint32("status", ps, depth, &(r_q->status));
 
 	return True;
@@ -1687,7 +1726,8 @@ BOOL lsa_io_q_set_info(char *desc, LSA_Q_SET_INFO * q_q,
 	prs_debug(ps, depth, desc, "lsa_io_q_set_info");
 	depth++;
 
-	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
+	if (!smb_io_pol_hnd("", &q_q->pol, ps, depth))
+		return False;
 
 	prs_uint16("info_class", ps, depth, &q_q->info_class);
 	prs_align(ps);
@@ -1888,10 +1928,10 @@ BOOL lsa_io_q_sid_get_privs(char *desc, LSA_Q_SID_GET_PRIVS * q_o,
 	prs_debug(ps, depth, desc, "lsa_io_q_sid_get_privs");
 	depth++;
 
-	if(!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
+	if (!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
 		return False;
 
-	if(!smb_io_dom_sid2("", &q_o->sid, ps, depth))
+	if (!smb_io_dom_sid2("", &q_o->sid, ps, depth))
 		return False;
 
 	return True;
@@ -2003,10 +2043,10 @@ BOOL lsa_io_q_open_trusted_dom(char *desc, LSA_Q_OPEN_TRUSTED_DOM * q_o,
 	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_dom");
 	depth++;
 
-	if(!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
+	if (!smb_io_pol_hnd("", &q_o->hnd, ps, depth))
 		return False;
 
-	if(!smb_io_dom_sid2("trusted sid", &q_o->sid, ps, depth))
+	if (!smb_io_dom_sid2("trusted sid", &q_o->sid, ps, depth))
 		return False;
 
 	prs_align(ps);
@@ -2024,7 +2064,7 @@ BOOL lsa_io_r_open_trusted_dom(char *desc, LSA_R_OPEN_TRUSTED_DOM * r_p,
 	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_dom");
 	depth++;
 
-	if(!smb_io_pol_hnd("", &r_p->hnd, ps, depth))
+	if (!smb_io_pol_hnd("", &r_p->hnd, ps, depth))
 		return False;
 
 	prs_uint32("status", ps, depth, &r_p->status);

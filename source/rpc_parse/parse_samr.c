@@ -848,13 +848,16 @@ static BOOL sam_io_sam_str1(char *desc, SAM_STR1 * sam, uint32 acct_buf,
 	depth++;
 
 	prs_align(ps);
+	if (!smb_io_unistr2("name", &sam->uni_acct_name, acct_buf, ps, depth))
+		return False;
 
-	smb_io_unistr2("name", &(sam->uni_acct_name), acct_buf, ps, depth);	/* account name unicode string */
 	prs_align(ps);
-	smb_io_unistr2("full_name", &(sam->uni_full_name), name_buf, ps, depth);	/* full name unicode string */
+	if (!smb_io_unistr2("desc", &sam->uni_acct_desc, desc_buf, ps, depth))
+		return False;
+
 	prs_align(ps);
-	smb_io_unistr2("desc", &(sam->uni_acct_desc), desc_buf, ps, depth);	/* account desc unicode string */
-	prs_align(ps);
+	if (!smb_io_unistr2("full", &sam->uni_full_name, name_buf, ps, depth))
+		return False;
 
 	return True;
 }
@@ -904,9 +907,12 @@ static BOOL sam_io_sam_entry1(char *desc, SAM_ENTRY1 * sam,
 	prs_uint16("acb_info ", ps, depth, &(sam->acb_info));
 	prs_uint16("pad      ", ps, depth, &(sam->pad));
 
-	smb_io_unihdr("unihdr", &(sam->hdr_acct_name), ps, depth);	/* account name unicode string header */
-	smb_io_unihdr("unihdr", &(sam->hdr_user_name), ps, depth);	/* account name unicode string header */
-	smb_io_unihdr("unihdr", &(sam->hdr_user_desc), ps, depth);	/* account name unicode string header */
+	if (!smb_io_unihdr("hdr_acct_name", &sam->hdr_acct_name, ps, depth))
+		return False;
+	if (!smb_io_unihdr("hdr_user_desc", &sam->hdr_user_desc, ps, depth))
+		return False;
+	if (!smb_io_unihdr("hdr_user_name", &sam->hdr_user_name, ps, depth))
+		return False;
 
 	return True;
 }
@@ -4921,7 +4927,6 @@ BOOL samr_io_q_query_userinfo(char *desc, SAMR_Q_QUERY_USERINFO * q_u,
 	smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
 
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));	/* 0x0015 or 0x0011 */
-	prs_align(ps);
 
 	return True;
 }
