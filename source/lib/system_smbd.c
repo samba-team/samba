@@ -61,13 +61,14 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 
 	ngrp_saved = getgroups(ngrp_saved, gids_saved);
 	if (ngrp_saved == -1) {
-		free(gids_saved);
+		SAFE_FREE(gids_saved);
 		/* very strange! */
 		return -1;
 	}
 
 	if (initgroups(user, gid) != 0) {
-		free(gids_saved);
+		DEBUG(0, ("getgrouplist_internals: initgroups() failed!\n"));
+		SAFE_FREE(gids_saved);
 		return -1;
 	}
 

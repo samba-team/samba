@@ -237,6 +237,23 @@ static BOOL cli_session_setup_plaintext(struct cli_state *cli, char *user,
 	return True;
 }
 
+static void set_signing_on_cli (struct cli_state *cli, char* pass, uint8 response[24]) 
+{
+	uint8 zero_sig[8];
+	ZERO_STRUCT(zero_sig);
+	if (memcmp(&cli->outbuf[smb_ss_field], zero_sig, 8) != 0) {
+		cli->sign_info.use_smb_signing = True;
+		cli_calculate_mac_key(cli, pass, response);
+	}
+}
+
+static void set_temp_signing_on_cli(struct cli_state *cli) 
+{
+	if (cli->sign_info.negotiated_smb_signing) {
+		cli->sign_info.temp_smb_signing = True;
+	}
+}
+
 
 /**
    do a NT1 NTLM/LM encrypted session setup
@@ -256,7 +273,6 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	uchar pword[24];
 	uchar ntpword[24];
 	char *p;
-	BOOL tried_signing = False;
 
 	if (passlen > sizeof(pword) || ntpasslen > sizeof(ntpword)) {
 		return False;
@@ -268,12 +284,12 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		ntpasslen = 24;
 		SMBencrypt(pass,cli->secblob.data,pword);
 		SMBNTencrypt(pass,cli->secblob.data,ntpword);
-		if (!cli->sign_info.use_smb_signing && cli->sign_info.negotiated_smb_signing) {
-			cli_calculate_mac_key(cli, pass, ntpword);
-			tried_signing = True;
-		}
+
+		set_temp_signing_on_cli(cli);
+
 	} else {
-		/* pre-encrypted password supplied.  Only used for security=server, can't do
+		/* pre-encrypted password supplied.  Only used for 
+		   security=server, can't do
 		   signing becouse we don't have oringial key */
 		memcpy(pword, pass, 24);
 		if (ntpasslen == 24) {
@@ -307,21 +323,15 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
 
-	cli_send_smb(cli);
+	if (!cli_send_smb(cli)) {
+		return False;
+	}
+
 	if (!cli_receive_smb(cli)) {
-		if (tried_signing) {
-			/* We only use it if we have a successful non-guest connect */
-			cli->sign_info.use_smb_signing = False;
-		}
 		return False;
 	}
 
 	show_msg(cli->inbuf);
-
-	if (tried_signing && (cli_is_error(cli) || SVAL(cli->inbuf,smb_vwv2) /* guest */)) {
-		/* We only use it if we have a successful non-guest connect */
-		cli->sign_info.use_smb_signing = False;
-	}
 
 	if (cli_is_error(cli)) {
 		return False;
@@ -336,6 +346,11 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
 
 	fstrcpy(cli->user_name, user);
+
+	if (passlen != 24) {
+		/* Have plaintext orginal */
+		set_signing_on_cli(cli, pass, ntpword);
+	}
 
 	return True;
 }
@@ -360,6 +375,9 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 	set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
+
+	set_temp_signing_on_cli(cli);
+
 	cli_setup_packet(cli);
 			
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -375,8 +393,8 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
 	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
 	cli_setup_bcc(cli, p);
-
 	cli_send_smb(cli);
+
 	if (!cli_receive_smb(cli))
 		return blob2;
 
@@ -451,7 +469,7 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	uint32 neg_flags;
 
 	neg_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_LM_KEY | 
+		NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM;
 
 	memset(sess_key, 0, 16);
@@ -525,7 +543,13 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 	data_blob_free(&auth);
 	data_blob_free(&blob);
 
-	return !cli_is_error(cli);
+	if (cli_is_error(cli)) {
+		return False;
+	}
+
+	set_signing_on_cli(cli, pass, nthash);
+
+	return True;
 }
 
 /****************************************************************************
@@ -540,9 +564,6 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	uint8 guid[16];
 	int i;
 	BOOL got_kerberos_mechanism = False;
-
-	/* spnego security cannot use SMB signing (for now). */
-	cli->sign_info.use_smb_signing = False;
 
 	DEBUG(2,("Doing spnego session setup (blob length=%d)\n", cli->secblob.length));
 
@@ -642,6 +663,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
 	}
+
+	/* Indidicate signing */
+	
 
 	/* if the server supports extended security then use SPNEGO */
 	if (cli->capabilities & CAP_EXTENDED_SECURITY) {
@@ -891,12 +915,8 @@ BOOL cli_negprot(struct cli_state *cli)
 				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
 		}
 
-		/* A way to attempt to force SMB signing */
-		if (getenv("CLI_FORCE_SMB_SIGNING"))
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
 			cli->sign_info.negotiated_smb_signing = True;
-                                   
-		if (cli->sign_info.negotiated_smb_signing && !(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED))
-			cli->sign_info.negotiated_smb_signing = False;
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;

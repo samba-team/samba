@@ -106,7 +106,10 @@ static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB ntv2_response,
 	client_key_data = data_blob(ntv2_response.data+16, ntv2_response.length-16);
 	memcpy(client_response, ntv2_response.data, sizeof(client_response));
 
-	ntv2_owf_gen(part_passwd, user, domain, kr);
+	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
+		return False;
+	}
+
 	SMBOWFencrypt_ntv2(kr, sec_blob, client_key_data, value_from_encryption);
 	if (user_sess_key != NULL)
 	{
