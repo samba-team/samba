@@ -40,7 +40,7 @@ static BOOL run_netbench(struct cli_state *cli, int client)
 
 	nb_setup(cli, client, warmup);
 
-	asprintf(&cname, "client%d", client);
+	asprintf(&cname, "client%d", client+1);
 
 	f = fopen(loadfile, "r");
 
