@@ -619,6 +619,9 @@ char *uni_strncpy(char *destbuf, const char *srcbuf, int len);
 uint32 buffer2_to_uint32(const BUFFER2 *str);
 void buffer2_to_multistr(char *dest, const BUFFER2 *str, size_t maxlen);
 void buffer4_to_str(char *dest, const BUFFER4 *str, size_t maxlen);
+BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
+UNISTR2 *unistr2_dup(const UNISTR2 *name);
+void unistr2_free(UNISTR2 *name);
 
 /*The following definitions come from  libsmb/clientgen.c  */
 
@@ -2220,9 +2223,6 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 BOOL make_buffer2(BUFFER2 *str, const char *buf, int len);
 BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_buf_unistr2(UNISTR2 *str, uint32 *ptr, char *buf);
-BOOL copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
-UNISTR2 *unistr2_dup(const UNISTR2 *name);
-void unistr2_free(UNISTR2 *name);
 BOOL make_string2(STRING2 *str, char *buf, int len);
 BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 BOOL make_unistr2(UNISTR2 *str, const char *buf, int len);
@@ -3031,6 +3031,8 @@ BOOL make_srv_tprt_info0(TPRT_INFO_0 *tp0,
 				uint32 num_vcs, uint32 trans_addr_len,
 				char *trans_name, char *trans_addr,
 				char *addr_name);
+void free_srv_tprt_info_0(SRV_TPRT_INFO_0 *tp0);
+void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR *ctr);
 BOOL make_srv_q_net_tprt_enum(SRV_Q_NET_TPRT_ENUM *q_n, 
 				char *srv_name, 
 				uint32 tprt_level, SRV_TPRT_INFO_CTR *ctr,

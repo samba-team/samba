@@ -1207,12 +1207,24 @@ static BOOL srv_io_srv_tprt_info_0(char *desc,  SRV_TPRT_INFO_0 *tp0, prs_struct
 	{
 		uint32 i;
 		uint32 num_entries = tp0->num_entries_read;
-		if (num_entries > MAX_TPRT_ENTRIES)
-		{
-			num_entries = MAX_TPRT_ENTRIES; /* report this! */
-		}
 
 		prs_uint32("num_entries_read2", ps, depth, &(tp0->num_entries_read2));
+
+		if (ps->io)
+		{
+			/* reading */
+			tp0->info_0 = (TPRT_INFO_0*)malloc(num_entries *
+			              sizeof(tp0->info_0[0]));
+
+			tp0->info_0_str = (TPRT_INFO_0_STR*)malloc(num_entries *
+			              sizeof(tp0->info_0_str[0]));
+
+			if (tp0->info_0 == NULL || tp0->info_0_str == NULL)
+			{
+				free_srv_tprt_info_0(tp0);
+				return False;
+			}
+		}
 
 		for (i = 0; i < num_entries; i++)
 		{
@@ -1231,7 +1243,30 @@ static BOOL srv_io_srv_tprt_info_0(char *desc,  SRV_TPRT_INFO_0 *tp0, prs_struct
 		prs_align(ps);
 	}
 
+	if (!ps->io)
+	{
+		/* writing */
+		free_srv_tprt_info_0(tp0);
+	}
+
 	return True;
+}
+
+/*******************************************************************
+frees a structure.
+********************************************************************/
+void free_srv_tprt_info_0(SRV_TPRT_INFO_0 *tp0)
+{
+	if (tp0->info_0 != NULL)
+	{
+		free(tp0->info_0);
+		tp0->info_0 = NULL;
+	}
+	if (tp0->info_0_str != NULL)
+	{
+		free(tp0->info_0_str);
+		tp0->info_0_str = NULL;
+	}
 }
 
 /*******************************************************************
@@ -1268,6 +1303,27 @@ static BOOL srv_io_srv_tprt_ctr(char *desc,  SRV_TPRT_INFO_CTR *ctr, prs_struct 
 	}
 
 	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void free_srv_tprt_ctr(SRV_TPRT_INFO_CTR *ctr)
+{
+	switch (ctr->switch_value)
+	{
+		case 0:
+		{
+			free_srv_tprt_info_0(&(ctr->tprt.info0));
+			break;
+		}
+		default:
+		{
+			DEBUG(5,("no transport info at switch_value %d\n",
+				 ctr->switch_value));
+			break;
+		}
+	}
 }
 
 /*******************************************************************

@@ -161,6 +161,8 @@ void cmd_srv_enum_tprt(struct client_info *info)
 	{
 		DEBUG(5,("cmd_srv_enum_tprt: query failed\n"));
 	}
+
+	free_srv_tprt_ctr(&ctr);
 }
 
 /****************************************************************************

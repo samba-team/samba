@@ -282,8 +282,8 @@ typedef struct srv_tprt_info_0_info
 	uint32 ptr_tprt_info;                        /* Buffer */
 	uint32 num_entries_read2;                    /* EntriesRead */
 
-	TPRT_INFO_0     info_0    [MAX_TPRT_ENTRIES]; /* transport entry pointers */
-	TPRT_INFO_0_STR info_0_str[MAX_TPRT_ENTRIES]; /* transport entry strings */
+	TPRT_INFO_0     *info_0; /* transport entry pointers */
+	TPRT_INFO_0_STR *info_0_str; /* transport entry strings */
 
 } SRV_TPRT_INFO_0;
 
