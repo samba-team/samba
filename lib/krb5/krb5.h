@@ -717,6 +717,13 @@ krb5_build_principal_va(krb5_context context,
 			va_list ap);
 
 krb5_error_code
+krb5_build_principal_va_ext(krb5_context context, 
+			    krb5_principal *principal, 
+			    int rlen,
+			    const char *realm,
+			    va_list ap);
+
+krb5_error_code
 krb5_build_principal_ext(krb5_context context,
 			 krb5_principal *principal,
 			 int rlen,
@@ -852,6 +859,10 @@ krb5_decrypt (krb5_context context,
 	      int etype,
 	      const krb5_keyblock *keyblock,
 	      krb5_data *result);
+
+krb5_error_code
+krb5_generate_random_des_key(krb5_context context,
+			     krb5_keyblock *keyblock);
 
 krb5_error_code
 krb5_generate_random_keyblock(krb5_context,

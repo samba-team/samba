@@ -3,6 +3,13 @@
 #ifndef __CACHE_H__
 #define __CACHE_H__
 
+void
+krb5_free_ccache(krb5_context context,
+		 krb5_ccache val);
+
+krb5_error_code
+krb5_cc_register(krb5_context context, krb5_cc_ops *ops, int override);
+
 krb5_error_code
 krb5_cc_resolve(krb5_context context,
 		const char *residual,

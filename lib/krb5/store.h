@@ -35,6 +35,12 @@ krb5_store_string(krb5_storage *sp, char *s);
 krb5_error_code
 krb5_ret_string(krb5_storage *sp, char **string);
 
+krb5_error_code
+krb5_store_stringz(krb5_storage *sp, char *s);
+
+krb5_error_code
+krb5_ret_stringz(krb5_storage *sp, char **string);
+
 /* mem */
 
 size_t mem_store(krb5_storage *sp, void *data, size_t size);
