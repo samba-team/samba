@@ -403,13 +403,23 @@ slave#  /usr/heimdal/libexec/ipropd-slave master &
 
 Salting is used to make it harder to precalculate all possible
 keys. Using a salt increases the search space to make it almost
-impossible to precalculate all keys. In salting you just append the salt
-to the password, or somehow merge the password with the salt.
+impossible to precalculate all keys. Salting is the process of mixing a
+public string (the salt) with the password, then sending it through an
+encryption-type specific string-to-key function that will output the
+fixed size encryption key.
 
-In Kerberos 5 the salting is determined by the encryption-type, except
-in case of @code{des}. In @code{des} there is the kerberos 4 salting
-(none at all) or the afs-salting (using the cell (realm in
-afs-lingo)). @code{[kadmin]default_keys} in @file{krb5.conf} controls
+In Kerberos 5 the salt is determined by the encryption-type, except
+in some special cases.
+
+In @code{des} there is the Kerberos 4 salt
+(none at all) or the afs-salt (using the cell (realm in
+afs-lingo)).
+
+In @code{arcfour} (the encryption type that Microsoft Windows 2000 uses)
+there is no salt. This is to be compatible with NTLM keys in Windows
+NT 4.
+
+@code{[kadmin]default_keys} in @file{krb5.conf} controls
 what salting to use,
 
 The syntax of @code{[kadmin]default_keys} is
