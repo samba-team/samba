@@ -439,6 +439,10 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, char *user,
 		return False;
 	}
 
+#if 0
+	file_save("chal.dat", blob.data, blob.length);
+#endif
+
 	/* the server gives us back two challenges */
 	if (!spnego_parse_challenge(blob, &chal1, &chal2)) {
 		return False;
@@ -498,6 +502,10 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 		DEBUG(3,("server didn't supply a full spnego negprot\n"));
 		goto ntlmssp;
 	}
+
+#if 0
+	file_save("negprot.dat", cli->secblob.data, cli->secblob.length);
+#endif
 
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
