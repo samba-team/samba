@@ -2,6 +2,17 @@
 
 @chapter Setting up a realm
 
+@menu
+* Configuration file::          
+* Creating the database::       
+* keytabs::                     
+* Remote administration::       
+* Password changing::           
+* Testing clients and servers::  
+* Slave Servers::               
+* Incremental propagation::     
+@end menu
+
 A
 @cindex realm
 realm is an administrative domain.  The name of a Kerberos realm is
@@ -9,6 +20,7 @@ usually the Internet domain name in uppercase.  Call your realm the same
 as your Internet domain name if you do not have strong reasons for not
 doing so.  It will make life easier for you and everyone else.
 
+@node  Configuration file, Creating the database, Setting up a realm, Setting up a realm
 @section Configuration file
 
 To setup a realm you will first have to create a configuration file:
@@ -78,6 +90,7 @@ If you use a realm name equal to your domain name, you can omit the
 SRV-record for your realm, or your kerberos server has CNAME called
 @samp{kerberos.my.realm}, you can omit the @samp{realms} section too.
 
+@node Creating the database, keytabs, Configuration file, Setting up a realm
 @section Creating the database
 
 The database library will look for the database in @file{/var/heimdal},
@@ -149,6 +162,7 @@ krbtgt/MY.REALM@@MY.REALM 1:0:1:52b53b61c875ce16:-:0:7:c8943be ...
 kadmin/changepw@@MY.REALM 1:0:1:f48c8af2b340e9fb:-:0:7:e3e6088 ...
 @end smallexample
 
+@node keytabs, Remote administration, Creating the database, Setting up a realm
 @section keytabs
 
 To extract a service ticket from the database and put it in a keytab you
@@ -170,6 +184,7 @@ Version  Type             Principal
      1   des3-cbc-sha1    host/my.host.name@@MY.REALM
 @end example
 
+@node Remote administration, Password changing, keytabs, Setting up a realm
 @section Remote administration
 
 The administration server, @samp{kadmind}, can be started by
@@ -202,6 +217,7 @@ the principal to only apply for the subjects that match the pattern.
 The patters are of the same type as those used in shell globbing, see
 @url{none,,fnmatch(3)}.
 
+@node Password changing, Testing clients and servers, Remote administration, Setting up a realm
 @section Password changing
 
 To allow users to change their passwords, you should run @samp{kpasswdd}.
@@ -248,12 +264,14 @@ the patch available at
 If no password quality checking function is configured, it is only
 verified that it is at least six characters of length.
 
+@node Testing clients and servers, Slave Servers, Password changing, Setting up a realm
 @section Testing clients and servers
 
 Now you should be able to run all the clients and servers.  Refer to the
 appropriate man pages for information on how to use them.
 
-@section Slave servers
+@node Slave Servers, Incremental propagation, Testing clients and servers, Setting up a realm
+@section Slave servers, Incremental propagation, Testing clients and servers, Setting up a realm
 
 It is desirable to have at least one backup (slave) server in case the
 master server fails. It is possible to have any number of such slave
@@ -301,3 +319,59 @@ automate this you will want to start
 @code{hprop} on the master to regularly propagate the database.
 Starting the propagation once an hour from @code{cron} is probably a
 good idea.
+
+@node Incremental propagation,  , Slave Servers, Setting up a realm
+@section Incremental propagation
+
+There is also a newer and still somewhat experimental mechanism for
+doing incremental propagation in Heimdal.  Instead of sending the whole
+database regularly, it sends the changes as they happen on the master to
+the slaves.  The master keeps track of all the changes by assigned a
+version number to every change to the database.  The slaves know which
+was the latest version they saw and in this way it can be determined if
+they are in sync or not.  A log of all the changes is kept on the master
+and when a slave is at an older versioner than the oldest one in the
+log, the whole database has to be sent.
+
+Protocol-wise, all the slaves connects to the master and as a greeting
+tell it the latest version that they have (@samp{IHAVE} message).  The
+master then responds by sending all the changes between that version and
+the current version at the master (a series of @samp{FORYOU} messages)
+or the whole database in a @samp{TELLYOUEVERYTHING} message.
+
+@subsection Configuring incremental propagation
+
+The program that runs on the master is @code{ipropd-master} and all
+clients run @code{ipropd-slave}.
+
+Create the file @file{/var/heimdal/slaves} on the master containing all
+the slaves that the database should be propagated to.  Each line contains
+the full name of the principal (for example
+@samp{iprop/hemligare.foo.se@@FOO.SE}).
+
+You should already have @samp{iprop/tcp} defined as 212, in your
+@file{/etc/services}.  Otherwise, or if you need to use a different port
+for some peculiar reason, you can use the @kbd{--port} option.  This is
+useful when you have multiple realms to distribute from one server.
+
+Then you need to create these principals that you added in the
+configuration file.  Create one @samp{iprop/hostname} for the master and
+for every slave.
+
+
+@example
+master# /usr/heimdal/sbin/ktutil get iprop/`hostname`
+@end example
+
+The next step is to start the @code{ipropd-master} process on the master
+server.  The @code{ipropd-master} listens on the UNIX-socket
+@file{/var/heimdal/signal} to know when changes have been made to the
+database so they can be propagated to the slaves.  There is also a
+safety feature of testing the version number regularly (every 30
+seconds) to see if it has been modified by some means that do not raise
+this signal.  Then, start @code{ipropd-slave} on all the slaves:
+
+@example
+master# /usr/heimdal/libexec/ipropd-master &
+slave#  /usr/heimdal/libexec/ipropd-slave master &
+@end example
