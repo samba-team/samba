@@ -3,6 +3,7 @@
    Version 1.9.
    Username handling
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 1997-2001.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -390,8 +391,7 @@ static BOOL user_in_unix_group_list(const char *user,const char *gname)
  	 */
  
  	if (pass) {
- 		gptr = getgrgid(pass->pw_gid);
- 		if (gptr && strequal(gptr->gr_name,gname)) {
+ 		if (strequal(gname,gidtoname(pass->pw_gid))) {
  			DEBUG(10,("user_in_unix_group_list: group %s is primary group.\n", gname ));
  			return True;
  		}
@@ -421,12 +421,15 @@ static BOOL user_in_unix_group_list(const char *user,const char *gname)
 BOOL user_in_group_list(const char *user, const char *gname)
 {
 	BOOL winbind_answered = False;
-	BOOL ret = user_in_winbind_group_list(user, gname, &winbind_answered);
+	BOOL ret;
 
-	if (winbind_answered)
-		return ret;
+	ret = user_in_winbind_group_list(user, gname, &winbind_answered);
+	if (!winbind_answered)
+		ret = user_in_unix_group_list(user, gname);
 
-	return user_in_unix_group_list(user, gname);	
+	if (ret)
+		DEBUG(10,("user_in_group_list: user |%s| is in group |%s|\n", user, gname));
+	return ret;
 }
 
 /****************************************************************************
@@ -442,6 +445,9 @@ BOOL user_in_list(const char *user,char **list)
 	DEBUG(10,("user_in_list: checking user %s in list\n", user));
 
 	while (*list) {
+
+		DEBUG(10,("user_in_list: checking user |%s| in group |%s|\n", user, *list));
+
 		/*
 		 * Check raw username.
 		 */
@@ -518,8 +524,10 @@ BOOL user_in_list(const char *user,char **list)
 				/* Check if user name is in the Windows group */
 				ret = user_in_winbind_group_list(user, *list, &winbind_answered);
 
-				if (winbind_answered && ret == True)
+				if (winbind_answered && ret == True) {
+					DEBUG(10,("user_in_list: user |%s| is in group |%s|\n", user, *list));
 					return ret;
+				}
 			}
 		}
     
