@@ -16,9 +16,12 @@ SMB_SUBSYSTEM(TORTURE_RPC,[],
 		torture/rpc/scanner.o torture/rpc/autoidl.o torture/rpc/netlogon.o],
 		torture/rpc/torture_rpc_public_proto.h)
 
+SMB_SUBSYSTEM(TORTURE_NBENCH,[],
+		[torture/nbench/nbio.o torture/nbench/nbench.o])
+
 SMB_SUBSYSTEM(TORTURE,[],
-		[torture/torture.o torture/torture_util.o torture/nbio.o torture/scanner.o \
+		[torture/torture.o torture/torture_util.o torture/scanner.o \
 		torture/utable.o torture/denytest.o torture/mangle_test.o \
 		torture/aliases.o libcli/raw/clirewrite.o \$(TORTURE_RAW_OBJS) \
-		\$(TORTURE_RPC_OBJS)],
+		\$(TORTURE_RPC_OBJS) \$(TORTURE_NBENCH_OBJS)],
 		torture/torture_public_proto.h)
