@@ -34,120 +34,94 @@ static int interpret_long_filename(struct cli_state *cli,
 				   int level,char *p,file_info *finfo)
 {
 	extern file_info def_finfo;
+	file_info finfo2;
+	int len;
+	char *base = p;
 
-	if (finfo)
-		memcpy(finfo,&def_finfo,sizeof(*finfo));
+	if (!finfo) finfo = &finfo2;
+
+	memcpy(finfo,&def_finfo,sizeof(*finfo));
 
 	switch (level)
 		{
 		case 1: /* OS/2 understands this */
-			if (finfo) {
-				/* these dates are converted to GMT by make_unix_date */
-				finfo->ctime = make_unix_date2(p+4);
-				finfo->atime = make_unix_date2(p+8);
-				finfo->mtime = make_unix_date2(p+12);
-				finfo->size = IVAL(p,16);
-				finfo->mode = CVAL(p,24);
-				clistr_pull(cli, finfo->name, p+27,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE);
-			}
-			return(28 + CVAL(p,26));
+			/* these dates are converted to GMT by
+                           make_unix_date */
+			finfo->ctime = make_unix_date2(p+4);
+			finfo->atime = make_unix_date2(p+8);
+			finfo->mtime = make_unix_date2(p+12);
+			finfo->size = IVAL(p,16);
+			finfo->mode = CVAL(p,24);
+			len = CVAL(p, 26);
+			p += 27;
+			p += clistr_align_in(cli, p, 0);
+			p += clistr_pull(cli, finfo->name, p,
+				    sizeof(finfo->name),
+				    len, 
+				    STR_TERMINATE);
+			return PTR_DIFF(p, base);
 
 		case 2: /* this is what OS/2 uses mostly */
-			if (finfo) {
-				/* these dates are converted to GMT by make_unix_date */
-				finfo->ctime = make_unix_date2(p+4);
-				finfo->atime = make_unix_date2(p+8);
-				finfo->mtime = make_unix_date2(p+12);
-				finfo->size = IVAL(p,16);
-				finfo->mode = CVAL(p,24);
-				clistr_pull(cli, finfo->name, p+31,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE);
-			}
-			return(32 + CVAL(p,30));
-
-			/* levels 3 and 4 are untested */
-		case 3:
-			if (finfo) {
-				/* these dates are probably like the other ones */
-				finfo->ctime = make_unix_date2(p+8);
-				finfo->atime = make_unix_date2(p+12);
-				finfo->mtime = make_unix_date2(p+16);
-				finfo->size = IVAL(p,20);
-				finfo->mode = CVAL(p,28);
-				clistr_pull(cli, finfo->name, p+33,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE);
-			}
-			return(SVAL(p,4)+4);
-			
-		case 4:
-			if (finfo) {
-				/* these dates are probably like the other ones */
-				finfo->ctime = make_unix_date2(p+8);
-				finfo->atime = make_unix_date2(p+12);
-				finfo->mtime = make_unix_date2(p+16);
-				finfo->size = IVAL(p,20);
-				finfo->mode = CVAL(p,28);
-				clistr_pull(cli, finfo->name, p+37,
-					    sizeof(finfo->name),
-					    -1, 
-					    STR_TERMINATE);
-			}
-			return(SVAL(p,4)+4);
+			/* these dates are converted to GMT by
+                           make_unix_date */
+			finfo->ctime = make_unix_date2(p+4);
+			finfo->atime = make_unix_date2(p+8);
+			finfo->mtime = make_unix_date2(p+12);
+			finfo->size = IVAL(p,16);
+			finfo->mode = CVAL(p,24);
+			len = CVAL(p, 30);
+			p += 31;
+			p += clistr_pull(cli, finfo->name, p,
+					 sizeof(finfo->name),
+					 len, 
+					 STR_NOALIGN);
+			return PTR_DIFF(p, base) + 1;
 			
 		case 260: /* NT uses this, but also accepts 2 */
-			if (finfo) {
-				int ret = SVAL(p,0);
-				int namelen, slen;
-				p += 4; /* next entry offset */
-				p += 4; /* fileindex */
+		{
+			int namelen, slen;
+			p += 4; /* next entry offset */
+			p += 4; /* fileindex */
 				
-				/* these dates appear to arrive in a
-				   weird way. It seems to be localtime
-				   plus the serverzone given in the
-				   initial connect. This is GMT when
-				   DST is not in effect and one hour
-				   from GMT otherwise. Can this really
-				   be right??
-
-				   I suppose this could be called
-				   kludge-GMT. Is is the GMT you get
-				   by using the current DST setting on
-				   a different localtime. It will be
-				   cheap to calculate, I suppose, as
-				   no DST tables will be needed */
-
-				finfo->ctime = interpret_long_date(p); p += 8;
-				finfo->atime = interpret_long_date(p); p += 8;
-				finfo->mtime = interpret_long_date(p); p += 8; p += 8;
-				finfo->size = IVAL(p,0); p += 8;
-				p += 8; /* alloc size */
-				finfo->mode = CVAL(p,0); p += 4;
-				namelen = IVAL(p,0); p += 4;
-				p += 4; /* EA size */
-				slen = SVAL(p, 0);
-				p += 2; 
-				{
-					/* stupid NT bugs. grr */
-					int flags = 0;
-					if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
-					clistr_pull(cli, finfo->short_name, p,
-						    sizeof(finfo->short_name),
-						    24, flags);
-				}
-				p += 24; /* short name? */	  
-				clistr_pull(cli, finfo->name, p,
-					    sizeof(finfo->name),
-					    namelen, 0);
-				return(ret);
+			/* these dates appear to arrive in a
+			   weird way. It seems to be localtime
+			   plus the serverzone given in the
+			   initial connect. This is GMT when
+			   DST is not in effect and one hour
+			   from GMT otherwise. Can this really
+			   be right??
+			   
+			   I suppose this could be called
+			   kludge-GMT. Is is the GMT you get
+			   by using the current DST setting on
+			   a different localtime. It will be
+			   cheap to calculate, I suppose, as
+			   no DST tables will be needed */
+			
+			finfo->ctime = interpret_long_date(p); p += 8;
+			finfo->atime = interpret_long_date(p); p += 8;
+			finfo->mtime = interpret_long_date(p); p += 8; p += 8;
+			finfo->size = IVAL(p,0); p += 8;
+			p += 8; /* alloc size */
+			finfo->mode = CVAL(p,0); p += 4;
+			namelen = IVAL(p,0); p += 4;
+			p += 4; /* EA size */
+			slen = SVAL(p, 0);
+			p += 2; 
+			{
+				/* stupid NT bugs. grr */
+				int flags = 0;
+				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
+				clistr_pull(cli, finfo->short_name, p,
+					    sizeof(finfo->short_name),
+					    24, flags);
 			}
-			return(SVAL(p,0));
+			p += 24; /* short name? */	  
+			clistr_pull(cli, finfo->name, p,
+				    sizeof(finfo->name),
+				    namelen, 0);
+			return SVAL(base, 0);
+		}
 		}
 	
 	DEBUG(1,("Unknown long filename format %d\n",level));
