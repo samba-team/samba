@@ -1435,7 +1435,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	DEBUG(10,("open_file_shared : share_mode = %x\n", fsp->share_mode ));
 
 	if (Access) {
-		(*Access) = open_mode;
+		(*Access) = (SET_DENY_MODE(deny_mode) | SET_OPEN_MODE(open_mode));
 	}
 
 	action = 0;
