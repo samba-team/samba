@@ -44,18 +44,28 @@ int forwardable;
 int preauth = 1;
 int renewable;
 int version_flag = 0;
+int help_flag = 0;
 
 struct getargs args[] = {
-    { "forwardable",		'f', arg_flag, &forwardable, NULL },
-    { "preauthentication",	'p', arg_negative_flag, &preauth, NULL },
-    { "renewable",		'r', arg_flag, &renewable, NULL },
-    { "version", 		0,   arg_flag, &version_flag, NULL }
+    { "forwardable",		'f', arg_flag, &forwardable, 
+      "get forwardable tickets" },
+    { "preauthentication",	'p', arg_negative_flag, &preauth, 
+      "disable preauthentication" },
+    { "renewable",		'r', arg_flag, &renewable, 
+      "get renewable tickets" },
+    { "version", 		0,   arg_flag, &version_flag, 
+      "print version" },
+    { "help",			0,   arg_flag, &help_flag, 
+      "112" }
 };
 
 static void
 usage (void)
 {
-    errx (1, "Usage: %s [-f] [-p] [principal]", __progname);
+    arg_printusage (args,
+		    sizeof(args)/sizeof(*args),
+		    "[principal]");
+    exit (1);
 }
 
 int
@@ -81,9 +91,12 @@ main (int argc, char **argv)
     memset(&cred, 0, sizeof(cred));
     options.i = 0;
     
-    while(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
+    if(getarg(args, sizeof(args) / sizeof(args[0]), argc, argv, &optind))
 	usage();
     
+    if (help_flag)
+	usage ();
+
     if(version_flag){
 	printf("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
 	exit(0);
