@@ -63,6 +63,7 @@
 
 #define BUILTIN_ALIAS_RID_REPLICATOR    (0x00000228L)
 #define BUILTIN_ALIAS_RID_RAS_SERVERS   (0x00000229L)
+#define BUILTIN_ALIAS_RID_PRE_2K_ACCESS (0x0000022aL)
 
 /*
  * Masks for mappings between unix uid and gid types and
