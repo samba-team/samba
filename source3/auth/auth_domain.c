@@ -276,7 +276,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
          */
 
 	nt_status = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						   user_info->internal_username.str, user_info->domain.str, 
+						   user_info->smb_name.str, user_info->domain.str, 
 						   user_info->wksta_name.str, chal, 
 						   user_info->lm_resp, user_info->nt_resp, 
 						   &info3);
