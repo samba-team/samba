@@ -112,7 +112,7 @@ afslog_cell(krb5_context context, krb5_ccache id,
 	if(verbose)
 	    krb5_warnx(context, "Cell \"%s\" expanded to \"%s\"", cell, c);
     }
-    return k5_afsklog(context, id, c, realm);
+    return krb5_afslog(context, id, c, realm);
 }
 
 static int
@@ -175,5 +175,5 @@ int main(int argc, char **argv)
 	    afslog_cell(context, id, argv[i], 1);
     }    
     if(num == 0)
-	k5_afsklog(context, id, NULL, NULL);
+	krb5_afslog(context, id, NULL, NULL);
 }
