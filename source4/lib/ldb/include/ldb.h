@@ -145,7 +145,7 @@ struct ldb_backend_ops {
   for pool allocators
 */
 struct ldb_alloc_ops {
-	void *(*alloc)(void *context, void *ptr, size_t size);
+	void *(*alloc)(const void *context, void *ptr, size_t size);
 	void *context;
 };
 
@@ -320,7 +320,7 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
   which often take a context argument
 */
 int ldb_set_alloc(struct ldb_context *ldb,
-		  void *(*alloc)(void *context, void *ptr, size_t size),
+		  void *(*alloc)(const void *context, void *ptr, size_t size),
 		  void *context);
 
 /*

@@ -42,7 +42,7 @@ int gendb_search_v(struct ldb_context *ldb,
 		return -1;
 	}
 
-	ldb_set_alloc(ldb, talloc_ldb_alloc, mem_ctx);
+	ldb_set_alloc(ldb, talloc_realloc_fn, mem_ctx);
 
 	count = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, attrs, res);
 
