@@ -50,6 +50,7 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB credentials;
+	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
 	mem_ctx = talloc_init("dcerpc_bind_auth");
 	if (!mem_ctx) {
@@ -79,7 +80,7 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 	p->security_state.auth_info->auth_pad_length = 0;
 	p->security_state.auth_info->auth_reserved = 0;
 	p->security_state.auth_info->auth_context_id = random();
-	p->security_state.auth_info->credentials = data_blob(NULL, 0);
+	p->security_state.auth_info->credentials = null_data_blob;
 
 	if (p->flags & DCERPC_SEAL) {
 		p->security_state.auth_info->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
@@ -90,7 +91,7 @@ NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p, uint8_t auth_type,
 	}
 
 	status = gensec_update(p->security_state.generic_state, mem_ctx,
-			       p->security_state.auth_info->credentials,
+			       null_data_blob,
 			       &credentials);
 	
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
