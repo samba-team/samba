@@ -108,9 +108,11 @@ rtbl_add_column (rtbl_t table, const char *header, unsigned int flags)
 	free (col);
 	return ENOMEM;
     }
-    col->flags = flags;
+    col->prefix   = NULL;
+    col->width    = 0;
+    col->flags    = flags;
     col->num_rows = 0;
-    col->rows = NULL;
+    col->rows     = NULL;
     table->columns[table->num_columns++] = col;
     return 0;
 }
