@@ -99,6 +99,7 @@ static void rpcclient_stop(void)
 ****************************************************************************/
 void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state *cli)
 {
+	pstring cmd;
 	int i;
 
 	/* establish connections.  nothing to stop these being re-established. */
@@ -114,9 +115,22 @@ void run_enums_test(int num_ops, struct client_info *cli_info, struct cli_state 
 	
 	for (i = 0; i < num_ops; i++)
 	{
+		set_first_token("");
 		cmd_srv_enum_sess(cli_info);
+		set_first_token("");
 		cmd_srv_enum_shares(cli_info);
+		set_first_token("");
 		cmd_srv_enum_files(cli_info);
+
+		if (password[0] != 0)
+		{
+			slprintf(cmd, sizeof(cmd)-1, "1");
+			set_first_token(cmd);
+		}
+		else
+		{
+			set_first_token("");
+		}
 		cmd_srv_enum_conn(cli_info);
 	}
 
