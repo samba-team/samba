@@ -3267,35 +3267,44 @@ struct
 	     int,int,char **,char **,int *,int *);
   int flags;
 } api_commands[] = {
-  {"RNetShareEnum",	0,	api_RNetShareEnum,0},
-  {"RNetShareGetInfo",	1,	api_RNetShareGetInfo,0},
-  {"RNetServerGetInfo",	13,	api_RNetServerGetInfo,0},
-  {"RNetGroupGetUsers", 52,	api_RNetGroupGetUsers,0},
-  {"RNetUserGetInfo",	56,	api_RNetUserGetInfo,0},
-  {"NetUserGetGroups",	59,	api_NetUserGetGroups,0},
-  {"NetWkstaGetInfo",	63,	api_NetWkstaGetInfo,0},
-  {"DosPrintQEnum",	69,	api_DosPrintQEnum,0},
-  {"DosPrintQGetInfo",	70,	api_DosPrintQGetInfo,0},
-  {"WPrintQueuePause",  74, api_WPrintQueueCtrl,0},
-  {"WPrintQueueResume", 75, api_WPrintQueueCtrl,0},
-  {"WPrintJobEnumerate",76,	api_WPrintJobEnumerate,0},
-  {"WPrintJobGetInfo",	77,	api_WPrintJobGetInfo,0},
-  {"RDosPrintJobDel",	81,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobPause",	82,	api_RDosPrintJobDel,0},
-  {"RDosPrintJobResume",83,	api_RDosPrintJobDel,0},
-  {"WPrintDestEnum",	84,	api_WPrintDestEnum,0},
-  {"WPrintDestGetInfo",	85,	api_WPrintDestGetInfo,0},
-  {"NetRemoteTOD",	91,	api_NetRemoteTOD,0},
-  {"WPrintQueuePurge",	103,	api_WPrintQueueCtrl,0},
-  {"NetServerEnum",	104,	api_RNetServerEnum,0},
-  {"WAccessGetUserPerms",105,	api_WAccessGetUserPerms,0},
-  {"SetUserPassword",	115,	api_SetUserPassword,0},
-  {"WWkstaUserLogon",	132,	api_WWkstaUserLogon,0},
-  {"PrintJobInfo",	147,	api_PrintJobInfo,0},
-  {"WPrintDriverEnum",	205,	api_WPrintDriverEnum,0},
-  {"WPrintQProcEnum",	206,	api_WPrintQProcEnum,0},
-  {"WPrintPortEnum",	207,	api_WPrintPortEnum,0},
-  {"SamOEMChangePassword", 214, api_SamOEMChangePassword,0},
+  {"RNetShareEnum",	RAP_WshareEnum,		api_RNetShareEnum,0},
+  {"RNetShareGetInfo",	RAP_WshareGetInfo,	api_RNetShareGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetShareAdd",	RAP_WshareAdd,		api_RNetShareAdd,0},
+#endif
+  {"RNetServerGetInfo",	RAP_WserverGetInfo,	api_RNetServerGetInfo,0},
+#if 0 /* Not yet implemented. */
+  {"RNetGroupEnum",	RAP_WGroupEnum,		api_RNetGroupEnum,0},
+#endif
+  {"RNetGroupGetUsers", RAP_WGroupGetUsers,	api_RNetGroupGetUsers,0},
+#if 0 /* Not yet implemented. */
+  {"RNetUserEnum", 	RAP_WUserEnum,		api_RNetUserEnum,0},
+#endif
+  {"RNetUserGetInfo",	RAP_WUserGetInfo,	api_RNetUserGetInfo,0},
+  {"NetUserGetGroups",	RAP_WUserGetGroups,	api_NetUserGetGroups,0},
+  {"NetWkstaGetInfo",	RAP_WWkstaGetInfo,	api_NetWkstaGetInfo,0},
+  {"DosPrintQEnum",	RAP_WPrintQEnum,	api_DosPrintQEnum,0},
+  {"DosPrintQGetInfo",	RAP_WPrintQGetInfo,	api_DosPrintQGetInfo,0},
+  {"WPrintQueuePause",  RAP_WPrintQPause,	api_WPrintQueueCtrl,0},
+  {"WPrintQueueResume", RAP_WPrintQContinue,	api_WPrintQueueCtrl,0},
+  {"WPrintJobEnumerate",RAP_WPrintJobEnum,	api_WPrintJobEnumerate,0},
+  {"WPrintJobGetInfo",	RAP_WPrintJobGetInfo,	api_WPrintJobGetInfo,0},
+  {"RDosPrintJobDel",	RAP_WPrintJobDel,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobPause",	RAP_WPrintJobPause,	api_RDosPrintJobDel,0},
+  {"RDosPrintJobResume",RAP_WPrintJobContinue,	api_RDosPrintJobDel,0},
+  {"WPrintDestEnum",	RAP_WPrintDestEnum,	api_WPrintDestEnum,0},
+  {"WPrintDestGetInfo",	RAP_WPrintDestGetInfo,	api_WPrintDestGetInfo,0},
+  {"NetRemoteTOD",	RAP_NetRemoteTOD,	api_NetRemoteTOD,0},
+  {"WPrintQueuePurge",	RAP_WPrintQPurge,	api_WPrintQueueCtrl,0},
+  {"NetServerEnum",	RAP_NetServerEnum2,	api_RNetServerEnum,0},
+  {"WAccessGetUserPerms",RAP_WAccessGetUserPerms,api_WAccessGetUserPerms,0},
+  {"SetUserPassword",	RAP_WUserPasswordSet2,	api_SetUserPassword,0},
+  {"WWkstaUserLogon",	RAP_WWkstaUserLogon,	api_WWkstaUserLogon,0},
+  {"PrintJobInfo",	RAP_WPrintJobSetInfo,	api_PrintJobInfo,0},
+  {"WPrintDriverEnum",	RAP_WPrintDriverEnum,	api_WPrintDriverEnum,0},
+  {"WPrintQProcEnum",	RAP_WPrintQProcessorEnum,api_WPrintQProcEnum,0},
+  {"WPrintPortEnum",	RAP_WPrintPortEnum,	api_WPrintPortEnum,0},
+  {"SamOEMChangePassword",RAP_SamOEMChgPasswordUser2_P,api_SamOEMChangePassword,0},
   {NULL,		-1,	api_Unsupported,0}};
 
 
@@ -3364,10 +3373,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
 
   send_trans_reply(outbuf, rparam, rparam_len, rdata, rdata_len, False);
 
-  if (rdata )
-    free(rdata);
-  if (rparam)
-    free(rparam);
+  SAFE_FREE(rdata);
+  SAFE_FREE(rparam);
   
   return -1;
 }

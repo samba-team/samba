@@ -667,6 +667,8 @@ extern int errno;
 
 #include "mapping.h"
 
+#include "rap.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif
