@@ -83,11 +83,8 @@ gss_decode(void *app_data, void *buf, int len, int level)
 			   &output,
 			   &conf_state,
 			   &qop_state);
-    if(GSS_ERROR(maj_stat)) {
-	printf("Error unwrapping GSS packet: %x, %d, len = %d.\n", 
-	       maj_stat, min_stat, len);
-	abort();
-    }
+    if(GSS_ERROR(maj_stat))
+	return -1;
     memmove(buf, output.value, output.length);
     return output.length;
 }
@@ -270,8 +267,11 @@ gss_auth(void *app_data, char *host)
 					&output_token,
 					NULL,
 					NULL);
-	if (GSS_ERROR(maj_stat))
-	    abort ();
+	if (GSS_ERROR(maj_stat)) {
+	    printf("Error initializing security context: %x.%d\n", 
+		   maj_stat, min_stat);
+	    return -1;
+	}
 	gss_release_buffer(&min_stat, &input);
 	if (output_token.length != 0) {
 	    base64_encode(output_token.value, output_token.length, &p);
@@ -289,15 +289,18 @@ gss_auth(void *app_data, char *host)
 	if (maj_stat & GSS_S_CONTINUE_NEEDED) {
 	    p = strstr(reply_string, "ADAT=");
 	    if(p == NULL){
-		abort();
+		printf("Error: expected ADAT in reply.\n");
+		return -1;
 	    } else {
 		p+=5;
 		input.value = malloc(strlen(p));
 		input.length = base64_decode(p, input.value);
 	    }
 	} else {
-	    if(code != 235)
-		abort();
+	    if(code != 235) {
+		printf("Unrecognized response code: %d\n", code);
+		return -1;
+	    }
 	    context_established = 1;
 	}
     }
