@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -162,8 +162,8 @@ der_get_oid (const unsigned char *p, size_t len,
     if (len < 1)
 	return ASN1_OVERRUN;
 
-    data->components = malloc(len * sizeof(*data->components));
-    if (data->components == NULL && len != 0)
+    data->components = malloc((len + 1) * sizeof(*data->components));
+    if (data->components == NULL)
 	return ENOMEM;
     data->components[0] = (*p) / 40;
     data->components[1] = (*p) % 40;
@@ -178,7 +178,7 @@ der_get_oid (const unsigned char *p, size_t len,
 	} while (len > 0 && p[-1] & 0x80);
 	data->components[n] = u;
     }
-    if (p[-1] & 0x80) {
+    if (len > 0 && p[-1] & 0x80) {
 	free_oid (data);
 	return ASN1_OVERRUN;
     }
