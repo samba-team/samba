@@ -48,21 +48,21 @@ This should be moved in a more generic lib.
 
 static BOOL spoolss_io_system_time(char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
 {
-	if(!prs_uint16("year", ps, depth, &(systime->year)))
+	if(!prs_uint16("year", ps, depth, &systime->year))
 		return False;
-	if(!prs_uint16("month", ps, depth, &(systime->month)))
+	if(!prs_uint16("month", ps, depth, &systime->month))
 		return False;
-	if(!prs_uint16("dayofweek", ps, depth, &(systime->dayofweek)))
+	if(!prs_uint16("dayofweek", ps, depth, &systime->dayofweek))
 		return False;
-	if(!prs_uint16("day", ps, depth, &(systime->day)))
+	if(!prs_uint16("day", ps, depth, &systime->day))
 		return False;
-	if(!prs_uint16("hour", ps, depth, &(systime->hour)))
+	if(!prs_uint16("hour", ps, depth, &systime->hour))
 		return False;
-	if(!prs_uint16("minute", ps, depth, &(systime->minute)))
+	if(!prs_uint16("minute", ps, depth, &systime->minute))
 		return False;
-	if(!prs_uint16("second", ps, depth, &(systime->second)))
+	if(!prs_uint16("second", ps, depth, &systime->second))
 		return False;
-	if(!prs_uint16("milliseconds", ps, depth, &(systime->milliseconds)))
+	if(!prs_uint16("milliseconds", ps, depth, &systime->milliseconds))
 		return False;
 
 	return True;
