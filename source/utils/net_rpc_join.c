@@ -35,6 +35,61 @@
                 goto done; \
         }
 
+
+/**
+ * confirm that a domain join is still valid
+ *
+ * @return A shell status integer (0 for success)
+ *
+ **/
+int net_rpc_join_ok(const char *domain)
+{
+	struct cli_state *cli;
+	uchar stored_md4_trust_password[16];
+	int retval = 1;
+	uint32 channel;
+	NTSTATUS result;
+
+	/* Connect to remote machine */
+	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
+		return 1;
+	}
+
+	if (!cli_nt_session_open(cli, PIPE_NETLOGON)) {
+		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
+		goto done;
+	}
+
+	if (!secrets_fetch_trust_account_password(domain,
+						  stored_md4_trust_password, NULL)) {
+		DEBUG(0,("Could not reterive domain trust secret"));
+		goto done;
+	}
+	
+	if (lp_server_role() == ROLE_DOMAIN_BDC || 
+	    lp_server_role() == ROLE_DOMAIN_PDC) {
+		channel = SEC_CHAN_BDC;
+	} else {
+		channel = SEC_CHAN_WKSTA;
+	}
+
+	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
+					 channel,
+					 stored_md4_trust_password),
+			  "error in domain join verification");
+	
+	retval = 0;		/* Success! */
+	
+done:
+	/* Close down pipe - this will clean up open policy handles */
+	if (cli->nt_pipe_fnum)
+		cli_nt_session_close(cli);
+
+	cli_shutdown(cli);
+
+	return retval;
+}
+
 /**
  * Join a domain using the administrator username and password
  *
@@ -67,7 +122,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	char *clear_trust_password = NULL;
 	fstring ucs2_trust_password;
 	int ucs2_pw_len;
-	uchar stored_md4_trust_password[16];
 	uchar pwbuf[516], sess_key[16];
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_24 p24;
@@ -80,8 +134,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	fstring domain;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
-	const char *acct_name;
-	
+	char *acct_name;
+	const char *const_acct_name;
+
 	/* Connect to remote machine */
 
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_PDC))) 
@@ -133,6 +188,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Create domain user */
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname); 
 	strlower(acct_name);
+	const_acct_name = acct_name;
 
         acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
@@ -162,7 +218,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
 						  &domain_pol, flags,
-						  1, &acct_name, &num_rids,
+						  1, &const_acct_name, 
+						  &num_rids,
 						  &user_rids, &name_types),
 			    ("error looking up rid for user %s: %s\n",
 			     acct_name, nt_errstr(result)));
@@ -253,28 +310,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* Now check the whole process from top-to-bottom */
-
 	cli_samr_close(cli, mem_ctx, &user_pol);
-
 	cli_nt_session_close(cli); /* Done with this pipe */
 
-	if (!cli_nt_session_open(cli, PIPE_NETLOGON)) {
-		DEBUG(0, ("Error connecting to NETLOGON pipe\n"));
-		goto done;
-	}
-
-	if (!secrets_fetch_trust_account_password(domain, 
-						  stored_md4_trust_password, NULL)) {
-		DEBUG(0, ("Could not reterive secrets we just stored!"));
-		goto done;
-	}
-	
-	CHECK_RPC_ERR(new_cli_nt_setup_creds(cli, 
-					     (acb_info & ACB_SVRTRUST) ? SEC_CHAN_BDC : SEC_CHAN_WKSTA, 
-					     stored_md4_trust_password),
-			  "error in domain join verification");
-	
-	retval = 0;		/* Success! */
+	retval = net_rpc_join_ok(domain);
 	
 done:
 	/* Close down pipe - this will clean up open policy handles */
@@ -296,4 +335,29 @@ done:
 	SAFE_FREE(clear_trust_password);
 
 	return retval;
+}
+
+
+/**
+ * check that a join is OK
+ *
+ * @return A shell status integer (0 for success)
+ *
+ **/
+int net_rpc_testjoin(int argc, const char **argv) 
+{
+	char *domain = lp_workgroup();
+
+	domain = smb_xstrdup(domain);
+
+	/* Display success or failure */
+	if (net_rpc_join_ok(domain) != 0) {
+		fprintf(stderr,"Join to domain '%s' is not valid\n",domain);
+		free(domain);
+		return -1;
+	}
+
+	printf("Join to '%s' is OK\n",domain);
+	free(domain);
+	return 0;
 }

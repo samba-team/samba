@@ -32,7 +32,7 @@ struct user_auth_info {
 /* How low can we go? */
 
 enum tree_level {LEV_WORKGROUP, LEV_SERVER, LEV_SHARE};
-enum tree_level level = LEV_SHARE;
+static enum tree_level level = LEV_SHARE;
 
 static void usage(void)
 {
