@@ -1421,66 +1421,6 @@ BOOL smb_io_pol_hnd(char *desc, POLICY_HND *pol, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Reads or writes a dom query structure.
-********************************************************************/
-
-static BOOL smb_io_dom_query(char *desc, DOM_QUERY *d_q, prs_struct *ps, int depth)
-{
-	if (d_q == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_dom_query");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint16("uni_dom_max_len", ps, depth, &d_q->uni_dom_max_len)) /* domain name string length * 2 */
-		return False;
-	if(!prs_uint16("uni_dom_str_len", ps, depth, &d_q->uni_dom_str_len)) /* domain name string length * 2 */
-		return False;
-
-	if(!prs_uint32("buffer_dom_name", ps, depth, &d_q->buffer_dom_name)) /* undocumented domain name string buffer pointer */
-		return False;
-	if(!prs_uint32("buffer_dom_sid ", ps, depth, &d_q->buffer_dom_sid)) /* undocumented domain SID string buffer pointer */
-		return False;
-
-	if(!smb_io_unistr2("unistr2", &d_q->uni_domain_name, d_q->buffer_dom_name, ps, depth)) /* domain name (unicode string) */
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if (d_q->buffer_dom_sid != 0) {
-		if(!smb_io_dom_sid2("", &d_q->dom_sid, ps, depth)) /* domain SID */
-			return False;
-	} else {
-		memset((char *)&d_q->dom_sid, '\0', sizeof(d_q->dom_sid));
-	}
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a dom query structure.
-********************************************************************/
-
-BOOL smb_io_dom_query_3(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	return smb_io_dom_query("", d_q, ps, depth);
-}
-
-/*******************************************************************
- Reads or writes a dom query structure.
-********************************************************************/
-
-BOOL smb_io_dom_query_5(char *desc, DOM_QUERY_3 *d_q, prs_struct *ps, int depth)
-{
-	return smb_io_dom_query("", d_q, ps, depth);
-}
-
-
-/*******************************************************************
  Reads or writes a UNISTR3 structure.
 ********************************************************************/
 
