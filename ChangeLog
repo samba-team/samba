@@ -1,7 +1,52 @@
+2003-11-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/pkinit.c: clean up
+	
+	* lib/krb5/krb5.h: make pkinit_win2k_compatible into a flag field
+	
+	* lib/krb5/pkinit.c: remove most compile depencies clean up
+	
+	* kdc/pkinit.c: print an error and turn of pkinit if openssl
+	failed to load
+
+	* kdc/config.c: read pkinit (pki-muble) configuration options
+	
+	* kdc/kerberos5.c: add pkinit support
+	
+	* kdc/kdc_locl.h: add prototypes for pkinit
+	
+	* kdc/pkinit.c: PKINIT patch from Daniel Kouril and Petr Holub, I
+	removed the dependency on valicert asn1 parser, remove smartcard
+	and globus support (for now). Work to be done on this: DH support,
+	Globus support, Smartcard support, windows support (MS implements
+	-09 of the draft), make it conform to the new draft
+	
+	* lib/krb5/pkinit.c: fix bugs, improve error reporting
+
+2003-11-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kuser/kinit.c: add some "struct foo;" glue for pkinit
+	structures that isn't used
+
+	* lib/krb5/pkinit.c: clean up, make remove depenency on openssl's
+	api
+
+	* lib/krb5/krb5_locl.h: add some glue for pkinit add reference
+	counter to _krb5_get_init_creds_opt_private
+	
+	* lib/krb5/init_creds.c: reference count krb5_get_init_creds_opt
+	private component to avoid copy all the data in it
+	
+	* lib/krb5/crypto.c (AES_string_to_key): fix memory leak
+
+	* lib/krb5/init_creds_pw.c (init_cred_loop): fix memory leak
+	
+	* lib/krb5/heim_threads.h: include pthread.h in the pthread case
+	
 2003-11-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* kpasswd/kpasswdd.c (main): parse kdc.conf From: Jeffrey
-	Hutzelman <jhutz@cmu.edu>
+	* kpasswd/kpasswdd.c (main): parse kdc.conf
+	From: Jeffrey Hutzelman <jhutz@cmu.edu>
 	
 2003-11-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
