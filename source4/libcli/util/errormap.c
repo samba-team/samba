@@ -1534,13 +1534,13 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 /*********************************************************************
  Map an NT error code from a Unix error code.
 *********************************************************************/
-
 NTSTATUS map_nt_error_from_unix(int unix_error)
 {
 	int i = 0;
 
-	if (unix_error == 0)
-		return NT_STATUS_OK;
+	if (unix_error == 0) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Look through list */
 	while(unix_dos_nt_errmap[i].unix_error != 0) {
