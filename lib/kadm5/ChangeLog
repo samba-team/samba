@@ -1,3 +1,11 @@
+1999-05-04  Assar Westerlund  <assar@sics.se>
+
+	* init_c.c (get_new_cache): don't abort when interrupted from
+ 	password prompt
+	
+	* destroy_c.c (kadm5_c_destroy): check if we should destroy the
+ 	auth context
+
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
 	* chpass_s.c: fix arguments to _kadm5_set_keys2
