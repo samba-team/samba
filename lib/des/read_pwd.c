@@ -52,7 +52,7 @@
 #include <setjmp.h>
 
 #ifdef WIN32	/* Visual C++ 4.0 (Windows95/NT) */
-#include "winlocl/passwd_dlg.h"
+#include "passwd_dlg.h"
 #endif /* WIN32 */
  
 /* There are 5 types of terminal interface supported,
