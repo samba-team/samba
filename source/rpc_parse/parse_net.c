@@ -336,12 +336,37 @@ void init_r_trust_dom(NET_R_TRUST_DOM_LIST *r_t,
 
 BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, int depth)
 {
-	int i;
+	uint32 value;
+
 	if (r_t == NULL)
 		 return False;
 
 	prs_debug(ps, depth, desc, "net_io_r_trust_dom");
 	depth++;
+
+	/* temporary code to give a valid response */
+	value=2;
+	if(!prs_uint32("status", ps, depth, &value))
+		 return False;
+
+	value=1;
+	if(!prs_uint32("status", ps, depth, &value))
+		 return False;
+	value=2;
+	if(!prs_uint32("status", ps, depth, &value))
+		 return False;
+
+	value=0;
+	if(!prs_uint32("status", ps, depth, &value))
+		 return False;
+
+	value=0;
+	if(!prs_uint32("status", ps, depth, &value))
+		 return False;
+
+/* old non working code */
+#if 0
+	int i;
 
 	for (i = 0; i < MAX_TRUST_DOMS; i++) {
 		if (r_t->uni_trust_dom_name[i].uni_str_len == 0)
@@ -352,7 +377,7 @@ BOOL net_io_r_trust_dom(char *desc, NET_R_TRUST_DOM_LIST *r_t, prs_struct *ps, i
 
 	if(!prs_uint32("status", ps, depth, &r_t->status))
 		 return False;
-
+#endif
 	return True;
 }
 
