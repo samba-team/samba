@@ -52,7 +52,8 @@ BOOL print_backend_init(void)
 {
 	char *sversion = "INFO/version";
 
-	if (tdb && local_pid == sys_getpid()) return True;
+	if (tdb && local_pid == sys_getpid())
+		return True;
 	tdb = tdb_open_log(lock_path("printing.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
 		DEBUG(0,("print_backend_init: Failed to open printing backend database %s\n",
@@ -108,7 +109,7 @@ static struct printjob *print_job_find(int jobid)
 		return NULL;
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
-	free(ret.dptr);
+	SAFE_FREE(ret.dptr);
 	return &pjob;
 }
 
@@ -291,7 +292,7 @@ static pid_t get_updating_pid(fstring printer_name)
 		return (pid_t)-1;
 
 	memcpy(&updating_pid, data.dptr, sizeof(pid_t));
-	free(data.dptr);
+	SAFE_FREE(data.dptr);
 
 	if (process_exists(updating_pid))
 		return updating_pid;
@@ -568,10 +569,9 @@ BOOL print_job_exists(int jobid)
 	return tdb_exists(tdb, print_key(jobid));
 }
 
-
 /****************************************************************************
- Work out which service a jobid is for
- note that we have to look up by queue name to ensure that it works for 
+ Work out which service a jobid is for.
+ Note that we have to look up by queue name to ensure that it works for 
  other than the process that started the job.
 ****************************************************************************/
 
@@ -922,7 +922,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 		if (data.dsize == sizeof(print_status_struct)) {
 			memcpy(status, data.dptr, sizeof(print_status_struct));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 	return status->qcount;
 }
@@ -968,7 +968,7 @@ static int get_total_jobs(int snum)
 }
 
 /***************************************************************************
-start spooling a job - return the jobid
+ Start spooling a job - return the jobid.
 ***************************************************************************/
 
 int print_job_start(struct current_user *user, int snum, char *jobname)
@@ -1116,7 +1116,7 @@ to open spool file %s.\n", pjob.filename));
 }
 
 /****************************************************************************
- Update the number of pages spooled to jobid.
+ Update the number of pages spooled to jobid
 ****************************************************************************/
 
 void print_job_endpage(int jobid)
@@ -1330,7 +1330,7 @@ int print_queue_status(int snum,
 		if (data.dsize == sizeof(*status)) {
 			memcpy(status, data.dptr, sizeof(*status));
 		}
-		free(data.dptr);
+		SAFE_FREE(data.dptr);
 	}
 
 	/*

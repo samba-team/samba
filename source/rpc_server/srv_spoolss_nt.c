@@ -809,8 +809,10 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 
 	/* Iterate the printer list */
 
-	for (snum=0; snum<n_services; snum++) {
-		if (lp_snum_ok(snum) && lp_print_ok(snum) ) {
+	for (snum=0; snum<n_services; snum++)
+	{
+		if (lp_snum_ok(snum) && lp_print_ok(snum) ) 
+		{
 			WERROR result;
 			NT_PRINTER_INFO_LEVEL *printer = NULL;
 
@@ -818,15 +820,19 @@ void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
 			if (!W_ERROR_IS_OK(result))
 				continue;
 
-			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername)) {
+			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername)) 
+			{
 				DEBUG(6,("Updating printer [%s]\n", printer->info_2->printername));
+				
 				/* all we care about currently is the change_id */
+				
 				result = mod_a_printer(*printer, 2);
 				if (!W_ERROR_IS_OK(result)) {
 					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n",
 					dos_errstr(result)));
 				}
 			}
+			
 			free_a_printer(&printer, 2);
 		}
 	}
@@ -1000,16 +1006,6 @@ Can't find printer handle we created for printer %s\n", name ));
 	}
 
 /*
-	if (printer_default->datatype_ptr != NULL)
-	{
-		unistr2_to_ascii(datatype, printer_default->datatype, sizeof(datatype)-1);
-		set_printer_hnd_datatype(handle, datatype);
-	}
-	else
-		set_printer_hnd_datatype(handle, "");
-*/
-	
-	/*
 	   First case: the user is opening the print server:
 
 	   Disallow MS AddPrinterWizard if parameter disables it. A Win2k
@@ -3492,10 +3488,26 @@ static WERROR enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, 
  enum_all_printers_info_1_network.
 *********************************************************************/
 
-static WERROR enum_all_printers_info_1_network(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
+static WERROR enum_all_printers_info_1_network(fstring name, NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
+	char *s = name;
+
 	DEBUG(4,("enum_all_printers_info_1_network\n"));	
 	
+	/* If we respond to a enum_printers level 1 on our name with flags
+	   set to PRINTER_ENUM_REMOTE with a list of printers then these
+	   printers incorrectly appear in the APW browse list.
+	   Specifically the printers for the server appear at the workgroup
+	   level where all the other servers in the domain are
+	   listed. Windows responds to this call with a
+	   WERR_CAN_NOT_COMPLETE so we should do the same. */ 
+
+	if (name[0] == '\\' && name[1] == '\\')
+		 s = name + 2;
+
+	if (is_myname_or_ipaddr(s))
+		 return WERR_CAN_NOT_COMPLETE;
+
 	return enum_all_printers_info_1(PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
 }
 
@@ -3582,7 +3594,7 @@ static WERROR enumprinters_level1( uint32 flags, fstring name,
 		return enum_all_printers_info_1_remote(name, buffer, offered, needed, returned);
 
 	if (flags & PRINTER_ENUM_NETWORK)
-		return enum_all_printers_info_1_network(buffer, offered, needed, returned);
+		return enum_all_printers_info_1_network(name, buffer, offered, needed, returned);
 
 	return WERR_OK; /* NT4sp5 does that */
 }
@@ -5247,7 +5259,10 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		 * bound to the printer, simulating what happens in the Windows arch.
 		 */
 		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername)){
-			set_driver_init(printer, 2);
+			if (!set_driver_init(printer, 2)) {
+				DEBUG(5,("update_printer: Error restoring driver initialization data for driver [%s]!\n",
+					printer->info_2->drivername));
+			}
 			msg.flags |= PRINTER_MESSAGE_DRIVER;
 		}
 	}
@@ -6603,16 +6618,70 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 			driver_name));
 	}
 
-	/* if driver is not 9x, delete existing driver init data */
+	/*
+	 * Based on the version (e.g. driver destination dir: 0=9x,2=Nt/2k,3=2k/Xp),
+	 * decide if the driver init data should be deleted. The rules are:
+	 *  1) never delete init data if it is a 9x driver, they don't use it anyway
+	 *  2) delete init data only if there is no 2k/Xp driver
+	 *  3) always delete init data
+	 * The generalized rule is always use init data from the highest order driver.
+	 * It is necessary to follow the driver install by an initialization step to
+	 * finish off this process.
+	*/
+	if (level == 3)
+		version = driver.info_3->cversion;
+	else if (level == 6)
+		version = driver.info_6->version;
+	else
+		version = -1;
+	switch (version) {
+		/*
+		 * 9x printer driver - never delete init data
+		*/
+		case 0: 
+			DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n",
+					driver_name));
+			break;
+		
+		/*
+		 * Nt or 2k (compatiblity mode) printer driver - only delete init data if
+		 * there is no 2k/Xp driver init data for this driver name.
+		*/
+		case 2:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL driver1;
 
-	if ((level == 3 && driver.info_3->cversion != 0) ||
-			(level == 6 && driver.info_6->version  != 0)) {
+			if (!W_ERROR_IS_OK(get_a_printer_driver(&driver1, 3, driver_name, "Windows NT x86", 3))) {
+				/*
+				 * No 2k/Xp driver found, delete init data (if any) for the new Nt driver.
+				*/
 		if (!del_driver_init(driver_name))
-			DEBUG(3,("_spoolss_addprinterdriver: del_driver_init(%s) failed!\n", driver_name));
+					DEBUG(6,("_spoolss_addprinterdriver: del_driver_init(%s) Nt failed!\n", driver_name));
 	} else {
-		DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for 9x driver [%s]\n", driver_name));
+				/*
+				 * a 2k/Xp driver was found, don't delete init data because Nt driver will use it.
+				*/
+				free_a_printer_driver(driver1,3);
+				DEBUG(10,("_spoolss_addprinterdriver: init data not deleted for Nt driver [%s]\n", 
+						driver_name));
+			}
+		}
+		break;
+
+		/*
+		 * 2k or Xp printer driver - always delete init data
+		*/
+		case 3:	
+			if (!del_driver_init(driver_name))
+				DEBUG(6,("_spoolss_addprinterdriver: del_driver_init(%s) 2k/Xp failed!\n", driver_name));
+			break;
+
+		default:
+			DEBUG(0,("_spoolss_addprinterdriver: invalid level=%d\n", level));
+			break;
 	}
 
+	
  done:
 	free_a_printer_driver(driver, level);
 	return err;
@@ -6755,23 +6824,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 	 */
 	if ( (in_value_len==0) && (in_data_len==0) ) {
 		DEBUGADD(6,("Activating NT mega-hack to find sizes\n"));
-
-#if 0
-		/*
-		 * NT can ask for a specific parameter size - we need to return NO_MORE_ITEMS
-		 * if this parameter size doesn't exist.
-		 * Ok - my opinion here is that the client is not asking for the greatest
-		 * possible size of all the parameters, but is asking specifically for the size needed
-		 * for this specific parameter. In that case we can remove the loop below and
-		 * simplify this lookup code considerably. JF - comments welcome. JRA.
-		 */
-
-		if (!get_specific_param_by_index(*printer, 2, idx, value, &data, &type, &data_len)) {
-			SAFE_FREE(data);
-			free_a_printer(&printer, 2);
-			return WERR_NO_MORE_ITEMS;
-		}
-#endif
 
 		SAFE_FREE(data);
 
@@ -7925,7 +7977,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 
 	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
 
-	if (get_short_archi(short_archi, long_archi)==FALSE)
+	if (get_short_archi(short_archi, long_archi)==False)
 		return WERR_INVALID_ENVIRONMENT;
 
 	if((info=(PRINTPROCESSOR_DIRECTORY_1 *)malloc(sizeof(PRINTPROCESSOR_DIRECTORY_1))) == NULL)
@@ -7958,6 +8010,7 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	NEW_BUFFER *buffer = NULL;
 	uint32 offered = q_u->offered;
 	uint32 *needed = &r_u->needed;
+	WERROR result;
 
 	/* that's an [in out] buffer */
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
@@ -7969,11 +8022,11 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 
 	switch(level) {
 	case 1:
-		return getprintprocessordirectory_level_1
+		result = getprintprocessordirectory_level_1
 		  (&q_u->name, &q_u->environment, buffer, offered, needed);
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		result = WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_ACCESS_DENIED;
+	return result;
 }
