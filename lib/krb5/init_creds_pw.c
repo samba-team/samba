@@ -168,7 +168,7 @@ print_expire (krb5_context context,
 	      krb5_data *data)
 {
     int i;
-    LastReq *lr = &rep->part2.last_req;
+    LastReq *lr = &rep->enc_part.last_req;
     int32_t sec;
     time_t t;
 
@@ -192,12 +192,12 @@ print_expire (krb5_context context,
 	}
     }
 
-    if (rep->part2.key_expiration
-	&& *rep->part2.key_expiration <= t) {
+    if (rep->enc_part.key_expiration
+	&& *rep->enc_part.key_expiration <= t) {
 	char *p;
 
 	asprintf (&p, "Your password/account will expire at %s",
-		  ctime(rep->part2.key_expiration));
+		  ctime(rep->enc_part.key_expiration));
 	(*prompter) (context, data, p, 0, NULL);
 	free (p);
     }

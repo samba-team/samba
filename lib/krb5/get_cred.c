@@ -259,20 +259,20 @@ decrypt_tkt_with_subkey (krb5_context context,
     size_t size;
     krb5_data save;
     
-    ret = krb5_data_copy(&save, dec_rep->part1.enc_part.cipher.data,
-			 dec_rep->part1.enc_part.cipher.length);
+    ret = krb5_data_copy(&save, dec_rep->kdc_rep.enc_part.cipher.data,
+			 dec_rep->kdc_rep.enc_part.cipher.length);
     if(ret)
 	return ret;
     
     ret = krb5_decrypt (context,
-			dec_rep->part1.enc_part.cipher.data,
-			dec_rep->part1.enc_part.cipher.length,
-			dec_rep->part1.enc_part.etype,
+			dec_rep->kdc_rep.enc_part.cipher.data,
+			dec_rep->kdc_rep.enc_part.cipher.length,
+			dec_rep->kdc_rep.enc_part.etype,
 			key,
 			&data);
     if(ret && subkey){
 	ret = krb5_decrypt (context, save.data, save.length,
-			    dec_rep->part1.enc_part.etype,
+			    dec_rep->kdc_rep.enc_part.etype,
 			    (krb5_keyblock*)subkey, /* local subkey */
 			    &data);
     }
@@ -282,12 +282,12 @@ decrypt_tkt_with_subkey (krb5_context context,
 
     ret = decode_EncASRepPart(data.data,
 			      data.length,
-			      &dec_rep->part2, 
+			      &dec_rep->enc_part, 
 			      &size);
     if (ret)
 	ret = decode_EncTGSRepPart(data.data,
 				   data.length,
-				   &dec_rep->part2, 
+				   &dec_rep->enc_part, 
 				   &size);
     krb5_data_free (&data);
     if (ret) return ret;
@@ -361,7 +361,7 @@ get_cred_kdc(krb5_context context,
 	goto out;
 
     memset(&rep, 0, sizeof(rep));
-    if(decode_TGS_REP(resp.data, resp.length, &rep.part1, &len) == 0){
+    if(decode_TGS_REP(resp.data, resp.length, &rep.kdc_rep, &len) == 0){
 	ret = krb5_copy_principal(context, 
 				  in_creds->client, 
 				  &(*out_creds)->client);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,7 @@ RCSID("$Id$");
 krb5_error_code
 krb5_free_kdc_rep(krb5_context context, krb5_kdc_rep *rep)
 {
-    free_KDC_REP(&rep->part1);
-    free_EncTGSRepPart(&rep->part2);
+    free_KDC_REP(&rep->kdc_rep);
+    free_EncTGSRepPart(&rep->enc_part);
     return 0;
 }

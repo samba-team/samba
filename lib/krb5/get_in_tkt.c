@@ -89,9 +89,9 @@ decrypt_tkt (krb5_context context,
     size_t size;
 
     ret = krb5_decrypt (context,
-			dec_rep->part1.enc_part.cipher.data,
-			dec_rep->part1.enc_part.cipher.length,
-			dec_rep->part1.enc_part.etype,
+			dec_rep->kdc_rep.enc_part.cipher.data,
+			dec_rep->kdc_rep.enc_part.cipher.length,
+			dec_rep->kdc_rep.enc_part.etype,
 			key,
 			&data);
     if (ret)
@@ -99,12 +99,12 @@ decrypt_tkt (krb5_context context,
 
     ret = decode_EncASRepPart(data.data,
 			      data.length,
-			      &dec_rep->part2, 
+			      &dec_rep->enc_part, 
 			      &size);
     if (ret)
 	ret = decode_EncTGSRepPart(data.data,
 				   data.length,
-				   &dec_rep->part2, 
+				   &dec_rep->enc_part, 
 				   &size);
     krb5_data_free (&data);
     if (ret) return ret;
@@ -132,8 +132,8 @@ _krb5_extract_ticket(krb5_context context,
     /* compare client */
 
     err = principalname2krb5_principal (&tmp_principal,
-					rep->part1.cname,
-					rep->part1.crealm);
+					rep->kdc_rep.cname,
+					rep->kdc_rep.crealm);
     if (err)
 	goto out;
     tmp = krb5_principal_compare (context, tmp_principal, creds->client);
@@ -148,7 +148,7 @@ _krb5_extract_ticket(krb5_context context,
 	unsigned char buf[1024];
 	size_t len;
 	encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
-			    &rep->part1.ticket, &len);
+			    &rep->kdc_rep.ticket, &len);
 	creds->ticket.data = malloc(len);
 	memcpy(creds->ticket.data, buf + sizeof(buf) - len, len);
 	creds->ticket.length = len;
@@ -159,8 +159,8 @@ _krb5_extract_ticket(krb5_context context,
     /* compare server */
 
     err = principalname2krb5_principal (&tmp_principal,
-					rep->part1.ticket.sname,
-					rep->part1.ticket.realm);
+					rep->kdc_rep.ticket.sname,
+					rep->kdc_rep.ticket.realm);
     if (err)
 	goto out;
     if(allow_server_mismatch){
@@ -187,7 +187,7 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare nonces */
 
-    if (nonce != rep->part2.nonce) {
+    if (nonce != rep->enc_part.nonce) {
 	err = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
@@ -200,16 +200,16 @@ _krb5_extract_ticket(krb5_context context,
 				 "libdefaults",
 				 "kdc_timesync",
 				 NULL)) {
-	context->kdc_sec_offset = rep->part2.authtime - sec_now;
+	context->kdc_sec_offset = rep->enc_part.authtime - sec_now;
 	krb5_timeofday (context, &sec_now);
     }
 
     /* check all times */
 
-    if (rep->part2.starttime) {
-	tmp_time = *rep->part2.starttime;
+    if (rep->enc_part.starttime) {
+	tmp_time = *rep->enc_part.starttime;
     } else
-	tmp_time = rep->part2.authtime;
+	tmp_time = rep->enc_part.authtime;
 
     if (creds->times.starttime == 0
 	&& abs(tmp_time - sec_now) > context->max_skew) {
@@ -225,8 +225,8 @@ _krb5_extract_ticket(krb5_context context,
 
     creds->times.starttime = tmp_time;
 
-    if (rep->part2.renew_till) {
-	tmp_time = *rep->part2.renew_till;
+    if (rep->enc_part.renew_till) {
+	tmp_time = *rep->enc_part.renew_till;
     } else
 	tmp_time = 0;
 
@@ -238,38 +238,38 @@ _krb5_extract_ticket(krb5_context context,
 
     creds->times.renew_till = tmp_time;
 
-    creds->times.authtime = rep->part2.authtime;
+    creds->times.authtime = rep->enc_part.authtime;
 
     if (creds->times.endtime != 0
-	&& rep->part2.endtime > creds->times.endtime) {
+	&& rep->enc_part.endtime > creds->times.endtime) {
 	err = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
-    creds->times.endtime  = rep->part2.endtime;
+    creds->times.endtime  = rep->enc_part.endtime;
 
-    if(rep->part2.caddr)
-	krb5_copy_addresses (context, rep->part2.caddr, &creds->addresses);
+    if(rep->enc_part.caddr)
+	krb5_copy_addresses (context, rep->enc_part.caddr, &creds->addresses);
     else if(addrs)
 	krb5_copy_addresses (context, addrs, &creds->addresses);
     else {
 	creds->addresses.len = 0;
 	creds->addresses.val = NULL;
     }
-    creds->flags.b = rep->part2.flags;
+    creds->flags.b = rep->enc_part.flags;
 	  
     creds->authdata.len = 0;
     creds->authdata.val = NULL;
     creds->session.keyvalue.length = 0;
     creds->session.keyvalue.data   = NULL;
-    creds->session.keytype = rep->part2.key.keytype;
+    creds->session.keytype = rep->enc_part.key.keytype;
     err = krb5_data_copy (&creds->session.keyvalue,
-			  rep->part2.key.keyvalue.data,
-			  rep->part2.key.keyvalue.length);
+			  rep->enc_part.key.keyvalue.data,
+			  rep->enc_part.key.keyvalue.length);
 
 out:
-    memset (rep->part2.key.keyvalue.data, 0,
-	    rep->part2.key.keyvalue.length);
+    memset (rep->enc_part.key.keyvalue.data, 0,
+	    rep->enc_part.key.keyvalue.length);
     return err;
 }
 
@@ -539,7 +539,7 @@ krb5_get_in_cred(krb5_context context,
 	return ret;
 
     memset (&rep, 0, sizeof(rep));
-    if((ret = decode_AS_REP(resp.data, resp.length, &rep.part1, &size))){
+    if((ret = decode_AS_REP(resp.data, resp.length, &rep.kdc_rep, &size))){
 	/* let's try to parse it as a KRB-ERROR */
 	KRB_ERROR error;
 	int ret2;
@@ -558,15 +558,15 @@ krb5_get_in_cred(krb5_context context,
     krb5_data_free(&resp);
     
     pa = NULL;
-    etype = rep.part1.enc_part.etype;
-    if(rep.part1.padata){
+    etype = rep.kdc_rep.enc_part.etype;
+    if(rep.kdc_rep.padata){
 	int index = 0;
-	pa = krb5_find_padata(rep.part1.padata->val, rep.part1.padata->len, 
+	pa = krb5_find_padata(rep.kdc_rep.padata->val, rep.kdc_rep.padata->len, 
 			      pa_pw_salt, &index);
 	if(pa == NULL) {
 	    index = 0;
-	    pa = krb5_find_padata(rep.part1.padata->val, 
-				  rep.part1.padata->len, 
+	    pa = krb5_find_padata(rep.kdc_rep.padata->val, 
+				  rep.kdc_rep.padata->len, 
 				  pa_afs3_salt, &index);
 	}
     }
