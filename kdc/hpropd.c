@@ -307,9 +307,9 @@ main(int argc, char **argv)
 	free(server);
 	krb5_free_ticket (context, ticket);
 
-	ret = krb5_auth_getauthenticator(context, ac, &authent);
+	ret = krb5_auth_con_getauthenticator(context, ac, &authent);
 	if(ret)
-	    krb5_err(context, 1, ret, "krb5_auth_getauthenticator");
+	    krb5_err(context, 1, ret, "krb5_auth_con_getauthenticator");
 	
 	ret = krb5_make_principal(context, &c1, NULL, "kadmin", "hprop", NULL);
 	if(ret)
