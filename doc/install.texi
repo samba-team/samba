@@ -7,12 +7,26 @@ Automake to manage makefiles. If this is new to you, the short
 instruction is to run the @code{configure} script in the top level
 directory, and when that finishes @code{make}.
 
-You will need a compiler that supports a ``loose'' ANSI C mode, such as
-@code{gcc}. To build the server side you will need either NDBM or
-Berkeley DB. If you have neither, parts of the code will not build
-(specifically libraries and programs that deals with databases). It
-should be possible to build all clients even without a working db
-library, but make will need some help (such as with the @samp{-k} flag).
+If you want to build the distribution in a different directory from the
+source directory, you will need a make that implements VPATH correctly,
+such as GNU make.
+
+You will need to build the distribution:
+
+@itemize @bullet
+@item
+A compiler that supports a ``loose'' ANSI C mode, such as @code{gcc}.
+@item
+lex or flex
+@item
+yacc or bison
+@item
+a socket library
+@item
+NDBM or Berkeley DB for building the server side.
+@item 
+
+@end itemize
 
 When everything is built, you can install by doing @kbd{make
 install}. The default location for installation is @file{/usr/heimdal},
@@ -28,13 +42,13 @@ DB is preferred before NDBM, but if you for some reason want to use NDBM
 instead, you can use this option.
 @item @kbd{--with-krb4=@file{dir}}
 Gives the location of Kerberos 4 libraries and headers. This enables
-Kerberos 4 support in some programs, like telnet and the KDC. If you
-keep libraries and headers in different places, you can instead give the
-path to each with the @kbd{--with-krb4-lib=@file{dir}}, and
-@kbd{--with-krb4-include=@file{dir}} options.
+Kerberos 4 support in the applications (telnet, rsh, popper, etc) and
+the KDC. If you keep libraries and headers in different places, you can
+instead give the path to each with the @kbd{--with-krb4-lib=@file{dir}},
+and @kbd{--with-krb4-include=@file{dir}} options.
 @item @kbd{--enable-kaserver}
-Enables experimental kaserver support. This is the protocol used by
-``KDC'' in AFS. Requires Kerberos 4 support.
+Enables experimental kaserver support in the KDC. This is the protocol
+used by ``KDC'' in AFS. Requires Kerberos 4 support.
 @item @kbd{--with-readline=@file{dir}}
 Gives the path for the GNU Readline library, which will be used in some
 programs. If no readline library is found, the (simpler) editline

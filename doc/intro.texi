@@ -22,10 +22,12 @@ conflict, with RFC 1510 (and any future updated RFC)
 @item
 be somewhat compatible with the M.I.T Kerberos V5 API
 @item
-have support for kerberosV5 over GSS-API
+have support for Kerberos V5 over GSS-API
 @item
 include the most important and useful application programs (rsh, telnet,
 popper, etc.)
+@item
+include enough backwards compatibility with Kerberos V4
 @end itemize
 
 This initial pre-version is mostly compatible with the M.I.T
@@ -58,12 +60,23 @@ Eric Young's @file{libdes}
 @item
 @file{popper}, @file{push} (a movemail equivalent)
 @item
+a library @file{libkafs} for authenticating to AFS and a program
+@file{afslog} that uses it
+@item
 some simple test programs
 @item
 a KDC that supports most things, not including cross-realm and
-user-to-user
+user-to-user, optionally, it may also support Kerberos V4 and kaserver,
+@item
+simple programs for distributing databases between a KDC master and
+slaves
+@item
+a password changing daemon @file{kpasswdd}, library functions for
+changing passwords and a simple client
 @item
 an incredibly simple @file{kdb_edit}
+@item
+all applications can also support the Kerberos V4 protocols
 @end itemize
 
 @heading Bug reports
