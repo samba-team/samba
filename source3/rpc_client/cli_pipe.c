@@ -193,8 +193,8 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 	BOOL auth_seal = ((cli->ntlmssp_srv_flgs & NTLMSSP_NEGOTIATE_SEAL) != 0);
 	BOOL auth_schannel = (cli->saved_netlogon_pipe_fnum != 0);
 
-	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s\n",
-	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal)));
+	DEBUG(5,("rpc_auth_pipe: len: %d auth_len: %d verify %s seal %s schannel %s\n",
+	          len, auth_len, BOOLSTR(auth_verify), BOOLSTR(auth_seal), BOOLSTR(auth_schannel)));
 
 	/*
 	 * Unseal any sealed data in the PDU, not including the
@@ -302,16 +302,16 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 		prs_struct auth_verf;
 
 		if (auth_len != RPC_AUTH_NETSEC_CHK_LEN) {
-			DEBUG(0,("rpc_auth_pipe: wrong auth len %d\n", auth_len));
+			DEBUG(0,("rpc_auth_pipe: wrong schannel auth len %d\n", auth_len));
 			return False;
 		}
 
 		if (dp - prs_data_p(rdata) > prs_data_size(rdata)) {
-			DEBUG(0,("rpc_auth_pipe: auth data > data size !\n"));
+			DEBUG(0,("rpc_auth_pipe: schannel auth data > data size !\n"));
 			return False;
 		}
 
-		DEBUG(10,("rpc_auth_pipe: verify netsec\n"));
+		DEBUG(10,("rpc_auth_pipe: schannel verify netsec\n"));
 		dump_data(100, dp, auth_len);
 
 		memcpy(data, dp, sizeof(data));
@@ -324,17 +324,18 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 		prs_give_memory(&auth_verf, data, RPC_AUTH_NETSEC_CHK_LEN, False);
 
-		if (!smb_io_rpc_auth_netsec_chk("auth_sign", &chk, &auth_verf, 0)) {
-			DEBUG(0, ("rpc_auth_pipe: unmarshalling "
+		if (!smb_io_rpc_auth_netsec_chk("schannel_auth_sign", &chk, &auth_verf, 0)) {
+			DEBUG(0, ("rpc_auth_pipe: schannel unmarshalling "
 				  "RPC_AUTH_NETSECK_CHK failed\n"));
 			return False;
 		}
+
+		cli->auth_info.seq_num++;
 
 		if (!netsec_decode(&cli->auth_info, &chk, reply_data, data_len)) {
 			DEBUG(0, ("rpc_auth_pipe: Could not decode schannel\n"));
 			return False;
 		}
-		cli->auth_info.seq_num++;
 	}
 	return True;
 }
@@ -360,7 +361,7 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
  +------------+-----------------+-------------+---------------+-------------+
 
  Where the presence of the AUTH_HDR and AUTH are dependent on the
- signing & sealing being neogitated.
+ signing & sealing being negotiated.
 
  ****************************************************************************/
 
@@ -649,7 +650,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, BOOL do_netse
 
 		init_rpc_hdr_auth(&hdr_auth, NETSEC_AUTH_TYPE, NETSEC_AUTH_LEVEL,
 				  0x00, 1);
-		init_rpc_auth_netsec_neg(&netsec_neg, my_name, domain);
+		init_rpc_auth_netsec_neg(&netsec_neg, domain, my_name);
 
 		/*
 		 * Use the 4k buffer to store the auth info.
@@ -1018,8 +1019,15 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 			uchar sign[8];
 			prs_struct netsec_blob;
 
-			memset(sign, 0, sizeof(sign));
-			sign[4] = 0x80;
+			if ((cli->auth_info.seq_num & 1) != 0) {
+				DEBUG(0,("SCHANNEL ERROR: seq_num must be even in client (seq_num=%d)\n",
+					cli->auth_info.seq_num));
+			}
+
+			DEBUG(10,("SCHANNEL seq_num=%d\n", cli->auth_info.seq_num));
+
+			RSIVAL(sign, 0, cli->auth_info.seq_num);
+			SIVAL(sign, 4, 0x80);
 
 			if (!prs_init(&netsec_blob, send_size+auth_padding,
 				      cli->mem_ctx, MARSHALL)) {
@@ -1047,12 +1055,15 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 			init_rpc_auth_netsec_chk(&verf, netsec_sig, nullbytes,
 						 sign, nullbytes);
 
-			netsec_encode(&(cli->auth_info), &verf,
+			netsec_encode(&cli->auth_info, &verf,
 				      prs_data_p(&netsec_blob),
 				      prs_data_size(&netsec_blob));
 
 			prs_append_prs_data(&outgoing_packet, &netsec_blob);
 			prs_mem_free(&netsec_blob);
+
+			cli->auth_info.seq_num++;
+
 		} else {
 			if(!prs_append_some_prs_data(&outgoing_packet, data, 
 						     data_sent, send_size)) {

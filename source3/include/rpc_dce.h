@@ -211,8 +211,8 @@ typedef struct rpc_hdr_auth_info
 /* RPC_AUTH_NETSEC_NEG */
 typedef struct rpc_auth_netsec_neg_info
 {
-	uint32 unknown1;
-	uint32 unknown2;
+	uint32 type1; 	/* Always zero ? */
+	uint32 type2;	/* Types 0x3 and 0x13 seen. Check AcquireSecurityContext() docs.... */
 	fstring domain; /* calling workstations's domain */
 	fstring myname; /* calling workstation's name */
 } RPC_AUTH_NETSEC_NEG;
