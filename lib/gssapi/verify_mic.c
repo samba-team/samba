@@ -173,7 +173,7 @@ verify_mic_des3
   }
 
   /* verify sequence number */
-  docompat = (context_handle->more_flags & COMPAT_OLD_DES3);
+  docompat = 0;
 retry:
   if (docompat)
       memset(ivec, 0, 8);
