@@ -71,8 +71,46 @@ interface drsuapi
 	NTSTATUS DRSUAPI_GET_NT4_CHANGELOG();
 
 	/*****************/
-        /* Function 0x0c */
-	NTSTATUS DRSUAPI_CRACKNAMES();
+	/* Function 0x0c */
+	typedef struct {
+		unistr *str;
+	} drsuapi_DsCrackNamesInInfo1Names;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		uint32 unknown4;
+		uint32 unknown5;
+		[range(1,10000)] uint32 count;
+		[size_is(count)] drsuapi_DsCrackNamesInInfo1Names *names;
+	} drsuapi_DsCrackNamesInInfo1;
+
+	typedef union {
+		[case(1)] drsuapi_DsCrackNamesInInfo1 info1;
+	} drsuapi_DsCrackNamesInInfo;
+
+	typedef struct {
+		uint32 unknown1;
+		unistr *name1;
+		unistr *name2;
+	} drsuapi_DsCrackNamesOutInfo1Names;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] drsuapi_DsCrackNamesOutInfo1Names *names;
+	} drsuapi_DsCrackNamesOutInfo1;
+
+	typedef union {
+		[case(1)] drsuapi_DsCrackNamesOutInfo1 *info1;
+	} drsuapi_DsCrackNamesOutInfo;
+
+	NTSTATUS drsuapi_DsCrackNames(
+		[in,ref] policy_handle *bind_handle,
+		[in, out] uint32 level,
+		[in,switch_is(level)] drsuapi_DsCrackNamesInInfo in,
+		[out,switch_is(level)] drsuapi_DsCrackNamesOutInfo out
+		);
 
 	/*****************/
         /* Function 0x0d */
