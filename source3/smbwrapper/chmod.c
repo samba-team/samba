@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 2.0
-   SMB wrapper functions - definitions
+   SMB wrapper functions
    Copyright (C) Andrew Tridgell 1998
    
    This program is free software; you can redistribute it and/or modify
@@ -19,13 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#define SMBW_PREFIX "/smb/"
+#include "wrapper.h"
 
-#define SMBW_FD_OFFSET 1024
-#define SMBW_CLI_FD 1023
-#define SMBW_MAX_OPEN 2048
+ int chmod(const char *name,mode_t mode)
+{
+	if (smbw_path(name)) {
+		return smbw_chmod(name, mode);
+	}
 
-#define SMBW_FILE_MODE (S_IFREG | 0644)
-#define SMBW_DIR_MODE (S_IFDIR | 0755)
+	return real_chmod(name, mode);
+}
 
-#define SMBW_PWD_ENV "PWD"
