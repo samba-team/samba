@@ -273,7 +273,7 @@ done
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
 cp -p source/nsswitch/libnss_winbind.so $DESTDIR/lib
 cp -p source/nsswitch/pam_winbind.so $DESTDIR/lib/security
-cp -p source/bin/pam_smbpasswd.so $DESTDIR/lib/security
+cp -p source/bin/pam_smbpass.so $DESTDIR/lib/security
 # Make link for wins resolver
 ( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2 )
 
