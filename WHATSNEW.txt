@@ -120,7 +120,7 @@ Domain Controller than serving Windows NT logon requests.
 A useful version of a Primary Domain Controller contains
 many remote procedure calls to do things like enumerate users, 
 groups, and security information, only some of which Samba currently
-implements. In addion, there are outstanding (known) bugs with
+implements. In addition, there are outstanding (known) bugs with
 using Samba as a PDC in this release that the Samba Team are actively
 working on. For this reason we have chosen not to advertise and 
 actively support Primary Domain Controller functionality with this
