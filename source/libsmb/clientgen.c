@@ -209,13 +209,13 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	if (!cli->outbuf || !cli->inbuf)
 	{
-		return False;
+		return NULL;
 	}
 
 	if ((cli->mem_ctx = talloc_init()) == NULL) {
 		free(cli->outbuf);
 		free(cli->inbuf);
-		return False;
+		return NULL;
 	}
 
 	memset(cli->outbuf, '\0', cli->bufsize);

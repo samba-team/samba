@@ -997,8 +997,7 @@ BOOL lsa_io_q_lookup_names(char *desc, LSA_Q_LOOKUP_NAMES *q_r, prs_struct *ps, 
 reads or writes a structure.
 ********************************************************************/
 
-BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc, 
-			   LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
+BOOL lsa_io_r_lookup_names(char *desc, LSA_R_LOOKUP_NAMES *r_r, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -1032,11 +1031,12 @@ BOOL lsa_io_r_lookup_names(TALLOC_CTX *mem_ctx, char *desc,
 			return False;
 		}
 
-		if ((r_r->dom_rid = (DOM_RID2 *)
-		     talloc(mem_ctx, r_r->num_entries2 * sizeof(DOM_RID2)))
-		    == NULL) {
-			DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
-			return False;
+		if (UNMARSHALLING(ps)) {
+			if ((r_r->dom_rid = (DOM_RID2 *)prs_alloc_mem(ps, r_r->num_entries2 * sizeof(DOM_RID2)))
+			    == NULL) {
+				DEBUG(3, ("lsa_io_r_lookup_names(): out of memory\n"));
+				return False;
+			}
 		}
 
 		for (i = 0; i < r_r->num_entries2; i++)

@@ -304,6 +304,12 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 		nt->high = 0;
 		return;
 	}
+	if (t == -1)
+	{
+		nt->low = 0xffffffff;
+		nt->high = 0xffffffff;
+		return;
+	}		
 
 	/* this converts GMT to kludge-GMT */
 	t -= LocTimeDiff(t) - serverzone; 

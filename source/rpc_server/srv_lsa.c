@@ -390,11 +390,6 @@ static BOOL lsa_reply_lookup_sids(prs_struct *rdata, DOM_SID2 *sid, int num_entr
 		return False;
 	}
 
-	/* Free memory - perhaps this should be done using talloc()? */
-
-	safe_free(names.name);
-	safe_free(names.uni_name);
-
 	return True;
 }
 
@@ -409,10 +404,7 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata, UNISTR2 *names,
 	DOM_R_REF ref;
 	DOM_RID2 rids[MAX_LOOKUP_SIDS];
 	uint32 mapped_count = 0;
-	TALLOC_CTX *mem_ctx = talloc_init();
 	BOOL result = True;
-
-	if (!mem_ctx) return False;
 
 	ZERO_STRUCT(r_l);
 	ZERO_STRUCT(ref);
@@ -423,12 +415,11 @@ static BOOL lsa_reply_lookup_names(prs_struct *rdata, UNISTR2 *names,
 	init_reply_lookup_names(&r_l, &ref, num_entries, rids, mapped_count);
 
 	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_names(mem_ctx, "", &r_l, rdata, 0)) {
+	if(!lsa_io_r_lookup_names("", &r_l, rdata, 0)) {
 		DEBUG(0,("lsa_reply_lookup_names: Failed to marshall LSA_R_LOOKUP_NAMES.\n"));
 		result = False;
 	}
 
-	talloc_destroy(mem_ctx);
 	return result;
 }
 
@@ -583,19 +574,12 @@ static BOOL api_lsa_lookup_sids(pipes_struct *p)
 	if(!lsa_io_q_lookup_sids("", &q_l, data, 0)) {
 		DEBUG(0,("api_lsa_lookup_sids: failed to unmarshall LSA_Q_LOOKUP_SIDS.\n"));
 		result = False;
-		goto done;
 	}
 
 	/* construct reply.  return status is always 0x0 */
 	if(!lsa_reply_lookup_sids(rdata, q_l.sids.sid, q_l.sids.num_entries)) {
 		result = False;
-		goto done;
 	}
-
-
- done:
-	safe_free(q_l.sids.ptr_sid);
-	safe_free(q_l.sids.sid);
 
 	return result;
 }
