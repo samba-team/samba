@@ -310,10 +310,11 @@ MAKEDIR = || exec false; \
 @BROKEN_CC@	-mv `echo $@ | sed 's%^.*/%%g'` $@
 
 # 'make pch' is extremely useful for fast compiles if you have gcc-3.4
-pch: basics
-	rm -f $(srcdir)/include/includes.h.gch
+pch: pch_clean basics
 	$(CC) -I. -I$(srcdir) $(FLAGS) -c $(srcdir)/include/includes.h -o $(srcdir)/include/includes.h.gch
 
+pch_clean:
+	rm -f $(srcdir)/include/includes.h.gch
 
 idl_full: build/pidl/idl.pm
 	CPP="@CPP@" script/build_idl.sh FULL
@@ -535,7 +536,7 @@ clean: delheaders
 # afterwards.
 proto_exists: include/proto.h include/build_env.h
 
-delheaders:
+delheaders: pch_clean
 	@/bin/rm -f $(srcdir)/include/proto.h $(srcdir)/include/build_env.h 
 
 include/proto.h:
