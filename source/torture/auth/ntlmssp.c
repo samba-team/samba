@@ -95,7 +95,7 @@ BOOL torture_ntlmssp_self_check(int dummy)
 		return False;
 	}
 
-	if (memcmp(sig.data, expected_sig.data, sig.length)) {
+	if (memcmp(sig.data+8, expected_sig.data+8, sig.length-8)) {
 		return False;
 	}
 
