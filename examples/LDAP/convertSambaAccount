@@ -9,6 +9,12 @@
 ##       --input=<input ldif> --output=<output ldif> \
 ##       --changetype=[modify|add]
 ##
+## You can generate an input ldif file using:
+## $ ldapsearch -LL -x -h ldapsrv -D cn=root,dc=company,dc=com \
+##   -b dc=copmany,dc=com > /tmp/samba3.alpha23.ldif
+##
+## Note the "-LL" so no additional comments are generated
+##
 
 
 use strict;
