@@ -119,20 +119,19 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 /*
   initialise the NTVFS subsystem
 */
-BOOL ntvfs_init(void)
+NTSTATUS ntvfs_init(void)
 {
 	NTSTATUS status;
 
 	status = register_subsystem("ntvfs", ntvfs_register); 
 	if (!NT_STATUS_IS_OK(status)) {
-		return False;
+		return status;
 	}
 
-	/* FIXME: Perhaps panic if a basic backend, such as IPC, fails to initialise? */
-	static_init_ntvfs;
+	ntvfs_init_static_modules;
 
 	DEBUG(3,("NTVFS subsystem version %d initialised\n", NTVFS_INTERFACE_VERSION));
-	return True;
+	return status;
 }
 
 

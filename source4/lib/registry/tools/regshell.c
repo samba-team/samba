@@ -356,6 +356,7 @@ static char **reg_completion(const char *text, int start, int end)
 		POPT_TABLEEND
 	};
 
+	regshell_init_subsystems;
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);

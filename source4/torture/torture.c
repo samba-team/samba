@@ -2632,6 +2632,8 @@ static BOOL is_binding_string(const char *binding_string)
 		POPT_TABLEEND
 	};
 
+	smbtorture_init_subsystems;
+
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
 #ifdef HAVE_SETBUFFER

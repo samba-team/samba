@@ -41,26 +41,7 @@ void init_subsystems(void)
 		exit(1);
 	}
 
-	/* Setup the PROCESS_MODEL subsystem */
-	if (!process_model_init())
-		exit(1);
-
-	/* Setup the SERVER_SERVICE subsystem */
-	if (!server_service_init())
-		exit(1);
-
-	/* Setup the AUTH subsystem */
-	if (!auth_init())
-		exit(1);
-
-	/* Setup the NTVFS subsystem */
-	if (!ntvfs_init())
-		exit(1);
-
-	/* Setup the DCERPC subsystem */
-	if (!subsystem_dcerpc_init())
-		exit(1);
-
+	smbd_init_subsystems;
 }
 
 /****************************************************************************

@@ -30,6 +30,7 @@ ADD_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM LIBNDR_GEN
 [SUBSYSTEM::LIBNDR_GEN]
+INIT_FUNCTION = librpc_init
 INIT_OBJ_FILES = \
 		librpc/gen_ndr/tables.o
 ADD_OBJ_FILES = \

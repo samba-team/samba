@@ -349,7 +349,7 @@ sub HeaderInterface($)
 		$res .= "#define DCERPC_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}\n";
 
 	    $res .= "\nextern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
-	    $res .= "NTSTATUS dcerpc_$interface->{NAME}_init(void);\n\n";
+	    $res .= "NTSTATUS dcerpc_server_$interface->{NAME}_init(void);\n\n";
     }
 
     foreach my $d (@{$data}) {

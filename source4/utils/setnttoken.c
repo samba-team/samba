@@ -41,6 +41,8 @@ int main(int argc, char **argv)
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 
+	static_init_setnttoken;
+
 	setup_logging("setnttoken", DEBUG_STDOUT);
 
 	mem_ctx = talloc_init("setnttoken");

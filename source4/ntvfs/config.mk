@@ -3,6 +3,7 @@
 ################################################
 # Start MODULE ntvfs_cifs
 [MODULE::ntvfs_cifs]
+INIT_FUNCTION = ntvfs_cifs_init 
 INIT_OBJ_FILES = \
 		ntvfs/cifs/vfs_cifs.o
 REQUIRED_SUBSYSTEMS = \
@@ -13,6 +14,7 @@ REQUIRED_SUBSYSTEMS = \
 ################################################
 # Start MODULE ntvfs_simple
 [MODULE::ntvfs_simple]
+INIT_FUNCTION = ntvfs_simple_init 
 INIT_OBJ_FILES = \
 		ntvfs/simple/vfs_simple.o
 ADD_OBJ_FILES = \
@@ -23,6 +25,7 @@ ADD_OBJ_FILES = \
 ################################################
 # Start MODULE ntvfs_print
 [MODULE::ntvfs_print]
+INIT_FUNCTION = ntvfs_print_init 
 INIT_OBJ_FILES = \
 		ntvfs/print/vfs_print.o
 # End MODULE ntvfs_print
@@ -31,6 +34,7 @@ INIT_OBJ_FILES = \
 ################################################
 # Start MODULE ntvfs_ipc
 [MODULE::ntvfs_ipc]
+INIT_FUNCTION = ntvfs_ipc_init 
 INIT_OBJ_FILES = \
 		ntvfs/ipc/vfs_ipc.o \
 		ntvfs/ipc/ipc_rap.o \
@@ -43,6 +47,7 @@ INIT_OBJ_FILES = \
 ################################################
 # Start MODULE ntvfs_nbench
 [MODULE::ntvfs_nbench]
+INIT_FUNCTION = ntvfs_nbench_init 
 INIT_OBJ_FILES = \
 		ntvfs/nbench/vfs_nbench.o
 # End MODULE ntvfs_nbench
@@ -51,6 +56,7 @@ INIT_OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::NTVFS]
+INIT_FUNCTION = ntvfs_init
 INIT_OBJ_FILES = \
 		ntvfs/ntvfs_base.o
 ADD_OBJ_FILES = \

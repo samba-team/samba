@@ -131,6 +131,7 @@ static void writediff(struct registry_key *oldkey, struct registry_key *newkey, 
 		POPT_TABLEEND
 	};
 
+	regdiff_init_subsystems;
 
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", dyn_CONFIGFILE);
