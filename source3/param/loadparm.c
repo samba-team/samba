@@ -222,9 +222,9 @@ typedef struct
   char *writelist;
   char *volume;
   int  iMinPrintSpace;
-  int  iCreate_mode;
+  int  iCreate_mask;
   int  iCreate_force_mode;
-  int  iDir_mode;
+  int  iDir_mask;
   int  iDir_force_mode;
   int  iMaxConnections;
   int  iDefaultCase;
@@ -302,9 +302,9 @@ static service sDefault =
   NULL,    /* writelist */
   NULL,    /* volume */
   0,       /* iMinPrintSpace */
-  0644,    /* iCreate_mode */
+  0744,    /* iCreate_mask */
   0000,    /* iCreate_force_mode */
-  0755,    /* iDir_mode */
+  0755,    /* iDir_mask */
   0000,    /* iDir_force_mode */
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
@@ -504,11 +504,11 @@ struct parm_struct
   {"writable",         P_BOOLREV, P_LOCAL,  &sDefault.bRead_only,       NULL},
   {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL},
   {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL},
-  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mode,     NULL},
-  {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mode,     NULL},
+  {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL},
+  {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mask,     NULL},
   {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL},
-  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mode,        NULL},
-  {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mode,        NULL},
+  {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL},
+  {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mask,        NULL},
   {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL},
@@ -929,9 +929,9 @@ FN_LOCAL_BOOL(lp_map_system,bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
 
-FN_LOCAL_INTEGER(lp_create_mode,iCreate_mode)
+FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
-FN_LOCAL_INTEGER(lp_dir_mode,iDir_mode)
+FN_LOCAL_INTEGER(lp_dir_mode,iDir_mask)
 FN_LOCAL_INTEGER(lp_force_dir_mode,iDir_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
