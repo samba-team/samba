@@ -3,15 +3,17 @@
  v 0.1 23 Aug 1997 	Dan Shearer 
 			Original Samba-meta-FAQ.sgml from Paul's sambafaq.sgml
  v 0.2 25 Aug 1997      Dan   
+ v 0.3 7  Oct 1997	Paul
+			Changed samba.canberra refs to samba.anu.../samba/
 -->
 
 <article>
 
 <title> Samba meta FAQ
 
-<author>Dan Shearer & Paul Blackman, <tt>ictinus@lake.canberra.edu.au</tt>
+<author>Dan Shearer & Paul Blackman, <tt>ictinus@samba.anu.edu.au</tt>
 
-<date>v 0.1, 23 Aug '97
+<date>v 0.3, 7 Oct '97
 
 <abstract> This is the meta-Frequently Asked Questions (FAQ) document
 for Samba, the free and very popular SMB and CIFS server product. It
@@ -286,7 +288,7 @@ See below for subscription information.
 discussion about Samba. 
 
 <item>The WWW site 'SAMBA Web Pages' at <url
-url="http://samba.canberra.edu.au/pub/samba/samba.html"> includes:
+url="http://samba.anu.edu.au/samba/"> includes:
 
   <itemize>
     <item>Links to man pages and documentation, including this FAQ
