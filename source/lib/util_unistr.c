@@ -945,7 +945,7 @@ int strcmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
 			return c1 - c2;
 
 		if (c1 == 0)
-            return 0;
+			break;
     }
 	return 0;
 }
@@ -966,7 +966,7 @@ int strncmp_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2, size_t len)
 			return c1 - c2;
 
 		if (c1 == 0)
-			return 0;
+			break;
 
     }
 	return 0;

@@ -1193,9 +1193,11 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	      SIVAL(pdata,12,strlen(vname));
 	      pstrcpy(pdata+18,vname);      
       } else {
-	      data_len = 18 + 2*strlen(vname);
-	      SIVAL(pdata,12,strlen(vname)*2);
-	      dos_PutUniCode(pdata+18,unix_to_dos(vname,False),sizeof(pstring), False);
+          int vnamelen;
+
+          vnamelen = dos_PutUniCode(pdata+18, vname, sizeof(pstring), False);
+	      data_len = 18 + vnamelen;
+	      SIVAL(pdata,12,vnamelen);
 		  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       }
 
@@ -1466,10 +1468,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
             *short_name = '\0';
         }
         strupper(short_name);
-        l = strlen(short_name);
-        dos_PutUniCode(pdata + 4, unix_to_dos(short_name,False),sizeof(pstring), False);
-        data_size = 4 + (2*l);
-        SIVAL(pdata,0,2*l);
+        l = dos_PutUniCode(pdata + 4, short_name, sizeof(pstring), False);
+        data_size = 4 + l;
+        SIVAL(pdata,0,l);
       }
       break;
 
@@ -1483,7 +1484,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
         l = l*2;
         SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-        dos_PutUniCode(pdata + 4, unix_to_dos("\\",False),sizeof(pstring), False);
+        dos_PutUniCode(pdata + 4, "\\",sizeof(pstring), False);
       } else {
         pstrcpy(pdata+4,fname);
       }

@@ -280,10 +280,8 @@ static BOOL get_printer_snum(POLICY_HND *hnd, int *number)
 		return (*number != -1);
 	case PRINTER_HANDLE_IS_PRINTSERVER:
 		return False;
-		break;
 	default:
 		return False;
-		break;
 	}
 }
 
@@ -1320,7 +1318,6 @@ static uint32 size_of_notify_info_data(uint16 type, uint16 field)
 		     (notify_info_data_table[i].field == field ) )
 		{
 			return (notify_info_data_table[i].size);
-			continue;
 		}
 		i++;
 	}
@@ -1347,7 +1344,6 @@ static BOOL type_of_notify_info_data(uint16 type, uint16 field)
 			{
 				return (True);
 			}
-			continue;
 		}
 		i++;
 	}
@@ -1657,10 +1653,8 @@ uint32 _spoolss_rfnpcnex( POLICY_HND *handle, uint32 change,
 	switch (Printer->printer_type) {
 		case PRINTER_HANDLE_IS_PRINTSERVER:
 			return printserver_notify_info(handle, info);
-			break;
 		case PRINTER_HANDLE_IS_PRINTER:
 			return printer_notify_info(handle, info);
-			break;
 	}
 
 	return ERROR_INVALID_HANDLE;
@@ -2364,18 +2358,14 @@ uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 le
 	switch (level) {
 	case 1:
 		return enumprinters_level1(flags, name, buffer, offered, needed, returned);
-		break;
 	case 2:
 		return enumprinters_level2(flags, name, buffer, offered, needed, returned);
-		break;				
 	case 5:
 		return enumprinters_level5(flags, name, buffer, offered, needed, returned);
-		break;				
 	case 3:
 	case 4:
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -2540,7 +2530,6 @@ uint32 _spoolss_getprinter(POLICY_HND *handle, uint32 level,
 		return getprinter_level_3(servername,snum, buffer, offered, needed);
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }	
 		
@@ -2957,7 +2946,7 @@ static uint32 getprinterdriver2_level6(fstring servername, fstring architecture,
 	*needed += spoolss_size_printer_driver_info_6(&info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		free_printer_driver_info_3(&info);
+		free_printer_driver_info_6(&info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
@@ -2998,19 +2987,14 @@ uint32 _spoolss_getprinterdriver2(POLICY_HND *handle, const UNISTR2 *uni_arch, u
 	switch (level) {
 	case 1:
 		return getprinterdriver2_level1(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
-		break;
 	case 2:
 		return getprinterdriver2_level2(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
-		break;				
 	case 3:
 		return getprinterdriver2_level3(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
-		break;				
 	case 6:
 		return getprinterdriver2_level6(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
-		break;				
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -3482,17 +3466,13 @@ uint32 _spoolss_setprinter(POLICY_HND *handle, uint32 level,
 	switch (level) {
 		case 0:
 			return control_printer(handle, command, p);
-			break;
 		case 2:
 			return update_printer(handle, level, info, devmode_ctr.devmode);
-			break;
 		case 3:
 			return update_printer_sec(handle, level, info, p,
 						  secdesc_ctr);
-			break;
 		default:
 			return ERROR_INVALID_LEVEL;
-			break;
 	}
 }
 
@@ -3741,15 +3721,12 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 	switch (level) {
 	case 1:
 		return enumjobs_level1(queue, snum, buffer, offered, needed, returned);
-		break;
 	case 2:
 		return enumjobs_level2(queue, snum, buffer, offered, needed, returned);
-		break;				
 	default:
 		safe_free(queue);
 		*returned=0;
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -4056,18 +4033,14 @@ uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 
 	switch (level) {
 	case 1:
 		return enumprinterdrivers_level1(servername, architecture, buffer, offered, needed, returned);
-   		break;
 	case 2:
 		return enumprinterdrivers_level2(servername, architecture, buffer, offered, needed, returned);
-		break;
 	case 3:
 		return enumprinterdrivers_level3(servername, architecture, buffer, offered, needed, returned);
-		break;
 	default:
 		*returned=0;
 		safe_free(list);
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -4448,13 +4421,10 @@ uint32 _spoolss_enumports( UNISTR2 *name, uint32 level,
 	switch (level) {
 	case 1:
 		return enumports_level_1(buffer, offered, needed, returned);
-		break;
 	case 2:
 		return enumports_level_2(buffer, offered, needed, returned);
-		break;
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -4539,15 +4509,12 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name, uint32 level,
 			/* we don't handle yet */
 			/* but I know what to do ... */
 			return ERROR_INVALID_LEVEL;
-			break;
 		case 2:
 			return spoolss_addprinterex_level_2(uni_srv_name, info, 
 							    unk0, unk1, unk2, unk3,
 							    user_switch, user, handle);
-			break;
 		default:
 			return ERROR_INVALID_LEVEL;
-			break;
 	}
 }
 
@@ -4646,10 +4613,8 @@ uint32 _spoolss_getprinterdriverdirectory(UNISTR2 *name, UNISTR2 *uni_environmen
 	switch(level) {
 	case 1:
 		return getprinterdriverdir_level_1(name, uni_environment, buffer, offered, needed);
-		break;
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 	
@@ -5034,10 +4999,8 @@ uint32 _spoolss_enumprintprocessors(UNISTR2 *name, UNISTR2 *environment, uint32 
 	switch (level) {
 	case 1:
 		return enumprintprocessors_level_1(buffer, offered, needed, returned);
-		break;
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -5086,10 +5049,8 @@ uint32 _spoolss_enumprintprocdatatypes(UNISTR2 *name, UNISTR2 *processor, uint32
 	switch (level) {
 	case 1:
 		return enumprintprocdatatypes_level_1(buffer, offered, needed, returned);
-		break;
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -5178,13 +5139,10 @@ uint32 _spoolss_enumprintmonitors(UNISTR2 *name,uint32 level,
 	switch (level) {
 	case 1:
 		return enumprintmonitors_level_1(buffer, offered, needed, returned);
-		break;		
 	case 2:
 		return enumprintmonitors_level_2(buffer, offered, needed, returned);
-		break;
 	default:
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 
@@ -5315,14 +5273,11 @@ uint32 _spoolss_getjob( POLICY_HND *handle, uint32 jobid, uint32 level,
 	switch (level) {
 	case 1:
 		return getjob_level_1(queue, count, snum, jobid, buffer, offered, needed);
-		break;
 	case 2:
 		return getjob_level_2(queue, count, snum, jobid, buffer, offered, needed);
-		break;
 	default:
 		safe_free(queue);
 		return ERROR_INVALID_LEVEL;
-		break;
 	}
 }
 #undef OLD_NTDOMAIN

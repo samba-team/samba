@@ -64,7 +64,7 @@ BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 	prs_string("real_name", ps, depth,   r_u->real_name, strlen(r_u->real_name), sizeof(r_u->real_name));
 	prs_align(ps);
-	prs_uint32("guest", ps, depth, &(r_u->guest));
+	prs_uint32("guest", ps, depth, (uint32 *)&(r_u->guest));
 	return True;
 }
 
@@ -120,7 +120,7 @@ BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int dept
 
 	prs_uint32("uid", ps, depth, &(r_u->uid));
 	prs_uint32("gid", ps, depth, &(r_u->gid));
-	prs_uint32("num_grps", ps, depth, &(r_u->num_grps));
+	prs_uint32("num_grps", ps, depth, (uint32 *)&(r_u->num_grps));
 	if (r_u->num_grps != 0)
 	{
 		r_u->grps = (uint32*)Realloc(r_u->grps,
@@ -240,37 +240,37 @@ BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int dep
 
 	prs_align(ps);
 
-	prs_uint32("nullpwd", ps, depth, &(pwd->null_pwd));
+	prs_uint32("nullpwd", ps, depth, (uint32 *)&(pwd->null_pwd));
 	if (pwd->null_pwd)
 	{
 		return True;
 	}
 	
-	prs_uint32("cleartext", ps, depth, &(pwd->cleartext));
+	prs_uint32("cleartext", ps, depth, (uint32 *)&(pwd->cleartext));
 	if (pwd->cleartext)
 	{
 		prs_string("password", ps, depth,   pwd->password, strlen(pwd->password), sizeof(pwd->password));
 		prs_align(ps);
 		return True;
 	}
-	prs_uint32("crypted", ps, depth, &(pwd->crypted));
+	prs_uint32("crypted", ps, depth, (uint32 *)&(pwd->crypted));
 		
-	prs_uint8s(False, "smb_lm_pwd", ps, depth, (char*)&pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
+	prs_uint8s(False, "smb_lm_pwd", ps, depth, (unsigned char*)&pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 	prs_align(ps);
-	prs_uint8s(False, "smb_nt_pwd", ps, depth, (char*)&pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
+	prs_uint8s(False, "smb_nt_pwd", ps, depth, (unsigned char*)&pwd->smb_nt_pwd, sizeof(pwd->smb_nt_pwd));
 	prs_align(ps);
 
-	prs_uint8s(False, "smb_lm_owf", ps, depth, (char*)&pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
+	prs_uint8s(False, "smb_lm_owf", ps, depth, (unsigned char*)&pwd->smb_lm_owf, sizeof(pwd->smb_lm_owf));
 	prs_align(ps);
 	prs_uint32("nt_owf_len", ps, depth, &(pwd->nt_owf_len));
 	if (pwd->nt_owf_len > sizeof(pwd->smb_nt_owf))
 	{
 		return False;
 	}
-	prs_uint8s(False, "smb_nt_owf", ps, depth, (char*)&pwd->smb_nt_owf, pwd->nt_owf_len);
+	prs_uint8s(False, "smb_nt_owf", ps, depth, (unsigned char*)&pwd->smb_nt_owf, pwd->nt_owf_len);
 	prs_align(ps);
 
-	prs_uint8s(False, "lm_cli_chal", ps, depth, (char*)&pwd->lm_cli_chal, sizeof(pwd->lm_cli_chal));
+	prs_uint8s(False, "lm_cli_chal", ps, depth, (unsigned char*)&pwd->lm_cli_chal, sizeof(pwd->lm_cli_chal));
 	prs_align(ps);
 	prs_uint32("nt_cli_chal_len", ps, depth, &(pwd->nt_cli_chal_len));
 
@@ -278,7 +278,7 @@ BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int dep
 	{
 		return False;
 	}
-	prs_uint8s(False, "nt_cli_chal", ps, depth, (char*)&pwd->nt_cli_chal, pwd->nt_cli_chal_len);
+	prs_uint8s(False, "nt_cli_chal", ps, depth, (unsigned char*)&pwd->nt_cli_chal, pwd->nt_cli_chal_len);
 	prs_align(ps);
 
 	return True;
@@ -329,7 +329,7 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 
 	prs_align(ps);
 
-	prs_uint32("reuse", ps, depth, &(r_u->reuse));
+	prs_uint32("reuse", ps, depth, (uint32 *)&(r_u->reuse));
 
 	prs_uint32("ptr_ntc", ps, depth, &(r_u->ptr_ntc));
 	prs_uint32("ptr_uxc", ps, depth, &(r_u->ptr_uxc));
@@ -354,7 +354,7 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	}
 	if (r_u->ptr_ssk != 0)
 	{
-		prs_uint8s(False, "usr_sess_key", ps, depth, (char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
+		prs_uint8s(False, "usr_sess_key", ps, depth, (unsigned char*)&r_u->usr_sess_key, sizeof(r_u->usr_sess_key));
 	}
 	else
 	{
@@ -371,7 +371,7 @@ void copy_unix_creds(CREDS_UNIX *to, const CREDS_UNIX *from)
 		return;
 	}
 	fstrcpy(to->user_name, from->user_name);
-};
+}
 
 void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from)
 {
@@ -395,7 +395,7 @@ void copy_nt_sec_creds(CREDS_NT_SEC *to, const CREDS_NT_SEC *from)
 		to->num_grps = from->num_grps;
 		memcpy(to->grp_rids, from->grp_rids, size);
 	}
-};
+}
 
 void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 {
@@ -423,7 +423,7 @@ void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 		to->num_grps = from->num_grps;
 		memcpy(to->grps, from->grps, size);
 	}
-};
+}
 
 void create_ntc_from_cli_state (CREDS_NT *to, const struct cli_state *cli_from)
 {
@@ -446,7 +446,7 @@ void create_ntc_from_cli_state (CREDS_NT *to, const struct cli_state *cli_from)
                to->user_name, to->domain,
                to->ntlmssp_flags));
 
-};
+}
 
 
 void copy_nt_creds(struct ntuser_creds *to,
@@ -469,7 +469,7 @@ void copy_nt_creds(struct ntuser_creds *to,
 	DEBUG(10,("copy_nt_creds: user %s domain %s flgs: %x\n",
 	       to->user_name, to->domain, 
 	       to->ntlmssp_flags));
-};
+}
 
 void copy_user_creds(struct user_creds *to,
 				const struct user_creds *from)
@@ -519,7 +519,7 @@ void copy_user_creds(struct user_creds *to,
 		memcpy(to->usr_sess_key, from->usr_sess_key,
 		        sizeof(to->usr_sess_key));
 	}
-};
+}
 
 void free_user_creds(struct user_creds *creds)
 {

@@ -37,7 +37,7 @@ void init_request(struct winbindd_request *request, int request_type)
         static char *domain_env;
         static BOOL initialised;
 
-	request->cmd = request_type;
+	request->cmd = (enum winbindd_cmd)request_type;
 	request->pid = getpid();
 	request->domain[0] = '\0';
 
@@ -59,7 +59,7 @@ void init_response(struct winbindd_response *response)
 {
 	/* Initialise return value */
 
-	response->result = NSS_STATUS_UNAVAIL;
+	response->result = (enum winbindd_result)NSS_STATUS_UNAVAIL;
 }
 
 /* Close established socket */
