@@ -344,16 +344,15 @@ static void
 generate_type_encode (Symbol *s)
 {
   fprintf (headerfile,
-	   "int encode_%s(unsigned char *, int, void *);\n",
-	   s->gen_name);
+	   "int encode_%s(unsigned char *, int, %s *);\n",
+	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "int\n"
-	   "encode_%s(unsigned char *p, int len, void *d)\n"
+	   "encode_%s(unsigned char *p, int len, %s *data)\n"
 	   "{\n"
-	   "%s *data = (%s *)d;\n"
 	   "int ret = 0;\n"
 	   "int l, i;\n\n",
-	   s->gen_name, s->gen_name, s->gen_name);
+	   s->gen_name, s->gen_name);
 
   encode_type ("data", s->type);
   fprintf (codefile, "return ret;\n"
@@ -620,16 +619,15 @@ static void
 generate_type_decode (Symbol *s)
 {
   fprintf (headerfile,
-	   "int decode_%s(unsigned char *, int, void *);\n",
-	   s->gen_name);
+	   "int decode_%s(unsigned char *, int, %s *);\n",
+	   s->gen_name, s->gen_name);
 
   fprintf (codefile, "int\n"
-	   "decode_%s(unsigned char *p, int len, void *d)\n"
+	   "decode_%s(unsigned char *p, int len, %s *data)\n"
 	   "{\n"
-	   "%s *data = (%s *)d;\n"
 	   "int ret = 0, reallen;\n"
 	   "int l, i;\n\n",
-	   s->gen_name, s->gen_name, s->gen_name);
+	   s->gen_name, s->gen_name);
 
   decode_type ("data", s->type);
   fprintf (codefile, "return ret;\n"
