@@ -386,11 +386,11 @@ static NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_secur
 	/* the session_info owns this now */
 	gensec_ntlmssp_state->server_info = NULL;
 
-	(*session_info)->session_key = data_blob_talloc((*session_info)->mem_ctx, 
+	(*session_info)->session_key = data_blob_talloc(*session_info, 
 							gensec_ntlmssp_state->ntlmssp_state->session_key.data,
 							gensec_ntlmssp_state->ntlmssp_state->session_key.length);
 
-	(*session_info)->workstation = talloc_strdup((*session_info)->mem_ctx, 
+	(*session_info)->workstation = talloc_strdup(*session_info, 
 						     gensec_ntlmssp_state->ntlmssp_state->workstation);
 
 	return NT_STATUS_OK;

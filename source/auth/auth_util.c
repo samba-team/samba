@@ -402,15 +402,12 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
 NTSTATUS make_server_info(struct auth_serversupplied_info **server_info, 
 			  const char *username)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("auth subsystem: server_info for %s", username);
-	*server_info = talloc_p(mem_ctx, struct auth_serversupplied_info);
+	*server_info = talloc_p(NULL, struct auth_serversupplied_info);
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
-		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(*server_info);
-	(*server_info)->mem_ctx = mem_ctx;
 	
 	return NT_STATUS_OK;
 }
@@ -431,8 +428,8 @@ NTSTATUS make_server_info_guest(struct auth_serversupplied_info **server_info)
 	
 	(*server_info)->guest = True;
 
-	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_ANONYMOUS);
-	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_BUILTIN_GUESTS);
+	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info), SID_ANONYMOUS);
+	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info), SID_BUILTIN_GUESTS);
 	(*server_info)->n_domain_groups = 0;
 	(*server_info)->domain_groups = NULL;
 	
@@ -495,8 +492,8 @@ void free_user_info(struct auth_usersupplied_info **user_info)
 void free_server_info(struct auth_serversupplied_info **server_info)
 {
 	DEBUG(5,("attempting to free a server_info structure\n"));
-	if (!*server_info) {
-		talloc_destroy((*server_info)->mem_ctx);
+	if (*server_info) {
+		talloc_free(*server_info);
 	}
 	*server_info = NULL;
 }
@@ -530,15 +527,12 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
 {
 	NTSTATUS nt_status;
 
-	*session_info = talloc_p(server_info->mem_ctx, struct auth_session_info);
+	*session_info = talloc_p(server_info, struct auth_session_info);
 	if (!*session_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	
 	(*session_info)->refcount = 1;
-	(*session_info)->mem_ctx = server_info->mem_ctx;
-	server_info->mem_ctx = NULL; /* make sure not to accidentily destory it, 
-					and this information is now constant */
 	(*session_info)->server_info = server_info;
 
 	/* unless set otherwise, the session key is the user session
@@ -546,7 +540,7 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
  
 	(*session_info)->session_key = server_info->user_session_key;
 	
-	nt_status = create_nt_user_token((*session_info)->mem_ctx, 
+	nt_status = create_nt_user_token((*session_info), 
 					 server_info->user_sid, 
 					 server_info->primary_group_sid, 
 					 server_info->n_domain_groups, 
@@ -567,7 +561,7 @@ void free_session_info(struct auth_session_info **session_info)
 	if (*session_info) {
 		(*session_info)->refcount--;
 		if ((*session_info)->refcount <= 0) {
-			talloc_destroy((*session_info)->mem_ctx);
+			talloc_free((*session_info));
 		}
 	}
 	*session_info = NULL;

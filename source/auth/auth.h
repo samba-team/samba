@@ -58,8 +58,6 @@ struct auth_usersupplied_info
 
 struct auth_serversupplied_info 
 {
-	TALLOC_CTX *mem_ctx;
-
 	BOOL guest;
 	
 	struct dom_sid *user_sid;
@@ -95,8 +93,6 @@ struct auth_serversupplied_info
 
 struct auth_session_info 
 {
-	TALLOC_CTX *mem_ctx;
-
 	int refcount;
 	/* NT group information taken from the info3 structure */
 	
