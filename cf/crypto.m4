@@ -39,6 +39,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
   #include <openssl/rc4.h>
   ],
   [
+    void *schedule = 0;
     MD4_CTX md4;
     MD5_CTX md5;
     SHA_CTX sha1;
@@ -47,7 +48,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
     MD5_Init(&md5);
     SHA1_Init(&sha1);
 
-    des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+    des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
     RC4(0, 0, 0, 0);
   ], [
   crypto_lib=libcrypto
