@@ -314,7 +314,7 @@ static WERROR cmd_spoolss_enum_printers(struct cli_state *cli,
 		return WERR_OK;
 	}
 
-	if (argc == 2)
+	if (argc >= 2)
 		info_level = atoi(argv[1]);
 
 	if (argc == 3)
