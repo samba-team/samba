@@ -124,7 +124,15 @@ krb5_get_credentials (krb5_context context,
 	int len;
 	struct md4 m;
 	Checksum c;
+	krb5_creds cred, mcred;
 	
+	krb5_build_principal(context, &mcred.server, 
+			     in_creds->client->realm.length,
+			     in_creds->client->realm.data,
+			     "krbtgt", a.req_body.realm, NULL);
+	krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
+	memcpy(&key, cred.session.contents.data, sizeof(key));
+
 	len = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 				  &a.req_body);
 	md4_init(&m);
@@ -133,19 +141,11 @@ krb5_get_credentials (krb5_context context,
 	c.checksum.length = 16;
 	c.checksum.data = malloc(16);
 	md4_finito(&m, c.checksum.data);
-	krb5_build_authenticator (context, in_creds->client,
-				  &c, NULL, &authenticator);
-    }
-    
-    {
-	krb5_creds cred, mcred;
-
-	krb5_build_principal(context, &mcred.server, 
-			     in_creds->client->realm.length,
-			     in_creds->client->realm.data,
-			     "krbtgt", a.req_body.realm, NULL);
-	krb5_cc_retrieve_cred(context, ccache, 0, &mcred, &cred);
-	memcpy(&key, cred.session.contents.data, sizeof(key));
+	krb5_build_authenticator (context, NULL,
+				  &cred,
+				  &c,
+				  NULL,
+				  &authenticator);
 
 	foo.padata_type = pa_tgs_req;
 	err = krb5_build_ap_req(context, &cred, 
