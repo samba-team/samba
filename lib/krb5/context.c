@@ -87,7 +87,8 @@ init_context_from_config_file(krb5_context context)
 					 "time_format", NULL);
     if(context->time_fmt == NULL)
 	context->time_fmt = "%d-%b-%Y %H:%M:%S";
-    context->log_utc = krb5_config_get_bool(context, NULL, "libdefaults", "log_utc", NULL);
+    context->log_utc = krb5_config_get_bool(context, NULL, "libdefaults",
+					    "log_utc", NULL);
 
     /* init dns-proxy slime */
     tmp = krb5_config_get_string(context, NULL, "libdefaults", 
@@ -178,7 +179,7 @@ krb5_free_context(krb5_context context)
   int i;
 
   free(context->etypes);
-  free(context->default_realm);
+  krb5_free_host_realm (context, context->default_realms);
   krb5_config_file_free (context, context->cf);
   free_error_table (context->et_list);
   for(i = 0; i < context->num_cc_ops; ++i)
