@@ -627,7 +627,7 @@ static NTSTATUS lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_NO_MEMORY;
 		}
 			
-		samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "securityIdentifier", name);
+		samdb_msg_add_string(trusted_domain_state->policy->sam_ctx, mem_ctx, msg, "securityIdentifier", sid_string);
 	}
 
 	/* pull in all the template attributes.  Note this is always from the global samdb */
@@ -761,11 +761,12 @@ static NTSTATUS lsa_OpenTrustedDomainByName(struct dcesrv_call_state *dce_call,
 	if (!trusted_domain_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	trusted_domain_state->policy = policy_state;
 
 	/* search for the trusted_domain record */
 	ret = samdb_search(trusted_domain_state->policy->sam_ctx,
 			   mem_ctx, policy_state->system_dn, &msgs, attrs,
-			   "(&(cn=%s)(objectclass=trustedDomain))", 
+			   "(&(flatname=%s)(objectclass=trustedDomain))", 
 			   r->in.name.string);
 	if (ret == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -818,7 +819,7 @@ static NTSTATUS lsa_SetTrustDomainInfo(struct dcesrv_call_state *dce_call, TALLO
   lsa_DeleteTrustDomain
 */
 static NTSTATUS lsa_DeleteTrustDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_DeleteTrustDomain *r)
+				      struct lsa_DeleteTrustDomain *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -885,13 +886,88 @@ static NTSTATUS lsa_CloseTrustedDomainEx(struct dcesrv_call_state *dce_call,
 }
 
 
+/*
+  comparison function for sorting lsa_DomainInformation array
+*/
+static int compare_DomainInformation(struct lsa_DomainInformation *e1, struct lsa_DomainInformation *e2)
+{
+	return strcasecmp(e1->name.string, e2->name.string);
+}
+
 /* 
   lsa_EnumTrustDom 
 */
 static NTSTATUS lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct lsa_EnumTrustDom *r)
+				 struct lsa_EnumTrustDom *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *policy_handle;
+	struct lsa_DomainInformation *entries;
+	struct lsa_policy_state *policy_state;
+	struct ldb_message **domains;
+	const char *attrs[] = {
+		"flatname", 
+		"securityIdentifier",
+		NULL
+	};
+
+
+	int count, i;
+
+	*r->out.resume_handle = 0;
+
+	r->out.domains->domains = NULL;
+	r->out.domains->count = 0;
+
+	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
+
+	policy_state = policy_handle->data;
+
+	/* search for all users in this domain. This could possibly be cached and 
+	   resumed based on resume_key */
+	count = samdb_search(policy_state->sam_ctx, mem_ctx, policy_state->system_dn, &domains, attrs, 
+			     "objectclass=trustedDomain");
+	if (count == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (count == 0 || r->in.max_size == 0) {
+		return NT_STATUS_OK;
+	}
+
+	/* convert to lsa_DomainInformation format */
+	entries = talloc_array_p(mem_ctx, struct lsa_DomainInformation, count);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<count;i++) {
+		entries[i].sid = samdb_result_dom_sid(mem_ctx, domains[i], "securityIdentifier");
+		entries[i].name.string = samdb_result_string(domains[i], "flatname", NULL);
+	}
+
+	/* sort the results by name */
+	qsort(entries, count, sizeof(struct lsa_DomainInformation), 
+	      (comparison_fn_t)compare_DomainInformation);
+
+	if (*r->in.resume_handle >= count) {
+		*r->out.resume_handle = -1;
+
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+
+	/* return the rest, limit by max_size. Note that we 
+	   use the w2k3 element size value of 60 */
+	r->out.domains->count = count - *r->in.resume_handle;
+	r->out.domains->count = MIN(r->out.domains->count, 
+				 1+(r->in.max_size/LSA_ENUM_TRUST_DOMAIN_MULTIPLIER));
+
+	r->out.domains->domains = entries + *r->in.resume_handle;
+	r->out.domains->count = r->out.domains->count;
+
+	if (r->out.domains->count < count - *r->in.resume_handle) {
+		*r->out.resume_handle = *r->in.resume_handle + r->out.domains->count;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
