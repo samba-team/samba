@@ -225,7 +225,6 @@ enum client_action
 	pstring term_code;
 	BOOL got_pass = False;
 	char *cmd_str="";
-	mode_t myumask = 0755;
 	enum client_action cli_action = CLIENT_NONE;
 	int nprocs = 1;
 	int numops = 100;
@@ -289,9 +288,6 @@ enum client_action
 	smb_cli->nt_pipe_fnum   = 0xffff;
 
 	setup_logging(pname, True);
-
-	myumask = umask(0);
-	umask(myumask);
 
 	if (!get_myname(global_myname))
 	{
