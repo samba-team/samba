@@ -1,13 +1,35 @@
-2003-03-19  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acquire_cred.c (acquire_initiator_cred): if the requested name
+	isn't in the ccache, also check keytab.  Extact the krbtgt for the
+	default realm to check how long the credentials will last.
+	
+	* add_cred.c (gss_add_cred): don't create a new ccache, just open
+	the old one; better check if output handle is compatible with new
+	(copied) handle
+
+	* test_acquire_cred.c: test gss_add_cred too
+	
+2003-04-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: build test_acquire_cred
+	
+	* test_acquire_cred.c: simple gss_acquire_cred test
+	
+2003-04-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: s/gssapi/GSS-API/
+	
+2003-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: document v1 interface (and that they are
 	obsolete)
 
-2003-03-18  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_acquire_cred.3: list supported mechanism and nametypes
 	
-2003-03-16  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-16  Love Hörnquist Åstrand  <lha@it.su.se>
 	
 	* gss_acquire_cred.3: text about gss_display_name
 
@@ -119,7 +141,7 @@
 
 	* gssapi.h: comment out the argument names
 	
-2003-03-15  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gssapi.3: add LIST OF FUNCTIONS and copyright/license
 
@@ -127,29 +149,29 @@
 	
 	* Makefile.am: man_MANS += gss_aquire_cred.3
 	
-2003-03-14  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss_aquire_cred.3: the gssapi api manpage
 	
-2003-03-03  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* inquire_context.c: (gss_inquire_context): rename argument open
 	to open_context
 
 	* gssapi.h (gss_inquire_context): rename argument open to open_context
 
-2003-02-27  Love Hörnquist Åstrand <lha@it.su.se>
+2003-02-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_sec_context.c (do_delegation): remove unused variable
 	subkey
 
 	* gssapi.3: all 0.5.x version had broken token delegation
 	
-2003-02-21  Love Hörnquist Åstrand <lha@it.su.se>
+2003-02-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* (init_auth): only generate one subkey
 
-2003-01-27  Love Hörnquist Åstrand <lha@it.su.se>
+2003-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* verify_mic.c (verify_mic_des3): fix 3des verify_mic to conform
 	to rfc (and mit kerberos), provide backward compat hook
