@@ -85,7 +85,7 @@ static int attribute = aDIR | aSYSTEM | aHIDDEN;
 #define CLIENT_TIMEOUT (30*1000)
 #endif
 
-static char *tarbuf;
+static char *tarbuf, *buffer_p;
 static int tp, ntarf, tbufsiz, ttarf;
 /* Incremental mode */
 BOOL tar_inc=False;
@@ -1554,18 +1554,26 @@ static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
   }
 }
 
-#if 0 /* Removed to get around gcc 'defined but not used' error. */
+#ifndef OLD_DOTARPUT 
 
 /****************************************************************************
 Move to the next block in the buffer, which may mean read in another set of
-blocks.
+blocks. FIXME, we should allow more than one block to be skipped.
 ****************************************************************************/
-static int next_block(char *ltarbuf, char *bufferp, int bufsiz)
+static int next_block(char *ltarbuf, char **bufferp, int bufsiz)
 {
   int bufread, total = 0;
 
-  if (bufferp >= (ltarbuf + bufsiz)) {
-    
+  DEBUG(5, ("Advancing to next block: %0X\n", *bufferp));
+  *bufferp += TBLOCK;
+  total = TBLOCK;
+
+  if (*bufferp >= (ltarbuf + bufsiz)) {
+
+    DEBUG(5, ("Reading more data into ltarbuf ...\n"));
+
+    total = 0;
+
     for (bufread = read(tarhandle, ltarbuf, bufsiz); total < bufsiz; total += bufread) {
 
       if (bufread <= 0) { /* An error, return false */
@@ -1574,49 +1582,192 @@ static int next_block(char *ltarbuf, char *bufferp, int bufsiz)
 
     }
 
-    bufferp = ltarbuf;
+    DEBUG(5, ("Total bytes read ... %i\n", total));
 
-  }
-  else {
-
-    bufferp += TBLOCK;
+    *bufferp = ltarbuf;
 
   }
 
-  return(0);
+  return(total);
 
 }
 
-static int skip_file(int skip)
+/* Skip a file, even if it includes a long file name? */
+static int skip_file(int skipsize)
+{
+  int dsize = skipsize;
+
+  DEBUG(5, ("Skiping file. Size = %i\n", skipsize));
+
+  /* FIXME, we should skip more than one block at a time */
+
+  while (dsize > 0) {
+
+    if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+
+	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+	return(False);
+
+    }
+
+    dsize -= TBLOCK;
+
+  }
+
+  return(True);
+}
+
+/* We get a file from the tar file and store it */
+static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
+{
+  int fsize = finfo.size;
+  int fnum, pos = 0, dsize = 0, wsize = 0, rsize = 0;
+
+  DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, fsize));
+
+  if (ensurepath(finfo.name, inbuf, outbuf) &&
+      !smbcreat(finfo, &fnum, inbuf, outbuf))
+    {
+      DEBUG(0, ("abandoning restore\n"));
+      return(False);
+    }
+
+  DEBUG(0, ("restore tar file %s of size %d bytes\n",
+	    finfo.name, finfo.size));
+
+  /* read the blocks from the tar file and write to the remote file */
+
+  rsize = fsize;
+
+  while (rsize > 0) {
+
+    dsize = MIN(tbufsiz - (buffer_p - tarbuf), rsize); /* Calculate the size to write */
+
+    DEBUG(5, ("writing %i bytes ...\n", dsize));
+
+    if (!smbwrite(fnum, dsize, pos, 0, fsize - pos, buffer_p, inbuf, outbuf)) {
+
+      DEBUG(0, ("Error writing remote file\n"));
+      return 0;
+
+    }
+
+    rsize -= dsize;
+
+    /* Now figure out how much to move in the buffer */
+
+    /* FIXME, we should skip more than one block at a time */
+
+    while (dsize > 0) {
+
+      if (next_block(tarbuf, &buffer_p, tbufsiz) <=0) {
+
+	DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+	return False;
+
+      }
+
+      dsize -= TBLOCK;
+
+    }
+
+  }
+
+  /* Now close the file ... */
+
+  if (!smbshut(finfo, fnum, inbuf, outbuf)) {
+
+    DEBUG(0, ("Error closing remote file\n"));
+    return(False);
+
+  }
+
+  /* Now we update the creation date ... */
+
+  DEBUG(5, ("Updating creation date on %s\n", finfo.name));
+
+  if (!do_setrtime(finfo.name, finfo.mtime)) {
+
+    DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
+    /*return(False); */ /* Ignore, as Win95 does not allow changes */
+
+  }
+
+  ntarf++;
+  return(True);
+
+}
+
+/* Create a directory.  We just ensure that the path exists and return as there
+   is no file associated with a directory 
+*/
+static int get_dir(file_info2 finfo, char * inbuf, char * outbuf)
 {
 
-  return(0);
-}
+  DEBUG(5, ("Creating directory: %s\n", finfo.name));
 
-static int get_file(file_info2 finfo)
-{
+  if (!ensurepath(finfo.name, inbuf, outbuf)) {
 
-  return(0);
+    DEBUG(0, ("Problems creating directory\n"));
+    return(False);
 
-}
-
-static int get_dir(file_info2 finfo)
-{
-
-  return(0);
+  }
+  return(True);
 
 }
-
+/* Get a file with a long file name ... first file has file name, next file 
+   has the data. We only want the long file name, as the loop in do_tarput
+   will deal with the rest.
+*/
 static char * get_longfilename(file_info2 finfo)
 {
+  int namesize = finfo.size + strlen(cur_dir) + 2;
+  char *longname = malloc(namesize);
+  char *xxx;
+  int offset = 0, left = finfo.size;
 
-  return(NULL);
+  DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
+  DEBUG(5, ("Len = %i\n", finfo.size));
+  fflush(stderr);
+
+  if (longname == NULL) {
+
+    DEBUG(0, ("could not allocate buffer of size %d for longname\n", 
+	      finfo.size + strlen(cur_dir) + 2));
+    return(NULL);
+  }
+
+  /* First, add cur_dir to the long file name */
+
+  if (strlen(cur_dir) > 0) {
+    strncpy(longname, cur_dir, namesize);
+    offset = strlen(cur_dir);
+  }
+
+  /* Loop through the blocks picking up the name */
+
+  while (left > 0) {
+
+    if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+
+      DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+      return(NULL);
+
+    }
+
+    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size));
+    DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
+
+    offset += TBLOCK;
+    left -= TBLOCK;
+
+  }
+
+  return(longname);
 
 }
 
-static char * bufferp;
-
-static void do_tarput2(void)
+static void do_tarput(void)
 {
   file_info2 finfo, *finfo2;
   struct timeval tp_start;
@@ -1625,8 +1776,11 @@ static void do_tarput2(void)
 
   GetTimeOfDay(&tp_start);
 
-  bufferp = tarbuf + tbufsiz;  /* init this to force first read */
+  DEBUG(5, ("RJS do_tarput called ...\n"));
 
+  buffer_p = tarbuf + tbufsiz;  /* init this to force first read */
+
+#ifdef 0   /* Fix later ... */
   if (push_dir(&dir_stack, &finfo)) {
 
     finfo2 = pop_dir(&dir_stack);
@@ -1637,6 +1791,7 @@ static void do_tarput2(void)
 
     }
   }
+#endif
 
   inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -1648,21 +1803,27 @@ static void do_tarput2(void)
 
   }
 
-  if (next_block(tarbuf, bufferp, tbufsiz) <= 0) {
-
-    DEBUG(0, ("Empty file or short tar file: %s\n", strerror(errno)));
-
-  }
-
   /* Now read through those files ... */
 
   while (True) {
 
-    switch (readtarheader((union hblock *) bufferp, &finfo, cur_dir)) {
+    /* Get us to the next block, or the first block first time around */
+
+    if (next_block(tarbuf, &buffer_p, tbufsiz) <= 0) {
+
+      DEBUG(0, ("Empty file, short tar file, or read error: %s\n", strerror(errno)));
+
+      return;
+
+    }
+
+    DEBUG(5, ("Reading the next header ...\n"));
+    fflush(stdout);
+    switch (readtarheader((union hblock *) buffer_p, &finfo, cur_dir)) {
 
     case -2:    /* Hmm, not good, but not fatal */
       DEBUG(0, ("Skipping %s...\n", finfo.name));
-      if ((next_block(tarbuf, bufferp, tbufsiz) <= 0) &&
+      if ((next_block(tarbuf, &buffer_p, tbufsiz) <= 0) &&
           !skip_file(finfo.size)) {
 
 	DEBUG(0, ("Short file, bailing out...\n"));
@@ -1691,46 +1852,65 @@ static void do_tarput2(void)
     /* Now, do we have a long file name? */
 
     if (longfilename != NULL) {
-      if (strlen(longfilename) < sizeof(finfo.name)) { /* if we have space */
 
-	strncpy(finfo.name, longfilename, sizeof(finfo.name) - 1);
-	free(longfilename);
-	longfilename = NULL;
-
-      }
-      else {
-
-	DEBUG(0, ("filename: %s too long, skipping\n", strlen(longfilename)));
-	skip = True;
-
-      }
-    }
-
-    /* Well, now we have a header, process the file ... */
-
-    /* Should we skip the file?                         */
-
-    if (skip) {
-
-      skip_file(finfo.size);
-      continue;
+      free(finfo.name);   /* Free the space already allocated */
+      finfo.name = longfilename;
+      longfilename = NULL;
 
     }
+
+    /* Well, now we have a header, process the file ...            */
+
+    /* Should we skip the file? We have the long name as well here */
+
+    skip = clipn &&
+      ((!tar_re_search && clipfind(cliplist, clipn, finfo.name) ^ tar_excl)
+#ifdef HAVE_REGEX_H
+      || (tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
+#else
+      || (tar_re_search && mask_match(finfo.name, cliplist[0], True, False)));
+#endif
+
+  DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, cliplist[0], finfo.name));
+
+  if (skip) {
+
+    skip_file(finfo.size);
+    continue;
+
+  }
 
     /* We only get this far if we should process the file */
 
-    switch (((union hblock *)bufferp) -> dbuf.linkflag) {
+    switch (((union hblock *)buffer_p) -> dbuf.linkflag) {
 
     case '0':  /* Should use symbolic names--FIXME */
-      get_file(finfo);
+      if (!get_file(finfo, inbuf, outbuf)) {
+
+	free(inbuf); free(outbuf);
+	DEBUG(0, ("Abandoning restore\n"));
+	return;
+
+      }
       break;
 
     case '5':
-      get_dir(finfo);
+      if (!get_dir(finfo, inbuf, outbuf)) {
+	free(inbuf); free(outbuf);
+	DEBUG(0, ("Abandoning restore \n"));
+	return;
+      }
       break;
 
     case 'L':
       longfilename = get_longfilename(finfo);
+      if (!longfilename) {
+	free(inbuf); free(outbuf);
+	DEBUG(0, ("abandoning restore\n"));
+	return;
+
+      }
+      DEBUG(5, ("Long file name: %s\n", longfilename));
       break;
 
     default:
@@ -1743,7 +1923,8 @@ static void do_tarput2(void)
 
 
 }
-#endif /* Removed to get around gcc 'defined but not used' error. */
+
+#else 
 
 static void do_tarput()
 {
@@ -1774,7 +1955,7 @@ static void do_tarput()
 
   /* These should be the only reads in clitar.c */
   while ((bufread=read(tarhandle, tarbuf, tbufsiz))>0) {
-    char *buffer_p, *endofbuffer;
+    char *endofbuffer;
     int chunk;
 
     /* Code to handle a short read.
@@ -2062,6 +2243,7 @@ static void do_tarput()
 
   free(inbuf); free(outbuf);
 }
+#endif
 
 /*
  * samba interactive commands

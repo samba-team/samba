@@ -3209,28 +3209,35 @@ static BOOL list_servers(char *wk_grp)
 }
 
 
+/* Some constants for completing filename arguments */
+
+#define COMPL_NONE        0          /* No completions */
+#define COMPL_REMOTE      1          /* Complete remote filename */
+#define COMPL_LOCAL       2          /* Complete local filename */
+
 /* This defines the commands supported by this client */
 struct
 {
   char *name;
   void (*fn)(char *, char *);
   char *description;
+  char compl_args[2];      /* Completion argument info */
 } commands[] = 
 {
-  {"ls",cmd_dir,"<mask> list the contents of the current directory"},
-  {"dir",cmd_dir,"<mask> list the contents of the current directory"},
-  {"lcd",cmd_lcd,"[directory] change/report the local current working directory"},
-  {"cd",cmd_cd,"[directory] change/report the remote directory"},
+  {"ls",cmd_dir,"<mask> list the contents of the current directory",COMPL_REMOTE},
+  {"dir",cmd_dir,"<mask> list the contents of the current directory",COMPL_REMOTE},
+  {"lcd",cmd_lcd,"[directory] change/report the local current working directory",COMPL_LOCAL},
+  {"cd",cmd_cd,"[directory] change/report the remote directory",COMPL_REMOTE},
   {"pwd",cmd_pwd,"show current remote directory (same as 'cd' with no args)"},
-  {"get",cmd_get,"<remote name> [local name] get a file"},
-  {"mget",cmd_mget,"<mask> get all the matching files"},
-  {"put",cmd_put,"<local name> [remote name] put a file"},
-  {"mput",cmd_mput,"<mask> put all matching files"},
-  {"rename",cmd_rename,"<src> <dest> rename some files"},
-  {"more",cmd_more,"<remote name> view a remote file with your pager"},  
-  {"mask",cmd_select,"<mask> mask all filenames against this"},
-  {"del",cmd_del,"<mask> delete all matching files"},
-  {"rm",cmd_del,"<mask> delete all matching files"},
+  {"get",cmd_get,"<remote name> [local name] get a file",COMPL_REMOTE,COMPL_LOCAL},
+  {"mget",cmd_mget,"<mask> get all the matching files",COMPL_REMOTE},
+  {"put",cmd_put,"<local name> [remote name] put a file",COMPL_LOCAL,COMPL_REMOTE},
+  {"mput",cmd_mput,"<mask> put all matching files",COMPL_REMOTE},
+  {"rename",cmd_rename,"<src> <dest> rename some files",COMPL_REMOTE,COMPL_REMOTE},
+  {"more",cmd_more,"<remote name> view a remote file with your pager",COMPL_REMOTE},  
+  {"mask",cmd_select,"<mask> mask all filenames against this",COMPL_REMOTE},
+  {"del",cmd_del,"<mask> delete all matching files",COMPL_REMOTE},
+  {"rm",cmd_del,"<mask> delete all matching files",COMPL_REMOTE},
   {"mkdir",cmd_mkdir,"<directory> make a directory"},
   {"md",cmd_mkdir,"<directory> make a directory"},
   {"rmdir",cmd_rmdir,"<directory> remove a directory"},
@@ -3248,13 +3255,13 @@ struct
   {"quit",cli_send_logout,"logoff the server"},
   {"q",cli_send_logout,"logoff the server"},
   {"exit",cli_send_logout,"logoff the server"},
-  {"newer",cmd_newer,"<file> only mget files newer than the specified local file"},
+  {"newer",cmd_newer,"<file> only mget files newer than the specified local file",COMPL_LOCAL},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit"},
   {"tar",cmd_tar,"tar <c|x>[IXbgNa] current directory to/from <file name>" },
   {"blocksize",cmd_block,"blocksize <number> (default 20)" },
   {"tarmode",cmd_tarmode,
      "<full|inc|reset|noreset> tar's behaviour towards archive bits" },
-  {"setmode",cmd_setmode,"filename <setmode string> change modes of file"},
+  {"setmode",cmd_setmode,"filename <setmode string> change modes of file",COMPL_REMOTE},
   {"help",cmd_help,"[command] give help on a command"},
   {"?",cmd_help,"[command] give help on a command"},
   {"!",NULL,"run a shell command on the local system"},
@@ -3356,6 +3363,182 @@ static void wait_keyboard(char *buffer)
     }  
 }
 
+#ifdef HAVE_LIBREADLINE
+
+/****************************************************************************
+  completion routines for GNU Readline
+****************************************************************************/
+
+/* To avoid filename completion being activated when no valid
+   completions are found, we assign this stub completion function
+   to the rl_completion_entry_function variable. */
+
+char *complete_cmd_null(char *text, int state)
+{
+  return NULL;
+}
+
+/* Argh.  This is starting to get ugly.  We need to be able to pass data
+   back from the do_dir() iterator function. */
+
+static int compl_state;
+static char *compl_text;
+static pstring result;
+
+/* Iterator function for do_dir() */
+
+void complete_process_file(file_info *f)
+{
+  /* Do we have a partial match? */
+
+  if ((compl_state >= 0) && (strncmp(compl_text, f->name, 
+				     strlen(compl_text)) == 0)) {
+
+    /* Return filename if we have made enough matches */
+
+    if (compl_state == 0) {
+      pstrcpy(result, f->name);
+      compl_state = -1;
+
+      return;
+    }
+    compl_state--;
+  }
+}
+
+/* Complete a remote file */
+
+char *complete_remote_file(char *text, int state)
+{
+  char *InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+  char *OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
+  int attribute = aDIR | aSYSTEM | aHIDDEN;
+  pstring mask;
+
+  if ((InBuffer == NULL) || (OutBuffer == NULL)) 
+    return(NULL);
+
+  /* Create dir mask */
+
+  pstrcpy(mask, cur_dir);
+  pstrcat(mask, "*");
+
+  /* Initialise static vars for filename match */
+
+  compl_text = text;
+  compl_state = state;
+  result[0] = '\0';
+
+  /* Iterate over all files in directory */
+
+  do_dir(InBuffer, OutBuffer, mask, attribute, complete_process_file, False, 
+	 True);
+
+  /* Clean up */
+
+  free(InBuffer);
+  free(OutBuffer);
+
+  /* Return matched filename */
+
+  if (result[0] != '\0') {
+    return strdup(result);      /* Readline will dispose of strings */
+  } else {
+    return NULL;
+  }
+}
+
+/* Complete a smbclient command */
+
+char *complete_cmd(char *text, int state)
+{
+  static int cmd_index;
+  char *name;
+
+  /* Initialise */
+  
+  if (state == 0) {
+    cmd_index = 0;
+  }
+
+  /* Return the next name which partially matches the list of commands */
+
+  while (strlen(name = commands[cmd_index++].name) > 0) {
+    if (strncmp(name, text, strlen(text)) == 0) {
+      return strdup(name);
+    }
+  }
+
+  return NULL;
+}
+
+/* Main completion function for smbclient.  Work out which word we are
+   trying to complete and call the appropriate function. */
+
+char **completion_fn(char *text, int start, int end)
+{
+  int i, num_words, cmd_index;
+  char lastch = ' ';
+
+  /* If we are at the start of a word, we are completing a smbclient
+     command. */
+
+  if (start == 0) {
+    return completion_matches(text, complete_cmd);
+  }
+
+  /* Count # of words in command */
+
+  num_words = 0;
+  for (i = 0; i <= end; i++) {
+    if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
+      num_words++;
+    lastch = rl_line_buffer[i];
+  }
+
+  if (rl_line_buffer[end] == ' ')
+    num_words++;
+
+  /* Work out which command we are completing for */
+
+  for (cmd_index = 0; strcmp(commands[cmd_index].name, "") != 0; 
+       cmd_index++) {
+
+    /* Check each command in array */
+
+    if (strncmp(rl_line_buffer, commands[cmd_index].name,
+		strlen(commands[cmd_index].name)) == 0) {
+
+      /* Call appropriate completion function */
+
+      if ((num_words == 2) || (num_words == 3)) {
+	switch (commands[cmd_index].compl_args[num_words - 2]) {
+
+	case COMPL_REMOTE:
+	  return completion_matches(text, complete_remote_file);
+	  break;
+
+	case COMPL_LOCAL:
+	  return completion_matches(text, filename_completion_function);
+	  break;
+
+	default:
+	    /* An invalid completion type */
+	    break;
+	}
+      }
+
+      /* We're either completing an argument > 3 or found an invalid
+	 completion type.  Either way do nothing about it. */
+
+      break;
+    }
+  }
+ 
+  return NULL;
+}
+
+#endif /* HAVE_LIBREADLINE */
 
 /****************************************************************************
   process commands from the client
@@ -3422,6 +3605,30 @@ static BOOL process(char *base_directory)
 
       bzero(OutBuffer,smb_size);
 
+#ifdef HAVE_LIBREADLINE
+
+      {
+	pstring prompt;
+	
+	/* Read input using GNU Readline */
+
+	slprintf(prompt, sizeof(prompt) - 1, "smb: %s> ", CNV_LANG(cur_dir));
+	if (!readline(prompt))
+	  break;
+
+	/* Copy read line to samba buffer */
+	
+	pstrcpy(line, rl_line_buffer);
+	pstrcat(line, "\n");
+
+	/* Add line to history */
+
+	if (strlen(line) > 0)
+	  add_history(line);
+      }
+
+#else
+
       /* display a prompt */
       DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
       dbgflush( );
@@ -3431,6 +3638,8 @@ static BOOL process(char *base_directory)
       /* and get a response */
       if (!fgets(line,1000,stdin))
 	break;
+
+#endif
 
       /* input language code to internal one */
       CNV_INPUT (line);
@@ -3755,6 +3964,19 @@ static void usage(char *pname)
       exit(1);
     }
 
+#ifdef HAVE_LIBREADLINE
+
+  /* Initialise GNU Readline */
+  
+  rl_readline_name = "smbclient";
+  rl_attempted_completion_function = completion_fn;
+  rl_completion_entry_function = (Function *)complete_cmd_null;
+
+  /* Initialise history list */
+
+  using_history();
+
+#endif /* HAVE_LIBREADLINE */
 
   DEBUG( 3, ( "Client started (version %s).\n", VERSION ) );
 
@@ -3848,5 +4070,3 @@ static void usage(char *pname)
 
   return(0);
 }
-
-
