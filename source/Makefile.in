@@ -109,7 +109,8 @@ QUOTAOBJS=@QUOTAOBJS@
 # object file lists
 ######################################################################
 
-TDB_OBJ = tdb/tdb.o tdb/spinlock.o tdb/tdbutil.o 
+TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
+TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o 
 
 LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
@@ -455,6 +456,8 @@ WINBIND_NSS_PICOBJS = $(WINBIND_NSS_OBJ:.o=.po)
 POPT_OBJS=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
 
+TDBBACKUP_OBJ = tdb/tdbbackup.o $(TDBBASE_OBJ)
+
 ######################################################################
 # now the rules...
 ######################################################################
@@ -745,6 +748,10 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 bin/spamsync: rpcclient/samsync.o bin/libmsrpc.a
 	@$(LINK) -o $@ rpcclient/samsync.o bin/libmsrpc.a \
 		$(UBIQX_OBJ) $(LIBS)
+
+bin/tdbbackup: $(TDBBACKUP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
 
 install: installbin installman installscripts installswat 
 
