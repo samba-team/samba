@@ -35,6 +35,86 @@
 
 RCSID("$Id$");
 
+typedef struct krb5_get_init_creds_ctx {
+    krb5_kdc_flags flags;
+    krb5_creds cred;
+    krb5_addresses *addrs;
+    krb5_enctype *etypes;
+    krb5_preauthtype *pre_auth_types;
+    const char *in_tkt_service;
+    unsigned nonce;
+
+    AS_REQ as_req;
+
+    const char *password;
+    krb5_s2k_proc key_proc;
+} krb5_get_init_creds_ctx;
+
+static krb5_error_code
+default_s2k_func(krb5_context context, krb5_enctype type, 
+		 krb5_const_pointer keyseed,
+		 krb5_salt salt, krb5_data *s2kparms,
+		 krb5_keyblock **key)
+{
+    krb5_error_code ret;
+    krb5_data password;
+    krb5_data opaque;
+
+    password.data = (void *)keyseed;
+    password.length = strlen(keyseed);
+    if (s2kparms)
+	opaque = *s2kparms;
+    else
+	krb5_data_zero(&opaque);
+	
+    *key = malloc(sizeof(**key));
+    if (*key == NULL)
+	return ENOMEM;
+    ret = krb5_string_to_key_data_salt_opaque(context, type, password,
+					      salt, opaque, *key);
+    if (ret)
+	free(*key);
+    return ret;
+}
+
+static krb5_error_code
+init_init_creds_ctx(krb5_context context,
+		    krb5_get_init_creds_ctx *ctx, 
+		    const char *in_tkt_service,
+		    const krb5_get_init_creds_opt *init_cred_opts)
+{
+    memset(ctx, 0, sizeof(*ctx));
+    
+    if (init_cred_opts->private) {
+	ctx->password = init_cred_opts->private->password;
+	ctx->key_proc = init_cred_opts->private->key_proc;
+    }
+    if (ctx->key_proc == NULL)
+	ctx->key_proc = default_s2k_func;
+
+    ctx->pre_auth_types = NULL;
+    ctx->flags.i = 0;
+    ctx->addrs = NULL;
+    ctx->etypes = NULL;
+    ctx->pre_auth_types = NULL;
+    ctx->in_tkt_service = in_tkt_service;
+
+    memset(&ctx->as_req, 0, sizeof(ctx->as_req));
+
+    return 0;
+}
+
+static void
+free_init_creds_ctx(krb5_context context, krb5_get_init_creds_ctx *ctx)
+{
+    if (ctx->etypes)
+	free(ctx->etypes);
+    if (ctx->pre_auth_types)
+	free (ctx->pre_auth_types);
+    free_AS_REQ(&ctx->as_req);
+    memset(&ctx->as_req, 0, sizeof(ctx->as_req));
+}
+
 static int
 get_config_time (krb5_context context,
 		 const char *realm,
@@ -201,65 +281,65 @@ get_init_creds_common(krb5_context context,
 		      krb5_deltat start_time,
 		      const char *in_tkt_service,
 		      krb5_get_init_creds_opt *options,
-		      krb5_addresses **addrs,
-		      krb5_enctype **etypes,
-		      krb5_creds *cred,
-		      krb5_preauthtype **pre_auth_types,
-		      krb5_kdc_flags *flags)
+		      krb5_get_init_creds_ctx *ctx)
 {
-    krb5_error_code ret;
     krb5_get_init_creds_opt default_opt;
+    krb5_error_code ret;
+    krb5_enctype *etypes;
+    krb5_preauthtype *pre_auth_types;
 
     if (options == NULL) {
 	krb5_get_init_creds_opt_init (&default_opt);
 	options = &default_opt;
     }
 
-    ret = init_cred (context, cred, client, start_time,
+    ret = init_cred (context, &ctx->cred, client, start_time,
 		     in_tkt_service, options);
     if (ret)
 	return ret;
 
-    flags->i = 0;
+    ctx->flags.i = 0;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_FORWARDABLE)
-	flags->b.forwardable = options->forwardable;
+	ctx->flags.b.forwardable = options->forwardable;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PROXIABLE)
-	flags->b.proxiable = options->proxiable;
+	ctx->flags.b.proxiable = options->proxiable;
 
     if (start_time)
-	flags->b.postdated = 1;
-    if (cred->times.renew_till)
-	flags->b.renewable = 1;
+	ctx->flags.b.postdated = 1;
+    if (ctx->cred.times.renew_till)
+	ctx->flags.b.renewable = 1;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ADDRESS_LIST)
-	*addrs = options->address_list;
+	ctx->addrs = options->address_list;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ETYPE_LIST) {
-	*etypes = malloc((options->etype_list_length + 1)
+	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
-	if (*etypes == NULL) {
+	if (etypes == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
-	memcpy (*etypes, options->etype_list,
+	memcpy (etypes, options->etype_list,
 		options->etype_list_length * sizeof(krb5_enctype));
-	(*etypes)[options->etype_list_length] = ETYPE_NULL;
+	etypes[options->etype_list_length] = ETYPE_NULL;
+	ctx->etypes = etypes;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST) {
-	*pre_auth_types = malloc((options->preauth_list_length + 1)
-				 * sizeof(krb5_preauthtype));
-	if (*pre_auth_types == NULL) {
+	pre_auth_types = malloc((options->preauth_list_length + 1)
+				* sizeof(krb5_preauthtype));
+	if (pre_auth_types == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
 	    return ENOMEM;
 	}
-	memcpy (*pre_auth_types, options->preauth_list,
+	memcpy (pre_auth_types, options->preauth_list,
 		options->preauth_list_length * sizeof(krb5_preauthtype));
-	(*pre_auth_types)[options->preauth_list_length] = KRB5_PADATA_NONE;
+	pre_auth_types[options->preauth_list_length] = KRB5_PADATA_NONE;
+	ctx->pre_auth_types = pre_auth_types;
     }
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_SALT)
 	;			/* XXX */
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ANONYMOUS)
-	flags->b.request_anonymous = options->anonymous;
+	ctx->flags.b.request_anonymous = options->anonymous;
     return 0;
 }
 
@@ -392,18 +472,18 @@ krb5_get_init_creds_keytab(krb5_context context,
 			   const char *in_tkt_service,
 			   krb5_get_init_creds_opt *options)
 {
+    struct krb5_get_init_creds_ctx ctx;
     krb5_error_code ret;
-    krb5_kdc_flags flags;
-    krb5_addresses *addrs = NULL;
-    krb5_enctype *etypes = NULL;
-    krb5_preauthtype *pre_auth_types = NULL;
-    krb5_creds this_cred;
     krb5_keytab_key_proc_args *a;
     
+    ret = init_init_creds_ctx(context, &ctx, in_tkt_service, options);
+    if (ret)
+	goto out;
+
     ret = get_init_creds_common(context, creds, client, start_time,
-				in_tkt_service, options,
-				&addrs, &etypes, &this_cred, &pre_auth_types,
-				&flags);
+				ctx.in_tkt_service,
+				options,
+				&ctx);
     if(ret)
 	goto out;
 
@@ -413,37 +493,29 @@ krb5_get_init_creds_keytab(krb5_context context,
 	ret = ENOMEM;
 	goto out;
     }
-    a->principal = this_cred.client;
+    a->principal = ctx.cred.client;
     a->keytab    = keytab;
 
     ret = krb5_get_in_cred (context,
-			    flags.i,
-			    addrs,
-			    etypes,
-			    pre_auth_types,
+			    ctx.flags.i,
+			    ctx.addrs,
+			    ctx.etypes,
+			    ctx.pre_auth_types,
 			    NULL,
 			    krb5_keytab_key_proc,
 			    a,
 			    NULL,
 			    NULL,
-			    &this_cred,
+			    &ctx.cred,
 			    NULL);
     free (a);
 
-    if (ret)
-	goto out;
-    free (pre_auth_types);
-    free (etypes);
-    if (creds)
-	*creds = this_cred;
+    if (ret == 0 && creds)
+	*creds = ctx.cred;
     else
-	krb5_free_creds_contents (context, &this_cred);
-    return 0;
+	krb5_free_creds_contents (context, &ctx.cred);
 
-out:
-    free (pre_auth_types);
-    free (etypes);
-    krb5_free_creds_contents (context, &this_cred);
+    free_init_creds_ctx(context, &ctx);
     return ret;
 }
 
@@ -457,7 +529,6 @@ init_creds_init_as_req (krb5_context context,
 			const krb5_creds *creds,
 			const krb5_addresses *addrs,
 			const krb5_enctype *etypes,
-			unsigned nonce,
 			AS_REQ *a)
 {
     krb5_error_code ret;
@@ -511,7 +582,7 @@ init_creds_init_as_req (krb5_context context,
 	}
 	*a->req_body.rtime = creds->times.renew_till;
     }
-    a->req_body.nonce = nonce;
+    a->req_body.nonce = 0;
     ret = krb5_init_etype (context,
 			   &a->req_body.etype.len,
 			   &a->req_body.etype.val,
@@ -557,11 +628,6 @@ init_creds_init_as_req (krb5_context context,
     memset(a, 0, sizeof(*a));
     return ret;
 }
-
-struct preauth_ctx {
-    const char *password;
-    krb5_s2k_proc key_proc;
-};
 
 struct pa_info_data {
     krb5_enctype etype;
@@ -883,16 +949,16 @@ static krb5_error_code
 pa_data_to_md_ts_enc(krb5_context context,
 		     const AS_REQ *a,
 		     const krb5_principal client,
-		     struct preauth_ctx *pa_ctx,
+		     krb5_get_init_creds_ctx *ctx,
 		     struct pa_info_data *ppaid,
 		     METHOD_DATA *md)
 {
-    if (pa_ctx->key_proc == NULL || pa_ctx->password == NULL)
+    if (ctx->key_proc == NULL || ctx->password == NULL)
 	return 0;
 
     if (ppaid) {
 	add_enc_ts_padata(context, md, client, 
-			  pa_ctx->key_proc, pa_ctx->password,
+			  ctx->key_proc, ctx->password,
 			  &ppaid->etype, 1,
 			  &ppaid->salt, ppaid->s2kparams);
     } else {
@@ -900,7 +966,7 @@ pa_data_to_md_ts_enc(krb5_context context,
 	
 	/* make a v5 salted pa-data */
 	add_enc_ts_padata(context, md, client, 
-			  pa_ctx->key_proc, pa_ctx->password,
+			  ctx->key_proc, ctx->password,
 			  a->req_body.etype.val, a->req_body.etype.len, 
 			  NULL, NULL);
 	
@@ -908,7 +974,7 @@ pa_data_to_md_ts_enc(krb5_context context,
 	salt.salttype = KRB5_PW_SALT;
 	krb5_data_zero(&salt.saltvalue);
 	add_enc_ts_padata(context, md, client, 
-			  pa_ctx->key_proc, pa_ctx->password, 
+			  ctx->key_proc, ctx->password, 
 			  a->req_body.etype.val, a->req_body.etype.len, 
 			  &salt, NULL);
     }
@@ -918,7 +984,7 @@ pa_data_to_md_ts_enc(krb5_context context,
 static krb5_error_code
 pa_data_to_key_plain(krb5_context context,
 		     const krb5_principal client,
-		     struct preauth_ctx *pa_ctx,
+		     krb5_get_init_creds_ctx *ctx,
 		     krb5_salt salt,
 		     krb5_data *s2kparams,
 		     krb5_enctype etype,
@@ -926,8 +992,8 @@ pa_data_to_key_plain(krb5_context context,
 {
     krb5_error_code ret;
 
-    ret = (*pa_ctx->key_proc)(context, etype, pa_ctx->password,
-			      salt, s2kparams, key);
+    ret = (*ctx->key_proc)(context, etype, ctx->password,
+			   salt, s2kparams, key);
     return ret;
 }
 
@@ -936,7 +1002,7 @@ static krb5_error_code
 process_pa_data_to_md(krb5_context context,
 		      const krb5_creds *creds,
 		      const AS_REQ *a,
-		      struct preauth_ctx *pa_ctx,
+		      krb5_get_init_creds_ctx *ctx,
 		      METHOD_DATA *in_md,
 		      METHOD_DATA **out_md,
 		      krb5_prompter_fct prompter,
@@ -967,7 +1033,7 @@ process_pa_data_to_md(krb5_context context,
      * KRB5_PADATA_ENC_TIMESTAMP
      */
 
-    pa_data_to_md_ts_enc(context, a, creds->client, pa_ctx, ppaid, *out_md);
+    pa_data_to_md_ts_enc(context, a, creds->client, ctx, ppaid, *out_md);
     if (ppaid)
 	free_paid(context, ppaid);
     return 0;
@@ -975,7 +1041,7 @@ process_pa_data_to_md(krb5_context context,
 
 static krb5_error_code
 process_pa_data_to_key(krb5_context context,
-		       struct preauth_ctx *pa_ctx,
+		       krb5_get_init_creds_ctx *ctx,
 		       krb5_creds *creds,
 		       AS_REQ *a,
 		       krb5_kdc_rep *rep,
@@ -1007,84 +1073,30 @@ process_pa_data_to_key(krb5_context context,
      * other preauth mechs then KRB5_PA_ENC_TIMESTAMP.
      */
 
-    ret = pa_data_to_key_plain(context, creds->client, pa_ctx, 
+    ret = pa_data_to_key_plain(context, creds->client, ctx, 
 				paid.salt, paid.s2kparams, etype, key);
     free_paid(context, &paid);
     return ret;
 }
 
 static krb5_error_code
-default_s2k_func(krb5_context context, krb5_enctype type, 
-		 krb5_const_pointer keyseed,
-		 krb5_salt salt, krb5_data *s2kparms,
-		 krb5_keyblock **key)
-{
-    krb5_error_code ret;
-    krb5_data password;
-    krb5_data opaque;
-
-    password.data = (void *)keyseed;
-    password.length = strlen(keyseed);
-    if (s2kparms)
-	opaque = *s2kparms;
-    else
-	krb5_data_zero(&opaque);
-	
-    *key = malloc(sizeof(**key));
-    if (*key == NULL)
-	return ENOMEM;
-    ret = krb5_string_to_key_data_salt_opaque(context, type, password,
-					      salt, opaque, *key);
-    if (ret)
-	free(*key);
-    return ret;
-}
-
-static krb5_error_code
-init_pa_ctx(krb5_context context,
-	    struct preauth_ctx *pa_ctx, 
-	    const krb5_get_init_creds_opt *init_cred_opts)
-{
-    memset(pa_ctx, 0, sizeof(*pa_ctx));
-    
-    if (init_cred_opts->private) {
-	pa_ctx->password = init_cred_opts->private->password;
-	pa_ctx->key_proc = init_cred_opts->private->key_proc;
-    }
-    if (pa_ctx->key_proc == NULL)
-	pa_ctx->key_proc = default_s2k_func;
-
-    return 0;
-}
-
-static krb5_error_code
 init_cred_loop(krb5_context context,
-	       krb5_kdc_flags options,
-	       const krb5_addresses *addrs,
-	       const krb5_enctype *etypes,
 	       const krb5_get_init_creds_opt *init_cred_opts,
 	       const krb5_prompter_fct prompter,
 	       void *prompter_data,
-	       struct preauth_ctx *pa_ctx,
+	       krb5_get_init_creds_ctx *ctx,
 	       krb5_creds *creds,
 	       krb5_kdc_rep *ret_as_reply)
 {
     krb5_error_code ret;
-    AS_REQ a;
     krb5_kdc_rep rep;
     krb5_data resp;
     size_t len;
-    krb5_salt salt;
     krb5_keyblock *key;
     size_t size;
-    krb5_kdc_flags opts;
-    unsigned nonce;
     int pa_counter;
-    krb5_data s2kparam;
     METHOD_DATA md;
 
-    krb5_data_zero(&s2kparam);
-    krb5_data_zero(&salt.saltvalue);
     memset(&md, 0, sizeof(md));
     memset(&rep, 0, sizeof(rep));
     key = NULL;
@@ -1092,13 +1104,8 @@ init_cred_loop(krb5_context context,
     if (ret_as_reply)
 	memset(ret_as_reply, 0, sizeof(*ret_as_reply));
 
-    opts = options;
-
-    krb5_generate_random_block (&nonce, sizeof(nonce));
-    nonce &= 0xffffffff;
-
-    ret = init_creds_init_as_req(context, opts, creds,
-				 addrs, etypes, nonce, &a);
+    ret = init_creds_init_as_req(context, ctx->flags, creds,
+				 ctx->addrs, ctx->etypes, &ctx->as_req);
     if (ret)
 	return ret;
 
@@ -1112,18 +1119,24 @@ init_cred_loop(krb5_context context,
     for (pa_counter = 0; pa_counter < MAX_PA_COUNTER; pa_counter++) {
 	krb5_data req;
 
-	if (a.padata) {
-	    free_METHOD_DATA(a.padata);
-	    a.padata = NULL;
+	if (ctx->as_req.padata) {
+	    free_METHOD_DATA(ctx->as_req.padata);
+	    ctx->as_req.padata = NULL;
 	}
 
+	/* Set a new nonce. */
+	krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
+	ctx->nonce &= 0xffffffff;
+	ctx->as_req.req_body.nonce = ctx->nonce;
+
 	/* fill_in_md_data */
-	ret = process_pa_data_to_md(context, creds, &a, pa_ctx,
-				    &md, &a.padata,
+	ret = process_pa_data_to_md(context, creds, &ctx->as_req, ctx,
+				    &md, &ctx->as_req.padata,
 				    prompter, prompter_data);
 	if (ret)
 	    goto out;
-	ASN1_MALLOC_ENCODE(AS_REQ, req.data, req.length, &a, &len, ret);
+	ASN1_MALLOC_ENCODE(AS_REQ, req.data, req.length, 
+			   &ctx->as_req, &len, ret);
 	if (ret)
 	    goto out;
 	if(len != req.length)
@@ -1183,7 +1196,8 @@ init_cred_loop(krb5_context context,
 	}
     }
 
-    ret = process_pa_data_to_key(context, pa_ctx, creds, &a, &rep, &key);
+    ret = process_pa_data_to_key(context, ctx, creds, 
+				 &ctx->as_req, &rep, &key);
     if (ret)
 	goto out;
 
@@ -1197,22 +1211,112 @@ init_cred_loop(krb5_context context,
 			       NULL,
 			       KRB5_KU_AS_REP_ENC_PART,
 			       NULL,
-			       nonce,
+			       ctx->nonce,
 			       FALSE,
-			       opts.b.request_anonymous,
+			       ctx->flags.b.request_anonymous,
 			       NULL,
 			       NULL);
     krb5_free_keyblock(context, key);
 
 out:
-    if (a.padata)
-	free_METHOD_DATA(a.padata);
-    free_AS_REQ(&a);
-
     if (ret == 0 && ret_as_reply)
 	*ret_as_reply = rep;
     else
 	krb5_free_kdc_rep (context, &rep);
+    return ret;
+}
+
+krb5_error_code
+krb5_get_init_creds(krb5_context context,
+		    krb5_creds *creds,
+		    krb5_principal client,
+		    krb5_prompter_fct prompter,
+		    void *data,
+		    krb5_deltat start_time,
+		    const char *in_tkt_service,
+		    krb5_get_init_creds_opt *options)
+{
+    krb5_get_init_creds_ctx ctx;
+    krb5_kdc_rep kdc_reply;
+    krb5_error_code ret;
+    char buf[BUFSIZ];
+    int done;
+
+    memset(&kdc_reply, 0, sizeof(kdc_reply));
+
+    ret = init_init_creds_ctx(context, &ctx, in_tkt_service, options);
+    if (ret)
+	goto out;
+
+    ret = get_init_creds_common(context, creds, client, start_time,
+				ctx.in_tkt_service,
+				options,
+				&ctx);
+    if (ret)
+	goto out;
+
+    done = 0;
+    while(!done) {
+	memset(&kdc_reply, 0, sizeof(kdc_reply));
+
+	ret = init_cred_loop(context,
+			     options,
+			     prompter,
+			     data,
+			     &ctx,
+			     &ctx.cred,
+			     &kdc_reply);
+	
+	switch (ret) {
+	case 0 :
+	    done = 1;
+	    break;
+	case KRB5KDC_ERR_KEY_EXPIRED :
+	    /* try to avoid recursion */
+
+	    /* don't try to change password where then where none */
+	    if (prompter == NULL || ctx.password == NULL)
+		goto out;
+
+	    krb5_clear_error_string (context);
+
+	    if (ctx.in_tkt_service != NULL
+		&& strcmp (ctx.in_tkt_service, "kadmin/changepw") == 0)
+		goto out;
+
+	    ret = change_password (context,
+				   client,
+				   ctx.password,
+				   buf,
+				   sizeof(buf),
+				   prompter,
+				   data,
+				   options);
+	    if (ret)
+		goto out;
+	    ctx.password = buf;
+	    break;
+	default:
+	    goto out;
+	}
+    }
+
+    if (prompter)
+	print_expire (context,
+		      krb5_princ_realm (context, ctx.cred.client),
+		      &kdc_reply,
+		      prompter,
+		      data);
+
+ out:
+    memset (buf, 0, sizeof(buf));
+    free_init_creds_ctx(context, &ctx);
+    if (ret == 0) {
+	*creds = ctx.cred;
+	krb5_free_kdc_rep (context, &kdc_reply);
+    } else
+	krb5_free_creds_contents (context, &ctx.cred);
+
     return ret;
 }
 
@@ -1225,39 +1329,22 @@ krb5_get_init_creds_password(krb5_context context,
 			     void *data,
 			     krb5_deltat start_time,
 			     const char *in_tkt_service,
-			     krb5_get_init_creds_opt *options)
+			     krb5_get_init_creds_opt *in_options)
 {
-    krb5_error_code ret;
-    krb5_kdc_flags flags;
-    krb5_addresses *addrs = NULL;
-    krb5_enctype *etypes = NULL;
-    krb5_preauthtype *pre_auth_types = NULL;
-    krb5_creds this_cred;
+    krb5_get_init_creds_opt *options;
     char buf[BUFSIZ];
-    krb5_kdc_rep kdc_reply;
-    int done;
-    struct preauth_ctx pa_ctx;
+    krb5_error_code ret;
 
-    memset(&pa_ctx, 0, sizeof(pa_ctx));
-    memset(&kdc_reply, 0, sizeof(kdc_reply));
-
-    ret = get_init_creds_common(context, creds, client, start_time,
-				in_tkt_service, options,
-				&addrs, &etypes, &this_cred, &pre_auth_types,
-				&flags);
+    ret = krb5_get_init_creds_opt_copy(context, in_options, &options);
     if (ret)
 	return ret;
 
-    ret = init_pa_ctx(context, &pa_ctx, options);
-    if (ret)
-	goto out;
-
-    if (password == NULL && pa_ctx.password == NULL) {
+    if (password == NULL && options->private->password == NULL) {
 	krb5_prompt prompt;
 	krb5_data password_data;
 	char *p, *q;
 
-	krb5_unparse_name (context, this_cred.client, &p);
+	krb5_unparse_name (context, client, &p);
 	asprintf (&q, "%s's Password: ", p);
 	free (p);
 	prompt.prompt = q;
@@ -1271,79 +1358,27 @@ krb5_get_init_creds_password(krb5_context context,
 	free (q);
 	if (ret) {
 	    memset (buf, 0, sizeof(buf));
+	    krb5_get_init_creds_opt_free(options);
 	    ret = KRB5_LIBOS_PWDINTR;
 	    krb5_clear_error_string (context);
-	    goto out;
+	    return ret;
 	}
 	password = password_data.data;
     }
-    if (pa_ctx.password == NULL)
-	pa_ctx.password = password;
 
-    done = 0;
-    while(!done) {
-	memset(&kdc_reply, 0, sizeof(kdc_reply));
-
-	ret = init_cred_loop(context,
-			     flags,
-			     addrs,
-			     etypes,
-			     options,
-			     prompter,
-			     data,
-			     &pa_ctx,
-			     &this_cred,
-			     &kdc_reply);
-	
-	switch (ret) {
-	case 0 :
-	    done = 1;
-	    break;
-	case KRB5KDC_ERR_KEY_EXPIRED :
-	    /* try to avoid recursion */
-
-	    if (prompter == NULL)
-		goto out;
-
-	    krb5_clear_error_string (context);
-
-	    if (in_tkt_service != NULL
-		&& strcmp (in_tkt_service, "kadmin/changepw") == 0)
-		goto out;
-
-	    ret = change_password (context,
-				   client,
-				   password,
-				   buf,
-				   sizeof(buf),
-				   prompter,
-				   data,
-				   options);
-	    if (ret)
-		goto out;
-	    password = buf;
-	    break;
-	default:
-	    goto out;
+    if (options->private->password == NULL) {
+	ret = krb5_get_init_creds_opt_set_pa_password(context, options,
+						      password, NULL);
+	if (ret) {
+	    krb5_get_init_creds_opt_free(options);
+	    memset(buf, 0, sizeof(buf));
+	    return ret;
 	}
     }
 
-    if (prompter)
-	print_expire (context,
-		      krb5_princ_realm (context, this_cred.client),
-		      &kdc_reply,
-		      prompter,
-		      data);
-
- out:
-    memset (buf, 0, sizeof(buf));
-    free (pre_auth_types);
-    free (etypes);
-    if (ret == 0) {
-	*creds = this_cred;
-	krb5_free_kdc_rep (context, &kdc_reply);
-    } else
-	krb5_free_creds_contents (context, &this_cred);
-
+    ret = krb5_get_init_creds(context, creds, client, prompter,
+			      data, start_time, in_tkt_service, options);
+    krb5_get_init_creds_opt_free(options);
+    memset(buf, 0, sizeof(buf));
     return ret;
 }
