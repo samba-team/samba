@@ -10,6 +10,7 @@ sub LoadStructure($)
 {
 	my $f = shift;
 	my $contents = FileLoad($f);
+	defined $contents || return undef;
 	return eval "$contents";
 }
 

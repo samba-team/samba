@@ -124,8 +124,9 @@ sub process_file($)
 		}		
 	} else {
 		$pidl = util::LoadStructure($pidl_file);
+		defined $pidl || die "Failed to load $pidl_file - maybe you need --parse\n";
 	}
-	
+
 	if ($opt_dump) {
 		print IdlDump::Dump($pidl);
 	}
