@@ -1,3 +1,8 @@
+2004-07-23  Love  <lha@stacken.kth.se>
+
+	* kuser/klist.c (print_cred_verbose): keytypes are no longer, use
+	enctype
+
 2004-07-22  Love  <lha@stacken.kth.se>
 
 	* lib/hdb/hdb-ldap.c (LDAP_entry2mods): allow for pre-c99
