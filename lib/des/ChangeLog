@@ -1,3 +1,15 @@
+Mon Mar 22 20:16:26 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: hash.h
+
+	* sha.c: use hash.h; fixes for crays
+
+	* md5.c: use hash.h; fixes for crays
+
+	* md4.c: use hash.h; fixes for crays
+
+	* hash.h: common stuff from md4, md5, and sha1
+
 Sat Mar 20 00:16:53 1999  Assar Westerlund  <assar@sics.se>
 
 	* rnd_keys.c (des_rand_data): move declaration to get rid of
