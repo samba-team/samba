@@ -537,7 +537,8 @@ BOOL torture_smb_scan(int dummy)
 		}
 
 		usleep(10000);
-		if (cli_transport_pending(cli->transport)) {
+		cli_transport_process(cli->transport);
+		if (req->state > CLI_REQUEST_RECV) {
 			status = cli_request_simple_recv(req);
 			printf("op=0x%x status=%s\n", op, nt_errstr(status));
 			torture_close_connection(cli);
@@ -545,7 +546,8 @@ BOOL torture_smb_scan(int dummy)
 		}
 
 		sleep(1);
-		if (cli_transport_pending(cli->transport)) {
+		cli_transport_process(cli->transport);
+		if (req->state > CLI_REQUEST_RECV) {
 			status = cli_request_simple_recv(req);
 			printf("op=0x%x status=%s\n", op, nt_errstr(status));
 		} else {

@@ -77,3 +77,17 @@ do { \
 		DLIST_REMOVE(list, p); \
 		DLIST_ADD_END(list, p, tmp); \
 } while (0)
+
+/* concatenate two lists - putting all elements of the 2nd list at the
+   end of the first list */
+#define DLIST_CONCATENATE(list1, list2, type) \
+do { \
+		if (!(list1)) { \
+			(list1) = (list2); \
+		} else { \
+			type tmp; \
+			for (tmp = (list1); tmp->next; tmp = tmp->next) ; \
+			tmp->next = (list2); \
+			(list2)->prev = tmp; \
+		} \
+} while (0)

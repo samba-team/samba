@@ -72,7 +72,13 @@ BOOL cli_sock_connect(struct cli_socket *sock, struct in_addr *ip, int port)
 				   &sock->dest_ip,
 				   sock->port, 
 				   LONG_CONNECT_TIMEOUT);
-	return (sock->fd != -1);
+	if (sock->fd == -1) {
+		return False;
+	}
+
+	set_blocking(sock->fd, False);
+
+	return True;
 }
 
 

@@ -2677,8 +2677,6 @@ make sure we swallow keepalives during idle time
 ****************************************************************************/
 static void readline_callback(void)
 {
-	fd_set fds;
-	struct timeval timeout;
 	static time_t last_t;
 	time_t t;
 
@@ -2688,28 +2686,7 @@ static void readline_callback(void)
 
 	last_t = t;
 
- again:
-	if (cli->transport->socket->fd == -1)
-		return;
-
-	FD_ZERO(&fds);
-	FD_SET(cli->transport->socket->fd, &fds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-	sys_select_intr(cli->transport->socket->fd+1,&fds,NULL,NULL,&timeout);
-      		
-	/* We deliberately use cli_swallow_keepalives instead of
-	   client_receive_smb as we want to receive
-	   session keepalives and then drop them here.
-	*/
-	if (FD_ISSET(cli->transport->socket->fd, &fds)) {
-		if (!cli_request_receive_next(cli->transport)) {
-			d_printf("Lost connection to server\n");
-			exit(1);
-		}
-		goto again;
-	}
+	cli_transport_process(cli->transport);
 
 	if (cli->tree) {
 		cli_chkpath(cli->tree, "\\");

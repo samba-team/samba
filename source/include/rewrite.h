@@ -50,13 +50,6 @@ typedef int BOOL;
 /* Debugging stuff */
 #include "debug.h"
 
-/* types of socket errors */
-enum socket_error {SOCKET_READ_TIMEOUT,
-		   SOCKET_READ_EOF,
-		   SOCKET_READ_ERROR,
-		   SOCKET_WRITE_ERROR,
-		   SOCKET_READ_BAD_SIG};
-
 #include "doserr.h"
 
 /*

@@ -22,18 +22,36 @@
 #include "includes.h"
 
 /*
+  an event has happened on the socket
+*/
+static void cli_transport_event_handler(struct event_context *ev, struct fd_event *fde, 
+					time_t t, uint16_t flags)
+{
+	struct cli_transport *transport = fde->private;
+
+	cli_transport_process(transport);
+}
+
+/*
   create a transport structure based on an established socket
 */
 struct cli_transport *cli_transport_init(struct cli_socket *sock)
 {
 	TALLOC_CTX *mem_ctx;
 	struct cli_transport *transport;
+	struct fd_event fde;
 
 	mem_ctx = talloc_init("cli_transport");
 	if (!mem_ctx) return NULL;
 
 	transport = talloc_zero(mem_ctx, sizeof(*transport));
 	if (!transport) return NULL;
+
+	transport->event.ctx = event_context_init();
+	if (transport->event.ctx == NULL) {
+		talloc_destroy(mem_ctx);
+		return NULL;
+	}
 
 	transport->mem_ctx = mem_ctx;
 	transport->socket = sock;
@@ -47,6 +65,14 @@ struct cli_transport *cli_transport_init(struct cli_socket *sock)
 
 	ZERO_STRUCT(transport->called);
 
+	fde.fd = sock->fd;
+	fde.flags = EVENT_FD_READ;
+	fde.handler = cli_transport_event_handler;
+	fde.private = transport;
+	fde.ref_count = 1;
+
+	transport->event.fde = event_add_fd(transport->event.ctx, &fde);
+
 	return transport;
 }
 
@@ -59,6 +85,9 @@ void cli_transport_close(struct cli_transport *transport)
 	transport->reference_count--;
 	if (transport->reference_count <= 0) {
 		cli_sock_close(transport->socket);
+		event_remove_fd(transport->event.ctx, transport->event.fde);
+		event_remove_timed(transport->event.ctx, transport->event.te);
+		event_context_destroy(transport->event.ctx);
 		talloc_destroy(transport->mem_ctx);
 	}
 }
@@ -72,6 +101,21 @@ void cli_transport_dead(struct cli_transport *transport)
 }
 
 
+/*
+  enable select for write on a transport
+*/
+static void cli_transport_write_enable(struct cli_transport *transport)
+{
+	transport->event.fde->flags |= EVENT_FD_WRITE;
+}
+
+/*
+  disable select for write on a transport
+*/
+static void cli_transport_write_disable(struct cli_transport *transport)
+{
+	transport->event.fde->flags &= ~EVENT_FD_WRITE;
+}
 
 /****************************************************************************
 send a session request (if appropriate)
@@ -145,7 +189,7 @@ again:
 	/* the zero mid is reserved for requests that don't have a mid */
 	if (mid == 0) mid = 1;
 
-	for (req=transport->pending_requests; req; req=req->next) {
+	for (req=transport->pending_recv; req; req=req->next) {
 		if (req->mid == mid) {
 			mid++;
 			goto again;
@@ -156,81 +200,284 @@ again:
 	return mid;
 }
 
+static void idle_handler(struct event_context *ev, 
+			 struct timed_event *te, time_t t)
+{
+	struct cli_transport *transport = te->private;
+	te->next_event = t + transport->idle.period;
+	transport->idle.func(transport, transport->idle.private);
+}
+
 /*
   setup the idle handler for a transport
+  the period is in seconds
 */
 void cli_transport_idle_handler(struct cli_transport *transport, 
 				void (*idle_func)(struct cli_transport *, void *),
 				uint_t period,
 				void *private)
 {
+	struct timed_event te;
 	transport->idle.func = idle_func;
 	transport->idle.private = private;
 	transport->idle.period = period;
-}
 
-
-/*
-  determine if a packet is pending for receive on a transport
-*/
-BOOL cli_transport_pending(struct cli_transport *transport)
-{
-	return socket_pending(transport->socket->fd);
-}
-
-
-
-/*
-  wait for data on a transport, periodically calling a wait function
-  if one has been defined
-  return True if a packet is received
-*/
-BOOL cli_transport_select(struct cli_transport *transport)
-{
-	fd_set fds;
-	int selrtn;
-	int fd;
-	struct timeval timeout;
-
-	fd = transport->socket->fd;
-
-	if (fd == -1) {
-		return False;
+	if (transport->event.te != NULL) {
+		event_remove_timed(transport->event.ctx, transport->event.te);
 	}
 
-	do {
-		uint_t period = 1000;
+	te.next_event = time(NULL) + period;
+	te.handler = idle_handler;
+	te.private = transport;
+	transport->event.te = event_add_timed(transport->event.ctx, &te);
+}
 
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
-	
-		if (transport->idle.func) {
-			period = transport->idle.period;
+/*
+  process some pending sends
+*/
+static void cli_transport_process_send(struct cli_transport *transport)
+{
+	while (transport->pending_send) {
+		struct cli_request *req = transport->pending_send;
+		ssize_t ret;
+		ret = cli_sock_write(transport->socket, req->out.buffer, req->out.size);
+		if (ret == -1) {
+			if (errno == EAGAIN || errno == EINTR) {
+				return;
+			}
+			cli_transport_dead(transport);
+		}
+		req->out.buffer += ret;
+		req->out.size -= ret;
+		if (req->out.size == 0) {
+			req->state = CLI_REQUEST_RECV;
+			DLIST_REMOVE(transport->pending_send, req);
+			DLIST_ADD(transport->pending_recv, req);
+		}
+	}
+
+	/* we're out of requests to send, so don't wait for write
+	   events any more */
+	cli_transport_write_disable(transport);
+}
+
+/*
+  we have a full request in our receive buffer - match it to a pending request
+  and process
+ */
+static void cli_transport_finish_recv(struct cli_transport *transport)
+{
+	uint8_t *buffer, *hdr, *vwv;
+	int len;
+	uint16_t wct, mid = 0;
+	struct cli_request *req;
+
+	buffer = transport->recv_buffer.buffer;
+	len = transport->recv_buffer.req_size;
+
+	hdr = buffer+NBT_HDR_SIZE;
+	vwv = hdr + HDR_VWV;
+
+	/* see if it could be an oplock break request */
+	if (handle_oplock_break(transport, len, hdr, vwv)) {
+		talloc_free(transport->mem_ctx, buffer);
+		ZERO_STRUCT(transport->recv_buffer);
+		return;
+	}
+
+	/* at this point we need to check for a readbraw reply, as
+	   these can be any length */
+	if (transport->readbraw_pending) {
+		transport->readbraw_pending = 0;
+
+		/* it must match the first entry in the pending queue
+		   as the client is not allowed to have outstanding
+		   readbraw requests */
+		req = transport->pending_recv;
+		if (!req) goto error;
+
+		req->in.buffer = buffer;
+		talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
+		req->in.size = len + NBT_HDR_SIZE;
+		req->in.allocated = req->in.size;
+		goto async;
+	}
+
+	if (len >= MIN_SMB_SIZE) {
+		/* extract the mid for matching to pending requests */
+		mid = SVAL(hdr, HDR_MID);
+		wct = CVAL(hdr, HDR_WCT);
+	}
+
+	/* match the incoming request against the list of pending requests */
+	for (req=transport->pending_recv; req; req=req->next) {
+		if (req->mid == mid) break;
+	}
+
+	if (!req) {
+		DEBUG(1,("Discarding unmatched reply with mid %d\n", mid));
+		goto error;
+	}
+
+	/* fill in the 'in' portion of the matching request */
+	req->in.buffer = buffer;
+	talloc_steal(transport->mem_ctx, req->mem_ctx, buffer);
+	req->in.size = len + NBT_HDR_SIZE;
+	req->in.allocated = req->in.size;
+
+	/* handle non-SMB replies */
+	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE) {
+		req->state = CLI_REQUEST_ERROR;
+		goto error;
+	}
+
+	if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
+		DEBUG(2,("bad reply size for mid %d\n", mid));
+		req->status = NT_STATUS_UNSUCCESSFUL;
+		req->state = CLI_REQUEST_ERROR;
+		goto error;
+	}
+
+	req->in.hdr = hdr;
+	req->in.vwv = vwv;
+	req->in.wct = wct;
+	if (req->in.size >= NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct)) {
+		req->in.data = req->in.vwv + VWV(wct) + 2;
+		req->in.data_size = SVAL(req->in.vwv, VWV(wct));
+		if (req->in.size < NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct) + req->in.data_size) {
+			DEBUG(3,("bad data size for mid %d\n", mid));
+			/* blergh - w2k3 gives a bogus data size values in some
+			   openX replies */
+			req->in.data_size = req->in.size - (NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct));
+		}
+	}
+	req->in.ptr = req->in.data;
+	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
+
+	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
+		transport->error.etype = ETYPE_DOS;
+		transport->error.e.dos.eclass = CVAL(req->in.hdr,HDR_RCLS);
+		transport->error.e.dos.ecode = SVAL(req->in.hdr,HDR_ERR);
+		req->status = dos_to_ntstatus(transport->error.e.dos.eclass, 
+					      transport->error.e.dos.ecode);
+	} else {
+		transport->error.etype = ETYPE_NT;
+		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
+		req->status = transport->error.e.nt_status;
+	}
+
+	if (!cli_request_check_sign_mac(req)) {
+		transport->error.etype = ETYPE_SOCKET;
+		transport->error.e.socket_error = SOCKET_READ_BAD_SIG;
+		req->state = CLI_REQUEST_ERROR;
+		goto error;
+	};
+
+async:
+	/* if this request has an async handler then call that to
+	   notify that the reply has been received. This might destroy
+	   the request so it must happen last */
+	ZERO_STRUCT(transport->recv_buffer);
+	DLIST_REMOVE(transport->pending_recv, req);
+	req->state = CLI_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+	return;
+
+error:
+	if (req) {
+		DLIST_REMOVE(transport->pending_recv, req);
+		req->state = CLI_REQUEST_ERROR;
+	}
+	ZERO_STRUCT(transport->recv_buffer);
+}
+
+/*
+  process some pending receives
+*/
+static void cli_transport_process_recv(struct cli_transport *transport)
+{
+	/* a incoming packet goes through 2 stages - first we read the
+	   4 byte header, which tells us how much more is coming. Then
+	   we read the rest */
+	if (transport->recv_buffer.received < NBT_HDR_SIZE) {
+		ssize_t ret;
+		ret = cli_sock_read(transport->socket, 
+				    transport->recv_buffer.header + 
+				    transport->recv_buffer.received,
+				    NBT_HDR_SIZE - transport->recv_buffer.received);
+		if (ret == -1) {
+			if (errno == EINTR || errno == EAGAIN) {
+				return;
+			}
+			cli_transport_dead(transport);
+			return;
 		}
 
-		timeout.tv_sec = period / 1000;
-		timeout.tv_usec = 1000*(period%1000);
-		
-		selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
-		
-		if (selrtn == 1) {
-			/* the fd is readable */
-			return True;
-		}
-		
-		if (selrtn == -1) {
-			/* sys_select_intr() already handles EINTR, so this
-			   is an error. The socket is probably dead */
-			return False;
-		}
-		
-		/* only other possibility is that we timed out - call the idle function
-		   if there is one */
-		if (transport->idle.func) {
-			transport->idle.func(transport, transport->idle.private);
-		}
-	} while (selrtn == 0);
+		transport->recv_buffer.received += ret;
 
+		if (transport->recv_buffer.received == NBT_HDR_SIZE) {
+			/* we've got a full header */
+			transport->recv_buffer.req_size = smb_len(transport->recv_buffer.header) + NBT_HDR_SIZE;
+			transport->recv_buffer.buffer = talloc(transport->mem_ctx,
+							       NBT_HDR_SIZE+transport->recv_buffer.req_size);
+			if (transport->recv_buffer.buffer == NULL) {
+				cli_transport_dead(transport);
+				return;
+			}
+			memcpy(transport->recv_buffer.buffer, transport->recv_buffer.header, NBT_HDR_SIZE);
+		}
+	}
+
+	if (transport->recv_buffer.received < transport->recv_buffer.req_size) {
+		ssize_t ret;
+		ret = cli_sock_read(transport->socket, 
+				    transport->recv_buffer.buffer + 
+				    transport->recv_buffer.received,
+				    transport->recv_buffer.req_size - 
+				    transport->recv_buffer.received);
+		if (ret == -1) {
+			if (errno == EINTR || errno == EAGAIN) {
+				return;
+			}
+			cli_transport_dead(transport);
+			return;
+		}
+		transport->recv_buffer.received += ret;
+	}
+
+	if (transport->recv_buffer.received != 0 &&
+	    transport->recv_buffer.received == transport->recv_buffer.req_size) {
+		cli_transport_finish_recv(transport);
+	}
+}
+
+/*
+  process some read/write requests that are pending
+  return False if the socket is dead
+*/
+BOOL cli_transport_process(struct cli_transport *transport)
+{
+	cli_transport_process_send(transport);
+	cli_transport_process_recv(transport);
+	if (transport->socket->fd == -1) {
+		return False;
+	}
 	return True;
 }
 
+
+
+/*
+  put a request into the send queue
+*/
+void cli_transport_send(struct cli_request *req)
+{
+	/* put it on the outgoing socket queue */
+	req->state = CLI_REQUEST_SEND;
+	DLIST_ADD(req->transport->pending_send, req);
+
+	/* make sure we look for write events */
+	cli_transport_write_enable(req->transport);
+}

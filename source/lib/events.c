@@ -81,9 +81,90 @@ struct event_context *event_context_init(void)
 	/* start off with no events */
 	ZERO_STRUCTP(ev);
 
+	ev->ref_count = 1;
+
 	return ev;
 }
 
+/*
+  destroy an events context, also destroying any remaining events
+*/
+void event_context_destroy(struct event_context *ev)
+{
+	struct fd_event *fde;
+	struct timed_event *te;
+	struct loop_event *le;
+
+	ev->ref_count--;
+	if (ev->ref_count != 0) {
+		return;
+	}
+
+	for (fde=ev->fd_events; fde;) {
+		struct fd_event *next = fde->next;
+		event_remove_fd(ev, fde);
+		if (fde->ref_count == 0) {
+			free(fde);
+		}
+		fde=next;
+	}
+	for (te=ev->timed_events; te;) {
+		struct timed_event *next = te->next;
+		event_remove_timed(ev, te);
+		if (te->ref_count == 0) {
+			free(te);
+		}
+		te=next;
+	}
+	for (le=ev->loop_events; le;) {
+		struct loop_event *next = le->next;
+		event_remove_loop(ev, le);
+		if (le->ref_count == 0) {
+			free(le);
+		}
+		le=next;
+	}
+	free(ev);
+}
+
+
+/*
+  recalculate the maxfd
+*/
+static void calc_maxfd(struct event_context *ev)
+{
+	struct fd_event *e;
+	ev->maxfd = 0;
+	for (e=ev->fd_events; e; e=e->next) {
+		if (e->ref_count && 
+		    e->fd > ev->maxfd) {
+			ev->maxfd = e->fd;
+		}
+	}
+}
+
+/*
+  move the event structures from ev2 into ev, upping the reference
+  count on ev. The event context ev2 is then destroyed.
+
+  this is used by modules that need to call on the events of a lower module
+*/
+void event_context_merge(struct event_context *ev, struct event_context *ev2)
+{
+	DLIST_CONCATENATE(ev->fd_events, ev2->fd_events, struct fd_event *);
+	DLIST_CONCATENATE(ev->timed_events, ev2->timed_events, struct timed_event *);
+	DLIST_CONCATENATE(ev->loop_events, ev2->loop_events, struct loop_event *);
+
+	ev->ref_count++;
+
+	ev2->fd_events = NULL;
+	ev2->timed_events = NULL;
+	ev2->loop_events = NULL;
+
+	event_context_destroy(ev2);
+
+	calc_maxfd(ev);
+}
 
 
 /*
@@ -102,21 +183,6 @@ struct fd_event *event_add_fd(struct event_context *ev, struct fd_event *e)
 	return e;
 }
 
-
-/*
-  recalculate the maxfd
-*/
-static void calc_maxfd(struct event_context *ev)
-{
-	struct fd_event *e;
-	ev->maxfd = 0;
-	for (e=ev->fd_events; e; e=e->next) {
-		if (e->ref_count && 
-		    e->fd > ev->maxfd) {
-			ev->maxfd = e->fd;
-		}
-	}
-}
 
 /* to mark the ev->maxfd invalid
  * this means we need to recalculate it
@@ -242,6 +308,143 @@ void event_loop_exit(struct event_context *ev, int code)
 }
 
 /*
+  do a single event loop using the events defined in ev this function
+*/
+void event_loop_once(struct event_context *ev)
+{
+	time_t t;
+	fd_set r_fds, w_fds;
+	struct fd_event *fe;
+	struct loop_event *le;
+	struct timed_event *te;
+	int selrtn;
+	struct timeval tval;
+
+	t = time(NULL);
+
+	/* the loop events are called on each loop. Be careful to allow the 
+	   event to remove itself */
+	for (le=ev->loop_events;le;) {
+		struct loop_event *next = le->next;
+		if (le->ref_count == 0) {
+			DLIST_REMOVE(ev->loop_events, le);
+			free(le);
+		} else {
+			le->ref_count++;
+			le->handler(ev, le, t);
+			le->ref_count--;
+		}
+		le = next;
+	}
+
+	ZERO_STRUCT(tval);
+	FD_ZERO(&r_fds);
+	FD_ZERO(&w_fds);
+
+	/* setup any fd events */
+	for (fe=ev->fd_events; fe; ) {
+		struct fd_event *next = fe->next;
+		if (fe->ref_count == 0) {
+			DLIST_REMOVE(ev->fd_events, fe);
+			if (ev->maxfd == fe->fd) {
+				ev->maxfd = EVENT_INVALID_MAXFD;
+			}
+			free(fe);
+		} else {
+			if (fe->flags & EVENT_FD_READ) {
+				FD_SET(fe->fd, &r_fds);
+			}
+			if (fe->flags & EVENT_FD_WRITE) {
+				FD_SET(fe->fd, &w_fds);
+			}
+		}
+		fe = next;
+	}
+
+	/* start with a reasonable max timeout */
+	tval.tv_sec = 600;
+		
+	/* work out the right timeout for all timed events */
+	for (te=ev->timed_events;te;te=te->next) {
+		int timeout = te->next_event - t;
+		if (timeout < 0) {
+			timeout = 0;
+		}
+		if (te->ref_count &&
+		    timeout < tval.tv_sec) {
+			tval.tv_sec = timeout;
+		}
+	}
+
+	/* only do a select() if there're fd_events
+	 * otherwise we would block for a the time in tval,
+	 * and if there're no fd_events present anymore we want to
+	 * leave the event loop directly
+	 */
+	if (ev->fd_events) {
+		/* we maybe need to recalculate the maxfd */
+		if (ev->maxfd == EVENT_INVALID_MAXFD) {
+			calc_maxfd(ev);
+		}
+		
+		/* TODO:
+		 * we don't use sys_select() as it isn't thread
+		 * safe. We need to replace the magic pipe handling in
+		 * sys_select() with something in the events
+		 * structure - for now just use select() 
+		 */
+		selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
+		
+		t = time(NULL);
+		
+		if (selrtn == -1 && errno == EBADF) {
+			/* the socket is dead! this should never
+			   happen as the socket should have first been
+			   made readable and that should have removed
+			   the event, so this must be a bug. This is a
+			   fatal error. */
+			DEBUG(0,("EBADF on event_loop_wait - exiting\n"));
+			return;
+		}
+		
+		if (selrtn > 0) {
+			/* at least one file descriptor is ready - check
+			   which ones and call the handler, being careful to allow
+			   the handler to remove itself when called */
+			for (fe=ev->fd_events; fe; fe=fe->next) {
+				uint16_t flags = 0;
+				if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
+				if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+				if (fe->ref_count && flags) {
+					fe->ref_count++;
+					fe->handler(ev, fe, t, flags);
+					fe->ref_count--;
+				}
+			}
+		}
+	}
+
+	/* call any timed events that are now due */
+	for (te=ev->timed_events;te;) {
+		struct timed_event *next = te->next;
+		if (te->ref_count == 0) {
+			DLIST_REMOVE(ev->timed_events, te);
+			free(te);
+		} else if (te->next_event <= t) {
+			te->ref_count++;
+			te->handler(ev, te, t);
+			te->ref_count--;
+			if (te->next_event <= t) {
+				/* the handler didn't set a time for the 
+				   next event - remove the event */
+				event_remove_timed(ev, te);
+			}
+		}
+		te = next;
+	}		
+}
+
+/*
   go into an event loop using the events defined in ev this function
   will return with the specified code if one of the handlers calls
   event_loop_exit()
@@ -250,142 +453,13 @@ void event_loop_exit(struct event_context *ev, int code)
 */
 int event_loop_wait(struct event_context *ev)
 {
-	time_t t;
-
 	ZERO_STRUCT(ev->exit);
 	ev->maxfd = EVENT_INVALID_MAXFD;
 
-	t = time(NULL);
+	ev->exit.exit_now = False;
 
 	while (ev->fd_events && !ev->exit.exit_now) {
-		fd_set r_fds, w_fds;
-		struct fd_event *fe;
-		struct loop_event *le;
-		struct timed_event *te;
-		int selrtn;
-		struct timeval tval;
-
-		/* the loop events are called on each loop. Be careful to allow the 
-		   event to remove itself */
-		for (le=ev->loop_events;le;) {
-			struct loop_event *next = le->next;
-			if (le->ref_count == 0) {
-				DLIST_REMOVE(ev->loop_events, le);
-				free(le);
-			} else {
-				le->ref_count++;
-				le->handler(ev, le, t);
-				le->ref_count--;
-			}
-			le = next;
-		}
-
-		ZERO_STRUCT(tval);
-		FD_ZERO(&r_fds);
-		FD_ZERO(&w_fds);
-
-		/* setup any fd events */
-		for (fe=ev->fd_events; fe; ) {
-			struct fd_event *next = fe->next;
-			if (fe->ref_count == 0) {
-				DLIST_REMOVE(ev->fd_events, fe);
-				if (ev->maxfd == fe->fd) {
-					ev->maxfd = EVENT_INVALID_MAXFD;
-				}
-				free(fe);
-			} else {
-				if (fe->flags & EVENT_FD_READ) {
-					FD_SET(fe->fd, &r_fds);
-				}
-				if (fe->flags & EVENT_FD_WRITE) {
-					FD_SET(fe->fd, &w_fds);
-				}
-			}
-			fe = next;
-		}
-
-		/* start with a reasonable max timeout */
-		tval.tv_sec = 600;
-		
-		/* work out the right timeout for all timed events */
-		for (te=ev->timed_events;te;te=te->next) {
-			int timeout = te->next_event - t;
-			if (timeout < 0) {
-				timeout = 0;
-			}
-			if (te->ref_count &&
-			    timeout < tval.tv_sec) {
-				tval.tv_sec = timeout;
-			}
-		}
-
-		/* only do a select() if there're fd_events
-		 * otherwise we would block for a the time in tval,
-		 * and if there're no fd_events present anymore we want to
-		 * leave the event loop directly
-		 */
-		if (ev->fd_events) {
-			/* we maybe need to recalculate the maxfd */
-			if (ev->maxfd == EVENT_INVALID_MAXFD) {
-				calc_maxfd(ev);
-			}
-
-			/* TODO:
-			 * we don't use sys_select() as it isn't thread
-			 * safe. We need to replace the magic pipe handling in
-			 * sys_select() with something in the events
-			 * structure - for now just use select() 
-			 */
-			selrtn = select(ev->maxfd+1, &r_fds, &w_fds, NULL, &tval);
-
-			t = time(NULL);
-
-			if (selrtn == -1 && errno == EBADF) {
-				/* the socket is dead! this should never
-				   happen as the socket should have first been
-				   made readable and that should have removed
-				   the event, so this must be a bug. This is a
-				   fatal error. */
-				DEBUG(0,("EBADF on event_loop_wait - exiting\n"));
-				return -1;
-			}
-
-			if (selrtn > 0) {
-				/* at least one file descriptor is ready - check
-				   which ones and call the handler, being careful to allow
-				   the handler to remove itself when called */
-				for (fe=ev->fd_events; fe; fe=fe->next) {
-					uint16_t flags = 0;
-					if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
-					if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
-					if (fe->ref_count && flags) {
-						fe->ref_count++;
-						fe->handler(ev, fe, t, flags);
-						fe->ref_count--;
-					}
-				}
-			}
-		}
-
-		/* call any timed events that are now due */
-		for (te=ev->timed_events;te;) {
-			struct timed_event *next = te->next;
-			if (te->ref_count == 0) {
-				DLIST_REMOVE(ev->timed_events, te);
-				free(te);
-			} else if (te->next_event <= t) {
-				te->ref_count++;
-				te->handler(ev, te, t);
-				te->ref_count--;
-				if (te->next_event <= t) {
-					/* the handler didn't set a time for the 
-					   next event - remove the event */
-					event_remove_timed(ev, te);
-				}
-			}
-			te = next;
-		}		
-
+		event_loop_once(ev);
 	}
 
 	return ev->exit.code;

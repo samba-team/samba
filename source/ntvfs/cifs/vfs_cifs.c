@@ -68,17 +68,17 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16
 	return req_send_oplock_break(private->tcon, fnum, level);
 }
 
-/*
+ /*
   a handler for read events on a connection to a backend server
 */
 static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
 {
 	struct cvfs_private *private = fde->private;
 	struct smbsrv_tcon *tcon = private->tcon;
-
+	
 	DEBUG(5,("cifs_socket_handler event on fd %d\n", fde->fd));
-
-	if (!cli_request_receive_next(private->transport)) {
+	
+	if (!cli_transport_process(private->transport)) {
 		/* the connection to our server is dead */
 		close_cnum(tcon);
 	}
@@ -93,7 +93,6 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename)
 	NTSTATUS status;
 	struct cvfs_private *private;
 	const char *map_calls;
-	struct fd_event fde;
 	const char *host, *user, *pass, *domain, *remote_share;
 
 	/* Here we need to determine which server to connect to.
@@ -157,18 +156,17 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename)
 		tcon->ntvfs_ops = ops;
 	}	  
 
-	/* we need to tell the event loop that we wish to receive read events
-	   on our SMB connection to the server */
-	fde.fd = private->transport->socket->fd;
-	fde.flags = EVENT_FD_READ;
-	fde.private = private;
-	fde.handler = cifs_socket_handler;
-
-	event_add_fd(tcon->smb_conn->connection->event.ctx, &fde);
-
 	/* we need to receive oplock break requests from the server */
 	cli_oplock_handler(private->transport, oplock_handler, private);
-	cli_transport_idle_handler(private->transport, idle_func, 100, private);
+	cli_transport_idle_handler(private->transport, idle_func, 1, private);
+
+	private->transport->event.fde->handler = cifs_socket_handler;
+	private->transport->event.fde->private = private;
+
+	event_context_merge(tcon->smb_conn->connection->event.ctx,
+			    private->transport->event.ctx);
+
+	private->transport->event.ctx = tcon->smb_conn->connection->event.ctx;
 
 	return NT_STATUS_OK;
 }
@@ -180,7 +178,6 @@ static NTSTATUS cvfs_disconnect(struct smbsrv_tcon *tcon)
 {
 	struct cvfs_private *private = tcon->ntvfs_private;
 
-	event_remove_fd_all(tcon->smb_conn->connection->event.ctx, private->transport->socket->fd);
 	smb_tree_disconnect(private->tree);
 	cli_tree_close(private->tree);
 
