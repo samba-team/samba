@@ -146,7 +146,6 @@ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 /* create a ndr_push structure, ready for some marshalling */
 struct ndr_push *ndr_push_init(void)
 {
-	struct ndr_push *ndr;
 	return ndr_push_init_ctx(NULL);
 }
 
