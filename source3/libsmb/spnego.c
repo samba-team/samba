@@ -71,7 +71,23 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 		/* Read mecListMIC */
 		case ASN1_CONTEXT(3):
 			asn1_start_tag(asn1, ASN1_CONTEXT(3));
-			asn1_read_OctetString(asn1, &token->mechListMIC);
+			if (asn1->data[asn1->ofs] == ASN1_OCTET_STRING) {
+				asn1_read_OctetString(asn1,
+						      &token->mechListMIC);
+			} else {
+				/* RFC 2478 says we have an Octet String here,
+				   but W2k sends something different... */
+				char *mechListMIC;
+				asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+				asn1_push_tag(asn1, ASN1_CONTEXT(0));
+				asn1_read_GeneralString(asn1, &mechListMIC);
+				asn1_pop_tag(asn1);
+				asn1_pop_tag(asn1);
+
+				token->mechListMIC =
+					data_blob(mechListMIC, strlen(mechListMIC));
+				SAFE_FREE(mechListMIC);
+			}
 			asn1_end_tag(asn1);
 			break;
 		default:

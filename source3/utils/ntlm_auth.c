@@ -560,7 +560,7 @@ static void manage_gss_spnego_request(enum squid_mode squid_mode,
 
 static NTLMSSP_CLIENT_STATE *client_ntlmssp_state = NULL;
 
-static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
+static BOOL manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 {
 	NTSTATUS status;
 	DATA_BLOB null_blob = data_blob(NULL, 0);
@@ -573,14 +573,12 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (client_ntlmssp_state != NULL) {
 		DEBUG(1, ("Request for initial SPNEGO request where "
 			  "we already have a state\n"));
-		x_fprintf(x_stdout, "BH\n");
-		return;
+		return False;
 	}
 
 	if ( (opt_username == NULL) || (opt_domain == NULL) ) {
 		DEBUG(1, ("Need username and domain for NTLMSSP\n"));
-		x_fprintf(x_stdout, "BH\n");
-		return;
+		return False;
 	}
 
 	if (opt_password == NULL) {
@@ -591,7 +589,7 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 
 		DEBUG(10, ("Requesting password\n"));
 		x_fprintf(x_stdout, "PW\n");
-		return;
+		return True;
 	}
 
 	status = ntlmssp_client_start(&client_ntlmssp_state);
@@ -599,9 +597,8 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
 			  nt_errstr(status)));
-		x_fprintf(x_stdout, "BH\n");
 		ntlmssp_client_end(&client_ntlmssp_state);
-		return;
+		return False;
 	}
 
 	status = ntlmssp_set_username(client_ntlmssp_state, opt_username);
@@ -609,9 +606,8 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set username: %s\n",
 			  nt_errstr(status)));
-		x_fprintf(x_stdout, "BH\n");
 		ntlmssp_client_end(&client_ntlmssp_state);
-		return;
+		return False;
 	}
 
 	status = ntlmssp_set_domain(client_ntlmssp_state, opt_domain);
@@ -619,9 +615,8 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set domain: %s\n",
 			  nt_errstr(status)));
-		x_fprintf(x_stdout, "BH\n");
 		ntlmssp_client_end(&client_ntlmssp_state);
-		return;
+		return False;
 	}
 
 	status = ntlmssp_set_password(client_ntlmssp_state, opt_password);
@@ -629,9 +624,8 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not set password: %s\n",
 			  nt_errstr(status)));
-		x_fprintf(x_stdout, "BH\n");
 		ntlmssp_client_end(&client_ntlmssp_state);
-		return;
+		return False;
 	}
 
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
@@ -645,9 +639,8 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		DEBUG(1, ("Expected MORE_PROCESSING_REQUIRED, got: %s\n",
 			  nt_errstr(status)));
-		x_fprintf(x_stdout, "BH\n");
 		ntlmssp_client_end(&client_ntlmssp_state);
-		return;
+		return False;
 	}
 
 	write_spnego_data(&to_server, &spnego);
@@ -657,7 +650,7 @@ static void manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	data_blob_free(&to_server);
 	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
 	SAFE_FREE(to_server_base64);
-	return;
+	return True;
 }
 
 static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
@@ -719,11 +712,10 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	return;
 }
 
-static void manage_client_krb5_init(SPNEGO_DATA spnego)
+static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 {
 	DEBUG(1, ("to be done ... \n"));
-	x_fprintf(x_stdout, "BH\n");
-	return;
+	return False;
 }
 
 static void manage_client_krb5_targ(SPNEGO_DATA spnego)
@@ -796,14 +788,15 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 
 		while (*mechType != NULL) {
 
-			if (strcmp(*mechType, OID_NTLMSSP) == 0) {
-				manage_client_ntlmssp_init(spnego);
-				goto out;
+			if ( (strcmp(*mechType, OID_KERBEROS5_OLD) == 0) ||
+			     (strcmp(*mechType, OID_KERBEROS5) == 0) ) {
+				if (manage_client_krb5_init(spnego))
+					goto out;
 			}
 
-			if (strcmp(*mechType, OID_KERBEROS5_OLD) == 0) {
-				manage_client_krb5_init(spnego);
-				goto out;
+			if (strcmp(*mechType, OID_NTLMSSP) == 0) {
+				if (manage_client_ntlmssp_init(spnego))
+					goto out;
 			}
 
 			mechType++;
@@ -815,6 +808,29 @@ static void manage_gss_spnego_client_request(enum squid_mode squid_mode,
 	}
 
 	if (spnego.type == SPNEGO_NEG_TOKEN_TARG) {
+
+		if (spnego.negTokenTarg.supportedMech == NULL) {
+			/* On accept/reject Windows does not send the
+                           mechanism anymore. Handle that here and
+                           shut down the mechanisms. */
+
+			switch (spnego.negTokenTarg.negResult) {
+			case SPNEGO_ACCEPT_COMPLETED:
+				x_fprintf(x_stdout, "AF\n");
+				break;
+			case SPNEGO_REJECT:
+				x_fprintf(x_stdout, "NA\n");
+				break;
+			default:
+				DEBUG(1, ("Got a negTokenTarg with no mech and an "
+					  "unknown negResult: %d\n",
+					  spnego.negTokenTarg.negResult));
+				x_fprintf(x_stdout, "BH\n");
+			}
+
+			ntlmssp_client_end(&client_ntlmssp_state);
+			goto out;
+		}
 
 		if (strcmp(spnego.negTokenTarg.supportedMech,
 			   OID_NTLMSSP) == 0) {
