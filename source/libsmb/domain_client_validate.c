@@ -330,7 +330,7 @@ NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info,
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_username.str,
-                         user_info->domain.str, remote_machine, 
+                         user_info->domain.str, cli.srv_name_slash, 
                          get_nt_error_msg(status)));
 	}
 
