@@ -487,6 +487,44 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 }
 
 /****************************************************************************
+ Create a UNIX user on demand.
+****************************************************************************/
+
+int smb_create_user(const char *domain, const char *unix_username, const char *homedir)
+{
+	pstring add_script;
+	int ret;
+
+	pstrcpy(add_script, lp_adduser_script());
+	if (! *add_script)
+		return -1;
+	all_string_sub(add_script, "%u", unix_username, sizeof(pstring));
+	if (domain)
+		all_string_sub(add_script, "%D", domain, sizeof(pstring));
+	if (homedir)
+		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
+	ret = smbrun(add_script,NULL);
+	DEBUG(3,("smb_create_user: Running the command `%s' gave %d\n",add_script,ret));
+	return ret;
+}
+
+int smb_create_account(const char *add_script, const char *unix_username)
+{
+	pstring script;
+	int ret;
+
+	if (! *add_script)
+		return -1;
+
+	pstrcpy(script, add_script);
+	all_string_sub(script, "%u", unix_username, sizeof(pstring));
+	ret = smbrun(script,NULL);
+	DEBUG(3,("smb_create_account: Running the command `%s' gave %d\n",
+		 script,ret));
+	return ret;
+}
+
+/****************************************************************************
  Create a UNIX group on demand.
 ****************************************************************************/
 
@@ -733,6 +771,11 @@ NTSTATUS pdb_default_find_alias(struct pdb_methods *methods,
 	SAFE_FREE(closure.name);
 
 	return closure.found ? NT_STATUS_OK : NT_STATUS_NO_SUCH_ALIAS;
+}
+
+BOOL new_alias(const char *name, const DOM_SID *sid)
+{
+	return add_initial_alias(sid_string_static(sid), name);
 }
 
 NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
@@ -1128,6 +1171,38 @@ static BOOL set_name_mapping(const char *unixname, const char *ntname,
 	SAFE_FREE(lcname);
 	SAFE_FREE(key);
 	return res;
+}
+
+BOOL create_name_mapping(const char *unixname, const char *ntname,
+			 BOOL is_user)
+{
+	return set_name_mapping(unixname, ntname, is_user, TDB_INSERT);
+}
+
+/* This deletes all mappings, use with care! It's mainly for vampire */
+
+BOOL delete_name_mappings(void)
+{
+	fstring pattern;
+	TDB_LIST_NODE *nodes, *node;
+	BOOL ok = True;
+
+	if (!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return False;
+	}
+
+	fstr_sprintf(pattern, "%s*", NAME_PREFIX);
+
+	nodes = tdb_search_keys(tdb, pattern);
+
+	for (node = nodes; node != NULL; node = node->next) {
+		if (tdb_delete(tdb, node->node_key) != 0)
+			ok = False;
+	}
+
+	tdb_search_list_free(nodes);
+	return ok;
 }
 
 static void generate_name_mapping(TALLOC_CTX *mem_ctx,

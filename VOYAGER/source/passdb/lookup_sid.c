@@ -48,15 +48,16 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 		return False;
 
 	if (is_user) {
-		if (((pwd = getpwnam(unix_name)) != NULL) &&
-		    (NT_STATUS_IS_OK(uid_to_sid(psid, pwd->pw_uid)))) {
+		if ((pwd = getpwnam(unix_name)) != NULL) {
+			uid_to_sid(psid, pwd->pw_uid);
 			SAFE_FREE(unix_name);
 			*name_type = SID_NAME_USER;
 			return True;
 		}
 	} else {
-		if (((grp = getgrnam(unix_name)) != NULL) &&
-		    (NT_STATUS_IS_OK(gid_to_sid(psid, grp->gr_gid)))) {
+		if ((grp = getgrnam(unix_name)) != NULL) {
+			gid_to_sid(psid, grp->gr_gid);
+			SAFE_FREE(unix_name);
 			*name_type = SID_NAME_DOM_GRP;
 			return True;
 		}
@@ -123,7 +124,9 @@ BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
 {
 	fstring dom_name;
 	fstring name;
+	char *unix_name;
 	enum SID_NAME_USE type;
+	BOOL is_user;
 
 	if (!sid_check_is_in_our_domain(sid))
 		return False;
@@ -134,7 +137,19 @@ BOOL sid_to_local_user_name(const DOM_SID *sid, fstring username)
 	if (type != SID_NAME_USER)
 		return False;
  
-	fstrcpy(username, name);
+	if (!nt_to_unix_name(NULL, name, &unix_name, &is_user))
+		return False;
+
+	if (!is_user) {
+		DEBUG(0, ("For sid %s lookup_sid said %s\\%s is a user, but "
+			  "name mapping says its a group\n",
+			  sid_string_static(sid), dom_name, name));
+		smb_panic("stop");
+	}
+
+	fstrcpy(username, unix_name);
+	SAFE_FREE(unix_name);
+
  	return True;
 }
 
@@ -142,7 +157,9 @@ BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
 {
 	fstring dom_name;
 	fstring name;
+	char *unix_name;
 	enum SID_NAME_USE type;
+	BOOL is_user;
 
 	if (!sid_check_is_in_our_domain(sid))
 		return False;
@@ -153,7 +170,19 @@ BOOL sid_to_local_dom_grp_name(const DOM_SID *sid, fstring groupname)
 	if (type != SID_NAME_DOM_GRP)
 		return False;
 
-	fstrcpy(groupname, name);
+	if (!nt_to_unix_name(NULL, name, &unix_name, &is_user))
+		return False;
+
+	if (is_user) {
+		DEBUG(0, ("For sid %s lookup_sid said %s\\%s is a group, but "
+			  "name mapping says its a user\n",
+			  sid_string_static(sid), dom_name, name));
+		smb_panic("stop");
+	}
+
+	fstrcpy(groupname, unix_name);
+	SAFE_FREE(unix_name);
+
 	return True;
 }
  
@@ -340,10 +369,10 @@ static void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
  *THE CANONICAL* convert uid_t to SID function.
 *****************************************************************/  
 
-NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
+void uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	if (fetch_sid_from_uid_cache(psid, uid))
-		return NT_STATUS_OK;
+		return;
 
 	if (!winbind_uid_to_sid(psid, uid)) {
 		sid_copy(psid, get_global_sam_sid());
@@ -355,17 +384,17 @@ NTSTATUS uid_to_sid(DOM_SID *psid, uid_t uid)
 	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid,
 		  sid_string_static(psid)));
 
-	return NT_STATUS_OK;
+	return;
 }
 
 /*****************************************************************
  *THE CANONICAL* convert gid_t to SID function.
 *****************************************************************/  
 
-NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
+void gid_to_sid(DOM_SID *psid, gid_t gid)
 {
 	if (fetch_sid_from_gid_cache(psid, gid))
-		return NT_STATUS_OK;
+		return;
 
 	if (!winbind_gid_to_sid(psid, gid)) {
 		sid_copy(psid, get_global_sam_sid());
@@ -377,7 +406,7 @@ NTSTATUS gid_to_sid(DOM_SID *psid, gid_t gid)
 	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid,
 		  sid_string_static(psid)));
 
-	return NT_STATUS_OK;
+	return;
 }
 
 /*****************************************************************

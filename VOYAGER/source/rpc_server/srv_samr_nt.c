@@ -717,11 +717,7 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	SAM_ACCOUNT *pwd = NULL;
 	UNISTR2 uni_temp_name;
 	const char *temp_name;
-	const DOM_SID *user_sid;
-	uint32 user_rid;
-	fstring user_sid_string;
-	fstring domain_sid_string;
-	
+
 	*sam_pp = NULL;
 	*uni_name_pp = NULL;
 
@@ -738,17 +734,21 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	}
 
 	for (i = 0; i < num_entries; i++) {
+		DOM_SID user_sid;
+		uint32 user_rid;
+
 		pwd = &disp_user_info[i+start_idx];
 		temp_name = pdb_get_username(pwd);
 		init_unistr2(&uni_temp_name, temp_name, UNI_STR_TERMINATE);
-		user_sid = pdb_get_user_sid(pwd);
 
-		if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
+		uid_to_sid(&user_sid, pdb_get_gid(pwd));
+
+		if (!sid_peek_check_rid(domain_sid, &user_sid, &user_rid)) {
 			DEBUG(0, ("make_user_sam_entry_list: User %s has SID %s, which conflicts with "
 				  "the domain sid %s.  Failing operation.\n", 
-				  temp_name, 
-				  sid_to_string(user_sid_string, user_sid),
-				  sid_to_string(domain_sid_string, domain_sid)));
+				  temp_name, sid_string_static(&user_sid),
+				  sid_string_static(domain_sid)));
+
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
@@ -2264,7 +2264,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
  	}
  	
 	/* Get the user's SID */
-	sid_copy(&sid, pdb_get_user_sid(sam_pass));
+	uid_to_sid(&sid, pdb_get_uid(sam_pass));
 	
 	samr_make_usr_obj_sd(p->mem_ctx, &psd, &sd_size, &sid);
 	se_map_generic(&des_access, &usr_generic_mapping);
@@ -3373,10 +3373,7 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	for (i=0; i<num; i++) {
 		DOM_SID sid;
 
-		if (!NT_STATUS_IS_OK(uid_to_sid(&sid, uids[i]))) {
-			DEBUG(1, ("Could not map member uid to SID\n"));
-			continue;
-		}
+		uid_to_sid(&sid, uids[i]);
 
 		if (!sid_check_is_in_our_domain(&sid)) {
 			DEBUG(1, ("Inconsistent SAM -- group member uid not "

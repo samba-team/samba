@@ -237,34 +237,22 @@ static int net_groupmap_delalias(int argc, const char **argv)
 
 int net_help_groupmap(int argc, const char **argv)
 {
-	d_printf("net groupmap add"\
-		"\n  Create a new group mapping\n");
-	d_printf("net groupmap modify"\
-		"\n  Update a group mapping\n");
-	d_printf("net groupmap delete"\
-		"\n  Remove a group mapping\n");
-	d_printf("net groupmap addmember"\
-		 "\n  Add a foreign alias member\n");
-	d_printf("net groupmap delmember"\
-		 "\n  Delete a foreign alias member\n");
-	d_printf("net groupmap listmembers"\
-		 "\n  List foreign group members\n");
-	d_printf("net groupmap memberships"\
-		 "\n  List foreign group memberships\n");
-	d_printf("net groupmap list"\
-		"\n  List current group map\n");
-	d_printf("net groupmap set"\
-		"\n  Set group mapping\n");
-	d_printf("net groupmap cleanup"\
-		"\n  Remove foreign group mapping entries\n");
-	d_printf("net groupmap comment"\
-		 "\n  Get/Set a group comment\n");
 	d_printf("net groupmap aliases"\
 		 "\n  List aliases\n");
 	d_printf("net groupmap newalias"\
 		 "\n  Create an alias\n");
 	d_printf("net groupmap delalias"\
 		 "\n  Delete an alias\n");
+	d_printf("net groupmap addmember"\
+		 "\n  Add an alias member\n");
+	d_printf("net groupmap delmember"\
+		 "\n  Delete a foreign alias member\n");
+	d_printf("net groupmap listmembers"\
+		 "\n  List foreign group members\n");
+	d_printf("net groupmap memberships"\
+		 "\n  List foreign group memberships\n");
+	d_printf("net groupmap comment"\
+		 "\n  Get/Set a group comment\n");
 	
 	return -1;
 }

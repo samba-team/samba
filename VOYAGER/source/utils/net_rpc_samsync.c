@@ -239,8 +239,8 @@ fail:
 		    (!old_string && new_string) ||\
 		(old_string && new_string && (strcmp(old_string, new_string) != 0))
 
-static NTSTATUS
-sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
+static void sam_account_from_delta(SAM_ACCOUNT *account,
+				   SAM_ACCOUNT_INFO *delta)
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
@@ -322,12 +322,6 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
-	/* User and group sid */
-	if (pdb_get_user_rid(account) != delta->user_rid)
-		pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
-	if (pdb_get_group_rid(account) != delta->group_rid)
-		pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
-
 	/* Logon and password information */
 	if (!nt_time_is_zero(&delta->logon_time)) {
 		unix_time = nt_time_to_unix(&delta->logon_time);
@@ -354,31 +348,26 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		unix_time = nt_time_to_unix(&delta->pwd_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(account);
 		if (stored_time != unix_time)
-			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
+			pdb_set_pass_last_set_time(account, unix_time,
+						   PDB_CHANGED);
 	}
-
-#if 0
-/*	No kickoff time in the delta? */
-	if (!nt_time_is_zero(&delta->kickoff_time)) {
-		unix_time = nt_time_to_unix(&delta->kickoff_time);
-		stored_time = pdb_get_kickoff_time(account);
-		if (stored_time != unix_time)
-			pdb_set_kickoff_time(account, unix_time, PDB_CHANGED);
-	}
-#endif
 
 	/* Decode hashes from password hash 
-	   Note that win2000 may send us all zeros for the hashes if it doesn't 
-	   think this channel is secure enough - don't set the passwords at all
-	   in that case
+
+	   Note that win2000 may send us all zeros for the hashes if it
+	   doesn't think this channel is secure enough - don't set the
+	   passwords at all in that case
 	*/
+
 	if (memcmp(delta->pass.buf_lm_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
+		sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd,
+			     lm_passwd, 0);
 		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
 	}
 
 	if (memcmp(delta->pass.buf_nt_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
+		sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd,
+			     nt_passwd, 0);
 		pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
 	}
 
@@ -388,311 +377,398 @@ sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 		pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
 
 	pdb_set_domain(account, lp_workgroup(), PDB_CHANGED);
-
-	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
+static char *invent_username(TALLOC_CTX *mem_ctx, char *ntname)
 {
-	NTSTATUS nt_ret;
-	fstring account;
-	pstring add_script;
+	/* First attempt: Complete random stuff */
+	fstring username;
+	int attempts=5;
+	struct passwd *pwd;
+
+	do {
+		fstr_sprintf(username, "u%s", generate_random_alnum(7));
+		pwd = getpwnam(username);
+
+		d_printf("Trying user name %s -- %s\n",
+			 username, pwd == NULL ? "ok" : "exists - next one");
+
+		attempts -= 1;
+
+		if (attempts == 0) {
+			d_printf("Did not find user name\n");
+			return NULL;
+		}
+	} while (pwd != NULL);
+
+	return talloc_strdup(mem_ctx, username);
+}
+
+static BOOL fetch_account_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
+			       uint32 rid, SAM_ACCOUNT_INFO *delta)
+{
+	fstring name;
+	char *unix_name;
 	SAM_ACCOUNT *sam_account=NULL;
 	DOM_SID user_sid;
 	DOM_SID group_sid;
-	struct passwd *passwd;
-	fstring sid_string;
 	fstring groupname;
+	struct passwd *pwd;
+	BOOL is_user;
+	int ret;
+	unid_t id;
+	gid_t gid;
+	const char *add_script;
 
-	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
-	d_printf("Creating account: %s\n", account);
+	unistr2_to_ascii(name, &delta->uni_acct_name, sizeof(name)-1);
 
-	if (!NT_STATUS_IS_OK(nt_ret = pdb_init_sam(&sam_account)))
-		return nt_ret;
-
-	if (!(passwd = Get_Pwnam(account))) {
-		/* Create appropriate user */
-		if (delta->acb_info & ACB_NORMAL) {
-			pstrcpy(add_script, lp_adduser_script());
-		} else if ( (delta->acb_info & ACB_WSTRUST) ||
-			    (delta->acb_info & ACB_SVRTRUST) ||
-			    (delta->acb_info & ACB_DOMTRUST) ) {
-			pstrcpy(add_script, lp_addmachine_script());
-		} else {
-			DEBUG(1, ("Unknown user type: %s\n",
-				  pdb_encode_acct_ctrl(delta->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
-			nt_ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		if (*add_script) {
-			int add_ret;
-			all_string_sub(add_script, "%u", account,
-				       sizeof(account));
-			add_ret = smbrun(add_script,NULL);
-			DEBUG(1,("fetch_account: Running the command `%s' "
-				 "gave %d\n", add_script, add_ret));
-		} else {
-			DEBUG(8,("fetch_account_info: no add user/machine script.  Asking winbindd\n"));
-			
-			/* don't need a RID allocated since the user already has a SID */
-			if ( !winbind_create_user( account, NULL ) )
-				DEBUG(4,("fetch_account_info: winbind_create_user() failed\n"));
-		}
-		
-		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam(account)) ) {
-			d_printf("Could not create posix account info for '%s'\n", account);
-			nt_ret = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-	}
-	
-	sid_copy(&user_sid, get_global_sam_sid());
+	sid_copy(&user_sid, dom_sid);
 	sid_append_rid(&user_sid, delta->user_rid);
 
-	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n", sid_to_string(sid_string, &user_sid), account));
-	if (!pdb_getsampwsid(sam_account, &user_sid)) {
-		sam_account_from_delta(sam_account, delta);
-		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
-			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
-		if (!pdb_add_sam_account(sam_account)) {
-			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
-				  account));
-			return NT_STATUS_ACCESS_DENIED; 
-		}
-	} else {
-		sam_account_from_delta(sam_account, delta);
-		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
-			  sid_to_string(sid_string, &user_sid), pdb_get_username(sam_account)));
-		if (!pdb_update_sam_account(sam_account)) {
-			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
-				  account));
-			pdb_free_sam(&sam_account);
-			return NT_STATUS_ACCESS_DENIED; 
-		}
+	sid_copy(&group_sid, dom_sid);
+	sid_append_rid(&group_sid, delta->group_rid);
+
+	if (nt_to_unix_name(mem_ctx, name, &unix_name, &is_user)) {
+		d_printf("Name %s exists, stopping\n", name);
+		return False;
 	}
 
-	group_sid = *pdb_get_group_sid(sam_account);
+	if ((pwd = getpwnam(name)) != NULL) {
+		d_printf("User %s exists, trying to invent a new name\n",
+			 name);
+		unix_name = invent_username(mem_ctx, name);
+	} else {
+		d_printf("User %s does not exist, trying native name\n",
+			 name);
+		unix_name = talloc_strdup(mem_ctx, name);
+	}
+
+	if (unix_name == NULL) {
+		d_printf("No unix name for %s, stopping\n", name);
+		return False;
+	}
+
+	/* Try to find primary group */
+
+	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid))) {
+		d_printf("No gid for primary group SID %s\n",
+			 sid_string_static(&group_sid));
+		return False;
+	}
 
 	if (!sid_to_local_dom_grp_name(&group_sid, groupname)) {
-		DEBUG(0, ("Primary group of %s has no mapping!\n",
-			  pdb_get_username(sam_account)));
-	} else {
-		smb_set_primary_group(groupname,
-				      pdb_get_username(sam_account));
-	}	
-
-	if ( !passwd ) {
-		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", 
-			pdb_get_username(sam_account)));
+		d_printf("Could not find primary group %s for user %s\n",
+			 sid_string_static(&group_sid), name);
+		return False;
 	}
 
- done:
+	add_script = ((delta->acb_info & ACB_NORMAL) != 0) ?
+		lp_adduser_script() : lp_addmachine_script();
+
+	if ((ret = smb_create_account(add_script, unix_name)) != 0) {
+		d_printf("Error creating user %s: %d\n", unix_name, ret);
+
+		unix_name = invent_username(mem_ctx, name);
+		d_printf("Retrying with invented name %s\n", unix_name);
+
+		if ((ret = smb_create_account(add_script, unix_name)) != 0) {
+			d_printf("Error creating user %s: %d\n", name, ret);
+			return False;
+		}
+	}
+
+	if ((ret = smb_set_primary_group(groupname, unix_name)) != 0) {
+		d_printf("Could not set primary group of user %s to %s: %d\n",
+			 unix_name, groupname, ret);
+		return False;
+	}
+
+	if ((pwd = getpwnam(unix_name)) == NULL) {
+		d_printf("User created, but not there\n");
+		return False;
+	}
+
+	if (pwd->pw_gid != gid) {
+		d_printf("Setting primary group id failed for user %s\n",
+			 name);
+	}
+
+	if (!create_name_mapping(pwd->pw_name, name, True)) {
+		d_printf("Could not create name mapping\n");
+		return False;
+	}
+
+	id.uid = pwd->pw_uid;
+
+	if (!NT_STATUS_IS_OK(idmap_set_mapping(&user_sid, id, ID_USERID))) {
+		d_printf("Could not create id mapping\n");
+		return False;
+	}
+
+	/* Ok, finally get the additional NT attributes right */
+
+	pdb_init_sam(&sam_account);
+	sam_account_from_delta(sam_account, delta);
+
+	if (!pdb_add_sam_account(sam_account)) {
+		d_printf("Could not add sam account\n");
+		return False;
+	}
+
 	pdb_free_sam(&sam_account);
-	return nt_ret;
+	return True;
 }
 
-static NTSTATUS
-fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
+static char *invent_groupname(TALLOC_CTX *mem_ctx, char *ntname)
+{
+	/* First attempt: Complete random stuff */
+	fstring groupname;
+	int attempts=5;
+	struct group *grp;
+
+	do {
+		fstr_sprintf(groupname, "g%s", generate_random_alnum(7));
+		grp = getgrnam(groupname);
+
+		d_printf("Trying group name %s -- %s\n",
+			 groupname, grp == NULL ? "ok" : "exists - next one");
+
+		attempts -= 1;
+
+		if (attempts == 0) {
+			d_printf("Did not find group name\n");
+			return NULL;
+		}
+	} while (grp != NULL);
+
+	return talloc_strdup(mem_ctx, groupname);
+}
+
+static BOOL fetch_group_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
+			     uint32 rid, SAM_GROUP_INFO *delta)
 {
 	fstring name;
+	char *unix_name;
 	fstring comment;
 	DOM_SID group_sid;
-	fstring sid_string;
+	BOOL is_user;
+	struct group *grp;
+	gid_t gid;
+	int ret;
+	unid_t id;
 
 	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment)-1);
 
-	/* add the group to the mapping table */
-	sid_copy(&group_sid, get_global_sam_sid());
+	sid_copy(&group_sid, dom_sid);
 	sid_append_rid(&group_sid, rid);
-	sid_to_string(sid_string, &group_sid);
 
-	/* TODO */
+	if (nt_to_unix_name(mem_ctx, name, &unix_name, &is_user)) {
+		d_printf("Name %s exists, stopping\n", name);
+		return False;
+	}
 
-	return NT_STATUS_ACCESS_DENIED;
+	if ((grp = getgrnam(name)) != NULL) {
+		d_printf("Group %s exists, trying to invent a new name\n",
+			 name);
+		unix_name = invent_groupname(mem_ctx, name);
+	} else {
+		d_printf("Group %s does not exist, trying native name\n",
+			 name);
+		unix_name = talloc_strdup(mem_ctx, name);
+	}
+
+	if (unix_name == NULL) {
+		d_printf("No unix name for %s, stopping\n", name);
+		return False;
+	}
+
+	if ((ret = smb_create_group(unix_name, &gid)) != 0) {
+		d_printf("Error creating group %s: %d\n", unix_name, ret);
+
+		unix_name = invent_groupname(mem_ctx, name);
+		d_printf("Retrying with invented name %s\n", unix_name);
+
+		if ((ret = smb_create_group(unix_name, &gid)) != 0) {
+			d_printf("Error creating group %s: %d\n", name, ret);
+			return False;
+		}
+	}
+
+	if ((grp = getgrgid(gid)) == NULL) {
+		d_printf("Group created, but not there\n");
+		return False;
+	}
+
+	if (!create_name_mapping(grp->gr_name, name, False)) {
+		d_printf("Could not create name mapping\n");
+		return False;
+	}
+
+	id.gid = gid;
+
+	if (!NT_STATUS_IS_OK(idmap_set_mapping(&group_sid, id, ID_GROUPID))) {
+		d_printf("Could not create id mapping\n");
+		return False;
+	}
+
+	if (!pdb_set_group_comment(unix_name, comment)) {
+		d_printf("Could not set group comment\n");
+		return False;
+	}
+
+	return True;
 }
 
-static NTSTATUS
-fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
+static BOOL fetch_group_mem_info(TALLOC_CTX *mem_ctx, const DOM_SID *dom_sid,
+				 uint32 rid, SAM_GROUP_MEM_INFO *delta)
 {
 	int i;
-	TALLOC_CTX *t = NULL;
-	char **nt_members = NULL;
-	char **unix_members;
 	DOM_SID group_sid;
 	struct group *grp;
 	gid_t gid;
 
 	if (delta->num_members == 0) {
-		return NT_STATUS_OK;
+		return True;
 	}
 
-	sid_copy(&group_sid, get_global_sam_sid());
+	sid_copy(&group_sid, dom_sid);
 	sid_append_rid(&group_sid, rid);
 
 	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid))) {
-		DEBUG(0, ("Could not find global group %d\n", rid));
-		return NT_STATUS_NO_SUCH_GROUP;
+		d_printf("Could not find global group %d\n", rid);
+		return False;
 	}
 
 	if (!(grp = getgrgid(gid))) {
-		DEBUG(0, ("Could not find unix group %d\n", gid));
-		return NT_STATUS_NO_SUCH_GROUP;
+		d_printf("Could not find unix group %d\n", gid);
+		return False;
 	}
 
-	d_printf("Group members of %s: ", grp->gr_name);
-
-	if (!(t = talloc_init("fetch_group_mem_info"))) {
-		DEBUG(0, ("could not talloc_init\n"));
-		return NT_STATUS_NO_MEMORY;
+	if ((grp->gr_mem != NULL) && (grp->gr_mem[0] != NULL)) {
+		d_printf("Group %s has auxiliary members\n", grp->gr_name);
+		return False;
 	}
-
-	nt_members = talloc_zero(t, sizeof(char *) * delta->num_members);
 
 	for (i=0; i<delta->num_members; i++) {
-		NTSTATUS nt_status;
-		SAM_ACCOUNT *member = NULL;
 		DOM_SID member_sid;
+		uid_t uid;
+		struct passwd *pwd;
+		int res;
 
-		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam_talloc(t, &member))) {
-			talloc_destroy(t);
-			return nt_status;
-		}
-
-		sid_copy(&member_sid, get_global_sam_sid());
+		sid_copy(&member_sid, dom_sid);
 		sid_append_rid(&member_sid, delta->rids[i]);
 
-		if (!pdb_getsampwsid(member, &member_sid)) {
-			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
-				  delta->rids[i], sid_string_static(&member_sid), grp->gr_name));
-			pdb_free_sam(&member);
+		if (!NT_STATUS_IS_OK(sid_to_uid(&member_sid, &uid))) {
+			d_printf("Could not find uid for member SID %s\n",
+				 sid_string_static(&member_sid));
+			return False;
+		}
+
+		if ((pwd = getpwuid(uid)) == NULL) {
+			d_printf("Member %d not found in passwd\n", uid);
+			return False;
+		}
+
+		if (pwd->pw_gid == gid) {
+			d_printf("User %s has group %d as primary group\n",
+				 pwd->pw_name, gid);
 			continue;
 		}
 
-		if (pdb_get_group_rid(member) == rid) {
-			d_printf("%s(primary),", pdb_get_username(member));
-			pdb_free_sam(&member);
-			continue;
-		}
-		
-		d_printf("%s,", pdb_get_username(member));
-		nt_members[i] = talloc_strdup(t, pdb_get_username(member));
-		pdb_free_sam(&member);
-	}
+		res = smb_add_user_group(grp->gr_name, pwd->pw_name);
 
-	d_printf("\n");
-
-	unix_members = grp->gr_mem;
-
-	while (*unix_members) {
-		BOOL is_nt_member = False;
-		for (i=0; i<delta->num_members; i++) {
-			if (nt_members[i] == NULL) {
-				/* This was a primary group */
-				continue;
-			}
-
-			if (strcmp(*unix_members, nt_members[i]) == 0) {
-				is_nt_member = True;
-				break;
-			}
-		}
-		if (!is_nt_member) {
-			/* We look at a unix group member that is not
-			   an nt group member. So, remove it. NT is
-			   boss here. */
-			smb_delete_user_group(grp->gr_name, *unix_members);
-		}
-		unix_members += 1;
-	}
-
-	for (i=0; i<delta->num_members; i++) {
-		BOOL is_unix_member = False;
-
-		if (nt_members[i] == NULL) {
-			/* This was the primary group */
-			continue;
-		}
-
-		unix_members = grp->gr_mem;
-
-		while (*unix_members) {
-			if (strcmp(*unix_members, nt_members[i]) == 0) {
-				is_unix_member = True;
-				break;
-			}
-			unix_members += 1;
-		}
-
-		if (!is_unix_member) {
-			/* We look at a nt group member that is not a
-                           unix group member currently. So, add the nt
-                           group member. */
-			smb_add_user_group(grp->gr_name, nt_members[i]);
+		if (res != 0) {
+			d_printf("Could not add user %s to group %s\n",
+				 pwd->pw_name, pwd->pw_name);
+			return False;
 		}
 	}
-	
-	talloc_destroy(t);
-	return NT_STATUS_OK;
+
+	return True;
 }
 
-static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
-				 DOM_SID dom_sid)
+static BOOL fetch_alias_info(TALLOC_CTX *mem_ctx, uint32 rid,
+			     SAM_ALIAS_INFO *delta, const DOM_SID *dom_sid)
 {
 	fstring name;
 	fstring comment;
 	DOM_SID alias_sid;
-	fstring sid_string;
+	char *unix_name;
+	BOOL is_user;
 
 	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name)-1);
 	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment)-1);
 
-	/* Find out whether the group is already mapped */
-	sid_copy(&alias_sid, &dom_sid);
+	sid_copy(&alias_sid, dom_sid);
 	sid_append_rid(&alias_sid, rid);
-	sid_to_string(sid_string, &alias_sid);
 
-	/* TODO: The passdb api needs a way to hard-code all values of a new
-	 * alias. */
+	if (nt_to_unix_name(mem_ctx, name, &unix_name, &is_user)) {
+		d_printf("Name %s exists, stopping\n", name);
+		return False;
+	}
 
-	d_printf("Aliases currently not supported in vampire\n");
+	if (!new_alias(name, &alias_sid)) {
+		d_printf("Could not create alias %s\n", name);
+		return False;
+	}
 
-	return NT_STATUS_UNSUCCESSFUL;
+	if (!pdb_set_group_comment(name, comment)) {
+		d_printf("Could not set comment of [%s] to [%s]\n",
+			 name, comment);
+		return False;
+	}
+
+	return True;
 }
 
-static NTSTATUS
-fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
+static BOOL fetch_alias_mem(TALLOC_CTX *mem_ctx, uint32 rid,
+			    SAM_ALIAS_MEM_INFO *delta, const DOM_SID *dom_sid)
 {
-	d_printf("Aliases currently not supported in vampire\n");
+	DOM_SID alias_sid;
+	int i;
 
-	return NT_STATUS_OK;
+	sid_copy(&alias_sid, dom_sid);
+	sid_append_rid(&alias_sid, rid);
+
+	for (i=0; i<delta->num_members; i++) {
+		if (!pdb_add_aliasmem(&alias_sid, &delta->sids[i].sid)) {
+			d_printf("Could not add member %s to alias %s\n",
+				 sid_string_static(&delta->sids[i].sid),
+				 sid_string_static(&alias_sid));
+			return False;
+		}
+	}
+
+	return True;
 }
 
-static void
-fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
-		DOM_SID dom_sid)
+static BOOL
+fetch_sam_entry(TALLOC_CTX *mem_ctx, SAM_DELTA_HDR *hdr_delta,
+		SAM_DELTA_CTR *delta, const DOM_SID *dom_sid)
 {
 	switch(hdr_delta->type) {
 	case SAM_DELTA_ACCOUNT_INFO:
-		fetch_account_info(hdr_delta->target_rid,
-				   &delta->account_info);
+		return fetch_account_info(mem_ctx, dom_sid,
+					  hdr_delta->target_rid,
+					  &delta->account_info);
 		break;
 	case SAM_DELTA_GROUP_INFO:
-		fetch_group_info(hdr_delta->target_rid,
-				 &delta->group_info);
+		return fetch_group_info(mem_ctx, dom_sid,
+					hdr_delta->target_rid,
+					&delta->group_info);
 		break;
 	case SAM_DELTA_GROUP_MEM:
-		fetch_group_mem_info(hdr_delta->target_rid,
-				     &delta->grp_mem_info);
+		return fetch_group_mem_info(mem_ctx, dom_sid,
+					    hdr_delta->target_rid,
+					    &delta->grp_mem_info);
 		break;
 	case SAM_DELTA_ALIAS_INFO:
-		fetch_alias_info(hdr_delta->target_rid,
-				 &delta->alias_info, dom_sid);
-		break;
+		return fetch_alias_info(mem_ctx, hdr_delta->target_rid,
+					&delta->alias_info, dom_sid);
 	case SAM_DELTA_ALIAS_MEM:
-		fetch_alias_mem(hdr_delta->target_rid,
-				&delta->als_mem_info, dom_sid);
+		return fetch_alias_mem(mem_ctx, hdr_delta->target_rid,
+				       &delta->als_mem_info, dom_sid);
 		break;
 	/* The following types are recognised but not handled */
 	case SAM_DELTA_DOMAIN_INFO:
@@ -732,11 +808,12 @@ fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
 		break;
 	}
+	return True;
 }
 
 static NTSTATUS
 fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
-	       DOM_SID dom_sid)
+	       const DOM_SID *dom_sid)
 {
 	unsigned sync_context = 0;
         NTSTATUS result;
@@ -777,7 +854,11 @@ fetch_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds,
 					     ret_creds);
 
 			for (i = 0; i < num_deltas; i++) {
-				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
+				if (!fetch_sam_entry(mem_ctx, &hdr_deltas[i],
+						     &deltas[i], dom_sid)) {
+					result = NT_STATUS_UNSUCCESSFUL;
+					break;
+				}
 			}
 		} else
 			return result;
@@ -805,8 +886,15 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 
 	ZERO_STRUCT(ret_creds);
 
-	d_printf("net rpc vampire currently rather broken -- Not doing it.\n");
-	return NT_STATUS_UNSUCCESSFUL;
+	if (!idmap_init(lp_idmap_backend())) {
+		d_printf("Could not init idmap\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!delete_name_mappings()) {
+		d_printf("Could not delete name mappings\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (!sid_equal(domain_sid, get_global_sam_sid())) {
 		d_printf("Cannot import users from %s at this time, "
@@ -838,7 +926,8 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 		goto fail;
 	}
 
-	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds, *domain_sid);
+	result = fetch_database(cli, SAM_DATABASE_DOMAIN, &ret_creds,
+				domain_sid);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to fetch domain database: %s\n",
@@ -850,7 +939,7 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 	}
 
 	result = fetch_database(cli, SAM_DATABASE_BUILTIN, &ret_creds, 
-				global_sid_Builtin);
+				&global_sid_Builtin);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to fetch builtin database: %s\n",
