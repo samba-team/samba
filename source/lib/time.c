@@ -121,7 +121,7 @@ Updated by Paul Eggert <eggert@twinsun.com>
 ********************************************************************/
 static int TimeZoneFaster(time_t t)
 {
-  static struct dst_table {time_t start,end; int zone;} *dst_table = NULL;
+  static struct dst_table {time_t start,end; int zone;} *tdt, *dst_table = NULL;
   static int table_size = 0;
   int i;
   int zone = 0;
@@ -141,11 +141,14 @@ static int TimeZoneFaster(time_t t)
     time_t low,high;
 
     zone = TimeZone(t);
-    dst_table = (struct dst_table *)Realloc(dst_table,
+    tdt = (struct dst_table *)Realloc(dst_table,
 					      sizeof(dst_table[0])*(i+1));
-    if (!dst_table) {
-      table_size = 0;
-    } else {
+	if (!tdt) {
+		DEBUG(0,("TimeZoneFaster: out of memory!\n"));
+		if (dst_table)
+			free(dst_table);
+		table_size = 0;
+	} else {
       table_size++;
 
       dst_table[i].zone = zone; 
