@@ -48,6 +48,10 @@
 #include <lber.h>
 #include <ldap.h>
 
+#ifndef LDAP_OPT_SUCCESS
+#define LDAP_OPT_SUCCESS LDAP_SUCCESS
+#endif
+
 #ifndef SAM_ACCOUNT
 #define SAM_ACCOUNT struct sam_passwd
 #endif
@@ -73,7 +77,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
 	int version, rc;
-	int tls = LDAP_OPT_X_TLS_HARD;
+	int tls;
 	
 	if (geteuid() != 0) {
 		DEBUG(0, ("ldap_open_connection: cannot access LDAP when not root..\n"));
@@ -105,6 +109,7 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	switch (lp_ldap_ssl())
 	{
 		case LDAP_SSL_START_TLS:
+#ifdef HAVE_LDAP_START_TLS_S
 			if (ldap_get_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, 
 				&version) == LDAP_OPT_SUCCESS)
 			{
@@ -122,13 +127,23 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 				return False;
 			}
 			DEBUG (2, ("StartTLS issued: using a TLS connection\n"));
+#else
+			DEBUG(0,("ldap_open_connection: StartTLS not supported by LDAP client libraries!\n"));
+                        return False;
+#endif
 			break;
 			
 		case LDAP_SSL_ON:
+#ifdef LDAP_OPT_X_TLS
+			tls = LDAP_OPT_X_TLS_HARD;
 			if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
+#else
+			DEBUG(0,("ldap_open_connection: Secure connection not supported by LDAP client libraries!\n"));
+			return False;
+#endif
 			break;
 			
 		case LDAP_SSL_OFF:
@@ -188,7 +203,7 @@ static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMes
 
 	DEBUG(2, ("ldap_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, filter, NULL, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, (char*)filter, NULL, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldap_search_one_user: Problem during the LDAP search: %s\n", 
