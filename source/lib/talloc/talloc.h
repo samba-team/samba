@@ -37,7 +37,7 @@ typedef void TALLOC_CTX;
 #endif
 
 /* useful macros for creating type checked pointers */
-#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
+#define talloc(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type ": " __location__)
 #define talloc_size(ctx, size) talloc_named_const(ctx, size, __location__)
 
 #define talloc_new(ctx) talloc_named_const(ctx, 0, "talloc_new: " __location__)
