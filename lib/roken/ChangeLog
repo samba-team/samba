@@ -1,3 +1,8 @@
+2000-06-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* strsep_copy.c: strsep, but with const stringp so returns string
+	in separate buffer
+
 2000-05-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* getusershell.c: implment the AIX version use
