@@ -86,7 +86,7 @@ proto (int sock, const char *service)
 	      krb5_get_err_text(context, status));
 
     status = krb5_unparse_name (context,
-				ticket->enc_part2.client,
+				ticket->client,
 				&name);
     if (status)
 	errx (1, "krb5_unparse_name: %s",
