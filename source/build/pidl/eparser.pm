@@ -236,6 +236,15 @@ sub ParseFunctionArg($$)
     my($io) = shift;		# "in" or "out"
 
     if (has_property($arg->{PROPERTIES}, $io)) {
+
+	# For some reason, pointers to elements in function definitions
+	# aren't parsed.
+
+	if (defined($arg->{POINTERS}) && !is_scalar_type($arg->{TYPE})) {
+	    $arg->{POINTERS} -= 1, if ($arg->{POINTERS} > 0);
+	    delete($arg->{POINTERS}), if ($arg->{POINTERS} == 0);
+	}
+
 	ParseElement($arg, "scalars|buffers");
     }
 }
