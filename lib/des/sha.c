@@ -299,10 +299,10 @@ sha_finito (struct sha *m, void *res)
       u_char *r = (u_char *)res;
 
       for (i = 0; i < 5; ++i) {
-	  r[4*i]   = m->counter[i] & 0xFF;
-	  r[4*i+1] = (m->counter[i] >> 8) & 0xFF;
-	  r[4*i+2] = (m->counter[i] >> 16) & 0xFF;
-	  r[4*i+3] = (m->counter[i] >> 24) & 0xFF;
+	  r[4*i+3] = m->counter[i] & 0xFF;
+	  r[4*i+2] = (m->counter[i] >> 8) & 0xFF;
+	  r[4*i+1] = (m->counter[i] >> 16) & 0xFF;
+	  r[4*i]   = (m->counter[i] >> 24) & 0xFF;
       }
   }
 #if 0
