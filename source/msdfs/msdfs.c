@@ -78,6 +78,7 @@ static BOOL parse_dfs_path(char* pathname, struct dfs_path* pdp)
 
 /********************************************************
  Fake up a connection struct for the VFS layer.
+ Note this CHANGES CWD !!!! JRA.
 *********************************************************/
 
 static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
@@ -96,6 +97,11 @@ static BOOL create_conn_struct( connection_struct *conn, int snum, char *path)
 	
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
+		talloc_destroy( conn->mem_ctx );
+		return False;
+	}
+	if (vfs_ChDir(conn,conn->connectpath) != 0) {
+		DEBUG(0,("create_conn_struct: Can't ChDir to new conn path %s\n", conn->connectpath));
 		talloc_destroy( conn->mem_ctx );
 		return False;
 	}
@@ -161,7 +167,8 @@ static BOOL parse_symlink(char* buf,struct referral** preflist,
 /**********************************************************************
  Returns true if the unix path is a valid msdfs symlink
  **********************************************************************/
-BOOL is_msdfs_link(connection_struct* conn, char* path,
+
+BOOL is_msdfs_link(connection_struct* conn, char * path,
 		   struct referral** reflistp, int* refcnt,
 		   SMB_STRUCT_STAT *sbufp)
 {
@@ -171,8 +178,6 @@ BOOL is_msdfs_link(connection_struct* conn, char* path,
 
 	if (!path || !conn)
 		return False;
-
-	strlower_m(path);
 
 	if (sbufp == NULL)
 		sbufp = &st;
@@ -212,17 +217,21 @@ they request referrals for dfs roots on a server.
 
 consumedcntp: how much of the dfs path is being redirected. the client
 should try the remaining path on the redirected server.
+		
 *****************************************************************/
-static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp, 
+
+static BOOL resolve_dfs_path(pstring dfspath, struct dfs_path* dp, 
 		      connection_struct* conn,
 		      BOOL findfirst_flag,
 		      struct referral** reflistpp, int* refcntp,
 		      BOOL* self_referralp, int* consumedcntp)
 {
-	fstring localpath;
+	pstring localpath;
 	int consumed_level = 1;
 	char *p;
-	fstring reqpath;
+	BOOL bad_path = False;
+	SMB_STRUCT_STAT sbuf;
+	pstring reqpath;
 
 	if (!dp || !conn) {
 		DEBUG(1,("resolve_dfs_path: NULL dfs_path* or NULL connection_struct*!\n"));
@@ -237,10 +246,13 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 		return False;
 	}
 
+	DEBUG(10,("resolve_dfs_path: Conn path = %s req_path = %s\n", conn->connectpath, dp->reqpath));
+
+	unix_convert(dp->reqpath,conn,0,&bad_path,&sbuf);
+	/* JRA... should we strlower the last component here.... ? */
+	pstrcpy(localpath, dp->reqpath);
+
 	/* check if need to redirect */
-	fstrcpy(localpath, conn->connectpath);
-	fstrcat(localpath, "/");
-	fstrcat(localpath, dp->reqpath);
 	if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
 		if (findfirst_flag) {
 			DEBUG(6,("resolve_dfs_path (FindFirst) No redirection "
@@ -256,13 +268,11 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 	} 
 
 	/* redirect if any component in the path is a link */
-	fstrcpy(reqpath, dp->reqpath);
+	pstrcpy(reqpath, dp->reqpath);
 	p = strrchr(reqpath, '/');
 	while (p) {
 		*p = '\0';
-		fstrcpy(localpath, conn->connectpath);
-		fstrcat(localpath, "/");
-		fstrcat(localpath, reqpath);
+		pstrcpy(localpath, reqpath);
 		if (is_msdfs_link(conn, localpath, reflistpp, refcntp, NULL)) {
 			DEBUG(4, ("resolve_dfs_path: Redirecting %s because parent %s is dfs link\n", dfspath, localpath));
 
@@ -278,7 +288,8 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
 				trim_char(buf, '\0', '\\');
 				for (; consumed_level; consumed_level--) {
 					q = strrchr(buf, '\\');
-					if (q) *q = 0;
+					if (q)
+						*q = 0;
 				}
 				*consumedcntp = strlen(buf);
 				DEBUG(10, ("resolve_dfs_path: Path consumed: %s (%d)\n", buf, *consumedcntp));
@@ -297,7 +308,8 @@ static BOOL resolve_dfs_path(char* dfspath, struct dfs_path* dp,
   Decides if a dfs pathname should be redirected or not.
   If not, the pathname is converted to a tcon-relative local unix path
 *****************************************************************/
-BOOL dfs_redirect(char* pathname, connection_struct* conn,
+
+BOOL dfs_redirect(pstring pathname, connection_struct* conn,
 		  BOOL findfirst_flag)
 {
 	struct dfs_path dp;
@@ -310,7 +322,7 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn,
 	/* if dfs pathname for a non-dfs share, convert to tcon-relative
 	   path and return false */
 	if (!lp_msdfs_root(SNUM(conn))) {
-		fstrcpy(pathname, dp.reqpath);
+		pstrcpy(pathname, dp.reqpath);
 		return False;
 	}
 	
@@ -325,7 +337,7 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn,
 		DEBUG(3,("dfs_redirect: Not redirecting %s.\n", pathname));
 		
 		/* Form non-dfs tcon-relative path */
-		fstrcpy(pathname, dp.reqpath);
+		pstrcpy(pathname, dp.reqpath);
 		DEBUG(3,("dfs_redirect: Path converted to non-dfs path %s\n",
 			 pathname));
 		return False;
@@ -338,6 +350,7 @@ BOOL dfs_redirect(char* pathname, connection_struct* conn,
  Gets valid referrals for a dfs path and fills up the
  junction_map structure
  **********************************************************************/
+
 BOOL get_referred_path(char *pathname, struct junction_map* jn,
 		       int* consumedcntp, BOOL* self_referralp)
 {
@@ -363,14 +376,12 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 
 	/* Verify hostname in path */
 	if (local_machine && (!strequal(local_machine, dp.hostname))) {
-
-	   /* Hostname mismatch, check if one of our IP addresses */
-	   if (!ismyip(*interpret_addr2(dp.hostname))) {
-		
-		DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
-		  	  dp.hostname, pathname));
-		return False;
-	   }
+		/* Hostname mismatch, check if one of our IP addresses */
+		if (!ismyip(*interpret_addr2(dp.hostname))) {
+			DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
+				dp.hostname, pathname));
+			return False;
+		}
 	}
 
 	pstrcpy(jn->service_name, dp.servicename);
@@ -386,7 +397,7 @@ BOOL get_referred_path(char *pathname, struct junction_map* jn,
 	pstrcpy(conn_path, lp_pathname(snum));
 	if (!create_conn_struct(conn, snum, conn_path))
 		return False;
-	
+
 	if (!lp_msdfs_root(SNUM(conn))) {
 		DEBUG(3,("get_referred_path: .%s. in dfs path %s is not a dfs root.\n",
 			 dp.servicename, pathname));
@@ -626,7 +637,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
  * Set up the Dfs referral for the dfs pathname
  ******************************************************************/
 
-int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
+int setup_dfs_referral(connection_struct *orig_conn, char *pathname, int max_referral_level, char** ppdata)
 {
 	struct junction_map junction;
 	int consumedcnt;
@@ -648,12 +659,14 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 		pathnamep++;
 
 	pstrcpy(buf, pathnamep);
-	if (!get_referred_path(buf, &junction, &consumedcnt,
-			       &self_referral))
+	/* The following call can change cwd. */
+	if (!get_referred_path(buf, &junction, &consumedcnt, &self_referral)) {
+		vfs_ChDir(orig_conn,orig_conn->connectpath);
 		return -1;
+	}
+	vfs_ChDir(orig_conn,orig_conn->connectpath);
 	
-	if (!self_referral)
-	{
+	if (!self_referral) {
 		pathnamep[consumedcnt] = '\0';
 
 		if( DEBUGLVL( 3 ) ) {
@@ -672,24 +685,18 @@ int setup_dfs_referral(char* pathname, int max_referral_level, char** ppdata)
 
 	switch(max_referral_level) {
 	case 2:
-		{
 		reply_size = setup_ver2_dfs_referral(pathnamep, ppdata, &junction, 
 						     consumedcnt, self_referral);
 		SAFE_FREE(junction.referral_list);
 		break;
-		}
 	case 3:
-		{
 		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata, &junction, 
 						     consumedcnt, self_referral);
 		SAFE_FREE(junction.referral_list);
 		break;
-		}
 	default:
-		{
 		DEBUG(0,("setup_dfs_referral: Invalid dfs referral version: %d\n", max_referral_level));
 		return -1;
-		}
 	}
       
 	DEBUG(10,("DFS Referral pdata:\n"));
@@ -752,7 +759,6 @@ static BOOL junction_to_local_path(struct junction_map* jn, char* path,
 
 	safe_strcpy(path, lp_pathname(snum), max_pathlen-1);
 	safe_strcat(path, "/", max_pathlen-1);
-	strlower_m(jn->volume_name);
 	safe_strcat(path, jn->volume_name, max_pathlen-1);
 
 	pstrcpy(conn_path, lp_pathname(snum));
@@ -885,18 +891,12 @@ static BOOL form_junctions(int snum, struct junction_map* jn, int* jn_count)
 	cnt++;
 	
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, connect_path);
+	dirp = SMB_VFS_OPENDIR(conn, ".");
 	if(!dirp)
 		goto out;
 
 	while((dname = vfs_readdirname(conn, dirp)) != NULL) {
-		pstring pathreal;
-
-		pstrcpy(pathreal, connect_path);
-		pstrcat(pathreal, "/");
-		pstrcat(pathreal, dname);
- 
-		if (is_msdfs_link(conn, pathreal, &(jn[cnt].referral_list),
+		if (is_msdfs_link(conn, dname, &(jn[cnt].referral_list),
 				  &(jn[cnt].referral_count), NULL)) {
 			pstrcpy(jn[cnt].service_name, service_name);
 			pstrcpy(jn[cnt].volume_name, dname);
@@ -925,4 +925,3 @@ int enum_msdfs_links(struct junction_map* jn)
 	}
 	return jn_count;
 }
-
