@@ -18,8 +18,6 @@ ADD_OBJ_FILES = \
 		lib/time.o \
 		lib/genrand.o \
 		lib/username.o \
-		lib/util_getent.o \
-		lib/util_pw.o \
 		lib/smbrun.o \
 		lib/bitmap.o \
 		lib/snprintf.o \
