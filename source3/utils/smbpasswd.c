@@ -420,7 +420,7 @@ static int process_root(int local_flags)
 	} else if (local_flags & LOCAL_INTERDOM_ACCOUNT) {
 		static fstring buf;
 
-		if (local_flags & LOCAL_ADD_USER) {
+		if (local_flags & LOCAL_ADD_USER & !new_passwd) {
 			/*
 			 * Prompt for trusting domain's account password
 			 */
@@ -465,7 +465,7 @@ static int process_root(int local_flags)
 			}
 		}
 		
-		if(local_flags & LOCAL_SET_PASSWORD) {
+		if(local_flags & LOCAL_SET_PASSWORD & !new_passwd) {
 			new_passwd = prompt_for_new_password(stdin_passwd_get);
 			
 			if(!new_passwd) {
