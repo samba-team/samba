@@ -766,6 +766,14 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   XXXX This currently doesn't handle packets too big for one
   datagram. It should split them and use the packet_offset, more and
   first flags to handle the fragmentation. Yuck.
+
+    [...but it isn't clear that we would ever need to send a
+    a fragmented NBT Datagram.  The IP layer does its own
+    fragmentation to ensure that messages can fit into the path
+    MTU.  It *is* important to be able to receive and rebuild
+    fragmented NBT datagrams, just in case someone out there
+    really has implemented this 'feature'.  crh -)------ ]
+
   ******************************************************************/
 static int build_dgram(char *buf,struct packet_struct *p)
 {
@@ -795,8 +803,11 @@ static int build_dgram(char *buf,struct packet_struct *p)
   memcpy(ubuf+offset,dgram->data,dgram->datasize);
   offset += dgram->datasize;
 
-  /* automatically set the dgm_length */
-  dgram->header.dgm_length = offset;
+  /* automatically set the dgm_length
+   * NOTE: RFC1002 says the dgm_length does *not*
+   *       include the fourteen-byte header. crh
+   */
+  dgram->header.dgm_length = (offset - 14);
   RSSVAL(ubuf,10,dgram->header.dgm_length); 
 
   return(offset);
