@@ -936,7 +936,7 @@ recvrequest(char *cmd, char *local, char *remote, char *lmode, int printnames)
 	{
 	    size_t blocksize = BUFSIZ;
 #ifdef HAVE_ST_BLKSIZE
-	    if (fstat(fileno(fout), &st) => 0 && st.st_blksize > 0)
+	    if (fstat(fileno(fout), &st) >= 0 && st.st_blksize > 0)
 		blocksize = st.st_blksize;
 #endif
 	    if (blocksize > bufsize) {
