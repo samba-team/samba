@@ -173,8 +173,8 @@ int make_rpc_reply(char *inbuf, char *q, int data_len)
 
 void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
 {
-	hdr->uni_max_len = max_len;
-	hdr->uni_str_len = len;
+	hdr->uni_max_len = 2 * max_len;
+	hdr->uni_str_len = 2 * len;
 	hdr->undoc       = terminate;
 }
 
