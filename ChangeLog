@@ -1,4 +1,13 @@
+2003-09-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kpasswd/kpasswdd.c: add support for Set password protocol as
+	defined by RFC3244 -- Microsoft Windows 2000 Kerberos Change
+	Password and Set Password Protocols
+
 2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/db3.c: improve readability of ->open ifdef, check if
+	version >= 4.1
 
 	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_copy): add
 	
