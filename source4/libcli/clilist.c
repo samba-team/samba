@@ -27,7 +27,8 @@ struct search_private {
 	int dirlist_len;
 	int ff_searchcount;  /* total received in 1 server trip */
 	int total_received;  /* total received all together */
-	int info_level;
+	enum smb_search_level info_level;
+	const char *last_name;     /* used to continue trans2 search */
 	DATA_BLOB status;	/* used for old-style search */
 };
 
@@ -35,7 +36,7 @@ struct search_private {
 /****************************************************************************
  Interpret a long filename structure.
 ****************************************************************************/
-static BOOL interpret_long_filename(int level,
+static BOOL interpret_long_filename(enum smb_search_level level,
 				    union smb_search_data *info,
 				    file_info *finfo)
 {
@@ -43,17 +44,35 @@ static BOOL interpret_long_filename(int level,
 
 	if (!finfo) finfo = &finfo2;
 	ZERO_STRUCTP(finfo);
-	
-	finfo->size = info->both_directory_info.size;
-	finfo->ctime = nt_time_to_unix(info->both_directory_info.create_time);
-	finfo->atime = nt_time_to_unix(info->both_directory_info.access_time);
-	finfo->mtime = nt_time_to_unix(info->both_directory_info.write_time);
-	finfo->mode = info->both_directory_info.attrib; /* 32 bit->16 bit attrib */
-	if (info->both_directory_info.short_name.s) {
-		strncpy(finfo->short_name, info->both_directory_info.short_name.s, 
-			sizeof(finfo->short_name)-1);
+
+	switch (level) {
+	case RAW_SEARCH_STANDARD:
+		finfo->size = info->standard.size;
+		finfo->ctime = info->standard.create_time;
+		finfo->atime = info->standard.access_time;
+		finfo->mtime = info->standard.write_time;
+		finfo->mode = info->standard.attrib;
+		finfo->name = info->standard.name.s;
+		break;
+
+	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
+		finfo->size = info->both_directory_info.size;
+		finfo->ctime = nt_time_to_unix(info->both_directory_info.create_time);
+		finfo->atime = nt_time_to_unix(info->both_directory_info.access_time);
+		finfo->mtime = nt_time_to_unix(info->both_directory_info.write_time);
+		finfo->mode = info->both_directory_info.attrib; /* 32 bit->16 bit attrib */
+		if (info->both_directory_info.short_name.s) {
+			strncpy(finfo->short_name, info->both_directory_info.short_name.s, 
+				sizeof(finfo->short_name)-1);
+		}
+		finfo->name = info->both_directory_info.name.s;
+		break;
+
+	default:
+		DEBUG(0,("Unhandled level %d in interpret_long_filename\n", (int)level));
+		return False;
 	}
-	finfo->name = info->both_directory_info.name.s;
+
 	return True;
 }
 
@@ -75,6 +94,7 @@ static BOOL cli_list_new_callback(void *private, union smb_search_data *file)
 
 	interpret_long_filename(state->info_level, file, &state->dirlist[state->total_received]);
 
+	state->last_name = state->dirlist[state->total_received].name;
 	state->total_received++;
 	state->ff_searchcount++;
 	
@@ -95,7 +115,6 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 	char *mask;
 	int ff_eos = 0, i, ff_searchcount;
 	int ff_dir_handle=0;
-	enum smb_search_level level;
 
 	/* initialize state for search */
 	state.dirlist = NULL;
@@ -106,9 +125,9 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 	mask = talloc_strdup(state.mem_ctx, Mask);
 
 	if (tree->session->transport->negotiate.capabilities & CAP_NT_SMBS) {
-		level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
+		state.info_level = RAW_SEARCH_BOTH_DIRECTORY_INFO;
 	} else {
-		level = RAW_SEARCH_STANDARD;
+		state.info_level = RAW_SEARCH_STANDARD;
 	}
 
 	while (1) {
@@ -116,7 +135,7 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 		if (first) {
 			NTSTATUS status;
 
-			first_parms.t2ffirst.level = level;
+			first_parms.t2ffirst.level = state.info_level;
 			first_parms.t2ffirst.in.max_count = max_matches;
 			first_parms.t2ffirst.in.search_attrib = attribute;
 			first_parms.t2ffirst.in.pattern = mask;
@@ -142,12 +161,12 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 		} else {
 			NTSTATUS status;
 
-			next_parms.t2fnext.level = level;
+			next_parms.t2fnext.level = state.info_level;
 			next_parms.t2fnext.in.max_count = max_matches;
-			next_parms.t2fnext.in.last_name = mask;
+			next_parms.t2fnext.in.last_name = state.last_name;
 			next_parms.t2fnext.in.handle = ff_dir_handle;
 			next_parms.t2fnext.in.resume_key = 0;
-			next_parms.t2fnext.in.flags = FLAG_TRANS2_FIND_CONTINUE | FLAG_TRANS2_FIND_CLOSE_IF_END;
+			next_parms.t2fnext.in.flags = FLAG_TRANS2_FIND_CLOSE_IF_END;
 			
 			status = smb_raw_search_next(tree, 
 						     state.mem_ctx,
