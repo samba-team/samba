@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -60,15 +60,21 @@ static int use_v4 = -1;
 #ifdef KRB5
 static int use_v5 = -1;
 #endif
+#if defined(KRB4) || defined(KRB5)
 static int use_only_broken = 0;
+#else
+static int use_only_broken = 1;
+#endif
 static int use_broken = 1;
 static char *port_str;
 static const char *user;
 static int do_version;
 static int do_help;
 static int do_errsock = 1;
+#ifdef KRB5
 static char *protocol_version_str;
 static int protocol_version = 2;
+#endif
 
 /*
  *
@@ -750,7 +756,6 @@ doit (const char *hostname,
       const char *local_user,
       const char *cmd,
       size_t cmd_len,
-      int do_errsock,
       int (*auth_func)(int s,
 		       struct sockaddr *this, struct sockaddr *that,
 		       const char *hostname, const char *remote_user,
@@ -829,22 +834,22 @@ struct getargs args[] = {
 #endif
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5" },
-    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials (krb5)"},
-    { NULL, 'G', arg_negative_flag,&do_forward,	"Don't forward credentials" },
+    { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials [krb5]"},
     { "forwardable", 'F', arg_flag,	&do_forwardable,
-      "Forward forwardable credentials" },
+      "Forward forwardable credentials [krb5]" },
+    { NULL, 'G', arg_negative_flag,&do_forward,	"Don't forward credentials" },
+    { "unique", 'u', arg_flag,	&do_unique_tkfile,
+      "Use unique remote credentials cache [krb5]" },
+    { "tkfile", 'U', arg_string,  &unique_tkfile,
+      "Specifies remote credentials cache [krb5]" },
+    { "protocol", 'P', arg_string,      &protocol_version_str, 
+      "Protocol version [krb5]", "protocol" },
 #endif
-#if defined(KRB4) || defined(KRB5)
     { "broken", 'K', arg_flag,		&use_only_broken, "Use only priv port" },
+#if defined(KRB4) || defined(KRB5)
     { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection" },
     { NULL, 	'z', arg_negative_flag,      &do_encrypt,
       "Don't encrypt connection", NULL },
-#endif
-#ifdef KRB5
-    { "unique", 'u', arg_flag,	&do_unique_tkfile,
-      "Use unique remote tkfile (krb5)" },
-    { "tkfile", 'U', arg_string,  &unique_tkfile,
-      "Use that remote tkfile (krb5)" },
 #endif
     { NULL,	'd', arg_flag,		&sock_debug, "Enable socket debugging" },
     { "input",	'n', arg_negative_flag,	&input,		"Close stdin" },
@@ -852,8 +857,8 @@ struct getargs args[] = {
       "port" },
     { "user",	'l', arg_string,	&user,		"Run as this user", "login" },
     { "stderr", 'e', arg_negative_flag, &do_errsock,	"Don't open stderr"},
-    { "protocol", 'P', arg_string,      &protocol_version_str, 
-      "Protocol version", "protocol" },
+#ifdef KRB5
+#endif
     { "version", 0,  arg_flag,		&do_version,	NULL },
     { "help",	 0,  arg_flag,		&do_help,	NULL }
 };
@@ -918,6 +923,7 @@ main(int argc, char **argv)
 	return 0;
     }
 
+#ifdef KRB5
     if(protocol_version_str != NULL) {
 	if(strcasecmp(protocol_version_str, "N") == 0)
 	    protocol_version = 2;
@@ -935,7 +941,6 @@ main(int argc, char **argv)
 	}
     }
 
-#ifdef KRB5
     status = krb5_init_context (&context);
     if (status) {
 	if(use_v5 == 1)
@@ -1049,7 +1054,6 @@ main(int argc, char **argv)
 	auth_method = AUTH_KRB5;
       again:
 	ret = doit (host, ai, user, local_user, cmd, cmd_len,
-		    do_errsock,
 		    send_krb5_auth);
 	if(ret != 0 && sendauth_version_error && 
 	   protocol_version == 2) {
@@ -1082,7 +1086,6 @@ main(int argc, char **argv)
 	    errx (1, "getaddrinfo: %s", gai_strerror(error));
 	auth_method = AUTH_KRB4;
 	ret = doit (host, ai, user, local_user, cmd, cmd_len,
-		    do_errsock,
 		    send_krb4_auth);
 	freeaddrinfo(ai);
     }
