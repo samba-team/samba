@@ -134,7 +134,20 @@ static int (*Setpag)(void);
 
 #include "dlfcn.h"
 
-int aix_setup(void)
+static
+int
+isSuid()
+{
+  int uid = getuid();
+  int gid = getgid();
+  int euid = getegid();
+  int egid = getegid();
+  return (uid != euid) || (gid != egid);
+}
+
+static
+int
+aix_setup(void)
 {
 #ifdef STATIC_AFS_SYSCALLS
     Pioctl = aix_pioctl;
@@ -142,7 +155,10 @@ int aix_setup(void)
 #else
     void *ptr;
     char path[MaxPathLen], *p;
-    if((p = getenv("AFSLIBPATH")) != NULL)
+    /*
+     * If we are root or running setuid don't trust AFSLIBPATH!
+     */
+    if (getuid() != 0 && !isSuid() && (p = getenv("AFSLIBPATH")) != NULL)
 	strcpy(path, p);
     else
 	sprintf(path, "%s/afslib.so", LIBDIR);
