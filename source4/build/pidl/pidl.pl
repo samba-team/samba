@@ -65,7 +65,7 @@ sub ShowHelp()
              --dump                dump a pidl file back to idl
              --header              create a C header file
              --parser              create a C parser
-             --server              create server boilterplate
+             --server              create server boilerplate
              --template            print a template for a pipe
              --eparser             create an ethereal parser
              --diff                run diff on the idl and dumped output

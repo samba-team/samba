@@ -27,7 +27,7 @@ SMB_MODULE_MK(registry_w95, REGISTRY, STATIC, lib/registry/config.mk)
 SMB_MODULE_MK(registry_dir, REGISTRY, STATIC, lib/registry/config.mk)
 SMB_MODULE_MK(registry_rpc, REGISTRY, STATIC, lib/registry/config.mk)
 SMB_MODULE_MK(registry_gconf, REGISTRY, STATIC, lib/registry/config.mk)
-SMB_MODULE_MK(registry_ldb, REGISTRY, NOT, lib/registry/config.mk)
+SMB_MODULE_MK(registry_ldb, REGISTRY, STATIC, lib/registry/config.mk)
 
 SMB_SUBSYSTEM_MK(REGISTRY,lib/registry/config.mk)
 
