@@ -199,8 +199,7 @@ in the 3.0 release.  The most noticeable are
     backend and authentication section for more details
   
   * inclusion of non-standard passdb modules may be enabled using
-    --with-expsam.  This includes an XML backend, a mysql backend,
-    and a NIS backend.
+    --with-expsam.  This includes an XML backend and a mysql backend.
       
   * removal of --with-msdfs (is now enabled by default)
   
