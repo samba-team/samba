@@ -69,9 +69,6 @@ extern BOOL tar_inc;
 extern BOOL tar_reset;
 /* clitar bits end */
  
-
-mode_t myumask = 0755;
-
 BOOL prompt = True;
 
 int printmode = 1;
@@ -2560,8 +2557,6 @@ static int do_message_op(void)
 	pstrcpy(workgroup,lp_workgroup_unix());
 
 	load_interfaces();
-	myumask = umask(0);
-	umask(myumask);
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
