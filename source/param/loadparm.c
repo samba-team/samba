@@ -2506,6 +2506,8 @@ BOOL lp_set_option(const char *option)
 }
 
 
+#define BOOLSTR(b) ((b) ? "Yes" : "No")
+
 /***************************************************************************
  Print a parameter of the specified type.
 ***************************************************************************/
