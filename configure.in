@@ -175,7 +175,7 @@ dnl Checks for library functions.
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
 
-AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname)
+AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname gethostbyname2)
 AC_CHECK_FUNCS(getmsg grantpt logwtmp mktime ptsname rand random)
 AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
 AC_CHECK_FUNCS(setsid setsockopt sigaction strstr timegm ttyname umask)
@@ -274,6 +274,9 @@ AC_EGREP_HEADER(ut_type, utmp.h, AC_DEFINE(HAVE_UT_TYPE))
 AC_EGREP_HEADER(ut_pid, utmp.h, AC_DEFINE(HAVE_UT_PID))
 AC_EGREP_HEADER(ut_id, utmp.h, AC_DEFINE(HAVE_UT_ID))
 AC_EGREP_HEADER(ut_syslen, utmpx.h, AC_DEFINE(HAVE_UT_SYSLEN))
+
+AC_EGREP_HEADER(sockaddr_in6, netinet/in.h, AC_DEFINE(HAVE_SOCKADDR_IN6))
+AC_EGREP_HEADER(sockaddr_in6, netinet/in6.h, AC_DEFINE(HAVE_SOCKADDR_IN6))
 
 dnl
 dnl Check for struct winsize
