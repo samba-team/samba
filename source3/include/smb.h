@@ -1745,6 +1745,12 @@ struct field_info
 
 #define MAX_MAX_MUX_LIMIT 16
 
+struct nmb_state
+{
+	struct in_addr ip;
+	int port;
+};
+
 #endif /* _SMB_H */
 
 /* _SMB_H */

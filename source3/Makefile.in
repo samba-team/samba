@@ -297,6 +297,9 @@ MNT_OBJ = client/smbmnt.o \
 UMOUNT_OBJ = client/smbumount.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
+NMB_AGENT_OBJ = utils/nmb-agent.o $(PARAM_OBJ) $(UBIQX_OBJ) \
+                $(LIBSMB_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
+
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ) $(RPC_PARSE_OBJ2)
 
@@ -485,6 +488,10 @@ bin/rpctorture: $(RPCTORTURE_OBJ) bin/.dummy
 bin/smb-client: $(SMB_CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMB_CLIENT_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/nmb-agent: $(NMB_AGENT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NMB_AGENT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smb-agent: $(SMB_AGENT_OBJ) bin/.dummy
 	@echo Linking $@

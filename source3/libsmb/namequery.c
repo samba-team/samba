@@ -29,6 +29,8 @@ extern int DEBUGLEVEL;
 /* nmbd.c sets this to True. */
 BOOL global_in_nmbd = False;
 
+  static int name_trn_id = 0;
+
 /****************************************************************************
 interpret a node status response
 ****************************************************************************/
@@ -99,8 +101,19 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
-  static int name_trn_id = 0;
+	int packet_type = NMB_PACKET;
 
+	if (fd == -1)
+	{
+		retries = 1;
+		packet_type = NMB_SOCK_PACKET;
+		fd = get_nmb_sock();
+
+		if (fd < 0)
+		{
+			return False;
+		}
+	}
   bzero((char *)&p,sizeof(p));
 
   if (!name_trn_id) name_trn_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) + 
@@ -130,12 +143,15 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
   p.port = NMB_PORT;
   p.fd = fd;
   p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
+  p.packet_type = packet_type;
 
   GetTimeOfDay(&tval);
 
   if (!send_packet(&p)) 
+	{
+		if (packet_type == NMB_SOCK_PACKET) close(fd);
     return(False);
+	}
 
   retries--;
 
@@ -146,12 +162,15 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
       if (TvalDiff(&tval,&tval2) > retry_time) {
 	if (!retries) break;
 	if (!found && !send_packet(&p))
+	{
+		if (packet_type == NMB_SOCK_PACKET) close(fd);
 	  return False;
+	}
 	GetTimeOfDay(&tval);
 	retries--;
       }
 
-      if ((p2=receive_packet(fd,NMB_PACKET,90)))
+      if ((p2=receive_packet(fd,packet_type,90)))
 	{     
 	  struct nmb_packet *nmb2 = &p2->packet.nmb;
       debug_nmb_packet(p2);
@@ -179,6 +198,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
 	  _interpret_node_status(&nmb2->answers->rdata[0], master,rname);
 	  free_packet(p2);
+		if (packet_type == NMB_SOCK_PACKET) close(fd);
 	  return(True);
 	}
     }
@@ -186,6 +206,7 @@ BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 
   DEBUG(0,("No status response (this is not unusual)\n"));
 
+if (packet_type == NMB_SOCK_PACKET) close(fd);
   return(False);
 }
 
@@ -205,8 +226,20 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   struct packet_struct p;
   struct packet_struct *p2;
   struct nmb_packet *nmb = &p.packet.nmb;
-  static int name_trn_id = 0;
   struct in_addr *ip_list = NULL;
+	BOOL packet_type = NMB_PACKET;
+
+	if (fd == -1)
+	{
+		retries = 0;
+		packet_type = NMB_SOCK_PACKET;
+		fd = get_nmb_sock();
+
+		if (fd < 0)
+		{
+			return NULL;
+		}
+	}
 
   bzero((char *)&p,sizeof(p));
   (*count) = 0;
@@ -238,30 +271,34 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
   p.port = NMB_PORT;
   p.fd = fd;
   p.timestamp = time(NULL);
-  p.packet_type = NMB_PACKET;
+  p.packet_type = packet_type;
 
   GetTimeOfDay(&tval);
 
   if (!send_packet(&p)) 
+	{	
+		if (packet_type == NMB_SOCK_PACKET) close(fd);
     return NULL;
+	}
 
-  retries--;
-
-  while (1)
+  while (retries >= 0)
   {
     struct timeval tval2;
+
+	retries--;
+
     GetTimeOfDay(&tval2);
     if (TvalDiff(&tval,&tval2) > retry_time) 
     {
-      if (!retries)
-        break;
       if (!found && !send_packet(&p))
+	{
+		if (packet_type == NMB_SOCK_PACKET) close(fd);
         return NULL;
+	}
       GetTimeOfDay(&tval);
-      retries--;
     }
 
-    if ((p2=receive_packet(fd,NMB_PACKET,90)))
+    if ((p2=receive_packet(fd,packet_type,90)))
     {     
       struct nmb_packet *nmb2 = &p2->packet.nmb;
       debug_nmb_packet(p2);
@@ -269,6 +306,8 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
       if (nmb->header.name_trn_id != nmb2->header.name_trn_id ||
           !nmb2->header.response)
       {
+	DEBUG(10,("packet not for us (received %d, expected %d\n",
+      nmb2->header.name_trn_id, nmb->header.name_trn_id));
         /* 
          * Its not for us - maybe deal with it later 
          * (put it on the queue?).
@@ -314,16 +353,15 @@ struct in_addr *name_query(int fd,const char *name,int name_type, BOOL bcast,BOO
       if (fn)
         break;
 
-      /*
-       * If we're doing a unicast lookup we only
-       * expect one reply. Don't wait the full 2
-       * seconds if we got one. JRA.
-       */
-      if(!bcast && found)
+      if(found)
+	{
+        DEBUG(10,("returning OK\n"));
         break;
+        }
     }
   }
 
+	if (packet_type == NMB_SOCK_PACKET) close(fd);
   return ip_list;
 }
 
