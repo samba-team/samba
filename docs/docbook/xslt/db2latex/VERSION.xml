@@ -1,8 +1,6 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
- |	$Id: VERSION.xml,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $
  |- #############################################################################
- |	$Author: jerry $
  |														
  |   PURPOSE:
  + ############################################################################## -->
@@ -17,7 +15,6 @@
     <xsl:otherwise><xsl:value-of select="$RCSTAG" /></xsl:otherwise>
   </xsl:choose>
 </xsl:variable>
-<xsl:variable name="CVSVERSION">$Id: VERSION.xml,v 1.1.4.1 2003/06/06 15:08:20 jerry Exp $</xsl:variable>
 
 
 </xsl:stylesheet>
