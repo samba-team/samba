@@ -542,6 +542,7 @@ other recognised flags are:
   sign      : enable ntlmssp signing
   seal      : enable ntlmssp sealing
   spnego    : use SPNEGO instead of NTLMSSP authentication
+  krb5      : use KRB5 instead of NTLMSSP authentication
   connect   : enable rpc connect level auth (auth, but no sign or seal)
   validate  : enable the NDR validator
   print     : enable debugging of the packets
