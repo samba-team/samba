@@ -461,7 +461,7 @@ static int do_setrattr(char *fname, int attr, int setit)
   set_message(outbuf,0,2 + strlen(fname),True);
   CVAL(outbuf,smb_com) = SMBgetatr;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
 
   p = smb_buf(outbuf);
   *p++ = 4;
@@ -497,7 +497,7 @@ static int do_setrattr(char *fname, int attr, int setit)
   set_message(outbuf,8,4 + strlen(fname),True);
   CVAL(outbuf,smb_com) = SMBsetatr;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
 
   SSVAL(outbuf,smb_vwv0,attr);
 
@@ -537,7 +537,7 @@ static BOOL smbcreat(file_info finfo, int *fnum, char *inbuf, char *outbuf)
   set_message(outbuf,3,2 + strlen(finfo.name),True);
   CVAL(outbuf,smb_com) = SMBcreate;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
   
   SSVAL(outbuf,smb_vwv0,finfo.mode);
   put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
@@ -576,7 +576,7 @@ static BOOL smbwrite(int fnum, int n, int low, int high, int left,
   set_message(outbuf,5,n + 3, False);
   CVAL(outbuf,smb_com) = SMBwrite;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
   
   SSVAL(outbuf,smb_vwv0,fnum);
   SSVAL(outbuf,smb_vwv1,n);
@@ -615,7 +615,7 @@ static BOOL smbshut(file_info finfo, int fnum, char *inbuf, char *outbuf)
   set_message(outbuf,3,0,True);
   CVAL(outbuf,smb_com) = SMBclose;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
   
   SSVAL(outbuf,smb_vwv0,fnum);
   put_dos_date3(outbuf,smb_vwv1,finfo.mtime);
@@ -648,7 +648,7 @@ static BOOL smbchkpath(char *fname, char *inbuf, char *outbuf)
   set_message(outbuf,0,4 + strlen(fname),True);
   CVAL(outbuf,smb_com) = SMBchkpth;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
 
   p = smb_buf(outbuf);
   *p++ = 4;
@@ -675,7 +675,7 @@ static BOOL smbmkdir(char *fname, char *inbuf, char *outbuf)
   
   CVAL(outbuf,smb_com) = SMBmkdir;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
   
   p = smb_buf(outbuf);
   *p++ = 4;      
@@ -798,7 +798,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 
   CVAL(outbuf,smb_com) = SMBopenX;
   SSVAL(outbuf,smb_tid,cnum);
-  setup_pkt(outbuf);
+  cli_setup_pkt(outbuf);
 
   SSVAL(outbuf,smb_vwv0,0xFF);
   SSVAL(outbuf,smb_vwv2,1);
@@ -834,7 +834,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
     {
       if (CVAL(inbuf,smb_rcls) == ERRSRV &&
 	  SVAL(inbuf,smb_err) == ERRnoresource &&
-	  reopen_connection(inbuf,outbuf))
+	  cli_reopen_connection(inbuf,outbuf))
 	{
 	  do_atar(rname,lname,finfo1);
 	  free(inbuf);free(outbuf);
@@ -930,7 +930,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      set_message(outbuf,10,0,True);
 	      CVAL(outbuf,smb_com) = SMBreadX;
 	      SSVAL(outbuf,smb_tid,cnum);
-	      setup_pkt(outbuf);
+	      cli_setup_pkt(outbuf);
 	      
 	      if (close_done)
 		{
@@ -996,7 +996,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 		set_message(outbuf,8,0,True);
 		CVAL(outbuf,smb_com) = SMBreadbraw;
 		SSVAL(outbuf,smb_tid,cnum);
-		setup_pkt(outbuf);
+		cli_setup_pkt(outbuf);
 		SSVAL(outbuf,smb_vwv0,fnum);
 		SIVAL(outbuf,smb_vwv1,nread);
 		SSVAL(outbuf,smb_vwv3,MIN(finfo.size-nread,readbraw_size));
@@ -1048,7 +1048,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
 	      set_message(outbuf,5,0,True);
 	      CVAL(outbuf,smb_com) = SMBread;
 	      SSVAL(outbuf,smb_tid,cnum);
-	      setup_pkt(outbuf);
+	      cli_setup_pkt(outbuf);
 	      
 	      SSVAL(outbuf,smb_vwv0,fnum);
 	      SSVAL(outbuf,smb_vwv1,MIN(max_xmit-200,finfo.size - nread));
@@ -1111,7 +1111,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       set_message(outbuf,3,0,True);
       CVAL(outbuf,smb_com) = SMBclose;
       SSVAL(outbuf,smb_tid,cnum);
-      setup_pkt(outbuf);
+      cli_setup_pkt(outbuf);
       
       SSVAL(outbuf,smb_vwv0,fnum);
       SIVALS(outbuf,smb_vwv1,-1);

@@ -516,6 +516,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		pstring domain_groups;
 		pstring dom_sid;
 		pstring other_sids;
+		fstring tmp;
 		extern pstring myname;
 		uint32 r_uid;
 		uint32 r_gid;
@@ -545,22 +546,28 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		/* any additional groups this user is in.  e.g power users */
 		pstrcpy(domain_groups, lp_domain_groups());
 
-		/* one RID group always added: 512 (Admin); 513 (Users); 514 (Guests) */
-
+		/* can only be a user or a guest.  cannot be guest _and_ admin */
 		if (user_in_list(samlogon_user, lp_domain_guest_users()))
 		{
-			DEBUG(3,("domain guest access granted\n"));
-			strcat(domain_groups, " 514/7 ");
-		}
-		else if (user_in_list(samlogon_user, lp_domain_admin_users()))
-		{
-			DEBUG(3,("domain admin access granted\n"));
-			strcat(domain_groups, " 512/7 ");
+			sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_GUESTS);
+			strcat(domain_groups, tmp);
+
+			DEBUG(3,("domain guest access %s granted\n", tmp));
 		}
 		else
 		{
-			DEBUG(3,("domain user access granted\n"));
-			strcat(domain_groups, " 513/7 ");
+			sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_USERS);
+			strcat(domain_groups, tmp);
+
+			DEBUG(3,("domain user access %s granted\n", tmp));
+
+			if (user_in_list(samlogon_user, lp_domain_admin_users()))
+			{
+				sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_ADMINS);
+				strcat(domain_groups, tmp);
+
+				DEBUG(3,("domain admin access %s granted\n", tmp));
+			}
 		}
 
 		num_gids = make_dom_gids(domain_groups, gids);
