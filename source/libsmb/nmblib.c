@@ -771,6 +771,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   
   DEBUG( 5, ( "Sending a packet of len %d to (%s) on port %d\n",
 	      len, inet_ntoa(ip), port ) );
+  dump_data(100, buf, len);
 	
   ret = (sendto(fd,buf,len,0,(struct sockaddr *)&sock_out,
 		sizeof(sock_out)) >= 0);
