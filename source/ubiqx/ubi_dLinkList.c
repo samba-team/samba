@@ -25,6 +25,10 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_dLinkList.c,v 
+ * Revision 0.8  1998/06/03 18:06:03  crh
+ * Further fiddling with sys_include.h, which has been moved from the .c file
+ * to the .h file.
+ *
  * Revision 0.7  1998/06/02 01:38:47  crh
  * Changed include file name from ubi_null.h to sys_include.h to make it
  * more generic.
@@ -59,7 +63,6 @@
  * ========================================================================== **
  */
 
-#include "sys_include.h"    /* System-specific includes. */
 #include "ubi_dLinkList.h"  /* Header for *this* module. */
 
 /* ========================================================================== **

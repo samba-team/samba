@@ -1,5 +1,5 @@
-#ifndef ubi_BinTree_H
-#define ubi_BinTree_H
+#ifndef UBI_BINTREE_H
+#define UBI_BINTREE_H
 /* ========================================================================== **
  *                              ubi_BinTree.h
  *
@@ -29,6 +29,18 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_BinTree.h,v 
+ * Revision 4.4  1998/06/03 17:42:46  crh
+ * Further fiddling with sys_include.h.  It's now in ubi_BinTree.h which is
+ * included by all of the binary tree files.
+ *
+ * Reminder: Some of the ubi_tr* macros in ubi_BinTree.h are redefined in
+ *           ubi_AVLtree.h and ubi_SplayTree.h.  This allows easy swapping
+ *           of tree types by simply changing a header.  Unfortunately, the
+ *           macro redefinitions in ubi_AVLtree.h and ubi_SplayTree.h will
+ *           conflict if used together.  You must either choose a single tree
+ *           type, or use the underlying function calls directly.  Compare
+ *           the two header files for more information.
+ *
  * Revision 4.3  1998/06/02 01:28:43  crh
  * Changed ubi_null.h to sys_include.h to make it more generic.
  *
@@ -133,6 +145,12 @@
  *
  * ========================================================================== **
  */
+
+#include "sys_include.h"  /* Global include file, used to adapt the ubiqx
+                           * modules to the host environment and the project
+                           * with which the modules will be used.  See
+                           * sys_include.h for more info.
+                           */
 
 /* -------------------------------------------------------------------------- **
  * Macros and constants.
@@ -775,4 +793,4 @@ int ubi_btModuleID( int size, char *list[] );
 #define ubi_trModuleID( s, l ) ubi_btModuleID( s, l )
 
 /* ========================================================================== */
-#endif /* ubi_BinTree_H */
+#endif /* UBI_BINTREE_H */

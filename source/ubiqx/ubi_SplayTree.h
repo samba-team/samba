@@ -39,6 +39,29 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.h,v 
+ * Revision 4.3  1998/06/03 17:45:05  crh
+ * Further fiddling with sys_include.h.  It's now in ubi_BinTree.h which is
+ * included by all of the binary tree files.
+ *
+ * Also fixed some warnings produced by lint on Irix 6.2, which doesn't seem
+ * to like syntax like this:
+ *
+ *   if( (a = b) )
+ *
+ * The fix was to change lines like the above to:
+ *
+ *   if( 0 != (a=b) )
+ *
+ * Which means the same thing.
+ *
+ * Reminder: Some of the ubi_tr* macros in ubi_BinTree.h are redefined in
+ *           ubi_AVLtree.h and ubi_SplayTree.h.  This allows easy swapping
+ *           of tree types by simply changing a header.  Unfortunately, the
+ *           macro redefinitions in ubi_AVLtree.h and ubi_SplayTree.h will
+ *           conflict if used together.  You must either choose a single tree
+ *           type, or use the underlying function calls directly.  Compare
+ *           the two header files for more information.
+ *
  * Revision 4.2  1998/06/02 01:29:14  crh
  * Changed ubi_null.h to sys_include.h to make it more generic.
  *

@@ -1386,11 +1386,14 @@ extern int errno;
 
 
 /* -------------------------------------------------------------------------- **
- * Lists, trees, and caches...
+ * Lists, trees, and caching...
  */
 #include "ubiqx/ubi_sLinkList.h"
 #include "ubiqx/ubi_dLinkList.h"
+
+#ifndef UBI_BINTREE_H
 #include "ubiqx/ubi_SplayTree.h"
 #include "ubiqx/ubi_Cache.h"
+#endif /* UBI_BINTREE_H */
 
 #endif /* _INCLUDES_H */

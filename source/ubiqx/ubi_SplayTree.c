@@ -37,6 +37,29 @@
  * -------------------------------------------------------------------------- **
  *
  * Log: ubi_SplayTree.c,v 
+ * Revision 4.3  1998/06/03 17:45:05  crh
+ * Further fiddling with sys_include.h.  It's now in ubi_BinTree.h which is
+ * included by all of the binary tree files.
+ *
+ * Also fixed some warnings produced by lint on Irix 6.2, which doesn't seem
+ * to like syntax like this:
+ *
+ *   if( (a = b) )
+ *
+ * The fix was to change lines like the above to:
+ *
+ *   if( 0 != (a=b) )
+ *
+ * Which means the same thing.
+ *
+ * Reminder: Some of the ubi_tr* macros in ubi_BinTree.h are redefined in
+ *           ubi_AVLtree.h and ubi_SplayTree.h.  This allows easy swapping
+ *           of tree types by simply changing a header.  Unfortunately, the
+ *           macro redefinitions in ubi_AVLtree.h and ubi_SplayTree.h will
+ *           conflict if used together.  You must either choose a single tree
+ *           type, or use the underlying function calls directly.  Compare
+ *           the two header files for more information.
+ *
  * Revision 4.2  1998/06/02 01:29:14  crh
  * Changed ubi_null.h to sys_include.h to make it more generic.
  *
@@ -129,7 +152,6 @@
  * ========================================================================== **
  */
 
-#include "sys_include.h"    /* System-specific includes. */
 #include "ubi_SplayTree.h"  /* Header for THIS module.   */
 
 /* ========================================================================== **
@@ -137,8 +159,8 @@
  */
 
 static char ModuleID[] = "ubi_SplayTree\n\
-\tRevision: 4.2 \n\
-\tDate: 1998/06/02 01:29:14 \n\
+\tRevision: 4.3 \n\
+\tDate: 1998/06/03 17:45:05 \n\
 \tAuthor: crh \n";
 
 
@@ -207,7 +229,7 @@ static ubi_btNodePtr Splay( ubi_btNodePtr SplayWithMe )
   {
   ubi_btNodePtr parent;
 
-  while( (parent = SplayWithMe->Link[ubi_trPARENT]) )
+  while( NULL != (parent = SplayWithMe->Link[ubi_trPARENT]) )
     {
     if( parent->gender == SplayWithMe->gender )       /* Zig-Zig */
       Rotate( parent );
@@ -309,8 +331,8 @@ ubi_btNodePtr ubi_sptRemove( ubi_btRootPtr RootPtr, ubi_btNodePtr DeadNode )
   ubi_btNodePtr p;
 
   (void)Splay( DeadNode );                  /* Move dead node to root.        */
-  if( (p = DeadNode->Link[ubi_trLEFT]) )    /* If left subtree exists...      */
-    {
+  if( NULL != (p = DeadNode->Link[ubi_trLEFT]) )
+    {                                       /* If left subtree exists...      */
     ubi_btNodePtr q = DeadNode->Link[ubi_trRIGHT];
 
     p->Link[ubi_trPARENT] = NULL;           /* Left subtree node becomes root.*/
@@ -323,8 +345,8 @@ ubi_btNodePtr ubi_sptRemove( ubi_btRootPtr RootPtr, ubi_btNodePtr DeadNode )
     }
   else
     {
-    if( (p = DeadNode->Link[ubi_trRIGHT]) ) /* No left, but right subtree...  */
-      {                                     /* ...exists...                   */
+    if( NULL != (p = DeadNode->Link[ubi_trRIGHT]) )
+      {                               /* No left, but right subtree exists... */
       p->Link[ubi_trPARENT] = NULL;         /* Right subtree root becomes...  */
       p->gender       = ubi_trPARENT;       /* ...overall tree root.          */
       RootPtr->root   = p;
