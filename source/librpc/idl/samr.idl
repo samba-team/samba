@@ -245,11 +245,47 @@
 
 	/************************/
 	/* Function    0x13     */
-	NTSTATUS samr_OPEN_GROUP();
+	NTSTATUS samr_OpenGroup(
+		[in,ref]      policy_handle *handle,
+		[in]          uint32 access_mask,
+		[in]          uint32 rid,
+		[out,ref]     policy_handle *acct_handle
+		);
 
 	/************************/
 	/* Function    0x14     */
-	NTSTATUS samr_QUERY_GROUPINFO();
+
+	typedef struct {
+		samr_Name name;
+		uint32 unknown;
+		uint32 members;
+		samr_Name description;
+	} samr_GroupInfoAll;
+
+	typedef struct {
+		samr_Name Name;
+	} samr_GroupInfoName;
+
+	typedef struct {
+		uint32 unknown;
+	} samr_GroupInfoX;
+
+	typedef struct {
+		samr_Name description;
+	} samr_GroupInfoDesciption;
+
+	typedef union {
+		case(1) samr_GroupInfoAll all;
+		case(2) samr_GroupInfoName name;
+		case(3) samr_GroupInfoX unknown;
+		case(4) samr_GroupInfoDesciption description;
+	} samr_GroupInfo;
+
+	NTSTATUS samr_QueryGroupInfo(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint16 level,
+		[out,switch_is(level)]    samr_GroupInfo *info
+		);
 
 	/************************/
 	/* Function    0x15     */

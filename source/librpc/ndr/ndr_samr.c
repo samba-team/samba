@@ -157,14 +157,19 @@ NTSTATUS ndr_push_samr_LOOKUP_RIDS(struct ndr_push *ndr, struct samr_LOOKUP_RIDS
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_OPEN_GROUP(struct ndr_push *ndr, struct samr_OPEN_GROUP *r)
+NTSTATUS ndr_push_samr_OpenGroup(struct ndr_push *ndr, struct samr_OpenGroup *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_mask));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.rid));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_QUERY_GROUPINFO(struct ndr_push *ndr, struct samr_QUERY_GROUPINFO *r)
+NTSTATUS ndr_push_samr_QueryGroupInfo(struct ndr_push *ndr, struct samr_QueryGroupInfo *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -626,19 +631,19 @@ static NTSTATUS ndr_pull_samr_DomInfo2(struct ndr_pull *ndr, int ndr_flags, stru
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
-	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown1));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_2));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_3));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown3));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_users));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_groups));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aliases));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown1));
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
 done:
@@ -660,10 +665,10 @@ static NTSTATUS ndr_pull_samr_DomInfo4(struct ndr_pull *ndr, int ndr_flags, stru
 {
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 4));
-	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown));
 done:
 	return NT_STATUS_OK;
 }
@@ -731,13 +736,13 @@ static NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, str
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	NDR_CHECK(ndr_pull_align(ndr, 8));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->force_logoff_time));
-	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown_name));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->unknown1));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->domain));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->primary));
 	NDR_CHECK(ndr_pull_HYPER_T(ndr, &r->sequence_num));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_2));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown2));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->role));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown_3));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown3));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_users));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_groups));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_aliases));
@@ -746,7 +751,7 @@ static NTSTATUS ndr_pull_samr_DomInfo11(struct ndr_pull *ndr, int ndr_flags, str
 	NDR_CHECK(ndr_pull_uint16(ndr, &r->lockout_threshold));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
-		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown_name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->unknown1));
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->domain));
 		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->primary));
 done:
@@ -1020,15 +1025,130 @@ NTSTATUS ndr_pull_samr_LOOKUP_RIDS(struct ndr_pull *ndr, struct samr_LOOKUP_RIDS
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_OPEN_GROUP(struct ndr_pull *ndr, struct samr_OPEN_GROUP *r)
+NTSTATUS ndr_pull_samr_OpenGroup(struct ndr_pull *ndr, struct samr_OpenGroup *r)
 {
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.acct_handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_QUERY_GROUPINFO(struct ndr_pull *ndr, struct samr_QUERY_GROUPINFO *r)
+static NTSTATUS ndr_pull_samr_GroupInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoAll *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->members));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_GroupInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoName *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->Name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->Name));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_GroupInfoX(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoX *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_GroupInfoDesciption(struct ndr_pull *ndr, int ndr_flags, struct samr_GroupInfoDesciption *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_GroupInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_GroupInfo *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all));
+	break; }
+
+	case 2: {
+	NDR_CHECK(ndr_pull_samr_GroupInfoName(ndr, NDR_SCALARS, &r->name));
+	break; }
+
+	case 3: {
+	NDR_CHECK(ndr_pull_samr_GroupInfoX(ndr, NDR_SCALARS, &r->unknown));
+	break; }
+
+	case 4: {
+	NDR_CHECK(ndr_pull_samr_GroupInfoDesciption(ndr, NDR_SCALARS, &r->description));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_samr_GroupInfoAll(ndr, NDR_BUFFERS, &r->all));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_pull_samr_GroupInfoName(ndr, NDR_BUFFERS, &r->name));
+	break;
+
+	case 3:
+		NDR_CHECK(ndr_pull_samr_GroupInfoX(ndr, NDR_BUFFERS, &r->unknown));
+	break;
+
+	case 4:
+		NDR_CHECK(ndr_pull_samr_GroupInfoDesciption(ndr, NDR_BUFFERS, &r->description));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_QueryGroupInfo(struct ndr_pull *ndr, struct samr_QueryGroupInfo *r)
+{
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
+	} else {
+		r->out.info = NULL;
+	}
+	if (r->out.info) {
+	{ uint16 _level;
+	NDR_CHECK(ndr_pull_samr_GroupInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -2022,13 +2142,13 @@ void ndr_print_samr_DomInfo2(struct ndr_print *ndr, const char *name, struct sam
 	ndr_print_struct(ndr, name, "samr_DomInfo2");
 	ndr->depth++;
 	ndr_print_HYPER_T(ndr, "force_logoff_time", r->force_logoff_time);
-	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr_print_samr_Name(ndr, "unknown1", &r->unknown1);
 	ndr_print_samr_Name(ndr, "domain", &r->domain);
 	ndr_print_samr_Name(ndr, "primary", &r->primary);
 	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
-	ndr_print_uint32(ndr, "unknown_2", r->unknown_2);
+	ndr_print_uint32(ndr, "unknown2", r->unknown2);
 	ndr_print_uint32(ndr, "role", r->role);
-	ndr_print_uint32(ndr, "unknown_3", r->unknown_3);
+	ndr_print_uint32(ndr, "unknown3", r->unknown3);
 	ndr_print_uint32(ndr, "num_users", r->num_users);
 	ndr_print_uint32(ndr, "num_groups", r->num_groups);
 	ndr_print_uint32(ndr, "num_aliases", r->num_aliases);
@@ -2047,7 +2167,7 @@ void ndr_print_samr_DomInfo4(struct ndr_print *ndr, const char *name, struct sam
 {
 	ndr_print_struct(ndr, name, "samr_DomInfo4");
 	ndr->depth++;
-	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr_print_samr_Name(ndr, "unknown", &r->unknown);
 	ndr->depth--;
 }
 
@@ -2097,13 +2217,13 @@ void ndr_print_samr_DomInfo11(struct ndr_print *ndr, const char *name, struct sa
 	ndr_print_struct(ndr, name, "samr_DomInfo11");
 	ndr->depth++;
 	ndr_print_HYPER_T(ndr, "force_logoff_time", r->force_logoff_time);
-	ndr_print_samr_Name(ndr, "unknown_name", &r->unknown_name);
+	ndr_print_samr_Name(ndr, "unknown1", &r->unknown1);
 	ndr_print_samr_Name(ndr, "domain", &r->domain);
 	ndr_print_samr_Name(ndr, "primary", &r->primary);
 	ndr_print_HYPER_T(ndr, "sequence_num", r->sequence_num);
-	ndr_print_uint32(ndr, "unknown_2", r->unknown_2);
+	ndr_print_uint32(ndr, "unknown2", r->unknown2);
 	ndr_print_uint32(ndr, "role", r->role);
-	ndr_print_uint32(ndr, "unknown_3", r->unknown_3);
+	ndr_print_uint32(ndr, "unknown3", r->unknown3);
 	ndr_print_uint32(ndr, "num_users", r->num_users);
 	ndr_print_uint32(ndr, "num_groups", r->num_groups);
 	ndr_print_uint32(ndr, "num_aliases", r->num_aliases);
@@ -2184,6 +2304,66 @@ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, uint16 l
 
 	case 13:
 	ndr_print_samr_DomInfo13(ndr, "info13", &r->info13);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+void ndr_print_samr_GroupInfoAll(struct ndr_print *ndr, const char *name, struct samr_GroupInfoAll *r)
+{
+	ndr_print_struct(ndr, name, "samr_GroupInfoAll");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "name", &r->name);
+	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr_print_uint32(ndr, "members", r->members);
+	ndr_print_samr_Name(ndr, "description", &r->description);
+	ndr->depth--;
+}
+
+void ndr_print_samr_GroupInfoName(struct ndr_print *ndr, const char *name, struct samr_GroupInfoName *r)
+{
+	ndr_print_struct(ndr, name, "samr_GroupInfoName");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "Name", &r->Name);
+	ndr->depth--;
+}
+
+void ndr_print_samr_GroupInfoX(struct ndr_print *ndr, const char *name, struct samr_GroupInfoX *r)
+{
+	ndr_print_struct(ndr, name, "samr_GroupInfoX");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr->depth--;
+}
+
+void ndr_print_samr_GroupInfoDesciption(struct ndr_print *ndr, const char *name, struct samr_GroupInfoDesciption *r)
+{
+	ndr_print_struct(ndr, name, "samr_GroupInfoDesciption");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "description", &r->description);
+	ndr->depth--;
+}
+
+void ndr_print_samr_GroupInfo(struct ndr_print *ndr, const char *name, uint16 level, union samr_GroupInfo *r)
+{
+	ndr_print_union(ndr, name, level, "samr_GroupInfo");
+	switch (level) {
+	case 1:
+	ndr_print_samr_GroupInfoAll(ndr, "all", &r->all);
+	break;
+
+	case 2:
+	ndr_print_samr_GroupInfoName(ndr, "name", &r->name);
+	break;
+
+	case 3:
+	ndr_print_samr_GroupInfoX(ndr, "unknown", &r->unknown);
+	break;
+
+	case 4:
+	ndr_print_samr_GroupInfoDesciption(ndr, "description", &r->description);
 	break;
 
 	default:

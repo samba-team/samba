@@ -122,13 +122,13 @@ struct samr_DomInfo1 {
 
 struct samr_DomInfo2 {
 	HYPER_T force_logoff_time;
-	struct samr_Name unknown_name;
+	struct samr_Name unknown1;
 	struct samr_Name domain;
 	struct samr_Name primary;
 	HYPER_T sequence_num;
-	uint32 unknown_2;
+	uint32 unknown2;
 	uint32 role;
-	uint32 unknown_3;
+	uint32 unknown3;
 	uint32 num_users;
 	uint32 num_groups;
 	uint32 num_aliases;
@@ -139,7 +139,7 @@ struct samr_DomInfo3 {
 };
 
 struct samr_DomInfo4 {
-	struct samr_Name unknown_name;
+	struct samr_Name unknown;
 };
 
 struct samr_DomInfo5 {
@@ -165,13 +165,13 @@ struct samr_DomInfo9 {
 
 struct samr_DomInfo11 {
 	HYPER_T force_logoff_time;
-	struct samr_Name unknown_name;
+	struct samr_Name unknown1;
 	struct samr_Name domain;
 	struct samr_Name primary;
 	HYPER_T sequence_num;
-	uint32 unknown_2;
+	uint32 unknown2;
 	uint32 role;
-	uint32 unknown_3;
+	uint32 unknown3;
 	uint32 num_users;
 	uint32 num_groups;
 	uint32 num_aliases;
@@ -340,21 +340,54 @@ struct samr_LOOKUP_RIDS {
 
 };
 
-struct samr_OPEN_GROUP {
+struct samr_OpenGroup {
 	struct {
+		struct policy_handle *handle;
+		uint32 access_mask;
+		uint32 rid;
 	} in;
 
 	struct {
+		struct policy_handle *acct_handle;
 		NTSTATUS result;
 	} out;
 
 };
 
-struct samr_QUERY_GROUPINFO {
+struct samr_GroupInfoAll {
+	struct samr_Name name;
+	uint32 unknown;
+	uint32 members;
+	struct samr_Name description;
+};
+
+struct samr_GroupInfoName {
+	struct samr_Name Name;
+};
+
+struct samr_GroupInfoX {
+	uint32 unknown;
+};
+
+struct samr_GroupInfoDesciption {
+	struct samr_Name description;
+};
+
+union samr_GroupInfo {
+/* [case(1)] */ struct samr_GroupInfoAll all;
+/* [case(2)] */ struct samr_GroupInfoName name;
+/* [case(3)] */ struct samr_GroupInfoX unknown;
+/* [case(4)] */ struct samr_GroupInfoDesciption description;
+};
+
+struct samr_QueryGroupInfo {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
 	} in;
 
 	struct {
+		union samr_GroupInfo *info;
 		NTSTATUS result;
 	} out;
 
@@ -1033,8 +1066,8 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_GET_ALIAS_MEMBERSHIP 16
 #define DCERPC_SAMR_LOOKUP_NAMES 17
 #define DCERPC_SAMR_LOOKUP_RIDS 18
-#define DCERPC_SAMR_OPEN_GROUP 19
-#define DCERPC_SAMR_QUERY_GROUPINFO 20
+#define DCERPC_SAMR_OPENGROUP 19
+#define DCERPC_SAMR_QUERYGROUPINFO 20
 #define DCERPC_SAMR_SET_GROUPINFO 21
 #define DCERPC_SAMR_ADD_GROUPMEM 22
 #define DCERPC_SAMR_DELETE_DOM_GROUP 23
