@@ -1161,6 +1161,15 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	/* paranoia: destroy the local copy of the password */
 	ZERO_STRUCT(password);
 
+	if (strcmp(cli_info.dest_host, "*") == 0) {
+		/* special case - we want the PDC */
+		struct in_addr ip;
+		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host, &ip)) {
+			report(out_hnd, "ERROR: Failed to find the PDC\n");
+			return 1;
+		}
+	}
+
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, cli_info.dest_host);
 	strupper(srv_name);
