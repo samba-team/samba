@@ -383,8 +383,13 @@ gss_accept_sec_context
     if (mech_type)
 	*mech_type = GSS_KRB5_MECHANISM;
 
-    if (time_rec)
-	*time_rec = (*context_handle)->lifetime;
+    if (time_rec) {
+	ret = gssapi_lifetime_left(minor_status,
+				   (*context_handle)->lifetime,
+				   time_rec);
+	if (ret)
+	    goto failure;
+    }
 
     if(flags & GSS_C_MUTUAL_FLAG) {
 	krb5_data outbuf;
