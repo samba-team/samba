@@ -679,15 +679,14 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 			   struct ldb_message *msg, 
 			   struct samr_CryptPassword *pwbuf)
 {
+	NTSTATUS nt_status;
 	char new_pass[512];
 	uint32_t new_pass_len;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 
-	session_key = dce_call->conn->transport_session_key;
-
-	if (session_key.length == 0) {
-		DEBUG(3,("Bad session key in samr_set_password\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
+	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
@@ -721,17 +720,16 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      struct ldb_message *msg, 
 			      struct samr_CryptPasswordEx *pwbuf)
 {
+	NTSTATUS nt_status;
 	char new_pass[512];
 	uint32_t new_pass_len;
 	DATA_BLOB co_session_key;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	struct MD5Context ctx;
 
-	session_key = dce_call->conn->transport_session_key;
-
-	if (session_key.length == 0) {
-		DEBUG(3,("Bad session key in samr_set_password\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
+	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	co_session_key = data_blob_talloc(mem_ctx, NULL, 16);

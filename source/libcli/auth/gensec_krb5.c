@@ -682,15 +682,13 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		session_info->nt_user_token = NULL;
 	}
 
-	session_info->session_key = data_blob_talloc(session_info->mem_ctx, 
-						     gensec_krb5_state->session_key.data,
-						     gensec_krb5_state->session_key.length);
+	nt_status = gensec_krb5_session_key(gensec_security, &session_info->session_key);
 
 	session_info->workstation = NULL;
 
 	*session_info_out = session_info;
 
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 

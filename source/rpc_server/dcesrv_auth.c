@@ -128,6 +128,9 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return False;
 		}
+
+		/* Now that we are authenticated, got back to the generic session key... */
+		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return True;
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		dce_conn->auth_state.auth_info->auth_pad_length = 0;
@@ -176,6 +179,8 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
 			return False;
 		}
+		/* Now that we are authenticated, got back to the generic session key... */
+		dce_conn->auth_state.session_key = dcesrv_generic_session_key;
 		return True;
 	} else {
 		DEBUG(4, ("dcesrv_auth_auth3: failed to authenticate: %s\n", 

@@ -239,6 +239,35 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
+					      DATA_BLOB *session_key)
+{
+	if (p->auth_state.session_info->session_key.length) {
+		*session_key = p->auth_state.session_info->session_key;
+		return NT_STATUS_OK;
+	}
+	return NT_STATUS_NO_USER_SESSION_KEY;
+}
+
+NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *p,
+				  DATA_BLOB *session_key)
+{
+	/* this took quite a few CPU cycles to find ... */
+	session_key->data = "SystemLibraryDTC";
+	session_key->length = 16;
+	return NT_STATUS_OK;
+}
+
+/*
+  fetch the user session key - may be default (above) or the SMB session key
+*/
+NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
+				  DATA_BLOB *session_key)
+{
+	return p->auth_state.session_key(p, session_key);
+}
+
+
 /*
   connect to a dcerpc endpoint
 */
@@ -271,6 +300,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	(*p)->auth_state.auth_info = NULL;
 	(*p)->auth_state.gensec_security = NULL;
 	(*p)->auth_state.session_info = NULL;
+	(*p)->auth_state.session_key = dcesrv_generic_session_key;
 	(*p)->srv_conn = NULL;
 
 	return NT_STATUS_OK;
@@ -300,7 +330,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 
 	session_info->refcount++;
 	(*dce_conn_p)->auth_state.session_info = session_info;
-	(*dce_conn_p)->transport_session_key = session_info->session_key;
+	(*dce_conn_p)->auth_state.session_key = dcesrv_inherited_session_key;
 
 	/* TODO: check security descriptor of the endpoint here 
 	 *       if it's a smb named pipe

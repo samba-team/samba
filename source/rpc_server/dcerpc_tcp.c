@@ -133,8 +133,6 @@ void dcesrv_tcp_accept(struct server_connection *conn)
 
 	dcesrv_conn->srv_conn = conn;
 
-	dcesrv_conn->transport_session_key = data_blob_talloc(dcesrv_conn, "SystemLibraryDTC", 16);
-
 	conn->private_data = dcesrv_conn;
 
 	/* TODO: this should to the generic code
