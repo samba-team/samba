@@ -1902,6 +1902,29 @@ else
     echo "no"
 fi
 
+AC_ARG_WITH(spinlocks, [  --with-spinlocks        use spin locks instead of fcntl locks ])
+if test "x$with_spinlocks" = "xyes"; then
+    AC_DEFINE(USE_SPINLOCKS)
+
+    case "$host_cpu" in
+        sparc)
+            AC_DEFINE(SPARC_SPINLOCKS)
+            ;;
+
+        i386|i486|i586|i686)
+            AC_DEFINE(INTEL_SPINLOCKS)
+            ;;
+
+        mips)
+            AC_DEFINE(MIPS_SPINLOCKS)
+            ;;
+
+        powerpc)
+            AC_DEFINE(POWERPC_SPINLOCKS)
+            ;;
+    esac
+fi
+
 echo "checking configure summary"
 AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
