@@ -302,7 +302,7 @@ krb5_change_password (krb5_context	context,
 	    FD_ZERO(&fdset);
 	    FD_SET(sock, &fdset);
 	    tv.tv_usec = 0;
-	    tv.tv_sec  = 1 + 1 << i;
+	    tv.tv_sec  = 1 + (1 << i);
 
 	    ret = select (sock + 1, &fdset, NULL, NULL, &tv);
 	    if (ret < 0 && errno != EINTR) {
