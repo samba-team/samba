@@ -613,7 +613,7 @@ BOOL check_oem_password(char *user,
 	uchar unenc_old_pw[16];
 	uchar null_pw[16];
 	uchar null_ntpw[16];
-	uchar no_pw[2];
+	char no_pw[2];
 	BOOL nt_pass_set = (ntdata != NULL && nthash != NULL);
 
 	become_root(False);

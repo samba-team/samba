@@ -2734,7 +2734,7 @@ void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 
 	make_enc_passwd(&(q_u->lm_newpass), lm_newpass);
 	make_enc_hash  (&(q_u->lm_oldhash), lm_oldhash);
-};
+}
 
 /*******************************************************************
 reads or writes a structure.
