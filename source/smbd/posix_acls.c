@@ -41,60 +41,36 @@ static void create_file_sids(SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SI
 }
 
 /****************************************************************************
- Map unix perms to NT.
+ Map canon_ace perms to NT.
 ****************************************************************************/
 
-static SEC_ACCESS map_unix_perms( int *pacl_type, mode_t perm, int r_mask, int w_mask, int x_mask, BOOL is_directory)
+static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace)
 {
 	SEC_ACCESS sa;
 	uint32 nt_mask = 0;
 
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
-	if((perm & (r_mask|w_mask|x_mask)) == (r_mask|w_mask|x_mask)) {
+	if((ace->perms & (ACL_READ|ACL_WRITE|ACL_EXECUTE)) == (ACL_READ|ACL_WRITE|ACL_EXECUTE)) {
 		nt_mask = UNIX_ACCESS_RWX;
-	} else if((perm & (r_mask|w_mask|x_mask)) == 0) {
-		nt_mask = UNIX_ACCESS_NONE;
+	} else if((ace->perms & (ACL_READ|ACL_WRITE|ACL_EXECUTE)) == 0) {
+		/*
+		 * Here we differentiate between the owner and any other user.
+		 */
+		if (sid_equal(powner_sid, &ace->sid)
+			nt_mask = UNIX_ACCESS_NONE;
+		} else {
+			/* Not owner, this is an access denied ACE. */
+			nt_mask = UNIX_ACCESS_RWX;
+			*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
+		}
 	} else {
-		nt_mask |= (perm & r_mask) ? UNIX_ACCESS_R : 0;
-		if(is_directory)
-			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
-		else
-			nt_mask |= (perm & w_mask) ? UNIX_ACCESS_W : 0;
-		nt_mask |= (perm & x_mask) ? UNIX_ACCESS_X : 0;
+		nt_mask |= (perm & ACL_READ) ? UNIX_ACCESS_R : 0;
+		nt_mask |= (perm & ACL_WRITE) ? UNIX_ACCESS_W : 0;
+		nt_mask |= (perm & ACL_EXECUTE) ? UNIX_ACCESS_X : 0;
 	}
 	init_sec_access(&sa,nt_mask);
 	return sa;
-}
-
-/****************************************************************************
- Validate a SID.
-****************************************************************************/
-
-static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
-{
-  extern DOM_SID global_sam_sid;
-  DOM_SID sid;
-
-  if(!sd_sid) {
-    DEBUG(5,("validate_unix_sid: sid missing.\n"));
-    return False;
-  }
-
-  sid_copy(psid, sd_sid);
-  sid_copy(&sid, sd_sid);
-
-  if(!sid_split_rid(&sid, prid)) {
-    DEBUG(5,("validate_unix_sid: cannot get RID from sid.\n"));
-    return False;
-  }
-
-  if(!sid_equal( &sid, &global_sam_sid)) {
-    DEBUG(5,("validate_unix_sid: sid is not ours.\n"));
-    return False;
-  }
-
-  return True;
 }
 
 /****************************************************************************
@@ -330,11 +306,39 @@ static BOOL unpack_nt_permissions(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *p
 }
 
 /****************************************************************************
+ Count a linked list of canonical ACE entries.
+****************************************************************************/
+
+static size_t count_canon_ace_list( canon_ace *list_head )
+{
+	size_t count = 0;
+	canon_ace *ace;
+
+	for (ace = list_head; ace; ace = ace->next)
+		count++;
+
+	return count;
+}
+
+/****************************************************************************
+ Free a linked list of canonical ACE entries.
+****************************************************************************/
+
+static void free_canon_ace_list( canon_ace *list_head )
+{
+	while (list_head) {
+		canon_ace *old_head = list_head;
+		DLIST_REMOVE(list_head, list_head);
+		free(old_head);
+	}
+}
+
+/****************************************************************************
  Create a linked list of canonical ACE entries. This is sorted so that DENY
  entries are at the front of the list, as NT requires.
 ****************************************************************************/
 
-canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
+static canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 {
 	extern DOM_SID global_sid_World;
 	acl_permset_t acl_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
@@ -342,6 +346,7 @@ canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
 	int entry_id = ACL_FIRST_ENTRY;
+	acl_entry_t entry;
 
 	if (posix_acl == NULL)
 		return default_canonicalise_acl(psbuf);
@@ -451,52 +456,6 @@ canon_ace *canonicalise_acl( acl_t posix_acl, SMB_STRUCT_STAT *psbuf)
 }
 
 /****************************************************************************
- Go through the ACL entries one by one, count them and extract the permset
- of the mask entry as we scan the acl.
-****************************************************************************/
-
-static size_t get_num_entries(acl_t posix_acl, acl_permset_t *file_mask)
-{
-	size_t num_entries;
-	acl_entry_t entry;
-	int entry_id = ACL_FIRST_ENTRY;
-
-	*file_mask = (ACL_READ|ACL_WRITE|ACL_EXECUTE);
-
-	/*
-	 * If the acl is NULL, then return 3 as we will fake this using UNIX
-	 * permissions.
-	 */
-
-	if (posix_acl == NULL)
-		return 3;
-
-	num_entries = 0;
-	while ( acl_get_entry(posix_acl, entry_id, &entry) == 1) {
-		acl_tag_t tagtype;
-		acl_permset_t permset;
-
-		/* get_next... */
-		if (entry_id == ACL_FIRST_ENTRY)
-			entry_id = ACL_NEXT_ENTRY;
-
-		/* Is this a MASK entry ? */
-		if (acl_get_tag_type(entry, &tagtype) == -1)
-			continue;
-
-		if (tagtype == ACL_MASK) {
-			if (acl_get_permset(entry, &permset) == 0)
-				*file_mask = permset;
-			continue; /* Don't count the mask as an entry. */
-		}
-
-		num_entries++;
-	}
-
-	return num_entries;
-}
-
-/****************************************************************************
  Reply to query a security descriptor from an fsp. If it succeeds it allocates
  the space for the return elements and returns the size needed to return the
  security descriptor. This should be the only external function needed for
@@ -507,10 +466,10 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
 	extern DOM_SID global_sid_World;
 	SMB_STRUCT_STAT sbuf;
-	SEC_ACE *ace_list;
+	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
-	size_t sd_size;
+	size_t sd_size = 0;
 	SEC_ACL *psa = NULL;
 	SEC_ACCESS owner_access;
 	int owner_acl_type;
@@ -520,12 +479,12 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	int other_acl_type;
 	size_t num_acls = 0;
 	size_t num_dir_acls = 0;
-	size _t i;
+	size_t num_aces = 0;
 	acl_t posix_acl = NULL;
-	acl_t directory_acl = NULL;
-	acl_permset_t file_mask = 0;
-	acl_permset_t directory_mask = 0;
-	 
+	acl_t dir_acl = NULL;
+	canon_ace *file_ace = NULL;
+	canon_ace *dir_ace = NULL;
+ 
 	*ppdesc = NULL;
 
 	if(fsp->is_directory || fsp->fd == -1) {
@@ -545,7 +504,7 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		 */
 
 		if(fsp->is_directory)
-			directory_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_DEFAULT);
+			dir_acl = acl_get_file( dos_to_unix(fsp->fsp_name, False), ACL_TYPE_DEFAULT);
 
 	} else {
 
@@ -565,28 +524,59 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 
 	create_file_sids(&sbuf, &owner_sid, &group_sid);
 
-	/*
-	 * Count the number of entries in the ACL and return
-	 * the mask.
-	 */
+	/* Create the canon_ace lists. */
+	file_ace = canonicalise_acl( posix_acl, &sbuf);
+	num_acls = count_canon_ace_list(file_ace);
 
-	num_acls = get_num_entries(posix_acl, &file_mask);
-	if (fsp->is_directory)
-		num_dir_acls = get_num_entries(directory_acl, &directory_mask);
+	if (fsp->is_directory) { 
+		dir_ace = canonicalise_acl( dir_acl, &sbuf);
+		num_dir_acls = count_canon_ace_list(dir_ace);
+	}
 
 	/* Allocate the ace list. */
-	if ((ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
-		goto fail:
+	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
+		goto done:
 	}
 
-	memset(ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+	memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
 
-	for (i = 0; i < num_acls; i++) {
-		SEC_ACCESS acc = map_unix_perms();
+	/*
+	 * Create the NT ACE list from the canonical ace lists.
+	 */
+
+	{
+		canon_ace *ace;
+		int nt_acl_type;
+
+		ace = file_ace;
+
+		for (i = 0; i < num_acls; i++, ace = ace->next) {
+			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			init_sec_ace(&nt_ace_list[num_aces++], &ace->sid, nt_acl_type, acc, 0);
+		}
+
+		ace = dir_ace;
+
+		for (i = 0; i < num_dir_acls; i++, ace = ace->next) {
+			SEC_ACCESS acc = map_canon_ace_perms(&nt_acl_type, &owner_sid, ace );
+			init_sec_ace(&nt_ace_list[num_aces++], &ace->sid, nt_acl_type, acc, 
+					SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+		}
 	}
 
-	for (i = 0; i < num_dir_acls; i++) {
-		SEC_ACCESS acc = map_unix_perms();
+	if (num_acls) {
+		if((psa = make_sec_acl( ACL_REVISION, num_aces, ace_list)) == NULL) {
+			DEBUG(0,("get_nt_acl: Unable to malloc space for acl.\n"));
+			goto done;
+		}
+	}
+
+	*ppdesc = make_standard_sec_desc( &owner_sid, &group_sid, psa, &sd_size);
+
+	if(!*ppdesc) {
+		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
+		sd_size = 0;
 	}
 
   done:
@@ -595,6 +585,17 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		acl_free(posix_acl);
 	if (directory_acl)
 		acl_free(directory_acl);
+	if (file_ace)
+		free_canon_ace_list(file_ace);
+	if (dir_ace)
+		free_canon_ace_list(dir_ace);
+	if (nt_ace_list)
+		free(nt_ace_list);
+	if (psa)
+		free_sec_acl(&psa);
+
+	return sd_size;
+}
 
 	} else {
 
