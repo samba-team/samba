@@ -1,12 +1,81 @@
                    ==============================
-                   Release Notes for Samba 3.0.12
-                            Mar 18, 2005
+                   Release Notes for Samba 3.0.13
+                            Mar 24, 2005
                    ==============================
 
 This is the latest stable release of Samba. This is the version
 that production Samba servers should be running for all current
 bug-fixes.  Please read the following important changes in this
 release.
+
+Common bugs fixed in 3.0.13 include:
+
+  o Infinite FindNext() loop from Windows 9x client when
+    copying or deleting files on a Samba file share using 
+    explorer.exe.
+  o Numerous smbclient bugs when listing directories.
+  o Failures in smbclient when connecting to a Windows 9x 
+    file server.
+
+    
+######################################################################
+Changes
+#######
+
+Changes since 3.0.12
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * Fix typo bug in smbclient where flags overwrote info level
+      in the cli_list_new().
+    * Fix old smbclient bug where ff_searchcount was being compared 
+      to -1 resulting in processing a filename twice.
+    * Fix segv in smbclient caused by overwriting the last 2 bytes 
+      in cli_list_new().
+    * BUG 2530: Fix potential segv in smbclient when talking to a 
+      Windows 9x file server.
+    * Fix last entry offset in cli_list_new() when using a 
+      FindFirst/FindNext info level of 0x104.
+    * BUG 2501: Stop Win98 from looping doing FindNext on a 
+      singleton directory. 
+      
+      
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * BUG 2497: Fix bug in rpcclient's deletedriverex when asking 
+      to delete all versions of a driver.
+    * BUG 2517: use the realm from smb.conf for 'net ads info' when 
+      'disable netbios = yes'.
+    * BUG 2530: Ensure that smbclient correctly detects MS-DFS root
+      shares.  
+    * Update RedHat packaging files to require cups support.  Also
+      remove requirement for 'idmap {uid,gid}' settings in smb.conf
+      from winbindd init script.
+    * BUG 2516: fix compile issue on True64.
+    
+      
+      
+o   Guenther Deschner <gd@samba.org>
+    * Check for the correct cli-struct when copying files in 'net 
+      rpc printer' routines.
+
+
+o   Herb Lewis <herb@samba.org>
+    * Fix incorrect test in 'net rpc user' when the user is not
+      a member of any groups.
+      
+      
+o   Jim McDonough <jmcd@us.ibm.com>
+    * Make sure that enum_group_members() searches the correct suffix.
+    
+
+
+Release Notes for older release follow:
+
+      --------------------------------------------------
+                   ==============================
+                   Release Notes for Samba 3.0.12
+                            Mar 18, 2005
+                   ==============================
 
 Common bugs fixed in 3.0.12 include:
 
@@ -124,7 +193,7 @@ o   Guenther Deschner <gd@samba.org>
 
 
 o   William Jojo <jojowil@hvcc.edu>
-    * BUG 2445: Patch to avoid default ACLson AIX.
+    * BUG 2445: Patch to avoid default ACLs on AIX.
 
 
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
@@ -397,18 +466,11 @@ o   Shlomi Yaakobovich" <Shlomi@exanet.com>
     * Detect infinite loops when traversing tdbs.
 
 
-Release Notes for older release follow:
-
       --------------------------------------------------
       		   ==============================
                    Release Notes for Samba 3.0.11
                              Feb 5, 2005
                    ==============================
-
-This is the latest stable release of Samba. This is the version
-that production Samba servers should be running for all current
-bug-fixes.  Please read the following important changes in this 
-release.
 
 Common bugs fixed in 3.0.11 include:
 
@@ -1976,7 +2038,7 @@ o   Herb Lewis <herb@samba.org>
     * need to leave empty dacl so we can remove last ACE.
 
 
-o    Jianliang Lu <Jianliang.Lu@getronics.com>
+o   Jianliang Lu <Jianliang.Lu@getronics.com>
     * Fix to stop smbd hanging on missing group member in 
       get_memberuids().
     * Make sure Samba returns the correct group types.
