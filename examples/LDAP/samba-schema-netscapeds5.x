@@ -1,6 +1,7 @@
 ##
 ## Darren Chew <darren.chew at vicscouts dot asn dot au>
 ## Andre Fiebach <andre dot fiebach at stud dot uni-rostock dot de>
+## Thomas Mueller 12.04.2003, thomas.mueller@christ-wasser.de
 ##
 ## Samba 3.0 schema file for Netscape DS 5.x
 ##
@@ -22,8 +23,6 @@ aci: (targetattr = "*")(version 3.0; acl "Local Directory Administrators Group
  "; allow (all) groupdn = "ldap:///cn=Directory Administrators, dc=samba,dc=org";)
 aci: (targetattr = "*")(version 3.0; acl "SIE Group"; allow (all)groupdn = "ld
  ap:///cn=slapd-sambaldap, cn=iPlanet Directory Server, cn=Server Group, cn=iPlanetDirectory.samba.org, ou=samba.org, o=NetscapeRoot";)
-modifiersName: cn=directory manager
-modifyTimestamp: 20020322124844Z
 ####################################################################
 objectClasses: ( 1.3.6.1.4.1.7165.2.2.6 NAME 'sambaSamAccount' SUP top AUXILIARY DESC 'Samba 3.0 Auxilary SAM Account' MUST ( uid $ sambaSID ) MAY  ( cn $ sambaLMPassword $ sambaNTPassword $ sambaPwdLastSet $ sambaLogonTime $ sambaLogoffTime $ sambaKickoffTime $ sambaPwdCanChange $ sambaPwdMustChange $ sambaAcctFlags $ displayName $ sambaHomePath $ sambaHomeDrive $ sambaLogonScript $ sambaProfilePath $ description $ sambaUserWorkstations $ sambaPrimaryGroupSID $ sambaDomainName ) X-ORIGIN 'user defined' )
 objectClasses: ( 1.3.6.1.4.1.7165.2.2.4 NAME 'sambaGroupMapping' SUP top AUXILIARY DESC 'Samba Group Mapping' MUST ( gidNumber $ sambaSID $ sambaGroupType ) MAY  ( displayName $ description ) X-ORIGIN 'user defined' )
