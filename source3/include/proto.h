@@ -91,6 +91,10 @@ void fault_setup(void (*fn)(void *));
 
 int fnmatch (const char *pattern, const char *string, int flags);
 
+/*The following definitions come from  lib/fsusage.c  */
+
+int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
+
 /*The following definitions come from  lib/genrand.c  */
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
