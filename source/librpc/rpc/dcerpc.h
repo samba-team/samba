@@ -25,24 +25,39 @@ enum dcerpc_transport_t {NCACN_NP, NCACN_IP_TCP};
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
-struct dcerpc_security {
-	void *private;
-	NTSTATUS (*unseal_packet)(struct dcerpc_security *, 
-				  TALLOC_CTX *mem_ctx, 
-				  uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*check_packet)(struct dcerpc_security *, 
-				 TALLOC_CTX *mem_ctx, 
-				 const uint8_t *data, size_t length, const DATA_BLOB *sig);
-	NTSTATUS (*seal_packet)(struct dcerpc_security *, 
-				TALLOC_CTX *mem_ctx, 
-				uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*sign_packet)(struct dcerpc_security *, 
-				TALLOC_CTX *mem_ctx, 
-				const uint8_t *data, size_t length, DATA_BLOB *sig);
-	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
-	void (*security_end)(struct dcerpc_security *);
+struct dcerpc_security;
+struct dcerpc_pipe;
+
+struct dcerpc_user {
+	const char *domain;
+	const char *name;
+	const char *password;
 };
 
+struct dcesrv_security_ops {
+	const char *name;
+	uint8 auth_type;
+	NTSTATUS (*start)(struct dcerpc_pipe *dce_pipe, struct dcerpc_security *dce_sec);
+	NTSTATUS (*update)(struct dcerpc_security *dce_sec, TALLOC_CTX *out_mem_ctx,
+				const DATA_BLOB in, DATA_BLOB *out);
+	NTSTATUS (*seal)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*sign)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				const uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*check_sig)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx, 
+				const uint8_t *data, size_t length, const DATA_BLOB *sig);
+	NTSTATUS (*unseal)(struct dcerpc_security *dce_sec, TALLOC_CTX *sig_mem_ctx,
+				uint8_t *data, size_t length, DATA_BLOB *sig);
+	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
+	void (*end)(struct dcerpc_security *dce_sec);
+};
+	
+struct dcerpc_security {
+	struct dcerpc_auth *auth_info;
+	struct dcerpc_user user;
+	void *private_data;
+	const struct dcesrv_security_ops *ops;
+};
 
 struct dcerpc_pipe {
 	TALLOC_CTX *mem_ctx;
@@ -51,8 +66,7 @@ struct dcerpc_pipe {
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
 	uint_t flags;
-	struct dcerpc_security *security_state;
-	struct dcerpc_auth *auth_info;
+	struct dcerpc_security security_state;
 	const char *binding_string;
 	
 	struct dcerpc_transport {
