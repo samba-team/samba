@@ -62,6 +62,9 @@ int do_afslog		= -1;
 int get_v4_tgt		= -1;
 int convert_524		= 0;
 int fcache_version;
+char *pk_cert_file	= NULL;
+char *pk_key_file	= NULL;
+char *pk_ca_dir		= NULL;
 
 static char *krb4_cc_name;
 
@@ -137,7 +140,16 @@ static struct getargs args[] = {
 
     { "request-pac",	0,   arg_flag,	&pac_flag,
       "request a Windows PAC" },
+#ifdef PKINIT
+    {  "certificate",  'C',  arg_string, &pk_cert_file,
+       "principal's public key certificate", "filename"},
+       
+    {  "private-key",  'K',  arg_string, &pk_key_file,
+       "principal's private key", "filename" },
 
+    {  "ca-dir",       'D',  arg_string, &pk_ca_dir,
+       "directory with CA certificates", "directory" },
+#endif
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
 };
@@ -436,6 +448,15 @@ get_new_tickets(krb5_context context,
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_paq_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
+    if (pk_cert_file || pk_key_file || pk_ca_dir) {
+	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
+						 pk_cert_file,
+						 pk_key_file,
+						 pk_ca_dir,
+						 NULL);
+	if (ret)
+	    krb5_err(context, 1, ret, "set_pkinit");
+    }
 
     if (!addrs_flag) {
 	no_addrs.len = 0;
@@ -498,6 +519,16 @@ get_new_tickets(krb5_context context,
 					  server,
 					  opt);
 	krb5_kt_close(context, kt);
+    } else if (pk_key_file) {
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    principal,
+					    NULL,
+					    krb5_prompter_posix,
+					    NULL,
+					    start_time,
+					    server,
+					    opt);
     } else {
 	char *p, *prompt;
 
@@ -511,7 +542,7 @@ get_new_tickets(krb5_context context,
 	}
 
 	free (prompt);
-
+	
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
