@@ -38,7 +38,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        8
-    EUROPE                                       39
+    EUROPE                                       38
     MIDDLE EAST                                   1
 
 AFRICA
@@ -850,16 +850,6 @@ SAMBA Experience : SunOS, Solaris, SCO-Unix, Free BSD, Win95/NT/3.1
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
-BRISBANE - AUSTRALIA
-
-Brett Worth
-Select Computer Technology - Brisbane
-431 Logan Road
-Stones Corner   QLD   4120
-E-Mail: brett@sct.com.au
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
 CANBERRA - AUSTRALIA
 
 Paul Blackman (ictinus@lake.canberra.edu.au, Ph. 06 2012518) is
@@ -1437,6 +1427,25 @@ Sample prices:  Basic rate £30/hour.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+NEWCASTLE UPOON TYNE - ENGLAND
+
+New Mode Technology Limited, Newcastle Upon  Tyne, UK
+Tel 07050 606 991  Fax  07050 606 992
+EMAIL : newmode@unforgettable.com.
+
+Support Available:
+
+Consultancy 
+
+Design and Implementation of Networking solutions based on Samba and other
+protocols. Integration and migration between Unix and NT.
+
+All consultants are Microsoft Certified, and have implemented and suported Samba
+for several large clients on AIX and Solaris.
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 READING - ENGLAND
 
 Philip Hands                | E-Mail: info@hands.com  Tel:+44 118 9545656
@@ -1915,24 +1924,6 @@ http://www.id.ibs.se/ibsid
         
 We have offices in about 20 cities in Sweden and can provide commercial 
 support for Samba.
-------------------------------------------------------------------------------
-
-------------------------------------------------------------------------------
-BERN - SWITZERLAND
-
-Charles Bueche           e-mail : cbueche@worldcom.ch
-Les Morels 9             phone  : +41.(0)79.330.00.70
-2515 Preles              fax    : +41.(0)32.315.52.16
-Switzerland
-
-I have used Samba for more than 4 years across several 
-large Swiss companies. I offer support on planing, 
-configuration and maintenance of Samba. My primary 
-platform is Sun Solaris, but I can also support 
-Samba on SunOS, HP, DEC-UNIX, or Linux.
-
-Other duties includes security audits (Inter- & Intranet),
-Sun High Availability and Checkpoint Firewall-1.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
