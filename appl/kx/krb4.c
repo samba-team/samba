@@ -74,10 +74,10 @@ krb4_authenticate (kx_context *kc, int s)
     MSG_DAT msg;
     int status;
     krb4_kx_context *c = (krb4_kx_context *)kc->data;
-    char *host = kc->host;
+    const char *host = kc->host;
 
     status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
-			   host, krb_realmofhost (host),
+			   (char *)host, krb_realmofhost (host),
 			   getpid(), &msg, &cred, c->schedule,
 			   &kc->thisaddr, &kc->thataddr, KX_VERSION);
     if (status != KSUCCESS) {
@@ -135,7 +135,7 @@ krb4_write(kx_context *kc,
 {
     void *outbuf;
     krb4_kx_context *c = (krb4_kx_context *)kc->data;
-    size_t outlen;
+    int outlen;
     unsigned char tmp[4];
 
     outbuf = malloc (len + 30);
