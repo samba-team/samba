@@ -23,10 +23,6 @@
 
 #include "winbind_client.h"
 
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
 /* Maximum number of users to pass back over the unix domain socket
    per call. This is not a static limit on the total number of users 
    or groups returned in total. */
@@ -852,7 +848,9 @@ _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 					if (*size == limit) {
 						goto done;
 					}
-					newsize = MIN(newsize, limit);
+					if (newsize > limit) {
+						newsize = limit;
+					}
 				}
 
 				newgroups = realloc((*groups), newsize * sizeof(**groups));
