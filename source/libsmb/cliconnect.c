@@ -1258,8 +1258,8 @@ again:
 	if (service) {
 		if (!cli_send_tconX(cli, service, service_type,
 				    password, strlen(password)+1)) {
-			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			nt_status = cli_nt_error(cli);
+			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				nt_status = NT_STATUS_UNSUCCESSFUL;
