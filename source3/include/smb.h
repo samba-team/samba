@@ -472,7 +472,7 @@ typedef enum
 {
 	DOM_MAP_LOCAL,
 	DOM_MAP_DOMAIN,
-	DOM_MAP_USER,
+	DOM_MAP_USER
 
 } DOM_MAP_TYPE;
 
