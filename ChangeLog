@@ -1,3 +1,31 @@
+1999-09-07  Assar Westerlund  <assar@sics.se>
+
+	* lib/hdb/Makefile.am (libhdb_la_SOURCES): add keytab.c.  From
+ 	Love <lha@e.kth.se>
+
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): check
+ 	return value from `krb5_sendto_kdc'
+
+1999-09-06  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (send_and_recv): rename to recv_loop and
+ 	remove the sending of data.  add a parameter `limit'.  let callers
+ 	send the date themselves (and preferably with net_write on tcp
+ 	sockets)
+	(send_and_recv_tcp): read first the length field and then only that
+	many bytes
+
+1999-09-05  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c (handle_tcp): try to print warning `TCP data of
+ 	strange type' less often
+
+	* lib/krb5/send_to_kdc.c (send_and_recv): handle EINTR properly.
+  	return on EOF.  always free data.  check return value from
+ 	realloc.
+	(send_and_recv_tcp, send_and_recv_http): check advertised length
+	against actual length
+
 1999-09-01  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: check for sgi capabilities
@@ -25,6 +53,12 @@
 1999-08-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kpasswd/kpasswdd.c: add `--keytab' flag
+
+1999-08-23  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/addr_families.c (IN6_ADDR_V6_TO_V4): use `s6_addr'
+ 	instead of the non-standard `s6_addr32'.  From Yoshinobu Inoue
+ 	<shin@kame.net> by way of the KAME repository
 
 1999-08-18  Assar Westerlund  <assar@sics.se>
 
