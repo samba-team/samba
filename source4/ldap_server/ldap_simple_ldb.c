@@ -336,10 +336,126 @@ static NTSTATUS sldb_Del(struct ldapsrv_partition *partition, struct ldapsrv_cal
 	return ldapsrv_queue_reply(call, del_reply);
 }
 
+static NTSTATUS sldb_Modify(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
+				     struct ldap_ModifyRequest *r)
+{
+	struct ldap_Result *modify_result;
+	struct ldapsrv_reply *modify_reply;
+	int ldb_ret;
+	struct samdb_context *samdb;
+	struct ldb_context *ldb;
+	const char *dn;
+	struct ldb_message *msg;
+	int result = LDAP_SUCCESS;
+	const char *errstr = NULL;
+	int i,j;
+
+	samdb = samdb_connect(call);
+	ldb = samdb->ldb;
+	dn = sldb_trim_dn(samdb, r->dn);
+
+	DEBUG(10, ("sldb_modify: dn: [%s]\n", dn));
+
+	msg = talloc_p(samdb, struct ldb_message);
+	ALLOC_CHECK(msg);
+
+	msg->dn = discard_const_p(char, dn);
+	msg->private_data = NULL;
+	msg->num_elements = 0;
+	msg->elements = NULL;
+
+	if (r->num_mods > 0) {
+		msg->num_elements = r->num_mods;
+		msg->elements = talloc_array_p(msg, struct ldb_message_element, r->num_mods);
+		ALLOC_CHECK(msg->elements);
+
+		for (i=0; i < msg->num_elements; i++) {
+			msg->elements[i].name = discard_const_p(char, r->mods[i].attrib.name);
+			msg->elements[i].num_values = 0;
+			msg->elements[i].values = NULL;
+
+			switch (r->mods[i].type) {
+			default:
+				result = 2;
+				goto invalid_input;
+			case LDAP_MODIFY_ADD:
+				DEBUG(0,("mod_add: %s\n",msg->elements[i].name));
+				msg->elements[i].flags = LDB_FLAG_MOD_ADD;
+				break;
+			case LDAP_MODIFY_DELETE:
+				DEBUG(0,("mod_del: %s\n",msg->elements[i].name));
+				msg->elements[i].flags = LDB_FLAG_MOD_DELETE;
+				break;
+			case LDAP_MODIFY_REPLACE:
+				DEBUG(0,("mod_replace: %s\n",msg->elements[i].name));
+				msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+				break;
+			}
+
+			if (r->mods[i].attrib.num_values > 0) {
+				msg->elements[i].num_values = r->mods[i].attrib.num_values;
+				msg->elements[i].values = talloc_array_p(msg, struct ldb_val, msg->elements[i].num_values);
+				ALLOC_CHECK(msg->elements[i].values);
+
+				for (j=0; j < msg->elements[i].num_values; j++) {
+					if (!(r->mods[i].attrib.values[j].length > 0)) {
+						result = 80;
+						goto invalid_input;
+					}
+					msg->elements[i].values[j].length = r->mods[i].attrib.values[j].length;
+					msg->elements[i].values[j].data = r->mods[i].attrib.values[j].data;			
+				}
+			} else {
+				/* TODO: test what we should do here 
+				 *
+				 *       LDAP_MODIFY_DELETE is ok to pass here
+				 */
+			}
+		}
+	} else {
+		result = 80;
+		goto invalid_input;
+	}
+
+invalid_input:
+
+	modify_reply = ldapsrv_init_reply(call, LDAP_TAG_ModifyResponse);
+	ALLOC_CHECK(modify_reply);
+
+	modify_result = &modify_reply->msg.r.AddResponse;
+	modify_result->dn = talloc_steal(modify_reply, dn);
+
+	if (result == LDAP_SUCCESS) {
+		ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+		ldb_ret = ldb_modify(ldb, msg);
+		if (ldb_ret == 0) {
+			result = LDAP_SUCCESS;
+			errstr = NULL;
+		} else {
+			/* currently we have no way to tell if there was an internal ldb error
+		 	 * or if the object was not found, return the most probable error
+		 	 */
+			result = 1;
+			errstr = talloc_strdup(modify_reply, ldb_errstring(ldb));
+		}
+	} else {
+		errstr = talloc_strdup(modify_reply,"invalid input data");
+	}
+DEBUG(0,("mod result: %d, %s\n",result, errstr));
+	modify_result->resultcode = result;
+	modify_result->errormessage = errstr;
+	modify_result->referral = NULL;
+
+	talloc_free(samdb);
+
+	return ldapsrv_queue_reply(call, modify_reply);
+}
+
 static const struct ldapsrv_partition_ops sldb_ops = {
 	.Search		= sldb_Search,
 	.Add		= sldb_Add,
-	.Del		= sldb_Del
+	.Del		= sldb_Del,
+	.Modify		= sldb_Modify
 };
 
 const struct ldapsrv_partition_ops *ldapsrv_get_sldb_partition_ops(void)
