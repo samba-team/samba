@@ -226,15 +226,14 @@ static BOOL srv_pipe_bind_and_alt_req(rpcsrv_struct *l,
 	if (l->hdr.auth_len != 0)
 	{
 		RPC_HDR_AUTH  auth_info;
+		extern srv_auth_fns ntlmssp_fns;
 
 		/* decode the authentication verifier */
 		smb_io_rpc_hdr_auth    ("", &auth_info    , &l->data_i, 0);
 		if (l->data_i.offset == 0) return False;
 
-		if (rpc_hdr_ntlmssp_auth_chk(&(auth_info)))
+		if (ntlmssp_fns.api_is_auth(&(auth_info)))
 		{
-			extern srv_auth_fns ntlmssp_fns;
-
 			l->auth = &ntlmssp_fns;
 			l->auth_info = (void*)malloc(sizeof(ntlmssp_auth_struct));
 			if (l->auth_info == NULL)

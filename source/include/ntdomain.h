@@ -28,6 +28,9 @@
 /* dce/rpc support */
 #include "rpc_dce.h"
 
+/* dce/rpc authentication support */
+#include "rpc_ntlmssp.h"
+
 /* miscellaneous structures / defines */
 #include "rpc_misc.h"
 
@@ -124,14 +127,17 @@ struct cli_connection;
 
 typedef struct cli_auth_fns
 {
+	/* these three will do for now.  they *should* match with server-side */
 	BOOL (*create_bind_req)(struct cli_connection *, prs_struct *,
 	                        uint32, RPC_IFACE *, RPC_IFACE *);
 	BOOL (*decode_bind_resp)(struct cli_connection *, prs_struct *);
 	BOOL (*create_bind_cont)(struct cli_connection *, prs_struct *,
 	                         uint32);
+	/* creates an authenticated PDU */
 	BOOL (*cli_create_pdu)(struct cli_connection *, uint8,
 	                         prs_struct *, int, int*,
 	                         prs_struct *, uint8 *);
+	/* decodes an authenticated PDU */
 	BOOL (*cli_decode_pdu)(struct cli_connection *, prs_struct *,
 	                         int, int);
  
@@ -139,9 +145,15 @@ typedef struct cli_auth_fns
 
 typedef struct srv_auth_fns
 {
+	BOOL (*api_is_auth)(RPC_HDR_AUTH*);
+
+	/* state-based authentication: one to decode, one to generate */
 	BOOL (*api_auth_chk)(rpcsrv_struct *, enum RPC_PKT_TYPE);
 	BOOL (*api_auth_gen)(rpcsrv_struct *, prs_struct *, enum RPC_PKT_TYPE);
+
+	/* decodes an authenticated PDU */
 	BOOL (*api_decode_pdu)(rpcsrv_struct *);
+	/* creates an authenticated PDU */
 	BOOL (*api_create_pdu)(rpcsrv_struct *, uint32, prs_struct *);
 
 } srv_auth_fns;

@@ -606,8 +606,14 @@ static BOOL api_ntlmssp_decode_pdu(rpcsrv_struct *l)
 	return True;
 }
 
+static BOOL api_ntlmssp_hdr_chk(RPC_HDR_AUTH *auth_info)
+{
+	return rpc_hdr_ntlmssp_auth_chk(auth_info);
+}
+
 srv_auth_fns ntlmssp_fns = 
 {
+	api_ntlmssp_hdr_chk,
 	api_ntlmssp_auth_chk,
 	api_ntlmssp_auth_gen,
 	api_ntlmssp_decode_pdu,

@@ -177,6 +177,7 @@ static BOOL api_noauth_decode_pdu(rpcsrv_struct *l)
 
 srv_auth_fns noauth_fns = 
 {
+	NULL,
 	api_noauth_auth_chk,
 	api_noauth_auth_gen,
 	api_noauth_decode_pdu,
