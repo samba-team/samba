@@ -1864,7 +1864,7 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 	if ((convert_string_allocate(NULL, CH_UNIX, 
 				     CH_DOS, password,
 				     strlen(password)+1, 
-				     (void**)&lm_response.data)) == -1) {
+				     (void**)&lm_response.data,True)) == -1) {
 		DEBUG(0, ("push_ascii_allocate failed!\n"));
 		exit(1);
 	}
