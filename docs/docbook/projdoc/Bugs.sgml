@@ -164,7 +164,7 @@ occurred. Include this in your mail.
 </para>
 
 <para>
-If you known any assembly language then do a <userinput>disass</userinput> of the routine
+If you know any assembly language then do a <userinput>disass</userinput> of the routine
 where the problem occurred (if its in a library routine then
 disassemble the routine that called it) and try to work out exactly
 where the problem is by looking at the surrounding code. Even if you
@@ -195,7 +195,7 @@ where it occurred.
 The best sort of bug report is one that includes a fix! If you send us
 patches please use <userinput>diff -u</userinput> format if your version of 
 diff supports it, otherwise use <userinput>diff -c4</userinput>. Make sure 
-your do the diff against a clean version of the source and let me know 
+you do the diff against a clean version of the source and let me know 
 exactly what version you used. 
 </para>
 

@@ -102,7 +102,7 @@ of your home directory called <filename>.profiles</filename> (thus making them h
 </para>
 
 <para>
-Not only that, but <userinput>net use/home</userinput> will also work, because of a feature in
+Not only that, but <userinput>net use /home</userinput> will also work, because of a feature in
 Windows 9x / Me. It removes any directory stuff off the end of the home directory area
 and only uses the server and share portion. That is, it looks like you
 specified \\%L\%U for <command>logon home</command>.
@@ -157,7 +157,8 @@ There are three ways of doing this:
 
 	Disable:	Only Allow Local User Profiles
 	Disable:	Prevent Roaming Profile Change from Propogating to the Server
-	</programlisting><para>
+	</programlisting>
+	</para>
 	</listitem>
 
 	<listitem><para>
@@ -964,7 +965,7 @@ The default entries are:
 <para>
 When a new user first logs onto MS Windows 200x/XP machine the default profile is obtained from
 <filename>C:\Documents and Settings\Default User</filename>. The administrator can modify (or change
-the contents of this location and MS Windows 200x/XP will gladly user it. This is far from the optimum
+the contents of this location and MS Windows 200x/XP will gladly use it. This is far from the optimum
 arrangement since it will involve copying a new default profile to every MS Windows 200x/XP client
 workstation. 
 </para>
@@ -981,7 +982,7 @@ login name of the user.
 	<note>
 	<para>
 	This path translates, in Samba parlance, to the smb.conf [NETLOGON] share. The directory
-	should be created at the root of this share and msut be called <filename>Default Profile</filename>.
+	should be created at the root of this share and must be called <filename>Default Profile</filename>.
 	</para>
 	</note>
 
@@ -998,7 +999,7 @@ the local machine only under the path <filename>C:\Documents and Settings\%USERN
 </para>
 
 <para>
-Those wishing to modify the default behaviour can do so through up to three methods:
+Those wishing to modify the default behaviour can do so through three methods:
 </para>
 
 <itemizedlist>
@@ -1078,7 +1079,7 @@ the others are of type REG_EXPAND_SZ.
 <para>
 It makes a huge difference to the speed of handling roaming user profiles if all the folders are
 stored on a dedicated location on a network server. This means that it will NOT be necessary to
-write Outlook PST file over the network for every login and logout.
+write the Outlook PST file over the network for every login and logout.
 </para>
 
 <para>

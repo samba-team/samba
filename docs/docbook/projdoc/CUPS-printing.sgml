@@ -294,9 +294,12 @@ for the mailing, etc.).
 </sect1>
 
 <sect1>
-<title>CUPS as a network PostScript RIP -- CUPS drivers working on server, Adobe
-PostScript driver with CUPS-PPDs downloaded to clients</title>
+<title>CUPS as a network PostScript RIP</title>
 
+<para>
+This is the configuration where CUPS drivers are working on server, and where the
+Adobe PostScript driver with CUPS-PPDs is downloaded to clients.
+</para>
 
 <para>
 CUPS is perfectly able to use PPD files (PostScript
@@ -543,7 +546,8 @@ associated with this printer is copied from <filename>/etc/cups/ppd/</filename> 
 
 <para><programlisting>
 <prompt>root# </prompt> <command>cupsaddsmb -U root infotec_IS2027</command>
-Password for root required to access localhost via SAMBA: <userinput>[type in password 'secret']</userinput>
+Password for root required to access localhost via
+SAMBA: <userinput>[type in password 'secret']</userinput>
 </programlisting></para>
 
 <para>
@@ -568,7 +572,8 @@ Note: The following line shave been wrapped so that information is not lost.
 <prompt>root# </prompt> cupsaddsmb -v -U root infotec_IS2027
     Password for root required to access localhost via SAMBA:
     Running command: smbclient //localhost/print\$ -N -U'root%secret' -c 'mkdir W32X86;put
-       /var/spool/cups/tmp/3cd1cc66376c0 W32X86/infotec_IS2027.PPD;put /usr/share/cups/drivers/
+       /var/spool/cups/tmp/3cd1cc66376c0 W32X86/infotec_IS2027.PPD;put
+       /usr/share/cups/drivers/
        ADOBEPS5.DLL W32X86/ADOBEPS5.DLL;put /usr/share/cups/drivers/ADOBEPSU.DLLr
        W32X86/ADOBEPSU.DLL;put /usr/share/cups/drivers/ADOBEPSU.HLP W32X86/ADOBEPSU.HLP'
     added interface ip=10.160.16.45 bcast=10.160.31.255 nmask=255.255.240.0
@@ -576,14 +581,14 @@ Note: The following line shave been wrapped so that information is not lost.
     added interface ip=172.16.200.1 bcast=172.16.200.255 nmask=255.255.255.0
     Domain=[TUX-NET] OS=[Unix] Server=[Samba 2.2.3a.200204262025cvs]
     NT_STATUS_OBJECT_NAME_COLLISION making remote directory \W32X86
-    putting file /var/spool/cups/tmp/3cd1cc66376c0 as \W32X86/infotec_IS2027.PPD (17394.6 kb/s)
-      (average 17395.2 kb/s)
-    putting file /usr/share/cups/drivers/ADOBEPS5.DLL as \W32X86/ADOBEPS5.DLL (10877.4 kb/s)
-      (average 11343.0 kb/s)
-    putting file /usr/share/cups/drivers/ADOBEPSU.DLL as \W32X86/ADOBEPSU.DLL (5095.2 kb/s)
-      (average 9260.4 kb/s)
-    putting file /usr/share/cups/drivers/ADOBEPSU.HLP as \W32X86/ADOBEPSU.HLP (8828.7 kb/s)
-      (average 9247.1 kb/s)
+    putting file /var/spool/cups/tmp/3cd1cc66376c0 as
+      \W32X86/infotec_IS2027.PPD (17394.6 kb/s) (average 17395.2 kb/s)
+    putting file /usr/share/cups/drivers/ADOBEPS5.DLL as
+      \W32X86/ADOBEPS5.DLL (10877.4 kb/s) (average 11343.0 kb/s)
+    putting file /usr/share/cups/drivers/ADOBEPSU.DLL as
+      \W32X86/ADOBEPSU.DLL (5095.2 kb/s) (average 9260.4 kb/s)
+    putting file /usr/share/cups/drivers/ADOBEPSU.HLP as
+      \W32X86/ADOBEPSU.HLP (8828.7 kb/s) (average 9247.1 kb/s)
 
     Running command: smbclient //localhost/print\$ -N -U'root%secret' -c 'mkdir WIN40;put
       /var/spool/cups/tmp/3cd1cc66376c0 WIN40/infotec_IS2027.PPD;put
@@ -598,32 +603,37 @@ Note: The following line shave been wrapped so that information is not lost.
     added interface ip=172.16.200.1 bcast=172.16.200.255 nmask=255.255.255.0
     Domain=[TUX-NET] OS=[Unix] Server=[Samba 2.2.3a.200204262025cvs]
     NT_STATUS_OBJECT_NAME_COLLISION making remote directory \WIN40
-    putting file /var/spool/cups/tmp/3cd1cc66376c0 as \WIN40/infotec_IS2027.PPD (26091.5 kb/s)
-      (average 26092.8 kb/s)
-    putting file /usr/share/cups/drivers/ADFONTS.MFM as \WIN40/ADFONTS.MFM (11241.6 kb/s)
-      (average 11812.9 kb/s)
-    putting file /usr/share/cups/drivers/ADOBEPS4.DRV as \WIN40/ADOBEPS4.DRV (16640.6 kb/s)
-      (average 14679.3 kb/s)
-    putting file /usr/share/cups/drivers/ADOBEPS4.HLP as \WIN40/ADOBEPS4.HLP (11285.6 kb/s)
-      (average 14281.5 kb/s)
-    putting file /usr/share/cups/drivers/DEFPRTR2.PPD as \WIN40/DEFPRTR2.PPD (823.5 kb/s)
-      (average 12944.0 kb/s)
-    putting file /usr/share/cups/drivers/ICONLIB.DLL as \WIN40/ICONLIB.DLL (19226.2 kb/s)
-      (average 13169.7 kb/s)
-    putting file /usr/share/cups/drivers/PSMON.DLL as \WIN40/PSMON.DLL (18666.1 kb/s)
-      (average 13266.7 kb/s)
+    putting file /var/spool/cups/tmp/3cd1cc66376c0 as
+      \WIN40/infotec_IS2027.PPD (26091.5 kb/s) (average 26092.8 kb/s)
+    putting file /usr/share/cups/drivers/ADFONTS.MFM as
+      \WIN40/ADFONTS.MFM (11241.6 kb/s) (average 11812.9 kb/s)
+    putting file /usr/share/cups/drivers/ADOBEPS4.DRV as
+      \WIN40/ADOBEPS4.DRV (16640.6 kb/s) (average 14679.3 kb/s)
+    putting file /usr/share/cups/drivers/ADOBEPS4.HLP as
+      \WIN40/ADOBEPS4.HLP (11285.6 kb/s) (average 14281.5 kb/s)
+    putting file /usr/share/cups/drivers/DEFPRTR2.PPD as
+      \WIN40/DEFPRTR2.PPD (823.5 kb/s) (average 12944.0 kb/s)
+    putting file /usr/share/cups/drivers/ICONLIB.DLL as
+      \WIN40/ICONLIB.DLL (19226.2 kb/s) (average 13169.7 kb/s)
+    putting file /usr/share/cups/drivers/PSMON.DLL as
+      \WIN40/PSMON.DLL (18666.1 kb/s) (average 13266.7 kb/s)
 
-    Running command: rpcclient localhost -N -U'root%secret' -c 'adddriver "Windows NT x86"
-       "infotec_IS2027:ADOBEPS5.DLL:infotec_IS2027.PPD:ADOBEPSU.DLL:ADOBEPSU.HLP:NULL:RAW:NULL"'
-    cmd = adddriver "Windows NT x86" "infotec_IS2027:ADOBEPS5.DLL:infotec_IS2027.PPD:ADOBEPSU.DLL:
+    Running command: rpcclient localhost -N -U'root%secret'
+       -c 'adddriver "Windows NT x86"
+       "infotec_IS2027:ADOBEPS5.DLL:infotec_IS2027.PPD:ADOBEPSU.DLL:
+		ADOBEPSU.HLP:NULL:RAW:NULL"'
+    cmd = adddriver "Windows NT x86"
+       "infotec_IS2027:ADOBEPS5.DLL:infotec_IS2027.PPD:ADOBEPSU.DLL:
        ADOBEPSU.HLP:NULL:RAW:NULL"
     Printer Driver infotec_IS2027 successfully installed.
 
-    Running command: rpcclient localhost -N -U'root%secret' -c 'adddriver "Windows 4.0"
-       "infotec_IS2027:ADOBEPS4.DRV:infotec_IS2027.PPD:NULL:ADOBEPS4.HLP:PSMON.DLL:RAW:
-       ADFONTS.MFM,DEFPRTR2.PPD,ICONLIB.DLL"'
-    cmd = adddriver "Windows 4.0" "infotec_IS2027:ADOBEPS4.DRV:infotec_IS2027.PPD:NULL:
-       ADOBEPS4.HLP:PSMON.DLL:RAW:ADFONTS.MFM,DEFPRTR2.PPD,ICONLIB.DLL"
+    Running command: rpcclient localhost -N -U'root%secret'
+       -c 'adddriver "Windows 4.0"
+       "infotec_IS2027:ADOBEPS4.DRV:infotec_IS2027.PPD:NULL:
+		ADOBEPS4.HLP:PSMON.DLL:RAW: ADFONTS.MFM,DEFPRTR2.PPD,ICONLIB.DLL"'
+    cmd = adddriver "Windows 4.0" "infotec_IS2027:ADOBEPS4.DRV:
+		infotec_IS2027.PPD:NULL:ADOBEPS4.HLP:PSMON.DLL:RAW:
+		ADFONTS.MFM,DEFPRTR2.PPD,ICONLIB.DLL"
     Printer Driver infotec_IS2027 successfully installed.
 
     Running command: rpcclient localhost -N -U'root%secret'
@@ -1537,7 +1547,8 @@ as compared to the Adobe drivers?
 	<listitem><para>
 	the Adobe drivers (depending on the printer PPD associated with them)
 	often put a PJL header in front of the core PostScript part of the print
-	file (thus the file starts with "<replaceable>1B</replaceable>%-12345X" or "<replaceable>escape</replaceable>%-12345X"
+	file (thus the file starts with "<replaceable>1B</replaceable>%-12345X"
+	or "<replaceable>escape</replaceable>%-12345X"
 	instead of "%!PS"). This leads to the CUPS daemon autotyping the
 	arriving file as a print-ready file, not requiring a pass thru the
 	"pstops" filter (to speak more technical, it is not regarded as the

@@ -123,7 +123,7 @@ between domains in purely Samba environment.
 <title>Samba-3 as the Trusting Domain</title>
 
 <para>
-In order to set Samba PDC to be trusted party of the relationship first you need
+In order to set the Samba PDC to be the trusted party of the relationship first you need
 to create special account for the domain that will be the trusting party. To do that,
 you can use the 'smbpasswd' utility. Creating the trusted domain account is very
 similiar to creating a trusted machine account. Suppose, your domain is
@@ -152,8 +152,8 @@ The account name will be 'rumba$' (the name of the remote domain)
 After issuing this command you'll be asked to enter the password for
 the account. You can use any password you want, but be aware that Windows NT will
 not change this password until 7 days following account creation.
-After the command returns successfully, you can look at the entry for new account
-(in the way depending on your configuration) and see that account's name is
+After the command returns successfully, you can look at the entry for the new account
+(in the stardard way depending on your configuration) and see that account's name is
 really RUMBA$ and it has 'I' flag in the flags field. Now you're ready to confirm
 the trust by establishing it from Windows NT Server.
 </para>
@@ -187,8 +187,8 @@ domain (SAMBA) and password securing the relationship.
 </para>
 
 <para>
-The password can be arbitrarily chosen. It is easy to change it the password
-from Samba server whenever you want. After confirming the password your account is
+The password can be arbitrarily chosen. It is easy to change the password
+from the Samba server whenever you want. After confirming the password your account is
 ready for use. Now it's Samba's turn.
 </para>
 
@@ -202,7 +202,7 @@ Using your favourite shell while being logged in as root, issue this command:
 
 <para>
 You will be prompted for the password you just typed on your Windows NT4 Server box.
-Don not worry if you see an error message that mentions a returned code of
+Do not worry if you see an error message that mentions a returned code of
 <errorname>NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT</errorname>. It means the
 password you gave is correct and the NT4 Server says the account is
 ready for interdomain connection and not for ordinary

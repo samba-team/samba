@@ -230,9 +230,9 @@ SWAT has context sensitive help. To find out what each parameter is for simply c
 <title>Share Settings</title>
 
 <para>
-To affect a currenly configured share, simple click on the pull down button between the
+To affect a currenly configured share, simply click on the pull down button between the
 <emphasis>Choose Share</emphasis> and the <emphasis>Delete Share</emphasis> buttons,
-select the share you wish to operation on, then to edit the settings click on the
+select the share you wish to operate on, then to edit the settings click on the
 <emphasis>Choose Share</emphasis> button, to delete the share simply press the
 <emphasis>Delete Share</emphasis> button.
 </para>
@@ -249,9 +249,9 @@ into the text field the name of the share to be created, then click on the
 <title>Printers Settings</title>
 
 <para>
-To affect a currenly configured printer, simple click on the pull down button between the
+To affect a currenly configured printer, simply click on the pull down button between the
 <emphasis>Choose Printer</emphasis> and the <emphasis>Delete Printer</emphasis> buttons,
-select the printer you wish to operation on, then to edit the settings click on the
+select the printer you wish to operate on, then to edit the settings click on the
 <emphasis>Choose Printer</emphasis> button, to delete the share simply press the
 <emphasis>Delete Printer</emphasis> button.
 </para>
@@ -330,7 +330,7 @@ parameters and their settings.
 <title>The Password Change Page</title>
 
 <para>
-The Password Change page is a popular tool. This tool allows to creation, deletion, deactivation
+The Password Change page is a popular tool. This tool allows the creation, deletion, deactivation
 and reactivation of MS Windows networking users on the local machine. Alternatively, you can use
 this tool to change a local password for a user account.
 </para>
