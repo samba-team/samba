@@ -694,11 +694,13 @@ run_err(const char *fmt, ...)
 	vfprintf(fp, fmt, ap);
 	fprintf(fp, "\n");
 	fflush(fp);
-
-	if (!iamremote)
-		vwarnx(fmt, ap);
-
 	va_end(ap);
+
+	if (!iamremote) {
+	    va_start(ap, fmt);
+	    vwarnx(fmt, ap);
+	    va_end(ap);
+	}
 }
 
 /*
