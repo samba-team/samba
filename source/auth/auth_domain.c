@@ -130,7 +130,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	struct in_addr dest_ip;
 	fstring remote_machine;
         NTSTATUS result;
-	uint32 neg_flags = 0x000001ff;
+	uint32_t neg_flags = 0x000001ff;
 
 	*retry = False;
 

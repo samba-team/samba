@@ -104,7 +104,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connections,BOOL Clear, uint32 msg_flags)
+BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connections,BOOL Clear, uint32_t msg_flags)
 {
 	struct connections_key key;
 	struct connections_data crec;
@@ -180,7 +180,7 @@ BOOL claim_connection(struct tcon_context *conn, const char *name,int max_connec
 	return True;
 }
 
-BOOL register_message_flags(BOOL doreg, uint32 msg_flags)
+BOOL register_message_flags(BOOL doreg, uint32_t msg_flags)
 {
 	struct connections_key key;
 	struct connections_data *pcrec;

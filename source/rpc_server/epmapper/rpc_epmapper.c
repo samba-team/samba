@@ -31,7 +31,7 @@ struct dcesrv_ep_iface {
 	const char *name;
 	struct dcesrv_ep_description ep_description;
 	const char *uuid;
-	uint32 if_version;
+	uint32_t if_version;
 };
 
 /*
@@ -112,12 +112,12 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 /*
   build a list of all interfaces handled by all endpoint servers
 */
-static uint32 build_ep_list(TALLOC_CTX *mem_ctx,
+static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			    struct dcesrv_endpoint *endpoint_list,
 			    struct dcesrv_ep_iface **eps)
 {
 	struct dcesrv_endpoint *d;
-	uint32 total = 0;
+	uint32_t total = 0;
 
 	(*eps) = NULL;
 	
@@ -165,10 +165,10 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 {
 	struct dcesrv_handle *h;
 	struct rpc_eps {
-		uint32 count;
+		uint32_t count;
 		struct dcesrv_ep_iface *e;
 	} *eps;
-	uint32 num_ents;
+	uint32_t num_ents;
 	int i;
 
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
@@ -240,7 +240,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			struct epm_Map *r)
 {
-	uint32 count;
+	uint32_t count;
 	int i;
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;

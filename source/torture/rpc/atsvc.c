@@ -21,7 +21,7 @@
 
 #include "includes.h"
 
-static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32 job_id)
+static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t job_id)
 {
 	NTSTATUS status;
 	struct atsvc_JobGetInfo r;
@@ -39,8 +39,8 @@ static BOOL test_JobGetInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32 j
 	return True;
 }
 
-static BOOL test_JobDel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32 min_job_id,
-			uint32 max_job_id)
+static BOOL test_JobDel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint32_t min_job_id,
+			uint32_t max_job_id)
 {
 	NTSTATUS status;
 	struct atsvc_JobDel r;
@@ -64,7 +64,7 @@ static BOOL test_JobEnum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	NTSTATUS status;
 	struct atsvc_JobEnum r;
 	struct atsvc_enum_ctr ctr;
-	uint32 resume_handle = 0, i;
+	uint32_t resume_handle = 0, i;
 	BOOL ret = True;
 
 	printf("\ntesting JobEnum\n");

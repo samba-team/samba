@@ -39,7 +39,7 @@ struct samr_connect_state {
 	int reference_count;
 	void *sam_ctx;
 	TALLOC_CTX *mem_ctx;
-	uint32 access_mask;
+	uint32_t access_mask;
 };
 
 /*
@@ -50,7 +50,7 @@ struct samr_domain_state {
 	int reference_count;
 	void *sam_ctx;
 	TALLOC_CTX *mem_ctx;
-	uint32 access_mask;
+	uint32_t access_mask;
 	const char *domain_sid;
 	const char *domain_name;
 	const char *domain_dn;
@@ -63,7 +63,7 @@ struct samr_account_state {
 	struct samr_domain_state *domain_state;
 	void *sam_ctx;
 	TALLOC_CTX *mem_ctx;
-	uint32 access_mask;
+	uint32_t access_mask;
 	const char *account_sid;
 	const char *account_name;
 	const char *account_dn;

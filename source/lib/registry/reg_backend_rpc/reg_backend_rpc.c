@@ -197,7 +197,7 @@ static WERROR rpc_get_value_by_index(REG_KEY *parent, int n, REG_VAL **value)
 	struct winreg_EnumValueName vn;
 	NTSTATUS status;
 	struct rpc_key_data *mykeydata;
-	uint32 type = 0x0, requested_len = 0, returned_len = 0;
+	uint32_t type = 0x0, requested_len = 0, returned_len = 0;
 	WERROR error;
 
 	error = rpc_key_put_rpc_data(parent, &mykeydata);
@@ -283,7 +283,7 @@ static WERROR rpc_get_subkey_by_index(REG_KEY *parent, int n, REG_KEY **subkey)
 	return r.out.result;
 }
 
-static WERROR rpc_add_key(REG_KEY *parent, const char *name, uint32 access_mask, SEC_DESC *sec, REG_KEY **key)
+static WERROR rpc_add_key(REG_KEY *parent, const char *name, uint32_t access_mask, SEC_DESC *sec, REG_KEY **key)
 {
 	struct rpc_key_data *mykeydata;
 	WERROR error;

@@ -31,7 +31,7 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32 buf_size = 0;
+		uint32_t buf_size = 0;
 		r.in.handle = handle;
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
@@ -92,7 +92,7 @@ static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.formname = formname;
@@ -132,7 +132,7 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumForms r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.level = 1;
@@ -271,11 +271,11 @@ static BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		  struct policy_handle *handle, uint32 job_id)
+		  struct policy_handle *handle, uint32_t job_id)
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.job_id = job_id;
@@ -311,7 +311,7 @@ static BOOL test_GetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_SetJob(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		 struct policy_handle *handle, uint32 job_id, uint32 command)
+		 struct policy_handle *handle, uint32_t job_id, uint32_t command)
 {
 	NTSTATUS status;
 	struct spoolss_SetJob r;
@@ -338,7 +338,7 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumJobs r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.firstjob = 0;
@@ -408,7 +408,7 @@ static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.value_name = value_name;
@@ -444,7 +444,7 @@ static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.key_name = key_name;
@@ -485,7 +485,7 @@ static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.enum_index = 0;
 
 	do {
-		uint32 data_size;
+		uint32_t data_size;
 		
 		r.in.value_offered = 0;
 		data_size = 0;
@@ -756,7 +756,7 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32 buf_size = 0;
+		uint32_t buf_size = 0;
 		union spoolss_PrinterInfo *info;
 		int j;
 
@@ -830,7 +830,7 @@ static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
-	uint32 buf_size;
+	uint32_t buf_size;
 
 	r.in.handle = handle;
 	r.in.architecture = "W32X86";
@@ -872,10 +872,10 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		uint32 buf_size;
+		uint32_t buf_size;
 		char *server;
 		union spoolss_DriverInfo *info;
-		uint32 j;
+		uint32_t j;
 
 		asprintf(&server, "\\\\%s", dcerpc_server_name(p));
 		r.in.server = server;

@@ -42,7 +42,7 @@ uint_t ea_list_size(uint_t num_eas, struct ea_struct *eas)
 void ea_put_list(char *data, uint_t num_eas, struct ea_struct *eas)
 {
 	int i;
-	uint32 ea_size;
+	uint32_t ea_size;
 
 	ea_size = ea_list_size(num_eas, eas);
 
@@ -105,7 +105,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 		      uint_t *num_eas, struct ea_struct **eas)
 {
 	int n;
-	uint32 ea_size, ofs;
+	uint32_t ea_size, ofs;
 
 	if (blob->length < 4) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;

@@ -154,7 +154,7 @@ static BOOL remote_fill_interface(struct dcesrv_interface *iface, const struct d
 	return True;
 }
 
-static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32 if_version)
+static BOOL remote_op_interface_by_uuid(struct dcesrv_interface *iface, const char *uuid, uint32_t if_version)
 {
 	int i;
 

@@ -180,15 +180,15 @@ void tdb_read_unlock_bystring(TDB_CONTEXT *tdb, const char *keyval)
 
 
 /****************************************************************************
- Fetch a int32 value by a arbitrary blob key, return -1 if not found.
- Output is int32 in native byte order.
+ Fetch a int32_t value by a arbitrary blob key, return -1 if not found.
+ Output is int32_t in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
+int32_t tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 {
 	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
-	int32 ret;
+	int32_t ret;
 
 	data = tdb_fetch(tdb, key);
 	if (!data.dptr || data.dsize != sizeof(int32)) {
@@ -202,25 +202,25 @@ int32 tdb_fetch_int32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len)
 }
 
 /****************************************************************************
- Fetch a int32 value by string key, return -1 if not found.
- Output is int32 in native byte order.
+ Fetch a int32_t value by string key, return -1 if not found.
+ Output is int32_t in native byte order.
 ****************************************************************************/
 
-int32 tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
+int32_t tdb_fetch_int32(TDB_CONTEXT *tdb, const char *keystr)
 {
 	return tdb_fetch_int32_byblob(tdb, keystr, strlen(keystr) + 1);
 }
 
 /****************************************************************************
- Store a int32 value by an arbitary blob key, return 0 on success, -1 on failure.
- Input is int32 in native byte order. Output in tdb is in little-endian.
+ Store a int32_t value by an arbitary blob key, return 0 on success, -1 on failure.
+ Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32 v)
+int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int32_t v)
 {
 	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
-	int32 v_store;
+	int32_t v_store;
 
 	SIVAL(&v_store,0,v);
 	data.dptr = (void *)&v_store;
@@ -230,21 +230,21 @@ int tdb_store_int32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, int
 }
 
 /****************************************************************************
- Store a int32 value by string key, return 0 on success, -1 on failure.
- Input is int32 in native byte order. Output in tdb is in little-endian.
+ Store a int32_t value by string key, return 0 on success, -1 on failure.
+ Input is int32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32 v)
+int tdb_store_int32(TDB_CONTEXT *tdb, const char *keystr, int32_t v)
 {
 	return tdb_store_int32_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
 /****************************************************************************
- Fetch a uint32 value by a arbitrary blob key, return -1 if not found.
- Output is uint32 in native byte order.
+ Fetch a uint32_t value by a arbitrary blob key, return -1 if not found.
+ Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32 *value)
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, uint32_t *value)
 {
 	TDB_DATA key = make_tdb_data(keyval, len);
 	TDB_DATA data;
@@ -261,25 +261,25 @@ BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, const char *keyval, size_t len, u
 }
 
 /****************************************************************************
- Fetch a uint32 value by string key, return -1 if not found.
- Output is uint32 in native byte order.
+ Fetch a uint32_t value by string key, return -1 if not found.
+ Output is uint32_t in native byte order.
 ****************************************************************************/
 
-BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 *value)
+BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t *value)
 {
 	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
 
 /****************************************************************************
- Store a uint32 value by an arbitary blob key, return 0 on success, -1 on failure.
- Input is uint32 in native byte order. Output in tdb is in little-endian.
+ Store a uint32_t value by an arbitary blob key, return 0 on success, -1 on failure.
+ Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32 value)
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, uint32_t value)
 {
 	TDB_DATA key = make_tdb_data(keystr, len);
 	TDB_DATA data;
-	uint32 v_store;
+	uint32_t v_store;
 	BOOL ret = True;
 
 	SIVAL(&v_store, 0, value);
@@ -293,11 +293,11 @@ BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, const char *keystr, size_t len, u
 }
 
 /****************************************************************************
- Store a uint32 value by string key, return 0 on success, -1 on failure.
- Input is uint32 in native byte order. Output in tdb is in little-endian.
+ Store a uint32_t value by string key, return 0 on success, -1 on failure.
+ Input is uint32_t in native byte order. Output in tdb is in little-endian.
 ****************************************************************************/
 
-BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32 value)
+BOOL tdb_store_uint32(TDB_CONTEXT *tdb, const char *keystr, uint32_t value)
 {
 	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
 }
@@ -340,10 +340,10 @@ int tdb_delete_bystring(TDB_CONTEXT *tdb, const char *keystr)
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldval, int32 change_val)
+int32_t tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32_t *oldval, int32_t change_val)
 {
-	int32 val;
-	int32 ret = -1;
+	int32_t val;
+	int32_t ret = -1;
 
 	if (tdb_lock_bystring(tdb, keystr,0) == -1)
 		return -1;
@@ -381,9 +381,9 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldva
  Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
-BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldval, uint32 change_val)
+BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32_t *oldval, uint32_t change_val)
 {
-	uint32 val;
+	uint32_t val;
 	BOOL ret = False;
 
 	if (tdb_lock_bystring(tdb, keystr,0) == -1)
@@ -429,7 +429,7 @@ size_t tdb_pack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 	va_list ap;
 	uint8 bt;
 	uint16 w;
-	uint32 d;
+	uint32_t d;
 	int i;
 	void *p;
 	int len;
@@ -523,7 +523,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 	va_list ap;
 	uint8 *bt;
 	uint16 *w;
-	uint32 *d;
+	uint32_t *d;
 	int len;
 	int *i;
 	void **p;
@@ -553,7 +553,7 @@ int tdb_unpack(TDB_CONTEXT *tdb, char *buf, int bufsize, const char *fmt, ...)
 			break;
 		case 'd':
 			len = 4;
-			d = va_arg(ap, uint32 *);
+			d = va_arg(ap, uint32_t *);
 			if (bufsize < len)
 				goto no_space;
 			*d = IVAL(buf, 0);

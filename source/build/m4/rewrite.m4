@@ -364,6 +364,8 @@ AC_CHECK_TYPE(offset_t,loff_t)
 AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(wchar_t, unsigned short)
 AC_CHECK_TYPE(uint_t, unsigned int)
+AC_CHECK_TYPE(int32_t, long)
+AC_CHECK_TYPE(uint32_t, unsigned long)
 AC_CHECK_TYPE(int64_t, long long)
 AC_CHECK_TYPE(uint64_t, unsigned long long)
 

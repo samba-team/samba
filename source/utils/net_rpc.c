@@ -53,7 +53,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	DOM_SID *domain_sid;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
-	uint32 info_class = 5;
+	uint32_t info_class = 5;
 	fstring domain_name;
 	TALLOC_CTX *mem_ctx;
 	
@@ -489,7 +489,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
 	uint16 acb_info;
-	uint32 unknown, user_rid;
+	uint32_t unknown, user_rid;
 
 	if (argc != 1) {
 		d_printf("User must be specified\n");
@@ -603,8 +603,8 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		uint32_t *user_rids, num_rids, *name_types;
+		uint32_t flags = 0x000003e8; /* Unknown */
 
 		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 					       flags, 1, &argv[0],
@@ -677,8 +677,8 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 *rids, num_rids, *name_types, num_names;
-	uint32 flags = 0x000003e8; /* Unknown */
+	uint32_t *rids, num_rids, *name_types, num_names;
+	uint32_t flags = 0x000003e8; /* Unknown */
 	int i;
 	char **names;
 	DOM_GID *user_gids;
@@ -719,7 +719,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 	/* Look up rids */
 
-	rids = (uint32 *)talloc(mem_ctx, sizeof(uint32) * num_rids);
+	rids = (uint32_t *)talloc(mem_ctx, sizeof(uint32_t) * num_rids);
 
 	for (i = 0; i < num_rids; i++)
                 rids[i] = user_gids[i].g_rid;
@@ -779,7 +779,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, num_entries, i, loop_count = 0;
+	uint32_t start_idx=0, num_entries, i, loop_count = 0;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
 
@@ -809,7 +809,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			 "\n-----------------------------\n");
 	do {
 		fstring user, desc;
-		uint32 max_entries, max_size;
+		uint32_t max_entries, max_size;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
@@ -900,7 +900,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, num_entries, i;
+	uint32_t start_idx=0, max_entries=250, num_entries, i;
 	struct acct_info *groups;
 	DOM_SID global_sid_Builtin;
 
@@ -1043,8 +1043,8 @@ rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	WERROR result;
 	char *sharename=talloc_strdup(mem_ctx, argv[0]);
 	char *path;
-	uint32 type=0; /* only allow disk shares to be added */
-	uint32 num_users=0, perms=0;
+	uint32_t type=0; /* only allow disk shares to be added */
+	uint32_t num_users=0, perms=0;
 	char *password=NULL; /* don't allow a share password */
 
 	path = strchr(sharename, '=');
@@ -1160,7 +1160,7 @@ rpc_share_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	SRV_SHARE_INFO_CTR ctr;
 	WERROR result;
 	ENUM_HND hnd;
-	uint32 preferred_len = 0xffffffff, i;
+	uint32_t preferred_len = 0xffffffff, i;
 
 	init_enum_hnd(&hnd, 0);
 
@@ -1300,7 +1300,7 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	SRV_FILE_INFO_CTR ctr;
 	WERROR result;
 	ENUM_HND hnd;
-	uint32 preferred_len = 0xffffffff, i;
+	uint32_t preferred_len = 0xffffffff, i;
 	const char *username=NULL;
 
 	init_enum_hnd(&hnd, 0);
@@ -1450,7 +1450,7 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
         const char *msg = "This machine will be shutdown shortly";
-	uint32 timeout = 20;
+	uint32_t timeout = 20;
 #if 0
 	poptContext pc;
 	int rc;
@@ -1537,7 +1537,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint16 acb_info;
-	uint32 unknown, user_rid;
+	uint32_t unknown, user_rid;
 
 	if (argc != 1) {
 		d_printf("Usage: net rpc trustdom add <domain_name>\n");
@@ -1885,7 +1885,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
 	char **trusting_dom_names;
-	uint32 *trusting_dom_rids;
+	uint32_t *trusting_dom_rids;
 	
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)

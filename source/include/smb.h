@@ -264,7 +264,7 @@ typedef struct nt_user_token {
 /* 32 bit time (sec) since 01jan1970 - cifs6.txt, section 3.5, page 30 */
 typedef struct time_info
 {
-  uint32 time;
+  uint32_t time;
 } UTIME;
 
 /* used to hold an arbitrary blob of data */
@@ -292,7 +292,7 @@ typedef struct userdom_struct {
 struct server_info_struct
 {
   fstring name;
-  uint32 type;
+  uint32_t type;
   fstring comment;
   fstring domain; /* used ONLY in ipc.c NOT namework.c */
   BOOL server_added; /* used ONLY in ipc.c NOT namework.c */
@@ -357,7 +357,7 @@ struct connections_data {
 	char addr[24];
 	char machine[FSTRING_LEN];
 	time_t start;
-	uint32 bcast_msg_flags;
+	uint32_t bcast_msg_flags;
 };
 
 /* the following are used by loadparm for option lists */
@@ -396,7 +396,7 @@ struct parm_struct
 };
 
 struct bitmap {
-	uint32 *b;
+	uint32_t *b;
 	unsigned int n;
 };
 

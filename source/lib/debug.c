@@ -141,7 +141,7 @@ void print_suspicious_usage(const char* from, const char* info)
 	}
 }
 
-uint32 get_task_id(void)
+uint32_t get_task_id(void)
 {
 	if (debug_handlers.ops.get_task_id) {
 		return debug_handlers.ops.get_task_id();

@@ -192,16 +192,16 @@ static int thread_mutex_lock(smb_mutex_t *mutexP, const char *name)
 		if (rc == EBUSY) {
 			mutex_start_timer(&tp1);
 			printf("mutex lock: thread %d, lock %s not available\n", 
-				(uint32)pthread_self(), name);
+				(uint32_t)pthread_self(), name);
 			print_suspicious_usage("mutex_lock", name);
 			pthread_mutex_lock(mutex);
 			t = mutex_end_timer(tp1);
 			printf("mutex lock: thread %d, lock %s now available, waited %g seconds\n", 
-				(uint32)pthread_self(), name, t);
+				(uint32_t)pthread_self(), name, t);
 			return 0;
 		}
 		printf("mutex lock: thread %d, lock %s failed rc=%d\n", 
-				(uint32)pthread_self(), name, rc);
+				(uint32_t)pthread_self(), name, rc);
 		SMB_ASSERT(errno == 0); /* force error */
 	}
 	return 0;
@@ -254,16 +254,16 @@ static int thread_rwlock_lock_read(smb_rwlock_t *rwlockP, const char *name)
 		if (rc == EBUSY) {
 			mutex_start_timer(&tp1);
 			printf("rwlock lock_read: thread %d, lock %s not available\n", 
-				(uint32)pthread_self(), name);
+				(uint32_t)pthread_self(), name);
 			print_suspicious_usage("rwlock_lock_read", name);
 			pthread_rwlock_rdlock(rwlock);
 			t = mutex_end_timer(tp1);
 			printf("rwlock lock_read: thread %d, lock %s now available, waited %g seconds\n", 
-				(uint32)pthread_self(), name, t);
+				(uint32_t)pthread_self(), name, t);
 			return 0;
 		}
 		printf("rwlock lock_read: thread %d, lock %s failed rc=%d\n", 
-				(uint32)pthread_self(), name, rc);
+				(uint32_t)pthread_self(), name, rc);
 		SMB_ASSERT(errno == 0); /* force error */
 	}
 	return 0;
@@ -283,16 +283,16 @@ static int thread_rwlock_lock_write(smb_rwlock_t *rwlockP, const char *name)
 		if (rc == EBUSY) {
 			mutex_start_timer(&tp1);
 			printf("rwlock lock_write: thread %d, lock %s not available\n", 
-				(uint32)pthread_self(), name);
+				(uint32_t)pthread_self(), name);
 			print_suspicious_usage("rwlock_lock_write", name);
 			pthread_rwlock_wrlock(rwlock);
 			t = mutex_end_timer(tp1);
 			printf("rwlock lock_write: thread %d, lock %s now available, waited %g seconds\n", 
-				(uint32)pthread_self(), name, t);
+				(uint32_t)pthread_self(), name, t);
 			return 0;
 		}
 		printf("rwlock lock_write: thread %d, lock %s failed rc=%d\n", 
-				(uint32)pthread_self(), name, rc);
+				(uint32_t)pthread_self(), name, rc);
 		SMB_ASSERT(errno == 0); /* force error */
 	}
 	return 0;
@@ -354,16 +354,16 @@ static void thread_print_suspicious_usage(const char* from, const char* info)
 #endif
 }
 
-static uint32 thread_get_task_id(void)
+static uint32_t thread_get_task_id(void)
 {
-	return (uint32)pthread_self();
+	return (uint32_t)pthread_self();
 }
 
 static void thread_log_task_id(int fd)
 {
 	char *s;
 	
-	asprintf(&s, "thread %u: ", (uint32)pthread_self());
+	asprintf(&s, "thread %u: ", (uint32_t)pthread_self());
 	write(fd, s, strlen(s));
 	free(s);
 }

@@ -35,7 +35,7 @@ NTSTATUS ads_name_to_sid(ADS_STRUCT *ads,
 	ADS_STATUS rc;
 	void *res = NULL;
 	char *ldap_exp;
-	uint32 t;
+	uint32_t t;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *escaped_name = escape_ldap_string_alloc(name);
 	char *escaped_realm = escape_ldap_string_alloc(ads->config.realm);
@@ -70,7 +70,7 @@ NTSTATUS ads_name_to_sid(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	if (!ads_pull_uint32(ads, res, "sAMAccountType", &t)) {
+	if (!ads_pull_uint32_t(ads, res, "sAMAccountType", &t)) {
 		DEBUG(1,("No sAMAccountType for %s !?\n", name));
 		goto done;
 	}
@@ -104,7 +104,7 @@ NTSTATUS ads_sid_to_name(ADS_STRUCT *ads,
 	void *msg = NULL;
 	char *ldap_exp = NULL;
 	char *sidstr = NULL;
-	uint32 atype;
+	uint32_t atype;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	if (!(sidstr = sid_binstring(sid))) {
@@ -126,7 +126,7 @@ NTSTATUS ads_sid_to_name(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype)) {
+	if (!ads_pull_uint32_t(ads, msg, "sAMAccountType", &atype)) {
 		goto done;
 	}
 

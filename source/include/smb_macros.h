@@ -152,7 +152,7 @@ true if two IP addresses are equal
  Used by dptr_zero.
 ****************************************************************************/
 
-#define DPTR_MASK ((uint32)(((uint32)1)<<31))
+#define DPTR_MASK ((uint32_t)(((uint32_t)1)<<31))
 
 /****************************************************************************
  Return True if the offset is at zero.

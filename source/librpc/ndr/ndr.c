@@ -34,7 +34,7 @@
 /*
   work out the number of bytes needed to align on a n byte boundary
 */
-size_t ndr_align_size(uint32 offset, size_t n)
+size_t ndr_align_size(uint32_t offset, size_t n)
 {
 	if ((offset & (n-1)) == 0) return 0;
 	return n - (offset & (n-1));
@@ -63,7 +63,7 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
   create an ndr sub-context based on an existing context. The new context starts
   at the current offset, with the given size limit
 */
-NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32 size)
+NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32_t size)
 {
 	NDR_PULL_NEED_BYTES(ndr, size);
 	*ndr2 = *ndr;
@@ -78,7 +78,7 @@ NTSTATUS ndr_pull_subcontext(struct ndr_pull *ndr, struct ndr_pull *ndr2, uint32
 /*
   advance by 'size' bytes
 */
-NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32 size)
+NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 {
 	ndr->offset += size;
 	if (ndr->offset > ndr->data_size) {
@@ -92,7 +92,7 @@ NTSTATUS ndr_pull_advance(struct ndr_pull *ndr, uint32 size)
 /*
   set the parse offset to 'ofs'
 */
-NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32 ofs)
+NTSTATUS ndr_pull_set_offset(struct ndr_pull *ndr, uint32_t ofs)
 {
 	ndr->offset = ofs;
 	if (ndr->offset > ndr->data_size) {
@@ -177,7 +177,7 @@ DATA_BLOB ndr_push_blob(struct ndr_push *ndr)
 /*
   expand the available space in the buffer to 'size'
 */
-NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
+NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32_t size)
 {
 	if (ndr->alloc_size >= size) {
 		return NT_STATUS_OK;
@@ -199,7 +199,7 @@ NTSTATUS ndr_push_expand(struct ndr_push *ndr, uint32 size)
 /*
   set the push offset to 'ofs'
 */
-NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
+NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32_t ofs)
 {
 	NDR_CHECK(ndr_push_expand(ndr, ofs));
 	ndr->offset = ofs;
@@ -210,7 +210,7 @@ NTSTATUS ndr_push_set_offset(struct ndr_push *ndr, uint32 ofs)
   push a generic array
 */
 NTSTATUS ndr_push_array(struct ndr_push *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32 count, 
+			size_t elsize, uint32_t count, 
 			NTSTATUS (*push_fn)(struct ndr_push *, int, void *))
 {
 	int i;
@@ -235,7 +235,7 @@ done:
   pull a constant sized array
 */
 NTSTATUS ndr_pull_array(struct ndr_pull *ndr, int ndr_flags, void *base, 
-			size_t elsize, uint32 count, 
+			size_t elsize, uint32_t count, 
 			NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
 {
 	int i;
@@ -262,7 +262,7 @@ done:
   print a generic array
 */
 void ndr_print_array(struct ndr_print *ndr, const char *name, void *base, 
-		     size_t elsize, uint32 count, 
+		     size_t elsize, uint32_t count, 
 		     void (*print_fn)(struct ndr_print *, const char *, void *))
 {
 	int i;
@@ -322,9 +322,9 @@ void ndr_print_debug(void (*fn)(struct ndr_print *, const char *, void *),
 /*
   a useful helper function for printing idl unions via DEBUG()
 */
-void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32, void *),
+void ndr_print_union_debug(void (*fn)(struct ndr_print *, const char *, uint32_t, void *),
 			   const char *name,
-			   uint32 level,
+			   uint32_t level,
 			   void *ptr)
 {
 	struct ndr_print ndr;
@@ -419,7 +419,7 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 {
 	switch (sub_size) {
 	case 0: {
-		uint32 size = ndr->data_size - ndr->offset;
+		uint32_t size = ndr->data_size - ndr->offset;
 		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
 		break;
@@ -434,7 +434,7 @@ static NTSTATUS ndr_pull_subcontext_header(struct ndr_pull *ndr,
 	}
 
 	case 4: {
-		uint32 size;
+		uint32_t size;
 		NDR_CHECK(ndr_pull_uint32(ndr, &size));
 		if (size == 0) return NT_STATUS_OK;
 		NDR_CHECK(ndr_pull_subcontext(ndr, ndr2, size));
@@ -488,9 +488,9 @@ NTSTATUS ndr_pull_subcontext_flags_fn(struct ndr_pull *ndr,
 
 NTSTATUS ndr_pull_subcontext_union_fn(struct ndr_pull *ndr, 
 				      size_t sub_size,
-				      uint32 level,
+				      uint32_t level,
 				      void *base,
-				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32 , void *))
+				      NTSTATUS (*fn)(struct ndr_pull *, int , uint32_t , void *))
 {
 	struct ndr_pull ndr2;
 
@@ -577,9 +577,9 @@ NTSTATUS ndr_push_subcontext_flags_fn(struct ndr_push *ndr,
 */
 NTSTATUS ndr_push_subcontext_union_fn(struct ndr_push *ndr, 
 				      size_t sub_size,
-				      uint32 level,
+				      uint32_t level,
 				      void *base,
-				      NTSTATUS (*fn)(struct ndr_push *, int, uint32, void *))
+				      NTSTATUS (*fn)(struct ndr_push *, int, uint32_t, void *))
 {
 	struct ndr_push *ndr2;
 
@@ -644,7 +644,7 @@ NTSTATUS ndr_pull_relative(struct ndr_pull *ndr, const void **buf, size_t size,
 			   NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, void *))
 {
 	struct ndr_pull ndr2;
-	uint32 ofs;
+	uint32_t ofs;
 	struct ndr_pull_save save;
 	void *p;
 
@@ -719,8 +719,8 @@ NTSTATUS ndr_push_relative(struct ndr_push *ndr, int ndr_flags, const void *p,
 /*
   pull a union from a blob using NDR
 */
-NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32 level, void *p,
-			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint32, void *))
+NTSTATUS ndr_pull_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t level, void *p,
+			     NTSTATUS (*fn)(struct ndr_pull *, int ndr_flags, uint32_t, void *))
 {
 	struct ndr_pull *ndr;
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
