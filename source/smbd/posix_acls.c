@@ -130,7 +130,8 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 			nt_mask = UNIX_ACCESS_NONE;
 		} else {
 			/* Not owner, no access. */
-			nt_mask = 0;
+			*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
+			nt_mask = GENERIC_ALL_ACCESS;
 		}
 	} else {
 		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
@@ -948,13 +949,13 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 
 	group_ace->type = SMB_ACL_GROUP_OBJ;
 	group_ace->sid = *pgroup;
-	owner_ace->unix_ug.gid = psbuf->st_gid;
-	owner_ace->owner_type = GID_ACE;
+	group_ace->unix_ug.gid = psbuf->st_gid;
+	group_ace->owner_type = GID_ACE;
 
 	other_ace->type = SMB_ACL_OTHER;
 	other_ace->sid = global_sid_World;
-	owner_ace->unix_ug.world = -1;
-	owner_ace->owner_type = WORLD_ACE;
+	other_ace->unix_ug.world = -1;
+	other_ace->owner_type = WORLD_ACE;
 
 	if (is_directory)
 		mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
@@ -977,6 +978,23 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 		DLIST_ADD(list_head, owner_ace);
 	} else
 		safe_free(owner_ace);
+
+	if (list_head == NULL) {
+		/*
+		 * Return an "Everyone" NO ACCESS ace.
+		 */
+
+		if ((other_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
+			goto fail;
+
+		other_ace->type = SMB_ACL_OTHER;
+		other_ace->sid = global_sid_World;
+		other_ace->unix_ug.world = -1;
+		other_ace->owner_type = WORLD_ACE;
+		other_ace->perms = (mode_t)0;
+		
+		DLIST_ADD(list_head, other_ace);
+	}
 
 	return list_head;
 
@@ -1308,7 +1326,7 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 {
 	SMB_STRUCT_STAT sbuf;
-	SEC_ACE *nt_ace_list;
+	SEC_ACE *nt_ace_list = NULL;
 	DOM_SID owner_sid;
 	DOM_SID group_sid;
 	size_t sd_size = 0;
@@ -1383,13 +1401,15 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 		num_dir_acls = count_canon_ace_list(dir_ace);
 	}
 
-	/* Allocate the ace list. */
-	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
-		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
-		goto done;
-	}
+	if ((num_acls + num_dir_acls) != 0) {
+		/* Allocate the ace list. */
+		if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+			DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
+			goto done;
+		}
 
-	memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+		memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+	}
 
 	/*
 	 * Create the NT ACE list from the canonical ace lists.
