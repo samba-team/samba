@@ -21,6 +21,8 @@
 #ifndef _POPT_COMMON_H
 #define _POPT_COMMON_H
 
+#include <popt.h>
+
 /* Common popt structures */
 extern struct poptOption popt_common_samba[];
 extern struct poptOption popt_common_connection[];
