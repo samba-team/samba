@@ -123,6 +123,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
 				namelen = IVAL(p,0); p += 4;
 				p += 4; /* EA size */
 				p += 2; /* short name len? */
+				unistr_to_ascii(finfo->short_name, p, 12);
 				p += 24; /* short name? */	  
 				StrnCpy(finfo->name,p,MIN(sizeof(finfo->name)-1,namelen));
 				dos_to_unix(finfo->name,True);
