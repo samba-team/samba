@@ -534,6 +534,8 @@ static void usage(char *pname)
   printf( "\t-n netbiosname.       " );
   printf( "the netbios name to advertise for this host\n");
   printf( "\t-H hosts file         load a netbios hosts file\n" );
+  printf( "\t-a                    append to log file (default)\n" );
+  printf( "\t-o                    overwrite log file, don't append\n" );
   printf( "\n");
 } /* usage */
 
@@ -546,6 +548,9 @@ int main(int argc,char *argv[])
   int opt;
   extern FILE *dbf;
   extern char *optarg;
+  extern BOOL  append_log;
+
+  append_log = True;  /* Default, override with '-o' option. */
 
   global_nmb_port = NMB_PORT;
   *host_file = 0;
@@ -595,7 +600,8 @@ int main(int argc,char *argv[])
 #endif /* SIGUSR2 */
 #endif /* MEM_MAN */
 
-  while((opt = getopt(argc, argv, "as:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:")) != EOF)
+  while( EOF != 
+         (opt = getopt( argc, argv, "aos:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:f:" )) )
     {
       switch (opt)
         {
@@ -624,10 +630,10 @@ int main(int argc,char *argv[])
           strupper(scope);
           break;
         case 'a':
-          {
-          extern BOOL append_log;
-          append_log = !append_log;
-          }
+          append_log = True;
+          break;
+        case 'o':
+          append_log = False;
           break;
         case 'D':
           is_daemon = True;

@@ -490,7 +490,8 @@ static void usage(char *pname)
 {
 	DEBUG(0,("Incorrect program usage - are you sure the command line is correct?\n"));
 
-	printf("Usage: %s [-D] [-p port] [-d debuglevel] [-l log basename] [-s services file]\n",pname);
+	printf("Usage: %s [-D] [-p port] [-d debuglevel] ", pname);
+        printf("[-l log basename] [-s services file]\n" );
 	printf("Version %s\n",VERSION);
 	printf("\t-D                    become a daemon\n");
 	printf("\t-p port               listen on the specified port\n");
@@ -498,7 +499,8 @@ static void usage(char *pname)
 	printf("\t-l log basename.      Basename for log/debug files\n");
 	printf("\t-s services file.     Filename of services file\n");
 	printf("\t-P                    passive only\n");
-	printf("\t-a                    overwrite log file, don't append\n");
+	printf("\t-a                    append to log file (default)\n");
+	printf("\t-o                    overwrite log file, don't append\n");
 	printf("\n");
 }
 
@@ -564,7 +566,7 @@ static void usage(char *pname)
 		argc--;
 	}
 
-	while ((opt = getopt(argc, argv, "O:i:l:s:d:Dp:hPaf:")) != EOF)
+	while ( EOF != (opt = getopt(argc, argv, "O:i:l:s:d:Dp:h?Paof:")) )
 		switch (opt)  {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -590,10 +592,11 @@ static void usage(char *pname)
 			break;
 
 		case 'a':
-			{
-				extern BOOL append_log;
-				append_log = !append_log;
-			}
+			append_log = True;
+			break;
+
+		case 'o':
+			append_log = False;
 			break;
 
 		case 'D':
@@ -612,6 +615,7 @@ static void usage(char *pname)
 			break;
 
 		case 'h':
+		case '?':
 			usage(argv[0]);
 			exit(0);
 			break;
