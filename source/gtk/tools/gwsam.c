@@ -26,6 +26,7 @@ struct policy_handle sam_handle;
 struct dcerpc_pipe *sam_pipe = NULL;
 struct policy_handle domain_handle;
 GtkWidget *mainwin;
+GtkWidget *seldomain;
 
 void update_grouplist(void)
 {
@@ -96,6 +97,10 @@ on_select_domain_activate                       (GtkMenuItem     *menuitem,
 		return;
 	}
 	domain_handle = gtk_select_domain_dialog_get_handle(d);
+
+	update_userlist();
+	update_grouplist();
+
 	gtk_widget_destroy(GTK_WIDGET(d));
 }
 
@@ -140,10 +145,8 @@ void on_connect_activate (GtkMenuItem *menuitem, gpointer user_data)
 		return;
 	}
 
+	gtk_widget_set_sensitive (seldomain, TRUE);
 	gtk_widget_destroy(GTK_WIDGET(d));
-
-	update_userlist();
-	update_grouplist();
 }
 
 void
@@ -216,7 +219,6 @@ create_mainwindow (void)
 	GtkWidget *new1;
 	GtkWidget *separatormenuitem1;
 	GtkWidget *quit;
-	GtkWidget *seldomain;
 	GtkWidget *policies;
 	GtkWidget *policies_menu;
 	GtkWidget *account;
