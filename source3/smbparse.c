@@ -597,7 +597,14 @@ void make_arc4_owf(ARC4_OWF *hash, char data[16])
 
 	DEBUG(5,("make_arc4_owf: %d\n", __LINE__));
 	
-	memcpy(hash->data, data, sizeof(hash->data));
+	if (data != NULL)
+	{
+		memcpy(hash->data, data, sizeof(hash->data));
+	}
+	else
+	{
+		bzero(hash->data, sizeof(hash->data));
+	}
 }
 
 /*******************************************************************
@@ -622,12 +629,12 @@ makes a DOM_ID_INFO_1 structure.
 ********************************************************************/
 void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
-				char *user_name, char *workgroup_name,
+				char *user_name, char *wksta_name,
 				char arc4_lm_owf[16], char arc4_nt_owf[16])
 {
-	int len_domain_name    = strlen(domain_name   );
-	int len_user_name      = strlen(user_name     );
-	int len_workgroup_name = strlen(workgroup_name);
+	int len_domain_name = strlen(domain_name);
+	int len_user_name   = strlen(user_name  );
+	int len_wksta_name  = strlen(wksta_name );
 
 	if (id == NULL) return;
 
@@ -635,20 +642,20 @@ void make_id_info1(DOM_ID_INFO_1 *id, char *domain_name,
 
 	id->ptr_id_info1 = 1;
 
-	make_uni_hdr(&(id->hdr_domain_name   ), len_domain_name   , len_domain_name   , 4);
+	make_uni_hdr(&(id->hdr_domain_name), len_domain_name, len_domain_name, 4);
 
 	id->param_ctrl = param_ctrl;
 	make_logon_id(&(id->logon_id), log_id_low, log_id_high);
 
-	make_uni_hdr(&(id->hdr_user_name     ), len_user_name     , len_user_name     , 4);
-	make_uni_hdr(&(id->hdr_workgroup_name), len_workgroup_name, len_workgroup_name, 4);
+	make_uni_hdr(&(id->hdr_user_name  ), len_user_name  , len_user_name  , 4);
+	make_uni_hdr(&(id->hdr_wksta_name ), len_wksta_name , len_wksta_name , 4);
 
 	make_arc4_owf(&(id->arc4_lm_owf), arc4_lm_owf);
 	make_arc4_owf(&(id->arc4_nt_owf), arc4_nt_owf);
 
-	make_unistr2(&(id->uni_domain_name   ), domain_name   , len_domain_name   );
-	make_unistr2(&(id->uni_user_name     ), user_name     , len_user_name     );
-	make_unistr2(&(id->uni_workgroup_name), workgroup_name, len_workgroup_name);
+	make_unistr2(&(id->uni_domain_name), domain_name, len_domain_name);
+	make_unistr2(&(id->uni_user_name  ), user_name  , len_user_name  );
+	make_unistr2(&(id->uni_wksta_name ), wksta_name , len_wksta_name );
 }
 
 /*******************************************************************
@@ -667,20 +674,20 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 
 	if (id->ptr_id_info1 != 0)
 	{
-		q = smb_io_unihdr(io, &(id->hdr_domain_name   ), q, base, align, depth);
+		q = smb_io_unihdr(io, &(id->hdr_domain_name), q, base, align, depth);
 
 		DBG_RW_IVAL("param_ctrl", depth, base, io, q, id->param_ctrl); q += 4;
 		q = smb_io_logon_id(io, &(id->logon_id), q, base, align, depth);
 
-		q = smb_io_unihdr(io, &(id->hdr_user_name     ), q, base, align, depth);
-		q = smb_io_unihdr(io, &(id->hdr_workgroup_name), q, base, align, depth);
+		q = smb_io_unihdr(io, &(id->hdr_user_name  ), q, base, align, depth);
+		q = smb_io_unihdr(io, &(id->hdr_wksta_name ), q, base, align, depth);
 
 		q = smb_io_arc4_owf(io, &(id->arc4_lm_owf), q, base, align, depth);
 		q = smb_io_arc4_owf(io, &(id->arc4_nt_owf), q, base, align, depth);
 
-		q = smb_io_unistr2(io, &(id->uni_domain_name   ), q, base, align, depth);
-		q = smb_io_unistr2(io, &(id->uni_user_name     ), q, base, align, depth);
-		q = smb_io_unistr2(io, &(id->uni_workgroup_name), q, base, align, depth);
+		q = smb_io_unistr2(io, &(id->uni_domain_name), q, base, align, depth);
+		q = smb_io_unistr2(io, &(id->uni_user_name  ), q, base, align, depth);
+		q = smb_io_unistr2(io, &(id->uni_wksta_name ), q, base, align, depth);
 	}
 
 	return q;
@@ -691,7 +698,7 @@ makes a DOM_SAM_INFO structure.
 ********************************************************************/
 void make_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
-				DOM_CRED *rtn_cred, uint16 switch_value, uint16 logon_level,
+				DOM_CRED *rtn_cred, uint16 logon_level, uint16 switch_value,
 				DOM_ID_INFO_1 *id1)
 {
 	if (sam == NULL) return;

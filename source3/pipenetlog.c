@@ -436,9 +436,15 @@ static void api_lsa_sam_logon( user_struct *vuser,
                                char **rdata, int *rdata_len )
 {
 	LSA_Q_SAM_LOGON q_l;
+	DOM_ID_INFO_1 id1;	
+
 	LSA_USER_INFO usr_info;
 
 	DOM_CRED srv_creds;
+
+	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
+	   dynamically allocate it inside lsa_io_q_sam_logon, at some point */
+	q_l.sam_id.auth.id1 = &id1;
 
 	lsa_io_q_sam_logon(True, &q_l, data + 0x18, data, 4, 0);
 
@@ -465,7 +471,7 @@ static void api_lsa_sam_logon( user_struct *vuser,
 		extern pstring myname;
 		uint32 r_uid;
 		uint32 r_gid;
-		UNISTR2 *uni_samlogon_user = &(q_l.sam_id.auth.id1.uni_user_name);
+		UNISTR2 *uni_samlogon_user = &(q_l.sam_id.auth.id1->uni_user_name);
 
 		dummy_time.low  = 0xffffffff;
 		dummy_time.high = 0x7fffffff;
