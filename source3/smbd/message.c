@@ -42,8 +42,8 @@ static void msg_deliver(void)
 {
   pstring s;
   fstring name;
-  FILE *f;
   int i;
+  int fd;
 
   if (! (*lp_msg_command()))
     {
@@ -56,21 +56,19 @@ static void msg_deliver(void)
   sprintf(s,"/tmp/msg.XXXXXX");
   strcpy(name,(char *)mktemp(s));
 
-  f = fopen(name,"w");
-  if (!f)
-    {
-      DEBUG(1,("can't open message file %s\n",name));
-      return;
-    }
+  fd = open(name,O_WRONLY|O_CREAT|O_TRUNC|O_EXCL,0600);
+  if (fd == -1) {
+    DEBUG(1,("can't open message file %s\n",name));
+    return;
+  }
 
-  for (i=0;i<msgpos;)
-    {
-      if (msgbuf[i]=='\r' && i<(msgpos-1) && msgbuf[i+1]=='\n')
-	i++;
-      fputc(msgbuf[i++],f);
+  for (i=0;i<msgpos;) {
+    if (msgbuf[i]=='\r' && i<(msgpos-1) && msgbuf[i+1]=='\n') {
+      i++; continue;      
     }
-
-  fclose(f);
+    write(fd,&msgbuf[i++],1);
+  }
+  close(fd);
 
 
   /* run the command */
@@ -81,7 +79,7 @@ static void msg_deliver(void)
       string_sub(s,"%f",msgfrom);
       string_sub(s,"%t",msgto);
       standard_sub(-1,s);
-      smbrun(s,NULL);
+      smbrun(s,NULL,False);
     }
 
   msgpos = 0;

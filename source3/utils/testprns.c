@@ -53,10 +53,9 @@ int main(int argc, char *argv[])
    else
    {
       dbf = fopen("test.log", "w");
-      if (dbf == NULL)
+      if (dbf == NULL) {
          printf("Unable to open logfile.\n");
-      else
-      {
+      } else {
          DEBUGLEVEL = 3;
          pszTemp = (argc < 3) ? PRINTCAP_NAME : argv[2];
          printf("Looking for printer %s in printcap file %s\n", 

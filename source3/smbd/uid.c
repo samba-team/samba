@@ -27,9 +27,6 @@ extern connection_struct Connections[];
 
 static int initial_uid;
 static int initial_gid;
-static int old_umask = 022;
-
-static pstring OriginalDir;
 
 /* what user is current? */
 struct current_user current_user;
@@ -57,7 +54,7 @@ void init_uid(void)
 
   current_user.cnum = -1;
 
-  GetWd(OriginalDir);
+  ChDir(IDLE_DIR);
 }
 
 
@@ -68,6 +65,10 @@ static BOOL become_uid(int uid)
 {
   if (initial_uid != 0)
     return(True);
+
+  if (uid == -1 || uid == 65535) {
+    DEBUG(1,("WARNING: using uid %d is a security risk\n",uid));    
+  }
 
 #ifdef AIX
   {
@@ -118,6 +119,10 @@ static BOOL become_gid(int gid)
 {
   if (initial_uid != 0)
     return(True);
+
+  if (gid == -1 || gid == 65535) {
+    DEBUG(1,("WARNING: using gid %d is a security risk\n",gid));    
+  }
   
 #ifdef USE_SETRES 
   if (setresgid(-1,gid,-1) != 0)
@@ -199,7 +204,6 @@ static BOOL check_user_ok(int cnum,user_struct *vuser,int snum)
 ****************************************************************************/
 BOOL become_user(int cnum, int uid)
 {
-  int new_umask;
   user_struct *vuser;
   int snum,gid;
   int id = uid;
@@ -259,14 +263,11 @@ BOOL become_user(int cnum, int uid)
 	return(False);
     }
 
-  new_umask = 0777 & ~CREATE_MODE(cnum);
-  old_umask = umask(new_umask);
-
   current_user.cnum = cnum;
   current_user.id = id;
   
-  DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d) new_umask=0%o\n",
-	   getuid(),geteuid(),getgid(),getegid(),new_umask));
+  DEBUG(5,("become_user uid=(%d,%d) gid=(%d,%d)\n",
+	   getuid(),geteuid(),getgid(),getegid()));
   
   return(True);
 }
@@ -279,9 +280,7 @@ BOOL unbecome_user(void )
   if (current_user.cnum == -1)
     return(False);
 
-  ChDir(OriginalDir);
-
-  umask(old_umask);
+  ChDir(IDLE_DIR);
 
   if (initial_uid == 0)
     {
@@ -318,9 +317,9 @@ BOOL unbecome_user(void )
   current_user.uid = initial_uid;
   current_user.gid = initial_gid;
   
-  if (ChDir(OriginalDir) != 0)
+  if (ChDir(IDLE_DIR) != 0)
     DEBUG(0,("%s chdir(%s) failed in unbecome_user\n",
-	     timestring(),OriginalDir));  
+	     timestring(),IDLE_DIR));
 
   DEBUG(5,("unbecome_user now uid=(%d,%d) gid=(%d,%d)\n",
 	getuid(),geteuid(),getgid(),getegid()));
@@ -332,14 +331,69 @@ BOOL unbecome_user(void )
 
 
 /****************************************************************************
-run a command via system() using smbrun, being careful about uid/gid handling
+This is a utility function of smbrun(). It must be called only from
+the child as it may leave the caller in a privilaged state.
 ****************************************************************************/
-int smbrun(char *cmd,char *outfile)
+static BOOL setup_stdout_file(char *outfile,BOOL shared)
+{  
+  int fd;
+  mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
+
+  close(1);
+
+  if (shared) {
+    /* become root - unprivilaged users can't delete these files */
+#ifdef USE_SETRES
+    setresgid(0,0,0);
+    setresuid(0,0,0);
+#else      
+    setuid(0);
+    seteuid(0);
+#endif
+  }
+
+  /* now create the file with O_EXCL set */
+  unlink(outfile);
+  fd = open(outfile,O_RDWR|O_CREAT|O_TRUNC|O_EXCL,mode);
+
+  if (fd == -1) return False;
+
+  if (fd != 1) {
+    if (dup2(fd,1) != 0) {
+      DEBUG(2,("Failed to create stdout file descriptor\n"));
+      close(fd);
+      return False;
+    }
+    close(fd);
+  }
+  return True;
+}
+
+
+/****************************************************************************
+run a command being careful about uid/gid handling and putting the output in
+outfile (or discard it if outfile is NULL).
+
+if shared is True then ensure the file will be writeable by all users
+but created such that its owned by root. This overcomes a security hole.
+
+if shared is not set then open the file with O_EXCL set
+****************************************************************************/
+int smbrun(char *cmd,char *outfile,BOOL shared)
 {
+  int fd,pid;
+  int uid = current_user.uid;
+  int gid = current_user.gid;
+
+#if USE_SYSTEM
   int ret;
   pstring syscmd;  
   char *path = lp_smbrun();
 
+  /* in the old method we use system() to execute smbrun which then
+     executes the command (using system() again!). This involves lots
+     of shell launches and is very slow. It also suffers from a
+     potential security hole */
   if (!file_exist(path,NULL))
     {
       DEBUG(0,("SMBRUN ERROR: Can't find %s. Installation problem?\n",path));
@@ -347,13 +401,69 @@ int smbrun(char *cmd,char *outfile)
     }
 
   sprintf(syscmd,"%s %d %d \"(%s 2>&1) > %s\"",
-	  path,current_user.uid,current_user.gid,cmd,
+	  path,uid,gid,cmd,
 	  outfile?outfile:"/dev/null");
 
   DEBUG(5,("smbrun - running %s ",syscmd));
   ret = system(syscmd);
   DEBUG(5,("gave %d\n",ret));
   return(ret);
+#else
+  /* in this newer method we will exec /bin/sh with the correct
+     arguments, after first setting stdout to point at the file */
+
+  if ((pid=fork())) {
+    int status=0;
+    /* the parent just waits for the child to exit */
+    if (waitpid(pid,&status,0) != pid) {
+      DEBUG(2,("waitpid(%d) : %s\n",pid,strerror(errno)));
+      return -1;
+    }
+    return status;
+  }
+
+
+  /* we are in the child. we exec /bin/sh to do the work for us. we
+     don't directly exec the command we want because it may be a
+     pipeline or anything else the config file specifies */
+
+  /* point our stdout at the file we want output to go into */
+  if (outfile && !setup_stdout_file(outfile,shared)) {
+    exit(80);
+  }
+
+  /* now completely lose our privilages. This is a fairly paranoid
+     way of doing it, but it does work on all systems that I know of */
+#ifdef USE_SETRES
+  setresgid(0,0,0);
+  setresuid(0,0,0);
+  setresgid(gid,gid,gid);
+  setresuid(uid,uid,uid);      
+#else      
+  setuid(0);
+  seteuid(0);
+  setgid(gid);
+  setegid(gid);
+  setuid(uid);
+  seteuid(uid);
+#endif
+
+  if (getuid() != uid || geteuid() != uid ||
+      getgid() != gid || getegid() != gid) {
+    /* we failed to lose our privilages - do not execute the command */
+    exit(81); /* we can't print stuff at this stage, instead use exit codes
+		 for debugging */
+  }
+
+  /* close all other file descriptors, leaving only 0, 1 and 2. 0 and
+     2 point to /dev/null from the startup code */
+  for (fd=3;fd<256;fd++) close(fd);
+
+  execl("/bin/sh","sh","-c",cmd,NULL);  
+
+  /* not reached */
+  exit(82);
+#endif
 }
 
 

@@ -567,7 +567,7 @@ int disk_free(char *path,int *bsize,int *dfree,int *dsize)
       sprintf(syscmd,"%s %s",df_command,path);
       standard_sub_basic(syscmd);
 
-      ret = smbrun(syscmd,outfile);
+      ret = smbrun(syscmd,outfile,False);
       DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
 	  
       {
@@ -923,7 +923,7 @@ static void check_magic(int fnum,int cnum)
       sprintf(magic_output,"%s.out",fname);
 
     chmod(fname,0755);
-    ret = smbrun(fname,magic_output);
+    ret = smbrun(fname,magic_output,False);
     DEBUG(3,("Invoking magic command %s gave %d\n",fname,ret));
     unlink(fname);
   }
@@ -2096,7 +2096,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       strcpy(cmd,lp_rootpreexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
       DEBUG(5,("cmd=%s\n",cmd));
-      smbrun(cmd,NULL);
+      smbrun(cmd,NULL,False);
     }
 
   if (!become_user(cnum,pcon->uid))
@@ -2149,7 +2149,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       pstring cmd;
       strcpy(cmd,lp_preexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
-      smbrun(cmd,NULL);
+      smbrun(cmd,NULL,False);
     }
   
   /* we've finished with the sensitive stuff */
@@ -2629,7 +2629,7 @@ void close_cnum(int cnum, int uid)
       pstring cmd;
       strcpy(cmd,lp_postexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
-      smbrun(cmd,NULL);
+      smbrun(cmd,NULL,False);
       unbecome_user();
     }
 
@@ -2640,7 +2640,7 @@ void close_cnum(int cnum, int uid)
       pstring cmd;
       strcpy(cmd,lp_rootpostexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
-      smbrun(cmd,NULL);
+      smbrun(cmd,NULL,False);
     }
 
   Connections[cnum].open = False;
@@ -2764,8 +2764,10 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 
   if (!file_exist(fname,NULL))
     {
+      int oldmask = umask(022);
       f = fopen(fname,"w");
       if (f) fclose(f);
+      umask(oldmask);
     }
 
   total_recs = file_size(fname) / sizeof(crec);
@@ -3617,7 +3619,9 @@ static void usage(char *pname)
 
   fault_setup(exit_server);
 
-  umask(0777 & ~DEF_CREATE_MASK);
+  /* we want total control over the permissions on created files,
+     so set our umask to 0 */
+  umask(0);
 
   init_uid();
 

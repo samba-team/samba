@@ -805,7 +805,7 @@ void init_uid(void);
 BOOL become_guest(void);
 BOOL become_user(int cnum, int uid);
 BOOL unbecome_user(void );
-int smbrun(char *cmd,char *outfile);
+int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  username.c  */
 
