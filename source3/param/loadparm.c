@@ -216,6 +216,7 @@ typedef struct
 	char *szLdapSuffix;
 	char *szLdapFilter;
 	char *szLdapAdminDn;
+	char *szAclCompat;
 	int ldap_passwd_sync; 
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
@@ -536,6 +537,8 @@ static BOOL handle_ldap_machine_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_user_suffix ( char *pszParmValue, char **ptr );
 static BOOL handle_ldap_suffix ( char *pszParmValue, char **ptr );
 
+static BOOL handle_acl_compatibility(char *pszParmValue, char **ptr);
+
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
 
@@ -820,8 +823,9 @@ static struct parm_struct parm_table[] = {
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_DEVELOPER},
 	{"disable netbios", P_BOOL, P_GLOBAL, &Globals.bDisableNetbios, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	
+	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_ADVANCED},
+	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE | FLAG_ADVANCED | FLAG_WIZARD},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE  | FLAG_ADVANCED | FLAG_WIZARD},
 	{"nt status support", P_BOOL, P_GLOBAL, &Globals.bNTStatusSupport, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"profile acls", P_BOOL,  P_LOCAL, &sDefault.bProfileAcls, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE  | FLAG_ADVANCED | FLAG_WIZARD},
 	
@@ -1407,6 +1411,7 @@ static void init_globals(void)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
+	string_set(&Globals.szAclCompat, "");
 
 	Globals.winbind_cache_time = 15;
 	Globals.bWinbindEnumUsers = True;
@@ -1579,6 +1584,7 @@ FN_GLOBAL_STRING(lp_wins_partners, &Globals.szWINSPartners)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -2771,6 +2777,19 @@ static BOOL handle_ldap_suffix( char *pszParmValue, char **ptr)
        return True;
 }
 
+static BOOL handle_acl_compatibility(char *pszParmValue, char **ptr)
+{
+	if (strequal(pszParmValue, "auto"))
+		string_set(ptr, "");
+	else if (strequal(pszParmValue, "winnt"))
+		string_set(ptr, "winnt");
+	else if (strequal(pszParmValue, "win2k"))
+		string_set(ptr, "win2k");
+	else
+		return False;
+
+	return True;
+}
 /***************************************************************************
 initialise a copymap
 ***************************************************************************/

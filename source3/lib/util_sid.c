@@ -40,9 +40,9 @@ DOM_SID global_sid_NULL;            		/* NULL sid */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
 DOM_SID global_sid_Network;			/* Network rids */
 
-static DOM_SID global_sid_Creator_Owner;	/* Creator Owner */
-static DOM_SID global_sid_Creator_Group;	/* Creator Group */
-static DOM_SID global_sid_Anonymous;		/* Anonymous login */
+DOM_SID global_sid_Creator_Owner;	/* Creator Owner */
+DOM_SID global_sid_Creator_Group;	/* Creator Group */
+DOM_SID global_sid_Anonymous;		/* Anonymous login */
 
 DOM_SID global_sid_Builtin; 			/* Local well-known domain */
 DOM_SID global_sid_Builtin_Administrators;	/* Builtin administrators */
@@ -166,6 +166,10 @@ void generate_wellknown_sids(void)
 	initialised = True;
 }
 
+/**************************************************************************
+ Create the SYSTEM token.
+***************************************************************************/
+
 NT_USER_TOKEN *get_system_token(void) 
 {
 	generate_wellknown_sids(); /* The token is initialised here */
@@ -239,7 +243,10 @@ char *sid_to_string(fstring sidstr_out, const DOM_SID *sid)
 		return sidstr_out;
 	}
 
-	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	/*
+	 * BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 
+	 * in a range of 2^48.
+	 */
 	ia = (sid->id_auth[5]) +
 		(sid->id_auth[4] << 8 ) +
 		(sid->id_auth[3] << 16) +
@@ -272,63 +279,63 @@ const char *sid_string_static(const DOM_SID *sid)
    
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
-  pstring tok;
-  char *p, *q;
-  /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-  uint32 ia;
+	pstring tok;
+	char *p, *q;
+	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
+	uint32 ia;
   
-  if (StrnCaseCmp( sidstr, "S-", 2)) {
-    DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
-    return False;
-  }
+	if (StrnCaseCmp( sidstr, "S-", 2)) {
+		DEBUG(0,("string_to_sid: Sid %s does not start with 'S-'.\n", sidstr));
+		return False;
+	}
 
-  memset((char *)sidout, '\0', sizeof(DOM_SID));
+	memset((char *)sidout, '\0', sizeof(DOM_SID));
 
-  q = p = strdup(sidstr + 2);
-  if (p == NULL) {
-    DEBUG(0, ("string_to_sid: out of memory!\n"));
-    return False;
-  }
+	q = p = strdup(sidstr + 2);
+	if (p == NULL) {
+		DEBUG(0, ("string_to_sid: out of memory!\n"));
+		return False;
+	}
 
-  if (!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    SAFE_FREE(q);
-    return False;
-  }
+	if (!next_token(&p, tok, "-", sizeof(tok))) {
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		SAFE_FREE(q);
+		return False;
+	}
 
-  /* Get the revision number. */
-  sidout->sid_rev_num = (uint8)strtoul(tok, NULL, 10);
+	/* Get the revision number. */
+	sidout->sid_rev_num = (uint8)strtoul(tok, NULL, 10);
 
-  if (!next_token(&p, tok, "-", sizeof(tok))) {
-    DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
-    SAFE_FREE(q);
-    return False;
-  }
+	if (!next_token(&p, tok, "-", sizeof(tok))) {
+		DEBUG(0,("string_to_sid: Sid %s is not in a valid format.\n", sidstr));
+		SAFE_FREE(q);
+		return False;
+	}
 
-  /* identauth in decimal should be <  2^32 */
-  ia = (uint32)strtoul(tok, NULL, 10);
+	/* identauth in decimal should be <  2^32 */
+	ia = (uint32)strtoul(tok, NULL, 10);
 
-  /* NOTE - the ia value is in big-endian format. */
-  sidout->id_auth[0] = 0;
-  sidout->id_auth[1] = 0;
-  sidout->id_auth[2] = (ia & 0xff000000) >> 24;
-  sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
-  sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
-  sidout->id_auth[5] = (ia & 0x000000ff);
+	/* NOTE - the ia value is in big-endian format. */
+	sidout->id_auth[0] = 0;
+	sidout->id_auth[1] = 0;
+	sidout->id_auth[2] = (ia & 0xff000000) >> 24;
+	sidout->id_auth[3] = (ia & 0x00ff0000) >> 16;
+	sidout->id_auth[4] = (ia & 0x0000ff00) >> 8;
+	sidout->id_auth[5] = (ia & 0x000000ff);
 
-  sidout->num_auths = 0;
+	sidout->num_auths = 0;
 
-  while(next_token(&p, tok, "-", sizeof(tok)) && 
-	sidout->num_auths < MAXSUBAUTHS) {
-    /* 
-     * NOTE - the subauths are in native machine-endian format. They
-     * are converted to little-endian when linearized onto the wire.
-     */
-	sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
-  }
+	while(next_token(&p, tok, "-", sizeof(tok)) && 
+		sidout->num_auths < MAXSUBAUTHS) {
+		/* 
+		 * NOTE - the subauths are in native machine-endian format. They
+		 * are converted to little-endian when linearized onto the wire.
+		 */
+		sid_append_rid(sidout, (uint32)strtoul(tok, NULL, 10));
+	}
 
-  SAFE_FREE(q);
-  return True;
+	SAFE_FREE(q);
+	return True;
 }
 
 /*****************************************************************
@@ -412,10 +419,10 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
 		dst->sub_auths[i] = src->sub_auths[i];
 }
 
-
 /*****************************************************************
  Write a sid out into on-the-wire format.
 *****************************************************************/  
+
 BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 {
 	size_t i;
@@ -433,36 +440,41 @@ BOOL sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 }
 
 /*****************************************************************
- parse a on-the-wire SID to a DOM_SID
+ Parse a on-the-wire SID to a DOM_SID.
 *****************************************************************/  
+
 BOOL sid_parse(const char *inbuf, size_t len, DOM_SID *sid)
 {
 	int i;
-	if (len < 8) return False;
+	if (len < 8)
+		return False;
 
 	ZERO_STRUCTP(sid);
 
 	sid->sid_rev_num = CVAL(inbuf, 0);
 	sid->num_auths = CVAL(inbuf, 1);
 	memcpy(sid->id_auth, inbuf+2, 6);
-	if (len < 8 + sid->num_auths*4) return False;
-	for (i=0;i<sid->num_auths;i++) {
+	if (len < 8 + sid->num_auths*4)
+		return False;
+	for (i=0;i<sid->num_auths;i++)
 		sid->sub_auths[i] = IVAL(inbuf, 8+i*4);
-	}
 	return True;
 }
-
 
 /*****************************************************************
  Compare the auth portion of two sids.
 *****************************************************************/  
+
 static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
-	if (sid1 == sid2) return 0;
-	if (!sid1) return -1;
-	if (!sid2) return 1;
+	if (sid1 == sid2)
+		return 0;
+	if (!sid1)
+		return -1;
+	if (!sid2)
+		return 1;
 
 	if (sid1->sid_rev_num != sid2->sid_rev_num)
 		return sid1->sid_rev_num - sid2->sid_rev_num;
@@ -477,15 +489,19 @@ static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
+
 int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
-	if (sid1 == sid2) return 0;
-	if (!sid1) return -1;
-	if (!sid2) return 1;
+	if (sid1 == sid2)
+		return 0;
+	if (!sid1)
+		return -1;
+	if (!sid2)
+		return 1;
 
-	/* compare most likely different rids, first: i.e start at end */
+	/* Compare most likely different rids, first: i.e start at end */
 	if (sid1->num_auths != sid2->num_auths)
 		return sid1->num_auths - sid2->num_auths;
 
@@ -497,9 +513,10 @@ int sid_compare(const DOM_SID *sid1, const DOM_SID *sid2)
 }
 
 /*****************************************************************
-see if 2 SIDs are in the same domain
-this just compares the leading sub-auths
+ See if 2 SIDs are in the same domain
+ this just compares the leading sub-auths
 *****************************************************************/  
+
 int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int n, i;
@@ -516,25 +533,25 @@ int sid_compare_domain(const DOM_SID *sid1, const DOM_SID *sid2)
 /*****************************************************************
  Compare two sids.
 *****************************************************************/  
+
 BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	return sid_compare(sid1, sid2) == 0;
 }
 
-
-
 /*****************************************************************
  Check if the SID is the builtin SID (S-1-5-32).
 *****************************************************************/  
+
 BOOL sid_check_is_builtin(const DOM_SID *sid)
 {
 	return sid_equal(sid, &global_sid_Builtin);
 }
 
-
 /*****************************************************************
- Check if the SID is our domain SID (S-1-5-21-x-y-z).
+ Check if the SID is one of the builtin SIDs (S-1-5-32-a).
 *****************************************************************/  
+
 BOOL sid_check_is_in_builtin(const DOM_SID *sid)
 {
 	DOM_SID dom_sid;
@@ -545,7 +562,6 @@ BOOL sid_check_is_in_builtin(const DOM_SID *sid)
 	
 	return sid_equal(&dom_sid, &global_sid_Builtin);
 }
-
 
 /*****************************************************************
  Calculates size of a sid.
@@ -574,25 +590,24 @@ BOOL non_mappable_sid(DOM_SID *sid)
 	if (sid_equal(&dom, &global_sid_Builtin))
 		return True;
 
-	if (sid_equal(&dom, &global_sid_Creator_Owner_Domain))
-		return True;
- 
 	if (sid_equal(&dom, &global_sid_NT_Authority))
 		return True;
 
 	return False;
 }
 
-/*
-  return the binary string representation of a DOM_SID
-  caller must free
-*/
+/*****************************************************************
+ Return the binary string representation of a DOM_SID.
+ Caller must free.
+*****************************************************************/
+
 char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
 	int len = sid_size(sid);
 	buf = malloc(len);
-	if (!buf) return NULL;
+	if (!buf)
+		return NULL;
 	sid_linearize(buf, len, sid);
 	s = binary_string(buf, len);
 	free(buf);
@@ -600,9 +615,10 @@ char *sid_binstring(const DOM_SID *sid)
 }
 
 
-/*
-  print a GUID structure for debugging
-*/
+/*****************************************************************
+ Print a GUID structure for debugging.
+*****************************************************************/
+
 void print_guid(GUID *guid)
 {
 	int i;

@@ -319,6 +319,9 @@ int vfs_mkdir(connection_struct *conn, const char *name, mode_t mode)
 	SMB_STRUCT_STAT sbuf;
 
 	if(!(ret=conn->vfs_ops.mkdir(conn,name,mode))) {
+
+		inherit_access_acl(conn, name, mode);
+
 		/*
 		 * Check if high bits should have been set,
 		 * then (if bits are missing): add them.
