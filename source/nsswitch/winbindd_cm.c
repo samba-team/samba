@@ -134,6 +134,8 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 		}
 	}
 
+	SAFE_FREE(ip_list);
+
 	/* No-one to talk to )-: */
 	return False;		/* Boo-hoo */
 	
@@ -250,16 +252,6 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, pipe_name);
 	
-	/* Look for a domain controller for this domain.  Negative results
-	   are cached so don't bother applying the caching for this
-	   function just yet.  */
-
-	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
-		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		add_failed_connection_entry(new_conn, result);
-		return result;
-	}
-		
 	/* Return false if we have tried to look up this domain and netbios
 	   name before and failed. */
 
@@ -291,6 +283,16 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 		return result;
 	}
 
+	/* Look for a domain controller for this domain.  Negative results
+	   are cached so don't bother applying the caching for this
+	   function just yet.  */
+
+	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		add_failed_connection_entry(new_conn, result);
+		return result;
+	}
+		
 	/* Initialise SMB connection */
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
