@@ -350,7 +350,7 @@ int debug_lookup_classname(const char *classname)
 
 
 /****************************************************************************
-dump the current registered denug levels
+dump the current registered debug levels
 ****************************************************************************/
 static void debug_dump_status(int level)
 {
