@@ -554,6 +554,7 @@ char *mktemp(char *); /* No standard include */
 #include <sys/priv.h>
 #include <netinet/tcp.h>
 #include <locale.h>
+#include <arpa/inet.h>    /* needed for inet_ntoa proto */
 #define SYSV
 #define USE_WAITPID
 #define USE_SIGBLOCK

@@ -27,11 +27,6 @@
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 
-/* Default size of shared memory used for share mode locking */
-#ifndef SHMEM_SIZE
-#define SHMEM_SIZE 102400
-#endif
-
 #define NMB_PORT 137
 #define DGRAM_PORT 138
 #define SMB_PORT 139

@@ -236,3 +236,28 @@ matching record.\n", id));
 
   return NULL;
 }
+
+/****************************************************************************
+  Check if a refresh is queued for a particular name on a particular subnet.
+  **************************************************************************/
+   
+BOOL is_refresh_already_queued(struct subnet_record *subrec, struct name_record *namerec)
+{  
+  struct response_record *rrec = NULL;
+   
+  for (rrec = subrec->responselist; rrec; rrec = rrec->next)
+  {
+    struct packet_struct *p = rrec->packet;
+    struct nmb_packet *nmb = &p->packet.nmb;
+
+    if((nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_8) ||
+       (nmb->header.opcode == NMB_NAME_REFRESH_OPCODE_9))
+    {
+      /* Yes it's a queued refresh - check if the name is correct. */
+      if(nmb_name_equal(&nmb->question.question_name, &namerec->name))
+        return True;
+    }
+  }
+
+  return False;
+} 

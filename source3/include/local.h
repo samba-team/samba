@@ -39,6 +39,11 @@
 #define MAX_CONNECTIONS 127
 #define MAX_OPEN_FILES 100
 
+/* Default size of shared memory used for share mode locking */
+#ifndef SHMEM_SIZE
+#define SHMEM_SIZE (1024*MAX_OPEN_FILES)
+#endif
+
 /* the max number of connections that the smbstatus program will show */
 #define MAXSTATUS 1000
 

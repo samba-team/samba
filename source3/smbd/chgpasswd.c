@@ -451,9 +451,9 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
  no longer be valid.
 ************************************************************/
 
-BOOL change_lanman_password(struct smb_passwd *smbpw, char *pass1, char *pass2)
+BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2)
 {
-  char unenc_new_pw[16];
+  unsigned char unenc_new_pw[16];
   BOOL ret;
 
   if(smbpw == NULL)
