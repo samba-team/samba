@@ -1,8 +1,4 @@
 #
-# The static master prototype file for the Samba package.
-# For files that can't be dynamically added to the prototype file at 
-# package build time
-#
 # Information files.
 # 
 i pkginfo=./pkginfo
@@ -15,40 +11,33 @@ i r.swat=./r.swat
 #
 # Stuff that goes into the system areas of the filesystem.
 #
-d none /etc ? ? ?
+d none $CONFIGDIR ? ? ?
 d initscript /etc/init.d ? ? ?
-f initscript /etc/init.d/samba.server=packaging/Solaris/samba.server 0744 root sys
+f initscript /etc/init.d/samba=scripts/samba.init 0744 root sys
 d initscript /etc/rc3.d ? ? ?
-s initscript /etc/rc3.d/S99samba.server=../init.d/samba.server
 #
 # Stuff to set up SWAT
 #
 d swat /etc/inet ? ? ?
-e swat /etc/inet/services=packaging/Solaris/services ? ? ?
-e swat /etc/inet/inetd.conf=packaging/Solaris/inetd.conf ? ? ?
+e swat /etc/inet/services=scripts/services ? ? ?
+e swat /etc/inet/inetd.conf=scripts/inetd.conf ? ? ?
 #
-# Create the samba subtree. (Usually /usr/local/samba )
+# Create the samba subtree.
 #
-d none samba 0755 root other
-d none samba/var 0755 root other
-d none samba/bin 0755 root other
-d none samba/lib 0755 root other
-d none samba/docs 0755 root other
+d none $INSTALL_BASE 755 root sys
+d none $DOCDIR 755 root other
+d none $CONFIGDIR 755 root sys
+d none $PRIVATE_DIR 700 root sys
+d none $SBINDIR 0755 root other
+d none $BINDIR 0755 root other
+d none $LIBDIR 0755 root other
+d none $LIBDIR/charset 0755 root other
+d none $LIBDIR/vfs 0755 root other
+d none $SWATDIR 0755 root other
+d none $LOGFILEBASE 0755 root other
+d none $PIDDIR 0755 root other
 #
-# Stuff that goes into lib
 #
-d none samba/lib/charset 0755 root other
-f none samba/lib/smb.conf.example=examples/smb.conf.default 0644 root other
-d none samba/lib/regeditscripts 0755 root other
-f none samba/lib/regeditscripts/NT4_PlainPassword.reg=docs/registry/NT4_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win95_PlainPassword.reg=docs/registry/Win95_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win98_PlainPassword.reg=docs/registry/Win98_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/WinME_PlainPassword.reg=docs/registry/WinME_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/Win2000_PlainPassword.reg=docs/registry/Win2000_PlainPassword.reg 0444 root other
-f none samba/lib/regeditscripts/WinXP_PlainPassword.reg=docs/registry/WinXP_PlainPassword.reg 0444 root other
+f none $CONFIGDIR/smb.conf.default=scripts/smb.conf.default 0644 root other
 #
-# Random files 
-f none samba/docs/Samba-HOWTO-Collection.pdf=docs/Samba-HOWTO-Collection.pdf 0644 root other
-#
-# Static part of prototype file ends.
 #
