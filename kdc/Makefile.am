@@ -12,8 +12,8 @@ libexec_PROGRAMS = hprop hpropd kdc
 
 man_MANS = kdc.8 kstash.8 hprop.8 hpropd.8 string2key.8
 
-hprop_SOURCES = hprop.c hprop-common.c mit_dump.c v4_dump.c hprop.h kadb.h 
-hpropd_SOURCES = hpropd.c hprop-common.c hprop.h
+hprop_SOURCES = hprop.c mit_dump.c v4_dump.c hprop.h kadb.h 
+hpropd_SOURCES = hpropd.c hprop.h
 
 kstash_SOURCES = kstash.c headers.h
 

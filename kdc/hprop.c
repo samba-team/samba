@@ -98,8 +98,6 @@ open_socket(krb5_context context, const char *hostname, const char *port)
     return -1;
 }
 
-int hdb_entry2value(krb5_context, hdb_entry*, krb5_data*);
-
 krb5_error_code
 v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 {
@@ -119,9 +117,10 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     }
 
     if(to_stdout)
-	ret = send_clear(context, STDOUT_FILENO, data);
+	ret = krb5_write_message(context, &pd->sock, &data);
     else
-	ret = send_priv(context, pd->auth_context, &data, pd->sock);
+	ret = krb5_write_priv_message(context, pd->auth_context, 
+				      &pd->sock, &data);
     krb5_data_free(&data);
     return ret;
 }
@@ -649,13 +648,13 @@ propagate_database (krb5_context context, int type,
 
 	data.data = NULL;
 	data.length = 0;
-	ret = send_priv(context, auth_context, &data, fd);
+	ret = krb5_write_priv_message(context, auth_context, &fd, &data);
 	if(ret)
-	    krb5_warn(context, ret, "send_priv");
+	    krb5_warn(context, ret, "krb5_write_priv_message");
 
-	ret = recv_priv(context, auth_context, fd, &data);
+	ret = krb5_read_priv_message(context, auth_context, &fd, &data);
 	if(ret)
-	    krb5_warn(context, ret, "recv_priv");
+	    krb5_warn(context, ret, "krb5_read_priv_message");
 	else
 	    krb5_data_free (&data);
 	

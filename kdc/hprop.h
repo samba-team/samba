@@ -53,11 +53,6 @@ struct prop_data{
 #define NEVERDATE ((1U << 31) - 1)
 #endif
 
-krb5_error_code send_priv(krb5_context, krb5_auth_context, krb5_data*, int);
-krb5_error_code recv_priv(krb5_context, krb5_auth_context, int, krb5_data*);
-krb5_error_code send_clear(krb5_context context, int fd, krb5_data data);
-krb5_error_code recv_clear(krb5_context context, int fd, krb5_data *out);
-
 krb5_error_code v5_prop(krb5_context, HDB*, hdb_entry*, void*);
 int mit_prop_dump(void*, const char*);
 int v4_prop(void*, Principal*);

@@ -352,20 +352,20 @@ main(int argc, char **argv)
 	hdb_entry entry;
 
 	if(from_stdin) {
-	    ret = recv_clear(context, fd, &data);
+	    ret = krb5_read_message(context, &fd, &data);
 	    if(ret)
-		krb5_err(context, 1, ret, "recv_clear");
+		krb5_err(context, 1, ret, "krb5_read_message");
 	} else {
-	    ret = recv_priv(context, ac, fd, &data);
+	    ret = krb5_read_priv_message(context, ac, &fd, &data);
 	    if(ret)
-		krb5_err(context, 1, ret, "recv_priv");
+		krb5_err(context, 1, ret, "krb5_read_priv_message");
 	}
 
 	if(data.length == 0) {
 	    if(!from_stdin) {
 		data.data = NULL;
 		data.length = 0;
-		send_priv(context, ac, &data, fd);
+		krb5_write_priv_message(context, ac, &fd, &data);
 	    }
 	    if(!print_dump) {
 #ifdef KRB4
