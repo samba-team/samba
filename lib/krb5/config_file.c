@@ -43,7 +43,7 @@ RCSID("$Id$");
  * Netinfo implementation from Luke Howard <lukeh@xedoc.com.au>
  */
 
-#ifdef HAVE_NETINFO_NI_H
+#ifdef HAVE_NETINFO
 #include <netinfo/ni.h>
 static ni_status
 ni_proplist2binding(ni_proplist *pl, krb5_config_section **ret)
@@ -180,7 +180,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     }
     return ret;
 }
-#else /* !NETINFO_NI_H */
+#else /* !HAVE_NETINFO */
 
 static int parse_section(char *p, krb5_config_section **s,
 			 krb5_config_section **res);
@@ -335,7 +335,7 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     return 0;
 }
 
-#endif /* HAVE_NETINFO_NI_H */
+#endif /* HAVE_NETINFO */
 
 static void
 free_binding (krb5_context context, krb5_config_binding *b)
