@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -1319,9 +1319,14 @@ tgs_rep2(KDC_REQ_BODY *b,
     
     if(ap_req.ticket.enc_part.kvno && 
        *ap_req.ticket.enc_part.kvno != krbtgt->kvno){
-	kdc_log(0, "Ticket kvno = %d, DB kvno = %d", 
+	char *p;
+
+	krb5_unparse_name (context, princ, &p);
+	kdc_log(0, "Ticket kvno = %d, DB kvno = %d (%s)", 
 		*ap_req.ticket.enc_part.kvno,
-		krbtgt->kvno);
+		krbtgt->kvno,
+		p);
+	free (p);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
 	goto out2;
     }
