@@ -1,3 +1,29 @@
+Thu Nov  6 00:20:41 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kadmin/kadmind.c: Crude admin server.
+
+	* kadmin/kadmin.c: Update to use remote protocol.
+
+	* kadmin/get.c: Fix principal formatting.
+
+	* lib/kadm5: Add client support.
+
+	* lib/kadm5/error.c: Error code mapping.
+
+	* lib/kadm5/server.c: Kadmind support function.
+
+	* lib/kadm5/marshall.c: Kadm5 marshalling.
+
+	* lib/kadm5/acl.c: Simple acl system.
+
+	* lib/kadm5/kadm5_locl.h: Add client stuff.
+
+	* lib/kadm5/init_s.c: Initialize acl.
+
+	* lib/kadm5/*:  Return values.
+
+	* lib/kadm5/create_s.c: Correct kvno.
+
 Wed Nov  5 22:06:50 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/log.c: Fix parsing of log destinations.

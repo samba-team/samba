@@ -39,6 +39,10 @@ there's some room for improvement here.
 
 should the KDC use keytabs to store its keys?  Then it could use krb5_rd_req.
 
+* kadmin
+
+is in need of a major cleanup
+
 * lib
 
 ** lib/asn1
@@ -80,7 +84,15 @@ fix locking
 
 fix atomic rename of database
 
+** lib/kadm5
+
+add policies?
+
+fix to use rpc?
+
 ** lib/krb5
+
+fix addresses when there are no addresses
 
 replay cache not implemented
 
