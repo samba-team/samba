@@ -9,13 +9,12 @@ release.
 The following development objectives for future releases
 are in progress:
 ----------------------------------------------------------------------------
-Samba-3.0.0		The Domain Integration Release
+Samba-3.0.0		The Domain Integration Release.
 
-Samba-3.0.x		Refinments to the User and Group IDMAP facility and
+Samba-3.0.x		Improvements in Management and Migration tools, &
 			general code stabilization work.
 
-Samba-3.x.x		Improvements in Management and Migration tools, 
-			the introduction of further integration capabilities.
+Samba-3.x.x		Requirements are currently under discussion.
 
 Samba-4			Danger Will Robinson, a big code clean up with major
 			system redesign. More will be announced as this work
