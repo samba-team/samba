@@ -113,6 +113,21 @@ struct event_context {
 
 
 /*
+  destroy an event context
+*/
+static int event_context_destructor(void *ptr)
+{
+#if WITH_EPOLL
+	struct event_context *ev = talloc_get_type(ptr, struct event_context);
+	if (ev->epoll_fd != -1) {
+		close(ev->epoll_fd);
+		ev->epoll_fd = -1;
+	}
+#endif
+	return 0;
+}
+
+/*
   create a event_context structure. This must be the first events
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
@@ -127,6 +142,8 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 #if WITH_EPOLL
 	ev->epoll_fd = epoll_create(64);
 #endif
+
+	talloc_set_destructor(ev, event_context_destructor);
 
 	return ev;
 }
