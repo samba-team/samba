@@ -1728,7 +1728,7 @@ BOOL samr_open_domain(struct cli_state *cli, uint16 fnum,
 	SAMR_Q_OPEN_DOMAIN q_o;
 	BOOL valid_pol = False;
 
-	if (DEBUGLVL(4))
+	if (DEBUGLEVEL >= 4)
 	{
 		sid_to_string(sid_str, sid);
 		DEBUG(4,("SAMR Open Domain.  SID:%s Permissions:%x\n",
