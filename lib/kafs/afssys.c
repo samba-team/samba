@@ -17,6 +17,9 @@ RCSID("$Id$");
 #include <string.h>
 #include <signal.h>
 
+#include <sys/socket.h>
+#include <netdb.h>
+
 #include <krb.h>
 #include <kafs.h>
 
@@ -43,7 +46,9 @@ foldup(char *a, char *b)
   *a = '\0';
 }
 
-#define _PATH_THISCELL "/usr/vice/etc/ThisCell"
+#define _PATH_VICE		"/usr/vice/etc/"
+#define _PATH_THISCELL 		_PATH_VICE "ThisCell"
+#define _PATH_CELLSERVDB 	_PATH_VICE "CellServDB"
 
 static char *
 k_cell(void)
@@ -74,6 +79,69 @@ get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
   return k_errno;
 }
 
+
+/* Convert a string to a 32 bit ip number in network byte order. 
+   Return 0 on error
+   */
+
+static u_int32_t ip_aton(char *ip)
+{
+  u_int32_t addr;
+  int a, b, c, d;
+  if(sscanf(ip, "%d.%d.%d.%d", &a, &b, &c, &d) != 4)
+    return 0;
+  if(a < 0 || a > 255 || 
+     b < 0 || b > 255 || 
+     c < 0 || c > 255 || 
+     d < 0 || d > 255)
+    return 0;
+  addr = (a << 24) | (b << 16) | (c << 8) | d;
+  addr = htonl(addr);
+  return addr;
+}
+
+/* Find the realm associated with cell. Do this by opening
+   /usr/vice/etc/CellServDB and getting the realm-of-host for the
+   first VL-server for the cell.
+
+   This does not work when the VL-server is living in one cell, but
+   the cell it is serving is living in another cell.
+   */
+
+static char*
+realm_of_cell(char *cell)
+{
+  FILE *F;
+  char buf[1024];
+  u_int32_t addr;
+  struct hostent *hp;
+  char *realm = NULL;
+
+  F = fopen(_PATH_CELLSERVDB, "r");
+  while(F && !feof(F)){
+    fgets(buf, 1024, F);
+    if(buf[0] != '>')
+      continue;
+    if(strncmp(buf+1, cell, strlen(cell)) == 0){
+      fgets(buf, 1024, F);
+      if(feof(F))
+	break;
+      addr = ip_aton(buf);
+      if(addr == 0)
+	break;
+      hp = gethostbyaddr((char*)&addr, 4, AF_INET);
+      if(hp == NULL)
+	break;
+      strcpy(buf, hp->h_name);
+      realm = krb_realmofhost(buf);
+      break;
+    }
+  }
+  if(F)
+    fclose(F);
+  return realm;
+}
+
 int
 k_afsklog(char *cell, char *krealm)
 {
@@ -81,7 +149,11 @@ k_afsklog(char *cell, char *krealm)
   CREDENTIALS c;
   KTEXT_ST ticket;
   char realm[REALM_SZ];
+  char *vl_realm; /* realm of vl-server */
+  char *lrealm; /* local realm */
   char CELL[64];
+
+  char *realms[4], **r;
 
   if (!k_hasafs())
     return KSUCCESS;
@@ -92,19 +164,67 @@ k_afsklog(char *cell, char *krealm)
     return KSUCCESS;		/* Not running AFS */
   foldup(CELL, cell);
 
-  if (krealm == 0 || krealm[0] == 0)
-    {
-      k_errno = krb_get_lrealm(realm, 0);
-      if (k_errno != KSUCCESS)
-	return k_errno;
-      krealm = realm;
-    }  
+  vl_realm = realm_of_cell(cell);
+
+  k_errno = krb_get_lrealm(realm , 0);
+  if(k_errno == KSUCCESS && (krealm == NULL || strcmp(krealm, realm)))
+    lrealm = realm;
+  else
+    lrealm = NULL;
+
+  /* We're about to find the the realm that holds the key for afs in
+   * the specified cell. The problem is that null-instance
+   * afs-principals are common and that hitting the wrong realm might
+   * yield the wrong afs key. These thoughts leads to the following
+   * code.
+   *
+   * Any realm passed to us is preferred.
+   *
+   * If there is a realm with the same name as the cell, it is most
+   * likely the correct realm to talk to.
+   *
+   * In most (maybe even all) cases the volume location servers of the
+   * cell will live in the realm we are looking for.
+   *
+   * Try the local realm, but if the previous cases fail, this is
+   * really a long shot.
+   *
+   */
   
-  /* First we try afs.cell@REALM, if there is no such thing try
-   * afs@CELL instead. */
-  k_errno = get_cred(AUTH_SUPERUSER, cell, krealm, &c, &ticket);
-  if (k_errno != KSUCCESS)
+  /* comments on the ordering of these tests */
+
+  /* If the user passes a realm, she probably knows something we don't
+   * know and we should try afs@krealm (otherwise we're talking with a
+   * blondino and she might as well have it.)
+   */
+  
+  k_errno = -1;
+  if(krealm){
+    k_errno = get_cred(AUTH_SUPERUSER, cell, krealm, &c, &ticket);
+    if(k_errno)
+      k_errno = get_cred(AUTH_SUPERUSER, "", krealm, &c, &ticket);
+  }
+
+  if(k_errno)
+    k_errno = get_cred(AUTH_SUPERUSER, cell, CELL, &c, &ticket);
+  if(k_errno)
     k_errno = get_cred(AUTH_SUPERUSER, "", CELL, &c, &ticket);
+  
+  /* this might work in some conditions */
+  if(k_errno && vl_realm){
+    k_errno = get_cred(AUTH_SUPERUSER, cell, vl_realm, &c, &ticket);
+    if(k_errno)
+      k_errno = get_cred(AUTH_SUPERUSER, "", vl_realm, &c, &ticket);
+  }
+  
+  if(k_errno && lrealm){
+    k_errno = get_cred(AUTH_SUPERUSER, cell, lrealm, &c, &ticket);
+#if 0
+    /* this is most likely never right anyway, but won't fail */
+    if(k_errno)
+      k_errno = get_cred(AUTH_SUPERUSER, "", lrealm, &c, &ticket);
+#endif
+  }
   
   if (k_errno == KSUCCESS)
     {
