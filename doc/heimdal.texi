@@ -31,8 +31,9 @@
 @title Heimdal
 @subtitle Kerberos 5 from KTH
 @subtitle Edition @value{EDITION}, for version @value{VERSION}
-@subtitle 1999
+@subtitle 2004
 @author Johan Danielsson
+@author Love Hörnquist Åstrand
 @author Assar Westerlund
 @author last updated @value{UPDATED}
 
@@ -41,7 +42,7 @@
 @def@copyrightend{}
 @page
 @copyrightstart
-Copyright (c) 1997-2000 Kungliga Tekniska Högskolan 
+Copyright (c) 1997-2005 Kungliga Tekniska Högskolan 
 (Royal Institute of Technology, Stockholm, Sweden).
 All rights reserved.
 
