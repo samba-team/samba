@@ -150,6 +150,7 @@ void init_iconv(void)
 
 /**
  * Convert string from one encoding to another, making error checking etc
+ * Slow path version - uses (slow) iconv.
  *
  * @param src pointer to source string (multibyte or singlebyte)
  * @param srclen length of the source string in bytes
@@ -160,7 +161,8 @@ void init_iconv(void)
  * Ensure the srclen contains the terminating zero.
  *
  **/
-size_t convert_string(charset_t from, charset_t to,
+
+static size_t convert_string_internal(charset_t from, charset_t to,
 		      void const *src, size_t srclen, 
 		      void *dest, size_t destlen)
 {
@@ -170,18 +172,13 @@ size_t convert_string(charset_t from, charset_t to,
 	char* outbuf = (char*)dest;
 	smb_iconv_t descriptor;
 
-	if (srclen == (size_t)-1)
-		srclen = strlen(src)+1;
-	if (srclen == 0)
-		return 0;
-
 	lazy_initialize_conv();
 
 	descriptor = conv_handles[from][to];
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		if (!conv_silent)
-			DEBUG(0,("convert_string: Conversion not supported.\n"));
+			DEBUG(0,("convert_string_internal: Conversion not supported.\n"));
 		goto use_as_is;
 	}
 
@@ -194,12 +191,12 @@ size_t convert_string(charset_t from, charset_t to,
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
 				if (!conv_silent)
-					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			case E2BIG:
 				reason="No more room"; 
 				if (!conv_silent)
-					DEBUG(3, ("convert_string: Required %lu, available %lu\n",
+					DEBUG(3, ("convert_string_internal: Required %lu, available %lu\n",
 						(unsigned long)srclen, (unsigned long)destlen));
 				/* we are not sure we need srclen bytes,
 			          may be more, may be less.
@@ -209,11 +206,11 @@ size_t convert_string(charset_t from, charset_t to,
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
 				if (!conv_silent)
-					DEBUG(3,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				goto use_as_is;
 			default:
 				if (!conv_silent)
-					DEBUG(0,("convert_string: Conversion error: %s(%s)\n",reason,inbuf));
+					DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",reason,inbuf));
 				break;
 		}
 		/* smb_panic(reason); */
@@ -229,6 +226,90 @@ size_t convert_string(charset_t from, charset_t to,
 			memcpy(dest,src,len);
 		return len;
 	}
+}
+
+/**
+ * Convert string from one encoding to another, making error checking etc
+ * Fast path version - handles ASCII first.
+ *
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ *
+ * Ensure the srclen contains the terminating zero.
+ *
+ **/
+
+size_t convert_string(charset_t from, charset_t to,
+		      void const *src, size_t srclen, 
+		      void *dest, size_t destlen)
+{
+	if (srclen == (size_t)-1) {
+		if (from == CH_UCS2)
+			srclen = strlen_w(src)+2;
+		else
+			srclen = strlen(src)+1;
+	}
+	if (srclen == 0)
+		return 0;
+
+	if (from != CH_UCS2 && to != CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		size_t retval = 0;
+
+		/* If all characters are ascii, fast path here. */
+		while (srclen && destlen) {
+			if (*p <= 0x7f) {
+				*q++ = *p++;
+				srclen--;
+				destlen--;
+				retval++;
+			} else {
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	} else if (from == CH_UCS2 && to != CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		size_t retval = 0;
+
+		/* If all characters are ascii, fast path here. */
+		while ((srclen >= 2) && destlen) {
+			if (*p <= 0x7f && p[1] == 0) {
+				*q++ = *p;
+				srclen -= 2;
+				p += 2;
+				destlen--;
+				retval++;
+			} else {
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	} else if (from != CH_UCS2 && to == CH_UCS2) {
+		const unsigned char *p = (const unsigned char *)src;
+		unsigned char *q = (unsigned char *)dest;
+		size_t retval = 0;
+
+		/* If all characters are ascii, fast path here. */
+		while (srclen && (destlen >= 2)) {
+			if (*p <= 0x7F) {
+				*q++ = *p++;
+				*q++ = '\0';
+				srclen--;
+				destlen -= 2;
+				retval += 2;
+			} else {
+				return retval + convert_string_internal(from, to, p, srclen, q, destlen);
+			}
+		}
+		return retval;
+	}
+	return convert_string_internal(from, to, src, srclen, dest, destlen);
 }
 
 /**
@@ -925,8 +1006,10 @@ size_t push_string_fn(const char *function, unsigned int line, const void *base_
 
 size_t pull_string_fn(const char *function, unsigned int line, const void *base_ptr, char *dest, const void *src, size_t dest_len, size_t src_len, int flags)
 {
+#ifdef DEVELOPER
 	if (dest_len != (size_t)-1)
 		clobber_region(function, line, dest, dest_len);
+#endif
 
 	if (!(flags & STR_ASCII) && \
 	    ((flags & STR_UNICODE || \

@@ -503,7 +503,9 @@ char *safe_strcpy_fn(const char *fn, int line, char *dest,const char *src, size_
 		return NULL;
 	}
 
+#ifdef DEVELOPER
 	clobber_region(fn,line,dest, maxlength+1);
+#endif
 
 	if (!src) {
 		*dest = 0;
@@ -542,7 +544,9 @@ char *safe_strcat_fn(const char *fn, int line, char *dest, const char *src, size
 	src_len = strnlen(src, maxlength + 1);
 	dest_len = strnlen(dest, maxlength + 1);
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest + dest_len, maxlength + 1 - dest_len);
+#endif
 
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
@@ -569,7 +573,9 @@ char *alpha_strcpy_fn(const char *fn, int line, char *dest, const char *src, con
 {
 	size_t len, i;
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest, maxlength);
+#endif
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -609,7 +615,9 @@ char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n)
 {
 	char *d = dest;
 
+#ifdef DEVELOPER
 	clobber_region(fn, line, dest, n+1);
+#endif
 
 	if (!dest)
 		return(NULL);
@@ -639,8 +647,9 @@ static char *strncpyn(char *dest, const char *src, size_t n, char c)
 	char *p;
 	size_t str_len;
 
+#ifdef DEVELOPER
 	clobber_region(dest, n+1);
-
+#endif
 	p = strchr_m(src, c);
 	if (p == NULL) {
 		DEBUG(5, ("strncpyn: separator character (%c) not found\n", c));
