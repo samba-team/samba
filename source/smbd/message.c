@@ -111,11 +111,14 @@ int reply_sends(connection_struct *conn,
   int len;
   char *orig,*dest,*msg;
   int outsize = 0;
+  START_PROFILE(SMBsends);
 
   msgpos = 0;
 
-  if (! (*lp_msg_command()))
+  if (! (*lp_msg_command())) {
+    END_PROFILE(SMBsends);
     return(ERROR(ERRSRV,ERRmsgoff));
+  }
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -138,6 +141,7 @@ int reply_sends(connection_struct *conn,
 
   msg_deliver();
 
+  END_PROFILE(SMBsends);
   return(outsize);
 }
 
@@ -150,9 +154,12 @@ int reply_sendstrt(connection_struct *conn,
 {
   char *orig,*dest;
   int outsize = 0;
+  START_PROFILE(SMBsendstrt);
 
-  if (! (*lp_msg_command()))
+  if (! (*lp_msg_command())) {
+    END_PROFILE(SMBsendstrt);
     return(ERROR(ERRSRV,ERRmsgoff));
+  }
 
   outsize = set_message(outbuf,1,0,True);
 
@@ -167,6 +174,7 @@ int reply_sendstrt(connection_struct *conn,
 
   DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
+  END_PROFILE(SMBsendstrt);
   return(outsize);
 }
 
@@ -180,9 +188,12 @@ int reply_sendtxt(connection_struct *conn,
   int len;
   int outsize = 0;
   char *msg;
+  START_PROFILE(SMBsendtxt);
 
-  if (! (*lp_msg_command()))
+  if (! (*lp_msg_command())) {
+    END_PROFILE(SMBsendtxt);
     return(ERROR(ERRSRV,ERRmsgoff));
+  }
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -196,6 +207,7 @@ int reply_sendtxt(connection_struct *conn,
 
   DEBUG( 3, ( "SMBsendtxt\n" ) );
 
+  END_PROFILE(SMBsendtxt);
   return(outsize);
 }
 
@@ -207,9 +219,12 @@ int reply_sendend(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   int outsize = 0;
+  START_PROFILE(SMBsendend);
 
-  if (! (*lp_msg_command()))
+  if (! (*lp_msg_command())) {
+    END_PROFILE(SMBsendend);
     return(ERROR(ERRSRV,ERRmsgoff));
+  }
 
   outsize = set_message(outbuf,0,0,True);
 
@@ -217,6 +232,7 @@ int reply_sendend(connection_struct *conn,
 
   msg_deliver();
 
+  END_PROFILE(SMBsendend);
   return(outsize);
 }
 
