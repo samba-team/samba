@@ -55,7 +55,6 @@ struct bitmap *bitmap_allocate(int n);
 void bitmap_free(struct bitmap *bm);
 BOOL bitmap_set(struct bitmap *bm, unsigned i);
 BOOL bitmap_clear(struct bitmap *bm, unsigned i);
-BOOL bitmap_query(struct bitmap *bm, unsigned i);
 int bitmap_find(struct bitmap *bm, unsigned ofs);
 
 /*The following definitions come from  lib/charcnv.c  */
@@ -1857,16 +1856,17 @@ BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
-void reset_chain_pnum(void);
-void set_chain_pnum(int new_pnum);
+void reset_chain_p(void);
+void set_chain_p(pipes_struct *new_p);
 void init_rpc_pipe_hnd(void);
-int open_rpc_pipe_hnd(char *pipe_name, connection_struct *conn, uint16 vuid);
-int read_pipe(uint16 pnum, char *data, uint32 pos, int n);
-BOOL get_rpc_pipe(int pnum, pipes_struct **p);
-char *get_rpc_pipe_hnd_name(int pnum);
+pipes_struct *open_rpc_pipe_p(char *pipe_name, 
+				connection_struct *conn, uint16 vuid);
+int read_pipe(pipes_struct *p, char *data, uint32 pos, int n);
+char *get_rpc_pipe_hnd_name(pipes_struct *p);
 BOOL set_rpc_pipe_hnd_state(pipes_struct *p, uint16 device_state);
-BOOL close_rpc_pipe_hnd(int pnum, connection_struct *conn);
-int get_rpc_pipe_num(char *buf, int where);
+BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn);
+pipes_struct *get_rpc_pipe_p(char *buf, int where);
+pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 

@@ -3398,7 +3398,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	/* Get the file handle and hence the file name. */
 	pnum = setup[1];
 	subcommand = setup[0];
-	get_rpc_pipe(pnum, &p);
+	p = get_rpc_pipe(pnum);
 
 	if (p != NULL)
 	{

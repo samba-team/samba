@@ -45,9 +45,6 @@
    one time. */
 #define MAX_CONNECTIONS 127
 
-/* this must be larger than the sum of the open files and directories */
-#define PIPE_HANDLE_OFFSET 0x7000
-
 /* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
 #define SHMEM_SIZE (1024*1024)

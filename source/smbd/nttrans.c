@@ -364,32 +364,33 @@ static int map_share_mode( uint32 desired_access, uint32 share_access, uint32 fi
 static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
-  int pnum = -1;
-  uint16 vuid = SVAL(inbuf, smb_uid);
-  int i;
+	pipes_struct *p = NULL;
 
-  DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
-    
-  /* See if it is one we want to handle. */
-  for( i = 0; known_nt_pipes[i]; i++ )
-    if( strequal(fname,known_nt_pipes[i]))
-      break;
-    
-  if ( known_nt_pipes[i] == NULL )
-    return(ERROR(ERRSRV,ERRaccess));
-    
-  /* Strip \\ off the name. */
-  fname++;
-    
-  DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
+	uint16 vuid = SVAL(inbuf, smb_uid);
+	int i;
 
-  pnum = open_rpc_pipe_hnd(fname, conn, vuid);
-  if (pnum < 0)
-    return(ERROR(ERRSRV,ERRnofids));
+	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
+    
+	/* See if it is one we want to handle. */
+	for( i = 0; known_nt_pipes[i]; i++ )
+		if( strequal(fname,known_nt_pipes[i]))
+			break;
+    
+	if ( known_nt_pipes[i] == NULL )
+		return(ERROR(ERRSRV,ERRaccess));
+    
+	/* Strip \\ off the name. */
+	fname++;
+    
+	DEBUG(3,("nt_open_pipe: Known pipe %s opening.\n", fname));
 
-  *ppnum = pnum + PIPE_HANDLE_OFFSET; /* Mark file handle up into high
-					 range. */
-  return 0;
+	p = open_rpc_pipe_p(fname, conn, vuid);
+	if (!p)
+		return(ERROR(ERRSRV,ERRnofids));
+
+	*ppnum = p->pnum;
+
+	return 0;
 }
 
 /****************************************************************************
@@ -1258,8 +1259,8 @@ static int call_nt_transact_ioctl(connection_struct *conn,
                                   int bufsize, 
                                   char **ppsetup, char **ppparams, char **ppdata)
 {
-  DEBUG(0,("call_nt_transact_ioctl: Currently not implemented.\n"));
-  return(ERROR(ERRSRV,ERRnosupport));
+	DEBUG(0,("call_nt_transact_ioctl: Currently not implemented.\n"));
+	return(ERROR(ERRSRV,ERRnosupport));
 }
    
 /****************************************************************************
