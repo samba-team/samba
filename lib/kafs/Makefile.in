@@ -72,7 +72,7 @@ dist: $(DISTFILES)
 
 $(LIBNAME).a: $(OBJECTS) @AFS_EXTRA_OBJS@
 	rm -f $@
-	$(AR) cr $@ $?
+	$(AR) cr $@ $(OBJECTS) @AFS_EXTRA_OBJS@
 	-$(RANLIB) $@
 
 
