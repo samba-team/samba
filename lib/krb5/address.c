@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -120,5 +120,30 @@ krb5_free_addresses(krb5_context context,
 		    krb5_addresses *addresses)
 {
     free_HostAddresses(addresses);
+    return 0;
+}
+
+krb5_error_code
+krb5_append_addresses(krb5_context context,
+		      krb5_addresses *dest,
+		      const krb5_addresses *source)
+{
+    krb5_address *tmp;
+    krb5_error_code ret;
+    int i;
+    if(source->len > 0) {
+	tmp = realloc(dest->val, (dest->len + source->len) * sizeof(*tmp));
+	if(tmp == NULL)
+	    return ENOMEM;
+	dest->val = tmp;
+	for(i = 0; i < source->len; i++) {
+	    ret = krb5_copy_address(context, 
+				    &source->val[i], 
+				    &dest->val[dest->len]);
+	    if(ret)
+		return ret;
+	    dest->len++;
+	}
+    }
     return 0;
 }
