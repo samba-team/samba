@@ -1932,5 +1932,16 @@ int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
  */
 int smbc_unlink_print_job(const char *purl, int id);
 
+/**@ingroup callback
+ * Remove a server from the cached server list it's unused.
+ *
+ * @param context    pointer to smb context
+ *
+ * @param srv        pointer to server to remove
+ *
+ * @return On success, 0 is returned. 1 is returned if the server could not
+ *         be removed. Also useable outside libsmbclient.
+ */
+int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
 
 #endif /* SMBCLIENT_H_INCLUDED */
