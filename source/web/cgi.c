@@ -19,7 +19,7 @@
 
 
 #include "includes.h"
-#include "smb.h"
+#include "../web/swat_proto.h"
 
 #define MAX_VARIABLES 10000
 

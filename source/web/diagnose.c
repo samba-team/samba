@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "smb.h"
+#include "../web/swat_proto.h"
 
 
 /* check to see if nmbd is running on localhost by looking for a __SAMBA__

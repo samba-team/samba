@@ -27,6 +27,7 @@
  **/
 
 #include "includes.h"
+#include "../web/swat_proto.h"
 
 #define GLOBALS_SNUM -1
 
