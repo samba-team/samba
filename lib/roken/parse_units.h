@@ -41,7 +41,7 @@
 #ifndef __PARSE_UNITS_H__
 #define __PARSE_UNITS_H__
 
-#include <stdlib.h>
+#include <stddef.h>
 
 struct units {
     const char *name;
