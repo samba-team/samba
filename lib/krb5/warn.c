@@ -107,26 +107,26 @@ krb5_warnx(krb5_context context, const char *fmt, ...)
 krb5_error_code
 krb5_verr(krb5_context context, int eval, krb5_error_code code, const char *fmt, va_list ap)
 {
-    return _warnerr(context, 1, eval, 1, code, 1, fmt, ap);
+    return _warnerr(context, 1, eval, 1, code, 0, fmt, ap);
 }
 
 
 krb5_error_code
 krb5_err(krb5_context context, int eval, krb5_error_code code, const char *fmt, ...)
 {
-    FUNC(1, eval, 1, code, 1);
+    FUNC(1, eval, 1, code, 0);
 }
 
 krb5_error_code
 krb5_verrx(krb5_context context, int eval, const char *fmt, va_list ap)
 {
-    return _warnerr(context, 1, eval, 0, 0, 1, fmt, ap);
+    return _warnerr(context, 1, eval, 0, 0, 0, fmt, ap);
 }
 
 krb5_error_code
 krb5_errx(krb5_context context, int eval, const char *fmt, ...)
 {
-    FUNC(1, eval, 0, 0, 1);
+    FUNC(1, eval, 0, 0, 0);
 }
 
 krb5_error_code
