@@ -864,7 +864,7 @@ void build_options(BOOL screen);
 	   smbd is launched via inetd and we fork a copy of 
 	   ourselves here */
 
-	if ( is_daemon )
+	if ( is_daemon && !interactive )
 		start_background_queue(); 
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
