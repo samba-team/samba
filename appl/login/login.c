@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,7 +43,7 @@ RCSID("$Id$");
 char **env;
 int num_env;
 
-void
+static void
 extend_env(char *str)
 {
     env = realloc(env, (num_env + 1) * sizeof(*env));
@@ -52,7 +52,7 @@ extend_env(char *str)
     env[num_env++] = str;
 }
 
-void
+static void
 add_env(const char *var, const char *value)
 {
     int i;
@@ -71,7 +71,7 @@ add_env(const char *var, const char *value)
     extend_env(str);
 }
 
-void
+static void
 copy_env(void)
 {
     char **p;
@@ -79,7 +79,7 @@ copy_env(void)
 	extend_env(*p);
 }
 
-void
+static void
 exec_shell(const char *shell, int fallback)
 {
     char *sh;
@@ -125,7 +125,7 @@ struct getargs args[] = {
 
 int nargs = sizeof(args) / sizeof(args[0]);
 
-void
+static void
 update_utmp(const char *username, const char *hostname)
 {
     char *tty, *ttyn, ttname[32];
@@ -150,7 +150,7 @@ update_utmp(const char *username, const char *hostname)
     utmp_login(ttyn, username, hostname);
 }
 
-void
+static void
 do_login(struct passwd *pwd)
 {
     int rootlogin = (pwd->pw_uid == 0);
@@ -194,7 +194,7 @@ do_login(struct passwd *pwd)
 }
 
 #ifdef KRB5
-int
+static int
 krb5_verify(struct passwd *pwd, const char *password)
 {
     krb5_error_code ret;
@@ -246,7 +246,7 @@ krb5_verify(struct passwd *pwd, const char *password)
 }
 #endif
 
-int
+static int
 check_password(struct passwd *pwd, const char *password)
 {
     if(pwd->pw_passwd == NULL)
@@ -269,7 +269,7 @@ check_password(struct passwd *pwd, const char *password)
     return 1;
 }
 
-void
+static void
 usage(int status)
 {
     arg_printusage(args, nargs, NULL, "[username]");
