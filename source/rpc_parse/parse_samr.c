@@ -1810,14 +1810,15 @@ BOOL samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct
 makes a SAMR_Q_OPEN_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
-				const POLICY_HND *hnd, uint32 unk, uint32 rid)
+				const POLICY_HND *hnd,
+				uint32 access_mask, uint32 rid)
 {
 	if (q_c == NULL || hnd == NULL) return False;
 
 	DEBUG(5,("make_samr_q_open_group\n"));
 
 	memcpy(&(q_c->domain_pol), hnd, sizeof(q_c->domain_pol));
-	q_c->unknown = unk;
+	q_c->access_mask = access_mask;
 	q_c->rid_group = rid;
 
 	return True;
@@ -1837,7 +1838,7 @@ BOOL samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, i
 
 	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth); 
 
-	prs_uint32("unknown  ", ps, depth, &(q_u->unknown  ));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 	prs_uint32("rid_group", ps, depth, &(q_u->rid_group));
 
 	return True;
@@ -3876,8 +3877,7 @@ BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
 	make_uni_hdr(&(q_u->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_u->uni_acct_desc), acct_desc, acct_len);
 
-	q_u->unknown_1 = 0x001f;
-	q_u->unknown_2 = 0x000f;
+	q_u->access_mask = 0x001f000f;
 
 	return True;
 }
@@ -3901,8 +3901,7 @@ BOOL samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_s
 	smb_io_unistr2("uni_acct_desc", &(q_u->uni_acct_desc), q_u->hdr_acct_desc.buffer, ps, depth);
 	prs_align(ps);
 
-	prs_uint16("unknown_1", ps, depth, &(q_u->unknown_1));
-	prs_uint16("unknown_2", ps, depth, &(q_u->unknown_2));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 
 	return True;
 }
@@ -4470,7 +4469,7 @@ reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 				const POLICY_HND *pol,
-				uint32 unk_0, uint32 rid)
+				uint32 access_mask, uint32 rid)
 {
 	if (q_u == NULL) return False;
 
@@ -4478,7 +4477,7 @@ BOOL make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
 
 	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
 	
-	q_u->unknown_0 = unk_0;
+	q_u->access_mask = access_mask;
 	q_u->user_rid  = rid;
 
 	return True;
@@ -4499,7 +4498,7 @@ BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int
 	smb_io_pol_hnd("domain_pol", &(q_u->domain_pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint32("unknown_0", ps, depth, &(q_u->unknown_0));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 	prs_uint32("user_rid ", ps, depth, &(q_u->user_rid ));
 
 	prs_align(ps);
@@ -4533,7 +4532,7 @@ reads or writes a structure.
 BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 				POLICY_HND *pol,
 				const char *name,
-				uint16 acb_info, uint32 unk_1)
+				uint16 acb_info, uint32 access_mask)
 {
 	int len_name;
 	if (q_u == NULL) return False;
@@ -4547,7 +4546,7 @@ BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 	make_unistr2(&(q_u->uni_name), name, len_name);
 
 	q_u->acb_info = acb_info;
-	q_u->unknown_1 = unk_1;
+	q_u->access_mask = access_mask;
 
 	return True;
 }
@@ -4571,9 +4570,9 @@ BOOL samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps,
 	smb_io_unistr2("unistr2", &(q_u->uni_name), q_u->hdr_name.buffer, ps, depth); 
 	prs_align(ps);
 
-	prs_uint16("acb_info", ps, depth, &(q_u->acb_info));
+	prs_uint16("acb_info   ", ps, depth, &(q_u->acb_info   ));
 	prs_align(ps);
-	prs_uint32("unknown_1", ps, depth, &(q_u->unknown_1));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 
 	prs_align(ps);
 
@@ -5834,7 +5833,7 @@ BOOL samr_io_r_set_userinfo2(char *desc,  SAMR_R_SET_USERINFO2 *r_u, prs_struct 
 makes a SAMR_Q_CONNECT structure.
 ********************************************************************/
 BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				const char *srv_name, uint32 unknown_0)
+				const char *srv_name, uint32 access_mask)
 {
 	int len_srv_name = strlen(srv_name);
 
@@ -5847,7 +5846,7 @@ BOOL make_samr_q_connect(SAMR_Q_CONNECT *q_u,
 	make_unistr2(&(q_u->uni_srv_name), srv_name, len_srv_name+1);  
 
 	/* example values: 0x0000 0002 */
-	q_u->unknown_0 = unknown_0; 
+	q_u->access_mask = access_mask; 
 
 	return True;
 }
@@ -5870,7 +5869,7 @@ BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int dep
 
 	prs_align(ps);
 
-	prs_uint32("unknown_0   ", ps, depth, &(q_u->unknown_0   ));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 
 	return True;
 }
@@ -5907,7 +5906,7 @@ BOOL make_samr_q_connect_anon(SAMR_Q_CONNECT_ANON *q_u)
 	q_u->ptr       = 1;
 	q_u->unknown_0 = 0x5c; /* server name (?!!) */
 	q_u->unknown_1 = 0x01;
-	q_u->unknown_2 = 0x20;
+	q_u->access_mask = 0x20;
 
 	return True;
 }
@@ -5928,7 +5927,7 @@ BOOL samr_io_q_connect_anon(char *desc,  SAMR_Q_CONNECT_ANON *q_u, prs_struct *p
 	prs_uint32("ptr      ", ps, depth, &(q_u->ptr      ));
 	prs_uint16("unknown_0", ps, depth, &(q_u->unknown_0));
 	prs_uint16("unknown_1", ps, depth, &(q_u->unknown_1));
-	prs_uint32("unknown_2", ps, depth, &(q_u->unknown_2));
+	prs_uint32("access_mask", ps, depth, &(q_u->access_mask));
 
 	return True;
 }

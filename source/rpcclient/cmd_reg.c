@@ -156,7 +156,7 @@ BOOL msrpc_reg_enum_key(const char* srv_name, const char* full_keyname,
 	DEBUG(5, ("reg_enum_key: %s\n", full_keyname));
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, full_keyname, key_name,
+	res = res ? reg_connect(srv_name, full_keyname, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)
@@ -365,7 +365,7 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 	}
 	
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, keyname, key_name,
+	res = res ? reg_connect(srv_name, keyname, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)
@@ -448,7 +448,7 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, full_keyname, key_name,
+	res = res ? reg_connect(srv_name, full_keyname, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)
@@ -603,7 +603,7 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 	dump_data(10, (char *)value.buffer, value.buf_len);
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, keyname, parent_name,
+	res = res ? reg_connect(srv_name, keyname, parent_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*val_name) != 0)
@@ -683,7 +683,7 @@ void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[])
 	}
 	
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, keyname, parent_name,
+	res = res ? reg_connect(srv_name, keyname, parent_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*val_name) != 0)
@@ -759,7 +759,7 @@ void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[])
 	}
 	
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, parent_name, key_name,
+	res = res ? reg_connect(srv_name, parent_name, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)
@@ -853,7 +853,7 @@ void cmd_reg_create_key(struct client_info *info, int argc, char *argv[])
 	sam_access.mask = SEC_RIGHTS_READ;
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, parent_key, parent_name,
+	res = res ? reg_connect(srv_name, parent_key, parent_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*parent_name) != 0)
@@ -934,7 +934,7 @@ void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[])
 	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, full_keyname, key_name,
+	res = res ? reg_connect(srv_name, full_keyname, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)
@@ -1038,7 +1038,7 @@ void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[])
 	split_server_keyname(srv_name, full_keyname, argv[1]);
 
 	/* open registry receive a policy handle */
-	res = res ? reg_connect(srv_name, full_keyname, key_name,
+	res = res ? reg_connect(srv_name, full_keyname, key_name, 0x02000000,
 				&pol_con) : False;
 
 	if ((*key_name) != 0)

@@ -37,6 +37,7 @@ do a REG Open Policy
 BOOL reg_connect( const char* srv_name,
 				const char *full_keyname,
 				char *key_name,
+				uint32 access_mask,
 				POLICY_HND *reg_hnd)
 {
 	BOOL res = True;
@@ -72,7 +73,7 @@ BOOL reg_connect( const char* srv_name,
 		case HKEY_CLASSES_ROOT:
 		{
 			res = res ? reg_open_hkcr(con, 
-					0x5428, 0x02000000,
+					0x5428, access_mask,
 					reg_hnd) : False;
 			break;
 		}
@@ -80,7 +81,7 @@ BOOL reg_connect( const char* srv_name,
 		case HKEY_LOCAL_MACHINE:
 		{
 			res = res ? reg_open_hklm(con, 
-					0x84E0, 0x02000000,
+					0x84E0, access_mask,
 					reg_hnd) : False;
 			break;
 		}
@@ -88,7 +89,7 @@ BOOL reg_connect( const char* srv_name,
 		case HKEY_USERS:
 		{
 			res = res ? reg_open_hku(con, 
-					0x84E0, 0x02000000,
+					0x84E0, access_mask,
 					reg_hnd) : False;
 			break;
 		}
@@ -101,7 +102,8 @@ BOOL reg_connect( const char* srv_name,
 
 	if (res)
 	{
-		if (!register_policy_hnd(get_global_hnd_cache(), reg_hnd) ||
+		if (!register_policy_hnd(get_global_hnd_cache(), reg_hnd,
+		                         access_mask) ||
 		    !set_policy_con(get_global_hnd_cache(), reg_hnd, con, 
 						 cli_connection_unlink))
 		{

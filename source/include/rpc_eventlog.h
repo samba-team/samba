@@ -79,8 +79,8 @@ typedef struct eventlog_q_open
 	UNIHDR  hdr_unk;
 	UNISTR2 uni_unk;
 	
-	uint32 unk6;
-	uint32 unk7;
+	uint32 unk6; /* one of these is an access mask! */
+	uint32 unk7; /* one of these is an access mask! */
 
 } EVENTLOG_Q_OPEN;
 

@@ -617,7 +617,7 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 /****************************************************************************
 do a SAMR Connect
 ****************************************************************************/
-BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
+BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 				POLICY_HND *connect_pol)
 {
 	prs_struct data;
@@ -633,8 +633,8 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 		return False;
 	}
 
-	DEBUG(4,("SAMR Open Policy server:%s undoc value:%x\n",
-				srv_name, unknown_0));
+	DEBUG(4,("SAMR Open Policy server:%s access_mask:%x\n",
+				srv_name, access_mask));
 
 	if (srv_name == NULL || connect_pol == NULL) return False;
 
@@ -644,7 +644,7 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 	prs_init(&rdata, 0, 4, True );
 
 	/* store the parameters */
-	make_samr_q_connect(&q_o, srv_name, unknown_0);
+	make_samr_q_connect(&q_o, srv_name, access_mask);
 
 	/* turn parameters into data stream */
 	samr_io_q_connect("", &q_o,  &data, 0);
@@ -668,8 +668,11 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 		if (p)
 		{
 			memcpy(connect_pol, &r_o.connect_pol, sizeof(r_o.connect_pol));
-			valid_pol = register_policy_hnd(get_global_hnd_cache(), connect_pol) &&
-			            set_policy_con(get_global_hnd_cache(), connect_pol, con,
+			valid_pol = register_policy_hnd(get_global_hnd_cache(),
+			                                connect_pol,
+			                                access_mask) &&
+			            set_policy_con(get_global_hnd_cache(),
+			                                 connect_pol, con,
 			                                 cli_connection_unlink);
 		}
 	}

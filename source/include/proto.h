@@ -2118,6 +2118,7 @@ void cli_nt_session_close(struct cli_state *cli, uint16 fnum);
 BOOL reg_connect( const char* srv_name,
 				const char *full_keyname,
 				char *key_name,
+				uint32 access_mask,
 				POLICY_HND *reg_hnd);
 BOOL reg_open_hkcr( struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
@@ -2980,7 +2981,7 @@ BOOL make_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
 BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
-				uint16 unknown_0, uint32 level);
+				uint16 unknown_0, uint32 acccess_mask);
 BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth);
 BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth);
 BOOL make_reg_q_flush_key(REG_Q_FLUSH_KEY *q_u, POLICY_HND *pol);
@@ -3046,7 +3047,7 @@ BOOL make_reg_q_enum_key(REG_Q_ENUM_KEY *q_i, POLICY_HND *pol, uint32 key_idx);
 BOOL reg_io_q_enum_key(char *desc,  REG_Q_ENUM_KEY *q_q, prs_struct *ps, int depth);
 BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int depth);
 BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
-				char *key_name, uint32 unk);
+				char *key_name, uint32 acces_mask);
 BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int depth);
 BOOL make_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
 				POLICY_HND *pol, uint32 status);

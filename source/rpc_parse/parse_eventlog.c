@@ -42,8 +42,8 @@ BOOL make_eventlog_q_open(EVENTLOG_Q_OPEN *q_u, const char *journal, char *unk)
 	make_uni_hdr(&(q_u->hdr_unk), len_unk);
 	make_unistr2(&(q_u->uni_unk), unk, len_unk);
 	
-	q_u->unk6=0x01;
-	q_u->unk7=0x01;
+	q_u->unk6=0x01; /* one of these is an access mask! */
+	q_u->unk7=0x01; /* one of these is an access mask! */
 
 	return True;
 }

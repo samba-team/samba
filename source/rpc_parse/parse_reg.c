@@ -89,12 +89,12 @@ BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int d
 creates a structure.
 ********************************************************************/
 BOOL make_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
-				uint16 unknown_0, uint32 level)
+				uint16 unknown_0, uint32 access_mask)
 {
 	q_o->ptr = 1;
 	q_o->unknown_0 = unknown_0;
 	q_o->unknown_1 = 0x0; /* random - changes */
-	q_o->level = level;
+	q_o->access_mask = access_mask;
 
 	return True;
 }
@@ -116,7 +116,7 @@ BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int d
 	{
 		prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0));
 		prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1));
-		prs_uint32("level    ", ps, depth, &(r_q->level    ));
+		prs_uint32("access_mask", ps, depth, &(r_q->access_mask));
 	}
 
 	return True;
@@ -1271,7 +1271,7 @@ BOOL reg_io_r_enum_key(char *desc,  REG_R_ENUM_KEY *r_q, prs_struct *ps, int dep
 makes a structure.
 ********************************************************************/
 BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
-				char *key_name, uint32 unk)
+				char *key_name, uint32 access_mask)
 {
 	int len_name = strlen(key_name)+1;
 
@@ -1283,7 +1283,7 @@ BOOL make_reg_q_open_entry(REG_Q_OPEN_ENTRY *r_q, POLICY_HND *pol,
 	make_unistr2(&(r_q->uni_name), key_name, len_name);
 
 	r_q->unknown_0 = 0x00000000;
-	r_q->unknown_1 = unk;
+	r_q->access_mask = access_mask;
 
 	return True;
 }
@@ -1307,7 +1307,7 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 	prs_align(ps);
 	
 	prs_uint32("unknown_0", ps, depth, &(r_q->unknown_0));
-	prs_uint32("unknown_1", ps, depth, &(r_q->unknown_1));
+	prs_uint32("access_mask", ps, depth, &(r_q->access_mask));
 
 	return True;
 }
