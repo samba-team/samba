@@ -579,3 +579,19 @@ char *get_nt_error_c_code(NTSTATUS nt_code)
 
         return out;
 }
+
+/*****************************************************************************
+ returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
+ *****************************************************************************/
+NTSTATUS nt_status_string_to_code(char *nt_status_str)
+{
+        int idx = 0;
+
+	while (nt_errs[idx].nt_errstr != NULL) {
+		if (strcmp(nt_errs[idx].nt_errstr, nt_status_str) == 0) {
+                        return nt_errs[idx].nt_errcode;
+		}
+		idx++;
+	}
+	return NT_STATUS_UNSUCCESSFUL;
+}
