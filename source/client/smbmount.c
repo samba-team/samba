@@ -191,6 +191,11 @@ static struct cli_state *do_connection(char *svc_name)
 		}
 	}
 
+	/* This should be right for current smbfs. Future versions will support
+	   large files as well as unicode and oplocks. */
+	c->capabilities &= ~(CAP_UNICODE | CAP_LARGE_FILES | CAP_NT_SMBS |
+				CAP_NT_FIND | CAP_STATUS32 | CAP_LEVEL_II_OPLOCKS);
+	c->force_dos_errors = True;
 	if (!cli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
@@ -364,7 +369,6 @@ static void send_fs_socket(char *svc_name, char *mount_point, struct cli_state *
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
 		cli_shutdown(c);
-		free(c);
 		c = NULL;
 
 		if (!closed) {
@@ -811,6 +815,7 @@ static void parse_mount_smb(int argc, char **argv)
 	/* here we are interactive, even if run from autofs */
 	setup_logging("mount.smbfs",True);
 
+#if 0 /* JRA - Urban says not needed ? */
 	/* CLI_FORCE_ASCII=false makes smbmount negotiate unicode. The default
 	   is to not announce any unicode capabilities as current smbfs does
 	   not support it. */
@@ -819,6 +824,7 @@ static void parse_mount_smb(int argc, char **argv)
 		unsetenv("CLI_FORCE_ASCII");
 	else
 		setenv("CLI_FORCE_ASCII", "true", 1);
+#endif
 
 	TimeInit();
 	charset_initialise();
