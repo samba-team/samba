@@ -53,3 +53,60 @@ Note:
 Under NT/2K the use of mandotory profiles forces the use of MS Exchange
 storage of mail data. That keeps desktop profiles usable.
 
+
+Note:
+-----
+	Date: Tue, 19 Nov 2002 08:32:17 -0000
+	From: John Russell <apca72@dsl.pipex.com>
+	Reply-To: John Russell <j.c.russell@sussex.ac.uk>
+	To: samba@lists.samba.org
+	Subject: Re: [Samba] Samba and Windows XP
+
+	    [ The following text is in the "iso-8859-1" character set. ]
+	    [ Your display is set for the "US-ASCII" character set.  ]
+	    [ Some characters may be displayed incorrectly. ]
+
+	 this is a security check new to Windows XP (or maybe only
+	Windows XP service pack 1).  It can be disabled via a group policy in
+	Active Directory.  The policy is:
+
+	"Computer Configuration\Administrative Templates\System\User
+	Profiles\Do not check for user ownership of Roaming Profile Folders"
+
+	...and it should be set to "Enabled".
+
+	Does the new version of samba have an Active Directory analogue?  If so,
+	then you may be able to set the policy through this.
+
+	If you cannot set group policies in samba, then you may be able to set
+	the policy locally on each machine.  If you want to try this, then do
+	the following (N.B. I don't know for sure that this will work in the
+	same way as a domain group policy):
+
+	On the XP workstation log in with an Administrator account.
+
+	Click: "Start", "Run"
+	Type: "mmc"
+	Click: "OK"
+
+	A Microsoft Management Console should appear.
+	Click: File, "Add/Remove Snap-in...", "Add"
+	Double-Click: "Group Policy"
+	Click: "Finish", "Close"
+	Click: "OK"
+
+	In the "Console Root" window:
+	Expand: "Local Computer Policy", "Computer Configuration",
+	"Administrative Templates", "System", "User Profiles"
+	Double-Click: "Do not check for user ownership of Roaming Profile
+	Folders"
+	Select: "Enabled"
+	Click: OK"
+
+	Close the whole console.  You do not need to save the settings (this
+	refers to the console settings rather than the policies you have
+	changed).
+
+	Reboot.
+
+
