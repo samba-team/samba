@@ -47,7 +47,7 @@ printers) from unix, Netware and other operating systems
 - a tar extension to the client for backing up PCs
 
 For a much better overview have a look at the web site at
-http://samba.canberra.edu.au/pub/samba, and browse the user survey.
+http://samba.anu.edu.au/samba, and browse the user survey.
 
 Related packages include:
 
@@ -140,14 +140,14 @@ WEB SITE
 
 A Samba WWW site has been setup with lots of useful info. Connect to:
 
-http://samba.canberra.edu.au/pub/samba/
+http://samba.anu.edu.au/samba/
 
 As well as general information and documentation, this also has searchable 
 archives of the mailing list and a user survey that shows who else is using
 this package. Have you registered with the survey yet? :-)
 
 It is maintained by Paul Blackman (thanks Paul!). You can contact him
-at ictinus@lake.canberra.edu.au.
+at ictinus@samba.anu.edu.au.
 
 
 
