@@ -469,6 +469,7 @@ int reply_ntcreate_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   set_posix_case_semantics(file_attributes);
 
   StrnCpy(fname,smb_buf(inbuf),fname_len);
+  fname[fname_len] = '\0';
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
@@ -622,6 +623,7 @@ static int call_nt_transact_create(char *inbuf, char *outbuf, int bufsize, int c
   set_posix_case_semantics(file_attributes);
 
   StrnCpy(fname,params+53,fname_len);
+  fname[fname_len] = '\0';
   unix_convert(fname,cnum,0,&bad_path);
     
   fnum = find_free_file();
@@ -753,16 +755,27 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int c
 {
   char *params = *pparams;
   pstring new_name;
-  pstring old_name;
   int fnum = SVAL(params, 0);
-  uint16 rename_flags = SVAL(params,2);
+  BOOL replace_if_exists = (SVAL(params,2) & RENAME_REPLACE_IF_EXISTS) ? True : False;
   uint32 total_parameter_count = IVAL(inbuf, smb_nt_TotalParameterCount);
   uint32 fname_len = MIN((((uint32)IVAL(inbuf,smb_nt_TotalParameterCount)-4)),
                          ((uint32)sizeof(fname)-1));
+  int outsize = 0;
 
+  CHECK_FNUM(fnum, cnum);
   StrnCpy(new_name,params+4,fname_len);
-  unix_convert(new_name,cnum,0,&bad_path);
+  new_name[fname_len] = '\0';
 
+  outsize = rename_internals(inbuf, outbuf, Files[fnum].name, newname, replace_if_exists);
+  if(outsize == 0) {
+    /*
+     * Rename was successful.
+     */
+    send_nt_replies(outbuf, bufsize, NULL, 0, NULL, 0);
+    outsize = -1;
+  }
+
+  return(outsize);
 }
    
 /****************************************************************************

@@ -1779,7 +1779,7 @@ int reply_printqueue(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_printwrite(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_mkdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_rmdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
-int rename_internals(char *inbuf, char *outbuf, char *name, char *newname);
+int rename_internals(char *inbuf, char *outbuf, char *name, char *newname, BOOL replace_if_exists);
 int reply_mv(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_copy(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
 int reply_setdir(char *inbuf,char *outbuf, int dum_size, int dum_buffsize);
