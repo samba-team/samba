@@ -716,6 +716,9 @@ The minimal configuration for <filename>krb5.conf</filename> is:
 </para>
 
 <para><programlisting>
+        [libdefaults]
+            default_realm = YOUR.KERBEROS.REALM
+
 	[realms]
 	    YOUR.KERBEROS.REALM = {
 		kdc = your.kerberos.server
