@@ -1965,10 +1965,13 @@ static NTSTATUS can_rename(char *fname,connection_struct *conn, SMB_STRUCT_STAT 
 
 	if (!fsp) {
 		NTSTATUS ret = NT_STATUS_ACCESS_DENIED;
-		if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
+		if (!NT_STATUS_IS_OK(unix_ERR_ntstatus))
+			ret = unix_ERR_ntstatus;
+		else if (unix_ERR_class == ERRDOS && unix_ERR_code == ERRbadshare)
 			ret = NT_STATUS_SHARING_VIOLATION;
 		unix_ERR_class = 0;
 		unix_ERR_code = 0;
+		unix_ERR_ntstatus = NT_STATUS_OK;
 		return ret;
 	}
 	close_file(fsp,False);
