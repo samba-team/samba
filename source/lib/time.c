@@ -292,9 +292,9 @@ char *http_timestring(TALLOC_CTX *mem_ctx, time_t t)
 	return buf;
 }
 
-/***************************************************************************
-return a LDAP time string
-  ***************************************************************************/
+/*
+  return a LDAP time string
+*/
 char *ldap_timestring(TALLOC_CTX *mem_ctx, time_t t)
 {
 	struct tm *tm = gmtime(&t);
@@ -309,6 +309,28 @@ char *ldap_timestring(TALLOC_CTX *mem_ctx, time_t t)
 			       tm->tm_year+1900, tm->tm_mon+1,
 			       tm->tm_mday, tm->tm_hour, tm->tm_min,
 			       tm->tm_sec);
+}
+
+
+/*
+  convert a LDAP time string to a time_t. Return 0 if unable to convert
+*/
+time_t ldap_string_to_time(const char *s)
+{
+	struct tm tm;
+	
+	if (s == NULL) return 0;
+	
+	ZERO_STRUCT(tm);
+	if (sscanf(s, "%04u%02u%02u%02u%02u%02u.0Z", 
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+		return 0;
+	}
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+	
+	return timegm(&tm);
 }
 
 /****************************************************************************

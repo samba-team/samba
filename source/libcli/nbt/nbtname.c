@@ -359,10 +359,10 @@ static const char *nbt_hex_encode(TALLOC_CTX *mem_ctx, const char *s)
 /*
   form a string for a NBT name
 */
-const char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
+char *nbt_name_string(TALLOC_CTX *mem_ctx, const struct nbt_name *name)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	const char *ret;
+	char *ret;
 	if (name->scope) {		
 		ret = talloc_asprintf(mem_ctx, "%s<%02x>-%s",
 				      nbt_hex_encode(tmp_ctx, name->name),

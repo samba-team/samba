@@ -60,8 +60,8 @@ void nbtd_request_defense(struct nbt_name_socket *nbtsock,
 		DEBUG(2,("Defending name %s on %s against %s\n",
 			 nbt_name_string(packet, name), 
 			 iface->bcast_address, src_address));
-		nbtd_negative_name_registration_reply(nbtsock, packet, 
-						      src_address, src_port);
+		nbtd_name_registration_reply(nbtsock, packet, 
+					     src_address, src_port, NBT_RCODE_ACT);
 	} else {
 		nbtd_winsserver_request(nbtsock, packet, src_address, src_port);
 	}

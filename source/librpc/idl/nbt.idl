@@ -38,6 +38,7 @@ interface nbt
 
 	/* rcode values */
 	typedef enum {
+		NBT_RCODE_OK  = 0x0,
 		NBT_RCODE_FMT = 0x1,
 		NBT_RCODE_SVR = 0x2,
 		NBT_RCODE_NAM = 0x3,

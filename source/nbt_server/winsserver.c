@@ -22,28 +22,121 @@
 
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
+#include "nbt_server/winsdb.h"
+#include "system/time.h"
+
+/*
+  register a new name with WINS
+*/
+static uint8_t wins_register_new(struct nbt_name_socket *nbtsock, 
+				 struct nbt_name_packet *packet, 
+				 const char *src_address, int src_port)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	struct nbt_name *name = &packet->questions[0].name;
+	uint32_t ttl = packet->additional[0].ttl;
+	struct winsdb_record rec;
+
+	ttl = MIN(ttl, winssrv->max_ttl);
+	ttl = MAX(ttl, winssrv->min_ttl);
+
+	rec.name          = name;
+	rec.nb_flags      = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
+	rec.state         = WINS_REC_ACTIVE;
+	rec.expire_time   = time(NULL) + ttl;
+	rec.registered_by = src_address;
+	rec.addresses     = str_list_make(packet, 
+					  packet->additional[0].rdata.netbios.addresses[0].ipaddr,
+					  NULL);
+	
+	return winsdb_add(winssrv, &rec);
+}
+
+
+/*
+  register a name
+*/
+static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock, 
+				     struct nbt_name_packet *packet, 
+				     const char *src_address, int src_port)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	struct nbt_name *name = &packet->questions[0].name;
+	struct winsdb_record *rec;
+	uint8_t rcode = 0;
+
+	rec = winsdb_load(winssrv, name, packet);
+	if (rec == NULL) {
+		rcode = wins_register_new(nbtsock, packet, src_address, src_port);
+	} else if (rec->state != WINS_REC_ACTIVE) {
+		uint32_t ttl = packet->additional[0].ttl;
+		ttl = MIN(ttl, winssrv->max_ttl);
+		ttl = MAX(ttl, winssrv->min_ttl);
+		rec->nb_flags      = packet->additional[0].rdata.netbios.addresses[0].nb_flags;
+		rec->state         = WINS_REC_ACTIVE;
+		rec->expire_time   = time(NULL) + ttl;
+		rec->registered_by = src_address;
+		rec->addresses     = str_list_make(packet, 
+						   packet->additional[0].rdata.netbios.addresses[0].ipaddr,
+						   NULL);
+		winsdb_modify(winssrv, rec);
+	} else {
+		rcode = NBT_RCODE_ACT;
+	}
+
+	nbtd_name_registration_reply(nbtsock, packet, src_address, src_port, rcode);
+}
 
 
 
+/*
+  query a name
+*/
 static void nbtd_winsserver_query(struct nbt_name_socket *nbtsock, 
 				  struct nbt_name_packet *packet, 
 				  const char *src_address, int src_port)
 {
-	nbtd_negative_name_query_reply(nbtsock, packet, src_address, src_port);
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	struct nbt_name *name = &packet->questions[0].name;
+	struct winsdb_record *rec;
+
+	rec = winsdb_load(winssrv, name, packet);
+	if (rec == NULL || rec->state != WINS_REC_ACTIVE) {
+		nbtd_negative_name_query_reply(nbtsock, packet, src_address, src_port);
+		return;
+	}
+
+	nbtd_name_query_reply(nbtsock, packet, src_address, src_port, name, 
+			      0, rec->nb_flags, rec->addresses);
 }
 
-static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock, 
-				    struct nbt_name_packet *packet, 
-				    const char *src_address, int src_port)
-{
-	nbtd_negative_name_registration_reply(nbtsock, packet, src_address, src_port);
-}
-
-
+/*
+  release a name
+*/
 static void nbtd_winsserver_release(struct nbt_name_socket *nbtsock, 
 				    struct nbt_name_packet *packet, 
 				    const char *src_address, int src_port)
 {
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	struct nbt_name *name = &packet->questions[0].name;
+	struct winsdb_record *rec;
+
+	rec = winsdb_load(winssrv, name, packet);
+	if (rec != NULL && rec->state == WINS_REC_ACTIVE) {
+		rec->state = WINS_REC_RELEASED;
+		winsdb_modify(winssrv, rec);
+	}
+
+	/* we match w2k3 by always giving a positive reply to name releases. */
+	nbtd_name_release_reply(nbtsock, packet, src_address, src_port, NBT_RCODE_OK);
 }
 
 
@@ -54,7 +147,10 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 			     struct nbt_name_packet *packet, 
 			     const char *src_address, int src_port)
 {
-	if (packet->operation & NBT_FLAG_BROADCAST) {
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private, 
+						       struct nbtd_interface);
+	struct wins_server *winssrv = iface->nbtsrv->winssrv;
+	if ((packet->operation & NBT_FLAG_BROADCAST) || winssrv == NULL) {
 		return;
 	}
 
@@ -83,14 +179,15 @@ void nbtd_winsserver_request(struct nbt_name_socket *nbtsock,
 NTSTATUS nbtd_winsserver_init(struct nbtd_server *nbtsrv)
 {
 	if (!lp_wins_support()) {
-		nbtsrv->wins_db = NULL;
+		nbtsrv->winssrv = NULL;
 		return NT_STATUS_OK;
 	}
 
-	nbtsrv->wins_db = ldb_wrap_connect(nbtsrv, lp_wins_url(), 0, NULL);
-	if (nbtsrv->wins_db == NULL) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
+	nbtsrv->winssrv = talloc(nbtsrv, struct wins_server);
+	NT_STATUS_HAVE_NO_MEMORY(nbtsrv->winssrv);
 
-	return NT_STATUS_OK;
+	nbtsrv->winssrv->max_ttl = lp_max_wins_ttl();
+	nbtsrv->winssrv->min_ttl = lp_min_wins_ttl();
+
+	return winsdb_init(nbtsrv->winssrv);
 }

@@ -178,11 +178,12 @@ failed:
 }
 
 /*
-  send a name defense reply
+  send a name registration reply
 */
-void nbtd_negative_name_registration_reply(struct nbt_name_socket *nbtsock, 
-					   struct nbt_name_packet *request_packet, 
-					   const char *src_address, int src_port)
+void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock, 
+				  struct nbt_name_packet *request_packet, 
+				  const char *src_address, int src_port,
+				  uint8_t rcode)
 {
 	struct nbt_name_packet *packet;
 	struct nbt_name *name = &request_packet->questions[0].name;
@@ -198,7 +199,7 @@ void nbtd_negative_name_registration_reply(struct nbt_name_socket *nbtsock,
 		NBT_FLAG_AUTHORITIVE |
 		NBT_FLAG_RECURSION_DESIRED |
 		NBT_FLAG_RECURSION_AVAIL |
-		NBT_RCODE_ACT;
+		rcode;
 	
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
 	if (packet->answers == NULL) goto failed;
@@ -206,10 +207,53 @@ void nbtd_negative_name_registration_reply(struct nbt_name_socket *nbtsock,
 	packet->answers[0].name     = *name;
 	packet->answers[0].rr_type  = NBT_QTYPE_NETBIOS;
 	packet->answers[0].rr_class = NBT_QCLASS_IP;
-	packet->answers[0].ttl      = 0;
+	packet->answers[0].ttl      = request_packet->additional[0].ttl;
 	packet->answers[0].rdata    = request_packet->additional[0].rdata;
 
-	DEBUG(7,("Sending negative name registration reply for %s to %s:%d\n", 
+	DEBUG(7,("Sending %s name registration reply for %s to %s:%d\n", 
+		 rcode==0?"positive":"negative",
+		 nbt_name_string(packet, name), src_address, src_port));
+	
+	nbt_name_reply_send(nbtsock, src_address, src_port, packet);
+
+failed:
+	talloc_free(packet);
+}
+
+
+/*
+  send a name release reply
+*/
+void nbtd_name_release_reply(struct nbt_name_socket *nbtsock, 
+			     struct nbt_name_packet *request_packet, 
+			     const char *src_address, int src_port,
+			     uint8_t rcode)
+{
+	struct nbt_name_packet *packet;
+	struct nbt_name *name = &request_packet->questions[0].name;
+
+	packet = talloc_zero(nbtsock, struct nbt_name_packet);
+	if (packet == NULL) return;
+
+	packet->name_trn_id = request_packet->name_trn_id;
+	packet->ancount = 1;
+	packet->operation = 
+		NBT_FLAG_REPLY | 
+		NBT_OPCODE_RELEASE |
+		NBT_FLAG_AUTHORITIVE |
+		rcode;
+	
+	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
+	if (packet->answers == NULL) goto failed;
+
+	packet->answers[0].name     = *name;
+	packet->answers[0].rr_type  = NBT_QTYPE_NETBIOS;
+	packet->answers[0].rr_class = NBT_QCLASS_IP;
+	packet->answers[0].ttl      = request_packet->additional[0].ttl;
+	packet->answers[0].rdata    = request_packet->additional[0].rdata;
+
+	DEBUG(7,("Sending %s name release reply for %s to %s:%d\n", 
+		 rcode==0?"positive":"negative",
 		 nbt_name_string(packet, name), src_address, src_port));
 	
 	nbt_name_reply_send(nbtsock, src_address, src_port, packet);

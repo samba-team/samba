@@ -67,8 +67,7 @@ struct nbtd_server {
 	   our names with a WINS server */
 	struct nbtd_interface *wins_interface;
 
-	/* wins server database handle, if configured */
-	struct ldb_wrap *wins_db;
+	struct wins_server *winssrv;
 };
 
 
