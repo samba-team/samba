@@ -171,54 +171,9 @@ static void reply_lanman2(struct smbsrv_request *req, uint16_t choice)
 
 	req_push_str(req, NULL, lp_workgroup(), -1, STR_TERMINATE);
 
+
 	req_send_reply(req);
 }
-
-
-#if 0
-/****************************************************************************
- Generate the spnego negprot reply blob. Return the number of bytes used.
-****************************************************************************/
-static DATA_BLOB negprot_spnego(struct smbsrv_connection *smb_conn)
-{
-	DATA_BLOB blob;
-	uint8_t guid[16];
-	const char *OIDs_krb5[] = {OID_KERBEROS5,
-				   OID_KERBEROS5_OLD,
-				   OID_NTLMSSP,
-				   NULL};
-	const char *OIDs_plain[] = {OID_NTLMSSP, NULL};
-	char *principal;
-
-	smb_conn->negotiate.spnego_negotiated = True;
-
-	memset(guid, 0, 16);
-	safe_strcpy((char *)guid, lp_netbios_name(), 16);
-	strlower((char *)guid);
-
-#if 0
-	/* strangely enough, NT does not send the single OID NTLMSSP when
-	   not a ADS member, it sends no OIDs at all
-
-	   we can't do this until we teach our sesssion setup parser to know
-	   about raw NTLMSSP (clients send no ASN.1 wrapping if we do this)
-	*/
-	if (lp_security() != SEC_ADS) {
-		memcpy(p, guid, 16);
-		return 16;
-	}
-#endif
-	if (lp_security() != SEC_ADS) {
-		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
-	} else {
-		asprintf(&principal, "%s$@%s", guid, lp_realm());
-		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, principal);
-		free(principal);
-	}
-
-	return blob;
-}
-#endif
 
 /****************************************************************************
  Reply for the nt protocol.
@@ -243,13 +198,12 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
 	
-	if (req->smb_conn->negotiate.encrypted_passwords && 
+	if (0 && req->smb_conn->negotiate.encrypted_passwords && 
 	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
 	    (req->flags2 & FLAGS2_EXTENDED_SECURITY)) {
-/* REWRITE		negotiate_spnego = True; 
+		negotiate_spnego = True; 
 		capabilities |= CAP_EXTENDED_SECURITY;
-*/
 	}
 	
 	if (lp_unix_extensions()) {
@@ -335,15 +289,51 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		req_push_str(req, NULL, lp_netbios_name(), -1, STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
 	} else {
-#if 0
-		DATA_BLOB blob = negprot_spnego(req->smb_conn);
+		struct gensec_security *gensec_security;
+		DATA_BLOB null_data_blob = data_blob(NULL, 0);
+		DATA_BLOB blob;
+		NTSTATUS nt_status = gensec_server_start(&gensec_security);
+		
+		if (req->smb_conn->negotiate.auth_context) {
+			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
+			return;
+		}
 
-		req_grow_data(req, blob.length);
+		req->smb_conn->negotiate.auth_context = NULL;
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
+			smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
+			return;
+		}
+
+		nt_status = gensec_start_mech_by_oid(gensec_security, OID_SPNEGO);
+		
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Failed to start SPNEGO: %s\n", nt_errstr(nt_status)));
+			smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO\n");
+			return;
+		}
+
+		nt_status = gensec_update(gensec_security, req->mem_ctx, null_data_blob, &blob);
+
+		if (!NT_STATUS_IS_OK(nt_status) && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(0, ("Failed to get SPNEGO to give us the first token: %s\n", nt_errstr(nt_status)));
+			smbsrv_terminate_connection(req->smb_conn, "Failed to start SPNEGO - no first token\n");
+			return;
+		}
+
+		req->smb_conn->negotiate.spnego_negotiated = True;
+	
+		req_grow_data(req, blob.length + 16);
+		/* a NOT very random guid */
+		memset(req->out.ptr, '\0', 16);
+		req->out.ptr += 16;
+
 		memcpy(req->out.ptr, blob.data, blob.length);
+		SCVAL(req->out.vwv+1, VWV(16), blob.length + 16);
+		req->out.ptr += blob.length;
 		DEBUG(3,("using SPNEGO\n"));
-#else
-		smbsrv_terminate_connection(req->smb_conn, "no SPNEGO please");
-#endif
 	}
 	
 	req_send_reply_nosign(req);	
