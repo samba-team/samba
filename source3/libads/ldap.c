@@ -27,113 +27,12 @@
    realm of the form AA.BB.CC 
    caller must free
 */
-static char *ads_build_dn(const char *realm)
-{
-	char *p, *r;
-	int numdots = 0;
-	char *ret;
-	int len;
-	
-	r = strdup(realm);
-
-	if (!r || !*r) return r;
-
-	for (p=r; *p; p++) {
-		if (*p == '.') numdots++;
-	}
-
-	len = (numdots+1)*4 + strlen(r) + 1;
-
-	ret = malloc(len);
-	strlcpy(ret,"dc=", len);
-	p=strtok(r,"."); 
-	strlcat(ret, p, len);
-
-	while ((p=strtok(NULL,"."))) {
-		strlcat(ret,",dc=", len);
-		strlcat(ret, p, len);
-	}
-
-	free(r);
-
-	return ret;
-}
-
 /*
   return a string for an error from a ads routine
 */
 char *ads_errstr(int rc)
 {
 	return ldap_err2string(rc);
-}
-
-/*
-  find the ldap server from DNS
-*/
-static char *find_ldap_server(ADS_STRUCT *ads)
-{
-	char *list = NULL;
-
-	if (ldap_domain2hostlist(ads->realm, &list) == LDAP_SUCCESS) {
-		char *p;
-		p = strchr(list, ':');
-		if (p) *p = 0;
-		return list;
-	}
-
-	return NULL;
-}
-
-/*
-  initialise a ADS_STRUCT, ready for some ads_ ops
-*/
-ADS_STRUCT *ads_init(const char *realm, 
-		     const char *ldap_server,
-		     const char *bind_path)
-{
-	ADS_STRUCT *ads;
-	
-	ads = (ADS_STRUCT *)malloc(sizeof(*ads));
-	if (!ads) return NULL;
-	memset(ads, 0, sizeof(*ads));
-	
-	ads->realm = realm? strdup(realm) : NULL;
-	ads->ldap_server = ldap_server? strdup(ldap_server) : NULL;
-	ads->bind_path = bind_path? strdup(bind_path) : NULL;
-	ads->ldap_port = LDAP_PORT;
-
-	if (!ads->realm) {
-		ads->realm = lp_realm();
-	}
-	if (!ads->bind_path) {
-		ads->bind_path = ads_build_dn(ads->realm);
-	}
-	if (!ads->ldap_server) {
-		ads->ldap_server = lp_ads_server();
-		if (!ads->ldap_server[0]) {
-			ads->ldap_server = find_ldap_server(ads);
-		}
-	}
-	if (!ads->kdc_server) {
-		/* assume its the same as LDAP */
-		ads->kdc_server = ads->ldap_server? strdup(ads->ldap_server) : NULL;
-	}
-
-	return ads;
-}
-
-/*
-  free the memory used by the ADS structure initialized with 'ads_init(...)'
-*/
-void ads_destroy(ADS_STRUCT *ads)
-{
-	if (ads->ld) ldap_unbind(ads->ld);
-	SAFE_FREE(ads->realm);
-	SAFE_FREE(ads->ldap_server);
-	SAFE_FREE(ads->kdc_server);
-	SAFE_FREE(ads->bind_path);
-	ZERO_STRUCTP(ads);
-	free(ads);
 }
 
 /*
@@ -474,7 +373,7 @@ BOOL ads_USN(ADS_STRUCT *ads, unsigned *usn)
 	void *res;
 
 	rc = ldap_search_s(ads->ld, ads->bind_path, 
-			   LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage *)&res);
+			   LDAP_SCOPE_BASE, "(objectclass=*)", (char **)attrs, 0, (LDAPMessage **)&res);
 	if (rc || ads_count_replies(ads, res) != 1) return False;
 	return False;
 }
