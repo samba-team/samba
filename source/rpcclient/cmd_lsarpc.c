@@ -750,9 +750,13 @@ struct cmd_set lsarpc_commands[] = {
 	{ "enumprivs", 	         RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privilege,     NULL, PI_LSARPC, "Enumerate privileges",                 "" },
 	{ "getdispname",         RPC_RTYPE_NTSTATUS, cmd_lsa_get_dispname,       NULL, PI_LSARPC, "Get the privilege name",               "" },
 	{ "lsaenumsid",          RPC_RTYPE_NTSTATUS, cmd_lsa_enum_sids,          NULL, PI_LSARPC, "Enumerate the LSA SIDS",               "" },
-	{ "lsacreateaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_create_account, NULL, PI_LSARPC, "Create a new lsa account",   "" },
+	{ "lsacreateaccount",    RPC_RTYPE_NTSTATUS, cmd_lsa_create_account,     NULL, PI_LSARPC, "Create a new lsa account",   "" },
 	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, "Enumerate the rights of an SID",   "" },
+#if 0
+	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, "Assign a privilege to a SID", "" },
+	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, "Revoke a privilege from a SID", "" },
+#endif
 	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookupprivvalue,    NULL, PI_LSARPC, "Get a privilege value given its name", "" },
@@ -760,3 +764,4 @@ struct cmd_set lsarpc_commands[] = {
 
 	{ NULL }
 };
+
