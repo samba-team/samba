@@ -266,7 +266,6 @@ static void do_command(struct client_info *info, char *tok, char *line)
 ****************************************************************************/
 static BOOL process( struct client_info *info, char *cmd_str)
 {
-	extern FILE *dbf;
 	pstring line;
 	char *cmd = cmd_str;
 
@@ -407,7 +406,6 @@ enum client_action
 	struct client_info cli_info;
 
 	pstring password; /* local copy only, if one is entered */
-	pstring tmp;
 
 	rpcclient_init();
 
