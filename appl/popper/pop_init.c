@@ -76,7 +76,6 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
     krb5_error_code ret;
     krb5_auth_context auth_context = NULL;
     u_int32_t len;
-    krb5_principal server;
     krb5_ticket *ticket;
 
     if (memcmp (buf, "\x00\x00\x00\x13", 4) != 0)
@@ -88,29 +87,32 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
     if (len != sizeof(KRB5_SENDAUTH_VERSION)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
 	return -1;
-    
-    ret = krb5_sock_to_principal (p->context,
-				  s,
-				  "pop",
-				  KRB5_NT_SRV_HST,
-				  &server);
-    if (ret) {
-	pop_log (p, POP_FAILURE,
-		 "krb5_sock_to_principal: %s",
-		 krb5_get_err_text(p->context, ret));
-	exit (1);
-    }
 
     ret = krb5_recvauth (p->context,
 			 &auth_context,
 			 &s,
 			 "KPOPV1.0",
-			 server,
+			 NULL, /* let rd_req figure out what server to use */
 			 KRB5_RECVAUTH_IGNORE_VERSION,
 			 NULL,
 			 &ticket);
-    krb5_free_principal (p->context, server);
     if (ret == 0) {
+	char *s;
+	ret = krb5_unparse_name(p->context, ticket->server, &s);
+	if(ret) {
+	    pop_log(p, POP_FAILURE, "krb5_unparse_name: %s", 
+		    krb5_get_err_text(p->context, ret));
+	    exit(1);
+	}
+	/* does this make sense? */
+	if(strncmp(s, "pop/", 4) != 0) {
+	    pop_log(p, POP_FAILURE, 
+		    "Got ticket for service `%s'", s);
+	    exit(1);
+	} else if(p->debug)
+	    pop_log(p, POP_DEBUG, 
+		    "Accepted ticket for service `%s'", s);
+	free(s);
 	krb5_auth_con_free (p->context, auth_context);
 	krb5_copy_principal (p->context, ticket->client, &p->principal);
 	krb5_free_ticket (p->context, ticket);
