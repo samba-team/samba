@@ -426,10 +426,10 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 
 	/* 0 means the conversion worked but the result was empty 
-	   so we only fail if it's negative.  In any case, it always 
+	   so we only fail if it's -1.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) == (size_t)-1) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
 		rc = LDAP_NO_MEMORY;
 		goto done;
 	}
@@ -652,8 +652,8 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 	/* 0 means the conversion worked but the result was empty 
 	   so we only fail if it's negative.  In any case, it always 
 	   at least nulls out the dest */
-	if ((push_utf8_talloc(ctx, &utf8_exp, exp) < 0) ||
-	    (push_utf8_talloc(ctx, &utf8_path, bind_path) < 0)) {
+	if ((push_utf8_talloc(ctx, &utf8_exp, exp) == (size_t)-1) ||
+	    (push_utf8_talloc(ctx, &utf8_path, bind_path) == (size_t)-1)) {
 		DEBUG(1,("ads_do_search: push_utf8_talloc() failed!"));
 		rc = LDAP_NO_MEMORY;
 		goto done;
@@ -1022,7 +1022,7 @@ char *ads_ou_string(const char *org_unit)
 static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname, 
 				       const char *org_unit)
 {
-	ADS_STATUS ret;
+	ADS_STATUS ret, status;
 	char *host_spn, *host_upn, *new_dn, *samAccountName, *controlstr;
 	char *ou_str;
 	TALLOC_CTX *ctx;
@@ -1089,9 +1089,21 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 	ads_mod_str(ctx, &mods, "operatingSystem", "Samba");
 	ads_mod_str(ctx, &mods, "operatingSystemVersion", VERSION);
 
-	ads_gen_add(ads, new_dn, mods);
-	ret = ads_set_machine_sd(ads, hostname, new_dn);
+	ret = ads_gen_add(ads, new_dn, mods);
 
+	if (!ADS_ERR_OK(ret))
+		goto done;
+
+	/* Do not fail if we can't set security descriptor
+	 * it shouldn't be mandatory and probably we just 
+	 * don't have enough rights to do it.
+	 */
+	status = ads_set_machine_sd(ads, hostname, new_dn);
+
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(0, ("Warning: ads_set_machine_sd: %s\n",
+				ads_errstr(status)));
+	}
 done:
 	talloc_destroy(ctx);
 	return ret;
@@ -1406,7 +1418,7 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
  **/
 ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 {
-	const char     *attrs[] = {"ntSecurityDescriptor", "objectSid", 0};
+	const char     *attrs[] = {"nTSecurityDescriptor", "objectSid", 0};
 	char           *exp     = 0;
 	size_t          sd_size = 0;
 	struct berval   bval = {0, NULL};
@@ -1420,8 +1432,12 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 	NTSTATUS    status;
 	ADS_STATUS  ret;
 	DOM_SID     sid;
-	SEC_DESC   *psd = 0;
-	TALLOC_CTX *ctx = 0;	
+	SEC_DESC   *psd = NULL;
+	TALLOC_CTX *ctx = NULL;	
+
+	/* Avoid segmentation fault in prs_mem_free if
+	 * we have to bail out before prs_init */
+	ps_wire.is_dynamic = False;
 
 	if (!ads) return ADS_ERROR(LDAP_SERVER_DOWN);
 
@@ -1448,7 +1464,11 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 		goto ads_set_sd_error;
 	}
 
-	ads_pull_sid(ads, msg, attrs[1], &sid);	
+	if (!ads_pull_sid(ads, msg, attrs[1], &sid)) {
+		ret = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		goto ads_set_sd_error;
+	}
+
 	if (!(ctx = talloc_init("sec_io_desc"))) {
 		ret =  ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;
@@ -1466,7 +1486,10 @@ ADS_STATUS ads_set_machine_sd(ADS_STRUCT *ads, const char *hostname, char *dn)
 		goto ads_set_sd_error;
 	}
 
-	prs_init(&ps_wire, sd_size, ctx, MARSHALL);
+	if (!prs_init(&ps_wire, sd_size, ctx, MARSHALL)) {
+		ret = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
 	if (!sec_io_desc("sd_wire", &psd, &ps_wire, 1)) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto ads_set_sd_error;

@@ -345,7 +345,7 @@ DATA_BLOB spnego_gen_negTokenTarg(const char *principal, int time_offset)
 /*
   parse a spnego NTLMSSP challenge packet giving two security blobs
 */
-BOOL spnego_parse_challenge(DATA_BLOB blob,
+BOOL spnego_parse_challenge(const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2)
 {
 	BOOL ret;
@@ -387,7 +387,7 @@ BOOL spnego_parse_challenge(DATA_BLOB blob,
 
 
 /*
- generate a SPNEGO NTLMSSP auth packet. This will contain the encrypted passwords
+ generate a SPNEGO auth packet. This will contain the encrypted passwords
 */
 DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 {
@@ -412,7 +412,7 @@ DATA_BLOB spnego_gen_auth(DATA_BLOB blob)
 }
 
 /*
- parse a SPNEGO NTLMSSP auth packet. This contains the encrypted passwords
+ parse a SPNEGO auth packet. This contains the encrypted passwords
 */
 BOOL spnego_parse_auth(DATA_BLOB blob, DATA_BLOB *auth)
 {
@@ -447,11 +447,11 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	uint8 negResult;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		negResult = SPNGEO_NEG_RESULT_ACCEPT;
+		negResult = SPNEGO_NEG_RESULT_ACCEPT;
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		negResult = SPNGEO_NEG_RESULT_INCOMPLETE; 
+		negResult = SPNEGO_NEG_RESULT_INCOMPLETE; 
 	} else {
-		negResult = SPNGEO_NEG_RESULT_REJECT; 
+		negResult = SPNEGO_NEG_RESULT_REJECT; 
 	}
 
 	ZERO_STRUCT(data);
@@ -461,7 +461,8 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *ntlmssp_reply, NTSTATUS nt_status)
 	asn1_push_tag(&data, ASN1_CONTEXT(0));
 	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
-	if (negResult == SPNGEO_NEG_RESULT_INCOMPLETE) {
+
+	if (negResult == SPNEGO_NEG_RESULT_INCOMPLETE) {
 		asn1_push_tag(&data,ASN1_CONTEXT(1));
 		asn1_write_OID(&data, OID_NTLMSSP);
 		asn1_pop_tag(&data);

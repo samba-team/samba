@@ -790,7 +790,7 @@ static void usage(void)
 	/* Set environment variable so we don't recursively call ourselves.
 	   This may also be useful interactively. */
 
-	SETENV(WINBINDD_DONT_ENV, "1", 1);
+	setenv(WINBINDD_DONT_ENV, "1", 1);
 
 	/* Initialise samba/rpc client stuff */
 
