@@ -806,6 +806,10 @@ extern int errno;
 
 #include "rpc_secdes.h"
 
+#include "genparser.h"
+
+#include "gums.h"
+
 #include "nt_printing.h"
 
 #include "msdfs.h"

@@ -20,9 +20,8 @@
 
 #include "includes.h"
 
-extern GUMS_FUNCTIONS *gums_storage;
-
 extern DOM_SID global_sid_World;
+extern DOM_SID global_sid_Builtin;
 extern DOM_SID global_sid_Builtin_Administrators;
 extern DOM_SID global_sid_Builtin_Power_Users;
 extern DOM_SID global_sid_Builtin_Account_Operators;
@@ -37,7 +36,7 @@ extern DOM_SID global_sid_Builtin_Guests;
 /* defines */
 
 #define ALLOC_CHECK(str, ptr, err, label) do { if ((ptr) == NULL) { DEBUG(0, ("%s: out of memory!\n", str)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
-#define NTSTATUS_CHECK(str1, str2, err, label) do { if (NT_STATUS_IS_ERR(err)) { DEBUG(0, ("%s: %s failed!\n", str1, str2)); } } while(0)
+#define NTSTATUS_CHECK(err, label, str1, str2) do { if (NT_STATUS_IS_ERR(err)) { DEBUG(0, ("%s: %s\n", str1, str2)); } } while(0)
 
 /****************************************************************************
  Check if a user is a mapped group.
@@ -75,224 +74,6 @@ NTSTATUS is_mapped_group(BOOL *mapped, const DOM_SID *sid)
 }
 #endif
 
-/****************************************************************************
- duplicate alloc luid_attr
- ****************************************************************************/
-NTSTATUS dupalloc_luid_attr(TALLOC_CTX *ctx, LUID_ATTR **new_la, LUID_ATTR old_la)
-{
-	*new_la = (LUID_ATTR *)talloc(ctx, sizeof(LUID_ATTR));
-	if (*new_la == NULL) {
-		DEBUG(0,("dupalloc_luid_attr: could not Alloc memory to duplicate LUID_ATTR\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	(*new_la)->luid.high = old_la.luid.high;
-	(*new_la)->luid.low = old_la.luid.low;
-	(*new_la)->attr = old_la.attr;
-	
-	return NT_STATUS_OK;	
-}
-
-/****************************************************************************
- initialise a privilege list
- ****************************************************************************/
-void gums_init_privilege(PRIVILEGE_SET *priv_set)
-{
-	priv_set->count=0;
-	priv_set->control=0;
-	priv_set->set=NULL;
-}
-
-/****************************************************************************
- add a privilege to a privilege array
- ****************************************************************************/
-NTSTATUS gums_add_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
-{
-	LUID_ATTR *new_set;
-
-	/* check if the privilege is not already in the list */
-	if (gums_check_priv_in_privilege(priv_set, set))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	/* we can allocate memory to add the new privilege */
-
-	new_set=(LUID_ATTR *)talloc_realloc(ctx, priv_set->set, (priv_set->count+1)*(sizeof(LUID_ATTR)));
-	if (new_set==NULL) {
-		DEBUG(0,("add_privilege: could not Realloc memory to add a new privilege\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	new_set[priv_set->count].luid.high=set.luid.high;
-	new_set[priv_set->count].luid.low=set.luid.low;
-	new_set[priv_set->count].attr=set.attr;
-	
-	priv_set->count++;
-	priv_set->set=new_set;
-	
-	return NT_STATUS_OK;	
-}
-
-/****************************************************************************
- add all the privileges to a privilege array
- ****************************************************************************/
-NTSTATUS gums_add_all_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx)
-{
-	NTSTATUS result = NT_STATUS_OK;
-	LUID_ATTR set;
-
-	set.attr=0;
-	set.luid.high=0;
-	
-	set.luid.low=SE_PRIV_ADD_USERS;
-	result = gums_add_privilege(priv_set, ctx, set);
-	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
-	
-	set.luid.low=SE_PRIV_ADD_MACHINES;
-	result = gums_add_privilege(priv_set, ctx, set);
-	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
-
-	set.luid.low=SE_PRIV_PRINT_OPERATOR;
-	result = gums_add_privilege(priv_set, ctx, set);
-	NTSTATUS_CHECK("add_all_privilege", "add_privilege", result, done);
-	
-done:
-	return result;
-}
-
-/****************************************************************************
- check if the privilege list is empty
- ****************************************************************************/
-BOOL gums_check_empty_privilege(PRIVILEGE_SET *priv_set)
-{
-	return (priv_set->count == 0);
-}
-
-/****************************************************************************
- check if the privilege is in the privilege list
- ****************************************************************************/
-BOOL gums_check_priv_in_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
-{
-	int i;
-
-	/* if the list is empty, obviously we can't have it */
-	if (gums_check_empty_privilege(priv_set))
-		return False;
-
-	for (i=0; i<priv_set->count; i++) {
-		LUID_ATTR *cur_set;
-
-		cur_set=&priv_set->set[i];
-		/* check only the low and high part. Checking the attr field has no meaning */
-		if( (cur_set->luid.low==set.luid.low) && (cur_set->luid.high==set.luid.high) )
-			return True;
-	}
-
-	return False;
-}
-
-/****************************************************************************
- remove a privilege from a privilege array
- ****************************************************************************/
-NTSTATUS gums_remove_privilege(PRIVILEGE_SET *priv_set, TALLOC_CTX *ctx, LUID_ATTR set)
-{
-	LUID_ATTR *new_set;
-	LUID_ATTR *old_set;
-	int i,j;
-
-	/* check if the privilege is in the list */
-	if (!gums_check_priv_in_privilege(priv_set, set))
-		return NT_STATUS_UNSUCCESSFUL;
-
-	/* special case if it's the only privilege in the list */
-	if (priv_set->count==1) {
-		gums_init_privilege(priv_set);	
-		return NT_STATUS_OK;
-	}
-
-	/* 
-	 * the privilege is there, create a new list,
-	 * and copy the other privileges
-	 */
-
-	old_set = priv_set->set;
-
-	new_set=(LUID_ATTR *)talloc(ctx, (priv_set->count - 1) * (sizeof(LUID_ATTR)));
-	if (new_set==NULL) {
-		DEBUG(0,("remove_privilege: could not malloc memory for new privilege list\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0, j=0; i<priv_set->count; i++) {
-		if ((old_set[i].luid.low == set.luid.low) && 
-		    (old_set[i].luid.high == set.luid.high)) {
-		    	continue;
-		}
-		
-		new_set[j].luid.low = old_set[i].luid.low;
-		new_set[j].luid.high = old_set[i].luid.high;
-		new_set[j].attr = old_set[i].attr;
-
-		j++;
-	}
-	
-	if (j != priv_set->count - 1) {
-		DEBUG(0,("remove_privilege: mismatch ! difference is not -1\n"));
-		DEBUGADD(0,("old count:%d, new count:%d\n", priv_set->count, j));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-		
-	/* ok everything is fine */
-	
-	priv_set->count--;
-	priv_set->set=new_set;
-	
-	return NT_STATUS_OK;	
-}
-
-/****************************************************************************
- duplicates a privilege array
- ****************************************************************************/
-NTSTATUS gums_dup_priv_set(PRIVILEGE_SET **new_priv_set, TALLOC_CTX *mem_ctx, PRIVILEGE_SET *priv_set)
-{
-	LUID_ATTR *new_set;
-	LUID_ATTR *old_set;
-	int i;
-
-	*new_priv_set = (PRIVILEGE_SET *)talloc(mem_ctx, sizeof(PRIVILEGE_SET));
-	gums_init_privilege(*new_priv_set);	
-
-	/* special case if there are no privileges in the list */
-	if (priv_set->count == 0) {
-		return NT_STATUS_OK;
-	}
-
-	/* 
-	 * create a new list,
-	 * and copy the other privileges
-	 */
-
-	old_set = priv_set->set;
-
-	new_set = (LUID_ATTR *)talloc(mem_ctx, (priv_set->count - 1) * (sizeof(LUID_ATTR)));
-	if (new_set==NULL) {
-		DEBUG(0,("remove_privilege: could not malloc memory for new privilege list\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0; i < priv_set->count; i++) {
-		
-		new_set[i].luid.low = old_set[i].luid.low;
-		new_set[i].luid.high = old_set[i].luid.high;
-		new_set[i].attr = old_set[i].attr;
-	}
-			
-	(*new_priv_set)->count = priv_set->count;
-	(*new_priv_set)->control = priv_set->control;
-	(*new_priv_set)->set = new_set;
-	
-	return NT_STATUS_OK;	
-}
-
 #define ALIAS_DEFAULT_SACL_SA_RIGHTS	0x01050013
 #define ALIAS_DEFAULT_DACL_SA_RIGHTS \
 		(READ_CONTROL_ACCESS		| \
@@ -302,7 +83,6 @@ NTSTATUS gums_dup_priv_set(PRIVILEGE_SET **new_priv_set, TALLOC_CTX *mem_ctx, PR
 #define ALIAS_DEFAULT_SACL_SEC_ACE_FLAG (SEC_ACE_FLAG_FAILED_ACCESS | SEC_ACE_FLAG_SUCCESSFUL_ACCESS) /* 0xc0 */
 
 
-#if 0
 NTSTATUS create_builtin_alias_default_sec_desc(SEC_DESC **sec_desc, TALLOC_CTX *ctx)
 {
 	DOM_SID *world = &global_sid_World;
@@ -334,7 +114,7 @@ NTSTATUS create_builtin_alias_default_sec_desc(SEC_DESC **sec_desc, TALLOC_CTX *
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*sec_desc = make_sec_desc(ctx, SEC_DESC_REVISION, admins, admins, sacl, dacl, &psize);
+	*sec_desc = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, admins, admins, sacl, dacl, &psize);
 	if (!(*sec_desc)) {
 		DEBUG(0,("get_share_security: Failed to make SEC_DESC.\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -363,248 +143,243 @@ NTSTATUS sec_desc_add_ace_to_dacl(SEC_DESC *sec_desc, TALLOC_CTX *ctx, DOM_SID *
 	return result;
 }
 
-NTSTATUS gums_init_builtin_groups(void)
+NTSTATUS gums_make_domain(DOM_SID *sid, const char *name, const char *description)
 {
-	NTSTATUS result;
-	GUMS_OBJECT g_obj;
-	GUMS_GROUP *g_grp;
-	GUMS_PRIVILEGE g_priv;
+	NTSTATUS ret;
+	GUMS_OBJECT *go;
+	GUMS_FUNCTIONS *fns;
 
-	/* Build the well known Builtin Local Groups */
-	g_obj.type = GUMS_OBJ_GROUP;
-	g_obj.version = 1;
-	g_obj.seq_num = 0;
-	g_obj.mem_ctx = talloc_init("gums_init_backend_acct");
-	if (g_obj.mem_ctx == NULL) {
-		DEBUG(0, ("gums_init_backend: Out of Memory!\n"));
-		return NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(ret = get_gums_fns(&fns)))
+		return ret;
+
+	if (!NT_STATUS_IS_OK(ret = gums_create_object(&go, GUMS_OBJ_DOMAIN)))
+		return ret;
+
+	ret = gums_set_object_sid(go, sid);
+	NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set sid!");
+
+	ret = gums_set_object_name(go, name);
+	NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set name!");
+
+	if (description) {
+		ret = gums_set_object_description(go, description);
+		NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set description!");
 	}
 
-	/* Administrators * /
+	/* make security descriptor * /
+	ret = create_builtin_alias_default_sec_desc(&((*go).sec_desc), (*go).mem_ctx); 
+	NTSTATUS_CHECK(ret, error, "gums_init_backend", "create_builtin_alias_default_sec_desc");
+	*/
 
-	/* alloc group structure */
-	g_obj.data.group = (GUMS_GROUP *)talloc(g_obj.mem_ctx, sizeof(GUMS_GROUP));
-	ALLOC_CHECK("gums_init_backend", g_obj.data.group, result, done);
-
-	/* make admins sid */
-	g_grp = (GUMS_GROUP *)g_obj.data.group;
-	sid_copy(g_obj.sid, &global_sid_Builtin_Administrators);
-
-	/* make security descriptor */
-	result = create_builtin_alias_default_sec_desc(&(g_obj.sec_desc), g_obj.mem_ctx); 
-	NTSTATUS_CHECK("gums_init_backend", "create_builtin_alias_default_sec_desc", result, done);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeSecurityPrivilege
-		SeBackupPrivilege
-		SeRestorePrivilege
-		SeSystemtimePrivilege
-		SeShutdownPrivilege
-		SeRemoteShutdownPrivilege
-		SeTakeOwnershipPrivilege
-		SeDebugPrivilege
-		SeSystemEnvironmentPrivilege
-		SeSystemProfilePrivilege
-		SeProfileSingleProcessPrivilege
-		SeIncreaseBasePriorityPrivilege
-		SeLocalDriverPrivilege
-		SeCreatePagefilePrivilege
-		SeIncreaseQuotaPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Administrators");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Members can fully administer the computer/domain");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* numebr of group members */
-	g_grp->count = 0;
-	g_grp->members = NULL;
-
-	/* store Administrators group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Power Users */
-	/* Domain Controllers Does NOT have power Users */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Power_Users);
-
-	/* make privilege set */
-	/* SE_PRIV_??? */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Power Users");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-/* > */	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Power Users");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Power Users group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Account Operators */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Account_Operators);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeShutdownPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Account Operators");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Members can administer domain user and group accounts");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Account Operators group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Server Operators */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Server_Operators);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeBackupPrivilege
-		SeRestorePrivilege
-		SeSystemtimePrivilege
-		SeShutdownPrivilege
-		SeRemoteShutdownPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Server Operators");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Members can administer domain servers");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Server Operators group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Print Operators */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Print_Operators);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeShutdownPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Print Operators");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Members can administer domain printers");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Print Operators group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Backup Operators */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Backup_Operators);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeBackupPrivilege
-		SeRestorePrivilege
-		SeShutdownPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Backup Operators");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Members can bypass file security to backup files");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Backup Operators group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Replicator */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Replicator);
-
-	/* make privilege set */
-	/* From BDC join trace:
-		SeBackupPrivilege
-		SeRestorePrivilege
-		SeShutdownPrivilege
-	 */
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Replicator");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Supports file replication in a domain");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Replicator group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Users */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Users);
-
-	/* add ACE to sec dsec dacl */
-	sec_desc_add_ace_to_dacl(g_obj.sec_desc, g_obj.mem_ctx, &global_sid_Builtin_Account_Operators, ALIAS_DEFAULT_DACL_SA_RIGHTS);
-	sec_desc_add_ace_to_dacl(g_obj.sec_desc, g_obj.mem_ctx, &global_sid_Builtin_Power_Users, ALIAS_DEFAULT_DACL_SA_RIGHTS);
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Users");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Ordinary users");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Users group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* Guests */
-
-	sid_copy(g_obj.sid, &global_sid_Builtin_Guests);
-
-	/* set name */
-	g_obj.name = talloc_strdup(g_obj.mem_ctx, "Guests");
-	ALLOC_CHECK("gums_init_backend", g_obj.name, result, done);
-
-	/* set description */
-	g_obj.description = talloc_strdup(g_obj.mem_ctx, "Users granted guest access to the computer/domain");
-	ALLOC_CHECK("gums_init_backend", g_obj.description, result, done);
-
-	/* store Guests group */
-	result = gums_storage->set_object(&g_obj);
-
-	/* set default privileges */
-	g_priv.type = GUMS_OBJ_GROUP;
-	g_priv.version = 1;
-	g_priv.seq_num = 0;
-	g_priv.mem_ctx = talloc_init("gums_init_backend_priv");
-	if (g_priv.mem_ctx == NULL) {
-		DEBUG(0, ("gums_init_backend: Out of Memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-		
+	ret = fns->set_object(go);
 
 done:
-	talloc_destroy(g_obj.mem_ctx);
-	talloc_destroy(g_priv.mem_ctx);
-	return result;
+	gums_destroy_object(&go);
+	return ret;
 }
-#endif
+
+NTSTATUS gums_make_alias(DOM_SID *sid, const char *name, const char *description)
+{
+	NTSTATUS ret;
+	GUMS_OBJECT *go;
+	GUMS_FUNCTIONS *fns;
+
+	if (!NT_STATUS_IS_OK(ret = get_gums_fns(&fns)))
+		return ret;
+
+	if (!NT_STATUS_IS_OK(ret = gums_create_object(&go, GUMS_OBJ_ALIAS)))
+		return ret;
+
+	ret = gums_set_object_sid(go, sid);
+	NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set sid!");
+
+	ret = gums_set_object_name(go, name);
+	NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set name!");
+
+	if (description) {
+		ret = gums_set_object_description(go, description);
+		NTSTATUS_CHECK(ret, done, "gums_make_alias", "unable to set description!");
+	}
+
+	/* make security descriptor * /
+	ret = create_builtin_alias_default_sec_desc(&((*go).sec_desc), (*go).mem_ctx); 
+	NTSTATUS_CHECK(ret, error, "gums_init_backend", "create_builtin_alias_default_sec_desc");
+	*/
+
+	ret = fns->set_object(go);
+
+done:
+	gums_destroy_object(&go);
+	return ret;
+}
+
+NTSTATUS gums_init_domain(DOM_SID *sid, const char *name)
+{
+	NTSTATUS ret;
+
+	/* Add the weelknown Builtin Domain */
+	if (!NT_STATUS_IS_OK(ret = gums_make_domain(
+					sid,
+					name,
+					NULL
+					))) {
+		return ret;
+	}
+
+	/* Add default users and groups */
+	/* Administrator
+	   Guest
+	   Domain Administrators
+	   Domain Users
+	   Domain Guests
+	*/
+
+	return ret;
+}
+
+NTSTATUS gums_init_builtin_domain(void)
+{
+	NTSTATUS ret;
+
+	generate_wellknown_sids();
+
+	/* Add the weelknown Builtin Domain */
+	if (!NT_STATUS_IS_OK(ret = gums_make_domain(
+					&global_sid_Builtin,
+					"BUILTIN",
+					"Builtin Domain"
+					))) {
+		return ret;
+	}
+
+	/* Add the well known Builtin Local Groups */
+
+	/* Administrators */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Administrators,
+					"Administrators",
+					"Members can fully administer the computer/domain"
+					))) {
+		return ret;
+	}
+	/* Administrator privilege set */
+	/* From BDC join trace:
+		SeSecurityPrivilege, SeBackupPrivilege, SeRestorePrivilege,
+		SeSystemtimePrivilege, SeShutdownPrivilege,
+		SeRemoteShutdownPrivilege, SeTakeOwnershipPrivilege,
+		SeDebugPrivilege, SeSystemEnvironmentPrivilege,
+		SeSystemProfilePrivilege, SeProfileSingleProcessPrivilege,
+		SeIncreaseBasePriorityPrivilege, SeLocalDriverPrivilege,
+		SeCreatePagefilePrivilege, SeIncreaseQuotaPrivilege
+	 */
+
+	/* Power Users */
+	/* Domain Controllers Does NOT have Power Users (?) */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Power_Users,
+					"Power Users",
+					"Power Users"
+					))) {
+		return ret;
+	}
+
+	/* Power Users privilege set */
+	/* (?) */
+
+	/* Account Operators */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Account_Operators,
+					"Account Operators",
+					"Members can administer domain user and group accounts"
+					))) {
+		return ret;
+	}
+
+	/* make privilege set */
+	/* From BDC join trace:
+		SeShutdownPrivilege
+	 */
+
+	/* Server Operators */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Server_Operators,
+					"Server Operators",
+					"Members can administer domain servers"
+					))) {
+		return ret;
+	}
+
+	/* make privilege set */
+	/* From BDC join trace:
+		SeBackupPrivilege, SeRestorePrivilege, SeSystemtimePrivilege,
+		SeShutdownPrivilege, SeRemoteShutdownPrivilege
+	 */
+
+	/* Print Operators */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Print_Operators,
+					"Print Operators",
+					"Members can administer domain printers"
+					))) {
+		return ret;
+	}
+
+	/* make privilege set */
+	/* From BDC join trace:
+		SeShutdownPrivilege
+	 */
+
+	/* Backup Operators */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Backup_Operators,
+					"Backup Operators",
+					 "Members can bypass file security to backup files"
+					))) {
+		return ret;
+	}
+
+	/* make privilege set */
+	/* From BDC join trace:
+		SeBackupPrivilege, SeRestorePrivilege, SeShutdownPrivilege
+	 */
+
+	/* Replicator */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Replicator,
+					"Replicator",
+					"Supports file replication in a domain"
+					))) {
+		return ret;
+	}
+
+	/* make privilege set */
+	/* From BDC join trace:
+		SeBackupPrivilege, SeRestorePrivilege, SeShutdownPrivilege
+	 */
+
+	/* Users */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Users,
+					"Users",
+					"Ordinary users"
+					))) {
+		return ret;
+	}
+
+	/* Users specific ACEs * /
+	sec_desc_add_ace_to_dacl(go->sec_desc, go->mem_ctx, &global_sid_Builtin_Account_Operators, ALIAS_DEFAULT_DACL_SA_RIGHTS);
+	sec_desc_add_ace_to_dacl(go->sec_desc, go->mem_ctx, &global_sid_Builtin_Power_Users, ALIAS_DEFAULT_DACL_SA_RIGHTS);
+	*/
+
+	/* Guests */
+	if (!NT_STATUS_IS_OK(ret = gums_make_alias(
+					&global_sid_Builtin_Guests,
+					"Guests",
+					"Users granted guest access to the computer/domain"
+					))) {
+		return ret;
+	}
+
+	return ret;
+}
 

@@ -540,13 +540,17 @@ static NTSTATUS xmlsam_init(PDB_CONTEXT * pdb_context, PDB_METHODS ** pdb_method
 	(*pdb_method)->getsampwsid = NULL;
 	(*pdb_method)->update_sam_account = NULL;
 	(*pdb_method)->delete_sam_account = NULL;
-	(*pdb_method)->getgrsid = NULL;
-	(*pdb_method)->getgrgid = NULL;
-	(*pdb_method)->getgrnam = NULL;
-	(*pdb_method)->add_group_mapping_entry = NULL;
-	(*pdb_method)->update_group_mapping_entry = NULL;
-	(*pdb_method)->delete_group_mapping_entry = NULL;
-	(*pdb_method)->enum_group_mapping = NULL;
+	(*pdb_method)->get_group_info_by_sid = NULL;
+	(*pdb_method)->get_group_list = NULL;
+	(*pdb_method)->get_group_sids = NULL;
+	(*pdb_method)->add_group = NULL;
+	(*pdb_method)->update_group = NULL;
+	(*pdb_method)->delete_group = NULL;
+	(*pdb_method)->add_sid_to_group = NULL;
+	(*pdb_method)->remove_sid_from_group = NULL;
+	(*pdb_method)->get_group_info_by_name = NULL;
+	(*pdb_method)->get_group_info_by_nt_name = NULL;
+	(*pdb_method)->get_group_uids = NULL;
 
 	data = talloc(pdb_context->mem_ctx, sizeof(pdb_xml));
 	data->location = talloc_strdup(pdb_context->mem_ctx, (location ? location : "passdb.xml"));

@@ -464,7 +464,7 @@ static NTSTATUS user_data_to_gums_object(GUMS_OBJECT **object, struct tdbsam2_us
 		SET_OR_FAIL(gums_set_user_hours(*object, userdata->hours), error);
 
 	SET_OR_FAIL(gums_set_user_unknown_3(*object, userdata->unknown_3), error);
-	SET_OR_FAIL(gums_set_user_unknown_5(*object, userdata->unknown_5), error);
+	SET_OR_FAIL(gums_set_user_bad_password_count(*object, userdata->bad_password_count), error);
 	SET_OR_FAIL(gums_set_user_unknown_6(*object, userdata->unknown_6), error);
 
 	SET_OR_FAIL(gums_set_user_logon_time(*object, *(userdata->logon_time)), error);
@@ -750,7 +750,7 @@ static NTSTATUS tdbsam2_new_object(DOM_SID *sid, const char *name, const int obj
 			obj.data.user->hours = &defhours;
 
 			obj.data.user->unknown_3 = 0x00ffffff;
-			obj.data.user->unknown_5 = 0x00020000;
+			obj.data.user->bad_password_count = 0x00020000;
 			obj.data.user->unknown_6 = 0x000004ec;
 			break;
 
