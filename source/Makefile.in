@@ -18,6 +18,9 @@ LIBTOOL=@LIBTOOL@ --quiet
 LIBTOOL_DEPS=@LIBTOOL_DEPS@
 LINK=$(LIBTOOL) --mode=link $(CC) $(FLAGS) $(LDFLAGS)
 
+RUNTEST = runtest
+RUNTESTDEFAULTFLAGS = --srcdir @srcdir@/testsuite
+
 INSTALL = @INSTALL@
 INSTALLCMD=@INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -740,9 +743,6 @@ rpctorture : CHECK bin/rpctorture
 smbfilter : CHECK bin/smbfilter
 
 nsswitch: CHECK nsswitch/ntdom.so bin/winbindd
-
-RUNTEST = runtest
-RUNTESTDEFAULTFLAGS = --srcdir @srcdir@/testsuite
 
 check:
 	$(RUNTEST) $(RUNTESTDEFAULTFLAGS) $(RUNTESTFLAGS)
