@@ -227,7 +227,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->dev = psbuf->st_dev;
 	fsp->vuid = current_user.vuid;
 	fsp->size = psbuf->st_size;
-	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = ((flags & O_WRONLY)==0);
 	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
@@ -1362,7 +1361,6 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = psbuf->st_dev;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
 	fsp->can_lock = True;
 	fsp->can_read = False;
 	fsp->can_write = False;
@@ -1425,7 +1423,6 @@ files_struct *open_file_stat(connection_struct *conn, char *fname, SMB_STRUCT_ST
 	fsp->dev = (SMB_DEV_T)0;
 	fsp->size = psbuf->st_size;
 	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
 	fsp->can_lock = False;
 	fsp->can_read = False;
 	fsp->can_write = False;
