@@ -229,7 +229,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
-			fstrcpy(dev,"LPT1:");
+			fstrcpy(dev,"LPT:");
 		} else if (strequal(lp_fstype(snum), "IPC")) {
 			fstrcpy(dev, "IPC");
 		} else {
@@ -253,7 +253,7 @@ static NTSTATUS share_sanity_checks(int snum, fstring dev)
 
 	/* Behave as a printer if we are supposed to */
 	if (lp_print_ok(snum) && (strcmp(dev, "A:") == 0)) {
-		fstrcpy(dev, "LPT1:");
+		fstrcpy(dev, "LPT:");
 	}
 
 	return NT_STATUS_OK;
