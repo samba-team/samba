@@ -41,6 +41,8 @@
 RCSID("$Id$");
 #endif
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "com_err.h"
 
 static struct error_table *et_list;
