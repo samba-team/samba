@@ -380,121 +380,129 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 {
 	NTSTATUS status;
 	struct netr_LogonSamLogon *r = &samlogon_state->r;
-
+	int levels[] = { 2, 6 };
+	int i;
 	struct netr_NetworkInfo ninfo;
-	samlogon_state->r.in.logon_level = 2;
-	samlogon_state->r.in.logon.network = &ninfo;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("testing netr_LogonSamLogon with logon level %d\n", levels[i]);
+
+		samlogon_state->r.in.logon_level = levels[i];
+		samlogon_state->r.in.logon.network = &ninfo;
 	
-	ninfo.logon_info.domain_name.string = lp_workgroup();
-	ninfo.logon_info.parameter_control = 0;
-	ninfo.logon_info.logon_id_low = 0;
-	ninfo.logon_info.logon_id_high = 0;
-	ninfo.logon_info.username.string = samlogon_state->username;
-	ninfo.logon_info.workstation.string = TEST_MACHINE_NAME;
-
-	memcpy(ninfo.challenge, chall->data, 8);
-	
-	switch (break_which) {
-	case BREAK_NONE:
-		break;
-	case BREAK_LM:
-		if (lm_response && lm_response->data) {
-			lm_response->data[0]++;
+		ninfo.logon_info.domain_name.string = lp_workgroup();
+		ninfo.logon_info.parameter_control = 0;
+		ninfo.logon_info.logon_id_low = 0;
+		ninfo.logon_info.logon_id_high = 0;
+		ninfo.logon_info.username.string = samlogon_state->username;
+		ninfo.logon_info.workstation.string = TEST_MACHINE_NAME;
+		
+		memcpy(ninfo.challenge, chall->data, 8);
+		
+		switch (break_which) {
+		case BREAK_NONE:
+			break;
+		case BREAK_LM:
+			if (lm_response && lm_response->data) {
+				lm_response->data[0]++;
+			}
+			break;
+		case BREAK_NT:
+			if (nt_response && nt_response->data) {
+				nt_response->data[0]++;
+			}
+			break;
+		case NO_LM:
+			data_blob_free(lm_response);
+			break;
+		case NO_NT:
+			data_blob_free(nt_response);
+			break;
 		}
-		break;
-	case BREAK_NT:
-		if (nt_response && nt_response->data) {
-			nt_response->data[0]++;
+		
+		if (nt_response) {
+			ninfo.nt.data = nt_response->data;
+			ninfo.nt.length = nt_response->length;
+		} else {
+			ninfo.nt.data = NULL;
+			ninfo.nt.length = 0;
 		}
-		break;
-	case NO_LM:
-		data_blob_free(lm_response);
-		break;
-	case NO_NT:
-		data_blob_free(nt_response);
-		break;
-	}
-	
-	if (nt_response) {
-		ninfo.nt.data = nt_response->data;
-		ninfo.nt.length = nt_response->length;
-	} else {
-		ninfo.nt.data = NULL;
-		ninfo.nt.length = 0;
-	}
-
-	if (lm_response) {
-		ninfo.lm.data = lm_response->data;
-		ninfo.lm.length = lm_response->length;
-	} else {
-		ninfo.lm.data = NULL;
-		ninfo.lm.length = 0;
-	}
-
-	ZERO_STRUCT(samlogon_state->auth2);
-	creds_client_authenticator(&samlogon_state->creds, &samlogon_state->auth);
-
-	r->out.authenticator = NULL;
-	status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (error_string) {
-			*error_string = strdup(nt_errstr(status));
+		
+		if (lm_response) {
+			ninfo.lm.data = lm_response->data;
+			ninfo.lm.length = lm_response->length;
+		} else {
+			ninfo.lm.data = NULL;
+			ninfo.lm.length = 0;
 		}
-	}
-
-	if (!r->out.authenticator || !creds_client_check(&samlogon_state->creds, &r->out.authenticator->cred)) {
-		printf("Credential chaining failed\n");
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		/* we cannot check the session key, if the logon failed... */
-		return status;
-	}
-	
-	/* find and decyrpt the session keys, return in parameters above */
-	if (r->in.validation_level == 2) {
-		static const char zeros[16];
-
-		if (memcmp(r->out.validation.sam->LMSessKey.key, zeros,  sizeof(r->out.validation.sam->LMSessKey.key)) != 0) {
-			creds_arcfour_crypt(&samlogon_state->creds, 
-					    r->out.validation.sam->LMSessKey.key, 
-					    sizeof(r->out.validation.sam->LMSessKey.key));
+		
+		ZERO_STRUCT(samlogon_state->auth2);
+		creds_client_authenticator(&samlogon_state->creds, &samlogon_state->auth);
+		
+		r->out.authenticator = NULL;
+		status = dcerpc_netr_LogonSamLogon(samlogon_state->p, samlogon_state->mem_ctx, r);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
 		}
+		
+		if (!r->out.authenticator || 
+		    !creds_client_check(&samlogon_state->creds, &r->out.authenticator->cred)) {
+			printf("Credential chaining failed\n");
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/* we cannot check the session key, if the logon failed... */
+			return status;
+		}
+		
+		/* find and decyrpt the session keys, return in parameters above */
+		if (r->in.validation_level == 2) {
+			static const char zeros[16];
 			
-		if (lm_key) {
-			memcpy(lm_key, r->out.validation.sam->LMSessKey.key, 8);
-		}
-
-		if (memcmp(r->out.validation.sam->key.key, zeros,  sizeof(r->out.validation.sam->key.key)) != 0) {
-			creds_arcfour_crypt(&samlogon_state->creds, 
-					    r->out.validation.sam->key.key, 
-					    sizeof(r->out.validation.sam->key.key));
-		}
-
-		if (user_session_key) {
-			memcpy(user_session_key, r->out.validation.sam->key.key, 16);
-		}
-
-	} else if (r->in.validation_level == 3) {
-		static const char zeros[16];
-		if (memcmp(r->out.validation.sam2->LMSessKey.key, zeros,  sizeof(r->out.validation.sam2->LMSessKey.key)) != 0) {
-			creds_arcfour_crypt(&samlogon_state->creds, 
-					    r->out.validation.sam2->LMSessKey.key, 
-					    sizeof(r->out.validation.sam2->LMSessKey.key));
-		}
-
-		if (lm_key) {
-			memcpy(lm_key, r->out.validation.sam2->LMSessKey.key, 8);
-		}
-
-		if (memcmp(r->out.validation.sam2->key.key, zeros,  sizeof(r->out.validation.sam2->key.key)) != 0) {
-			creds_arcfour_crypt(&samlogon_state->creds, 
-					    r->out.validation.sam2->key.key, 
-					    sizeof(r->out.validation.sam2->key.key));
-		}
-
-		if (user_session_key) {
-			memcpy(user_session_key, r->out.validation.sam2->key.key, 16);
+			if (memcmp(r->out.validation.sam->LMSessKey.key, zeros,  
+				   sizeof(r->out.validation.sam->LMSessKey.key)) != 0) {
+				creds_arcfour_crypt(&samlogon_state->creds, 
+						    r->out.validation.sam->LMSessKey.key, 
+						    sizeof(r->out.validation.sam->LMSessKey.key));
+			}
+			
+			if (lm_key) {
+				memcpy(lm_key, r->out.validation.sam->LMSessKey.key, 8);
+			}
+			
+			if (memcmp(r->out.validation.sam->key.key, zeros,  sizeof(r->out.validation.sam->key.key)) != 0) {
+				creds_arcfour_crypt(&samlogon_state->creds, 
+						    r->out.validation.sam->key.key, 
+						    sizeof(r->out.validation.sam->key.key));
+			}
+			
+			if (user_session_key) {
+				memcpy(user_session_key, r->out.validation.sam->key.key, 16);
+			}
+			
+		} else if (r->in.validation_level == 3) {
+			static const char zeros[16];
+			if (memcmp(r->out.validation.sam2->LMSessKey.key, zeros,  sizeof(r->out.validation.sam2->LMSessKey.key)) != 0) {
+				creds_arcfour_crypt(&samlogon_state->creds, 
+						    r->out.validation.sam2->LMSessKey.key, 
+						    sizeof(r->out.validation.sam2->LMSessKey.key));
+			}
+			
+			if (lm_key) {
+				memcpy(lm_key, r->out.validation.sam2->LMSessKey.key, 8);
+			}
+			
+			if (memcmp(r->out.validation.sam2->key.key, zeros,  sizeof(r->out.validation.sam2->key.key)) != 0) {
+				creds_arcfour_crypt(&samlogon_state->creds, 
+						    r->out.validation.sam2->key.key, 
+						    sizeof(r->out.validation.sam2->key.key));
+			}
+			
+			if (user_session_key) {
+				memcpy(user_session_key, r->out.validation.sam2->key.key, 16);
+			}
 		}
 	}
 
