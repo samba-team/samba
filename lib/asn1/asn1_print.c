@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -32,6 +32,7 @@
  */
 
 #include "der_locl.h"
+#include <com_right.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <getarg.h>
