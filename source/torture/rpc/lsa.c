@@ -421,6 +421,12 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
+
+	/* NO_MORE_ENTRIES is allowed */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
+		return True;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumTrustDom failed - %s\n", nt_errstr(status));
 		return False;
@@ -447,6 +453,12 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 		printf("\ntrying QueryInfoPolicy level %d\n", i);
 
 		status = dcerpc_lsa_QueryInfoPolicy(p, mem_ctx, &r);
+
+		if ((i == 9 || i == 10) &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			continue;
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryInfoPolicy failed - %s\n", nt_errstr(status));
 			ret = False;

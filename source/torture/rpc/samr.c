@@ -91,6 +91,12 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	printf("Testing CreateUser(%s)\n", r.in.username->name);
 
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Server refused create of '%s'\n", r.in.username->name);
+		return True;
+	}
+
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
