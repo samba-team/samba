@@ -458,7 +458,7 @@ static char *get_pass( char *prompt, BOOL stdin_get)
 	} else {
 		p = getpass(prompt);
 	}
-	return xstrdup(p);
+	return smb_xstrdup(p);
 }
 
 /*************************************************************
@@ -685,7 +685,7 @@ static int process_root(int argc, char *argv[])
 		if (got_username || got_pass)
 			usage();
 		fstrcpy(user_name, argv[0]);
-		new_passwd = xstrdup(argv[1]);
+		new_passwd = smb_xstrdup(argv[1]);
 		break;
 	default:
 		usage();
@@ -715,7 +715,7 @@ static int process_root(int argc, char *argv[])
 
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
-			new_passwd = xstrdup(user_name);
+			new_passwd = smb_xstrdup(user_name);
 			strlower(new_passwd);
 		}
 
@@ -793,9 +793,9 @@ static int process_root(int argc, char *argv[])
 }
 
 
-/*************************************************************
-handle password changing for non-root
-*************************************************************/
+/**
+   handle password changing for non-root
+**/
 static int process_nonroot(int argc, char *argv[])
 {
 	struct passwd  *pwd = NULL;
@@ -842,9 +842,9 @@ static int process_nonroot(int argc, char *argv[])
 	if (!user_name) {
 		pwd = sys_getpwuid(getuid());
 		if (pwd) {
-			user_name = xstrdup(pwd->pw_name);
+			user_name = smb_xstrdup(pwd->pw_name);
 		} else {
-			fprintf(stderr,"you don't exist - go away\n");
+			fprintf(stderr, "smbpasswd: you don't exist - go away\n");
 			exit(1);
 		}
 	}
