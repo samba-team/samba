@@ -1,5 +1,19 @@
+2001-05-28  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/krb5.conf.5: add [appdefaults]
+	* lib/krb5/init_creds_pw.c: remove configuration reading that is
+	now done in krb5_get_init_creds_opt_set_default_flags
+	* lib/krb5/init_creds.c
+	(krb5_get_init_creds_opt_set_default_flags): add reading of
+	libdefaults versions of these and add no_addresses
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): clear error string
+	when preauth was required and we retry
+
 2001-05-25  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/convert_creds.c (krb524_convert_creds_kdc): call
+	krb5_get_krb524hst
 	* lib/krb5/krbhst.c (krb5_get_krb524hst): add and restructure the
 	support functions
 
