@@ -84,7 +84,7 @@ WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
 WINBIND_LPROGS = @WINBIND_PAM_PROGS@ nsswitch/libnss_winbind.so
 
 SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@ @WINBIND_TARGETS@
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef bin/pdbedit @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 LPROGS = @WINBIND_LTARGETS@
@@ -249,6 +249,9 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) \
 		$(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(UBIQX_OBJ) $(RPC_PARSE_OBJ) $(RPC_CLIENT_OBJ) \
 		libsmb/cli_lsarpc.o libsmb/cli_samr.o $(LIB_OBJ)
+
+PDBEDIT_OBJ = utils/pdbedit.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
+		$(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ)
 
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_spoolss.o \
 		rpcclient/cmd_samr.o rpcclient/cmd_lsarpc.o \
@@ -522,6 +525,10 @@ bin/smbcontrol: $(SMBCONTROL_OBJ) bin/.dummy
 bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/pdbedit: $(PDBEDIT_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(PDBEDIT_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
