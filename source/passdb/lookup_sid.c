@@ -445,14 +445,11 @@ NTSTATUS sid_to_gid(const DOM_SID *psid, gid_t *pgid)
 	 * Group mapping can deal with foreign SIDs
 	 */
 
+	if ( local_sid_to_gid(pgid, psid, &name_type) )
+		goto success;
+	
 	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
-		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
-			sid_to_string(sid_str, psid) ));
-
-		if ( local_sid_to_gid(pgid, psid, &name_type) )
-			goto success;
-			
-		DEBUG(10,("sid_to_gid: no one knows this SID\n"));
+		DEBUG(10,("sid_to_gid: no one knows the SID %s (tried local, then winbind)\n", sid_to_string(sid_str, psid)));
 		
 		return NT_STATUS_UNSUCCESSFUL;
 	}
