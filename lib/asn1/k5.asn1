@@ -341,8 +341,23 @@ krb-error INTEGER ::= 30 -- Error response
 
 -- pa-data types
 
-pa-tgs-req INTEGER ::= 1 --
-pa-enc-timestamp INTEGER ::= 2 --
+pa-tgs-req		INTEGER ::= 1
+pa-enc-timestamp	INTEGER ::= 2
+pa-pw-salt		INTEGER ::= 3
+pa-enc-unix-time	INTEGER ::= 5
+pa-sandia-secureid	INTEGER ::= 6
+pa-sesame		INTEGER ::= 7
+pa-osf-dce		INTEGER ::= 8
+pa-cybersafe-secureid	INTEGER ::= 9
+pa-afs3-salt		INTEGER ::= 10
+pa-etype-info		INTEGER ::= 11
+sam-challenge		INTEGER ::= 12 -- (sam/otp)
+sam-response		INTEGER ::= 13 -- (sam/otp)
+pa-pk-as-req		INTEGER ::= 14 -- (pkinit)
+pa-pk-as-rep		INTEGER ::= 15 -- (pkinit)
+pa-pk-as-sign		INTEGER ::= 16 -- (pkinit)
+pa-pk-key-req		INTEGER ::= 17 -- (pkinit)
+pa-pk-key-rep		INTEGER ::= 18 -- (pkinit)
 
 -- checksumtypes
 
