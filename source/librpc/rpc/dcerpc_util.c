@@ -94,7 +94,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	/* encoded with NDR ... */
 	twr.towers.floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 	GUID_from_string(NDR_GUID, &twr.towers.floors[1].lhs.info.uuid.uuid);
-	twr.towers.floors[1].lhs.info.uuid.version = 2;
+	twr.towers.floors[1].lhs.info.uuid.version = NDR_GUID_VERSION;
 	twr.towers.floors[1].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 2);
 
 	/* on an RPC connection ... */
@@ -112,6 +112,7 @@ NTSTATUS dcerpc_epm_map_tcp_port(const char *server,
 	twr.towers.floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr.towers.floors[4].rhs.rhs_data = data_blob_talloc(p->mem_ctx, NULL, 4);
 
+	/* with some nice pretty paper around it of course */
 	r.in.object = &guid;
 	r.in.map_tower = &twr;
 	r.in.entry_handle = &handle;

@@ -22,7 +22,7 @@ interface epmapper
 
 	/* this guid indicates NDR encoding in a protocol tower */
 	const string NDR_GUID = "8a885d04-1ceb-11c9-9fe8-08002b104860";
-	const string NDR_GUID_VERSION = 1;
+	const string NDR_GUID_VERSION = 2;
 
 	typedef struct {
 		GUID uuid;
