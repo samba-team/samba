@@ -2531,14 +2531,14 @@ sourceroute(struct addrinfo *ai,
 	    int *protop,
 	    int *optp)
 {
-	char *cp, *cp2, *lsrp, *lsrep;
+	char *cp, *cp2, *lsrp = NULL, *lsrep = NULL;
 	struct addrinfo hints, *res;
 	int len, error;
 	struct sockaddr_in *sin;
 	register char c;
 	static char lsr[44];
 #ifdef INET6
-	struct cmsghdr *cmsg;
+	struct cmsghdr *cmsg = NULL;
 	struct sockaddr_in6 *sin6;
 	static char rhbuf[1024];
 #endif
