@@ -246,13 +246,13 @@ int register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
 
 	/* Find all the groups this uid is in and store them. 
 		Used by become_user() */
-	initialise_groups(unix_name, uid, gid);
+	initialise_groups(vuser->user.unix_name, vuser->uid, vuser->gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest);
+	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, guest);
 
-	DEBUG(3,("uid %d registered to name %s\n",(int)uid,unix_name));
+	DEBUG(3,("uid %d registered to name %s\n",(int)vuser->uid,vuser->user.unix_name));
 
 	next_vuid++;
 	num_validated_vuids++;
