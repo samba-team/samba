@@ -1,3 +1,4 @@
+dnl $Id$
 dnl
 dnl Tests for readline functions
 dnl
@@ -27,9 +28,9 @@ elif test "$ac_cv_func_readline" = yes; then
 	:
 elif test "$ac_cv_func_el_init" = yes; then
 	ac_foo=yes
-	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.a $LIB_el_init"
+	LIB_readline="\$(top_builddir)/lib/editline/libel_compat.la $LIB_el_init"
 else
-	LIB_readline='$(top_builddir)/lib/editline/libeditline.a'
+	LIB_readline='$(top_builddir)/lib/editline/libeditline.la'
 fi
 AM_CONDITIONAL(el_compat, test "$ac_foo" = yes)
 if test "$readline_libdir"; then
