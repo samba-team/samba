@@ -1,3 +1,9 @@
+1999-06-26  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: add pagsh
+
+	* pagsh.c: new file.  contributed by Miroslav Ruda <ruda@ics.muni.cz>
+
 Sat Mar 27 12:49:43 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* afslog.c: cleanup option parsing
