@@ -62,6 +62,24 @@ BOOL idmap_check_rid_is_in_free_range(uint32 rid)
 	return True;
 }
 
+/* if it is a foreign SID or if the SID is in the free range, return true */
+
+BOOL idmap_check_sid_is_in_free_range(const DOM_SID *sid)
+{
+	if (sid_compare_domain(get_global_sam_sid(), sid) == 0) {
+	
+		uint32 rid;
+
+		if (sid_peek_rid(sid, &rid)) {
+			return idmap_check_rid_is_in_free_range(rid);
+		}
+
+		return False;
+	}
+
+	return True;
+}
+
 /******************************************************************
  * Get the the non-algorithmic RID range if idmap range are defined
  ******************************************************************/
@@ -196,7 +214,6 @@ NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	BOOL fallback = False;
-	uint32 rid;
 	unid_t id;
 	int flags;
 
@@ -204,20 +221,30 @@ NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
 
 	flags = ID_USERID;
 	if (!lp_idmap_only()) {
-		if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
-			if (!idmap_check_rid_is_in_free_range(rid)) {
-				flags |= ID_NOMAP;
-				fallback = True;
-			}
+		if (!idmap_check_sid_is_in_free_range(sid)) {
+			flags |= ID_NOMAP;
+			fallback = True;
 		}
 	}
 
 	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, sid))) {
+
 		DEBUG(10,("sid_to_uid: uid = [%d]\n", id.uid));
+
 		*uid = id.uid;
 		ret = NT_STATUS_OK;
+		
 	} else if (fallback) {
+		uint32 rid;
+
+		if (!sid_peek_rid(sid, &rid)) {
+			DEBUG(10,("sid_to_uid: invalid SID!\n"));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
+
 		DEBUG(10,("sid_to_uid: Fall back to algorithmic mapping\n"));
+
 		if (!fallback_pdb_rid_is_user(rid)) {
 			DEBUG(3, ("sid_to_uid: SID %s is *NOT* a user\n", sid_string_static(sid)));
 			ret = NT_STATUS_UNSUCCESSFUL;
@@ -228,6 +255,7 @@ NTSTATUS sid_to_uid(const DOM_SID *sid, uid_t *uid)
 		}
 	}
 
+done:
 	return ret;
 }
 
@@ -252,21 +280,26 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 
 	flags = ID_GROUPID;
 	if (!lp_idmap_only()) {
-		if (sid_peek_check_rid(get_global_sam_sid(), sid, &rid)) {
-			if (!idmap_check_rid_is_in_free_range(rid)) {
-				flags |= ID_NOMAP;
-				fallback = True;
-			}
+		if (!idmap_check_sid_is_in_free_range(sid)) {
+			flags |= ID_NOMAP;
+			fallback = True;
 		}
 	}
 
 	if (NT_STATUS_IS_OK(idmap_get_id_from_sid(&id, &flags, sid))) {
+		
 		DEBUG(10,("sid_to_gid: gid = [%d]\n", id.gid));
 		*gid = id.gid;
 		ret = NT_STATUS_OK;
+
 	} else if (fallback) {
-		GROUP_MAP map;
-		BOOL result;
+		uint32 rid;
+
+		if (!sid_peek_rid(sid, &rid)) {
+			DEBUG(10,("sid_to_uid: invalid SID!\n"));
+			ret = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 
 		DEBUG(10,("sid_to_gid: Fall back to algorithmic mapping\n"));
 
@@ -280,6 +313,7 @@ NTSTATUS sid_to_gid(const DOM_SID *sid, gid_t *gid)
 		}
 	}
 
+done:
 	return ret;
 }
 
@@ -338,5 +372,6 @@ BOOL idmap_init_wellknown_sids(void)
 		}
 	}
 
+	passwd_free(&pass);
 	return True;
 }
