@@ -266,7 +266,7 @@ if [ $1 = 0 ] ; then
     mv $tmpfile services
 
     # Recreate xinetd.conf file from /etc/inetd.conf
-    mv /etc/xinetd.conf /etc/xinetd.conf.samba.old
+    mv /etc/xinetd.conf /etc/xinetd.conf.samba
     /usr/sbin/itox --daemon_dir /usr/sbin < /etc/inetd.conf > /etc/xinetd.conf
 fi
 
@@ -316,6 +316,7 @@ fi
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.5.html
 %attr(-,root,root) /usr/share/swat/help/smbpasswd.8.html
 %attr(-,root,root) /usr/share/swat/help/smbrun.1.html
+%attr(-,root,root) /usr/share/swat/help/smbsh.1.html
 %attr(-,root,root) /usr/share/swat/help/smbstatus.1.html
 %attr(-,root,root) /usr/share/swat/help/smbtar.1.html
 %attr(-,root,root) /usr/share/swat/help/swat.8.html
