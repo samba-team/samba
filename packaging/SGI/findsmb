@@ -65,9 +65,17 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
   @name = grep(/<00>/,@nmblookup);
   $_ = @name[0];
-  if ($_) {			# we have a netbios name
-    /(\S+)/;
-    $name = $1;
+  if ($_) {                     # we have a netbios name
+    if (/GROUP/) {		# is it a group name
+	($name, $aliases, $type, $length, @addresses) = 
+	gethostbyaddr(pack('C4',split('\.',$ip)),2);
+	if (! $name) {			# could not get name
+	    $name = "unknown nis name";
+	}
+    } else {
+	/(\S+)/;
+	$name = $1;
+    }
 
 # do an smbclient command on the netbios name.
 
