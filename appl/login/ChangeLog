@@ -1,3 +1,10 @@
+2000-08-22  Johan Danielsson  <joda@pdc.kth.se>
+
+	* login.c (do_login): set PATH to something sane;
+	(start_logout_process): avoid getting signals sent to the parent
+
+	* login_locl.h: _PATH_DEFPATH
+
 2000-07-01  Assar Westerlund  <assar@sics.se>
 
 	* login.c (login_timeout): add back
