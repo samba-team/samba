@@ -4324,6 +4324,18 @@ BOOL lp_use_sendfile(int snum)
 }
 
 /*******************************************************************
+ Turn off sendfile if we find the underlying OS doesn't support it.
+********************************************************************/
+
+void set_use_sendfile(int snum, BOOL val)
+{
+	if (LP_SNUM_OK(snum))
+		ServicePtrs[snum]->bUseSendfile = val;
+	else
+		sDefault.bUseSendfile = val;
+}
+
+/*******************************************************************
  Turn off storing DOS attributes if this share doesn't support it.
 ********************************************************************/
 
