@@ -233,10 +233,10 @@ if test -f /lib/pse.exp ;then
 	LIBS="$LIBS -Wl,-bI:/lib/pse.exp"
 fi
 
-AC_CHECK_LIB(termcap, tgetent)
-AC_CHECK_LIB(curses, setupterm)
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(nsl, gethostbyname)
+AC_FIND_FUNC(tgetent, termcap)
+AC_FIND_FUNC(setupterm, curses)
+AC_FIND_FUNC(socket, socket)
+AC_FIND_FUNC(gethostbyname, nsl)
 	
 
 AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror strftime)
@@ -270,7 +270,7 @@ dnl if test "$ac_cv_func_gethostbyname" = no; then
 dnl 	AC_CHECK_LIB(nsl, gethostbyname)
 dnl fi
 
-AC_CHECK_LIB(util, logout)
+AC_FIND_FUNC(logout, util)
 
 AC_SUBST(HAVE_LIBTERMCAP)
 

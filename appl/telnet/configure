@@ -961,14 +961,15 @@ if test -f /lib/pse.exp ;then
 	LIBS="$LIBS -Wl,-bI:/lib/pse.exp"
 fi
 
-echo $ac_n "checking for -ltermcap""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_lib_termcap'+set}'`\" = set"; then
+
+
+echo $ac_n "checking for tgetent""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'j_cv_func_tgetent'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  ac_save_LIBS="$LIBS"
-LIBS="-ltermcap  $LIBS"
+  
 cat > conftest.$ac_ext <<EOF
-#line 972 "configure"
+#line 973 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -978,36 +979,102 @@ tgetent()
 EOF
 if eval $ac_link; then
   rm -rf conftest*
-  eval "ac_cv_lib_termcap=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_lib_termcap=no"
+  eval "j_cv_func_tgetent=yes"
 fi
 rm -f conftest*
-LIBS="$ac_save_LIBS"
+
+j_save_LIBS="$LIBS"
+if eval "test \"`echo '$j_cv_func_'tgetent`\" != yes"; then
+	cat > conftest.$ac_ext <<EOF
+#line 990 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+tgetent()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_tgetent=yes";break
+fi
+rm -f conftest*
+
+	for j_lib in termcap; do 
+		LIBS="-l$j_lib $j_save_LIBS"
+		cat > conftest.$ac_ext <<EOF
+#line 1007 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+tgetent()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_tgetent=-l$j_lib";break
+fi
+rm -f conftest*
+
+	done
+	if eval "test -z \"`echo '$j_cv_func_'tgetent`\""; then
+		eval "j_cv_func_tgetent=no"
+	fi
+fi
+LIBS="$j_save_LIBS"
 
 fi
-if eval "test \"`echo '$ac_cv_lib_'termcap`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo termcap | tr '[a-z]' '[A-Z]'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
+
+
+#j_res=`echo \`eval \\\`echo "echo "'$j_cv_func_'"tgetent"\\\`\``
+
+j_res=`echo \`eval echo '$j_cv_func_'tgetent\``
+
+# autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs tgetent"@@@
+@@@libs="$libs termcap"@@@
+END
+
+case "$j_res" in
+	yes)
+		j_tr_func=HAVE_`echo tgetent | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
 EOF
 
-  LIBS="-ltermcap $LIBS"
+	echo "$ac_t""yes" 1>&6
+	;;
+	no)
+	echo "$ac_t""no" 1>&6
+	;;
+	*)
+		j_tr_func=HAVE_`echo tgetent | tr '[a-z]' '[A-Z]'`
+	j_tr_lib=HAVE_LIB`echo $j_res | sed -e 's/-l//' | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
+EOF
 
-else
-  echo "$ac_t""no" 1>&6
-fi
+	cat >> confdefs.h <<EOF
+#define $j_tr_lib 1
+EOF
 
-echo $ac_n "checking for -lcurses""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_lib_curses'+set}'`\" = set"; then
+	echo "$ac_t""yes, in $j_res" 1>&6
+
+	LIBS="$j_res $LIBS"
+	;;
+esac
+
+
+
+echo $ac_n "checking for setupterm""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'j_cv_func_setupterm'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  ac_save_LIBS="$LIBS"
-LIBS="-lcurses  $LIBS"
+  
 cat > conftest.$ac_ext <<EOF
-#line 1011 "configure"
+#line 1078 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1017,36 +1084,102 @@ setupterm()
 EOF
 if eval $ac_link; then
   rm -rf conftest*
-  eval "ac_cv_lib_curses=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_lib_curses=no"
+  eval "j_cv_func_setupterm=yes"
 fi
 rm -f conftest*
-LIBS="$ac_save_LIBS"
+
+j_save_LIBS="$LIBS"
+if eval "test \"`echo '$j_cv_func_'setupterm`\" != yes"; then
+	cat > conftest.$ac_ext <<EOF
+#line 1095 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+setupterm()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_setupterm=yes";break
+fi
+rm -f conftest*
+
+	for j_lib in curses; do 
+		LIBS="-l$j_lib $j_save_LIBS"
+		cat > conftest.$ac_ext <<EOF
+#line 1112 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+setupterm()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_setupterm=-l$j_lib";break
+fi
+rm -f conftest*
+
+	done
+	if eval "test -z \"`echo '$j_cv_func_'setupterm`\""; then
+		eval "j_cv_func_setupterm=no"
+	fi
+fi
+LIBS="$j_save_LIBS"
 
 fi
-if eval "test \"`echo '$ac_cv_lib_'curses`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo curses | tr '[a-z]' '[A-Z]'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
+
+
+#j_res=`echo \`eval \\\`echo "echo "'$j_cv_func_'"setupterm"\\\`\``
+
+j_res=`echo \`eval echo '$j_cv_func_'setupterm\``
+
+# autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs setupterm"@@@
+@@@libs="$libs curses"@@@
+END
+
+case "$j_res" in
+	yes)
+		j_tr_func=HAVE_`echo setupterm | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
 EOF
 
-  LIBS="-lcurses $LIBS"
+	echo "$ac_t""yes" 1>&6
+	;;
+	no)
+	echo "$ac_t""no" 1>&6
+	;;
+	*)
+		j_tr_func=HAVE_`echo setupterm | tr '[a-z]' '[A-Z]'`
+	j_tr_lib=HAVE_LIB`echo $j_res | sed -e 's/-l//' | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
+EOF
 
-else
-  echo "$ac_t""no" 1>&6
-fi
+	cat >> confdefs.h <<EOF
+#define $j_tr_lib 1
+EOF
 
-echo $ac_n "checking for -lsocket""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_lib_socket'+set}'`\" = set"; then
+	echo "$ac_t""yes, in $j_res" 1>&6
+
+	LIBS="$j_res $LIBS"
+	;;
+esac
+
+
+
+echo $ac_n "checking for socket""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'j_cv_func_socket'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  ac_save_LIBS="$LIBS"
-LIBS="-lsocket  $LIBS"
+  
 cat > conftest.$ac_ext <<EOF
-#line 1050 "configure"
+#line 1183 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1056,36 +1189,102 @@ socket()
 EOF
 if eval $ac_link; then
   rm -rf conftest*
-  eval "ac_cv_lib_socket=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_lib_socket=no"
+  eval "j_cv_func_socket=yes"
 fi
 rm -f conftest*
-LIBS="$ac_save_LIBS"
+
+j_save_LIBS="$LIBS"
+if eval "test \"`echo '$j_cv_func_'socket`\" != yes"; then
+	cat > conftest.$ac_ext <<EOF
+#line 1200 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+socket()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_socket=yes";break
+fi
+rm -f conftest*
+
+	for j_lib in socket; do 
+		LIBS="-l$j_lib $j_save_LIBS"
+		cat > conftest.$ac_ext <<EOF
+#line 1217 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+socket()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_socket=-l$j_lib";break
+fi
+rm -f conftest*
+
+	done
+	if eval "test -z \"`echo '$j_cv_func_'socket`\""; then
+		eval "j_cv_func_socket=no"
+	fi
+fi
+LIBS="$j_save_LIBS"
 
 fi
-if eval "test \"`echo '$ac_cv_lib_'socket`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo socket | tr '[a-z]' '[A-Z]'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
+
+
+#j_res=`echo \`eval \\\`echo "echo "'$j_cv_func_'"socket"\\\`\``
+
+j_res=`echo \`eval echo '$j_cv_func_'socket\``
+
+# autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs socket"@@@
+@@@libs="$libs socket"@@@
+END
+
+case "$j_res" in
+	yes)
+		j_tr_func=HAVE_`echo socket | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
 EOF
 
-  LIBS="-lsocket $LIBS"
+	echo "$ac_t""yes" 1>&6
+	;;
+	no)
+	echo "$ac_t""no" 1>&6
+	;;
+	*)
+		j_tr_func=HAVE_`echo socket | tr '[a-z]' '[A-Z]'`
+	j_tr_lib=HAVE_LIB`echo $j_res | sed -e 's/-l//' | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
+EOF
 
-else
-  echo "$ac_t""no" 1>&6
-fi
+	cat >> confdefs.h <<EOF
+#define $j_tr_lib 1
+EOF
 
-echo $ac_n "checking for -lnsl""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_lib_nsl'+set}'`\" = set"; then
+	echo "$ac_t""yes, in $j_res" 1>&6
+
+	LIBS="$j_res $LIBS"
+	;;
+esac
+
+
+
+echo $ac_n "checking for gethostbyname""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'j_cv_func_gethostbyname'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  ac_save_LIBS="$LIBS"
-LIBS="-lnsl  $LIBS"
+  
 cat > conftest.$ac_ext <<EOF
-#line 1089 "configure"
+#line 1288 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1095,27 +1294,92 @@ gethostbyname()
 EOF
 if eval $ac_link; then
   rm -rf conftest*
-  eval "ac_cv_lib_nsl=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_lib_nsl=no"
+  eval "j_cv_func_gethostbyname=yes"
 fi
 rm -f conftest*
-LIBS="$ac_save_LIBS"
+
+j_save_LIBS="$LIBS"
+if eval "test \"`echo '$j_cv_func_'gethostbyname`\" != yes"; then
+	cat > conftest.$ac_ext <<EOF
+#line 1305 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+gethostbyname()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_gethostbyname=yes";break
+fi
+rm -f conftest*
+
+	for j_lib in nsl; do 
+		LIBS="-l$j_lib $j_save_LIBS"
+		cat > conftest.$ac_ext <<EOF
+#line 1322 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+gethostbyname()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_gethostbyname=-l$j_lib";break
+fi
+rm -f conftest*
+
+	done
+	if eval "test -z \"`echo '$j_cv_func_'gethostbyname`\""; then
+		eval "j_cv_func_gethostbyname=no"
+	fi
+fi
+LIBS="$j_save_LIBS"
 
 fi
-if eval "test \"`echo '$ac_cv_lib_'nsl`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo nsl | tr '[a-z]' '[A-Z]'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
+
+
+#j_res=`echo \`eval \\\`echo "echo "'$j_cv_func_'"gethostbyname"\\\`\``
+
+j_res=`echo \`eval echo '$j_cv_func_'gethostbyname\``
+
+# autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs gethostbyname"@@@
+@@@libs="$libs nsl"@@@
+END
+
+case "$j_res" in
+	yes)
+		j_tr_func=HAVE_`echo gethostbyname | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
 EOF
 
-  LIBS="-lnsl $LIBS"
+	echo "$ac_t""yes" 1>&6
+	;;
+	no)
+	echo "$ac_t""no" 1>&6
+	;;
+	*)
+		j_tr_func=HAVE_`echo gethostbyname | tr '[a-z]' '[A-Z]'`
+	j_tr_lib=HAVE_LIB`echo $j_res | sed -e 's/-l//' | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
+EOF
 
-else
-  echo "$ac_t""no" 1>&6
-fi
+	cat >> confdefs.h <<EOF
+#define $j_tr_lib 1
+EOF
+
+	echo "$ac_t""yes, in $j_res" 1>&6
+
+	LIBS="$j_res $LIBS"
+	;;
+esac
 
 	
 
@@ -1126,7 +1390,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1130 "configure"
+#line 1394 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1175,7 +1439,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1179 "configure"
+#line 1443 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1226,7 +1490,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1230 "configure"
+#line 1494 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1277,7 +1541,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1281 "configure"
+#line 1545 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1324,14 +1588,15 @@ done
 
 
 
-echo $ac_n "checking for -lutil""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'ac_cv_lib_util'+set}'`\" = set"; then
+
+
+echo $ac_n "checking for logout""... $ac_c" 1>&6
+if eval "test \"`echo '$''{'j_cv_func_logout'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  ac_save_LIBS="$LIBS"
-LIBS="-lutil  $LIBS"
+  
 cat > conftest.$ac_ext <<EOF
-#line 1335 "configure"
+#line 1600 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1341,27 +1606,92 @@ logout()
 EOF
 if eval $ac_link; then
   rm -rf conftest*
-  eval "ac_cv_lib_util=yes"
-else
-  rm -rf conftest*
-  eval "ac_cv_lib_util=no"
+  eval "j_cv_func_logout=yes"
 fi
 rm -f conftest*
-LIBS="$ac_save_LIBS"
+
+j_save_LIBS="$LIBS"
+if eval "test \"`echo '$j_cv_func_'logout`\" != yes"; then
+	cat > conftest.$ac_ext <<EOF
+#line 1617 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+logout()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_logout=yes";break
+fi
+rm -f conftest*
+
+	for j_lib in util; do 
+		LIBS="-l$j_lib $j_save_LIBS"
+		cat > conftest.$ac_ext <<EOF
+#line 1634 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+logout()
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  eval "j_cv_func_logout=-l$j_lib";break
+fi
+rm -f conftest*
+
+	done
+	if eval "test -z \"`echo '$j_cv_func_'logout`\""; then
+		eval "j_cv_func_logout=no"
+	fi
+fi
+LIBS="$j_save_LIBS"
 
 fi
-if eval "test \"`echo '$ac_cv_lib_'util`\" = yes"; then
-  echo "$ac_t""yes" 1>&6
-    ac_tr_lib=HAVE_LIB`echo util | tr '[a-z]' '[A-Z]'`
-  cat >> confdefs.h <<EOF
-#define $ac_tr_lib 1
+
+
+#j_res=`echo \`eval \\\`echo "echo "'$j_cv_func_'"logout"\\\`\``
+
+j_res=`echo \`eval echo '$j_cv_func_'logout\``
+
+# autoheader tricks *sigh*
+: << END
+@@@funcs="$funcs logout"@@@
+@@@libs="$libs util"@@@
+END
+
+case "$j_res" in
+	yes)
+		j_tr_func=HAVE_`echo logout | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
 EOF
 
-  LIBS="-lutil $LIBS"
+	echo "$ac_t""yes" 1>&6
+	;;
+	no)
+	echo "$ac_t""no" 1>&6
+	;;
+	*)
+		j_tr_func=HAVE_`echo logout | tr '[a-z]' '[A-Z]'`
+	j_tr_lib=HAVE_LIB`echo $j_res | sed -e 's/-l//' | tr '[a-z]' '[A-Z]'`
+		cat >> confdefs.h <<EOF
+#define $j_tr_func 1
+EOF
 
-else
-  echo "$ac_t""no" 1>&6
-fi
+	cat >> confdefs.h <<EOF
+#define $j_tr_lib 1
+EOF
+
+	echo "$ac_t""yes, in $j_res" 1>&6
+
+	LIBS="$j_res $LIBS"
+	;;
+esac
 
 
 
@@ -1374,7 +1704,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1378 "configure"
+#line 1708 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -1410,7 +1740,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1414 "configure"
+#line 1744 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -1446,7 +1776,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1450 "configure"
+#line 1780 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF

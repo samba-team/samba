@@ -53,6 +53,9 @@
 /* Define if you have the frevoke function.  */
 #undef HAVE_FREVOKE
 
+/* Define if you have the gethostbyname function.  */
+#undef HAVE_GETHOSTBYNAME
+
 /* Define if you have the getmsg function.  */
 #undef HAVE_GETMSG
 
@@ -61,6 +64,9 @@
 
 /* Define if you have the grantpt function.  */
 #undef HAVE_GRANTPT
+
+/* Define if you have the logout function.  */
+#undef HAVE_LOGOUT
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
@@ -79,6 +85,9 @@
 
 /* Define if you have the setupterm function.  */
 #undef HAVE_SETUPTERM
+
+/* Define if you have the socket function.  */
+#undef HAVE_SOCKET
 
 /* Define if you have the tgetent function.  */
 #undef HAVE_TGETENT
