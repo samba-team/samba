@@ -445,7 +445,6 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	return (cli->rap_error == 0);
 }
 
-#if UNUSED_CODE
 /****************************************************************************
 call a NetShareEnum - try and browse available connections on a host
 ****************************************************************************/
@@ -501,9 +500,9 @@ BOOL cli_RNetShareEnum(struct cli_state *cli, void (*fn)(char *, uint32, char *)
   if (rdata)
     free(rdata);
 
-  return(count>0);
+  return count;
 }
-#endif
+
 
 /****************************************************************************
 call a NetServerEnum for the specified workgroup and servertype mask.
@@ -608,29 +607,38 @@ BOOL cli_session_setup(struct cli_state *cli,
 		       char *workgroup)
 {
 	char *p;
-	fstring pword;
+	fstring pword, ntpword;
 
 	if (cli->protocol < PROTOCOL_LANMAN1)
 		return True;
 
-	if (passlen > sizeof(pword)-1) {
+	if (passlen > sizeof(pword)-1 || ntpasslen > sizeof(ntpword)-1) {
 		return False;
 	}
 
         if (((passlen == 0) || (passlen == 1)) && (pass[0] == '\0')) {
           /* Null session connect. */
           pword[0] = '\0';
+          ntpword[0] = '\0';
         } else {
           if ((cli->sec_mode & 2) && passlen != 24) {
             passlen = 24;
+            ntpasslen = 24;
             SMBencrypt((uchar *)pass,(uchar *)cli->cryptkey,(uchar *)pword);
+            SMBNTencrypt((uchar *)ntpass,(uchar *)cli->cryptkey,(uchar *)ntpword);
           } else {
             memcpy(pword, pass, passlen);
+            memcpy(ntpword, ntpass, ntpasslen);
           }
         }
 
 	/* if in share level security then don't send a password now */
-	if (!(cli->sec_mode & 1)) {fstrcpy(pword, "");passlen=1;} 
+	if (!(cli->sec_mode & 1)) {
+		fstrcpy(pword, "");
+		passlen=1;
+		fstrcpy(ntpword, "");
+		ntpasslen=1;
+	} 
 
 	/* send a session setup command */
 	bzero(cli->outbuf,smb_size);
@@ -670,11 +678,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
-		if (ntpasslen != 0)
-		{
-			memcpy(p,ntpass,ntpasslen); 
-			p += SVAL(cli->outbuf,smb_vwv8);
-		}
+		memcpy(p,ntpword,ntpasslen); 
+		p += SVAL(cli->outbuf,smb_vwv8);
 		pstrcpy(p,user);
 		strupper(p);
 		p = skip_string(p,1);
@@ -771,6 +776,12 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	if (CVAL(cli->inbuf,smb_rcls) != 0) {
 		return False;
+	}
+
+	if (cli->protocol >= PROTOCOL_NT1 &&
+	    smb_buflen(cli->inbuf) == 3) {
+		/* almost certainly win95 - enable bug fixes */
+		cli->win95 = True;
 	}
 
 	cli->cnum = SVAL(cli->inbuf,smb_tid);
@@ -1119,37 +1130,51 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
+	int total=0;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	while (total < size) {
+		int size1 = MIN(size-total, cli->max_xmit - (smb_size+32));
+		int size2;
 
-	set_message(cli->outbuf,10,0,True);
+		bzero(cli->outbuf,smb_size);
+		bzero(cli->inbuf,smb_size);
 
-	CVAL(cli->outbuf,smb_com) = SMBreadX;
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+		set_message(cli->outbuf,10,0,True);
+		
+		CVAL(cli->outbuf,smb_com) = SMBreadX;
+		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		cli_setup_packet(cli);
 
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SSVAL(cli->outbuf,smb_vwv5,size);
-	SSVAL(cli->outbuf,smb_vwv6,size);
+		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+		SSVAL(cli->outbuf,smb_vwv2,fnum);
+		SIVAL(cli->outbuf,smb_vwv3,offset+total);
+		SSVAL(cli->outbuf,smb_vwv5,size1);
+		SSVAL(cli->outbuf,smb_vwv6,size1);
 
-	send_smb(cli->fd,cli->outbuf);
-	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
-		return -1;
+		send_smb(cli->fd,cli->outbuf);
+		if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+			return total?total:-1;
+		}
+
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+			return total?total:-1;
+		}
+
+		size2 = SVAL(cli->inbuf, smb_vwv5);
+		if (size2 > size1) {
+			DEBUG(0,("server returned more than we wanted!\n"));
+			exit(1);
+		}
+		p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+
+		if (size2 <= 0) break;
+
+		memcpy(buf+total, p, size2);
+
+		total += size2;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
-	}
-
-	size = SVAL(cli->inbuf, smb_vwv5);
-	p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
-
-	memcpy(buf, p, size);
-
-	return size;
+	return total;
 }
 
 
@@ -1159,36 +1184,100 @@ int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 s
 int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size)
 {
 	char *p;
+	int total=0;
 
+	while (total < size) {
+		int size1 = MIN(size-total, cli->max_xmit - (smb_size+32));
+		int size2;
+
+		bzero(cli->outbuf,smb_size);
+		bzero(cli->inbuf,smb_size);
+
+		set_message(cli->outbuf,12,size1,True);
+
+		CVAL(cli->outbuf,smb_com) = SMBwriteX;
+		SSVAL(cli->outbuf,smb_tid,cli->cnum);
+		cli_setup_packet(cli);
+
+		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
+		SSVAL(cli->outbuf,smb_vwv2,fnum);
+		SIVAL(cli->outbuf,smb_vwv3,offset+total);
+
+		SSVAL(cli->outbuf,smb_vwv10,size1);
+		SSVAL(cli->outbuf,smb_vwv11,
+		      smb_buf(cli->outbuf) - smb_base(cli->outbuf));
+
+		p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
+		memcpy(p, buf+total, size1);
+
+		send_smb(cli->fd,cli->outbuf);
+		if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
+			return -1;
+		}
+
+		if (CVAL(cli->inbuf,smb_rcls) != 0) {
+			return -1;
+		}
+
+		size2 = SVAL(cli->inbuf, smb_vwv2);
+
+		if (size2 <= 0) break;
+
+		total += size2;
+	}
+
+	return total;
+}
+
+
+/****************************************************************************
+do a SMBgetattrE call
+****************************************************************************/
+BOOL cli_getattrE(struct cli_state *cli, int fd, 
+		  int *attr, uint32 *size, 
+		  time_t *c_time, time_t *a_time, time_t *m_time)
+{
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
 
-	set_message(cli->outbuf,12,size,True);
+	set_message(cli->outbuf,2,0,True);
 
-	CVAL(cli->outbuf,smb_com) = SMBwriteX;
+	CVAL(cli->outbuf,smb_com) = SMBgetattrE;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
 
-	CVAL(cli->outbuf,smb_vwv0) = 0xFF;
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	SIVAL(cli->outbuf,smb_vwv3,offset);
-
-	SSVAL(cli->outbuf,smb_vwv10,size);
-	SSVAL(cli->outbuf,smb_vwv11,smb_buf(cli->outbuf) - smb_base(cli->outbuf));
-
-	p = smb_base(cli->outbuf) + SVAL(cli->outbuf,smb_vwv11);
-	memcpy(p, buf, size);
+	SSVAL(cli->outbuf,smb_vwv0,fd);
 
 	send_smb(cli->fd,cli->outbuf);
 	if (!client_receive_smb(cli->fd,cli->inbuf,cli->timeout)) {
-		return -1;
+		return False;
 	}
-
+	
 	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return -1;
+		return False;
 	}
 
-	return SVAL(cli->inbuf, smb_vwv2);
+	if (size) {
+		*size = IVAL(cli->inbuf, smb_vwv6);
+	}
+
+	if (attr) {
+		*attr = SVAL(cli->inbuf,smb_vwv10);
+	}
+
+	if (c_time) {
+		*c_time = make_unix_date3(cli->inbuf+smb_vwv0);
+	}
+
+	if (a_time) {
+		*a_time = make_unix_date3(cli->inbuf+smb_vwv2);
+	}
+
+	if (m_time) {
+		*m_time = make_unix_date3(cli->inbuf+smb_vwv4);
+	}
+
+	return True;
 }
 
 
@@ -1196,7 +1285,7 @@ int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 
 do a SMBgetatr call
 ****************************************************************************/
 BOOL cli_getatr(struct cli_state *cli, char *fname, 
-		int *attr, uint32 *size, time_t *t)
+		uint32 *attr, size_t *size, time_t *t)
 {
 	char *p;
 
@@ -1281,13 +1370,16 @@ send a qpathinfo call
 ****************************************************************************/
 BOOL cli_qpathinfo(struct cli_state *cli, char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
-		   uint32 *size, int *mode)
+		   size_t *size, uint32 *mode)
 {
 	int data_len = 0;
 	int param_len = 0;
 	uint16 setup = TRANSACT2_QPATHINFO;
 	pstring param;
 	char *rparam=NULL, *rdata=NULL;
+	int count=8;
+	BOOL ret;
+	time_t (*date_fn)(void *);
 
 	param_len = strlen(fname) + 7;
 
@@ -1295,34 +1387,46 @@ BOOL cli_qpathinfo(struct cli_state *cli, char *fname,
 	SSVAL(param, 0, SMB_INFO_STANDARD);
 	pstrcpy(&param[6], fname);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL, 0,                      /* Name, length */
-                            -1, 0,                        /* fid, flags */
-                            &setup, 1, 0,                 /* setup, length, max */
-                            param, param_len, 10,         /* param, length, max */
-                            NULL, data_len, cli->max_xmit /* data, length, max */
-                           )) {
+	do {
+		ret = (cli_send_trans(cli, SMBtrans2, 
+				      NULL, 0,        /* Name, length */
+				      -1, 0,          /* fid, flags */
+				      &setup, 1, 0,   /* setup, length, max */
+				      param, param_len, 10, /* param, length, max */
+				      NULL, data_len, cli->max_xmit /* data, length, max */
+				      ) &&
+		       cli_receive_trans(cli, SMBtrans2, 
+					 &rparam, &param_len,
+					 &rdata, &data_len));
+		if (!ret) {
+			/* we need to work around a Win95 bug - sometimes
+			   it gives ERRSRV/ERRerror temprarily */
+			uint8 eclass;
+			uint32 ecode;
+			cli_error(cli, &eclass, &ecode);
+			if (eclass != ERRSRV || ecode != ERRerror) break;
+			msleep(100);
+		}
+	} while (count-- && ret==False);
+
+	if (!ret || !rdata || data_len < 22) {
 		return False;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2, 
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
-		return False;
-	}
-
-	if (!rdata || data_len < 22) {
-		return False;
+	if (cli->win95) {
+		date_fn = make_unix_date;
+	} else {
+		date_fn = make_unix_date2;
 	}
 
 	if (c_time) {
-		*c_time = make_unix_date2(rdata+0);
+		*c_time = date_fn(rdata+0);
 	}
 	if (a_time) {
-		*a_time = make_unix_date2(rdata+4);
+		*a_time = date_fn(rdata+4);
 	}
 	if (m_time) {
-		*m_time = make_unix_date2(rdata+8);
+		*m_time = date_fn(rdata+8);
 	}
 	if (size) {
 		*size = IVAL(rdata, 12);
@@ -1579,7 +1683,7 @@ int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info
 	int i;
 	char *dirlist = NULL;
 	int dirlist_len = 0;
-	int total_received = 0;
+	int total_received = -1;
 	BOOL First = True;
 	int ff_resume_key = 0;
 	int ff_searchcount=0;
@@ -1633,14 +1737,23 @@ int cli_list(struct cli_state *cli,char *Mask,int attribute,void (*fn)(file_info
 				    NULL, 0, 
 				    cli->max_xmit /* data, length, max */
 				    )) {
-			return -1;
+			break;
 		}
 
 		if (!cli_receive_trans(cli, SMBtrans2, 
 				       &rparam, &param_len,
 				       &rdata, &data_len)) {
-			return -1;
+			/* we need to work around a Win95 bug - sometimes
+			   it gives ERRSRV/ERRerror temprarily */
+			uint8 eclass;
+			uint32 ecode;
+			cli_error(cli, &eclass, &ecode);
+			if (eclass != ERRSRV || ecode != ERRerror) break;
+			msleep(100);
+			continue;
 		}
+
+		if (total_received == -1) total_received = 0;
 
 		/* parse out some important return info */
 		p = rparam;
@@ -1880,9 +1993,11 @@ BOOL cli_negprot(struct cli_state *cli)
 		/* this time arrives in real GMT */
 		cli->servertime = interpret_long_date(cli->inbuf+smb_vwv11+1);
 		memcpy(cli->cryptkey,smb_buf(cli->inbuf),8);
-		if (IVAL(cli->inbuf,smb_vwv9+1) & 1)
-			cli->readbraw_supported = 
-				cli->writebraw_supported = True;      
+		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
+		if (cli->capabilities & 1) {
+			cli->readbraw_supported = True;
+			cli->writebraw_supported = True;      
+		}
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
 		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
@@ -2032,34 +2147,53 @@ void cli_shutdown(struct cli_state *cli)
 
 /****************************************************************************
   return error codes for the last packet
+  returns 0 if there was no error and the bext approx of a unix errno
+  otherwise
 ****************************************************************************/
-BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
+int cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num)
 {
 	int  flgs2 = SVAL(cli->inbuf,smb_flg2);
+	char rcls;
+	int code;
 
 	if (eclass) *eclass = 0;
 	if (num   ) *num = 0;
 
-	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES)
-	{
+	if (flgs2 & FLAGS2_32_BIT_ERROR_CODES) {
 		/* 32 bit error codes detected */
 		uint32 nt_err = IVAL(cli->inbuf,smb_rcls);
 		if (num) *num = nt_err;
 		DEBUG(10,("cli_error: 32 bit codes: code=%08x\n", nt_err));
-		return (IS_BITS_SET_ALL(nt_err, 0xc0000000));
+		if (!IS_BITS_SET_ALL(nt_err, 0xc0000000)) return 0;
+
+		switch (nt_err & 0xFFFFFF) {
+		case NT_STATUS_ACCESS_VIOLATION: return EPERM;
+		}
+
+		/* for all other cases - a default code */
+		return EINVAL;
 	}
-	else
-	{
-		/* dos 16 bit error codes detected */
-		char rcls  = CVAL(cli->inbuf,smb_rcls);
-		if (rcls != 0)
-		{
-			if (eclass) *eclass = rcls;
-			if (num   ) *num    = SVAL(cli->inbuf,smb_err);
-			return True;
+
+	rcls  = CVAL(cli->inbuf,smb_rcls);
+	code  = SVAL(cli->inbuf,smb_err);
+	if (rcls == 0) return 0;
+
+	if (eclass) *eclass = rcls;
+	if (num   ) *num    = code;
+
+	if (rcls == ERRDOS) {
+		switch (code) {
+		case ERRbadfile: return ENOENT;
+		case ERRnoaccess: return EPERM;
 		}
 	}
-	return False;
+	if (rcls == ERRSRV) {
+		switch (code) {
+		case ERRbadpw: return EPERM;
+		}
+	}
+	/* for other cases */
+	return EINVAL;
 }
 
 /****************************************************************************
