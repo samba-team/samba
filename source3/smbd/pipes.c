@@ -99,7 +99,7 @@ int reply_open_pipe_and_X(connection_struct *conn,
 	put_dos_date3(outbuf,smb_vwv4,mtime);
 	SIVAL(outbuf,smb_vwv6,size);
 	SSVAL(outbuf,smb_vwv8,rmode);
-	SSVAL(outbuf,smb_vwv11,0);
+	SSVAL(outbuf,smb_vwv11,0x0001);
 
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }

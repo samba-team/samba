@@ -293,7 +293,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
                                 prs_struct *auth_ntlm,
 				uint32 call_id,
                                 RPC_IFACE *abstract, RPC_IFACE *transfer,
-                                char *my_name, char *domain)
+                                char *my_name, char *domain, uint32 neg_flags)
 {
 	RPC_HDR_RB           hdr_rb;
 	RPC_HDR              hdr;
@@ -322,7 +322,7 @@ static BOOL create_rpc_bind_req(prs_struct *rhdr,
 		mem_realloc_data(auth_req->data, auth_req->offset);
 
 		make_rpc_auth_ntlmssp_neg(&ntlmssp_neg,
-		                       0x0000b2b3, my_name, domain);
+		                       neg_flags, my_name, domain);
 
 		smb_io_rpc_auth_ntlmssp_neg("ntlmssp_neg", &ntlmssp_neg, auth_req, 0);
 		mem_realloc_data(auth_req->data, auth_req->offset);
@@ -451,7 +451,7 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len,
 
 	if (auth_len != 0)
 	{
-		alloc_hint = data_len - 0x18 - auth_len - 12;
+		alloc_hint = data_len - 0x18 - auth_len - 10;
 	}
 	else
 	{
@@ -522,7 +522,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		RPC_AUTH_NTLMSSP_CHK chk;
 		RPC_HDR_AUTH         rhdr_auth;
 
-		make_rpc_hdr_auth(&rhdr_auth, 0x0a, 0x06, 0x02);
+		make_rpc_hdr_auth(&rhdr_auth, 0x0a, 0x06, 0x08);
 		smb_io_rpc_hdr_auth("hdr_auth", &rhdr_auth, &hdr_auth, 0);
 
 		make_rpc_auth_ntlmssp_chk(&chk, NTLMSSP_SIGN_VERSION, crc32, 0);
@@ -747,7 +747,8 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	                    ntlmssp_auth ? &auth_req : NULL,
 	                    ntlmssp_auth ? &auth_ntlm : NULL,
 	                    call_id,
-	                    abstract, transfer, global_myname, cli->domain);
+	                    abstract, transfer,
+	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
 	prs_init(&data, mem_buf_len(hdr.data), 4, 0x0, False);
@@ -884,16 +885,19 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name, BOOL encrypted)
 
 	if (encrypted)
 	{
-		cli->ntlmssp_cli_flgs =
+		cli->ntlmssp_cli_flgs = 
 		                    NTLMSSP_NEGOTIATE_UNICODE |
-		                    NTLMSSP_NEGOTIATE_OEM |
+/*		                    NTLMSSP_NEGOTIATE_OEM |
+ */
 		                    NTLMSSP_NEGOTIATE_SIGN |
 		                    NTLMSSP_NEGOTIATE_SEAL |
 		                    NTLMSSP_NEGOTIATE_LM_KEY |
 		                    NTLMSSP_NEGOTIATE_NTLM |
-		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
+/*
 		                    NTLMSSP_NEGOTIATE_00001000 |
 		                    NTLMSSP_NEGOTIATE_00002000;
+ */
 		DEBUG(5,("cli_nt_session_open: neg_flags: %lx\n",
 		         cli->ntlmssp_cli_flgs));
 	}

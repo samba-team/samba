@@ -554,8 +554,8 @@ void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 	smb_io_strhdr("hdr_myname", &(neg->hdr_myname), ps, depth); 
 	smb_io_strhdr("hdr_domain", &(neg->hdr_domain), ps, depth); 
 
-	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len, sizeof(neg->myname)); 
 	prs_string("domain", ps, depth, neg->domain, neg->hdr_domain.str_str_len, sizeof(neg->domain)); 
+	prs_string("myname", ps, depth, neg->myname, neg->hdr_myname.str_str_len, sizeof(neg->myname)); 
 }
 
 /*******************************************************************
@@ -635,12 +635,6 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 		usr_len *= 2;
 	}
 
-	make_str_hdr(&rsp->hdr_lm_resp, lm_len, lm_len, offset);
-	offset += lm_len;
-
-	make_str_hdr(&rsp->hdr_nt_resp, nt_len, nt_len, offset);
-	offset += nt_len;
-
 	make_str_hdr(&rsp->hdr_domain , dom_len, dom_len, offset);
 	offset += dom_len;
 
@@ -649,6 +643,12 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	make_str_hdr(&rsp->hdr_wks    , wks_len, wks_len, offset);
 	offset += wks_len;
+
+	make_str_hdr(&rsp->hdr_lm_resp, lm_len , lm_len , offset);
+	offset += lm_len;
+
+	make_str_hdr(&rsp->hdr_nt_resp, nt_len , nt_len , offset);
+	offset += nt_len;
 
 	make_str_hdr(&rsp->hdr_sess_key, 0, 0, offset);
 
@@ -705,14 +705,6 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		old_offset = ps->offset;
 
-		ps->offset = rsp->hdr_lm_resp .buffer + 0x1c;
-		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
-		old_offset += rsp->hdr_lm_resp .str_str_len;
-
-		ps->offset = rsp->hdr_nt_resp .buffer + 0x1c;
-		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
-		old_offset += rsp->hdr_nt_resp .str_str_len;
-
 		ps->offset = rsp->hdr_domain  .buffer + 0x1c;
 		prs_uint8s(True , "domain  ", ps, depth, (uint8*)rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
 		old_offset += rsp->hdr_domain  .str_str_len;
@@ -724,6 +716,14 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 		ps->offset = rsp->hdr_wks     .buffer + 0x1c;
 		prs_uint8s(True , "wks     ", ps, depth, (uint8*)rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
 		old_offset += rsp->hdr_wks     .str_str_len;
+
+		ps->offset = rsp->hdr_lm_resp .buffer + 0x1c;
+		prs_uint8s(False, "lm_resp ", ps, depth, (uint8*)rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
+		old_offset += rsp->hdr_lm_resp .str_str_len;
+
+		ps->offset = rsp->hdr_nt_resp .buffer + 0x1c;
+		prs_uint8s(False, "nt_resp ", ps, depth, (uint8*)rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
+		old_offset += rsp->hdr_nt_resp .str_str_len;
 
 		if (rsp->hdr_sess_key.str_str_len != 0)
 		{
@@ -746,11 +746,11 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 
 		prs_uint32("neg_flags", ps, depth, &(rsp->neg_flags)); /* 0x0000 82b1 */
 
-		prs_uint8s(False, "lm_resp ", ps, depth, rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
-		prs_uint8s(False, "nt_resp ", ps, depth, rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		prs_uint8s(True , "domain  ", ps, depth, rsp->domain  , MIN(rsp->hdr_domain  .str_str_len, sizeof(rsp->domain  ))); 
 		prs_uint8s(True , "user    ", ps, depth, rsp->user    , MIN(rsp->hdr_usr     .str_str_len, sizeof(rsp->user    ))); 
 		prs_uint8s(True , "wks     ", ps, depth, rsp->wks     , MIN(rsp->hdr_wks     .str_str_len, sizeof(rsp->wks     ))); 
+		prs_uint8s(False, "lm_resp ", ps, depth, rsp->lm_resp , MIN(rsp->hdr_lm_resp .str_str_len, sizeof(rsp->lm_resp ))); 
+		prs_uint8s(False, "nt_resp ", ps, depth, rsp->nt_resp , MIN(rsp->hdr_nt_resp .str_str_len, sizeof(rsp->nt_resp ))); 
 		prs_uint8s(False, "sess_key", ps, depth, rsp->sess_key, MIN(rsp->hdr_sess_key.str_str_len, sizeof(rsp->sess_key))); 
 	}
 }

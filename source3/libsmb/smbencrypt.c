@@ -162,6 +162,12 @@ void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24])
 	memset(p21 + 8, 0xbd, 8);    
 
 	E_P24(p21, ntlmchalresp, p24);
+#ifdef DEBUG_PASSWORD
+	DEBUG(100,("NTLMSSPOWFencrypt: p21, c8, p24\n"));
+	dump_data(100, p21, 21);
+	dump_data(100, ntlmchalresp, 8);
+	dump_data(100, p24, 24);
+#endif
 }
 
 

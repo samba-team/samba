@@ -1269,6 +1269,7 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USER_INFO_21 *usr);
+BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
 BOOL do_samr_unknown_8(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value);
 BOOL do_samr_enum_dom_users(struct cli_state *cli, 
@@ -1541,7 +1542,7 @@ void make_rpc_hdr_ba(RPC_HDR_BA *rpc,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 void smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
-void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 data_len, uint16 opnum);
+void make_rpc_hdr_req(RPC_HDR_REQ *hdr, uint32 alloc_hint, uint16 opnum);
 void smb_io_rpc_hdr_req(char *desc,  RPC_HDR_REQ *rpc, prs_struct *ps, int depth);
 void smb_io_rpc_hdr_resp(char *desc,  RPC_HDR_RESP *rpc, prs_struct *ps, int depth);
 void make_rpc_hdr_autha(RPC_HDR_AUTHA *rai,

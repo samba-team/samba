@@ -98,6 +98,57 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 }
 
 /****************************************************************************
+do a SAMR unknown 0x38 command
+****************************************************************************/
+BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_UNKNOWN_38 q_e;
+	BOOL valid_un8 = False;
+
+	/* create and send a MSRPC command with api SAMR_ENUM_DOM_USERS */
+
+	prs_init(&data , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rdata, 0   , 4, SAFETY_MARGIN, True );
+
+	DEBUG(4,("SAMR Unknown 38 server:%s\n", srv_name));
+
+	make_samr_q_unknown_38(&q_e, srv_name);
+
+	/* turn parameters into data stream */
+	samr_io_q_unknown_38("", &q_e, &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, SAMR_UNKNOWN_38, &data, &rdata))
+	{
+		SAMR_R_UNKNOWN_38 r_e;
+		BOOL p;
+
+		samr_io_r_unknown_38("", &r_e, &rdata, 0);
+
+		p = rdata.offset != 0;
+		if (p && r_e.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("SAMR_R_UNKNOWN_38: %s\n", get_nt_error_msg(r_e.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_un8 = True;
+		}
+	}
+
+	prs_mem_free(&data   );
+	prs_mem_free(&rdata  );
+
+	return valid_un8;
+}
+
+/****************************************************************************
 do a SAMR unknown 0x8 command
 ****************************************************************************/
 BOOL do_samr_unknown_8(struct cli_state *cli, 

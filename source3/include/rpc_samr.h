@@ -91,6 +91,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_21        0x21
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
+#define SAMR_UNKNOWN_38        0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_OPEN_ALIAS        0x1b
 #define SAMR_QUERY_ALIASINFO   0x1c
