@@ -933,7 +933,7 @@ static NTSTATUS alternate_name(struct winbindd_domain *domain)
 	ADS_STRUCT *ads;
 	ADS_STATUS rc;
 	TALLOC_CTX *ctx;
-	char *workgroup;
+	const char *workgroup;
 
 	DEBUG(3,("ads: alternate_name\n"));
 
