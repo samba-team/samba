@@ -272,7 +272,7 @@ void dptr_close(int *key)
   dptr = dptr_get(*key);
 
   if (!dptr) {
-    DEBUG(0,("Invalid key %d given to dptr_close\n",key));
+    DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
     return;
   }
 
