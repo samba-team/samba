@@ -561,8 +561,8 @@ static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *u
 
 static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
-	unistr_to_ascii(nt_devmode->devicename, devmode.devicename.buffer, 31);
-	unistr_to_ascii(nt_devmode->formname, devmode.formname.buffer, 31);
+	unistr_to_ascii(nt_devmode->devicename, (char *)devmode.devicename.buffer, 31);
+	unistr_to_ascii(nt_devmode->formname, (char *)devmode.formname.buffer, 31);
 
 	nt_devmode->specversion=devmode.specversion;
 	nt_devmode->driverversion=devmode.driverversion;
@@ -856,7 +856,7 @@ static void spoolss_notify_server_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 	snprintf(temp_name, sizeof(temp_name), "\\\\%s", global_myname);
 
 	data->notify_data.data.length=strlen(temp_name);
-	ascii_to_unistr(data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, temp_name, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -870,7 +870,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 	ascii_to_unistr(data->notify_data.data.string, lp_servicename(snum), sizeof(data->notify_data.data.string)-1);
 */
 	data->notify_data.data.length=strlen(printer->info_2->printername);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->printername, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -881,7 +881,7 @@ static void spoolss_notify_printer_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, 
 static void spoolss_notify_share_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_servicename(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_servicename(snum), 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -894,7 +894,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
 	/* even if it's strange, that's consistant in all the code */
 
 	data->notify_data.data.length=strlen(lp_servicename(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_servicename(snum), 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -907,7 +907,7 @@ static void spoolss_notify_port_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, pri
 static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->drivername);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->drivername, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -918,7 +918,7 @@ static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(lp_comment(snum));
-	ascii_to_unistr(data->notify_data.data.string,
+	ascii_to_unistr((char *)data->notify_data.data.string,
 	                lp_comment(snum),
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -931,7 +931,7 @@ static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_location(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->location);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->location, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -952,7 +952,7 @@ static void spoolss_notify_devmode(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->sepfile);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->sepfile, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -964,7 +964,7 @@ static void spoolss_notify_sepfile(int snum, SPOOL_NOTIFY_INFO_DATA *data, print
 static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->printprocessor);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->printprocessor, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -976,7 +976,7 @@ static void spoolss_notify_print_processor(int snum, SPOOL_NOTIFY_INFO_DATA *dat
 static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->parameters);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->parameters, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -988,7 +988,7 @@ static void spoolss_notify_parameters(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 static void spoolss_notify_datatype(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(printer->info_2->datatype);
-	ascii_to_unistr(data->notify_data.data.string, 
+	ascii_to_unistr((char *)data->notify_data.data.string, 
 	                printer->info_2->datatype, 
 			sizeof(data->notify_data.data.string)-1);
 }
@@ -1091,7 +1091,7 @@ static void spoolss_notify_average_ppm(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
 static void spoolss_notify_username(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->user);
-	ascii_to_unistr(data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, queue->user, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1108,7 +1108,7 @@ static void spoolss_notify_job_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, pr
 static void spoolss_notify_job_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
 	data->notify_data.data.length=strlen(queue->file);
-	ascii_to_unistr(data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, queue->file, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -1132,7 +1132,7 @@ static void spoolss_notify_job_status_string(int snum, SPOOL_NOTIFY_INFO_DATA *d
 		break;
 	}
 	data->notify_data.data.length=strlen(p);
-	ascii_to_unistr(data->notify_data.data.string, p, sizeof(data->notify_data.data.string)-1);
+	ascii_to_unistr((char *)data->notify_data.data.string, p, sizeof(data->notify_data.data.string)-1);
 }
 
 /*******************************************************************
@@ -2431,7 +2431,7 @@ static void init_unistr_array(uint16 **uni_array, char **char_array, char *where
 			DEBUG(0,("init_unistr_array: Realloc error\n" ));
 			return;
 		}
-		ascii_to_unistr( *uni_array+j, line , strlen(line));
+		ascii_to_unistr((char *)(*uni_array+j), line , 2*strlen(line));
 		j+=strlen(line)+1;			
 		i++;
 	}
@@ -3874,13 +3874,13 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle, uint32 idx,
 	 * take a pause *before* coding not *during* coding
 	 */
 	 
-	*out_max_value_len=in_value_len/2;
+	*out_max_value_len=in_value_len;
 	if((*out_value=(uint16 *)malloc(in_value_len*sizeof(uint8))) == NULL) {
 		free_a_printer(printer, 2);
 		safe_free(data);
 		return ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ascii_to_unistr(*out_value, value, *out_max_value_len);
+	ascii_to_unistr((char *)*out_value, value, *out_max_value_len);
 	*out_value_len=2*(1+strlen(value));
 
 	*out_type=type;
