@@ -63,6 +63,13 @@ char *DirCacheCheck(char *path,char *name,int snum);
 void DirCacheFlush(int snum);
 void fault_setup(void (*fn)());
 char *getsmbpass(char *prompt)    ;
+void load_interfaces(void);
+void iface_set_default(char *ip,char *bcast,char *nmask);
+BOOL ismyip(struct in_addr ip);
+BOOL ismybcast(struct in_addr bcast);
+struct in_addr *iface_bcast(struct in_addr ip);
+struct in_addr *iface_nmask(struct in_addr ip);
+struct in_addr *iface_ip(struct in_addr ip);
 int reply_trans(char *inbuf,char *outbuf);
 int interpret_coding_system(char *str, int def);
 char *lp_string(char *s);
@@ -109,7 +116,8 @@ void announce_master(void);
 struct work_record *remove_workgroup(struct domain_record *d, 
 				     struct work_record *work);
 void expire_browse_cache(time_t t);
-struct work_record *find_workgroupstruct(struct domain_record *d, fstring name, BOOL add);
+struct work_record *find_workgroupstruct(struct domain_record *d, 
+					 fstring name, BOOL add);
 struct domain_record *find_domain(struct in_addr source_ip);
 void dump_workgroups(void);
 struct domain_record *add_domain_entry(struct in_addr source_ip, 
@@ -164,8 +172,11 @@ void remove_name(struct name_record *n);
 void dump_names(void);
 void remove_netbios_name(char *name,int type, enum name_source source,
 			 struct in_addr ip);
-struct name_record *add_netbios_entry(char *name, int type, int nb_flags, int ttl,
-				      enum name_source source, struct in_addr ip);
+struct name_record *add_netbios_entry(char *name, int type, int nb_flags, 
+				      int ttl,
+				      enum name_source source, 
+				      struct in_addr ip,
+				      BOOL new_only);
 void remove_name_entry(char *name,int type);
 void add_name_entry(char *name,int type,int nb_flags);
 void add_my_names(void);
@@ -466,9 +477,6 @@ BOOL string_sub(char *s,char *pattern,char *insert);
 BOOL do_match(char *str, char *regexp, int case_sig);
 BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
 void become_daemon(void);
-void get_broadcast(struct in_addr *if_ipaddr,
-                    struct in_addr *if_bcast,
-                    struct in_addr *if_nmask);
 BOOL yesno(char *p);
 char *fgets_slash(char *s2,int maxlen,FILE *f);
 int set_filelen(int fd, long len);

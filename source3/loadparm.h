@@ -36,6 +36,7 @@ extern void lp_killunused(BOOL (*snumused)(int ));
 extern BOOL lp_loaded(void);
 extern BOOL lp_snum_ok(int iService);
 extern BOOL lp_manglednames(int iService);
+extern char *lp_interfaces(void);
 extern char *lp_passwordserver(void);
 extern char *lp_passwd_program(void);
 extern char *lp_passwd_chat(void);

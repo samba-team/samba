@@ -899,10 +899,6 @@ extern char    *getsmbpass(char *);
 #define FD_SETSIZE 255
 #endif
 
-#ifndef MAXINT
-#define MAXINT ((((unsigned)1)<<(sizeof(int)*8-1))-1)
-#endif
-
 #ifndef __STDC__
 #define const
 #endif

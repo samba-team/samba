@@ -22,14 +22,13 @@
 
 #include "includes.h"
 #include "loadparm.h"
-#include "localnet.h"
 
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 extern int DEBUGLEVEL;
 
 extern pstring myname;
-extern struct in_addr bcast_ip;
-extern struct in_addr Netmask;
 
 extern int name_type;
 extern int max_protocol;
@@ -114,7 +113,7 @@ static BOOL add_info(struct domain_record *d, struct work_record *work, int serv
 		  /* creates workgroup on remote subnet */
 		  if ((w = find_workgroupstruct(d,sname, False)))
 		    {
-		      if (ip_equal(bcast_ip, d->bcast_ip))
+		      if (ismybcast(d->bcast_ip))
 			{
 			  announce_request(w, d->bcast_ip);
 			}

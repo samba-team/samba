@@ -28,14 +28,15 @@
 #include "includes.h"
 #include "smb.h"
 #include "loadparm.h"
-#include "localnet.h"
+
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 extern int DEBUGLEVEL;
 
 extern time_t StartupTime;
 extern pstring myname;
 extern pstring scope;
-extern struct in_addr bcast_ip;
 
 /* this is our browse master/backup cache database */
 struct browse_cache_record *browserlist = NULL;
@@ -305,7 +306,8 @@ void expire_browse_cache(time_t t)
   that it get created/added anyway. this allows us to force entries in
   lmhosts file to be added.
   **************************************************************************/
-struct work_record *find_workgroupstruct(struct domain_record *d, fstring name, BOOL add)
+struct work_record *find_workgroupstruct(struct domain_record *d, 
+					 fstring name, BOOL add)
 {
   struct work_record *ret, *work;
   
@@ -323,28 +325,31 @@ struct work_record *find_workgroupstruct(struct domain_record *d, fstring name, 
       return NULL;
     }
   
-  for (ret = d->workgrouplist; ret; ret = ret->next)
-    {
-      if (!strcmp(ret->work_group,name))
-	{
-	  DEBUG(4, ("found\n"));
-	  return(ret);
-	}
+  for (ret = d->workgrouplist; ret; ret = ret->next) {
+    if (!strcmp(ret->work_group,name)) {
+      DEBUG(4, ("found\n"));
+      return(ret);
     }
-  
-  DEBUG(4, ("not found: creating\n"));
+  }
+
+  if (!add) {
+    DEBUG(4, ("not found\n"));
+    return NULL;
+  }
+
+  DEBUG(4,("not found: creating\n"));
   
   if ((work = make_workgroup(name)))
     {
       if (lp_preferred_master() &&
 	  strequal(lp_workgroup(), name) &&
-	  ip_equal(d->bcast_ip, bcast_ip))
+	  ismybcast(d->bcast_ip))
 	{
 	  DEBUG(3, ("preferred master startup for %s\n", work->work_group));
 	  work->needelection = True;
 	  work->ElectionCriterion |= (1<<3);
 	}
-      if (!ip_equal(bcast_ip, d->bcast_ip))
+      if (!ismybcast(d->bcast_ip))
 	{
 	  work->needelection = False;
 	}
@@ -446,7 +451,8 @@ struct domain_record *add_domain_entry(struct in_addr source_ip,
   
   ip = *interpret_addr2("255.255.255.255");
   
-  if (zero_ip(source_ip)) source_ip = bcast_ip;
+  if (zero_ip(source_ip)) 
+    source_ip = *iface_bcast(source_ip);
   
   /* add the domain into our domain database */
   if ((d = find_domain(source_ip)) ||
@@ -516,7 +522,8 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
   b->ip     = ip;
   b->type   = type;
   
-  if (newentry || ttl < b->sync_time) b->sync_time = ttl;
+  if (newentry || ttl < b->sync_time) 
+    b->sync_time = ttl;
   
   if (newentry)
     {
@@ -576,7 +583,7 @@ struct server_record *add_server_entry(struct domain_record *d,
       bzero((char *)s,sizeof(*s));
     }
   
-  if (ip_equal(bcast_ip, d->bcast_ip) &&
+  if (ismybcast(d->bcast_ip) &&
       strequal(lp_workgroup(),work->work_group))
     {
       servertype |= SV_TYPE_LOCAL_LIST_ONLY;

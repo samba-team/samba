@@ -21,10 +21,8 @@
 */
 
 #include "includes.h"
-#include "localnet.h"
 #include "loadparm.h"
 
-extern struct in_addr myip;
 extern int DEBUGLEVEL;
 
 int num_good_sends = 0;

@@ -33,9 +33,6 @@
 extern int DEBUGLEVEL;
 extern BOOL CanRecurse;
 
-extern struct in_addr myip;
-extern struct in_addr bcast_ip;
-extern struct in_addr Netmask;
 extern struct in_addr ipzero;
 
 extern pstring myname;
@@ -84,7 +81,7 @@ void announce_request(struct work_record *work, struct in_addr ip)
   p = skip_string(p,1);
   
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,work->work_group,0x20,0x0,ip,myip);
+		      myname,work->work_group,0x20,0x1e,ip,*iface_ip(ip));
 }
 
 
@@ -111,7 +108,7 @@ void do_announce_request(char *info, char *to_name, int announce_type,
   p = skip_string(p,1);
   
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,to_name,from,to,dest_ip,myip);
+		      myname,to_name,from,to,dest_ip,*iface_ip(dest_ip));
 }
 
 /****************************************************************************
@@ -175,7 +172,8 @@ void announce_backup(void)
 				  ClientDGRAM,outbuf,
 				  PTR_DIFF(p,outbuf),
 				  myname, work->work_group,
-				  0x0,type,d->bcast_ip,myip);
+				  0x0,type,d->bcast_ip,
+				  *iface_ip(d->bcast_ip));
 	    }
 	}
     }
@@ -205,7 +203,7 @@ void announce_host(void)
     {
       struct work_record *work;
       
-      if (!ip_equal(bcast_ip,d->bcast_ip))
+      if (!ismybcast(d->bcast_ip))
 	continue;
 
       for (work = d->workgrouplist; work; work = work->next)
@@ -231,7 +229,7 @@ void announce_host(void)
 	  
 	  work->lastannounce_time = t;
 
-	  if (!ip_equal(bcast_ip,d->bcast_ip)) {
+	  if (!ismybcast(d->bcast_ip)) {
 	    stype &= ~(SV_TYPE_POTENTIAL_BROWSER | SV_TYPE_MASTER_BROWSER |
 		       SV_TYPE_DOMAIN_MASTER | SV_TYPE_BACKUP_BROWSER |
 		       SV_TYPE_DOMAIN_CTRL | SV_TYPE_DOMAIN_MEMBER);
@@ -266,7 +264,7 @@ void announce_host(void)
 	      p = p+31;
 	      p = skip_string(p,1);
 	      
-	      if (ip_equal(bcast_ip,d->bcast_ip))
+	      if (ismybcast(d->bcast_ip))
 		{
 		  if (AM_MASTER(work))
 		    {
@@ -280,7 +278,8 @@ void announce_host(void)
 		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
 					  my_name,work->work_group,0,
-					  0x1e,d->bcast_ip,myip);
+					  0x1e,d->bcast_ip,
+					  *iface_ip(d->bcast_ip));
 		      
 		      DEBUG(2,("sending domain announce to %s for %s\n",
 			       inet_ntoa(d->bcast_ip),work->work_group));
@@ -297,7 +296,8 @@ void announce_host(void)
 		      
 		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
-					  my_name,MSBROWSE,0,0x01,d->bcast_ip,myip);
+					  my_name,MSBROWSE,0,0x01,d->bcast_ip,
+					  *iface_ip(d->bcast_ip));
 		    }
 		  else
 		    {
@@ -309,7 +309,7 @@ void announce_host(void)
 		      send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,
 					  PTR_DIFF(p,outbuf),
 					  my_name,work->work_group,0,0x1d,
-					  d->bcast_ip,myip);
+					  d->bcast_ip,*iface_ip(d->bcast_ip));
 		    }
 		}
 	    }
@@ -424,11 +424,10 @@ void announce_master(void)
 	      
 	      ip = *interpret_addr2(lp_domain_controller());
 	      
-	      if (zero_ip(ip))
-		{
-		  ip = bcast_ip;
-		  bcast = True;
-		}
+	      if (zero_ip(ip)) {
+		ip = *iface_bcast(d->bcast_ip);
+		bcast = True;
+	      }
 
 	      DEBUG(2, ("Searching for PDC %s at %s\n",
 			lp_domain_controller(), inet_ntoa(ip)));

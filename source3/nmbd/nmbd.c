@@ -27,7 +27,6 @@
 
 #include "includes.h"
 #include "loadparm.h"
-#include "localnet.h"
 
 extern int DEBUGLEVEL;
 
@@ -49,15 +48,11 @@ static BOOL is_daemon = False;
 /* machine comment for host announcements */
 pstring ServerComment="";
 
-static BOOL got_bcast = False;
-static BOOL got_myip = False;
-static BOOL got_nmask = False;
-
 /* what server type are we currently */
 
 time_t StartupTime =0;
 
-struct in_addr ipzero;
+extern struct in_addr ipzero;
 
 
 /****************************************************************************
@@ -187,6 +182,8 @@ BOOL reload_services(BOOL test)
     reload_services(True);
   }
 
+  load_interfaces();
+
   return(ret);
 }
 
@@ -248,7 +245,7 @@ static void load_hosts_file(char *fname)
 	if (strchr(mask, 'G') || strchr(mask, 'S') || strchr(mask, 'M')) {
 	  strcpy(flags, mask );
 	  /* default action for no subnet mask */
-	  strcpy(mask, inet_ntoa(Netmask));
+	  strcpy(mask, "");
 	}
 
 	DEBUG(4, ("lmhost entry: %s %s %s %s\n", ip, name, mask, flags));
@@ -262,12 +259,15 @@ static void load_hosts_file(char *fname)
 	}
 
 	ipaddr = *interpret_addr2(ip);
-	ipmask = *interpret_addr2(mask);
+	if (*mask)
+	  ipmask = *interpret_addr2(mask);
+	else 
+	  ipmask = *iface_nmask(ipaddr);
 
 	if (group) {
 	  add_domain_entry(ipaddr, ipmask, name, True);
 	} else {
-	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr);
+	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr,False);
 	}
       }
     }
@@ -347,77 +347,13 @@ static BOOL open_sockets(BOOL isdaemon, int port)
 }
 
 
-/*******************************************************************
-  check that a IP, bcast and netmask and consistent. Must be a 1s
-  broadcast
-  ******************************************************************/
-static BOOL ip_consistent(struct in_addr ip,struct in_addr bcast, struct in_addr nmask)
-{
-  unsigned long a_ip,a_bcast,a_nmask;
-
-  a_ip = ntohl(ip.s_addr);
-  a_bcast = ntohl(bcast.s_addr);
-  a_nmask = ntohl(nmask.s_addr);
-
-  /* check the netmask is sane */
-  if (((a_nmask>>24)&0xFF) != 0xFF) {
-    DEBUG(0,("Insane netmask %s\n",inet_ntoa(nmask)));
-    return(False);
-  }
-
-  /* check the IP and bcast are on the same net */
-  if ((a_ip&a_nmask) != (a_bcast&a_nmask)) {
-    DEBUG(0,("IP and broadcast are on different nets!\n"));
-    return(False);
-  }
-
-  /* check the IP and bcast are on the same net */
-  if ((a_bcast|a_nmask) != 0xFFFFFFFF) {
-    DEBUG(0,("Not a ones based broadcast %s\n",inet_ntoa(bcast)));
-    return(False);
-  }
-
-  return(True);
-}
-
-
 /****************************************************************************
   initialise connect, service and file structs
 ****************************************************************************/
 static BOOL init_structs()
 {
-  if (!get_myname(myhostname,got_myip?NULL:&myip))
+  if (!get_myname(myhostname,NULL))
     return(False);
-
-  /* Read the broadcast address from the interface */
-  {
-    struct in_addr ip0,ip1,ip2;
-
-    ip0 = myip;
-
-    if (!(got_bcast && got_nmask))
-      {
-	get_broadcast(&ip0,&ip1,&ip2);
-
-	if (!got_myip)
-	  myip = ip0;
-    
-	if (!got_bcast)
-	  bcast_ip = ip1;
-    
-	if (!got_nmask)
-	  Netmask = ip2;   
-      } 
-
-    DEBUG(1,("Using IP %s  ",inet_ntoa(myip))); 
-    DEBUG(1,("broadcast %s  ",inet_ntoa(bcast_ip)));
-    DEBUG(1,("netmask %s\n",inet_ntoa(Netmask)));    
-
-    if (!ip_consistent(myip,bcast_ip,Netmask)) {
-      DEBUG(0,("WARNING: The IP address, broadcast and Netmask are not consistent\n"));
-      DEBUG(0,("You are likely to experience problems with this setup!\n"));
-    }
-  }
 
   if (! *myname) {
     char *p;
@@ -462,7 +398,9 @@ static void usage(char *pname)
   int opt;
   extern FILE *dbf;
   extern char *optarg;
+  fstring group;
 
+  *group = 0;
   *host_file = 0;
 
   StartupTime = time(NULL);
@@ -474,8 +412,6 @@ static void usage(char *pname)
   setup_logging(argv[0],False);
 
   charset_initialise();
-
-  ipzero = *interpret_addr2("0.0.0.0");
 
 #ifdef LMHOSTSFILE
   strcpy(host_file,LMHOSTSFILE);
@@ -491,9 +427,6 @@ static void usage(char *pname)
 
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 
-  bcast_ip = ipzero;
-  myip = ipzero;
-
   while ((opt = getopt (argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)
     {
       switch (opt)
@@ -505,29 +438,19 @@ static void usage(char *pname)
 	  strcpy(ServerComment,optarg);
 	  break;
 	case 'G':
-	  if (got_bcast && got_nmask) {
-	    add_domain_entry(bcast_ip,Netmask,optarg, True);
-	  } else {
-	    DEBUG(0, ("Warning: option -G %s added before broadcast and netmask.\n",
-		      optarg));
-	    DEBUG(0, ("Assuming default values: bcast %s netmask %s\n",
-		      inet_ntoa(bcast_ip), inet_ntoa(Netmask))); /* (i hope) */
-	  }
+	  strcpy(group,optarg);
 	  break;
 	case 'H':
 	  strcpy(host_file,optarg);
 	  break;
 	case 'I':
-	  myip = *interpret_addr2(optarg);
-	  got_myip = True;
+	  iface_set_default(optarg,NULL,NULL);
 	  break;
 	case 'B':
-	  bcast_ip = *interpret_addr2(optarg);
-	  got_bcast = True;
+	  iface_set_default(NULL,optarg,NULL);
 	  break;
 	case 'N':
-	  Netmask = *interpret_addr2(optarg);
-	  got_nmask = True;
+	  iface_set_default(NULL,NULL,optarg);
 	  break;
 	case 'n':
 	  strcpy(myname,optarg);
@@ -567,6 +490,9 @@ static void usage(char *pname)
 
   if (!reload_services(False))
     return(-1);	
+
+  if (*group)
+    add_domain_entry(*iface_bcast(ipzero),*iface_nmask(ipzero),group, True);
 
   if (!is_daemon && !is_a_socket(0)) {
     DEBUG(0,("standard input is not a socket, assuming -D option\n"));

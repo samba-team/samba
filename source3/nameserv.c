@@ -27,8 +27,9 @@
 
 #include "includes.h"
 #include "loadparm.h"
-#include "localnet.h"
 
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 enum name_search { FIND_SELF, FIND_GLOBAL };
 
@@ -102,29 +103,31 @@ void remove_name(struct name_record *n)
   FIND_GLOBAL - the name can be anyone. first look on the client's
                 subnet, then the server's subnet, then all subnets.
   **************************************************************************/
-static struct name_record *find_name_search(struct nmb_name *name, enum name_search search,
+static struct name_record *find_name_search(struct nmb_name *name, 
+					    enum name_search search,
 					    struct in_addr ip)
 {
-	struct name_record *ret;
-
-	/* any number of winpopup names can be added. must search by ip as well */
-	if (name->name_type != 0x3) ip = ipzero;
-
-	for (ret = namelist; ret; ret = ret->next)
+  struct name_record *ret;
+  
+  /* any number of winpopup names can be added. must search by ip as 
+     well */
+  if (name->name_type != 0x3) ip = ipzero;
+  
+  for (ret = namelist; ret; ret = ret->next)
+    {
+      if (name_equal(&ret->name,name))
 	{
-		if (name_equal(&ret->name,name))
-		{
-			/* self search: self names only */
-			if (search == FIND_SELF && ret->source != SELF) continue;
-
-			if (zero_ip(ip) || ip_equal(ip, ret->ip))
-			{
-				return ret;
-			}
-		}
+	  /* self search: self names only */
+	  if (search == FIND_SELF && ret->source != SELF) continue;
+	  
+	  if (zero_ip(ip) || ip_equal(ip, ret->ip))
+	    {
+	      return ret;
+	    }
 	}
-
-	return NULL;
+    }
+  
+  return NULL;
 }
 
 
@@ -133,19 +136,19 @@ static struct name_record *find_name_search(struct nmb_name *name, enum name_sea
   **************************************************************************/
 void dump_names(void)
 {
-	struct name_record *n;
-	time_t t = time(NULL);
-
-	DEBUG(3,("Dump of local name table:\n"));
-
-	for (n = namelist; n; n = n->next)
-	{
-		DEBUG(3,("%s %s TTL=%d NBFLAGS=%2x\n",
-		        namestr(&n->name),
-		        inet_ntoa(n->ip),
-		        n->death_time?n->death_time-t:0,
-				n->nb_flags));
-	}
+  struct name_record *n;
+  time_t t = time(NULL);
+  
+  DEBUG(3,("Dump of local name table:\n"));
+  
+  for (n = namelist; n; n = n->next)
+    {
+      DEBUG(3,("%s %s TTL=%d NBFLAGS=%2x\n",
+	       namestr(&n->name),
+	       inet_ntoa(n->ip),
+	       n->death_time?n->death_time-t:0,
+	       n->nb_flags));
+    }
 }
 
 
@@ -155,21 +158,24 @@ void dump_names(void)
 void remove_netbios_name(char *name,int type, enum name_source source,
 			 struct in_addr ip)
 {
-	struct nmb_name nn;
-	struct name_record *n;
-
-	make_nmb_name(&nn, name, type, scope);
-	n = find_name_search(&nn, FIND_GLOBAL, ip);
-
-	if (n && n->source == source) remove_name(n);
+  struct nmb_name nn;
+  struct name_record *n;
+  
+  make_nmb_name(&nn, name, type, scope);
+  n = find_name_search(&nn, FIND_GLOBAL, ip);
+  
+  if (n && n->source == source) remove_name(n);
 }
 
 
 /****************************************************************************
   add an entry to the name list
   ****************************************************************************/
-struct name_record *add_netbios_entry(char *name, int type, int nb_flags, int ttl,
-				      enum name_source source, struct in_addr ip)
+struct name_record *add_netbios_entry(char *name, int type, int nb_flags, 
+				      int ttl,
+				      enum name_source source, 
+				      struct in_addr ip,
+				      BOOL new_only)
 {
   struct name_record *n;
   struct name_record *n2=NULL;
@@ -181,9 +187,10 @@ struct name_record *add_netbios_entry(char *name, int type, int nb_flags, int tt
 
   make_nmb_name(&n->name,name,type,scope);
 
-  if ((n2 = find_name_search(&n->name, FIND_GLOBAL, ip)))
+  if ((n2 = find_name_search(&n->name, FIND_GLOBAL, new_only?ipzero:ip)))
   {
     free(n);
+    if (new_only || (n2->source==SELF && source!=SELF)) return n2;
     n = n2;
   }
 
@@ -209,7 +216,7 @@ void remove_name_entry(char *name,int type)
   if (lp_wins_support())
     {
       /* we are a WINS server. */
-      remove_netbios_name(name,type,SELF,myip);
+      remove_netbios_name(name,type,SELF,ipzero);
     }
   else
     {
@@ -229,7 +236,7 @@ void remove_name_entry(char *name,int type)
 void add_name_entry(char *name,int type,int nb_flags)
 {
   /* always add our own entries */
-  add_netbios_entry(name,type,nb_flags,0,SELF,myip);
+  add_netbios_entry(name,type,nb_flags,0,SELF,ipzero,False);
 
   if (!lp_wins_support())
     {
@@ -257,13 +264,9 @@ void add_my_names(void)
   add_name_entry(myname,0x00,NB_ACTIVE);
   add_name_entry(myname,0x1f,NB_ACTIVE);
   
-  add_netbios_entry("*",0x0,NB_ACTIVE,0,SELF,ip);
-  add_netbios_entry("__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip);
-  add_netbios_entry("__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip);
-  
-  if (lp_wins_support()) {
-    add_netbios_entry(inet_ntoa(myip),0x01,NB_ACTIVE,0,SELF,ip); /* nt as? */
-  }
+  add_netbios_entry("*",0x0,NB_ACTIVE,0,SELF,ip,False);
+  add_netbios_entry("__SAMBA__",0x20,NB_ACTIVE,0,SELF,ip,False);
+  add_netbios_entry("__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False);
 }
 
 /*******************************************************************
@@ -328,7 +331,7 @@ void response_name_release(struct packet_struct *p)
       struct in_addr found_ip;
       putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
-      if (ip_equal(found_ip, myip))
+      if (ismyip(found_ip))
 	{
 	  remove_netbios_name(name,type,SELF,found_ip);
 	}
@@ -412,9 +415,9 @@ void response_name_reg(struct packet_struct *p)
       
       putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
-      if (ip_equal(found_ip, myip)) source = SELF;
+      if (ismyip(found_ip)) source = SELF;
       
-      add_netbios_entry(name,type,nb_flags,ttl,source,found_ip);
+      add_netbios_entry(name,type,nb_flags,ttl,source,found_ip,True);
     }
   else
     {
@@ -491,7 +494,7 @@ void reply_name_reg(struct packet_struct *p)
   else
     {
       /* add the name to our subnet/name database */
-      n = add_netbios_entry(qname,name_type,nb_flags,ttl,REGISTER,ip);
+      n = add_netbios_entry(qname,name_type,nb_flags,ttl,REGISTER,ip,False);
     }
   
   if (bcast) return;
@@ -667,12 +670,14 @@ struct name_record *search_for_name(struct nmb_name *question,
 	  /* no luck with DNS. We could possibly recurse here XXXX */
 	  /* if this isn't a bcast then we should send a negative reply XXXX */
 	  DEBUG(3,("no recursion\n"));
-	  add_netbios_entry(qname,name_type,NB_ACTIVE,60*60,DNSFAIL,dns_ip);
+	  add_netbios_entry(qname,name_type,NB_ACTIVE,60*60,DNSFAIL,
+			    dns_ip,False);
 	  return NULL;
 	}
       
       /* add it to our cache of names. give it 2 hours in the cache */
-      n = add_netbios_entry(qname,name_type,NB_ACTIVE,2*60*60,DNS,dns_ip);
+      n = add_netbios_entry(qname,name_type,NB_ACTIVE,2*60*60,DNS,
+			    dns_ip,False);
       
       /* failed to add it? yikes! */
       if (!n) return NULL;
@@ -737,7 +742,7 @@ extern void reply_name_query(struct packet_struct *p)
   struct name_record *n;
   enum name_search search = dns_type || name_type == 0x1b ?
     FIND_GLOBAL : FIND_SELF;
-  
+
   DEBUG(3,("Name query "));
   
   if ((n = search_for_name(question,p->ip,p->timestamp, search)))
@@ -746,7 +751,7 @@ extern void reply_name_query(struct packet_struct *p)
 	 a name we own or it is for a Primary Domain Controller name */
       if (bcast && n->source != SELF && name_type != 0x1b)
 	{
-	  if (!lp_wins_proxy() || same_net(p->ip,n->ip,Netmask)) {
+	  if (!lp_wins_proxy() || same_net(p->ip,n->ip,*iface_nmask(p->ip))) {
 	    /* never reply with a negative response to broadcast queries */
 	    return;
 	  }
@@ -766,9 +771,8 @@ extern void reply_name_query(struct packet_struct *p)
   /* if asking for a group name (type 0x1e) return 255.255.255.255 */
   if (ip_equal(retip, gp_ip) && name_type == 0x1e) retip = gp_ip;
 
-  /* if the IP is 0 then substitute my IP - we should see which one is on the 
-     right interface for the caller to do this right XXX */
-  if (zero_ip(retip)) retip = myip;
+  /* if the IP is 0 then substitute my IP */
+  if (zero_ip(retip)) retip = *iface_ip(p->ip);
 
   if (success)
     {
@@ -897,7 +901,7 @@ static void response_netbios_packet(struct packet_struct *p)
 	    fstring serv_name;
 	    
 	    if (interpret_node_status(nmb->answers->rdata,
-				      &name,0x1d,serv_name,n->to_ip))
+				      &name,0x1d,serv_name,p->ip))
 	      {
 		if (*serv_name)
 		  {
@@ -950,7 +954,7 @@ static void response_netbios_packet(struct packet_struct *p)
 	    DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
 	    add_netbios_entry(nmb->answers->rr_name.name,
 			      nmb->answers->rr_name.name_type,
-			      nb_flags,GET_TTL(0),STATUS_QUERY,found_ip);
+			      nb_flags,GET_TTL(0),STATUS_QUERY,found_ip,False);
 	  }
 	else
 	  {
@@ -973,73 +977,72 @@ static void response_netbios_packet(struct packet_struct *p)
   ****************************************************************************/
 void process_nmb(struct packet_struct *p)
 {
-	struct nmb_packet *nmb = &p->packet.nmb;
+  struct nmb_packet *nmb = &p->packet.nmb;
 
-	debug_nmb_packet(p);
+  debug_nmb_packet(p);
 
-	switch (nmb->header.opcode) 
-	{
-		case 5:
-		case 8:
-		case 9:
+  switch (nmb->header.opcode) 
+    {
+    case 5:
+    case 8:
+    case 9:
+      {
+	if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
+	if (nmb->header.response)
+	  response_name_reg(p);
+	else
+	  reply_name_reg(p);
+	break;
+      }
+      
+    case 0:
+      {
+	if (nmb->header.response)
+	  {
+	    switch (nmb->question.question_type)
+	      {
+	      case 0x0:
 		{
-			if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
-			if (nmb->header.response)
-				response_name_reg(p);
-			else
-				reply_name_reg(p);
-			break;
+		  response_netbios_packet(p);
+		  break;
 		}
-
-		case 0:
+	      }
+	    return;
+	  }
+	else if (nmb->header.qdcount>0) 
+	  {
+	    switch (nmb->question.question_type)
+	      {
+	      case NMB_QUERY:
 		{
-			if (nmb->header.response)
-			{
-				switch (nmb->question.question_type)
-				{
-					case 0x0:
-					{
-						response_netbios_packet(p);
-						break;
-					}
-				}
-				return;
-			}
-			else if (nmb->header.qdcount>0) 
-			{
-				switch (nmb->question.question_type)
-				{
-					case NMB_QUERY:
-					{
-						reply_name_query(p);
-						break;
-					}
-					case NMB_STATUS:
-					{
-						reply_name_status(p);
-						break;
-					}
-				}
-				return;
-			}
-			break;
+		  reply_name_query(p);
+		  break;
 		}
-
-		case 6:
+	      case NMB_STATUS:
 		{
-			if (nmb->header.qdcount==0 || nmb->header.arcount==0)
-			{
-				DEBUG(2,("netbios release packet rejected\n"));
-				break;
-			}
-
-			if (nmb->header.response)
-				response_name_release(p);
-			else
-				reply_name_release(p);
-			break;
+		  reply_name_status(p);
+		  break;
 		}
-	}
-
+	      }
+	    return;
+	  }
+	break;
+      }
+      
+    case 6:
+      {
+	if (nmb->header.qdcount==0 || nmb->header.arcount==0)
+	  {
+	    DEBUG(2,("netbios release packet rejected\n"));
+	    break;
+	  }
+	
+	if (nmb->header.response)
+	  response_name_release(p);
+	else
+	  reply_name_release(p);
+	break;
+      }
+    }
 }
 

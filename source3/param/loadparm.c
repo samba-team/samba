@@ -109,61 +109,62 @@ extern int coding_system;
  */
 typedef struct
 {
-   char *szPrintcapname;
-   char *szLockDir;
-   char *szRootdir;
-   char *szDefaultService;
-   char *szDfree;
-   char *szMsgCommand;
-   char *szHostsEquiv;
-   char *szServerString;
-   char *szAutoServices;
-   char *szPasswdProgram;
-   char *szPasswdChat;
-   char *szLogFile;
-   char *szConfigFile;
-   char *szSMBPasswdFile;
-   char *szPasswordServer;
-   char *szSocketOptions;
-   char *szValidChars;
-   char *szWorkGroup;
-   char *szDomainController;
-   char *szUsernameMap;
-   char *szCharacterSet;
-   char *szLogonScript;
-   char *szSmbrun;
-   char *szWINSserver;
-   int max_log_size;
-   int mangled_stack;
-   int max_xmit;
-   int max_mux;
-   int max_packet;
-   int pwordlevel;
-   int deadtime;
-   int maxprotocol;
-   int security;
-   int printing;
-   int maxdisksize;
-   int lpqcachetime;
-   int syslog;
-   int os_level;
-   int max_ttl;
-   BOOL bWINSsupport;
-   BOOL bWINSproxy;
-   BOOL bPreferredMaster;
-   BOOL bDomainMaster;
-   BOOL bDomainLogons;
-   BOOL bEncryptPasswords;
-   BOOL bStripDot;
-   BOOL bNullPasswords;
-   BOOL bLoadPrinters;
-   BOOL bUseRhosts;
-   BOOL bReadRaw;
-   BOOL bWriteRaw;
-   BOOL bReadPrediction;
-   BOOL bReadbmpx;
-   BOOL bSyslogOnly;
-   BOOL bBrowseList;
+  char *szPrintcapname;
+  char *szLockDir;
+  char *szRootdir;
+  char *szDefaultService;
+  char *szDfree;
+  char *szMsgCommand;
+  char *szHostsEquiv;
+  char *szServerString;
+  char *szAutoServices;
+  char *szPasswdProgram;
+  char *szPasswdChat;
+  char *szLogFile;
+  char *szConfigFile;
+  char *szSMBPasswdFile;
+  char *szPasswordServer;
+  char *szSocketOptions;
+  char *szValidChars;
+  char *szWorkGroup;
+  char *szDomainController;
+  char *szUsernameMap;
+  char *szCharacterSet;
+  char *szLogonScript;
+  char *szSmbrun;
+  char *szWINSserver;
+  char *szInterfaces;
+  int max_log_size;
+  int mangled_stack;
+  int max_xmit;
+  int max_mux;
+  int max_packet;
+  int pwordlevel;
+  int deadtime;
+  int maxprotocol;
+  int security;
+  int printing;
+  int maxdisksize;
+  int lpqcachetime;
+  int syslog;
+  int os_level;
+  int max_ttl;
+  BOOL bWINSsupport;
+  BOOL bWINSproxy;
+  BOOL bPreferredMaster;
+  BOOL bDomainMaster;
+  BOOL bDomainLogons;
+  BOOL bEncryptPasswords;
+  BOOL bStripDot;
+  BOOL bNullPasswords;
+  BOOL bLoadPrinters;
+  BOOL bUseRhosts;
+  BOOL bReadRaw;
+  BOOL bWriteRaw;
+  BOOL bReadPrediction;
+  BOOL bReadbmpx;
+  BOOL bSyslogOnly;
+  BOOL bBrowseList;
 } global;
 
 static global Globals;
@@ -368,6 +369,7 @@ struct parm_struct
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL},
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL},
+  {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
@@ -704,6 +706,7 @@ FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
+FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)

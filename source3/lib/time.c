@@ -142,6 +142,10 @@ static int TimeZoneFaster(time_t t)
       if (t < low)
 	low = TIME_T_MIN;
       
+      high = t + MAX_DST_WIDTH/2;
+      if (high < t)
+	high = TIME_T_MAX;
+      
       /* widen the new entry using two bisection searches */
       while (low+60*60 < dst_table[i].start) {
 	if (dst_table[i].start - low > MAX_DST_SKIP*2)
@@ -154,10 +158,6 @@ static int TimeZoneFaster(time_t t)
 	  low = t;
       }
 
-      high = low + MAX_DST_WIDTH/2;
-      if (high < t)
-	high = TIME_T_MAX;
-      
       while (high-60*60 > dst_table[i].end) {
 	if (high - dst_table[i].end > MAX_DST_SKIP*2)
 	  t = dst_table[i].end + MAX_DST_SKIP;

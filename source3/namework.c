@@ -27,7 +27,9 @@
 
 #include "includes.h"
 #include "loadparm.h"
-#include "localnet.h"
+
+extern int ClientNMB;
+extern int ClientDGRAM;
 
 #define TEST_CODE /* want to debug unknown browse packets */
 
@@ -35,14 +37,12 @@ extern int DEBUGLEVEL;
 extern pstring scope;
 extern BOOL CanRecurse;
 
-extern struct in_addr myip;
-extern struct in_addr bcast_ip;
-extern struct in_addr Netmask;
-
 extern pstring myname;
 
 extern int ClientNMB;
 extern int ClientDGRAM;
+
+extern struct in_addr ipzero;
 
 extern int workgroup_count; /* total number of workgroups we know about */
 
@@ -99,7 +99,7 @@ void reset_server(char *name, int state, struct in_addr ip)
 	   name,inet_ntoa(ip),state));
 
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,name,0x20,0x1d,ip,myip);
+		      myname,name,0x20,0x1d,ip,*iface_ip(ip));
 }
 
 
@@ -194,7 +194,7 @@ void do_browser_lists(void)
   static time_t last = 0;
   time_t t = time(NULL);
   
-  if (t-last < 4) return; /* don't do too many of these at once! */
+  if (t-last < 20) return; /* don't do too many of these at once! */
   
   last = t;
   
@@ -252,7 +252,7 @@ void update_from_reg(char *name, int type, struct in_addr ip)
       if (!(work = find_workgroupstruct(d, name, False))) return;
       
       /* request the server to announce if on our subnet */
-      if (ip_equal(bcast_ip, d->bcast_ip)) announce_request(work, ip);
+      if (ismybcast(d->bcast_ip)) announce_request(work, ip);
       
       /* domain master type or master browser type */
       if (type == 0x1b || type == 0x1d)
@@ -276,7 +276,9 @@ void add_my_domains(void)
   
   if (*lp_workgroup() != '*')
     {
-      add_domain_entry(bcast_ip,Netmask,lp_workgroup(), True);
+      add_domain_entry(*iface_bcast(ipzero),
+		       *iface_nmask(ipzero),
+		       lp_workgroup(), True);
     }
 }
 
@@ -409,7 +411,7 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
     
   }
   send_mailslot_reply(BROWSE_MAILSLOT,ClientDGRAM,outbuf,PTR_DIFF(p,outbuf),
-		      myname,theirname,0x20,0,ip,myip);
+		      myname,theirname,0x20,0,ip,*iface_ip(ip));
 }
 
 
@@ -461,8 +463,7 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
-  struct domain_record *d = find_domain(ip);
-  
+  struct domain_record *d = find_domain(ip); 
   int update_count = CVAL(buf,0);
   int ttl = IVAL(buf,1)/1000;
   char *name = buf+5;
@@ -473,7 +474,8 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
   struct work_record *work;
   char *work_name;
   char *serv_name = dgram->source_name.name;
-  
+  BOOL add = False;
+
   comment[43] = 0;
   
   DEBUG(4,("Announce(%d) %s(%x)",command,name,name[15]));
@@ -505,8 +507,17 @@ static void process_announce(struct packet_struct *p,int command,char *buf)
   } else {
     work_name = dgram->dest_name.name;
   }
+
+  /* we need some way of finding out about new workgroups
+     that appear to be sending packets to us. The name_type checks make
+     sure we don't add host names as workgroups */
+  if (command == ANN_HostAnnouncement &&
+      (dgram->dest_name.name_type == 0x1d ||
+       dgram->dest_name.name_type == 0x1e))
+    add = True;
   
-  if (!(work = find_workgroupstruct(d, work_name, False))) return;
+  if (!(work = find_workgroupstruct(d, work_name,add)))
+    return;
   
   DEBUG(4, ("workgroup %s on %s\n", work->work_group, serv_name));
   
@@ -534,7 +545,7 @@ static void process_master_announce(struct packet_struct *p,char *buf)
   struct dgram_packet *dgram = &p->packet.dgram;
   struct in_addr ip = dgram->header.source_ip;
   struct domain_record *d = find_domain(ip);
-  struct domain_record *mydomain = find_domain(bcast_ip);
+  struct domain_record *mydomain = find_domain(*iface_bcast(ip));
   char *name = buf;
   struct work_record *work;
   name[15] = 0;
@@ -752,7 +763,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
   
   if (!d) return;
   
-  if (!ip_equal(bcast_ip, d->bcast_ip)) return;
+  if (!ismybcast(d->bcast_ip)) return;
   
   for (work = d->workgrouplist; work; work = work->next)
     {
@@ -842,8 +853,9 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   q += 2;
   
   send_mailslot_reply(logname,ClientDGRAM,outbuf,PTR_DIFF(q,outbuf),
- 		      myname,&dgram->source_name.name[0],0x20,0,p->ip,myip);  
- }
+ 		      myname,&dgram->source_name.name[0],0x20,0,p->ip,
+		      *iface_ip(p->ip));  
+}
  
 
 /****************************************************************************
