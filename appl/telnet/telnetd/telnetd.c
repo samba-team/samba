@@ -88,8 +88,12 @@ int	registerd_host_only = 0;
 # include <stropts.h>
 # include <termio.h>
 /* make sure we don't get the bsd version */
+# ifndef __sgi
 # include "/usr/include/sys/tty.h"
 # include <sys/ptyvar.h>
+# else  /* __sgi */
+# include <sys/strtty.h>
+# endif /* __sgi */
 
 /*
  * Because of the way ptyibuf is used with streams messages, we need
