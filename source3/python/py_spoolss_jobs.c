@@ -84,3 +84,33 @@ PyObject *spoolss_enumjobs(PyObject *self, PyObject *args, PyObject *kw)
 	Py_INCREF(result);
 	return result;
 }
+
+/* Set job command */
+
+PyObject *spoolss_setjob(PyObject *self, PyObject *args, PyObject *kw)
+{
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	WERROR werror;
+	PyObject *result;
+	uint32 level = 0, command, jobid;
+	static char *kwlist[] = {"jobid", "command", "level", NULL};
+
+	/* Parse parameters */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "ii|i", kwlist, &jobid,
+					 &command, &level))
+		return NULL;
+	
+	/* Call rpc function */
+	
+	werror = cli_spoolss_setjob(hnd->cli, hnd->mem_ctx, &hnd->pol,
+				    jobid, level, command);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+	
+	Py_INCREF(Py_None);
+	return Py_None;
+}

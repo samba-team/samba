@@ -191,6 +191,9 @@ Set the form given by the dictionary argument.
         { "enumjobs", spoolss_enumjobs, METH_VARARGS | METH_KEYWORDS,
           "Enumerate jobs" },
 
+        { "setjob", spoolss_setjob, METH_VARARGS | METH_KEYWORDS,
+          "Set job command" },
+
 	{ NULL }
 
 };
@@ -324,6 +327,14 @@ struct spoolss_const {
 	{ "WERR_NOT_LOCAL_DOMAIN", 2320 },
 	{ "WERR_PRINTER_DRIVER_IN_USE", 3001 },
 	{ "WERR_STATUS_MORE_ENTRIES  ", 0x0105 },
+
+	/* Job control constants */
+
+	{ "JOB_CONTROL_PAUSE", JOB_CONTROL_PAUSE },
+	{ "JOB_CONTROL_RESUME", JOB_CONTROL_RESUME },
+	{ "JOB_CONTROL_CANCEL", JOB_CONTROL_CANCEL },
+	{ "JOB_CONTROL_RESTART", JOB_CONTROL_RESTART },
+	{ "JOB_CONTROL_DELETE", JOB_CONTROL_DELETE },
 
 	{ NULL },
 };
