@@ -19,10 +19,10 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBGROUP_DB
+#ifdef USE_SMBUNIX_DB
 
-static int grp_file_lock_depth = 0;
 extern int DEBUGLEVEL;
+extern DOM_SID global_member_sid;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
@@ -31,9 +31,7 @@ extern int DEBUGLEVEL;
 
 static void *startsmbfilegrpent(BOOL update)
 {
-	static char s_readbuf[1024];
-	return startfilepwent(lp_smb_passgrp_file(), s_readbuf, sizeof(s_readbuf),
-	                      &grp_file_lock_depth, update);
+	return startsmbfilepwent(False);
 }
 
 /***************************************************************
@@ -42,7 +40,7 @@ static void *startsmbfilegrpent(BOOL update)
 
 static void endsmbfilegrpent(void *vp)
 {
-	endfilepwent(vp, &grp_file_lock_depth);
+	endsmbfilepwent(vp);
 }
 
 /*************************************************************************
@@ -52,7 +50,7 @@ static void endsmbfilegrpent(void *vp)
 
 static SMB_BIG_UINT getsmbfilegrppos(void *vp)
 {
-	return getfilepwpos(vp);
+	return getsmbfilepwpos(vp);
 }
 
 /*************************************************************************
@@ -62,23 +60,22 @@ static SMB_BIG_UINT getsmbfilegrppos(void *vp)
 
 static BOOL setsmbfilegrppos(void *vp, SMB_BIG_UINT tok)
 {
-	return setfilepwpos(vp, tok);
+	return setsmbfilepwpos(vp, tok);
 }
 
 /*************************************************************************
- Routine to return the next entry in the smbpasswd list.
+ Routine to return the next smbpassgroup entry
  *************************************************************************/
 static struct smb_passwd *getsmbfilegrpent(void *vp,
 		uint32 **grp_rids, int *num_grps,
 		uint32 **als_rids, int *num_alss)
 {
 	/* Static buffers we will return. */
-	static struct smb_passwd pw_buf;
-	static pstring  user_name;
-	struct passwd *pwfile;
-	pstring		linebuf;
-	char  *p;
-	int            uidval;
+	struct smb_passwd *pw_buf;
+	struct passwd *pw;
+	int i;
+	int unixgrps;
+	gid_t *grps;
 
 	if (vp == NULL)
 	{
@@ -86,92 +83,137 @@ static struct smb_passwd *getsmbfilegrpent(void *vp,
 		return NULL;
 	}
 
-	pwdb_init_smb(&pw_buf);
-
-	/*
-	 * Scan the file, a line at a time.
-	 */
-	while (getfileline(vp, linebuf, sizeof(linebuf)) > 0)
+	pw_buf = getsmbfilepwent(vp);
+	
+	if (grp_rids != NULL)
 	{
-		/*
-		 * The line we have should be of the form :-
-		 * 
-		 * username:uid:aliassid1,aliassid2..:domainrid1,domainrid2..:
-		 */
-
-		/*
-		 * As 256 is shorter than a pstring we don't need to check
-		 * length here - if this ever changes....
-		 */
-		p = strncpyn(user_name, linebuf, sizeof(user_name), ':');
-
-		/* Go past ':' */
-		p++;
-
-		/* Get smb uid. */
-
-		p = Atoic((char *) p, &uidval, ":");
-
-		pw_buf.smb_name = user_name;
-		pw_buf.smb_userid = uidval;
-
-		/*
-		 * Now get a list of alias RIDs
-		 */
-
-		/* Skip the ':' */
-		p++;
-
-		if (als_rids != NULL && num_alss != NULL)
-		{
-			int i;
-			p = get_numlist(p, als_rids, num_alss);
-			if (p == NULL)
-			{
-				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
-				return NULL;
-			}
-			for (i = 0; i < (*num_alss); i++)
-			{
-				(*als_rids)[i] = pwdb_gid_to_alias_rid((*als_rids)[i]);
-			}
-		}
-
-		/*
-		 * Now get a list of group RIDs
-		 */
-
-		/* Skip the ':' */
-		p++;
-
-		if (grp_rids != NULL && num_grps != NULL)
-		{
-			int i;
-			p = get_numlist(p, grp_rids, num_grps);
-			if (p == NULL)
-			{
-				DEBUG(0,("getsmbfilegrpent: invalid line\n"));
-				return NULL;
-			}
-			for (i = 0; i < (*num_grps); i++)
-			{
-				(*grp_rids)[i] = pwdb_gid_to_group_rid((*grp_rids)[i]);
-			}
-		}
-
-		pwfile = Get_Pwnam(pw_buf.smb_name, False);
-		if (pwfile == NULL)
-		{
-			DEBUG(0,("getsmbfilegrpent: smbpasswd database is corrupt!\n"));
-			DEBUG(0,("getsmbfilegrpent: username %s not in unix passwd database!\n", pw_buf.smb_name));
-			return NULL;
-		}
-
-		return &pw_buf;
+		(*grp_rids) = NULL;
+		(*num_grps) = 0;
 	}
 
-	DEBUG(5,("getsmbfilegrpent: end of file reached.\n"));
-	return NULL;
+	if (als_rids != NULL)
+	{
+		(*als_rids) = NULL;
+		(*num_alss) = 0;
+	}
+	
+	if (als_rids == NULL && grp_rids == NULL)
+	{
+		return pw_buf;
+	}
+
+	/*
+	 * find all unix groups
+	 */
+
+	pw = Get_Pwnam(pw_buf->smb_name, False);
+
+	if (pw == NULL)
+	{
+		return NULL;
+	}
+
+	if (get_unixgroups(pw_buf->smb_name, pw->pw_uid, pw->pw_gid, &unixgrps, &grps))
+	{
+		return NULL;
+	}
+
+	/*
+	 * check each unix group for a mapping as an nt alias or an nt group
+	 */
+
+	for (i = 0; i < unixgrps; i++)
+	{
+		DOM_SID sid;
+		uint8 type;
+		char *unix_grpname;
+		uint32 status;
+		uint32 rid;
+
+		/*
+		 * find the unix name for each user's group.
+		 * assume the unix group is an nt name (alias? group? user?)
+		 * (user or not our own domain will be an error).
+		 */
+
+		unix_grpname = gidtoname(grps[i]);
+		if (map_unix_alias_name(unix_grpname, &sid, NULL, NULL))
+		{
+			/*
+			 * ok, the unix groupname is mapped to an alias.
+			 * check that it is in our domain.
+			 */
+
+			sid_split_rid(&sid, &rid);
+			if (!sid_equal(&sid, &global_member_sid))
+			{
+				pstring sid_str;
+				sid_to_string(sid_str, &sid);
+				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT RID (0x%x) in another domain (%s)\n",
+				          pw_buf->smb_name, unix_grpname, rid, sid_str));
+				continue;
+			}
+
+			if (add_num_to_list(als_rids, num_alss, rid) == NULL)
+			{
+				return NULL;
+			}
+		}
+		else if (map_unix_group_name(unix_grpname, &sid, NULL, NULL))
+		{
+			/*
+			 * ok, the unix groupname is mapped to a domain group.
+			 * check that it is in our domain.
+			 */
+
+			sid_split_rid(&sid, &rid);
+			if (!sid_equal(&sid, &global_member_sid))
+			{
+				pstring sid_str;
+				sid_to_string(sid_str, &sid);
+				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT RID (0x%x) in another domain (%s)\n",
+				          pw_buf->smb_name, unix_grpname, rid, sid_str));
+				continue;
+			}
+
+			if (add_num_to_list(grp_rids, num_grps, rid) == NULL)
+			{
+				return NULL;
+			}
+		}
+		else if (lp_server_role() == ROLE_DOMAIN_MEMBER)
+		{
+			/*
+			 * server is a member of a domain or stand-alone.
+			 * name is not explicitly mapped
+			 * so we are responsible for it.
+			 * as a LOCAL group.
+			 */
+
+			rid = pwdb_gid_to_alias_rid(grps[i]);
+			if (add_num_to_list(als_rids, num_alss, rid) == NULL)
+			{
+				return NULL;
+			}
+		}
+		else if (lp_server_role() != ROLE_DOMAIN_NONE)
+		{
+			/*
+			 * server is a PDC or BDC.
+			 * name is explicitly mapped
+			 * so we are responsible for it.
+			 * as a DOMAIN group.
+			 */
+
+			rid = pwdb_gid_to_group_rid(grps[i]);
+			if (add_num_to_list(grp_rids, num_grps, rid) == NULL)
+			{
+				return NULL;
+			}
+		}
+	}
+
+	return pw_buf;
 }
 
 static struct passgrp_ops file_ops =
@@ -186,7 +228,7 @@ static struct passgrp_ops file_ops =
 	getsmbfilegrpent,
 };
 
-struct passgrp_ops *file_initialise_password_grp(void)
+struct passgrp_ops *unix_initialise_password_grp(void)
 {    
   return &file_ops;
 }

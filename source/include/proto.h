@@ -36,10 +36,19 @@ LOCAL_GRP *getaliasrid(uint32 alias_rid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 LOCAL_GRP *getaliasgid(gid_t gid, LOCAL_GRP_MEMBER **mem, int *num_mem);
 BOOL getuseraliasnam(char *user_name, LOCAL_GRP **als, int *num_alss);
 void aldb_init_als(LOCAL_GRP *als);
+BOOL make_alias_line(char *p, int max_len,
+				LOCAL_GRP *als,
+				LOCAL_GRP_MEMBER **mem, int *num_mem);
 
 /*The following definitions come from  groupdb/aliasfile.c  */
 
 struct aliasdb_ops *file_initialise_alias_db(void);
+
+/*The following definitions come from  groupdb/aliasunix.c  */
+
+BOOL get_unixalias_members(struct group *als,
+				int *num_mem, LOCAL_GRP_MEMBER **members);
+struct aliasdb_ops *unix_initialise_alias_db(void);
 
 /*The following definitions come from  groupdb/groupdb.c  */
 
@@ -60,10 +69,19 @@ DOMAIN_GRP *getgrouprid(uint32 group_rid, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 DOMAIN_GRP *getgroupgid(gid_t gid, DOMAIN_GRP_MEMBER **mem, int *num_mem);
 BOOL getusergroupsnam(char *user_name, DOMAIN_GRP **grp, int *num_grps);
 void gpdb_init_grp(DOMAIN_GRP *grp);
+BOOL make_group_line(char *p, int max_len,
+				DOMAIN_GRP *grp,
+				DOMAIN_GRP_MEMBER **mem, int *num_mem);
 
 /*The following definitions come from  groupdb/groupfile.c  */
 
 struct groupdb_ops *file_initialise_group_db(void);
+
+/*The following definitions come from  groupdb/groupunix.c  */
+
+BOOL get_unixgroup_members(struct group *grp,
+				int *num_mem, DOMAIN_GRP_MEMBER **members);
+struct groupdb_ops *unix_initialise_group_db(void);
 
 /*The following definitions come from  lib/access.c  */
 
@@ -263,6 +281,7 @@ char *tmpdir(void);
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups);
 int get_number(char *tmp);
 char *Atoic(char *p, int *n, char *c);
+int* add_num_to_list(uint32 **num, int *count, int val);
 char *get_numlist(char *p, uint32 **num, int *count);
 void putip(void *dest,void *src);
 char *dns_to_netbios_name(char *dns_name);
@@ -1223,6 +1242,7 @@ int lp_minor_announce_version(void);
 void lp_set_name_resolve_order(char *new_order);
 void lp_set_kernel_oplocks(BOOL val);
 BOOL lp_kernel_oplocks(void);
+int lp_server_role(void);
 
 /*The following definitions come from  param/params.c  */
 
@@ -1318,6 +1338,11 @@ struct smb_passwd *getsmbgrpuid(uid_t smb_userid,
 
 /*The following definitions come from  passdb/smbpass.c  */
 
+void *startsmbfilepwent(BOOL update);
+void endsmbfilepwent(void *vp);
+SMB_BIG_UINT getsmbfilepwpos(void *vp);
+BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok);
+struct smb_passwd *getsmbfilepwent(void *vp);
 struct passdb_ops *file_initialise_password_db(void);
 
 /*The following definitions come from  passdb/smbpasschange.c  */
@@ -1340,6 +1365,10 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
 /*The following definitions come from  passdb/smbpassgroup.c  */
 
 struct passgrp_ops *file_initialise_password_grp(void);
+
+/*The following definitions come from  passdb/smbpassgroupunix.c  */
+
+struct passgrp_ops *unix_initialise_password_grp(void);
 
 /*The following definitions come from  printing/pcap.c  */
 
@@ -1951,7 +1980,7 @@ void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *ps, int depth);
 void samr_io_q_unknown_12(char *desc,  SAMR_Q_UNKNOWN_12 *q_u, prs_struct *ps, int depth);
 void make_samr_r_unknown_12(SAMR_R_UNKNOWN_12 *r_u,
-		uint32 num_aliases, fstring *als_name, uint32 *num_als_usrs,
+		uint32 num_aliases, fstring *als_name, uint8 *num_als_usrs,
 		uint32 status);
 void samr_io_r_unknown_12(char *desc,  SAMR_R_UNKNOWN_12 *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
@@ -2157,31 +2186,28 @@ void wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 int make_dom_gids(DOMAIN_GRP *mem, int num_members, DOM_GID **ppgids);
 int get_domain_user_groups(DOMAIN_GRP_MEMBER **grp_members, uint32 group_rid);
-uint32 lookup_builtin_names(DOM_SID *sid, char *name, uint8 *type);
-uint32 lookup_added_name(DOM_SID *sid, char *name, uint8 *type);
-uint32 lookup_name(DOM_SID *sid, char *name, uint8 *type);
-uint32 lookup_wk_group_name(DOM_SID *sid, char *group_name, uint8 *type);
-uint32 lookup_group_name(DOM_SID *sid, char *group_name, uint8 *type);
-uint32 lookup_wk_alias_name(DOM_SID *sid, char *alias_name, uint8 *type);
-uint32 lookup_alias_name(DOM_SID *sid, char *alias_name, uint8 *type);
-uint32 lookup_wk_user_name(DOM_SID *sid, char *user_name, uint8 *type);
-uint32 lookup_user_name(DOM_SID *sid, char *user_name, uint8 *type);
-uint32 lookup_group_rid(char *group_name, uint32 *rid, uint8 *type);
-uint32 lookup_wk_group_rid(char *group_name, uint32 *rid, uint8 *type);
-uint32 lookup_alias_sid(char *alias_name, DOM_SID *sid, uint8 *type);
-uint32 lookup_alias_rid(char *alias_name, uint32 *rid, uint8 *type);
-uint32 lookup_wk_alias_sid(char *alias_name, DOM_SID *sid, uint8 *type);
-uint32 lookup_wk_alias_rid(char *alias_name, uint32 *rid, uint8 *type);
-uint32 lookup_sid(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_builtin_sid(DOM_SID *sid, char *name, uint8 *type);
+uint32 lookup_added_sid(DOM_SID *sid, char *name, uint8 *type);
+uint32 lookup_sid(DOM_SID *sid, char *name, uint8 *type);
+uint32 lookup_wk_group_sid(DOM_SID *sid, char *group_name, uint8 *type);
+uint32 lookup_group_sid(DOM_SID *sid, char *group_name, uint8 *type);
+uint32 lookup_wk_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type);
+uint32 lookup_alias_sid(DOM_SID *sid, char *alias_name, uint8 *type);
+uint32 lookup_wk_user_sid(DOM_SID *sid, char *user_name, uint8 *type);
+uint32 lookup_user_sid(DOM_SID *sid, char *user_name, uint8 *type);
+uint32 lookup_group_name(char *grp_name, DOM_SID *sid, uint8 *type);
+uint32 lookup_wk_group_name(char *group_name, DOM_SID *sid, uint8 *type);
+uint32 lookup_alias_name(char *als_name, DOM_SID *sid, uint8 *type);
+uint32 lookup_wk_alias_name(char *alias_name, DOM_SID *sid, uint8 *type);
 uint32 lookup_added_user_rids(char *user_name,
 		uint32 *usr_rid, uint32 *grp_rid);
-uint32 lookup_added_user_rid(char *user_name, uint32 *rid, uint8 *type);
-uint32 lookup_wk_user_rid(char *user_name, uint32 *rid, uint8 *type);
-uint32 lookup_added_grp_rid(char *name, uint32 *rid, uint8 *type);
-uint32 lookup_builtin_grp_rid(char *name, uint32 *rid, uint8 *type);
-uint32 lookup_grp_rid(char *name, uint32 *rid, uint8 *type);
-uint32 lookup_user_rid(char *name, uint32 *rid, uint8 *type);
-uint32 lookup_rid(char *name, uint32 *rid, uint8 *type);
+uint32 lookup_added_user_name(char *user_name, DOM_SID *sid, uint8 *type);
+uint32 lookup_wk_user_name(char *user_name, DOM_SID *sid, uint8 *type);
+uint32 lookup_added_grp_name(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_builtin_grp_name(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_grp_name(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_user_name(char *name, DOM_SID *sid, uint8 *type);
+uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
 uint32 lookup_user_rids(char *name, uint32 *usr_rid, uint32 *grp_rid);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
@@ -2238,6 +2264,7 @@ BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_sid.c  */
 
+void get_sam_domain_name(void);
 BOOL get_member_domain_sid(void);
 void generate_wellknown_sids(void);
 BOOL generate_sam_sid(void);
@@ -2488,14 +2515,14 @@ void file_chain_restore(void);
 
 /*The following definitions come from  smbd/groupname.c  */
 
-BOOL map_group_sid_to_name(DOM_SID *psid, char *group_name, char *nt_domain);
-BOOL map_alias_sid_to_name(DOM_SID *psid, char *alias_name, char *nt_domain);
-BOOL map_group_name_to_sid(char *group_name, DOM_SID *psid);
-BOOL map_alias_name_to_sid(char *alias_name, DOM_SID *psid);
-BOOL map_gid_to_alias_sid(gid_t gid, DOM_SID *psid);
-BOOL map_gid_to_group_sid( gid_t gid, DOM_SID *psid);
-BOOL map_group_sid_to_gid( DOM_SID *psid, gid_t *gid);
-BOOL map_alias_sid_to_gid( DOM_SID *psid, gid_t *gid);
+BOOL map_group_sid(DOM_SID *psid, gid_t *gid, char *group_name, char *nt_domain);
+BOOL map_alias_sid(DOM_SID *psid, gid_t *gid, char *alias_name, char *nt_domain);
+BOOL map_unix_group_name(char *group_name, DOM_SID *psid, char *ntgroup_name, char *nt_domain);
+BOOL map_unix_alias_name(char *alias_name, DOM_SID *psid, char *ntalias_name, char *nt_domain);
+BOOL map_nt_group_name(char *ntgroup_name, char *nt_domain, DOM_SID *psid, char *group_name, gid_t *gid);
+BOOL map_nt_alias_name(char *ntalias_name, char *nt_domain, DOM_SID *psid, char *alias_name, gid_t *gid);
+BOOL map_alias_gid(gid_t gid, DOM_SID *psid, char *nt_als_name, char *nt_domain);
+BOOL map_group_gid( gid_t gid, DOM_SID *psid, char *nt_grp_name, char *nt_domain);
 
 /*The following definitions come from  smbd/ipc.c  */
 

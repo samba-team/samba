@@ -43,7 +43,7 @@ char *sid_to_string(pstring sidstr_out, DOM_SID *sid)
 
   for (i = 0; i < sid->num_auths; i++)
   {
-    slprintf(subauth, sizeof(subauth)-1, "-%d", sid->sub_auths[i]);
+    slprintf(subauth, sizeof(subauth)-1, "-%u", sid->sub_auths[i]);
     pstrcat(sidstr_out, subauth);
   }
 
@@ -103,7 +103,9 @@ BOOL string_to_sid(DOM_SID *sidout, char *sidstr)
      * NOTE - the subauths are in native machine-endian format. They
      * are converted to little-endian when linearized onto the wire.
      */
-	sid_append_rid(sidout, atoi(tok));
+	uint32 rid = (uint32)strtoul(tok, NULL, 10);
+	DEBUG(50,("string_to_sid: tok: %s rid 0x%x\n", tok, rid));
+	sid_append_rid(sidout, rid);
   }
 
   DEBUG(7,("string_to_sid: converted SID %s ok\n", sidstr));
@@ -144,6 +146,11 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 void sid_copy(DOM_SID *sid1, DOM_SID *sid2)
 {
 	int i;
+
+	for (i = 0; i < 6; i++)
+	{
+		sid1->id_auth[i] = sid2->id_auth[i];
+	}
 
 	for (i = 0; i < sid2->num_auths; i++)
 	{

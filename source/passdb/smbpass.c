@@ -33,7 +33,7 @@ static char s_readbuf[1024];
  to ensure no modification outside this module.
 ****************************************************************/
 
-static void *startsmbfilepwent(BOOL update)
+void *startsmbfilepwent(BOOL update)
 {
 	return startfilepwent(lp_smb_passwd_file(), s_readbuf, sizeof(s_readbuf),
 	                      &pw_file_lock_depth, update);
@@ -43,7 +43,7 @@ static void *startsmbfilepwent(BOOL update)
  End enumeration of the smbpasswd list.
 ****************************************************************/
 
-static void endsmbfilepwent(void *vp)
+void endsmbfilepwent(void *vp)
 {
 	endfilepwent(vp, &pw_file_lock_depth);
 }
@@ -53,7 +53,7 @@ static void endsmbfilepwent(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-static SMB_BIG_UINT getsmbfilepwpos(void *vp)
+SMB_BIG_UINT getsmbfilepwpos(void *vp)
 {
 	return getfilepwpos(vp);
 }
@@ -63,7 +63,7 @@ static SMB_BIG_UINT getsmbfilepwpos(void *vp)
  This must be treated as an opaque token.
 *************************************************************************/
 
-static BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
+BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
 {
 	return setfilepwpos(vp, tok);
 }
@@ -71,7 +71,7 @@ static BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
  *************************************************************************/
-static struct smb_passwd *getsmbfilepwent(void *vp)
+struct smb_passwd *getsmbfilepwent(void *vp)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
@@ -80,7 +80,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 	static unsigned char smbntpwd[16];
 	struct passwd *pwfile;
 	char            linebuf[256];
-	unsigned char  *p;
+	char  *p;
 	int            uidval;
 	size_t            linebuf_len;
 
@@ -118,14 +118,14 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 		 * As 256 is shorter than a pstring we don't need to check
 		 * length here - if this ever changes....
 		 */
-		p = (unsigned char *)strncpyn(user_name, linebuf, sizeof(user_name), ':');
+		p = strncpyn(user_name, linebuf, sizeof(user_name), ':');
 
 		/* Go past ':' */
 		p++;
 
 		/* Get smb uid. */
 
-		p = (unsigned char *)Atoic((char *) p, &uidval, ":");
+		p = Atoic( p, &uidval, ":");
 
 		pw_buf.smb_name = user_name;
 		pw_buf.smb_userid = uidval;
@@ -161,14 +161,14 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			continue;
 		}
 
-		if (!strncasecmp((char *) p, "NO PASSWORD", 11))
+		if (!strncasecmp( p, "NO PASSWORD", 11))
 		{
 			pw_buf.smb_passwd = NULL;
 			pw_buf.acct_ctrl |= ACB_PWNOTREQ;
 		}
 		else
 		{
-			if (!pwdb_gethexpwd((char *)p, (char *)smbpwd))
+			if (!pwdb_gethexpwd(p, (char *)smbpwd))
 			{
 				DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
 				continue;
@@ -188,7 +188,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 		{
 			if (*p != '*' && *p != 'X')
 			{
-				if(pwdb_gethexpwd((char *)p,(char *)smbntpwd))
+				if(pwdb_gethexpwd(p,(char *)smbntpwd))
 				{
 					pw_buf.smb_nt_passwd = smbntpwd;
 				}
@@ -218,7 +218,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 			if (*p == ':')
 			{
 				p++;
-				pw_buf.pass_last_set_time = pwdb_get_last_set_time((char *)p);
+				pw_buf.pass_last_set_time = pwdb_get_last_set_time(p);
 			}
 		}
 		else

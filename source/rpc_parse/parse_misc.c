@@ -204,7 +204,7 @@ creates a DOM_SID2 structure.
 ********************************************************************/
 void make_dom_sid2(DOM_SID2 *sid2, DOM_SID *sid)
 {
-        sid2->sid = *sid;
+        sid_copy(&sid2->sid, sid);
 	sid2->num_auths = sid2->sid.num_auths;
 }
 

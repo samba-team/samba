@@ -189,6 +189,18 @@ char *Atoic(char *p, int *n, char *c)
 	return p;
 }
 
+int* add_num_to_list(uint32 **num, int *count, int val)
+{
+	(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
+	if ((*num) == NULL)
+	{
+		return NULL;
+	}
+	(*num)[(*count)] = val;
+	(*count)++;
+
+	return (*num);
+}
 /*************************************************************************
  reads a list of numbers
  *************************************************************************/
@@ -206,13 +218,10 @@ char *get_numlist(char *p, uint32 **num, int *count)
 
 	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':')
 	{
-		(*num) = Realloc((*num), ((*count)+1) * sizeof(uint32));
-		if ((*num) == NULL)
+		if (add_num_to_list(num, count, val) == NULL)
 		{
 			return NULL;
 		}
-		(*num)[(*count)] = val;
-		(*count)++;
 		p++;
 	}
 
