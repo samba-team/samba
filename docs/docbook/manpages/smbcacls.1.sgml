@@ -26,6 +26,7 @@
 		<arg choice="opt">-G name</arg>
 		<arg choice="opt">-n</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-d</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -136,6 +137,15 @@
 		<term>-h</term>
 		<listitem><para>Print usage information on the <command>smbcacls
 		</command> program.</para></listitem>
+		</varlistentry>
+		
+		
+		
+		<varlistentry>
+		<term>-d debuglevel</term>
+		<listitem><para>Sets the debug level to the value given
+		rather than use the value from the
+		<filename>smb.conf</filename> file.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
