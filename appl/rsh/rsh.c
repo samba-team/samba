@@ -83,7 +83,7 @@ static int protocol_version = 2;
 static int input = 1;		/* Read from stdin */
 
 static int
-loop (int s, int errsock)
+rsh_loop (int s, int errsock)
 {
     fd_set real_readset;
     int count = 1;
@@ -620,7 +620,7 @@ proto (int s, int errsock,
 	    warn("setsockopt stderr");
     }
     
-    return loop (s, errsock2);
+    return rsh_loop (s, errsock2);
 }
 
 /*
