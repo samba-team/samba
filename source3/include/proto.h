@@ -51,6 +51,8 @@ void cmd_help(char *dum_in, char *dum_out);
 
 /*The following definitions come from  clientgen.c  */
 
+char *cli_smb_errstr(struct cli_state *cli);
+char *cli_errstr(struct cli_state *cli);
 BOOL cli_api_pipe(struct cli_state *cli, char *pipe_name, int pipe_name_len,
                   uint16 *setup, uint32 setup_count, uint32 max_setup_count,
                   char *params, uint32 param_count, uint32 max_param_count,
@@ -97,7 +99,6 @@ BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip);
 BOOL cli_initialise(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-char *cli_errstr(struct cli_state *cli);
 void cli_error(struct cli_state *cli, int *eclass, int *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
@@ -1726,7 +1727,7 @@ struct smb_passwd *getsmbpwuid(unsigned int uid);
 char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
-void *machine_password_lock( char *doman, char *name, BOOL update);
+void *machine_password_lock( char *domain, char *name, BOOL update);
 BOOL machine_password_unlock( void *token );
 BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
                                    time_t *last_change_time);
