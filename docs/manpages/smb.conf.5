@@ -3524,6 +3524,11 @@ then continues with the next line.
 
 If any line begins with a '#' or a ';' then it is ignored
 
+If any line begins with an ! then the processing will stop after that
+line if a mapping was done by the line. Otherwise mapping continues
+with every line being processed. Using ! is most useful when you have
+a wildcard mapping line later in the file.
+
 For example to map from the name "admin" or "administrator" to the UNIX
 name "root" you would use
 
@@ -3543,6 +3548,14 @@ quotes around the name. For example:
 
 would map the windows username "Andrew Tridgell" to the unix username
 tridge.
+
+The following example would map mary and fred to the unix user sys,
+and map the rest to guest. Note the use of the ! to tell Samba to stop
+processing if it gets a match on that line.
+
+	!sys = mary fred
+	guest = *
+
 
 Note that the remapping is applied to all occurrences of
 usernames. Thus if you connect to "\e\eserver\efred" and "fred" is
