@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbcontrol</refname>
-	<refpurpose>send messages to smbd or nmbd processes</refpurpose>
+	<refpurpose>send messages to smbd, nmbd or winbindd processes</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -34,9 +34,9 @@
 
 	<para><command>smbcontrol</command> is a very small program, which 
 	sends messages to an <ulink url="smbd.8.html">smbd(8)</ulink>, 
-	an <ulink url="nmbd.8.html">nmbd(8)</ulink> or a 
-	<ulink url="winbindd.8.html">winbindd(8)</ulink> daemon running on the 
-	system.</para>
+	an <ulink url="nmbd.8.html">nmbd(8)</ulink>
+	or a <ulink url="winbindd.8.html">winbindd(8)</ulink> 
+	daemon running on the system.</para>
 </refsect1>
 
 
