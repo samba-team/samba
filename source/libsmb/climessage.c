@@ -42,10 +42,10 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	p = smb_buf(cli->outbuf);
 	*p++ = 4;
 	p += clistr_push(cli, p, username, -1, 
-			 CLISTR_TERMINATE|CLISTR_CONVERT);
+			 STR_TERMINATE|STR_CONVERT);
 	*p++ = 4;
 	p += clistr_push(cli, p, host, -1, 
-			 CLISTR_TERMINATE|CLISTR_CONVERT);
+			 STR_TERMINATE|STR_CONVERT);
 	
 	cli_setup_bcc(cli, p);
 	

@@ -29,10 +29,10 @@ dos code page destination choosing unicode or ascii based on the
 cli->capabilities flag
 return the number of bytes occupied by the string in the destination
 flags can have:
-  CLISTR_TERMINATE means include the null termination
-  CLISTR_CONVERT   means convert from unix to dos codepage
-  CLISTR_UPPER     means uppercase in the destination
-  CLISTR_ASCII     use ascii even with unicode servers
+  STR_TERMINATE means include the null termination
+  STR_CONVERT   means convert from unix to dos codepage
+  STR_UPPER     means uppercase in the destination
+  STR_ASCII     use ascii even with unicode servers
 dest_len is the maximum length allowed in the destination. If dest_len
 is -1 then no maxiumum is used
 ****************************************************************************/
@@ -45,52 +45,52 @@ int clistr_push(struct cli_state *cli, void *dest, const char *src, int dest_len
 		dest_len = sizeof(pstring);
 	}
 
-	if (!(flags & CLISTR_ASCII) && clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
+	if (!(flags & STR_ASCII) && clistr_align(cli, PTR_DIFF(dest, cli->outbuf))) {
 		*(char *)dest = 0;
 		dest++;
 		dest_len--;
 		len++;
 	}
 
-	if ((flags & CLISTR_ASCII) || !(cli->capabilities & CAP_UNICODE)) {
+	if ((flags & STR_ASCII) || !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
-		if (flags & CLISTR_TERMINATE) len++;
-		if (flags & CLISTR_CONVERT) unix_to_dos(dest,True);
-		if (flags & CLISTR_UPPER) strupper(dest);
+		if (flags & STR_TERMINATE) len++;
+		if (flags & STR_CONVERT) unix_to_dos(dest,True);
+		if (flags & STR_UPPER) strupper(dest);
 		return len;
 	}
 
 	/* the server likes unicode. give it the works */
-	if (flags & CLISTR_CONVERT) {
-		dos_PutUniCode(dest, src, dest_len, flags & CLISTR_TERMINATE);
+	if (flags & STR_CONVERT) {
+		dos_PutUniCode(dest, src, dest_len, flags & STR_TERMINATE);
 	} else {
 		ascii_to_unistr(dest, src, dest_len);
 	}
-	if (flags & CLISTR_UPPER) {
+	if (flags & STR_UPPER) {
 		strupper_w(dest);
 	}
 	len += strlen(src)*2;
-	if (flags & CLISTR_TERMINATE) len += 2;
+	if (flags & STR_TERMINATE) len += 2;
 	return len;
 }
 
 
 /****************************************************************************
 return the length that a string would occupy when copied with clistr_push()
-  CLISTR_TERMINATE means include the null termination
-  CLISTR_CONVERT   means convert from unix to dos codepage
-  CLISTR_UPPER     means uppercase in the destination
+  STR_TERMINATE means include the null termination
+  STR_CONVERT   means convert from unix to dos codepage
+  STR_UPPER     means uppercase in the destination
 note that dest is only used for alignment purposes. No data is written.
 ****************************************************************************/
 int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, int dest_len, int flags)
 {
 	int len = strlen(src);
-	if (flags & CLISTR_TERMINATE) len++;
-	if (!(flags & CLISTR_ASCII) && (cli->capabilities & CAP_UNICODE)) len *= 2;
+	if (flags & STR_TERMINATE) len++;
+	if (!(flags & STR_ASCII) && (cli->capabilities & CAP_UNICODE)) len *= 2;
 
-	if (!(flags & CLISTR_ASCII) && dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
+	if (!(flags & STR_ASCII) && dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
 		len++;
 	}
 
@@ -101,10 +101,10 @@ int clistr_push_size(struct cli_state *cli, const void *dest, const char *src, i
 copy a string from a unicode or ascii source (depending on
 cli->capabilities) to a char* destination
 flags can have:
-  CLISTR_CONVERT   means convert from dos to unix codepage
-  CLISTR_TERMINATE means the string in src is null terminated
-  CLISTR_UNICODE   means to force as unicode
-if CLISTR_TERMINATE is set then src_len is ignored
+  STR_CONVERT   means convert from dos to unix codepage
+  STR_TERMINATE means the string in src is null terminated
+  STR_UNICODE   means to force as unicode
+if STR_TERMINATE is set then src_len is ignored
 src_len is the length of the source area in bytes
 return the number of bytes occupied by the string in src
 ****************************************************************************/
@@ -121,9 +121,9 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		if (src_len > 0) src_len--;
 	}
 
-	if (!(flags & CLISTR_UNICODE) && !(cli->capabilities & CAP_UNICODE)) {
+	if (!(flags & STR_UNICODE) && !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
-		if (flags & CLISTR_TERMINATE) {
+		if (flags & STR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
 			len = strlen(src)+1;
 		} else {
@@ -132,11 +132,11 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 			memcpy(dest, src, len);
 			dest[len] = 0;
 		}
-		if (flags & CLISTR_CONVERT) dos_to_unix(dest,True);
+		if (flags & STR_CONVERT) dos_to_unix(dest,True);
 		return len;
 	}
 
-	if (flags & CLISTR_TERMINATE) {
+	if (flags & STR_TERMINATE) {
 		unistr_to_ascii(dest, src, dest_len);
 		len = strlen(dest)*2 + 2;
 	} else {
@@ -149,7 +149,7 @@ int clistr_pull(struct cli_state *cli, char *dest, const void *src, int dest_len
 		*dest++ = 0;
 		len = src_len;
 	}
-	if (flags & CLISTR_CONVERT) dos_to_unix(dest,True);
+	if (flags & STR_CONVERT) dos_to_unix(dest,True);
 	return len;
 }
 

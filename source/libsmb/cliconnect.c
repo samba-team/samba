@@ -104,7 +104,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 			/*
 			 * Plaintext mode needed, assume plaintext supplied.
 			 */
-			passlen = clistr_push(cli, pword, pass, -1, CLISTR_CONVERT|CLISTR_TERMINATE);
+			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
 			fstrcpy(ntpword, "");
 			ntpasslen = 0;
 		}
@@ -136,7 +136,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen);
 		p += passlen;
-		p += clistr_push(cli, p, user, -1, CLISTR_CONVERT|CLISTR_UPPER|CLISTR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_UPPER|STR_TERMINATE);
 		cli_setup_bcc(cli, p);
 	}
 	else
@@ -167,10 +167,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += SVAL(cli->outbuf,smb_vwv7);
 		memcpy(p,ntpword,ntpasslen); 
 		p += SVAL(cli->outbuf,smb_vwv8);
-		p += clistr_push(cli, p, user, -1, CLISTR_CONVERT|CLISTR_TERMINATE|CLISTR_UPPER);
-		p += clistr_push(cli, p, workgroup, -1, CLISTR_CONVERT|CLISTR_TERMINATE|CLISTR_UPPER);
-		p += clistr_push(cli, p, "Unix", -1, CLISTR_CONVERT|CLISTR_TERMINATE);
-		p += clistr_push(cli, p, "Samba", -1, CLISTR_CONVERT|CLISTR_TERMINATE);
+		p += clistr_push(cli, p, user, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, workgroup, -1, STR_CONVERT|STR_TERMINATE|STR_UPPER);
+		p += clistr_push(cli, p, "Unix", -1, STR_CONVERT|STR_TERMINATE);
+		p += clistr_push(cli, p, "Samba", -1, STR_CONVERT|STR_TERMINATE);
 		cli_setup_bcc(cli, p);
 	}
 
@@ -193,9 +193,9 @@ BOOL cli_session_setup(struct cli_state *cli,
 	       * info.
 	       */
 	      char *q = smb_buf(cli->inbuf);
-	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
-	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
-	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, CLISTR_TERMINATE|CLISTR_CONVERT);
+	      q += clistr_pull(cli, cli->server_os, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
+	      q += clistr_pull(cli, cli->server_type, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
+	      q += clistr_pull(cli, cli->server_domain, q, sizeof(fstring), -1, STR_TERMINATE|STR_CONVERT);
       }
 
       fstrcpy(cli->user_name, user);
@@ -255,7 +255,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
-			passlen = clistr_push(cli, pword, pass, -1, CLISTR_CONVERT|CLISTR_TERMINATE);
+			passlen = clistr_push(cli, pword, pass, -1, STR_CONVERT|STR_TERMINATE);
 		} else {
 			memcpy(pword, pass, passlen);
 		}
@@ -276,7 +276,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	p = smb_buf(cli->outbuf);
 	memcpy(p,pword,passlen);
 	p += passlen;
-	p += clistr_push(cli, p, fullshare, -1, CLISTR_CONVERT | CLISTR_TERMINATE);
+	p += clistr_push(cli, p, fullshare, -1, STR_CONVERT | STR_TERMINATE);
 	fstrcpy(p, dev); p += strlen(dev)+1;
 
 	cli_setup_bcc(cli, p);
@@ -294,7 +294,7 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	fstrcpy(cli->dev, "A:");
 
 	if (cli->protocol >= PROTOCOL_NT1) {
-		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, CLISTR_TERMINATE | CLISTR_CONVERT);
+		clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE | STR_CONVERT);
 	}
 
 	if (strcasecmp(share,"IPC$")==0) {
