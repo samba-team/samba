@@ -24,6 +24,14 @@ REQUIRED_SUBSYSTEMS = \
 # End MODULE server_rpc
 ################################################
 
+################################################
+# Start MODULE server_service_ldap
+[MODULE::server_service_ldap]
+REQUIRED_SUBSYSTEMS = \
+		LDAP
+# End MODULE server_ldap
+################################################
+
 #######################
 # Start SUBSYSTEM SERVICE
 [SUBSYSTEM::SERVER_SERVICE]
