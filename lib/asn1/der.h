@@ -139,7 +139,8 @@ int encode_oid (unsigned char *p, size_t len,
 int encode_generalized_time (unsigned char *p, size_t len,
 			     const time_t *t, size_t*);
 int encode_nulltype (unsigned char*, size_t, size_t*);
-int encode_utf8string (unsigned char*, size_t, heim_utf8_string*, size_t*);
+int encode_utf8string (unsigned char*, size_t, 
+		       const heim_utf8_string*, size_t*);
 
 void free_integer (int *num);
 void free_general_string (heim_general_string *str);
