@@ -23,6 +23,20 @@
 	may occur:
 	</para>
 
+<caution><para>
+Notice: A significant number of network administrators have responded to the guidance given
+below. It should be noted that there are sites that have a single PDC for many hundreds of
+concurrent network clients. Network bandwidth, network bandwidth utilization, and server load
+are among the factors that will determine the maximum number of Windows clients that
+can be served by a single domain controller (PDC or BDC) on a network segment. It is possible
+to operate with only a single PDC over a routed network. What is possible is not necessarily
+<emphasis>best practice</emphasis>. When Windows client network logons begin to fail with
+the message that the domain controller can not be found, or that the user account can not
+be found (when you know it exists), that may be an indication that the DC is overloaded or
+network bandwidth is overloaded. The guidance given in respect of PDC/BDC ratio to Windows
+clients is conservative and if followed will minimize problems - but it is not absolute.
+</para></caution>
+
 	<variablelist>
 		<varlistentry>
 		<term>Users experiencing difficulty logging onto the network</term>
@@ -257,8 +271,6 @@
 	for approval; I appreciate the urgency.
 	</para></blockquote>
 	</para>
-
-<?latex \newpage ?>
 
 	<sect2>
 		<title>Assignment Tasks</title>
@@ -1068,7 +1080,7 @@ verify that the versions you are about to use are matching.
 				<row>
 					<entry align="center">SUSE Linux 8.x</entry>
 					<entry align="center">SUSE Linux 9.x</entry>
-					<entry align="center">Red Hat Linux 9</entry>
+					<entry align="center">Red Hat Linux</entry>
 				</row>
 			</thead>
 			<tbody>
@@ -1090,26 +1102,6 @@ verify that the versions you are about to use are matching.
 				<row>
 					<entry>openldap2-client</entry>
 					<entry>openldap2-client</entry>
-					<entry></entry>
-				</row>
-				<row>
-					<entry></entry>
-					<entry>openldap2-back-perl</entry>
-					<entry></entry>
-				</row>
-				<row>
-					<entry></entry>
-					<entry>openldap2-back-monitor</entry>
-					<entry></entry>
-				</row>
-				<row>
-					<entry></entry>
-					<entry>openldap2-back-ldap</entry>
-					<entry></entry>
-				</row>
-				<row>
-					<entry></entry>
-					<entry>openldap2-back-meta</entry>
 					<entry></entry>
 				</row>
 			</tbody>
@@ -1551,7 +1543,8 @@ Setting stored password for "cn=Manager,dc=abmas,dc=biz" in secrets.tdb
 		been written to the <filename>secrets.tdb</filename> or to the LDAP backend:
 <screen>
 [2005/03/03 23:19:34, 0] lib/smbldap.c:smbldap_connect_system(852)
-  failed to bind to server ldap://massive.abmas.biz with dn="cn=Manager,dc=abmas,dc=biz" Error: Can't contact LDAP server
+  failed to bind to server ldap://massive.abmas.biz
+with dn="cn=Manager,dc=abmas,dc=biz" Error: Can't contact LDAP server
         (unknown)
 [2005/03/03 23:19:48, 0] lib/smbldap.c:smbldap_search_suffix(1169)
   smbldap_search_suffix: Problem during the LDAP search: (unknown) (Timed out)
@@ -1873,8 +1866,10 @@ Before starting, check
 Looking for configuration files...
 
 Samba Config File Location [/etc/samba/smb.conf] &gt;
-smbldap Config file Location (global parameters) [/etc/smbldap-tools/smbldap.conf] &gt;
-smbldap Config file Location (bind parameters) [/etc/smbldap-tools/smbldap_bind.conf] &gt;
+smbldap Config file Location (global parameters)
+	 [/etc/smbldap-tools/smbldap.conf] &gt;
+smbldap Config file Location (bind parameters)
+	 [/etc/smbldap-tools/smbldap_bind.conf] &gt;
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 Let's start configuring the smbldap-tools scripts ...
 
@@ -1882,15 +1877,21 @@ Let's start configuring the smbldap-tools scripts ...
   workgroup name [MEGANET2] &gt;
 . netbios name: netbios name of the samba controler
   netbios name [MASSIVE] &gt;
-. logon drive: local path to which the home directory will be connected (for NT Workstations). Ex: 'H:'
+. logon drive: local path to which the home directory
+	 will be connected (for NT Workstations). Ex: 'H:'
   logon drive [X:] &gt;
 . logon home: home directory location (for Win95/98 or NT Workstation).
   (use %U as username) Ex:'\\MASSIVE\home\%U'
-  logon home (leave blank if you don't want homeDirectory) [\\MASSIVE\home\%U] &gt; \\MASSIVE\%U
-. logon path: directory where roaming profiles are stored. Ex:'\\MASSIVE\profiles\%U'
-  logon path (leave blank if you don't want roaming profile) [\\MASSIVE\profiles\%U] &gt;
-. home directory prefix (use %U as username) [/home/%U] &gt; /home/users/%U
-. default user netlogon script (use %U as username) [%U.cmd] &gt; scripts\login.cmd
+  logon home (leave blank if you don't want homeDirectory)
+	 [\\MASSIVE\home\%U] &gt; \\MASSIVE\%U
+. logon path: directory where roaming profiles are stored.
+	 Ex:'\\MASSIVE\profiles\%U'
+  logon path (leave blank if you don't want roaming profile)
+	 [\\MASSIVE\profiles\%U] &gt;
+. home directory prefix (use %U as username)
+	 [/home/%U] &gt; /home/users/%U
+. default user netlogon script (use %U as username)
+	 [%U.cmd] &gt; scripts\login.cmd
   default password validation time (time in days) [45] &gt; 0
 . ldap suffix [dc=abmas,dc=biz] &gt;
 . ldap group suffix [ou=Groups] &gt;
@@ -1900,37 +1901,52 @@ Let's start configuring the smbldap-tools scripts ...
 . sambaUnixIdPooldn: object where you want to store the next uidNumber
   and gidNumber available for new users and groups
   sambaUnixIdPooldn object (relative to ${suffix}) [cn=NextFreeUnixId] &gt;
-. ldap master server: IP adress or DNS name of the master (writable) ldap server
-Use of uninitialized value in scalar chomp at ./configure.pl line 138, &lt;STDIN&gt; line 17.
-Use of uninitialized value in hash element at ./configure.pl line 140, &lt;STDIN&gt; line 17.
-Use of uninitialized value in concatenation (.) or string at ./configure.pl line 144, &lt;STDIN&gt; line 17.
-Use of uninitialized value in string at ./configure.pl line 145, &lt;STDIN&gt; line 17.
+. ldap master server: IP adress or DNS name
+	 of the master (writable) ldap server
+Use of uninitialized value in scalar chomp at ./configure.pl
+	 line 138, &lt;STDIN&gt; line 17.
+Use of uninitialized value in hash element at ./configure.pl
+	 line 140, &lt;STDIN&gt; line 17.
+Use of uninitialized value in concatenation (.) or string at
+	 ./configure.pl line 144, &lt;STDIN&gt; line 17.
+Use of uninitialized value in string at ./configure.pl
+	 line 145, &lt;STDIN&gt; line 17.
   ldap master server [] &gt; 127.0.0.1
 . ldap master port [389] &gt;
 . ldap master bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
 . ldap master bind password [] &gt;
-. ldap slave server: IP adress or DNS name of the slave ldap server: can also be the master one
-Use of uninitialized value in scalar chomp at ./configure.pl line 138, &lt;STDIN&gt; line 21.
-Use of uninitialized value in hash element at ./configure.pl line 140, &lt;STDIN&gt; line 21.
-Use of uninitialized value in concatenation (.) or string at ./configure.pl line 144, &lt;STDIN&gt; line 21.
-Use of uninitialized value in string at ./configure.pl line 145, &lt;STDIN&gt; line 21.
+. ldap slave server: IP adress or DNS name of the slave
+	 ldap server: can also be the master one
+Use of uninitialized value in scalar chomp at ./configure.pl
+	 line 138, &lt;STDIN&gt; line 21.
+Use of uninitialized value in hash element at ./configure.pl
+	 line 140, &lt;STDIN&gt; line 21.
+Use of uninitialized value in concatenation (.) or string at
+	 ./configure.pl line 144, &lt;STDIN&gt; line 21.
+Use of uninitialized value in string at ./configure.pl line 145,
+	 &lt;STDIN&gt; line 21.
   ldap slave server [] &gt; 127.0.0.1
 . ldap slave port [389] &gt;
 . ldap slave bind dn [cn=Manager,dc=abmas,dc=biz] &gt;
 . ldap slave bind password [] &gt;
 . ldap tls support (1/0) [0] &gt;
-. SID for domain MEGANET2: SID of the domain (can be obtained with 'net getlocalsid MASSIVE')
-  SID for domain MEGANET2 [S-1-5-21-3504140859-1010554828-2431957765] &gt;
+. SID for domain MEGANET2: SID of the domain
+	 (can be obtained with 'net getlocalsid MASSIVE')
+  SID for domain MEGANET2
+	 [S-1-5-21-3504140859-1010554828-2431957765] &gt;
 . unix password encryption: encryption used for unix passwords
-  unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
+  unix password encryption
+	 (CRYPT, MD5, SMD5, SSHA, SHA) [SSHA] &gt; MD5
 . default user gidNumber [513] &gt;
 . default computer gidNumber [515] &gt;
 . default login shell [/bin/bash] &gt;
 . default domain name to append to mail adress [] &gt; abmas.biz
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 backup old configuration files:
-  /etc/smbldap-tools/smbldap.conf-&gt;etc/smbldap-tools/smbldap.conf.old
-  /etc/smbldap-tools/smbldap_bind.conf-&gt;etc/smbldap-tools/smbldap_bind.conf.old
+  /etc/smbldap-tools/smbldap.conf-&gt;
+	etc/smbldap-tools/smbldap.conf.old
+  /etc/smbldap-tools/smbldap_bind.conf-&gt;
+	etc/smbldap-tools/smbldap_bind.conf.old
 writing new configuration file:
   /etc/smbldap-tools/smbldap.conf done.
   /etc/smbldap-tools/smbldap_bind.conf done.
@@ -2507,13 +2523,18 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 		<step><para>
 		The next step might seem a little odd at this point, but take note that you are about to
 		start <command>winbindd</command> which must be able to authenticate to the PDC via the
-		localhost interface. This requires a Domain account for the PDC. This account can be
+		localhost interface with the <command>smbd</command> process. This account can be
 		easily created by joining the PDC to the Domain by executing the following command:
 <screen>
 &rootprompt; net rpc join -U root%not24get
+</screen>
+		Note: Before executing this command on the PDC both <command>nmbd</command> and
+		<command>smbd</command> must be started so that the <command>net</command> command
+		can communicate with <command>smbd</command>. The expected output is:
+<screen>
 Joined domain MEGANET2.
 </screen>
-		This indicates that the Domain security account for the BDC has been correctly created.
+		This indicates that the Domain security account for the PDC has been correctly created.
 		</para></step>
 
 		<step><para>
@@ -2622,7 +2643,8 @@ smb: \> q
                 Only on the server to which the printer is attached, configure the CUPS Print
                 Queues as follows:
 <screen>
-&rootprompt; lpadmin -p <parameter>printque</parameter> -v socket://<parameter>printer-name</parameter>.abmas.biz:9100 -E
+&rootprompt; lpadmin -p <parameter>printque</parameter>
+	 -v socket://<parameter>printer-name</parameter>.abmas.biz:9100 -E
 </screen>
                 <indexterm><primary>print filter</primary></indexterm>
                 This step creates the necessary print queue to use no assigned print filter. This
@@ -2870,8 +2892,7 @@ PIOps (S-1-5-21-3504140859-1010554828-2431957765-3005) -> PIOps
 
 		<step><para>
 		Your new <constant>BLDG1, BLDG2</constant> servers do not have home directories for users.
-		To rectify this using the SUSE yast2 utility or by manually
-	    editing the <filename>/etc/fstab</filename>
+		To rectify this using the SUSE yast2 utility or by manually editing the <filename>/etc/fstab</filename>
 		file, add a mount entry to mount the <constant>home</constant> directory that has been exported
 		from the <constant>MASSIVE</constant> server. Mount this resource before proceeding. An alternate
 		approach could be to create local home directories for users who are to use these machines.
