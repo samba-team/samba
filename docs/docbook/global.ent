@@ -83,6 +83,15 @@
 	</affiliation>
 </author>'>
 
+<!ENTITY author.dlechnyr '
+<author>
+	<firstname>David</firstname><surname>Lechnyr</surname>
+	<affiliation>
+		<orgname>Unofficial HOWTO</orgname>
+		<address><email>david@lechnyr.com</email></address>
+	</affiliation>
+</author>'>
+
 <!-- URL's -->
 <!ENTITY url.samba.cvsinfo 'http://pserver.samba.org/samba/cvs.html'>
 <!ENTITY url.pdc-howto.local 'samba-pdc-howto.html'>
@@ -440,42 +449,43 @@ an Active Directory environment.
 <!ENTITY MAN-WINBINDD SYSTEM "manpages/winbindd.8.sgml">
 
 
-<!ENTITY UNIX-INSTALL SYSTEM "projdoc/UNIX_INSTALL.sgml">
-<!ENTITY ENCRYPTION SYSTEM "projdoc/ENCRYPTION.sgml">
-<!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.sgml">
-<!ENTITY PRINTER-DRIVER2 SYSTEM "projdoc/printer_driver2.sgml">
-<!ENTITY DOMAIN-MEMBER SYSTEM "projdoc/DOMAIN_MEMBER.sgml">
-<!ENTITY WINBIND SYSTEM "projdoc/winbind.sgml">
-<!ENTITY NT-Security SYSTEM "projdoc/NT_Security.sgml">
-<!ENTITY Samba-PDC-HOWTO SYSTEM "projdoc/Samba-PDC-HOWTO.sgml">
-<!ENTITY Samba-BDC-HOWTO SYSTEM "projdoc/Samba-BDC-HOWTO.sgml">
-<!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.sgml">
-<!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.sgml">
-<!ENTITY Samba-PAM SYSTEM "projdoc/PAM-Authentication-And-Samba.sgml">
-<!ENTITY Samba-LDAP SYSTEM "projdoc/Samba-LDAP-HOWTO.sgml">
-<!ENTITY Diagnosis SYSTEM "projdoc/Diagnosis.sgml">
-<!ENTITY BUGS SYSTEM "projdoc/Bugs.sgml">
-<!ENTITY SECURITY-LEVEL SYSTEM "projdoc/security_level.sgml">
-<!ENTITY SPEED SYSTEM "projdoc/Speed.sgml">
+<!ENTITY ADS-HOWTO SYSTEM "projdoc/ADS-HOWTO.sgml">
+<!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.sgml">
 <!ENTITY BROWSING SYSTEM "projdoc/Browsing.sgml">
 <!ENTITY BROWSING-Quick SYSTEM "projdoc/Browsing-Quickguide.sgml">
+<!ENTITY BUGS SYSTEM "projdoc/Bugs.sgml">
+<!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.sgml">
+<!ENTITY CVS-Access SYSTEM "projdoc/CVS-Access.sgml">
+<!ENTITY Compiling SYSTEM "projdoc/Compiling.sgml">
+<!ENTITY DOMAIN-MEMBER SYSTEM "projdoc/DOMAIN_MEMBER.sgml">
+<!ENTITY Diagnosis SYSTEM "projdoc/Diagnosis.sgml">
+<!ENTITY ENCRYPTION SYSTEM "projdoc/ENCRYPTION.sgml">
 <!ENTITY GROUP-MAPPING-HOWTO SYSTEM "projdoc/GROUP-MAPPING-HOWTO.sgml">
-<!ENTITY Portability SYSTEM "projdoc/Portability.sgml">
+<!ENTITY IntegratingWithWindows SYSTEM "projdoc/Integrating-with-Windows.sgml">
+<!ENTITY IntroSMB SYSTEM "projdoc/IntroSMB.sgml">
+<!ENTITY MS-Dfs-Setup SYSTEM "projdoc/msdfs_setup.sgml">
+<!ENTITY NT-Security SYSTEM "projdoc/NT_Security.sgml">
+<!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.sgml">
 <!ENTITY Other-Clients SYSTEM "projdoc/Other-Clients.sgml">
-<!ENTITY ADS-HOWTO SYSTEM "projdoc/ADS-HOWTO.sgml">
+<!ENTITY PRINTER-DRIVER2 SYSTEM "projdoc/printer_driver2.sgml">
+<!ENTITY Passdb SYSTEM "projdoc/passdb.sgml">
+<!ENTITY PolicyMgmt SYSTEM "projdoc/PolicyMgmt.sgml">
+<!ENTITY Portability SYSTEM "projdoc/Portability.sgml">
+<!ENTITY ProfileMgmt SYSTEM "projdoc/ProfileMgmt.sgml">
+<!ENTITY SECURITY-LEVEL SYSTEM "projdoc/security_level.sgml">
+<!ENTITY SPEED SYSTEM "projdoc/Speed.sgml">
+<!ENTITY SWAT SYSTEM "projdoc/SWAT.sgml">
+<!ENTITY Samba-BDC-HOWTO SYSTEM "projdoc/Samba-BDC-HOWTO.sgml">
+<!ENTITY Samba-LDAP SYSTEM "projdoc/Samba-LDAP-HOWTO.sgml">
+<!ENTITY Samba-PAM SYSTEM "projdoc/PAM-Authentication-And-Samba.sgml">
+<!ENTITY Samba-PDC-HOWTO SYSTEM "projdoc/Samba-PDC-HOWTO.sgml">
+<!ENTITY SecuringSamba SYSTEM "projdoc/securing-samba.sgml">
+<!ENTITY ServerType SYSTEM "projdoc/ServerType.sgml">
+<!ENTITY Trusts SYSTEM "projdoc/InterdomainTrusts.sgml">
+<!ENTITY UNIX-INSTALL SYSTEM "projdoc/UNIX_INSTALL.sgml">
+<!ENTITY VFS SYSTEM "projdoc/VFS.sgml">
+<!ENTITY WINBIND SYSTEM "projdoc/winbind.sgml">
 <!ENTITY pdb-mysql SYSTEM "projdoc/pdb_mysql.sgml">
 <!ENTITY pdb.sgml SYSTEM "projdoc/pdb.sgml.sgml">
-<!ENTITY VFS SYSTEM "projdoc/VFS.sgml">
-<!ENTITY Passdb SYSTEM "projdoc/passdb.sgml">
-<!ENTITY ServerType SYSTEM "projdoc/ServerType.sgml">
-<!ENTITY SecuringSamba SYSTEM "projdoc/securing-samba.sgml">
-<!ENTITY Compiling SYSTEM "projdoc/Compiling.sgml">
-<!ENTITY unicode SYSTEM "projdoc/unicode.sgml">
-<!ENTITY CUPS SYSTEM "projdoc/CUPS-printing.sgml">
-<!ENTITY AdvancedNetworkAdmin SYSTEM "projdoc/AdvancedNetworkAdmin.sgml">
-<!ENTITY PolicyMgmt SYSTEM "projdoc/PolicyMgmt.sgml">
-<!ENTITY ProfileMgmt SYSTEM "projdoc/ProfileMgmt.sgml">
-<!ENTITY NT4Migration SYSTEM "projdoc/NT4Migration.sgml">
-<!ENTITY SWAT SYSTEM "projdoc/SWAT.sgml">
-<!ENTITY Trusts SYSTEM "projdoc/InterdomainTrusts.sgml">
 <!ENTITY problems SYSTEM "projdoc/Problems.sgml">
+<!ENTITY unicode SYSTEM "projdoc/unicode.sgml">
