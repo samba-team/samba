@@ -292,7 +292,7 @@ BOOL map_name_to_wellknown_sid(DOM_SID *sid, enum SID_NAME_USE *use, const char 
 			continue;
 
 		for (j=0; users[j].known_user_name != NULL; j++) {
-			if (strequal(users[j].known_user_name, name) == 0) {
+			if ( strequal(users[j].known_user_name, name) ) {
 				sid_copy(sid, sid_name_map[i].sid);
 				sid_append_rid(sid, users[j].rid);
 				*use = users[j].sid_name_use;
