@@ -74,7 +74,7 @@ doit2(HDB *db, hdb_entry *ent)
 	set_password (ent);
     set_modified_by (ent);
     
-    ret = db->store(context, db, ent);
+    ret = db->store(context, db, 1, ent);
     if(ret)
 	krb5_err(context, 1, ret, "db->store");
 }

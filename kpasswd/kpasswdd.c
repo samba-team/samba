@@ -301,7 +301,7 @@ change (krb5_auth_context auth_context,
 	ent.modified_by = e;
 	if (ent.pw_end)
 	    *ent.pw_end = e->time + 3600; /* XXX - Change here! */
-	ret = db->store (context, db, &ent);
+	ret = db->store (context, db, 1, &ent);
     }
     krb5_free_keyblock (context, &new_keyblock);
 

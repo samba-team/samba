@@ -106,7 +106,7 @@ init(int argc, char **argv)
 	ent.flags.renewable = 1;
 	ent.flags.postdate = 1;
 	ent.flags.server = 1;
-	db->store(context, db, &ent);
+	db->store(context, db, 1, &ent);
 	hdb_free_entry(context, &ent);
 
 	/* Create `default' */
@@ -129,7 +129,7 @@ init(int argc, char **argv)
 			     "kadmin",
 			     NULL);
 	ent.flags.invalid = 1;
-	db->store(context, db, &ent);
+	db->store(context, db, 1, &ent);
 	hdb_free_entry(context, &ent);
 
 	/* Create `kadmin/changepw' */
@@ -157,7 +157,7 @@ init(int argc, char **argv)
 	ent.flags.initial   = 1;
 	ent.flags.server    = 1;
 	ent.flags.change_pw = 1;
-	db->store(context, db, &ent);
+	db->store(context, db, 1, &ent);
 	hdb_free_entry(context, &ent);
     }
     db->close(context, db);

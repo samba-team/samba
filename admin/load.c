@@ -266,7 +266,7 @@ doit(char *filename, int merge)
 	ent.max_renew = parse_integer(NULL, e.max_renew);
 	
 	ent.flags = parse_hdbflags2int(e.flags);
-	db->store(context, db, &ent);
+	db->store(context, db, 1, &ent);
 	hdb_free_entry (context, &ent);
     }
     db->close(context, db);

@@ -73,7 +73,7 @@ doit(const char *principal)
     set_password (&ent);
     set_created_by (&ent);
     
-    ret = db->store(context, db, &ent);
+    ret = db->store(context, db, 0, &ent);
     if(ret)
 	krb5_err(context, 1, ret, "db->store");
 
