@@ -78,7 +78,7 @@ FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbstatus @RUNPROG@
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage @WRAP@ @WRAP32@
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/make_unicodemap @WRAP@ @WRAP32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
@@ -182,6 +182,9 @@ SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
+                       $(UBIQX_OBJ) $(LIB_OBJ)
+
+MAKE_UNICODEMAP_OBJ = utils/make_unicodemap.o $(PARAM_OBJ) \
                        $(UBIQX_OBJ) $(LIB_OBJ)
 
 MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
@@ -400,6 +403,10 @@ bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/make_unicodemap: $(MAKE_UNICODEMAP_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MAKE_UNICODEMAP_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/nmblookup: $(NMBLOOKUP_OBJ) bin/.dummy
 	@echo Linking $@
