@@ -40,8 +40,8 @@ static int lsa_reply_open_policy(char *q, char *base)
 	LSA_R_OPEN_POL r_o;
 
 	/* set up the LSA QUERY INFO response */
-	/* bzero(&(r_o.pol.data), POL_HND_SIZE); */
-	for (i = 0; i < POL_HND_SIZE; i++)
+	bzero(&(r_o.pol.data), POL_HND_SIZE);
+	for (i = 4; i < POL_HND_SIZE; i++)
 	{
 		r_o.pol.data[i] = i;
 	}
@@ -337,6 +337,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			SIVAL(q, 0, 4); /* entries read */
 			SIVAL(q, 0, 8); /* trust information */
 
+			q += 12;
+
 			endrpcreply(data, *rdata, q-*rdata, 0x8000001a, rdata_len);
 
 			break;
@@ -344,17 +346,19 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 
 		case LSA_CLOSE:
 		{
-			char *q = *rdata + 0x18;
+			char *q;
 
 			DEBUG(3,("LSA_CLOSE\n"));
 
 			initrpcreply(data, *rdata);
 
-			SIVAL(q, 0, 0);
-			SIVAL(q, 0, 4);
-			SIVAL(q, 0, 8);
-			SIVAL(q, 0, 12);
-			SIVAL(q, 0, 16);
+			q = *rdata + 0x18;
+
+			SIVAL(q, 0, 0); q += 4;
+			SIVAL(q, 0, 0); q += 4;
+			SIVAL(q, 0, 0); q += 4;
+			SIVAL(q, 0, 0); q += 4;
+			SIVAL(q, 0, 0); q += 4;
 
 			endrpcreply(data, *rdata, q-*rdata, 0, rdata_len);
 
@@ -373,6 +377,8 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			SIVAL(q, 0, 8);
 			SIVAL(q, 0, 12);
 			SIVAL(q, 0, 16);
+
+			q += 20;
 
 			endrpcreply(data, *rdata, q-*rdata, 0xc000034, rdata_len);
 
