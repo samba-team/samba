@@ -111,6 +111,8 @@ statement	: INDEX NUMBER
 		| EC STRING ',' STRING
 		{
 		    struct error_code *ec = malloc(sizeof(*ec));
+
+		    ec->next = NULL;
 		    ec->number = number;
 		    if(prefix && *prefix != '\0') {
 			ec->name = malloc(strlen(prefix) + strlen($2) + 1);
