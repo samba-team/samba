@@ -1195,6 +1195,16 @@ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
         return NT_STATUS_OK;
 }
 
+/* generate a random GUID */
+struct GUID GUID_random(void)
+{
+	struct GUID guid;
+
+	generate_random_buffer((uint8_t *)&guid, sizeof(guid));
+
+	return guid;
+}
+
 /*
   its useful to be able to display these in debugging messages
 */
