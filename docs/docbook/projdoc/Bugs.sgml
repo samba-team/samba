@@ -15,7 +15,8 @@
 <title>Introduction</title>
 
 <para>
-The email address for bug reports is samba@samba.org
+The email address for bug reports for stable releases is <ulink url="samba@samba.org">samba@samba.org</ulink>. 
+Bug reports for alpha releases should go to <ulink url="mailto:samba-technical@samba.org">samba-technical@samba.org</ulink>.
 </para>
 
 <para>
@@ -44,7 +45,7 @@ that list that may be able to help you.
 <para>
 You may also like to look though the recent mailing list archives,
 which are conveniently accessible on the Samba web pages
-at http://samba.org/samba/ 
+at <ulink url="http://samba.org/samba/">http://samba.org/samba/</ulink>.
 </para>
 
 </sect1>
