@@ -2380,14 +2380,14 @@ static BOOL run_deletetest(int dummy)
 	
 	cli_sockopt(&cli1, sockops);
 
-	/* Test 1 - this should *NOT* delete the file on close. */
+	/* Test 1 - this should delete the file on close. */
 	
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
 	
 	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
 				   FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 
-				   DELETE_ON_CLOSE_FLAG);
+				   FILE_DELETE_ON_CLOSE);
 	
 	if (fnum1 == -1) {
 		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
@@ -2402,14 +2402,8 @@ static BOOL run_deletetest(int dummy)
 	}
 
 	fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
-	if (fnum1 == -1) {
-		printf("[1] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
-		correct = False;
-		goto fail;
-	}
-	
-	if (!cli_close(&cli1, fnum1)) {
-		printf("[1] close failed (%s)\n", cli_errstr(&cli1));
+	if (fnum1 != -1) {
+		printf("[1] open of %s succeeded (should fail)\n", fname);
 		correct = False;
 		goto fail;
 	}
