@@ -9,7 +9,13 @@ noinst_PROGRAMS = dump_config
 check_PROGRAMS = n-fold-test string-to-key-test
 TESTS = n-fold-test string-to-key-test
 
+if KRB4
+KRB4LIB = $(LIB_krb4)
+keytab_krb4_c = keytab_krb4.c
+endif
+
 LDADD = libkrb5.la \
+	$(KRB4LIB) \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken)
@@ -17,6 +23,8 @@ LDADD = libkrb5.la \
 lib_LTLIBRARIES = libkrb5.la
 
 ERR_FILES = krb5_err.c heim_err.c
+
+EXTRA_libkrb5_la_SOURCES = keytab_krb4.c
 
 libkrb5_la_SOURCES = \
 	addr_families.c \
@@ -60,6 +68,7 @@ libkrb5_la_SOURCES = \
 	keytab.c \
 	keytab_file.c \
 	keytab_memory.c \
+	$(keytab_krb4_c) \
 	krbhst.c \
 	kuserok.c \
 	log.c \
