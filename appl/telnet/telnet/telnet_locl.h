@@ -77,7 +77,7 @@
 #include <sys/termio.h>
 #endif
 
-#ifdef HAVE_TERM_H
+#if defined(HAVE_TERM_H) && !defined(HAVE_TERMIOS_H)
 #include <term.h>
 #endif
 
