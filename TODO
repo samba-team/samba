@@ -90,6 +90,8 @@ should the sequence numbers be XORed?
 
 fix pre-authentication with pa-afs3-salt
 
+fix send_to_kdc to handle machines with both v4 and v6 addresses
+
 OTP?
 
 ** lib/roken
