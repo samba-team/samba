@@ -145,10 +145,11 @@ static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *ch
 
 NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) 
 {
-	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
 	if (!user) {
-		ntlmssp_state->user = NULL;
+		/* it should be at least "" */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
+	ntlmssp_state->user = talloc_strdup(ntlmssp_state, user);
 	if (!ntlmssp_state->user) {
 		return NT_STATUS_NO_MEMORY;
 	}
