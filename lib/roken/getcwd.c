@@ -44,7 +44,6 @@ RCSID("$Id$");
 #include <unistd.h>
 #include <sys/param.h>
 
-#include "protos.h"
 #include "roken.h"
 
 char*

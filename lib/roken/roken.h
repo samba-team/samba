@@ -69,8 +69,6 @@
 #include <sys/ioctl.h>
 #endif
 
-#include "protos.h"
-
 #if !defined(HAVE_SETSID) && defined(HAVE__SETSID)
 #define setsid _setsid
 #endif
@@ -179,10 +177,6 @@ int inet_aton(const char *cp, struct in_addr *adr);
 
 #if !defined(HAVE_GETCWD)
 char* getcwd(char *path, size_t size);
-#endif
-
-#ifndef HAVE_GETENT
-int getent(char *cp, char *name);
 #endif
 
 #ifdef HAVE_PWD_H

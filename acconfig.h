@@ -1,5 +1,9 @@
 @BOTTOM@
 
+/* This should be handled by automake */
+#undef VERSION
+#undef PACKAGE
+
 #undef HAVE_INT8_T
 #undef HAVE_INT16_T
 #undef HAVE_INT32_T
@@ -9,11 +13,62 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+/* define if you have h_errno */
+#undef HAVE_H_ERRNO
+
+/* define if you have h_errlist but not hstrerror */
+#undef HAVE_H_ERRLIST
+
+/* define if you have h_nerr but not hstrerror */
+#undef HAVE_H_NERR
+
+/* define if your system doesn't declare h_errlist */
+#undef HAVE_H_ERRLIST_DECLARATION
+
+/* define if your system doesn't declare h_nerr */
+#undef HAVE_H_NERR_DECLARATION
+
+/* define this if you need a declaration for h_errno */
+#undef HAVE_H_ERRNO_DECLARATION
+
+/* define if you need a declaration for optarg */
+#undef HAVE_OPTARG_DECLARATION
+
+/* define if you need a declaration for optind */
+#undef HAVE_OPTIND_DECLARATION
+
+/* define if you need a declaration for opterr */
+#undef HAVE_OPTERR_DECLARATION
+
+/* define if you need a declaration for optopt */
+#undef HAVE_OPTOPT_DECLARATION
+
+/* define if you need a declaration for __progname */
+#undef HAVE___PROGNAME_DECLARATION
+
+/* define if the system is missing a prototype for crypt() */
+#undef NEED_CRYPT_PROTO
+
+/* define if the system is missing a prototype for strtok_r() */
+#undef NEED_STRTOK_R_PROTO
+
 /* Define this if your `struct tm' has a field `tm_gmtoff' */
 #undef HAVE_STRUCT_TM_TM_GMTOFF
 
+/* define if getcwd() is broken (such as in SunOS) */
+#undef BROKEN_GETCWD
+
 /* Define this if you have a variable `timezone' */
 #undef HAVE_TIMEZONE
+
+/*  Define this if struct winsize is declared in sys/termios.h */
+#undef HAVE_STRUCT_WINSIZE
+
+/*  Define this if struct winsize have ws_xpixel */
+#undef HAVE_WS_XPIXEL
+
+/*  Define this if struct winsize have ws_ypixel */
+#undef HAVE_WS_YPIXEL
 
 #undef VOID_RETSIGTYPE
 
@@ -23,7 +78,14 @@
 #define SIGRETURN(x) return (RETSIGTYPE)(x)
 #endif
 
+/* Define if you have a readline compatible library */
+#undef HAVE_READLINE
+
 #define RCSID(msg) \
 static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 
 #undef PROTOTYPES
+
+/* Maximum values on all known systems */
+#define MaxHostNameLen (64+4)
+#define MaxPathLen (1024+4)

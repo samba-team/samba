@@ -28,23 +28,11 @@ if test "$withval" = no; then
 fi
 ])
 
+AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
+
 AC_C_BIGENDIAN
 
 dnl AM_C_PROTOTYPES
-
-dnl Checks for libraries.
-
-AC_FIND_FUNC(socket, socket)
-AC_FIND_FUNC(gethostbyname, nsl)
-AC_FIND_FUNC(dbopen, $berkeley_db)
-AC_FIND_FUNC(dbm_firstkey, $berkeley_db gdbm ndbm)
-AC_FIND_FUNC(syslog, syslog)
-
-dnl Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h limits.h sys/ioctl.h sys/time.h unistd.h)
-AC_CHECK_HEADERS(sys/bitypes.h sys/filio.h sys/types.h)
-AC_CHECK_HEADERS(db.h ndbm.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -54,9 +42,53 @@ AC_HEADER_TIME
 AC_STRUCT_TM
 AC_DECL_YYTEXT
 
+dnl Checks for header files.
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(arpa/inet.h crypt.h db.h dbm.h fcntl.h grp.h)
+AC_CHECK_HEADERS(limits.h ndbm.h netdb.h netinet/in.h paths.h pwd.h)
+AC_CHECK_HEADERS(rpcsvc/dbm.h shadow.h sys/bitypes.h sys/filio.h)
+AC_CHECK_HEADERS(sys/ioctl.h sys/param.h sys/proc.h sys/resource.h)
+AC_CHECK_HEADERS(sys/socket.h sys/stat.h sys/sysctl.h sys/time.h)
+AC_CHECK_HEADERS(sys/tty.h sys/types.h syslog.h termios.h unistd.h)
+
+dnl Checks for libraries.
+
+AC_FIND_FUNC(socket, socket)
+AC_FIND_FUNC(gethostbyname, nsl)
+AC_FIND_FUNC(dbopen, $berkeley_db)
+AC_FIND_FUNC(dbm_firstkey, $berkeley_db gdbm ndbm)
+AC_FIND_FUNC(syslog, syslog)
+
+AC_FIND_FUNC_NO_LIBS(tgetent, termcap)
+
 dnl Checks for library functions.
-AC_CHECK_FUNCS(gethostname mktime timegm select strdup strstr)
-AC_CHECK_FUNCS(random rand setitimer)
+
+AC_CACHE_CHECK(for working snprintf,ac_cv_func_snprintf_working,
+ac_cv_func_snprintf_working=yes
+AC_TRY_RUN([
+#include <stdio.h>
+#include <string.h>
+int main()
+{
+changequote(`,')dnl
+	char foo[3];
+changequote([,])dnl
+	snprintf(foo, 2, "12");
+	return strcmp(foo, "1");
+}],:,ac_cv_func_snprintf_working=no,:))
+: << END
+@@@funcs="$funcs snprintf"@@@
+END
+if test "$ac_cv_func_snprintf_working" = yes; then
+	foo=HAVE_SNPRINTF
+	AC_DEFINE_UNQUOTED($foo)
+fi
+
+AC_CHECK_FUNCS(asnprintf asprintf vasprintf vasnprintf vsnprintf)
+
+AC_CHECK_FUNCS(gethostname mktime timegm select strstr)
+AC_CHECK_FUNCS(random rand setitimer setsid)
 
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
@@ -64,12 +96,127 @@ if test "$ac_cv_type_signal" = "void" ; then
 fi
 AC_SUBST(VOID_RETSIGTYPE)
 
+dnl AC_FIND_IF_NOT_BROKEN(hstrerror, resolv,
+dnl [#ifdef HAVE_NETDB_H
+dnl #include <netdb.h>
+dnl #endif],
+dnl 17)
+
+AC_BROKEN(chown daemon err errx fchown getcwd getdtablesize)
+AC_BROKEN(getusershell inet_aton initgroups lstat memmove mkstemp)
+AC_BROKEN(putenv rcmd setegid setenv seteuid strcasecmp strdup)
+AC_BROKEN(strerror strftime strlwr strnlen strtok_r strupr unsetenv)
+AC_BROKEN(verr verrx vwarn vwarnx warn warnx)
+
+dnl AC_KRB_FUNC_GETCWD_BROKEN
+
+dnl
+dnl Checks for prototypes and declarations
+dnl
+
+AC_NEED_PROTO([
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+],
+crypt)
+
+AC_NEED_PROTO([
+#include <string.h>
+],
+strtok_r)
+
+AC_CHECK_VAR([#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],
+h_errno)
+
+AC_CHECK_VAR([#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],
+h_errlist)
+
+AC_CHECK_VAR([#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif],
+h_nerr)
+
+AC_CHECK_VAR([#ifdef HAVE_ERR_H
+#include <err.h>
+#endif],[__progname])
+
+AC_CHECK_DECLARATION([#include <stdlib.h>], optarg)
+AC_CHECK_DECLARATION([#include <stdlib.h>], optind)
+AC_CHECK_DECLARATION([#include <stdlib.h>], opterr)
+AC_CHECK_DECLARATION([#include <stdlib.h>], optopt)
+
+dnl
+dnl Check for struct winsize
+dnl
+
+AC_KRB_STRUCT_WINSIZE
+
+dnl
+dnl Check for some common types
+dnl
+
+AC_TYPE_PID_T
+AC_TYPE_UID_T
+AC_TYPE_OFF_T
+AC_TYPE_SIZE_T
+
+dnl AC_SUBST(LIBOBJS)
+
 AC_GROK_TYPES(int8_t int16_t int32_t int64_t)
 AC_GROK_TYPES(u_int8_t u_int16_t u_int32_t u_int64_t)
+
+dnl
+dnl Tests for editline
+dnl
+
+AC_FIND_FUNC_NO_LIBS(el_init, edit)
+AC_FIND_FUNC_NO_LIBS(readline, readline)
+
+if test "$with_readline"; then
+	AC_DEFINE(HAVE_READLINE, 1)
+	editline_OBJS=
+	LIB_readline="$READLINELIB "'$(LIB_tgetent)'
+	INCLUDE_readline="$READLINEINCLUDE"
+elif test "$ac_cv_func_el_init" = yes; then
+	AC_DEFINE(HAVE_READLINE, 1)
+
+	editline_OBJS=edit_compat.o
+	LIB_readline='-L$(top_builddir)/lib/editline -leditline '"$LIB_el_init"' $(LIB_tgetent)'
+
+	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
+elif test "$ac_cv_func_readline" = yes; then
+	AC_DEFINE(HAVE_READLINE, 1)
+	editline_OBJS=
+	LIB_readline='-lreadline $(LIB_tgetent)'
+	INCLUDE_readline=
+else
+	AC_DEFINE(HAVE_READLINE, 1)
+	editline_OBJS="editline.o complete.o sysunix.o"
+	LIB_readline='-L$(top_builddir)/lib/editline -leditline $(LIB_tgetent)'
+	INCLUDE_readline='-I$(top_builddir)/lib/editline -I$(top_srcdir)/lib/editline'
+fi
+AC_SUBST(LIB_tgetent)
+AC_SUBST(LIB_readline)
+AC_SUBST(INCLUDE_readline)
+AC_SUBST(editline_OBJS)
 
 AC_OUTPUT(Makefile 		\
 	include/Makefile	\
 	lib/Makefile		\
+	lib/roken/Makefile	\
+	lib/editline/Makefile	\
+	lib/sl/Makefile		\
 	lib/asn1/Makefile	\
 	lib/des/Makefile	\
 	lib/krb5/Makefile	\

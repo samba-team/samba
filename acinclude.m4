@@ -76,6 +76,13 @@ fi
 ])
 
 dnl
+dnl Warning!
+dnl
+
+dnl undefine(AC_REPLACE_FUNCS)
+dnl define(AC_BROKEN,AC_REPLACE_FUNCS)
+
+dnl
 dnl Same as AC _REPLACE_FUNCS, just define HAVE_func if found in normal
 dnl libraries 
 
@@ -86,7 +93,7 @@ AC_CHECK_FUNC($ac_func, [
 changequote(, )dnl
 ac_tr_func=HAVE_`echo $ac_func | tr '[a-z]' '[A-Z]'`
 changequote([, ])dnl
-AC_DEFINE_UNQUOTED($ac_tr_func)],[LIBOBJS="$LIBOBJS ${ac_func}.o"])
+AC_DEFINE_UNQUOTED($ac_tr_func)],[LIBOBJS[]="$LIBOBJS ${ac_func}.o"])
 # autoheader tricks *sigh*
 : << END
 @@@funcs="$funcs $1"@@@
@@ -102,7 +109,7 @@ dnl
 AC_DEFUN(AC_FIND_IF_NOT_BROKEN,
 [AC_FIND_FUNC([$1], [$2], [$3], [$4])
 if eval "test \"$ac_cv_func_$1\" != yes"; then
-LIBOBJS="$LIBOBJS $1.o"
+LIBOBJS[]="$LIBOBJS $1.o"
 fi
 AC_SUBST(LIBOBJS)dnl
 ])
@@ -275,29 +282,25 @@ dnl
 dnl Check if we need the prototype for a function
 dnl
 
-dnl AC_NEED_PROTO(includes, code, function)
-AC_DEFUN(AC_NEED_PROTO, [
-AC_MSG_CHECKING([if $3 needs a proto])
-AC_CACHE_VAL(ac_cv_func_$3_proto, [
-AC_TRY_COMPILE([$1],
-[$2],
-eval "ac_cv_func_$3_proto=no",
-eval "ac_cv_func_$3_proto=yes")
-])
-changequote(, )dnl
-eval "ac_tr_func=NEED_`echo $3 | tr '[a-z]' '[A-Z]'`_PROTO"
-changequote([, ])dnl
+dnl AC_NEED_PROTO(includes, function)
 
-define([foo], [NEED_]translit($3, [a-z], [A-Z])[_PROTO])
+AC_DEFUN(AC_NEED_PROTO, [
+AC_CACHE_CHECK([if $2 needs a prototype], ac_cv_func_$2_noproto,
+AC_TRY_COMPILE([$1],
+[struct foo { int foo; } xx;
+extern int $2 (struct foo*);
+$2(&xx);
+],
+eval "ac_cv_func_$2_noproto=yes",
+eval "ac_cv_func_$2_noproto=no"))
+define([foo], [NEED_]translit($2, [a-z], [A-Z])[_PROTO])
+if test "$ac_cv_func_$2_noproto" = yes; then
+	AC_DEFINE(foo)
+fi
 : << END
 @@@syms="$syms foo"@@@
 END
 undefine([foo])
-
-AC_MSG_RESULT($ac_cv_func_$3_proto)
-if eval "test \"\$ac_cv_func_$3_proto\" = yes"; then
-	AC_DEFINE_UNQUOTED($ac_tr_func)
-fi
 ])
 
 dnl AC_HAVE_STRUCT_FIELD(includes, struct, type, field)
@@ -321,6 +324,35 @@ undefine([foo])
 
 AC_MSG_RESULT($ac_cv_struct_$2_$4)
 if eval "test \"\$ac_cv_struct_$2_$4\" = yes"; then
+	AC_DEFINE_UNQUOTED($ac_tr_var)
+fi
+])
+
+dnl
+dnl Check if we need the declaration of a variable
+dnl
+
+dnl AC_HAVE_DECLARATION(includes, variable)
+AC_DEFUN(AC_CHECK_DECLARATION, [
+AC_MSG_CHECKING([if $2 is properly declared])
+AC_CACHE_VAL(ac_cv_var_$2_declaration, [
+AC_TRY_COMPILE([$1
+extern struct { int foo; } $2;],
+[$2.foo = 1;],
+eval "ac_cv_var_$2_declaration=no",
+eval "ac_cv_var_$2_declaration=yes")
+])
+
+ac_tr_var=[HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION]
+
+define([foo], [HAVE_]translit($2, [a-z], [A-Z])[_DECLARATION])
+: << END
+@@@syms="$syms foo"@@@
+END
+undefine([foo])
+
+AC_MSG_RESULT($ac_cv_var_$2_declaration)
+if eval "test \"\$ac_cv_var_$2_declaration\" = yes"; then
 	AC_DEFINE_UNQUOTED($ac_tr_var)
 fi
 ])
@@ -476,4 +508,28 @@ for i in $1; do
 	fi
 	AC_MSG_RESULT($ac_res)
 done
+])
+
+dnl
+dnl Search for struct winsize
+dnl
+
+AC_DEFUN(AC_KRB_STRUCT_WINSIZE, [
+AC_MSG_CHECKING(for struct winsize)
+AC_CACHE_VAL(ac_cv_struct_winsize, [
+ac_cv_struct_winsize=no
+for i in sys/termios.h sys/ioctl.h; do
+AC_EGREP_HEADER(
+changequote(, )dnl
+struct[ 	]*winsize,dnl
+changequote([,])dnl
+$i, ac_cv_struct_winsize=yes; break)dnl
+done
+])
+if test "$ac_cv_struct_winsize" = "yes"; then
+  AC_DEFINE(HAVE_STRUCT_WINSIZE, 1)dnl
+fi
+AC_MSG_RESULT($ac_cv_struct_winsize)
+AC_EGREP_HEADER(ws_xpixel, termios.h, AC_DEFINE(HAVE_WS_XPIXEL))
+AC_EGREP_HEADER(ws_ypixel, termios.h, AC_DEFINE(HAVE_WS_YPIXEL))
 ])
