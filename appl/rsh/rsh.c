@@ -35,9 +35,9 @@
 RCSID("$Id$");
 
 enum auth_method auth_method;
-int do_encrypt;
-int do_forward;
-int do_forwardable;
+int do_encrypt       = -1;
+int do_forward       = -1;
+int do_forwardable   = -1;
 int do_unique_tkfile = 0;
 char *unique_tkfile  = NULL;
 char tkfile[MAXPATHLEN];
@@ -404,7 +404,7 @@ proto (int s, int errsock,
     struct sockaddr *thataddr = (struct sockaddr *)&thataddr_ss;
     struct sockaddr_storage erraddr_ss;
     struct sockaddr *erraddr = (struct sockaddr *)&erraddr_ss;
-    int addrlen;
+    socklen_t addrlen;
     int ret;
 
     addrlen = sizeof(thisaddr_ss);
@@ -841,20 +841,23 @@ main(int argc, char **argv)
     if (status)
         errx(1, "krb5_init_context failed: %u", status);
       
-    do_forwardable = krb5_config_get_bool (context, NULL,
-					   "libdefaults",
-					   "forwardable",
-					   NULL);
+    if (do_forwardable == -1)
+	do_forwardable = krb5_config_get_bool (context, NULL,
+					       "libdefaults",
+					       "forwardable",
+					       NULL);
 	
-    do_forward = krb5_config_get_bool (context, NULL,
-				       "libdefaults",
-				       "forward",
-				       NULL);
+    if (do_forward == -1)
+	do_forward = krb5_config_get_bool (context, NULL,
+					   "libdefaults",
+					   "forward",
+					   NULL);
 
-    do_encrypt = krb5_config_get_bool (context, NULL,
-				       "libdefaults",
-				       "encrypt",
-				       NULL);
+    if (do_encrypt == -1)
+	do_encrypt = krb5_config_get_bool (context, NULL,
+					   "libdefaults",
+					   "encrypt",
+					   NULL);
 
     if (getarg (args, sizeof(args) / sizeof(args[0]), argc, argv,
 		&optind))
