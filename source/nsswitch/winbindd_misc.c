@@ -113,7 +113,11 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 	   have changed since we last looked.  There may be a sequence
 	   number or something we should use but I haven't found it yet. */
 
-	init_domain_list();
+	if (!init_domain_list()) {
+		DEBUG(1, ("winbindd_list_trusted_domains: could not "
+			  "refresh trusted domain list\n"));
+		return WINBINDD_ERROR;
+	}
 
 	for(domain = domain_list(); domain; domain = domain->next) {
 
