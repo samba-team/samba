@@ -46,14 +46,14 @@ extern int DEBUGLEVEL;
 static int process_tok(fstring tok);
 static void cmd_help(struct client_info *info, int argc, char *argv[]);
 static void cmd_quit(struct client_info *info, int argc, char *argv[]);
-static void cmd_set (struct client_info *info, int argc, char *argv[]);
-static void cmd_use (struct client_info *info, int argc, char *argv[]);
+static void cmd_set(struct client_info *info, int argc, char *argv[]);
+static void cmd_use(struct client_info *info, int argc, char *argv[]);
 
 static struct user_creds usr;
 
 static struct client_info cli_info;
 
-static char  **cmd_argv = NULL;
+static char **cmd_argv = NULL;
 static uint32 cmd_argc = 0;
 
 FILE *out_hnd;
@@ -72,8 +72,9 @@ static struct command_set *cmd_set_dup(const struct command_set *from)
 {
 	if (from != NULL)
 	{
-		struct command_set *copy = (struct command_set *)
-		                        malloc(sizeof(struct command_set));
+		struct command_set *copy =
+			(struct command_set
+			 *)malloc(sizeof(struct command_set));
 		if (copy != NULL)
 		{
 			memcpy(copy, from, sizeof(struct command_set));
@@ -89,18 +90,20 @@ static struct command_set *cmd_set_dup(const struct command_set *from)
 
 void free_cmd_set_array(uint32 num_entries, struct command_set **entries)
 {
-	void(*fn)(void*) = (void(*)(void*))&cmd_set_free;
-	free_void_array(num_entries, (void**)entries, *fn);
+	void (*fn) (void *) = (void (*)(void *))&cmd_set_free;
+	free_void_array(num_entries, (void **)entries, *fn);
 }
 
-struct command_set* add_cmd_set_to_array(uint32 *len,
-				struct command_set ***array,
-				const struct command_set *cmd)
+struct command_set *add_cmd_set_to_array(uint32 * len,
+					 struct command_set ***array,
+					 const struct command_set *cmd)
 {
-	void*(*fn)(const void*) = (void*(*)(const void*))&cmd_set_dup;
-	return (struct command_set*)add_copy_to_array(len,
-	                     (void***)array, (const void*)cmd, *fn, False);
-				
+	void *(*fn) (const void *) = (void *(*)(const void *))&cmd_set_dup;
+	return (struct command_set *)add_copy_to_array(len,
+						       (void ***)array,
+						       (const void *)cmd, *fn,
+						       False);
+
 }
 
 static struct command_set **commands = NULL;
@@ -121,92 +124,91 @@ void add_command_set(struct command_set *cmds)
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-static struct command_set general_commands[] = 
-{
+static struct command_set general_commands[] = {
 	/*
 	 * maintenance
 	 */
 
 	{
-		"set",
-		cmd_set,
-		"run rpcclient inside rpcclient (change options etc.)",
-		{NULL, NULL}
-	},
+	 "set",
+	 cmd_set,
+	 "run rpcclient inside rpcclient (change options etc.)",
+	 {NULL, NULL}
+	 },
 
 	{
-		"use",
-		cmd_use,
-		"net use and net view",
-		{NULL, NULL}
-	},
+	 "use",
+	 cmd_use,
+	 "net use and net view",
+	 {NULL, NULL}
+	 },
 	/*
 	 * bye bye
 	 */
 
 	{
-		"quit",
-		cmd_quit,
-		"logoff the server",
-		{NULL, NULL}
-	},
+	 "quit",
+	 cmd_quit,
+	 "logoff the server",
+	 {NULL, NULL}
+	 },
 	{
-		"q",
-		cmd_quit,
-		"logoff the server",
-		{NULL, NULL}
-	},
+	 "q",
+	 cmd_quit,
+	 "logoff the server",
+	 {NULL, NULL}
+	 },
 	{
-		"exit",
-		cmd_quit,
-		"logoff the server",
-		{NULL, NULL}
-	},
+	 "exit",
+	 cmd_quit,
+	 "logoff the server",
+	 {NULL, NULL}
+	 },
 	{
-		"bye",
-		cmd_quit,
-		"logoff the server",
-		{NULL, NULL}
-	},
+	 "bye",
+	 cmd_quit,
+	 "logoff the server",
+	 {NULL, NULL}
+	 },
 
 	/*
 	 * eek!
 	 */
 
 	{
-		"help",
-		cmd_help,
-		"[command] give help on a command",
-		{NULL, NULL}
-	},
+	 "help",
+	 cmd_help,
+	 "[command] give help on a command",
+	 {NULL, NULL}
+	 },
 	{
-		"?",
-		cmd_help,
-		"[command] give help on a command",
-		{NULL, NULL}
-	},
+	 "?",
+	 cmd_help,
+	 "[command] give help on a command",
+	 {NULL, NULL}
+	 },
 
 	/*
 	 * shell
 	 */
 
 	{
-		"!",
-		NULL,
-		"run a shell command on the local system",
-		{NULL, NULL}
-	},
+	 "!",
+	 NULL,
+	 "run a shell command on the local system",
+	 {NULL, NULL}
+	 },
 
 	/*
 	 * oop!
 	 */
 
 	{
-		"",
-		NULL,
-		NULL,
-		{NULL, NULL}
-	}
+	 "",
+	 NULL,
+	 NULL,
+	 {NULL, NULL}
+	 }
 };
 
 
@@ -217,7 +219,7 @@ static void cmd_quit(struct client_info *info, int argc, char *argv[])
 {
 #ifdef MEM_MAN
 	{
-		extern FILE* dbf;
+		extern FILE *dbf;
 		smb_mem_write_status(dbf);
 		smb_mem_write_errors(dbf);
 		smb_mem_write_verbose(dbf);
@@ -233,22 +235,21 @@ help
 ****************************************************************************/
 static void cmd_help(struct client_info *info, int argc, char *argv[])
 {
-	int i=0,j;
+	int i = 0, j;
 
 	if (argc > 1)
 	{
 		if ((i = process_tok(argv[1])) >= 0)
 		{
 			fprintf(out_hnd, "HELP %s:\n\t%s\n\n",
-			                 commands[i]->name,
-			                 commands[i]->description);
+				commands[i]->name, commands[i]->description);
 		}
 	}
 	else
 	{
 		for (i = 0; i < num_commands; i++)
 		{
-			fprintf(out_hnd, "%-15s",commands[i]->name);
+			fprintf(out_hnd, "%-15s", commands[i]->name);
 			j++;
 			if (j == 5)
 			{
@@ -269,31 +270,31 @@ static void cmd_help(struct client_info *info, int argc, char *argv[])
   ******************************************************************/
 static int process_tok(char *tok)
 {
-  int i = 0, matches = 0;
-  int cmd=0;
-  int tok_len = strlen(tok);
+	int i = 0, matches = 0;
+	int cmd = 0;
+	int tok_len = strlen(tok);
 
-  for (i = 0; i < num_commands; i++)
-    {
-      if (strequal(commands[i]->name,tok))
+	for (i = 0; i < num_commands; i++)
 	{
-	  matches = 1;
-	  cmd = i;
-	  break;
+		if (strequal(commands[i]->name, tok))
+		{
+			matches = 1;
+			cmd = i;
+			break;
+		}
+		else if (strnequal(commands[i]->name, tok, tok_len))
+		{
+			matches++;
+			cmd = i;
+		}
 	}
-      else if (strnequal(commands[i]->name, tok, tok_len))
-	{
-	  matches++;
-	  cmd = i;
-	}
-    }
-  
-  if (matches == 0)
-    return(-1);
-  else if (matches == 1)
-    return(cmd);
-  else
-    return(-2);
+
+	if (matches == 0)
+		return (-1);
+	else if (matches == 1)
+		return (cmd);
+	else
+		return (-2);
 }
 
 /****************************************************************************
@@ -307,7 +308,7 @@ static BOOL get_cmd_args(char *line)
 	cmd_argv = NULL;
 
 	/* get the first part of the command */
-	if (!next_token(&ptr,tok,NULL, sizeof(tok)))
+	if (!next_token(&ptr, tok, NULL, sizeof(tok)))
 	{
 		return False;
 	}
@@ -316,7 +317,8 @@ static BOOL get_cmd_args(char *line)
 	{
 		add_chars_to_array(&cmd_argc, &cmd_argv, tok);
 
-	} while (next_token(NULL, tok, NULL, sizeof(tok)));
+	}
+	while (next_token(NULL, tok, NULL, sizeof(tok)));
 
 	return True;
 }
@@ -331,7 +333,8 @@ static BOOL do_command(struct client_info *info, char *line)
 {
 	int i;
 
-	if (!get_cmd_args(line)) return False;
+	if (!get_cmd_args(line))
+		return False;
 
 	if (cmd_argc == 0)
 	{
@@ -351,12 +354,12 @@ static BOOL do_command(struct client_info *info, char *line)
 	else if (i == -2)
 	{
 		fprintf(out_hnd, "%s: command abbreviation ambiguous\n",
-		                 CNV_LANG(cmd_argv[0]));
+			CNV_LANG(cmd_argv[0]));
 	}
 	else
 	{
 		fprintf(out_hnd, "%s: command not found\n",
-		                 CNV_LANG(cmd_argv[0]));
+			CNV_LANG(cmd_argv[0]));
 	}
 
 	free_char_array(cmd_argc, cmd_argv);
@@ -368,7 +371,7 @@ static BOOL do_command(struct client_info *info, char *line)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static BOOL process( struct client_info *info, char *cmd_str)
+static BOOL process(struct client_info *info, char *cmd_str)
 {
 	pstring line;
 	char *cmd = cmd_str;
@@ -387,87 +390,94 @@ static BOOL process( struct client_info *info, char *cmd_str)
 			}
 			else
 			{
-				if (p - cmd > 999) p = cmd + 999;
+				if (p - cmd > 999)
+					p = cmd + 999;
 				strncpy(line, cmd, p - cmd);
 				line[p - cmd] = '\0';
 				cmd = p + 1;
 			}
 
 			/* input language code to internal one */
-			CNV_INPUT (line);
+			CNV_INPUT(line);
 
-			if (!do_command(info, line)) continue;
+			if (!do_command(info, line))
+				continue;
 		}
 	}
-	else while (!feof(stdin))
-	{
-	        pstring pline;
-		BOOL at_sym = False;
-		pline[0] = 0;
-		safe_strcat(pline, "[", sizeof(pline)-1);
-		if (usr.ntc.domain[0] != 0)
+	else
+		while (!feof(stdin))
 		{
-			safe_strcat(pline, usr.ntc.domain, sizeof(pline)-1);
-			safe_strcat(pline, "\\", sizeof(pline)-1);
-			at_sym = True;
-		}
-		if (usr.ntc.user_name[0] != 0)
-		{
-			safe_strcat(pline, usr.ntc.user_name, sizeof(pline)-1);
-			at_sym = True;
-		}
-		if (at_sym)
-		{
-			safe_strcat(pline, "@", sizeof(pline)-1);
-		}
-	
-		safe_strcat(pline, cli_info.dest_host, sizeof(pline)-1);
-		safe_strcat(pline, "]$ ", sizeof(pline)-1);
+			pstring pline;
+			BOOL at_sym = False;
+			pline[0] = 0;
+			safe_strcat(pline, "[", sizeof(pline) - 1);
+			if (usr.ntc.domain[0] != 0)
+			{
+				safe_strcat(pline, usr.ntc.domain,
+					    sizeof(pline) - 1);
+				safe_strcat(pline, "\\", sizeof(pline) - 1);
+				at_sym = True;
+			}
+			if (usr.ntc.user_name[0] != 0)
+			{
+				safe_strcat(pline, usr.ntc.user_name,
+					    sizeof(pline) - 1);
+				at_sym = True;
+			}
+			if (at_sym)
+			{
+				safe_strcat(pline, "@", sizeof(pline) - 1);
+			}
+
+			safe_strcat(pline, cli_info.dest_host,
+				    sizeof(pline) - 1);
+			safe_strcat(pline, "]$ ", sizeof(pline) - 1);
 
 #ifndef HAVE_LIBREADLINE
 
-		/* display a prompt */
-		fprintf(out_hnd, "%s", CNV_LANG(pline));
-		fflush(out_hnd);
+			/* display a prompt */
+			fprintf(out_hnd, "%s", CNV_LANG(pline));
+			fflush(out_hnd);
 
-		cli_use_wait_keyboard();
+			cli_use_wait_keyboard();
 
-		/* and get a response */
-		if (!fgets(line,1000,stdin))
-		{
-			break;
-		}
+			/* and get a response */
+			if (!fgets(line, 1000, stdin))
+			{
+				break;
+			}
 
 #else /* HAVE_LIBREADLINE */
 
-		if (!readline(pline))
-		    break;
+			if (!readline(pline))
+				break;
 
-		/* Copy read line to samba buffer */
+			/* Copy read line to samba buffer */
 
-		pstrcpy(line, rl_line_buffer);
+			pstrcpy(line, rl_line_buffer);
 
-		/* Add to history */
+			/* Add to history */
 
-		if (strlen(line) > 0) 
-		    add_history(line);
+			if (strlen(line) > 0)
+				add_history(line);
 #endif
-		/* input language code to internal one */
-		CNV_INPUT (line);
+			/* input language code to internal one */
+			CNV_INPUT(line);
 
-		/* special case - first char is ! */
-		if (*line == '!')
-		{
-			system(line + 1);
-			continue;
+			/* special case - first char is ! */
+			if (*line == '!')
+			{
+				system(line + 1);
+				continue;
+			}
+
+			fprintf(out_hnd, "%s\n", line);
+
+			if (!do_command(info, line))
+				continue;
 		}
 
-		fprintf(out_hnd, "%s\n", line);
-
-		if (!do_command(info, line)) continue;
-	}
-
-	return(True);
+	return (True);
 }
 
 /****************************************************************************
@@ -475,24 +485,36 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  fprintf(out_hnd, "Usage: %s [\\server] [password] [-U user] -[W domain] [-l log] ",
-	   pname);
+	fprintf(out_hnd,
+		"Usage: %s [\\server] [password] [-U user] -[W domain] [-l log] ",
+		pname);
 
-  fprintf(out_hnd, "\nVersion %s\n",VERSION);
-  fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
-  fprintf(out_hnd, "\t-S <\\>server         Server to connect to (\\. or . for localhost)\n");
-  fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
-  fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");
-  fprintf(out_hnd, "\t-N                    don't ask for a password\n");
-  fprintf(out_hnd, "\t-m max protocol       set the max protocol level\n");
-  fprintf(out_hnd, "\t-I dest IP            use this IP to connect to\n");
-  fprintf(out_hnd, "\t-E                    write messages to stderr instead of stdout\n");
-  fprintf(out_hnd, "\t-U username           set the network username\n");
-  fprintf(out_hnd, "\t-U username%%pass      set the network username and password\n");
-  fprintf(out_hnd, "\t-W domain             set the domain name\n");
-  fprintf(out_hnd, "\t-c 'command string'   execute semicolon separated commands\n");
-  fprintf(out_hnd, "\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
-  fprintf(out_hnd, "\n");
+	fprintf(out_hnd, "\nVersion %s\n", VERSION);
+	fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
+	fprintf(out_hnd,
+		"\t-S <\\>server         Server to connect to (\\. or . for localhost)\n");
+	fprintf(out_hnd,
+		"\t-l log basename.      Basename for log/debug files\n");
+	fprintf(out_hnd,
+		"\t-n netbios name.      Use this name as my netbios name\n");
+	fprintf(out_hnd,
+		"\t-N                    don't ask for a password\n");
+	fprintf(out_hnd,
+		"\t-m max protocol       set the max protocol level\n");
+	fprintf(out_hnd,
+		"\t-I dest IP            use this IP to connect to\n");
+	fprintf(out_hnd,
+		"\t-E                    write messages to stderr instead of stdout\n");
+	fprintf(out_hnd,
+		"\t-U username           set the network username\n");
+	fprintf(out_hnd,
+		"\t-U username%%pass      set the network username and password\n");
+	fprintf(out_hnd, "\t-W domain             set the domain name\n");
+	fprintf(out_hnd,
+		"\t-c 'command string'   execute semicolon separated commands\n");
+	fprintf(out_hnd,
+		"\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
+	fprintf(out_hnd, "\n");
 }
 
 #ifdef HAVE_LIBREADLINE
@@ -525,17 +547,15 @@ static void reg_init(int val, const char *full_keyname, int num)
 }
 
 static void reg_key_list(const char *full_name,
-				const char *name, time_t key_mod_time)
+			 const char *name, time_t key_mod_time)
 {
 	fstring key_name;
-	slprintf(key_name, sizeof(key_name)-1, "%s\\", name);
+	slprintf(key_name, sizeof(key_name) - 1, "%s\\", name);
 	add_chars_to_array(&reg_list_len, &reg_name, key_name);
 }
 
 static void reg_val_list(const char *full_name,
-				const char* name,
-				uint32 type,
-				const BUFFER2 *value)
+			 const char *name, uint32 type, const BUFFER2 * value)
 {
 	add_chars_to_array(&reg_list_len, &reg_name, name);
 }
@@ -544,7 +564,7 @@ char *complete_regenum(char *text, int state)
 {
 	pstring full_keyname;
 	static uint32 i = 0;
-    
+
 	if (state == 0)
 	{
 		fstring srv_name;
@@ -556,7 +576,7 @@ char *complete_regenum(char *text, int state)
 		{
 			char *sep;
 			split_server_keyname(srv_name, full_keyname,
-			                     cmd_argv[1]);
+					     cmd_argv[1]);
 
 			sep = strrchr(full_keyname, '\\');
 			if (sep != NULL)
@@ -567,13 +587,13 @@ char *complete_regenum(char *text, int state)
 
 		/* Iterate all keys / values */
 		if (!msrpc_reg_enum_key(srv_name, full_keyname,
-		                   reg_init, reg_key_list, reg_val_list))
+					reg_init, reg_key_list, reg_val_list))
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < reg_list_len; i++)
 	{
@@ -585,7 +605,7 @@ char *complete_regenum(char *text, int state)
 			return name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -595,7 +615,7 @@ char *complete_samenum_usr(char *text, int state)
 	static uint32 i = 0;
 	static uint32 num_usrs = 0;
 	static struct acct_info *sam = NULL;
-    
+
 	if (state == 0)
 	{
 		fstring srv_name;
@@ -620,15 +640,15 @@ char *complete_samenum_usr(char *text, int state)
 		num_usrs = 0;
 
 		/* Iterate all users */
-		if (msrpc_sam_enum_users(srv_name, domain, &sid1, 
-		                   &sam, &num_usrs,
-		                   NULL, NULL, NULL, NULL) == 0)
+		if (msrpc_sam_enum_users(srv_name, domain, &sid1,
+					 &sam, &num_usrs,
+					 NULL, NULL, NULL, NULL) == 0)
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < num_usrs; i++)
 	{
@@ -641,7 +661,7 @@ char *complete_samenum_usr(char *text, int state)
 			return name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -650,7 +670,7 @@ char *complete_samenum_als(char *text, int state)
 	static uint32 i = 0;
 	static uint32 num_als = 0;
 	static struct acct_info *sam = NULL;
-    
+
 	if (state == 0)
 	{
 		fstring srv_name;
@@ -675,15 +695,15 @@ char *complete_samenum_als(char *text, int state)
 		num_als = 0;
 
 		/* Iterate all aliases */
-		if (msrpc_sam_enum_aliases(srv_name, domain, &sid1, 
-		                   &sam, &num_als,
-		                   NULL, NULL, NULL) == 0)
+		if (msrpc_sam_enum_aliases(srv_name, domain, &sid1,
+					   &sam, &num_als,
+					   NULL, NULL, NULL) == 0)
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < num_als; i++)
 	{
@@ -696,7 +716,7 @@ char *complete_samenum_als(char *text, int state)
 			return name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -705,7 +725,7 @@ char *complete_samenum_grp(char *text, int state)
 	static uint32 i = 0;
 	static uint32 num_grps = 0;
 	static struct acct_info *sam = NULL;
-    
+
 	if (state == 0)
 	{
 		fstring srv_name;
@@ -731,15 +751,15 @@ char *complete_samenum_grp(char *text, int state)
 
 		/* Iterate all groups */
 		if (msrpc_sam_enum_groups(srv_name,
-		                   domain, &sid1, 
-		                   &sam, &num_grps,
-		                   NULL, NULL, NULL) == 0)
+					  domain, &sid1,
+					  &sam, &num_grps,
+					  NULL, NULL, NULL) == 0)
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < num_grps; i++)
 	{
@@ -752,7 +772,7 @@ char *complete_samenum_grp(char *text, int state)
 			return name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -767,7 +787,7 @@ char *complete_svcenum(char *text, int state)
 	fstrcat(srv_name, cli_info.dest_host);
 	strupper(srv_name);
 
-    
+
 	if (state == 0)
 	{
 		free(svc);
@@ -776,19 +796,19 @@ char *complete_svcenum(char *text, int state)
 
 		/* Iterate all users */
 		if (msrpc_svc_enum(srv_name, &svc, &num_svcs,
-		                   NULL, NULL) == 0)
+				   NULL, NULL) == 0)
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < num_svcs; i++)
 	{
 		fstring svc_name;
 		unistr_to_ascii(svc_name, svc[i].uni_srvc_name.buffer,
-			sizeof(svc_name)-1);
+				sizeof(svc_name) - 1);
 
 		if (text == NULL || text[0] == 0 ||
 		    strnequal(text, svc_name, strlen(text)))
@@ -798,7 +818,7 @@ char *complete_svcenum(char *text, int state)
 			return name;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -807,7 +827,7 @@ char *complete_printersenum(char *text, int state)
 	static uint32 i = 0;
 	static uint32 num = 0;
 	static PRINTER_INFO_1 **ctr = NULL;
-    
+
 	if (state == 0)
 	{
 		fstring srv_name;
@@ -821,20 +841,19 @@ char *complete_printersenum(char *text, int state)
 
 		/* Iterate all users */
 		if (!msrpc_spoolss_enum_printers(srv_name,
-		                   1, &num, (void***)&ctr,
-		                   NULL))
+						 1, &num, (void ***)&ctr,
+						 NULL))
 		{
 			return NULL;
 		}
 
 		i = 0;
-    	}
+	}
 
 	for (; i < num; i++)
 	{
 		fstring name;
-		unistr_to_ascii(name, ctr[i]->name.buffer,
-			sizeof(name)-1);
+		unistr_to_ascii(name, ctr[i]->name.buffer, sizeof(name) - 1);
 
 		if (text == NULL || text[0] == 0 ||
 		    strnequal(text, name, strlen(text)))
@@ -844,7 +863,7 @@ char *complete_printersenum(char *text, int state)
 			return copy;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -852,24 +871,27 @@ char *complete_printersenum(char *text, int state)
 
 static char *complete_cmd(char *text, int state)
 {
-    static int cmd_index;
-    char *name;
+	static int cmd_index;
+	char *name;
 
-    /* Initialise */
+	/* Initialise */
 
-    if (state == 0) {
-	cmd_index = 0;
-    }
-
-    /* Return the next name which partially matches the list of commands */
-    
-    while (strlen(name = commands[cmd_index++]->name) > 0) {
-	if (strncmp(name, text, strlen(text)) == 0) {
-	    return strdup(name);
+	if (state == 0)
+	{
+		cmd_index = 0;
 	}
-    }
-    
-    return NULL;
+
+	/* Return the next name which partially matches the list of commands */
+
+	while (strlen(name = commands[cmd_index++]->name) > 0)
+	{
+		if (strncmp(name, text, strlen(text)) == 0)
+		{
+			return strdup(name);
+		}
+	}
+
+	return NULL;
 }
 
 /* Main completion function */
@@ -880,62 +902,66 @@ static char **completion_fn(char *text, int start, int end)
 	int cmd_index;
 	int num_words;
 
-    int i;
-    char lastch = ' ';
+	int i;
+	char lastch = ' ';
 
 	(void)get_cmd_args(rl_line_buffer);
 
 	safe_strcpy(cmd_partial, rl_line_buffer,
-	            MAX(sizeof(cmd_partial),end)-1);
+		    MAX(sizeof(cmd_partial), end) - 1);
 
-    /* Complete rpcclient command */
+	/* Complete rpcclient command */
 
-    if (start == 0)
+	if (start == 0)
 	{
-	return completion_matches(text, complete_cmd);
-    }
-
-    /* Count # of words in command */
-    
-    num_words = 0;
-    for (i = 0; i <= end; i++) {
-	if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
-	{
-		num_words++;
+		return completion_matches(text, complete_cmd);
 	}
-	lastch = rl_line_buffer[i];
-    }
-    
-    if (rl_line_buffer[end] == ' ')
-	num_words++;
 
-    /* Work out which command we are completing for */
+	/* Count # of words in command */
 
-    for (cmd_index = 0; cmd_index < num_commands; cmd_index++)
-    {
-	
-	/* Check each command in array */
-	
-	if (strncmp(rl_line_buffer, commands[cmd_index]->name,
-		    strlen(commands[cmd_index]->name)) == 0) {
-	    
-	    /* Call appropriate completion function */
-
-      if (num_words == 2 || num_words == 3)
-      {
-		char* (*fn)(char*, int);
-		fn = commands[cmd_index]->compl_args[num_words - 2];
-		if (fn != NULL)
+	num_words = 0;
+	for (i = 0; i <= end; i++)
+	{
+		if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
 		{
-          		return completion_matches(text, fn);
-          	}
-        }
-      }
-    }
+			num_words++;
+		}
+		lastch = rl_line_buffer[i];
+	}
 
-    /* Eeek! */
+	if (rl_line_buffer[end] == ' ')
+		num_words++;
 
-    return NULL;
+	/* Work out which command we are completing for */
+
+	for (cmd_index = 0; cmd_index < num_commands; cmd_index++)
+	{
+
+		/* Check each command in array */
+
+		if (strncmp(rl_line_buffer, commands[cmd_index]->name,
+			    strlen(commands[cmd_index]->name)) == 0)
+		{
+
+			/* Call appropriate completion function */
+
+			if (num_words == 2 || num_words == 3)
+			{
+				char *(*fn) (char *, int);
+				fn =
+					commands[cmd_index]->compl_args
+					[num_words - 2];
+				if (fn != NULL)
+				{
+					return completion_matches(text, fn);
+				}
+			}
+		}
+	}
+
+	/* Eeek! */
+
+	return NULL;
 }
 
 /* To avoid filename completion being activated when no valid
@@ -977,26 +1003,26 @@ char *complete_regenum(char *text, int state)
 #endif /* HAVE_LIBREADLINE */
 
 static void set_user_password(struct ntuser_creds *u,
-				BOOL got_pass, char *password)
+			      BOOL got_pass, char *password)
 {
 	/* set the password cache info */
 	if (got_pass)
 	{
 		if (password == NULL)
 		{
-			DEBUG(10,("set_user_password: NULL pwd\n"));
+			DEBUG(10, ("set_user_password: NULL pwd\n"));
 			pwd_set_nullpwd(&(u->pwd));
 		}
 		else
 		{
 			/* generate 16 byte hashes */
-			DEBUG(10,("set_user_password: generate\n"));
+			DEBUG(10, ("set_user_password: generate\n"));
 			pwd_make_lm_nt_16(&(u->pwd), password);
 		}
 	}
-	else 
+	else
 	{
-		DEBUG(10,("set_user_password: read\n"));
+		DEBUG(10, ("set_user_password: read\n"));
 		pwd_read(&(u->pwd), "Enter Password:", True);
 	}
 }
@@ -1018,12 +1044,13 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	copy_nt_creds(&u, &usr_creds->ntc);
 
 	pstrcpy(dest_host, cli_info.dest_host);
-	pstrcpy(u.user_name,optarg);
+	pstrcpy(u.user_name, optarg);
 	info->reuse = False;
 
 	if (argc <= 1)
 	{
-		report(out_hnd, "net [\\\\Server] [-U user%%pass] [-W domain] [-d] [-f]\n");
+		report(out_hnd,
+		       "net [\\\\Server] [-U user%%pass] [-W domain] [-d] [-f]\n");
 		report(out_hnd, "    -d     Deletes a connection\n");
 		report(out_hnd, "    -f     Forcibly deletes a connection\n");
 		report(out_hnd, "net -u     Shows all connections\n");
@@ -1034,7 +1061,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		if (strnequal("\\\\", argv[1], 2) ||
 		    strnequal("//", argv[1], 2))
 		{
-			pstrcpy(dest_host,argv[1]+2);
+			pstrcpy(dest_host, argv[1] + 2);
 		}
 		argc--;
 		argv++;
@@ -1053,12 +1080,12 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 			case 'U':
 			{
 				char *lp;
-				pstrcpy(u.user_name,optarg);
-				if ((lp=strchr(u.user_name,'%')))
+				pstrcpy(u.user_name, optarg);
+				if ((lp = strchr(u.user_name, '%')))
 				{
 					*lp = 0;
-					pstrcpy(password,lp+1);
-					memset(strchr(optarg,'%')+1,'X',
+					pstrcpy(password, lp + 1);
+					memset(strchr(optarg, '%') + 1, 'X',
 					       strlen(password));
 					got_pwd = True;
 				}
@@ -1075,7 +1102,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 			}
 			case 'W':
 			{
-				pstrcpy(u.domain,optarg);
+				pstrcpy(u.domain, optarg);
 				break;
 			}
 
@@ -1093,7 +1120,8 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 
 			default:
 			{
-				report(out_hnd, "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n");
+				report(out_hnd,
+				       "net -S \\server [-U user%%pass] [-W domain] [-d] [-f]\n");
 				report(out_hnd, "net -u\n");
 				break;
 			}
@@ -1131,14 +1159,14 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 				if (use[i] != NULL && use[i]->connected)
 				{
 					report(out_hnd, "Server:\t%s\t",
-					                 use[i]->srv_name);
+					       use[i]->srv_name);
 					report(out_hnd, "Key:\t[%d,%x]\t",
-					                 use[i]->key.pid,
-					                 use[i]->key.vuid);
+					       use[i]->key.pid,
+					       use[i]->key.vuid);
 					report(out_hnd, "User:\t%s\t",
-					                 use[i]->user_name);
+					       use[i]->user_name);
 					report(out_hnd, "Domain:\t%s\n",
-					                 use[i]->domain);
+					       use[i]->domain);
 				}
 			}
 		}
@@ -1155,10 +1183,10 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		}
 
 		/* paranoia: destroy the local copy of the password */
-		bzero(password, sizeof(password)); 
+		bzero(password, sizeof(password));
 
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		                 srv_name, u.user_name, u.domain);
+		       srv_name, u.user_name, u.domain);
 		report(out_hnd, "Connection:\t");
 
 		if (cli_net_use_add(srv_name, &u, True, info->reuse) != NULL)
@@ -1174,7 +1202,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	{
 		BOOL closed;
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
-		                 srv_name, u.user_name, u.domain);
+		       srv_name, u.user_name, u.domain);
 		report(out_hnd, "Connection:\t");
 
 		if (!cli_net_use_del(srv_name, &u, force_close, &closed))
@@ -1196,7 +1224,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
+	bzero(password, sizeof(password));
 }
 
 #define CMD_STR 0x1
@@ -1227,7 +1255,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	extern char *optarg;
 	static pstring servicesf = CONFIGFILE;
 	pstring term_code;
-	pstring password; /* local copy only, if one is entered */
+	pstring password;	/* local copy only, if one is entered */
 	extern struct user_creds *usr_creds;
 
 	password[0] = 0;
@@ -1245,7 +1273,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		    strnequal("//", argv[1], 2))
 		{
 			cmd_set_options |= CMD_HOST;
-			pstrcpy(cli_info.dest_host,argv[1]+2);
+			pstrcpy(cli_info.dest_host, argv[1] + 2);
 			strupper(cli_info.dest_host);
 		}
 		argc--;
@@ -1254,13 +1282,15 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	if (argc > 1 && (*argv[1] != '-'))
 	{
 		cmd_set_options |= CMD_PASS;
-		pstrcpy(password,argv[1]);  
-		memset(argv[1],'X',strlen(argv[1]));
+		pstrcpy(password, argv[1]);
+		memset(argv[1], 'X', strlen(argv[1]));
 		argc--;
 		argv++;
 	}
 
-	while ((opt = getopt(argc, argv, "Rs:B:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv,
+			     "Rs:B:O:M:S:i:Nn:d:l:hI:EB:U:L:t:m:W:T:D:c:")) !=
+	       EOF)
 	{
 		switch (opt)
 		{
@@ -1275,22 +1305,25 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 				/* FIXME ... max_protocol seems to be funny here */
 
 				int max_protocol = 0;
-				max_protocol = interpret_protocol(optarg,max_protocol);
-				fprintf(stderr, "max protocol not currently supported\n");
+				max_protocol =
+					interpret_protocol(optarg,
+							   max_protocol);
+				fprintf(stderr,
+					"max protocol not currently supported\n");
 				break;
 			}
 
 			case 'O':
 			{
 				cmd_set_options |= CMD_SOCK;
-				pstrcpy(user_socket_options,optarg);
-				break;	
+				pstrcpy(user_socket_options, optarg);
+				break;
 			}
 
 			case 'S':
 			{
 				cmd_set_options |= CMD_HOST;
-				pstrcpy(cli_info.dest_host,optarg);
+				pstrcpy(cli_info.dest_host, optarg);
 				strupper(cli_info.dest_host);
 				break;
 			}
@@ -1298,7 +1331,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			case 'B':
 			{
 				cmd_set_options |= CMD_IFACE;
-				iface_set_default(NULL,optarg,NULL);
+				iface_set_default(NULL, optarg, NULL);
 				break;
 			}
 
@@ -1313,15 +1346,17 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			{
 				char *lp;
 				cmd_set_options |= CMD_USER;
-				pstrcpy(usr.ntc.user_name,optarg);
-				if ((lp=strchr(usr.ntc.user_name,'%')))
+				pstrcpy(usr.ntc.user_name, optarg);
+				if ((lp = strchr(usr.ntc.user_name, '%')))
 				{
 					*lp = 0;
-					pstrcpy(password,lp+1);
+					pstrcpy(password, lp + 1);
 					cmd_set_options |= CMD_PASS;
-					memset(strchr(optarg,'%')+1,'X',strlen(password));
+					memset(strchr(optarg, '%') + 1, 'X',
+					       strlen(password));
 				}
-				if (usr.ntc.user_name[0] == 0 && password[0] == 0)
+				if (usr.ntc.user_name[0] == 0
+				    && password[0] == 0)
 				{
 					cmd_set_options |= CMD_NOPW;
 				}
@@ -1331,7 +1366,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			case 'W':
 			{
 				cmd_set_options |= CMD_DOM;
-				pstrcpy(usr.ntc.domain,optarg);
+				pstrcpy(usr.ntc.domain, optarg);
 				break;
 			}
 
@@ -1380,8 +1415,8 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 			case 'l':
 			{
 				cmd_set_options |= CMD_INTER;
-				slprintf(debugf, sizeof(debugf)-1,
-				         "%s.client", optarg);
+				slprintf(debugf, sizeof(debugf) - 1,
+					 "%s.client", optarg);
 				interactive = False;
 				break;
 			}
@@ -1434,9 +1469,11 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_SVC))
 	{
-		if (!lp_load(servicesf,True, False, False))
+		if (!lp_load(servicesf, True, False, False))
 		{
-			fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+			fprintf(stderr,
+				"Can't load %s - run testparm to debug it\n",
+				servicesf);
 		}
 
 	}
@@ -1446,7 +1483,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 		load_interfaces();
 	}
 
-	DEBUG(10,("cmd_set: options: %x\n", cmd_set_options));
+	DEBUG(10, ("cmd_set: options: %x\n", cmd_set_options));
 
 	if (IS_BITS_SET_ALL(cmd_set_options, CMD_HELP))
 	{
@@ -1460,12 +1497,12 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	else
 	{
 		set_user_password(&usr.ntc,
-		                  IS_BITS_SET_ALL(cmd_set_options, CMD_PASS),
-		                  password);
+				  IS_BITS_SET_ALL(cmd_set_options, CMD_PASS),
+				  password);
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
+	bzero(password, sizeof(password));
 
 	if (cmd_str != NULL)
 	{
@@ -1482,16 +1519,17 @@ static void read_user_env(struct ntuser_creds *u)
 	if (getenv("USER"))
 	{
 		char *p;
-		pstrcpy(u->user_name,getenv("USER"));
+		pstrcpy(u->user_name, getenv("USER"));
 
 		/* modification to support userid%passwd syntax in the USER var
-		25.Aug.97, jdblair@uab.edu */
+		   25.Aug.97, jdblair@uab.edu */
 
-		if ((p=strchr(u->user_name,'%')))
+		if ((p = strchr(u->user_name, '%')))
 		{
 			*p = 0;
-			pstrcpy(password,p+1);
-			memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
+			pstrcpy(password, p + 1);
+			memset(strchr(getenv("USER"), '%') + 1, 'X',
+			       strlen(password));
 		}
 		strupper(u->user_name);
 	}
@@ -1500,19 +1538,19 @@ static void read_user_env(struct ntuser_creds *u)
 	   25.Aug.97, jdblair@uab.edu */
 	if (getenv("PASSWD"))
 	{
-		pstrcpy(password,getenv("PASSWD"));
+		pstrcpy(password, getenv("PASSWD"));
 	}
 
 	if (*u->user_name == 0 && getenv("LOGNAME"))
 	{
-		pstrcpy(u->user_name,getenv("LOGNAME"));
+		pstrcpy(u->user_name, getenv("LOGNAME"));
 		strupper(u->user_name);
 	}
 
 	set_user_password(u, True, password);
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
+	bzero(password, sizeof(password));
 }
 
 void readline_init(void)
@@ -1520,25 +1558,25 @@ void readline_init(void)
 #ifdef HAVE_LIBREADLINE
 
 	/* Initialise GNU Readline */
-	
+
 	rl_readline_name = "rpcclient";
 	rl_attempted_completion_function = completion_fn;
-	rl_completion_entry_function = (Function *)complete_cmd_null;
-	
+	rl_completion_entry_function = (Function *) complete_cmd_null;
+
 	/* Initialise history list */
-	
+
 	using_history();
 
 #else
 	int x;
-	x = 0; /* stop compiler warnings */
+	x = 0;			/* stop compiler warnings */
 #endif /* HAVE_LIBREADLINE */
 }
 
 /****************************************************************************
   main program
 ****************************************************************************/
-int command_main(int argc,char *argv[])
+int command_main(int argc, char *argv[])
 {
 	extern struct user_creds *usr_creds;
 	mode_t myumask = 0755;
@@ -1604,12 +1642,11 @@ int command_main(int argc,char *argv[])
 		exit(0);
 	}
 
-	DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
+	DEBUG(3, ("%s client started (version %s)\n", timestring(), VERSION));
 
 	process(&cli_info, NULL);
 
 	free_connections();
 
-	return(0);
+	return (0);
 }
-
