@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -318,7 +318,7 @@ init_auth
 			 &cred->session);
   
     flags = 0;
-    ap_options = 0;
+    ap_options = AP_OPTS_USE_SUBKEY;
     if (req_flags & GSS_C_DELEG_FLAG)
 	do_delegation ((*context_handle)->auth_context,
 		       ccache, cred, target_name, &fwd_data, &flags);
