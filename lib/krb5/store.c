@@ -2,113 +2,35 @@
 
 RCSID("$Id$");
 
-struct krb5_fd_storage{
-    int fd;
-};
-
-#define FD(S) (((struct krb5_fd_storage*)(S)->data)->fd)
-
-struct krb5_mem_storage{
-    void *base;
-    size_t len;
-    void *ptr;
-};
-
-#define MEM(S) ((struct krb5_mem_storage*)((S)->data))
-
-size_t
-fd_fetch(krb5_storage *sp, void *data, size_t size)
-{
-    return read(FD(sp), data, size);
-}
-
-size_t
-fd_store(krb5_storage *sp, void *data, size_t size)
-{
-    return write(FD(sp), data, size);
-}
-
-off_t
-fd_seek(krb5_storage *sp, off_t offset, int whence)
-{
-    return lseek(FD(sp), offset, whence);
-}
-
-size_t
-mem_fetch(krb5_storage *sp, void *data, size_t size)
-{
-    memmove(data, MEM(sp)->ptr, size);
-    sp->seek(sp, size, SEEK_CUR);
-    return size;
-}
-
-size_t
-mem_store(krb5_storage *sp, void *data, size_t size)
-{
-    memmove(MEM(sp)->ptr, data, size);
-    sp->seek(sp, size, SEEK_CUR);
-    return size;
-}
-
-off_t
-mem_seek(krb5_storage *sp, off_t offset, int whence)
-{
-    switch(whence){
-    case SEEK_SET:
-	if(offset > MEM(sp)->len)
-	    offset = MEM(sp)->len;
-	if(offset < 0)
-	    offset = 0;
-	MEM(sp)->ptr = (char*)(MEM(sp)->base) + offset;
-	break;
-    case SEEK_CUR:
-	sp->seek(sp,
-		 (char *)MEM(sp)->ptr - (char *)MEM(sp)->base + offset,
-		 SEEK_SET);
-	break;
-    case SEEK_END:
-	sp->seek(sp, MEM(sp)->len + offset, SEEK_SET);
-    default:
-	errno = EINVAL;
-	return -1;
-    }
-    return (char *)MEM(sp)->ptr - (char *)MEM(sp)->base;
-}
-
-krb5_storage *
-krb5_storage_from_fd(int fd)
-{
-    krb5_storage *sp = malloc(sizeof(krb5_storage));
-    sp->data = malloc(sizeof(struct krb5_fd_storage));
-    FD(sp) = fd;
-    sp->fetch = fd_fetch;
-    sp->store = fd_store;
-    sp->seek = fd_seek;
-    return sp;
-}
-
-krb5_storage *
-krb5_storage_from_mem(void *buf, size_t len)
-{
-    krb5_storage *sp = malloc(sizeof(krb5_storage));
-    sp->data = malloc(sizeof(struct krb5_mem_storage));
-    MEM(sp)->base = buf;
-    MEM(sp)->len = len;
-    MEM(sp)->ptr = buf;
-    sp->fetch = mem_fetch;
-    sp->store = mem_store;
-    sp->seek = mem_seek;
-    return sp;
-}
-
 krb5_error_code
 krb5_storage_free(krb5_storage *sp)
 {
+    if(sp->free)
+	(*sp->free)(sp);
     free(sp->data);
     free(sp);
     return 0;
 }
 
+krb5_error_code
+krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
+{
+    off_t pos;
+    size_t size;
+    pos = sp->seek(sp, 0, SEEK_CUR);
+    size = (size_t)sp->seek(sp, 0, SEEK_END);
+    data->length = size;
+    data->data = malloc(data->length);
+    if(data->data == NULL){
+	data->length = 0;
+	sp->seek(sp, pos, SEEK_SET);
+	return ENOMEM;
+    }
+    sp->seek(sp, 0, SEEK_SET);
+    sp->fetch(sp, data->data, data->length);
+    sp->seek(sp, pos, SEEK_SET);
+    return 0;
+}
 
 krb5_error_code
 krb5_store_int32(krb5_storage *sp,
