@@ -65,7 +65,7 @@ mod_entry(int argc, char **argv)
 	return 0;
     }
     
-    edit_entry(&princ, &mask);
+    edit_entry(&princ, &mask, NULL, 0);
 
     ret = kadm5_modify_principal(kadm_handle, &princ, mask);
     if(ret)
