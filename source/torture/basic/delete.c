@@ -41,7 +41,7 @@ BOOL torture_test_delete(int dummy)
 	if (!torture_open_connection(&cli1)) {
 		return False;
 	}
-	
+
 	/* Test 1 - this should delete the file on close. */
 	
 	smbcli_setatr(cli1->tree, fname, 0, 0);
@@ -52,20 +52,23 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 == -1) {
-		printf("[1] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[1] close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	if (fnum1 != -1) {
-		printf("[1] open of %s succeeded (should fail)\n", fname);
+		printf("(%s) open of %s succeeded (should fail)\n", 
+		       __location__, fname);
 		correct = False;
 		goto fail;
 	}
@@ -82,28 +85,33 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
-		printf("[2] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[2] setting delete_on_close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) setting delete_on_close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[2] close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
-		printf("[2] open of %s succeeded should have been deleted on close !\n", fname);
+		printf("(%s) open of %s succeeded should have been deleted on close !\n", 
+		       __location__, fname);
 		if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-			printf("[2] close failed (%s)\n", smbcli_errstr(cli1->tree));
+			printf("(%s) close failed (%s)\n", 
+			       __location__, smbcli_errstr(cli1->tree));
 			correct = False;
 			goto fail;
 		}
@@ -115,11 +123,15 @@ BOOL torture_test_delete(int dummy)
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      GENERIC_RIGHTS_FILE_ALL_ACCESS, 
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		printf("[3] open - 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open - 1 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -127,12 +139,15 @@ BOOL torture_test_delete(int dummy)
 	/* This should fail with a sharing violation - open for delete is only compatible
 	   with SHARE_DELETE. */
 
-	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
-				   NTCREATEX_DISP_OPEN, 0, 0);
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      GENERIC_RIGHTS_FILE_READ, 
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
+				      NTCREATEX_DISP_OPEN, 0, 0);
 
 	if (fnum2 != -1) {
-		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
+		printf("(%s) open  - 2 of %s succeeded - should have failed.\n", 
+		       __location__, fname);
 		correct = False;
 		goto fail;
 	}
@@ -143,25 +158,29 @@ BOOL torture_test_delete(int dummy)
 			NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN, 0, 0);
 
 	if (fnum2 == -1) {
-		printf("[3] open  - 2 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open  - 2 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[3] setting delete_on_close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) setting delete_on_close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[3] close 1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close 1 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum2))) {
-		printf("[3] close 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -170,9 +189,11 @@ BOOL torture_test_delete(int dummy)
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
-		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
+		printf("(%s) open of %s succeeded should have been deleted on close !\n", 
+		       __location__, fname);
 		if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-			printf("[3] close failed (%s)\n", smbcli_errstr(cli1->tree));
+			printf("(%s) close failed (%s)\n", 
+			       __location__, smbcli_errstr(cli1->tree));
 		}
 		smbcli_unlink(cli1->tree, fname);
 		correct = False;
@@ -182,7 +203,12 @@ BOOL torture_test_delete(int dummy)
 
 	/* Test 4 ... */
 	smbcli_setatr(cli1->tree, fname, 0, 0);
-	smbcli_unlink(cli1->tree, fname);
+	status = smbcli_unlink(cli1->tree, fname);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("(%s) succeeded unlink of %s\n", __location__, fname);
+		correct = False;
+		goto fail;
+	}
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
 				   SA_RIGHT_FILE_READ_DATA  | 
@@ -193,7 +219,8 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
-		printf("[4] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -206,19 +233,22 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_SHARE_ACCESS_DELETE, 
 				   NTCREATEX_DISP_OPEN, 0, 0);
 	if (fnum2 == -1) {
-		printf("[4] open  - 2 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open  - 2 of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum2))) {
-		printf("[4] close - 1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 1 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[4] setting delete_on_close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) setting delete_on_close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -228,14 +258,16 @@ BOOL torture_test_delete(int dummy)
 				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
 				   NTCREATEX_DISP_OPEN, 0, 0);
 	if (fnum2 != -1) {
-		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
+		printf("(%s) open  - 3 of %s succeeded ! Should have failed.\n",
+		       __location__, fname );
 		correct = False;
 		goto fail;
 	} else
 		printf("fourth delete on close test succeeded.\n");
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[4] close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -246,7 +278,8 @@ BOOL torture_test_delete(int dummy)
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("[5] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -254,13 +287,15 @@ BOOL torture_test_delete(int dummy)
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
 	if (NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
+		printf("(%s) setting delete_on_close on OpenX file succeeded - should fail !\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[5] close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -280,7 +315,8 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
-		printf("[6] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -288,13 +324,15 @@ BOOL torture_test_delete(int dummy)
 	/* This should fail - only allowed on NT opens with DELETE access. */
 	
 	if (NT_STATUS_IS_OK(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
+		printf("(%s) setting delete_on_close on file with no delete access succeeded - should fail !\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[6] close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -312,25 +350,29 @@ BOOL torture_test_delete(int dummy)
 				   FILE_ATTRIBUTE_NORMAL, 0, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 								
 	if (fnum1 == -1) {
-		printf("[7] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[7] setting delete_on_close on file failed !\n");
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, False))) {
-		printf("[7] unsetting delete_on_close on file failed !\n");
+		printf("(%s) unsetting delete_on_close on file failed !\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[7] close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -339,13 +381,15 @@ BOOL torture_test_delete(int dummy)
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 == -1) {
-		printf("[5] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[7] close - 2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -357,7 +401,8 @@ BOOL torture_test_delete(int dummy)
 	smbcli_unlink(cli1->tree, fname);
 	
 	if (!torture_open_connection(&cli2)) {
-		printf("[8] failed to open second connection.\n");
+		printf("(%s) failed to open second connection.\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
@@ -367,7 +412,8 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
 	if (fnum1 == -1) {
-		printf("[8] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -377,25 +423,29 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OPEN, 0, 0);
 	
 	if (fnum2 == -1) {
-		printf("[8] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_nt_delete_on_close(cli1->tree, fnum1, True))) {
-		printf("[8] setting delete_on_close on file failed !\n");
+		printf("(%s) setting delete_on_close on file failed !\n",
+		       __location__);
 		correct = False;
 		goto fail;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[8] close - 1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close - 1 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		printf("[8] close - 2 failed (%s)\n", smbcli_errstr(cli2->tree));
+		printf("(%s) close - 2 failed (%s)\n", 
+		       __location__, smbcli_errstr(cli2->tree));
 		correct = False;
 		goto fail;
 	}
@@ -403,7 +453,8 @@ BOOL torture_test_delete(int dummy)
 	/* This should fail.. */
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
-		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
+		printf("(%s) open of %s succeeded should have been deleted on close !\n",
+		       __location__, fname);
 		goto fail;
 		correct = False;
 	} else
@@ -414,7 +465,8 @@ BOOL torture_test_delete(int dummy)
 				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
-		printf("[9] open of %s succeeded should have failed!\n", fname);
+		printf("(%s) open of %s succeeded should have failed!\n", 
+		       __location__, fname);
 		correct = False;
 		goto fail;
 	}
@@ -424,14 +476,16 @@ BOOL torture_test_delete(int dummy)
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
 				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	if (fnum1 == -1) {
-		printf("[10] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	/* This should delete the file. */
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[10] close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -439,7 +493,8 @@ BOOL torture_test_delete(int dummy)
 	/* This should fail.. */
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum1 != -1) {
-		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
+		printf("(%s) open of %s succeeded should have been deleted on close !\n",
+		       __location__, fname);
 		goto fail;
 		correct = False;
 	} else
@@ -455,7 +510,8 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 	
         if (fnum1 == -1) {
-                printf("[11] open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+                printf("(%s) open of %s failed (%s)\n", 
+		       __location__, fname, smbcli_errstr(cli1->tree));
                 correct = False;
                 goto fail;
         }
@@ -463,13 +519,15 @@ BOOL torture_test_delete(int dummy)
 	status = smbcli_nt_delete_on_close(cli1->tree, fnum1, True);
 
 	if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
-		printf("[11] setting delete_on_close should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) setting delete_on_close should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		printf("[11] close failed (%s)\n", smbcli_errstr(cli1->tree));
+		printf("(%s) close failed (%s)\n", 
+		       __location__, smbcli_errstr(cli1->tree));
 		correct = False;
 		goto fail;
 	}
@@ -486,14 +544,16 @@ BOOL torture_test_delete(int dummy)
 				   NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
-		printf("[12] open of %s succeeded. Should fail with NT_STATUS_CANNOT_DELETE.\n", fname);
+		printf("(%s) open of %s succeeded. Should fail with NT_STATUS_CANNOT_DELETE.\n", 
+		       __location__, fname);
 		smbcli_close(cli1->tree, fnum1);
 		correct = False;
 		goto fail;
 	} else {
 		status = smbcli_nt_error(cli1->tree);
 		if (NT_STATUS_V(status) != NT_STATUS_V(NT_STATUS_CANNOT_DELETE)) {
-			printf("[12] setting delete_on_close on open should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", smbcli_errstr(cli1->tree));
+			printf("(%s) setting delete_on_close on open should fail with NT_STATUS_CANNOT_DELETE. Got %s instead)\n", 
+			       __location__, smbcli_errstr(cli1->tree));
 			correct = False;
 			goto fail;
 		}
