@@ -667,7 +667,7 @@ do a REG Create Key
 ****************************************************************************/
 BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 				char *key_name, char *key_class,
-				SEC_INFO *sam_access,
+				SEC_ACCESS *sam_access,
 				POLICY_HND *key)
 {
 	prs_struct rbuf;
@@ -683,7 +683,7 @@ BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
 	/* create and send a MSRPC command with api REG_CREATE_KEY */
 
 	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
-		sam_access != NULL ? sam_access->perms : 0));
+		sam_access != NULL ? sam_access->mask : 0));
 
 	make_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access);
 

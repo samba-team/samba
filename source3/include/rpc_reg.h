@@ -104,11 +104,11 @@ typedef struct q_reg_set_key_sec_info
 {
 	POLICY_HND pol;         /* policy handle */
 
-	uint32 unknown;       /* 0x0000 0004 */
+	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
 
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
-	SEC_DESC_BUF data;    /* security data */
+	SEC_DESC_BUF *data;    /* security data */
 	
 } REG_Q_SET_KEY_SEC;
 
@@ -125,7 +125,7 @@ typedef struct q_reg_get_key_sec_info
 {
 	POLICY_HND pol;         /* policy handle */
 
-	uint32 unknown;       /* 0x0000 0007 */
+	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
 
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
@@ -136,7 +136,7 @@ typedef struct q_reg_get_key_sec_info
 /* REG_R_GET_KEY_SEC */
 typedef struct r_reg_get_key_sec_info
 {
-	uint32 unknown;       /* 0x0000 0007 */
+	uint32 sec_info;       /* xxxx_SECURITY_INFORMATION */
 
 	uint32 ptr;       /* pointer */
 	BUFHDR hdr_sec;    /* header for security data */
@@ -225,7 +225,7 @@ typedef struct q_reg_create_key_info
 	UNISTR2 uni_class;
 
 	uint32 reserved; /* 0x0000 0000 */
-	SEC_INFO sam_access; /* access rights flags, see rpc_secdes.h */
+	SEC_ACCESS sam_access; /* access rights flags, see rpc_secdes.h */
 
 	uint32 ptr1;
 	uint32 unknown_0; /* 0x0000 000C */

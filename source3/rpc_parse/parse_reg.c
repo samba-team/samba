@@ -125,7 +125,7 @@ creates a structure.
 ********************************************************************/
 void make_reg_q_create_key(REG_Q_CREATE_KEY *q_c, POLICY_HND *hnd,
 				char *name, char *class,
-				SEC_INFO *sam_access)
+				SEC_ACCESS *sam_access)
 {
 	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
 	int len_class = class != NULL ? strlen(class) + 1: 0;
@@ -191,7 +191,7 @@ void reg_io_q_create_key(char *desc,  REG_Q_CREATE_KEY *r_q, prs_struct *ps, int
 	prs_align(ps);
 
 	prs_uint32("reserved", ps, depth, &(r_q->reserved));
-	sec_io_info("sam_access", &r_q->sam_access, ps, depth);
+	sec_io_access("sam_access", &r_q->sam_access, ps, depth);
 
 	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
 	if (r_q->ptr2 != 0)
@@ -551,11 +551,11 @@ void make_reg_q_set_key_sec(REG_Q_SET_KEY_SEC *q_i, POLICY_HND *pol,
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
-	q_i->unknown = 0x4;
+	q_i->sec_info = DACL_SECURITY_INFORMATION;
 
 	q_i->ptr = 1;
 	make_buf_hdr(&(q_i->hdr_sec), buf_len, buf_len);
-	make_sec_desc_buf(&(q_i->data), buf_len, sec_desc);
+	make_sec_desc_buf(q_i->data, buf_len, sec_desc);
 }
 
 /*******************************************************************
@@ -572,7 +572,7 @@ void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 	
 	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
 
-	prs_uint32("unknown", ps, depth, &(r_q->unknown));
+	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
 	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
 
 	if (r_q->ptr != 0)
@@ -581,10 +581,10 @@ void reg_io_q_set_key_sec(char *desc,  REG_Q_SET_KEY_SEC *r_q, prs_struct *ps, i
 		uint32 old_offset;
 		smb_io_hdrbuf_pre("hdr_sec", &(r_q->hdr_sec), ps, depth, &hdr_offset);
 		old_offset = ps->offset;
-		sec_io_desc_buf("data   ", &(r_q->data   ), ps, depth);
+		sec_io_desc_buf("data   ", r_q->data   , ps, depth);
 		smb_io_hdrbuf_post("hdr_sec", &(r_q->hdr_sec), ps, depth, hdr_offset,
-		                   r_q->data.max_len, r_q->data.len);
-		ps->offset = old_offset + r_q->data.len + sizeof(uint32) * 3;
+		                   r_q->data->max_len, r_q->data->len);
+		ps->offset = old_offset + r_q->data->len + sizeof(uint32) * 3;
 		prs_align(ps);
 	}
 }
@@ -615,7 +615,9 @@ void make_reg_q_get_key_sec(REG_Q_GET_KEY_SEC *q_i, POLICY_HND *pol,
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
-	q_i->unknown = 0x7;
+	q_i->sec_info = OWNER_SECURITY_INFORMATION |
+	                GROUP_SECURITY_INFORMATION |
+	                DACL_SECURITY_INFORMATION;
 
 	q_i->ptr = sec_buf != NULL ? 1 : 0;
 	q_i->data = sec_buf;
@@ -641,8 +643,8 @@ void reg_io_q_get_key_sec(char *desc,  REG_Q_GET_KEY_SEC *r_q, prs_struct *ps, i
 	
 	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
 
-	prs_uint32("unknown", ps, depth, &(r_q->unknown));
-	prs_uint32("ptr    ", ps, depth, &(r_q->ptr    ));
+	prs_uint32("sec_info", ps, depth, &(r_q->sec_info));
+	prs_uint32("ptr     ", ps, depth, &(r_q->ptr     ));
 
 	if (r_q->ptr != 0)
 	{

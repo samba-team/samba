@@ -637,7 +637,7 @@ void cmd_reg_create_key(struct client_info *info)
 	fstring parent_name;
 	fstring key_name;
 	fstring key_class;
-	SEC_INFO sam_access;
+	SEC_ACCESS sam_access;
 
 	DEBUG(5, ("cmd_reg_create_key: smb_cli->fd:%d\n", smb_cli->fd));
 
@@ -661,7 +661,7 @@ void cmd_reg_create_key(struct client_info *info)
 	}
 
 	/* set access permissions */
-	sam_access.perms = SEC_RIGHTS_READ;
+	sam_access.mask = SEC_RIGHTS_READ;
 
 	/* open WINREG session. */
 	res = res ? cli_nt_session_open(smb_cli, PIPE_WINREG) : False;
@@ -766,11 +766,16 @@ void cmd_reg_test_key_sec(struct client_info *info)
 
 	/* query key sec info.  first call sets sec_buf_size. */
 	sec_buf_size = 0;
-	sec_buf.sec = NULL;
+	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 	
+	if (res4)
+	{
+		free_sec_desc_buf(&sec_buf);
+	}
+
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 
@@ -783,7 +788,7 @@ void cmd_reg_test_key_sec(struct client_info *info)
 		res4 = res4 ? do_reg_set_key_sec(smb_cli, &key_pol,
 				sec_buf_size, sec_buf.sec) : False;
 
-		free(sec_buf.sec);
+		free_sec_desc_buf(&sec_buf);
 	}
 
 	/* close the key handle */
@@ -861,11 +866,16 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	/* query key sec info.  first call sets sec_buf_size. */
 	sec_buf_size = 0;
-	sec_buf.sec = NULL;
+	ZERO_STRUCT(sec_buf);
 
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 	
+	if (res4)
+	{
+		free_sec_desc_buf(&sec_buf);
+	}
+
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 
@@ -874,6 +884,7 @@ void cmd_reg_get_key_sec(struct client_info *info)
 		display_sec_desc(out_hnd, ACTION_HEADER   , sec_buf.sec);
 		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
 		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
+
 		free(sec_buf.sec);
 	}
 
