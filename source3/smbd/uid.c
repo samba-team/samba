@@ -207,9 +207,8 @@ BOOL become_authenticated_pipe_user(pipes_struct *p)
 		return False;
 	}
 
-	/* JRATEST - this needs fixined w.r.t. NT user tokens... */
 	set_sec_ctx(p->pipe_user.uid, p->pipe_user.gid, 
-		    p->pipe_user.ngroups, p->pipe_user.groups, NULL);
+		    p->pipe_user.ngroups, p->pipe_user.groups, p->pipe_user.nt_user_token);
 
 	return True;
 }

@@ -163,8 +163,9 @@ char *validated_domain(uint16 vuid)
  Initialize the groups a user belongs to.
 ****************************************************************************/
 
-int initialize_groups(char *user, uid_t uid, gid_t gid)
+BOOL initialize_groups(char *user, uid_t uid, gid_t gid)
 {
+	become_root();
 	if (initgroups(user,gid) == -1) {
 		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
 		if (getuid() == 0) {
@@ -172,9 +173,11 @@ int initialize_groups(char *user, uid_t uid, gid_t gid)
 				DEBUG(0,("This is probably a problem with the account %s\n", user));
 			}
 		}
-		return -1;
+		unbecome_root();
+		return False;
 	}
-	return 0;
+	become_root();
+	return True;
 }
 
 /****************************************************************************
