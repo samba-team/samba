@@ -261,6 +261,7 @@ BOOL lp_syncalways(int );
 BOOL lp_map_system(int );
 BOOL lp_delete_readonly(int );
 BOOL lp_fake_oplocks(int );
+BOOL lp_recursive_veto_delete(int );
 int lp_create_mode(int );
 int lp_force_create_mode(int );
 int lp_dir_mode(int );
@@ -805,9 +806,6 @@ struct smb_passwd *get_smbpwnam(char *name);
 
 
 /*The following definitions come from  smbrun.c  */
-
-
-/*The following definitions come from  smbwizard.c  */
 
 
 /*The following definitions come from  status.c  */
