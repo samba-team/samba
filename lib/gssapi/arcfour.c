@@ -338,7 +338,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     token->SGN_ALG[0] = 0x11;
     token->SGN_ALG[1] = 0x00;
     if (conf_req_flag) {
-	token->SEAL_ALG[0] = 0x00;
+	token->SEAL_ALG[0] = 0x10;
 	token->SEAL_ALG[1] = 0x00;
     } else {
 	token->SEAL_ALG[0] = 0xff;
@@ -388,7 +388,7 @@ _gssapi_wrap_arcfour(OM_uint32 * minor_status,
     {
 	int i;
 
-	Klocal.keytype = KEYTYPE_ARCFOUR;
+	Klocal.keytype = key->keytype;
 	Klocal.keyvalue.data = Klocaldata;
 	Klocal.keyvalue.length = sizeof(Klocaldata);
 
@@ -483,7 +483,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return GSS_S_BAD_SIG;
     p += 2;
 
-    if (memcmp (p, "\x00\x00", 2) == 0)
+    if (memcmp (p, "\x10\x00", 2) == 0)
 	conf_flag = 1;
     else if (memcmp (p, "\xff\xff", 2) == 0)
 	conf_flag = 0;
@@ -527,7 +527,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
     {
 	int i;
 
-	Klocal.keytype = KEYTYPE_ARCFOUR;
+	Klocal.keytype = key->keytype;
 	Klocal.keyvalue.data = Klocaldata;
 	Klocal.keyvalue.length = sizeof(Klocaldata);
 
