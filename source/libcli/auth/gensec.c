@@ -355,6 +355,9 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info)
 {
+	if (!gensec_security->ops->session_info) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 	return gensec_security->ops->session_info(gensec_security, session_info);
 }
 
