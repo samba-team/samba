@@ -1631,6 +1631,9 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 		case PI_NETDFS:
 			netdfs_get_pipe_fns( &cmds, &n_cmds );
 			break;
+		case PI_SVCCTL:
+			svcctl_get_pipe_fns( &cmds, &n_cmds );
+			break;
 #ifdef DEVELOPER
 		case PI_ECHO:
 			echo_get_pipe_fns( &cmds, &n_cmds );

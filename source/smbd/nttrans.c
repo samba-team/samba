@@ -40,6 +40,7 @@ static const char *known_nt_pipes[] = {
 	"\\spoolss",
 	"\\netdfs",
 	"\\rpcecho",
+        "\\svcctl",
 	"\\epmapper",
 	NULL
 };

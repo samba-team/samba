@@ -180,6 +180,17 @@ interface/version dce/rpc pipe identification
 	}, 0x03                             \
 }
 
+#define SYNT_SVCCTL_V2                      \
+{                                           \
+	{                                   \
+		0x367abb81, 0x9844, 0x35f1, \
+                { 0xad, 0x32 },             \
+                { 0x98, 0xf0,               \
+                  0x38, 0x00, 0x10, 0x03 }  \
+	}, 0x02                             \
+}
+
+
 /*
  * IMPORTANT!!  If you update this structure, make sure to
  * update the index #defines in smb.h.
@@ -200,6 +211,7 @@ const struct pipe_id_info pipe_names [] =
 	{ PIPE_ECHO    , SYNT_ECHO_V1          , PIPE_ECHO     , TRANS_SYNT_V2 },
 	{ PIPE_SHUTDOWN, SYNT_SHUTDOWN_V1      , PIPE_SHUTDOWN , TRANS_SYNT_V2 },
 	{ PIPE_EPM     , SYNT_EPM_V3           , PIPE_EPM      , TRANS_SYNT_V2 },
+	{ PIPE_SVCCTL  , SYNT_SVCCTL_V2        , PIPE_NTSVCS   , TRANS_SYNT_V2 },
 	{ NULL         , SYNT_NONE_V0          , NULL          , SYNT_NONE_V0  }
 };
 

@@ -397,6 +397,7 @@ typedef struct {
 #include "rpc_samr.h"
 #include "rpc_srvsvc.h"
 #include "rpc_wkssvc.h"
+#include "rpc_svcctl.h"
 #include "rpc_spoolss.h"
 #include "rpc_dfs.h"
 #include "rpc_ds.h"
