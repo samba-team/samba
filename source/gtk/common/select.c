@@ -196,7 +196,6 @@ void gtk_select_host_dialog_init (GtkSelectHostDialog *select_host_dialog)
 	GtkWidget *dialog_vbox2;
 	GtkWidget *hbox2;
 	GtkWidget *label2;
-	GtkWidget *entry_host;
 	GtkWidget *scrolledwindow2;
 	GtkWidget *dialog_action_area2;
 	GtkWidget *cancelbutton2;
