@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
     }
 
-    fprintf(stdout, "Directory handles: %u, %u, %u\n", dh1, dh2, dh3);
+    fprintf(stdout, "Directory handles: %u\n", dh1);
 
     /* Now, list those directories, but in funny ways ... */
 
