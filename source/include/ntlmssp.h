@@ -92,6 +92,8 @@ typedef struct ntlmssp_state
 typedef struct ntlmssp_client_state 
 {
 	TALLOC_CTX *mem_ctx;
+	unsigned int ref_count;
+
 	BOOL unicode;
 	BOOL use_ntlmv2;
 	char *user;
@@ -102,6 +104,9 @@ typedef struct ntlmssp_client_state
 	const char *(*get_global_myname)(void);
 	const char *(*get_domain)(void);
 
+	DATA_BLOB chal;
+ 	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 	
 	uint32 neg_flags;
