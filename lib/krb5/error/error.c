@@ -10,7 +10,7 @@ krb5_get_err_text(krb5_context context, long code)
 	if(code >= p->table->base && code < p->table->base + p->table->n_msgs)
 	    return p->table->msgs[code - p->table->base];
     }
-    return "Error message not found";
+    return strerror(code);
 }
 
 void
