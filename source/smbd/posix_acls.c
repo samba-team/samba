@@ -758,9 +758,9 @@ static BOOL create_canon_ace_lists(files_struct *fsp,
 
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
-			SAFE_FREE(current_ace);
 			DEBUG(0,("create_canon_ace_lists: unable to map SID %s to uid or gid.\n",
 				sid_to_string(str, &current_ace->trustee) ));
+			SAFE_FREE(current_ace);
 			return False;
 		}
 
