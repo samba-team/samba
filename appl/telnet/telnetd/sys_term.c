@@ -378,7 +378,7 @@ int getpty(int *ptynum)
 	char *cp, *p1, *p2;
 	int i;
 	int dummy;
-#ifdef HAVE_OPENPTY
+#if 0 /* && defined(HAVE_OPENPTY) */
         int master;
 	int slave;
 	if(openpty(&master, &slave, line, 0, 0) == 0){
@@ -1182,7 +1182,7 @@ int cleanopen(char *line)
 }
 #endif	/* !defined(CRAY) || !defined(NEWINIT) */
 
-#if BSD <= 43
+#if !defined(BSD4_4)
 
 int login_tty(int t)
 {
