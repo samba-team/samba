@@ -470,7 +470,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
-		free(tdb_key.dptr);
+		ldb_free(ldb, tdb_key.dptr);
 		return -1;
 	}
 
