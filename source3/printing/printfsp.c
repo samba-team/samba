@@ -52,8 +52,15 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 		return NULL;
 	}
 
+	/* Convert to RAP id. */
+	fsp->rap_print_jobid = pjobid_to_rap(SNUM(conn), jobid);
+	if (fsp->rap_print_jobid == 0) {
+		/* We need to delete the entry in the tdb here ! FIXME ! JRA */
+		file_free(fsp);
+		return NULL;
+	}
+
 	/* setup a full fsp */
-	fsp->print_jobid = jobid;
 	fsp->fd = print_job_fd(SNUM(conn),jobid);
 	GetTimeOfDay(&fsp->open_time);
 	fsp->vuid = current_user.vuid;
@@ -88,6 +95,9 @@ print a file - called on closing the file
 ****************************************************************************/
 void print_fsp_end(files_struct *fsp, BOOL normal_close)
 {
+	uint32 jobid;
+	int snum;
+
 	if (fsp->share_mode == FILE_DELETE_ON_CLOSE) {
 		/*
 		 * Truncate the job. print_job_end will take
@@ -96,9 +106,15 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close)
 		sys_ftruncate(fsp->fd, 0);
 	}
 
-	print_job_end(SNUM(fsp->conn),fsp->print_jobid, normal_close);
-
 	if (fsp->fsp_name) {
 		string_free(&fsp->fsp_name);
 	}
+
+	if (!rap_to_pjobid(fsp->rap_print_jobid, &snum, &jobid)) {
+		DEBUG(3,("print_fsp_end: Unable to convert RAP jobid %u to print jobid.\n",
+			(unsigned int)fsp->rap_print_jobid ));
+		return;
+	}
+
+	print_job_end(SNUM(fsp->conn),jobid, normal_close);
 }

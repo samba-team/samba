@@ -3006,8 +3006,6 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 	
 	if ((SVAL(inbuf,(smb_setup+4)) == LMCAT_SPL) &&
 			(SVAL(inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
-		uint16 rap_jobid;
-
 		pdata = Realloc(*ppdata, 32);
 		if(pdata == NULL)
 			return ERROR_DOS(ERRDOS,ERRnomem);
@@ -3016,8 +3014,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 		/* NOTE - THIS IS ASCII ONLY AT THE MOMENT - NOT SURE IF OS/2
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
-		rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);                     /* Job number */
-		SSVAL(pdata,0,rap_jobid);                     /* Job number */
+		SSVAL(pdata,0,fsp->rap_print_jobid);                     /* Job number */
 		srvstr_push( outbuf, pdata + 2, global_myname(), 15, STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_ASCII|STR_TERMINATE); /* Service name */
 		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
