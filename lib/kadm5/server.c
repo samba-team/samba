@@ -43,17 +43,18 @@ RCSID("$Id$");
 kadm5_ret_t
 kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 {
-    int32_t cmd;
     kadm5_ret_t ret;
+    int32_t cmd, mask, tmp;
     kadm5_server_context *context = kadm_handle;
     char client[128], name[128], name2[128];
     char *op = "";
     krb5_principal princ, princ2;
     kadm5_principal_ent_rec ent;
-    int32_t mask;
-    char *password;
+    char *password, *exp;
     krb5_keyblock *new_keys;
     int n_keys;
+    char **princs;
+    int n_princs;
     
     krb5_unparse_name_fixed(context->context, context->caller, 
 			    client, sizeof(client));
@@ -248,6 +249,36 @@ kadmind_dispatch(void *kadm_handle, krb5_storage *sp)
 	krb5_store_int32(sp, ret);
 	if(ret == 0)
 	    krb5_store_int32(sp, mask);
+	break;
+    }
+    case kadm_get_princs:{
+	op = "LIST";
+	ret = krb5_ret_int32(sp, &tmp);
+	if(ret)
+	    goto fail;
+	if(tmp){
+	    ret = krb5_ret_string(sp, &exp);
+	    if(ret)
+		goto fail;
+	}else
+	    exp = NULL;
+	krb5_warnx(context->context, "%s: %s %s", client, op, exp ? exp : "*");
+	ret = _kadm5_acl_check_permission(context, KADM5_PRIV_LIST);
+	if(ret){
+	    free(exp);
+	    goto fail;
+	}
+	ret = kadm5_get_principals(kadm_handle, exp, &princs, &n_princs);
+	free(exp);
+	sp->seek(sp, 0, SEEK_SET);
+	krb5_store_int32(sp, ret);
+	if(ret == 0){
+	    int i;
+	    krb5_store_int32(sp, n_princs);
+	    for(i = 0; i < n_princs; i++)
+		krb5_store_string(sp, princs[i]);
+	    kadm5_free_name_list(kadm_handle, princs, &n_princs);
+	}
 	break;
     }
     default:

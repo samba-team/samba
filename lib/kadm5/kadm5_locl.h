@@ -55,6 +55,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_FNMATCH_H
+#include <fnmatch.h>
+#endif
 #include "admin.h"
 #include "kadm5_err.h"
 #include <hdb.h>
@@ -89,7 +92,8 @@ enum kadm_ops {
     kadm_chpass,
     kadm_modify,
     kadm_randkey,
-    kadm_get_privs
+    kadm_get_privs,
+    kadm_get_princs
 };
 
 #define KADMIN_APPL_VERSION "KADM0.0"
@@ -122,6 +126,12 @@ kadm5_ret_t
 _kadm5_error_code __P((kadm5_ret_t code));
 
 kadm5_ret_t
+_kadm5_privs_to_string __P((
+	u_int32_t privs,
+	char *string,
+	size_t len));
+
+kadm5_ret_t
 _kadm5_s_init_context __P((
 	kadm5_server_context **ctx,
 	kadm5_config_params *params,
@@ -147,13 +157,7 @@ _kadm5_setup_entry __P((
 
 kadm5_ret_t
 _kadm5_string_to_privs __P((
-	const char *s, 
+	const char *s,
 	u_int32_t* privs));
-
-kadm5_ret_t
-_kadm5_privs_to_string __P((
-	u_int32_t privs,
-	char *string,
-	size_t len));
 
 #endif /* __KADM5_LOCL_H__ */
