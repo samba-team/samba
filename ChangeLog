@@ -5,6 +5,17 @@
 	<allbery@kf8nh.apk.net> and Chaskiel M Grundman
 	<cg2v@andrew.cmu.edu> for debugging.
 
+	* kdc/kerberos4.c (do_version4): if an tgs-req is received with an
+	old kvno, return an error reply and write a message in the log.
+	
+2000-02-12  Assar Westerlund  <assar@sics.se>
+
+	* appl/test/gssapi_server.c (proto): with `--fork', create a child
+	and send over/receive creds with export/import_sec_context
+	* appl/test/gssapi_client.c (proto): with `--fork', create a child
+	and send over/receive creds with export/import_sec_context
+	* appl/test/common.c: add `--fork' / `-f' (only used by gssapi)
+
 2000-02-11  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kdc_locl.h: remove keyfile add explicit_addresses
