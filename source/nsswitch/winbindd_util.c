@@ -216,7 +216,6 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
-				 const char *dom_name,
 				 const char *name, DOM_SID *sid, 
 				 enum SID_NAME_USE *type)
 {

@@ -73,6 +73,7 @@ enum winbindd_result winbindd_ping(struct winbindd_cli_state
 						   *state);
 enum winbindd_result winbindd_info(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_interface_version(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_domain_name(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_pam.c  */
 
@@ -109,7 +110,6 @@ BOOL init_domain_list(void);
 struct winbindd_domain *find_domain_from_name(char *domain_name);
 struct winbindd_domain *find_domain_from_sid(DOM_SID *sid);
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain, 
-				 const char *dom_name,
 				 const char *name, DOM_SID *sid, 
 				 enum SID_NAME_USE *type);
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,

@@ -215,7 +215,7 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name */
         
-	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_group, &group_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, name_group, &group_sid, 
 					 &name_type)) {
 		DEBUG(1, ("group %s in domain %s does not exist\n", 
 			  name_group, name_domain));
@@ -792,7 +792,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	/* Get rid and name type from name.  The following costs 1 packet */
 
-	if (!winbindd_lookup_sid_by_name(domain, name_domain, name_user, &user_sid, 
+	if (!winbindd_lookup_sid_by_name(domain, name_user, &user_sid, 
 					 &name_type)) {
 		DEBUG(1, ("user '%s' does not exist\n", name_user));
 		goto done;

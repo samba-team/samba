@@ -30,52 +30,9 @@ NSS_STATUS winbindd_request(int req_type,
                                  struct winbindd_request *request,
                                  struct winbindd_response *response);
 
-/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
-   form DOMAIN/user into a domain and a user */
-extern fstring global_myworkgroup;
-
-static BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
-{
-	char *p = strchr(domuser,*lp_winbind_separator());
-
-	if (!(p || lp_winbind_use_default_domain()))
-		return False;
-	
-	if(!p && lp_winbind_use_default_domain()) {
-		fstrcpy(user, domuser);
-		fstrcpy(domain, global_myworkgroup);
-	} else {
-		fstrcpy(user, p+1);
-		fstrcpy(domain, domuser);
-		domain[PTR_DIFF(p, domuser)] = 0;
-	}
-	strupper(domain);
-	return True;
-}
-
-/*
-     Fill DOMAIN\\USERNAME entry accounting 'winbind use default domain' and
-     'winbind separator' options.
-     This means:
- 	- omit DOMAIN when 'winbind use default domain = true' and DOMAIN is
- 	global_myworkgroup
- 	 
-*/
-static void fill_domain_username(fstring name, const char *domain, const char *user)
-{
- 	if(lp_winbind_use_default_domain() &&
- 	    !strcmp(global_myworkgroup, domain)) {
- 		strlcpy(name, user, sizeof(fstring));
- 	} else {
- 		slprintf(name, sizeof(fstring) - 1, "%s%s%s",
- 			 domain, lp_winbind_separator(),
- 			 user);
- 	}
-}
-
 /* Call winbindd to convert a name to a sid */
 
-BOOL winbind_lookup_name(const char *name, DOM_SID *sid, 
+BOOL winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
                          enum SID_NAME_USE *name_type)
 {
 	struct winbindd_request request;
@@ -85,20 +42,13 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid,
 	if (!sid || !name_type)
 		return False;
 
-	/*
-	 * Don't do the lookup if the name has no separator _and_ we are not in
-	 * 'winbind use default domain' mode.
-	 */
-
-	if (!(strchr(name, *lp_winbind_separator()) || lp_winbind_use_default_domain()))
-		return False;
-
 	/* Send off request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	fstrcpy(request.data.name, name);
+	fstrcpy(request.data.name.dom_name, dom_name);
+	fstrcpy(request.data.name.name, name);
 
 	if ((result = winbindd_request(WINBINDD_LOOKUPNAME, &request, 
 				       &response)) == NSS_STATUS_SUCCESS) {
@@ -111,7 +61,8 @@ BOOL winbind_lookup_name(const char *name, DOM_SID *sid,
 
 /* Call winbindd to convert sid to name */
 
-BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, 
+BOOL winbind_lookup_sid(DOM_SID *sid, 
+			fstring dom_name, fstring name, 
                         enum SID_NAME_USE *name_type)
 {
 	struct winbindd_request request;
@@ -134,7 +85,8 @@ BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name,
 	/* Copy out result */
 
 	if (result == NSS_STATUS_SUCCESS) {
-		parse_domain_user(response.data.name.name, dom_name, name);
+		fstrcpy(dom_name, response.data.name.dom_name);
+		fstrcpy(name, response.data.name.name);
 		*name_type = (enum SID_NAME_USE)response.data.name.type;
 
 		DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
@@ -425,80 +377,4 @@ int winbind_getgroups(const char *user, int size, gid_t *list)
  done:
 	SAFE_FREE(groups);
 	return result;
-}
-
-/* Utility function. Convert a uid_t to a name if possible. */
-
-BOOL winbind_uidtoname(fstring name, uid_t uid)
-{
-	DOM_SID sid;
-	fstring dom_name;
-	fstring user_name;
-	enum SID_NAME_USE name_type;
-
-	if (!winbind_uid_to_sid(&sid, uid))
-		return False;
-	if (!winbind_lookup_sid(&sid, dom_name, user_name, &name_type))
-		return False;
-
-	if (name_type != SID_NAME_USER)
-		return False;
-
-	fill_domain_username(name, dom_name, user_name);
-
-	return True;
-}
-
-/* Utility function. Convert a gid_t to a name if possible. */
-
-BOOL winbind_gidtoname(fstring name, gid_t gid)
-{
-	DOM_SID sid;
-	fstring dom_name;
-	fstring group_name;
-	enum SID_NAME_USE name_type;
-
-	if (!winbind_gid_to_sid(&sid, gid))
-		return False;
-	if (!winbind_lookup_sid(&sid, dom_name, group_name, &name_type))
-		return False;
-
-	if (name_type != SID_NAME_DOM_GRP)
-		return False;
-
-	fill_domain_username(name, dom_name, group_name);
-
-	return True;
-}
-
-/* Utility function. Convert a name to a uid_t if possible. */
-
-BOOL winbind_nametouid(uid_t *puid, const char *name)
-{
-	DOM_SID sid;
-	enum SID_NAME_USE name_type;
-
-	if (!winbind_lookup_name(name, &sid, &name_type))
-                return False;
-
-	if (name_type != SID_NAME_USER)
-		return False;
-
-	return winbind_sid_to_uid(puid, &sid);
-}
-
-/* Utility function. Convert a name to a gid_t if possible. */
-
-BOOL winbind_nametogid(gid_t *pgid, const char *gname)
-{
-	DOM_SID g_sid;
-	enum SID_NAME_USE name_type;
-
-	if (!winbind_lookup_name(gname, &g_sid, &name_type))
-                return False;
-
-	if (name_type != SID_NAME_DOM_GRP)
-		return False;
-
-	return winbind_sid_to_gid(pgid, &g_sid);
 }
